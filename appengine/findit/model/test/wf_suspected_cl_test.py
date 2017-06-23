@@ -9,17 +9,14 @@ from model.wf_suspected_cl import WfSuspectedCL
 
 
 class WfSuspectedCLTest(unittest.TestCase):
+
   def testGetBuildInfo(self):
     repo_name = 'chromium'
     revision = 'rev1'
     commit_position = 1
-    build = {
-        'status': None
-    }
+    build = {'status': None}
     suspected_cl = WfSuspectedCL.Create(repo_name, revision, commit_position)
-    suspected_cl.builds = {
-        'm/b/123': build
-    }
+    suspected_cl.builds = {'m/b/123': build}
     self.assertEqual(build, suspected_cl.GetBuildInfo('m', 'b', 123))
 
   def testCrNotificationProcessed(self):

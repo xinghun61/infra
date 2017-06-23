@@ -13,7 +13,6 @@ from libs import time_util
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_try_job_data import WfTryJobData
 
-
 NOT_AVAILABLE = 'N/A'
 
 
@@ -56,22 +55,23 @@ def _FormatDisplayData(try_job_data):
   display_data = try_job_data.to_dict()
 
   for attribute in ('created_time', 'start_time', 'end_time', 'request_time'):
-    display_data[attribute] = time_util.FormatDatetime(
-        display_data[attribute])
+    display_data[attribute] = time_util.FormatDatetime(display_data[attribute])
 
-  display_data['pending_time'] = (
-      _FormatDuration(try_job_data.request_time, try_job_data.start_time) if
-      try_job_data.start_time else
-      _FormatDuration(try_job_data.created_time, time_util.GetUTCNow()))
+  display_data['pending_time'] = (_FormatDuration(try_job_data.request_time,
+                                                  try_job_data.start_time)
+                                  if try_job_data.start_time else
+                                  _FormatDuration(try_job_data.created_time,
+                                                  time_util.GetUTCNow()))
   display_data['last_buildbucket_response'] = json.dumps(
       _PrepareBuildbucketResponseForDisplay(
-          display_data['last_buildbucket_response']), sort_keys=True)
+          display_data['last_buildbucket_response']),
+      sort_keys=True)
 
   if isinstance(try_job_data, FlakeTryJobData):
     # Flake try job data does not include try_job_type.
     display_data['try_job_type'] = 'flake'
-    display_data['analysis_key'] = (try_job_data.analysis_key.urlsafe() if
-                                    try_job_data.analysis_key else None)
+    display_data['analysis_key'] = (try_job_data.analysis_key.urlsafe()
+                                    if try_job_data.analysis_key else None)
 
   # Do not include the try job key in the response.
   display_data.pop('try_job_key', None)
@@ -99,18 +99,20 @@ def _GetStartEndDates(start, end):
     return datetime.strptime(start, '%Y-%m-%d'), midnight_tomorrow
 
   # Both start and end are specified, get everything in between.
-  return (datetime.strptime(start, '%Y-%m-%d'),
-          datetime.strptime(end, '%Y-%m-%d'))
+  return (datetime.strptime(start, '%Y-%m-%d'), datetime.strptime(
+      end, '%Y-%m-%d'))
+
 
 def _AveragePerCommitExecutionTime(try_job_data, display_data):
-  if (hasattr(try_job_data, 'number_of_commits_analyzed')
-      and try_job_data.number_of_commits_analyzed
-      and try_job_data.end_time and try_job_data.start_time):
+  if (hasattr(try_job_data, 'number_of_commits_analyzed') and
+      try_job_data.number_of_commits_analyzed and try_job_data.end_time and
+      try_job_data.start_time):
     display_data['execution_time_per_commit'] = time_util.FormatTimedelta(
-         (try_job_data.end_time - try_job_data.start_time)
-         / try_job_data.number_of_commits_analyzed)
+        (try_job_data.end_time - try_job_data.start_time) /
+        try_job_data.number_of_commits_analyzed)
   else:
     display_data['execution_time_per_commit'] = 'N/A'
+
 
 class TryJobDashboard(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
@@ -153,10 +155,10 @@ class TryJobDashboard(BaseHandler):
       if not try_job_data.end_time and not try_job_data.error:
         start_time = try_job_data.request_time or try_job_data.created_time
         now = time_util.GetUTCNow()
-        display_data['elapsed_time'] = (
-            _FormatDuration(start_time, now) if start_time else None)
-        display_data['status'] = (
-            'running' if try_job_data.start_time else 'pending')
+        display_data['elapsed_time'] = (_FormatDuration(start_time, now)
+                                        if start_time else None)
+        display_data['status'] = ('running'
+                                  if try_job_data.start_time else 'pending')
         try_jobs_in_progress.append(display_data)
       elif try_job_data.error:
         display_data['error'] = try_job_data.error['message']
@@ -165,9 +167,9 @@ class TryJobDashboard(BaseHandler):
             try_job_data.start_time, try_job_data.end_time)
         try_jobs_with_error.append(display_data)
       else:
-        display_data['culprit_found'] = (
-            bool(try_job_data.culprits) if isinstance(
-                try_job_data, WfTryJobData) else 'N/A')
+        display_data['culprit_found'] = (bool(try_job_data.culprits)
+                                         if isinstance(try_job_data,
+                                                       WfTryJobData) else 'N/A')
         display_data['execution_time'] = _FormatDuration(
             try_job_data.start_time, try_job_data.end_time)
         _AveragePerCommitExecutionTime(try_job_data, display_data)
@@ -182,7 +184,4 @@ class TryJobDashboard(BaseHandler):
         'successfully_completed_try_jobs': successfully_completed_try_jobs
     }
 
-    return {
-        'template': 'try_job_dashboard.html',
-        'data': data
-    }
+    return {'template': 'try_job_dashboard.html', 'data': data}

@@ -12,18 +12,18 @@ from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 class ScheduleCompileTryJobPipeline(ScheduleTryJobPipeline):
   """A pipeline for scheduling a new try job for failed compile build."""
 
-  def _GetBuildProperties(
-      self, master_name, builder_name, build_number, good_revision,
-      bad_revision, try_job_type, suspected_revisions):
+  def _GetBuildProperties(self, master_name, builder_name, build_number,
+                          good_revision, bad_revision, try_job_type,
+                          suspected_revisions):
     properties = super(ScheduleCompileTryJobPipeline, self)._GetBuildProperties(
-        master_name, builder_name, build_number, good_revision,
-        bad_revision, try_job_type, suspected_revisions)
+        master_name, builder_name, build_number, good_revision, bad_revision,
+        try_job_type, suspected_revisions)
     properties['target_buildername'] = builder_name
 
     return properties
 
-  def _CreateTryJobData(
-      self, build_id, try_job_key, has_compile_targets, has_heuristic_results):
+  def _CreateTryJobData(self, build_id, try_job_key, has_compile_targets,
+                        has_heuristic_results):
     try_job_data = WfTryJobData.Create(build_id)
     try_job_data.created_time = time_util.GetUTCNow()
     try_job_data.has_compile_targets = has_compile_targets
@@ -34,10 +34,9 @@ class ScheduleCompileTryJobPipeline(ScheduleTryJobPipeline):
     try_job_data.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(
-      self, master_name, builder_name, build_number, good_revision,
-      bad_revision, try_job_type, compile_targets, suspected_revisions,
-      cache_name, dimensions):
+  def run(self, master_name, builder_name, build_number, good_revision,
+          bad_revision, try_job_type, compile_targets, suspected_revisions,
+          cache_name, dimensions):
     """
     Args:
       master_name (str): the master name of a build.
@@ -74,7 +73,7 @@ class ScheduleCompileTryJobPipeline(ScheduleTryJobPipeline):
 
     # Create a corresponding WfTryJobData entity to capture as much metadata as
     # early as possible.
-    self._CreateTryJobData(
-        build_id, try_job.key, bool(compile_targets), bool(suspected_revisions))
+    self._CreateTryJobData(build_id, try_job.key,
+                           bool(compile_targets), bool(suspected_revisions))
 
     return build_id

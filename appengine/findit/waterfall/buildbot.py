@@ -21,8 +21,7 @@ from waterfall.build_info import BuildInfo
 _HOST_NAME_PATTERN = (
     r'https?://(?:build\.chromium\.org/p|\w+\.\w+\.google\.com/i)')
 
-_MASTER_URL_PATTERN = re.compile(
-    r'^%s/([^/]+)(?:/.*)?$' % _HOST_NAME_PATTERN)
+_MASTER_URL_PATTERN = re.compile(r'^%s/([^/]+)(?:/.*)?$' % _HOST_NAME_PATTERN)
 
 _MILO_MASTER_URL_PATTERN = re.compile(
     r'^https?://luci-milo\.appspot\.com/buildbot/([^/]+)(?:/.*)?$')
@@ -31,8 +30,7 @@ _MILO_SWARMING_TASK_URL_PATTERN = re.compile(
     r'^https?://luci-milo\.appspot\.com/swarming/task/([^/]+)(?:/.*)?$')
 
 _BUILD_URL_PATTERN = re.compile(
-    r'^%s/([^/]+)/builders/([^/]+)/builds/(\d+)(?:/.*)?$' %
-    _HOST_NAME_PATTERN)
+    r'^%s/([^/]+)/builders/([^/]+)/builds/(\d+)(?:/.*)?$' % _HOST_NAME_PATTERN)
 
 _MILO_BUILD_URL_PATTERN = re.compile(
     r'^https?://luci-milo\.appspot\.com/buildbot/([^/]+)/([^/]+)/(\d+)'
@@ -46,30 +44,28 @@ _STEP_URL_PATTERN = re.compile(
     r'^%s/([^/]+)/builders/([^/]+)/builds/(\d+)/steps/([^/]+)(/.*)?$' %
     _HOST_NAME_PATTERN)
 
-_COMMIT_POSITION_PATTERN = re.compile(
-    r'refs/heads/master@{#(\d+)}$', re.IGNORECASE)
-
+_COMMIT_POSITION_PATTERN = re.compile(r'refs/heads/master@{#(\d+)}$',
+                                      re.IGNORECASE)
 
 # These values are buildbot constants used for Build and BuildStep.
 # This line was copied from buildbot/master/buildbot/status/results.py.
 SUCCESS, WARNINGS, FAILURE, SKIPPED, EXCEPTION, RETRY, CANCELLED = range(7)
 
 
-def _ProcessMiloData(
-    response_json, master_name, builder_name, build_number=''):
+def _ProcessMiloData(response_json, master_name, builder_name, build_number=''):
   if not response_json:
     return None
   try:
     response_data = json.loads(response_json)
   except Exception:  # pragma: no cover
-    logging.error('Failed to load json data for %s-%s-%s' % (
-        master_name, builder_name, build_number))
+    logging.error('Failed to load json data for %s-%s-%s' %
+                  (master_name, builder_name, build_number))
     return None
   try:
     decoded_data = base64.b64decode(response_data.get('data'))
   except Exception:  # pragma: no cover
-    logging.error('Failed to b64decode data for %s-%s-%s' % (
-        master_name, builder_name, build_number))
+    logging.error('Failed to b64decode data for %s-%s-%s' %
+                  (master_name, builder_name, build_number))
     return None
 
   if build_number:
@@ -81,20 +77,22 @@ def _ProcessMiloData(
       with gzip.GzipFile(fileobj=compressed_file) as decompressed_file:
         data_json = decompressed_file.read()
   except Exception:  # pragma: no cover
-    logging.error('Failed to decompress data for %s-%s-%s' % (
-        master_name, builder_name, build_number))
+    logging.error('Failed to decompress data for %s-%s-%s' %
+                  (master_name, builder_name, build_number))
     return None
 
   return data_json
 
 
-def _GetMasterJsonData(
-    http_client, master_name, builder_name='', build_number=''):
-  response_json = rpc_util.DownloadJsonData(
-      _MILO_ENDPOINT_MASTER, {'name': master_name}, http_client)
+def _GetMasterJsonData(http_client,
+                       master_name,
+                       builder_name='',
+                       build_number=''):
+  response_json = rpc_util.DownloadJsonData(_MILO_ENDPOINT_MASTER,
+                                            {'name': master_name}, http_client)
 
-  return _ProcessMiloData(
-      response_json, master_name, builder_name, build_number)
+  return _ProcessMiloData(response_json, master_name, builder_name,
+                          build_number)
 
 
 def ListBuildersOnMaster(master_name, http_client):
@@ -186,17 +184,20 @@ def CreateArchivedBuildUrl(master_name, builder_name, build_number):
 def CreateBuildUrl(master_name, builder_name, build_number):
   """Creates the url for the given build."""
   builder_name = urllib.quote(builder_name)
-  return 'https://luci-milo.appspot.com/buildbot/%s/%s/%s' % (
-      master_name, builder_name, build_number)
+  return 'https://luci-milo.appspot.com/buildbot/%s/%s/%s' % (master_name,
+                                                              builder_name,
+                                                              build_number)
 
 
 def CreateGtestResultPath(master_name, builder_name, build_number, step_name):
-  return ('/chrome-gtest-results/buildbot/%s/%s/%s/%s.json.gz') % (
-      master_name, builder_name, build_number, step_name)
+  return ('/chrome-gtest-results/buildbot/%s/%s/%s/%s.json.gz') % (master_name,
+                                                                   builder_name,
+                                                                   build_number,
+                                                                   step_name)
 
 
-def GetBuildDataFromBuildMaster(
-    master_name, builder_name, build_number, http_client):
+def GetBuildDataFromBuildMaster(master_name, builder_name, build_number,
+                                http_client):
   """Returns the json-format data of the build."""
   data = {
       'master': master_name,
@@ -205,12 +206,12 @@ def GetBuildDataFromBuildMaster(
   }
   response_json = rpc_util.DownloadJsonData(_MILO_ENDPOINT_BUILD, data,
                                             http_client)
-  return _ProcessMiloData(
-      response_json, master_name, builder_name, str(build_number))
+  return _ProcessMiloData(response_json, master_name, builder_name,
+                          str(build_number))
 
 
-def GetBuildDataFromArchive(master_name,
-                            builder_name, build_number, http_client):
+def GetBuildDataFromArchive(master_name, builder_name, build_number,
+                            http_client):
   """Returns the json-format data of the build from build archive."""
   status_code, data = http_client.Get(
       CreateArchivedBuildUrl(master_name, builder_name, build_number))
@@ -220,12 +221,12 @@ def GetBuildDataFromArchive(master_name,
     return data
 
 
-def GetGtestResultLog(
-    master_name, builder_name, build_number, step_name):  # pragma: no cover
+def GetGtestResultLog(master_name, builder_name, build_number,
+                      step_name):  # pragma: no cover
   """Returns the content of the gtest json results for the gtest-based step."""
   try:
-    archived_log_path = CreateGtestResultPath(
-        master_name, builder_name, build_number, step_name)
+    archived_log_path = CreateGtestResultPath(master_name, builder_name,
+                                              build_number, step_name)
     with contextlib.closing(gcs.open(archived_log_path)) as gtest_result_file:
       with gzip.GzipFile(fileobj=gtest_result_file) as unzipped_gtest_file:
         return unzipped_gtest_file.read()
@@ -343,22 +344,26 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
 
 def _CreateStdioLogUrl(master_name, builder_name, build_number, step_name):
   return ('https://build.chromium.org/p/%s/builders/%s/builds/%s/'
-          'steps/%s/logs/stdio/text') % (
-              master_name, builder_name, build_number, step_name)
+          'steps/%s/logs/stdio/text') % (master_name, builder_name,
+                                         build_number, step_name)
 
 
-def _GetStepStdioFromBuildBot(
-    master_name, builder_name, build_number, step_name, http_client):
+def _GetStepStdioFromBuildBot(master_name, builder_name, build_number,
+                              step_name, http_client):
   """Returns the raw string of stdio of the specified step."""
   status_code, data = http_client.Get(
-      _CreateStdioLogUrl(
-          master_name, urllib.quote(builder_name), build_number,
-          urllib.quote(step_name)))
+      _CreateStdioLogUrl(master_name,
+                         urllib.quote(builder_name), build_number,
+                         urllib.quote(step_name)))
   return data if status_code == 200 else None
 
 
-def GetStepLog(master_name, builder_name, build_number,
-               full_step_name, http_client, log_type='stdout'):
+def GetStepLog(master_name,
+               builder_name,
+               build_number,
+               full_step_name,
+               http_client,
+               log_type='stdout'):
   """Returns sepcific log of the specified step."""
 
   # 1. Get log.
@@ -366,8 +371,8 @@ def GetStepLog(master_name, builder_name, build_number,
                                       full_step_name, log_type, http_client)
   if not data:
     if log_type.lower() == 'stdout':
-      return _GetStepStdioFromBuildBot(
-          master_name, builder_name, build_number, full_step_name, http_client)
+      return _GetStepStdioFromBuildBot(master_name, builder_name, build_number,
+                                       full_step_name, http_client)
     else:
       return None
 

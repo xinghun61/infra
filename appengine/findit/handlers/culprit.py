@@ -13,6 +13,7 @@ from waterfall import build_util
 
 def _GetBuildInfoAsDict(culprit):
   """Returns the list of failed builds associated with the given culprit."""
+
   def ConvertBuildInfoToADict(build_info):
     return {
         'master_name': build_info[0],
@@ -32,7 +33,7 @@ def _GetBuildInfoAsDict(culprit):
       build_number = build_info[2]
       if (not displayed_builds.get((master_name, builder_name)) or
           displayed_builds[(master_name, builder_name)][0] > build_number):
-        displayed_builds[(master_name, builder_name)] = (build_number, )
+        displayed_builds[(master_name, builder_name)] = (build_number,)
 
     return [k + v for k, v in displayed_builds.iteritems()]
 
@@ -54,13 +55,19 @@ class Culprit(BaseHandler):
       return self.CreateError('Culprit not found', 404)
 
     data = {
-        'project_name': culprit.project_name,
-        'revision': culprit.revision,
-        'commit_position': culprit.commit_position,
-        'cr_notified': culprit.cr_notified,
-        'cr_notification_time': time_util.FormatDatetime(
-            culprit.cr_notification_time),
-        'builds': _GetBuildInfoAsDict(culprit),
-        'key': key,
+        'project_name':
+            culprit.project_name,
+        'revision':
+            culprit.revision,
+        'commit_position':
+            culprit.commit_position,
+        'cr_notified':
+            culprit.cr_notified,
+        'cr_notification_time':
+            time_util.FormatDatetime(culprit.cr_notification_time),
+        'builds':
+            _GetBuildInfoAsDict(culprit),
+        'key':
+            key,
     }
     return {'template': 'waterfall/culprit.html', 'data': data}

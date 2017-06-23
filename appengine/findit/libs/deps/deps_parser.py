@@ -1,7 +1,6 @@
 # Copyright 2014 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """ This is an incomplete implementation of a DEPS file parser.
 
 Now only keys 'vars', 'deps', and 'deps_os' are taken care of.
@@ -12,12 +11,12 @@ TODO: support strict mode, 'target_os', 'target_os_only', 'use_relative_paths',
 
 from libs.deps import dependency
 
-
 # All supported OSes in DEPS file.
 DEPS_OS_CHOICES = ('win', 'ios', 'mac', 'unix', 'android')
 
 
 class DEPSLoader(object):
+
   def Load(self, repo_url, revision, deps_file):
     """Returns the raw content of the DEPS file if it exists, otherwise None.
 
@@ -31,6 +30,7 @@ class DEPSLoader(object):
 
 
 class VarImpl(object):
+
   def __init__(self, local_scope):
     self._local_scope = local_scope
 
@@ -160,6 +160,7 @@ def UpdateDependencyTree(root_dep, target_os_list, deps_loader):
         dependencies of all supported target OSes will be included.
     deps_loader (DEPSLoader): an instance of a DEPSLoader implementation.
   """
+
   def _NormalizeTargetOSName(target_os):
     os_name = target_os.lower()
     assert os_name in DEPS_OS_CHOICES, 'Target OS "%s" is invalid' % os_name
@@ -186,8 +187,7 @@ def UpdateDependencyTree(root_dep, target_os_list, deps_loader):
       # The dependency is pinned to some revision.
       repo_url, revision = repo_info.split('@')
 
-    return dependency.Dependency(
-        path, repo_url, revision, root_dep.deps_file)
+    return dependency.Dependency(path, repo_url, revision, root_dep.deps_file)
 
   for path, repo_info in all_deps.iteritems():
     if repo_info is None:

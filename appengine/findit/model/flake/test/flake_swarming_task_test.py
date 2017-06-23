@@ -30,8 +30,8 @@ class FlakeSwarmingTaskTest(unittest.TestCase):
     number_of_iterations = 100
     number_of_passes = 100
 
-    task = FlakeSwarmingTask.Create(
-        master_name, builder_name, build_number, step_name, test_name)
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
     task.task_id = task_id
     task.created_time = created_time
     task.started_time = started_time

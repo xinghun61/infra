@@ -11,10 +11,14 @@ from waterfall.test import wf_testcase
 
 class ExtractorsTest(wf_testcase.WaterfallTestCase):
 
-  def _RunTest(self, failure_log, extractor_class, expected_signal_json,
-               bot='builder1', master='master1'):
-    signal = extractor_class().Extract(
-        failure_log, 'suite.test', 'step', bot, master)
+  def _RunTest(self,
+               failure_log,
+               extractor_class,
+               expected_signal_json,
+               bot='builder1',
+               master='master1'):
+    signal = extractor_class().Extract(failure_log, 'suite.test', 'step', bot,
+                                       master)
 
     self.assertEqual(expected_signal_json, signal.ToDict())
 
@@ -24,15 +28,10 @@ class ExtractorsTest(wf_testcase.WaterfallTestCase):
 
         blabla d/e/f.cc:30
         blabla""")
-    expected_signal_json = {
-        'files': {
-            'd/e/f.cc': [30]
-        },
-        'keywords': {}
-    }
+    expected_signal_json = {'files': {'d/e/f.cc': [30]}, 'keywords': {}}
 
-    self._RunTest(
-        failure_log, extractors.GeneralExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.GeneralExtractor,
+                  expected_signal_json)
 
   def testExpectedCrashIsIgnored(self):
     failure_log = textwrap.dedent("""
@@ -44,15 +43,10 @@ class ExtractorsTest(wf_testcase.WaterfallTestCase):
         ...
         SUMMARY: AddressSanitizer: x/y/z.cc:123:9
         Only this file should be extracted: a/b/c.h:90""")
-    expected_signal_json = {
-        'files': {
-            'a/b/c.h': [90]
-        },
-        'keywords': {}
-    }
+    expected_signal_json = {'files': {'a/b/c.h': [90]}, 'keywords': {}}
 
-    self._RunTest(
-        failure_log, extractors.GeneralExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.GeneralExtractor,
+                  expected_signal_json)
 
   def testIndirectLeakCrashIsIgnored(self):
     failure_log = textwrap.dedent("""
@@ -82,8 +76,8 @@ class ExtractorsTest(wf_testcase.WaterfallTestCase):
         'keywords': {}
     }
 
-    self._RunTest(
-        failure_log, extractors.GeneralExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.GeneralExtractor,
+                  expected_signal_json)
 
   def testNontopFramesInCrashAreIgnored(self):
     failure_log = textwrap.dedent("""
@@ -107,8 +101,8 @@ class ExtractorsTest(wf_testcase.WaterfallTestCase):
         'keywords': {}
     }
 
-    self._RunTest(
-        failure_log, extractors.GeneralExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.GeneralExtractor,
+                  expected_signal_json)
 
   def testNontopFramesInCrashAreIgnoredWhenStackFramesHavePrefixString(self):
     failure_log = textwrap.dedent("""
@@ -132,8 +126,8 @@ class ExtractorsTest(wf_testcase.WaterfallTestCase):
         'keywords': {}
     }
 
-    self._RunTest(
-        failure_log, extractors.GeneralExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.GeneralExtractor,
+                  expected_signal_json)
 
   def testNontopFramesInDisorderedCrashStackTraceAreIgnored(self):
     failure_log = textwrap.dedent("""
@@ -157,8 +151,8 @@ class ExtractorsTest(wf_testcase.WaterfallTestCase):
         'keywords': {}
     }
 
-    self._RunTest(
-        failure_log, extractors.GeneralExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.GeneralExtractor,
+                  expected_signal_json)
 
   def testGmockWarningStatementsAreIgnored(self):
     failure_log = """
@@ -180,8 +174,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
         'keywords': {}
     }
 
-    self._RunTest(
-        failure_log, extractors.GeneralExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.GeneralExtractor,
+                  expected_signal_json)
 
   def testLeastRecentPythonFramesAreIgnored(self):
     failure_log = textwrap.dedent("""
@@ -279,8 +273,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
         'keywords': {}
     }
 
-    self._RunTest(
-        failure_log, extractors.GeneralExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.GeneralExtractor,
+                  expected_signal_json)
 
   def testCompileStepExtractor(self):
     failure_log = textwrap.dedent("""
@@ -318,8 +312,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
         ],
     }
 
-    self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json)
 
   def testCompileStepExtractorExtractFailedCompileTargetsLinux(self):
     failure_log = textwrap.dedent("""
@@ -353,19 +347,15 @@ Note:You can safely ignore the above warning unless this call should not happen.
             'a/b/d.cc': [123],
         },
         'keywords': {},
-        'failed_targets': [
-            {
-                'source': '../../a/b/c.cc',
-                'target': 'obj/a/b/c.o',
-            },
-            {
-                'source': '../../a/b/x.cc',
-                'target': 'obj/a/b/x.o',
-            },
-            {
-                'target': 'target.exe'
-            }
-        ],
+        'failed_targets': [{
+            'source': '../../a/b/c.cc',
+            'target': 'obj/a/b/c.o',
+        }, {
+            'source': '../../a/b/x.cc',
+            'target': 'obj/a/b/x.o',
+        }, {
+            'target': 'target.exe'
+        }],
         'failed_output_nodes': [
             'notgoma.exe',
             'obj/a/b/c.o',
@@ -374,9 +364,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
         ],
     }
 
-    self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json,
-        'builder2', 'master2')
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json, 'builder2', 'master2')
 
   def testCompileStepExtractorExtractFailedTargetsLinuxOutsideFailure(self):
     failure_log = textwrap.dedent("""
@@ -392,20 +381,17 @@ Note:You can safely ignore the above warning unless this call should not happen.
     expected_signal_json = {
         'files': {},
         'keywords': {},
-        'failed_targets': [
-            {
-                'source': 'a/b.cc',
-                'target': 'c/d.o'
-            }
-        ],
+        'failed_targets': [{
+            'source': 'a/b.cc',
+            'target': 'c/d.o'
+        }],
         'failed_output_nodes': [
             'blabla',
         ],
     }
 
-    self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json,
-        'builder2', 'master2')
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json, 'builder2', 'master2')
 
   def testCompileStepExtractorExtractFailedLinkTargetsLinux(self):
     failure_log = textwrap.dedent("""
@@ -420,23 +406,19 @@ Note:You can safely ignore the above warning unless this call should not happen.
     expected_signal_json = {
         'files': {},
         'keywords': {},
-        'failed_targets': [
-            {
-                'target': 'a/b.nexe'
-            },
-            {
-                'target': '"target with spaces and quotes"'
-            }
-        ],
+        'failed_targets': [{
+            'target': 'a/b.nexe'
+        }, {
+            'target': '"target with spaces and quotes"'
+        }],
         'failed_output_nodes': [
             'a/b.nexe',
             'target with spaces and quotes',
         ],
     }
 
-    self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json,
-        'builder2', 'master2')
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json, 'builder2', 'master2')
 
   def testCompileStepExtractorExtractFailedCompileTargetsWindows(self):
     failure_log = textwrap.dedent("""
@@ -480,19 +462,16 @@ Note:You can safely ignore the above warning unless this call should not happen.
     expected_signal_json = {
         'files': {},
         'keywords': {},
-        'failed_targets': [
-            {
-                'target': 'test.exe'
-            }
-        ],
+        'failed_targets': [{
+            'target': 'test.exe'
+        }],
         'failed_output_nodes': [
             'test.exe',
         ],
     }
 
-    self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json,
-        'builder2', 'master2')
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json, 'builder2', 'master2')
 
   def testCompileStepNinjaErrorExtractor(self):
     """Test ninja error extraction in compile step."""
@@ -501,15 +480,10 @@ Note:You can safely ignore the above warning unless this call should not happen.
         ninja: Entering directory `../da/b/build/sl/M/'
         ninja: error: '../../r/w/c/sess.js', needed by 'ob/r/w/h.stamp',
         missing and no known rule to make it""")
-    expected_signal_json = {
-        'files': {
-            'r/w/c/sess.js': []
-        },
-        'keywords': {}
-    }
+    expected_signal_json = {'files': {'r/w/c/sess.js': []}, 'keywords': {}}
 
-    self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json)
 
   def testCompileStepIOSExtractor(self):
     """Test compile step for builder iOS_Simulator_(dbg) and iOS_Device."""
@@ -548,9 +522,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
         'keywords': {}
     }
 
-    self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json,
-        'iOS_Simulator_(dbg)', 'chromium.mac')
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json, 'iOS_Simulator_(dbg)', 'chromium.mac')
 
   def testCompileStepStrictRegexForCompileFailures(self):
 
@@ -584,8 +557,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
         ],
     }
 
-    self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json)
 
   def testCompileStepStrictRegexForLinkFailures(self):
     goma_gcc_prefix = (
@@ -605,8 +578,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
         /b/build/goma/goma_ctl.sh stat
         blabla...""" % goma_gcc_prefix)
     expected_signal_json = {
-        'files': {
-        },
+        'files': {},
         'keywords': {},
         'failed_targets': [
             {
@@ -619,8 +591,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
         ],
     }
 
-    self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json)
 
   def testCompileStepNoMatchingQuote(self):
     goma_gcc_prefix = (
@@ -637,8 +609,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
         /b/build/goma/goma_ctl.sh stat
         blabla...""" % goma_gcc_prefix)
     expected_signal_json = {
-        'files': {
-        },
+        'files': {},
         'keywords': {},
         'failed_targets': [
             {
@@ -647,8 +618,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
         ],
     }
 
-    self._RunTest(
-        failure_log, extractors.CompileStepExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json)
 
   def testCheckPermExtractor(self):
     failure_log = textwrap.dedent("""
@@ -657,15 +628,10 @@ Note:You can safely ignore the above warning unless this call should not happen.
         FAILED whitespace.txt
         d/e/f.py
         ...""")
-    expected_signal_json = {
-        'files': {
-            'd/e/f.py': []
-        },
-        'keywords': {}
-    }
+    expected_signal_json = {'files': {'d/e/f.py': []}, 'keywords': {}}
 
-    self._RunTest(
-        failure_log, extractors.CheckPermExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.CheckPermExtractor,
+                  expected_signal_json)
 
   def testCheckSizesExtractor(self):
     failure_log = textwrap.dedent("""
@@ -720,8 +686,8 @@ Note:You can safely ignore the above warning unless this call should not happen.
         'keywords': {}
     }
 
-    self._RunTest(
-        failure_log, extractors.CheckSizesExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.CheckSizesExtractor,
+                  expected_signal_json)
 
   def testInstrumentationTestExtractor(self):
     failure_log = textwrap.dedent("""
@@ -758,8 +724,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
         },
         'keywords': {}
     }
-    self._RunTest(failure_log,
-                  extractors.InstrumentationTestExtractor,
+    self._RunTest(failure_log, extractors.InstrumentationTestExtractor,
                   expected_signal_json)
 
   def testJunitTestExtractor(self):
@@ -818,8 +783,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
         },
         'keywords': {}
     }
-    self._RunTest(failure_log,
-                  extractors.JunitTestExtractor,
+    self._RunTest(failure_log, extractors.JunitTestExtractor,
                   expected_signal_json)
 
   def testRunhooksExtractor(self):
@@ -859,10 +823,11 @@ Note:You can safely ignore the above warning unless this call should not happen.
         'keywords': {}
     }
 
-    self._RunTest(
-        failure_log, extractors.RunhooksExtractor, expected_signal_json)
+    self._RunTest(failure_log, extractors.RunhooksExtractor,
+                  expected_signal_json)
 
   def testExtractSignal(self):
+
     class DummyGeneralExtractor(Extractor):
 
       def Extract(self, *_):
@@ -878,10 +843,7 @@ Note:You can safely ignore the above warning unless this call should not happen.
       def Extract(self, *_):
         return '2'
 
-    DUMMY_EXTRACTORS = {
-        '1': DummyExtractor1,
-        '2': DummyExtractor2
-    }
+    DUMMY_EXTRACTORS = {'1': DummyExtractor1, '2': DummyExtractor2}
 
     self.mock(extractors, 'GeneralExtractor', DummyGeneralExtractor)
     self.mock(extractors, 'EXTRACTORS', DUMMY_EXTRACTORS)
@@ -894,6 +856,5 @@ Note:You can safely ignore the above warning unless this call should not happen.
     }
 
     for step_name, expected_result in cases.iteritems():
-      result = extractors.ExtractSignal(
-          'master', 'bot', step_name, 'test', '')
+      result = extractors.ExtractSignal('master', 'bot', step_name, 'test', '')
       self.assertEqual(expected_result, result)

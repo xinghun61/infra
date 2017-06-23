@@ -1,7 +1,6 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """An abstraction of a ChangeList's relevant information."""
 
 from libs import time_util
@@ -64,7 +63,7 @@ class Revert(object):
         'timestamp': time_util.FormatDatetime(self.timestamp),
     }
     if self.reverting_cl:
-        result['reverting_cl'] = self.reverting_cl.serialize()
+      result['reverting_cl'] = self.reverting_cl.serialize()
     return result
 
 
@@ -108,8 +107,8 @@ class ClInfo(object):
 
   def AddCqAttempt(self, patchset_id, committer, timestamp):
     if patchset_id not in self.commit_attempts.keys():
-      self.commit_attempts[patchset_id] = CommitAttempt(
-          patchset_id, committer, timestamp)
+      self.commit_attempts[patchset_id] = CommitAttempt(patchset_id, committer,
+                                                        timestamp)
     else:
       commit_attempt = self.commit_attempts[patchset_id]
       if timestamp > commit_attempt.last_cq_timestamp:
@@ -118,19 +117,29 @@ class ClInfo(object):
 
   def serialize(self):
     return {
-        'server_hostname': self.server_hostname,
-        'change_id': self.change_id,
-        'owner_email': self.owner_email,
+        'server_hostname':
+            self.server_hostname,
+        'change_id':
+            self.change_id,
+        'owner_email':
+            self.owner_email,
         'commits': [x.serialize() for x in self.commits],
-        'commit_attempts': [x.serialize() for x in
-                            self.commit_attempts.values()],
+        'commit_attempts': [
+            x.serialize() for x in self.commit_attempts.values()
+        ],
         'reverts': [x.serialize() for x in self.reverts],
-        'closed': self.closed,
-        'cc': self.cc,
-        'reviewers': self.reviewers,
-        'auto_revert_off': self.auto_revert_off,
-        'subject': self.subject,
-        'description': self.description
+        'closed':
+            self.closed,
+        'cc':
+            self.cc,
+        'reviewers':
+            self.reviewers,
+        'auto_revert_off':
+            self.auto_revert_off,
+        'subject':
+            self.subject,
+        'description':
+            self.description
     }
 
   def GetPatchsetIdByRevision(self, revision):

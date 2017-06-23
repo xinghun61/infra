@@ -28,11 +28,14 @@ class BuildBucketClientTest(testing.AppengineTestCase):
                        buildbucket_client._GetBucketName(master_name))
 
   def testTryJobToBuildbucketRequestWithTests(self):
-    try_job = buildbucket_client.TryJob(
-        'm', 'b', 'r', {'a': '1'}, ['a'],
-        {'tests': {'a_tests': ['Test.One', 'Test.Two']}})
+    try_job = buildbucket_client.TryJob('m', 'b', 'r', {'a': '1'}, ['a'], {
+        'tests': {
+            'a_tests': ['Test.One', 'Test.Two']
+        }
+    })
     expceted_parameters = {
-        'builder_name': 'b',
+        'builder_name':
+            'b',
         'changes': [
             {
                 'author': {
@@ -60,12 +63,14 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual(expceted_parameters, parameters)
 
   def testTryJobToSwarmbucketRequest(self):
-    try_job = buildbucket_client.TryJob(
-        'luci.c', 'b', 'r', {'a': '1'}, ['a'],
-        {'tests': {'a_tests': ['Test.One', 'Test.Two'],}},
-        'builder_abc123')
+    try_job = buildbucket_client.TryJob('luci.c', 'b', 'r', {'a': '1'}, ['a'], {
+        'tests': {
+            'a_tests': ['Test.One', 'Test.Two'],
+        }
+    }, 'builder_abc123')
     expceted_parameters = {
-        'builder_name': 'b',
+        'builder_name':
+            'b',
         'changes': [
             {
                 'author': {
@@ -101,12 +106,15 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual(expceted_parameters, parameters)
 
   def testTryJobToSwarmbucketRequestWithOverrides(self):
-    try_job = buildbucket_client.TryJob(
-        'luci.c', 'b', 'r', {'a': '1', 'recipe': 'b'}, ['a'],
-        {'tests': {'a_tests': ['Test.One', 'Test.Two'],}},
-        'builder_abc123', ['os:Linux'])
+    try_job = buildbucket_client.TryJob('luci.c', 'b', 'r', {
+        'a': '1',
+        'recipe': 'b'
+    }, ['a'], {'tests': {
+        'a_tests': ['Test.One', 'Test.Two'],
+    }}, 'builder_abc123', ['os:Linux'])
     expceted_parameters = {
-        'builder_name': 'b',
+        'builder_name':
+            'b',
         'changes': [
             {
                 'author': {
@@ -149,7 +157,8 @@ class BuildBucketClientTest(testing.AppengineTestCase):
   def testTryJobToBuildbucketRequestWithRevision(self):
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {'a': '1'}, ['a'], {})
     expceted_parameters = {
-        'builder_name': 'b',
+        'builder_name':
+            'b',
         'changes': [
             {
                 'author': {
@@ -189,19 +198,19 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual(expceted_parameters, parameters)
 
   def _MockUrlFetch(self, build_id, try_job_request, content, status_code=200):
-    base_url = (
-        'https://cr-buildbucket.appspot.com/api/buildbucket/v1/builds')
-    headers = {
-        'Content-Type': 'application/json; charset=UTF-8'
-    }
+    base_url = ('https://cr-buildbucket.appspot.com/api/buildbucket/v1/builds')
+    headers = {'Content-Type': 'application/json; charset=UTF-8'}
     if build_id:
       url = base_url + '/' + build_id
       self.mocked_urlfetch.register_handler(
           url, content, status_code=status_code, headers=headers)
     else:
       self.mocked_urlfetch.register_handler(
-          base_url, content, status_code=status_code,
-          headers=headers, data=try_job_request)
+          base_url,
+          content,
+          status_code=status_code,
+          headers=headers,
+          data=try_job_request)
 
   def testTriggerTryJobsSuccess(self):
     response = {
@@ -212,8 +221,9 @@ class BuildBucketClientTest(testing.AppengineTestCase):
         }
     }
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {'a': 'b'}, [], {})
-    self._MockUrlFetch(
-        None, json.dumps(try_job.ToBuildbucketRequest()), json.dumps(response))
+    self._MockUrlFetch(None,
+                       json.dumps(try_job.ToBuildbucketRequest()),
+                       json.dumps(response))
     results = buildbucket_client.TriggerTryJobs([try_job])
     self.assertEqual(1, len(results))
     error, build = results[0]
@@ -231,8 +241,9 @@ class BuildBucketClientTest(testing.AppengineTestCase):
         }
     }
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [], {})
-    self._MockUrlFetch(
-        None, json.dumps(try_job.ToBuildbucketRequest()), json.dumps(response))
+    self._MockUrlFetch(None,
+                       json.dumps(try_job.ToBuildbucketRequest()),
+                       json.dumps(response))
     results = buildbucket_client.TriggerTryJobs([try_job])
     self.assertEqual(1, len(results))
     error, build = results[0]
@@ -244,9 +255,9 @@ class BuildBucketClientTest(testing.AppengineTestCase):
   def testTriggerTryJobsRequestFailure(self):
     response = 'Not Found'
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [], {})
-    self._MockUrlFetch(
-        None, json.dumps(try_job.ToBuildbucketRequest()),
-        response, 404)
+    self._MockUrlFetch(None,
+                       json.dumps(try_job.ToBuildbucketRequest()), response,
+                       404)
     results = buildbucket_client.TriggerTryJobs([try_job])
     self.assertEqual(1, len(results))
     error, build = results[0]
@@ -256,15 +267,8 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertIsNone(build)
 
   def testGetTryJobsSuccess(self):
-    response = {
-        'build': {
-            'id': '1',
-            'url': 'url',
-            'status': 'STARTED'
-        }
-    }
-    self._MockUrlFetch(
-        '1', None, json.dumps(response))
+    response = {'build': {'id': '1', 'url': 'url', 'status': 'STARTED'}}
+    self._MockUrlFetch('1', None, json.dumps(response))
     results = buildbucket_client.GetTryJobs(['1'])
     self.assertEqual(1, len(results))
     error, build = results[0]
@@ -281,8 +285,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
             'message': 'message',
         }
     }
-    self._MockUrlFetch(
-        '2', None, json.dumps(response))
+    self._MockUrlFetch('2', None, json.dumps(response))
     results = buildbucket_client.GetTryJobs(['2'])
     self.assertEqual(1, len(results))
     error, build = results[0]
@@ -293,8 +296,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
 
   def testGetTryJobsRequestFailure(self):
     response = 'Not Found'
-    self._MockUrlFetch(
-        '3', None, response, 404)
+    self._MockUrlFetch('3', None, response, 404)
     results = buildbucket_client.GetTryJobs(['3'])
     self.assertEqual(1, len(results))
     error, build = results[0]

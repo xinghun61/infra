@@ -1,7 +1,6 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Calculates detection rate on reliable failures at step level.
 
 The criteria would be:
@@ -61,8 +60,7 @@ class Result(object):
     }
 
 
-def _CheckIfTestFlaky(
-    master, builder, build, step, checked_test_name):
+def _CheckIfTestFlaky(master, builder, build, step, checked_test_name):
   task = WfSwarmingTask.Get(master, builder, build, step)
   if task and task.classified_tests:
     return checked_test_name in task.classified_tests.get('flaky_tests', [])
@@ -72,8 +70,8 @@ def _CheckIfTestFlaky(
 def _CreateResult(step, checked_test_name, culprit):
   new_result = Result(step, checked_test_name)
   new_result.culprits.append({
-    'repo_name': culprit.get('repo_name'),
-    'revision': culprit.get('revision')
+      'repo_name': culprit.get('repo_name'),
+      'revision': culprit.get('revision')
   })
   return new_result
 
@@ -84,8 +82,8 @@ def _GetCompileTryJobCulprit(compile_try_job):
   if not compile_try_job:
     return compile_culprits
 
-  try_job_result = (compile_try_job.compile_results[-1] if
-                    compile_try_job.compile_results else {})
+  try_job_result = (compile_try_job.compile_results[-1]
+                    if compile_try_job.compile_results else {})
 
   compile_culprits = try_job_result.get('culprit', {}).get('compile')
   if not compile_culprits:
@@ -100,8 +98,8 @@ def _GetTestTryJobCulprit(test_try_job, step):
   if not test_try_job:
     return culprits
 
-  try_job_result = (
-    test_try_job.test_results[-1] if test_try_job.test_results else {})
+  try_job_result = (test_try_job.test_results[-1]
+                    if test_try_job.test_results else {})
 
   step_culprit = try_job_result.get('culprit', {}).get(step)
   if not step_culprit:
@@ -118,8 +116,8 @@ def _GetTestTryJobCulprit(test_try_job, step):
 def _AddSuspectedCLs(updated_result, suspected_cls):
   for cl in suspected_cls:
     updated_result.culprits.append({
-      'repo_name': cl['repo_name'],
-      'revision': cl['revision']
+        'repo_name': cl['repo_name'],
+        'revision': cl['revision']
     })
 
 
@@ -193,10 +191,10 @@ if __name__ == '__main__':
   compile_results = []
 
   while more:
-    analyses, cursor, more = WfAnalysis.query(ndb.AND(
-        WfAnalysis.build_start_time >= start,
-        WfAnalysis.build_start_time < end)).fetch_page(
-            100, start_cursor=cursor)
+    analyses, cursor, more = WfAnalysis.query(
+        ndb.AND(WfAnalysis.build_start_time >= start,
+                WfAnalysis.build_start_time < end)).fetch_page(
+                    100, start_cursor=cursor)
 
     for analysis in analyses:
       if not analysis.completed or not analysis.result:
@@ -256,7 +254,6 @@ if __name__ == '__main__':
             compile_results.append(result)
           else:
             test_results.append(result)
-
 
   print '************* Compile ****************'
   _CalculateDetectionRate(compile_results)

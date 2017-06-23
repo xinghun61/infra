@@ -14,10 +14,10 @@ COMMIT_POSITION_PATTERN = re.compile(
 REVERTED_REVISION_PATTERN = re.compile(
     '^> Committed: https://.+/(?P<revision>[0-9a-fA-F]{40})$', re.IGNORECASE)
 
-GERRIT_CHANGE_ID_PATTERN = re.compile(
-    '^Change-Id: (?P<change_id>.*)$', re.IGNORECASE)
-GERRIT_REVIEW_URL_PATTERN =re.compile(
-    '^Reviewed-on: (?P<url>.*/\d+).*$', re.IGNORECASE)
+GERRIT_CHANGE_ID_PATTERN = re.compile('^Change-Id: (?P<change_id>.*)$',
+                                      re.IGNORECASE)
+GERRIT_REVIEW_URL_PATTERN = re.compile('^Reviewed-on: (?P<url>.*/\d+).*$',
+                                       re.IGNORECASE)
 CHANGE_INFO_PATTERN = re.compile('^.*:.*$', re.IGNORECASE)
 
 
@@ -90,8 +90,8 @@ def ExtractChangeInfo(message):
       if match:
         change_info['change_id'] = match.group('change_id')
 
-  if (not change_info['code_review_url'] and
-      change_info['host'] and change_info['change_id']):
+  if (not change_info['code_review_url'] and change_info['host'] and
+      change_info['change_id']):
     # For code review urls for Gerrit CLs, we want to unify them in
     # 'https://host/q/change_id' format.
     change_info['code_review_url'] = 'https://%s/q/%s' % (

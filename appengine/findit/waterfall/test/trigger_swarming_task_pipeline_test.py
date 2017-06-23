@@ -16,10 +16,10 @@ class TriggerSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     tests = []
 
-    self.assertEqual(
-        (master_name, builder_name, build_number, step_name),
-        TriggerSwarmingTaskPipeline()._GetArgs(
-            master_name, builder_name, build_number, step_name, tests))
+    self.assertEqual((master_name, builder_name, build_number, step_name),
+                     TriggerSwarmingTaskPipeline()._GetArgs(
+                         master_name, builder_name, build_number, step_name,
+                         tests))
 
   def testGetSwarmingTask(self):
     master_name = 'm'
@@ -27,8 +27,8 @@ class TriggerSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     step_name = 's'
 
-    WfSwarmingTask.Create(
-        master_name, builder_name, build_number, step_name).put()
+    WfSwarmingTask.Create(master_name, builder_name, build_number,
+                          step_name).put()
 
     task = TriggerSwarmingTaskPipeline()._GetSwarmingTask(
         master_name, builder_name, build_number, step_name)
@@ -56,6 +56,5 @@ class TriggerSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     self.UpdateUnitTestConfigSettings(
         config_property='swarming_settings',
         override_data={'iterations_to_rerun': expected_iterations})
-    self.assertEqual(
-        expected_iterations,
-        TriggerSwarmingTaskPipeline()._GetIterationsToRerun())
+    self.assertEqual(expected_iterations,
+                     TriggerSwarmingTaskPipeline()._GetIterationsToRerun())

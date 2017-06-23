@@ -14,18 +14,18 @@ class WfFailureGroup(BaseBuildModel):
   @staticmethod
   def _CreateKey(master_name, builder_name, build_number):  # pragma: no cover
     return ndb.Key('WfFailureGroup',
-                   BaseBuildModel.CreateBuildId(
-                       master_name, builder_name, build_number))
+                   BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                                build_number))
 
   @staticmethod
   def Create(master_name, builder_name, build_number):  # pragma: no cover
-    return WfFailureGroup(
-        key=WfFailureGroup._CreateKey(master_name, builder_name, build_number))
+    return WfFailureGroup(key=WfFailureGroup._CreateKey(
+        master_name, builder_name, build_number))
 
   @staticmethod
   def Get(master_name, builder_name, build_number):  # pragma: no cover
-    return WfFailureGroup._CreateKey(
-        master_name, builder_name, build_number).get()
+    return WfFailureGroup._CreateKey(master_name, builder_name,
+                                     build_number).get()
 
   # Integer representation for build failure type.
   # Refer to common/waterfall/failure_type.py for all the failure types.

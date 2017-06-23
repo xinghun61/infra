@@ -266,23 +266,25 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     step = BuildStep.Create('m', 'b2', 80, 's', datetime(2016, 10, 20))
     request.build_steps = [step]
 
-    self.assertIsNone(flake_analysis_service.ScheduleAnalysisForFlake(
-        request, 'test@chromium.org', False, triggering_sources.FINDIT_UI))
+    self.assertIsNone(
+        flake_analysis_service.ScheduleAnalysisForFlake(
+            request, 'test@chromium.org', False, triggering_sources.FINDIT_UI))
 
   @mock.patch.object(
       flake_analysis_service, '_CheckForNewAnalysis', return_value=(0, None))
-  @mock.patch.object(
-      flake_analysis_service.step_mapper, 'FindMatchingWaterfallStep')
+  @mock.patch.object(flake_analysis_service.step_mapper,
+                     'FindMatchingWaterfallStep')
   def testAuthorizedAccessButNoNewAnalysisNeeded(self, _mock1, _mock2):
     request = FlakeAnalysisRequest.Create('flake', False, 123)
     step = BuildStep.Create('m', 'b2', 80, 's', datetime(2016, 10, 20))
     request.build_steps = [step]
 
-    self.assertFalse(flake_analysis_service.ScheduleAnalysisForFlake(
-        request, 'test@chromium.org', True, triggering_sources.FINDIT_UI))
+    self.assertFalse(
+        flake_analysis_service.ScheduleAnalysisForFlake(
+            request, 'test@chromium.org', True, triggering_sources.FINDIT_UI))
 
-  @mock.patch.object(
-      flake_analysis_service.step_mapper, 'FindMatchingWaterfallStep')
+  @mock.patch.object(flake_analysis_service.step_mapper,
+                     'FindMatchingWaterfallStep')
   def testAuthorizedAccessAndNewAnalysisNeededAndTriggered(self, _mock):
     step = BuildStep.Create('m', 'b', 80, 's', datetime(2016, 10, 20))
     request = FlakeAnalysisRequest.Create('flake', False, 123)
@@ -304,31 +306,39 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     original_test = TestInfo('m', 'b', 80, 's', 'flake')
 
     with mock.patch.object(
-        flake_analysis_service, '_CheckForNewAnalysis',
+        flake_analysis_service,
+        '_CheckForNewAnalysis',
         side_effect=CheckForNewAnalysis) as (
             mocked_CheckForNewAnalysis), mock.patch.object(
                 flake_analysis_service.initialize_flake_pipeline,
-                'ScheduleAnalysisIfNeeded', return_value=mocked_analysis) as (
+                'ScheduleAnalysisIfNeeded',
+                return_value=mocked_analysis) as (
                     mocked_ScheduleAnalysisIfNeeded), mock.patch.object(
                         flake_analysis_service.FlakeAnalysisRequest,
-                        'GetVersion', return_value=mocked_request) as (
-                            mocked_GetVersion):
-      self.assertTrue(flake_analysis_service.ScheduleAnalysisForFlake(
-          request, user_email, True, triggering_source))
+                        'GetVersion',
+                        return_value=mocked_request) as (mocked_GetVersion):
+      self.assertTrue(
+          flake_analysis_service.ScheduleAnalysisForFlake(
+              request, user_email, True, triggering_source))
       mocked_CheckForNewAnalysis.assert_called_once_with(request, False)
       mocked_ScheduleAnalysisIfNeeded.assert_called_once_with(
-          normalized_test, original_test, bug_id=123,
-          allow_new_analysis=True, manually_triggered=False,
-          user_email=user_email, triggering_source=triggering_source,
-          queue_name=constants.WATERFALL_ANALYSIS_QUEUE, force=False)
+          normalized_test,
+          original_test,
+          bug_id=123,
+          allow_new_analysis=True,
+          manually_triggered=False,
+          user_email=user_email,
+          triggering_source=triggering_source,
+          queue_name=constants.WATERFALL_ANALYSIS_QUEUE,
+          force=False)
       mocked_GetVersion.assert_called_once_with(key='flake', version=1)
       mocked_request.assert_has_calls([
           mock.call.analyses.append('key'),
           mock.call.put(),
       ])
 
-  @mock.patch.object(
-      flake_analysis_service.step_mapper, 'FindMatchingWaterfallStep')
+  @mock.patch.object(flake_analysis_service.step_mapper,
+                     'FindMatchingWaterfallStep')
   def testAuthorizedAccessAndNewAnalysisNeededButNotTriggered(self, _mock):
     step = BuildStep.Create('m', 'b', 80, 's', datetime(2016, 10, 20))
     request = FlakeAnalysisRequest.Create('flake', False, 123)
@@ -346,20 +356,29 @@ class FlakeAnalysisServiceTest(wf_testcase.WaterfallTestCase):
     normalized_test = TestInfo('wf_m', 'wf_b', 100, 'wf_s', 'flake')
     original_test = TestInfo('m', 'b', 80, 's', 'flake')
     with mock.patch.object(
-        flake_analysis_service, '_CheckForNewAnalysis',
+        flake_analysis_service,
+        '_CheckForNewAnalysis',
         side_effect=CheckForNewAnalysis) as (
             mocked_CheckForNewAnalysis), mock.patch.object(
                 flake_analysis_service.initialize_flake_pipeline,
-                'ScheduleAnalysisIfNeeded', return_value=None) as (
+                'ScheduleAnalysisIfNeeded',
+                return_value=None) as (
                     mocked_ScheduleAnalysisIfNeeded), mock.patch.object(
                         flake_analysis_service.FlakeAnalysisRequest,
-                        'GetVersion', return_value=None) as mocked_GetVersion:
-      self.assertFalse(flake_analysis_service.ScheduleAnalysisForFlake(
-          request, user_email, True, triggering_sources.FINDIT_UI))
+                        'GetVersion',
+                        return_value=None) as mocked_GetVersion:
+      self.assertFalse(
+          flake_analysis_service.ScheduleAnalysisForFlake(
+              request, user_email, True, triggering_sources.FINDIT_UI))
       mocked_CheckForNewAnalysis.assert_called_once_with(request, False)
       mocked_ScheduleAnalysisIfNeeded.assert_called_once_with(
-          normalized_test, original_test, bug_id=123,
-          allow_new_analysis=True, manually_triggered=False,
-          user_email=user_email, triggering_source=triggering_source,
-          queue_name=constants.WATERFALL_ANALYSIS_QUEUE, force=False)
+          normalized_test,
+          original_test,
+          bug_id=123,
+          allow_new_analysis=True,
+          manually_triggered=False,
+          user_email=user_email,
+          triggering_source=triggering_source,
+          queue_name=constants.WATERFALL_ANALYSIS_QUEUE,
+          force=False)
       mocked_GetVersion.assert_not_called()

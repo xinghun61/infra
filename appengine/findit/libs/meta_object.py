@@ -1,7 +1,6 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """This module defines an interface of a meta structure -- ``MetaObject``.
 
 We can consider ``MetaObject`` as inner node, and it has ``is_meta`` property.
@@ -15,6 +14,7 @@ An use case in Predator is that being a subclass of ``MetaDict``,
 ``MetaFeature``  can group relevant features together to share common
 operations.
 """
+
 
 class MetaObject(object):
   """Class that can be either one element or a collection of elements."""

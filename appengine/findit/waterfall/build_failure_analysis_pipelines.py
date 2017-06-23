@@ -15,9 +15,8 @@ from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
 
 
 @ndb.transactional
-def NeedANewAnalysis(
-    master_name, builder_name, build_number, failed_steps,
-    build_completed, force):
+def NeedANewAnalysis(master_name, builder_name, build_number, failed_steps,
+                     build_completed, force):
   """Checks status of analysis for the build and decides if a new one is needed.
 
   A WfAnalysis entity for the given build will be created if none exists.
@@ -74,7 +73,9 @@ def NeedANewAnalysis(
   return False
 
 
-def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
+def ScheduleAnalysisIfNeeded(master_name,
+                             builder_name,
+                             build_number,
                              failed_steps=None,
                              build_completed=False,
                              force=False,
@@ -97,9 +98,8 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
   Returns:
     A WfAnalysis instance.
   """
-  if NeedANewAnalysis(
-      master_name, builder_name, build_number, failed_steps,
-      build_completed, force):
+  if NeedANewAnalysis(master_name, builder_name, build_number, failed_steps,
+                      build_completed, force):
     pipeline_job = AnalyzeBuildFailurePipeline(
         master_name, builder_name, build_number, build_completed, force)
     # Explicitly run analysis in the backend module "waterfall-backend".
@@ -117,7 +117,7 @@ def ScheduleAnalysisIfNeeded(master_name, builder_name, build_number,
                  master_name, builder_name, build_number,
                  pipeline_job.pipeline_status_path())
   else:
-    logging.info('An analysis is not needed for build %s, %s, %s',
-                 master_name, builder_name, build_number)
+    logging.info('An analysis is not needed for build %s, %s, %s', master_name,
+                 builder_name, build_number)
 
   return WfAnalysis.Get(master_name, builder_name, build_number)

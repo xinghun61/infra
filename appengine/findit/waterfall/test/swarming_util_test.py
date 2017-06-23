@@ -29,12 +29,14 @@ from waterfall.test import wf_testcase
 
 
 class MockBuild(object):
+
   def __init__(self, response):
     self.response = response
 
 
-MOCK_BUILDS = [(None, MockBuild({'tags': [
-              'swarming_tag:log_location:logdog://host/project/path']}))]
+MOCK_BUILDS = [(None, MockBuild({
+    'tags': ['swarming_tag:log_location:logdog://host/project/path']
+}))]
 
 ALL_BOTS = [{'bot_id': 'bot%d' % b} for b in range(10)]
 SOME_BOTS = [{'bot_id': 'bot%d' % b} for b in range(3)]
@@ -42,11 +44,13 @@ ONE_BOT = [{'bot_id': 'bot%d' % b} for b in range(1)]
 
 
 class MockTryJob(object):
+
   def __init__(self):
     self.is_swarmbucket_build = True
     self.dimensions = ['os:OS', 'cpu:CPU']
     self.properties = {'bad_revision': 'a1b2c3d4'}
     self.revision = None
+
 
 class SwarmingHttpClient(RetryHttpClient):
 
@@ -70,8 +74,11 @@ class SwarmingHttpClient(RetryHttpClient):
   def _SetResponseForGetRequestIsolated(self, url, file_hash):
     self.get_responses[url] = self._GetData('isolated', file_hash)
 
-  def _SetResponseForGetRequestSwarmingList(
-      self, master_name, builder_name, build_number, step_name=None):
+  def _SetResponseForGetRequestSwarmingList(self,
+                                            master_name,
+                                            builder_name,
+                                            build_number,
+                                            step_name=None):
     if builder_name == 'download_failed':
       return
 
@@ -171,8 +178,14 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         'priority': 1,
         'properties': {
             'command': 'cmd',
-            'dimensions': [{'key': 'd', 'value': 'dv'}],
-            'env': [{'key': 'e', 'value': 'ev'}],
+            'dimensions': [{
+                'key': 'd',
+                'value': 'dv'
+            }],
+            'env': [{
+                'key': 'e',
+                'value': 'ev'
+            }],
             'execution_timeout_secs': 4,
             'extra_args': ['--flag'],
             'grace_period_secs': 5,
@@ -193,16 +206,21 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     task_id = '1'
     url = ('https://chromium-swarm.appspot.com/'
            '_ah/api/swarming/v1/task/%s/request' % task_id)
-    self.logged_http_client.SetResponse(
-        'get', url, json.dumps(task_request_json), 200)
+    self.logged_http_client.SetResponse('get', url,
+                                        json.dumps(task_request_json), 200)
 
-    task_request = swarming_util.GetSwarmingTaskRequest(
-        task_id, self.logged_http_client)
+    task_request = swarming_util.GetSwarmingTaskRequest(task_id,
+                                                        self.logged_http_client)
 
     self.assertEqual(task_request_json, task_request.Serialize())
 
-  @mock.patch.object(swarming_util, '_SendRequestToServer',
-                     return_value=(None, {'code': 1, 'message': 'error'}))
+  @mock.patch.object(
+      swarming_util,
+      '_SendRequestToServer',
+      return_value=(None, {
+          'code': 1,
+          'message': 'error'
+      }))
   def testGetSwarmingTaskRequestError(self, _):
     self.assertIsNone(
         swarming_util.GetSwarmingTaskRequest('task_id1', HttpClientAppengine()))
@@ -226,8 +244,10 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     request.io_timeout_secs = 3
 
     url = 'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new'
-    self.logged_http_client.SetResponse(
-        'post', url, json.dumps({'task_id': '1'}), 200)
+    self.logged_http_client.SetResponse('post', url,
+                                        json.dumps({
+                                            'task_id': '1'
+                                        }), 200)
 
     expected_task_request_json = {
         'expiration_secs': 72000,
@@ -236,13 +256,21 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         'priority': 150,
         'properties': {
             'command': 'cmd',
-            'dimensions': [{'key': 'd', 'value': 'dv'}],
-            'env': [{'key': 'e', 'value': 'ev'}],
+            'dimensions': [{
+                'key': 'd',
+                'value': 'dv'
+            }],
+            'env': [{
+                'key': 'e',
+                'value': 'ev'
+            }],
             'execution_timeout_secs': 4,
             'extra_args': ['--flag'],
             'grace_period_secs': 5,
             'idempotent': True,
-            'inputs_ref': {'isolated': 'i'},
+            'inputs_ref': {
+                'isolated': 'i'
+            },
             'io_timeout_secs': 3,
         },
         'tags': ['tag', 'findit:1', 'project:Chromium', 'purpose:post-commit'],
@@ -252,8 +280,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         'pubsub_userdata': None,
     }
 
-    task_id, error = swarming_util.TriggerSwarmingTask(
-        request, self.logged_http_client)
+    task_id, error = swarming_util.TriggerSwarmingTask(request,
+                                                       self.logged_http_client)
     self.assertEqual('1', task_id)
     self.assertIsNone(error)
 
@@ -261,12 +289,17 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('post', method)
     self.assertEqual(expected_task_request_json, json.loads(data))
 
-  @mock.patch.object(swarming_util, '_SendRequestToServer',
-                     return_value=(None, {'code': 1, 'message': 'error'}))
+  @mock.patch.object(
+      swarming_util,
+      '_SendRequestToServer',
+      return_value=(None, {
+          'code': 1,
+          'message': 'error'
+      }))
   def testTriggerSwarmingTaskError(self, _):
     request = SwarmingTaskRequest()
-    task_id, error = swarming_util.TriggerSwarmingTask(
-        request, HttpClientAppengine())
+    task_id, error = swarming_util.TriggerSwarmingTask(request,
+                                                       HttpClientAppengine())
     self.assertIsNone(task_id)
     self.assertIsNotNone(error)
 
@@ -292,35 +325,36 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.http_client._SetResponseForGetRequestSwarmingList(
         master_name, builder_name, build_number)
     result = swarming_util.GetIsolatedDataForFailedBuild(
-        master_name, builder_name, build_number, failed_steps,
-        self.http_client)
+        master_name, builder_name, build_number, failed_steps, self.http_client)
 
     expected_failed_steps = {
         'a_tests': {
-            'current_failure': 2,
-            'first_failure': 0,
-            'list_isolated_data': [
-                {
-                    'digest': 'isolatedhashatests',
-                    'namespace': 'default-gzip',
-                    'isolatedserver': (
-                        waterfall_config.GetSwarmingSettings().get(
-                            'isolated_server'))
-                }
-            ]
+            'current_failure':
+                2,
+            'first_failure':
+                0,
+            'list_isolated_data': [{
+                'digest':
+                    'isolatedhashatests',
+                'namespace':
+                    'default-gzip',
+                'isolatedserver': (waterfall_config.GetSwarmingSettings().get(
+                    'isolated_server'))
+            }]
         },
         'unit_tests': {
-            'current_failure': 2,
-            'first_failure': 0,
-            'list_isolated_data': [
-                {
-                    'digest': 'isolatedhashunittests1',
-                    'namespace': 'default-gzip',
-                    'isolatedserver': (
-                        waterfall_config.GetSwarmingSettings().get(
-                            'isolated_server'))
-                }
-            ]
+            'current_failure':
+                2,
+            'first_failure':
+                0,
+            'list_isolated_data': [{
+                'digest':
+                    'isolatedhashunittests1',
+                'namespace':
+                    'default-gzip',
+                'isolatedserver': (waterfall_config.GetSwarmingSettings().get(
+                    'isolated_server'))
+            }]
         },
         'compile': {
             'current_failure': 2,
@@ -357,8 +391,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number)
 
     result = swarming_util.GetIsolatedDataForFailedBuild(
-        master_name, builder_name, build_number, failed_steps,
-        self.http_client)
+        master_name, builder_name, build_number, failed_steps, self.http_client)
     expected_failed_steps = {
         'a_tests': {
             'current_failure': 2,
@@ -381,16 +414,15 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.http_client._SetResponseForGetRequestSwarmingList(
         master_name, builder_name, build_number, step_name)
     data = swarming_util.GetIsolatedDataForStep(
-        master_name, builder_name, build_number, step_name,
-        self.http_client)
-    expected_data = [
-        {
-            'digest': 'isolatedhashunittests',
-            'namespace': 'default-gzip',
-            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-                'isolated_server')
-        }
-    ]
+        master_name, builder_name, build_number, step_name, self.http_client)
+    expected_data = [{
+        'digest':
+            'isolatedhashunittests',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
+    }]
     self.assertEqual(expected_data, data)
 
   def testGetIsolatedDataForStepNotOnlyFailure(self):
@@ -402,22 +434,27 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.http_client._SetResponseForGetRequestSwarmingList(
         master_name, builder_name, build_number, step_name)
     data = swarming_util.GetIsolatedDataForStep(
-        master_name, builder_name, build_number, step_name,
-        self.http_client, only_failure=False)
-    expected_data = [
-        {
-            'digest': 'isolatedhashunittests',
-            'namespace': 'default-gzip',
-            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-                'isolated_server')
-        },
-        {
-            'digest': 'isolatedhashunittests1',
-            'namespace': 'default-gzip',
-            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-                'isolated_server')
-        }
-    ]
+        master_name,
+        builder_name,
+        build_number,
+        step_name,
+        self.http_client,
+        only_failure=False)
+    expected_data = [{
+        'digest':
+            'isolatedhashunittests',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
+    }, {
+        'digest':
+            'isolatedhashunittests1',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
+    }]
     self.assertEqual(sorted(expected_data), sorted(data))
 
   def testGetIsolatedDataForStepFailed(self):
@@ -430,18 +467,19 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, step_name)
 
     task_ids = swarming_util.GetIsolatedDataForStep(
-        master_name, builder_name, build_number, step_name,
-        self.http_client)
+        master_name, builder_name, build_number, step_name, self.http_client)
     expected_task_ids = []
 
     self.assertEqual(expected_task_ids, task_ids)
 
   def testDownloadTestResults(self):
     isolated_data = {
-        'digest': 'shard1_isolated',
-        'namespace': 'default-gzip',
-        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-            'isolated_server')
+        'digest':
+            'shard1_isolated',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
     }
     isolated_storage_url = waterfall_config.GetSwarmingSettings().get(
         'isolated_storage_url')
@@ -450,93 +488,103 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.http_client._SetResponseForGetRequestIsolated(
         'https://%s/default-gzip/shard1' % isolated_storage_url, 'shard1')
 
-    result, error = swarming_util._DownloadTestResults(
-        isolated_data, self.http_client)
+    result, error = swarming_util._DownloadTestResults(isolated_data,
+                                                       self.http_client)
 
-    expected_result = json.loads(zlib.decompress(
-        self.http_client._GetData('isolated', 'shard1')))
+    expected_result = json.loads(
+        zlib.decompress(self.http_client._GetData('isolated', 'shard1')))
     self.assertEqual(expected_result, result)
     self.assertIsNone(error)
 
   def testDownloadTestResultsFailedForSecondHash(self):
     isolated_data = {
-        'digest': 'not found',
-        'namespace': 'default-gzip',
-        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-            'isolated_server')
+        'digest':
+            'not found',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
     }
 
-    result, error = swarming_util._DownloadTestResults(
-        isolated_data, self.http_client)
+    result, error = swarming_util._DownloadTestResults(isolated_data,
+                                                       self.http_client)
 
     self.assertIsNone(result)
     self.assertIsNotNone(error)
 
   def testDownloadTestResultsFailedForParsingSecondHash(self):
     isolated_data = {
-        'digest': 'not found',
-        'namespace': 'default-gzip',
-        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-            'isolated_server')
+        'digest':
+            'not found',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
     }
 
     self.http_client._SetResponseForPostRequest('not found')
-    result, error = swarming_util._DownloadTestResults(
-        isolated_data, self.http_client)
+    result, error = swarming_util._DownloadTestResults(isolated_data,
+                                                       self.http_client)
 
     self.assertIsNone(result)
     self.assertIsNone(error)
 
   def testDownloadTestResultsFailedForFileUrl(self):
     isolated_data = {
-        'digest': 'shard1_isolated',
-        'namespace': 'default-gzip',
-        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-            'isolated_server')
+        'digest':
+            'shard1_isolated',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
     }
     self.http_client._SetResponseForPostRequest('shard1_isolated')
-    result, error = swarming_util._DownloadTestResults(
-        isolated_data, self.http_client)
+    result, error = swarming_util._DownloadTestResults(isolated_data,
+                                                       self.http_client)
 
     self.assertIsNone(result)
     self.assertIsNotNone(error)
 
   def testDownloadTestResultsFailedForFile(self):
     isolated_data = {
-        'digest': 'shard1_isolated',
-        'namespace': 'default-gzip',
-        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-            'isolated_server')
+        'digest':
+            'shard1_isolated',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
     }
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
-    result, error = swarming_util._DownloadTestResults(
-        isolated_data, self.http_client)
+    result, error = swarming_util._DownloadTestResults(isolated_data,
+                                                       self.http_client)
 
     self.assertIsNone(result)
     self.assertIsNone(error)
 
   def testRetrieveShardedTestResultsFromIsolatedServer(self):
-    isolated_data = [
-        {
-            'digest': 'shard1_isolated',
-            'namespace': 'default-gzip',
-            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-                'isolated_server')
-        },
-        {
-            'digest': 'shard2_isolated',
-            'namespace': 'default-gzip',
-            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-                'isolated_server')
-        },
-        {
-            'digest': 'shard3_isolated',
-            'namespace': 'default-gzip',
-            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-                'isolated_server')
-        }
-    ]
+    isolated_data = [{
+        'digest':
+            'shard1_isolated',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
+    }, {
+        'digest':
+            'shard2_isolated',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
+    }, {
+        'digest':
+            'shard3_isolated',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
+    }]
     isolated_storage_url = waterfall_config.GetSwarmingSettings().get(
         'isolated_storage_url')
     self.http_client._SetResponseForPostRequest('shard1_isolated')
@@ -562,14 +610,14 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_result, result)
 
   def testRetrieveShardedTestResultsFromIsolatedServerSingleShard(self):
-    isolated_data = [
-        {
-            'digest': 'shard1_isolated',
-            'namespace': 'default-gzip',
-            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-                'isolated_server')
-        }
-    ]
+    isolated_data = [{
+        'digest':
+            'shard1_isolated',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
+    }]
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
     self.http_client._SetResponseForGetRequestIsolated(
@@ -580,19 +628,19 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
         isolated_data, self.http_client)
 
-    expected_result = json.loads(zlib.decompress(
-        self.http_client._GetData('isolated', 'shard1')))
+    expected_result = json.loads(
+        zlib.decompress(self.http_client._GetData('isolated', 'shard1')))
     self.assertEqual(expected_result, result)
 
   def testRetrieveShardedTestResultsFromIsolatedServerFailed(self):
-    isolated_data = [
-        {
-            'digest': 'shard1_isolated',
-            'namespace': 'default-gzip',
-            'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-                'isolated_server')
-        }
-    ]
+    isolated_data = [{
+        'digest':
+            'shard1_isolated',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
+    }]
 
     result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
         isolated_data, self.http_client)
@@ -608,18 +656,25 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         task_id, self.http_client)
 
     expected_outputs_ref = {
-        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-            'isolated_server'),
-        'namespace': 'default-gzip',
-        'isolated': 'shard1_isolated'
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server'),
+        'namespace':
+            'default-gzip',
+        'isolated':
+            'shard1_isolated'
     }
 
     self.assertEqual('COMPLETED', data['state'])
     self.assertEqual(expected_outputs_ref, data['outputs_ref'])
     self.assertIsNone(error)
 
-  @mock.patch.object(swarming_util, '_SendRequestToServer',
-                     return_value=(None, {'code': 1, 'message': 'error'}))
+  @mock.patch.object(
+      swarming_util,
+      '_SendRequestToServer',
+      return_value=(None, {
+          'code': 1,
+          'message': 'error'
+      }))
   def testGetSwarmingTaskResultByIdError(self, _):
     data, error = swarming_util.GetSwarmingTaskResultById(
         'task_id', HttpClientAppengine())
@@ -628,24 +683,26 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   def testGetSwarmingTaskFailureLog(self):
     outputs_ref = {
-        'isolatedserver': waterfall_config.GetSwarmingSettings().get(
-            'isolated_server'),
-        'namespace': 'default-gzip',
-        'isolated': 'shard1_isolated'
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server'),
+        'namespace':
+            'default-gzip',
+        'isolated':
+            'shard1_isolated'
     }
 
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
     self.http_client._SetResponseForGetRequestIsolated(
-        'https://%s/default-gzip/shard1' % (
-            waterfall_config.GetSwarmingSettings().get('isolated_storage_url')),
+        'https://%s/default-gzip/shard1' %
+        (waterfall_config.GetSwarmingSettings().get('isolated_storage_url')),
         'shard1')
 
     result, error = swarming_util.GetSwarmingTaskFailureLog(
         outputs_ref, self.http_client)
 
-    expected_result = json.loads(zlib.decompress(
-        self.http_client._GetData('isolated', 'shard1')))
+    expected_result = json.loads(
+        zlib.decompress(self.http_client._GetData('isolated', 'shard1')))
     self.assertEqual(expected_result, result)
     self.assertIsNone(error)
 
@@ -653,13 +710,10 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     output_json_content = ('{"content": "eJyrVkpLzMwpLUotVrKKVgpJLS4xV'
                            'IrVUVAqS8zJTFGyUigpKk2tBQDr9wxZ"}')
 
-    failure_log = swarming_util._RetrieveOutputJsonFile(
-        output_json_content, self.http_client)
+    failure_log = swarming_util._RetrieveOutputJsonFile(output_json_content,
+                                                        self.http_client)
 
-    expected_failure_log = {
-        'failures': ['Test1'],
-        'valid': True
-    }
+    expected_failure_log = {'failures': ['Test1'], 'valid': True}
 
     self.assertEqual(expected_failure_log, failure_log)
 
@@ -671,8 +725,9 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({}, swarming_util._GenerateIsolatedData(None))
 
   def testFetchOutputJsonInfoFromIsolatedServerReturnNone(self):
-    self.assertIsNone(swarming_util._FetchOutputJsonInfoFromIsolatedServer(
-        None, self.http_client))
+    self.assertIsNone(
+        swarming_util._FetchOutputJsonInfoFromIsolatedServer(
+            None, self.http_client))
 
   @mock.patch.object(
       RetryHttpClient, 'Get', side_effect=ConnectionClosedError())
@@ -680,8 +735,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     content, error = swarming_util._SendRequestToServer(
         'http://www.someurl.url', HttpClientAppengine())
     self.assertIsNone(content)
-    self.assertEqual(
-        error['code'], swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
+    self.assertEqual(error['code'],
+                     swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
 
   @mock.patch.object(
       RetryHttpClient, 'Get', side_effect=DeadlineExceededError())
@@ -689,8 +744,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     content, error = swarming_util._SendRequestToServer(
         'http://www.someurl.com', HttpClientAppengine())
     self.assertIsNone(content)
-    self.assertEqual(
-        error['code'], swarming_util.URLFETCH_DEADLINE_EXCEEDED_ERROR)
+    self.assertEqual(error['code'],
+                     swarming_util.URLFETCH_DEADLINE_EXCEEDED_ERROR)
 
   @mock.patch.object(RetryHttpClient, 'Get', side_effect=DownloadError())
   def testSendRequestToServerDownloadError(self, _):
@@ -711,29 +766,37 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         'should_retry_server': True,
         'server_retry_timeout_hours': -1
     }
-    self.UpdateUnitTestConfigSettings(
-        'swarming_settings', override_swarming_settings)
+    self.UpdateUnitTestConfigSettings('swarming_settings',
+                                      override_swarming_settings)
     content, error = swarming_util._SendRequestToServer(
         'http://www.someurl.com', HttpClientAppengine())
     self.assertIsNone(content)
-    self.assertEqual(
-        error['code'], swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
+    self.assertEqual(error['code'],
+                     swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
     self.assertTrue(error['retry_timeout'])
 
-  @mock.patch.object(swarming_util, 'GetSwarmingTaskResultById',
-                     return_value=({'outputs_ref': 'ref'}, None))
-  @mock.patch.object(swarming_util, 'GetSwarmingTaskFailureLog',
-                     return_value=(None, 'error'))
+  @mock.patch.object(
+      swarming_util,
+      'GetSwarmingTaskResultById',
+      return_value=({
+          'outputs_ref': 'ref'
+      }, None))
+  @mock.patch.object(
+      swarming_util, 'GetSwarmingTaskFailureLog', return_value=(None, 'error'))
   def testGetIsolatedOutputForTaskIsolatedError(self, *_):
     self.assertIsNone(swarming_util.GetIsolatedOutputForTask(None, None))
 
-  @mock.patch.object(swarming_util, 'GetSwarmingTaskResultById',
-                     return_value=({'a': []}, None))
+  @mock.patch.object(
+      swarming_util,
+      'GetSwarmingTaskResultById',
+      return_value=({
+          'a': []
+      }, None))
   def testGetIsolatedOutputForTaskNoOutputRef(self, _):
     self.assertIsNone(swarming_util.GetIsolatedOutputForTask(None, None))
 
-  @mock.patch.object(swarming_util, 'GetSwarmingTaskResultById',
-                     return_value=(None, 'error'))
+  @mock.patch.object(
+      swarming_util, 'GetSwarmingTaskResultById', return_value=(None, 'error'))
   def testGetIsolatedOutputForTaskDataError(self, _):
     self.assertIsNone(swarming_util.GetIsolatedOutputForTask(None, None))
 
@@ -743,44 +806,39 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.http_client._SetResponseForPostRequest('shard1_isolated')
     self.http_client._SetResponseForPostRequest('shard1_url')
     self.http_client._SetResponseForGetRequestIsolated(
-        'https://%s/default-gzip/shard1' % (
-            waterfall_config.GetSwarmingSettings().get('isolated_storage_url')),
+        'https://%s/default-gzip/shard1' %
+        (waterfall_config.GetSwarmingSettings().get('isolated_storage_url')),
         'shard1')
 
     result = swarming_util.GetIsolatedOutputForTask(task_id, self.http_client)
 
-    expected_result = json.loads(zlib.decompress(
-        self.http_client._GetData('isolated', 'shard1')))
+    expected_result = json.loads(
+        zlib.decompress(self.http_client._GetData('isolated', 'shard1')))
     self.assertEqual(expected_result, result)
 
   def testGetSwarmingBotCountsNodimentsions(self):
     self.assertEqual({}, swarming_util.GetSwarmingBotCounts(None, None))
 
-  @mock.patch.object(swarming_util, '_SendRequestToServer',
-                     return_value=(None, {'code': 1, 'message': 'error'}))
+  @mock.patch.object(
+      swarming_util,
+      '_SendRequestToServer',
+      return_value=(None, {
+          'code': 1,
+          'message': 'error'
+      }))
   def testGetSwarmingBotCountsError(self, _):
 
-    dimensions = {
-      'os': 'OS',
-      'cpu': 'cpu'
-    }
-    self.assertEqual({}, swarming_util.GetSwarmingBotCounts(
-        dimensions, self.http_client))
+    dimensions = {'os': 'OS', 'cpu': 'cpu'}
+    self.assertEqual({},
+                     swarming_util.GetSwarmingBotCounts(dimensions,
+                                                        self.http_client))
 
   @mock.patch.object(swarming_util, '_SendRequestToServer')
   def testGetSwarmingBotCounts(self, mock_fn):
 
-    dimensions = {
-      'os': 'OS',
-      'cpu': 'cpu'
-    }
+    dimensions = {'os': 'OS', 'cpu': 'cpu'}
 
-    content_data = {
-        'count': '10',
-        'dead': '1',
-        'quarantined': '0',
-        'busy': '5'
-    }
+    content_data = {'count': '10', 'dead': '1', 'quarantined': '0', 'busy': '5'}
     mock_fn.return_value = (json.dumps(content_data), None)
 
     expected_counts = {
@@ -791,74 +849,82 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         'available': 4
     }
 
-    self.assertEqual(expected_counts, swarming_util.GetSwarmingBotCounts(
-        dimensions, self.http_client))
+    self.assertEqual(expected_counts,
+                     swarming_util.GetSwarmingBotCounts(dimensions,
+                                                        self.http_client))
 
+  @mock.patch.object(buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
   @mock.patch.object(
-      buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
-  @mock.patch.object(logdog_util, '_GetLogLocationFromBuildbucketBuild',
-                     return_value=('host', 'project', 'path'))
-  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
-                     return_value='step')
-  @mock.patch.object(logdog_util, '_GetStreamForStep',
-                     return_value='log_stream')
-  @mock.patch.object(logdog_util, 'GetStepLogForBuild',
-                     return_value=json.dumps(wf_testcase.SAMPLE_STEP_METADATA))
+      logdog_util,
+      '_GetLogLocationFromBuildbucketBuild',
+      return_value=('host', 'project', 'path'))
+  @mock.patch.object(
+      logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
+  @mock.patch.object(
+      logdog_util, '_GetStreamForStep', return_value='log_stream')
+  @mock.patch.object(
+      logdog_util,
+      'GetStepLogForBuild',
+      return_value=json.dumps(wf_testcase.SAMPLE_STEP_METADATA))
   def testGetStepMetadata(self, *_):
     step_metadata = swarming_util.GetStepLog(
-      self.buildbucket_id, self.step_name, self.http_client, 'step_metadata')
+        self.buildbucket_id, self.step_name, self.http_client, 'step_metadata')
     self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
 
+  @mock.patch.object(buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
   @mock.patch.object(
-      buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
-  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
-                     return_value=None)
+      logdog_util, '_GetAnnotationsProtoForPath', return_value=None)
   def testGetStepMetadataStepNone(self, *_):
     step_metadata = swarming_util.GetStepLog(
-      self.buildbucket_id, self.step_name, self.http_client, 'step_metadata')
+        self.buildbucket_id, self.step_name, self.http_client, 'step_metadata')
     self.assertIsNone(step_metadata)
 
+  @mock.patch.object(buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
   @mock.patch.object(
-      buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
-  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
-                     return_value='step')
-  @mock.patch.object(logdog_util, '_GetLogLocationFromBuildbucketBuild',
-                     return_value=('host', 'project','some/path'))
-  @mock.patch.object(logdog_util, '_GetStreamForStep',
-                     return_value=None)
+      logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
+  @mock.patch.object(
+      logdog_util,
+      '_GetLogLocationFromBuildbucketBuild',
+      return_value=('host', 'project', 'some/path'))
+  @mock.patch.object(logdog_util, '_GetStreamForStep', return_value=None)
   def testGetStepMetadataStreamNone(self, *_):
     step_metadata = swarming_util.GetStepLog(
-      self.buildbucket_id, self.step_name, self.http_client, 'step_metadata')
+        self.buildbucket_id, self.step_name, self.http_client, 'step_metadata')
     self.assertIsNone(step_metadata)
 
+  @mock.patch.object(buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
   @mock.patch.object(
-      buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
-  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
-                     return_value='step')
-  @mock.patch.object(logdog_util, '_GetLogLocationFromBuildbucketBuild',
-                     return_value=('host', 'project','some/path'))
+      logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
+  @mock.patch.object(
+      logdog_util,
+      '_GetLogLocationFromBuildbucketBuild',
+      return_value=('host', 'project', 'some/path'))
   @mock.patch.object(logdog_util, '_GetStreamForStep', return_value='stream')
-  @mock.patch.object(logdog_util, 'GetStepLogForBuild',
-                     return_value='log1/nlog2')
-  def testGetStepLogStdio(self, *_):
-    self.assertEqual('log1/nlog2', swarming_util.GetStepLog(
-        self.buildbucket_id, self.step_name, self.http_client))
-
   @mock.patch.object(
-      buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
-  @mock.patch.object(logdog_util, '_GetAnnotationsProtoForPath',
-                     return_value=None)
-  @mock.patch.object(logdog_util, '_GetLogLocationFromBuildbucketBuild',
-                     return_value=('host', 'project','some/path'))
+      logdog_util, 'GetStepLogForBuild', return_value='log1/nlog2')
+  def testGetStepLogStdio(self, *_):
+    self.assertEqual('log1/nlog2',
+                     swarming_util.GetStepLog(self.buildbucket_id,
+                                              self.step_name, self.http_client))
+
+  @mock.patch.object(buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
+  @mock.patch.object(
+      logdog_util, '_GetAnnotationsProtoForPath', return_value=None)
+  @mock.patch.object(
+      logdog_util,
+      '_GetLogLocationFromBuildbucketBuild',
+      return_value=('host', 'project', 'some/path'))
   def testGetStepLogStdioNoAnnotations(self, *_):
-    self.assertIsNone(swarming_util.GetStepLog(
-         self.buildbucket_id, self.step_name, self.http_client))
+    self.assertIsNone(
+        swarming_util.GetStepLog(self.buildbucket_id, self.step_name,
+                                 self.http_client))
 
   @mock.patch.object(
       buildbucket_client, 'GetTryJobs', return_value=[(Exception(), None)])
   def testGetStepLogBuildbucketError(self, *_):
-    self.assertIsNone(swarming_util.GetStepLog(
-         self.buildbucket_id, self.step_name, self.http_client))
+    self.assertIsNone(
+        swarming_util.GetStepLog(self.buildbucket_id, self.step_name,
+                                 self.http_client))
 
   def testUpdateAnalysisResult(self):
     analysis_result = {
@@ -869,26 +935,27 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
             },
             {
                 'tests': [
-                  {
-                      'last_pass': 123,
-                      'first_failure': 123,
-                      'suspected_cls': [],
-                      'test_name': 'TestSuite1.test1'
-                  },
-                  {
-                      'last_pass': 123,
-                      'first_failure': 123,
-                      'suspected_cls': [],
-                      'test_name': 'TestSuite1.test2'
-                  },
-                  {
-                      'last_pass': 123,
-                      'first_failure': 123,
-                      'suspected_cls': [],
-                      'test_name': 'TestSuite1.test3'
-                  },
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test1'
+                    },
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test2'
+                    },
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test3'
+                    },
                 ],
-                'step_name': self.step_name
+                'step_name':
+                    self.step_name
             },
             {
                 'step_name': 'another_step2'
@@ -896,13 +963,10 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         ]
     }
 
-    flaky_failures = {
-        self.step_name: [
-            'TestSuite1.test1', 'TestSuite1.test2']
-    }
+    flaky_failures = {self.step_name: ['TestSuite1.test1', 'TestSuite1.test2']}
 
-    all_flaked = swarming_util.UpdateAnalysisResult(
-        analysis_result, flaky_failures)
+    all_flaked = swarming_util.UpdateAnalysisResult(analysis_result,
+                                                    flaky_failures)
 
     expected_result = {
         'failures': [
@@ -933,8 +997,10 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
                         'test_name': 'TestSuite1.test3'
                     },
                 ],
-                'step_name': self.step_name,
-                'flaky': False
+                'step_name':
+                    self.step_name,
+                'flaky':
+                    False
             },
             {
                 'step_name': 'another_step2'
@@ -947,79 +1013,60 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   def testUpdateAnalysisResultAllFlaky(self):
     analysis_result = {
-        'failures': [
-            {
-                'tests': [
-                  {
-                      'last_pass': 123,
-                      'first_failure': 123,
-                      'suspected_cls': [],
-                      'test_name': 'TestSuite1.test1'
-                  },
-                  {
-                      'last_pass': 123,
-                      'first_failure': 123,
-                      'suspected_cls': [],
-                      'test_name': 'TestSuite1.test2'
-                  }
-                ],
-                'step_name': self.step_name
-            }
-        ]
+        'failures': [{
+            'tests': [{
+                'last_pass': 123,
+                'first_failure': 123,
+                'suspected_cls': [],
+                'test_name': 'TestSuite1.test1'
+            }, {
+                'last_pass': 123,
+                'first_failure': 123,
+                'suspected_cls': [],
+                'test_name': 'TestSuite1.test2'
+            }],
+            'step_name':
+                self.step_name
+        }]
     }
 
-    flaky_failures = {
-        self.step_name: [
-            'TestSuite1.test1', 'TestSuite1.test2']
-    }
+    flaky_failures = {self.step_name: ['TestSuite1.test1', 'TestSuite1.test2']}
 
-    all_flaked = swarming_util.UpdateAnalysisResult(
-        analysis_result, flaky_failures)
+    all_flaked = swarming_util.UpdateAnalysisResult(analysis_result,
+                                                    flaky_failures)
 
     expected_result = {
-        'failures': [
-            {
-                'tests': [
-                    {
-                        'last_pass': 123,
-                        'first_failure': 123,
-                        'suspected_cls': [],
-                        'test_name': 'TestSuite1.test1',
-                        'flaky': True
-                    },
-                    {
-                        'last_pass': 123,
-                        'first_failure': 123,
-                        'suspected_cls': [],
-                        'test_name': 'TestSuite1.test2',
-                        'flaky': True
-                    }
-                ],
-                'step_name': self.step_name,
+        'failures': [{
+            'tests': [{
+                'last_pass': 123,
+                'first_failure': 123,
+                'suspected_cls': [],
+                'test_name': 'TestSuite1.test1',
                 'flaky': True
-            }
-        ]
+            }, {
+                'last_pass': 123,
+                'first_failure': 123,
+                'suspected_cls': [],
+                'test_name': 'TestSuite1.test2',
+                'flaky': True
+            }],
+            'step_name':
+                self.step_name,
+            'flaky':
+                True
+        }]
     }
 
     self.assertTrue(all_flaked)
     self.assertEqual(expected_result, analysis_result)
 
   def testUpdateAnalysisResultOnlyStep(self):
-    analysis_result = {
-        'failures': [
-            {
-                'step_name': 'another_step1'
-            }
-        ]
-    }
+    analysis_result = {'failures': [{'step_name': 'another_step1'}]}
 
-    flaky_failures = {
-        self.step_name: [
-            'TestSuite1.test1', 'TestSuite1.test2']
-    }
+    flaky_failures = {self.step_name: ['TestSuite1.test1', 'TestSuite1.test2']}
 
-    all_flaked = swarming_util.UpdateAnalysisResult(
-        analysis_result, flaky_failures)
+    all_flaked = swarming_util.UpdateAnalysisResult(analysis_result,
+                                                    flaky_failures)
 
     self.assertFalse(all_flaked)
 
@@ -1038,65 +1085,69 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertNotEqual(cache_name_a, cache_name_c)
     self.assertNotEqual(cache_name_b, cache_name_c)
 
-
   def testGetBot(self):
+
     class MockBuildbucketBuild(object):
       response = {
-          'result_details_json': json.dumps({
-              'swarming': {
-                  'task_result':{
-                      'bot_id': 'slave777-c4'
+          'result_details_json':
+              json.dumps({
+                  'swarming': {
+                      'task_result': {
+                          'bot_id': 'slave777-c4'
+                      }
                   }
-              }
-          })
+              })
       }
+
     self.assertEqual('slave777-c4', swarming_util.GetBot(MockBuildbucketBuild))
 
   def testGetBotNotFound(self):
+
     class MockBuildbucketBuild(object):
-      response = {
-          'result_details_json': json.dumps({})
-      }
+      response = {'result_details_json': json.dumps({})}
+
     self.assertIsNone(swarming_util.GetBot(MockBuildbucketBuild))
     MockBuildbucketBuild.response = {}
     self.assertIsNone(swarming_util.GetBot(MockBuildbucketBuild))
 
   def testGetBuilderCacheName(self):
+
     class MockBuildbucketBuild(object):
       response = {
-          'parameters_json': json.dumps({
-              'swarming': {
-                  'override_builder_cfg': {
-                      'caches': [{
-                          'path': 'builder',
-                          'name':'builder_dummyhash'
-                      }]
+          'parameters_json':
+              json.dumps({
+                  'swarming': {
+                      'override_builder_cfg': {
+                          'caches': [{
+                              'path': 'builder',
+                              'name': 'builder_dummyhash'
+                          }]
+                      }
                   }
-              }
-          })
+              })
       }
-    self.assertEqual('builder_dummyhash', swarming_util.GetBuilderCacheName(
-        MockBuildbucketBuild))
+
+    self.assertEqual('builder_dummyhash',
+                     swarming_util.GetBuilderCacheName(MockBuildbucketBuild))
 
   def testGetBuilderCacheNameNotFound(self):
+
     class MockBuildbucketBuild(object):
-      response = {
-          'parameters_json': json.dumps({
-              'swarming': {}
-          })
-      }
+      response = {'parameters_json': json.dumps({'swarming': {}})}
+
     self.assertIsNone(swarming_util.GetBuilderCacheName(MockBuildbucketBuild))
     MockBuildbucketBuild.response = {
-        'parameters_json': json.dumps({
-            'swarming': {
-                'override_builder_cfg': {
-                    'caches': [{
-                        'path': 'other_cache',
-                        'name':'other_cache_name'
-                    }]
+        'parameters_json':
+            json.dumps({
+                'swarming': {
+                    'override_builder_cfg': {
+                        'caches': [{
+                            'path': 'other_cache',
+                            'name': 'other_cache_name'
+                        }]
+                    }
                 }
-            }
-        })
+            })
     }
     self.assertIsNone(swarming_util.GetBuilderCacheName(MockBuildbucketBuild))
     MockBuildbucketBuild.response = {}
@@ -1104,8 +1155,10 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(swarming_util, '_SendRequestToServer')
   def testSelectWarmCacheNoOp(self, mock_fn):
+
     class MockTryJobBuildbot(object):
       is_swarmbucket_build = False
+
     try_job_buildbot = MockTryJobBuildbot()
     cache_name = 'some_other_cache_name'
     WfTryBotCache.Get(cache_name).recent_bots = ['slave1']
@@ -1113,55 +1166,58 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
                                       SwarmingHttpClient())
     self.assertFalse(mock_fn.called)
 
-  @mock.patch.object(swarming_util, '_SendRequestToServer',
-                     return_value=(None, {'code': 1, 'message': 'error'}))
+  @mock.patch.object(
+      swarming_util,
+      '_SendRequestToServer',
+      return_value=(None, {
+          'code': 1,
+          'message': 'error'
+      }))
   def testGetAllBotsWithCacheError(self, _):
-    dimensions = {
-      'os': 'OS',
-      'cpu': 'cpu'
-    }
-    self.assertEqual([], swarming_util.GetAllBotsWithCache(
-        dimensions, 'cache_name', self.http_client))
+    dimensions = {'os': 'OS', 'cpu': 'cpu'}
+    self.assertEqual([],
+                     swarming_util.GetAllBotsWithCache(dimensions, 'cache_name',
+                                                       self.http_client))
 
   @mock.patch.object(swarming_util, '_SendRequestToServer')
   def testGetAllBotsWithCache(self, mock_fn):
 
-    dimensions = {
-      'os': 'OS',
-      'cpu': 'cpu'
-    }
+    dimensions = {'os': 'OS', 'cpu': 'cpu'}
 
-    content_data = {
-        'items': [
-            {'bot_id': 'bot_1'}
-        ]
-    }
+    content_data = {'items': [{'bot_id': 'bot_1'}]}
     mock_fn.return_value = (json.dumps(content_data), None)
-    self.assertEqual(content_data['items'], swarming_util.GetAllBotsWithCache(
-        dimensions, 'cache_name', self.http_client))
+    self.assertEqual(content_data['items'],
+                     swarming_util.GetAllBotsWithCache(dimensions, 'cache_name',
+                                                       self.http_client))
 
   def testOnlyAvailable(self):
-    all_bots = [
-        {'bot_id': 'bot1', 'task_id': '123abc000'},
-        {'bot_id': 'bot2', 'is_dead': True},
-        {'bot_id': 'bot3', 'quarantined': True},
-        {'bot_id': 'bot4', 'deleted': True},
-        {'bot_id': 'bot5'}
-    ]
-    self.assertEqual(
-        [{'bot_id': 'bot5'}],
-        swarming_util.OnlyAvailable(all_bots)
-    )
+    all_bots = [{
+        'bot_id': 'bot1',
+        'task_id': '123abc000'
+    }, {
+        'bot_id': 'bot2',
+        'is_dead': True
+    }, {
+        'bot_id': 'bot3',
+        'quarantined': True
+    }, {
+        'bot_id': 'bot4',
+        'deleted': True
+    }, {
+        'bot_id': 'bot5'
+    }]
+    self.assertEqual([{
+        'bot_id': 'bot5'
+    }], swarming_util.OnlyAvailable(all_bots))
 
   def testHaveCommitPositionInLocalGitCache(self):
     bots = [{'bot_id': 'bot%d' % i} for i in range(10)]
     bot5 = WfTryBot.Get('bot5')
     bot5.newest_synced_revision = 100
     bot5.put()
-    self.assertEqual(
-        [{'bot_id': 'bot5'}],
-        swarming_util._HaveCommitPositionInLocalGitCache(bots, 1)
-    )
+    self.assertEqual([{
+        'bot_id': 'bot5'
+    }], swarming_util._HaveCommitPositionInLocalGitCache(bots, 1))
 
   def testSortByDistanceToCommitPosition(self):
     cache_name = 'cache_name'
@@ -1172,85 +1228,90 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     cache_stats.AddBot('bot4', 120, 120)
     cache_stats.put()
     bots = [{'bot_id': 'bot%d' % i} for i in range(1, 5)]
-    closest = swarming_util._ClosestEarlier(
-        bots, cache_name, 70)
+    closest = swarming_util._ClosestEarlier(bots, cache_name, 70)
     self.assertFalse(closest)
-    closest = swarming_util._ClosestLater(
-        bots, cache_name, 70)
-    self.assertEqual({'bot_id':'bot1'}, closest)
+    closest = swarming_util._ClosestLater(bots, cache_name, 70)
+    self.assertEqual({'bot_id': 'bot1'}, closest)
 
     sorted_bots = swarming_util._SortByDistanceToCommitPosition(
         bots, cache_name, 100, False)
-    self.assertEqual({'bot_id':'bot2'}, sorted_bots[0])
+    self.assertEqual({'bot_id': 'bot2'}, sorted_bots[0])
     sorted_bots = swarming_util._SortByDistanceToCommitPosition(
         bots, cache_name, 121, False)
-    self.assertEqual({'bot_id':'bot4'}, sorted_bots[0])
+    self.assertEqual({'bot_id': 'bot4'}, sorted_bots[0])
 
   def testLeastCrowded(self):
-    bots = [
-        {
-            'bot_id': 'slave1',
-            'dimensions': [{
-                'key': 'caches',
-                'value': ['builder_123456']
-            }],
-            'state': json.dumps({
-                'disks': {'c:\\': {'free_mb': 1000}}
+    bots = [{
+        'bot_id': 'slave1',
+        'dimensions': [{
+            'key': 'caches',
+            'value': ['builder_123456']
+        }],
+        'state': json.dumps({
+            'disks': {
+                'c:\\': {
+                    'free_mb': 1000
+                }
+            }
+        })
+    }, {
+        'bot_id':
+            'slave2',
+        'dimensions': [{
+            'key': 'caches',
+            'value': ['builder_123456', 'builder_abcdef']
+        }],
+        'state':
+            json.dumps({
+                'disks': {
+                    'c:\\': {
+                        'free_mb': 1000
+                    }
+                }
             })
-        },
-        {
-            'bot_id': 'slave2',
-            'dimensions': [{
-                'key': 'caches',
-                'value': [
-                    'builder_123456',
-                    'builder_abcdef'
-                ]
-            }],
-            'state': json.dumps({
-                'disks': {'c:\\': {'free_mb': 1000}}
+    }, {
+        'bot_id':
+            'slave3',
+        'dimensions': [{
+            'key': 'caches',
+            'value': ['builder_123456', 'builder_abcdef']
+        }],
+        'state':
+            json.dumps({
+                'disks': {
+                    'c:\\': {
+                        'free_mb': 2000
+                    }
+                }
             })
-        },
-        {
-            'bot_id': 'slave3',
-            'dimensions': [{
-                'key': 'caches',
-                'value': [
-                    'builder_123456',
-                    'builder_abcdef'
-                ]
-            }],
-            'state': json.dumps({
-                'disks': {'c:\\': {'free_mb': 2000}}
-            })
-        },
-        {
-            'bot_id': 'slave4'
-        }
-    ]
+    }, {
+        'bot_id': 'slave4'
+    }]
     # The one with fewer caches is preferred.
-    self.assertEqual('slave1', swarming_util._GetBotWithFewestNamedCaches(
-        bots)['bot_id'])
+    self.assertEqual('slave1',
+                     swarming_util._GetBotWithFewestNamedCaches(bots)['bot_id'])
     # If there is a tie, the one with more free space is preferred.
-    self.assertEqual('slave3', swarming_util._GetBotWithFewestNamedCaches(
-        bots[1:])['bot_id'])
-    self.assertEqual('slave3', swarming_util._GetBotWithFewestNamedCaches(
-        bots[2:])['bot_id'])
+    self.assertEqual(
+        'slave3',
+        swarming_util._GetBotWithFewestNamedCaches(bots[1:])['bot_id'])
+    self.assertEqual(
+        'slave3',
+        swarming_util._GetBotWithFewestNamedCaches(bots[2:])['bot_id'])
     # If a bot does not have the caches dimension or the free space data, it is
     # only selected as a last resort.
-    self.assertEqual('slave4', swarming_util._GetBotWithFewestNamedCaches(
-        bots[3:])['bot_id'])
+    self.assertEqual(
+        'slave4',
+        swarming_util._GetBotWithFewestNamedCaches(bots[3:])['bot_id'])
 
-  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
-              return_value=ALL_BOTS)
-  @mock.patch('waterfall.swarming_util.OnlyAvailable',
-              return_value=SOME_BOTS)
-  @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
-              return_value=SOME_BOTS)
-  @mock.patch('waterfall.swarming_util._ClosestEarlier',
-              return_value=ONE_BOT[0])
-  @mock.patch('waterfall.swarming_util._ClosestLater',
-              return_value=ONE_BOT[0])
+  @mock.patch(
+      'waterfall.swarming_util.GetAllBotsWithCache', return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util.OnlyAvailable', return_value=SOME_BOTS)
+  @mock.patch(
+      'waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
+      return_value=SOME_BOTS)
+  @mock.patch(
+      'waterfall.swarming_util._ClosestEarlier', return_value=ONE_BOT[0])
+  @mock.patch('waterfall.swarming_util._ClosestLater', return_value=ONE_BOT[0])
   @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
   def testAssignWarmCacheHostSpecificRevision(self, mock_changelog, *_):
     cache_name = 'cache_name'
@@ -1259,8 +1320,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
     mock_changelog.assert_called_once_with('def01234')
 
-  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
-              return_value=ALL_BOTS)
+  @mock.patch(
+      'waterfall.swarming_util.GetAllBotsWithCache', return_value=ALL_BOTS)
   @mock.patch('waterfall.swarming_util.logging.error')
   def testAssignWarmCacheHostWithNoRevision(self, mock_error, *_):
     cache_name = 'cache_name'
@@ -1272,16 +1333,15 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     # Make sure that an error was logged.
     mock_error.assert_called()
 
-  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
-              return_value=ALL_BOTS)
-  @mock.patch('waterfall.swarming_util.OnlyAvailable',
-              return_value=SOME_BOTS)
-  @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
-              return_value=SOME_BOTS)
-  @mock.patch('waterfall.swarming_util._ClosestEarlier',
-              return_value=ONE_BOT[0])
-  @mock.patch('waterfall.swarming_util._ClosestLater',
-              return_value=ONE_BOT[0])
+  @mock.patch(
+      'waterfall.swarming_util.GetAllBotsWithCache', return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util.OnlyAvailable', return_value=SOME_BOTS)
+  @mock.patch(
+      'waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
+      return_value=SOME_BOTS)
+  @mock.patch(
+      'waterfall.swarming_util._ClosestEarlier', return_value=ONE_BOT[0])
+  @mock.patch('waterfall.swarming_util._ClosestLater', return_value=ONE_BOT[0])
   @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
   def testAssignWarmCacheHost(self, *_):
     cache_name = 'cache_name'
@@ -1293,14 +1353,14 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     # No bots with earlier rev, check bot_id with earliest later rev
     # Bot with earlier rev gets assigned.
 
-  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
-              return_value=ALL_BOTS)
-  @mock.patch('waterfall.swarming_util.OnlyAvailable',
-              return_value=SOME_BOTS)
-  @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
-              return_value=SOME_BOTS)
-  @mock.patch('waterfall.swarming_util._ClosestEarlier',
-              return_value=ONE_BOT[0])
+  @mock.patch(
+      'waterfall.swarming_util.GetAllBotsWithCache', return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util.OnlyAvailable', return_value=SOME_BOTS)
+  @mock.patch(
+      'waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
+      return_value=SOME_BOTS)
+  @mock.patch(
+      'waterfall.swarming_util._ClosestEarlier', return_value=ONE_BOT[0])
   @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
   def testAssignWarmCacheHostEarlier(self, *_):
     cache_name = 'cache_name'
@@ -1308,16 +1368,14 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
     self.assertEqual('id:bot0', tryjob.dimensions[2])
 
-  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
-              return_value=ALL_BOTS)
-  @mock.patch('waterfall.swarming_util.OnlyAvailable',
-              return_value=SOME_BOTS)
-  @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
-              return_value=SOME_BOTS)
-  @mock.patch('waterfall.swarming_util._ClosestEarlier',
-              return_value=None)
-  @mock.patch('waterfall.swarming_util._ClosestLater',
-              return_value=ONE_BOT[0])
+  @mock.patch(
+      'waterfall.swarming_util.GetAllBotsWithCache', return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util.OnlyAvailable', return_value=SOME_BOTS)
+  @mock.patch(
+      'waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
+      return_value=SOME_BOTS)
+  @mock.patch('waterfall.swarming_util._ClosestEarlier', return_value=None)
+  @mock.patch('waterfall.swarming_util._ClosestLater', return_value=ONE_BOT[0])
   @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
   def testAssignWarmCacheHostLater(self, *_):
     cache_name = 'cache_name'
@@ -1327,16 +1385,14 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch('waterfall.swarming_util._GetBotWithFewestNamedCaches',
               lambda x: x[0])
-  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
-              return_value=ALL_BOTS)
-  @mock.patch('waterfall.swarming_util.OnlyAvailable',
-              return_value=SOME_BOTS)
-  @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
-              return_value=ONE_BOT)
-  @mock.patch('waterfall.swarming_util._ClosestEarlier',
-              return_value=None)
-  @mock.patch('waterfall.swarming_util._ClosestLater',
-              return_value=None)
+  @mock.patch(
+      'waterfall.swarming_util.GetAllBotsWithCache', return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util.OnlyAvailable', return_value=SOME_BOTS)
+  @mock.patch(
+      'waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
+      return_value=ONE_BOT)
+  @mock.patch('waterfall.swarming_util._ClosestEarlier', return_value=None)
+  @mock.patch('waterfall.swarming_util._ClosestLater', return_value=None)
   @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
   def testAssignWarmCacheHostNoCheckedOutRevision(self, *_):
     cache_name = 'cache_name'
@@ -1346,12 +1402,12 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch('waterfall.swarming_util._GetBotWithFewestNamedCaches',
               lambda x: x[0])
-  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
-              return_value=ALL_BOTS)
-  @mock.patch('waterfall.swarming_util.OnlyAvailable',
-              return_value=ONE_BOT)
-  @mock.patch('waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
-              return_value=[])
+  @mock.patch(
+      'waterfall.swarming_util.GetAllBotsWithCache', return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util.OnlyAvailable', return_value=ONE_BOT)
+  @mock.patch(
+      'waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
+      return_value=[])
   @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
   def testAssignWarmCacheHostNoCachedRevision(self, *_):
     cache_name = 'cache_name'
@@ -1369,10 +1425,9 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
     self.assertEqual(2, len(tryjob.dimensions))
 
-  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache',
-              return_value=[])
-  @mock.patch('waterfall.swarming_util.GetBotsByDimension',
-              return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util.GetAllBotsWithCache', return_value=[])
+  @mock.patch(
+      'waterfall.swarming_util.GetBotsByDimension', return_value=ALL_BOTS)
   @mock.patch('waterfall.swarming_util.OnlyAvailable', lambda x: x)
   @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
   @mock.patch('waterfall.swarming_util._GetBotWithFewestNamedCaches',
@@ -1392,11 +1447,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
         # Use Ordered dict to preserve the order of the dimensions.
         swarming_util._DimensionsToQueryString(
-            collections.OrderedDict([
-                ('bot_id', 'slave1'),
-                ('cpu', 'x86_64'),
-                ('os', 'Mac')
-            ])))
+            collections.OrderedDict([('bot_id', 'slave1'), ('cpu', 'x86_64'), (
+                'os', 'Mac')])))
     self.assertEqual(
         '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
         swarming_util._DimensionsToQueryString(
@@ -1405,8 +1457,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   def testGetETAToStartAnalysisWhenManuallyTriggered(self):
     mocked_utcnow = datetime.utcnow()
     self.MockUTCNow(mocked_utcnow)
-    self.assertEqual(mocked_utcnow,
-                     swarming_util.GetETAToStartAnalysis(True))
+    self.assertEqual(mocked_utcnow, swarming_util.GetETAToStartAnalysis(True))
 
   def testGetETAToStartAnalysisWhenTriggeredOnPSTWeekend(self):
     # Sunday 1pm in PST, and Sunday 8pm in UTC.

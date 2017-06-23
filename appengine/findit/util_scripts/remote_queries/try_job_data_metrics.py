@@ -1,7 +1,6 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Pulls historical try job metadata from Findit and prints a report."""
 
 import argparse
@@ -17,13 +16,12 @@ try:
 except ImportError:
   pyplot = None
 
-_FINDIT_DIR = os.path.join(os.path.dirname(__file__),
-                           os.path.pardir, os.path.pardir)
+_FINDIT_DIR = os.path.join(
+    os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
 from local_libs import remote_api
 
 from model.wf_try_job_data import WfTryJobData
-
 
 NOT_AVAILABLE = 'N/A'
 
@@ -100,8 +98,10 @@ def _FormatSecondsAsHMS(seconds):
   return '%d:%02d:%02d' % (hours, minutes, seconds)
 
 
-def _GetRequestSpikes(request_times, time_window_seconds=30*60,
-                      minimum_spike_size=3, show_plot=False):
+def _GetRequestSpikes(request_times,
+                      time_window_seconds=30 * 60,
+                      minimum_spike_size=3,
+                      show_plot=False):
   """Calculates and plots try jobs by request time.
 
   Args:
@@ -124,8 +124,8 @@ def _GetRequestSpikes(request_times, time_window_seconds=30*60,
       pyplot.plot(request_times, [i for i in range(len(request_times))], 'x')
       pyplot.show()
     else:
-      print ('In order to show plots, matplotlib needs to be installed. To '
-             'install, please run \'sudo pip install matplotlib\'')
+      print('In order to show plots, matplotlib needs to be installed. To '
+            'install, please run \'sudo pip install matplotlib\'')
 
   candidate_spike_start = request_times[0]
   points_in_spike = 1
@@ -145,8 +145,8 @@ def _GetRequestSpikes(request_times, time_window_seconds=30*60,
       candidate_spike_start = point_being_examined
       points_in_spike = 1  # Start over.
 
-  return (spike_count, _GetAverageOfNumbersInList(spike_sizes),
-          max(spike_sizes) if spike_sizes else 0)
+  return (spike_count, _GetAverageOfNumbersInList(spike_sizes), max(spike_sizes)
+          if spike_sizes else 0)
 
 
 def _GetReportInformation(try_job_data_list, start_date, end_date):
@@ -215,8 +215,8 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
   maximum_spike_size = NOT_AVAILABLE
 
   if try_job_data_list:
-    try_jobs_per_day = (
-        len(try_job_data_list) / float((end_date - start_date).days))
+    try_jobs_per_day = (len(try_job_data_list) / float(
+        (end_date - start_date).days))
     regression_range_sizes = []
     execution_times_seconds = []
     request_times = []
@@ -238,8 +238,7 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
 
       # Execution time.
       if try_job_data.start_time and try_job_data.end_time:
-        execution_time_delta = (
-            try_job_data.end_time - try_job_data.start_time)
+        execution_time_delta = (try_job_data.end_time - try_job_data.start_time)
         execution_time = execution_time_delta.total_seconds()
         execution_times_seconds.append(execution_time)
 
@@ -281,41 +280,36 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
 
     average_regression_range_size = _GetAverageOfNumbersInList(
         regression_range_sizes)
-    median_regression_range_size = (
-        numpy.median(regression_range_sizes) if regression_range_sizes
-        else NOT_AVAILABLE)
-    average_execution_time = (_GetAverageOfNumbersInList(
-        execution_times_seconds) if execution_times_seconds else NOT_AVAILABLE)
-    median_execution_time = (
-        numpy.median(execution_times_seconds) if execution_times_seconds else
-        NOT_AVAILABLE)
-    average_end_to_end_time = (
-        _GetAverageOfNumbersInList(end_to_end_times) if end_to_end_times
-        else NOT_AVAILABLE)
-    median_end_to_end_time = (
-        numpy.median(end_to_end_times) if end_to_end_times else NOT_AVAILABLE)
-    average_time_in_queue = (
-        _GetAverageOfNumbersInList(in_queue_times) if in_queue_times else
-        NOT_AVAILABLE)
-    median_time_in_queue = (
-        numpy.median(in_queue_times) if in_queue_times else NOT_AVAILABLE)
-    average_commits_analyzed = _GetAverageOfNumbersInList(
-        commits_analyzed)
-    median_commits_analyzed = (
-        numpy.median(commits_analyzed) if commits_analyzed else NOT_AVAILABLE)
-    longest_execution_time = (
-        str(datetime.timedelta(
-            seconds=int(round(max(execution_times_seconds)))))
+    median_regression_range_size = (numpy.median(regression_range_sizes) if
+                                    regression_range_sizes else NOT_AVAILABLE)
+    average_execution_time = (
+        _GetAverageOfNumbersInList(execution_times_seconds)
         if execution_times_seconds else NOT_AVAILABLE)
-    shortest_execution_time = (
-        str(datetime.timedelta(
-            seconds=int(round(min(execution_times_seconds)))))
-        if execution_times_seconds else NOT_AVAILABLE)
+    median_execution_time = (numpy.median(execution_times_seconds)
+                             if execution_times_seconds else NOT_AVAILABLE)
+    average_end_to_end_time = (_GetAverageOfNumbersInList(end_to_end_times)
+                               if end_to_end_times else NOT_AVAILABLE)
+    median_end_to_end_time = (numpy.median(end_to_end_times)
+                              if end_to_end_times else NOT_AVAILABLE)
+    average_time_in_queue = (_GetAverageOfNumbersInList(in_queue_times)
+                             if in_queue_times else NOT_AVAILABLE)
+    median_time_in_queue = (numpy.median(in_queue_times)
+                            if in_queue_times else NOT_AVAILABLE)
+    average_commits_analyzed = _GetAverageOfNumbersInList(commits_analyzed)
+    median_commits_analyzed = (numpy.median(commits_analyzed)
+                               if commits_analyzed else NOT_AVAILABLE)
+    longest_execution_time = (str(
+        datetime.timedelta(seconds=int(round(max(execution_times_seconds)))))
+                              if execution_times_seconds else NOT_AVAILABLE)
+    shortest_execution_time = (str(
+        datetime.timedelta(seconds=int(round(min(execution_times_seconds)))))
+                               if execution_times_seconds else NOT_AVAILABLE)
     detection_rate = float(culprits_detected) / total_number_of_try_jobs
     error_rate = float(errors_detected) / total_number_of_try_jobs
-    time_per_revision = (average_execution_time / average_commits_analyzed if (
-        average_execution_time != NOT_AVAILABLE and
-        average_commits_analyzed != NOT_AVAILABLE) else NOT_AVAILABLE)
+    time_per_revision = (average_execution_time / average_commits_analyzed
+                         if (average_execution_time != NOT_AVAILABLE and
+                             average_commits_analyzed != NOT_AVAILABLE) else
+                         NOT_AVAILABLE)
 
     under_five_minutes_rate = (
         float(number_under_five_minutes) / total_number_of_try_jobs)
@@ -328,42 +322,60 @@ def _GetReportInformation(try_job_data_list, start_date, end_date):
 
     # Calculate try job spikes.
     spike_count, average_spike_size, maximum_spike_size = _GetRequestSpikes(
-        request_times, time_window_seconds=30*60, minimum_spike_size=3,
+        request_times,
+        time_window_seconds=30 * 60,
+        minimum_spike_size=3,
         show_plot=False)
 
   return {
-      'try_jobs_per_day': _FormatDigits(try_jobs_per_day),
-      'average_regression_range_size': _FormatDigits(
-          average_regression_range_size),
-      'median_regression_range_size': median_regression_range_size,
-      'average_execution_time': _FormatSecondsAsHMS(_FormatDigits(
-          average_execution_time)),
-      'median_execution_time': _FormatSecondsAsHMS(_FormatDigits(
-          median_execution_time)),
-      'average_end_to_end_time': _FormatSecondsAsHMS(_FormatDigits(
-          average_end_to_end_time)),
-      'median_end_to_end_time': _FormatSecondsAsHMS(_FormatDigits(
-          median_end_to_end_time)),
-      'average_time_in_queue': _FormatSecondsAsHMS(
-          _FormatDigits(average_time_in_queue)),
-      'median_time_in_queue': _FormatSecondsAsHMS(_FormatDigits(
-          median_time_in_queue)),
-      'average_commits_analyzed': _FormatDigits(average_commits_analyzed),
-      'median_commits_analyzed': median_commits_analyzed,
-      'longest_execution_time': longest_execution_time,
-      'shortest_execution_time': shortest_execution_time,
-      'number_of_try_jobs': number_of_try_jobs,
-      'detection_rate': _FormatDigits(detection_rate),
-      'error_rate': _FormatDigits(error_rate),
-      'time_per_revision': _FormatSecondsAsHMS(
-          _FormatDigits(time_per_revision)),
-      'under_five_minutes_rate': _FormatDigits(under_five_minutes_rate),
-      'under_fifteen_minutes_rate': _FormatDigits(under_fifteen_minutes_rate),
-      'under_thirty_minutes_rate': _FormatDigits(under_thirty_minutes_rate),
-      'over_thirty_minutes_rate': _FormatDigits(over_thirty_minutes_rate),
-      'request_spike_count': spike_count,
-      'request_spike_average_size': average_spike_size,
-      'request_spike_maximum_size': maximum_spike_size,
+      'try_jobs_per_day':
+          _FormatDigits(try_jobs_per_day),
+      'average_regression_range_size':
+          _FormatDigits(average_regression_range_size),
+      'median_regression_range_size':
+          median_regression_range_size,
+      'average_execution_time':
+          _FormatSecondsAsHMS(_FormatDigits(average_execution_time)),
+      'median_execution_time':
+          _FormatSecondsAsHMS(_FormatDigits(median_execution_time)),
+      'average_end_to_end_time':
+          _FormatSecondsAsHMS(_FormatDigits(average_end_to_end_time)),
+      'median_end_to_end_time':
+          _FormatSecondsAsHMS(_FormatDigits(median_end_to_end_time)),
+      'average_time_in_queue':
+          _FormatSecondsAsHMS(_FormatDigits(average_time_in_queue)),
+      'median_time_in_queue':
+          _FormatSecondsAsHMS(_FormatDigits(median_time_in_queue)),
+      'average_commits_analyzed':
+          _FormatDigits(average_commits_analyzed),
+      'median_commits_analyzed':
+          median_commits_analyzed,
+      'longest_execution_time':
+          longest_execution_time,
+      'shortest_execution_time':
+          shortest_execution_time,
+      'number_of_try_jobs':
+          number_of_try_jobs,
+      'detection_rate':
+          _FormatDigits(detection_rate),
+      'error_rate':
+          _FormatDigits(error_rate),
+      'time_per_revision':
+          _FormatSecondsAsHMS(_FormatDigits(time_per_revision)),
+      'under_five_minutes_rate':
+          _FormatDigits(under_five_minutes_rate),
+      'under_fifteen_minutes_rate':
+          _FormatDigits(under_fifteen_minutes_rate),
+      'under_thirty_minutes_rate':
+          _FormatDigits(under_thirty_minutes_rate),
+      'over_thirty_minutes_rate':
+          _FormatDigits(over_thirty_minutes_rate),
+      'request_spike_count':
+          spike_count,
+      'request_spike_average_size':
+          average_spike_size,
+      'request_spike_maximum_size':
+          maximum_spike_size,
   }
 
 
@@ -397,10 +409,7 @@ def PrettyPrint(grouped_data, start_date, end_date, indent=0):
 
 
 def _SplitListByTryJobType(try_job_data_list):
-  categorized_data_dict = {
-      'compile': [],
-      'test': []
-  }
+  categorized_data_dict = {'compile': [], 'test': []}
   for try_job_data in try_job_data_list:
     if try_job_data.try_job_type.lower() == 'compile':
       categorized_data_dict['compile'].append(try_job_data)
@@ -465,10 +474,7 @@ def _SplitListByCompileTargets(try_job_data_list):
 
 
 def _SplitListByError(try_job_data_list):
-  categorized_data_dict = {
-      'with error': [],
-      'without error': []
-  }
+  categorized_data_dict = {'with error': [], 'without error': []}
   for try_job_data in try_job_data_list:
     if try_job_data.error:
       categorized_data_dict['with error'].append(try_job_data)
@@ -555,25 +561,33 @@ def GetArgsInOrder():
   command_line_args = sys.argv[1:]
 
   parser = argparse.ArgumentParser()
-  parser.add_argument('-b', action='store_true',
-                      help='group try job data by builder')
-  parser.add_argument('-c', action='store_true',
-                      help=('group try job data by those with and without '
-                            'compile targets'))
-  parser.add_argument('-e', action='store_true',
-                      help=('group try job data by those with and without '
-                            'errors detected'))
-  parser.add_argument('-m', action='store_true',
-                      help='group try job data by master')
-  parser.add_argument('-p', action='store_true',
-                      help='group try job data by platform')
-  parser.add_argument('-r', action='store_true',
-                      help=('group try job data by those with and without '
-                            'heuristic results'))
-  parser.add_argument('-t', action='store_true',
-                      help='group try job data by type (compile, test)')
-  parser.add_argument('--trybot', action='store_true',
-                      help='group try job data by trybot')
+  parser.add_argument(
+      '-b', action='store_true', help='group try job data by builder')
+  parser.add_argument(
+      '-c',
+      action='store_true',
+      help=('group try job data by those with and without '
+            'compile targets'))
+  parser.add_argument(
+      '-e',
+      action='store_true',
+      help=('group try job data by those with and without '
+            'errors detected'))
+  parser.add_argument(
+      '-m', action='store_true', help='group try job data by master')
+  parser.add_argument(
+      '-p', action='store_true', help='group try job data by platform')
+  parser.add_argument(
+      '-r',
+      action='store_true',
+      help=('group try job data by those with and without '
+            'heuristic results'))
+  parser.add_argument(
+      '-t',
+      action='store_true',
+      help='group try job data by type (compile, test)')
+  parser.add_argument(
+      '--trybot', action='store_true', help='group try job data by trybot')
 
   args_dict = vars(parser.parse_args())
 

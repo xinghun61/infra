@@ -13,30 +13,30 @@ from libs.gitiles.diff import ChangeType
 # TODO(http://crbug/644476): better name for this class; i.e., without
 # the extraneous \"Info\" at the very least.
 # TODO(http://crbug.com/659346): coverage tests for the smart constructors.
-class FileChangeInfo(namedtuple('FileChangeInfo',
-    ['change_type', 'old_path', 'new_path'])):
+class FileChangeInfo(
+    namedtuple('FileChangeInfo', ['change_type', 'old_path', 'new_path'])):
   """Represents a file change (add/delete/modify/rename/copy/etc)."""
   __slots__ = ()
 
   @classmethod
-  def Modify(cls, path): # pragma: no cover
+  def Modify(cls, path):  # pragma: no cover
     return cls(ChangeType.MODIFY, path, path)
 
   @classmethod
-  def Add(cls, path): # pragma: no cover
+  def Add(cls, path):  # pragma: no cover
     # Stay the same as gitile.
     return cls(ChangeType.ADD, None, path)
 
   @classmethod
-  def Delete(cls, path): # pragma: no cover
+  def Delete(cls, path):  # pragma: no cover
     return cls(ChangeType.DELETE, path, None)
 
   @classmethod
-  def Rename(cls, old_path, new_path): # pragma: no cover
+  def Rename(cls, old_path, new_path):  # pragma: no cover
     return cls(ChangeType.RENAME, old_path, new_path)
 
   @classmethod
-  def Copy(cls, old_path, new_path): # pragma: no cover
+  def Copy(cls, old_path, new_path):  # pragma: no cover
     return cls(ChangeType.COPY, old_path, new_path)
 
   @classmethod
@@ -70,16 +70,26 @@ class Contributor(namedtuple('Contributor', ['name', 'email', 'time'])):
   __slots__ = ()
 
 
-class ChangeLog(namedtuple('ChangeLog',
-    ['author', 'committer', 'revision', 'commit_position', 'message',
-     'touched_files', 'commit_url', 'code_review_url', 'reverted_revision',
-     'review_server_host', 'review_change_id'])):
+class ChangeLog(
+    namedtuple('ChangeLog', [
+        'author', 'committer', 'revision', 'commit_position', 'message',
+        'touched_files', 'commit_url', 'code_review_url', 'reverted_revision',
+        'review_server_host', 'review_change_id'
+    ])):
   """Represents the change log of a revision."""
   __slots__ = ()
 
-  def __new__(cls, author, committer, revision, commit_position, message,
-              touched_files, commit_url, code_review_url=None,
-              reverted_revision=None, review_server_host=None,
+  def __new__(cls,
+              author,
+              committer,
+              revision,
+              commit_position,
+              message,
+              touched_files,
+              commit_url,
+              code_review_url=None,
+              reverted_revision=None,
+              review_server_host=None,
               review_change_id=None):
     return super(cls, ChangeLog).__new__(
         cls, author, committer, revision, commit_position, message,
@@ -120,18 +130,16 @@ class ChangeLog(namedtuple('ChangeLog',
     for touched_file_info in info['touched_files']:
       if isinstance(touched_file_info, dict):
         touched_file_info = FileChangeInfo.FromDict(touched_file_info)
-      if not isinstance(touched_file_info, FileChangeInfo): # pragma: no cover
-        raise TypeError("expected FileChangeInfo but got %s"
-            % touched_file_info.__class__.__name__)
+      if not isinstance(touched_file_info, FileChangeInfo):  # pragma: no cover
+        raise TypeError("expected FileChangeInfo but got %s" %
+                        touched_file_info.__class__.__name__)
       touched_files.append(touched_file_info)
 
     return ChangeLog(
         Contributor(info['author']['name'], info['author']['email'],
                     info['author']['time']),
         Contributor(info['committer']['name'], info['committer']['email'],
-                    info['committer']['time']),
-        info['revision'], info['commit_position'], info['message'],
-        touched_files, info['commit_url'], info['code_review_url'],
-        info['reverted_revision'], info.get('review_server_host'),
-        info.get('review_change_id')
-    )
+                    info['committer']['time']), info['revision'],
+        info['commit_position'], info['message'], touched_files,
+        info['commit_url'], info['code_review_url'], info['reverted_revision'],
+        info.get('review_server_host'), info.get('review_change_id'))

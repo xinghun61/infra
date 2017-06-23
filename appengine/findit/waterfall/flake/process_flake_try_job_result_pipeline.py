@@ -19,8 +19,7 @@ def _GetSwarmingTaskIdForTryJob(report, revision, step_name, test_name):
 
   http_client = HttpClientAppengine()
 
-  step_result = report.get('result', {}).get(revision, {}).get(
-      step_name, {})
+  step_result = report.get('result', {}).get(revision, {}).get(step_name, {})
   pass_fail_counts = step_result.get('pass_fail_counts', {}).get(test_name)
   task_ids = step_result.get('step_metadata', {}).get('swarm_task_ids', [])
 

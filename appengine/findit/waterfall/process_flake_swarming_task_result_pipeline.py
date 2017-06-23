@@ -13,7 +13,6 @@ from waterfall import build_util
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
 
-
 _CHROMIUM_REPO_URL = 'https://chromium.googlesource.com/chromium/src.git'
 
 
@@ -42,13 +41,24 @@ class ProcessFlakeSwarmingTaskResultPipeline(
   generate a dict for statuses for each test run.
   """
 
-  def _UpdateMasterFlakeAnalysis(
-      self, master_name, builder_name, build_number, step_name,
-      master_build_number, test_name, version_number, pass_rate,
-      flake_swarming_task, has_valid_artifact=True):
+  def _UpdateMasterFlakeAnalysis(self,
+                                 master_name,
+                                 builder_name,
+                                 build_number,
+                                 step_name,
+                                 master_build_number,
+                                 test_name,
+                                 version_number,
+                                 pass_rate,
+                                 flake_swarming_task,
+                                 has_valid_artifact=True):
     """Update MasterFlakeAnalysis to include result of the swarming task."""
     master_flake_analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, master_build_number, step_name, test_name,
+        master_name,
+        builder_name,
+        master_build_number,
+        step_name,
+        test_name,
         version=version_number)
     logging.info(
         'Updating MasterFlakeAnalysis swarming task data %s/%s/%s/%s/%s',
@@ -62,14 +72,14 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     data_point.iterations = flake_swarming_task.tries
 
     # Include git information about each build that was run.
-    build_info = build_util.GetBuildInfo(
-        master_name, builder_name, build_number)
+    build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                         build_number)
     data_point.commit_position = build_info.commit_position
     data_point.git_hash = build_info.chromium_revision
 
     if build_number > 0:
-      previous_build = build_util.GetBuildInfo(
-          master_name, builder_name, build_number - 1)
+      previous_build = build_util.GetBuildInfo(master_name, builder_name,
+                                               build_number - 1)
       data_point.previous_build_commit_position = previous_build.commit_position
       data_point.previous_build_git_hash = previous_build.chromium_revision
       data_point.blame_list = _GetCommitsBetweenRevisions(
@@ -87,9 +97,9 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     master_flake_analysis.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def _CheckTestsRunStatuses(self, output_json, master_name,
-                             builder_name, build_number, step_name,
-                             master_build_number, test_name, version_number):
+  def _CheckTestsRunStatuses(self, output_json, master_name, builder_name,
+                             build_number, step_name, master_build_number,
+                             test_name, version_number):
     """Checks result status for each test run and saves the numbers accordingly.
 
     Args:
@@ -134,8 +144,7 @@ class ProcessFlakeSwarmingTaskResultPipeline(
 
     return tests_statuses
 
-  def _GetArgs(self, master_name, builder_name, build_number,
-               step_name, *args):
+  def _GetArgs(self, master_name, builder_name, build_number, step_name, *args):
     master_build_number = args[0]
     test_name = args[1]
     version_number = args[2]
@@ -144,27 +153,36 @@ class ProcessFlakeSwarmingTaskResultPipeline(
 
   # Unused Argument - pylint: disable=W0612,W0613
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def _GetSwarmingTask(self, master_name, builder_name, build_number,
-                       step_name, master_build_number, test_name, _):
+  def _GetSwarmingTask(self, master_name, builder_name, build_number, step_name,
+                       master_build_number, test_name, _):
     # Gets the appropriate kind of swarming task (FlakeSwarmingTask).
     return FlakeSwarmingTask.Get(master_name, builder_name, build_number,
                                  step_name, test_name)
 
-  def _SaveLastAttemptedSwarmingTask(
-      self, master_name, builder_name, build_number, step_name, task_id, *args):
+  def _SaveLastAttemptedSwarmingTask(self, master_name, builder_name,
+                                     build_number, step_name, task_id, *args):
     # Saves the last-attempted swarming task id to the corresponding analysis.
     master_build_number, test_name, version_number = args
     analysis = MasterFlakeAnalysis.GetVersion(
-        master_name, builder_name, master_build_number, step_name, test_name,
+        master_name,
+        builder_name,
+        master_build_number,
+        step_name,
+        test_name,
         version=version_number)
     analysis.last_attempted_build_number = build_number
     analysis.last_attempted_swarming_task_id = task_id
     analysis.put()
 
-   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, step_name,
-          task_id=None, *args):
-    self._SaveLastAttemptedSwarmingTask(
-        master_name, builder_name, build_number, step_name, task_id, *args)
+  # Arguments number differs from overridden method - pylint: disable=W0221
+  def run(self,
+          master_name,
+          builder_name,
+          build_number,
+          step_name,
+          task_id=None,
+          *args):
+    self._SaveLastAttemptedSwarmingTask(master_name, builder_name, build_number,
+                                        step_name, task_id, *args)
     super(ProcessFlakeSwarmingTaskResultPipeline, self).run(
         master_name, builder_name, build_number, step_name, task_id, *args)

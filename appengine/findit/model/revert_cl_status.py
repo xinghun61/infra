@@ -7,7 +7,6 @@ COMMITTED = 0
 DUPLICATE = 1
 FALSE_POSITIVE = 2
 
-
 STATUS_TO_DESCRIPTION = {
     COMMITTED: 'committed',
     DUPLICATE: 'duplicate',

@@ -9,6 +9,7 @@ from model.wf_culprit import WfCulprit
 
 
 class WfCulpritTest(unittest.TestCase):
+
   def testCrNotificationProcessed(self):
     culprit = WfCulprit.Create('chromium', 'r1', 123)
     for s in (status.COMPLETED, status.RUNNING):

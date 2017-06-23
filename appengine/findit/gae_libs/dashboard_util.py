@@ -27,15 +27,18 @@ def GetStartAndEndDates(start_date=None, end_date=None):
   midnight_yesterday = midnight_today - timedelta(days=1)
   midnight_tomorrow = midnight_today + timedelta(days=1)
 
-  start_date = (datetime.strptime(start_date, DATE_FORMAT) if start_date
-                else midnight_yesterday)
-  end_date = (datetime.strptime(end_date, DATE_FORMAT) if end_date else
-              midnight_tomorrow)
+  start_date = (datetime.strptime(start_date, DATE_FORMAT)
+                if start_date else midnight_yesterday)
+  end_date = (datetime.strptime(end_date, DATE_FORMAT)
+              if end_date else midnight_tomorrow)
 
   return start_date, end_date
 
 
-def GetPagedResults(query, order_property, cursor=None, direction=_NEXT,
+def GetPagedResults(query,
+                    order_property,
+                    cursor=None,
+                    direction=_NEXT,
                     page_size=PAGE_SIZE):
   """Paging the query results with page_size.
 

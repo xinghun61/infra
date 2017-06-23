@@ -32,8 +32,8 @@ class IteratorTest(TestCase):
     for index, entity in enumerate(Iterate(query, batch_run=False)):
       self.assertEqual(entity.index, index)
 
-    for index, entity in enumerate(Iterate(query, batch_size=1,
-                                           batch_run=False)):
+    for index, entity in enumerate(
+        Iterate(query, batch_size=1, batch_run=False)):
       self.assertEqual(entity.index, index)
 
   def testIterateByEntityBatch(self):

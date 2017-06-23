@@ -99,9 +99,8 @@ def _GetFailedRevisionFromCompileResult(compile_result):
   Returns:
     The failed revision from compile_results, or None if not found.
   """
-  return (
-      compile_result.get('report', {}).get('culprit') if compile_result
-      else None)
+  return (compile_result.get('report', {}).get('culprit')
+          if compile_result else None)
 
 
 def _GetHeuristicSuspectedCLs(analysis):
@@ -143,7 +142,7 @@ def _CompileFailureIsFlaky(result):
   sub_ranges = result.get('report', {}).get('metadata', {}).get('sub_ranges')
 
   if (culprit or not try_job_result or
-     'failed' not in try_job_result.values() or not sub_ranges):
+      'failed' not in try_job_result.values() or not sub_ranges):
     return False
 
   tested_revisions = try_job_result.keys()
@@ -162,8 +161,8 @@ def _GetUpdatedAnalysisResult(analysis, flaky_failures):
     return [], False
 
   analysis_result = copy.deepcopy(analysis.result)
-  all_flaky = swarming_util.UpdateAnalysisResult(
-      analysis_result, flaky_failures)
+  all_flaky = swarming_util.UpdateAnalysisResult(analysis_result,
+                                                 flaky_failures)
 
   return analysis_result, all_flaky
 
@@ -185,8 +184,8 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
       if change_log:
         culprits[failed_revision]['commit_position'] = (
             change_log.commit_position)
-        culprits[failed_revision]['url'] = (
-            change_log.code_review_url or change_log.commit_url)
+        culprits[failed_revision]['url'] = (change_log.code_review_url or
+                                            change_log.commit_url)
 
     return culprits
 
@@ -207,9 +206,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
       for step_name, tests in result['report']['culprits'].iteritems():
         culprit_map[step_name]['tests'] = {}
         for test_name, revision in tests.iteritems():
-          culprit_map[step_name]['tests'][test_name] = {
-              'revision': revision
-          }
+          culprit_map[step_name]['tests'][test_name] = {'revision': revision}
           failed_revisions.add(revision)
     return culprit_map, list(failed_revisions)
 
@@ -230,9 +227,8 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     return culprit_data
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(
-      self, master_name, builder_name, build_number, try_job_type,
-      try_job_id, result):
+  def run(self, master_name, builder_name, build_number, try_job_type,
+          try_job_id, result):
     """Identifies the information for failed revisions.
 
     Please refer to try_job_result_format.md for format check.
@@ -250,9 +246,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
           flaky_failures = {'compile': []}
 
         if culprits:
-          result['culprit'] = {
-              'compile': culprits[failed_revision]
-          }
+          result['culprit'] = {'compile': culprits[failed_revision]}
           try_job_data.culprits = {'compile': failed_revision}
       else:  # try_job_type is 'test'.
         culprit_map, failed_revisions = self._FindCulpritForEachTestFailure(
@@ -271,10 +265,9 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     def UpdateTryJobResult():
       try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
       if culprits:
-        results_to_update = (
-            try_job_result.compile_results if
-            try_job_type == failure_type.COMPILE else
-            try_job_result.test_results)
+        results_to_update = (try_job_result.compile_results
+                             if try_job_type == failure_type.COMPILE else
+                             try_job_result.test_results)
         updated = False
         for result_to_update in results_to_update:
           if try_job_id == result_to_update['try_job_id']:  # pragma: no branch
@@ -298,10 +291,10 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
       # culprits were found or failures are flaky.
       updated_result, all_flaked = _GetUpdatedAnalysisResult(
           analysis, flaky_failures)
-      updated_result_status = _GetResultAnalysisStatus(
-          analysis, result, all_flaked)
-      updated_suspected_cls = _GetSuspectedCLs(
-          analysis, try_job_type, result, culprits)
+      updated_result_status = _GetResultAnalysisStatus(analysis, result,
+                                                       all_flaked)
+      updated_suspected_cls = _GetSuspectedCLs(analysis, try_job_type, result,
+                                               culprits)
       if (analysis.result_status != updated_result_status or
           analysis.suspected_cls != updated_suspected_cls or
           analysis.result != updated_result):  # pragma: no cover
@@ -324,9 +317,10 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
               result.get('report', {}).get('result', {}).get(revision))
 
         suspected_cl_util.UpdateSuspectedCL(
-            culprit['repo_name'], revision, culprit.get('commit_position'),
-            analysis_approach_type.TRY_JOB, master_name, builder_name,
-            build_number, try_job_type, failures, None)
+            culprit['repo_name'], revision,
+            culprit.get('commit_position'), analysis_approach_type.TRY_JOB,
+            master_name, builder_name, build_number, try_job_type, failures,
+            None)
 
     # Store try-job results.
     UpdateTryJobResult()
@@ -345,6 +339,6 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     UpdateSuspectedCLs()
     if not culprits:
       return
-    yield RevertAndNotifyCulpritPipeline(
-        master_name, builder_name, build_number, culprits, heuristic_cls,
-        try_job_type)
+    yield RevertAndNotifyCulpritPipeline(master_name, builder_name,
+                                         build_number, culprits, heuristic_cls,
+                                         try_job_type)

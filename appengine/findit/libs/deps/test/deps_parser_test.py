@@ -11,11 +11,12 @@ from libs.deps import deps_parser
 
 
 class DepsParserTest(unittest.TestCase):
+
   def testVarNotDefined(self):
     local_scope = {'vars': {}}
     var_impl = deps_parser.VarImpl(local_scope)
-    self.assertRaisesRegexp(
-        KeyError, 'Var is not defined: a', var_impl.Lookup, 'a')
+    self.assertRaisesRegexp(KeyError, 'Var is not defined: a', var_impl.Lookup,
+                            'a')
 
   def testVarDefined(self):
     local_scope = {'vars': {'a': '1'}}
@@ -69,9 +70,7 @@ class DepsParserTest(unittest.TestCase):
               'depA': Var('cr_repo') + '/a.git' + '@' + Var('a'),
             }"""),
         keys=['deps'])
-    expected_deps = {
-        'depA': 'https://cr.repo/a.git@1'
-    }
+    expected_deps = {'depA': 'https://cr.repo/a.git@1'}
     self.assertEqual(1, len(result))
     self.assertEqual(expected_deps, result[0])
 
@@ -97,10 +96,10 @@ class DepsParserTest(unittest.TestCase):
         keys=['deps_os'])
     expected_deps_os = {
         'win': {
-          'depA': 'https://cr.repo/a.git@1'
+            'depA': 'https://cr.repo/a.git@1'
         },
         'unix': {
-          'depA': None
+            'depA': None
         }
     }
     self.assertEqual(1, len(result))
@@ -177,76 +176,145 @@ class DepsParserTest(unittest.TestCase):
         # Tuples of deps, deps_os, os_list and expected_deps.
         (
             # OS doesn't need module.
-            {'foo': 'default_foo'},
-            {'os1': {'foo': None}},
+            {
+                'foo': 'default_foo'
+            },
+            {
+                'os1': {
+                    'foo': None
+                }
+            },
             ['os1'],
-            {'foo': None}
-        ),
+            {
+                'foo': None
+            }),
         (
             # OS wants a different version of module.
-            {'foo': 'default_foo'},
-            {'os1': {'foo': 'os1_foo'}},
+            {
+                'foo': 'default_foo'
+            },
+            {
+                'os1': {
+                    'foo': 'os1_foo'
+                }
+            },
             ['os1'],
-            {'foo': 'os1_foo'}
-        ),
+            {
+                'foo': 'os1_foo'
+            }),
         (
             # OS with no overrides at all.
-            {'foo': 'default_foo'},
-            {'os1': {'foo': None}},
+            {
+                'foo': 'default_foo'
+            },
+            {
+                'os1': {
+                    'foo': None
+                }
+            },
             ['os2'],
-            {'foo': 'default_foo'}
-        ),
+            {
+                'foo': 'default_foo'
+            }),
         (
             # One OS doesn't need module, one OS wants the default.
-            {'foo': 'default_foo'},
-            {'os1': {'foo': None},
-             'os2': {}},
+            {
+                'foo': 'default_foo'
+            },
+            {
+                'os1': {
+                    'foo': None
+                },
+                'os2': {}
+            },
             ['os1', 'os2'],
-            {'foo': 'default_foo'}
-        ),
+            {
+                'foo': 'default_foo'
+            }),
         (
             # One OS doesn't need module, another OS wants a special version.
-            {'foo': 'default_foo'},
-            {'os1': {'foo': None},
-             'os2': {'foo': 'os2_foo'}},
+            {
+                'foo': 'default_foo'
+            },
+            {
+                'os1': {
+                    'foo': None
+                },
+                'os2': {
+                    'foo': 'os2_foo'
+                }
+            },
             ['os1', 'os2'],
-            {'foo': 'os2_foo'}
-        ),
+            {
+                'foo': 'os2_foo'
+            }),
         (
             # One OS wants to add a module.
-            {'foo': 'default_foo'},
-            {'os1': {'bar': 'os1_bar'}},
+            {
+                'foo': 'default_foo'
+            },
+            {
+                'os1': {
+                    'bar': 'os1_bar'
+                }
+            },
             ['os1'],
-            {'foo': 'default_foo',
-             'bar': 'os1_bar'}
-        ),
+            {
+                'foo': 'default_foo',
+                'bar': 'os1_bar'
+            }),
         (
             # One OS wants to add a module. One doesn't care.
-            {'foo': 'default_foo'},
-            {'os1': {'bar': 'os1_bar'}},
+            {
+                'foo': 'default_foo'
+            },
+            {
+                'os1': {
+                    'bar': 'os1_bar'
+                }
+            },
             ['os1', 'os2'],
-            {'foo': 'default_foo',
-             'bar': 'os1_bar'}
-        ),
+            {
+                'foo': 'default_foo',
+                'bar': 'os1_bar'
+            }),
         (
             # Two OSes want to add a module with the same definition.
-            {'foo': 'default_foo'},
-            {'os1': {'bar': 'os12_bar'},
-             'os2': {'bar': 'os12_bar'}},
+            {
+                'foo': 'default_foo'
+            },
+            {
+                'os1': {
+                    'bar': 'os12_bar'
+                },
+                'os2': {
+                    'bar': 'os12_bar'
+                }
+            },
             ['os1', 'os2'],
-            {'foo': 'default_foo',
-             'bar': 'os12_bar'}
-        ),
+            {
+                'foo': 'default_foo',
+                'bar': 'os12_bar'
+            }),
         (
             # Two OSes want different versions of the same module.
-            {'foo': 'default_foo'},
-            {'os1': {'bar': 'os_bar1'},
-             'os2': {'bar': 'os_bar2'}},
+            {
+                'foo': 'default_foo'
+            },
+            {
+                'os1': {
+                    'bar': 'os_bar1'
+                },
+                'os2': {
+                    'bar': 'os_bar2'
+                }
+            },
             ['os2', 'os1'],
-            {'foo': 'default_foo',
-             'bar': 'os_bar1'}
-        ),
-      ]
+            {
+                'foo': 'default_foo',
+                'bar': 'os_bar1'
+            }),
+    ]
 
     for deps, deps_os, target_os_list, expected_deps in test_data:
       orig_deps = copy.deepcopy(deps)
@@ -263,6 +331,7 @@ class DepsParserTest(unittest.TestCase):
     root_dep_deps_file = 'DEPS'
 
     class DummyDEPSLoader(deps_parser.DEPSLoader):
+
       def __init__(self, test):
         self.test = test
 
@@ -301,16 +370,14 @@ class DepsParserTest(unittest.TestCase):
                 'repo_url': 'https://a.git',
                 'revision': '1234a',
                 'deps_file': root_dep_deps_file,
-                'children': {
-                }
+                'children': {}
             },
             'src/c/': {
                 'path': 'src/c/',
                 'repo_url': 'https://c.git',
                 'revision': '1234c',
                 'deps_file': root_dep_deps_file,
-                'children': {
-                }
+                'children': {}
             },
         }
     }
@@ -325,8 +392,7 @@ class DepsParserTest(unittest.TestCase):
                 'repo_url': 'https://a.git',
                 'revision': '1234a',
                 'deps_file': root_dep_deps_file,
-                'children': {
-                }
+                'children': {}
             }
         }
     }
@@ -341,44 +407,41 @@ class DepsParserTest(unittest.TestCase):
                 'repo_url': 'https://a.git',
                 'revision': '1234a',
                 'deps_file': root_dep_deps_file,
-                'children': {
-                }
+                'children': {}
             },
             'src/b/': {
                 'path': 'src/b/',
                 'repo_url': 'https://b.git',
                 'revision': None,
                 'deps_file': root_dep_deps_file,
-                'children': {
-                }
+                'children': {}
             },
             'src/c/': {
                 'path': 'src/c/',
                 'repo_url': 'https://c.git',
                 'revision': '1234c',
                 'deps_file': root_dep_deps_file,
-                'children': {
-                }
+                'children': {}
             },
             'src/d/': {
                 'path': 'src/d/',
                 'repo_url': 'https://d.git',
                 'revision': '1234d',
                 'deps_file': root_dep_deps_file,
-                'children': {
-                }
+                'children': {}
             },
         }
     }
 
-
     def _Test(target_os_list, expected_deps_tree_json):
       root_dep = dependency.Dependency(
-          root_dep_path, root_dep_repo_url, root_dep_revision,
+          root_dep_path,
+          root_dep_repo_url,
+          root_dep_revision,
           deps_file=root_dep_deps_file)
 
-      deps_parser.UpdateDependencyTree(
-          root_dep, target_os_list, DummyDEPSLoader(self))
+      deps_parser.UpdateDependencyTree(root_dep, target_os_list,
+                                       DummyDEPSLoader(self))
 
       self.assertEqual(expected_deps_tree_json, root_dep.ToDict())
 

@@ -15,8 +15,7 @@ class ProcessSwarmingTaskResultPipeline(ProcessBaseSwarmingTaskResultPipeline):
   """
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def _GetArgs(self, master_name, builder_name, build_number,
-               step_name):
+  def _GetArgs(self, master_name, builder_name, build_number, step_name):
     return master_name, builder_name, build_number, step_name
 
   # Arguments number differs from overridden method - pylint: disable=W0221

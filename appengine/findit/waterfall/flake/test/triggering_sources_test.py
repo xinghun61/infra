@@ -10,14 +10,12 @@ from waterfall.flake import triggering_sources
 class FlakeAnalysisServiceTest(unittest.TestCase):
 
   def testGetDescriptionForTriggeringSource(self):
-    self.assertEqual(
-        'The analysis was triggered manually through Findit UI',
-        triggering_sources.GetDescriptionForTriggeringSource(
-            triggering_sources.FINDIT_UI, True))
-    self.assertEqual(
-        'The analysis was triggered manually through Findit API',
-        triggering_sources.GetDescriptionForTriggeringSource(
-            triggering_sources.FINDIT_API, True))
+    self.assertEqual('The analysis was triggered manually through Findit UI',
+                     triggering_sources.GetDescriptionForTriggeringSource(
+                         triggering_sources.FINDIT_UI, True))
+    self.assertEqual('The analysis was triggered manually through Findit API',
+                     triggering_sources.GetDescriptionForTriggeringSource(
+                         triggering_sources.FINDIT_API, True))
     self.assertEqual(
         'The analysis was triggered automatically through Findit pipeline',
         triggering_sources.GetDescriptionForTriggeringSource(
@@ -26,4 +24,3 @@ class FlakeAnalysisServiceTest(unittest.TestCase):
         'The analysis was triggered automatically through Findit API',
         triggering_sources.GetDescriptionForTriggeringSource(
             triggering_sources.FINDIT_API, False))
-

@@ -15,10 +15,10 @@ def GetCodeReviewForReview(review_server_host, code_review_settings=None):
     return None
 
   settings = code_review_settings or {}
-  if review_server_host in settings.get(
-      'rietveld_hosts', ['codereview.chromium.org']):
+  if review_server_host in settings.get('rietveld_hosts',
+                                        ['codereview.chromium.org']):
     return Rietveld(review_server_host)
-  elif review_server_host in settings.get(
-      'gerrit_hosts', ['chromium-review.googlesource.com']):
+  elif review_server_host in settings.get('gerrit_hosts',
+                                          ['chromium-review.googlesource.com']):
     return Gerrit(review_server_host)
   return None

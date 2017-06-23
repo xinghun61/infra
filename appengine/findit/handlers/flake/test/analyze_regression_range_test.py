@@ -14,25 +14,18 @@ from waterfall.test import wf_testcase
 
 
 class AnalyzeRegressionRangeTest(wf_testcase.WaterfallTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/waterfall/analyze_regression_range', AnalyzeRegressionRange)],
-                                       debug=True)
+  app_module = webapp2.WSGIApplication(
+      [('/waterfall/analyze_regression_range', AnalyzeRegressionRange)],
+      debug=True)
 
   def testValidateInput(self):
-    self.assertTrue(
-        analyze_regression_range._ValidateInput('1', '1', '100'))
-    self.assertTrue(
-        analyze_regression_range._ValidateInput('2', '1', '100'))
-    self.assertTrue(
-        analyze_regression_range._ValidateInput('', '1', '100'))
-    self.assertTrue(
-        analyze_regression_range._ValidateInput('1', '', '100'))
-    self.assertFalse(
-        analyze_regression_range._ValidateInput('', '', '100'))
-    self.assertFalse(
-        analyze_regression_range._ValidateInput('a', '1', '100'))
-    self.assertFalse(
-        analyze_regression_range._ValidateInput('1', 'a', '100'))
+    self.assertTrue(analyze_regression_range._ValidateInput('1', '1', '100'))
+    self.assertTrue(analyze_regression_range._ValidateInput('2', '1', '100'))
+    self.assertTrue(analyze_regression_range._ValidateInput('', '1', '100'))
+    self.assertTrue(analyze_regression_range._ValidateInput('1', '', '100'))
+    self.assertFalse(analyze_regression_range._ValidateInput('', '', '100'))
+    self.assertFalse(analyze_regression_range._ValidateInput('a', '1', '100'))
+    self.assertFalse(analyze_regression_range._ValidateInput('1', 'a', '100'))
 
   def testGetLowerAndUpperBoundCopmmitPositions(self):
     self.assertEqual(
@@ -101,9 +94,8 @@ class AnalyzeRegressionRangeTest(wf_testcase.WaterfallTestCase):
         },
         status=400)
 
-    self.assertEqual(
-        'Input format is invalid.',
-        response.json_body.get('error_message'))
+    self.assertEqual('Input format is invalid.',
+                     response.json_body.get('error_message'))
 
   @mock.patch.object(users, 'is_current_user_admin', return_value=True)
   @mock.patch.object(
@@ -127,6 +119,5 @@ class AnalyzeRegressionRangeTest(wf_testcase.WaterfallTestCase):
         },
         status=400)
 
-    self.assertEqual(
-        'Flake analysis was deleted unexpectedly!',
-        response.json_body.get('error_message'))
+    self.assertEqual('Flake analysis was deleted unexpectedly!',
+                     response.json_body.get('error_message'))

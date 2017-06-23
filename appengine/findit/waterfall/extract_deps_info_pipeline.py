@@ -49,8 +49,8 @@ def _GetDependencies(chromium_revision, os_platform):
   deps = {}
   dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
       CachedGitilesRepository.Factory(HttpClientAppengine()))
-  for path, dependency in dep_fetcher.GetDependency(
-      chromium_revision, os_platform).iteritems():
+  for path, dependency in dep_fetcher.GetDependency(chromium_revision,
+                                                    os_platform).iteritems():
     deps[path] = {
         'repo_url': dependency.repo_url,
         'revision': dependency.revision,
@@ -89,8 +89,8 @@ def _DetectDependencyRolls(change_logs, os_platform):
       if touched_file['new_path'] == 'DEPS':
         # In git, r^ refers to the previous revision of r.
         old_revision = '%s^' % revision
-        rolls = dep_fetcher.GetDependencyRolls(
-            old_revision, revision, os_platform)
+        rolls = dep_fetcher.GetDependencyRolls(old_revision, revision,
+                                               os_platform)
         deps_rolls[revision] = [roll.ToDict() for roll in rolls]
         break
 
@@ -140,8 +140,8 @@ class ExtractDEPSInfoPipeline(BasePipeline):
       return {'deps': {}, 'deps_rolls': {}}
 
     chromium_revision = failure_info['chromium_revision']
-    os_platform = _GetOSPlatformName(
-        failure_info['master_name'], failure_info['builder_name'])
+    os_platform = _GetOSPlatformName(failure_info['master_name'],
+                                     failure_info['builder_name'])
 
     return {
         'deps': _GetDependencies(chromium_revision, os_platform),

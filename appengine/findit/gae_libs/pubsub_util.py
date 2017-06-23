@@ -8,7 +8,6 @@ import httplib2
 from googleapiclient import discovery
 from oauth2client import client as oauth2client
 
-
 PUBSUB_SCOPES = [
     'https://www.googleapis.com/auth/pubsub',
 ]

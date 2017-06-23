@@ -1,7 +1,6 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """This module offers a serializer for ``MetaDict``.
 
 The ``MetaDictSerializer`` itself is a ``MetaDict``, only it is an ordered
@@ -108,8 +107,10 @@ class MetaDictSerializer(MetaDict):
 
     return element_list
 
-  def FromList(self, element_list,
-               meta_constructor=None, element_constructor=None):
+  def FromList(self,
+               element_list,
+               meta_constructor=None,
+               element_constructor=None):
     """De-serializes from element_list to an ``MetaDict``.
 
     Args:
@@ -135,7 +136,7 @@ class MetaDictSerializer(MetaDict):
     for key, serializer in self.iteritems():
       # Truncate the segment in the element list to construct
       # the ``MetaObject`` corresponding to ``key``.
-      segment = element_list[index : (index + serializer.Length())]
+      segment = element_list[index:(index + serializer.Length())]
       if not hasattr(serializer, 'is_meta'):
         meta_objs[key] = serializer.FromList(segment, element_constructor)
       else:

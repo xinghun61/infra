@@ -4,7 +4,6 @@
 
 import re
 
-
 AUTO_REVERT_OFF_PATTERN = re.compile(r'(NOAUTOREVERT)\s*=\s*true',
                                      re.IGNORECASE)
 

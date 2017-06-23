@@ -4,7 +4,6 @@
 
 import re
 
-
 # File extensions to filter out files from log.
 SUPPORTED_FILE_EXTENSIONS = [
     'c',
@@ -38,35 +37,28 @@ SUPPORTED_FILE_EXTENSIONS = [
     'txt',
 ]
 
-
 # Match file path separator: "/", "//", "\", "\\".
 PATH_SEPARATOR_PATTERN = r'(?:/{1,2}|\\{1,2})'
-
 
 # Match file/directory names, ".", and "..".
 # Some file/directory name may contain ' ', but it leads to noise if we try to
 # match them, so ignore for now.
 FILE_NAME_PATTERN = r'[\w+.-]+'
 
-
 # Match supported file extensions.
 # Sort extension list to avoid non-full match like 'c' matching 'c' in 'cpp'.
 FILE_EXTENSION_PATTERN = (
     r'(?:%s)' % '|'.join(sorted(SUPPORTED_FILE_EXTENSIONS, reverse=True)))
 
-
 # Match drive root directory on Windows, like "C:/" or "C:\\".
 WINDOWS_ROOT_PATTERN = r'[a-zA-Z]:{SEP}'.format(SEP=PATH_SEPARATOR_PATTERN)
-
 
 # Match system root directory on Linux/Mac.
 UNIX_ROOT_PATTERN = r'/+'
 
-
 # Match system/drive root on Linux/Mac/Windows.
 ROOT_DIR_PATTERN = r'(?:{WIN_ROOT}|{UNIX_ROOT})'.format(
     WIN_ROOT=WINDOWS_ROOT_PATTERN, UNIX_ROOT=UNIX_ROOT_PATTERN)
-
 
 # Match a full file path and line number.
 # It could match files with or without line numbers like below:
@@ -87,12 +79,11 @@ FILE_PATH_LINE_PATTERN = re.compile((
     r')'
     r'(?:[\(:](?:\[line )?(\d+))?'  # Line number might not be available.
     r'(?=\W+|$)'  # Non-path characters, match but no consume.
-    ).format(
-        ROOT_DIR=ROOT_DIR_PATTERN,
-        FILE_NAME=FILE_NAME_PATTERN,
-        SEP=PATH_SEPARATOR_PATTERN,
-        FILE_EXTENSION=FILE_EXTENSION_PATTERN))
-
+).format(
+    ROOT_DIR=ROOT_DIR_PATTERN,
+    FILE_NAME=FILE_NAME_PATTERN,
+    SEP=PATH_SEPARATOR_PATTERN,
+    FILE_EXTENSION=FILE_EXTENSION_PATTERN))
 
 # Patterns for Python stack trace frames.
 PYTHON_STACK_TRACE_FRAME_PATTERN_1 = re.compile(
@@ -123,8 +114,7 @@ JAVA_STACK_TRACE_FRAME_PATTERN = re.compile(
 JAVA_MAXIMUM_NUMBER_STACK_FRAMES = 4
 
 # Match the file path relative to the root src of a chromium repo checkout.
-CHROMIUM_SRC_PATTERN = re.compile(
-    r'.*/build/slave/\w+[^\t\n/]*/build/src/(.*)')
+CHROMIUM_SRC_PATTERN = re.compile(r'.*/build/slave/\w+[^\t\n/]*/build/src/(.*)')
 
 
 def NormalizeFilePath(file_path):
@@ -176,14 +166,7 @@ def ShouldIgnoreLine(line):
   are not related to the failure at all and could lead to false positive.
   """
   # TODO: log of ERROR level should be taken care of?
-  ignored_line_markers = (
-      'INFO:',
-      'WARNING:',
-      'ERROR',
-      'VERBOSE2',
-      '(INFO)',
-      '(CRITICAL)',
-      '(WARNING)',
-      'SUMMARY: AddressSanitizer',
-  )
+  ignored_line_markers = ('INFO:', 'WARNING:', 'ERROR', 'VERBOSE2', '(INFO)',
+                          '(CRITICAL)', '(WARNING)',
+                          'SUMMARY: AddressSanitizer',)
   return any(x in line for x in ignored_line_markers)

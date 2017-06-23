@@ -1,13 +1,11 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """An example of using Remote API to query datastore on live App Engine."""
 
 # During importing, sys.path will be setup appropriately.
-import remote_api # pylint: disable=W
+import remote_api  # pylint: disable=W
 from model.wf_step import WfStep
-
 
 # Set up the Remote API to use services on the live App Engine.
 remote_api.EnableRemoteApi(app_id='findit-for-me')

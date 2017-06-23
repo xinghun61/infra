@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+
 def ObscureEmails(emails, domains):
   """Obscures the given emails that are in the given domains."""
   obscured_emails = []

@@ -22,7 +22,6 @@ from infra_api_clients.codereview import cl_info
 from infra_api_clients.codereview import codereview
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 
-
 _RIETVELD_ISSUE_NUMBER_RE = re.compile('^/(\d+)/?.*')
 _PATCHSET_REVERTED_TO_ISSUE_REGEX = re.compile(
     r'A revert of this CL \(patchset #\d+ id:\d+\) has been '
@@ -138,6 +137,7 @@ class Rietveld(codereview.CodeReview):
       return None
 
   def _ParseClInfo(self, data, cl):
+
     def patchset_to_revision_func(cl, message):
       matches_cq = _PATCHSET_TO_REVISION_REGEX.match(message['text'])
       matches_manual = _PATCHSET_TO_REVISION_MANUAL_REGEX.match(message['text'])
@@ -164,7 +164,7 @@ class Rietveld(codereview.CodeReview):
       issue_url = matches.group('issueurl')
       url_parts = issue_url.split('/')
       # Support both https://host/1234 and https://host/1234/
-      change_id =  url_parts[-1] or url_parts[-2]
+      change_id = url_parts[-1] or url_parts[-2]
       reverter = message['sender']
       timestamp = time_util.DatetimeFromString(message['date'])
       revert_cl = self.GetClDetails(change_id)
@@ -184,7 +184,7 @@ class Rietveld(codereview.CodeReview):
         patchset_to_revision_func,
         patchset_reverted_to_issue_func,
         commit_attempt_func,
-      ]
+    ]
 
     # Sort by timestamp
     messages = sorted(
@@ -205,8 +205,8 @@ class Rietveld(codereview.CodeReview):
     url = 'https://%s/api/%s' % (self._server_hostname, change_id)
     status_code, content = self.HTTP_CLIENT.Get(url, params=params)
     if status_code == 200:  # pragma: no branch
-      return self._ParseClInfo(json.loads(content), cl_info.ClInfo(
-        self._server_hostname, change_id))
+      return self._ParseClInfo(
+          json.loads(content), cl_info.ClInfo(self._server_hostname, change_id))
     return None  # pragma: no cover
 
   def AddReviewers(self, change_id, reviewers, message=None):

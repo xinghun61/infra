@@ -1,7 +1,6 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Pulls historical swarming task metadata from Findit and prints a report."""
 
 from collections import defaultdict
@@ -10,14 +9,13 @@ import datetime
 import os
 import sys
 
-_FINDIT_DIR = os.path.join(os.path.dirname(__file__),
-                           os.path.pardir, os.path.pardir)
+_FINDIT_DIR = os.path.join(
+    os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
 from local_libs import remote_api
 
 from libs import analysis_status
 from model.wf_swarming_task import WfSwarmingTask
-
 
 NOT_AVAILABLE = 'N/A'
 
@@ -76,9 +74,7 @@ def _CategorizeSwarmingTaskData(swarming_task_list):
     }
   """
   categorized_data = defaultdict(
-      lambda: defaultdict(
-          lambda: defaultdict(
-              lambda: defaultdict(list))))
+      lambda: defaultdict(lambda: defaultdict(lambda: defaultdict(list))))
 
   for swarming_task in swarming_task_list:
     if (not swarming_task.parameters or not swarming_task.tests_statuses or
@@ -157,8 +153,7 @@ def _GetReportInformation(swarming_task_list, start_date, end_date):
             (swarming_task.started_time - swarming_task.created_time).seconds)
 
       # Number of iterations.
-      iterations_to_rerun = swarming_task.parameters.get(
-          'iterations_to_rerun')
+      iterations_to_rerun = swarming_task.parameters.get('iterations_to_rerun')
       if iterations_to_rerun is not None:
         iteration_counts.append(iterations_to_rerun)
 
@@ -171,11 +166,11 @@ def _GetReportInformation(swarming_task_list, start_date, end_date):
       if swarming_task.status == analysis_status.ERROR:
         error_count += 1
 
-    average_execution_time = (_GetAverageOfNumbersInList(
-        execution_times_seconds) if execution_times_seconds else NOT_AVAILABLE)
-    average_time_in_queue = (
-        _GetAverageOfNumbersInList(in_queue_times) if in_queue_times else
-        NOT_AVAILABLE)
+    average_execution_time = (
+        _GetAverageOfNumbersInList(execution_times_seconds)
+        if execution_times_seconds else NOT_AVAILABLE)
+    average_time_in_queue = (_GetAverageOfNumbersInList(in_queue_times)
+                             if in_queue_times else NOT_AVAILABLE)
     longest_execution_time = (
         str(datetime.timedelta(seconds=max(execution_times_seconds)))
         if execution_times_seconds else NOT_AVAILABLE)
@@ -309,10 +304,10 @@ def CreateHtmlPage(report, start_date, end_date):
           html += cell_template % _FormatStepName(step_name)
           html += cell_template % _FormatDigits(
               builder_report['swarming_tasks_per_day'])
-          html += cell_template % _FormatSecondsAsHMS(_FormatDigits(
-              builder_report['average_time_in_queue']))
-          html += cell_template % _FormatSecondsAsHMS(_FormatDigits(
-              builder_report['average_execution_time']))
+          html += cell_template % _FormatSecondsAsHMS(
+              _FormatDigits(builder_report['average_time_in_queue']))
+          html += cell_template % _FormatSecondsAsHMS(
+              _FormatDigits(builder_report['average_execution_time']))
           html += cell_template % builder_report['longest_execution_time']
           html += cell_template % builder_report['shortest_execution_time']
           html += cell_template % _FormatDigits(

@@ -92,8 +92,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     mock_fn.return_value = False
-    expected_try_job_key = WfTryJob.Create(
-        master_name, builder_name, build_number).key
+    expected_try_job_key = WfTryJob.Create(master_name, builder_name,
+                                           build_number).key
     need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
@@ -185,8 +185,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(try_job_util._BlameListsIntersection(['1'], []))
     self.assertFalse(try_job_util._BlameListsIntersection([], []))
     self.assertTrue(try_job_util._BlameListsIntersection(['1'], ['1']))
-    self.assertTrue(try_job_util._BlameListsIntersection([
-        '0', '1'], ['1', '2']))
+    self.assertTrue(
+        try_job_util._BlameListsIntersection(['0', '1'], ['1', '2']))
     self.assertTrue(try_job_util._BlameListsIntersection(['1'], ['1', '2']))
 
   def testGetFailedStepsAndTests(self):
@@ -202,17 +202,11 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'step_b': {}
     }
 
-    expected_result = [
-        ['step_a', 'test_a'],
-        ['step_a', 'test_b'],
-        ['step_a', 'test_c'],
-        ['step_b', None],
-        ['step_c', None]
-    ]
+    expected_result = [['step_a', 'test_a'], ['step_a', 'test_b'],
+                       ['step_a', 'test_c'], ['step_b', None], ['step_c', None]]
 
-    self.assertEqual(
-        expected_result,
-        try_job_util._GetStepsAndTests(failed_steps))
+    self.assertEqual(expected_result,
+                     try_job_util._GetStepsAndTests(failed_steps))
 
   def testFailedStepsAbsent(self):
     self.assertEqual([], try_job_util._GetStepsAndTests(None))
@@ -229,10 +223,9 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     try_job_util._LinkAnalysisToBuildFailureGroup(
         master_name, builder_name, build_number, failure_group_key)
-    self.assertEqual(
-        failure_group_key,
-        WfAnalysis.Get(
-            master_name, builder_name, build_number).failure_group_key)
+    self.assertEqual(failure_group_key,
+                     WfAnalysis.Get(master_name, builder_name,
+                                    build_number).failure_group_key)
 
   def testDoNotGroupUnknownBuildFailure(self):
     master_name = 'm1'
@@ -243,9 +236,10 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     # Run pipeline with UNKNOWN failure.
     # Observe that the build failure is unique, but there is no new group
     # creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.UNKNOWN,
-        None, None, None, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.UNKNOWN, None,
+            None, None, None))
     self.assertIsNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
@@ -258,9 +252,10 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     # Run pipeline with INFRA failure.
     # Observe that the build failure is unique, but there is no new group
     # creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.INFRA,
-        None, None, None, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.INFRA, None,
+            None, None, None))
     self.assertIsNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
@@ -271,21 +266,18 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals = {
-        'compile': {
-            'failed_output_nodes': []
-        }
-    }
+    signals = {'compile': {'failed_output_nodes': []}}
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have zero failed output nodes.
     # Observe that the build failure is unique, but there is no new group
     # creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.COMPILE,
-        blame_list, None, signals, None))
-    self.assertIsNone(WfFailureGroup.Get(
-        master_name, builder_name, build_number))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.COMPILE,
+            blame_list, None, signals, None))
+    self.assertIsNone(
+        WfFailureGroup.Get(master_name, builder_name, build_number))
 
   def testAnalysisFailureGroupKeySet(self):
     master_name = 'm1'
@@ -294,24 +286,19 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals = {
-        'compile': {
-            'failed_output_nodes': [
-                'abc.obj'
-            ]
-        }
-    }
+    signals = {'compile': {'failed_output_nodes': ['abc.obj']}}
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.COMPILE,
-        blame_list, None, signals, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.COMPILE,
+            blame_list, None, signals, None))
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    self.assertEqual(
-        [master_name, builder_name, build_number], analysis.failure_group_key)
+    self.assertEqual([master_name, builder_name, build_number],
+                     analysis.failure_group_key)
 
   def testSecondAnalysisFailureGroupKeySet(self):
     master_name = 'm1'
@@ -321,31 +308,27 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals = {
-        'compile': {
-            'failed_output_nodes': [
-                'abc.obj'
-            ]
-        }
-    }
+    signals = {'compile': {'failed_output_nodes': ['abc.obj']}}
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.COMPILE,
-        blame_list, None, signals, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.COMPILE,
+            blame_list, None, signals, None))
 
     WfAnalysis.Create(master_name_2, builder_name, build_number).put()
     # Run pipeline with signals that have the same failed output nodes.
     # Observe no new group creation.
-    self.assertFalse(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name_2, builder_name, build_number, failure_type.COMPILE,
-        blame_list, None, signals, None))
+    self.assertFalse(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name_2, builder_name, build_number, failure_type.COMPILE,
+            blame_list, None, signals, None))
 
     analysis_2 = WfAnalysis.Get(master_name_2, builder_name, build_number)
-    self.assertEqual(
-        [master_name, builder_name, build_number], analysis_2.failure_group_key)
+    self.assertEqual([master_name, builder_name, build_number],
+                     analysis_2.failure_group_key)
 
   def testGroupCompilesWithRelatedFailuresWithHeuristicResult(self):
     master_name = 'm1'
@@ -355,42 +338,34 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals = {
-        'compile': {
-            'failed_output_nodes': [
-                'abc.obj'
-            ]
-        }
-    }
+    signals = {'compile': {'failed_output_nodes': ['abc.obj']}}
 
     heuristic_result = {
-        'failures': [
-            {
-                'step_name': 'step1',
-                'suspected_cls': [
-                    {
-                        'revision': 'rev1',
-                    }
-                ],
-            }
-        ]
+        'failures': [{
+            'step_name': 'step1',
+            'suspected_cls': [{
+                'revision': 'rev1',
+            }],
+        }]
     }
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.COMPILE,
-        blame_list, None, signals, heuristic_result))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.COMPILE,
+            blame_list, None, signals, heuristic_result))
     self.assertIsNotNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
     WfAnalysis.Create(master_name_2, builder_name, build_number).put()
     # Run pipeline with signals that have the same failed output nodes.
     # Observe no new group creation.
-    self.assertFalse(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name_2, builder_name, build_number, failure_type.COMPILE,
-        blame_list, None, signals, heuristic_result))
+    self.assertFalse(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name_2, builder_name, build_number, failure_type.COMPILE,
+            blame_list, None, signals, heuristic_result))
     self.assertIsNone(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
@@ -402,29 +377,25 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals = {
-        'compile': {
-            'failed_output_nodes': [
-                'abc.obj'
-            ]
-        }
-    }
+    signals = {'compile': {'failed_output_nodes': ['abc.obj']}}
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.COMPILE,
-        blame_list, None, signals, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.COMPILE,
+            blame_list, None, signals, None))
     self.assertIsNotNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
     WfAnalysis.Create(master_name_2, builder_name, build_number).put()
     # Run pipeline with signals that have the same failed output nodes.
     # Observe no new group creation.
-    self.assertFalse(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name_2, builder_name, build_number, failure_type.COMPILE,
-        blame_list, None, signals, None))
+    self.assertFalse(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name_2, builder_name, build_number, failure_type.COMPILE,
+            blame_list, None, signals, None))
     self.assertIsNone(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
@@ -438,29 +409,25 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     blame_list_2 = ['b']
 
-    signals = {
-        'compile': {
-            'failed_output_nodes': [
-                'abc.obj'
-            ]
-        }
-    }
+    signals = {'compile': {'failed_output_nodes': ['abc.obj']}}
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.COMPILE,
-        blame_list_1, None, signals, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.COMPILE,
+            blame_list_1, None, signals, None))
     self.assertIsNotNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
     WfAnalysis.Create(master_name_2, builder_name, build_number).put()
     # Run pipeline with signals that have different failed output nodes.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name_2, builder_name, build_number, failure_type.COMPILE,
-        blame_list_2, None, signals, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name_2, builder_name, build_number, failure_type.COMPILE,
+            blame_list_2, None, signals, None))
     self.assertTrue(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
@@ -472,56 +439,43 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals = {
-        'compile': {
-            'failed_output_nodes': [
-                'abc.obj'
-            ]
-        }
-    }
+    signals = {'compile': {'failed_output_nodes': ['abc.obj']}}
 
     heuristic_result_1 = {
-        'failures': [
-            {
-                'step_name': 'step1',
-                'suspected_cls': [
-                    {
-                        'revision': 'rev1',
-                    }
-                ],
-            }
-        ]
+        'failures': [{
+            'step_name': 'step1',
+            'suspected_cls': [{
+                'revision': 'rev1',
+            }],
+        }]
     }
 
     heuristic_result_2 = {
-        'failures': [
-            {
-                'step_name': 'step1',
-                'suspected_cls': [
-                    {
-                        'revision': 'rev2',
-                    }
-                ],
-            }
-        ]
+        'failures': [{
+            'step_name': 'step1',
+            'suspected_cls': [{
+                'revision': 'rev2',
+            }],
+        }]
     }
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.COMPILE,
-        blame_list, None, signals,
-        heuristic_result_1))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.COMPILE,
+            blame_list, None, signals, heuristic_result_1))
     self.assertIsNotNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
     WfAnalysis.Create(master_name_2, builder_name, build_number).put()
     # Run pipeline with signals that have different failed output nodes.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name_2, builder_name, build_number, failure_type.COMPILE,
-        blame_list, None, signals, heuristic_result_2))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name_2, builder_name, build_number, failure_type.COMPILE,
+            blame_list, None, signals, heuristic_result_2))
     self.assertTrue(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
@@ -533,37 +487,27 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
     blame_list = ['a']
 
-    signals_1 = {
-        'compile': {
-            'failed_output_nodes': [
-                'abc.obj'
-            ]
-        }
-    }
+    signals_1 = {'compile': {'failed_output_nodes': ['abc.obj']}}
 
-    signals_2 = {
-        'compile': {
-            'failed_output_nodes': [
-                'def.obj'
-            ]
-        }
-    }
+    signals_2 = {'compile': {'failed_output_nodes': ['def.obj']}}
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed output nodes.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.COMPILE,
-        blame_list, None, signals_1, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.COMPILE,
+            blame_list, None, signals_1, None))
     self.assertIsNotNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
     WfAnalysis.Create(master_name_2, builder_name, build_number).put()
     # Run pipeline with signals that have different failed output nodes.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name_2, builder_name, build_number, failure_type.COMPILE,
-        blame_list, None, signals_2, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name_2, builder_name, build_number, failure_type.COMPILE,
+            blame_list, None, signals_2, None))
     self.assertTrue(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
@@ -580,9 +524,10 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     # Run pipeline with signals that have zero failed steps.
     # Observe that the build failure is unique, but there is no new group
     # creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.TEST, blame_list,
-        failed_steps, None, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.TEST,
+            blame_list, failed_steps, None, None))
     self.assertIsNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
@@ -603,33 +548,31 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     heuristic_result = {
-        'failures': [
-            {
-                'step_name': 'step1',
-                'suspected_cls': [
-                    {
-                        'revision': 'rev1',
-                    }
-                ],
-            }
-        ]
+        'failures': [{
+            'step_name': 'step1',
+            'suspected_cls': [{
+                'revision': 'rev1',
+            }],
+        }]
     }
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed steps.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.TEST, blame_list,
-        failed_steps, None, heuristic_result))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.TEST,
+            blame_list, failed_steps, None, heuristic_result))
     self.assertIsNotNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
     WfAnalysis.Create(master_name_2, builder_name, build_number).put()
     # Run pipeline with signals that have the same failed steps.
     # Observe no new group creation.
-    self.assertFalse(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name_2, builder_name, build_number, failure_type.TEST,
-        blame_list, failed_steps, None, heuristic_result))
+    self.assertFalse(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name_2, builder_name, build_number, failure_type.TEST,
+            blame_list, failed_steps, None, heuristic_result))
     self.assertIsNone(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
@@ -652,18 +595,20 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed steps.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.TEST, blame_list,
-        failed_steps, None, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.TEST,
+            blame_list, failed_steps, None, None))
     self.assertIsNotNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
     WfAnalysis.Create(master_name_2, builder_name, build_number).put()
     # Run pipeline with signals that have the same failed steps.
     # Observe no new group creation.
-    self.assertFalse(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name_2, builder_name, build_number, failure_type.TEST,
-        blame_list, failed_steps, None, None))
+    self.assertFalse(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name_2, builder_name, build_number, failure_type.TEST,
+            blame_list, failed_steps, None, None))
     self.assertIsNone(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
@@ -686,19 +631,20 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed steps.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.TEST,
-        blame_list_1, failed_steps, None,
-        None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.TEST,
+            blame_list_1, failed_steps, None, None))
     self.assertIsNotNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
     WfAnalysis.Create(master_name_2, builder_name, build_number).put()
     # Run pipeline with signals that have different failed steps.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name_2, builder_name, build_number, failure_type.TEST,
-        blame_list_2, failed_steps, None, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name_2, builder_name, build_number, failure_type.TEST,
+            blame_list_2, failed_steps, None, None))
     self.assertTrue(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
@@ -718,46 +664,40 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     heuristic_result_1 = {
-        'failures': [
-            {
-                'step_name': 'step1',
-                'suspected_cls': [
-                    {
-                        'revision': 'rev1',
-                    }
-                ],
-            }
-        ]
+        'failures': [{
+            'step_name': 'step1',
+            'suspected_cls': [{
+                'revision': 'rev1',
+            }],
+        }]
     }
 
     heuristic_result_2 = {
-        'failures': [
-            {
-                'step_name': 'step1',
-                'suspected_cls': [
-                    {
-                        'revision': 'rev2',
-                    }
-                ],
-            }
-        ]
+        'failures': [{
+            'step_name': 'step1',
+            'suspected_cls': [{
+                'revision': 'rev2',
+            }],
+        }]
     }
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed steps.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.TEST, blame_list,
-        failed_steps, None, heuristic_result_1))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.TEST,
+            blame_list, failed_steps, None, heuristic_result_1))
     self.assertIsNotNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
     WfAnalysis.Create(master_name_2, builder_name, build_number).put()
     # Run pipeline with signals that have different failed steps.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name_2, builder_name, build_number, failure_type.TEST,
-        blame_list, failed_steps, None, heuristic_result_2))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name_2, builder_name, build_number, failure_type.TEST,
+            blame_list, failed_steps, None, heuristic_result_2))
     self.assertTrue(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
@@ -788,18 +728,20 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with signals that have certain failed steps.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name, builder_name, build_number, failure_type.TEST, blame_list,
-        failed_steps_1, None, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name, builder_name, build_number, failure_type.TEST,
+            blame_list, failed_steps_1, None, None))
     self.assertIsNotNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
     WfAnalysis.Create(master_name_2, builder_name, build_number).put()
     # Run pipeline with signals that have different failed steps.
     # Observe new group creation.
-    self.assertTrue(try_job_util._IsBuildFailureUniqueAcrossPlatforms(
-        master_name_2, builder_name, build_number, failure_type.TEST,
-        blame_list, failed_steps_2, None, None))
+    self.assertTrue(
+        try_job_util._IsBuildFailureUniqueAcrossPlatforms(
+            master_name_2, builder_name, build_number, failure_type.TEST,
+            blame_list, failed_steps_2, None, None))
     self.assertTrue(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
@@ -908,16 +850,12 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.failure_result_map = {
-        'a': {
-            'a.t2': 'm/b/222'
-        }
-    }
+    analysis.failure_result_map = {'a': {'a.t2': 'm/b/222'}}
     analysis.put()
 
     mock_fn.return_value = False
-    expected_try_job_key = WfTryJob.Create(
-        master_name, builder_name, build_number).key
+    expected_try_job_key = WfTryJob.Create(master_name, builder_name,
+                                           build_number).key
 
     need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
@@ -1038,14 +976,12 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.failure_result_map = {
-        'compile': 'm/b/223'
-    }
+    analysis.failure_result_map = {'compile': 'm/b/223'}
     analysis.put()
 
     mock_fn.return_value = False
 
-    need_try_job, try_job_key  = try_job_util.NeedANewWaterfallTryJob(
+    need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
     self.assertTrue(need_try_job)
@@ -1075,8 +1011,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     mock_fn.return_value = False
-    expected_try_job_key = WfTryJob.Create(
-        master_name, builder_name, build_number).key
+    expected_try_job_key = WfTryJob.Create(master_name, builder_name,
+                                           build_number).key
 
     need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
@@ -1108,8 +1044,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
 
     mock_fn.return_value = False
-    expected_try_job_key = WfTryJob.Create(
-        master_name, builder_name, build_number).key
+    expected_try_job_key = WfTryJob.Create(master_name, builder_name,
+                                           build_number).key
     need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
         master_name, builder_name, build_number, failure_info, None, None)
 
@@ -1154,11 +1090,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     try_job.put()
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.failure_result_map = {
-        'a': {
-            'a.t2': 'm/b/223'
-        }
-    }
+    analysis.failure_result_map = {'a': {'a.t2': 'm/b/223'}}
     analysis.put()
 
     need_try_job, try_job_key = try_job_util.NeedANewWaterfallTryJob(
@@ -1168,12 +1100,12 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job_key, try_job.key)
 
   def testRemovePlatformFromStepName(self):
-    self.assertEqual('a_tests',
-                     try_job_util._RemovePlatformFromStepName(
-                         'a_tests on Platform'))
-    self.assertEqual('a_tests',
-                     try_job_util._RemovePlatformFromStepName(
-                         'a_tests on Other-Platform'))
+    self.assertEqual(
+        'a_tests',
+        try_job_util._RemovePlatformFromStepName('a_tests on Platform'))
+    self.assertEqual(
+        'a_tests',
+        try_job_util._RemovePlatformFromStepName('a_tests on Other-Platform'))
     self.assertEqual('a_tests',
                      try_job_util._RemovePlatformFromStepName('a_tests'))
 
@@ -1193,60 +1125,44 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def testGetSuspectedCLsWithFailures(self):
     heuristic_result = {
-        'failures': [
-            {
-                'step_name': 'step1',
-                'suspected_cls': [],
-            },
-            {
-                'step_name': 'step2',
-                'suspected_cls': [
-                    {
-                        'revision': 'r1',
-                    },
-                    {
-                        'revision': 'r2',
-                    },
-                ],
-            },
-            {
-                'step_name': 'step3',
-                'suspected_cls': [
-                    {
-                        'revision': 'r3',
-                    }
-                ],
-                'tests': [
-                    {
-                        'test_name': 'super_test_1',
-                        'suspected_cls': [
-                            {
-                                'revision': 'abc'
-                            }
-                        ]
-                    },
-                    {
-                        'test_name': 'super_test_2',
-                        'suspected_cls': [
-                            {
-                                'revision': 'def'
-                            },
-                            {
-                                'revision': 'ghi'
-                            }
-                        ]
-                    }
-                ]
-            }
-        ]
+        'failures': [{
+            'step_name': 'step1',
+            'suspected_cls': [],
+        }, {
+            'step_name': 'step2',
+            'suspected_cls': [
+                {
+                    'revision': 'r1',
+                },
+                {
+                    'revision': 'r2',
+                },
+            ],
+        }, {
+            'step_name':
+                'step3',
+            'suspected_cls': [{
+                'revision': 'r3',
+            }],
+            'tests': [{
+                'test_name': 'super_test_1',
+                'suspected_cls': [{
+                    'revision': 'abc'
+                }]
+            }, {
+                'test_name': 'super_test_2',
+                'suspected_cls': [{
+                    'revision': 'def'
+                }, {
+                    'revision': 'ghi'
+                }]
+            }]
+        }]
     }
-    expected_suspected_revisions = [
-        ['step2', 'r1', None],
-        ['step2', 'r2', None],
-        ['step3', 'abc', 'super_test_1'],
-        ['step3', 'def', 'super_test_2'],
-        ['step3', 'ghi', 'super_test_2']
-    ]
+    expected_suspected_revisions = [['step2', 'r1', None], [
+        'step2', 'r2', None
+    ], ['step3', 'abc', 'super_test_1'], ['step3', 'def', 'super_test_2'],
+                                    ['step3', 'ghi', 'super_test_2']]
     self.assertEqual(
         expected_suspected_revisions,
         sorted(try_job_util.GetSuspectedCLsWithFailures(heuristic_result)))
@@ -1255,31 +1171,37 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     signals = {
         'compile': {
             'failed_targets': [
-                {'target': 'a.exe'},
-                {'source': 'b.cc', 'target': 'b.o'},
+                {
+                    'target': 'a.exe'
+                },
+                {
+                    'source': 'b.cc',
+                    'target': 'b.o'
+                },
             ],
             'failed_output_nodes': ['a', 'b'],
         }
     }
 
     self.assertEqual(
-        try_job_util.GetFailedTargetsFromSignals(signals, 'm', 'b'),
-        ['a', 'b'])
+        try_job_util.GetFailedTargetsFromSignals(signals, 'm', 'b'), ['a', 'b'])
 
   def testGetFailedTargetsFromSignals(self):
-    self.assertEqual(
-        try_job_util.GetFailedTargetsFromSignals({}, 'm', 'b'), [])
+    self.assertEqual(try_job_util.GetFailedTargetsFromSignals({}, 'm', 'b'), [])
 
     self.assertEqual(
-        try_job_util.GetFailedTargetsFromSignals({'compile': {}}, 'm', 'b'),
-        [])
+        try_job_util.GetFailedTargetsFromSignals({
+            'compile': {}
+        }, 'm', 'b'), [])
 
     signals = {
         'compile': {
-            'failed_targets': [
-                {'target': 'a.exe'},
-                {'source': 'b.cc',
-                 'target': 'b.o'}]
+            'failed_targets': [{
+                'target': 'a.exe'
+            }, {
+                'source': 'b.cc',
+                'target': 'b.o'
+            }]
         }
     }
 
@@ -1290,12 +1212,14 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     signals = {
         'compile': {
             'failed_targets': [
-                {'source': 'b.cc', 'target': 'b.o'},
+                {
+                    'source': 'b.cc',
+                    'target': 'b.o'
+                },
             ]
         }
     }
 
     self.assertEqual(
-        try_job_util.GetFailedTargetsFromSignals(
-            signals, 'master1', 'builder1'),
-        ['b.o'])
+        try_job_util.GetFailedTargetsFromSignals(signals, 'master1',
+                                                 'builder1'), ['b.o'])

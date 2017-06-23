@@ -86,7 +86,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
   def delay_callback(self, countdown, callback_params, name=None):
     target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
     task = self.get_callback_task(
-        countdown=countdown, target=target,
+        countdown=countdown,
+        target=target,
         params={'callback_params': json.dumps(callback_params)},
         name=name)
     task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
@@ -98,8 +99,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         task_id = self.args[4]
       if task_id and task_id.lower() not in (NO_TASK, NO_TASK_EXCEPTION):
         taskqueue.Queue(
-            constants.WATERFALL_ANALYSIS_QUEUE).delete_tasks_by_name([
-                task_id + '_cleanup_task'])
+            constants.WATERFALL_ANALYSIS_QUEUE).delete_tasks_by_name(
+                [task_id + '_cleanup_task'])
       else:
         logging.error('Did not receive a task_id at construction.')
     except taskqueue.BadTaskStateError, e:  # pragma: no cover
@@ -151,8 +152,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         task.completed_time = (task.completed_time or
                                self._ConvertDateTime(data.get('completed_ts')))
         task.put()
-        pipeline_result = self._GetPipelineResult(
-            step_name, step_name_no_platform, task)
+        pipeline_result = self._GetPipelineResult(step_name,
+                                                  step_name_no_platform, task)
         self.complete(pipeline_result)
       elif time.time() > deadline:  # pragma: no cover
         # Timeout.
@@ -166,8 +167,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         timeout_hours = waterfall_config.GetSwarmingSettings().get(
             'task_timeout_hours')
         logging.error('Swarming task timed out after %d hours.' % timeout_hours)
-        pipeline_result = self._GetPipelineResult(
-            step_name, step_name_no_platform, task)
+        pipeline_result = self._GetPipelineResult(step_name,
+                                                  step_name_no_platform, task)
         self.complete(pipeline_result)
       else:
         self.last_params = {
@@ -181,8 +182,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
             'step_name_no_platform': step_name_no_platform,
         }
         # Update the stored callback url with possibly modified params.
-        new_callback_url = self.get_callback_url(callback_params=json.dumps(
-            self.last_params))
+        new_callback_url = self.get_callback_url(
+            callback_params=json.dumps(self.last_params))
         if task.callback_url != new_callback_url:  # pragma: no cover
           task.callback_url = new_callback_url
           task.put()
@@ -204,11 +205,10 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         return
 
     task_state = data['state']
-    exit_code = (data.get('exit_code') if
-                 task_state == swarming_util.STATE_COMPLETED else None)
-    step_name_no_platform = (
-        step_name_no_platform or swarming_util.GetTagValue(
-            data.get('tags', {}), 'ref_name'))
+    exit_code = (data.get('exit_code')
+                 if task_state == swarming_util.STATE_COMPLETED else None)
+    step_name_no_platform = (step_name_no_platform or swarming_util.GetTagValue(
+        data.get('tags', {}), 'ref_name'))
 
     if task_state not in swarming_util.STATES_RUNNING:
       task_completed = True
@@ -256,10 +256,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
           message = task_state
 
         task.status = analysis_status.ERROR
-        task.error = {
-            'code': code,
-            'message': message
-        }
+        task.error = {'code': code, 'message': message}
         task.put()
 
         logging_str = 'Swarming task stopped with status: %s' % task_state
@@ -282,8 +279,13 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
     check_task_completion()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, step_name,
-          task_id=None, *args):
+  def run(self,
+          master_name,
+          builder_name,
+          build_number,
+          step_name,
+          task_id=None,
+          *args):
     """Monitors a swarming task.
 
     Args:
@@ -332,10 +334,12 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
       task.status = analysis_status.SKIPPED
       task.put()
       self._UpdateMasterFlakeAnalysis(
-          *call_args, pass_rate=-1, flake_swarming_task=task,
+          *call_args,
+          pass_rate=-1,
+          flake_swarming_task=task,
           has_valid_artifact=has_valid_artifact)
-      self.complete(self._GetPipelineResult(
-          step_name, step_name_no_platform, task))
+      self.complete(
+          self._GetPipelineResult(step_name, step_name_no_platform, task))
       return
 
     self.last_params = {
@@ -349,16 +353,18 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         'step_name_no_platform': step_name_no_platform,
     }
 
-    task.callback_url = self.get_callback_url(callback_params=json.dumps(
-        self.last_params))
+    task.callback_url = self.get_callback_url(
+        callback_params=json.dumps(self.last_params))
     task.callback_target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)
     task.put()
 
     # Guarantee one callback 10 minutes after the deadline to clean up even if
     # Swarming fails to call us back.
-    self.delay_callback((timeout_hours * 60 + 10) * 60, self.last_params,
-                        name=task_id + '_cleanup_task')
+    self.delay_callback(
+        (timeout_hours * 60 + 10) * 60,
+        self.last_params,
+        name=task_id + '_cleanup_task')
 
     # Run immediately in case the task already went from scheduled to started.
     self.callback(callback_params=self.last_params)

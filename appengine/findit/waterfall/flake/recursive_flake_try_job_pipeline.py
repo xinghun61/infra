@@ -31,35 +31,34 @@ from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall import swarming_util
 from waterfall import waterfall_config
 
-
 _GIT_REPO = CachedGitilesRepository(
-    HttpClientAppengine(),
-    'https://chromium.googlesource.com/chromium/src.git')
+    HttpClientAppengine(), 'https://chromium.googlesource.com/chromium/src.git')
 _DEFAULT_ITERATIONS_TO_RERUN = 100
 
 _MAX_RETRY_TIMES = 5
 _BASE_COUNT_DOWN_SECONDS = 2 * 60
 
 
-def CreateCulprit(revision, commit_position, confidence_score,
+def CreateCulprit(revision,
+                  commit_position,
+                  confidence_score,
                   repo_name='chromium'):
   """Sets culprit information."""
   change_log = _GIT_REPO.GetChangeLog(revision)
 
   if change_log:
     url = change_log.code_review_url or change_log.commit_url
-    culprit = FlakeCulprit.Create(
-        repo_name, revision, commit_position, url, confidence_score)
+    culprit = FlakeCulprit.Create(repo_name, revision, commit_position, url,
+                                  confidence_score)
   else:
     logging.error('Unable to retrieve change logs for %s', revision)
-    culprit = FlakeCulprit.Create(
-        repo_name, revision, commit_position, None, confidence_score)
+    culprit = FlakeCulprit.Create(repo_name, revision, commit_position, None,
+                                  confidence_score)
 
   return culprit
 
 
-def UpdateAnalysisUponCompletion(
-    flake_analysis, culprit, status, error):
+def UpdateAnalysisUponCompletion(flake_analysis, culprit, status, error):
   flake_analysis.end_time = time_util.GetUTCNow()
   flake_analysis.try_job_status = status
 
@@ -78,8 +77,7 @@ def UpdateAnalysisUponCompletion(
 
 
 @ndb.transactional
-def _GetTryJob(
-    master_name, builder_name, step_name, test_name, revision):
+def _GetTryJob(master_name, builder_name, step_name, test_name, revision):
   """Gets or creates a FlakeTryJob for the specified configuration.
 
     If a try job from a previous run with this configuration was already run,
@@ -96,20 +94,19 @@ def _GetTryJob(
   Returns:
     FlakeTryJobData representing the try job.
   """
-  try_job = FlakeTryJob.Get(
-      master_name, builder_name, step_name, test_name, revision)
+  try_job = FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
+                            revision)
   if not try_job:
-    try_job = FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, revision)
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, revision)
     try_job.put()
   return try_job
 
 
 def _GetIterationsToRerun(user_specified_iterations, analysis):
   return (user_specified_iterations or
-          analysis.algorithm_parameters.get(
-              'try_job_rerun', {}).get('iterations_to_rerun',
-                                       _DEFAULT_ITERATIONS_TO_RERUN))
+          analysis.algorithm_parameters.get('try_job_rerun', {}).get(
+              'iterations_to_rerun', _DEFAULT_ITERATIONS_TO_RERUN))
 
 
 def _NeedANewTryJob(analysis, try_job, required_iterations, rerun):
@@ -144,13 +141,13 @@ def _NeedANewTryJob(analysis, try_job, required_iterations, rerun):
     fail_count = test_results['fail_count']
     tries = pass_count + fail_count
     pass_rate = float(pass_count) / tries
-    lower_flake_threshold = analysis.algorithm_parameters[
-        'try_job_rerun']['lower_flake_threshold']
-    upper_flake_threshold = analysis.algorithm_parameters[
-        'try_job_rerun']['upper_flake_threshold']
+    lower_flake_threshold = analysis.algorithm_parameters['try_job_rerun'][
+        'lower_flake_threshold']
+    upper_flake_threshold = analysis.algorithm_parameters['try_job_rerun'][
+        'upper_flake_threshold']
 
-    if (lookback_algorithm.IsStable(
-        pass_rate, lower_flake_threshold, upper_flake_threshold) and
+    if (lookback_algorithm.IsStable(pass_rate, lower_flake_threshold,
+                                    upper_flake_threshold) and
         tries < required_iterations):
       # Stable results with insufficient iterations are not reliable and should
       # be rerun.
@@ -170,12 +167,11 @@ def _SetAnalysisTryJobStatus(analysis, desired_status):
 def _CanStartTryJob(try_job, rerun, retries):
   try_master, try_builder = waterfall_config.GetWaterfallTrybot(
       try_job.master_name, try_job.builder_name)
-  if (try_master.startswith('luci.')
-      and not rerun
-      and retries < _MAX_RETRY_TIMES):
+  if (try_master.startswith('luci.') and not rerun and
+      retries < _MAX_RETRY_TIMES):
     dimensions = waterfall_config.GetTrybotDimensions(try_master, try_builder)
-    bot_counts = swarming_util.GetSwarmingBotCounts(
-        dimensions, HttpClientAppengine())
+    bot_counts = swarming_util.GetSwarmingBotCounts(dimensions,
+                                                    HttpClientAppengine())
     waterfall_reserved_rate = waterfall_config.GetTryJobSettings().get(
         'waterfall_reserved_rate', .5)
     total_count = bot_counts.get('count') or -1
@@ -188,15 +184,27 @@ def _CanStartTryJob(try_job, rerun, retries):
 class RecursiveFlakeTryJobPipeline(BasePipeline):
   """Starts a series of flake try jobs to identify the exact culprit."""
 
-  def __init__(
-      self, urlsafe_flake_analysis_key, commit_position, revision,
-      lower_bound_commit_position, upper_bound_commit_position,
-      user_specified_iterations, cache_name, dimensions, rerun=False,
-      retries=0):
+  def __init__(self,
+               urlsafe_flake_analysis_key,
+               commit_position,
+               revision,
+               lower_bound_commit_position,
+               upper_bound_commit_position,
+               user_specified_iterations,
+               cache_name,
+               dimensions,
+               rerun=False,
+               retries=0):
     super(RecursiveFlakeTryJobPipeline, self).__init__(
-        urlsafe_flake_analysis_key, commit_position, revision,
-        lower_bound_commit_position, upper_bound_commit_position,
-        user_specified_iterations, cache_name, dimensions, rerun=rerun,
+        urlsafe_flake_analysis_key,
+        commit_position,
+        revision,
+        lower_bound_commit_position,
+        upper_bound_commit_position,
+        user_specified_iterations,
+        cache_name,
+        dimensions,
+        rerun=rerun,
         retries=retries)
     self.urlsafe_flake_analysis_key = urlsafe_flake_analysis_key
     self.commit_position = commit_position
@@ -245,11 +253,17 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
   def finalized(self):
     self._LogUnexpectedAbort()
 
-
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, urlsafe_flake_analysis_key, commit_position, revision,
-          lower_bound_commit_position, upper_bound_commit_position,
-          user_specified_iterations, cache_name, dimensions, rerun=False,
+  def run(self,
+          urlsafe_flake_analysis_key,
+          commit_position,
+          revision,
+          lower_bound_commit_position,
+          upper_bound_commit_position,
+          user_specified_iterations,
+          cache_name,
+          dimensions,
+          rerun=False,
           retries=0):
     """Runs a try job at a revision to determine its flakiness.
 
@@ -280,9 +294,9 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
       # successfully.
       return
 
-    try_job = _GetTryJob(
-        analysis.master_name, analysis.builder_name,
-        analysis.canonical_step_name, analysis.test_name, revision)
+    try_job = _GetTryJob(analysis.master_name, analysis.builder_name,
+                         analysis.canonical_step_name, analysis.test_name,
+                         revision)
 
     if _NeedANewTryJob(analysis, try_job, user_specified_iterations, rerun):
       if _CanStartTryJob(try_job, rerun, retries):
@@ -302,20 +316,27 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
               try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
 
           yield ProcessFlakeTryJobResultPipeline(
-              revision, commit_position, try_job_result, try_job.key.urlsafe(),
-              urlsafe_flake_analysis_key)
+              revision, commit_position, try_job_result,
+              try_job.key.urlsafe(), urlsafe_flake_analysis_key)
 
           yield NextCommitPositionPipeline(
-              urlsafe_flake_analysis_key, try_job.key.urlsafe(),
-              lower_bound_commit_position, upper_bound_commit_position,
-              user_specified_iterations, cache_name, dimensions)
+              urlsafe_flake_analysis_key,
+              try_job.key.urlsafe(), lower_bound_commit_position,
+              upper_bound_commit_position, user_specified_iterations,
+              cache_name, dimensions)
       else:
         retries += 1
 
         pipeline_job = RecursiveFlakeTryJobPipeline(
-            urlsafe_flake_analysis_key, commit_position, revision,
-            lower_bound_commit_position, upper_bound_commit_position,
-            user_specified_iterations, cache_name, dimensions, rerun=rerun,
+            urlsafe_flake_analysis_key,
+            commit_position,
+            revision,
+            lower_bound_commit_position,
+            upper_bound_commit_position,
+            user_specified_iterations,
+            cache_name,
+            dimensions,
+            rerun=rerun,
             retries=retries)
 
         # Disable attribute 'target' defined outside __init__ pylint warning,
@@ -325,16 +346,16 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
 
         # Delay or start off peak.
         if retries > _MAX_RETRY_TIMES:
-          pipeline_job._StartOffPSTPeakHours(
-              queue_name=self.queue_name or constants.DEFAULT_QUEUE)
+          pipeline_job._StartOffPSTPeakHours(queue_name=self.queue_name or
+                                             constants.DEFAULT_QUEUE)
           logging.info('Retries exceed max count, RecursiveFlakeTryJobPipeline '
                        'on MasterFlakeAnalysis %s/%s/%s/%s/%s will start off '
                        'peak hours', analysis.master_name,
                        analysis.builder_name, analysis.build_number,
                        analysis.step_name, analysis.test_name)
         else:
-          pipeline_job._RetryWithDelay(
-              queue_name=self.queue_name or constants.DEFAULT_QUEUE)
+          pipeline_job._RetryWithDelay(queue_name=self.queue_name or
+                                       constants.DEFAULT_QUEUE)
           countdown = retries * _BASE_COUNT_DOWN_SECONDS
           logging.info('No available swarming bots, '
                        'RecursiveFlakeTryJobPipeline on MasterFlakeAnalysis '
@@ -345,9 +366,10 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
 
     else:
       yield NextCommitPositionPipeline(
-          urlsafe_flake_analysis_key, try_job.key.urlsafe(),
-          lower_bound_commit_position, upper_bound_commit_position,
-          user_specified_iterations, cache_name, dimensions)
+          urlsafe_flake_analysis_key,
+          try_job.key.urlsafe(), lower_bound_commit_position,
+          upper_bound_commit_position, user_specified_iterations, cache_name,
+          dimensions)
 
   def _StartOffPSTPeakHours(self, *args, **kwargs):
     """Starts the pipeline off PST peak hours if not triggered manually."""
@@ -368,8 +390,8 @@ def _NormalizeDataPoints(data_points):
   return sorted(normalized_data_points, key=lambda k: k.run_point_number)
 
 
-def _GetNormalizedTryJobDataPoints(
-    analysis, lower_bound_commit_position, upper_bound_commit_position):
+def _GetNormalizedTryJobDataPoints(analysis, lower_bound_commit_position,
+                                   upper_bound_commit_position):
   """Gets which data points should be used to determine the next revision.
 
   Args:
@@ -425,8 +447,8 @@ class NextCommitPositionPipeline(BasePipeline):
 
     # Don't call another pipeline if the previous try job failed.
     if try_job_data.error:
-      UpdateAnalysisUponCompletion(
-          flake_analysis, None, analysis_status.ERROR, try_job_data.error)
+      UpdateAnalysisUponCompletion(flake_analysis, None, analysis_status.ERROR,
+                                   try_job_data.error)
       yield UpdateFlakeBugPipeline(flake_analysis.key.urlsafe())
       return
 
@@ -435,12 +457,13 @@ class NextCommitPositionPipeline(BasePipeline):
 
     # Figure out what commit position to trigger the next try job on, if any.
     suspected_build_data_point = flake_analysis.GetDataPointOfSuspectedBuild()
-    data_points = _GetNormalizedTryJobDataPoints(
-        flake_analysis, lower_bound_commit_position,
-        upper_bound_commit_position)
+    data_points = _GetNormalizedTryJobDataPoints(flake_analysis,
+                                                 lower_bound_commit_position,
+                                                 upper_bound_commit_position)
     next_commit_position, suspected_commit_position, _ = (
         lookback_algorithm.GetNextRunPointNumber(
-            data_points, algorithm_settings,
+            data_points,
+            algorithm_settings,
             lower_bound_run_point_number=lower_bound_commit_position,
             upper_bound_run_point_number=upper_bound_commit_position))
 
@@ -449,10 +472,10 @@ class NextCommitPositionPipeline(BasePipeline):
           flake_analysis.data_points, suspected_commit_position)
       culprit_revision = suspected_build_data_point.GetRevisionAtCommitPosition(
           suspected_commit_position)
-      culprit = CreateCulprit(
-          culprit_revision, suspected_commit_position, confidence_score)
-      UpdateAnalysisUponCompletion(
-          flake_analysis, culprit, analysis_status.COMPLETED, None)
+      culprit = CreateCulprit(culprit_revision, suspected_commit_position,
+                              confidence_score)
+      UpdateAnalysisUponCompletion(flake_analysis, culprit,
+                                   analysis_status.COMPLETED, None)
 
       yield UpdateFlakeBugPipeline(flake_analysis.key.urlsafe())
       return

@@ -1,7 +1,6 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """This module is to provide Findit service APIs through Cloud Endpoints:
 
 Current APIs include:
@@ -43,7 +42,6 @@ from waterfall import build_util
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
-
 # This is used by the underlying ProtoRpc when creating names for the ProtoRPC
 # messages below. This package name will show up as a prefix to the message
 # class names in the discovery doc and client libraries.
@@ -52,13 +50,14 @@ package = 'FindIt'
 # How many seconds to cache requests for repeat analyses.
 ANALYSIS_CACHE_TIME = 5 * 60
 
+
 # These subclasses of Message are basically definitions of Protocol RPC
 # messages. https://cloud.google.com/appengine/docs/python/tools/protorpc/
 class _BuildFailure(messages.Message):
   master_url = messages.StringField(1, required=True)
   builder_name = messages.StringField(2, required=True)
-  build_number = messages.IntegerField(3, variant=messages.Variant.INT32,
-                                       required=True)
+  build_number = messages.IntegerField(
+      3, variant=messages.Variant.INT32, required=True)
   # All failed steps of the build reported by the client.
   failed_steps = messages.StringField(4, repeated=True, required=False)
 
@@ -93,11 +92,11 @@ class _TryJobStatus(messages.Enum):
 class _BuildFailureAnalysisResult(messages.Message):
   master_url = messages.StringField(1, required=True)
   builder_name = messages.StringField(2, required=True)
-  build_number = messages.IntegerField(3, variant=messages.Variant.INT32,
-                                       required=True)
+  build_number = messages.IntegerField(
+      3, variant=messages.Variant.INT32, required=True)
   step_name = messages.StringField(4, required=True)
-  is_sub_test = messages.BooleanField(5, variant=messages.Variant.BOOL,
-                                      required=True)
+  is_sub_test = messages.BooleanField(
+      5, variant=messages.Variant.BOOL, required=True)
   test_name = messages.StringField(6)
   first_known_failed_build_number = messages.IntegerField(
       7, variant=messages.Variant.INT32)
@@ -146,15 +145,17 @@ class _FlakeAnalysis(messages.Message):
   queued = messages.BooleanField(1, required=True)
 
 
-@Cached(PickledMemCache(),  # Since the return values are < 1MB.
-        expire_time=ANALYSIS_CACHE_TIME)
+@Cached(
+    PickledMemCache(),  # Since the return values are < 1MB.
+    expire_time=ANALYSIS_CACHE_TIME)
 def _AsyncProcessFailureAnalysisRequests(builds):
   """Pushes a task on the backend to process requests of failure analysis."""
   target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
   payload = json.dumps({'builds': builds})
   taskqueue.add(
       url=constants.WATERFALL_PROCESS_FAILURE_ANALYSIS_REQUESTS_URL,
-      payload=payload, target=target,
+      payload=payload,
+      target=target,
       queue_name=constants.WATERFALL_FAILURE_ANALYSIS_REQUEST_QUEUE)
   # Needed for @Cached to work, but ignored by caller.
   return 'Only semantically None.'
@@ -166,7 +167,8 @@ def _AsyncProcessFlakeReport(flake_analysis_request, user_email, is_admin):
   payload = pickle.dumps((flake_analysis_request, user_email, is_admin))
   taskqueue.add(
       url=constants.WATERFALL_PROCESS_FLAKE_ANALYSIS_REQUEST_URL,
-      payload=payload, target=target,
+      payload=payload,
+      target=target,
       queue_name=constants.WATERFALL_FLAKE_ANALYSIS_REQUEST_QUEUE)
 
 
@@ -176,8 +178,8 @@ def _AsyncProcessFlakeReport(flake_analysis_request, user_email, is_admin):
 class FindItApi(remote.Service):
   """FindIt API v1."""
 
-  def _GetAdditionalInformationForCL(
-      self, repo_name, revision, confidences, build, reference_build_key):
+  def _GetAdditionalInformationForCL(self, repo_name, revision, confidences,
+                                     build, reference_build_key):
     """Gets additional information for a cl.
 
     Currently additional information contains:
@@ -211,10 +213,19 @@ class FindItApi(remote.Service):
     return additional_info
 
   def _GenerateBuildFailureAnalysisResult(
-      self, build, step_name, suspected_cls_in_result=None, first_failure=None,
-      test_name=None, analysis_approach=_AnalysisApproach.HEURISTIC,
-      confidences=None, try_job_status=None, is_flaky_test=False,
-      reference_build_key=None, has_findings=True, is_finished=True,
+      self,
+      build,
+      step_name,
+      suspected_cls_in_result=None,
+      first_failure=None,
+      test_name=None,
+      analysis_approach=_AnalysisApproach.HEURISTIC,
+      confidences=None,
+      try_job_status=None,
+      is_flaky_test=False,
+      reference_build_key=None,
+      has_findings=True,
+      is_finished=True,
       is_supported=True):
 
     suspected_cls_in_result = suspected_cls_in_result or []
@@ -227,18 +238,20 @@ class FindItApi(remote.Service):
           repo_name, revision, confidences, build, reference_build_key)
       if additional_info.get('cl_approach'):
         cl_approach = (
-          _AnalysisApproach.HEURISTIC if
-          additional_info['cl_approach'] == analysis_approach_type.HEURISTIC
-          else _AnalysisApproach.TRY_JOB)
+            _AnalysisApproach.HEURISTIC if
+            additional_info['cl_approach'] == analysis_approach_type.HEURISTIC
+            else _AnalysisApproach.TRY_JOB)
       else:
         cl_approach = analysis_approach
 
-      suspected_cls.append(_SuspectedCL(
-          repo_name=repo_name, revision=revision,
-          commit_position=commit_position,
-          confidence=additional_info.get('confidence'),
-          analysis_approach=cl_approach,
-          revert_cl_url=additional_info.get('revert_cl_url')))
+      suspected_cls.append(
+          _SuspectedCL(
+              repo_name=repo_name,
+              revision=revision,
+              commit_position=commit_position,
+              confidence=additional_info.get('confidence'),
+              analysis_approach=cl_approach,
+              revert_cl_url=additional_info.get('revert_cl_url')))
 
     return _BuildFailureAnalysisResult(
         master_url=build.master_url,
@@ -256,13 +269,16 @@ class FindItApi(remote.Service):
         is_finished=is_finished,
         is_supported=is_supported)
 
-  def _GetStatusAndCulpritFromTryJob(
-      self, try_job, swarming_task, build_failure_type, step_name,
-      test_name=None):
+  def _GetStatusAndCulpritFromTryJob(self,
+                                     try_job,
+                                     swarming_task,
+                                     build_failure_type,
+                                     step_name,
+                                     test_name=None):
     """Returns the culprit found by try-job for the given step or test."""
 
-    if swarming_task and swarming_task.status in (
-        analysis_status.PENDING, analysis_status.RUNNING):
+    if swarming_task and swarming_task.status in (analysis_status.PENDING,
+                                                  analysis_status.RUNNING):
       return _TryJobStatus.RUNNING, None
 
     if not try_job or try_job.failed:
@@ -274,9 +290,8 @@ class FindItApi(remote.Service):
     if build_failure_type == failure_type.COMPILE:
       if not try_job.compile_results:  # pragma: no cover.
         return _TryJobStatus.FINISHED, None
-      return (
-          _TryJobStatus.FINISHED,
-          try_job.compile_results[-1].get('culprit', {}).get(step_name))
+      return (_TryJobStatus.FINISHED, try_job.compile_results[-1].get(
+          'culprit', {}).get(step_name))
 
     if not try_job.test_results:  # pragma: no cover.
       return _TryJobStatus.FINISHED, None
@@ -289,11 +304,11 @@ class FindItApi(remote.Service):
         return _TryJobStatus.FINISHED, None
       return _TryJobStatus.FINISHED, step_info
 
-    ref_name = (swarming_task.parameters.get('ref_name') if swarming_task and
-                swarming_task.parameters else None)
-    return (
-        _TryJobStatus.FINISHED, try_job.test_results[-1].get('culprit', {}).get(
-            ref_name or step_name, {}).get('tests', {}).get(test_name))
+    ref_name = (swarming_task.parameters.get('ref_name')
+                if swarming_task and swarming_task.parameters else None)
+    return (_TryJobStatus.FINISHED,
+            try_job.test_results[-1].get('culprit', {}).get(
+                ref_name or step_name, {}).get('tests', {}).get(test_name))
 
   def _CheckIsFlaky(self, swarming_task, test_name):
     """Checks if the test is flaky."""
@@ -302,19 +317,32 @@ class FindItApi(remote.Service):
 
     return test_name in swarming_task.classified_tests.get('flaky_tests', [])
 
-  def _PopulateResult(
-      self, results, build, step_name, build_failure_type=None,
-      heuristic_result=None, confidences=None, reference_build_key=None,
-      swarming_task=None, try_job=None, test_name=None, has_findings=True,
-      is_finished=True, is_supported=True):
+  def _PopulateResult(self,
+                      results,
+                      build,
+                      step_name,
+                      build_failure_type=None,
+                      heuristic_result=None,
+                      confidences=None,
+                      reference_build_key=None,
+                      swarming_task=None,
+                      try_job=None,
+                      test_name=None,
+                      has_findings=True,
+                      is_finished=True,
+                      is_supported=True):
     """Appends an analysis result for the given step or test.
 
     Try-job results are always given priority over heuristic results.
     """
     if not has_findings or not is_finished:
-      results.append(self._GenerateBuildFailureAnalysisResult(
-          build, step_name, has_findings=has_findings, is_finished=is_finished,
-          is_supported=is_supported))
+      results.append(
+          self._GenerateBuildFailureAnalysisResult(
+              build,
+              step_name,
+              has_findings=has_findings,
+              is_finished=is_finished,
+              is_supported=is_supported))
       return
 
     # Default to heuristic analysis.
@@ -330,7 +358,10 @@ class FindItApi(remote.Service):
     else:
       # Check analysis result from try-job.
       try_job_status, culprit = self._GetStatusAndCulpritFromTryJob(
-          try_job, swarming_task, build_failure_type, step_name,
+          try_job,
+          swarming_task,
+          build_failure_type,
+          step_name,
           test_name=test_name)
       if culprit:
         suspected_cls = [culprit]
@@ -343,12 +374,21 @@ class FindItApi(remote.Service):
     if try_job_status == _TryJobStatus.RUNNING:
       is_finished = False
 
-
-    results.append(self._GenerateBuildFailureAnalysisResult(
-        build, step_name, suspected_cls, heuristic_result['first_failure'],
-        test_name, analysis_approach, confidences, try_job_status,
-        is_flaky_test, reference_build_key, has_findings, is_finished,
-        is_supported=is_supported))
+    results.append(
+        self._GenerateBuildFailureAnalysisResult(
+            build,
+            step_name,
+            suspected_cls,
+            heuristic_result['first_failure'],
+            test_name,
+            analysis_approach,
+            confidences,
+            try_job_status,
+            is_flaky_test,
+            reference_build_key,
+            has_findings,
+            is_finished,
+            is_supported=is_supported))
 
   def _GetAllSwarmingTasks(self, failure_result_map):
     """Returns all swarming tasks related to one build.
@@ -380,15 +420,13 @@ class FindItApi(remote.Service):
     swarming_tasks = defaultdict(dict)
     for step_name, step_map in failure_result_map.iteritems():
       if isinstance(step_map, basestring):
-        swarming_tasks[step_name][step_map] = (
-            WfSwarmingTask.Get(
-                *build_util.GetBuildInfoFromId(step_map), step_name=step_name))
+        swarming_tasks[step_name][step_map] = (WfSwarmingTask.Get(
+            *build_util.GetBuildInfoFromId(step_map), step_name=step_name))
       else:
         for task_key in step_map.values():
           if not swarming_tasks[step_name].get(task_key):
-            swarming_tasks[step_name][task_key] = (
-              WfSwarmingTask.Get(*build_util.GetBuildInfoFromId(task_key),
-                                 step_name=step_name))
+            swarming_tasks[step_name][task_key] = (WfSwarmingTask.Get(
+                *build_util.GetBuildInfoFromId(task_key), step_name=step_name))
 
     return swarming_tasks
 
@@ -447,12 +485,12 @@ class FindItApi(remote.Service):
 
     return try_job_key, swarming_task, try_job
 
-  def _GenerateResultsForBuild(
-      self, build, heuristic_analysis, results, confidences):
+  def _GenerateResultsForBuild(self, build, heuristic_analysis, results,
+                               confidences):
 
     # Checks has_findings and is_finished for heuristic analysis.
-    has_findings = bool(heuristic_analysis and heuristic_analysis.result
-                        and not heuristic_analysis.failed)
+    has_findings = bool(heuristic_analysis and heuristic_analysis.result and
+                        not heuristic_analysis.failed)
     is_finished = heuristic_analysis.completed
 
     if not has_findings:
@@ -460,23 +498,31 @@ class FindItApi(remote.Service):
       for step_name in build.failed_steps:
         is_supported = True  # The step may be analyzed now.
         self._PopulateResult(
-            results, build, step_name,
-            has_findings=has_findings, is_finished=is_finished,
+            results,
+            build,
+            step_name,
+            has_findings=has_findings,
+            is_finished=is_finished,
             is_supported=is_supported)
       return
 
     steps_with_result = [
-        f.get('step_name') for f in heuristic_analysis.result['failures']]
+        f.get('step_name') for f in heuristic_analysis.result['failures']
+    ]
     steps_without_result = [
-        step_name for step_name in build.failed_steps if
-        step_name not in steps_with_result]
+        step_name for step_name in build.failed_steps
+        if step_name not in steps_with_result
+    ]
 
     for step_name in steps_without_result:
       has_findings = False  # No findings for the step.
       is_supported = True  # The step may be analyzed now.
       self._PopulateResult(
-          results, build, step_name,
-          has_findings=has_findings, is_finished=is_finished,
+          results,
+          build,
+          step_name,
+          has_findings=has_findings,
+          is_finished=is_finished,
           is_supported=is_supported)
 
     swarming_tasks = self._GetAllSwarmingTasks(
@@ -490,9 +536,12 @@ class FindItApi(remote.Service):
       if not is_supported:
         has_findings = False
         self._PopulateResult(
-          results, build, step_name,
-          has_findings=has_findings, is_finished=is_finished,
-          is_supported=is_supported)
+            results,
+            build,
+            step_name,
+            has_findings=has_findings,
+            is_finished=is_finished,
+            is_supported=is_supported)
         continue
 
       if failure.get('tests'):  # Test-level analysis.
@@ -503,9 +552,16 @@ class FindItApi(remote.Service):
                   step_name, test_name, heuristic_analysis.failure_result_map,
                   swarming_tasks, try_jobs))
           self._PopulateResult(
-              results, build, step_name, heuristic_analysis.failure_type, test,
-              confidences, reference_build_key, swarming_task,
-              try_job, test_name=test_name)
+              results,
+              build,
+              step_name,
+              heuristic_analysis.failure_type,
+              test,
+              confidences,
+              reference_build_key,
+              swarming_task,
+              try_job,
+              test_name=test_name)
       else:
         reference_build_key, swarming_task, try_job = (
             self._GetSwarmingTaskAndTryJobForFailure(
@@ -517,8 +573,10 @@ class FindItApi(remote.Service):
 
   @gae_ts_mon.instrument_endpoint()
   @endpoints.method(
-      _BuildFailureCollection, _BuildFailureAnalysisResultCollection,
-      path='buildfailure', name='buildfailure')
+      _BuildFailureCollection,
+      _BuildFailureAnalysisResultCollection,
+      path='buildfailure',
+      name='buildfailure')
   def AnalyzeBuildFailures(self, request):
     """Returns analysis results for the given build failures in the request.
 
@@ -545,8 +603,8 @@ class FindItApi(remote.Service):
     for build in request.builds:
       master_name = buildbot.GetMasterNameFromUrl(build.master_url)
       if not (master_name and waterfall_config.MasterIsSupported(master_name)):
-        logging.info('%s/%s/%s is not supported',
-                     build.master_url, build.builder_name, build.build_number)
+        logging.info('%s/%s/%s is not supported', build.master_url,
+                     build.builder_name, build.build_number)
         continue
 
       supported_builds.append({
@@ -560,13 +618,13 @@ class FindItApi(remote.Service):
       # scheduled to analyze new failed steps, the returned WfAnalysis will
       # still have the result from last completed analysis.
       # If there is no analysis yet, no result is returned.
-      heuristic_analysis = WfAnalysis.Get(
-          master_name, build.builder_name, build.build_number)
+      heuristic_analysis = WfAnalysis.Get(master_name, build.builder_name,
+                                          build.build_number)
       if not heuristic_analysis:
         continue
 
-      self._GenerateResultsForBuild(
-          build, heuristic_analysis, results, confidences)
+      self._GenerateResultsForBuild(build, heuristic_analysis, results,
+                                    confidences)
 
     logging.info('%d build failure(s), while %d are supported',
                  len(request.builds), len(supported_builds))
@@ -593,8 +651,8 @@ class FindItApi(remote.Service):
           'No permission to run a new analysis! User is %s' % user_email)
 
     def CreateFlakeAnalysisRequest(flake):
-      analysis_request = FlakeAnalysisRequest.Create(
-          flake.name, flake.is_step, flake.bug_id)
+      analysis_request = FlakeAnalysisRequest.Create(flake.name, flake.is_step,
+                                                     flake.bug_id)
       for step in flake.build_steps:
         analysis_request.AddBuildStep(step.master_name, step.builder_name,
                                       step.build_number, step.step_name,

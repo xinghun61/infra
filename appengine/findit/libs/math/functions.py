@@ -14,6 +14,7 @@ class Function(object):
   provides a base class for functions supporting all these sorts of
   operations in addition to being callable.
   """
+
   def __init__(self, f):
     self._f = f
 
@@ -40,6 +41,7 @@ class Function(object):
 
 class MemoizedFunction(Function):
   """A function which memoizes its value for all arguments."""
+
   def __init__(self, f):
     super(MemoizedFunction, self).__init__(f)
     self._memos = {}

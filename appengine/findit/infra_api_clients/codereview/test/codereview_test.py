@@ -8,6 +8,7 @@ from infra_api_clients.codereview import codereview
 
 
 class RietveldTest(testing.AppengineTestCase):
+
   def testIsAutoRevertOff(self):
     test_cases = {
         'NOAUTOREVERT=TRUE': True,

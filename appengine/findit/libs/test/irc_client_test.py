@@ -9,7 +9,6 @@ from testing_utils import testing
 
 from libs.irc_client import IRCClient
 
-
 SERVER_RESPONSE = """
 :verne.freenode.net NOTICE * :*** Looking up your hostname...
 :verne.freenode.net NOTICE * :*** Checking Ident
@@ -35,8 +34,9 @@ class IRCClientTest(testing.AppengineTestCase):
     # TODO(you): Find a more concise way to do the following three lines.
     self.mock_socket_obj = mock.Mock()
     self.mock_socket_obj.recv = mock.Mock(return_value=SERVER_RESPONSE)
-    self.patch('libs.irc_client.socket.socket',
-               new=mock.Mock(return_value=self.mock_socket_obj))
+    self.patch(
+        'libs.irc_client.socket.socket',
+        new=mock.Mock(return_value=self.mock_socket_obj))
 
   def testIRCClientTestDirectMessage(self):
     channel = '#chromium'
@@ -45,14 +45,14 @@ class IRCClientTest(testing.AppengineTestCase):
     other_nick = 'someone'
     with IRCClient('irc.freenode.net', channel, nick, 'CulpritFinder') as i:
       i.SendMessage(message, other_nick)
-    self.assertEqual(
-        self.mock_socket_obj.sendall.call_args_list,
-         [mock.call('USER %s %s %s : CulpritFinder\r\n' % (nick, nick, nick)),
-          mock.call('NICK %s\r\n' % nick),
-          mock.call('JOIN %s\r\n' % channel),
-          mock.call('PRIVMSG %s :%s\r\n' % (other_nick, message)),
-          mock.call('PART %s\r\n' % channel),
-          mock.call('QUIT\r\n')])
+    self.assertEqual(self.mock_socket_obj.sendall.call_args_list, [
+        mock.call('USER %s %s %s : CulpritFinder\r\n' % (nick, nick, nick)),
+        mock.call('NICK %s\r\n' % nick),
+        mock.call('JOIN %s\r\n' % channel),
+        mock.call('PRIVMSG %s :%s\r\n' % (other_nick, message)),
+        mock.call('PART %s\r\n' % channel),
+        mock.call('QUIT\r\n')
+    ])
 
   def testIRCClientTestChannelMessage(self):
     channel = '#chromium'
@@ -60,14 +60,14 @@ class IRCClientTest(testing.AppengineTestCase):
     message = 'Foo bar baz\n\n'
     with IRCClient('irc.freenode.net', channel, nick, 'CulpritFinder') as i:
       i.SendMessage(message)
-    self.assertEqual(
-        self.mock_socket_obj.sendall.call_args_list,
-         [mock.call('USER %s %s %s : CulpritFinder\r\n' % (nick, nick, nick)),
-          mock.call('NICK %s\r\n' % nick),
-          mock.call('JOIN %s\r\n' % channel),
-          mock.call('PRIVMSG %s :%s\r\n' % (channel, message)),
-          mock.call('PART %s\r\n' % channel),
-          mock.call('QUIT\r\n')])
+    self.assertEqual(self.mock_socket_obj.sendall.call_args_list, [
+        mock.call('USER %s %s %s : CulpritFinder\r\n' % (nick, nick, nick)),
+        mock.call('NICK %s\r\n' % nick),
+        mock.call('JOIN %s\r\n' % channel),
+        mock.call('PRIVMSG %s :%s\r\n' % (channel, message)),
+        mock.call('PART %s\r\n' % channel),
+        mock.call('QUIT\r\n')
+    ])
 
   def testIRCClientTestTimeout(self):
     channel = '#chromium'
@@ -89,33 +89,31 @@ class IRCClientTest(testing.AppengineTestCase):
         side_effect=['\n', '\n', SERVER_RESPONSE])
     with IRCClient('irc.freenode.net', channel, nick, 'CulpritFinder') as i:
       i.SendMessage(message)
-    self.assertEqual(
-        self.mock_socket_obj.sendall.call_args_list,
-         [mock.call('USER %s %s %s : CulpritFinder\r\n' % (nick, nick, nick)),
-          mock.call('NICK %s\r\n' % nick),
-          mock.call('JOIN %s\r\n' % channel),
-          mock.call('PRIVMSG %s :%s\r\n' % (channel, message)),
-          mock.call('PART %s\r\n' % channel),
-          mock.call('QUIT\r\n')])
+    self.assertEqual(self.mock_socket_obj.sendall.call_args_list, [
+        mock.call('USER %s %s %s : CulpritFinder\r\n' % (nick, nick, nick)),
+        mock.call('NICK %s\r\n' % nick),
+        mock.call('JOIN %s\r\n' % channel),
+        mock.call('PRIVMSG %s :%s\r\n' % (channel, message)),
+        mock.call('PART %s\r\n' % channel),
+        mock.call('QUIT\r\n')
+    ])
 
   def testIRCClientTestTruncatedJoinMessage(self):
     channel = '#chromium'
     nick = 'findittest'
     message = 'Foo bar baz\n\n'
     # Force socket.recv to be called multiple times.
-    self.mock_socket_obj.recv = mock.Mock(
-        side_effect=[
-            'Preamble',
-            'MOTD message\r\n',
-            'Foo\r\n:verne.freenode.net 353 findit',
-            'test @ #chromium :findittest @someone\r\nBar\r\n'])
+    self.mock_socket_obj.recv = mock.Mock(side_effect=[
+        'Preamble', 'MOTD message\r\n', 'Foo\r\n:verne.freenode.net 353 findit',
+        'test @ #chromium :findittest @someone\r\nBar\r\n'
+    ])
     with IRCClient('irc.freenode.net', channel, nick, 'CulpritFinder') as i:
       i.SendMessage(message)
-    self.assertEqual(
-        self.mock_socket_obj.sendall.call_args_list,
-         [mock.call('USER %s %s %s : CulpritFinder\r\n' % (nick, nick, nick)),
-          mock.call('NICK %s\r\n' % nick),
-          mock.call('JOIN %s\r\n' % channel),
-          mock.call('PRIVMSG %s :%s\r\n' % (channel, message)),
-          mock.call('PART %s\r\n' % channel),
-          mock.call('QUIT\r\n')])
+    self.assertEqual(self.mock_socket_obj.sendall.call_args_list, [
+        mock.call('USER %s %s %s : CulpritFinder\r\n' % (nick, nick, nick)),
+        mock.call('NICK %s\r\n' % nick),
+        mock.call('JOIN %s\r\n' % channel),
+        mock.call('PRIVMSG %s :%s\r\n' % (channel, message)),
+        mock.call('PART %s\r\n' % channel),
+        mock.call('QUIT\r\n')
+    ])

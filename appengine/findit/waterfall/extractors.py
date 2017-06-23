@@ -66,9 +66,8 @@ class GeneralExtractor(Extractor):
             break
         end = i
 
-        if (start >= 1 and
-            self.INDIRECT_LEAK_MARKER_PATTERN.match(
-                failure_log_lines[start - 1])):
+        if (start >= 1 and self.INDIRECT_LEAK_MARKER_PATTERN.match(
+            failure_log_lines[start - 1])):
           # Ignore stack trace of an indirect leak.
           continue
 
@@ -134,17 +133,14 @@ class CompileStepExtractor(Extractor):
   IOS_BUILDER_NAMES_FOR_COMPILE = ['iOS_Simulator_(dbg)', 'iOS_Device']
   MAC_MASTER_NAME_FOR_COMPILE = 'chromium.mac'
 
-  GOMA_COMPILER_PREFIX = (
-      r'\S*/gomacc '
-      '\S+(?:clang\+\+|androideabi-gcc|androideabi-g\+\+)'
-  )
+  GOMA_COMPILER_PREFIX = (r'\S*/gomacc '
+                          '\S+(?:clang\+\+|androideabi-gcc|androideabi-g\+\+)')
   STRICT_COMPILE_FAILURE_PATTEN = re.compile(
       r'^%s -MMD -MF (obj/[^\s-]+\.o)\.d .* '
       '-c ([^\s-]+(?:cc|c|cpp|m|mm)) -o \\1$' % GOMA_COMPILER_PREFIX)
 
   STRICT_LINK_FAILURE_PATTEN = re.compile(
-      r'^%s -Wl,.* -o (\S+) -Wl,--start-group .*$' % (
-          GOMA_COMPILER_PREFIX))
+      r'^%s -Wl,.* -o (\S+) -Wl,--start-group .*$' % (GOMA_COMPILER_PREFIX))
 
   def ExtractFailedOutputNodes(self, line, signal):
     match = self.STRICT_COMPILE_FAILURE_PATTEN.match(line)
@@ -185,15 +181,10 @@ class CompileStepExtractor(Extractor):
 
       if source_file:
         # Failure is a compile failure.
-        signal.AddTarget({
-            'target': target,
-            'source': source_file
-        })
+        signal.AddTarget({'target': target, 'source': source_file})
       else:
         # Failure is a linker error.
-        signal.AddTarget({
-            'target': target
-        })
+        signal.AddTarget({'target': target})
     else:
       # If no match was found using Linux pattern matching, fallback to Windows.
       match = self.WINDOWS_FAILED_SOURCE_TARGET_PATTERN.search(line)
@@ -202,10 +193,7 @@ class CompileStepExtractor(Extractor):
         # Failure is a compile failure.
         source_file = match.group(1)
         object_file = match.group(2)
-        signal.AddTarget({
-            'target': object_file,
-            'source': source_file
-        })
+        signal.AddTarget({'target': object_file, 'source': source_file})
       else:
         match = self.WINDOWS_LINK_FAILURE_PATTERN.search(line)
         if match:
@@ -231,8 +219,7 @@ class CompileStepExtractor(Extractor):
         match_quote_index = line.find('"', quote_index + 1)
         if match_quote_index < 0:
           return []  # Return an empty list for unexpected format.
-        failed_output_nodes.append(
-            line[quote_index + 1: match_quote_index])
+        failed_output_nodes.append(line[quote_index + 1:match_quote_index])
         remaining_part = line[match_quote_index + 1:]
       line = remaining_part
 
@@ -253,8 +240,7 @@ class CompileStepExtractor(Extractor):
         bot_name in self.IOS_BUILDER_NAMES_FOR_COMPILE):
       error_lines = []
       for line in reversed(failure_log.splitlines()):
-        if (not failure_started and
-            self.ERROR_LINE_END_PATTERN1.match(line)):
+        if (not failure_started and self.ERROR_LINE_END_PATTERN1.match(line)):
           failure_started = True
           continue
 
@@ -322,8 +308,7 @@ class CheckPermExtractor(Extractor):
       # Extract files.
       for match in extractor_util.FILE_PATH_LINE_PATTERN.finditer(line):
         file_path, line_number = match.groups()
-        signal.AddFile(extractor_util.NormalizeFilePath(file_path),
-                       line_number)
+        signal.AddFile(extractor_util.NormalizeFilePath(file_path), line_number)
 
     return signal
 
@@ -393,8 +378,8 @@ class AndroidJavaTestExtractor(Extractor):
 
     if self._InWhitelist(package_classname):
       if filename:
-        file_path = os.path.join(
-            '/'.join(package_classname.split('.')[:-2]), filename)
+        file_path = os.path.join('/'.join(package_classname.split('.')[:-2]),
+                                 filename)
       else:
         file_path = '/'.join(package_classname.split('.')[:-1]) + '.java'
       signal.AddFile(extractor_util.NormalizeFilePath(file_path), line_number)
@@ -533,6 +518,7 @@ class RunhooksExtractor(Extractor):
       index -= 1
     return signal
 
+
 # TODO(lijeffrey): Several steps are named similarly and may use the same
 # extractor. We may need to implement a solution to map a name to an extractor
 # in a cleaner fashion, though there may be some shortcomings of special-case
@@ -564,5 +550,5 @@ def ExtractSignal(master_name, bot_name, step_name, test_name, failure_log):
   """
   # Fall back to a general-but-maybe-not-accurate extractor.
   extractor_class = EXTRACTORS.get(step_name, GeneralExtractor)
-  return extractor_class().Extract(
-      failure_log, test_name, step_name, bot_name, master_name)
+  return extractor_class().Extract(failure_log, test_name, step_name, bot_name,
+                                   master_name)

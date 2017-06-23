@@ -25,7 +25,9 @@ class ScriptUtilTest(testing.AppengineTestCase):
 
   # TODO(katesonia): Figure out a good way to work around cache.
   def testGetLocalGitCommandOutput(self):
+
     class _MockProcess(object):
+
       def __init__(self, command, *_):
         self.command = command
 

@@ -10,7 +10,6 @@ from libs import time_util
 from model.wf_analysis import WfAnalysis
 from model import result_status
 
-
 _DEFAULT_DISPLAY_COUNT = 500
 
 
@@ -41,14 +40,13 @@ class ListAnalyses(BaseHandler):
     if status_code >= 0:
       analysis_query = WfAnalysis.query(WfAnalysis.result_status == status_code)
     elif self.request.get('triage') == '1':
-      analysis_query = WfAnalysis.query(ndb.AND(
-          WfAnalysis.result_status > result_status.FOUND_CORRECT,
-          WfAnalysis.result_status <
-          result_status.NOT_FOUND_CORRECT))
+      analysis_query = WfAnalysis.query(
+          ndb.AND(WfAnalysis.result_status > result_status.FOUND_CORRECT,
+                  WfAnalysis.result_status < result_status.NOT_FOUND_CORRECT))
     else:
-      analysis_query = WfAnalysis.query(ndb.AND(
-          WfAnalysis.result_status >= result_status.FOUND_CORRECT,
-          WfAnalysis.result_status < result_status.FOUND_UNTRIAGED))
+      analysis_query = WfAnalysis.query(
+          ndb.AND(WfAnalysis.result_status >= result_status.FOUND_CORRECT,
+                  WfAnalysis.result_status < result_status.FOUND_UNTRIAGED))
 
     if self.request.get('count'):
       count = int(self.request.get('count'))
@@ -58,17 +56,16 @@ class ListAnalyses(BaseHandler):
     if self.request.get('days'):  # pragma: no cover
       start_date = time_util.GetUTCNow() - datetime.timedelta(
           int(self.request.get('days')))
-      start_date = start_date.replace(
-          hour=0, minute=0, second=0, microsecond=0)
+      start_date = start_date.replace(hour=0, minute=0, second=0, microsecond=0)
 
       if status_code >= 0:
         analysis_results = analysis_query.filter(
-            WfAnalysis.build_start_time >= start_date).order(
-            -WfAnalysis.build_start_time).fetch(count)
+            WfAnalysis.build_start_time >=
+            start_date).order(-WfAnalysis.build_start_time).fetch(count)
       else:
         analysis_results = WfAnalysis.query(
-            WfAnalysis.build_start_time >= start_date).order(
-            -WfAnalysis.build_start_time).fetch(count)
+            WfAnalysis.build_start_time >=
+            start_date).order(-WfAnalysis.build_start_time).fetch(count)
     else:
       analysis_results = analysis_query.order(
           WfAnalysis.result_status, -WfAnalysis.build_start_time).fetch(count)

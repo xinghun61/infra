@@ -22,11 +22,7 @@ class ProcessSwarmingTasksResultPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testStepHasFirstTimeFailure(self):
     build_number = 1
-    tests = {
-        'test1': {
-            'first_failure': 0
-        }
-    }
+    tests = {'test1': {'first_failure': 0}}
     self.assertFalse(
         process_swarming_tasks_result_pipeline.StepHasFirstTimeFailure(
             tests, build_number))
@@ -75,18 +71,15 @@ class ProcessSwarmingTasksResultPipelineTest(wf_testcase.WaterfallTestCase):
     build_completed = True
 
     self.MockPipeline(
-      ProcessSwarmingTaskResultPipeline,
-      [],
-      expected_args=[
-        master_name, builder_name, build_number, step_name],
-      expected_kwargs={})
+        ProcessSwarmingTaskResultPipeline, [],
+        expected_args=[master_name, builder_name, build_number, step_name],
+        expected_kwargs={})
 
     self.MockPipeline(
-      UpdateAnalysisWithFlakeInfoPipeline,
-      None,
-      expected_args=[
-        master_name, builder_name, build_number, []],
-      expected_kwargs={})
+        UpdateAnalysisWithFlakeInfoPipeline,
+        None,
+        expected_args=[master_name, builder_name, build_number, []],
+        expected_kwargs={})
 
     pipeline = ProcessSwarmingTasksResultPipeline(
         master_name, builder_name, build_number, failure_info, build_completed)
@@ -98,13 +91,13 @@ class ProcessSwarmingTasksResultPipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
     failure_info = {
-      'parent_mastername': None,
-      'parent_buildername': None,
-      'failure_type': failure_type.TEST,
+        'parent_mastername': None,
+        'parent_buildername': None,
+        'failure_type': failure_type.TEST,
     }
     build_completed = False
 
     pipeline = ProcessSwarmingTasksResultPipeline(
-      master_name, builder_name, build_number, failure_info, build_completed)
+        master_name, builder_name, build_number, failure_info, build_completed)
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()

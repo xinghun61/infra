@@ -20,20 +20,17 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     self.build_number = 121
 
   def testGetResultAndFailureResultMapForGroup(self):
-    first_analysis = WfAnalysis.Create(
-        self.master_name, self.builder_name, self.build_number)
-    first_analysis.result = {
-        'failures': []
-    }
-    first_analysis.failure_result_map = {
-        'compile': 'm/b/121'
-    }
+    first_analysis = WfAnalysis.Create(self.master_name, self.builder_name,
+                                       self.build_number)
+    first_analysis.result = {'failures': []}
+    first_analysis.failure_result_map = {'compile': 'm/b/121'}
     first_analysis.put()
 
-    second_analysis = WfAnalysis.Create(
-        'm2', self.builder_name, self.build_number)
-    second_analysis.failure_group_key = [self.master_name, self.builder_name,
-                                         self.build_number]
+    second_analysis = WfAnalysis.Create('m2', self.builder_name,
+                                        self.build_number)
+    second_analysis.failure_group_key = [
+        self.master_name, self.builder_name, self.build_number
+    ]
     second_analysis.put()
 
     result, failure_result_map = handlers_util._GetResultAndFailureResultMap(
@@ -48,8 +45,8 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({}, data)
 
   def testGetSwarmingTaskInfoReturnEmptyIfNoFailureMap(self):
-    WfAnalysis.Create(
-        self.master_name, self.builder_name, self.build_number).put()
+    WfAnalysis.Create(self.master_name, self.builder_name,
+                      self.build_number).put()
 
     data = handlers_util.GetSwarmingTaskInfo(
         self.master_name, self.builder_name, self.build_number)
@@ -57,8 +54,8 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({}, data)
 
   def testGetSwarmingTaskInfoNoSwarmingTasks(self):
-    analysis = WfAnalysis.Create(
-        self.master_name, self.builder_name, self.build_number)
+    analysis = WfAnalysis.Create(self.master_name, self.builder_name,
+                                 self.build_number)
     analysis.failure_result_map = {
         'step1': {
             'test1': '%s/%s/%s' % (self.master_name, self.builder_name, 120),
@@ -93,8 +90,8 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_data, data)
 
   def testGetSwarmingTaskInfoReturnIfNonSwarming(self):
-    analysis = WfAnalysis.Create(
-        self.master_name, self.builder_name, self.build_number)
+    analysis = WfAnalysis.Create(self.master_name, self.builder_name,
+                                 self.build_number)
     analysis.failure_result_map = {
         'step1': '%s/%s/%s' % (self.master_name, self.builder_name, 120)
     }
@@ -118,8 +115,8 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_data, data)
 
   def testGetSwarmingTaskInfoIfNoSwarmingTask(self):
-    analysis = WfAnalysis.Create(
-        self.master_name, self.builder_name, self.build_number)
+    analysis = WfAnalysis.Create(self.master_name, self.builder_name,
+                                 self.build_number)
     analysis.failure_result_map = {
         'step1': {
             'test1': '%s/%s/%s' % (self.master_name, self.builder_name, 120),
@@ -153,33 +150,35 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_data, data)
 
   def testGetSwarmingTaskInfo(self):
-    analysis = WfAnalysis.Create(
-        self.master_name, self.builder_name, self.build_number)
+    analysis = WfAnalysis.Create(self.master_name, self.builder_name,
+                                 self.build_number)
     analysis.failure_result_map = {
         'step1 on platform': {
-            'PRE_test1': '%s/%s/%s' % (
-                self.master_name, self.builder_name, 120),
-            'PRE_PRE_test2': '%s/%s/%s' % (
-                self.master_name, self.builder_name, self.build_number),
-            'test3': '%s/%s/%s' % (
-                self.master_name, self.builder_name, self.build_number),
-            'test4': '%s/%s/%s' % (
-                self.master_name, self.builder_name, self.build_number)
+            'PRE_test1':
+                '%s/%s/%s' % (self.master_name, self.builder_name, 120),
+            'PRE_PRE_test2':
+                '%s/%s/%s' % (self.master_name, self.builder_name,
+                              self.build_number),
+            'test3':
+                '%s/%s/%s' % (self.master_name, self.builder_name,
+                              self.build_number),
+            'test4':
+                '%s/%s/%s' % (self.master_name, self.builder_name,
+                              self.build_number)
         },
         'step2': {
-            'test1': '%s/%s/%s' % (
-                self.master_name, self.builder_name, self.build_number)
+            'test1':
+                '%s/%s/%s' % (self.master_name, self.builder_name,
+                              self.build_number)
         }
     }
     analysis.put()
 
-    task0 = WfSwarmingTask.Create(
-        self.master_name, self.builder_name, 120, 'step1 on platform')
+    task0 = WfSwarmingTask.Create(self.master_name, self.builder_name, 120,
+                                  'step1 on platform')
     task0.task_id = 'task0'
     task0.status = analysis_status.COMPLETED
-    task0.parameters = {
-        'tests': ['test1']
-    }
+    task0.parameters = {'tests': ['test1']}
     task0.tests_statuses = {
         'test1': {
             'total_run': 2,
@@ -192,14 +191,11 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     }
     task0.put()
 
-    task1 = WfSwarmingTask.Create(
-        self.master_name, self.builder_name, self.build_number,
-        'step1 on platform')
+    task1 = WfSwarmingTask.Create(self.master_name, self.builder_name,
+                                  self.build_number, 'step1 on platform')
     task1.task_id = 'task1'
     task1.status = analysis_status.COMPLETED
-    task1.parameters = {
-        'tests': ['test2', 'test3', 'test4']
-    }
+    task1.parameters = {'tests': ['test2', 'test3', 'test4']}
     task1.tests_statuses = {
         'PRE_PRE_test2': {
             'total_run': 2,
@@ -225,8 +221,8 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     }
     task1.put()
 
-    task2 = WfSwarmingTask.Create(
-        self.master_name, self.builder_name, self.build_number, 'step2')
+    task2 = WfSwarmingTask.Create(self.master_name, self.builder_name,
+                                  self.build_number, 'step2')
     task2.put()
 
     data = handlers_util.GetSwarmingTaskInfo(
@@ -237,8 +233,10 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             'swarming_tasks': {
                 'm/b/121': {
                     'task_info': {
-                        'status': analysis_status.COMPLETED,
-                        'task_id': 'task1',
+                        'status':
+                            analysis_status.COMPLETED,
+                        'task_id':
+                            'task1',
                         'task_url': ('https://chromium-swarm.appspot.com/user'
                                      '/task/task1')
                     },
@@ -249,8 +247,10 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
                 },
                 'm/b/120': {
                     'task_info': {
-                        'status': analysis_status.COMPLETED,
-                        'task_id': 'task0',
+                        'status':
+                            analysis_status.COMPLETED,
+                        'task_id':
+                            'task0',
                         'task_url': ('https://chromium-swarm.appspot.com/user/'
                                      'task/task0')
                     },
@@ -282,8 +282,8 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({}, data)
 
   def testGetTryJobResultReturnNoneIfNoFailureResultMap(self):
-    analysis = WfAnalysis.Create(
-        self.master_name, self.builder_name, self.build_number)
+    analysis = WfAnalysis.Create(self.master_name, self.builder_name,
+                                 self.build_number)
     analysis.put()
 
     result = handlers_util.GetAllTryJobResults(
@@ -292,26 +292,26 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({}, result)
 
   def testGetTryJobResultReturnNoneIfNoFailureResultMapWithResult(self):
-    analysis = WfAnalysis.Create(
-        self.master_name, self.builder_name, self.build_number)
+    analysis = WfAnalysis.Create(self.master_name, self.builder_name,
+                                 self.build_number)
     analysis.result = {
-        'failures': [
-            {
-                'step_name': 'a',
+        'failures': [{
+            'step_name':
+                'a',
+            'first_failure':
+                121,
+            'last_pass':
+                120,
+            'supported':
+                True,
+            'suspected_cls': [],
+            'tests': [{
+                'test_name': 'Unittest1.Subtest1',
                 'first_failure': 121,
                 'last_pass': 120,
-                'supported': True,
-                'suspected_cls': [],
-                'tests': [
-                    {
-                        'test_name': 'Unittest1.Subtest1',
-                        'first_failure': 121,
-                        'last_pass': 120,
-                        'suspected_cls': []
-                    }
-                ]
-            }
-        ]
+                'suspected_cls': []
+            }]
+        }]
     }
     analysis.put()
 
@@ -320,12 +320,10 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
 
     expected_result = {
         'a': {
-            'try_jobs': [
-                {
-                    'status': result_status.NO_FAILURE_RESULT_MAP,
-                    'tests': ['Unittest1.Subtest1']
-                }
-            ]
+            'try_jobs': [{
+                'status': result_status.NO_FAILURE_RESULT_MAP,
+                'tests': ['Unittest1.Subtest1']
+            }]
         }
     }
     self.assertEqual(expected_result, result)
@@ -336,142 +334,130 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({}, result)
 
   def testGetTryJobResultForCompileOnlyReturnStatusNoResult(self):
-    WfTryJob.Create(
-        self.master_name, self.builder_name, self.build_number).put()
+    WfTryJob.Create(self.master_name, self.builder_name,
+                    self.build_number).put()
 
     result = handlers_util._GetTryJobResultForCompile({'compile': 'm/b/121'})
 
     expected_result = {
         'compile': {
-            'try_jobs': [
-                {
-                    'try_job_key': 'm/b/121',
-                    'status': analysis_status.PENDING
-                }
-            ]
+            'try_jobs': [{
+                'try_job_key': 'm/b/121',
+                'status': analysis_status.PENDING
+            }]
         }
     }
 
     self.assertEqual(expected_result, result)
 
   def testGetTryJobResultForCompileOnlyReturnUrlIfStarts(self):
-    try_job = WfTryJob.Create(
-        self.master_name, self.builder_name, self.build_number)
+    try_job = WfTryJob.Create(self.master_name, self.builder_name,
+                              self.build_number)
     try_job.status = analysis_status.RUNNING
-    try_job.compile_results = [
-        {
-            'result': None,
-            'url': ('http://build.chromium.org/p/tryserver.chromium.linux/'
-                    'builders/linux_chromium_variable/builds/121')
-        }
-    ]
+    try_job.compile_results = [{
+        'result':
+            None,
+        'url': ('http://build.chromium.org/p/tryserver.chromium.linux/'
+                'builders/linux_chromium_variable/builds/121')
+    }]
     try_job.put()
 
     result = handlers_util._GetTryJobResultForCompile({'compile': 'm/b/121'})
 
     expected_result = {
         'compile': {
-            'try_jobs': [
-                {
-                    'try_job_key': 'm/b/121',
-                    'status': analysis_status.RUNNING,
-                    'try_job_build_number': 121,
-                    'try_job_url': (
-                        'http://build.chromium.org/p/tryserver.chromium.'
-                        'linux/builders/linux_chromium_variable/builds/121')
-                }
-            ]
+            'try_jobs': [{
+                'try_job_key':
+                    'm/b/121',
+                'status':
+                    analysis_status.RUNNING,
+                'try_job_build_number':
+                    121,
+                'try_job_url': (
+                    'http://build.chromium.org/p/tryserver.chromium.'
+                    'linux/builders/linux_chromium_variable/builds/121')
+            }]
         }
     }
     self.assertEqual(expected_result, result)
 
   def testGetTryJobResultForCompileNonBuildbot(self):
-    try_job = WfTryJob.Create(
-        self.master_name, self.builder_name, self.build_number)
+    try_job = WfTryJob.Create(self.master_name, self.builder_name,
+                              self.build_number)
     try_job.status = analysis_status.RUNNING
-    try_job.compile_results = [
-        {
-            'result': None,
-            'url': 'https://luci-milo.appspot.com/swarming/task/3639e',
-            'try_job_id': '12341234'
-        }
-    ]
+    try_job.compile_results = [{
+        'result': None,
+        'url': 'https://luci-milo.appspot.com/swarming/task/3639e',
+        'try_job_id': '12341234'
+    }]
     try_job.put()
 
     result = handlers_util._GetTryJobResultForCompile({'compile': 'm/b/121'})
 
     expected_result = {
         'compile': {
-            'try_jobs': [
-                {
-                    'try_job_key': 'm/b/121',
-                    'status': analysis_status.RUNNING,
-                    'try_job_build_number': '12341234',
-                    'try_job_url':
-                        'https://luci-milo.appspot.com/swarming/task/3639e',
-                }
-            ]
+            'try_jobs': [{
+                'try_job_key':
+                    'm/b/121',
+                'status':
+                    analysis_status.RUNNING,
+                'try_job_build_number':
+                    '12341234',
+                'try_job_url':
+                    'https://luci-milo.appspot.com/swarming/task/3639e',
+            }]
         }
     }
     self.assertEqual(expected_result, result)
 
   def testGetTryJobResultForCompileOnlyReturnStatusIfError(self):
-    try_job = WfTryJob.Create(
-        self.master_name, self.builder_name, self.build_number)
+    try_job = WfTryJob.Create(self.master_name, self.builder_name,
+                              self.build_number)
     try_job.status = analysis_status.ERROR
-    try_job.compile_results = [
-        {
-            'try_job_id': '1'
-        }
-    ]
+    try_job.compile_results = [{'try_job_id': '1'}]
     try_job.put()
 
     result = handlers_util._GetTryJobResultForCompile({'compile': 'm/b/121'})
 
     expected_result = {
         'compile': {
-            'try_jobs': [
-                {
-                    'try_job_key': 'm/b/121',
-                    'status': analysis_status.ERROR
-                }
-            ]
+            'try_jobs': [{
+                'try_job_key': 'm/b/121',
+                'status': analysis_status.ERROR
+            }]
         }
     }
 
     self.assertEqual(expected_result, result)
 
   def testGetTryJobResultWhenTryJobCompleted(self):
-    analysis = WfAnalysis.Create(
-        self.master_name, self.builder_name, self.build_number)
-    analysis.failure_result_map = {
-        'compile': 'm/b/121'
-    }
+    analysis = WfAnalysis.Create(self.master_name, self.builder_name,
+                                 self.build_number)
+    analysis.failure_result_map = {'compile': 'm/b/121'}
     analysis.put()
 
-    try_job = WfTryJob.Create(
-        self.master_name, self.builder_name, self.build_number)
+    try_job = WfTryJob.Create(self.master_name, self.builder_name,
+                              self.build_number)
     try_job.status = analysis_status.COMPLETED
-    try_job.compile_results = [
-        {
-            'report': {
-                'result': {
-                    'rev1': 'passed',
-                    'rev2': 'failed'
-                }
-            },
-            'try_job_id': 'm/b/121',
-            'url': ('http://build.chromium.org/p/tryserver.chromium.'
-                    'linux/builders/linux_chromium_variable/builds/121'),
-            'culprit': {
-                'compile': {
-                    'revision': 'rev2',
-                    'commit_position': '2',
-                    'review_url': 'url_2'
-                }
+    try_job.compile_results = [{
+        'report': {
+            'result': {
+                'rev1': 'passed',
+                'rev2': 'failed'
+            }
+        },
+        'try_job_id':
+            'm/b/121',
+        'url': ('http://build.chromium.org/p/tryserver.chromium.'
+                'linux/builders/linux_chromium_variable/builds/121'),
+        'culprit': {
+            'compile': {
+                'revision': 'rev2',
+                'commit_position': '2',
+                'review_url': 'url_2'
             }
         }
-    ]
+    }]
     try_job.put()
 
     result = handlers_util.GetAllTryJobResults(
@@ -479,49 +465,46 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
 
     expected_result = {
         'compile': {
-            'try_jobs': [
-                {
-                    'try_job_key': 'm/b/121',
-                    'status': analysis_status.COMPLETED,
-                    'try_job_build_number': 121,
-                    'try_job_url': (
-                        'http://build.chromium.org/p/tryserver.chromium.'
-                        'linux/builders/linux_chromium_variable/builds/121'),
-                    'culprit': {
-                        'revision': 'rev2',
-                        'commit_position': '2',
-                        'review_url': 'url_2'
-                    }
+            'try_jobs': [{
+                'try_job_key':
+                    'm/b/121',
+                'status':
+                    analysis_status.COMPLETED,
+                'try_job_build_number':
+                    121,
+                'try_job_url': (
+                    'http://build.chromium.org/p/tryserver.chromium.'
+                    'linux/builders/linux_chromium_variable/builds/121'),
+                'culprit': {
+                    'revision': 'rev2',
+                    'commit_position': '2',
+                    'review_url': 'url_2'
                 }
-            ]
+            }]
         }
     }
 
     self.assertEqual(expected_result, result)
 
   def testGetTryJobResultWhenTryJobCompletedAllPassed(self):
-    analysis = WfAnalysis.Create(
-        self.master_name, self.builder_name, self.build_number)
-    analysis.failure_result_map = {
-        'compile': 'm/b/121'
-    }
+    analysis = WfAnalysis.Create(self.master_name, self.builder_name,
+                                 self.build_number)
+    analysis.failure_result_map = {'compile': 'm/b/121'}
     analysis.put()
 
-    try_job = WfTryJob.Create(
-        self.master_name, self.builder_name, self.build_number)
+    try_job = WfTryJob.Create(self.master_name, self.builder_name,
+                              self.build_number)
     try_job.status = analysis_status.COMPLETED
-    try_job.compile_results = [
-        {
-            'report': {
-                'result': {
-                    'rev1': 'passed',
-                    'rev2': 'failed'
-                },
+    try_job.compile_results = [{
+        'report': {
+            'result': {
+                'rev1': 'passed',
+                'rev2': 'failed'
             },
-            'url': ('http://build.chromium.org/p/tryserver.chromium.linux/'
-                    'builders/linux_chromium_variable/builds/121')
-        }
-    ]
+        },
+        'url': ('http://build.chromium.org/p/tryserver.chromium.linux/'
+                'builders/linux_chromium_variable/builds/121')
+    }]
     try_job.put()
 
     result = handlers_util.GetAllTryJobResults(
@@ -529,29 +512,26 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
 
     expected_result = {
         'compile': {
-            'try_jobs': [
-                {
-                    'try_job_key': 'm/b/121',
-                    'status': analysis_status.COMPLETED,
-                    'try_job_build_number': 121,
-                    'try_job_url': (
-                        'http://build.chromium.org/p/tryserver.chromium.'
-                        'linux/builders/linux_chromium_variable/builds/121')
-                }
-            ]
+            'try_jobs': [{
+                'try_job_key':
+                    'm/b/121',
+                'status':
+                    analysis_status.COMPLETED,
+                'try_job_build_number':
+                    121,
+                'try_job_url': (
+                    'http://build.chromium.org/p/tryserver.chromium.'
+                    'linux/builders/linux_chromium_variable/builds/121')
+            }]
         }
     }
 
     self.assertEqual(expected_result, result)
 
   def testGetAllTryJobResultsTestFailureNoTaskInfo(self):
-    analysis = WfAnalysis.Create(
-        self.master_name, self.builder_name, self.build_number)
-    analysis.failure_result_map = {
-        'step1': {
-            'test1': 'm/b/118'
-        }
-    }
+    analysis = WfAnalysis.Create(self.master_name, self.builder_name,
+                                 self.build_number)
+    analysis.failure_result_map = {'step1': {'test1': 'm/b/118'}}
     analysis.put()
 
     result = handlers_util.GetAllTryJobResults(
@@ -559,15 +539,13 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
 
     expected_result = {
         'step1': {
-            'try_jobs': [
-                {
-                    'try_job_key': 'm/b/118',
-                    'status': (
-                        result_status.NO_TRY_JOB_REASON_MAP.get(
-                            result_status.NO_SWARMING_TASK_FOUND)),
-                    'tests': ['test1']
-                }
-            ]
+            'try_jobs': [{
+                'try_job_key':
+                    'm/b/118',
+                'status': (result_status.NO_TRY_JOB_REASON_MAP.get(
+                    result_status.NO_SWARMING_TASK_FOUND)),
+                'tests': ['test1']
+            }]
         }
     }
 
@@ -586,19 +564,20 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             }
         }
     }
-    result = handlers_util._GetAllTryJobResultsForTest(
-        {'step1': 'm/b/119'}, tasks_info)
+    result = handlers_util._GetAllTryJobResultsForTest({
+        'step1': 'm/b/119'
+    }, tasks_info)
 
     expected_result = {
         'step1': {
-            'try_jobs': [
-                {
-                    'try_job_key': 'm/b/119',
-                    'status': result_status.NO_TRY_JOB_REASON_MAP.get(
+            'try_jobs': [{
+                'try_job_key':
+                    'm/b/119',
+                'status':
+                    result_status.NO_TRY_JOB_REASON_MAP.get(
                         result_status.NON_SWARMING_NO_RERUN),
-                    'tests': ['test1']
-                }
-            ]
+                'tests': ['test1']
+            }]
         }
     }
     self.assertEqual(expected_result, result)
@@ -616,46 +595,36 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
             }
         }
     }
-    result = handlers_util._GetAllTryJobResultsForTest(
-        {'step1': 'm/b/119'}, tasks_info, True)
+    result = handlers_util._GetAllTryJobResultsForTest({
+        'step1': 'm/b/119'
+    }, tasks_info, True)
 
     expected_result = {
         'step1': {
-            'try_jobs': [
-                {
-                    'try_job_key': 'm/b/119',
-                    'ref_name': 'step1',
-                    'can_force': True,
-                    'status': result_status.NON_SWARMING_NO_RERUN,
-                    'tests': ['test1']
-                }
-            ]
+            'try_jobs': [{
+                'try_job_key': 'm/b/119',
+                'ref_name': 'step1',
+                'can_force': True,
+                'status': result_status.NON_SWARMING_NO_RERUN,
+                'tests': ['test1']
+            }]
         }
     }
 
     self.assertEqual(expected_result, result)
 
   def testGetAllTryJobResultsForTestNoSwarmingTaskInfo(self):
-    failure_result_map = {
-        'step1': {
-            'test3': 'm/b/119'
-        }
-    }
+    failure_result_map = {'step1': {'test3': 'm/b/119'}}
 
     tasks_info = {}
 
-    result = handlers_util._GetAllTryJobResultsForTest(
-        failure_result_map, tasks_info)
+    result = handlers_util._GetAllTryJobResultsForTest(failure_result_map,
+                                                       tasks_info)
 
     self.assertEqual({}, result)
 
   def testGetAllTryJobResultsForTestSwarmingTaskNotComplete(self):
-    failure_result_map = {
-        'step1': {
-            'test1': 'm/b/118',
-            'test3': 'm/b/119'
-        }
-    }
+    failure_result_map = {'step1': {'test1': 'm/b/118', 'test3': 'm/b/119'}}
 
     tasks_info = {
         'step1': {
@@ -678,27 +647,30 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    result = handlers_util._GetAllTryJobResultsForTest(
-        failure_result_map, tasks_info)
+    result = handlers_util._GetAllTryJobResultsForTest(failure_result_map,
+                                                       tasks_info)
 
     expected_result = {
         'step1': {
-            'try_jobs': [
-                {
-                    'try_job_key': 'm/b/118',
-                    'status': result_status.NO_TRY_JOB_REASON_MAP[
-                        analysis_status.PENDING],
-                    'tests': ['test1']
-                },
-                {
-                    'try_job_key': 'm/b/119',
-                    'status': result_status.NO_TRY_JOB_REASON_MAP[
-                        analysis_status.RUNNING],
-                    'task_id': 'task3',
-                    'task_url': 'task3_url',
-                    'tests': ['test3']
-                }
-            ]
+            'try_jobs': [{
+                'try_job_key':
+                    'm/b/118',
+                'status':
+                    result_status.NO_TRY_JOB_REASON_MAP[analysis_status.PENDING
+                                                       ],
+                'tests': ['test1']
+            }, {
+                'try_job_key':
+                    'm/b/119',
+                'status':
+                    result_status.NO_TRY_JOB_REASON_MAP[analysis_status.RUNNING
+                                                       ],
+                'task_id':
+                    'task3',
+                'task_url':
+                    'task3_url',
+                'tests': ['test3']
+            }]
         }
     }
 
@@ -721,41 +693,32 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    try_jobs = [
-        {
-            'try_job_key': 'm/b/119'
-        }
-    ]
+    try_jobs = [{'try_job_key': 'm/b/119'}]
 
-    handlers_util._UpdateTryJobInfoBasedOnSwarming(
-        step_tasks_info, try_jobs)
+    handlers_util._UpdateTryJobInfoBasedOnSwarming(step_tasks_info, try_jobs)
 
-    expected_try_jobs = [
-        {
-            'try_job_key': 'm/b/119',
-            'ref_name': 'step1',
-            'tests': ['test2', 'test3'],
-            'status': result_status.FLAKY,
-            'task_id': 'task1',
-            'task_url': 'task_url'
-        }
-    ]
+    expected_try_jobs = [{
+        'try_job_key': 'm/b/119',
+        'ref_name': 'step1',
+        'tests': ['test2', 'test3'],
+        'status': result_status.FLAKY,
+        'task_id': 'task1',
+        'task_url': 'task_url'
+    }]
     self.assertEqual(expected_try_jobs, try_jobs)
 
   def testGetAllTryJobResultsForTestHasCulprit(self):
-    failure_result_map = {
-        'step1 on platform': {
-            'test3': 'm/b/119'
-        }
-    }
+    failure_result_map = {'step1 on platform': {'test3': 'm/b/119'}}
 
     tasks_info = {
         'step1 on platform': {
             'swarming_tasks': {
                 'm/b/119': {
                     'task_info': {
-                        'status': analysis_status.COMPLETED,
-                        'task_id': 'task1',
+                        'status':
+                            analysis_status.COMPLETED,
+                        'task_id':
+                            'task1',
                         'task_url': ('https://chromium-swarm.appspot.com/user'
                                      '/task/task1')
                     },
@@ -770,68 +733,70 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
 
     try_job = WfTryJob.Create('m', 'b', 119)
     try_job.status = analysis_status.COMPLETED
-    try_job.test_results = [
-        {
-            'report': {
-                'result': {
-                    'rev1': {
-                        'step1': {
-                            'status': 'passed',
-                            'valid': True
-                        }
-                    },
-                    'rev2': {
-                        'step1': {
-                            'status': 'failed',
-                            'valid': True,
-                            'failures': ['test3']
-                        }
+    try_job.test_results = [{
+        'report': {
+            'result': {
+                'rev1': {
+                    'step1': {
+                        'status': 'passed',
+                        'valid': True
+                    }
+                },
+                'rev2': {
+                    'step1': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['test3']
                     }
                 }
-            },
-            'url': ('http://build.chromium.org/p/tryserver.chromium.'
-                    'linux/builders/linux_chromium_variable/builds/121'),
-            'try_job_id': 'try_job_id',
-            'culprit': {
-                'step1': {
-                    'tests': {
-                        'test3': {
-                            'revision': 'rev2',
-                            'commit_position': '2',
-                            'review_url': 'url_2'
-                        }
+            }
+        },
+        'url': ('http://build.chromium.org/p/tryserver.chromium.'
+                'linux/builders/linux_chromium_variable/builds/121'),
+        'try_job_id':
+            'try_job_id',
+        'culprit': {
+            'step1': {
+                'tests': {
+                    'test3': {
+                        'revision': 'rev2',
+                        'commit_position': '2',
+                        'review_url': 'url_2'
                     }
                 }
             }
         }
-    ]
+    }]
     try_job.put()
 
-    result = handlers_util._GetAllTryJobResultsForTest(
-        failure_result_map, tasks_info)
+    result = handlers_util._GetAllTryJobResultsForTest(failure_result_map,
+                                                       tasks_info)
 
     expected_result = {
         'step1 on platform': {
-            'try_jobs': [
-                {
-                    'ref_name': 'step1',
-                    'try_job_key': 'm/b/119',
-                    'status': analysis_status.COMPLETED,
-                    'try_job_url': (
-                        'http://build.chromium.org/p/tryserver.chromium.'
-                        'linux/builders/linux_chromium_variable/builds/121'),
-                    'try_job_build_number': 121,
-                    'culprit': {
-                        'revision': 'rev2',
-                        'commit_position': '2',
-                        'review_url': 'url_2'
-                    },
-                    'task_id': 'task1',
-                    'task_url': ('https://chromium-swarm.appspot.com/user'
-                                 '/task/task1'),
-                    'tests': ['test3']
-                }
-            ]
+            'try_jobs': [{
+                'ref_name':
+                    'step1',
+                'try_job_key':
+                    'm/b/119',
+                'status':
+                    analysis_status.COMPLETED,
+                'try_job_url': (
+                    'http://build.chromium.org/p/tryserver.chromium.'
+                    'linux/builders/linux_chromium_variable/builds/121'),
+                'try_job_build_number':
+                    121,
+                'culprit': {
+                    'revision': 'rev2',
+                    'commit_position': '2',
+                    'review_url': 'url_2'
+                },
+                'task_id':
+                    'task1',
+                'task_url': ('https://chromium-swarm.appspot.com/user'
+                             '/task/task1'),
+                'tests': ['test3']
+            }]
         }
     }
     self.assertEqual(expected_result, result)
@@ -872,94 +837,102 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
 
     try_job = WfTryJob.Create('m', 'b', 119)
     try_job.status = analysis_status.COMPLETED
-    try_job.test_results = [
-        {
-            'report': {
-                'result': {
-                    'rev1': {
-                        'step1': {
-                            'status': 'passed',
-                            'valid': True
-                        }
-                    },
-                    'rev2': {
-                        'step1': {
-                            'status': 'failed',
-                            'valid': True,
-                            'failures': ['test2']
-                        }
+    try_job.test_results = [{
+        'report': {
+            'result': {
+                'rev1': {
+                    'step1': {
+                        'status': 'passed',
+                        'valid': True
+                    }
+                },
+                'rev2': {
+                    'step1': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['test2']
                     }
                 }
-            },
-            'url': ('http://build.chromium.org/p/tryserver.chromium.'
-                    'linux/builders/linux_chromium_variable/builds/121'),
-            'try_job_id': 'try_job_id',
-            'culprit': {
-                'step1': {
-                    'tests': {
-                        'test2': {
-                            'revision': 'rev2',
-                            'commit_position': '2',
-                            'review_url': 'url_2'
-                        }
+            }
+        },
+        'url': ('http://build.chromium.org/p/tryserver.chromium.'
+                'linux/builders/linux_chromium_variable/builds/121'),
+        'try_job_id':
+            'try_job_id',
+        'culprit': {
+            'step1': {
+                'tests': {
+                    'test2': {
+                        'revision': 'rev2',
+                        'commit_position': '2',
+                        'review_url': 'url_2'
                     }
                 }
             }
         }
-    ]
+    }]
     try_job.put()
 
-    result = handlers_util._GetAllTryJobResultsForTest(
-        failure_result_map, tasks_info)
+    result = handlers_util._GetAllTryJobResultsForTest(failure_result_map,
+                                                       tasks_info)
 
     expected_result = {
         'step1 on platform': {
-            'try_jobs': [
-                {
-                    'try_job_key': 'm/b/118',
-                    'status': result_status.NO_TRY_JOB_REASON_MAP.get(
+            'try_jobs': [{
+                'try_job_key':
+                    'm/b/118',
+                'status':
+                    result_status.NO_TRY_JOB_REASON_MAP.get(
                         result_status.NO_SWARMING_TASK_FOUND),
-                    'tests': ['test1']
+                'tests': ['test1']
+            }, {
+                'ref_name':
+                    'step1',
+                'try_job_key':
+                    'm/b/119',
+                'task_id':
+                    'task1',
+                'task_url':
+                    'url/task1',
+                'status':
+                    analysis_status.COMPLETED,
+                'try_job_url': (
+                    'http://build.chromium.org/p/tryserver.chromium.'
+                    'linux/builders/linux_chromium_variable/builds/121'),
+                'try_job_build_number':
+                    121,
+                'tests': ['test3'],
+                'culprit': {}
+            }, {
+                'ref_name':
+                    'step1',
+                'try_job_key':
+                    'm/b/119',
+                'task_id':
+                    'task1',
+                'task_url':
+                    'url/task1',
+                'status':
+                    analysis_status.COMPLETED,
+                'try_job_url': (
+                    'http://build.chromium.org/p/tryserver.chromium.'
+                    'linux/builders/linux_chromium_variable/builds/121'),
+                'try_job_build_number':
+                    121,
+                'culprit': {
+                    'revision': 'rev2',
+                    'commit_position': '2',
+                    'review_url': 'url_2'
                 },
-                {
-                    'ref_name': 'step1',
-                    'try_job_key': 'm/b/119',
-                    'task_id': 'task1',
-                    'task_url': 'url/task1',
-                    'status': analysis_status.COMPLETED,
-                    'try_job_url': (
-                        'http://build.chromium.org/p/tryserver.chromium.'
-                        'linux/builders/linux_chromium_variable/builds/121'),
-                    'try_job_build_number': 121,
-                    'tests': ['test3'],
-                    'culprit': {}
-                },
-                {
-                    'ref_name': 'step1',
-                    'try_job_key': 'm/b/119',
-                    'task_id': 'task1',
-                    'task_url': 'url/task1',
-                    'status': analysis_status.COMPLETED,
-                    'try_job_url': (
-                        'http://build.chromium.org/p/tryserver.chromium.'
-                        'linux/builders/linux_chromium_variable/builds/121'),
-                    'try_job_build_number': 121,
-                    'culprit': {
-                        'revision': 'rev2',
-                        'commit_position': '2',
-                        'review_url': 'url_2'
-                    },
-                    'tests': ['test2']
-                },
-                {
-                    'ref_name': 'step1',
-                    'try_job_key': 'm/b/119',
-                    'status': result_status.FLAKY,
-                    'task_id': 'task1',
-                    'task_url': 'url/task1',
-                    'tests': ['test4']
-                }
-            ]
+                'tests': ['test2']
+            }, {
+                'ref_name': 'step1',
+                'try_job_key': 'm/b/119',
+                'status': result_status.FLAKY,
+                'task_id': 'task1',
+                'task_url': 'url/task1',
+                'tests': ['test4']
+            }]
         }
     }
     self.assertEqual(set(expected_result), set(result))
@@ -998,29 +971,25 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     try_job_key = 'm/b/119'
     culprits_info = {
         'step1 on platform': {
-            'try_jobs': [
-                {
-                    'ref_name': 'step1',
-                    'try_job_key': try_job_key,
-                    'tests': ['test2', 'test3']
-                }
-            ]
+            'try_jobs': [{
+                'ref_name': 'step1',
+                'try_job_key': try_job_key,
+                'tests': ['test2', 'test3']
+            }]
         }
     }
     WfTryJob.Create('m', 'b', '119').put()
-    handlers_util._GetCulpritInfoForTryJobResultForTest(
-        try_job_key, culprits_info)
+    handlers_util._GetCulpritInfoForTryJobResultForTest(try_job_key,
+                                                        culprits_info)
 
     expected_culprits_info = {
         'step1 on platform': {
-            'try_jobs': [
-                {
-                    'ref_name': 'step1',
-                    'try_job_key': try_job_key,
-                    'tests': ['test2', 'test3'],
-                    'status': analysis_status.PENDING
-                }
-            ]
+            'try_jobs': [{
+                'ref_name': 'step1',
+                'try_job_key': try_job_key,
+                'tests': ['test2', 'test3'],
+                'status': analysis_status.PENDING
+            }]
         }
     }
     self.assertEqual(expected_culprits_info, culprits_info)
@@ -1029,42 +998,41 @@ class HandlersUtilResultTest(wf_testcase.WaterfallTestCase):
     try_job_key = 'm/b/119'
     culprits_info = {
         'step1 on platform': {
-            'try_jobs': [
-                {
-                    'ref_name': 'step1',
-                    'try_job_key': try_job_key,
-                    'tests': ['test2', 'test3']
-                }
-            ]
+            'try_jobs': [{
+                'ref_name': 'step1',
+                'try_job_key': try_job_key,
+                'tests': ['test2', 'test3']
+            }]
         }
     }
     try_job = WfTryJob.Create('m', 'b', '119')
     try_job.status = analysis_status.RUNNING
-    try_job.test_results = [
-        {
-            'url': ('http://build.chromium.org/p/tryserver.chromium.'
-                    'linux/builders/linux_chromium_variable/builds/121'),
-            'try_job_id': '121'
-        }
-    ]
+    try_job.test_results = [{
+        'url': ('http://build.chromium.org/p/tryserver.chromium.'
+                'linux/builders/linux_chromium_variable/builds/121'),
+        'try_job_id':
+            '121'
+    }]
     try_job.put()
-    handlers_util._GetCulpritInfoForTryJobResultForTest(
-        try_job_key, culprits_info)
+    handlers_util._GetCulpritInfoForTryJobResultForTest(try_job_key,
+                                                        culprits_info)
 
     expected_culprits_info = {
         'step1 on platform': {
-            'try_jobs': [
-                {
-                    'ref_name': 'step1',
-                    'try_job_key': try_job_key,
-                    'tests': ['test2', 'test3'],
-                    'status': analysis_status.RUNNING,
-                    'try_job_url': (
-                        'http://build.chromium.org/p/tryserver.chromium.'
-                        'linux/builders/linux_chromium_variable/builds/121'),
-                    'try_job_build_number': 121
-                }
-            ]
+            'try_jobs': [{
+                'ref_name':
+                    'step1',
+                'try_job_key':
+                    try_job_key,
+                'tests': ['test2', 'test3'],
+                'status':
+                    analysis_status.RUNNING,
+                'try_job_url': (
+                    'http://build.chromium.org/p/tryserver.chromium.'
+                    'linux/builders/linux_chromium_variable/builds/121'),
+                'try_job_build_number':
+                    121
+            }]
         }
     }
     self.assertEqual(expected_culprits_info, culprits_info)

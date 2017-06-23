@@ -48,10 +48,8 @@ default_web_application = webapp2.WSGIApplication(
     default_web_pages_handler_mappings, debug=False)
 gae_ts_mon.initialize(default_web_application)
 
-
 # Cloud Endpoint apis in the default module.
 api_application = endpoints.api_server([FindItApi])
-
 
 # App Engine pipeline status pages in the default module.
 pipeline_status_handler_mappings = [
@@ -64,11 +62,9 @@ pipeline_status_application = webapp2.WSGIApplication(
     pipeline_status_handler_mappings, debug=False)
 gae_ts_mon.initialize(pipeline_status_application)
 
-
 # For appengine pipeline running on backend modules.
 pipeline_backend_application = pipeline_handlers._APP
 gae_ts_mon.initialize(pipeline_backend_application)
-
 
 # "waterfall-frontend" module.
 waterfall_frontend_web_pages_handler_mappings = [
@@ -77,8 +73,7 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/list-analyses', list_analyses.ListAnalyses),
     ('/pubsub/swarmingpush', swarming_push.SwarmingPush),
     ('/pubsub/tryjobpush', try_job_push.TryJobPush),
-    ('/waterfall/auto-revert-metrics',
-     auto_revert_metrics.AutoRevertMetrics),
+    ('/waterfall/auto-revert-metrics', auto_revert_metrics.AutoRevertMetrics),
     ('/waterfall/build-failure', build_failure.BuildFailure),
     ('/waterfall/calculate-confidence-scores',
      calculate_confidence_scores.CalculateConfidenceScores),
@@ -98,7 +93,7 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/failure-log', failure_log.FailureLog),
     ('/waterfall/flake', check_flake.CheckFlake),
     ('/waterfall/flake/analyze_regression_range',
-        analyze_regression_range.AnalyzeRegressionRange),
+     analyze_regression_range.AnalyzeRegressionRange),
     ('/waterfall/help-triage', help_triage.HelpTriage),
     ('/waterfall/list-failures', list_analyses.ListAnalyses),
     ('/waterfall/list-flakes', list_flakes.ListFlakes),
@@ -115,7 +110,6 @@ waterfall_frontend_web_pages_handler_mappings = [
 waterfall_frontend_web_application = webapp2.WSGIApplication(
     waterfall_frontend_web_pages_handler_mappings, debug=False)
 gae_ts_mon.initialize(waterfall_frontend_web_application)
-
 
 # "waterfall-backend" module.
 waterfall_backend_web_pages_handler_mappings = [

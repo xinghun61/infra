@@ -54,5 +54,5 @@ def SteppinessForCommitPosition(data_points, commit_position):
     data_points (list): A list of master_flake_analysis.DataPoint instances.
     commit_position (int): The commit position to split the data points.
   """
-  return _Steppiness(
-      data_points, lambda dp: dp.commit_position, commit_position)
+  return _Steppiness(data_points, lambda dp: dp.commit_position,
+                     commit_position)

@@ -1,7 +1,6 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """This module contains util functions that local scripts can use."""
 
 import atexit
@@ -26,12 +25,12 @@ GIT_HASH_PATTERN = re.compile(r'^[0-9a-fA-F]{40}$')
 def SetAppEnginePaths(root_dir=None):
   """Inserts appengine sdk paths of infra to system paths."""
   # If no root directory is provided, default to findit root directory.
-  root_dir = root_dir or os.path.realpath(os.path.join(
-      os.path.dirname(__file__), os.path.pardir))
+  root_dir = root_dir or os.path.realpath(
+      os.path.join(os.path.dirname(__file__), os.path.pardir))
 
-  appengine_sdk_dir = os.path.realpath(os.path.join(
-      root_dir, os.path.pardir, os.path.pardir, os.path.pardir,
-      'google_appengine'))
+  appengine_sdk_dir = os.path.realpath(
+      os.path.join(root_dir, os.path.pardir, os.path.pardir, os.path.pardir,
+                   'google_appengine'))
 
   sys.path.insert(1, appengine_sdk_dir)
 
@@ -42,8 +41,8 @@ def SetAppEnginePaths(root_dir=None):
 def SetUpSystemPaths(root_dir=None):  # pragma: no cover
   """Inserts root path, first_party, third_party and appengine sdk paths."""
   # If no root directory is provided, default to findit root directory.
-  root_dir = root_dir or os.path.realpath(os.path.join(
-      os.path.dirname(__file__), os.path.pardir))
+  root_dir = root_dir or os.path.realpath(
+      os.path.join(os.path.dirname(__file__), os.path.pardir))
   SetAppEnginePaths(root_dir)
 
   first_party_dir = os.path.join(root_dir, 'first_party')
@@ -135,8 +134,8 @@ def RunTasks(tasks):  # pragma: no cover
   result_semaphore = threading.Semaphore(0)
   # Push task to task queue for execution.
   for task in tasks:
-    TASK_QUEUE.put((task['function'], task.get('args', []),
-                    task.get('kwargs', {}), result_semaphore))
+    TASK_QUEUE.put((task['function'], task.get('args', []), task.get(
+        'kwargs', {}), result_semaphore))
 
   # Wait until all tasks to be executed.
   for _ in tasks:
@@ -178,7 +177,10 @@ def GetLockedMethod(cls, method_name, lock):  # pragma: no cover
 
 # TODO(katesonia): Move this to gae_libs.
 # TODO(crbug.com/662540): Add unittests.
-def GetFilterQuery(query, time_property, start_date, end_date,
+def GetFilterQuery(query,
+                   time_property,
+                   start_date,
+                   end_date,
                    property_values=None,
                    datetime_pattern='%Y-%m-%d'):  # pragma: no cover.
   """Gets query with filters.
@@ -239,9 +241,9 @@ def ParseGitHash(revision, repo_path='.'):  # pragma: no cover
   try:
     # Can parse revision like 'HEAD', 'HEAD~3'.
     return subprocess.check_output(
-        'cd %s; git rev-parse %s' % (
-            repo_path, revision), shell=True).replace('\n', '')
-  except: # pylint: disable=W
-    logging.error('Failed to parse git hash for %s\nStacktrace:\n%s',
-                  revision, traceback.format_exc())
+        'cd %s; git rev-parse %s' % (repo_path, revision), shell=True).replace(
+            '\n', '')
+  except:  # pylint: disable=W
+    logging.error('Failed to parse git hash for %s\nStacktrace:\n%s', revision,
+                  traceback.format_exc())
     return None

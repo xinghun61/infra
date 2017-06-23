@@ -33,7 +33,7 @@ class WfTryBotCacheTest(wf_testcase.WaterfallTestCase):
   def testTruncateList(self):
     init_cache = WfTryBotCache.Get('popular_cache')
     for i in range(WfTryBotCache.MAX_RECENT_BOTS):
-        init_cache.AddBot('bot%d' % i, i, i+1)
+      init_cache.AddBot('bot%d' % i, i, i + 1)
     init_cache.put()
     cache = WfTryBotCache.Get('popular_cache')
     self.assertEqual(WfTryBotCache.MAX_RECENT_BOTS, len(cache.recent_bots))

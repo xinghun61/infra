@@ -20,8 +20,8 @@ from libs.time_util import TimeZoneInfo
 
 COMMIT_POSITION_PATTERN = re.compile(
     '^Cr-Commit-Position: refs/heads/master@{#(\d+)}$', re.IGNORECASE)
-CODE_REVIEW_URL_PATTERN = re.compile(
-    '^(?:Review URL|Review-Url): (.*\d+).*$', re.IGNORECASE)
+CODE_REVIEW_URL_PATTERN = re.compile('^(?:Review URL|Review-Url): (.*\d+).*$',
+                                     re.IGNORECASE)
 REVERTED_REVISION_PATTERN = re.compile(
     '^> Committed: https://.+/([0-9a-fA-F]{40})$', re.IGNORECASE)
 TIMEZONE_PATTERN = re.compile('[-+]\d{4}$')
@@ -41,7 +41,7 @@ class GitilesRepository(GitRepository):
     self._http_client = http_client
 
   @classmethod
-  def Factory(cls, http_client): # pragma: no cover
+  def Factory(cls, http_client):  # pragma: no cover
     """Construct a factory for creating ``GitilesRepository`` instances.
 
     Args:
@@ -60,7 +60,7 @@ class GitilesRepository(GitRepository):
     return self._repo_url
 
   @property
-  def identifier(self): # pragma: no cover
+  def identifier(self):  # pragma: no cover
     """This is used by ``_DefaultKeyGenerator`` in cache_decorator.py."""
     return self.repo_url
 
@@ -90,7 +90,8 @@ class GitilesRepository(GitRepository):
       return None
     return base64.b64decode(content)
 
-  def _GetDateTimeFromString(self, datetime_string,
+  def _GetDateTimeFromString(self,
+                             datetime_string,
                              date_format='%a %b %d %H:%M:%S %Y'):
     if TIMEZONE_PATTERN.findall(datetime_string):
       # Need to handle timezone conversion.
@@ -101,10 +102,9 @@ class GitilesRepository(GitRepository):
     return datetime.strptime(datetime_string, date_format)
 
   def _ContributorFromDict(self, data):
-    return Contributor(
-        data['name'],
-        commit_util.NormalizeEmail(data['email']),
-        self._GetDateTimeFromString(data['time']))
+    return Contributor(data['name'],
+                       commit_util.NormalizeEmail(data['email']),
+                       self._GetDateTimeFromString(data['time']))
 
   def _ParseChangeLogFromLogData(self, data):
     change_info = commit_util.ExtractChangeInfo(data['message'])
@@ -115,19 +115,18 @@ class GitilesRepository(GitRepository):
       if not diff.IsKnownChangeType(change_type):
         raise Exception('Unknown change type "%s"' % change_type)
       touched_files.append(
-          FileChangeInfo(
-              change_type, file_diff['old_path'], file_diff['new_path']))
+          FileChangeInfo(change_type, file_diff['old_path'], file_diff[
+              'new_path']))
 
     reverted_revision = commit_util.GetRevertedRevision(data['message'])
     url = '%s/+/%s' % (self.repo_url, data['commit'])
 
     return ChangeLog(
         self._ContributorFromDict(data['author']),
-        self._ContributorFromDict(data['committer']),
-        data['commit'], change_info.get('commit_position'), data['message'],
-        touched_files, url,change_info.get('code_review_url'),
-        reverted_revision, change_info.get('host'),
-        change_info.get('change_id'))
+        self._ContributorFromDict(data['committer']), data['commit'],
+        change_info.get('commit_position'), data['message'], touched_files, url,
+        change_info.get('code_review_url'), reverted_revision,
+        change_info.get('host'), change_info.get('change_id'))
 
   def GetChangeLog(self, revision):
     """Returns the change log of the given revision."""
@@ -156,8 +155,8 @@ class GitilesRepository(GitRepository):
     commits = []
 
     while next_end_revision:
-      url = '%s/+log/%s..%s' % (
-          self.repo_url, start_revision, next_end_revision)
+      url = '%s/+log/%s..%s' % (self.repo_url, start_revision,
+                                next_end_revision)
       data = self._SendRequestForJsonResponse(url, params)
 
       if not data:
@@ -187,12 +186,12 @@ class GitilesRepository(GitRepository):
 
     blame = Blame(revision, path)
     for region in data['regions']:
-      author_time = self._GetDateTimeFromString(
-          region['author']['time'], '%Y-%m-%d %H:%M:%S')
+      author_time = self._GetDateTimeFromString(region['author']['time'],
+                                                '%Y-%m-%d %H:%M:%S')
 
       blame.AddRegion(
-          Region(region['start'], region['count'], region['commit'],
-                 region['author']['name'],
+          Region(region['start'], region['count'], region['commit'], region[
+              'author']['name'],
                  commit_util.NormalizeEmail(region['author']['email']),
                  author_time))
 
@@ -219,10 +218,11 @@ class GitilesRepository(GitRepository):
     changelogs = []
 
     while next_end_revision:
-      url = '%s/+log/%s..%s' % (self.repo_url,
-                                start_revision, next_end_revision)
-      data = self._SendRequestForJsonResponse(url, params={'n': str(n),
-                                                           'name-status': '1'})
+      url = '%s/+log/%s..%s' % (self.repo_url, start_revision,
+                                next_end_revision)
+      data = self._SendRequestForJsonResponse(
+          url, params={'n': str(n),
+                       'name-status': '1'})
       assert data is not None, '_SendRequestForJsonResponse failed unexpectedly'
 
       for log in data['log']:

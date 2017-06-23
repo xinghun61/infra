@@ -7,7 +7,6 @@ import unittest
 from libs.math.functions import Function
 from libs.math.functions import MemoizedFunction
 
-
 # Some arbitrary functions:
 _F = lambda x: x + 1
 _G = lambda x: x * x

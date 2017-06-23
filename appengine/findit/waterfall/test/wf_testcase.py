@@ -11,7 +11,6 @@ import gae_ts_mon
 from gae_libs.testcase import TestCase
 from model.wf_config import FinditConfig
 
-
 _DEFAULT_STEPS_FOR_MASTERS_RULES = {
     'supported_masters': {
         'm': {
@@ -23,10 +22,11 @@ _DEFAULT_STEPS_FOR_MASTERS_RULES = {
         'master1': {
             # supported_steps override global.
             'supported_steps': ['unsupported_step6'],
-            'unsupported_steps': ['unsupported_step1',
-                                  'unsupported_step2',
-                                  'unsupported_step3'],
-            'check_global': True,
+            'unsupported_steps': [
+                'unsupported_step1', 'unsupported_step2', 'unsupported_step3'
+            ],
+            'check_global':
+                True,
         },
         'master2': {
             # Only supports step4 and step5 regardless of global.
@@ -43,7 +43,6 @@ _DEFAULT_STEPS_FOR_MASTERS_RULES = {
         'unsupported_steps': ['unsupported_step6', 'unsupported_step7'],
     },
 }
-
 
 _DEFAULT_TRY_BOT_MAPPING = {
     'master1': {
@@ -78,14 +77,12 @@ _DEFAULT_TRY_BOT_MAPPING = {
     },
 }
 
-
 _DEFAULT_TRY_JOB_SETTINGS = {
     'server_query_interval_seconds': 60,
     'job_timeout_hours': 5,
     'allowed_response_error_times': 5,
     'max_seconds_look_back_for_group': 86400,
 }
-
 
 _DEFAULT_SWARMING_SETTINGS = {
     'server_host': 'chromium-swarm.appspot.com',
@@ -105,20 +102,17 @@ _DEFAULT_SWARMING_SETTINGS = {
     'minimum_percentage_of_available_bots': 0.1,
 }
 
-
 _DEFAULT_DOWNLOAD_BUILD_DATA_SETTINGS = {
     'download_interval_seconds': 10,
     'memcache_master_download_expiration_seconds': 3600,
     'use_chrome_build_extract': True,
 }
 
-
 _DEFAULT_ACTION_SETTINGS = {
     'cr_notification_build_threshold': 2,
     'cr_notification_latency_limit_minutes': 30,
     'revert_compile_culprit': True,
 }
-
 
 _DEFAULT_CHECK_FLAKE_SETTINGS = {
     'swarming_rerun': {
@@ -144,13 +138,11 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
     'update_monorail_bug': False
 }
 
-
 _DEFAULT_CODE_REVIEW_SETTINGS = {
     'rietveld_hosts': ['codereview.chromium.org'],
     'gerrit_hosts': ['chromium-review.googlesource.com'],
     'commit_bot_emails': ['commit-bot@chromium.org'],
 }
-
 
 DEFAULT_CONFIG_DATA = {
     'steps_for_masters_rules': _DEFAULT_STEPS_FOR_MASTERS_RULES,
@@ -163,7 +155,6 @@ DEFAULT_CONFIG_DATA = {
     'code_review_settings': _DEFAULT_CODE_REVIEW_SETTINGS,
 }
 
-
 SAMPLE_STEP_METADATA = {
     'waterfall_mastername': 'm',
     'waterfall_buildername': 'b',
@@ -174,7 +165,6 @@ SAMPLE_STEP_METADATA = {
     },
     'swarm_task_ids': ['1000']
 }
-
 
 SAMPLE_STEP_METADATA_NOT_SWARMED = {
     'waterfall_mastername': 'm',
@@ -189,7 +179,8 @@ SAMPLE_STEP_METADATA_NOT_SWARMED = {
 
 class WaterfallTestCase(TestCase):  # pragma: no cover.
 
-  def UpdateUnitTestConfigSettings(self, config_property=None,
+  def UpdateUnitTestConfigSettings(self,
+                                   config_property=None,
                                    override_data=None):
     """Sets up Findit's config for unit tests.
 
@@ -203,8 +194,8 @@ class WaterfallTestCase(TestCase):  # pragma: no cover.
       config_data = copy.deepcopy(DEFAULT_CONFIG_DATA)
       config_data[config_property].update(override_data)
 
-    FinditConfig.Get().Update(users.User(email='admin@chromium.org'), True,
-                              **config_data)
+    FinditConfig.Get().Update(
+        users.User(email='admin@chromium.org'), True, **config_data)
 
   def setUp(self):
     super(WaterfallTestCase, self).setUp()

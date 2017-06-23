@@ -17,6 +17,7 @@ class PickledMemCache(Cache):
   The data to be cached should be pickleable.
   Limitation: size of the pickled data and key should be <= 1MB.
   """
+
   def Get(self, key):
     return memcache.get(key)
 
@@ -25,6 +26,7 @@ class PickledMemCache(Cache):
 
 
 class _CachedItemMetaData(object):
+
   def __init__(self, number):
     self.number = number
 
@@ -63,7 +65,7 @@ class CompressedMemCache(Cache):
       num = 0
       for index in xrange(0, len(compressed_data), self.CHUNK_SIZE):
         sub_key = '%s-%s' % (key, num)
-        all_data[sub_key] = compressed_data[index : index + self.CHUNK_SIZE]
+        all_data[sub_key] = compressed_data[index:index + self.CHUNK_SIZE]
         num += 1
 
       all_data[key] = _CachedItemMetaData(num)
@@ -72,4 +74,3 @@ class CompressedMemCache(Cache):
 
     keys_not_set = memcache.set_multi(all_data, time=expire_time)
     return len(keys_not_set) == 0
-

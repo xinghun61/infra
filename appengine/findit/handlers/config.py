@@ -1,7 +1,6 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Handles requests to the findit config page."""
 
 import json
@@ -128,6 +127,7 @@ def _ValidateMastersAndStepsRulesMapping(steps_for_masters_rules):
 
 
 def _ValidateTrybotMapping(builders_to_trybots):
+
   def xor(a, b):
     return bool(a) != bool(b)
 
@@ -139,13 +139,14 @@ def _ValidateTrybotMapping(builders_to_trybots):
     for trybot_config in builders.values():
       if not isinstance(trybot_config, dict):
         return False
-      if xor(trybot_config.get('swarmbucket_mastername'),
-             trybot_config.get('swarmbucket_trybot')):
+      if xor(
+          trybot_config.get('swarmbucket_mastername'),
+          trybot_config.get('swarmbucket_trybot')):
         return False
-      if (not isinstance(trybot_config.get('swarmbucket_mastername', ''),
-                         basestring) or
-          not isinstance(trybot_config.get('swarmbucket_trybot', ''),
-                         basestring)):
+      if (not isinstance(
+          trybot_config.get('swarmbucket_mastername', ''), basestring) or
+          not isinstance(
+              trybot_config.get('swarmbucket_trybot', ''), basestring)):
         return False
       if not trybot_config.get('swarmbucket_mastername'):
         # Validate buildbucket style config. (Not swarmbucket).
@@ -153,8 +154,8 @@ def _ValidateTrybotMapping(builders_to_trybots):
             not trybot_config.get('waterfall_trybot') or
             not isinstance(trybot_config['waterfall_trybot'], basestring)):
           return False
-      if (trybot_config.get('flake_trybot') is not None and not
-          isinstance(trybot_config['flake_trybot'], basestring)):
+      if (trybot_config.get('flake_trybot') is not None and
+          not isinstance(trybot_config['flake_trybot'], basestring)):
         # Specifying a flake_trybot is optional in case flake analysis is not
         # supported, i.e. in case not_run_tests is True. If it is set, it must
         # be a string.
@@ -188,25 +189,23 @@ def _ValidateSwarmingSettings(settings):
           isinstance(settings.get('task_timeout_hours'), int) and
           isinstance(settings.get('isolated_server'), basestring) and
           isinstance(settings.get('isolated_storage_url'), basestring) and
-          isinstance(settings.get('iterations_to_rerun'), int) and
-          isinstance(
+          isinstance(settings.get('iterations_to_rerun'), int) and isinstance(
               settings.get('get_swarming_task_id_timeout_seconds'), int) and
           isinstance(settings.get('get_swarming_task_id_wait_seconds'), int) and
           isinstance(settings.get('server_retry_timeout_hours'), int) and
-          isinstance(settings.get(
-              'maximum_server_contact_retry_interval_seconds'), int) and
-          isinstance(settings.get('should_retry_server'), bool) and
+          isinstance(
+              settings.get('maximum_server_contact_retry_interval_seconds'),
+              int) and isinstance(settings.get('should_retry_server'), bool) and
           isinstance(settings.get('minimum_number_of_available_bots'), int) and
-          isinstance(settings.get('minimum_percentage_of_available_bots'),
-                     float) and
+          isinstance(
+              settings.get('minimum_percentage_of_available_bots'), float) and
           isinstance(settings.get('per_iteration_timeout_seconds'), int))
 
 
 def _ValidateDownloadBuildDataSettings(settings):
-  return (isinstance(settings, dict) and
-          isinstance(settings.get('download_interval_seconds'), int) and
-          isinstance(settings.get(
-              'memcache_master_download_expiration_seconds'), int) and
+  return (isinstance(settings, dict) and isinstance(
+      settings.get('download_interval_seconds'), int) and isinstance(
+          settings.get('memcache_master_download_expiration_seconds'), int) and
           isinstance(settings.get('use_chrome_build_extract'), bool))
 
 
@@ -243,14 +242,14 @@ def _ValidateFlakeAnalyzerTryJobRerunSettings(settings):
 
 
 def _ValidateCheckFlakeSettings(settings):
-  return (isinstance(settings, dict) and
-          _ValidateFlakeAnalyzerSwarmingRerunSettings(
-              settings.get('swarming_rerun')) and
-          _ValidateFlakeAnalyzerTryJobRerunSettings(
-              settings.get('try_job_rerun')) and
-          isinstance(settings.get('minimum_confidence_score_to_run_tryjobs'),
-                     float) and
-          isinstance(settings.get('update_monorail_bug'), bool))
+  return (
+      isinstance(settings, dict) and
+      _ValidateFlakeAnalyzerSwarmingRerunSettings(
+          settings.get('swarming_rerun')) and
+      _ValidateFlakeAnalyzerTryJobRerunSettings(settings.get('try_job_rerun'))
+      and isinstance(
+          settings.get('minimum_confidence_score_to_run_tryjobs'), float) and
+      isinstance(settings.get('update_monorail_bug'), bool))
 
 
 def _ValidateCodeReviewSettings(settings):
@@ -322,8 +321,8 @@ class Configuration(BaseHandler):
     settings = wf_config.FinditConfig.Get(version)
 
     if not settings:
-      return self.CreateError(
-          'The requested version is invalid or not found.', 400)
+      return self.CreateError('The requested version is invalid or not found.',
+                              400)
 
     latest_version = settings.GetLatestVersionNumber()
 
@@ -354,16 +353,17 @@ class Configuration(BaseHandler):
 
     message = self.request.get('message')
     if not message:  # pragma: no cover
-      return self.CreateError(
-          'Please provide the reason to update the config', 400)
+      return self.CreateError('Please provide the reason to update the config',
+                              400)
 
     if not _ConfigurationDictIsValid(new_config_dict):  # pragma: no cover
       return self.CreateError(
           'New configuration settings is not properly formatted.', 400)
 
-    wf_config.FinditConfig.Get().Update(users.get_current_user(),
-                                        users.IsCurrentUserAdmin(),
-                                        message=message,
-                                        **new_config_dict)
+    wf_config.FinditConfig.Get().Update(
+        users.get_current_user(),
+        users.IsCurrentUserAdmin(),
+        message=message,
+        **new_config_dict)
 
     return self.HandleGet()

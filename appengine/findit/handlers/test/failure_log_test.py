@@ -15,22 +15,23 @@ from handlers import failure_log
 from model.wf_step import WfStep
 
 # Root directory appengine/findit.
-ROOT_DIR = os.path.join(os.path.dirname(__file__),
-                        os.path.pardir, os.path.pardir)
+ROOT_DIR = os.path.join(
+    os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 
 
 def CreateStdioLogUrl(master_name, builder_name, build_number, step_name):
   builder_name = urllib.quote(builder_name)
   step_name = urllib.quote(step_name)
   return ('https://build.chromium.org/p/%s/builders/%s/builds/%s/'
-          'steps/%s/logs/stdio/text') % (
-              master_name, builder_name, build_number, step_name)
+          'steps/%s/logs/stdio/text') % (master_name, builder_name,
+                                         build_number, step_name)
 
 
 class FailureLogTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/failure-log', failure_log.FailureLog),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/failure-log', failure_log.FailureLog),
+      ], debug=True)
 
   def testInvalidStepUrl(self):
     step_url = 'abcde'
@@ -40,15 +41,17 @@ class FailureLogTest(testing.AppengineTestCase):
         re.compile('.*501 Not Implemented.*Url &#34;%s&#34; '
                    'is not pointing to a step.*' % step_url,
                    re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/failure-log', params={'url': step_url})
+        self.test_app.get,
+        '/failure-log',
+        params={'url': step_url})
 
   def testFailureLogNotFound(self):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
     step_name = 'compile'
-    step_url = CreateStdioLogUrl(
-        master_name, builder_name, build_number, step_name)
+    step_url = CreateStdioLogUrl(master_name, builder_name, build_number,
+                                 step_name)
 
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
@@ -56,16 +59,18 @@ class FailureLogTest(testing.AppengineTestCase):
         webtest.app.AppError,
         re.compile('.*404 Not Found.*No failure log available.*',
                    re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/failure-log', params={'url': step_url,
-                                                   'format': 'json'})
+        self.test_app.get,
+        '/failure-log',
+        params={'url': step_url,
+                'format': 'json'})
 
   def testFailureLogFetched(self):
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
     step_name = 'compile'
-    step_url = CreateStdioLogUrl(
-        master_name, builder_name, build_number, step_name)
+    step_url = CreateStdioLogUrl(master_name, builder_name, build_number,
+                                 step_name)
 
     step_log = WfStep.Create(master_name, builder_name, build_number, step_name)
     step_log.log_data = 'Log has been successfully fetched!'
@@ -73,8 +78,9 @@ class FailureLogTest(testing.AppengineTestCase):
 
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
-    response = self.test_app.get('/failure-log', params={'url': step_url,
-                                                         'format': 'json'})
+    response = self.test_app.get(
+        '/failure-log', params={'url': step_url,
+                                'format': 'json'})
     expected_response = {
         'master_name': 'm',
         'builder_name': 'b 1',
@@ -91,8 +97,8 @@ class FailureLogTest(testing.AppengineTestCase):
     builder_name = 'b'
     build_number = 123
     step_name = 'browser_test'
-    step_url = CreateStdioLogUrl(
-        master_name, builder_name, build_number, step_name)
+    step_url = CreateStdioLogUrl(master_name, builder_name, build_number,
+                                 step_name)
 
     step_log = WfStep.Create(master_name, builder_name, build_number, step_name)
     step_log.isolated = True
@@ -106,20 +112,24 @@ class FailureLogTest(testing.AppengineTestCase):
 
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
-    response = self.test_app.get('/failure-log', params={'url': step_url,
-                                                         'format': 'json'})
+    response = self.test_app.get(
+        '/failure-log', params={'url': step_url,
+                                'format': 'json'})
     expected_response = {
-        'master_name': 'm',
-        'builder_name': 'b',
-        'build_number': 123,
-        'step_name': 'browser_test',
+        'master_name':
+            'm',
+        'builder_name':
+            'b',
+        'build_number':
+            123,
+        'step_name':
+            'browser_test',
         'step_logs': ('{\n    "Unittest2.Subtest1": "ERROR:x_test.cc:1234'
                       '\n        a/b/u2s1.cc:567: Failure\n        '
                       'ERROR:[2]: 2594735000 bogo-microseconds\n        '
                       'ERROR:x_test.cc:1234\n        a/b/u2s1.cc:567: Failure'
                       '\n        ", \n    "Unittest3.Subtest2": '
                       '"a/b/u3s2.cc:110: Failure\n        "\n}')
-
     }
     self.assertEquals(200, response.status_int)
     self.assertEquals(expected_response, response.json_body)

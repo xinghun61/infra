@@ -29,31 +29,55 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     issue_tracker = mock.Mock()
     expected_issue = Issue({'id': 345})
     issue_tracker.getIssue.side_effect = [
-        Issue({'id': 123, 'mergedInto': {'issueId': 234}}),
-        Issue({'id': 234, 'mergedInto': {'issueId': 345}}),
+        Issue({
+            'id': 123,
+            'mergedInto': {
+                'issueId': 234
+            }
+        }),
+        Issue({
+            'id': 234,
+            'mergedInto': {
+                'issueId': 345
+            }
+        }),
         expected_issue,
     ]
 
     issue = update_flake_bug_pipeline._GetIssue(123, issue_tracker)
     self.assertEqual(expected_issue, issue)
-    issue_tracker.assert_has_calls(
-        [mock.call.getIssue(123), mock.call.getIssue(234),
-         mock.call.getIssue(345)])
+    issue_tracker.assert_has_calls([
+        mock.call.getIssue(123),
+        mock.call.getIssue(234),
+        mock.call.getIssue(345)
+    ])
 
   def testGetIssueWithMergeInACircle(self):
     issue_tracker = mock.Mock()
     expected_issue = Issue({'id': 123})
     issue_tracker.getIssue.side_effect = [
-        Issue({'id': 123, 'mergedInto': {'issueId': 234}}),
-        Issue({'id': 234, 'mergedInto': {'issueId': 123}}),
+        Issue({
+            'id': 123,
+            'mergedInto': {
+                'issueId': 234
+            }
+        }),
+        Issue({
+            'id': 234,
+            'mergedInto': {
+                'issueId': 123
+            }
+        }),
         expected_issue,
     ]
 
     issue = update_flake_bug_pipeline._GetIssue(123, issue_tracker)
     self.assertEqual(expected_issue, issue)
-    issue_tracker.assert_has_calls(
-        [mock.call.getIssue(123), mock.call.getIssue(234),
-         mock.call.getIssue(123)])
+    issue_tracker.assert_has_calls([
+        mock.call.getIssue(123),
+        mock.call.getIssue(234),
+        mock.call.getIssue(123)
+    ])
 
   def testGenerateCommentUponError(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
@@ -74,8 +98,7 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.suspected_flake_build_number = 120
     analysis.confidence_in_suspected_build = 0.6641
     comment = update_flake_bug_pipeline._GenerateComment(analysis)
-    self.assertTrue('started in build 120' in comment,
-                    comment)
+    self.assertTrue('started in build 120' in comment, comment)
 
   def testGenerateCommentWithSuspectedBuildLowConfidence(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
@@ -146,7 +169,8 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     analysis_config_not_to_update.status = analysis_status.COMPLETED
     analysis_config_not_to_update.bug_id = 123
     analysis_config_not_to_update.data_points = [
-        DataPoint(), DataPoint(), DataPoint()]
+        DataPoint(), DataPoint(), DataPoint()
+    ]
     analysis_config_not_to_update.algorithm_parameters = {
         'update_monorail_bug': False,
     }
@@ -160,10 +184,8 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     analysis_without_enough_data_points.data_points = [DataPoint()]
 
     analyses = [
-        analysis_not_completed,
-        analysis_without_bug,
-        analysis_config_not_to_update,
-        analysis_without_enough_data_points
+        analysis_not_completed, analysis_without_bug,
+        analysis_config_not_to_update, analysis_without_enough_data_points
     ]
     for analysis in analyses:
       analysis.put()
@@ -188,7 +210,8 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = update_flake_bug_pipeline.UpdateFlakeBugPipeline()
     self.assertFalse(pipeline.run(analysis.key.urlsafe()))
     issue_tracker.assert_has_calls(
-        [mock.call('chromium'), mock.call().getIssue(123)])
+        [mock.call('chromium'),
+         mock.call().getIssue(123)])
 
   @mock.patch('waterfall.flake.update_flake_bug_pipeline.IssueTrackerAPI')
   def testBugUpdated(self, issue_tracker):
@@ -207,7 +230,8 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     issue_tracker.return_value = mocked_instance
     pipeline = update_flake_bug_pipeline.UpdateFlakeBugPipeline()
     self.assertTrue(pipeline.run(analysis.key.urlsafe()))
-    issue_tracker.assert_has_calls(
-        [mock.call('chromium'),
-         mock.call().getIssue(123),
-         mock.call().update(dummy_issue, mock.ANY, send_email=True)])
+    issue_tracker.assert_has_calls([
+        mock.call('chromium'),
+        mock.call().getIssue(123),
+        mock.call().update(dummy_issue, mock.ANY, send_email=True)
+    ])

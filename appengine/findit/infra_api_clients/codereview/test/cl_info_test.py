@@ -14,7 +14,7 @@ class ClInfoTest(unittest.TestCase):
   change_id = '20002000'
   patchset_id = '2000'
   revision = 'abcd'
-  timestamp = datetime.datetime(2017, 1, 2 ,3, 4, 5)
+  timestamp = datetime.datetime(2017, 1, 2, 3, 4, 5)
   formatted_ts = '2017-01-02 03:04:05 UTC'
   email = 'developer@test.com'
 
@@ -27,8 +27,8 @@ class ClInfoTest(unittest.TestCase):
     }, commit.serialize())
 
   def testCommitAttempt(self):
-    commit_attempt = cl_info.CommitAttempt(
-        self.patchset_id, self.email, self.timestamp)
+    commit_attempt = cl_info.CommitAttempt(self.patchset_id, self.email,
+                                           self.timestamp)
     self.assertEqual({
         'patchset_id': self.patchset_id,
         'committing_user_email': self.email,
@@ -36,8 +36,7 @@ class ClInfoTest(unittest.TestCase):
     }, commit_attempt.serialize())
 
   def testRevertWithNoCl(self):
-    revert = cl_info.Revert(
-        self.patchset_id, None, self.email, self.timestamp)
+    revert = cl_info.Revert(self.patchset_id, None, self.email, self.timestamp)
     self.assertEqual({
         'patchset_id': self.patchset_id,
         'reverting_user_email': self.email,
@@ -46,8 +45,7 @@ class ClInfoTest(unittest.TestCase):
 
   def testRevertWithBareCl(self):
     cl = cl_info.ClInfo(self.server, self.change_id)
-    revert = cl_info.Revert(
-        self.patchset_id, cl, self.email, self.timestamp)
+    revert = cl_info.Revert(self.patchset_id, cl, self.email, self.timestamp)
     self.assertEqual({
         'patchset_id': self.patchset_id,
         'reverting_user_email': self.email,
@@ -69,6 +67,7 @@ class ClInfoTest(unittest.TestCase):
     }, revert.serialize())
 
   def testClInfo(self):
+
     def hours(h):
       return datetime.timedelta(hours=h)
 
@@ -77,33 +76,30 @@ class ClInfoTest(unittest.TestCase):
     # checks that the timestamp is different.
     cl.AddCqAttempt(self.patchset_id, self.email, self.timestamp)
     cl.AddCqAttempt(self.patchset_id, self.email, self.timestamp)
-    cl.AddCqAttempt(self.patchset_id, self.email,
-                    self.timestamp + datetime.timedelta(hours=1))
+    cl.AddCqAttempt(
+        self.patchset_id,
+        self.email,
+        self.timestamp + datetime.timedelta(hours=1))
 
-    cl.commits.append(cl_info.Commit(self.patchset_id,
-                                     self.revision,
-                                     self.timestamp + hours(1)))
-    self.assertEqual(self.patchset_id, cl.GetPatchsetIdByRevision(
-        self.revision))
+    cl.commits.append(
+        cl_info.Commit(self.patchset_id, self.revision, self.timestamp +
+                       hours(1)))
+    self.assertEqual(self.patchset_id,
+                     cl.GetPatchsetIdByRevision(self.revision))
 
-    cl.commits.append(cl_info.Commit('3000',
-                                     'ef1234',
-                                     self.timestamp + hours(2)))
+    cl.commits.append(
+        cl_info.Commit('3000', 'ef1234', self.timestamp + hours(2)))
     self.assertEqual('3000', cl.GetPatchsetIdByRevision('ef1234'))
     self.assertIsNone(cl.GetPatchsetIdByRevision('deadc0de'))
 
-
     revert_cl_1 = cl_info.ClInfo(self.server, 'revert1')
-    revert_cl_1.commits.append(cl_info.Commit('r1p1', '007c0de',
-                                              self.timestamp + hours(3)))
-    revert1 = cl_info.Revert(self.patchset_id, revert_cl_1,
-                             'reverter@test.com', self.timestamp + hours(3))
+    revert_cl_1.commits.append(
+        cl_info.Commit('r1p1', '007c0de', self.timestamp + hours(3)))
+    revert1 = cl_info.Revert(self.patchset_id, revert_cl_1, 'reverter@test.com',
+                             self.timestamp + hours(3))
     cl.reverts.append(revert1)
-    self.assertEqual(
-        '007c0de',
-        cl.GetRevertCLsByRevision(self.revision)[0]
-        .reverting_cl.commits[0]
-        .revision
-    )
+    self.assertEqual('007c0de',
+                     cl.GetRevertCLsByRevision(self.revision)[0]
+                     .reverting_cl.commits[0].revision)
     self.assertEqual([], cl.GetRevertCLsByRevision('ef1234'))
     self.assertIsNone(cl.GetRevertCLsByRevision('deadc0de'))

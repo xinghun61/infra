@@ -23,9 +23,7 @@ class LookbackAlgorithmTest(TestCase):
     self.assertIsNone(result)
 
   def testGetNextWithLowerBoundaryNotYetHit(self):
-    data_points = [
-        NormalizedDataPoint(2, 0.8),
-        NormalizedDataPoint(1, 0.8)]
+    data_points = [NormalizedDataPoint(2, 0.8), NormalizedDataPoint(1, 0.8)]
     next_run, result, _ = lookback_algorithm._ExponentialSearch(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
@@ -34,9 +32,7 @@ class LookbackAlgorithmTest(TestCase):
     self.assertIsNone(result)
 
   def testGetNextWithLowerBoundaryAlreadyHit(self):
-    data_points = [
-        NormalizedDataPoint(2, 0.8),
-        NormalizedDataPoint(1, 1.0)]
+    data_points = [NormalizedDataPoint(2, 0.8), NormalizedDataPoint(1, 1.0)]
     next_run, result, _ = lookback_algorithm._ExponentialSearch(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 1)
@@ -45,9 +41,11 @@ class LookbackAlgorithmTest(TestCase):
     self.assertEqual(2, result)
 
   def testSequentialSearchAtLowerBoundaryStable(self):
-    data_points = [NormalizedDataPoint(8, 0.8),
-                   NormalizedDataPoint(3, 0.8),
-                   NormalizedDataPoint(0, 1.0)]
+    data_points = [
+        NormalizedDataPoint(8, 0.8),
+        NormalizedDataPoint(3, 0.8),
+        NormalizedDataPoint(0, 1.0)
+    ]
     next_run, result, _ = lookback_algorithm._ExponentialSearch(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
@@ -55,9 +53,11 @@ class LookbackAlgorithmTest(TestCase):
     self.assertIsNone(result)
 
   def testSequentialSearchAtLowerBoundaryFlaky(self):
-    data_points = [NormalizedDataPoint(8, 0.8),
-                   NormalizedDataPoint(3, 0.8),
-                   NormalizedDataPoint(0, 0.8)]
+    data_points = [
+        NormalizedDataPoint(8, 0.8),
+        NormalizedDataPoint(3, 0.8),
+        NormalizedDataPoint(0, 0.8)
+    ]
     next_run, result, _ = lookback_algorithm._ExponentialSearch(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun'], 0)
@@ -71,7 +71,8 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(99, 0.7),
         NormalizedDataPoint(97, 0.5),
         NormalizedDataPoint(94, 0.6),
-        NormalizedDataPoint(90, 0.7)]
+        NormalizedDataPoint(90, 0.7)
+    ]
     next_run, result, _ = lookback_algorithm._ExponentialSearch(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
@@ -83,7 +84,8 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(100, 0.6),
         NormalizedDataPoint(99, 0.8),
         NormalizedDataPoint(97, 0.7),
-        NormalizedDataPoint(94, 1.0)]
+        NormalizedDataPoint(94, 1.0)
+    ]
 
     algorithm_settings = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
@@ -99,7 +101,8 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(99, 0.8),
         NormalizedDataPoint(97, 0.7),
         NormalizedDataPoint(95, 0.8),
-        NormalizedDataPoint(94, 1.0)]
+        NormalizedDataPoint(94, 1.0)
+    ]
 
     algorithm_settings = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
@@ -116,7 +119,8 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(99, 0.8),
         NormalizedDataPoint(97, 0.7),
         NormalizedDataPoint(96, 0.8),
-        NormalizedDataPoint(95, 1.0)]
+        NormalizedDataPoint(95, 1.0)
+    ]
 
     algorithm_settings = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
@@ -128,8 +132,7 @@ class LookbackAlgorithmTest(TestCase):
     self.assertIsNone(next_run)
 
   def testRunPositionIntroducedFlakiness(self):
-    data_points = [NormalizedDataPoint(100, 0.8),
-                   NormalizedDataPoint(99, -1)]
+    data_points = [NormalizedDataPoint(100, 0.8), NormalizedDataPoint(99, -1)]
     next_run, result, _ = lookback_algorithm._ExponentialSearch(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'], 0)
@@ -137,12 +140,14 @@ class LookbackAlgorithmTest(TestCase):
     self.assertEqual(100, result)
 
   def testFlakyFromBeginning(self):
-    data_points = [NormalizedDataPoint(100, 0.8),
-                   NormalizedDataPoint(99, 0.8),
-                   NormalizedDataPoint(97, 0.8),
-                   NormalizedDataPoint(94, 0.8),
-                   NormalizedDataPoint(91, 0.8),
-                   NormalizedDataPoint(90, -1)]
+    data_points = [
+        NormalizedDataPoint(100, 0.8),
+        NormalizedDataPoint(99, 0.8),
+        NormalizedDataPoint(97, 0.8),
+        NormalizedDataPoint(94, 0.8),
+        NormalizedDataPoint(91, 0.8),
+        NormalizedDataPoint(90, -1)
+    ]
     next_run, result, _ = lookback_algorithm._ExponentialSearch(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'], 0)
@@ -162,7 +167,8 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(100, 0.8),
         NormalizedDataPoint(80, 0.7),
         NormalizedDataPoint(70, 0.75),
-        NormalizedDataPoint(60, -1)]
+        NormalizedDataPoint(60, -1)
+    ]
     next_run, result, _ = lookback_algorithm._ExponentialSearch(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
@@ -170,9 +176,7 @@ class LookbackAlgorithmTest(TestCase):
     self.assertEqual(61, next_run)
 
   def testNextBuildWhenDiveHappened(self):
-    data_points = [
-        NormalizedDataPoint(100, 0.3),
-        NormalizedDataPoint(80, 0.8)]
+    data_points = [NormalizedDataPoint(100, 0.3), NormalizedDataPoint(80, 0.8)]
     next_run, result, _ = lookback_algorithm._ExponentialSearch(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
@@ -183,7 +187,8 @@ class LookbackAlgorithmTest(TestCase):
     data_points = [
         NormalizedDataPoint(100, 0.3),
         NormalizedDataPoint(99, 0.8),
-        NormalizedDataPoint(98, 0.3)]
+        NormalizedDataPoint(98, 0.3)
+    ]
     next_run, result, _ = lookback_algorithm._ExponentialSearch(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
@@ -197,7 +202,8 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(98, 0.8),
         NormalizedDataPoint(97, 0.7),
         NormalizedDataPoint(96, 0.8),
-        NormalizedDataPoint(95, 0.9)]
+        NormalizedDataPoint(95, 0.9)
+    ]
     next_run, result, _ = lookback_algorithm._ExponentialSearch(
         data_points,
         DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun'])
@@ -212,7 +218,8 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(96, 0.7),
         NormalizedDataPoint(95, 0.8),
         NormalizedDataPoint(94, 0.9),
-        NormalizedDataPoint(93, 0.8)]
+        NormalizedDataPoint(93, 0.8)
+    ]
 
     next_run, result, _ = lookback_algorithm._ExponentialSearch(
         data_points,
@@ -353,26 +360,26 @@ class LookbackAlgorithmTest(TestCase):
     }
     self.assertEqual(
         (90, 91),
-        lookback_algorithm._GetBisectRange([NormalizedDataPoint(90, 1.0),
-                                            NormalizedDataPoint(91, 0.9)],
-                                           algorithm_settings))
-    self.assertEqual(
-        (92, 95),
-        lookback_algorithm._GetBisectRange([NormalizedDataPoint(90, 1.0),
-                                            NormalizedDataPoint(91, 0.9),
-                                            NormalizedDataPoint(92, 1.0),
-                                            NormalizedDataPoint(95, 0.6)],
-                                           algorithm_settings))
-    self.assertEqual(
-        (94, 95),
-        lookback_algorithm._GetBisectRange([NormalizedDataPoint(90, 1.0),
-                                            NormalizedDataPoint(91, 0.9),
-                                            NormalizedDataPoint(92, 1.0),
-                                            NormalizedDataPoint(93, 0.6),
-                                            NormalizedDataPoint(94, 0.0),
-                                            NormalizedDataPoint(95, 0.9),
-                                            NormalizedDataPoint(96, 0.8)],
-                                           algorithm_settings))
+        lookback_algorithm._GetBisectRange(
+            [NormalizedDataPoint(90, 1.0),
+             NormalizedDataPoint(91, 0.9)], algorithm_settings))
+    self.assertEqual((92, 95),
+                     lookback_algorithm._GetBisectRange([
+                         NormalizedDataPoint(90, 1.0),
+                         NormalizedDataPoint(91, 0.9),
+                         NormalizedDataPoint(92, 1.0),
+                         NormalizedDataPoint(95, 0.6)
+                     ], algorithm_settings))
+    self.assertEqual((94, 95),
+                     lookback_algorithm._GetBisectRange([
+                         NormalizedDataPoint(90, 1.0),
+                         NormalizedDataPoint(91, 0.9),
+                         NormalizedDataPoint(92, 1.0),
+                         NormalizedDataPoint(93, 0.6),
+                         NormalizedDataPoint(94, 0.0),
+                         NormalizedDataPoint(95, 0.9),
+                         NormalizedDataPoint(96, 0.8)
+                     ], algorithm_settings))
 
   def testBisectNextRunPointNumber(self):
     algorithm_settings = {
@@ -381,9 +388,9 @@ class LookbackAlgorithmTest(TestCase):
     }
     self.assertEqual(
         (95, None),
-        lookback_algorithm._Bisect([NormalizedDataPoint(90, 1.0),
-                                    NormalizedDataPoint(100, 0.9)],
-                                   algorithm_settings))
+        lookback_algorithm._Bisect(
+            [NormalizedDataPoint(90, 1.0),
+             NormalizedDataPoint(100, 0.9)], algorithm_settings))
 
   def testBisectFinished(self):
     algorithm_settings = {
@@ -392,9 +399,9 @@ class LookbackAlgorithmTest(TestCase):
     }
     self.assertEqual(
         (None, 91),
-        lookback_algorithm._Bisect([NormalizedDataPoint(90, 1.0),
-                                    NormalizedDataPoint(91, 0.9)],
-                                   algorithm_settings))
+        lookback_algorithm._Bisect(
+            [NormalizedDataPoint(90, 1.0),
+             NormalizedDataPoint(91, 0.9)], algorithm_settings))
 
   def testShouldRunBisect(self):
     self.assertFalse(lookback_algorithm._ShouldRunBisect(None, 1))
@@ -402,27 +409,20 @@ class LookbackAlgorithmTest(TestCase):
     self.assertTrue(lookback_algorithm._ShouldRunBisect(1, 2))
 
   def testGetNextRunPointNumberBisect(self):
-    data_points = [
-        NormalizedDataPoint(90, 1.0),
-        NormalizedDataPoint(100, 0.9)
-    ]
+    data_points = [NormalizedDataPoint(90, 1.0), NormalizedDataPoint(100, 0.9)]
     algorithm_settings = {
         'lower_flake_threshold': 0.02,
         'upper_flake_threshold': 0.98,
     }
 
-    self.assertEqual(
-        (95, None, None),
-        lookback_algorithm.GetNextRunPointNumber(
-            data_points, algorithm_settings, 90, 100))
+    self.assertEqual((95, None, None),
+                     lookback_algorithm.GetNextRunPointNumber(
+                         data_points, algorithm_settings, 90, 100))
 
   @mock.patch.object(lookback_algorithm, '_ExponentialSearch')
-  def testGetNextRunPointNumberExponentialSearch(
-      self, mocked_exponential_search):
-    data_points = [
-        NormalizedDataPoint(90, 1.0),
-        NormalizedDataPoint(100, 0.9)
-    ]
+  def testGetNextRunPointNumberExponentialSearch(self,
+                                                 mocked_exponential_search):
+    data_points = [NormalizedDataPoint(90, 1.0), NormalizedDataPoint(100, 0.9)]
     algorithm_settings = {
         'lower_flake_threshold': 0.02,
         'upper_flake_threshold': 0.98,

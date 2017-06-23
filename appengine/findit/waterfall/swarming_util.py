@@ -32,13 +32,11 @@ from waterfall import monitoring
 from waterfall import waterfall_config
 from waterfall.swarming_task_request import SwarmingTaskRequest
 
-
 # Swarming task states.
 STATES_RUNNING = ('RUNNING', 'PENDING')
 STATE_COMPLETED = 'COMPLETED'
-STATES_NOT_RUNNING = (
-    'BOT_DIED', 'CANCELED', 'COMPLETED', 'EXPIRED', 'TIMED_OUT')
-
+STATES_NOT_RUNNING = ('BOT_DIED', 'CANCELED', 'COMPLETED', 'EXPIRED',
+                      'TIMED_OUT')
 
 # Swarming task stopped error codes.
 BOT_DIED = 30
@@ -53,21 +51,17 @@ STATES_NOT_RUNNING_TO_ERROR_CODES = {
     'TIMED_OUT': TIMED_OUT,
 }
 
-
 # Urlfetch error codes.
 URLFETCH_DOWNLOAD_ERROR = 100
 URLFETCH_DEADLINE_EXCEEDED_ERROR = 110
 URLFETCH_CONNECTION_CLOSED_ERROR = 120
 EXCEEDED_MAX_RETRIES_ERROR = 210
 
-
 # Outputs_ref is None.
 NO_TASK_OUTPUTS = 300
 
-
 # Other/miscellaneous error codes.
 UNKNOWN = 1000
-
 
 # Swarming task exit codes.
 ALL_TESTS_PASSED = 0
@@ -102,14 +96,16 @@ def _GetBackoffSeconds(retry_backoff, tries, maximum_retry_interval):
     maximum_retry_interval (int): The upper limit in seconds of how long to wait
       between retries.
   """
-  return min(retry_backoff * (2 ** (tries - 1)), maximum_retry_interval)
+  return min(retry_backoff * (2**(tries - 1)), maximum_retry_interval)
 
 
 def _OnConnectionFailed(url, exception_type):
   host = urlparse(url).hostname
   assert host
-  monitoring.outgoing_http_errors.increment(
-      {'host': host, 'exception': exception_type})
+  monitoring.outgoing_http_errors.increment({
+      'host': host,
+      'exception': exception_type
+  })
 
 
 def _SendRequestToServer(url, http_client, post_data=None):
@@ -155,31 +151,19 @@ def _SendRequestToServer(url, http_client, post_data=None):
       else:
         status_code, content = http_client.Get(url, headers=headers)
     except ConnectionClosedError as e:
-      error = {
-          'code': URLFETCH_CONNECTION_CLOSED_ERROR,
-          'message': e.message
-      }
+      error = {'code': URLFETCH_CONNECTION_CLOSED_ERROR, 'message': e.message}
       _OnConnectionFailed(url, 'ConnectionClosedError')
     except DeadlineExceededError as e:
-      error = {
-          'code': URLFETCH_DEADLINE_EXCEEDED_ERROR,
-          'message': e.message
-      }
+      error = {'code': URLFETCH_DEADLINE_EXCEEDED_ERROR, 'message': e.message}
       _OnConnectionFailed(url, 'DeadlineExceededError')
     except DownloadError as e:
-      error = {
-          'code': URLFETCH_DOWNLOAD_ERROR,
-          'message': e.message
-      }
+      error = {'code': URLFETCH_DOWNLOAD_ERROR, 'message': e.message}
       _OnConnectionFailed(url, 'DownloadError')
     except Exception as e:  # pragma: no cover
       logging.error(
           'An unknown exception occurred that need to be monitored: %s',
           e.message)
-      error = {
-          'code': UNKNOWN,
-          'message': e.message
-      }
+      error = {'code': UNKNOWN, 'message': e.message}
       _OnConnectionFailed(url, 'Unknown Exception')
 
     if error or status_code != 200:
@@ -197,8 +181,8 @@ def _SendRequestToServer(url, http_client, post_data=None):
 
     if should_retry and time.time() < deadline:  # pragma: no cover
       # Wait, then retry if applicable.
-      wait_time = _GetBackoffSeconds(
-          retry_backoff, tries, maximum_retry_interval)
+      wait_time = _GetBackoffSeconds(retry_backoff, tries,
+                                     maximum_retry_interval)
       logging.info('Retrying connection to %s in %d seconds', url, wait_time)
       time.sleep(wait_time)
       tries += 1
@@ -243,8 +227,8 @@ def TriggerSwarmingTask(request, http_client):
 
   request.tags.extend(['findit:1', 'project:Chromium', 'purpose:post-commit'])
 
-  response_data, error = _SendRequestToServer(
-      NEW_TASK_URL % _SwarmingHost(), http_client, request.Serialize())
+  response_data, error = _SendRequestToServer(NEW_TASK_URL % _SwarmingHost(),
+                                              http_client, request.Serialize())
 
   if not error:
     return json.loads(response_data)['task_id'], None
@@ -252,9 +236,11 @@ def TriggerSwarmingTask(request, http_client):
   return None, error
 
 
-def ListSwarmingTasksDataByTags(
-    master_name, builder_name, build_number, http_client,
-    additional_tag_filters=None):
+def ListSwarmingTasksDataByTags(master_name,
+                                builder_name,
+                                build_number,
+                                http_client,
+                                additional_tag_filters=None):
   """Downloads tasks data from swarming server.
 
   Args:
@@ -340,15 +326,15 @@ def GetTagValue(tags, tag_name):
   return content
 
 
-def GetIsolatedDataForFailedBuild(
-    master_name, builder_name, build_number, failed_steps, http_client):
+def GetIsolatedDataForFailedBuild(master_name, builder_name, build_number,
+                                  failed_steps, http_client):
   """Checks failed step_names in swarming log for the build.
 
   Searches each failed step_name to identify swarming/non-swarming tests
   and keeps track of isolated data for each failed swarming steps.
   """
-  data = ListSwarmingTasksDataByTags(
-      master_name, builder_name, build_number, http_client)
+  data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
+                                     http_client)
   if not data:
     return False
 
@@ -377,9 +363,12 @@ def GetIsolatedDataForFailedBuild(
   return True
 
 
-def GetIsolatedDataForStep(
-    master_name, builder_name, build_number, step_name, http_client,
-    only_failure=True):
+def GetIsolatedDataForStep(master_name,
+                           builder_name,
+                           build_number,
+                           step_name,
+                           http_client,
+                           only_failure=True):
   """Returns the isolated data for a specific step.
 
   Args:
@@ -541,10 +530,7 @@ def _MergeSwarmingTestShards(shard_results):
       ]
     }
   """
-  merged_results = {
-      'all_tests': set(),
-      'per_iteration_data': []
-  }
+  merged_results = {'all_tests': set(), 'per_iteration_data': []}
   for shard_result in shard_results:
     merged_results['all_tests'].update(shard_result.get('all_tests', []))
     merged_results['per_iteration_data'] = _MergeListsOfDicts(
@@ -554,8 +540,8 @@ def _MergeSwarmingTestShards(shard_results):
   return merged_results
 
 
-def RetrieveShardedTestResultsFromIsolatedServer(
-    list_isolated_data, http_client):
+def RetrieveShardedTestResultsFromIsolatedServer(list_isolated_data,
+                                                 http_client):
   """Gets test results from isolated server and merge the results."""
   shard_results = []
   for isolated_data in list_isolated_data:
@@ -620,22 +606,21 @@ def GetSwarmingBotCounts(dimensions, http_client):
   content_data = json.loads(content)
 
   bot_counts = {
-      k: int(content_data.get(k, 0)) for k in
-      ('busy', 'count', 'dead', 'quarantined')
+      k: int(content_data.get(k, 0))
+      for k in ('busy', 'count', 'dead', 'quarantined')
   }
   bot_counts['available'] = (bot_counts['count'] - bot_counts['busy'] -
                              bot_counts['dead'] - bot_counts['quarantined'])
 
   return bot_counts
 
-def GetStepLog(try_job_id, full_step_name, http_client,
-               log_type='stdout'):
+
+def GetStepLog(try_job_id, full_step_name, http_client, log_type='stdout'):
   """Returns specific log of the specified step."""
 
   error, build = buildbucket_client.GetTryJobs([try_job_id])[0]
   if error:
-    logging.exception('Error retrieving buildbucket build id: %s' %
-                      try_job_id)
+    logging.exception('Error retrieving buildbucket build id: %s' % try_job_id)
     return None
 
   # 1. Get log.
@@ -682,8 +667,7 @@ def GetBot(build):
   """Parses the swarming bot from the buildbucket response"""
   assert build
   if build.response:
-    details = json.loads(
-        build.response.get('result_details_json', '{}'))
+    details = json.loads(build.response.get('result_details_json', '{}'))
     if details:
       return details.get('swarming', {}).get('task_result', {}).get('bot_id')
   return None
@@ -720,12 +704,9 @@ def GetAllBotsWithCache(dimensions, cache_name, http_client):
 
 def OnlyAvailable(bots):
   return [
-      b for b in bots if not (
-          b.get('task_id') or
-          b.get('is_dead') or
-          b.get('quarantined') or
-          b.get('deleted')
-      )
+      b for b in bots
+      if not (b.get('task_id') or b.get('is_dead') or b.get('quarantined') or
+              b.get('deleted'))
   ]
 
 
@@ -741,27 +722,30 @@ def _HaveCommitPositionInLocalGitCache(bots, commit_position):
 def _SortByDistanceToCommitPosition(bots, cache_name, commit_position,
                                     include_later):
   cache_stats = WfTryBotCache.Get(cache_name)
+
   def _distance(bot_id):
     local_cp = cache_stats.checked_out_commit_positions.get(bot_id, 0)
     return commit_position - local_cp
+
   if include_later:
     distance = lambda x: abs(_distance(x))
   else:
     distance = _distance
-  result = sorted([b for b in bots if distance(b['bot_id']) >= 0],
-                  key=lambda x: distance(x['bot_id']))
+  result = sorted(
+      [b for b in bots if distance(b['bot_id']) >= 0],
+      key=lambda x: distance(x['bot_id']))
   return result
 
 
 def _ClosestEarlier(bots, cache_name, commit_position):
-  result = _SortByDistanceToCommitPosition(
-      bots, cache_name, commit_position, False)
+  result = _SortByDistanceToCommitPosition(bots, cache_name, commit_position,
+                                           False)
   return result[0] if result else None
 
 
 def _ClosestLater(bots, cache_name, commit_position):
-  result = _SortByDistanceToCommitPosition(
-      bots, cache_name, commit_position, True)
+  result = _SortByDistanceToCommitPosition(bots, cache_name, commit_position,
+                                           True)
   return result[0] if result else None
 
 
@@ -782,12 +766,13 @@ def _GetBotWithFewestNamedCaches(bots):
   candidates = []
   for b in bots:
     try:
-      caches_dimension = [d['value'] for d in b['dimensions']
-                          if d['key'] == 'caches'][0]
+      caches_dimension = [
+          d['value'] for d in b['dimensions'] if d['key'] == 'caches'
+      ][0]
       # We only care about caches whose name starts with 'builder_' as that is
       # the convention that we use in GetCacheName.
-      cache_count = len([
-          cache for cache in caches_dimension if cache.startswith('builder_')])
+      cache_count = len(
+          [cache for cache in caches_dimension if cache.startswith('builder_')])
       bot_state = json.loads(b['state'])
       free_space = sum(
           [disk['free_mb'] for _, disk in bot_state['disks'].iteritems()])
@@ -824,12 +809,10 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
     return
   request_dimensions = dict([x.split(':', 1) for x in tryjob.dimensions])
   bots_with_cache = OnlyAvailable(
-      GetAllBotsWithCache(request_dimensions, cache_name, http_client)
-  )
+      GetAllBotsWithCache(request_dimensions, cache_name, http_client))
   if bots_with_cache:
     git_repo = CachedGitilesRepository(
-         http_client,
-        'https://chromium.googlesource.com/chromium/src.git')
+        http_client, 'https://chromium.googlesource.com/chromium/src.git')
     # The bad revision in a tryjob is the later one, use that, unless the tryjob
     # specifies a specific one
     revision = tryjob.revision or tryjob.properties.get('bad_revision')
@@ -838,8 +821,8 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
       return
     target_commit_position = git_repo.GetChangeLog(revision).commit_position
 
-    bots_with_rev = _HaveCommitPositionInLocalGitCache(
-        bots_with_cache, target_commit_position)
+    bots_with_rev = _HaveCommitPositionInLocalGitCache(bots_with_cache,
+                                                       target_commit_position)
     if not bots_with_rev:
       selected_bot = _GetBotWithFewestNamedCaches(bots_with_cache)['bot_id']
       tryjob.dimensions.append('id:' + selected_bot)
@@ -864,8 +847,8 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
     return
 
   else:
-    idle_bots = OnlyAvailable(GetBotsByDimension(request_dimensions,
-                                                 http_client))
+    idle_bots = OnlyAvailable(
+        GetBotsByDimension(request_dimensions, http_client))
     if idle_bots:
       selected_bot = _GetBotWithFewestNamedCaches(idle_bots)['bot_id']
       tryjob.dimensions.append('id:' + selected_bot)
@@ -897,10 +880,11 @@ def GetETAToStartAnalysis(manually_triggered):
 
   # Set ETA time to 6pm, and also with a random latency within 30 minutes to
   # avoid sudden burst traffic to Swarming.
-  diff = timedelta(hours=18 - now_at_pst.hour,
-                   minutes=-now_at_pst.minute,
-                   seconds=-now_at_pst.second + random.randint(0, 30 * 60),
-                   microseconds=-now_at_pst.microsecond)
+  diff = timedelta(
+      hours=18 - now_at_pst.hour,
+      minutes=-now_at_pst.minute,
+      seconds=-now_at_pst.second + random.randint(0, 30 * 60),
+      microseconds=-now_at_pst.microsecond)
   eta = now_at_pst + diff
 
   # Convert back to UTC.

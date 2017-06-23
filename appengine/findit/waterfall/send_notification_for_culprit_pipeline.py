@@ -19,8 +19,8 @@ from waterfall import waterfall_config
 
 
 @ndb.transactional
-def _ShouldSendNotification(
-    repo_name, revision, build_num_threshold, force_notify):
+def _ShouldSendNotification(repo_name, revision, build_num_threshold,
+                            force_notify):
   """Returns True if a notification for the culprit should be sent.
 
   Send notification only when:
@@ -65,12 +65,11 @@ def _UpdateNotificationStatus(repo_name, revision, new_status):
   culprit.put()
 
 
-def _SendNotificationForCulprit(
-    repo_name, revision, commit_position, review_server_host, change_id,
-    revert_status):
+def _SendNotificationForCulprit(repo_name, revision, commit_position,
+                                review_server_host, change_id, revert_status):
   code_review_settings = FinditConfig().Get().code_review_settings
-  codereview = codereview_util.GetCodeReviewForReview(
-      review_server_host, code_review_settings)
+  codereview = codereview_util.GetCodeReviewForReview(review_server_host,
+                                                      code_review_settings)
   sent = False
   if codereview and change_id:
     # Occasionally, a commit was not uploaded for code-review.
@@ -91,17 +90,22 @@ def _SendNotificationForCulprit(
   else:
     logging.error('No code-review url for %s/%s', repo_name, revision)
 
-  _UpdateNotificationStatus(repo_name, revision,
-                            status.COMPLETED if sent else status.ERROR)
+  _UpdateNotificationStatus(repo_name, revision, status.COMPLETED
+                            if sent else status.ERROR)
   return sent
 
 
 class SendNotificationForCulpritPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(
-      self, master_name, builder_name, build_number, repo_name, revision,
-      force_notify, revert_status=None):
+  def run(self,
+          master_name,
+          builder_name,
+          build_number,
+          repo_name,
+          revision,
+          force_notify,
+          revert_status=None):
 
     # This information is not needed at the moment.
     # TODO(robertocn): Remove these arguments if we won't need them for
@@ -117,18 +121,17 @@ class SendNotificationForCulpritPipeline(BasePipeline):
 
     action_settings = waterfall_config.GetActionSettings()
     # Set some impossible default values to prevent notification by default.
-    build_num_threshold = action_settings.get(
-        'cr_notification_build_threshold', 100000)
+    build_num_threshold = action_settings.get('cr_notification_build_threshold',
+                                              100000)
 
-    culprit_info = suspected_cl_util.GetCulpritInfo(
-        repo_name, revision)
+    culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
     commit_position = culprit_info['commit_position']
     review_server_host = culprit_info['review_server_host']
     review_change_id = culprit_info['review_change_id']
 
-    if not _ShouldSendNotification(
-        repo_name, revision, build_num_threshold, force_notify):
+    if not _ShouldSendNotification(repo_name, revision, build_num_threshold,
+                                   force_notify):
       return False
-    return _SendNotificationForCulprit(
-        repo_name, revision, commit_position, review_server_host,
-        review_change_id, revert_status)
+    return _SendNotificationForCulprit(repo_name, revision, commit_position,
+                                       review_server_host, review_change_id,
+                                       revert_status)

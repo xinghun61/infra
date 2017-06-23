@@ -1,7 +1,6 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """This module is to handle manual triage of a suspected flake result.
 
 This handler will mark the suspected flake result as correct or incorrect.
@@ -25,19 +24,21 @@ def _UpdateSuspectedFlakeAnalysis(key_urlsafe, triage_result, user_name):
 
   if master_flake_analysis.culprit:
     suspect_info = {
-        'culprit_revision': master_flake_analysis.culprit.revision,
+        'culprit_revision':
+            master_flake_analysis.culprit.revision,
         'culprit_commit_position':
             master_flake_analysis.culprit.commit_position,
-        'culprit_url': master_flake_analysis.culprit.url
+        'culprit_url':
+            master_flake_analysis.culprit.url
     }
   else:
     suspect_info = {
         'build_number': master_flake_analysis.suspected_flake_build_number
     }
 
-  master_flake_analysis.UpdateTriageResult(
-      triage_result, suspect_info, user_name,
-      master_flake_analysis.version_number)
+  master_flake_analysis.UpdateTriageResult(triage_result, suspect_info,
+                                           user_name,
+                                           master_flake_analysis.version_number)
   master_flake_analysis.put()
   return True
 
@@ -58,7 +59,7 @@ class TriageFlakeAnalysis(BaseHandler):
     # already logged in.
     user_name = users.get_current_user().email().split('@')[0]
 
-    success = _UpdateSuspectedFlakeAnalysis(
-        key_urlsafe, int(triage_result), user_name)
+    success = _UpdateSuspectedFlakeAnalysis(key_urlsafe,
+                                            int(triage_result), user_name)
 
     return {'data': {'success': success}}

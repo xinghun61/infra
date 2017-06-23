@@ -25,62 +25,82 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
       def __init__(self, date, touched_files):
         self.author = Contributor(
             'name', 'email@chromium.org',
-            datetime.strptime(
-                'Jun %s 04:35:32 2015' % date, '%b %d %H:%M:%S %Y'))
+            datetime.strptime('Jun %s 04:35:32 2015' % date,
+                              '%b %d %H:%M:%S %Y'))
         self.touched_files = touched_files
 
     MOCK_CHANGE_LOGS = {}
     MOCK_CHANGE_LOGS['1'] = MockChangeLog('1', [])
     MOCK_CHANGE_LOGS['2'] = MockChangeLog('2', [
-        FileChangeInfo.FromDict(
-            {'change_type': ChangeType.ADD,
-             'old_path': 'dev/null',
-             'new_path': 'third_party/dep/f.cc'})])
+        FileChangeInfo.FromDict({
+            'change_type': ChangeType.ADD,
+            'old_path': 'dev/null',
+            'new_path': 'third_party/dep/f.cc'
+        })
+    ])
     MOCK_CHANGE_LOGS['3'] = MockChangeLog('3', [
-        FileChangeInfo.FromDict(
-            {'change_type': ChangeType.MODIFY,
-             'old_path': 'third_party/dep/f.cc',
-             'new_path': 'third_party/dep/f.cc'})])
+        FileChangeInfo.FromDict({
+            'change_type': ChangeType.MODIFY,
+            'old_path': 'third_party/dep/f.cc',
+            'new_path': 'third_party/dep/f.cc'
+        })
+    ])
     MOCK_CHANGE_LOGS['4'] = MockChangeLog('4', [
-        FileChangeInfo.FromDict(
-            {'change_type': ChangeType.MODIFY,
-             'old_path': 'third_party/dep/f2.cc',
-             'new_path': 'third_party/dep/f2.cc'})])
+        FileChangeInfo.FromDict({
+            'change_type': ChangeType.MODIFY,
+            'old_path': 'third_party/dep/f2.cc',
+            'new_path': 'third_party/dep/f2.cc'
+        })
+    ])
     MOCK_CHANGE_LOGS['5'] = MockChangeLog('5', [
-        FileChangeInfo.FromDict(
-            {'change_type': ChangeType.MODIFY,
-             'old_path': 'third_party/dep/f3.cc',
-             'new_path': 'third_party/dep/f3.cc'})])
+        FileChangeInfo.FromDict({
+            'change_type': ChangeType.MODIFY,
+            'old_path': 'third_party/dep/f3.cc',
+            'new_path': 'third_party/dep/f3.cc'
+        })
+    ])
     MOCK_CHANGE_LOGS['6'] = MockChangeLog('6', [
-        FileChangeInfo.FromDict(
-            {'change_type': ChangeType.MODIFY,
-             'old_path': 'third_party/dep/f.cc',
-             'new_path': 'third_party/dep/f.cc'})])
+        FileChangeInfo.FromDict({
+            'change_type': ChangeType.MODIFY,
+            'old_path': 'third_party/dep/f.cc',
+            'new_path': 'third_party/dep/f.cc'
+        })
+    ])
     MOCK_CHANGE_LOGS['7'] = MockChangeLog('7', [
-        FileChangeInfo.FromDict(
-            {'change_type': ChangeType.MODIFY,
-             'old_path': 'third_party/dep/f.cc',
-             'new_path': 'third_party/dep/f.cc'})])
+        FileChangeInfo.FromDict({
+            'change_type': ChangeType.MODIFY,
+            'old_path': 'third_party/dep/f.cc',
+            'new_path': 'third_party/dep/f.cc'
+        })
+    ])
     MOCK_CHANGE_LOGS['8'] = MockChangeLog('8', [
-        FileChangeInfo.FromDict(
-            {'change_type': ChangeType.MODIFY,
-             'old_path': 'third_party/dep/f.cc',
-             'new_path': 'third_party/dep/f.cc'})])
+        FileChangeInfo.FromDict({
+            'change_type': ChangeType.MODIFY,
+            'old_path': 'third_party/dep/f.cc',
+            'new_path': 'third_party/dep/f.cc'
+        })
+    ])
     MOCK_CHANGE_LOGS['9'] = MockChangeLog('9', [
-        FileChangeInfo.FromDict(
-            {'change_type': ChangeType.DELETE,
-             'old_path': 'third_party/dep/f.cc',
-             'new_path': 'dev/null'})])
+        FileChangeInfo.FromDict({
+            'change_type': ChangeType.DELETE,
+            'old_path': 'third_party/dep/f.cc',
+            'new_path': 'dev/null'
+        })
+    ])
     MOCK_CHANGE_LOGS['10'] = MockChangeLog('10', [
-        FileChangeInfo.FromDict(
-            {'change_type': ChangeType.MODIFY,
-             'old_path': 'third_party/dep/f2.cc',
-             'new_path': 'third_party/dep/f2.cc'})])
+        FileChangeInfo.FromDict({
+            'change_type': ChangeType.MODIFY,
+            'old_path': 'third_party/dep/f2.cc',
+            'new_path': 'third_party/dep/f2.cc'
+        })
+    ])
     MOCK_CHANGE_LOGS['11'] = MockChangeLog('11', [
-        FileChangeInfo.FromDict(
-            {'change_type': ChangeType.MODIFY,
-             'old_path': 'third_party/dep/f2.cc',
-             'new_path': 'third_party/dep/f2.cc'})])
+        FileChangeInfo.FromDict({
+            'change_type': ChangeType.MODIFY,
+            'old_path': 'third_party/dep/f2.cc',
+            'new_path': 'third_party/dep/f2.cc'
+        })
+    ])
 
     return MOCK_CHANGE_LOGS.get(revision, MockChangeLog('12', []))
 
@@ -93,21 +113,17 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     blame = Blame(revision, path)
 
     blame.AddRegions([
-        Region(1, 2, '7',
-               u'test3@chromium.org', u'test3@chromium.org',
+        Region(1, 2, '7', u'test3@chromium.org', u'test3@chromium.org',
                datetime(2015, 06, 07, 04, 35, 32)),
-        Region(3, 3, '5',
-               u'test3@chromium.org', u'test3@chromium.org',
+        Region(3, 3, '5', u'test3@chromium.org', u'test3@chromium.org',
                datetime(2015, 06, 05, 04, 35, 32)),
-        Region(7, 1, '8',
-               u'test2@chromium.org', u'test2@chromium.org',
+        Region(7, 1, '8', u'test2@chromium.org', u'test2@chromium.org',
                datetime(2015, 06, 8, 04, 35, 32)),
-        Region(8, 1, '7',
-               u'test3@chromium.org', u'test3@chromium.org',
+        Region(8, 1, '7', u'test3@chromium.org', u'test3@chromium.org',
                datetime(2015, 06, 07, 21, 35, 32)),
-        Region(9, 10, '12',
-               u'test3@chromium.org', u'test3@chromium.org',
-               datetime(2015, 06, 12, 04, 35, 32))])
+        Region(9, 10, '12', u'test3@chromium.org', u'test3@chromium.org',
+               datetime(2015, 06, 12, 04, 35, 32))
+    ])
     return blame
 
   def testIsSameFile(self):
@@ -143,9 +159,12 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     cases = {
         'a_file':
             'a_file_%s.cc' % '_'.join(build_failure_analysis._COMMON_SUFFIXES),
-        'src/b_file': 'src/b_file_impl_mac.h',
-        'c_file': 'c_file_browsertest.cc',
-        'xdtest': 'xdtest.cc',
+        'src/b_file':
+            'src/b_file_impl_mac.h',
+        'c_file':
+            'c_file_browsertest.cc',
+        'xdtest':
+            'xdtest.cc',
     }
     for expected_file, file_path in cases.iteritems():
       self.assertEqual(
@@ -154,23 +173,18 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
   def testIsRelated(self):
     self.assertTrue(build_failure_analysis._IsRelated('a.py', 'a_test.py'))
-    self.assertTrue(
-        build_failure_analysis._IsRelated('a.h', 'a_impl_test.o'))
+    self.assertTrue(build_failure_analysis._IsRelated('a.h', 'a_impl_test.o'))
     self.assertTrue(
         build_failure_analysis._IsRelated('a.h', 'target.a_impl_test.obj'))
 
-    self.assertFalse(
-        build_failure_analysis._IsRelated('a/x.cc', 'a/b/y.cc'))
-    self.assertFalse(
-        build_failure_analysis._IsRelated('a/x.cc', 'xdtest.cc'))
+    self.assertFalse(build_failure_analysis._IsRelated('a/x.cc', 'a/b/y.cc'))
+    self.assertFalse(build_failure_analysis._IsRelated('a/x.cc', 'xdtest.cc'))
     self.assertFalse(
         build_failure_analysis._IsRelated('a_tests.cc', 'a_browsertests.cc'))
     self.assertFalse(
         build_failure_analysis._IsRelated('cc_unittests.isolate', 'a.cc.obj'))
-    self.assertFalse(
-        build_failure_analysis._IsRelated('a.h', 'a.pyc'))
-    self.assertFalse(
-        build_failure_analysis._IsRelated('a', 'b'))
+    self.assertFalse(build_failure_analysis._IsRelated('a.h', 'a.pyc'))
+    self.assertFalse(build_failure_analysis._IsRelated('a', 'b'))
     self.assertFalse(build_failure_analysis._IsRelated('a', 'a'))
 
   def testCheckFilesAgainstSuspectedCL(self):
@@ -185,7 +199,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         }
     }
     change_log_json = {
-        'revision': 'rev',
+        'revision':
+            'rev',
         'touched_files': [
             {
                 'change_type': ChangeType.ADD,
@@ -227,8 +242,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     deps_info = {}
 
     justification = build_failure_analysis._CheckFiles(
-        FailureSignal.FromDict(failure_signal_json),
-        change_log_json, deps_info)
+        FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
     self.assertIsNotNone(justification)
     # The score is 15 because:
     # +5 added a/b/f1.cc (same file src/a/b/f1.cc in failure_signal log)
@@ -247,7 +261,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         }
     }
     change_log_json = {
-        'revision': 'rev',
+        'revision':
+            'rev',
         'touched_files': [
             {
                 'change_type': ChangeType.ADD,
@@ -259,13 +274,15 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     deps_info = {}
 
     justification = build_failure_analysis._CheckFiles(
-        FailureSignal.FromDict(failure_signal_json),
-        change_log_json, deps_info)
+        FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
     self.assertIsNone(justification)
 
-  def _testCheckFileInDependencyRoll(
-      self, file_path_in_log, rolls, expected_score, line_numbers,
-      expected_hints=None):
+  def _testCheckFileInDependencyRoll(self,
+                                     file_path_in_log,
+                                     rolls,
+                                     expected_score,
+                                     line_numbers,
+                                     expected_hints=None):
     self.mock(GitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
     self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
     self.mock(GitilesRepository, 'GetCommitsBetweenRevisions',
@@ -305,7 +322,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     expected_score = 1
     expected_hints = {
         ('rolled dependency third_party/dep/ with changes in '
-         'https://url_dep/+log/6..8?pretty=fuller (and f.cc was in log)'): 1
+         'https://url_dep/+log/6..8?pretty=fuller (and f.cc was in log)'):
+             1
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -355,7 +373,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     expected_hints = {
         ('rolled dependency third_party/dep/ with changes in '
          'https://url_dep/+log/1..2?pretty=fuller '
-         '(and f.cc(added) was in log)'): 5
+         '(and f.cc(added) was in log)'):
+             5
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -402,7 +421,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     expected_hints = {
         ('rolled dependency third_party/dep/ with changes in '
          'https://url_dep/+log/6..8?pretty=fuller '
-         '(and f.cc[2, 7] was in log)'): 4
+         '(and f.cc[2, 7] was in log)'):
+             4
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
@@ -423,34 +443,31 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                                         line_numbers)
 
   def testCheckFileInDependencyRollWhenFileIsDeleted(self):
-    rolls = [
-        {
-            'path': 'src/third_party/dep/',
-            'repo_url': 'https://url_dep',
-            'old_revision': '8',
-            'new_revision': '10',
-        }
-    ]
+    rolls = [{
+        'path': 'src/third_party/dep/',
+        'repo_url': 'https://url_dep',
+        'old_revision': '8',
+        'new_revision': '10',
+    }]
     file_path_in_log = 'third_party/dep/f.cc'
     expected_score = 5
     expected_hints = {
         ('rolled dependency third_party/dep/ with changes in '
          'https://url_dep/+log/8..10?pretty=fuller '
-         '(and f.cc(deleted) was in log)'): 5
+         '(and f.cc(deleted) was in log)'):
+             5
     }
 
     self._testCheckFileInDependencyRoll(file_path_in_log, rolls, expected_score,
                                         None, expected_hints)
 
   def testCheckFileInDependencyRollWhenFileIsModifiedWithoutBlame(self):
-    rolls = [
-        {
-            'path': 'src/third_party/dep/',
-            'repo_url': 'https://url_dep',
-            'old_revision': '10',
-            'new_revision': '11',
-        }
-    ]
+    rolls = [{
+        'path': 'src/third_party/dep/',
+        'repo_url': 'https://url_dep',
+        'old_revision': '10',
+        'new_revision': '11',
+    }]
     file_path_in_log = 'third_party/dep/f2.cc'
     line_numbers = [2, 7, 8]
     expected_score = 1
@@ -507,7 +524,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         }
     }
     change_log_json = {
-        'revision': 'rev',
+        'revision':
+            'rev',
         'touched_files': [
             {
                 'change_type': ChangeType.MODIFY,
@@ -533,8 +551,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
               self._MockGetCommitsBetweenRevisions)
     self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
     justification = build_failure_analysis._CheckFiles(
-        FailureSignal.FromDict(failure_signal_json),
-        change_log_json, deps_info)
+        FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
     self.assertIsNotNone(justification)
     # The score is 1 because:
     # +1 rolled third_party/dep1/ and src/third_party/dep1/f.cc was in log.
@@ -606,7 +623,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     change_logs = {
         'r99_1': {
-            'revision': 'r99_1',
+            'revision':
+                'r99_1',
             'touched_files': [
                 {
                     'change_type': ChangeType.MODIFY,
@@ -616,7 +634,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             ],
         },
         'r99_2': {
-            'revision': 'r99_2',
+            'revision':
+                'r99_2',
             'touched_files': [
                 {
                     'change_type': ChangeType.MODIFY,
@@ -626,7 +645,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             ],
         },
         'r98_1': {
-            'revision': 'r98_1',
+            'revision':
+                'r98_1',
             'touched_files': [
                 {
                     'change_type': ChangeType.MODIFY,
@@ -636,7 +656,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             ],
         },
         'r97_1': {
-            'revision': 'r97_1',
+            'revision':
+                'r97_1',
             'touched_files': [
                 {
                     'change_type': ChangeType.ADD,
@@ -651,7 +672,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             ],
         },
         'r96_1': {
-            'revision': 'r96_1',
+            'revision':
+                'r96_1',
             'touched_files': [
                 {
                     'change_type': ChangeType.MODIFY,
@@ -675,70 +697,68 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         },
     }
     expected_analysis_result = {
-        'failures': [
-            {
-                'step_name': 'a',
-                'supported': True,
-                'first_failure': 98,
-                'last_pass': None,
-                'suspected_cls': [
-                    {
-                        'build_number': 99,
-                        'repo_name': 'chromium',
-                        'revision': 'r99_2',
-                        'commit_position': None,
-                        'url': None,
-                        'score': 2,
-                        'hints': {
-                            'modified f99_2.cc (and it was in log)': 2,
-                        },
-                    }
-                ],
-            },
-            {
-                'step_name': 'b',
-                'supported': True,
-                'first_failure': 98,
-                'last_pass': 96,
-                'suspected_cls': [
-                    {
-                        'build_number': 97,
-                        'repo_name': 'chromium',
-                        'revision': 'r97_1',
-                        'commit_position': None,
-                        'url': None,
-                        'score': 5,
-                        'hints': {
-                            'added x/y/f99_1.cc (and it was in log)': 5,
-                        },
-                    }
-                ],
-            }
-        ]
+        'failures': [{
+            'step_name':
+                'a',
+            'supported':
+                True,
+            'first_failure':
+                98,
+            'last_pass':
+                None,
+            'suspected_cls': [{
+                'build_number': 99,
+                'repo_name': 'chromium',
+                'revision': 'r99_2',
+                'commit_position': None,
+                'url': None,
+                'score': 2,
+                'hints': {
+                    'modified f99_2.cc (and it was in log)': 2,
+                },
+            }],
+        }, {
+            'step_name':
+                'b',
+            'supported':
+                True,
+            'first_failure':
+                98,
+            'last_pass':
+                96,
+            'suspected_cls': [{
+                'build_number': 97,
+                'repo_name': 'chromium',
+                'revision': 'r97_1',
+                'commit_position': None,
+                'url': None,
+                'score': 5,
+                'hints': {
+                    'added x/y/f99_1.cc (and it was in log)': 5,
+                },
+            }],
+        }]
     }
 
-    expected_suspected_cl = [
-        {
-          'repo_name': 'chromium',
-          'revision': 'r99_2',
-          'commit_position': None,
-          'url': None,
-          'failures': {
+    expected_suspected_cl = [{
+        'repo_name': 'chromium',
+        'revision': 'r99_2',
+        'commit_position': None,
+        'url': None,
+        'failures': {
             'a': []
-          },
-          'top_score': 2
         },
-        {
-            'repo_name': 'chromium',
-            'revision': 'r97_1',
-            'commit_position': None,
-            'url': None,
-            'failures': {
-                'b': []
-            },
-            'top_score': 5
-        }
-    ]
+        'top_score': 2
+    }, {
+        'repo_name': 'chromium',
+        'revision': 'r97_1',
+        'commit_position': None,
+        'url': None,
+        'failures': {
+            'b': []
+        },
+        'top_score': 5
+    }]
 
     analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, deps_info, failure_signals_json)
@@ -760,16 +780,17 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                 'first_failure': 98,
             },
             'b': {
-                'current_failure': 99,
-                'first_failure': 98,
-                'last_pass': 96,
-                'list_isolated_data': [
-                    {
-                        'isolatedserver': 'https://isolateserver.appspot.com',
-                        'namespace': 'default-gzip',
-                        'digest': 'isolatedhashabctest-223'
-                    }
-                ],
+                'current_failure':
+                    99,
+                'first_failure':
+                    98,
+                'last_pass':
+                    96,
+                'list_isolated_data': [{
+                    'isolatedserver': 'https://isolateserver.appspot.com',
+                    'namespace': 'default-gzip',
+                    'digest': 'isolatedhashabctest-223'
+                }],
                 'tests': {
                     'Unittest1.Subtest1': {
                         'current_failure': 99,
@@ -811,7 +832,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     change_logs = {
         'r99_1': {
-            'revision': 'r99_1',
+            'revision':
+                'r99_1',
             'touched_files': [
                 {
                     'change_type': ChangeType.MODIFY,
@@ -821,7 +843,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             ],
         },
         'r99_2': {
-            'revision': 'r99_2',
+            'revision':
+                'r99_2',
             'touched_files': [
                 {
                     'change_type': ChangeType.MODIFY,
@@ -831,7 +854,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             ],
         },
         'r98_1': {
-            'revision': 'r98_1',
+            'revision':
+                'r98_1',
             'touched_files': [
                 {
                     'change_type': ChangeType.MODIFY,
@@ -841,7 +865,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             ],
         },
         'r97_1': {
-            'revision': 'r97_1',
+            'revision':
+                'r97_1',
             'touched_files': [
                 {
                     'change_type': ChangeType.ADD,
@@ -856,7 +881,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             ],
         },
         'r96_1': {
-            'revision': 'r96_1',
+            'revision':
+                'r96_1',
             'touched_files': [
                 {
                     'change_type': ChangeType.MODIFY,
@@ -903,159 +929,154 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
       del repo_info, touched_file
       if line_numbers:
         return line_numbers
+
     self.mock(build_failure_analysis, '_GetChangedLinesForChromiumRepo',
               MockGetChangedLines)
 
     expected_analysis_result = {
-        'failures': [
-            {
-                'step_name': 'a',
-                'first_failure': 98,
-                'last_pass': None,
-                'supported': True,
-                'suspected_cls': [
-                    {
-                        'build_number': 99,
-                        'repo_name': 'chromium',
-                        'revision': 'r99_2',
-                        'commit_position': None,
-                        'url': None,
-                        'score': 2,
-                        'hints': {
-                            'modified f99_2.cc (and it was in log)': 2,
-                        },
-                    }
-                ],
-            },
-            {
-                'step_name': 'b',
+        'failures': [{
+            'step_name':
+                'a',
+            'first_failure':
+                98,
+            'last_pass':
+                None,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 99,
+                'repo_name': 'chromium',
+                'revision': 'r99_2',
+                'commit_position': None,
+                'url': None,
+                'score': 2,
+                'hints': {
+                    'modified f99_2.cc (and it was in log)': 2,
+                },
+            }],
+        }, {
+            'step_name':
+                'b',
+            'first_failure':
+                98,
+            'last_pass':
+                96,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 97,
+                'repo_name': 'chromium',
+                'revision': 'r97_1',
+                'commit_position': None,
+                'url': None,
+                'score': 5,
+                'hints': {
+                    'added x/y/f99_1.cc (and it was in log)': 5,
+                },
+            }, {
+                'build_number': 98,
+                'repo_name': 'chromium',
+                'revision': 'r98_1',
+                'commit_position': None,
+                'url': None,
+                'score': 4,
+                'hints': {
+                    'modified f98.cc[123, 456] (and it was in log)': 4,
+                },
+            }],
+            'tests': [{
+                'test_name':
+                    'Unittest1.Subtest1',
+                'first_failure':
+                    98,
+                'last_pass':
+                    97,
+                'suspected_cls': [{
+                    'build_number': 97,
+                    'repo_name': 'chromium',
+                    'revision': 'r97_1',
+                    'commit_position': None,
+                    'url': None,
+                    'score': 5,
+                    'hints': {
+                        'added x/y/f99_1.cc (and it was in log)': 5,
+                    },
+                }]
+            }, {
+                'test_name':
+                    'Unittest2.Subtest1',
+                'first_failure':
+                    98,
+                'last_pass':
+                    97,
+                'suspected_cls': [{
+                    'build_number': 98,
+                    'repo_name': 'chromium',
+                    'revision': 'r98_1',
+                    'commit_position': None,
+                    'url': None,
+                    'score': 4,
+                    'hints': {
+                        ('modified f98.cc[123] '
+                         '(and it was in log)'): 4,
+                    },
+                }]
+            }, {
+                'test_name':
+                    'Unittest3.Subtest2',
+                'first_failure':
+                    98,
+                'last_pass':
+                    96,
+                'suspected_cls': [{
+                    'build_number': 98,
+                    'repo_name': 'chromium',
+                    'revision': 'r98_1',
+                    'commit_position': None,
+                    'url': None,
+                    'score': 4,
+                    'hints': {
+                        ('modified f98.cc[456] '
+                         '(and it was in log)'): 4,
+                    },
+                }]
+            }, {
+                'test_name': 'Unittest3.Subtest3',
                 'first_failure': 98,
                 'last_pass': 96,
-                'supported': True,
-                'suspected_cls': [
-                    {
-                        'build_number': 97,
-                        'repo_name': 'chromium',
-                        'revision': 'r97_1',
-                        'commit_position': None,
-                        'url': None,
-                        'score': 5,
-                        'hints': {
-                            'added x/y/f99_1.cc (and it was in log)': 5,
-                        },
-                    },
-                    {
-                        'build_number': 98,
-                        'repo_name': 'chromium',
-                        'revision': 'r98_1',
-                        'commit_position': None,
-                        'url': None,
-                        'score': 4,
-                        'hints': {
-                            'modified f98.cc[123, 456] (and it was in log)': 4,
-                        },
-                    }
-                ],
-                'tests': [
-                    {
-                        'test_name': 'Unittest1.Subtest1',
-                        'first_failure': 98,
-                        'last_pass': 97,
-                        'suspected_cls': [
-                            {
-                                'build_number': 97,
-                                'repo_name': 'chromium',
-                                'revision': 'r97_1',
-                                'commit_position': None,
-                                'url': None,
-                                'score': 5,
-                                'hints': {
-                                    'added x/y/f99_1.cc (and it was in log)': 5,
-                                },
-                            }
-                        ]
-                    },
-                    {
-                        'test_name': 'Unittest2.Subtest1',
-                        'first_failure': 98,
-                        'last_pass': 97,
-                        'suspected_cls': [
-                            {
-                                'build_number': 98,
-                                'repo_name': 'chromium',
-                                'revision': 'r98_1',
-                                'commit_position': None,
-                                'url': None,
-                                'score': 4,
-                                'hints': {
-                                    ('modified f98.cc[123] '
-                                     '(and it was in log)'): 4,
-                                },
-                            }
-                        ]
-                    },
-                    {
-                        'test_name': 'Unittest3.Subtest2',
-                        'first_failure': 98,
-                        'last_pass': 96,
-                        'suspected_cls': [
-                            {
-                                'build_number': 98,
-                                'repo_name': 'chromium',
-                                'revision': 'r98_1',
-                                'commit_position': None,
-                                'url': None,
-                                'score': 4,
-                                'hints': {
-                                    ('modified f98.cc[456] '
-                                     '(and it was in log)'): 4,
-                                },
-                            }
-                        ]
-                    },
-                    {
-                        'test_name': 'Unittest3.Subtest3',
-                        'first_failure': 98,
-                        'last_pass': 96,
-                        'suspected_cls': []
-                    }
-                ]
-            }
-        ]
+                'suspected_cls': []
+            }]
+        }]
     }
 
-    expected_suspected_cl = [
-        {
-          'repo_name': 'chromium',
-          'revision': 'r99_2',
-          'commit_position': None,
-          'url': None,
-          'failures': {
+    expected_suspected_cl = [{
+        'repo_name': 'chromium',
+        'revision': 'r99_2',
+        'commit_position': None,
+        'url': None,
+        'failures': {
             'a': []
-          },
-          'top_score': 2
         },
-        {
-            'repo_name': 'chromium',
-            'revision': 'r97_1',
-            'commit_position': None,
-            'url': None,
-            'failures': {
-                'b': ['Unittest1.Subtest1']
-            },
-            'top_score': 5
+        'top_score': 2
+    }, {
+        'repo_name': 'chromium',
+        'revision': 'r97_1',
+        'commit_position': None,
+        'url': None,
+        'failures': {
+            'b': ['Unittest1.Subtest1']
         },
-        {
-            'repo_name': 'chromium',
-            'revision': 'r98_1',
-            'commit_position': None,
-            'url': None,
-            'failures': {
-                'b': ['Unittest2.Subtest1', 'Unittest3.Subtest2']
-            },
-            'top_score': 4
-        }
-    ]
+        'top_score': 5
+    }, {
+        'repo_name': 'chromium',
+        'revision': 'r98_1',
+        'commit_position': None,
+        'url': None,
+        'failures': {
+            'b': ['Unittest2.Subtest1', 'Unittest3.Subtest2']
+        },
+        'top_score': 4
+    }]
 
     analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, deps_info, failure_signals_json)
@@ -1206,8 +1227,10 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertEqual([], changed_line_numbers)
 
   def testCheckFileSameLineChanged(self):
+
     def MockGetChangedLines(*_):
       return [1, 3]
+
     self.mock(build_failure_analysis, '_GetChangedLinesForChromiumRepo',
               MockGetChangedLines)
     touched_file = {
@@ -1224,9 +1247,9 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'revision': 'dummy_abcd1234'
     }
     commit_revision = 'dummy_1'
-    build_failure_analysis._CheckFile(
-        touched_file, file_path_in_log, justification, file_name_occurrences,
-        line_numbers, repo_info, commit_revision)
+    build_failure_analysis._CheckFile(touched_file, file_path_in_log,
+                                      justification, file_name_occurrences,
+                                      line_numbers, repo_info, commit_revision)
 
     expected_justification = {
         'score': 4,

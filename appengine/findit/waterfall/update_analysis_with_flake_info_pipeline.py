@@ -22,8 +22,8 @@ def _GetFlakyTests(task_results):
 
 
 @ndb.transactional
-def _UpdateAnalysisWithFlakeInfo(
-    master_name, builder_name, build_number, flaky_tests):
+def _UpdateAnalysisWithFlakeInfo(master_name, builder_name, build_number,
+                                 flaky_tests):
 
   if not flaky_tests:
     return False
@@ -43,8 +43,7 @@ class UpdateAnalysisWithFlakeInfoPipeline(BasePipeline):
   """A pipeline to update analysis with flake info."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(
-      self, master_name, builder_name, build_number, *task_results):
+  def run(self, master_name, builder_name, build_number, *task_results):
     """
     Args:
     master_name (str): The master name.
@@ -53,5 +52,5 @@ class UpdateAnalysisWithFlakeInfoPipeline(BasePipeline):
     flaky_tests (list): A list of results from swarming tasks.
     """
     flaky_tests = _GetFlakyTests(dict(task_results))
-    _UpdateAnalysisWithFlakeInfo(
-        master_name, builder_name, build_number, flaky_tests)
+    _UpdateAnalysisWithFlakeInfo(master_name, builder_name, build_number,
+                                 flaky_tests)

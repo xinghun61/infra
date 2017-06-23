@@ -16,7 +16,9 @@ from waterfall import identify_culprit_pipeline
 
 class ListAnalysesTest(testing.AppengineTestCase):
   app_module = webapp2.WSGIApplication(
-      [('/list-analyses', list_analyses.ListAnalyses), ], debug=True)
+      [
+          ('/list-analyses', list_analyses.ListAnalyses),
+      ], debug=True)
 
   def setUp(self):
     super(ListAnalysesTest, self).setUp()
@@ -55,6 +57,7 @@ class ListAnalysesTest(testing.AppengineTestCase):
     """Create and store dummy data."""
     analyses = []
     stored_dates = {}
+
     def StoreTestBuildDate(analysis_number, start_time):
       if datetime:  # pragma: no cover
         stored_dates[analysis_number] = start_time.strftime(
@@ -76,207 +79,202 @@ class ListAnalysesTest(testing.AppengineTestCase):
 
     analyses[2].build_start_time = datetime.datetime.utcnow()
     StoreTestBuildDate(2, analyses[2].build_start_time)
-    analyses[7].build_start_time = (datetime.datetime.utcnow()
-        - datetime.timedelta(6))
+    analyses[7].build_start_time = (
+        datetime.datetime.utcnow() - datetime.timedelta(6))
     StoreTestBuildDate(7, analyses[7].build_start_time)
-    analyses[10].build_start_time = (datetime.datetime.utcnow()
-        - datetime.timedelta(4))
+    analyses[10].build_start_time = (
+        datetime.datetime.utcnow() - datetime.timedelta(4))
     StoreTestBuildDate(10, analyses[10].build_start_time)
 
     analyses[1].result = {
-       'failures': [
-           {
-               'step_name': 'b',
-               'first_failure': 1,
-               'last_pass': None,
-               'supported': True,
-               'suspected_cls': [
-                   {
-                       'build_number': 1,
-                       'repo_name': 'chromium',
-                       'revision': 'r99_1',
-                       'commit_position': None,
-                       'url': None,
-                       'score': 5,
-                       'hints': {
-                           'added x/y/f99_1.cc (and it was in log)': 5,
-                       },
-                   }
-               ],
-           }
-       ]
+        'failures': [{
+            'step_name':
+                'b',
+            'first_failure':
+                1,
+            'last_pass':
+                None,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 1,
+                'repo_name': 'chromium',
+                'revision': 'r99_1',
+                'commit_position': None,
+                'url': None,
+                'score': 5,
+                'hints': {
+                    'added x/y/f99_1.cc (and it was in log)': 5,
+                },
+            }],
+        }]
     }
 
     analyses[2].result = {
-       'failures': [
-           {
-               'step_name': 'a',
-               'first_failure': 2,
-               'last_pass': None,
-               'supported': True,
-               'suspected_cls': [],
-           },
-           {
-               'step_name': 'b',
-               'first_failure': 1,
-               'last_pass': None,
-               'supported': True,
-               'suspected_cls': [],
-           }
-       ]
+        'failures': [{
+            'step_name': 'a',
+            'first_failure': 2,
+            'last_pass': None,
+            'supported': True,
+            'suspected_cls': [],
+        }, {
+            'step_name': 'b',
+            'first_failure': 1,
+            'last_pass': None,
+            'supported': True,
+            'suspected_cls': [],
+        }]
     }
 
     analyses[3].result = {
-       'failures': [
-           {
-               'step_name': 'a',
-               'first_failure': 3,
-               'last_pass': None,
-               'supported': True,
-               'suspected_cls': [],
-           },
-           {
-               'step_name': 'b',
-               'first_failure': 2,
-               'last_pass': None,
-               'supported': True,
-               'suspected_cls': [],
-           }
-       ]
+        'failures': [{
+            'step_name': 'a',
+            'first_failure': 3,
+            'last_pass': None,
+            'supported': True,
+            'suspected_cls': [],
+        }, {
+            'step_name': 'b',
+            'first_failure': 2,
+            'last_pass': None,
+            'supported': True,
+            'suspected_cls': [],
+        }]
     }
 
     analyses[7].result = {
-       'failures': [
-           {
-               'step_name': 'a',
-               'first_failure': 7,
-               'last_pass': None,
-               'supported': True,
-               'suspected_cls': [
-                   {
-                       'build_number': 7,
-                       'repo_name': 'chromium',
-                       'revision': 'r99_2',
-                       'commit_position': None,
-                       'url': None,
-                       'score': 1,
-                       'hints': {
-                           'modified f99_2.cc (and it was in log)': 1,
-                       },
-                   },
-                   {
-                       'build_number': 7,
-                       'repo_name': 'chromium',
-                       'revision': 'r99_6',
-                       'commit_position': None,
-                       'url': None,
-                       'score': 5,
-                       'hints': {
-                           'added x/y/f99_7.cc (and it was in log)': 5,
-                       },
-                   }
-               ],
-           },
-           {
-               'step_name': 'b',
-               'first_failure': 7,
-               'last_pass': None,
-               'supported': True,
-               'suspected_cls': [
-                   {
-                       'build_number': 7,
-                       'repo_name': 'chromium',
-                       'revision': 'r99_1',
-                       'commit_position': None,
-                       'url': 'https://chromium.googlesource.com/chromium/'
-                              'src/r99_1',
-                       'score': 5,
-                       'hints': {
-                           'added x/y/f99_1.cc (and it was in log)': 5,
-                       },
-                   }
-               ],
-           }
-       ]
+        'failures': [{
+            'step_name':
+                'a',
+            'first_failure':
+                7,
+            'last_pass':
+                None,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 7,
+                'repo_name': 'chromium',
+                'revision': 'r99_2',
+                'commit_position': None,
+                'url': None,
+                'score': 1,
+                'hints': {
+                    'modified f99_2.cc (and it was in log)': 1,
+                },
+            }, {
+                'build_number': 7,
+                'repo_name': 'chromium',
+                'revision': 'r99_6',
+                'commit_position': None,
+                'url': None,
+                'score': 5,
+                'hints': {
+                    'added x/y/f99_7.cc (and it was in log)': 5,
+                },
+            }],
+        }, {
+            'step_name':
+                'b',
+            'first_failure':
+                7,
+            'last_pass':
+                None,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 7,
+                'repo_name': 'chromium',
+                'revision': 'r99_1',
+                'commit_position': None,
+                'url': 'https://chromium.googlesource.com/chromium/'
+                       'src/r99_1',
+                'score': 5,
+                'hints': {
+                    'added x/y/f99_1.cc (and it was in log)': 5,
+                },
+            }],
+        }]
     }
 
     analyses[9].result = {
-       'failures': [
-           {
-               'step_name': 'a',
-               'first_failure': 9,
-               'last_pass': None,
-               'supported': True,
-               'suspected_cls': [],
-           },
-           {
-               'step_name': 'b',
-               'first_failure': 9,
-               'last_pass': None,
-               'supported': True,
-               'suspected_cls': [
-                   {
-                       'build_number': 9,
-                       'repo_name': 'chromium',
-                       'revision': 'r99_9',
-                       'commit_position': None,
-                       'url': None,
-                       'score': 1,
-                       'hints': {
-                           'modified f99_9.cc (and it was in log)': 1,
-                       },
-                   }
-               ],
-           }
-       ]
+        'failures': [{
+            'step_name': 'a',
+            'first_failure': 9,
+            'last_pass': None,
+            'supported': True,
+            'suspected_cls': [],
+        }, {
+            'step_name':
+                'b',
+            'first_failure':
+                9,
+            'last_pass':
+                None,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 9,
+                'repo_name': 'chromium',
+                'revision': 'r99_9',
+                'commit_position': None,
+                'url': None,
+                'score': 1,
+                'hints': {
+                    'modified f99_9.cc (and it was in log)': 1,
+                },
+            }],
+        }]
     }
 
     analyses[10].result = {
-       'failures': [
-           {
-               'step_name': 'a',
-               'first_failure': 10,
-               'last_pass': None,
-               'supported': True,
-               'suspected_cls': [
-                   {
-                       'build_number': 10,
-                       'repo_name': 'chromium',
-                       'revision': 'r99_10',
-                       'commit_position': None,
-                       'url': None,
-                       'score': 5,
-                       'hints': {
-                           'added x/f99_10.cc (and it was in log)': 5,
-                       },
-                   }
-               ],
-           },
-           {
-               'step_name': 'b',
-               'first_failure': 10,
-               'last_pass': None,
-               'supported': True,
-               'suspected_cls': [{
-                       'build_number': 10,
-                       'repo_name': 'chromium',
-                       'revision': 'r99_10',
-                       'commit_position': None,
-                       'url': None,
-                       'score': 1,
-                       'hints': {
-                           'modified x/f99_9.cc (and it was in log)': 1,
-                       },
-                   }
-               ],
-           }
-       ]
+        'failures': [{
+            'step_name':
+                'a',
+            'first_failure':
+                10,
+            'last_pass':
+                None,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 10,
+                'repo_name': 'chromium',
+                'revision': 'r99_10',
+                'commit_position': None,
+                'url': None,
+                'score': 5,
+                'hints': {
+                    'added x/f99_10.cc (and it was in log)': 5,
+                },
+            }],
+        }, {
+            'step_name':
+                'b',
+            'first_failure':
+                10,
+            'last_pass':
+                None,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 10,
+                'repo_name': 'chromium',
+                'revision': 'r99_10',
+                'commit_position': None,
+                'url': None,
+                'score': 1,
+                'hints': {
+                    'modified x/f99_9.cc (and it was in log)': 1,
+                },
+            }],
+        }]
     }
 
     for analysis in analyses:
       analysis.suspected_cls = self._GetSuspectedCLs(analysis.result)
-      analysis.result_status = (identify_culprit_pipeline.
-          _GetResultAnalysisStatus(analysis.result))
+      analysis.result_status = (
+          identify_culprit_pipeline._GetResultAnalysisStatus(analysis.result))
       analysis.put()
 
     analyses[1].result_status = result_status.FOUND_INCORRECT
@@ -291,59 +289,71 @@ class ListAnalysesTest(testing.AppengineTestCase):
   def testDisplayAggregatedBuildAnalysisResults(self):
     """Basic test case, no parameters."""
     expected_result = {
-        'analyses': [
-            {
-                'master_name': 'chromium.linux',
-                'builder_name': 'Linux GN',
-                'build_number': 26120,
-                'build_start_time': self.stored_dates.get(10),
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_10',
-                        'commit_position': None,
-                        'url': None
-                    }
-                ],
-                'result_status': 'Correct - Found'
-            },
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 1,
-                'build_start_time': None,
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_1',
-                        'commit_position': None,
-                        'url': None
-                    }
-                ],
-                'result_status': 'Incorrect - Found'
-            },
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 3,
-                'build_start_time': None,
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [],
-                'result_status': 'Incorrect - Not Found'
-            }
-        ],
-        'triage': '',
-        'days': '',
-        'count': '',
-        'result_status': ''
+        'analyses': [{
+            'master_name':
+                'chromium.linux',
+            'builder_name':
+                'Linux GN',
+            'build_number':
+                26120,
+            'build_start_time':
+                self.stored_dates.get(10),
+            'failure_type':
+                'test',
+            'status':
+                70,
+            'status_description':
+                'Completed',
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'r99_10',
+                'commit_position': None,
+                'url': None
+            }],
+            'result_status':
+                'Correct - Found'
+        }, {
+            'master_name':
+                'm',
+            'builder_name':
+                'b',
+            'build_number':
+                1,
+            'build_start_time':
+                None,
+            'failure_type':
+                'test',
+            'status':
+                70,
+            'status_description':
+                'Completed',
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'r99_1',
+                'commit_position': None,
+                'url': None
+            }],
+            'result_status':
+                'Incorrect - Found'
+        }, {
+            'master_name': 'm',
+            'builder_name': 'b',
+            'build_number': 3,
+            'build_start_time': None,
+            'failure_type': 'test',
+            'status': 70,
+            'status_description': 'Completed',
+            'suspected_cls': [],
+            'result_status': 'Incorrect - Not Found'
+        }],
+        'triage':
+            '',
+        'days':
+            '',
+        'count':
+            '',
+        'result_status':
+            ''
     }
 
     response_json = self.test_app.get('/list-analyses?format=json')
@@ -353,101 +363,115 @@ class ListAnalysesTest(testing.AppengineTestCase):
   def testDisplayAggregatedBuildAnalysisResultsTriage(self):
     """Test for parameter triage."""
     expected_result = {
-        'analyses': [
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 1,
-                'build_start_time': None,
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_1',
-                        'commit_position': None,
-                        'url': None
-                    }
-                ],
-                'result_status': 'Incorrect - Found'
-            },
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 3,
-                'build_start_time': None,
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [],
-                'result_status': 'Incorrect - Not Found'
-            },
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 7,
-                'build_start_time': self.stored_dates.get(7),
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_2',
-                        'commit_position': None,
-                        'url': None
-                    },
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_6',
-                        'commit_position': None,
-                        'url': None
-                    },
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_1',
-                        'commit_position': None,
-                        'url': 'https://chromium.googlesource.com'
-                               '/chromium/src/r99_1'
-                    }
-                ],
-                'result_status': 'Untriaged - Found'
-            },
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 9,
-                'build_start_time': None,
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_9',
-                        'commit_position': None,
-                        'url': None
-                    }
-                ],
-                'result_status': 'Untriaged - Found'
-            },
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 2,
-                'build_start_time': self.stored_dates.get(2),
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [],
-                'result_status': 'Untriaged - Not Found'
-            }
-        ],
-        'triage': '1',
-        'days': '',
-        'count': '',
-        'result_status': ''
+        'analyses': [{
+            'master_name':
+                'm',
+            'builder_name':
+                'b',
+            'build_number':
+                1,
+            'build_start_time':
+                None,
+            'failure_type':
+                'test',
+            'status':
+                70,
+            'status_description':
+                'Completed',
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'r99_1',
+                'commit_position': None,
+                'url': None
+            }],
+            'result_status':
+                'Incorrect - Found'
+        }, {
+            'master_name': 'm',
+            'builder_name': 'b',
+            'build_number': 3,
+            'build_start_time': None,
+            'failure_type': 'test',
+            'status': 70,
+            'status_description': 'Completed',
+            'suspected_cls': [],
+            'result_status': 'Incorrect - Not Found'
+        }, {
+            'master_name':
+                'm',
+            'builder_name':
+                'b',
+            'build_number':
+                7,
+            'build_start_time':
+                self.stored_dates.get(7),
+            'failure_type':
+                'test',
+            'status':
+                70,
+            'status_description':
+                'Completed',
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'r99_2',
+                'commit_position': None,
+                'url': None
+            }, {
+                'repo_name': 'chromium',
+                'revision': 'r99_6',
+                'commit_position': None,
+                'url': None
+            }, {
+                'repo_name': 'chromium',
+                'revision': 'r99_1',
+                'commit_position': None,
+                'url': 'https://chromium.googlesource.com'
+                       '/chromium/src/r99_1'
+            }],
+            'result_status':
+                'Untriaged - Found'
+        }, {
+            'master_name':
+                'm',
+            'builder_name':
+                'b',
+            'build_number':
+                9,
+            'build_start_time':
+                None,
+            'failure_type':
+                'test',
+            'status':
+                70,
+            'status_description':
+                'Completed',
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'r99_9',
+                'commit_position': None,
+                'url': None
+            }],
+            'result_status':
+                'Untriaged - Found'
+        }, {
+            'master_name': 'm',
+            'builder_name': 'b',
+            'build_number': 2,
+            'build_start_time': self.stored_dates.get(2),
+            'failure_type': 'test',
+            'status': 70,
+            'status_description': 'Completed',
+            'suspected_cls': [],
+            'result_status': 'Untriaged - Not Found'
+        }],
+        'triage':
+            '1',
+        'days':
+            '',
+        'count':
+            '',
+        'result_status':
+            ''
     }
 
     response_json = self.test_app.get('/list-analyses?format=json&triage=1')
@@ -457,48 +481,61 @@ class ListAnalysesTest(testing.AppengineTestCase):
   def testDisplayAggregatedBuildAnalysisResultsCount(self):
     """Test for parameter count."""
     expected_result = {
-        'analyses': [
-            {
-                'master_name': 'chromium.linux',
-                'builder_name': 'Linux GN',
-                'build_number': 26120,
-                'build_start_time': self.stored_dates.get(10),
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_10',
-                        'commit_position': None,
-                        'url': None
-                    }
-                ],
-                'result_status': 'Correct - Found'
-            },
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 1,
-                'build_start_time': None,
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_1',
-                        'commit_position': None,
-                        'url': None
-                    }
-                ],
-                'result_status': 'Incorrect - Found'
-            }
-        ],
-        'triage': '',
-        'days': '',
-        'count': '2',
-        'result_status': ''
+        'analyses': [{
+            'master_name':
+                'chromium.linux',
+            'builder_name':
+                'Linux GN',
+            'build_number':
+                26120,
+            'build_start_time':
+                self.stored_dates.get(10),
+            'failure_type':
+                'test',
+            'status':
+                70,
+            'status_description':
+                'Completed',
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'r99_10',
+                'commit_position': None,
+                'url': None
+            }],
+            'result_status':
+                'Correct - Found'
+        }, {
+            'master_name':
+                'm',
+            'builder_name':
+                'b',
+            'build_number':
+                1,
+            'build_start_time':
+                None,
+            'failure_type':
+                'test',
+            'status':
+                70,
+            'status_description':
+                'Completed',
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'r99_1',
+                'commit_position': None,
+                'url': None
+            }],
+            'result_status':
+                'Incorrect - Found'
+        }],
+        'triage':
+            '',
+        'days':
+            '',
+        'count':
+            '2',
+        'result_status':
+            ''
     }
 
     response_json = self.test_app.get('/list-analyses?format=json&count=2')
@@ -508,30 +545,38 @@ class ListAnalysesTest(testing.AppengineTestCase):
   def testDisplayAggregatedBuildAnalysisResultsResultStatus(self):
     """Test for parameter result_status."""
     expected_result = {
-        'analyses': [
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 1,
-                'build_start_time': None,
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_1',
-                        'commit_position': None,
-                        'url': None
-                    }
-                ],
-                'result_status': 'Incorrect - Found'
-            }
-        ],
-        'triage': '',
-        'days': '',
-        'count': '',
-        'result_status': '10'
+        'analyses': [{
+            'master_name':
+                'm',
+            'builder_name':
+                'b',
+            'build_number':
+                1,
+            'build_start_time':
+                None,
+            'failure_type':
+                'test',
+            'status':
+                70,
+            'status_description':
+                'Completed',
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'r99_1',
+                'commit_position': None,
+                'url': None
+            }],
+            'result_status':
+                'Incorrect - Found'
+        }],
+        'triage':
+            '',
+        'days':
+            '',
+        'count':
+            '',
+        'result_status':
+            '10'
     }
 
     response_json = self.test_app.get(
@@ -545,41 +590,48 @@ class ListAnalysesTest(testing.AppengineTestCase):
     This test case will only run locally, because it may cause flaky failure.
     """
     expected_result = {
-        'analyses': [
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 2,
-                'build_start_time': self.stored_dates.get(2),
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [],
-                'result_status': 'Untriaged - Not Found'
-            },
-            {
-                'master_name': 'chromium.linux',
-                'builder_name': 'Linux GN',
-                'build_number': 26120,
-                'build_start_time': self.stored_dates.get(10),
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_10',
-                        'commit_position': None,
-                        'url': None
-                    }
-                ],
-                'result_status': 'Correct - Found'
-            }
-        ],
-        'triage': '1',
-        'days': '5',
-        'count': '',
-        'result_status': ''
+        'analyses': [{
+            'master_name': 'm',
+            'builder_name': 'b',
+            'build_number': 2,
+            'build_start_time': self.stored_dates.get(2),
+            'failure_type': 'test',
+            'status': 70,
+            'status_description': 'Completed',
+            'suspected_cls': [],
+            'result_status': 'Untriaged - Not Found'
+        }, {
+            'master_name':
+                'chromium.linux',
+            'builder_name':
+                'Linux GN',
+            'build_number':
+                26120,
+            'build_start_time':
+                self.stored_dates.get(10),
+            'failure_type':
+                'test',
+            'status':
+                70,
+            'status_description':
+                'Completed',
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'r99_10',
+                'commit_position': None,
+                'url': None
+            }],
+            'result_status':
+                'Correct - Found'
+        }],
+        'triage':
+            '1',
+        'days':
+            '5',
+        'count':
+            '',
+        'result_status':
+            ''
     }
 
     response_json = self.test_app.get(
@@ -593,30 +645,38 @@ class ListAnalysesTest(testing.AppengineTestCase):
     This test case will only run locally, because it may cause flaky failure.
     """
     expected_result = {
-        'analyses': [
-            {
-                'master_name': 'chromium.linux',
-                'builder_name': 'Linux GN',
-                'build_number': 26120,
-                'build_start_time': self.stored_dates.get(10),
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_10',
-                        'commit_position': None,
-                        'url': None
-                    }
-                ],
-                'result_status': 'Correct - Found'
-            }
-        ],
-        'triage': '',
-        'days': '6',
-        'count': '',
-        'result_status': '0'
+        'analyses': [{
+            'master_name':
+                'chromium.linux',
+            'builder_name':
+                'Linux GN',
+            'build_number':
+                26120,
+            'build_start_time':
+                self.stored_dates.get(10),
+            'failure_type':
+                'test',
+            'status':
+                70,
+            'status_description':
+                'Completed',
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'r99_10',
+                'commit_position': None,
+                'url': None
+            }],
+            'result_status':
+                'Correct - Found'
+        }],
+        'triage':
+            '',
+        'days':
+            '6',
+        'count':
+            '',
+        'result_status':
+            '0'
     }
 
     response_json = self.test_app.get(
@@ -626,59 +686,71 @@ class ListAnalysesTest(testing.AppengineTestCase):
 
   def testResultStatusIsNotSpecified(self):
     expected_result = {
-        'analyses': [
-            {
-                'master_name': 'chromium.linux',
-                'builder_name': 'Linux GN',
-                'build_number': 26120,
-                'build_start_time': self.stored_dates.get(10),
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_10',
-                        'commit_position': None,
-                        'url': None
-                    }
-                ],
-                'result_status': 'Correct - Found'
-            },
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 1,
-                'build_start_time': None,
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'r99_1',
-                        'commit_position': None,
-                        'url': None
-                    }
-                ],
-                'result_status': 'Incorrect - Found'
-            },
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 3,
-                'build_start_time': None,
-                'failure_type': 'test',
-                'status': 70,
-                'status_description': 'Completed',
-                'suspected_cls': [],
-                'result_status': 'Incorrect - Not Found'
-            }
-        ],
-        'triage': '',
-        'days': '',
-        'count': '',
-        'result_status': ''
+        'analyses': [{
+            'master_name':
+                'chromium.linux',
+            'builder_name':
+                'Linux GN',
+            'build_number':
+                26120,
+            'build_start_time':
+                self.stored_dates.get(10),
+            'failure_type':
+                'test',
+            'status':
+                70,
+            'status_description':
+                'Completed',
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'r99_10',
+                'commit_position': None,
+                'url': None
+            }],
+            'result_status':
+                'Correct - Found'
+        }, {
+            'master_name':
+                'm',
+            'builder_name':
+                'b',
+            'build_number':
+                1,
+            'build_start_time':
+                None,
+            'failure_type':
+                'test',
+            'status':
+                70,
+            'status_description':
+                'Completed',
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'r99_1',
+                'commit_position': None,
+                'url': None
+            }],
+            'result_status':
+                'Incorrect - Found'
+        }, {
+            'master_name': 'm',
+            'builder_name': 'b',
+            'build_number': 3,
+            'build_start_time': None,
+            'failure_type': 'test',
+            'status': 70,
+            'status_description': 'Completed',
+            'suspected_cls': [],
+            'result_status': 'Incorrect - Not Found'
+        }],
+        'triage':
+            '',
+        'days':
+            '',
+        'count':
+            '',
+        'result_status':
+            ''
     }
 
     response_json = self.test_app.get(

@@ -6,7 +6,6 @@ import logging
 import re
 import socket
 
-
 # This is the maximum size of an IRC message.
 BUFFER_SIZE = 512
 
@@ -20,8 +19,12 @@ RETRIES = 3
 class IRCClient(object):
   """A numb IRC client to connect and send a message to a IRC channel."""
 
-  def __init__(self, server_hostname, channel_name,
-               nick_name, description, port=6667):
+  def __init__(self,
+               server_hostname,
+               channel_name,
+               nick_name,
+               description,
+               port=6667):
     self._server_hostname = server_hostname
     self._channel_name = channel_name
     self._nick_name = nick_name
@@ -52,8 +55,8 @@ class IRCClient(object):
     If we send a message before the sender confirms we joined the channel, the
     message may be dropped.
     """
-    join_message_regex = re.compile(r'[^ ]+ [^ ]+ %s @ %s.*' % (
-        self._nick_name, self._channel_name))
+    join_message_regex = re.compile(r'[^ ]+ [^ ]+ %s @ %s.*' %
+                                    (self._nick_name, self._channel_name))
     # Keep the last line in this var in case it is truncated.
     partial_line = ''
     while True:

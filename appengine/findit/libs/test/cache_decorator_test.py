@@ -12,6 +12,7 @@ from libs import cache_decorator
 
 
 class _DummyCache(cache.Cache):
+
   def __init__(self, cached_data):
     self.cached_data = cached_data
 
@@ -22,10 +23,7 @@ class _DummyCache(cache.Cache):
     self.cached_data[key] = data
 
 
-def _DummyKeyGenerator(func,
-                       _args,
-                       _kwargs,
-                       namespace=None):
+def _DummyKeyGenerator(func, _args, _kwargs, namespace=None):
   namespace = namespace or '%s.%s' % (func.__module__, func.__name__)
   return namespace + '-' + func.__name__
 
@@ -51,10 +49,12 @@ class CachedTest(unittest.TestCase):
       return 1  # pragma: no cover.
 
     class CallableIdentifier(object):
+
       def identifier(self):
         return 'fi'
 
     class PropertyIdentifier(object):
+
       @property
       def identifier(self):
         return 'pi'
@@ -110,7 +110,9 @@ class CachedTest(unittest.TestCase):
     self.assertEqual({}, dummy_cache.cached_data)
 
   def testCachedDecoratorWithMethodInAClass(self):
+
     class A(object):
+
       def __init__(self, url, retries):
         self.url = url
         self.retries = retries
@@ -176,8 +178,7 @@ class GeneratorCachedTest(unittest.TestCase):
 
     self.assertDictEqual(dummy_cache.cached_data, cached_data)
 
-  @mock.patch('libs.cache_decorator.GeneratorCached.SetCache',
-              lambda *_: False)
+  @mock.patch('libs.cache_decorator.GeneratorCached.SetCache', lambda *_: False)
   def testFailedToSetValue(self):
     value_list = [0, 1, 2, 3, 4]
     dummy_cache = _DummyCache({})

@@ -48,9 +48,15 @@ class DashBoardUtilTest(testcase.TestCase):
     entities_on_page1, _, bottom_cursor1 = dashboard_util.GetPagedResults(
         Entity.query(), Entity.time, direction='next', page_size=1)
     _, top_cursor2, _ = dashboard_util.GetPagedResults(
-        Entity.query(), Entity.time, cursor=bottom_cursor1, direction='next',
+        Entity.query(),
+        Entity.time,
+        cursor=bottom_cursor1,
+        direction='next',
         page_size=1)
     back_to_page1_entities, _, _ = dashboard_util.GetPagedResults(
-        Entity.query(), Entity.time, cursor=top_cursor2, direction='previous',
+        Entity.query(),
+        Entity.time,
+        cursor=top_cursor2,
+        direction='previous',
         page_size=1)
     self.assertListEqual(entities_on_page1, back_to_page1_entities)

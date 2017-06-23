@@ -33,8 +33,8 @@ class VersionedConfigTest(testing.AppengineTestCase):
     self._CreateFirstVersion()
     config = _Config.Get()
     self.assertIsNotNone(config)
-    self.assertTrue(config.Update(users.User(email='admin@chromium.org'), True,
-                                  a=2))
+    self.assertTrue(
+        config.Update(users.User(email='admin@chromium.org'), True, a=2))
 
     config = _Config.Get()
     self.assertIsNotNone(config)
@@ -45,8 +45,8 @@ class VersionedConfigTest(testing.AppengineTestCase):
     self._CreateFirstVersion()
     config = _Config.Get()
     self.assertIsNotNone(config)
-    self.assertFalse(config.Update(users.User(email='admin@chromium.org'), True,
-                                   a=1))
+    self.assertFalse(
+        config.Update(users.User(email='admin@chromium.org'), True, a=1))
 
     config = _Config.Get()
     self.assertIsNotNone(config)

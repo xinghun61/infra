@@ -10,15 +10,18 @@ from model.base_build_model import BaseBuildModel
 
 
 class _DummyModel(BaseBuildModel):
+
   @staticmethod
   def Create(master_name, builder_name, build_number):
-    key = ndb.Key('M', BaseBuildModel.CreateBuildId(
-                          master_name, builder_name, build_number),
-                  '_DummyModel', build_number)
+    key = ndb.Key('M',
+                  BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                               build_number), '_DummyModel',
+                  build_number)
     return _DummyModel(key=key)
 
 
 class BaseModelTest(unittest.TestCase):
+
   def setUp(self):
     self.dummy_model = _DummyModel.Create('master', 'builder', 1)
 

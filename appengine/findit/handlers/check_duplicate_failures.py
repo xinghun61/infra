@@ -65,16 +65,15 @@ def _ModifyStatusIfDuplicate(analysis):
   builder_name = analysis.builder_name
   build_number = analysis.build_number
 
-  first_build_analysis = WfAnalysis.Get(master_name,
-                                        builder_name, build_number - 1)
+  first_build_analysis = WfAnalysis.Get(master_name, builder_name,
+                                        build_number - 1)
 
   if not first_build_analysis:
     # Current build is not within a series of continuous build failures.
     return
 
-  if first_build_analysis.result_status not in (
-      result_status.FOUND_CORRECT,
-      result_status.FOUND_INCORRECT):
+  if first_build_analysis.result_status not in (result_status.FOUND_CORRECT,
+                                                result_status.FOUND_INCORRECT):
     # Findit doesn't find suspected CLs for previous build or
     # it has not been triaged.
     return
@@ -91,34 +90,32 @@ def _ModifyStatusIfDuplicate(analysis):
     if not build_analysis_cursor:  # The last failed build is not triaged.
       return
 
-    elif build_analysis_cursor.result_status in (
-        result_status.FOUND_CORRECT,
-        result_status.FOUND_INCORRECT):
+    elif build_analysis_cursor.result_status in (result_status.FOUND_CORRECT,
+                                                 result_status.FOUND_INCORRECT):
       # The last failed build is reached and it has been triaged.
       if (first_build_analysis.result_status !=
           build_analysis_cursor.result_status or
-          not _AnalysesForDuplicateFailures(
-              first_build_analysis, build_analysis_cursor)):
+          not _AnalysesForDuplicateFailures(first_build_analysis,
+                                            build_analysis_cursor)):
         # Compare the result statuses of the first and last analysis results.
         return
       else:
         break
 
     elif build_analysis_cursor.result_status in (
-        result_status.FOUND_UNTRIAGED,
-        result_status.FOUND_CORRECT_DUPLICATE,
+        result_status.FOUND_UNTRIAGED, result_status.FOUND_CORRECT_DUPLICATE,
         result_status.FOUND_INCORRECT_DUPLICATE):
       # It is still within the continuous builds, not reach the end yet.
-      if not _AnalysesForDuplicateFailures(
-          first_build_analysis, build_analysis_cursor):
+      if not _AnalysesForDuplicateFailures(first_build_analysis,
+                                           build_analysis_cursor):
         # The build is not the same failure as the one we begin with
         # so it breaks the continuous series of builds.
         return
 
       build_analyses.append(build_analysis_cursor)
       build_number_cursor += 1
-      build_analysis_cursor = WfAnalysis.Get(
-          master_name, builder_name, build_number_cursor)
+      build_analysis_cursor = WfAnalysis.Get(master_name, builder_name,
+                                             build_number_cursor)
 
     else:
       # If the build analysis' result_status is other status, such as
@@ -126,23 +123,19 @@ def _ModifyStatusIfDuplicate(analysis):
       return
 
   for build_analysis in build_analyses:
-    if (first_build_analysis.result_status ==
-        result_status.FOUND_CORRECT):
-      build_analysis.result_status = (
-          result_status.FOUND_CORRECT_DUPLICATE)
+    if (first_build_analysis.result_status == result_status.FOUND_CORRECT):
+      build_analysis.result_status = (result_status.FOUND_CORRECT_DUPLICATE)
     else:
-      build_analysis.result_status = (
-          result_status.FOUND_INCORRECT_DUPLICATE)
+      build_analysis.result_status = (result_status.FOUND_INCORRECT_DUPLICATE)
     build_analysis.put()
 
 
 def _FetchAndSortUntriagedAnalyses():
   query = WfAnalysis.query(
-  WfAnalysis.result_status == result_status.FOUND_UNTRIAGED)
+      WfAnalysis.result_status == result_status.FOUND_UNTRIAGED)
   analyses = query.fetch()
   return sorted(
-      analyses,
-      key=lambda x: (x.master_name, x.builder_name, x.build_number))
+      analyses, key=lambda x: (x.master_name, x.builder_name, x.build_number))
 
 
 class CheckDuplicateFailures(BaseHandler):

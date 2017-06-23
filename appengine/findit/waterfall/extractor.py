@@ -22,8 +22,8 @@ class Extractor(object):
     else:
       for match in extractor_util.FILE_PATH_LINE_PATTERN.finditer(message_line):
         file_path, line_number = match.groups()
-        failure_signal.AddFile(extractor_util.NormalizeFilePath(file_path),
-                               line_number)
+        failure_signal.AddFile(
+            extractor_util.NormalizeFilePath(file_path), line_number)
 
   # pylint disable=W0613, R0201
   def Extract(self, failure_log, test_name, step_name, bot_name, master_name):

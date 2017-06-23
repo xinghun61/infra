@@ -17,13 +17,11 @@ from model.suspected_cl_confidence import ConfidenceInformation
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall.test import wf_testcase
 
-
 APPROACH_MAP = {
     0: [analysis_approach_type.HEURISTIC],
     1: [analysis_approach_type.TRY_JOB],
     2: [analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB]
 }
-
 
 HEURISTIC_RESULTS = {
     failure_type.COMPILE: {
@@ -47,7 +45,6 @@ HEURISTIC_RESULTS = {
     }
 }
 
-
 TRY_JOB_RESULTS = {
     failure_type.COMPILE: {
         suspected_cl_status.CORRECT: 3
@@ -57,7 +54,6 @@ TRY_JOB_RESULTS = {
         suspected_cl_status.INCORRECT: 1
     }
 }
-
 
 BOTH_RESULTS = {
     failure_type.COMPILE: {
@@ -69,7 +65,6 @@ BOTH_RESULTS = {
     }
 }
 
-
 EXPECTED_CONFIDENCE = [
     ConfidenceInformation(correct=0, total=1, confidence=0, score=1),
     ConfidenceInformation(correct=2, total=2, confidence=1, score=2)
@@ -77,10 +72,12 @@ EXPECTED_CONFIDENCE = [
 
 
 class CalculateConfidenceScoresTest(wf_testcase.WaterfallTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/calculate-confidence-scores',
-       calculate_confidence_scores.CalculateConfidenceScores),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/calculate-confidence-scores',
+           calculate_confidence_scores.CalculateConfidenceScores),
+      ],
+      debug=True)
 
   def setUp(self):
     super(CalculateConfidenceScoresTest, self).setUp()
@@ -91,20 +88,22 @@ class CalculateConfidenceScoresTest(wf_testcase.WaterfallTestCase):
   def _AddCL(self, index):
     # Uses index as revision and build number.
     cl = WfSuspectedCL.Create('chromium', str(index), None)
-    cl.approaches = APPROACH_MAP[index%3]
-    cl.status = (
-      suspected_cl_status.CORRECT if index%5 else suspected_cl_status.INCORRECT)
+    cl.approaches = APPROACH_MAP[index % 3]
+    cl.status = (suspected_cl_status.CORRECT
+                 if index % 5 else suspected_cl_status.INCORRECT)
     build_key = 'm/b/%d' % index
     cl.builds = {
-      build_key: {
-        'failure_type': failure_type.COMPILE if index<5 else failure_type.TEST,
-        'approaches': APPROACH_MAP[index%3],
-        'top_score': index/2 + 1,
-        'failures': ['Test%d' % index],
-        'status': (
-            suspected_cl_status.CORRECT if index%5 else
-            suspected_cl_status.INCORRECT)
-      }
+        build_key: {
+            'failure_type':
+                failure_type.COMPILE if index < 5 else failure_type.TEST,
+            'approaches':
+                APPROACH_MAP[index % 3],
+            'top_score':
+                index / 2 + 1,
+            'failures': ['Test%d' % index],
+            'status': (suspected_cl_status.CORRECT
+                       if index % 5 else suspected_cl_status.INCORRECT)
+        }
     }
     cl.updated_time = self.start_date + datetime.timedelta(hours=index)
     cl.put()
@@ -130,7 +129,6 @@ class CalculateConfidenceScoresTest(wf_testcase.WaterfallTestCase):
     suspected_cls[3].builds['new_key'] = new_value
     suspected_cls[3].put()
 
-
     # Adds a build with the same failure for a try job result.
     new_value = copy.deepcopy(suspected_cls[4].builds['m/b/4'])
     suspected_cls[4].builds['new_key'] = new_value
@@ -143,11 +141,10 @@ class CalculateConfidenceScoresTest(wf_testcase.WaterfallTestCase):
         self.start_date, self.end_date)
     self.assertEqual(HEURISTIC_RESULTS, result)
 
-
   def testGetCLDataForTryJob(self):
     try_job_result, both_result = (
-        calculate_confidence_scores._GetCLDataForTryJob(
-            self.start_date, self.end_date))
+        calculate_confidence_scores._GetCLDataForTryJob(self.start_date,
+                                                        self.end_date))
     self.assertEqual(TRY_JOB_RESULTS, try_job_result)
     self.assertEqual(BOTH_RESULTS, both_result)
 
@@ -160,8 +157,7 @@ class CalculateConfidenceScoresTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(calculate_confidence_scores, '_GetCLDataForHeuristic')
   @mock.patch.object(calculate_confidence_scores, '_GetCLDataForTryJob')
   def testSavesNewCLConfidence(self, mock_fn_t, mock_fn_h, mock_fn):
-    mock_fn_t.return_value = (
-        TRY_JOB_RESULTS, BOTH_RESULTS)
+    mock_fn_t.return_value = (TRY_JOB_RESULTS, BOTH_RESULTS)
     mock_fn_h.return_value = HEURISTIC_RESULTS
     mock_fn.return_value = self.end_date
 

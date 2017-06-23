@@ -14,7 +14,6 @@ from google.appengine.ext import ndb
 from gae_libs.http import auth_util
 from libs import time_util
 
-
 _DELIMITER = ':'
 _RANDOM_BYTE_LENGTH = 512
 
@@ -64,12 +63,11 @@ def GenerateAuthToken(key_name, user_id, action_id='', when=None):
   digester.update(str(when_timestamp))
   digest = digester.digest()
 
-  return base64.urlsafe_b64encode(
-      '%s%s%d' % (digest, _DELIMITER, when_timestamp))
+  return base64.urlsafe_b64encode('%s%s%d' % (digest, _DELIMITER,
+                                              when_timestamp))
 
 
-def ValidateAuthToken(
-    key_name, token, user_id, action_id='', valid_hours=1):
+def ValidateAuthToken(key_name, token, user_id, action_id='', valid_hours=1):
   """Validates a token.
 
   Args:
@@ -119,6 +117,7 @@ class AddXSRFToken(object):
     self._action_id = action_id
 
   def __call__(self, handler_method):
+
     def AddToken(handler, *args, **kwargs):
       result = handler_method(handler, *args, **kwargs)
       user_email = auth_util.GetUserEmail()
@@ -140,14 +139,15 @@ class VerifyXSRFToken(object):
     self._action_id = action_id
 
   def __call__(self, handler_method):
+
     def VerifyToken(handler, *args, **kwargs):
       user_email = auth_util.GetUserEmail()
       xsrf_token = str(handler.request.get('xsrf_token'))
-      if (not user_email or
-          not ValidateAuthToken(
-              'site', xsrf_token, user_email, self._action_id)):
+      if (not user_email or not ValidateAuthToken('site', xsrf_token,
+                                                  user_email, self._action_id)):
         return handler.CreateError(
             'Invalid XSRF token. Please log in or refresh the page first.',
             return_code=403)
       return handler_method(handler, *args, **kwargs)
+
     return VerifyToken

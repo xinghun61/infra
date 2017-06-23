@@ -33,13 +33,17 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 1
 
     expected_properties = {
-        'recipe': 'findit/chromium/compile',
-        'good_revision': 1,
-        'bad_revision': 2,
-        'target_mastername': master_name,
-        'referenced_build_url': (
-            'https://luci-milo.appspot.com/buildbot/%s/%s/%s') % (
-                master_name, builder_name, build_number),
+        'recipe':
+            'findit/chromium/compile',
+        'good_revision':
+            1,
+        'bad_revision':
+            2,
+        'target_mastername':
+            master_name,
+        'referenced_build_url':
+            ('https://luci-milo.appspot.com/buildbot/%s/%s/%s') %
+            (master_name, builder_name, build_number),
         'suspected_revisions': ['rev']
     }
     try_job_pipeline = ScheduleTryJobPipeline()
@@ -55,13 +59,17 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 1
 
     expected_properties = {
-        'recipe': 'findit/chromium/test',
-        'good_revision': 1,
-        'bad_revision': 2,
-        'target_mastername': master_name,
-        'referenced_build_url': (
-            'https://luci-milo.appspot.com/buildbot/%s/%s/%s') % (
-                master_name, builder_name, build_number)
+        'recipe':
+            'findit/chromium/test',
+        'good_revision':
+            1,
+        'bad_revision':
+            2,
+        'target_mastername':
+            master_name,
+        'referenced_build_url':
+            ('https://luci-milo.appspot.com/buildbot/%s/%s/%s') %
+            (master_name, builder_name, build_number)
     }
     try_job_pipeline = ScheduleTryJobPipeline()
     properties = try_job_pipeline._GetBuildProperties(
@@ -75,8 +83,12 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
     build = WfBuild.Create(master_name, builder_name, build_number)
-    build.data = {'properties': {'parent_mastername': 'pm',
-                                 'parent_buildername': 'pb'}}
+    build.data = {
+        'properties': {
+            'parent_mastername': 'pm',
+            'parent_buildername': 'pb'
+        }
+    }
     build.put()
     response = {
         'build': {
@@ -101,8 +113,12 @@ class ScheduleTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
     build = WfBuild.Create(master_name, builder_name, build_number)
-    build.data = {'properties': {'parent_mastername': 'pm',
-                                 'parent_buildername': 'pb'}}
+    build.data = {
+        'properties': {
+            'parent_mastername': 'pm',
+            'parent_buildername': 'pb'
+        }
+    }
     build.put()
     response = {
         'build': {

@@ -20,23 +20,25 @@ class TriggerSwarmingTaskPipeline(TriggerBaseSwarmingTaskPipeline):
     return master_name, builder_name, build_number, step_name
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def _GetSwarmingTask(
-      self, master_name, builder_name, build_number, step_name):
-    return WfSwarmingTask.Get(
-        master_name, builder_name, build_number, step_name)
+  def _GetSwarmingTask(self, master_name, builder_name, build_number,
+                       step_name):
+    return WfSwarmingTask.Get(master_name, builder_name, build_number,
+                              step_name)
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def _CreateSwarmingTask(
-      self, master_name, builder_name, build_number, step_name):
-    return WfSwarmingTask.Create(
-        master_name, builder_name, build_number, step_name)
+  def _CreateSwarmingTask(self, master_name, builder_name, build_number,
+                          step_name):
+    return WfSwarmingTask.Create(master_name, builder_name, build_number,
+                                 step_name)
 
   def _GetIterationsToRerun(self):
     return waterfall_config.GetSwarmingSettings().get('iterations_to_rerun')
 
   def _OnTaskTriggered(self):  # pragma: no cover.
-    monitoring.swarming_tasks.increment(
-        {'operation': 'trigger', 'category': 'identify-flake'})
+    monitoring.swarming_tasks.increment({
+        'operation': 'trigger',
+        'category': 'identify-flake'
+    })
 
   def _GetAdditionalTags(self):  # pragma: no cover.
     return ['purpose:identify-flake']

@@ -45,7 +45,10 @@ class TriagedModel(ndb.Model):
   # When was the last addition of triage record.
   triage_record_last_add = ndb.DateTimeProperty(indexed=True)
 
-  def UpdateTriageResult(self, triage_result, suspect_info, user_name,
+  def UpdateTriageResult(self,
+                         triage_result,
+                         suspect_info,
+                         user_name,
                          version_number=None):
     result = TriageResult()
     result.user_name = user_name
@@ -62,14 +65,18 @@ class TriagedModel(ndb.Model):
     triage_history = []
     for triage_record in self.triage_history:
       triage_history.append({
-          'triaged_time': time_util.FormatDatetime(triage_record.triaged_time),
-          'user_name': triage_record.user_name,
-          'suspect_info': triage_record.suspect_info,
-          'triage_result': (
-              triage_status.TRIAGE_STATUS_TO_DESCRIPTION.get(
-                  triage_record.triage_result)),
-          'findit_version': triage_record.findit_version,
-          'version_number': triage_record.version_number
+          'triaged_time':
+              time_util.FormatDatetime(triage_record.triaged_time),
+          'user_name':
+              triage_record.user_name,
+          'suspect_info':
+              triage_record.suspect_info,
+          'triage_result': (triage_status.TRIAGE_STATUS_TO_DESCRIPTION.get(
+              triage_record.triage_result)),
+          'findit_version':
+              triage_record.findit_version,
+          'version_number':
+              triage_record.version_number
       })
 
     return triage_history

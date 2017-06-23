@@ -1,7 +1,6 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Pulls Findit data and outputs minutes between analyses."""
 
 from collections import Counter
@@ -13,23 +12,21 @@ import os
 import pickle
 import sys
 
-_APPENGINE_SDK_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
-                                  os.path.pardir, os.path.pardir,
-                                  os.path.pardir, os.path.pardir,
-                                  'google_appengine')
+_APPENGINE_SDK_DIR = os.path.join(
+    os.path.dirname(__file__), os.path.pardir, os.path.pardir, os.path.pardir,
+    os.path.pardir, os.path.pardir, 'google_appengine')
 sys.path.insert(1, _APPENGINE_SDK_DIR)
 
 from google.appengine.ext import ndb
 
-_FINDIT_DIR = os.path.join(os.path.dirname(__file__),
-                           os.path.pardir, os.path.pardir)
+_FINDIT_DIR = os.path.join(
+    os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
 from local_libs import remote_api
 
 from common.waterfall import failure_type
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
-
 
 NOT_AVAILABLE = 'N/A'
 START_DATE = datetime.datetime(2016, 1, 1)
@@ -54,9 +51,8 @@ def _BigFetch(query, page_size=MAX_ENTITIES_PER_REQUEST):
 
 
 def _FetchAnalyses(start_date, end_date):
-  analyses_query = WfAnalysis.query(
-      WfAnalysis.build_start_time >= start_date,
-      WfAnalysis.build_start_time < end_date)
+  analyses_query = WfAnalysis.query(WfAnalysis.build_start_time >= start_date,
+                                    WfAnalysis.build_start_time < end_date)
 
   return _BigFetch(analyses_query)
 
@@ -78,8 +74,9 @@ def _FetchBuildsFromAnalyses(analyses):
   """
   build_keys = []
   for analysis in analyses:
-    build_keys.append(WfBuild._CreateKey(
-        analysis.master_name, analysis.builder_name, analysis.build_number))
+    build_keys.append(
+        WfBuild._CreateKey(analysis.master_name, analysis.builder_name,
+                           analysis.build_number))
 
   builds = ndb.get_multi(build_keys)
 
@@ -130,8 +127,10 @@ def _GetSecondsBetweenTwoTimesInGroup(group, first, second):
 
 
 def _GetSecondsBetweenTwoTimesInGroupList(groups, first, second):
-  return [_GetSecondsBetweenTwoTimesInGroup(group, first, second)
-          for group in groups]
+  return [
+      _GetSecondsBetweenTwoTimesInGroup(group, first, second)
+      for group in groups
+  ]
 
 
 def _GetBuildEndTimeForAnalysis(analysis, builds):
@@ -151,8 +150,10 @@ def _GetBuildEndTimeForAnalysis(analysis, builds):
 
 
 def _GetTimesGroupFromAnalysesGroup(analyses_group, builds):
-  return [_GetBuildEndTimeForAnalysis(analysis, builds)
-          for analysis in analyses_group]
+  return [
+      _GetBuildEndTimeForAnalysis(analysis, builds)
+      for analysis in analyses_group
+  ]
 
 
 def _GetSecondsBetweenAllTimesInGroupList(groups):
@@ -180,17 +181,20 @@ def GetAndShowResults():
     all_analyses = _FetchAnalyses(START_DATE, END_DATE)
     _SaveAnalyses(all_analyses)
 
-  compile_analyses = [analysis for analysis in all_analyses
-                      if analysis.failure_type == failure_type.COMPILE
-                      and analysis.correct]
+  compile_analyses = [
+      analysis for analysis in all_analyses
+      if analysis.failure_type == failure_type.COMPILE and analysis.correct
+  ]
 
   builds = _FetchBuildsFromAnalyses(compile_analyses)
 
   compile_analyses_groups = _GroupCompileFailureAnalyses(compile_analyses)
   print 'Number of compile_analyses_groups: %d' % len(compile_analyses_groups)
 
-  time_groups = [sorted(_GetTimesGroupFromAnalysesGroup(group, builds))
-                 for group in compile_analyses_groups]
+  time_groups = [
+      sorted(_GetTimesGroupFromAnalysesGroup(group, builds))
+      for group in compile_analyses_groups
+  ]
   group_sizes = [len(group) for group in time_groups]
   average_analyses = numpy.average(group_sizes)
   median_analyses = numpy.median(group_sizes)
@@ -202,25 +206,27 @@ def GetAndShowResults():
   seconds_between_all_times = _GetSecondsBetweenAllTimesInGroupList(time_groups)
   average_of_average_seconds_between_all_times = numpy.average(
       [numpy.average(durations) for durations in seconds_between_all_times])
-  builders = Counter([analyses_group[0].builder_name
-                      for analyses_group in compile_analyses_groups])
+  builders = Counter([
+      analyses_group[0].builder_name
+      for analyses_group in compile_analyses_groups
+  ])
 
-  print ('Average (mean) number of analyses in each group: %d' %
-         average_analyses)
-  print ('Median number of analyses in each group: %d' %
-         median_analyses)
-  print ('Standard deviation of number of analyses in each group: %d' %
-         standard_deviation_analyses)
+  print(
+      'Average (mean) number of analyses in each group: %d' % average_analyses)
+  print('Median number of analyses in each group: %d' % median_analyses)
+  print('Standard deviation of number of analyses in each group: %d' %
+        standard_deviation_analyses)
   print
-  print ('Average seconds between first two analyses\' request times: %d '
-         'seconds' % average_seconds_between_first_two_analyses_list)
-  print ('Average seconds between first and last analyses\' request times: %d '
-         'seconds' % average_seconds_between_first_and_last_analyses_list)
-  print ('Average of average seconds between all analyses\' request times: %d '
-         'seconds' % average_of_average_seconds_between_all_times)
+  print('Average seconds between first two analyses\' request times: %d '
+        'seconds' % average_seconds_between_first_two_analyses_list)
+  print('Average seconds between first and last analyses\' request times: %d '
+        'seconds' % average_seconds_between_first_and_last_analyses_list)
+  print('Average of average seconds between all analyses\' request times: %d '
+        'seconds' % average_of_average_seconds_between_all_times)
   print
   print 'Builders of first analyses in each group:'
   print builders
+
 
 if __name__ == '__main__':
   GetAndShowResults()

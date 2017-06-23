@@ -23,21 +23,15 @@ class TimeUtilTest(unittest.TestCase):
     delta = date2 - date1
 
     self.assertEqual(
-        time_util.RemoveMicrosecondsFromDelta(delta).microseconds,
-        0)
+        time_util.RemoveMicrosecondsFromDelta(delta).microseconds, 0)
 
   def testFormatTimedelta(self):
     self.assertIsNone(time_util.FormatTimedelta(None))
-    self.assertEqual(time_util.FormatTimedelta(timedelta(0, 0)),
-                     '00:00:00')
-    self.assertEqual(time_util.FormatTimedelta(timedelta(0, 1)),
-                     '00:00:01')
-    self.assertEqual(time_util.FormatTimedelta(timedelta(0, 60)),
-                     '00:01:00')
-    self.assertEqual(time_util.FormatTimedelta(timedelta(0, 3600)),
-                     '01:00:00')
-    self.assertEqual(time_util.FormatTimedelta(timedelta(0, 0, 1)),
-                     '00:00:00')
+    self.assertEqual(time_util.FormatTimedelta(timedelta(0, 0)), '00:00:00')
+    self.assertEqual(time_util.FormatTimedelta(timedelta(0, 1)), '00:00:01')
+    self.assertEqual(time_util.FormatTimedelta(timedelta(0, 60)), '00:01:00')
+    self.assertEqual(time_util.FormatTimedelta(timedelta(0, 3600)), '01:00:00')
+    self.assertEqual(time_util.FormatTimedelta(timedelta(0, 0, 1)), '00:00:00')
 
   def testFormatDatetime(self):
     self.assertIsNone(time_util.FormatDatetime(None))
@@ -65,8 +59,8 @@ class TimeUtilTest(unittest.TestCase):
     self.assertEqual(tz.LocalToUTC(naive_time), datetime(2016, 9, 1, 2, 0, 0))
 
     tz_negative = time_util.TimeZoneInfo('-0700')
-    self.assertEqual(tz_negative.LocalToUTC(naive_time),
-                     datetime(2016, 9, 1, 17, 0, 0))
+    self.assertEqual(
+        tz_negative.LocalToUTC(naive_time), datetime(2016, 9, 1, 17, 0, 0))
 
   def testDatetimeFromString(self):
     self.assertEqual(None, time_util.DatetimeFromString('None'))
@@ -75,8 +69,8 @@ class TimeUtilTest(unittest.TestCase):
     iso_time_datetime = time_util.DatetimeFromString(iso_time_str)
     # Check that our function reverses datetime.isoformat
     self.assertEqual(iso_time_datetime.isoformat(), iso_time_str)
-    self.assertEqual(iso_time_datetime, time_util.DatetimeFromString(
-        iso_time_datetime))
+    self.assertEqual(iso_time_datetime,
+                     time_util.DatetimeFromString(iso_time_datetime))
     with self.assertRaises(ValueError):
       time_util.DatetimeFromString('Yesterday, at 5 o\'clock')
 
@@ -87,51 +81,50 @@ class TimeUtilTest(unittest.TestCase):
     self.assertEqual('00:01:01', time_util.SecondsToHMS(61))
 
   def testGetMostRecentUTCMidnight(self):
-    self.assertEqual(
-        datetime,
-        type(time_util.GetMostRecentUTCMidnight()))
+    self.assertEqual(datetime, type(time_util.GetMostRecentUTCMidnight()))
 
-  @mock.patch.object(time_util, 'GetMostRecentUTCMidnight',
-                     return_value=datetime(2017, 3, 19, 0, 0, 0))
+  @mock.patch.object(
+      time_util,
+      'GetMostRecentUTCMidnight',
+      return_value=datetime(2017, 3, 19, 0, 0, 0))
   def testGetStartEndDates(self, _):
-    self.assertEqual(
-        (datetime(2017, 3, 18, 0, 0, 0), datetime(2017, 3, 20, 0, 0, 0)),
-        time_util.GetStartEndDates(None, None))
-    self.assertEqual(
-        (None, datetime(2017, 3, 20, 0, 0, 0)),
-        time_util.GetStartEndDates(None, '2017-03-19'))
-    self.assertEqual(
-        (datetime(2017, 3, 18, 0, 0, 0), datetime(2017, 3, 20, 0, 0, 0)),
-        time_util.GetStartEndDates('2017-03-18', None))
-    self.assertEqual(
-        (datetime(2017, 3, 15, 0, 0, 0), datetime(2017, 3, 16, 0, 0, 0)),
-        time_util.GetStartEndDates('2017-03-15', '2017-03-16'))
+    self.assertEqual((datetime(2017, 3, 18, 0, 0, 0), datetime(
+        2017, 3, 20, 0, 0, 0)), time_util.GetStartEndDates(None, None))
+    self.assertEqual((None, datetime(2017, 3, 20, 0, 0, 0)),
+                     time_util.GetStartEndDates(None, '2017-03-19'))
+    self.assertEqual((datetime(2017, 3, 18, 0, 0, 0), datetime(
+        2017, 3, 20, 0, 0, 0)), time_util.GetStartEndDates('2017-03-18', None))
+    self.assertEqual((datetime(2017, 3, 15, 0, 0, 0), datetime(
+        2017, 3, 16, 0, 0, 0)),
+                     time_util.GetStartEndDates('2017-03-15', '2017-03-16'))
 
-  @mock.patch.object(time_util, 'GetMostRecentUTCMidnight',
-                     return_value=datetime(2017, 3, 19, 0, 0, 0))
+  @mock.patch.object(
+      time_util,
+      'GetMostRecentUTCMidnight',
+      return_value=datetime(2017, 3, 19, 0, 0, 0))
   def testGetStartEndDatesDefaultStartDefaultEnd(self, _):
     default_start = datetime(2017, 3, 15, 0, 0, 0)
     default_end = datetime(2017, 3, 16, 0, 0, 0)
     self.assertEqual((default_start, default_end),
-                     time_util.GetStartEndDates(None, None,
-                                                default_start=default_start,
-                                                default_end=default_end))
-    self.assertEqual(
-        (default_start, datetime(2017, 3, 20, 0, 0, 0)),
-        time_util.GetStartEndDates(None, '2017-03-19',
-                                   default_start=default_start))
+                     time_util.GetStartEndDates(
+                         None,
+                         None,
+                         default_start=default_start,
+                         default_end=default_end))
+    self.assertEqual((default_start, datetime(2017, 3, 20, 0, 0, 0)),
+                     time_util.GetStartEndDates(
+                         None, '2017-03-19', default_start=default_start))
 
-    self.assertEqual(
-        (datetime(2017, 3, 18, 0, 0, 0), default_end),
-        time_util.GetStartEndDates('2017-03-18', None,
-                                   default_end=default_end))
+    self.assertEqual((datetime(2017, 3, 18, 0, 0, 0), default_end),
+                     time_util.GetStartEndDates(
+                         '2017-03-18', None, default_end=default_end))
 
-  @mock.patch.object(time_util, 'GetUTCNow',
-                     return_value=datetime(2017, 4, 27, 8, 0, 0))
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2017, 4, 27, 8, 0, 0))
   def testGetPSTNow(self, _):
-    self.assertEqual(datetime(2017, 4, 27, 0, 0, 0),
-                     time_util.GetPSTNow())
+    self.assertEqual(datetime(2017, 4, 27, 0, 0, 0), time_util.GetPSTNow())
 
   def testConvertPSTToUTC(self):
-    self.assertEqual(datetime(2017, 4, 27, 8, 0, 0),
-                     time_util.ConvertPSTToUTC(datetime(2017, 4, 27, 0, 0, 0)))
+    self.assertEqual(
+        datetime(2017, 4, 27, 8, 0, 0),
+        time_util.ConvertPSTToUTC(datetime(2017, 4, 27, 0, 0, 0)))

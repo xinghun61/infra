@@ -30,9 +30,7 @@ from waterfall import buildbot
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
-
 NON_SWARMING = object()
-
 
 _ANALYSIS_CL_STATUS_MAP = {
     analysis_result_status.FOUND_CORRECT: suspected_cl_status.CORRECT,
@@ -61,22 +59,26 @@ def _GetCLDict(analysis, cl_info):
 
 
 def _GetTriageHistory(analysis):
-  if (not auth_util.IsCurrentUserAdmin() or
-      not analysis.completed or
+  if (not auth_util.IsCurrentUserAdmin() or not analysis.completed or
       not analysis.triage_history):
     return None
 
   triage_history = []
   for triage_record in analysis.triage_history:
     triage_history.append({
-        'triage_time': _FormatDatetime(
-            datetime.utcfromtimestamp(triage_record['triage_timestamp'])),
-        'user_name': triage_record['user_name'],
-        'triaged_cl': _GetCLDict(analysis, triage_record.get('triaged_cl')),
+        'triage_time':
+            _FormatDatetime(
+                datetime.utcfromtimestamp(triage_record['triage_timestamp'])),
+        'user_name':
+            triage_record['user_name'],
+        'triaged_cl':
+            _GetCLDict(analysis, triage_record.get('triaged_cl')),
         'result_status': (
-            RESULT_STATUS_TO_DESCRIPTION.get(triage_record.get('result_status'))
-            or CL_STATUS_TO_DESCRIPTION.get(triage_record.get('cl_status'))),
-        'version': triage_record.get('version'),
+            RESULT_STATUS_TO_DESCRIPTION.get(
+                triage_record.get('result_status')) or
+            CL_STATUS_TO_DESCRIPTION.get(triage_record.get('cl_status'))),
+        'version':
+            triage_record.get('version'),
     })
 
   return triage_history
@@ -261,9 +263,8 @@ def _GetAnalysisResultWithTryJobInfo(show_debug_info, organized_results,
     # Group tests based on indices.
     indices_test_map = defaultdict(list)
     for test_name, indices in test_result_map.iteritems():
-      indices_test_map[
-          (indices['try_job_index'], indices['heuristic_index'])].append(
-              test_name)
+      indices_test_map[(indices['try_job_index'],
+                        indices['heuristic_index'])].append(test_name)
 
     for (try_job_index, heuristic_index), tests in indices_test_map.iteritems():
       try_job_result = try_jobs[try_job_index]
@@ -284,8 +285,8 @@ def _GetAnalysisResultWithTryJobInfo(show_debug_info, organized_results,
            try_job_result['status'] in NO_TRY_JOB_REASON_MAP.values()) or
           try_job_result.get('can_force')):
         # There is no try job info but only heuristic result.
-        try_job_result['status'] = try_job_result.get(
-            'status', result_status.UNKNOWN)
+        try_job_result['status'] = try_job_result.get('status',
+                                                      result_status.UNKNOWN)
         step_updated_results['unclassified_failures'].append(final_result)
       elif try_job_result['status'] == result_status.FLAKY:
         step_updated_results['flaky_failures'].append(final_result)
@@ -313,8 +314,8 @@ def _PrepareTryJobDataForCompileFailure(analysis):
   try_job_data['url'] = result.get('url')
   try_job_data['completed'] = try_job.completed
   try_job_data['failed'] = try_job.failed
-  try_job_data['culprit'] = result.get(
-      'culprit', {}).get(constants.COMPILE_STEP_NAME)
+  try_job_data['culprit'] = result.get('culprit',
+                                       {}).get(constants.COMPILE_STEP_NAME)
 
   return try_job_data
 
@@ -331,12 +332,11 @@ def _PopulateHeuristicDataForCompileFailure(analysis, data):
       data['suspected_cls_by_heuristic'] = compile_failure['suspected_cls']
 
 
-def _GetAllSuspectedCLsAndCheckStatus(
-    master_name, builder_name, build_number, analysis):
+def _GetAllSuspectedCLsAndCheckStatus(master_name, builder_name, build_number,
+                                      analysis):
   if not analysis or not analysis.suspected_cls:
     return []
-  build_key = build_util.CreateBuildId(
-      master_name, builder_name, build_number)
+  build_key = build_util.CreateBuildId(master_name, builder_name, build_number)
   suspected_cls = copy.deepcopy(analysis.suspected_cls)
 
   confidences = SuspectedCLConfidence.Get()
@@ -363,22 +363,38 @@ class BuildFailure(BaseHandler):
 
   def _PrepareCommonDataForFailure(self, analysis):
     return {
-        'master_name': analysis.master_name,
-        'builder_name': analysis.builder_name,
-        'build_number': analysis.build_number,
-        'pipeline_status_path': analysis.pipeline_status_path,
-        'show_debug_info': self._ShowDebugInfo(),
-        'analysis_request_time': _FormatDatetime(analysis.request_time),
-        'analysis_start_time': _FormatDatetime(analysis.start_time),
-        'analysis_end_time': _FormatDatetime(analysis.end_time),
-        'analysis_duration': analysis.duration,
-        'analysis_update_time': _FormatDatetime(analysis.updated_time),
-        'analysis_completed': analysis.completed,
-        'analysis_failed': analysis.failed,
-        'analysis_correct': analysis.correct,
-        'analysis_is_duplicate': analysis.is_duplicate,
-        'triage_history': _GetTriageHistory(analysis),
-        'show_admin_controls': auth_util.IsCurrentUserAdmin(),
+        'master_name':
+            analysis.master_name,
+        'builder_name':
+            analysis.builder_name,
+        'build_number':
+            analysis.build_number,
+        'pipeline_status_path':
+            analysis.pipeline_status_path,
+        'show_debug_info':
+            self._ShowDebugInfo(),
+        'analysis_request_time':
+            _FormatDatetime(analysis.request_time),
+        'analysis_start_time':
+            _FormatDatetime(analysis.start_time),
+        'analysis_end_time':
+            _FormatDatetime(analysis.end_time),
+        'analysis_duration':
+            analysis.duration,
+        'analysis_update_time':
+            _FormatDatetime(analysis.updated_time),
+        'analysis_completed':
+            analysis.completed,
+        'analysis_failed':
+            analysis.failed,
+        'analysis_correct':
+            analysis.correct,
+        'analysis_is_duplicate':
+            analysis.is_duplicate,
+        'triage_history':
+            _GetTriageHistory(analysis),
+        'show_admin_controls':
+            auth_util.IsCurrentUserAdmin(),
         'triage_reference_analysis_master_name':
             analysis.triage_reference_analysis_master_name,
         'triage_reference_analysis_builder_name':
@@ -394,7 +410,10 @@ class BuildFailure(BaseHandler):
     # Check result from try job.
     data['try_job'] = _PrepareTryJobDataForCompileFailure(analysis)
 
-  def _PrepareDataForTestFailures(self, analysis, build_info, data,
+  def _PrepareDataForTestFailures(self,
+                                  analysis,
+                                  build_info,
+                                  data,
                                   show_debug_info=False):
 
     data['status_message_map'] = result_status.STATUS_MESSAGE_MAP
@@ -441,17 +460,11 @@ class BuildFailure(BaseHandler):
     if analysis.failure_type == failure_type.COMPILE or (
         analysis.failure_type == failure_type.INFRA):
       self._PrepareDataForCompileFailure(analysis, data)
-      return {
-        'template': 'waterfall/compile_failure.html',
-        'data': data
-      }
+      return {'template': 'waterfall/compile_failure.html', 'data': data}
     else:
-      self._PrepareDataForTestFailures(
-        analysis, build_info, data, self._ShowDebugInfo())
-      return {
-        'template': 'waterfall/test_failure.html',
-        'data': data
-      }
+      self._PrepareDataForTestFailures(analysis, build_info, data,
+                                       self._ShowDebugInfo())
+      return {'template': 'waterfall/test_failure.html', 'data': data}
 
   @token.VerifyXSRFToken()
   def HandlePost(self):
@@ -486,17 +499,20 @@ class BuildFailure(BaseHandler):
       build = build_util.GetBuildInfo(master_name, builder_name, build_number)
       if not build:
         return BaseHandler.CreateError(
-            'Can\'t get information about build "%s/%s/%s".' % (
-              master_name, builder_name, build_number), 501)
+            'Can\'t get information about build "%s/%s/%s".' %
+            (master_name, builder_name, build_number), 501)
 
       if not build.completed and force:
         return BaseHandler.CreateError(
-            'Can\'t force a rerun for an incomplete build "%s/%s/%s".' % (
-                master_name, builder_name, build_number), 501)
+            'Can\'t force a rerun for an incomplete build "%s/%s/%s".' %
+            (master_name, builder_name, build_number), 501)
 
       build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
-          master_name, builder_name, build_number,
-          build_completed=build.completed, force=force,
+          master_name,
+          builder_name,
+          build_number,
+          build_completed=build.completed,
+          force=force,
           queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
 
     return self.CreateRedirect('/waterfall/failure?redirect=1&url=%s' % url)

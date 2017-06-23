@@ -13,6 +13,7 @@ from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
 
 # TODO(stgao): remove BasePipeline after http://crrev.com/810193002 is landed.
 class BasePipeline(pipelines.AppenginePipeline):  # pragma: no cover
+
   def run_test(self, *args, **kwargs):
     pass
 

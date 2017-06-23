@@ -14,8 +14,11 @@ class TestCase(BaseTestCase, testing.AppengineTestCase):  # pragma: no cover.
   taskqueue_stub_root_path = os.path.join(
       os.path.dirname(__file__), os.path.pardir)
 
-  def MockPipeline(
-      self, pipeline_class, result, expected_args, expected_kwargs=None):
+  def MockPipeline(self,
+                   pipeline_class,
+                   result,
+                   expected_args,
+                   expected_kwargs=None):
     """Mocks a pipeline to return a value and asserts the expected parameters.
 
     Args:

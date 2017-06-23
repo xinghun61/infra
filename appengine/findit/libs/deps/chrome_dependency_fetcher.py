@@ -44,9 +44,8 @@ class DEPSDownloader(deps_parser.DEPSLoader):
       content = repository.GetSource('DEPS', revision)
 
     if content is None:
-      raise Exception(
-          'Failed to pull %s file from %s, at revision %s.' % (
-              deps_file, repo_url, revision))
+      raise Exception('Failed to pull %s file from %s, at revision %s.' %
+                      (deps_file, repo_url, revision))
 
     return content
 
@@ -79,11 +78,11 @@ class ChromeDependencyFetcher(object):
       deps_repo_info['deps_repo_revision'] = 'master'
       deps_repo_info['deps_file'] = 'releases/%s/DEPS' % revision
 
-    root_dep = dependency.Dependency(
-        _CHROMIUM_ROOT_DIR, _CHROMIUM_REPO_MASTER, revision, **deps_repo_info)
+    root_dep = dependency.Dependency(_CHROMIUM_ROOT_DIR, _CHROMIUM_REPO_MASTER,
+                                     revision, **deps_repo_info)
 
-    deps_parser.UpdateDependencyTree(
-        root_dep, [platform], DEPSDownloader(self._get_repository))
+    deps_parser.UpdateDependencyTree(root_dep, [platform],
+                                     DEPSDownloader(self._get_repository))
 
     dependencies = {}
 
@@ -100,7 +99,10 @@ class ChromeDependencyFetcher(object):
 
     return dependencies
 
-  def GetDependencyRolls(self, old_cr_revision, new_cr_revision, platform,
+  def GetDependencyRolls(self,
+                         old_cr_revision,
+                         new_cr_revision,
+                         platform,
                          skip_chromium_roll=True):
     """Returns a list of dependency rolls between the given Chromium revisions.
 
@@ -131,14 +133,14 @@ class ChromeDependencyFetcher(object):
 
       if old_revision != new_dep.revision:
         rolls.append(
-            dependency.DependencyRoll(
-                path, new_dep.repo_url, old_revision, new_dep.revision))
+            dependency.DependencyRoll(path, new_dep.repo_url, old_revision,
+                                      new_dep.revision))
 
     for path, old_dep in old_deps.iteritems():
       if path not in new_deps:
         rolls.append(
-            dependency.DependencyRoll(
-                path, old_dep.repo_url, old_dep.revision, None))
+            dependency.DependencyRoll(path, old_dep.repo_url, old_dep.revision,
+                                      None))
 
     return rolls
 
@@ -155,8 +157,8 @@ class ChromeDependencyFetcher(object):
     Returns:
       A dict, mapping dep path to its DependencyRoll.
     """
-    deps_rolls = self.GetDependencyRolls(old_cr_revision, new_cr_revision,
-                                         platform, skip_chromium_roll=False)
+    deps_rolls = self.GetDependencyRolls(
+        old_cr_revision, new_cr_revision, platform, skip_chromium_roll=False)
 
     deps_rolls_dict = {}
 

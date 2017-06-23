@@ -25,20 +25,22 @@ class PermissionLevelHandler(BaseHandler):
 
 
 class PermissionTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/permission', PermissionLevelHandler),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/permission', PermissionLevelHandler),
+      ], debug=True)
 
   def _VerifyUnauthorizedAccess(self, mocked_user_email=None):
     if mocked_user_email:
       self.mock_current_user(user_email=mocked_user_email)
     response = self.test_app.get('/permission?format=json', status=401)
-    self.assertEqual(
-        ('Either not log in yet or no permission. '
-         'Please log in with your @google.com account.'),
-        response.json_body.get('error_message'))
+    self.assertEqual(('Either not log in yet or no permission. '
+                      'Please log in with your @google.com account.'),
+                     response.json_body.get('error_message'))
 
-  def _VerifyAuthorizedAccess(self, mocked_user_email=None, is_admin=False,
+  def _VerifyAuthorizedAccess(self,
+                              mocked_user_email=None,
+                              is_admin=False,
                               headers=None):
     if mocked_user_email:
       self.mock_current_user(user_email=mocked_user_email, is_admin=is_admin)
@@ -102,8 +104,8 @@ class PermissionTest(testing.AppengineTestCase):
       PermissionLevelHandler.PERMISSION_LEVEL = permission
       # Simulation of task queue request by setting the header requires admin
       # login.
-      self._VerifyAuthorizedAccess(
-          'test@chromium.org', True, {'X-AppEngine-QueueName': 'task_queue'})
+      self._VerifyAuthorizedAccess('test@chromium.org', True,
+                                   {'X-AppEngine-QueueName': 'task_queue'})
 
   def testUnknownPermissionLevel(self):
     PermissionLevelHandler.PERMISSION_LEVEL = 80000  # An unknown permission.
@@ -125,8 +127,8 @@ class PermissionTest(testing.AppengineTestCase):
 
   @mock.patch('gae_libs.appengine_util.IsInProduction')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail')
-  def testUserInfoWhenNotLogin(
-      self, mocked_GetUserEmail, mocked_IsInProduction):
+  def testUserInfoWhenNotLogin(self, mocked_GetUserEmail,
+                               mocked_IsInProduction):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
     mocked_IsInProduction.side_effect = [True]
     mocked_GetUserEmail.side_effect = [None]
@@ -151,8 +153,11 @@ class PermissionTest(testing.AppengineTestCase):
     self.assertIsNotNone(response.json_body['xsrf_token'])
 
   @mock.patch.object(
-      PermissionLevelHandler, 'HandleGet',
-      return_value={'data': {'xsrf_token': 'abc'}})
+      PermissionLevelHandler,
+      'HandleGet',
+      return_value={'data': {
+          'xsrf_token': 'abc'
+      }})
   @mock.patch('gae_libs.appengine_util.IsInProduction')
   def testNotOverwriteAddXsrfTokenWhenLogin(self, mocked_IsInProduction, _):
     PermissionLevelHandler.PERMISSION_LEVEL = Permission.ANYONE
@@ -187,9 +192,10 @@ class UnImplementedHandler(BaseHandler):
 
 
 class UnimplementedGetAndPostTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/unimplemented', UnImplementedHandler),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/unimplemented', UnImplementedHandler),
+      ], debug=True)
 
   def testUnimplementedGet(self):
     self.assertRaisesRegexp(webtest.app.AppError, '.*501 Not Implemented.*',
@@ -210,9 +216,10 @@ class SetResultHandler(BaseHandler):
 
 
 class ResultTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/result', SetResultHandler),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/result', SetResultHandler),
+      ], debug=True)
 
   def testNoResult(self):
     SetResultHandler.RESULT = None
@@ -243,9 +250,10 @@ class RedirectHandler(BaseHandler):
 
 
 class RedirectTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/redirect', RedirectHandler),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/redirect', RedirectHandler),
+      ], debug=True)
 
   def testRedirect(self):
     response = self.test_app.post('/redirect', status=302)
@@ -253,14 +261,13 @@ class RedirectTest(testing.AppengineTestCase):
 
 
 class ResultFormatTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/format', SetResultHandler),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/format', SetResultHandler),
+      ], debug=True)
 
   def testDefaultFormatIsHtml(self):
-    SetResultHandler.RESULT = {
-        'data': 'error'
-    }
+    SetResultHandler.RESULT = {'data': 'error'}
     response = self.test_app.get('/format')
     self.assertEquals(200, response.status_int)
     self.assertEquals('text/html', response.content_type)
@@ -269,7 +276,9 @@ class ResultFormatTest(testing.AppengineTestCase):
   def testRequestForHtmlFormat(self):
     SetResultHandler.RESULT = {
         'template': 'error.html',
-        'data': {'error_message': 'error_message_here'}
+        'data': {
+            'error_message': 'error_message_here'
+        }
     }
     response = self.test_app.get('/format?format=HTML')
     self.assertEquals(200, response.status_int)
@@ -279,7 +288,9 @@ class ResultFormatTest(testing.AppengineTestCase):
   def testRequestForJsonFormat(self):
     SetResultHandler.RESULT = {
         'template': 'error.html',
-        'data': {'error_message': 'error'}
+        'data': {
+            'error_message': 'error'
+        }
     }
     response = self.test_app.get('/format?format=json')
     self.assertEquals(200, response.status_int)
@@ -287,18 +298,25 @@ class ResultFormatTest(testing.AppengineTestCase):
     self.assertEquals(SetResultHandler.RESULT['data'], response.json_body)
 
   def testImplicitJsonFormat(self):
+
     def testResult(result):
       SetResultHandler.RESULT = result
       response = self.test_app.get('/format')
       self.assertEquals(200, response.status_int)
       self.assertEquals('application/json', response.content_type)
       self.assertEquals(result['data'], response.json_body)
+
     testResult({'data': {'a': 'b'}})
     testResult({'data': [1, 2]})
 
   def testPrettyJson(self):
     SetResultHandler.RESULT = {
-        'data': {'z': [1, 2, 3], 'a': 'b', 'b': '1' * 200}}
+        'data': {
+            'z': [1, 2, 3],
+            'a': 'b',
+            'b': '1' * 200
+        }
+    }
     response = self.test_app.get('/format?format=json&pretty=1')
     self.assertEquals(200, response.status_int)
     self.assertEquals('application/json', response.content_type)
@@ -318,13 +336,13 @@ class InternalExceptionHandler(BaseHandler):
 
 
 class InternalExceptionTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/exception', InternalExceptionHandler),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/exception', InternalExceptionHandler),
+      ], debug=True)
 
   def testInternalException(self):
     self.assertRaisesRegexp(
         webtest.app.AppError,
         re.compile('.*500 Internal Server Error.*An internal error occurred.*',
-                   re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/exception')
+                   re.MULTILINE | re.DOTALL), self.test_app.get, '/exception')

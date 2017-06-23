@@ -32,19 +32,24 @@ class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 1
 
     expected_properties = {
-        'recipe': 'findit/chromium/compile',
-        'good_revision': 1,
-        'bad_revision': 2,
-        'target_mastername': master_name,
-        'target_buildername': 'b',
-        'referenced_build_url': (
-            'https://luci-milo.appspot.com/buildbot/%s/%s/%s') % (
-                master_name, builder_name, build_number)
+        'recipe':
+            'findit/chromium/compile',
+        'good_revision':
+            1,
+        'bad_revision':
+            2,
+        'target_mastername':
+            master_name,
+        'target_buildername':
+            'b',
+        'referenced_build_url':
+            ('https://luci-milo.appspot.com/buildbot/%s/%s/%s') %
+            (master_name, builder_name, build_number)
     }
     try_job_pipeline = ScheduleCompileTryJobPipeline()
     properties = try_job_pipeline._GetBuildProperties(
-        master_name, builder_name, build_number, 1, 2,
-        failure_type.COMPILE, None)
+        master_name, builder_name, build_number, 1, 2, failure_type.COMPILE,
+        None)
 
     self.assertEqual(properties, expected_properties)
 
@@ -59,8 +64,12 @@ class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     build_id = '1'
     url = 'url'
     build = WfBuild.Create(master_name, builder_name, build_number)
-    build.data = {'properties': {'parent_mastername': 'pm',
-                                 'parent_buildername': 'pb'}}
+    build.data = {
+        'properties': {
+            'parent_mastername': 'pm',
+            'parent_buildername': 'pb'
+        }
+    }
     build.put()
 
     response = {
@@ -85,8 +94,8 @@ class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     expected_try_job_id = '1'
     self.assertEqual(expected_try_job_id, try_job_id)
-    self.assertEqual(
-        expected_try_job_id, try_job.compile_results[-1]['try_job_id'])
+    self.assertEqual(expected_try_job_id,
+                     try_job.compile_results[-1]['try_job_id'])
     self.assertTrue(expected_try_job_id in try_job.try_job_ids)
     self.assertIsNotNone(try_job_data)
     self.assertEqual(try_job_data.master_name, master_name)

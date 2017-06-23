@@ -21,10 +21,10 @@ class FlakeCulprit(BaseSuspectedCL):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
-  def Create(cls, repo_name, revision, commit_position,
-             url, confidence=None):  # pragma: no cover
-    instance = super(FlakeCulprit, cls).Create(
-        repo_name, revision, commit_position)
+  def Create(cls, repo_name, revision, commit_position, url,
+             confidence=None):  # pragma: no cover
+    instance = super(FlakeCulprit, cls).Create(repo_name, revision,
+                                               commit_position)
     instance.url = url
     instance.confidence = confidence
     return instance

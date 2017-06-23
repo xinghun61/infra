@@ -54,24 +54,23 @@ class WfSwarmingTask(BaseBuildModel, BaseSwarmingTask):
     return self.key.pairs()[1][1]
 
   @staticmethod
-  def _CreateKey(
-      master_name, builder_name, build_number, step_name):  # pragma: no cover
-    build_id = BaseBuildModel.CreateBuildId(
-        master_name, builder_name, build_number)
+  def _CreateKey(master_name, builder_name, build_number,
+                 step_name):  # pragma: no cover
+    build_id = BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                            build_number)
     return ndb.Key('WfBuild', build_id, 'WfSwarmingTask', step_name)
 
   @staticmethod
-  def Create(
-      master_name, builder_name, build_number, step_name):  # pragma: no cover
-    task = WfSwarmingTask(
-        key=WfSwarmingTask._CreateKey(
-            master_name, builder_name, build_number, step_name))
+  def Create(master_name, builder_name, build_number,
+             step_name):  # pragma: no cover
+    task = WfSwarmingTask(key=WfSwarmingTask._CreateKey(
+        master_name, builder_name, build_number, step_name))
     task.parameters = task.parameters or {}
     task.tests_statuses = task.tests_statuses or {}
     return task
 
   @staticmethod
-  def Get(
-      master_name, builder_name, build_number, step_name):  # pragma: no cover
-    return WfSwarmingTask._CreateKey(
-        master_name, builder_name, build_number, step_name).get()
+  def Get(master_name, builder_name, build_number,
+          step_name):  # pragma: no cover
+    return WfSwarmingTask._CreateKey(master_name, builder_name, build_number,
+                                     step_name).get()

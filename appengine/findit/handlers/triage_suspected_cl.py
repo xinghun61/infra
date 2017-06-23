@@ -1,7 +1,6 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """This module is to handle manual triage of a suspected CL.
 
 This handler will flag the suspected cl as correct or incorrect.
@@ -24,8 +23,11 @@ from waterfall.suspected_cl_util import GetCLInfo
 
 
 @ndb.transactional
-def _UpdateSuspectedCL(
-    repo_name, revision, build_key, cl_status, updated_time=None):
+def _UpdateSuspectedCL(repo_name,
+                       revision,
+                       build_key,
+                       cl_status,
+                       updated_time=None):
   suspected_cl = WfSuspectedCL.Get(repo_name, revision)
   if (not suspected_cl or not suspected_cl.builds):
     return False
@@ -70,8 +72,8 @@ def _UpdateSuspectedCL(
 
 
 @ndb.transactional
-def _UpdateAnalysis(
-    master_name, builder_name, build_number, repo_name, revision, cl_status):
+def _UpdateAnalysis(master_name, builder_name, build_number, repo_name,
+                    revision, cl_status):
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   if not analysis or not analysis.suspected_cls:
     return False
@@ -102,8 +104,8 @@ def _UpdateAnalysis(
   return True
 
 
-def _AppendTriageHistoryRecord(
-    master_name, builder_name, build_number, cl_info, cl_status, user_name):
+def _AppendTriageHistoryRecord(master_name, builder_name, build_number, cl_info,
+                               cl_status, user_name):
 
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   if not analysis:
@@ -125,20 +127,18 @@ def _AppendTriageHistoryRecord(
   analysis.put()
 
 
-def _UpdateSuspectedCLAndAnalysis(
-    master_name, builder_name, build_number, cl_info, cl_status, user_name):
-  repo_name, revision  = GetCLInfo(cl_info)
-  build_key = build_util.CreateBuildId(
-      master_name, builder_name, build_number)
+def _UpdateSuspectedCLAndAnalysis(master_name, builder_name, build_number,
+                                  cl_info, cl_status, user_name):
+  repo_name, revision = GetCLInfo(cl_info)
+  build_key = build_util.CreateBuildId(master_name, builder_name, build_number)
 
-  success = (
-      _UpdateSuspectedCL(repo_name, revision, build_key, cl_status) and
-      _UpdateAnalysis(master_name, builder_name, build_number,
-                      repo_name, revision, cl_status))
+  success = (_UpdateSuspectedCL(repo_name, revision, build_key, cl_status) and
+             _UpdateAnalysis(master_name, builder_name, build_number, repo_name,
+                             revision, cl_status))
 
   if success:
-    _AppendTriageHistoryRecord(
-        master_name, builder_name, build_number, cl_info, cl_status, user_name)
+    _AppendTriageHistoryRecord(master_name, builder_name, build_number, cl_info,
+                               cl_status, user_name)
 
   return success
 
@@ -161,6 +161,6 @@ class TriageSuspectedCl(BaseHandler):
     # already logged in.
     user_name = users.get_current_user().email().split('@')[0]
     success = _UpdateSuspectedCLAndAnalysis(
-      master_name, builder_name, build_number, cl_info, cl_status, user_name)
+        master_name, builder_name, build_number, cl_info, cl_status, user_name)
 
     return {'data': {'success': success}}

@@ -17,9 +17,10 @@ from waterfall.test import wf_testcase
 
 
 class ObscureEmailsTest(wf_testcase.WaterfallTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/obscure-emails', obscure_emails.ObscureEmails),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/obscure-emails', obscure_emails.ObscureEmails),
+      ], debug=True)
 
   def testObscureTriageRecordsInWfAnalysis(self):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
@@ -111,16 +112,14 @@ class ObscureEmailsTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('xxxxx@google.com',
                      old_analysis.triage_history[0].user_name)
     self.assertTrue(old_analysis.triage_email_obscured)
-    self.assertEqual('xxxxx@google.com',
-                     old_analysis.triggering_user_email)
+    self.assertEqual('xxxxx@google.com', old_analysis.triggering_user_email)
     self.assertTrue(old_analysis.triggering_user_email_obscured)
 
     recent_analysis = MasterFlakeAnalysis.GetVersion('m', 'b', 1000, 's', 't')
     self.assertEqual('test2@google.com',
                      recent_analysis.triage_history[0].user_name)
     self.assertFalse(recent_analysis.triage_email_obscured)
-    self.assertEqual('test2@google.com',
-                     recent_analysis.triggering_user_email)
+    self.assertEqual('test2@google.com', recent_analysis.triggering_user_email)
     self.assertFalse(recent_analysis.triggering_user_email_obscured)
 
   def testObscureFlakeAnalysisRequest(self):

@@ -1,7 +1,6 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """This module is used to obscure recorded emails."""
 
 from datetime import timedelta
@@ -15,8 +14,7 @@ from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_analysis import WfAnalysis
 
-
-_TRIAGE_RECORD_RENTENSION_DAYS = 30   # 1 month.
+_TRIAGE_RECORD_RENTENSION_DAYS = 30  # 1 month.
 _REQUEST_RECORD_RENTENSION_DAYS = 90  # 3 months.
 _PAGE_SIZE = 100  # Query 100 entities at a time.
 
@@ -29,9 +27,8 @@ def _ObscureTriageRecordsInWfAnalysis():
   """Obscures the user names in WfAnalysis triage history."""
   count = 0
   time_limit = _TimeBeforeNow(days=_TRIAGE_RECORD_RENTENSION_DAYS)
-  query = WfAnalysis.query(
-      WfAnalysis.triage_email_obscured == False,
-      WfAnalysis.triage_record_last_add < time_limit)
+  query = WfAnalysis.query(WfAnalysis.triage_email_obscured == False,
+                           WfAnalysis.triage_record_last_add < time_limit)
   more = True
   cursor = None
   while more:
@@ -79,8 +76,8 @@ def _ObscureFlakeAnalysisRequest():
   while more:
     entities, cursor, more = query.fetch_page(_PAGE_SIZE, start_cursor=cursor)
     for entity in entities:
-      entity.user_emails = email_util.ObscureEmails(
-          entity.user_emails, ['google.com'])
+      entity.user_emails = email_util.ObscureEmails(entity.user_emails,
+                                                    ['google.com'])
       entity.user_emails_obscured = True
     ndb.put_multi(entities)
     count += len(entities)

@@ -15,7 +15,6 @@ from waterfall import buildbot
 from waterfall.flake.lookback_algorithm import IsStable
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 
-
 _RUNNING_STATUSES = [analysis_status.PENDING, analysis_status.RUNNING]
 
 
@@ -61,14 +60,14 @@ def _GetBuildInfo(master_name, builder_name, build_number):
 
   if not build_info:  # pragma: no cover
     # Network error.
-    raise pipeline.Retry('Failed to get build info for %s/%s' %
-                         (master_name, builder_name))
+    raise pipeline.Retry('Failed to get build info for %s/%s' % (master_name,
+                                                                 builder_name))
 
   return build_info
 
 
-def _GetBoundedRangeForCommitPosition(
-    commit_position, builds_to_commit_positions):
+def _GetBoundedRangeForCommitPosition(commit_position,
+                                      builds_to_commit_positions):
   """Gets the range (lower_bound, upper_bound] that contains commit_position.
 
   Args:
@@ -100,9 +99,8 @@ def _GetBoundedRangeForCommitPosition(
   # Check if the requested commit position is before the earliest known build
   # number's earliest commit.
   earliest_build_number = build_numbers[-1]
-  earliest_commit_position = (
-      builds_to_commit_positions[
-          earliest_build_number].earliest_commit_position)
+  earliest_commit_position = (builds_to_commit_positions[earliest_build_number]
+                              .earliest_commit_position)
   if commit_position < earliest_commit_position:
     return None, earliest_build_number
 
@@ -134,8 +132,8 @@ def _GetBoundedRangeForCommitPosition(
   return lower_bound, upper_bound
 
 
-def _GetBoundedRangeFromBuild(
-    commit_position, master_name, builder_name, build_number):
+def _GetBoundedRangeFromBuild(commit_position, master_name, builder_name,
+                              build_number):
   build_info = _GetBuildInfo(master_name, builder_name, build_number)
   if build_info.commit_position == commit_position:
     return build_number, build_number
@@ -147,8 +145,8 @@ def _GetBoundedRangeFromBuild(
 
 def _GetLatestBuildNumber(master_name, builder_name):
   """Attempts to get the latest build number on master_name/builder_name."""
-  recent_builds = buildbot.GetRecentCompletedBuilds(
-      master_name, builder_name, HttpClientAppengine())
+  recent_builds = buildbot.GetRecentCompletedBuilds(master_name, builder_name,
+                                                    HttpClientAppengine())
 
   if recent_builds is None:  # pragma: no cover
     # Likely a network error.
@@ -183,8 +181,8 @@ def _GetNearestBuild(master_name, builder_name, lower_bound_build_number,
   """
   if lower_bound_build_number is None:
     lower_bound_build_number = 0
-    earliest_build_info = _GetBuildInfo(
-        master_name, builder_name, lower_bound_build_number)
+    earliest_build_info = _GetBuildInfo(master_name, builder_name,
+                                        lower_bound_build_number)
     if requested_commit_position <= earliest_build_info.commit_position:
       # User requested something before what there are build numbers for.
       # Fallback to the earliest build. The calling code should compare the
@@ -194,8 +192,8 @@ def _GetNearestBuild(master_name, builder_name, lower_bound_build_number,
 
   if upper_bound_build_number is None:
     upper_bound_build_number = _GetLatestBuildNumber(master_name, builder_name)
-    latest_build_info = _GetBuildInfo(
-        master_name, builder_name, upper_bound_build_number)
+    latest_build_info = _GetBuildInfo(master_name, builder_name,
+                                      upper_bound_build_number)
     if requested_commit_position >= latest_build_info.commit_position:
       # User requested something beyond what has been committed or there is a
       # build available for. Fallback to the latest build. The calling code
@@ -210,8 +208,8 @@ def _GetNearestBuild(master_name, builder_name, lower_bound_build_number,
 
   while upper_bound - lower_bound > 1:
     candidate_build_number = (upper_bound - lower_bound) / 2 + lower_bound
-    candidate_build = _GetBuildInfo(
-        master_name, builder_name, candidate_build_number)
+    candidate_build = _GetBuildInfo(master_name, builder_name,
+                                    candidate_build_number)
 
     if candidate_build.commit_position == requested_commit_position:
       # Exact match.
@@ -266,9 +264,9 @@ def _GetEarliestContainingBuildNumber(commit_position, master_flake_analysis):
                           commit_position).build_number
 
 
-def _RemoveStablePointsWithinRange(
-    analysis, lower_bound_build_number, upper_bound_build_number,
-    minimum_iterations):
+def _RemoveStablePointsWithinRange(analysis, lower_bound_build_number,
+                                   upper_bound_build_number,
+                                   minimum_iterations):
   """Clears an analysis' data points within a commit position range."""
   algorithm_settings = analysis.algorithm_parameters.get('swarming_rerun')
   lower_flake_threshold = algorithm_settings.get('lower_flake_threshold')
@@ -278,9 +276,8 @@ def _RemoveStablePointsWithinRange(
       lower_bound_build_number, upper_bound_build_number)
   any_changes = False
   for data_point in filtered_data_points:
-    if (data_point.iterations < minimum_iterations and
-        IsStable(data_point.pass_rate, lower_flake_threshold,
-                 upper_flake_threshold)):
+    if (data_point.iterations < minimum_iterations and IsStable(
+        data_point.pass_rate, lower_flake_threshold, upper_flake_threshold)):
       # Flaky points with more iterations will still be flaky, however stable
       # points with too few iterations cannot be trusted and should be removed.
       analysis.RemoveDataPointWithCommitPosition(data_point.commit_position)
@@ -292,7 +289,7 @@ def _RemoveStablePointsWithinRange(
 
 def _CanStartManualAnalysis(analysis):
   return (analysis.status not in _RUNNING_STATUSES and
-          analysis.try_job_status not in  _RUNNING_STATUSES)
+          analysis.try_job_status not in _RUNNING_STATUSES)
 
 
 class RegressionRangeAnalysisPipeline(BasePipeline):
@@ -315,9 +312,9 @@ class RegressionRangeAnalysisPipeline(BasePipeline):
         analysis.master_name, analysis.builder_name, analysis.build_number,
         analysis.step_name, HttpClientAppengine(), 'step_metadata')
 
-    _RemoveStablePointsWithinRange(
-        analysis, lower_bound_build_number, upper_bound_build_number,
-        iterations_to_rerun)
+    _RemoveStablePointsWithinRange(analysis, lower_bound_build_number,
+                                   upper_bound_build_number,
+                                   iterations_to_rerun)
 
     logging.info('Analyzing manually-input regression range [%d:%d]',
                  lower_bound_commit_position, upper_bound_commit_position)
@@ -325,6 +322,9 @@ class RegressionRangeAnalysisPipeline(BasePipeline):
                  lower_bound_build_number, upper_bound_build_number)
 
     yield RecursiveFlakePipeline(
-        analysis_urlsafe_key, upper_bound_build_number,
-        lower_bound_build_number, upper_bound_build_number, iterations_to_rerun,
+        analysis_urlsafe_key,
+        upper_bound_build_number,
+        lower_bound_build_number,
+        upper_bound_build_number,
+        iterations_to_rerun,
         step_metadata=step_metadata)

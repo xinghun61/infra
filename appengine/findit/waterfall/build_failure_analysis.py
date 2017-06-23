@@ -108,17 +108,42 @@ def _NormalizeObjectFilePath(file_path):
 
 _COMMON_SUFFIXES = [
     'impl',
-    'browser_tests', 'browser_test', 'browsertest', 'browsertests',
-    'unittests', 'unittest', 'tests', 'test',
-    'gcc', 'msvc',
-    'arm', 'arm64', 'mips', 'portable', 'x86',
-    'android', 'ios', 'linux', 'mac', 'ozone', 'posix', 'win',
-    'aura', 'x', 'x11',
+    'browser_tests',
+    'browser_test',
+    'browsertest',
+    'browsertests',
+    'unittests',
+    'unittest',
+    'tests',
+    'test',
+    'gcc',
+    'msvc',
+    'arm',
+    'arm64',
+    'mips',
+    'portable',
+    'x86',
+    'android',
+    'ios',
+    'linux',
+    'mac',
+    'ozone',
+    'posix',
+    'win',
+    'aura',
+    'x',
+    'x11',
 ]
 
 _COMMON_TEST_SUFFIXES = [
-    'browser_tests', 'browser_test', 'browsertest', 'browsertests',
-    'unittests', 'unittest', 'tests', 'test',
+    'browser_tests',
+    'browser_test',
+    'browsertest',
+    'browsertests',
+    'unittests',
+    'unittest',
+    'tests',
+    'test',
 ]
 
 _COMMON_SUFFIX_PATTERNS = [
@@ -129,11 +154,9 @@ _COMMON_TEST_SUFFIX_PATTERNS = [
     re.compile('.*(_%s)$' % suffix) for suffix in _COMMON_TEST_SUFFIXES
 ]
 
-_RELATED_FILETYPES = [
-    ['h', 'hh' 'c', 'cc', 'cpp', 'm', 'mm', 'o', 'obj'],
-    ['py', 'pyc'],
-    ['gyp', 'gypi']
-]
+_RELATED_FILETYPES = [['h', 'hh'
+                       'c', 'cc', 'cpp', 'm', 'mm', 'o', 'obj'], ['py', 'pyc'],
+                      ['gyp', 'gypi']]
 
 
 def _AreBothFilesTestRelated(changed_src_file_path, file_in_log_path):
@@ -210,8 +233,9 @@ def _IsRelated(changed_src_file_path, file_path):
   if _AreBothFilesTestRelated(changed_src_file_path, file_path):
     return False
 
-  if _IsSameFile(_StripExtensionAndCommonSuffix(changed_src_file_path),
-                 _StripExtensionAndCommonSuffix(file_path)):
+  if _IsSameFile(
+      _StripExtensionAndCommonSuffix(changed_src_file_path),
+      _StripExtensionAndCommonSuffix(file_path)):
     return True
 
   return False
@@ -240,8 +264,12 @@ class _Justification(object):
   def score(self):
     return self._score
 
-  def AddFileChange(self, change_action, changed_src_file_path,
-                    file_path_in_log, score, num_file_name_occurrences,
+  def AddFileChange(self,
+                    change_action,
+                    changed_src_file_path,
+                    file_path_in_log,
+                    score,
+                    num_file_name_occurrences,
                     changed_line_numbers=None):
     """Adds a suspected file change.
 
@@ -260,16 +288,16 @@ class _Justification(object):
       file_path_in_log = os.path.basename(file_path_in_log)
 
     if changed_src_file_path != file_path_in_log:
-      hint = '%s %s (%s was in log)' % (
-          change_action, changed_src_file_path, file_path_in_log)
+      hint = '%s %s (%s was in log)' % (change_action, changed_src_file_path,
+                                        file_path_in_log)
     else:
       if changed_line_numbers:
         hint = '%s %s[%s] (and it was in log)' % (
             change_action, changed_src_file_path,
             ', '.join(map(str, changed_line_numbers)))
       else:
-        hint = '%s %s (and it was in log)' % (
-            change_action, changed_src_file_path)
+        hint = '%s %s (and it was in log)' % (change_action,
+                                              changed_src_file_path)
 
     self._hints[hint] += score
     self._score += score
@@ -287,21 +315,22 @@ class _Justification(object):
 
     if roll_file_change_type == ChangeType.ADD:
       hint = ('%s dependency %s with changes in %s '
-              '(and %s(added) was in log)' % (
-                  change_action, dep_path, url_to_changes_in_roll,
-                  file_path_in_log))
+              '(and %s(added) was in log)' %
+              (change_action, dep_path, url_to_changes_in_roll,
+               file_path_in_log))
     elif roll_file_change_type == ChangeType.DELETE:
       hint = ('%s dependency %s with changes in %s '
-              '(and %s(deleted) was in log)' % (
-                  change_action, dep_path, url_to_changes_in_roll,
-                  file_path_in_log))
+              '(and %s(deleted) was in log)' %
+              (change_action, dep_path, url_to_changes_in_roll,
+               file_path_in_log))
     elif changed_line_numbers:
-      hint = ('%s dependency %s with changes in %s (and %s[%s] was in log)' % (
-          change_action, dep_path, url_to_changes_in_roll, file_path_in_log,
-          ', '.join(map(str, changed_line_numbers))))
+      hint = ('%s dependency %s with changes in %s (and %s[%s] was in log)' %
+              (change_action, dep_path, url_to_changes_in_roll,
+               file_path_in_log, ', '.join(map(str, changed_line_numbers))))
     else:
-      hint = ('%s dependency %s with changes in %s (and %s was in log)' % (
-          change_action, dep_path, url_to_changes_in_roll, file_path_in_log))
+      hint = ('%s dependency %s with changes in %s (and %s was in log)' %
+              (change_action, dep_path, url_to_changes_in_roll,
+               file_path_in_log))
 
     self._hints[hint] = score
     self._score += score
@@ -313,12 +342,8 @@ class _Justification(object):
     }
 
 
-def _CheckFile(touched_file,
-               file_path_in_log,
-               justification,
-               file_name_occurrences,
-               line_numbers,
-               repo_info,
+def _CheckFile(touched_file, file_path_in_log, justification,
+               file_name_occurrences, line_numbers, repo_info,
                suspected_revision):
   """Checks if the given files are related and updates the justification.
 
@@ -352,12 +377,9 @@ def _CheckFile(touched_file,
       score = 1
 
     if score:
-      justification.AddFileChange('modified',
-                                  changed_src_file_path,
-                                  file_path_in_log,
-                                  score,
-                                  file_name_occurrences.get(file_name),
-                                  changed_line_numbers)
+      justification.AddFileChange(
+          'modified', changed_src_file_path, file_path_in_log, score,
+          file_name_occurrences.get(file_name), changed_line_numbers)
 
   if change_type in (ChangeType.ADD, ChangeType.COPY, ChangeType.RENAME):
     changed_src_file_path = touched_file['new_path']
@@ -370,10 +392,8 @@ def _CheckFile(touched_file,
       score = 1
 
     if score:
-      justification.AddFileChange('added',
-                                  changed_src_file_path,
-                                  file_path_in_log,
-                                  score,
+      justification.AddFileChange('added', changed_src_file_path,
+                                  file_path_in_log, score,
                                   file_name_occurrences.get(file_name))
 
   if change_type in (ChangeType.DELETE, ChangeType.RENAME):
@@ -387,10 +407,8 @@ def _CheckFile(touched_file,
       score = 1
 
     if score:
-      justification.AddFileChange('deleted',
-                                  changed_src_file_path,
-                                  file_path_in_log,
-                                  score,
+      justification.AddFileChange('deleted', changed_src_file_path,
+                                  file_path_in_log, score,
                                   file_name_occurrences.get(file_name))
 
 
@@ -489,7 +507,9 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
   return file_change_type, changed_line_numbers
 
 
-def _CheckFileInDependencyRolls(file_path_in_log, rolls, justification,
+def _CheckFileInDependencyRolls(file_path_in_log,
+                                rolls,
+                                justification,
                                 line_numbers=None):
   """Checks if the file is in a dependency roll and updates the justification.
 
@@ -546,10 +566,10 @@ def _CheckFileInDependencyRolls(file_path_in_log, rolls, justification,
       change_action = 'deleted'
       score = 5
 
-    justification.AddDEPSRoll(
-        change_action, dep_path, roll['repo_url'], roll['new_revision'],
-        roll['old_revision'], file_path_in_log[len(dep_path):], score,
-        changed_lines, roll_file_change_type)
+    justification.AddDEPSRoll(change_action, dep_path, roll['repo_url'],
+                              roll['new_revision'], roll['old_revision'],
+                              file_path_in_log[len(dep_path):], score,
+                              changed_lines, roll_file_change_type)
 
 
 def _CheckFiles(failure_signal, change_log, deps_info):
@@ -569,8 +589,8 @@ def _CheckFiles(failure_signal, change_log, deps_info):
   file_name_occurrences = defaultdict(int)
   for touched_file in change_log['touched_files']:
     change_type = touched_file['change_type']
-    if (change_type in (ChangeType.ADD, ChangeType.COPY,
-                        ChangeType.RENAME, ChangeType.MODIFY)):
+    if (change_type in (ChangeType.ADD, ChangeType.COPY, ChangeType.RENAME,
+                        ChangeType.MODIFY)):
       file_name = os.path.basename(touched_file['new_path'])
       file_name_occurrences[file_name] += 1
 
@@ -587,10 +607,9 @@ def _CheckFiles(failure_signal, change_log, deps_info):
     file_path_in_log = _StripChromiumRootDirectory(file_path_in_log)
 
     for touched_file in change_log['touched_files']:
-      _CheckFile(
-          touched_file, file_path_in_log, justification,
-          file_name_occurrences, line_numbers, repo_info,
-          change_log['revision'])
+      _CheckFile(touched_file, file_path_in_log, justification,
+                 file_name_occurrences, line_numbers, repo_info,
+                 change_log['revision'])
 
     _CheckFileInDependencyRolls(file_path_in_log, rolls, justification,
                                 line_numbers)
@@ -606,18 +625,19 @@ class _CLInfo(object):
 
   The information is specific to current build.
   """
+
   def __init__(self):
     self.failures = defaultdict(list)
     self.top_score = 0
     self.url = None
 
 
-def _SaveFailureToMap(
-    cl_failure_map, new_suspected_cl_dict, step_name, test_name, top_score):
+def _SaveFailureToMap(cl_failure_map, new_suspected_cl_dict, step_name,
+                      test_name, top_score):
   """Saves a failure's info to the cl that caused it."""
-  cl_key = (
-      new_suspected_cl_dict['repo_name'], new_suspected_cl_dict['revision'],
-      new_suspected_cl_dict['commit_position'])
+  cl_key = (new_suspected_cl_dict['repo_name'],
+            new_suspected_cl_dict['revision'],
+            new_suspected_cl_dict['commit_position'])
 
   if test_name:
     cl_failure_map[cl_key].failures[step_name].append(test_name)
@@ -626,10 +646,10 @@ def _SaveFailureToMap(
   # Ignores the case where in the same build for the same cl,
   # we have different scores.
   # Not sure if we need to handle it since it should be rare.
-  cl_failure_map[cl_key].top_score = (
-      cl_failure_map[cl_key].top_score or top_score)
-  cl_failure_map[cl_key].url = (
-      cl_failure_map[cl_key].url or new_suspected_cl_dict['url'])
+  cl_failure_map[cl_key].top_score = (cl_failure_map[cl_key].top_score or
+                                      top_score)
+  cl_failure_map[cl_key].url = (cl_failure_map[cl_key].url or
+                                new_suspected_cl_dict['url'])
 
 
 def _ConvertCLFailureMapToList(cl_failure_map):
@@ -645,8 +665,8 @@ def _ConvertCLFailureMapToList(cl_failure_map):
     suspected_cls.append(suspected_cl)
   return suspected_cls
 
-def AnalyzeBuildFailure(
-    failure_info, change_logs, deps_info, failure_signals):
+
+def AnalyzeBuildFailure(failure_info, change_logs, deps_info, failure_signals):
   """Analyzes the given failure signals, and figure out culprit CLs.
 
   Args:
@@ -700,9 +720,7 @@ def AnalyzeBuildFailure(
         ...
     ]
   """
-  analysis_result = {
-      'failures': []
-  }
+  analysis_result = {'failures': []}
 
   if not failure_info['failed'] or not failure_info['chromium_revision']:
     # Bail out if no failed step or no chromium revision.
@@ -716,10 +734,14 @@ def AnalyzeBuildFailure(
     # TODO(stgao): remove hard-coded 'chromium' when DEPS file parsing is
     # supported.
     cl_info = {
-        'build_number': build_number,
-        'repo_name': 'chromium',
-        'revision': change_log['revision'],
-        'commit_position': change_log.get('commit_position'),
+        'build_number':
+            build_number,
+        'repo_name':
+            'chromium',
+        'revision':
+            change_log['revision'],
+        'commit_position':
+            change_log.get('commit_position'),
         'url':
             change_log.get('code_review_url') or change_log.get('commit_url'),
     }
@@ -742,12 +764,15 @@ def AnalyzeBuildFailure(
     else:
       start_build_number = step_failure_info['first_failure']
     step_analysis_result = {
-        'step_name': step_name,
-        'first_failure': step_failure_info['first_failure'],
-        'last_pass': step_failure_info.get('last_pass'),
+        'step_name':
+            step_name,
+        'first_failure':
+            step_failure_info['first_failure'],
+        'last_pass':
+            step_failure_info.get('last_pass'),
         'suspected_cls': [],
-        'supported': waterfall_config.StepIsSupportedForMaster(
-            step_name, master_name)
+        'supported':
+            waterfall_config.StepIsSupportedForMaster(step_name, master_name)
     }
 
     if is_test_level:
@@ -771,8 +796,8 @@ def AnalyzeBuildFailure(
               test_signal = FailureSignal.FromDict(
                   failure_signals[step_name]['tests'].get(test_name, {}))
 
-              justification_dict = _CheckFiles(
-                  test_signal, change_logs[revision], deps_info)
+              justification_dict = _CheckFiles(test_signal,
+                                               change_logs[revision], deps_info)
 
               if not justification_dict:
                 continue
@@ -782,16 +807,16 @@ def AnalyzeBuildFailure(
               test_analysis_result['suspected_cls'].append(
                   new_suspected_cl_dict)
 
-              _SaveFailureToMap(
-                  cl_failure_map, new_suspected_cl_dict, step_name, test_name,
-                  max(justification_dict['hints'].values()))
+              _SaveFailureToMap(cl_failure_map, new_suspected_cl_dict,
+                                step_name, test_name,
+                                max(justification_dict['hints'].values()))
 
           # Checks Files on step level using step level signals
           # regardless of test level signals so we can make sure
           # no duplicate justifications added to the step result.
           failure_signal = FailureSignal.FromDict(failure_signals[step_name])
-          justification_dict = _CheckFiles(
-              failure_signal, change_logs[revision], deps_info)
+          justification_dict = _CheckFiles(failure_signal,
+                                           change_logs[revision], deps_info)
 
           if not justification_dict:
             continue
@@ -801,9 +826,8 @@ def AnalyzeBuildFailure(
           step_analysis_result['suspected_cls'].append(new_suspected_cl_dict)
 
           if not is_test_level:
-            _SaveFailureToMap(
-                cl_failure_map, new_suspected_cl_dict, step_name, None,
-                max(justification_dict['hints'].values()))
+            _SaveFailureToMap(cl_failure_map, new_suspected_cl_dict, step_name,
+                              None, max(justification_dict['hints'].values()))
 
     # TODO(stgao): sort CLs by score.
     analysis_result['failures'].append(step_analysis_result)

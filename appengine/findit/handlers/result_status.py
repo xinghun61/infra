@@ -26,18 +26,28 @@ NO_TRY_JOB_REASON_MAP = {
 }
 
 STATUS_MESSAGE_MAP = {
-    analysis_status.PENDING: 'Try job is pending.',
-    analysis_status.RUNNING: 'Try job is running.',
-    analysis_status.COMPLETED: 'Not Found.',
-    analysis_status.ERROR: 'Try job failed.',
-    NO_SWARMING_TASK_FOUND: 'No swarming task found, hence no try job.',
+    analysis_status.PENDING:
+        'Try job is pending.',
+    analysis_status.RUNNING:
+        'Try job is running.',
+    analysis_status.COMPLETED:
+        'Not Found.',
+    analysis_status.ERROR:
+        'Try job failed.',
+    NO_SWARMING_TASK_FOUND:
+        'No swarming task found, hence no try job.',
     NON_SWARMING_NO_RERUN: ('No swarming task nor try job will be triggered'
                             ' for non-swarming steps.'),
-    SWARMING_TASK_PENDING: 'Swarming task is pending, no try job yet.',
-    SWARMING_TASK_RUNNING: 'Swarming task is running, no try job yet.',
+    SWARMING_TASK_PENDING:
+        'Swarming task is pending, no try job yet.',
+    SWARMING_TASK_RUNNING:
+        'Swarming task is running, no try job yet.',
     SWARMING_TASK_ERROR: (
         'Swarming task failed, try job will not be triggered.'),
-    NO_FAILURE_RESULT_MAP: 'No swarming task nor try job was triggered.',
-    FLAKY: 'Flaky tests.',
-    UNKNOWN: 'Unknown failure.'
+    NO_FAILURE_RESULT_MAP:
+        'No swarming task nor try job was triggered.',
+    FLAKY:
+        'Flaky tests.',
+    UNKNOWN:
+        'Unknown failure.'
 }

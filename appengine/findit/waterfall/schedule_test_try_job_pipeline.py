@@ -15,18 +15,17 @@ from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
   """A pipeline for scheduling a new try job for failed test build."""
 
-  def _GetBuildProperties(
-      self, master_name, builder_name, build_number, good_revision,
-      bad_revision, try_job_type, suspected_revisions):
+  def _GetBuildProperties(self, master_name, builder_name, build_number,
+                          good_revision, bad_revision, try_job_type,
+                          suspected_revisions):
     properties = super(ScheduleTestTryJobPipeline, self)._GetBuildProperties(
-        master_name, builder_name, build_number, good_revision,
-        bad_revision, try_job_type, suspected_revisions)
+        master_name, builder_name, build_number, good_revision, bad_revision,
+        try_job_type, suspected_revisions)
     properties['target_testername'] = builder_name
 
     return properties
 
-  def _CreateTryJobData(
-      self, build_id, try_job_key, has_heuristic_results):
+  def _CreateTryJobData(self, build_id, try_job_key, has_heuristic_results):
     try_job_data = WfTryJobData.Create(build_id)
     try_job_data.created_time = time_util.GetUTCNow()
     try_job_data.has_compile_targets = False
@@ -37,10 +36,9 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
     try_job_data.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(
-      self, master_name, builder_name, build_number, good_revision,
-      bad_revision, try_job_type, suspected_revisions, cache_name, dimensions,
-      targeted_tests):
+  def run(self, master_name, builder_name, build_number, good_revision,
+          bad_revision, try_job_type, suspected_revisions, cache_name,
+          dimensions, targeted_tests):
     """
     Args:
       master_name (str): the master name of a build.

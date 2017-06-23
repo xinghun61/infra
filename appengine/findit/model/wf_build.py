@@ -16,13 +16,13 @@ class WfBuild(BaseBuildModel):
   @staticmethod
   def _CreateKey(master_name, builder_name, build_number):  # pragma: no cover
     return ndb.Key('WfBuild',
-                   BaseBuildModel.CreateBuildId(
-                       master_name, builder_name, build_number))
+                   BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                                build_number))
 
   @staticmethod
   def Create(master_name, builder_name, build_number):  # pragma: no cover
-    return WfBuild(
-        key=WfBuild._CreateKey(master_name, builder_name, build_number))
+    return WfBuild(key=WfBuild._CreateKey(master_name, builder_name,
+                                          build_number))
 
   @staticmethod
   def Get(master_name, builder_name, build_number):  # pragma: no cover

@@ -4,6 +4,7 @@
 
 from google.appengine.ext import ndb
 
+
 class WfTryBot(ndb.Model):
   """Represents a single bot in the pool.
 
@@ -17,9 +18,7 @@ class WfTryBot(ndb.Model):
     key = ndb.Key('WfTryBot', bot_id)
     result = key.get()
     if not result:
-      result = WfTryBot(
-          key=key,
-          newest_synced_revision=None)
+      result = WfTryBot(key=key, newest_synced_revision=None)
       result.put()
     return result
 
@@ -48,8 +47,8 @@ class WfTryBotCache(ndb.Model):
   warm_cache_times = ndb.JsonProperty(indexed=False, compressed=True)
 
   # This dict maps a bot_id to the last revision it synced to.
-  checked_out_commit_positions = ndb.JsonProperty(indexed=False,
-                                                  compressed=False)
+  checked_out_commit_positions = ndb.JsonProperty(
+      indexed=False, compressed=False)
 
   @staticmethod
   def Get(cache_name):
@@ -94,7 +93,7 @@ class WfTryBotCache(ndb.Model):
       # the clause may remove elements.
       for bot_id in self.checked_out_commit_positions.keys():
         if bot_id not in self.recent_bots:
-          del(self.checked_out_commit_positions[bot_id])
+          del (self.checked_out_commit_positions[bot_id])
 
   def AddCacheTime(self, t, cold=False):
     times = self.cold_cache_times if cold else self.warm_cache_times

@@ -66,7 +66,7 @@ def _MergeNewRequestIntoExistingOne(new_request, existing_request, rerun=False):
     existing_step = None
     for s in existing_request.build_steps:
       if (step.master_name == s.master_name and
-              step.builder_name == s.builder_name):
+          step.builder_name == s.builder_name):
         existing_step = s
         break
 
@@ -110,8 +110,8 @@ def _MergeNewRequestIntoExistingOne(new_request, existing_request, rerun=False):
 
   if need_updating:
     existing_request.user_emails = (
-        email_util.ObscureEmails(existing_request.user_emails, ['google.com'])
-        + list(set(new_request.user_emails)))
+        email_util.ObscureEmails(existing_request.user_emails, ['google.com']) +
+        list(set(new_request.user_emails)))
     existing_request.user_emails_obscured = False
     existing_request.user_emails_last_edit = time_util.GetUTCNow()
 
@@ -190,12 +190,15 @@ def _CheckForNewAnalysis(request, rerun=False):
 
 def IsAuthorizedUser(user_email, is_admin):
   """Returns True if the given user email account is authorized for access."""
-  return is_admin or (user_email and (
-      user_email in constants.WHITELISTED_APP_ACCOUNTS or
-      user_email.endswith('@google.com')))
+  return is_admin or (user_email and
+                      (user_email in constants.WHITELISTED_APP_ACCOUNTS or
+                       user_email.endswith('@google.com')))
 
 
-def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source,
+def ScheduleAnalysisForFlake(request,
+                             user_email,
+                             is_admin,
+                             triggering_source,
                              rerun=False):
   """Schedules an analysis on the flake in the given request if needed.
 
@@ -232,17 +235,20 @@ def ScheduleAnalysisForFlake(request, user_email, is_admin, triggering_source,
     logging.info('A new analysis is needed for: %s', build_step)
     normalized_test = TestInfo(
         build_step.wf_master_name, build_step.wf_builder_name,
-        build_step.wf_build_number, build_step.wf_step_name,
-        request.name)
-    original_test = TestInfo(
-        build_step.master_name, build_step.builder_name,
-        build_step.build_number, build_step.step_name,
-        request.name)
+        build_step.wf_build_number, build_step.wf_step_name, request.name)
+    original_test = TestInfo(build_step.master_name, build_step.builder_name,
+                             build_step.build_number, build_step.step_name,
+                             request.name)
     analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
-        normalized_test, original_test, bug_id=request.bug_id,
-        allow_new_analysis=True, manually_triggered=manually_triggered,
-        user_email=user_email, triggering_source=triggering_source,
-        queue_name=constants.WATERFALL_ANALYSIS_QUEUE, force=rerun)
+        normalized_test,
+        original_test,
+        bug_id=request.bug_id,
+        allow_new_analysis=True,
+        manually_triggered=manually_triggered,
+        user_email=user_email,
+        triggering_source=triggering_source,
+        queue_name=constants.WATERFALL_ANALYSIS_QUEUE,
+        force=rerun)
     if analysis:
       # TODO: put this in a transaction.
       request = FlakeAnalysisRequest.GetVersion(

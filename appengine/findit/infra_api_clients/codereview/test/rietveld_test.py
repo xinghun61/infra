@@ -69,7 +69,7 @@ class RietveldTest(testing.AppengineTestCase):
     self.assertIsNone(body)
 
   def testEncodeMultipartFormData(self):
-    content_type, body = self.rietveld._EncodeMultipartFormData({'a':'b'})
+    content_type, body = self.rietveld._EncodeMultipartFormData({'a': 'b'})
     expected_content_type = (
         'multipart/form-data; boundary=-F-I-N-D-I-T-M-E-S-S-A-G-E-')
     expected_body = textwrap.dedent("""
@@ -84,8 +84,8 @@ class RietveldTest(testing.AppengineTestCase):
 
   def testPostMessageSuccess(self):
     change_id = 123
-    message_publish_url = 'https://%s/%s/publish' % (
-        self.server_hostname, change_id)
+    message_publish_url = 'https://%s/%s/publish' % (self.server_hostname,
+                                                     change_id)
     self.http_client.SetResponse('https://%s/xsrf_token' % self.server_hostname,
                                  (200, 'abc'))
     self.http_client.SetResponse(message_publish_url, (200, 'OK'))
@@ -94,8 +94,8 @@ class RietveldTest(testing.AppengineTestCase):
 
   def testPostMessageFailOnXsrfToken(self):
     change_id = 123
-    message_publish_url = 'https://%s/%s/publish' % (
-        self.server_hostname, change_id)
+    message_publish_url = 'https://%s/%s/publish' % (self.server_hostname,
+                                                     change_id)
     self.http_client.SetResponse('https://%s/xsrf_token' % self.server_hostname,
                                  (302, 'login'))
     self.http_client.SetResponse(message_publish_url, (200, 'OK'))
@@ -104,8 +104,8 @@ class RietveldTest(testing.AppengineTestCase):
 
   def testPostMessageFailOnPublish(self):
     change_id = 123
-    message_publish_url = 'https://%s/%s/publish' % (
-        self.server_hostname, change_id)
+    message_publish_url = 'https://%s/%s/publish' % (self.server_hostname,
+                                                     change_id)
     self.http_client.SetResponse('https://%s/xsrf_token' % self.server_hostname,
                                  (200, 'abc'))
     self.http_client.SetResponse(message_publish_url, (404, 'Error'))
@@ -117,114 +117,121 @@ class RietveldTest(testing.AppengineTestCase):
     mocked_SendPostRequest.side_effect = [(200, '1234')]
     change_id = self.rietveld.CreateRevert('reason', 1222, 20001)
     self.assertEqual('1234', change_id)
-    mocked_SendPostRequest.assert_called_once_with(
-        '/api/1222/20001/revert',
-        {'revert_reason': 'reason', 'revert_cq': 0, 'no_redirect': 'True'})
+    mocked_SendPostRequest.assert_called_once_with('/api/1222/20001/revert', {
+        'revert_reason': 'reason',
+        'revert_cq': 0,
+        'no_redirect': 'True'
+    })
 
   @mock.patch.object(Rietveld, '_SendPostRequest')
   def testCreateRevertFail(self, mocked_SendPostRequest):
     mocked_SendPostRequest.side_effect = [(404, 'error')]
     change_id = self.rietveld.CreateRevert('reason', 1222, 20001)
     self.assertIsNone(change_id)
-    mocked_SendPostRequest.assert_called_once_with(
-        '/api/1222/20001/revert',
-        {'revert_reason': 'reason', 'revert_cq': 0, 'no_redirect': 'True'})
+    mocked_SendPostRequest.assert_called_once_with('/api/1222/20001/revert', {
+        'revert_reason': 'reason',
+        'revert_cq': 0,
+        'no_redirect': 'True'
+    })
 
-  @mock.patch(
-      'libs.time_util.DatetimeFromString',
-      lambda x: datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S.%f'))
+  @mock.patch('libs.time_util.DatetimeFromString',
+              lambda x: datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S.%f'))
   def testGetClDetails(self):
     rietveld_url = 'https://server.host.name'
     change_id = '123456001'
     revert_change_id = '2713613003'
-    with open(os.path.join(os.path.dirname(__file__),
-              'testissuedetails.json')) as f:
+    with open(
+        os.path.join(os.path.dirname(__file__), 'testissuedetails.json')) as f:
       response = 200, f.read()
     self.http_client.SetResponse('%s/api/%s?messages=true' %
                                  (rietveld_url, change_id), response)
-    with open(os.path.join(os.path.dirname(__file__),
-              'reverttestissuedetails.json')) as f:
+    with open(
+        os.path.join(os.path.dirname(__file__),
+                     'reverttestissuedetails.json')) as f:
       response = 200, f.read()
     self.http_client.SetResponse('%s/api/%s?messages=true' %
                                  (rietveld_url, revert_change_id), response)
     cl_info = self.rietveld.GetClDetails(change_id)
 
-    self.assertEqual(cl_info.serialize(),
-    {'server_hostname': 'server.host.name',
-     'change_id': '123456001',
-     'auto_revert_off': True,
-     'owner_email': 'author@chromium.org',
-     'commits': [
-         {
-             'patchset_id': '100001',
-             'timestamp': '2017-02-23 02:41:16 UTC',
-             'revision': 'c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb'
-         },
-         {
-             'patchset_id': '120001',
-             'timestamp': '2017-02-23 23:17:54 UTC',
-             'revision': 'deadbeefdeadbeefc001c001c001ce120ce120aa'
-         }
-     ],
-     'commit_attempts': [
-         {
-             'committing_user_email': u'author@chromium.org',
-             'patchset_id': '100001',
-             'timestamp': '2017-02-23 00:52:00 UTC'
-         },
-         {
-             'committing_user_email': u'author@chromium.org',
-             'patchset_id': '120001',
-             'timestamp': '2017-02-23 23:17:54 UTC',
-         }
-     ],
-     'reverts': [
-         {
-             'patchset_id': '100001',
-             'reverting_cl': {
-                 'cc': [u'chromium-reviews@chromium.org'],
-                 'reviewers': [u'someone@chromium.org'],
-                 'server_hostname': 'server.host.name',
-                 'auto_revert_off': False,
-                 'owner_email': 'author@chromium.org',
-                 'change_id': '2713613003',
-                 'commits': [
-                     {
-                         'patchset_id': '20001',
-                         'timestamp': '2017-02-23 23:17:54 UTC',
-                         'revision': 'deadbeefdeadbeefc001c001c001ce120ce120aa'
-                     }
-                 ],
-                 'commit_attempts': [
-                     {
-                         'committing_user_email': u'author@chromium.org',
-                         'patchset_id': '20001',
-                         'timestamp': '2017-02-23 21:24:47 UTC'
-                     }
-                 ],
-                 'reverts': [],
-                 'closed': True,
-                 'subject': None,
-                 'description': None
-             },
-             'reverting_user_email': 'reviewer@chromium.org',
-             'timestamp': '2017-02-23 03:09:25 UTC'
-         }
-     ],
-     'cc': [u'chromium-reviews@chromium.org'],
-     'reviewers': [u'someone@chromium.org'],
-     'closed': True,
-     'subject': None,
-     'description': None})
+    self.assertEqual(cl_info.serialize(), {
+        'server_hostname':
+            'server.host.name',
+        'change_id':
+            '123456001',
+        'auto_revert_off':
+            True,
+        'owner_email':
+            'author@chromium.org',
+        'commits': [{
+            'patchset_id': '100001',
+            'timestamp': '2017-02-23 02:41:16 UTC',
+            'revision': 'c0ffebabedeadc0dec0ffebabedeadc0dec0ffeb'
+        }, {
+            'patchset_id': '120001',
+            'timestamp': '2017-02-23 23:17:54 UTC',
+            'revision': 'deadbeefdeadbeefc001c001c001ce120ce120aa'
+        }],
+        'commit_attempts': [{
+            'committing_user_email': u'author@chromium.org',
+            'patchset_id': '100001',
+            'timestamp': '2017-02-23 00:52:00 UTC'
+        }, {
+            'committing_user_email': u'author@chromium.org',
+            'patchset_id': '120001',
+            'timestamp': '2017-02-23 23:17:54 UTC',
+        }],
+        'reverts': [{
+            'patchset_id': '100001',
+            'reverting_cl': {
+                'cc': [u'chromium-reviews@chromium.org'],
+                'reviewers': [u'someone@chromium.org'],
+                'server_hostname':
+                    'server.host.name',
+                'auto_revert_off':
+                    False,
+                'owner_email':
+                    'author@chromium.org',
+                'change_id':
+                    '2713613003',
+                'commits': [{
+                    'patchset_id': '20001',
+                    'timestamp': '2017-02-23 23:17:54 UTC',
+                    'revision': 'deadbeefdeadbeefc001c001c001ce120ce120aa'
+                }],
+                'commit_attempts': [{
+                    'committing_user_email': u'author@chromium.org',
+                    'patchset_id': '20001',
+                    'timestamp': '2017-02-23 21:24:47 UTC'
+                }],
+                'reverts': [],
+                'closed':
+                    True,
+                'subject':
+                    None,
+                'description':
+                    None
+            },
+            'reverting_user_email': 'reviewer@chromium.org',
+            'timestamp': '2017-02-23 03:09:25 UTC'
+        }],
+        'cc': [u'chromium-reviews@chromium.org'],
+        'reviewers': [u'someone@chromium.org'],
+        'closed':
+            True,
+        'subject':
+            None,
+        'description':
+            None
+    })
 
-  @mock.patch(
-      'libs.time_util.DatetimeFromString',
-      lambda x: datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S.%f'))
+  @mock.patch('libs.time_util.DatetimeFromString',
+              lambda x: datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S.%f'))
   def testGetClDetailsManualCommit(self):
     rietveld_url = 'https://server.host.name'
     change_id = '123456001'
-    with open(os.path.join(os.path.dirname(__file__),
-              'manualtestissuedetails.json')) as f:
+    with open(
+        os.path.join(os.path.dirname(__file__),
+                     'manualtestissuedetails.json')) as f:
       response = 200, f.read()
     self.http_client.SetResponse('%s/api/%s?messages=true' %
                                  (rietveld_url, change_id), response)
@@ -237,8 +244,9 @@ class RietveldTest(testing.AppengineTestCase):
     mock_send.return_value = (200, 'OK')
     rietveld_url = 'https://server.host.name'
     change_id = '2713613003'
-    with open(os.path.join(os.path.dirname(__file__),
-                           'reverttestissuedetails.json')) as f:
+    with open(
+        os.path.join(os.path.dirname(__file__),
+                     'reverttestissuedetails.json')) as f:
       response = 200, f.read()
     self.http_client.SetResponse('%s/api/%s?messages=true' %
                                  (rietveld_url, change_id), response)
@@ -259,9 +267,8 @@ class RietveldTest(testing.AppengineTestCase):
 
   def testGetCodeReviewUrl(self):
     change_id = '1234123001'
-    self.assertEqual(
-      'https://server.host.name/%s/' % change_id,
-      self.rietveld.GetCodeReviewUrl(change_id))
+    self.assertEqual('https://server.host.name/%s/' % change_id,
+                     self.rietveld.GetCodeReviewUrl(change_id))
 
   def testRegexForManualCommit(self):
     message = (

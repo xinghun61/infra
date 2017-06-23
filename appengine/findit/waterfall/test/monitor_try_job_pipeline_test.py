@@ -30,33 +30,41 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(monitor_try_job_pipeline._DictsAreEqual(None, None))
     self.assertTrue(monitor_try_job_pipeline._DictsAreEqual({}, {}))
     self.assertTrue(monitor_try_job_pipeline._DictsAreEqual({'a': 1}, {'a': 1}))
-    self.assertTrue(monitor_try_job_pipeline._DictsAreEqual(
-        {'a': 1},
-        {'a': 1, 'b': 2},
-        exclude_keys=['b']))
-    self.assertTrue(monitor_try_job_pipeline._DictsAreEqual(
-        {'a': 1, 'b': 1},
-        {'a': 1, 'b': 2},
-        exclude_keys=['b']))
-    self.assertTrue(monitor_try_job_pipeline._DictsAreEqual(
-        {'a': 1},
-        {},
-        exclude_keys=['a']))
-    self.assertFalse(monitor_try_job_pipeline._DictsAreEqual(
-        {'a': 1},
-        {'a': 2}))
-    self.assertFalse(monitor_try_job_pipeline._DictsAreEqual(
-        {'a': 1, 'b': 2},
-        {'a': 1}))
-    self.assertFalse(monitor_try_job_pipeline._DictsAreEqual(
-        {'a': 1},
-        {'a': 1, 'b': 2}))
+    self.assertTrue(
+        monitor_try_job_pipeline._DictsAreEqual(
+            {
+                'a': 1
+            }, {'a': 1,
+                'b': 2}, exclude_keys=['b']))
+    self.assertTrue(
+        monitor_try_job_pipeline._DictsAreEqual(
+            {
+                'a': 1,
+                'b': 1
+            }, {'a': 1,
+                'b': 2}, exclude_keys=['b']))
+    self.assertTrue(
+        monitor_try_job_pipeline._DictsAreEqual(
+            {
+                'a': 1
+            }, {}, exclude_keys=['a']))
+    self.assertFalse(
+        monitor_try_job_pipeline._DictsAreEqual({
+            'a': 1
+        }, {'a': 2}))
+    self.assertFalse(
+        monitor_try_job_pipeline._DictsAreEqual({
+            'a': 1,
+            'b': 2
+        }, {'a': 1}))
+    self.assertFalse(
+        monitor_try_job_pipeline._DictsAreEqual({
+            'a': 1
+        }, {'a': 1,
+            'b': 2}))
 
   def testUpdateTryJobMetadataForBuildError(self):
-    error_data = {
-        'reason': 'BUILD_NOT_FOUND',
-        'message': 'message'
-    }
+    error_data = {'reason': 'BUILD_NOT_FOUND', 'message': 'message'}
     error = buildbucket_client.BuildbucketError(error_data)
     try_job_data = WfTryJobData.Create('1')
     try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
@@ -86,10 +94,11 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
     build = buildbucket_client.BuildbucketBuild(build_data)
     expected_error_dict = {
-        'message': 'Try job monitoring was abandoned.',
-        'reason': ('Timeout after %s hours' %
-                   waterfall_config.GetTryJobSettings().get(
-                       'job_timeout_hours'))
+        'message':
+            'Try job monitoring was abandoned.',
+        'reason': (
+            'Timeout after %s hours' %
+            waterfall_config.GetTryJobSettings().get('job_timeout_hours'))
     }
     try_job_data = WfTryJobData.Create(try_job_id)
     try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
@@ -101,8 +110,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job_data.regression_range_size, 2)
     self.assertEqual(try_job_data.number_of_commits_analyzed, 2)
     self.assertEqual(try_job_data.end_time, datetime(2016, 2, 1, 22, 59, 34))
-    self.assertEqual(try_job_data.request_time,
-                     datetime(2016, 2, 1, 22, 59, 30))
+    self.assertEqual(try_job_data.request_time, datetime(
+        2016, 2, 1, 22, 59, 30))
     self.assertEqual(try_job_data.try_job_url, url)
 
     monitor_try_job_pipeline._UpdateTryJobMetadata(
@@ -125,13 +134,11 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_data.try_job_url = (
         'https://build.chromium.org/p/m/builders/b/builds/1234')
     try_job_data.put()
-    try_job.compile_results = [
-        {
-            'report': None,
-            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-            'try_job_id': '1',
-        }
-    ]
+    try_job.compile_results = [{
+        'report': None,
+        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+        'try_job_id': '1',
+    }]
     try_job.status = analysis_status.RUNNING
     try_job.put()
 
@@ -150,7 +157,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     mock_buildbucket.GetTryJobs.return_value = [
-        (None, buildbucket_client.BuildbucketBuild(build_response))]
+        (None, buildbucket_client.BuildbucketBuild(build_response))
+    ]
     mock_report.return_value = json.dumps(report)
 
     pipeline = MonitorTryJobPipeline()
@@ -188,8 +196,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(buildbot, 'GetStepLog')
   @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
-  def testGetTryJobsForCompileSuccessSerializedCallback(
-      self, mock_buildbucket, mock_report):
+  def testGetTryJobsForCompileSuccessSerializedCallback(self, mock_buildbucket,
+                                                        mock_report):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -202,13 +210,11 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_data.try_job_url = (
         'https://build.chromium.org/p/m/builders/b/builds/1234')
     try_job_data.put()
-    try_job.compile_results = [
-        {
-            'report': None,
-            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-            'try_job_id': '1',
-        }
-    ]
+    try_job.compile_results = [{
+        'report': None,
+        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+        'try_job_id': '1',
+    }]
     try_job.status = analysis_status.RUNNING
     try_job.put()
 
@@ -230,7 +236,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     mock_buildbucket.GetTryJobs.return_value = [
-        (None, buildbucket_client.BuildbucketBuild(build_response))]
+        (None, buildbucket_client.BuildbucketBuild(build_response))
+    ]
     mock_report.return_value = json.dumps(report)
 
     pipeline = MonitorTryJobPipeline()
@@ -269,60 +276,51 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(buildbot, 'GetStepLog')
   @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
-  def testGetTryJobsForTestMissingTryJobData(
-      self, mock_buildbucket, mock_report):
+  def testGetTryJobsForTestMissingTryJobData(self, mock_buildbucket,
+                                             mock_report):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
     try_job_id = '3'
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.test_results = [
-        {
-            'report': None,
-            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-            'try_job_id': try_job_id,
-        }
-    ]
+    try_job.test_results = [{
+        'report': None,
+        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+        'try_job_id': try_job_id,
+    }]
     try_job.status = analysis_status.RUNNING
     try_job.put()
 
-
-    data = [
-        {
-            'build': {
-                'id': '3',
-                'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-                'status': 'STARTED'
-            }
-        },
-        {
-            'error': {
-                'reason': 'BUILD_NOT_FOUND',
-                'message': 'message',
-            }
-        },
-        {
-            'build': {
-                'id': '3',
-                'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-                'status': 'STARTED'
-            }
-        },
-        {
-            'error': {
-                'reason': 'BUILD_NOT_FOUND',
-                'message': 'message',
-            }
-        },
-        {
-            'build': {
-                'id': '3',
-                'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-                'status': 'COMPLETED',
-            }
+    data = [{
+        'build': {
+            'id': '3',
+            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+            'status': 'STARTED'
         }
-    ]
+    }, {
+        'error': {
+            'reason': 'BUILD_NOT_FOUND',
+            'message': 'message',
+        }
+    }, {
+        'build': {
+            'id': '3',
+            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+            'status': 'STARTED'
+        }
+    }, {
+        'error': {
+            'reason': 'BUILD_NOT_FOUND',
+            'message': 'message',
+        }
+    }, {
+        'build': {
+            'id': '3',
+            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+            'status': 'COMPLETED',
+        }
+    }]
 
     report = {
         'result': {
@@ -357,7 +355,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
     pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
     # Since run() calls callback() immediately, we use -1.
-    for _ in range (len(get_tryjobs_responses) - 1):
+    for _ in range(len(get_tryjobs_responses) - 1):
       pipeline.callback(callback_params=pipeline.last_params)
 
     # Reload from ID to get all internal properties in sync.
@@ -401,13 +399,11 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_id = '3'
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.test_results = [
-        {
-            'report': None,
-            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-            'try_job_id': try_job_id,
-        }
-    ]
+    try_job.test_results = [{
+        'report': None,
+        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+        'try_job_id': try_job_id,
+    }]
     try_job.status = analysis_status.RUNNING
     try_job.put()
 
@@ -417,41 +413,35 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'https://build.chromium.org/p/m/builders/b/builds/1234')
     try_job_data.put()
 
-    data = [
-        {
-            'build': {
-                'id': '3',
-                'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-                'status': 'STARTED'
-            }
-        },
-        {
-            'error': {
-                'reason': 'BUILD_NOT_FOUND',
-                'message': 'message',
-            }
-        },
-        {
-            'build': {
-                'id': '3',
-                'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-                'status': 'STARTED'
-            }
-        },
-        {
-            'error': {
-                'reason': 'BUILD_NOT_FOUND',
-                'message': 'message',
-            }
-        },
-        {
-            'build': {
-                'id': '3',
-                'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-                'status': 'COMPLETED',
-            }
+    data = [{
+        'build': {
+            'id': '3',
+            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+            'status': 'STARTED'
         }
-    ]
+    }, {
+        'error': {
+            'reason': 'BUILD_NOT_FOUND',
+            'message': 'message',
+        }
+    }, {
+        'build': {
+            'id': '3',
+            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+            'status': 'STARTED'
+        }
+    }, {
+        'error': {
+            'reason': 'BUILD_NOT_FOUND',
+            'message': 'message',
+        }
+    }, {
+        'build': {
+            'id': '3',
+            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+            'status': 'COMPLETED',
+        }
+    }]
 
     report = {
         'result': {
@@ -486,7 +476,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
     pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
     # Since run() calls callback() immediately, we use -1.
-    for _ in range (len(get_tryjobs_responses) - 1):
+    for _ in range(len(get_tryjobs_responses) - 1):
       pipeline.callback(callback_params=pipeline.last_params)
 
     # Reload from ID to get all internal properties in sync.
@@ -531,15 +521,13 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     git_hash = 'a1b2c3d4'
     try_job_id = '1'
 
-    try_job = FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, git_hash)
-    try_job.flake_results = [
-        {
-            'report': None,
-            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-            'try_job_id': '1',
-        }
-    ]
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, git_hash)
+    try_job.flake_results = [{
+        'report': None,
+        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+        'try_job_id': '1',
+    }]
     try_job.status = analysis_status.RUNNING
     try_job.put()
 
@@ -571,7 +559,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     mock_buildbucket.GetTryJobs.return_value = [
-        (None, buildbucket_client.BuildbucketBuild(build_response))]
+        (None, buildbucket_client.BuildbucketBuild(build_response))
+    ]
     mock_report.return_value = json.dumps(report)
 
     pipeline = MonitorTryJobPipeline()
@@ -607,8 +596,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_flake_result, flake_result)
 
-    try_job = FlakeTryJob.Get(
-        master_name, builder_name, step_name, test_name, git_hash)
+    try_job = FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
+                              git_hash)
     self.assertEqual(expected_flake_result, try_job.flake_results[-1])
     self.assertEqual(analysis_status.RUNNING, try_job.status)
 
@@ -625,9 +614,9 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job.put()
 
     pipeline = MonitorTryJobPipeline()
-    pipeline._UpdateTryJobResult(
-        try_job.key.urlsafe(), failure_type.TEST, try_job_id, 'url',
-        buildbucket_client.BuildbucketBuild.STARTED)
+    pipeline._UpdateTryJobResult(try_job.key.urlsafe(), failure_type.TEST,
+                                 try_job_id, 'url',
+                                 buildbucket_client.BuildbucketBuild.STARTED)
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(analysis_status.RUNNING, try_job.status)
 
@@ -638,51 +627,59 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
     git_hash = 'a1b2c3d4'
     try_job_id = '2'
-    try_job = FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, git_hash)
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, git_hash)
     try_job.put()
 
     pipeline = MonitorTryJobPipeline()
-    pipeline._UpdateTryJobResult(
-        try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id, 'url',
-        buildbucket_client.BuildbucketBuild.STARTED)
-    try_job = FlakeTryJob.Get(
-        master_name, builder_name, step_name, test_name, git_hash)
+    pipeline._UpdateTryJobResult(try_job.key.urlsafe(), failure_type.FLAKY_TEST,
+                                 try_job_id, 'url',
+                                 buildbucket_client.BuildbucketBuild.STARTED)
+    try_job = FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
+                              git_hash)
     self.assertEqual(analysis_status.RUNNING, try_job.status)
 
   def testGetErrorForNoError(self):
     build_response = {
-        'id': 1,
-        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-        'status': 'COMPLETED',
-        'completed_ts': '1454367574000000',
-        'created_ts': '1454367570000000',
-        'result_details_json': json.dumps({
-            'properties': {
-                'report': {
-                    'result': {
-                        'rev1': 'passed',
-                        'rev2': 'failed'
-                    },
-                    'metadata': {
-                        'regression_range_size': 2
+        'id':
+            1,
+        'url':
+            'https://build.chromium.org/p/m/builders/b/builds/1234',
+        'status':
+            'COMPLETED',
+        'completed_ts':
+            '1454367574000000',
+        'created_ts':
+            '1454367570000000',
+        'result_details_json':
+            json.dumps({
+                'properties': {
+                    'report': {
+                        'result': {
+                            'rev1': 'passed',
+                            'rev2': 'failed'
+                        },
+                        'metadata': {
+                            'regression_range_size': 2
+                        }
                     }
                 }
-            }
-        })
+            })
     }
     self.assertEqual(
         monitor_try_job_pipeline._GetError(build_response, None, False, False),
         (None, None))
-    self.assertEqual(monitor_try_job_pipeline._GetError({}, None, False, False),
-                     (None, None))
+    self.assertEqual(
+        monitor_try_job_pipeline._GetError({}, None, False, False), (None,
+                                                                     None))
 
   def testGetErrorForTimeout(self):
     expected_error_dict = {
-        'message': 'Try job monitoring was abandoned.',
-        'reason': ('Timeout after %s hours' %
-                   waterfall_config.GetTryJobSettings().get(
-                       'job_timeout_hours'))
+        'message':
+            'Try job monitoring was abandoned.',
+        'reason': (
+            'Timeout after %s hours' %
+            waterfall_config.GetTryJobSettings().get('job_timeout_hours'))
     }
 
     self.assertEqual(
@@ -691,11 +688,12 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testGetErrorForBuildbucketReportedError(self):
     build_response = {
-        'result_details_json': json.dumps({
-            'error': {
-                'message': 'Builder b not found'
-            }
-        })
+        'result_details_json':
+            json.dumps({
+                'error': {
+                    'message': 'Builder b not found'
+                }
+            })
     }
 
     expected_error_dict = {
@@ -727,17 +725,20 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testGetErrorInfraFailure(self):
     build_response = {
-        'result': 'FAILED',
-        'failure_reason': 'INFRA_FAILURE',
-        'result_details_json': json.dumps({
-            'properties': {
-                'report': {
-                    'metadata': {
-                        'infra_failure': True
+        'result':
+            'FAILED',
+        'failure_reason':
+            'INFRA_FAILURE',
+        'result_details_json':
+            json.dumps({
+                'properties': {
+                    'report': {
+                        'metadata': {
+                            'infra_failure': True
+                        }
                     }
                 }
-            }
-        })
+            })
     }
 
     expected_error_dict = {
@@ -751,17 +752,20 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testGetErrorUnexpectedBuildFailure(self):
     build_response = {
-        'result': 'FAILED',
-        'failure_reason': 'BUILD_FAILURE',
-        'result_details_json': json.dumps({
-            'properties': {
-                'report': {
-                    'metadata': {
-                        'infra_failure': True
+        'result':
+            'FAILED',
+        'failure_reason':
+            'BUILD_FAILURE',
+        'result_details_json':
+            json.dumps({
+                'properties': {
+                    'report': {
+                        'metadata': {
+                            'infra_failure': True
+                        }
                     }
                 }
-            }
-        })
+            })
     }
 
     expected_error_dict = {
@@ -824,13 +828,11 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_data.try_job_url = (
         'https://build.chromium.org/p/m/builders/b/builds/1234')
     try_job_data.put()
-    try_job.compile_results = [
-        {
-            'report': None,
-            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-            'try_job_id': '1',
-        }
-    ]
+    try_job.compile_results = [{
+        'report': None,
+        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+        'try_job_id': '1',
+    }]
     try_job.status = analysis_status.RUNNING
     try_job.put()
 
@@ -853,14 +855,14 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'updated_ts': '1454367574000000',
     }
     mock_buildbucket.GetTryJobs.return_value = [
-        (None, buildbucket_client.BuildbucketBuild(build_response))]
+        (None, buildbucket_client.BuildbucketBuild(build_response))
+    ]
     mock_report.return_value = json.dumps(report)
 
-    pipeline = MonitorTryJobPipeline(
-        try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
+    pipeline = MonitorTryJobPipeline(try_job.key.urlsafe(),
+                                     failure_type.COMPILE, try_job_id)
     pipeline.start_test()
-    pipeline.run(
-        try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
+    pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
     pipeline.callback(**pipeline.last_params)
 
     # Reload from ID to get all internal properties in sync.
@@ -893,11 +895,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsInstance(try_job_data.start_time, datetime)
 
   def testGetErrorReportMissing(self):
-    build_response = {
-        'result_details_json': json.dumps({
-            'properties': {}
-        })
-    }
+    build_response = {'result_details_json': json.dumps({'properties': {}})}
 
     expected_error_dict = {
         'message': 'No result report was found.',
@@ -906,12 +904,12 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(
         monitor_try_job_pipeline._GetError(build_response, None, False, True),
-       (expected_error_dict, try_job_error.UNKNOWN))
+        (expected_error_dict, try_job_error.UNKNOWN))
 
   @mock.patch.object(swarming_util, 'GetStepLog')
   @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
-  def testGetTryJobsForCompileSuccessSwarming(
-      self, mock_buildbucket, mock_report):
+  def testGetTryJobsForCompileSuccessSwarming(self, mock_buildbucket,
+                                              mock_report):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -924,33 +922,40 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_data.try_job_key = try_job.key
     try_job_data.try_job_url = try_job_url
     try_job_data.put()
-    try_job.compile_results = [
-        {
-            'report': None,
-            'url': try_job_url,
-            'try_job_id': '1',
-        }
-    ]
+    try_job.compile_results = [{
+        'report': None,
+        'url': try_job_url,
+        'try_job_id': '1',
+    }]
     try_job.status = analysis_status.RUNNING
     try_job.put()
 
     build_response = {
-        'id': '1',
-        'url': try_job_url,
-        'status': 'COMPLETED',
-        'result_details_json': json.dumps({
-            'swarming': { 'task_result': {'bot_id': 'dummy_bot'}},
-        }),
-        'parameters_json': json.dumps({
-            'swarming': {
-                'override_builder_cfg': {
-                    'caches': [{
-                        'path': 'builder',
-                        'name': 'dummy_cache',
-                    }]
+        'id':
+            '1',
+        'url':
+            try_job_url,
+        'status':
+            'COMPLETED',
+        'result_details_json':
+            json.dumps({
+                'swarming': {
+                    'task_result': {
+                        'bot_id': 'dummy_bot'
+                    }
+                },
+            }),
+        'parameters_json':
+            json.dumps({
+                'swarming': {
+                    'override_builder_cfg': {
+                        'caches': [{
+                            'path': 'builder',
+                            'name': 'dummy_cache',
+                        }]
+                    }
                 }
-            }
-        })
+            })
     }
     report = {
         'result': {
@@ -962,7 +967,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     mock_buildbucket.GetTryJobs.return_value = [
-        (None, buildbucket_client.BuildbucketBuild(build_response))]
+        (None, buildbucket_client.BuildbucketBuild(build_response))
+    ]
     mock_report.return_value = json.dumps(report)
 
     pipeline = MonitorTryJobPipeline()
@@ -1000,8 +1006,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(swarming_util, 'GetStepLog')
   @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
-  def testGetTryJobsForCompileSuccessSwarmingNoBot(
-      self, mock_buildbucket, mock_report):
+  def testGetTryJobsForCompileSuccessSwarmingNoBot(self, mock_buildbucket,
+                                                   mock_report):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -1014,30 +1020,32 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_data.try_job_key = try_job.key
     try_job_data.try_job_url = try_job_url
     try_job_data.put()
-    try_job.compile_results = [
-        {
-            'report': None,
-            'url': try_job_url,
-            'try_job_id': '1',
-        }
-    ]
+    try_job.compile_results = [{
+        'report': None,
+        'url': try_job_url,
+        'try_job_id': '1',
+    }]
     try_job.status = analysis_status.RUNNING
     try_job.put()
 
     build_response = {
-        'id': '1',
-        'url': try_job_url,
-        'status': 'COMPLETED',
-        'parameters_json': json.dumps({
-            'swarming': {
-                'override_builder_cfg': {
-                    'caches': [{
-                        'path': 'builder',
-                        'name': 'dummy_cache',
-                    }]
+        'id':
+            '1',
+        'url':
+            try_job_url,
+        'status':
+            'COMPLETED',
+        'parameters_json':
+            json.dumps({
+                'swarming': {
+                    'override_builder_cfg': {
+                        'caches': [{
+                            'path': 'builder',
+                            'name': 'dummy_cache',
+                        }]
+                    }
                 }
-            }
-        })
+            })
     }
     report = {
         'result': {
@@ -1049,7 +1057,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     mock_buildbucket.GetTryJobs.return_value = [
-        (None, buildbucket_client.BuildbucketBuild(build_response))]
+        (None, buildbucket_client.BuildbucketBuild(build_response))
+    ]
     mock_report.return_value = json.dumps(report)
 
     pipeline = MonitorTryJobPipeline()
@@ -1087,8 +1096,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(swarming_util, 'GetStepLog')
   @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
-  def testGetTryJobsForCompileSuccessSwarmingNoReport(
-      self, mock_buildbucket, mock_report):
+  def testGetTryJobsForCompileSuccessSwarmingNoReport(self, mock_buildbucket,
+                                                      mock_report):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -1100,13 +1109,11 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_data.try_job_key = try_job.key
     try_job_data.try_job_url = try_job_url
     try_job_data.put()
-    try_job.compile_results = [
-        {
-            'report': None,
-            'url': try_job_url,
-            'try_job_id': '1',
-        }
-    ]
+    try_job.compile_results = [{
+        'report': None,
+        'url': try_job_url,
+        'try_job_id': '1',
+    }]
     try_job.status = analysis_status.RUNNING
     try_job.put()
 
@@ -1116,7 +1123,8 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'status': 'COMPLETED',
     }
     mock_buildbucket.GetTryJobs.return_value = [
-        (None, buildbucket_client.BuildbucketBuild(build_response))]
+        (None, buildbucket_client.BuildbucketBuild(build_response))
+    ]
     mock_report.return_value = json.dumps({})
 
     pipeline = MonitorTryJobPipeline()
@@ -1129,20 +1137,14 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.finalized()
 
   @mock.patch('waterfall.swarming_util.GetBot', return_value='BotName')
-  @mock.patch('waterfall.swarming_util.GetBuilderCacheName',
-              return_value='CacheName')
+  @mock.patch(
+      'waterfall.swarming_util.GetBuilderCacheName', return_value='CacheName')
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
   def testRecordCacheStats(self, mock_cl, *_):
-    cases = [
-        (None, None, '100', 100),
-        ('100', '100', '200', 200),
-        ('100', '200', '100', 200),
-        ('200', '200', '100', 200),
-        ('100', '200', '300', 300)
-    ]
-    for (checked_out_revision,
-         cached_revision,
-         bad_revision,
+    cases = [(None, None, '100', 100), ('100', '100', '200', 200),
+             ('100', '200', '100', 200), ('200', '200', '100',
+                                          200), ('100', '200', '300', 300)]
+    for (checked_out_revision, cached_revision, bad_revision,
          synced_revision) in cases:
       mock_commit_position = mock.PropertyMock()
       mock_commit_position.side_effect = filter(None, [
@@ -1152,23 +1154,21 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
       ])
       type(mock_cl.return_value).commit_position = mock_commit_position
       build = buildbucket_client.BuildbucketBuild({
-          'parameters_json': json.dumps(
-              {
-                  'properties':{
+          'parameters_json':
+              json.dumps({
+                  'properties': {
                       'bad_revision': bad_revision
                   }
-              }
-          )
+              })
       })
       report = {
           'last_checked_out_revision': checked_out_revision,
-           'previously_cached_revision': cached_revision
+          'previously_cached_revision': cached_revision
       }
       with mock.patch(
-          'model.wf_try_bot_cache.WfTryBotCache.AddBot'
-      ) as mock_add_bot:
+          'model.wf_try_bot_cache.WfTryBotCache.AddBot') as mock_add_bot:
         monitor_try_job_pipeline._RecordCacheStats(build, report)
-        mock_add_bot.assert_called_once_with(
-            'BotName',
-             int(checked_out_revision) if checked_out_revision else None,
-             synced_revision)
+        mock_add_bot.assert_called_once_with('BotName',
+                                             int(checked_out_revision)
+                                             if checked_out_revision else None,
+                                             synced_revision)

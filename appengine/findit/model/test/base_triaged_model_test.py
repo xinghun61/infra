@@ -33,9 +33,7 @@ class TriagedModelTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(mocked_now, model.triage_record_last_add)
 
   def testGetTriageHistory(self):
-    suspect_info = {
-        'build_number': 123
-    }
+    suspect_info = {'build_number': 123}
     user_name = 'test'
 
     model = _DummyModel()

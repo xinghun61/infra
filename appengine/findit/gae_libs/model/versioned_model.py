@@ -1,7 +1,6 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Provides a model to support versioned entities in datastore.
 
 Idea: use a root model entity to keep track of the most recent version of a
@@ -125,17 +124,13 @@ class VersionedModel(ndb.Model):
       try:
         if ndb.transaction(SaveData, retries=0):
           return self.key, True
-      except (
-          datastore_errors.InternalError,
-          datastore_errors.Timeout,
-          datastore_errors.TransactionFailedError) as e:
+      except (datastore_errors.InternalError, datastore_errors.Timeout,
+              datastore_errors.TransactionFailedError) as e:
         # https://cloud.google.com/appengine/docs/python/datastore/transactions
         # states the result is ambiguous, it could have succeeded.
         logging.info('Transaction likely failed: %s', e)
-      except (
-          apiproxy_errors.CancelledError,
-          datastore_errors.BadRequestError,
-          RuntimeError) as e:
+      except (apiproxy_errors.CancelledError, datastore_errors.BadRequestError,
+              RuntimeError) as e:
         logging.info('Transaction failure: %s', e)
       else:
         if retry_on_conflict:

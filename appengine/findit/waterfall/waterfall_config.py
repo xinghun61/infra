@@ -1,7 +1,6 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Determines support level for different steps for masters."""
 
 from model.wf_config import FinditConfig
@@ -11,10 +10,8 @@ from model.wf_config import FinditConfig
 _UNSUPPORTED_MASTERS = [
     'chromium.lkgr',  # Disable as results are not showed on Sheriff-o-Matic.
     'chromium.gpu',  # Disable as too many false positives.
-
     'chromium.memory.fyi',
     'chromium.gpu.fyi',
-
     'chromium.perf',
 ]
 
@@ -145,8 +142,8 @@ def StepIsSupportedForMaster(step_name, master_name):
 
   supported_steps = supported_master.get('supported_steps', [])
   unsupported_steps = supported_master.get('unsupported_steps', [])
-  global_unsupported_steps = (
-      steps_for_masters_rules['global'].get('unsupported_steps', []))
+  global_unsupported_steps = (steps_for_masters_rules['global'].get(
+      'unsupported_steps', []))
 
   return (step_name in supported_steps or
           (step_name not in unsupported_steps and

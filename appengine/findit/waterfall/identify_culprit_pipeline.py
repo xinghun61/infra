@@ -33,12 +33,12 @@ def _GetResultAnalysisStatus(analysis_result):
     if failure['supported']:
       any_supported = True
 
-  return (result_status.NOT_FOUND_UNTRIAGED if any_supported else
-          result_status.UNSUPPORTED)
+  return (result_status.NOT_FOUND_UNTRIAGED
+          if any_supported else result_status.UNSUPPORTED)
 
 
-def _SaveSuspectedCLs(
-    suspected_cls, master_name, builder_name, build_number, failure_type):
+def _SaveSuspectedCLs(suspected_cls, master_name, builder_name, build_number,
+                      failure_type):
   """Saves suspected CLs to dataStore."""
   for suspected_cl in suspected_cls:
     suspected_cl_util.UpdateSuspectedCL(
@@ -96,8 +96,8 @@ class IdentifyCulpritPipeline(BasePipeline):
     analysis.put()
 
     # Save suspected_cls to data_store.
-    _SaveSuspectedCLs(
-        suspected_cls, failure_info['master_name'],
-        failure_info['builder_name'], failure_info['build_number'],
-        failure_info['failure_type'])
+    _SaveSuspectedCLs(suspected_cls, failure_info['master_name'],
+                      failure_info['builder_name'],
+                      failure_info['build_number'],
+                      failure_info['failure_type'])
     return analysis_result

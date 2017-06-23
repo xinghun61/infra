@@ -1,7 +1,6 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Identifies mismatches between main waterfall builders and Findit trybots."""
 import base64
 from collections import defaultdict
@@ -13,15 +12,13 @@ import sys
 import urllib
 import urllib2
 
-_FINDIT_DIR = os.path.join(os.path.dirname(__file__),
-                           os.path.pardir, os.path.pardir)
+_FINDIT_DIR = os.path.join(
+    os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
 from local_libs import remote_api
 from model.wf_config import FinditConfig
 
-
 NOT_AVAILABLE = 'N/A'
-
 
 _MILO_RESPONSE_PREFIX = ')]}\'\n'
 _MILO_MASTER_ENDPOINT = ('https://luci-milo.appspot.com/prpc/milo.Buildbot/'
@@ -64,12 +61,12 @@ def _GetBuilderList(master_name):
     req = urllib2.Request(_MILO_MASTER_ENDPOINT, None, headers)
     f = urllib2.urlopen(req, json.dumps(values), timeout=60)
   except Exception as e:
-    print ('WARNING: Unable to reach builbot to retrieve trybot '
-           'information')
+    print('WARNING: Unable to reach builbot to retrieve trybot ' 'information')
     raise e
 
   data = _ProcessMiloData(f.read())
   return [bot for bot in data.get('builders', {}).keys()]
+
 
 if __name__ == '__main__':
   remote_api.EnableRemoteApi(app_id='findit-for-me')
@@ -82,8 +79,8 @@ if __name__ == '__main__':
 
   print 'Determining missing support...'
 
-  supported_masters = steps_for_masters_rules.get(
-      'supported_masters', {}).keys()
+  supported_masters = steps_for_masters_rules.get('supported_masters',
+                                                  {}).keys()
   for master in supported_masters:
     print 'Master: %s' % master
 
@@ -115,11 +112,10 @@ if __name__ == '__main__':
       tryserver = trybots[master][builder]['mastername']
       tryservers.add(tryserver)
       variable_builder = trybots[master][builder]['waterfall_trybot']
-      variable_builders_cache[variable_builder].append(
-          {
-              'master': master,
-              'builder': builder
-          })
+      variable_builders_cache[variable_builder].append({
+          'master': master,
+          'builder': builder
+      })
 
     if not any_missing:
       print 'OK'
@@ -171,8 +167,8 @@ if __name__ == '__main__':
 
     any_unused = False
     for builder in tryserver_builders:
-      if ('variable' in builder and 'deflake' not in builder and builder not in
-          variable_builders_in_config):
+      if ('variable' in builder and 'deflake' not in builder and
+          builder not in variable_builders_in_config):
         print '\'%s\' is unused.' % builder
         any_unused = True
 

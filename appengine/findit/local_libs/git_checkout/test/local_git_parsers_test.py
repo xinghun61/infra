@@ -9,8 +9,8 @@ import sys
 import textwrap
 import unittest
 
-_ROOT_DIR = os.path.join(os.path.dirname(__file__),
-                         os.path.pardir, os.path.pardir)
+_ROOT_DIR = os.path.join(
+    os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _ROOT_DIR)
 from local_libs import script_util
 script_util.SetUpSystemPaths()
@@ -28,8 +28,7 @@ class LocalGitParsersTest(unittest.TestCase):
     self.blame_parser = local_git_parsers.GitBlameParser()
 
   def testGitBlameParser(self):
-    output = textwrap.dedent(
-        """
+    output = textwrap.dedent("""
         revision_hash 18 18 3
         author test@google.com
         author-mail <test@google.com@2bbb7eff-a529-9590-31e7-b0007b416f81>
@@ -50,15 +49,15 @@ class LocalGitParsersTest(unittest.TestCase):
 
         revision_hash 29 29 2
                      *  blabla line 4
-        """
-    )
+        """)
 
     expected_blame = Blame('src/core/SkFont.h', 'rev')
     mock_email = 'test@google.com'
     author_time = datetime(2013, 03, 11, 17, 13, 36)
     expected_blame.AddRegions([
         Region(18, 3, 'revision_hash', mock_email, mock_email, author_time),
-        Region(29, 2, 'revision_hash', mock_email, mock_email, author_time)])
+        Region(29, 2, 'revision_hash', mock_email, mock_email, author_time)
+    ])
 
     blame_result = self.blame_parser(output, 'src/core/SkFont.h', 'rev')
     self.assertTrue(blame_result.revision, expected_blame.revision)
@@ -71,18 +70,15 @@ class LocalGitParsersTest(unittest.TestCase):
     self.assertIsNone(blame_result)
 
   def testGitBlameParserDummyOutput(self):
-    blame_result = self.blame_parser('Dummy',
-                                     'src/core/SkFont.h',
-                                     'rev')
+    blame_result = self.blame_parser('Dummy', 'src/core/SkFont.h', 'rev')
     self.assertIsNone(blame_result)
 
   def testGetFileChangeInfo(self):
-    self.assertIsNone(local_git_parsers.GetFileChangeInfo('unknown change type',
-                                                          None, None))
+    self.assertIsNone(
+        local_git_parsers.GetFileChangeInfo('unknown change type', None, None))
 
   def testGitChangeLogParser(self):
-    output = textwrap.dedent(
-        """
+    output = textwrap.dedent("""
         commit revision
         tree tree_revision
         parents parent_revision
@@ -103,8 +99,7 @@ class LocalGitParsersTest(unittest.TestCase):
         --Message end--
 
         :100644 100644 25f95f c766f1 M      src/a/b.py
-        """
-    )
+        """)
 
     message = ('Revert commit messages...\n'
                '> Committed: https://c.com/+/'
@@ -116,11 +111,10 @@ class LocalGitParsersTest(unittest.TestCase):
         change_log.Contributor('Test', 'test@google.com',
                                datetime(2016, 7, 13, 20, 37, 6)),
         change_log.Contributor('Test', 'test@google.com',
-                               datetime(2016, 7, 13, 20, 37, 6)),
-        'revision', 425880, message,
+                               datetime(2016, 7, 13, 20, 37,
+                                        6)), 'revision', 425880, message,
         [change_log.FileChangeInfo('modify', 'src/a/b.py', 'src/a/b.py')],
-        'https://repo/+/revision',
-        'https://codereview.chromium.org/2391763002',
+        'https://repo/+/revision', 'https://codereview.chromium.org/2391763002',
         'c9cc182781484f9010f062859cda048afefefefe')
 
     changelog = local_git_parsers.GitChangeLogParser()(output, 'https://repo')
@@ -130,8 +124,7 @@ class LocalGitParsersTest(unittest.TestCase):
     self.assertIsNone(local_git_parsers.GitChangeLogParser()(None, 'repo'))
 
   def testGitChangeLogsParser(self):
-    output = textwrap.dedent(
-        """
+    output = textwrap.dedent("""
         **Changelog start**
         commit rev1
         tree 27b0421273ed4aea25e497c6d26d9c7db6481852
@@ -189,33 +182,31 @@ class LocalGitParsersTest(unittest.TestCase):
         --Message end--
 
         :100644 100644 3f2e 20a5 R078 b/c.py b/cc.py
-        """
-    )
+        """)
 
     expected_changelogs = [
         change_log.ChangeLog(
             change_log.Contributor('author1', 'author1@chromium.org',
                                    datetime(2016, 6, 2, 10, 55, 38)),
             change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
-                                   datetime(2016, 6, 2, 10, 57, 13)),
-            'rev1', None,
-            'Message 1', [change_log.FileChangeInfo('delete', 'a/b.py', None)],
+                                   datetime(2016, 6, 2, 10, 57,
+                                            13)), 'rev1', None, 'Message 1',
+            [change_log.FileChangeInfo('delete', 'a/b.py', None)],
             'http://repo/+/rev1', None, None),
         change_log.ChangeLog(
             change_log.Contributor('author2', 'author2@chromium.org',
                                    datetime(2016, 6, 2, 10, 53, 3)),
             change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
-                                   datetime(2016, 6, 2, 10, 54, 14)),
-            'rev2', None,
-            'Message 2', [change_log.FileChangeInfo('add', None, 'b/c.py')],
+                                   datetime(2016, 6, 2, 10, 54,
+                                            14)), 'rev2', None, 'Message 2',
+            [change_log.FileChangeInfo('add', None, 'b/c.py')],
             'http://repo/+/rev2', None, None),
         change_log.ChangeLog(
             change_log.Contributor('author3', 'author3@chromium.org',
                                    datetime(2016, 6, 2, 10, 53, 3)),
             change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
-                                   datetime(2016, 6, 2, 10, 54, 14)),
-            'rev3', None,
-            'Message 3',
+                                   datetime(2016, 6, 2, 10, 54,
+                                            14)), 'rev3', None, 'Message 3',
             [change_log.FileChangeInfo('rename', 'b/c.py', 'b/cc.py')],
             'http://repo/+/rev3', None, None),
     ]

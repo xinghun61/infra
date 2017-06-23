@@ -50,7 +50,7 @@ class SuspectedCLConfidence(VersionedModel):
   end_date = ndb.DateTimeProperty(indexed=True)
 
   # Time when the instance is updated.
-  updated_time  = ndb.DateTimeProperty(indexed=True)
+  updated_time = ndb.DateTimeProperty(indexed=True)
 
   # Confidence scores for CLs for compile failures found by Heuristic approach.
   compile_heuristic = ndb.LocalStructuredProperty(
@@ -75,13 +75,12 @@ class SuspectedCLConfidence(VersionedModel):
   @classmethod
   def Get(cls, version=None):
     confidences = cls.GetVersion(version=version)
-    return (confidences or SuspectedCLConfidence.Create() if version is None
-            else confidences)
+    return (confidences or SuspectedCLConfidence.Create()
+            if version is None else confidences)
 
-  def Update(
-      self, start_date, end_date,
-      compile_heuristic, compile_try_job, compile_heuristic_try_job,
-      test_heuristic, test_try_job, test_heuristic_try_job):
+  def Update(self, start_date, end_date, compile_heuristic, compile_try_job,
+             compile_heuristic_try_job, test_heuristic, test_try_job,
+             test_heuristic_try_job):
 
     self.start_date = start_date
     self.end_date = end_date

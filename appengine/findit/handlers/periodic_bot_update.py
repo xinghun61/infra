@@ -10,7 +10,6 @@ from gae_libs.handlers.base_handler import Permission
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from waterfall import swarming_util
 
-
 _FINDIT_SWARMING_POOL = 'Chrome.Findit'
 _TARGET_MASTER = 'luci.chromium.try'
 _PLATFORM_BUILDER_MAP = {
@@ -19,12 +18,9 @@ _PLATFORM_BUILDER_MAP = {
     'Windows': 'LUCI win_chromium_variable',
 }
 _PLATFORM_CACHE_NAME_MAP = {
-    'Linux': swarming_util.GetCacheName(
-        'chromium.linux', 'Linux Builder'),
-    'Mac': swarming_util.GetCacheName(
-        'chromium.mac', 'Mac Builder'),
-    'Windows': swarming_util.GetCacheName(
-        'chromium.win', 'Win Builder'),
+    'Linux': swarming_util.GetCacheName('chromium.linux', 'Linux Builder'),
+    'Mac': swarming_util.GetCacheName('chromium.mac', 'Mac Builder'),
+    'Windows': swarming_util.GetCacheName('chromium.win', 'Win Builder'),
 }
 _BOT_UPDATE_RECIPE = 'findit/chromium/preemptive_bot_update'
 
@@ -48,8 +44,7 @@ def _TriggerUpdateJobs():
   tryjobs = []
   http_client = HttpClientAppengine()
   for os_name in _PLATFORM_BUILDER_MAP:
-    dimensions = ['pool:%s' % _FINDIT_SWARMING_POOL,
-                  'os:%s' % os_name]
+    dimensions = ['pool:%s' % _FINDIT_SWARMING_POOL, 'os:%s' % os_name]
     bots = swarming_util.GetBotsByDimension(dimensions, http_client)
     for b in swarming_util.OnlyAvailable(bots):
       tryjobs.append(_BotUpdateTryJob(b['bot_id'], os_name))
@@ -60,7 +55,7 @@ def _LogResults(results):
   for error, build in results:
     if error:
       logging.error('Failed to trigger periodic bot update due to %s',
-                      error.reason)
+                    error.reason)
       logging.error('Buildbucket failure message: %s' % error.message)
     else:
       logging.info('Triggered periodic bot update '
@@ -76,11 +71,7 @@ class PeriodicBotUpdate(BaseHandler):
     _LogResults(results)
     return {
         'data': {
-            'builds': [
-                build.response for error, build in results if not error
-            ],
-            'errors': [
-                error.response for error, build in results if error
-            ]
+            'builds': [build.response for error, build in results if not error],
+            'errors': [error.response for error, build in results if error]
         }
     }

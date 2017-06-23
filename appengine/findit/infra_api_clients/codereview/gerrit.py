@@ -30,7 +30,10 @@ class Gerrit(codereview.CodeReview):
       content = content[4:]
     return json.loads(content)
 
-  def _AuthenticatedRequest(self, path_parts, payload=None, method='GET',
+  def _AuthenticatedRequest(self,
+                            path_parts,
+                            payload=None,
+                            method='GET',
                             headers=None):
     # Prepend /a/ to make the request authenticated.
     if path_parts[0] != 'a':
@@ -82,9 +85,8 @@ class Gerrit(codereview.CodeReview):
     original_cl_commit_revision = original_cl_info.commits[0].revision
     original_cl_commit_timestamp = original_cl_info.commits[0].timestamp
 
-    revert_cl_description = (
-        'Revert "%s"\n\n' % (original_cl_subject if original_cl_subject else
-        original_cl_change_id))
+    revert_cl_description = ('Revert "%s"\n\n' % (
+        original_cl_subject if original_cl_subject else original_cl_change_id))
     revert_cl_description += 'This reverts commit %s.\n\n' % (
         original_cl_commit_revision)
     revert_cl_description += 'Reason for revert:\n%s\n\n' % revert_reason
@@ -93,8 +95,7 @@ class Gerrit(codereview.CodeReview):
     revert_cl_description += self._GetCQFlagsOrExplanation(
         original_cl_commit_timestamp)
     revert_cl_description += self._GetBugLine(original_cl_description) + '\n'
-    revert_cl_description += self._GetCQTryBotLine(
-        original_cl_description)
+    revert_cl_description += self._GetCQTryBotLine(original_cl_description)
     return revert_cl_description
 
   def _Get(self, path_parts, params=None, headers=None):
@@ -140,7 +141,7 @@ class Gerrit(codereview.CodeReview):
         if reviewer in current_reviewers:
           # Only add reviewers not currently assinged to the change.
           continue
-        parts =['changes', change_id, 'reviewers']
+        parts = ['changes', change_id, 'reviewers']
         response = self._Post(parts, body={'reviewer': reviewer})
         reviewers = response['reviewers']
         if reviewers == []:
@@ -173,8 +174,9 @@ class Gerrit(codereview.CodeReview):
       return None
     result = cl_info.ClInfo(self._server_hostname, change_id)
 
-    result.reviewers = [x['email'] for x in change_info['reviewers'].get(
-      'REVIEWER', [])]
+    result.reviewers = [
+        x['email'] for x in change_info['reviewers'].get('REVIEWER', [])
+    ]
     result.cc = [x['email'] for x in change_info['reviewers'].get('CC', [])]
     result.closed = change_info['status'] == 'MERGED'
     result.owner_email = change_info['owner']['email']
@@ -186,10 +188,9 @@ class Gerrit(codereview.CodeReview):
       current_revision = change_info['current_revision']
       revision_info = change_info['revisions'][current_revision]
       patchset_id = revision_info['_number']
-      commit_timestamp = time_util.DatetimeFromString(
-          change_info['submitted'])
-      result.commits.append(cl_info.Commit(patchset_id, current_revision,
-                                           commit_timestamp))
+      commit_timestamp = time_util.DatetimeFromString(change_info['submitted'])
+      result.commits.append(
+          cl_info.Commit(patchset_id, current_revision, commit_timestamp))
       revision_commit = revision_info['commit']
       # Detect manual commits.
       committer = revision_commit['committer']['email']
@@ -222,8 +223,8 @@ class Gerrit(codereview.CodeReview):
         author = message['author']['email']
         timestamp = time_util.DatetimeFromString(message['date'])
         reverting_change_id = revert_pattern.match(
-          message['message']).group('change_id')
+            message['message']).group('change_id')
         reverting_cl = self.GetClDetails(reverting_change_id)
-        result.reverts.append(cl_info.Revert(patchset_id, reverting_cl, author,
-                                             timestamp))
+        result.reverts.append(
+            cl_info.Revert(patchset_id, reverting_cl, author, timestamp))
     return result

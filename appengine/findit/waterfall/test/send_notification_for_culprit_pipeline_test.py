@@ -16,22 +16,27 @@ from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 from waterfall.test import wf_testcase
 
-
 _MOCKED_DATETIME_UTCNOW = datetime.datetime(2016, 06, 28, 12, 44, 00)
+
 
 class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
   def _MockRietveld(self, requests):
+
     def Mocked_Rietveld_PostMessage(_, change_id, message, should_email):
       requests.append((change_id, message, should_email))
       return True
+
     self.mock(Rietveld, 'PostMessage', Mocked_Rietveld_PostMessage)
 
   def _MockGitRepository(self, mocked_url):
+
     def Mocked_GetChangeLog(*_):
+
       class MockedChangeLog(object):
         commit_position = 123
         change_id = '123'
+
         @property
         def code_review_url(self):
           return mocked_url
@@ -46,10 +51,11 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
         @property
         def review_change_id(self):
-          return (urlparse.urlparse(mocked_url).path.split('/')[-1] if
-                  mocked_url else None)
+          return (urlparse.urlparse(mocked_url).path.split('/')[-1]
+                  if mocked_url else None)
 
       return MockedChangeLog()
+
     self.mock(GitilesRepository, 'GetChangeLog', Mocked_GetChangeLog)
 
   def testShouldNotSendNotificationForSingleFailedBuild(self):
@@ -148,8 +154,9 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testDontSendNotificationIfFinditRevertedCulprit(self):
     pipeline = SendNotificationForCulpritPipeline()
-    self.assertFalse(pipeline.run('m', 'b71', 71, 'chromium', 'r7', False,
-                                  create_revert_cl_pipeline.CREATED_BY_FINDIT))
+    self.assertFalse(
+        pipeline.run('m', 'b71', 71, 'chromium', 'r7', False,
+                     create_revert_cl_pipeline.CREATED_BY_FINDIT))
 
   def testSendConfirmMessage(self):
     rietveld_requests = []
@@ -162,6 +169,7 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline = SendNotificationForCulpritPipeline()
-    self.assertTrue(pipeline.run('m', 'b61', 61, 'chromium', 'r6', False,
-                                 create_revert_cl_pipeline.CREATED_BY_SHERIFF))
+    self.assertTrue(
+        pipeline.run('m', 'b61', 61, 'chromium', 'r6', False,
+                     create_revert_cl_pipeline.CREATED_BY_SHERIFF))
     self.assertEqual(1, len(rietveld_requests))

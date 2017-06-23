@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-
 # Represents status of the analysis result of a Chromium waterfall compile/test
 # failure or a Chrome crash.
 UNSPECIFIED = -1
@@ -17,7 +16,6 @@ FLAKY = 70
 UNSUPPORTED = 80
 FOUND_CORRECT_DUPLICATE = 1000
 FOUND_INCORRECT_DUPLICATE = 1010
-
 
 RESULT_STATUS_TO_DESCRIPTION = {
     FOUND_CORRECT: 'Correct - Found',

@@ -42,10 +42,10 @@ class FlakeAnalysisRequestTest(TestCase):
     self.assertFalse(request.AddBuildStep('m', 'b2', 11, 's', t3))
     self.assertTrue(request.AddBuildStep('m', 'b2', 9, 's', t4))
     self.assertEqual(2, len(request.build_steps), request.build_steps)
-    self.assertEqual(BuildStep.Create('m', 'b1', 1, 's', t1),
-                     request.build_steps[0])
-    self.assertEqual(BuildStep.Create('m', 'b2', 9, 's', t4),
-                     request.build_steps[1])
+    self.assertEqual(
+        BuildStep.Create('m', 'b1', 1, 's', t1), request.build_steps[0])
+    self.assertEqual(
+        BuildStep.Create('m', 'b2', 9, 's', t4), request.build_steps[1])
 
   def testCopyFrom(self):
     request1 = FlakeAnalysisRequest.Create('flaky_test', False, 123)
@@ -67,14 +67,13 @@ class FlakeAnalysisRequestTest(TestCase):
 
   def testCQFlake(self):
     request = FlakeAnalysisRequest.Create('flaky_test', False, 123)
-    request.AddBuildStep(
-        'tryserver.chromium.linux', 'b1', 1, 's', datetime(2016, 11, 14))
+    request.AddBuildStep('tryserver.chromium.linux', 'b1', 1, 's',
+                         datetime(2016, 11, 14))
     self.assertTrue(request.on_cq)
 
   def testWaterfallFlake(self):
     request = FlakeAnalysisRequest.Create('flaky_test', False, 123)
-    request.AddBuildStep(
-        'chromium.linux', 'b1', 1, 's', datetime(2016, 11, 14))
+    request.AddBuildStep('chromium.linux', 'b1', 1, 's', datetime(2016, 11, 14))
     self.assertFalse(request.on_cq)
 
   def testGetNormalizedConfigurationNames(self):
@@ -85,21 +84,23 @@ class FlakeAnalysisRequestTest(TestCase):
     test_name = 't'
     reported_time = datetime(2016, 11, 16)
     request = FlakeAnalysisRequest.Create(test_name, False, 123)
-    build_step = BuildStep.Create(
-        master_name, builder_name, build_number, step_name, reported_time)
+    build_step = BuildStep.Create(master_name, builder_name, build_number,
+                                  step_name, reported_time)
     build_step.wf_master_name = master_name
     build_step.wf_builder_name = builder_name
     build_step.wf_build_number = build_number
     build_step.wf_step_name = step_name
     request.build_steps.append(build_step)
-    self.assertEqual((None, None), request._GetNormalizedConfigurationNames(
-        'm2', 'b2'))
-    self.assertEqual(
-        (master_name, builder_name),
-        request._GetNormalizedConfigurationNames(master_name, builder_name))
+    self.assertEqual((None, None),
+                     request._GetNormalizedConfigurationNames('m2', 'b2'))
+    self.assertEqual((master_name, builder_name),
+                     request._GetNormalizedConfigurationNames(
+                         master_name, builder_name))
 
-  @mock.patch.object(FlakeAnalysisRequest, '_GetNormalizedConfigurationNames',
-                     return_value=(None, None))
+  @mock.patch.object(
+      FlakeAnalysisRequest,
+      '_GetNormalizedConfigurationNames',
+      return_value=(None, None))
   def testFindMatchingAnalysisNoMatchingConfiguration(self, _):
     request = FlakeAnalysisRequest.Create('test', False, 123)
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 'test')
@@ -107,11 +108,12 @@ class FlakeAnalysisRequestTest(TestCase):
     request.analyses.append(analysis.key)
     request.Save()
 
-    self.assertIsNone(
-        request.FindMatchingAnalysisForConfiguration('m', 'b'))
+    self.assertIsNone(request.FindMatchingAnalysisForConfiguration('m', 'b'))
 
-  @mock.patch.object(FlakeAnalysisRequest, '_GetNormalizedConfigurationNames',
-                     return_value=('m1', 'b1'))
+  @mock.patch.object(
+      FlakeAnalysisRequest,
+      '_GetNormalizedConfigurationNames',
+      return_value=('m1', 'b1'))
   def testFindMatchingAnalysisForWrongConfiguration(self, _):
     request = FlakeAnalysisRequest.Create('test', False, 123)
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 'test')
@@ -119,11 +121,12 @@ class FlakeAnalysisRequestTest(TestCase):
     request.analyses.append(analysis.key)
     request.Save()
 
-    self.assertIsNone(
-        request.FindMatchingAnalysisForConfiguration('m', 'b'))
+    self.assertIsNone(request.FindMatchingAnalysisForConfiguration('m', 'b'))
 
-  @mock.patch.object(FlakeAnalysisRequest, '_GetNormalizedConfigurationNames',
-                     return_value=('m', 'b'))
+  @mock.patch.object(
+      FlakeAnalysisRequest,
+      '_GetNormalizedConfigurationNames',
+      return_value=('m', 'b'))
   def testFindMatchingAnalysisForConfiguration(self, _):
     request = FlakeAnalysisRequest.Create('test', False, 123)
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 'test')
@@ -131,6 +134,5 @@ class FlakeAnalysisRequestTest(TestCase):
     request.analyses.append(analysis.key)
     request.Save()
 
-    self.assertEqual(
-        analysis,
-        request.FindMatchingAnalysisForConfiguration('m', 'b'))
+    self.assertEqual(analysis,
+                     request.FindMatchingAnalysisForConfiguration('m', 'b'))

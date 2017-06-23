@@ -5,17 +5,13 @@
 import json
 import logging
 
-
 _RESPONSE_PREFIX = ')]}\'\n'
 
 
 def DownloadData(url, data, http_client):
   """Downloads data from rpc endpoints like Logdog or Milo."""
 
-  headers = {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
-  }
+  headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
 
   status_code, response = http_client.Post(
       url, json.dumps(data), headers=headers)

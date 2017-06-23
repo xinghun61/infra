@@ -16,10 +16,14 @@ from waterfall.flake import triggering_sources
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 
 
-def _NeedANewAnalysis(
-    normalized_test, original_test, flake_settings,
-    bug_id=None, allow_new_analysis=False, force=False,
-    user_email='', triggering_source=triggering_sources.FINDIT_PIPELINE):
+def _NeedANewAnalysis(normalized_test,
+                      original_test,
+                      flake_settings,
+                      bug_id=None,
+                      allow_new_analysis=False,
+                      force=False,
+                      user_email='',
+                      triggering_source=triggering_sources.FINDIT_PIPELINE):
   """Checks status of analysis for the test and decides if a new one is needed.
 
   A MasterFlakeAnalysis entity for the given parameters will be created if none
@@ -87,9 +91,14 @@ def _NeedANewAnalysis(
 
 
 def ScheduleAnalysisIfNeeded(
-    normalized_test, original_test, bug_id=None,
-    allow_new_analysis=False, force=False, manually_triggered=False,
-    user_email=None, triggering_source=triggering_sources.FINDIT_PIPELINE,
+    normalized_test,
+    original_test,
+    bug_id=None,
+    allow_new_analysis=False,
+    force=False,
+    manually_triggered=False,
+    user_email=None,
+    triggering_source=triggering_sources.FINDIT_PIPELINE,
     queue_name=constants.DEFAULT_QUEUE):
   """Schedules an analysis if needed and returns the MasterFlakeAnalysis.
 
@@ -120,8 +129,13 @@ def ScheduleAnalysisIfNeeded(
       'use_nearby_neighbor', False)
 
   need_new_analysis, analysis = _NeedANewAnalysis(
-      normalized_test, original_test, flake_settings, bug_id=bug_id,
-      allow_new_analysis=allow_new_analysis, force=force, user_email=user_email,
+      normalized_test,
+      original_test,
+      flake_settings,
+      bug_id=bug_id,
+      allow_new_analysis=allow_new_analysis,
+      force=force,
+      user_email=user_email,
       triggering_source=triggering_source)
 
   if need_new_analysis:
@@ -130,8 +144,8 @@ def ScheduleAnalysisIfNeeded(
     # results and data.
     logging.info(
         'A new master flake analysis was successfully saved for %s (%s) and '
-        'will be captured in version %s', repr(normalized_test),
-        repr(original_test), analysis.version_number)
+        'will be captured in version %s',
+        repr(normalized_test), repr(original_test), analysis.version_number)
 
     step_metadata = buildbot.GetStepLog(
         normalized_test.master_name, normalized_test.builder_name,
@@ -139,7 +153,11 @@ def ScheduleAnalysisIfNeeded(
         HttpClientAppengine(), 'step_metadata')
 
     pipeline_job = RecursiveFlakePipeline(
-        analysis.key.urlsafe(), normalized_test.build_number, None, None, None,
+        analysis.key.urlsafe(),
+        normalized_test.build_number,
+        None,
+        None,
+        None,
         step_metadata=step_metadata,
         manually_triggered=manually_triggered,
         use_nearby_neighbor=use_nearby_neighbor)

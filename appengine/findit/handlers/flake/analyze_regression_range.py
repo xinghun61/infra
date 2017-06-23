@@ -87,8 +87,7 @@ class AnalyzeRegressionRange(BaseHandler):
     iterations_to_rerun = self.request.get('iterations_to_rerun', '100').strip()
 
     if not _ValidateInput(lower_bound_commit_position,
-                          upper_bound_commit_position,
-                          iterations_to_rerun):
+                          upper_bound_commit_position, iterations_to_rerun):
       return {
           'template': 'error.html',
           'data': {
@@ -114,9 +113,9 @@ class AnalyzeRegressionRange(BaseHandler):
     lower_bound, upper_bound = _GetLowerAndUpperBoundCommitPositions(
         lower_bound_commit_position, upper_bound_commit_position)
 
-    pipeline_job = RegressionRangeAnalysisPipeline(
-        urlsafe_analysis_key, lower_bound, upper_bound,
-        int(iterations_to_rerun))
+    pipeline_job = RegressionRangeAnalysisPipeline(urlsafe_analysis_key,
+                                                   lower_bound, upper_bound,
+                                                   int(iterations_to_rerun))
     pipeline_job.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)

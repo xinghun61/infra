@@ -27,7 +27,7 @@ def _GetIssue(bug_id, issue_tracker):
   return issue
 
 
-_COMMENT_FOOTER= """
+_COMMENT_FOOTER = """
 Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
 Flake Analyzer is in alpha version.
 Feedback is welcome using component Tools>Test>FindIt>Flakiness !""".lstrip()
@@ -36,27 +36,23 @@ _LINK = 'https://findit-for-me.appspot.com/waterfall/flake?key=%s'
 
 _ERROR_COMMENT_TEMPLATE = ("""
 Oops, due to an error, only a partial flakiness trend was generated for
-the config "%s / %s":""".lstrip().replace('\n', ' ')
-                           + '\n\n' + _LINK
-                           + '\n\n' + _COMMENT_FOOTER)
+the config "%s / %s":""".lstrip().replace('\n', ' ') + '\n\n' + _LINK + '\n\n' +
+                           _COMMENT_FOOTER)
 
 _CULPRIT_COMMENT_TEMPLATE = ("""
 Findit identified the culprit r%s with confidence %.1f%% in the config "%s / %s"
-based on the flakiness trend:""".lstrip()
-                           + '\n\n' + _LINK
-                           + '\n\n' + _COMMENT_FOOTER)
+based on the flakiness trend:""".lstrip() + '\n\n' + _LINK + '\n\n' +
+                             _COMMENT_FOOTER)
 
 _BUILD_HIGH_CONFIDENCE_COMMENT_TEMPLATE = ("""
 Findit found the flake started in build %s of the config "%s / %s"
-with confidence %.1f%% based on the flakiness trend:""".lstrip()
-                           + '\n\n' + _LINK
-                           + '\n\n' + _COMMENT_FOOTER)
+with confidence %.1f%% based on the flakiness trend:""".lstrip() + '\n\n' +
+                                           _LINK + '\n\n' + _COMMENT_FOOTER)
 
 _LOW_FLAKINESS_COMMENT_TEMPLATE = ("""
 This flake is a longstanding one, with low flakiness, or not reproducible
-based on the flakiness trend in the config "%s / %s":""".lstrip()
-                           + '\n\n' + _LINK
-                           + '\n\n' + _COMMENT_FOOTER)
+based on the flakiness trend in the config "%s / %s":""".lstrip() + '\n\n' +
+                                   _LINK + '\n\n' + _COMMENT_FOOTER)
 
 _FINDIT_ANALYZED_LABEL_TEXT = 'Test-Findit-Analyzed'
 
@@ -64,34 +60,25 @@ _FINDIT_ANALYZED_LABEL_TEXT = 'Test-Findit-Analyzed'
 def _GenerateComment(analysis):
   """Generates a comment based on the analysis result."""
   if analysis.failed:
-    return _ERROR_COMMENT_TEMPLATE % (
-        analysis.original_master_name,
-        analysis.original_builder_name,
-        analysis.key.urlsafe(),
-    )
+    return _ERROR_COMMENT_TEMPLATE % (analysis.original_master_name,
+                                      analysis.original_builder_name,
+                                      analysis.key.urlsafe(),)
   elif analysis.culprit is not None:
-    return _CULPRIT_COMMENT_TEMPLATE % (
-        analysis.culprit.commit_position,
-        analysis.culprit.confidence * 100,
-        analysis.original_master_name,
-        analysis.original_builder_name,
-        analysis.key.urlsafe(),
-    )
+    return _CULPRIT_COMMENT_TEMPLATE % (analysis.culprit.commit_position,
+                                        analysis.culprit.confidence * 100,
+                                        analysis.original_master_name,
+                                        analysis.original_builder_name,
+                                        analysis.key.urlsafe(),)
   elif (analysis.suspected_flake_build_number and
         analysis.confidence_in_suspected_build > 0.6):
     return _BUILD_HIGH_CONFIDENCE_COMMENT_TEMPLATE % (
-        analysis.suspected_flake_build_number,
-        analysis.original_master_name,
+        analysis.suspected_flake_build_number, analysis.original_master_name,
         analysis.original_builder_name,
-        analysis.confidence_in_suspected_build * 100,
-        analysis.key.urlsafe(),
-    )
+        analysis.confidence_in_suspected_build * 100, analysis.key.urlsafe(),)
   else:
-    return _LOW_FLAKINESS_COMMENT_TEMPLATE % (
-        analysis.original_master_name,
-        analysis.original_builder_name,
-        analysis.key.urlsafe(),
-    )
+    return _LOW_FLAKINESS_COMMENT_TEMPLATE % (analysis.original_master_name,
+                                              analysis.original_builder_name,
+                                              analysis.key.urlsafe(),)
 
 
 def _LogBugNotUpdated(reason):
@@ -124,9 +111,8 @@ def _ShouldUpdateBugForAnalysis(analysis):
     return False
 
   if (not analysis.culprit and
-      analysis.confidence_in_suspected_build <
-      analysis.algorithm_parameters.get(
-          'minimum_confidence_score_to_run_tryjobs')):
+      analysis.confidence_in_suspected_build < analysis.algorithm_parameters.
+      get('minimum_confidence_score_to_run_tryjobs')):
     _LogBugNotUpdated('insufficient confidence in suspected build')
     return False
 

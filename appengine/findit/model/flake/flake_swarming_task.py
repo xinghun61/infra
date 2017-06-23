@@ -28,23 +28,23 @@ class FlakeSwarmingTask(BaseSwarmingTask, BaseBuildModel):
   """
 
   @staticmethod
-  def _CreateSwarmingTaskId(master_name, builder_name, build_number,
-                            step_name, test_name):  # pragma: no cover
+  def _CreateSwarmingTaskId(master_name, builder_name, build_number, step_name,
+                            test_name):  # pragma: no cover
     encoded_test_name = base64.urlsafe_b64encode(test_name)
-    return '%s/%s/%s/%s/%s' % (master_name, builder_name,
-                               build_number, step_name, encoded_test_name)
+    return '%s/%s/%s/%s/%s' % (master_name, builder_name, build_number,
+                               step_name, encoded_test_name)
 
   @staticmethod
-  def _CreateKey(master_name, builder_name, build_number,
-                 step_name, test_name):  # pragma: no cover
+  def _CreateKey(master_name, builder_name, build_number, step_name,
+                 test_name):  # pragma: no cover
     return ndb.Key('FlakeSwarmingTask',
                    FlakeSwarmingTask._CreateSwarmingTaskId(
-                       master_name, builder_name, build_number,
-                       step_name, test_name))
+                       master_name, builder_name, build_number, step_name,
+                       test_name))
 
   @staticmethod
-  def Create(master_name, builder_name, build_number,
-             step_name, test_name):  # pragma: no cover
+  def Create(master_name, builder_name, build_number, step_name,
+             test_name):  # pragma: no cover
     return FlakeSwarmingTask(key=FlakeSwarmingTask._CreateKey(
         master_name, builder_name, build_number, step_name, test_name))
 
@@ -57,10 +57,10 @@ class FlakeSwarmingTask(BaseSwarmingTask, BaseBuildModel):
     return base64.urlsafe_b64decode(self.key.pairs()[0][1].split('/')[4])
 
   @staticmethod
-  def Get(master_name, builder_name, build_number,
-          step_name, test_name):  # pragma: no cover
-    return FlakeSwarmingTask._CreateKey(
-        master_name, builder_name, build_number, step_name, test_name).get()
+  def Get(master_name, builder_name, build_number, step_name,
+          test_name):  # pragma: no cover
+    return FlakeSwarmingTask._CreateKey(master_name, builder_name, build_number,
+                                        step_name, test_name).get()
 
   def GetFlakeSwarmingTaskData(self):
     flake_swarming_task_data = FlakeSwarmingTaskData()

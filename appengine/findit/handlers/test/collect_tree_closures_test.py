@@ -17,9 +17,11 @@ from model.tree_closure import TreeStatus
 
 
 class CollectTreeClosuresTest(TestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/collect-tree-closures', collect_tree_closures.CollectTreeClosures),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/collect-tree-closures', collect_tree_closures.CollectTreeClosures),
+      ],
+      debug=True)
 
   def testGetCurrentCheckingPointForTreeWithoutExistingData(self):
     self.MockUTCNow(datetime(2017, 04, 13, 10, 10, 10))
@@ -29,33 +31,27 @@ class CollectTreeClosuresTest(TestCase):
 
   def testGetCurrentCheckingPointForTreeWithExistingData(self):
     TreeClosure(tree_name='c', closed_time=datetime(2017, 04, 10, 10, 10)).put()
-    TreeClosure(tree_name='c',
-                closed_time=datetime(2017, 04, 11, 05, 05),
-                opened_time=datetime(2017, 04, 11, 05, 15)).put()
+    TreeClosure(
+        tree_name='c',
+        closed_time=datetime(2017, 04, 11, 05, 05),
+        opened_time=datetime(2017, 04, 11, 05, 15)).put()
     expected_checking_point = datetime(2017, 04, 11, 05, 15)
     checking_point = collect_tree_closures._GetCurrentCheckingPointForTree('c')
     self.assertEqual(expected_checking_point, checking_point)
 
-  @mock.patch.object(
-      collect_tree_closures.HttpClientAppengine, 'Get')
+  @mock.patch.object(collect_tree_closures.HttpClientAppengine, 'Get')
   def testRetrieveTreeStatusSuccess(self, mocked_Get):
-    mocked_Get.side_effect = [(
-        200,
-        json.dumps([
-            {
-                'date': '2017-04-01 12:12:12',
-                'message': 'm1',
-                'general_state': 'open',
-                'username': 'test@chromium.org',
-            },
-            {
-                'date': '2017-04-01 12:12:12',
-                'message': 'm1',
-                'general_state': 'open',
-                'username': 'test@chromium.org',
-            }
-        ])
-    )]
+    mocked_Get.side_effect = [(200, json.dumps([{
+        'date': '2017-04-01 12:12:12',
+        'message': 'm1',
+        'general_state': 'open',
+        'username': 'test@chromium.org',
+    }, {
+        'date': '2017-04-01 12:12:12',
+        'message': 'm1',
+        'general_state': 'open',
+        'username': 'test@chromium.org',
+    }]))]
     statuses = collect_tree_closures._RetrieveTreeStatus(
         'chromium', datetime(2017, 03, 31))
     self.assertEqual(1, len(statuses))
@@ -70,11 +66,9 @@ class CollectTreeClosuresTest(TestCase):
             'limit': 1000,
             'format': 'json',
             'endTime': 1490918400,
-        }
-    )
+        })
 
-  @mock.patch.object(
-      collect_tree_closures.HttpClientAppengine, 'Get')
+  @mock.patch.object(collect_tree_closures.HttpClientAppengine, 'Get')
   def testRetrieveTreeStatusFailure(self, mocked_Get):
     mocked_Get.side_effect = [(400, 'error')]
     statuses = collect_tree_closures._RetrieveTreeStatus(
@@ -88,8 +82,7 @@ class CollectTreeClosuresTest(TestCase):
             'format': 'json',
             'endTime': 1490918400,
             'startTime': 1491004800,
-        }
-    )
+        })
 
   def testExtractFailureInfoWithFullBuildLink(self):
     message = ('Tree is closed (Automatic: "compile" on '
@@ -117,26 +110,22 @@ class CollectTreeClosuresTest(TestCase):
             message=('Tree is closed (Automatic: "compile" on '
                      '/builders/Win%20x64/builds/10327 "Win x64" from blabla'),
             state='closed',
-            username='buildbot@chromium.org',
-        ),
+            username='buildbot@chromium.org',),
         TreeStatus(
             time=datetime(2017, 03, 31, 0, 1, 0),
             message='Tree is closed (sheriff investigating)',
             state='closed',
-            username='test@chromium.org',
-        ),
+            username='test@chromium.org',),
         TreeStatus(
             time=datetime(2017, 03, 31, 0, 5, 0),
             message='possible flake',
             state='open',
-            username='test@chromium.org',
-        ),
+            username='test@chromium.org',),
         TreeStatus(
             time=datetime(2017, 03, 31, 0, 15, 0),
             message='speculative Reverted r12345678',
             state='open',
-            username='test@chromium.org',
-        ),
+            username='test@chromium.org',),
         # An incomplete closure.
         TreeStatus(state='closed')
     ]
@@ -150,8 +139,8 @@ class CollectTreeClosuresTest(TestCase):
     self.assertEqual(all_statuses[1:-1], closure.statuses)
     self.assertEqual(datetime(2017, 03, 31, 0, 0, 0), closure.closed_time)
     self.assertEqual(datetime(2017, 03, 31, 0, 5, 0), closure.opened_time)
-    self.assertEqual(datetime(2017, 03, 31, 0, 15, 0),
-                     closure.latest_action_time)
+    self.assertEqual(
+        datetime(2017, 03, 31, 0, 15, 0), closure.latest_action_time)
     self.assertTrue(closure.auto_closed)
     self.assertFalse(closure.auto_opened)
     self.assertTrue(closure.possible_flake)
@@ -169,14 +158,12 @@ class CollectTreeClosuresTest(TestCase):
             message=('Tree is closed (Automatic: "compile" on '
                      '/builders/Win%20x64/builds/10327 "Win x64" from blabla'),
             state='closed',
-            username='buildbot@chromium.org',
-        ),
+            username='buildbot@chromium.org',),
         TreeStatus(
             time=datetime(2017, 03, 31, 0, 15, 0),
             message='possible flake',
             state='open',
-            username='test@chromium.org',
-        ),
+            username='test@chromium.org',),
     ]
     num = collect_tree_closures._DetectTreeClosureForTree('c', all_statuses)
     self.assertEqual(0, num)
@@ -185,20 +172,21 @@ class CollectTreeClosuresTest(TestCase):
     closure = ndb.Key(TreeClosure, key_str_id).get()
     self.assertIsNone(closure)
 
-  @mock.patch.object(collect_tree_closures, '_GetCurrentCheckingPointForTree',
-                     return_value=datetime(2017, 03, 01))
+  @mock.patch.object(
+      collect_tree_closures,
+      '_GetCurrentCheckingPointForTree',
+      return_value=datetime(2017, 03, 01))
   @mock.patch.object(
       collect_tree_closures, '_RetrieveTreeStatus', return_value=['a'])
   @mock.patch.object(
       collect_tree_closures, '_DetectTreeClosureForTree', return_value=2)
-  def testGetWithStartTimeAndEndTime(
-      self, mocked_detect_fun, mocked_retrive_fun, mocked_check_fun):
+  def testGetWithStartTimeAndEndTime(self, mocked_detect_fun,
+                                     mocked_retrive_fun, mocked_check_fun):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    response = self.test_app.get('/collect-tree-closures',
-                                 params={
-                                     'start_time': '2017-04-01',
-                                     'end_time': '2017-04-05'
-                                 })
+    response = self.test_app.get(
+        '/collect-tree-closures',
+        params={'start_time': '2017-04-01',
+                'end_time': '2017-04-05'})
     self.assertEquals(200, response.status_int)
     expected_result = {'chromium': 2}
     self.assertEqual(expected_result, response.json_body)
@@ -207,14 +195,16 @@ class CollectTreeClosuresTest(TestCase):
         'chromium', datetime(2017, 04, 01), end_time=datetime(2017, 04, 05))
     mocked_detect_fun.assert_called_once_with('chromium', ['a'])
 
-  @mock.patch.object(collect_tree_closures, '_GetCurrentCheckingPointForTree',
-                     return_value=datetime(2017, 04, 01))
+  @mock.patch.object(
+      collect_tree_closures,
+      '_GetCurrentCheckingPointForTree',
+      return_value=datetime(2017, 04, 01))
   @mock.patch.object(
       collect_tree_closures, '_RetrieveTreeStatus', return_value=['a'])
   @mock.patch.object(
       collect_tree_closures, '_DetectTreeClosureForTree', return_value=2)
-  def testGetWithoutStartTime(
-      self, mocked_detect_fun, mocked_retrive_fun, mocked_check_fun):
+  def testGetWithoutStartTime(self, mocked_detect_fun, mocked_retrive_fun,
+                              mocked_check_fun):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     response = self.test_app.get('/collect-tree-closures')
     self.assertEquals(200, response.status_int)

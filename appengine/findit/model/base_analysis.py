@@ -12,8 +12,7 @@ class BaseAnalysis(ndb.Model):
 
   @property
   def completed(self):
-    return self.status in (
-        analysis_status.COMPLETED, analysis_status.ERROR)
+    return self.status in (analysis_status.COMPLETED, analysis_status.ERROR)
 
   @property
   def duration(self):

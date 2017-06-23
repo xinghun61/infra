@@ -14,7 +14,6 @@ from gae_libs import appengine_util
 from gae_libs import token
 from gae_libs.http import auth_util
 
-
 JINJA_ENVIRONMENT = jinja2.Environment(
     loader=jinja2.FileSystemLoader(constants.HTML_TEMPLATE_DIR),
     extensions=['jinja2.ext.autoescape'],
@@ -72,7 +71,9 @@ class BaseHandler(webapp2.RequestHandler):
     logging.error('Error occurred: %s', error_message)
     return {
         'template': 'error.html',
-        'data': {'error_message': error_message},
+        'data': {
+            'error_message': error_message
+        },
         'return_code': return_code,
     }
 
@@ -164,9 +165,8 @@ class BaseHandler(webapp2.RequestHandler):
       if not self._HasPermission():
         template = 'error.html'
         data = {
-            'error_message':
-                ('Either not log in yet or no permission. '
-                 'Please log in with your @google.com account.'),
+            'error_message': ('Either not log in yet or no permission. '
+                              'Please log in with your @google.com account.'),
         }
         return_code = 401
         redirect_url = None
@@ -183,9 +183,7 @@ class BaseHandler(webapp2.RequestHandler):
       logging.exception(e)
 
       template = 'error.html'
-      data = {
-          'error_message': 'An internal error occurred.'
-      }
+      data = {'error_message': 'An internal error occurred.'}
       return_code = 500
       redirect_url = None
       cache_expiry = None
@@ -199,12 +197,13 @@ class BaseHandler(webapp2.RequestHandler):
     # too many existing testcases.
     if (not appengine_util.IsInUnitTestEnvironment() and
         not self.request.get('concise') == '1'):
-      data['user_info'] = auth_util.GetUserInfo(
-          self.request.referer or self.request.url or '/')
+      data['user_info'] = auth_util.GetUserInfo(self.request.referer or
+                                                self.request.url or '/')
       # If not yet, generate one xsrf token for the login user.
       if not data.get('xsrf_token') and data.get('user_info', {}).get('email'):
-        data['xsrf_token'] = token.GenerateAuthToken(
-            'site', data.get('user_info', {}).get('email'))
+        data['xsrf_token'] = token.GenerateAuthToken('site',
+                                                     data.get('user_info',
+                                                              {}).get('email'))
 
     self._SendResponse(template, data, return_code, cache_expiry)
 

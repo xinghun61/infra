@@ -26,14 +26,12 @@ def _GetsStatusFromSameFailure(builds, failures):
 
 
 @ndb.transactional
-def UpdateSuspectedCL(
-  repo_name, revision, commit_position,
-  approach, master_name, builder_name, build_number, cl_failure_type,
-  failures, top_score):
+def UpdateSuspectedCL(repo_name, revision, commit_position, approach,
+                      master_name, builder_name, build_number, cl_failure_type,
+                      failures, top_score):
 
-  suspected_cl = (
-      WfSuspectedCL.Get(repo_name, revision) or
-      WfSuspectedCL.Create(repo_name, revision, commit_position))
+  suspected_cl = (WfSuspectedCL.Get(repo_name, revision) or
+                  WfSuspectedCL.Create(repo_name, revision, commit_position))
 
   if not suspected_cl.identified_time:  # pragma: no cover.
     suspected_cl.identified_time = time_util.GetUTCNow()
@@ -45,8 +43,7 @@ def UpdateSuspectedCL(
   if cl_failure_type not in suspected_cl.failure_type:
     suspected_cl.failure_type.append(cl_failure_type)
 
-  build_key = build_util.CreateBuildId(
-      master_name, builder_name, build_number)
+  build_key = build_util.CreateBuildId(master_name, builder_name, build_number)
   if build_key not in suspected_cl.builds:
     suspected_cl.builds[build_key] = {
         'approaches': [approach],
@@ -72,32 +69,33 @@ def GetSuspectedCLConfidenceScore(confidences, cl_from_analyzed_build):
     return None
 
   if cl_from_analyzed_build['failure_type'] == failure_type.COMPILE:
-    if sorted(cl_from_analyzed_build['approaches']) == sorted([
-      analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB]):
+    if sorted(cl_from_analyzed_build['approaches']) == sorted(
+        [analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB]):
       return _RoundConfidentToInteger(
           confidences.compile_heuristic_try_job.confidence)
     elif cl_from_analyzed_build['approaches'] == [
-        analysis_approach_type.TRY_JOB]:
-      return _RoundConfidentToInteger(
-          confidences.compile_try_job.confidence)
+        analysis_approach_type.TRY_JOB
+    ]:
+      return _RoundConfidentToInteger(confidences.compile_try_job.confidence)
     elif (cl_from_analyzed_build['approaches'] == [
-        analysis_approach_type.HEURISTIC] and
-            cl_from_analyzed_build['top_score']):
+        analysis_approach_type.HEURISTIC
+    ] and cl_from_analyzed_build['top_score']):
       for confidences_info in confidences.compile_heuristic:
         if confidences_info.score == cl_from_analyzed_build['top_score']:
           return _RoundConfidentToInteger(confidences_info.confidence)
     return None
   else:
-    if sorted(cl_from_analyzed_build['approaches']) == sorted([
-      analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB]):
+    if sorted(cl_from_analyzed_build['approaches']) == sorted(
+        [analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB]):
       return _RoundConfidentToInteger(
           confidences.test_heuristic_try_job.confidence)
     elif cl_from_analyzed_build['approaches'] == [
-        analysis_approach_type.TRY_JOB]:
+        analysis_approach_type.TRY_JOB
+    ]:
       return _RoundConfidentToInteger(confidences.test_try_job.confidence)
     elif (cl_from_analyzed_build['approaches'] == [
-        analysis_approach_type.HEURISTIC] and
-            cl_from_analyzed_build['top_score']):
+        analysis_approach_type.HEURISTIC
+    ] and cl_from_analyzed_build['top_score']):
       for confidences_info in confidences.test_heuristic:
         if confidences_info.score == cl_from_analyzed_build['top_score']:
           return _RoundConfidentToInteger(confidences_info.confidence)
@@ -122,25 +120,25 @@ def _HasNewFailures(current_failures, new_failures):
 
 def GetSuspectedCLConfidenceScoreAndApproach(
     confidences, cl_from_analyzed_build, cl_from_first_failed_build):
-  if not confidences or (
-      not cl_from_analyzed_build and not cl_from_first_failed_build):
+  if not confidences or (not cl_from_analyzed_build and
+                         not cl_from_first_failed_build):
     return None, None
 
-  if (cl_from_first_failed_build and (
-          not cl_from_analyzed_build or
-          not _HasNewFailures(cl_from_analyzed_build.get('failures'),
-                              cl_from_first_failed_build.get('failures')))):
-      # For non-first-time failures, the try job result is not recorded.
-      # If there is no new failures in current build, use first failed build to
-      # make sure the confidence score is correct.
-      cl_from_analyzed_build = cl_from_first_failed_build
+  if (cl_from_first_failed_build and
+      (not cl_from_analyzed_build or not _HasNewFailures(
+          cl_from_analyzed_build.get('failures'),
+          cl_from_first_failed_build.get('failures')))):
+    # For non-first-time failures, the try job result is not recorded.
+    # If there is no new failures in current build, use first failed build to
+    # make sure the confidence score is correct.
+    cl_from_analyzed_build = cl_from_first_failed_build
 
-  confidence = GetSuspectedCLConfidenceScore(
-      confidences, cl_from_analyzed_build)
+  confidence = GetSuspectedCLConfidenceScore(confidences,
+                                             cl_from_analyzed_build)
   approach = (
-      analysis_approach_type.TRY_JOB if analysis_approach_type.TRY_JOB in
-      cl_from_analyzed_build['approaches'] else
-      analysis_approach_type.HEURISTIC)
+      analysis_approach_type.TRY_JOB
+      if analysis_approach_type.TRY_JOB in cl_from_analyzed_build['approaches']
+      else analysis_approach_type.HEURISTIC)
 
   return confidence, approach
 

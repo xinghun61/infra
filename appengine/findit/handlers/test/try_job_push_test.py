@@ -19,8 +19,10 @@ from model.wf_try_job_data import WfTryJobData
 
 
 class TryJobPushTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/pubsub/tryjobpush', TryJobPush),], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/pubsub/tryjobpush', TryJobPush),
+      ], debug=True)
 
   def setUp(self):
     super(TryJobPushTest, self).setUp()
@@ -29,25 +31,34 @@ class TryJobPushTest(testing.AppengineTestCase):
   @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
   @mock.patch('logging.warning')
   def testTryJobPushMissingJob(self, logging_mock, _):
-    self.test_app.post('/pubsub/tryjobpush', params={
-        'data': json.dumps({
-            'message':{
-                'attributes':{
-                    'auth_token': 'auth_token',
-                    'build_id': '12345',
-                },
-                'data': base64.b64encode(json.dumps({
-                    'build': {'id': '12345'},
-                    'user_data': json.dumps({
-                        'Message-Type': 'BuildbucketStatusChange',
-                    }),
-                })),
-            },
-        }),
-        'format': 'json',
-    })
+    self.test_app.post(
+        '/pubsub/tryjobpush',
+        params={
+            'data':
+                json.dumps({
+                    'message': {
+                        'attributes': {
+                            'auth_token': 'auth_token',
+                            'build_id': '12345',
+                        },
+                        'data':
+                            base64.b64encode(
+                                json.dumps({
+                                    'build': {
+                                        'id': '12345'
+                                    },
+                                    'user_data':
+                                        json.dumps({
+                                            'Message-Type':
+                                                'BuildbucketStatusChange',
+                                        }),
+                                })),
+                    },
+                }),
+            'format':
+                'json',
+        })
     self.assertTrue(logging_mock.called)
-
 
   # ill formed notification (bad token)
   @mock.patch.object(token, 'ValidateAuthToken', return_value=False)
@@ -55,36 +66,50 @@ class TryJobPushTest(testing.AppengineTestCase):
     # We expect a 400 error, and a webtest.webtest.AppError (not in path,
     # catching plain Exception)
     with self.assertRaisesRegexp(Exception, '.*400.*'):
-      _ = self.test_app.post('/pubsub/tryjobpush', params={
-          'data': json.dumps({
-              'message':{
-                  'attributes':{
-                      'auth_token': 'BadTokenString',
-                      'build_id': '12345',  # Shouldn't matter
-                  },
-                  'data': base64.b64encode(json.dumps({
-                      'build': {'id': '12345'},
-                      'user_data': json.dumps({
-                          'Message-Type': 'BuildbucketStatusChange',
-                      }),
-                  })),
-              },
-          }),
-        'format': 'json',
-      })
+      _ = self.test_app.post(
+          '/pubsub/tryjobpush',
+          params={
+              'data':
+                  json.dumps({
+                      'message': {
+                          'attributes': {
+                              'auth_token': 'BadTokenString',
+                              'build_id': '12345',  # Shouldn't matter
+                          },
+                          'data':
+                              base64.b64encode(
+                                  json.dumps({
+                                      'build': {
+                                          'id': '12345'
+                                      },
+                                      'user_data':
+                                          json.dumps({
+                                              'Message-Type':
+                                                  'BuildbucketStatusChange',
+                                          }),
+                                  })),
+                      },
+                  }),
+              'format':
+                  'json',
+          })
 
   def testTryJobPushBadFormat(self):
     # We expect a 500 error, and a webtest.webtest.AppError (not in path,
     # catching plain Exception)
     with self.assertRaisesRegexp(Exception, '.*500.*'):
-      _ = self.test_app.post('/pubsub/tryjobpush', params={
-          'data': json.dumps({
-              'message':{
-                  'data': base64.b64encode('Hello World!'),
-              },
-          }),
-        'format': 'json',
-      })
+      _ = self.test_app.post(
+          '/pubsub/tryjobpush',
+          params={
+              'data':
+                  json.dumps({
+                      'message': {
+                          'data': base64.b64encode('Hello World!'),
+                      },
+                  }),
+              'format':
+                  'json',
+          })
 
   # Send notification with unsupported message-type
   @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
@@ -92,24 +117,34 @@ class TryJobPushTest(testing.AppengineTestCase):
     # We expect a 500 error, and a webtest.webtest.AppError (not in path,
     # catching plain Exception)
     with self.assertRaisesRegexp(Exception, '.*500.*'):
-      _ = self.test_app.post('/pubsub/tryjobpush', params={
-          'data': json.dumps({
-              'message':{
-                  'attributes':{
-                      'auth_token': 'auth_token',
-                      'build_id': '8988270260466361040',
-                  },
-                  'data': base64.b64encode(json.dumps({
-                      'build': {'id': '8988270260466361040'},
-                      'user_data': json.dumps({
-                          # Should break beacause of this
-                          'Message-Type': 'HyperLoopSpaceJump',
-                      }),
-                  })),
-              },
-          }),
-        'format': 'json',
-      })
+      _ = self.test_app.post(
+          '/pubsub/tryjobpush',
+          params={
+              'data':
+                  json.dumps({
+                      'message': {
+                          'attributes': {
+                              'auth_token': 'auth_token',
+                              'build_id': '8988270260466361040',
+                          },
+                          'data':
+                              base64.b64encode(
+                                  json.dumps({
+                                      'build': {
+                                          'id': '8988270260466361040'
+                                      },
+                                      'user_data':
+                                          json.dumps({
+                                              # Should break beacause of this
+                                              'Message-Type':
+                                                  'HyperLoopSpaceJump',
+                                          }),
+                                  })),
+                      },
+                  }),
+              'format':
+                  'json',
+          })
 
   # Send well formed notification
   @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
@@ -125,23 +160,33 @@ class TryJobPushTest(testing.AppengineTestCase):
     try_job_in_progress.put()
 
     with mock.patch('google.appengine.api.taskqueue.add') as mock_queue:
-      self.test_app.post('/pubsub/tryjobpush', params={
-          'data': json.dumps({
-              'message':{
-                  'attributes':{
-                      'auth_token': 'auth_token',
-                      'build_id': 12345,
-                  },
-                  'data': base64.b64encode(json.dumps({
-                      'build': {'id': 12345},
-                      'user_data': json.dumps({
-                          'Message-Type': 'BuildbucketStatusChange',
-                      }),
-                  })),
-              },
-          }),
-          'format': 'json',
-      })
+      self.test_app.post(
+          '/pubsub/tryjobpush',
+          params={
+              'data':
+                  json.dumps({
+                      'message': {
+                          'attributes': {
+                              'auth_token': 'auth_token',
+                              'build_id': 12345,
+                          },
+                          'data':
+                              base64.b64encode(
+                                  json.dumps({
+                                      'build': {
+                                          'id': 12345
+                                      },
+                                      'user_data':
+                                          json.dumps({
+                                              'Message-Type':
+                                                  'BuildbucketStatusChange',
+                                          }),
+                                  })),
+                      },
+                  }),
+              'format':
+                  'json',
+          })
       mock_queue.assert_called_once()
 
   @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
@@ -159,21 +204,31 @@ class TryJobPushTest(testing.AppengineTestCase):
 
     # This should not break, so that pubsub does not keep retrying. We'll only
     # log a message.
-    self.test_app.post('/pubsub/tryjobpush', params={
-        'data': json.dumps({
-            'message':{
-                'attributes': {
-                    'auth_token': 'auth_token',
-                    'build_id': 12345,
-                },
-                'data': base64.b64encode(json.dumps({
-                    'build': {'id': 12345},
-                    'user_data': json.dumps({
-                        'Message-Type': 'BuildbucketStatusChange',
-                    }),
-                })),
-            },
-        }),
-        'format': 'json',
-    })
+    self.test_app.post(
+        '/pubsub/tryjobpush',
+        params={
+            'data':
+                json.dumps({
+                    'message': {
+                        'attributes': {
+                            'auth_token': 'auth_token',
+                            'build_id': 12345,
+                        },
+                        'data':
+                            base64.b64encode(
+                                json.dumps({
+                                    'build': {
+                                        'id': 12345
+                                    },
+                                    'user_data':
+                                        json.dumps({
+                                            'Message-Type':
+                                                'BuildbucketStatusChange',
+                                        }),
+                                })),
+                    },
+                }),
+            'format':
+                'json',
+        })
     self.assertTrue(logging_mock.called)

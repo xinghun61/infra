@@ -17,16 +17,17 @@ from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import suspected_cl_util
 
-
 # Check 1 day at a time if run as a cron-job.
 _DAYS_TO_CHECK = 1
 _DEFAULT_PAGE_SIZE = 1000
 
 
 @ndb.transactional
-def _UpdateSuspectedCL(
-    suspected_cl, sheriff_action_time=None, revert_commit_timestamp=None,
-    revert_status=None, overwrite=False):
+def _UpdateSuspectedCL(suspected_cl,
+                       sheriff_action_time=None,
+                       revert_commit_timestamp=None,
+                       revert_status=None,
+                       overwrite=False):
   """Updates a suspected cl based on revert cl results.
 
   Args:
@@ -42,14 +43,14 @@ def _UpdateSuspectedCL(
     # Bail out if this suspected CL has already been processed.
     return
 
-  suspected_cl.sheriff_action_time = (
-      suspected_cl.sheriff_action_time or sheriff_action_time)
+  suspected_cl.sheriff_action_time = (suspected_cl.sheriff_action_time or
+                                      sheriff_action_time)
 
   if suspected_cl.revert_cl:
     suspected_cl.revert_cl.committed_time = (
         suspected_cl.revert_cl.committed_time or revert_commit_timestamp)
-    suspected_cl.revert_cl.status = (
-        suspected_cl.revert_cl.status or revert_status)
+    suspected_cl.revert_cl.status = (suspected_cl.revert_cl.status or
+                                     revert_status)
 
   suspected_cl.put()
 
@@ -84,8 +85,8 @@ def _CheckRevertStatusOfSuspectedCL(suspected_cl):
     return None, None, None
 
   code_review_settings = FinditConfig().Get().code_review_settings
-  codereview = codereview_util.GetCodeReviewForReview(
-      review_server_host, code_review_settings)
+  codereview = codereview_util.GetCodeReviewForReview(review_server_host,
+                                                      code_review_settings)
   if not codereview:
     logging.error('Could not get codereview for %s/q/%s', review_server_host,
                   change_id)
@@ -122,16 +123,18 @@ def _CheckRevertStatusOfSuspectedCL(suspected_cl):
           # The sheriff used Findit's reverting CL.
           cq_attempt = revert.reverting_cl.commit_attempts[
               revert_commit.patchset_id]
-          _UpdateSuspectedCL(suspected_cl,
-                             sheriff_action_time=cq_attempt.last_cq_timestamp,
-                             revert_commit_timestamp=revert_commit.timestamp,
-                             revert_status=revert_cl_status.COMMITTED)
+          _UpdateSuspectedCL(
+              suspected_cl,
+              sheriff_action_time=cq_attempt.last_cq_timestamp,
+              revert_commit_timestamp=revert_commit.timestamp,
+              revert_status=revert_cl_status.COMMITTED)
           break
         else:
           # Sheriff used own revert CL.
-          _UpdateSuspectedCL(suspected_cl,
-                             sheriff_action_time=revert_commit.timestamp,
-                             revert_status=revert_cl_status.DUPLICATE)
+          _UpdateSuspectedCL(
+              suspected_cl,
+              sheriff_action_time=revert_commit.timestamp,
+              revert_status=revert_cl_status.DUPLICATE)
           break
 
     # No revert was ever committed. False positive.
@@ -149,8 +152,8 @@ def _CheckRevertStatusOfSuspectedCL(suspected_cl):
         _UpdateSuspectedCL(suspected_cl, sheriff_action_time=revert.timestamp)
         break
 
-  return True, code_review_url, (
-      revert_cl.status if revert_cl else revert_cl_status.DUPLICATE)
+  return True, code_review_url, (revert_cl.status
+                                 if revert_cl else revert_cl_status.DUPLICATE)
 
 
 def _GetRevertCLData(start_date, end_date):
@@ -161,9 +164,8 @@ def _GetRevertCLData(start_date, end_date):
       'undetermined': []
   }
 
-  query = WfSuspectedCL.query(
-      WfSuspectedCL.identified_time >= start_date,
-      WfSuspectedCL.identified_time < end_date)
+  query = WfSuspectedCL.query(WfSuspectedCL.identified_time >= start_date,
+                              WfSuspectedCL.identified_time < end_date)
 
   more = True
   cursor = None
@@ -178,10 +180,13 @@ def _GetRevertCLData(start_date, end_date):
         suspected_cl)
 
     result = {
-        'cr_notification_time': time_util.FormatDatetime(
-            suspected_cl.cr_notification_time or suspected_cl.updated_time),
-        'outcome': revert_cl_status.STATUS_TO_DESCRIPTION.get(outcome),
-        'url': review_url,
+        'cr_notification_time':
+            time_util.FormatDatetime(suspected_cl.cr_notification_time or
+                                     suspected_cl.updated_time),
+        'outcome':
+            revert_cl_status.STATUS_TO_DESCRIPTION.get(outcome),
+        'url':
+            review_url,
     }
 
     if processed:

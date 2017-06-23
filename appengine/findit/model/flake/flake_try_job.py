@@ -65,26 +65,25 @@ class FlakeTryJob(BaseTryJob):
       The string ID to be associated with this try job.
     """
     encoded_test_name = base64.urlsafe_b64encode(test_name)
-    return '%s/%s/%s/%s/%s' % (
-        master_name, builder_name, step_name, encoded_test_name, git_hash)
+    return '%s/%s/%s/%s/%s' % (master_name, builder_name, step_name,
+                               encoded_test_name, git_hash)
 
   @staticmethod
   def _CreateKey(master_name, builder_name, step_name, test_name,
                  git_hash):  # pragma: no cover
-    return ndb.Key(
-        'FlakeTryJob', FlakeTryJob._CreateTryJobId(
-            master_name, builder_name, step_name, test_name, git_hash))
+    return ndb.Key('FlakeTryJob',
+                   FlakeTryJob._CreateTryJobId(master_name, builder_name,
+                                               step_name, test_name, git_hash))
 
   @staticmethod
   def Create(master_name, builder_name, step_name, test_name, git_hash):
-    flake_try_job = FlakeTryJob(
-        key=FlakeTryJob._CreateKey(master_name, builder_name, step_name,
-                                   test_name, git_hash))
+    flake_try_job = FlakeTryJob(key=FlakeTryJob._CreateKey(
+        master_name, builder_name, step_name, test_name, git_hash))
     flake_try_job.flake_results = flake_try_job.flake_results or []
     flake_try_job.try_job_ids = flake_try_job.try_job_ids or []
     return flake_try_job
 
   @staticmethod
   def Get(master_name, builder_name, step_name, test_name, git_hash):
-    return FlakeTryJob._CreateKey(
-        master_name, builder_name, step_name, test_name, git_hash).get()
+    return FlakeTryJob._CreateKey(master_name, builder_name, step_name,
+                                  test_name, git_hash).get()

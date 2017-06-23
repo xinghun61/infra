@@ -16,14 +16,7 @@ from waterfall.test import wf_testcase
 class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testGetLastPassCurrentBuildIsNotFirstFailure(self):
-    failure_info = {
-        'failed_steps': {
-            'a': {
-                'first_failure': 1,
-                'last_pass': 0
-            }
-        }
-    }
+    failure_info = {'failed_steps': {'a': {'first_failure': 1, 'last_pass': 0}}}
     last_pass = start_try_job_on_demand_pipeline._GetLastPass(
         2, failure_info, failure_type.COMPILE)
     self.assertIsNone(last_pass)
@@ -87,16 +80,14 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testNotScheduleTryJobIfBuildNotCompleted(self):
     pipeline = start_try_job_on_demand_pipeline.StartTryJobOnDemandPipeline()
-    result = pipeline.run(
-        'm', 'b', 1, {}, {}, {}, False, False)
+    result = pipeline.run('m', 'b', 1, {}, {}, {}, False, False)
     self.assertEqual(list(result), [])
 
   @mock.patch.object(start_try_job_on_demand_pipeline, 'try_job_util')
   def testNotScheduleTryJobIfDontNeedTryJob(self, mock_module):
     mock_module.NeedANewWaterfallTryJob.return_value = False, None
     pipeline = start_try_job_on_demand_pipeline.StartTryJobOnDemandPipeline()
-    result = pipeline.run(
-        'm', 'b', 1, {}, {}, {}, True, False)
+    result = pipeline.run('m', 'b', 1, {}, {}, {}, True, False)
     self.assertEqual(list(result), [])
 
   @mock.patch.object(start_try_job_on_demand_pipeline, 'try_job_util')
@@ -123,8 +114,7 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     pipeline = start_try_job_on_demand_pipeline.StartTryJobOnDemandPipeline()
-    result = pipeline.run(
-        'm', 'b', 1, failure_info, {}, {}, True, False)
+    result = pipeline.run('m', 'b', 1, failure_info, {}, {}, True, False)
     self.assertEqual(list(result), [])
 
   @mock.patch.object(start_try_job_on_demand_pipeline, 'try_job_util')
@@ -165,7 +155,8 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
         'try_job_id',
         expected_args=[
             master_name, builder_name, build_number, good_revision,
-            bad_revision, try_job_type, {}, []],
+            bad_revision, try_job_type, {}, []
+        ],
         expected_kwargs={})
     self.MockPipeline(
         start_try_job_on_demand_pipeline.MonitorTryJobPipeline,
@@ -177,12 +168,12 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
         'final_result',
         expected_args=[
             master_name, builder_name, build_number, ['r2'], try_job_type,
-            'try_job_id', 'try_job_result'],
+            'try_job_id', 'try_job_result'
+        ],
         expected_kwargs={})
 
     pipeline = StartTryJobOnDemandPipeline()
-    result = pipeline.run(
-        'm', 'b', 1, failure_info, {}, {}, True, False)
+    result = pipeline.run('m', 'b', 1, failure_info, {}, {}, True, False)
     self.assertNotEqual(list(result), [])
 
   @mock.patch.object(start_try_job_on_demand_pipeline, 'try_job_util')
@@ -233,28 +224,28 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
     bad_revision = 'r2'
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
 
-    mock_module.NeedANewWaterfallTryJob.return_value = (
-        True, try_job.key)
+    mock_module.NeedANewWaterfallTryJob.return_value = (True, try_job.key)
 
     self.MockPipeline(
         start_try_job_on_demand_pipeline.ScheduleTestTryJobPipeline,
         'try_job_id',
         expected_args=[
             master_name, builder_name, build_number, good_revision,
-            bad_revision, try_job_type, 'targeted_tests', []],
+            bad_revision, try_job_type, 'targeted_tests', []
+        ],
         expected_kwargs={})
     self.MockPipeline(
         start_try_job_on_demand_pipeline.MonitorTryJobPipeline,
         'try_job_result',
-        expected_args=[
-            try_job.key.urlsafe(), try_job_type, 'try_job_id'],
+        expected_args=[try_job.key.urlsafe(), try_job_type, 'try_job_id'],
         expected_kwargs={})
     self.MockPipeline(
         start_try_job_on_demand_pipeline.IdentifyTryJobCulpritPipeline,
         'final_result',
         expected_args=[
             master_name, builder_name, build_number, ['r2'], try_job_type,
-            'try_job_id', 'try_job_result'],
+            'try_job_id', 'try_job_result'
+        ],
         expected_kwargs={})
 
     pipeline = StartTryJobOnDemandPipeline()
@@ -306,30 +297,17 @@ class StartTryJobOnDemandPipelineTest(wf_testcase.WaterfallTestCase):
 
     task1 = WfSwarmingTask.Create(master_name, builder_name, build_number,
                                   'a on platform')
-    task1.tests_statuses = {
-        'test1': {
-            'SUCCESS': 6
-        },
-        'test2': {
-            'FAILURE': 6
-        }
-    }
+    task1.tests_statuses = {'test1': {'SUCCESS': 6}, 'test2': {'FAILURE': 6}}
     task1.canonical_step_name = 'a'
     task1.put()
 
     task2 = WfSwarmingTask.Create(master_name, builder_name, build_number, 'b')
-    task2.tests_statuses = {
-        'b_test1': {
-            'SUCCESS': 6
-        }
-    }
+    task2.tests_statuses = {'b_test1': {'SUCCESS': 6}}
     task2.put()
 
     task_results = start_try_job_on_demand_pipeline._GetReliableTests(
         master_name, builder_name, build_number, failure_info)
 
-    expected_results = {
-        'a': ['test2']
-    }
+    expected_results = {'a': ['test2']}
 
     self.assertEqual(expected_results, task_results)

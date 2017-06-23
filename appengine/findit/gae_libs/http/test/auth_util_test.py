@@ -31,18 +31,20 @@ class AuthUtilTest(unittest.TestCase):
     self.assertEqual(
         {},
         authenticator.GetHttpHeadersFor('https://codereview.chromium.org.fake'))
-    self.assertEqual(
-        {'Authorization': 'Bearer abc'},
-        authenticator.GetHttpHeadersFor('https://test.googlesource.com/cr'))
-    self.assertEqual(
-        {'Authorization': 'Bearer abc'},
-        authenticator.GetHttpHeadersFor('https://codereview.chromium.org/api'))
+    self.assertEqual({
+        'Authorization': 'Bearer abc'
+    }, authenticator.GetHttpHeadersFor('https://test.googlesource.com/cr'))
+    self.assertEqual({
+        'Authorization': 'Bearer abc'
+    }, authenticator.GetHttpHeadersFor('https://codereview.chromium.org/api'))
 
   @mock.patch.object(
-      auth_util.oauth, 'get_current_user',
+      auth_util.oauth,
+      'get_current_user',
       return_value=users.User('email2', 'domain', 'id2'))
   @mock.patch.object(
-      auth_util.users, 'get_current_user',
+      auth_util.users,
+      'get_current_user',
       return_value=users.User('email1', 'domain', 'id1'))
   def testGetUserEmailFromCookie(self, mocked_users, mocked_oauth):
     self.assertEqual('email1', auth_util.GetUserEmail('scope'))
@@ -50,7 +52,8 @@ class AuthUtilTest(unittest.TestCase):
     mocked_oauth.assert_not_called()
 
   @mock.patch.object(
-      auth_util.oauth, 'get_current_user',
+      auth_util.oauth,
+      'get_current_user',
       return_value=users.User('email2', 'domain', 'id2'))
   @mock.patch.object(auth_util.users, 'get_current_user', return_value=None)
   def testGetUserEmailFromOauth(self, mocked_users, mocked_oauth):
@@ -59,7 +62,8 @@ class AuthUtilTest(unittest.TestCase):
     mocked_oauth.assert_called_once_with('scope')
 
   @mock.patch.object(
-      auth_util.oauth, 'get_current_user',
+      auth_util.oauth,
+      'get_current_user',
       side_effect=oauth.OAuthRequestError())
   @mock.patch.object(auth_util.users, 'get_current_user', return_value=None)
   def testGetUserEmailFromOauthException(self, mocked_users, mocked_oauth):
@@ -86,7 +90,8 @@ class AuthUtilTest(unittest.TestCase):
     mocked_oauth.assert_called_once_with('scope')
 
   @mock.patch.object(
-      auth_util.oauth, 'is_current_user_admin',
+      auth_util.oauth,
+      'is_current_user_admin',
       side_effect=oauth.OAuthRequestError())
   @mock.patch.object(
       auth_util.users, 'is_current_user_admin', return_value=False)
@@ -122,4 +127,3 @@ class AuthUtilTest(unittest.TestCase):
         'login_url': 'http://login',
     }
     self.assertEqual(expected_info, auth_util.GetUserInfo())
-

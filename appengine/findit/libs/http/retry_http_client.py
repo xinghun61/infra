@@ -5,7 +5,6 @@
 import time
 import urllib
 
-
 _NO_RETRY_CODE = [200, 302, 401, 403, 404, 501]
 
 
@@ -14,6 +13,7 @@ class RetryHttpClient(object):
 
   Subclasses should implement abstract functions below.
   """
+
   def __init__(self, no_error_logging_statuses=None):
     # If an http request results in the given statuses, the subclasses should
     # not log an error.
@@ -30,8 +30,7 @@ class RetryHttpClient(object):
     raise NotImplementedError(
         '_Get() should be implemented in the child class')  # pragma: no cover
 
-  def _Post(self, url, data, timeout_seconds,
-            headers):  # pylint: disable=W0613, R0201
+  def _Post(self, url, data, timeout_seconds, headers):  # pylint: disable=W0613, R0201
     """Sends the actual HTTP POST request.
 
     Returns:
@@ -40,8 +39,7 @@ class RetryHttpClient(object):
     raise NotImplementedError(
         '_Post() should be implemented in the child class')  # pragma: no cover
 
-  def _Put(self, url, data, timeout_seconds,
-            headers):  # pylint: disable=W0613, R0201
+  def _Put(self, url, data, timeout_seconds, headers):  # pylint: disable=W0613, R0201
     """Sends the actual HTTP PUT request.
 
     Returns:
@@ -61,12 +59,19 @@ class RetryHttpClient(object):
       tries (int): Indicates how many tries have been done.
     """
     if retry_backoff > 1:
-      return retry_backoff * (2 ** (tries - 1))
+      return retry_backoff * (2**(tries - 1))
     else:
       return retry_backoff
 
-  def _Retry(self, url, method, data=None, params=None, timeout_seconds=60,
-             max_retries=5, retry_backoff=1.5, headers=None):
+  def _Retry(self,
+             url,
+             method,
+             data=None,
+             params=None,
+             timeout_seconds=60,
+             max_retries=5,
+             retry_backoff=1.5,
+             headers=None):
     if params and method == 'GET':
       url = '%s?%s' % (url, urllib.urlencode(params))
 
@@ -88,8 +93,13 @@ class RetryHttpClient(object):
 
     return status_code, content
 
-  def Get(self, url, params=None, timeout_seconds=60,
-          max_retries=5, retry_backoff=1.5, headers=None):
+  def Get(self,
+          url,
+          params=None,
+          timeout_seconds=60,
+          max_retries=5,
+          retry_backoff=1.5,
+          headers=None):
     """Sends a GET request to the url with the given parameters and headers.
 
     Params:
@@ -105,12 +115,22 @@ class RetryHttpClient(object):
       (status_code, content)
     """
     return self._Retry(
-        url, method='GET', data=None, params=params,
-        timeout_seconds=timeout_seconds, max_retries=max_retries,
-        retry_backoff=retry_backoff, headers=headers)
+        url,
+        method='GET',
+        data=None,
+        params=params,
+        timeout_seconds=timeout_seconds,
+        max_retries=max_retries,
+        retry_backoff=retry_backoff,
+        headers=headers)
 
-  def Post(self, url, data, timeout_seconds=60,
-           max_retries=5, retry_backoff=1.5, headers=None):
+  def Post(self,
+           url,
+           data,
+           timeout_seconds=60,
+           max_retries=5,
+           retry_backoff=1.5,
+           headers=None):
     """Sends a POST request to the url with the given parameters and headers.
 
     Params:
@@ -126,12 +146,22 @@ class RetryHttpClient(object):
       (status_code, content)
     """
     return self._Retry(
-        url, method='POST', data=data, params=None,
-        timeout_seconds=timeout_seconds, max_retries=max_retries,
-        retry_backoff=retry_backoff, headers=headers)
+        url,
+        method='POST',
+        data=data,
+        params=None,
+        timeout_seconds=timeout_seconds,
+        max_retries=max_retries,
+        retry_backoff=retry_backoff,
+        headers=headers)
 
-  def Put(self, url, data, timeout_seconds=60,
-           max_retries=5, retry_backoff=1.5, headers=None):
+  def Put(self,
+          url,
+          data,
+          timeout_seconds=60,
+          max_retries=5,
+          retry_backoff=1.5,
+          headers=None):
     """Sends a PUT request to the url with the given parameters and headers.
 
     Params:
@@ -147,6 +177,11 @@ class RetryHttpClient(object):
       (status_code, content)
     """
     return self._Retry(
-        url, method='PUT', data=data, params=None,
-        timeout_seconds=timeout_seconds, max_retries=max_retries,
-        retry_backoff=retry_backoff, headers=headers)
+        url,
+        method='PUT',
+        data=data,
+        params=None,
+        timeout_seconds=timeout_seconds,
+        max_retries=max_retries,
+        retry_backoff=retry_backoff,
+        headers=headers)

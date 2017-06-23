@@ -17,14 +17,10 @@ from model.suspected_cl_confidence import SuspectedCLConfidence
 from model.suspected_cl_confidence import ConfidenceInformation
 from model.wf_suspected_cl import WfSuspectedCL
 
-
 TRIAGED_STATUS = [
-    suspected_cl_status.CORRECT,
-    suspected_cl_status.INCORRECT,
-    suspected_cl_status.PARTIALLY_CORRECT,
-    suspected_cl_status.PARTIALLY_TRIAGED
+    suspected_cl_status.CORRECT, suspected_cl_status.INCORRECT,
+    suspected_cl_status.PARTIALLY_CORRECT, suspected_cl_status.PARTIALLY_TRIAGED
 ]
-
 
 TIME_RANGE_DAYS = 183  # Query CLs in the past half year.
 
@@ -34,11 +30,12 @@ def _CreateConfidenceInformation(result, score=None):
   correct_number = result.get(suspected_cl_status.CORRECT, 0)
   incorrect_number = result.get(suspected_cl_status.INCORRECT, 0)
   total_number = correct_number + incorrect_number
-  confidence = (
-    float(correct_number) / total_number if total_number else -1.0)
+  confidence = (float(correct_number) / total_number if total_number else -1.0)
 
   return ConfidenceInformation(
-      correct=correct_number, total=total_number, confidence=confidence,
+      correct=correct_number,
+      total=total_number,
+      confidence=confidence,
       score=score)
 
 
@@ -54,11 +51,11 @@ def _CalculateConfidenceLevelsForHeuristic(new_results):
 
 def _GetCLDataForHeuristic(date_start, date_end):
   """Gets All triaged CLs which were found by heuristic approaches."""
-  suspected_cls_query = WfSuspectedCL.query(ndb.AND(
-      WfSuspectedCL.status.IN(TRIAGED_STATUS),
-      WfSuspectedCL.approaches == analysis_approach_type.HEURISTIC,
-      WfSuspectedCL.updated_time >= date_start,
-      WfSuspectedCL.updated_time < date_end))
+  suspected_cls_query = WfSuspectedCL.query(
+      ndb.AND(
+          WfSuspectedCL.status.IN(TRIAGED_STATUS), WfSuspectedCL.approaches ==
+          analysis_approach_type.HEURISTIC, WfSuspectedCL.updated_time >=
+          date_start, WfSuspectedCL.updated_time < date_end))
 
   suspected_cls = suspected_cls_query.fetch()
   cl_by_top_score_dict = defaultdict(
@@ -88,11 +85,11 @@ def _GetCLDataForHeuristic(date_start, date_end):
 
 def _GetCLDataForTryJob(date_start, date_end):
   """Gets All triaged CLs which were found by try job approaches."""
-  suspected_cls_query = WfSuspectedCL.query(ndb.AND(
-      WfSuspectedCL.status.IN(TRIAGED_STATUS),
-      WfSuspectedCL.approaches == analysis_approach_type.TRY_JOB,
-      WfSuspectedCL.updated_time >= date_start,
-      WfSuspectedCL.updated_time < date_end))
+  suspected_cls_query = WfSuspectedCL.query(
+      ndb.AND(
+          WfSuspectedCL.status.IN(TRIAGED_STATUS), WfSuspectedCL.approaches ==
+          analysis_approach_type.TRY_JOB, WfSuspectedCL.updated_time >=
+          date_start, WfSuspectedCL.updated_time < date_end))
 
   suspected_cls = suspected_cls_query.fetch()
   try_job_cls_dict = defaultdict(lambda: defaultdict(int))
@@ -122,7 +119,7 @@ def _GetCLDataForTryJob(date_start, date_end):
 def _SavesNewCLConfidence():
   """Queries all CLs and calculates confidence of each type of results."""
   date_end = time_util.GetUTCNow().replace(
-    hour=0, minute=0, second=0, microsecond=0)
+      hour=0, minute=0, second=0, microsecond=0)
   date_start = date_end - datetime.timedelta(days=TIME_RANGE_DAYS)
   result_heuristic = _GetCLDataForHeuristic(date_start, date_end)
   result_try_job, result_both = _GetCLDataForTryJob(date_start, date_end)
@@ -141,10 +138,10 @@ def _SavesNewCLConfidence():
       result_both[failure_type.TEST])
 
   confidence = SuspectedCLConfidence.Get()
-  confidence.Update(
-      date_start, date_end, new_compile_heuristic, new_compile_try_job,
-      new_compile_heuristic_try_job, new_test_heuristic, new_test_try_job,
-      new_test_heuristic_try_job)
+  confidence.Update(date_start, date_end, new_compile_heuristic,
+                    new_compile_try_job, new_compile_heuristic_try_job,
+                    new_test_heuristic, new_test_try_job,
+                    new_test_heuristic_try_job)
   return confidence
 
 

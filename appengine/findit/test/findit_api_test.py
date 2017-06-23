@@ -32,26 +32,27 @@ class FinditApiTest(testing.EndpointsTestCase):
   def setUp(self):
     super(FinditApiTest, self).setUp()
     self.taskqueue_requests = []
+
     def Mocked_taskqueue_add(**kwargs):
       self.taskqueue_requests.append(kwargs)
+
     self.mock(taskqueue, 'add', Mocked_taskqueue_add)
 
   def _MockMasterIsSupported(self, supported):
+
     def MockMasterIsSupported(*_):
       return supported
-    self.mock(waterfall_config, 'MasterIsSupported',
-              MockMasterIsSupported)
+
+    self.mock(waterfall_config, 'MasterIsSupported', MockMasterIsSupported)
 
   def testUnrecognizedMasterUrl(self):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     builds = {
-        'builds': [
-            {
-                'master_url': 'https://not a master url',
-                'builder_name': 'a',
-                'build_number': 1
-            }
-        ]
+        'builds': [{
+            'master_url': 'https://not a master url',
+            'builder_name': 'a',
+            'build_number': 1
+        }]
     }
     expected_results = []
 
@@ -64,13 +65,11 @@ class FinditApiTest(testing.EndpointsTestCase):
   def testMasterIsNotSupported(self):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     builds = {
-        'builds': [
-            {
-                'master_url': 'https://build.chromium.org/p/a',
-                'builder_name': 'a',
-                'build_number': 1
-            }
-        ]
+        'builds': [{
+            'master_url': 'https://build.chromium.org/p/a',
+            'builder_name': 'a',
+            'build_number': 1
+        }]
     }
     expected_results = []
 
@@ -88,13 +87,11 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
-        'builds': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number
-            }
-        ]
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number
+        }]
     }
 
     expected_result = []
@@ -113,33 +110,31 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
-        'builds': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number
-            }
-        ]
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number
+        }]
     }
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = analysis_status.ERROR
     analysis.result = {
-        'failures': [
-            {
-                'step_name': 'test',
-                'first_failure': 3,
-                'last_pass': 1,
-                'supported': True,
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'git_hash',
-                        'commit_position': 123,
-                    }
-                ]
-            }
-        ]
+        'failures': [{
+            'step_name':
+                'test',
+            'first_failure':
+                3,
+            'last_pass':
+                1,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'git_hash',
+                'commit_position': 123,
+            }]
+        }]
     }
     analysis.put()
 
@@ -159,13 +154,11 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
-        'builds': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number
-            }
-        ]
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number
+        }]
     }
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
@@ -189,57 +182,65 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
-        'builds': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number,
-                'failed_steps': ['a', 'b']
-            }
-        ]
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'failed_steps': ['a', 'b']
+        }]
     }
 
     self._MockMasterIsSupported(supported=True)
 
     analysis_result = {
-        'failures': [
-            {
-                'step_name': 'a',
-                'first_failure': 23,
-                'last_pass': 22,
-                'supported': True,
-                'suspected_cls': [
-                    {
-                        'repo_name': 'chromium',
-                        'revision': 'git_hash',
-                        'commit_position': 123,
-                    }
-                ]
-            }
-        ]
+        'failures': [{
+            'step_name':
+                'a',
+            'first_failure':
+                23,
+            'last_pass':
+                22,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'git_hash',
+                'commit_position': 123,
+            }]
+        }]
     }
     expected_results = [
         {
-            'master_url': master_url,
-            'builder_name': builder_name,
-            'build_number': build_number,
-            'step_name': 'a',
-            'is_sub_test': False,
-            'first_known_failed_build_number': 23,
-            'suspected_cls': [
-                {
-                    'repo_name': 'chromium',
-                    'revision': 'git_hash',
-                    'commit_position': 123,
-                    'analysis_approach': 'HEURISTIC'
-                }
-            ],
-            'analysis_approach': 'HEURISTIC',
-            'try_job_status': 'FINISHED',
-            'is_flaky_test': False,
-            'has_findings': True,
-            'is_finished': True,
-            'is_supported': True,
+            'master_url':
+                master_url,
+            'builder_name':
+                builder_name,
+            'build_number':
+                build_number,
+            'step_name':
+                'a',
+            'is_sub_test':
+                False,
+            'first_known_failed_build_number':
+                23,
+            'suspected_cls': [{
+                'repo_name': 'chromium',
+                'revision': 'git_hash',
+                'commit_position': 123,
+                'analysis_approach': 'HEURISTIC'
+            }],
+            'analysis_approach':
+                'HEURISTIC',
+            'try_job_status':
+                'FINISHED',
+            'is_flaky_test':
+                False,
+            'has_findings':
+                True,
+            'is_finished':
+                True,
+            'is_supported':
+                True,
         },
         {
             'master_url': master_url,
@@ -262,8 +263,8 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     response = self.call_api('AnalyzeBuildFailures', body=builds)
     self.assertEqual(200, response.status_int)
-    self.assertEqual(sorted(expected_results),
-                     sorted(response.json_body['results']))
+    self.assertEqual(
+        sorted(expected_results), sorted(response.json_body['results']))
 
   def testAnalysisFindingNoSuspectedCLsIsNotReturned(self):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
@@ -273,47 +274,41 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
-        'builds': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number,
-                'failed_steps': ['test']
-            }
-        ]
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'failed_steps': ['test']
+        }]
     }
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = analysis_status.COMPLETED
     analysis.result = {
-        'failures': [
-            {
-                'step_name': 'test',
-                'first_failure': 3,
-                'last_pass': 1,
-                'supported': True,
-                'suspected_cls': []
-            }
-        ]
+        'failures': [{
+            'step_name': 'test',
+            'first_failure': 3,
+            'last_pass': 1,
+            'supported': True,
+            'suspected_cls': []
+        }]
     }
     analysis.put()
 
-    expected_result = [
-        {
-            'master_url': master_url,
-            'builder_name': builder_name,
-            'build_number': build_number,
-            'step_name': 'test',
-            'is_sub_test': False,
-            'first_known_failed_build_number': 3,
-            'analysis_approach': 'HEURISTIC',
-            'try_job_status': 'FINISHED',
-            'is_flaky_test': False,
-            'has_findings': False,
-            'is_finished': True,
-            'is_supported': True,
-        }
-    ]
+    expected_result = [{
+        'master_url': master_url,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': 'test',
+        'is_sub_test': False,
+        'first_known_failed_build_number': 3,
+        'analysis_approach': 'HEURISTIC',
+        'try_job_status': 'FINISHED',
+        'is_flaky_test': False,
+        'has_findings': False,
+        'is_finished': True,
+        'is_supported': True,
+    }]
 
     self._MockMasterIsSupported(supported=True)
 
@@ -329,83 +324,87 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
-        'builds': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number
-            }
-        ]
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number
+        }]
     }
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = analysis_status.COMPLETED
     analysis.result = {
-        'failures': [
-            {
-                'step_name': 'test',
-                'first_failure': 3,
-                'last_pass': 1,
-                'supported': True,
-                'suspected_cls': [
-                    {
-                        'build_number': 2,
-                        'repo_name': 'chromium',
-                        'revision': 'git_hash1',
-                        'commit_position': 234,
-                        'score': 11,
-                        'hints': {
-                            'add a/b/x.cc': 5,
-                            'delete a/b/y.cc': 5,
-                            'modify e/f/z.cc': 1,
-                        }
-                    },
-                    {
-                        'build_number': 3,
-                        'repo_name': 'chromium',
-                        'revision': 'git_hash2',
-                        'commit_position': 288,
-                        'score': 1,
-                        'hints': {
-                            'modify d/e/f.cc': 1,
-                        }
-                    }
-                ]
-            }
-        ]
+        'failures': [{
+            'step_name':
+                'test',
+            'first_failure':
+                3,
+            'last_pass':
+                1,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 2,
+                'repo_name': 'chromium',
+                'revision': 'git_hash1',
+                'commit_position': 234,
+                'score': 11,
+                'hints': {
+                    'add a/b/x.cc': 5,
+                    'delete a/b/y.cc': 5,
+                    'modify e/f/z.cc': 1,
+                }
+            }, {
+                'build_number': 3,
+                'repo_name': 'chromium',
+                'revision': 'git_hash2',
+                'commit_position': 288,
+                'score': 1,
+                'hints': {
+                    'modify d/e/f.cc': 1,
+                }
+            }]
+        }]
     }
     analysis.put()
 
-    expected_results = [
-        {
-            'master_url': master_url,
-            'builder_name': builder_name,
-            'build_number': build_number,
-            'step_name': 'test',
-            'is_sub_test': False,
-            'first_known_failed_build_number': 3,
-            'suspected_cls': [
-                {
-                    'repo_name': 'chromium',
-                    'revision': 'git_hash1',
-                    'commit_position': 234,
-                    'analysis_approach': 'HEURISTIC'
-                },
-                {
-                    'repo_name': 'chromium',
-                    'revision': 'git_hash2',
-                    'commit_position': 288,
-                    'analysis_approach': 'HEURISTIC'
-                }
-            ],
-            'analysis_approach': 'HEURISTIC',
-            'is_flaky_test': False,
-            'try_job_status': 'FINISHED',
-            'has_findings': True,
-            'is_finished': True,
-            'is_supported': True,
-        }
-    ]
+    expected_results = [{
+        'master_url':
+            master_url,
+        'builder_name':
+            builder_name,
+        'build_number':
+            build_number,
+        'step_name':
+            'test',
+        'is_sub_test':
+            False,
+        'first_known_failed_build_number':
+            3,
+        'suspected_cls': [{
+            'repo_name': 'chromium',
+            'revision': 'git_hash1',
+            'commit_position': 234,
+            'analysis_approach': 'HEURISTIC'
+        }, {
+            'repo_name': 'chromium',
+            'revision': 'git_hash2',
+            'commit_position': 288,
+            'analysis_approach': 'HEURISTIC'
+        }],
+        'analysis_approach':
+            'HEURISTIC',
+        'is_flaky_test':
+            False,
+        'try_job_status':
+            'FINISHED',
+        'has_findings':
+            True,
+        'is_finished':
+            True,
+        'is_supported':
+            True,
+    }]
 
     self._MockMasterIsSupported(supported=True)
 
@@ -421,30 +420,26 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
-        'builds': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number,
-                'failed_steps': ['compile']
-            }
-        ]
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'failed_steps': ['compile']
+        }]
     }
 
     try_job = WfTryJob.Create(master_name, builder_name, 3)
     try_job.status = analysis_status.COMPLETED
-    try_job.compile_results = [
-        {
-            'culprit': {
-                'compile': {
-                      'repo_name': 'chromium',
-                      'revision': 'r3',
-                      'commit_position': 3,
-                      'url': None,
-                },
+    try_job.compile_results = [{
+        'culprit': {
+            'compile': {
+                'repo_name': 'chromium',
+                'revision': 'r3',
+                'commit_position': 3,
+                'url': None,
             },
-        }
-    ]
+        },
+    }]
     try_job.put()
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
@@ -454,53 +449,63 @@ class FinditApiTest(testing.EndpointsTestCase):
         'compile': '/'.join([master_name, builder_name, '3']),
     }
     analysis.result = {
-        'failures': [
-            {
-                'step_name': 'compile',
-                'first_failure': 3,
-                'last_pass': 1,
-                'supported': True,
-                'suspected_cls': [
-                    {
-                        'build_number': 3,
-                        'repo_name': 'chromium',
-                        'revision': 'git_hash2',
-                        'commit_position': 288,
-                        'score': 1,
-                        'hints': {
-                            'modify d/e/f.cc': 1,
-                        }
-                    }
-                ]
-            }
-        ]
+        'failures': [{
+            'step_name':
+                'compile',
+            'first_failure':
+                3,
+            'last_pass':
+                1,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 3,
+                'repo_name': 'chromium',
+                'revision': 'git_hash2',
+                'commit_position': 288,
+                'score': 1,
+                'hints': {
+                    'modify d/e/f.cc': 1,
+                }
+            }]
+        }]
     }
     analysis.put()
 
-    expected_results = [
-        {
-            'master_url': master_url,
-            'builder_name': builder_name,
-            'build_number': build_number,
-            'step_name': 'compile',
-            'is_sub_test': False,
-            'first_known_failed_build_number': 3,
-            'suspected_cls': [
-                {
-                    'repo_name': 'chromium',
-                    'revision': 'r3',
-                    'commit_position': 3,
-                    'analysis_approach': 'TRY_JOB'
-                },
-            ],
-            'analysis_approach': 'TRY_JOB',
-            'is_flaky_test': False,
-            'try_job_status': 'FINISHED',
-            'has_findings': True,
-            'is_finished': True,
-            'is_supported': True,
-        }
-    ]
+    expected_results = [{
+        'master_url':
+            master_url,
+        'builder_name':
+            builder_name,
+        'build_number':
+            build_number,
+        'step_name':
+            'compile',
+        'is_sub_test':
+            False,
+        'first_known_failed_build_number':
+            3,
+        'suspected_cls': [
+            {
+                'repo_name': 'chromium',
+                'revision': 'r3',
+                'commit_position': 3,
+                'analysis_approach': 'TRY_JOB'
+            },
+        ],
+        'analysis_approach':
+            'TRY_JOB',
+        'is_flaky_test':
+            False,
+        'try_job_status':
+            'FINISHED',
+        'has_findings':
+            True,
+        'is_finished':
+            True,
+        'is_supported':
+            True,
+    }]
 
     self._MockMasterIsSupported(supported=True)
 
@@ -516,14 +521,12 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
-        'builds': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number,
-                'failed_steps': ['compile']
-            }
-        ]
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'failed_steps': ['compile']
+        }]
     }
 
     try_job = WfTryJob.Create(master_name, builder_name, 3)
@@ -537,53 +540,63 @@ class FinditApiTest(testing.EndpointsTestCase):
         'compile': '/'.join([master_name, builder_name, '3']),
     }
     analysis.result = {
-        'failures': [
-            {
-                'step_name': 'compile',
-                'first_failure': 3,
-                'last_pass': 1,
-                'supported': True,
-                'suspected_cls': [
-                    {
-                        'build_number': 3,
-                        'repo_name': 'chromium',
-                        'revision': 'git_hash2',
-                        'commit_position': 288,
-                        'score': 1,
-                        'hints': {
-                            'modify d/e/f.cc': 1,
-                        }
-                    }
-                ]
-            }
-        ]
+        'failures': [{
+            'step_name':
+                'compile',
+            'first_failure':
+                3,
+            'last_pass':
+                1,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 3,
+                'repo_name': 'chromium',
+                'revision': 'git_hash2',
+                'commit_position': 288,
+                'score': 1,
+                'hints': {
+                    'modify d/e/f.cc': 1,
+                }
+            }]
+        }]
     }
     analysis.put()
 
-    expected_results = [
-        {
-            'master_url': master_url,
-            'builder_name': builder_name,
-            'build_number': build_number,
-            'step_name': 'compile',
-            'is_sub_test': False,
-            'first_known_failed_build_number': 3,
-            'suspected_cls': [
-                {
-                    'repo_name': 'chromium',
-                    'revision': 'git_hash2',
-                    'commit_position': 288,
-                    'analysis_approach': 'HEURISTIC'
-                },
-            ],
-            'analysis_approach': 'HEURISTIC',
-            'is_flaky_test': False,
-            'try_job_status': 'RUNNING',
-            'has_findings': True,
-            'is_finished': False,
-            'is_supported': True,
-        }
-    ]
+    expected_results = [{
+        'master_url':
+            master_url,
+        'builder_name':
+            builder_name,
+        'build_number':
+            build_number,
+        'step_name':
+            'compile',
+        'is_sub_test':
+            False,
+        'first_known_failed_build_number':
+            3,
+        'suspected_cls': [
+            {
+                'repo_name': 'chromium',
+                'revision': 'git_hash2',
+                'commit_position': 288,
+                'analysis_approach': 'HEURISTIC'
+            },
+        ],
+        'analysis_approach':
+            'HEURISTIC',
+        'is_flaky_test':
+            False,
+        'try_job_status':
+            'RUNNING',
+        'has_findings':
+            True,
+        'is_finished':
+            False,
+        'is_supported':
+            True,
+    }]
 
     self._MockMasterIsSupported(supported=True)
 
@@ -599,14 +612,12 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
-        'builds': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number,
-                'failed_steps': ['b on platform']
-            }
-        ]
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'failed_steps': ['b on platform']
+        }]
     }
 
     task = WfSwarmingTask.Create(master_name, builder_name, 3, 'b on platform')
@@ -633,64 +644,60 @@ class FinditApiTest(testing.EndpointsTestCase):
         },
     }
     analysis.result = {
-        'failures': [
-            {
-                'step_name': 'b on platform',
+        'failures': [{
+            'step_name':
+                'b on platform',
+            'first_failure':
+                3,
+            'last_pass':
+                2,
+            'supported':
+                True,
+            'suspected_cls': [],
+            'tests': [{
+                'test_name': 'Unittest3.Subtest1',
                 'first_failure': 3,
                 'last_pass': 2,
-                'supported': True,
-                'suspected_cls': [],
-                'tests': [
-                    {
-                        'test_name': 'Unittest3.Subtest1',
-                        'first_failure': 3,
-                        'last_pass': 2,
-                        'suspected_cls': []
-                    },
-                    {
-                        'test_name': 'Unittest3.Subtest2',
-                        'first_failure': 3,
-                        'last_pass': 2,
-                        'suspected_cls': []
-                    }
-                ]
-            }
-        ]
+                'suspected_cls': []
+            }, {
+                'test_name': 'Unittest3.Subtest2',
+                'first_failure': 3,
+                'last_pass': 2,
+                'suspected_cls': []
+            }]
+        }]
     }
     analysis.put()
 
-    expected_results = [
-        {
-            'master_url': master_url,
-            'builder_name': builder_name,
-            'build_number': build_number,
-            'step_name': 'b on platform',
-            'is_sub_test': True,
-            'test_name': 'Unittest3.Subtest1',
-            'first_known_failed_build_number': 3,
-            'analysis_approach': 'HEURISTIC',
-            'is_flaky_test': True,
-            'try_job_status': 'FINISHED',
-            'has_findings': True,
-            'is_finished': True,
-            'is_supported': True,
-        },
-        {
-            'master_url': master_url,
-            'builder_name': builder_name,
-            'build_number': build_number,
-            'step_name': 'b on platform',
-            'is_sub_test': True,
-            'test_name': 'Unittest3.Subtest2',
-            'first_known_failed_build_number': 3,
-            'analysis_approach': 'HEURISTIC',
-            'is_flaky_test': True,
-            'try_job_status': 'FINISHED',
-            'has_findings': True,
-            'is_finished': True,
-            'is_supported': True,
-        }
-    ]
+    expected_results = [{
+        'master_url': master_url,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': 'b on platform',
+        'is_sub_test': True,
+        'test_name': 'Unittest3.Subtest1',
+        'first_known_failed_build_number': 3,
+        'analysis_approach': 'HEURISTIC',
+        'is_flaky_test': True,
+        'try_job_status': 'FINISHED',
+        'has_findings': True,
+        'is_finished': True,
+        'is_supported': True,
+    }, {
+        'master_url': master_url,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': 'b on platform',
+        'is_sub_test': True,
+        'test_name': 'Unittest3.Subtest2',
+        'first_known_failed_build_number': 3,
+        'analysis_approach': 'HEURISTIC',
+        'is_flaky_test': True,
+        'try_job_status': 'FINISHED',
+        'has_findings': True,
+        'is_finished': True,
+        'is_supported': True,
+    }]
 
     self._MockMasterIsSupported(supported=True)
 
@@ -698,8 +705,8 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_results, response.json_body.get('results'))
 
-  @mock.patch.object(
-      suspected_cl_util, 'GetSuspectedCLConfidenceScoreAndApproach')
+  @mock.patch.object(suspected_cl_util,
+                     'GetSuspectedCLConfidenceScoreAndApproach')
   def testTestLevelResultIsReturned(self, mock_fn):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     master_name = 'm'
@@ -708,14 +715,12 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
-        'builds': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number,
-                'failed_steps': ['a', 'b on platform']
-            }
-        ]
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'failed_steps': ['a', 'b on platform']
+        }]
     }
 
     task = WfSwarmingTask.Create(master_name, builder_name, 4, 'b on platform')
@@ -725,28 +730,26 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     try_job = WfTryJob.Create(master_name, builder_name, 4)
     try_job.status = analysis_status.COMPLETED
-    try_job.test_results = [
-        {
-            'culprit': {
-                'a': {
-                      'repo_name': 'chromium',
-                      'revision': 'r4_2',
-                      'commit_position': 42,
-                      'url': None,
-                },
-                'b': {
-                    'tests': {
-                        'Unittest3.Subtest1': {
-                            'repo_name': 'chromium',
-                            'revision': 'r4_10',
-                            'commit_position': 410,
-                            'url': None,
-                        },
-                    }
-                }
+    try_job.test_results = [{
+        'culprit': {
+            'a': {
+                'repo_name': 'chromium',
+                'revision': 'r4_2',
+                'commit_position': 42,
+                'url': None,
             },
-        }
-    ]
+            'b': {
+                'tests': {
+                    'Unittest3.Subtest1': {
+                        'repo_name': 'chromium',
+                        'revision': 'r4_10',
+                        'commit_position': 410,
+                        'url': None,
+                    },
+                }
+            }
+        },
+    }]
     try_job.put()
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
@@ -760,108 +763,105 @@ class FinditApiTest(testing.EndpointsTestCase):
         },
     }
     analysis.result = {
-        'failures': [
-            {
-                'step_name': 'a',
+        'failures': [{
+            'step_name':
+                'a',
+            'first_failure':
+                4,
+            'last_pass':
+                3,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 4,
+                'repo_name': 'chromium',
+                'revision': 'r4_2_failed',
+                'commit_position': None,
+                'url': None,
+                'score': 2,
+                'hints': {
+                    'modified f4_2.cc (and it was in log)': 2,
+                },
+            }],
+        }, {
+            'step_name':
+                'b on platform',
+            'first_failure':
+                3,
+            'last_pass':
+                2,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 3,
+                'repo_name': 'chromium',
+                'revision': 'r3_1',
+                'commit_position': None,
+                'url': None,
+                'score': 5,
+                'hints': {
+                    'added x/y/f3_1.cc (and it was in log)': 5,
+                },
+            }, {
+                'build_number': 4,
+                'repo_name': 'chromium',
+                'revision': 'r4_1',
+                'commit_position': None,
+                'url': None,
+                'score': 2,
+                'hints': {
+                    'modified f4.cc (and it was in log)': 2,
+                },
+            }],
+            'tests': [{
+                'test_name':
+                    'Unittest1.Subtest1',
+                'first_failure':
+                    3,
+                'last_pass':
+                    2,
+                'suspected_cls': [{
+                    'build_number': 2,
+                    'repo_name': 'chromium',
+                    'revision': 'r2_1',
+                    'commit_position': None,
+                    'url': None,
+                    'score': 5,
+                    'hints': {
+                        'added x/y/f99_1.cc (and it was in log)': 5,
+                    },
+                }]
+            }, {
+                'test_name':
+                    'Unittest2.Subtest1',
+                'first_failure':
+                    4,
+                'last_pass':
+                    2,
+                'suspected_cls': [{
+                    'build_number': 2,
+                    'repo_name': 'chromium',
+                    'revision': 'r2_1',
+                    'commit_position': None,
+                    'url': None,
+                    'score': 5,
+                    'hints': {
+                        'added x/y/f99_1.cc (and it was in log)': 5,
+                    },
+                }]
+            }, {
+                'test_name': 'Unittest3.Subtest1',
                 'first_failure': 4,
-                'last_pass': 3,
-                'supported': True,
-                'suspected_cls': [
-                    {
-                        'build_number': 4,
-                        'repo_name': 'chromium',
-                        'revision': 'r4_2_failed',
-                        'commit_position': None,
-                        'url': None,
-                        'score': 2,
-                        'hints': {
-                            'modified f4_2.cc (and it was in log)': 2,
-                        },
-                    }
-                ],
-            },
-            {
-                'step_name': 'b on platform',
-                'first_failure': 3,
                 'last_pass': 2,
-                'supported': True,
-                'suspected_cls': [
-                    {
-                        'build_number': 3,
-                        'repo_name': 'chromium',
-                        'revision': 'r3_1',
-                        'commit_position': None,
-                        'url': None,
-                        'score': 5,
-                        'hints': {
-                            'added x/y/f3_1.cc (and it was in log)': 5,
-                        },
-                    },
-                    {
-                        'build_number': 4,
-                        'repo_name': 'chromium',
-                        'revision': 'r4_1',
-                        'commit_position': None,
-                        'url': None,
-                        'score': 2,
-                        'hints': {
-                            'modified f4.cc (and it was in log)': 2,
-                        },
-                    }
-                ],
-                'tests': [
-                    {
-                        'test_name': 'Unittest1.Subtest1',
-                        'first_failure': 3,
-                        'last_pass': 2,
-                        'suspected_cls': [
-                            {
-                                'build_number': 2,
-                                'repo_name': 'chromium',
-                                'revision': 'r2_1',
-                                'commit_position': None,
-                                'url': None,
-                                'score': 5,
-                                'hints': {
-                                    'added x/y/f99_1.cc (and it was in log)': 5,
-                                },
-                            }
-                        ]
-                    },
-                    {
-                        'test_name': 'Unittest2.Subtest1',
-                        'first_failure': 4,
-                        'last_pass': 2,
-                        'suspected_cls': [
-                            {
-                                'build_number': 2,
-                                'repo_name': 'chromium',
-                                'revision': 'r2_1',
-                                'commit_position': None,
-                                'url': None,
-                                'score': 5,
-                                'hints': {
-                                    'added x/y/f99_1.cc (and it was in log)': 5,
-                                },
-                            }
-                        ]
-                    },
-                    {
-                        'test_name': 'Unittest3.Subtest1',
-                        'first_failure': 4,
-                        'last_pass': 2,
-                        'suspected_cls': []
-                    }
-                ]
-            },
-            {
-                'step_name': 'c',
-                'first_failure': 4,
-                'last_pass': 3,
-                'supported': False,
-                'suspected_cls': [],
-            }
-        ]
+                'suspected_cls': []
+            }]
+        }, {
+            'step_name': 'c',
+            'first_failure': 4,
+            'last_pass': 3,
+            'supported': False,
+            'suspected_cls': [],
+        }]
     }
     analysis.put()
 
@@ -875,15 +875,15 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     suspected_cl_21 = WfSuspectedCL.Create('chromium', 'r2_1', None)
     suspected_cl_21.builds = {
-      build_util.CreateBuildId(master_name, builder_name, 3): {
+        build_util.CreateBuildId(master_name, builder_name, 3): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'top_score': 5
         },
-      build_util.CreateBuildId(master_name, builder_name, 4): {
+        build_util.CreateBuildId(master_name, builder_name, 4): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'top_score': 5
         },
-      build_util.CreateBuildId(master_name, builder_name, build_number): {
+        build_util.CreateBuildId(master_name, builder_name, build_number): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'top_score': 5
         }
@@ -892,12 +892,14 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     suspected_cl_410 = WfSuspectedCL.Create('chromium', 'r4_10', None)
     suspected_cl_410.builds = {
-      build_util.CreateBuildId(master_name, builder_name, 4): {
-            'approaches': [analysis_approach_type.HEURISTIC,
-                           analysis_approach_type.TRY_JOB],
-            'top_score': 5
+        build_util.CreateBuildId(master_name, builder_name, 4): {
+            'approaches': [
+                analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB
+            ],
+            'top_score':
+                5
         },
-      build_util.CreateBuildId(master_name, builder_name, build_number): {
+        build_util.CreateBuildId(master_name, builder_name, build_number): {
             'approaches': [analysis_approach_type.HEURISTIC],
             'top_score': 5
         }
@@ -908,10 +910,9 @@ class FinditApiTest(testing.EndpointsTestCase):
     suspected_cl_410.put()
 
     def confidence_side_effect(_, build_info, first_build_info):
-      if (first_build_info and
-          first_build_info.get('approaches') == [
-              analysis_approach_type.HEURISTIC,
-              analysis_approach_type.TRY_JOB]):
+      if (first_build_info and first_build_info.get('approaches') == [
+          analysis_approach_type.HEURISTIC, analysis_approach_type.TRY_JOB
+      ]):
         return 100, analysis_approach_type.TRY_JOB
       if build_info and build_info.get('top_score'):
         return 90, analysis_approach_type.HEURISTIC
@@ -919,114 +920,151 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     mock_fn.side_effect = confidence_side_effect
 
-    expected_results = [
-        {
-            'master_url': master_url,
-            'builder_name': builder_name,
-            'build_number': build_number,
-            'step_name': 'a',
-            'is_sub_test': False,
-            'first_known_failed_build_number': 4,
-            'suspected_cls': [
-                {
-                    'repo_name': 'chromium',
-                    'revision': 'r4_2',
-                    'commit_position': 42,
-                    'confidence': 98,
-                    'analysis_approach': 'TRY_JOB'
-                }
-            ],
+    expected_results = [{
+        'master_url':
+            master_url,
+        'builder_name':
+            builder_name,
+        'build_number':
+            build_number,
+        'step_name':
+            'a',
+        'is_sub_test':
+            False,
+        'first_known_failed_build_number':
+            4,
+        'suspected_cls': [{
+            'repo_name': 'chromium',
+            'revision': 'r4_2',
+            'commit_position': 42,
+            'confidence': 98,
+            'analysis_approach': 'TRY_JOB'
+        }],
+        'analysis_approach':
+            'TRY_JOB',
+        'is_flaky_test':
+            False,
+        'try_job_status':
+            'FINISHED',
+        'has_findings':
+            True,
+        'is_finished':
+            True,
+        'is_supported':
+            True,
+    }, {
+        'master_url':
+            master_url,
+        'builder_name':
+            builder_name,
+        'build_number':
+            build_number,
+        'step_name':
+            'b on platform',
+        'is_sub_test':
+            True,
+        'test_name':
+            'Unittest1.Subtest1',
+        'first_known_failed_build_number':
+            3,
+        'suspected_cls': [{
+            'repo_name': 'chromium',
+            'revision': 'r2_1',
+            'confidence': 90,
+            'analysis_approach': 'HEURISTIC'
+        }],
+        'analysis_approach':
+            'HEURISTIC',
+        'is_flaky_test':
+            False,
+        'try_job_status':
+            'FINISHED',
+        'has_findings':
+            True,
+        'is_finished':
+            True,
+        'is_supported':
+            True,
+    }, {
+        'master_url':
+            master_url,
+        'builder_name':
+            builder_name,
+        'build_number':
+            build_number,
+        'step_name':
+            'b on platform',
+        'is_sub_test':
+            True,
+        'test_name':
+            'Unittest2.Subtest1',
+        'first_known_failed_build_number':
+            4,
+        'suspected_cls': [{
+            'repo_name': 'chromium',
+            'revision': 'r2_1',
+            'confidence': 90,
+            'analysis_approach': 'HEURISTIC'
+        }],
+        'analysis_approach':
+            'HEURISTIC',
+        'is_flaky_test':
+            False,
+        'try_job_status':
+            'FINISHED',
+        'has_findings':
+            True,
+        'is_finished':
+            True,
+        'is_supported':
+            True,
+    }, {
+        'master_url':
+            master_url,
+        'builder_name':
+            builder_name,
+        'build_number':
+            build_number,
+        'step_name':
+            'b on platform',
+        'is_sub_test':
+            True,
+        'test_name':
+            'Unittest3.Subtest1',
+        'first_known_failed_build_number':
+            4,
+        'suspected_cls': [{
+            'repo_name': 'chromium',
+            'revision': 'r4_10',
+            'commit_position': 410,
             'analysis_approach': 'TRY_JOB',
-            'is_flaky_test': False,
-            'try_job_status': 'FINISHED',
-            'has_findings': True,
-            'is_finished': True,
-            'is_supported': True,
-        },
-        {
-            'master_url': master_url,
-            'builder_name': builder_name,
-            'build_number': build_number,
-            'step_name': 'b on platform',
-            'is_sub_test': True,
-            'test_name': 'Unittest1.Subtest1',
-            'first_known_failed_build_number': 3,
-            'suspected_cls': [
-                {
-                    'repo_name': 'chromium',
-                    'revision': 'r2_1',
-                    'confidence': 90,
-                    'analysis_approach': 'HEURISTIC'
-                }
-            ],
-            'analysis_approach': 'HEURISTIC',
-            'is_flaky_test': False,
-            'try_job_status': 'FINISHED',
-            'has_findings': True,
-            'is_finished': True,
-            'is_supported': True,
-        },
-        {
-            'master_url': master_url,
-            'builder_name': builder_name,
-            'build_number': build_number,
-            'step_name': 'b on platform',
-            'is_sub_test': True,
-            'test_name': 'Unittest2.Subtest1',
-            'first_known_failed_build_number': 4,
-            'suspected_cls': [
-                {
-                    'repo_name': 'chromium',
-                    'revision': 'r2_1',
-                    'confidence': 90,
-                    'analysis_approach': 'HEURISTIC'
-                }
-            ],
-            'analysis_approach': 'HEURISTIC',
-            'is_flaky_test': False,
-            'try_job_status': 'FINISHED',
-            'has_findings': True,
-            'is_finished': True,
-            'is_supported': True,
-        },
-        {
-            'master_url': master_url,
-            'builder_name': builder_name,
-            'build_number': build_number,
-            'step_name': 'b on platform',
-            'is_sub_test': True,
-            'test_name': 'Unittest3.Subtest1',
-            'first_known_failed_build_number': 4,
-            'suspected_cls': [
-                {
-                    'repo_name': 'chromium',
-                    'revision': 'r4_10',
-                    'commit_position': 410,
-                    'analysis_approach': 'TRY_JOB',
-                    'confidence': 100,
-                    'revert_cl_url': 'revert_cl_url'
-                }
-            ],
-            'analysis_approach': 'TRY_JOB',
-            'is_flaky_test': False,
-            'try_job_status': 'FINISHED',
-            'has_findings': True,
-            'is_finished': True,
-            'is_supported': True,
-        },
-        {
-          'master_url': master_url,
-          'builder_name': builder_name,
-          'build_number': build_number,
-          'step_name': 'c',
-          'is_sub_test': False,
-          'analysis_approach': 'HEURISTIC',
-          'is_flaky_test': False,
-          'has_findings': False,
-          'is_finished': True,
-          'is_supported': False,
-        }
-    ]
+            'confidence': 100,
+            'revert_cl_url': 'revert_cl_url'
+        }],
+        'analysis_approach':
+            'TRY_JOB',
+        'is_flaky_test':
+            False,
+        'try_job_status':
+            'FINISHED',
+        'has_findings':
+            True,
+        'is_finished':
+            True,
+        'is_supported':
+            True,
+    }, {
+        'master_url': master_url,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': 'c',
+        'is_sub_test': False,
+        'analysis_approach': 'HEURISTIC',
+        'is_flaky_test': False,
+        'has_findings': False,
+        'is_finished': True,
+        'is_supported': False,
+    }]
 
     self._MockMasterIsSupported(supported=True)
 
@@ -1043,13 +1081,11 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
-        'builds': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number
-            }
-        ]
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number
+        }]
     }
 
     expected_result = []
@@ -1071,33 +1107,34 @@ class FinditApiTest(testing.EndpointsTestCase):
             },
         ]
     }
-    self.assertEqual(
-        expected_payload_json,
-        json.loads(self.taskqueue_requests[0].get('payload')))
+    self.assertEqual(expected_payload_json,
+                     json.loads(self.taskqueue_requests[0].get('payload')))
 
   @mock.patch.object(findit_api, '_AsyncProcessFlakeReport', return_value=None)
   def testUnauthorizedRequestToAnalyzeFlake(self, mocked_func):
     self.mock_current_user(user_email='test@chromium.org', is_admin=False)
 
     flake = {
-        'name': 'suite.test',
-        'is_step': False,
-        'bug_id': 123,
-        'build_steps': [
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 456,
-                'step_name': 'name (with patch) on Windows-7-SP1',
-            }
-        ]
+        'name':
+            'suite.test',
+        'is_step':
+            False,
+        'bug_id':
+            123,
+        'build_steps': [{
+            'master_name': 'm',
+            'builder_name': 'b',
+            'build_number': 456,
+            'step_name': 'name (with patch) on Windows-7-SP1',
+        }]
     }
 
     self.assertRaisesRegexp(
         webtest.app.AppError,
-        re.compile('.*401 Unauthorized.*',
-                   re.MULTILINE | re.DOTALL),
-        self.call_api, 'AnalyzeFlake', body=flake)
+        re.compile('.*401 Unauthorized.*', re.MULTILINE | re.DOTALL),
+        self.call_api,
+        'AnalyzeFlake',
+        body=flake)
     mocked_func.assert_not_called()
 
   @mock.patch.object(
@@ -1106,17 +1143,18 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
     flake = {
-        'name': 'suite.test',
-        'is_step': False,
-        'bug_id': 123,
-        'build_steps': [
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 456,
-                'step_name': 'name (with patch) on Windows-7-SP1',
-            }
-        ]
+        'name':
+            'suite.test',
+        'is_step':
+            False,
+        'bug_id':
+            123,
+        'build_steps': [{
+            'master_name': 'm',
+            'builder_name': 'b',
+            'build_number': 456,
+            'step_name': 'name (with patch) on Windows-7-SP1',
+        }]
     }
 
     response = self.call_api('AnalyzeFlake', body=flake)
@@ -1129,17 +1167,18 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
     flake = {
-        'name': 'suite.test',
-        'is_step': False,
-        'bug_id': 123,
-        'build_steps': [
-            {
-                'master_name': 'm',
-                'builder_name': 'b',
-                'build_number': 456,
-                'step_name': 'name (with patch) on Windows-7-SP1',
-            }
-        ]
+        'name':
+            'suite.test',
+        'is_step':
+            False,
+        'bug_id':
+            123,
+        'build_steps': [{
+            'master_name': 'm',
+            'builder_name': 'b',
+            'build_number': 456,
+            'step_name': 'name (with patch) on Windows-7-SP1',
+        }]
     }
 
     response = self.call_api('AnalyzeFlake', body=flake)
@@ -1168,7 +1207,6 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(status, findit_api._TryJobStatus.RUNNING)
     self.assertIsNone(culprit)
 
-
   def testGetStatusAndCulpritFromTryJobTryJobFailed(self):
     try_job = WfTryJob.Create('m', 'b', 123)
     try_job.status = analysis_status.ERROR
@@ -1186,32 +1224,28 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
-        'builds': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number,
-                'failed_steps': ['a']
-            }
-        ]
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'failed_steps': ['a']
+        }]
     }
 
     self._MockMasterIsSupported(supported=True)
 
-    expected_results = [
-        {
-            'master_url': master_url,
-            'builder_name': builder_name,
-            'build_number': build_number,
-            'step_name': 'a',
-            'analysis_approach': 'HEURISTIC',
-            'is_sub_test': False,
-            'is_flaky_test': False,
-            'has_findings': False,
-            'is_finished': False,
-            'is_supported': True,
-        }
-    ]
+    expected_results = [{
+        'master_url': master_url,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': 'a',
+        'analysis_approach': 'HEURISTIC',
+        'is_sub_test': False,
+        'is_flaky_test': False,
+        'has_findings': False,
+        'is_finished': False,
+        'is_supported': True,
+    }]
 
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = analysis_status.RUNNING
@@ -1231,19 +1265,18 @@ class FinditApiTest(testing.EndpointsTestCase):
 
     master_url = 'https://build.chromium.org/p/%s' % master_name
     builds = {
-        'builds': [
-            {
-                'master_url': master_url,
-                'builder_name': builder_name,
-                'build_number': build_number,
-                'failed_steps': ['a']
-            }
-        ]
+        'builds': [{
+            'master_url': master_url,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'failed_steps': ['a']
+        }]
     }
 
     self.assertRaisesRegexp(
         webtest.app.AppError,
-        re.compile('.*401 Unauthorized.*',
-                   re.MULTILINE | re.DOTALL),
-        self.call_api, 'AnalyzeBuildFailures', body=builds)
+        re.compile('.*401 Unauthorized.*', re.MULTILINE | re.DOTALL),
+        self.call_api,
+        'AnalyzeBuildFailures',
+        body=builds)
     mocked_func.assert_not_called()

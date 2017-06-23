@@ -9,6 +9,7 @@ from model.base_suspected_cl import RevertCL
 
 
 class BaseSuspectedCLTest(unittest.TestCase):
+
   def testProjectName(self):
     culprit = BaseSuspectedCL.Create('chromium', 'r1', 123)
     self.assertEqual('chromium', culprit.project_name)

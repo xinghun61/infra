@@ -18,8 +18,8 @@ class FlakeTryJobDataTest(TestCase):
     git_hash = 'a1b2c3d4'
     try_job_id = 'try_job_id'
 
-    try_job = FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, git_hash)
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, git_hash)
     try_job_data = FlakeTryJobData.Create(try_job_id)
     try_job_data.try_job_key = try_job.key
 

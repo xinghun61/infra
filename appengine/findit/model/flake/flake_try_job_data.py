@@ -9,7 +9,6 @@ from model.base_try_job_data import BaseTryJobData
 
 
 class FlakeTryJobData(BaseTryJobData):
-
   """Represents a flake try job's metadata."""
 
   # The key of the original analysis that triggered this flake try job.

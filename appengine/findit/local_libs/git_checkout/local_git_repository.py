@@ -20,8 +20,8 @@ _CHANGELOG_FORMAT_STRING = ('commit %H%n'
                             'committer-mail %ce%n'
                             'committer-time %cd%n%n'
                             '--Message start--%n%B%n--Message end--%n')
-_CHANGELOGS_FORMAT_STRING = ('**Changelog start**%%n%s' %
-                             _CHANGELOG_FORMAT_STRING)
+_CHANGELOGS_FORMAT_STRING = (
+    '**Changelog start**%%n%s' % _CHANGELOG_FORMAT_STRING)
 CHECKOUT_ROOT_DIR = os.path.join(os.path.expanduser('~'), '.local_checkouts')
 
 
@@ -57,7 +57,7 @@ class LocalGitRepository(GitRepository):
     self.diff_parser = local_git_parsers.GitDiffParser()
 
   @classmethod
-  def Factory(cls): # pragma: no cover
+  def Factory(cls):  # pragma: no cover
     """Construct a factory for creating ``LocalGitRepository`` instances.
 
     Returns:
@@ -90,11 +90,10 @@ class LocalGitRepository(GitRepository):
       # Clone the repo if needed.
       if not os.path.exists(self.real_repo_path):
         try:
-          subprocess.check_call(['git', 'clone',
-                                 self.repo_url, self.real_repo_path])
+          subprocess.check_call(
+              ['git', 'clone', self.repo_url, self.real_repo_path])
         except subprocess.CalledProcessError as e:  # pragma: no cover.
-          raise Exception(
-              'Exception while cloning %s: %s' % (self.repo_url, e))
+          raise Exception('Exception while cloning %s: %s' % (self.repo_url, e))
       # Update repo if it's already cloned.
       else:
         try:
@@ -103,10 +102,12 @@ class LocalGitRepository(GitRepository):
             subprocess.check_call(
                 'cd %s && git fetch --tags && git merge FETCH_HEAD' %
                 self.real_repo_path,
-                stdout=null_handle, stderr=null_handle, shell=True)
+                stdout=null_handle,
+                stderr=null_handle,
+                shell=True)
         except subprocess.CalledProcessError as e:  # pragma: no cover.
-          raise Exception(
-              'Exception while updating %s: %s' % (self.repo_path, e))
+          raise Exception('Exception while updating %s: %s' % (self.repo_path,
+                                                               e))
 
       LocalGitRepository._updated_repos.add(self.repo_url)
 
@@ -114,7 +115,7 @@ class LocalGitRepository(GitRepository):
     # Change local time to utc time.
     if utc:
       command = 'TZ=UTC %s --date=format-local:"%s"' % (
-                command, local_git_parsers.DATETIME_FORMAT)
+          command, local_git_parsers.DATETIME_FORMAT)
     return 'cd %s && %s' % (self.real_repo_path, command)
 
   def GetChangeLog(self, revision):
@@ -127,10 +128,10 @@ class LocalGitRepository(GitRepository):
 
   def GetChangeLogs(self, start_revision, end_revision):  # pylint: disable=W
     """Returns change log list in (start_revision, end_revision]."""
-    command = ('git log --pretty=format:"%s" --raw --no-abbrev %s' % (
-                   _CHANGELOGS_FORMAT_STRING,
-                   '%s..%s' % (ConvertRemoteCommitToLocal(start_revision),
-                               ConvertRemoteCommitToLocal(end_revision))))
+    command = ('git log --pretty=format:"%s" --raw --no-abbrev %s' %
+               (_CHANGELOGS_FORMAT_STRING,
+                '%s..%s' % (ConvertRemoteCommitToLocal(start_revision),
+                            ConvertRemoteCommitToLocal(end_revision))))
     output = script_util.GetCommandOutput(self._GetFinalCommand(command, True))
     return self.changelogs_parser(output, self.repo_url)
 

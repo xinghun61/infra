@@ -51,16 +51,20 @@ def _GetSuspectedFlakeInfo(analysis):
   assert data_point
 
   return {
-      'confidence': analysis.confidence_in_suspected_build,
-      'build_number': analysis.suspected_flake_build_number,
-      'commit_position': data_point.commit_position,
-      'git_hash': data_point.git_hash,
+      'confidence':
+          analysis.confidence_in_suspected_build,
+      'build_number':
+          analysis.suspected_flake_build_number,
+      'commit_position':
+          data_point.commit_position,
+      'git_hash':
+          data_point.git_hash,
       'lower_bound_commit_position': (
           data_point.previous_build_commit_position),
-      'lower_bound_git_hash': data_point.previous_build_git_hash,
-      'triage_result': (
-          analysis.triage_history[-1].triage_result if analysis.triage_history
-          else triage_status.UNTRIAGED)
+      'lower_bound_git_hash':
+          data_point.previous_build_git_hash,
+      'triage_result': (analysis.triage_history[-1].triage_result
+                        if analysis.triage_history else triage_status.UNTRIAGED)
   }
 
 
@@ -145,10 +149,7 @@ def _GetLastAttemptedSwarmingTaskDetails(analysis):
              swarming_task_id.lower() not in (NO_TASK, NO_TASK_EXCEPTION) else
              None)
 
-  return {
-      'task_id': task_id,
-      'build_number': build_number
-  }
+  return {'task_id': task_id, 'build_number': build_number}
 
 
 def _GetLastAttemptedTryJobDetails(analysis):
@@ -156,9 +157,9 @@ def _GetLastAttemptedTryJobDetails(analysis):
   if not last_attempted_revision:
     return {}
 
-  try_job = FlakeTryJob.Get(
-      analysis.master_name, analysis.builder_name, analysis.step_name,
-      analysis.test_name, last_attempted_revision)
+  try_job = FlakeTryJob.Get(analysis.master_name, analysis.builder_name,
+                            analysis.step_name, analysis.test_name,
+                            last_attempted_revision)
 
   if not try_job or not try_job.try_job_ids:
     return {}
@@ -178,8 +179,8 @@ def _GetDurationForAnalysis(analysis):
   """Returns the duration of the given analysis."""
   if analysis.status == analysis_status.PENDING:
     return None
-  return time_util.FormatDuration(
-      analysis.start_time, analysis.end_time or time_util.GetUTCNow())
+  return time_util.FormatDuration(analysis.start_time, analysis.end_time or
+                                  time_util.GetUTCNow())
 
 
 class CheckFlake(BaseHandler):
@@ -216,9 +217,13 @@ class CheckFlake(BaseHandler):
     return None
 
   @staticmethod
-  def _CreateAndScheduleFlakeAnalysis(master_name, builder_name,
-                                      build_number, step_name, test_name,
-                                      bug_id, rerun=False):
+  def _CreateAndScheduleFlakeAnalysis(master_name,
+                                      builder_name,
+                                      build_number,
+                                      step_name,
+                                      test_name,
+                                      bug_id,
+                                      rerun=False):
     # pylint: disable=unused-argument
     """Create and schedule a flake analysis.
 
@@ -241,7 +246,10 @@ class CheckFlake(BaseHandler):
     request.AddBuildStep(master_name, builder_name, build_number, step_name,
                          time_util.GetUTCNow())
     scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
-        request, user_email, is_admin, triggering_sources.FINDIT_UI,
+        request,
+        user_email,
+        is_admin,
+        triggering_sources.FINDIT_UI,
         rerun=rerun)
 
     analysis = MasterFlakeAnalysis.GetVersion(
@@ -277,7 +285,8 @@ class CheckFlake(BaseHandler):
 
       if not self._CanRerunAnalysis(analysis):
         return self.CreateError(
-          'Cannot rerun analysis if one is currently running or pending.', 400)
+            'Cannot rerun analysis if one is currently running or pending.',
+            400)
 
       master_name = analysis.original_master_name
       builder_name = analysis.original_builder_name
@@ -308,8 +317,8 @@ class CheckFlake(BaseHandler):
     bug_id = int(bug_id) if bug_id else None
 
     (analysis, scheduled) = self._CreateAndScheduleFlakeAnalysis(
-        master_name, builder_name, build_number,
-        step_name, test_name, bug_id, rerun)
+        master_name, builder_name, build_number, step_name, test_name, bug_id,
+        rerun)
 
     if not analysis:
       if scheduled is None:
@@ -318,9 +327,9 @@ class CheckFlake(BaseHandler):
         return {
             'template': 'error.html',
             'data': {
-                'error_message':
-                    ('No permission to schedule an analysis for flaky test. '
-                     'Please log in with your @google.com account first.'),
+                'error_message': (
+                    'No permission to schedule an analysis for flaky test. '
+                    'Please log in with your @google.com account first.'),
             },
             'return_code': 403,
         }
@@ -372,30 +381,47 @@ class CheckFlake(BaseHandler):
         analysis.data_points)
 
     data = {
-        'key': analysis.key.urlsafe(),
-        'master_name': analysis.master_name,
-        'builder_name': analysis.builder_name,
-        'build_number': analysis.build_number,
-        'step_name': analysis.step_name,
-        'test_name': analysis.test_name,
+        'key':
+            analysis.key.urlsafe(),
+        'master_name':
+            analysis.master_name,
+        'builder_name':
+            analysis.builder_name,
+        'build_number':
+            analysis.build_number,
+        'step_name':
+            analysis.step_name,
+        'test_name':
+            analysis.test_name,
         'pass_rates': [],
-        'analysis_status': analysis.status_description,
-        'try_job_status': analysis_status.STATUS_TO_DESCRIPTION.get(
-            analysis.try_job_status),
-        'last_attempted_swarming_task': _GetLastAttemptedSwarmingTaskDetails(
-            analysis),
-        'last_attempted_try_job': _GetLastAttemptedTryJobDetails(analysis),
-        'version_number': analysis.version_number,
-        'suspected_flake': suspected_flake,
-        'culprit': culprit,
-        'request_time': time_util.FormatDatetime(
-            analysis.request_time),
-        'build_level_number': build_level_number,
-        'revision_level_number': revision_level_number,
-        'error': analysis.error_message,
-        'iterations_to_rerun': analysis.iterations_to_rerun,
-        'show_input_ui': self._ShowCustomRunOptions(analysis),
-        'show_rerun_ui': self._ShowCustomRunOptions(analysis)
+        'analysis_status':
+            analysis.status_description,
+        'try_job_status':
+            analysis_status.STATUS_TO_DESCRIPTION.get(analysis.try_job_status),
+        'last_attempted_swarming_task':
+            _GetLastAttemptedSwarmingTaskDetails(analysis),
+        'last_attempted_try_job':
+            _GetLastAttemptedTryJobDetails(analysis),
+        'version_number':
+            analysis.version_number,
+        'suspected_flake':
+            suspected_flake,
+        'culprit':
+            culprit,
+        'request_time':
+            time_util.FormatDatetime(analysis.request_time),
+        'build_level_number':
+            build_level_number,
+        'revision_level_number':
+            revision_level_number,
+        'error':
+            analysis.error_message,
+        'iterations_to_rerun':
+            analysis.iterations_to_rerun,
+        'show_input_ui':
+            self._ShowCustomRunOptions(analysis),
+        'show_rerun_ui':
+            self._ShowCustomRunOptions(analysis)
     }
 
     if (users.is_current_user_admin() and analysis.completed and
@@ -403,13 +429,9 @@ class CheckFlake(BaseHandler):
       data['triage_history'] = analysis.GetTriageHistory()
 
     data['pending_time'] = time_util.FormatDuration(
-        analysis.request_time,
-        analysis.start_time or time_util.GetUTCNow())
+        analysis.request_time, analysis.start_time or time_util.GetUTCNow())
     data['duration'] = _GetDurationForAnalysis(analysis)
 
     data['pass_rates'] = _GetCoordinatesData(analysis)
 
-    return {
-        'template': 'flake/result.html',
-        'data': data
-    }
+    return {'template': 'flake/result.html', 'data': data}

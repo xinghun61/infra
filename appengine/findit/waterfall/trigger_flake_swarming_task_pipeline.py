@@ -5,7 +5,7 @@
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from waterfall import monitoring
 from waterfall import waterfall_config
-from waterfall.trigger_base_swarming_task_pipeline import(
+from waterfall.trigger_base_swarming_task_pipeline import (
     TriggerBaseSwarmingTaskPipeline)
 
 
@@ -21,19 +21,19 @@ class TriggerFlakeSwarmingTaskPipeline(TriggerBaseSwarmingTaskPipeline):
     return (master_name, builder_name, build_number, step_name, test_name)
 
   # pylint: disable=arguments-differ
-  def _GetSwarmingTask(self, master_name, builder_name, build_number,
-                       step_name, test_name):
+  def _GetSwarmingTask(self, master_name, builder_name, build_number, step_name,
+                       test_name):
     # Get the appropriate kind of Swarming Task (Flake).
-    swarming_task = FlakeSwarmingTask.Get(
-        master_name, builder_name, build_number, step_name, test_name)
+    swarming_task = FlakeSwarmingTask.Get(master_name, builder_name,
+                                          build_number, step_name, test_name)
     return swarming_task
 
   # pylint: disable=arguments-differ
   def _CreateSwarmingTask(self, master_name, builder_name, build_number,
                           step_name, test_name):
     # Create the appropriate kind of Swarming Task (Flake).
-    swarming_task = FlakeSwarmingTask.Create(
-        master_name, builder_name, build_number, step_name, test_name)
+    swarming_task = FlakeSwarmingTask.Create(master_name, builder_name,
+                                             build_number, step_name, test_name)
     return swarming_task
 
   def _GetIterationsToRerun(self):
@@ -42,8 +42,10 @@ class TriggerFlakeSwarmingTaskPipeline(TriggerBaseSwarmingTaskPipeline):
     return swarming_rerun_settings.get('iterations_to_rerun', 100)
 
   def _OnTaskTriggered(self):  # pragma: no cover.
-    monitoring.swarming_tasks.increment(
-        {'operation': 'trigger', 'category': 'identify-regression-range'})
+    monitoring.swarming_tasks.increment({
+        'operation': 'trigger',
+        'category': 'identify-regression-range'
+    })
 
   def _GetAdditionalTags(self):  # pragma: no cover.
     return ['purpose:identify-regression-range']

@@ -132,36 +132,37 @@ class ExtractSignalPipeline(BasePipeline):
       else:
         # TODO: do test-level analysis instead of step-level.
         # TODO: Use swarming test result instead of archived gtest results
-        gtest_result = buildbot.GetGtestResultLog(
-            master_name, builder_name, build_number, step_name)
+        gtest_result = buildbot.GetGtestResultLog(master_name, builder_name,
+                                                  build_number, step_name)
         if gtest_result:
           failure_log = _GetReliableTestFailureLog(gtest_result)
 
         if gtest_result is None or failure_log == 'invalid':
           if not lock_util.WaitUntilDownloadAllowed(
               master_name):  # pragma: no cover
-            raise pipeline.Retry('Failed to pull log of step %s of master %s'
-                                 % (step_name, master_name))
+            raise pipeline.Retry('Failed to pull log of step %s of master %s' %
+                                 (step_name, master_name))
           try:
-            failure_log = buildbot.GetStepLog(
-                master_name, builder_name, build_number, step_name,
-                self.HTTP_CLIENT)
+            failure_log = buildbot.GetStepLog(master_name, builder_name,
+                                              build_number, step_name,
+                                              self.HTTP_CLIENT)
           except ResponseTooLargeError:  # pragma: no cover.
-            logging.exception(
-                'Log of step "%s" is too large for urlfetch.', step_name)
+            logging.exception('Log of step "%s" is too large for urlfetch.',
+                              step_name)
             # If the stdio log of a step is too large, we don't want to pull it
             # again in next run, because that might lead to DDoS to the master.
             # TODO: Use archived stdio logs in Google Storage instead.
             failure_log = 'Stdio log is too large for urlfetch.'
 
           if not failure_log:  # pragma: no cover
-            raise pipeline.Retry('Failed to pull stdio of step %s of master %s'
-                                 % (step_name, master_name))
+            raise pipeline.Retry(
+                'Failed to pull stdio of step %s of master %s' % (step_name,
+                                                                  master_name))
 
         # Save step log in datastore and avoid downloading again during retry.
         if not step:  # pragma: no cover
-          step = WfStep.Create(
-              master_name, builder_name, build_number, step_name)
+          step = WfStep.Create(master_name, builder_name, build_number,
+                               step_name)
 
         step.log_data = _ExtractStorablePortionOfLog(failure_log)
 
@@ -174,15 +175,13 @@ class ExtractSignalPipeline(BasePipeline):
       # TODO: save result in datastore?
       if step.isolated:
         try:
-          json_failure_log = (
-              json.loads(failure_log) if failure_log != 'flaky' else {})
+          json_failure_log = (json.loads(failure_log)
+                              if failure_log != 'flaky' else {})
         except ValueError:  # pragma: no cover
           json_failure_log = {}
           logging.warning('failure_log %s is not valid JSON.' % failure_log)
 
-        signals[step_name] = {
-            'tests': {}
-        }
+        signals[step_name] = {'tests': {}}
         step_signal = FailureSignal()
 
         for test_name, test_failure_log in json_failure_log.iteritems():

@@ -14,8 +14,11 @@ from libs.http.retry_http_client import RetryHttpClient
 class HttpClientAppengine(RetryHttpClient):
   """A http client for running on appengine."""
 
-  def __init__(self, follow_redirects=True,
-               authenticator=auth_util.Authenticator(), *args, **kwargs):
+  def __init__(self,
+               follow_redirects=True,
+               authenticator=auth_util.Authenticator(),
+               *args,
+               **kwargs):
     super(HttpClientAppengine, self).__init__(*args, **kwargs)
     self.follow_redirects = follow_redirects
     self.authenticator = authenticator
@@ -35,8 +38,13 @@ class HttpClientAppengine(RetryHttpClient):
     headers.update(self.authenticator.GetHttpHeadersFor(url))
 
     result = urlfetch.fetch(
-        url, payload=data, method=method, headers=headers, deadline=timeout,
-        follow_redirects=self.follow_redirects, validate_certificate=True)
+        url,
+        payload=data,
+        method=method,
+        headers=headers,
+        deadline=timeout,
+        follow_redirects=self.follow_redirects,
+        validate_certificate=True)
 
     if self._ShouldLogError(result.status_code):
       logging.error('Request to %s resulted in %d, headers:%s', url,

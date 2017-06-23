@@ -44,11 +44,11 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
             }
         }
     }
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
     analysis.Save()
-    try_job = FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, revision)
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, revision)
     try_job.flake_results = [{
         'url': url,
         'report': try_job_result,
@@ -56,9 +56,10 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     }]
     try_job.try_job_ids = [try_job_id]
     try_job.put()
-    ProcessFlakeTryJobResultPipeline().run(
-        revision, commit_position, try_job_result, try_job.key.urlsafe(),
-        analysis.key.urlsafe())
+    ProcessFlakeTryJobResultPipeline().run(revision, commit_position,
+                                           try_job_result,
+                                           try_job.key.urlsafe(),
+                                           analysis.key.urlsafe())
     resulting_data_point = analysis.data_points[-1]
     self.assertEqual(0.2, resulting_data_point.pass_rate)
     self.assertEqual(commit_position, resulting_data_point.commit_position)
@@ -86,11 +87,11 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
             }
         }
     }
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
     analysis.Save()
-    try_job = FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, revision)
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, revision)
     try_job.flake_results = [{
         'url': url,
         'report': try_job_result,
@@ -98,9 +99,10 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     }]
     try_job.try_job_ids = [try_job_id]
     try_job.put()
-    ProcessFlakeTryJobResultPipeline().run(
-        revision, commit_position, try_job_result, try_job.key.urlsafe(),
-        analysis.key.urlsafe())
+    ProcessFlakeTryJobResultPipeline().run(revision, commit_position,
+                                           try_job_result,
+                                           try_job.key.urlsafe(),
+                                           analysis.key.urlsafe())
     resulting_data_point = analysis.data_points[-1]
     self.assertEqual(-1, resulting_data_point.pass_rate)
     self.assertEqual(commit_position, resulting_data_point.commit_position)
@@ -108,16 +110,8 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
 
   @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
   def testGetSwarmingTaskIdForTryJob(self, mock_fn):
-    output_json_1 = {
-        'per_iteration_data': [{}, {}]
-    }
-    output_json_2 = {
-        'per_iteration_data': [
-            {
-                'Test.One': 'log for Test.One'
-            }
-        ]
-    }
+    output_json_1 = {'per_iteration_data': [{}, {}]}
+    output_json_2 = {'per_iteration_data': [{'Test.One': 'log for Test.One'}]}
     mock_fn.side_effect = [output_json_1, output_json_2]
 
     revision = 'r0'
@@ -137,7 +131,6 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
                     },
                     'step_metadata': {
                         'swarm_task_ids': ['task1', 'task2']
-
                     }
                 }
             }
@@ -146,7 +139,7 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
 
     task_id = process_flake_try_job_result_pipeline._GetSwarmingTaskIdForTryJob(
         report, revision, step_name, test_name)
-    self.assertEquals( 'task2', task_id)
+    self.assertEquals('task2', task_id)
 
   def testGetSwarmingTaskIdForTryJobNoReport(self):
     self.assertIsNone(
@@ -155,9 +148,7 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
 
   @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
   def testGetSwarmingTaskIdForTryJobNotFoundTaskWithResult(self, mock_fn):
-    output_json = {
-        'per_iteration_data': [{}, {}]
-    }
+    output_json = {'per_iteration_data': [{}, {}]}
     mock_fn.return_result = output_json
 
     revision = 'r0'
@@ -187,86 +178,86 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
         process_flake_try_job_result_pipeline._GetSwarmingTaskIdForTryJob(
             report, revision, step_name, test_name))
 
-  @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask',
-                     return_value=None)
+  @mock.patch.object(
+      swarming_util, 'GetIsolatedOutputForTask', return_value=None)
   def testGetSwarmingTaskIdForTryJobNoOutputJson(self, _):
     revision = 'r0'
     step_name = 'gl_tests'
     test_name = 'Test.One'
     report = {
-      'result': {
-        'r0': {
-          'gl_tests': {
-            'status': 'passed',
-            'valid': True,
-            'pass_fail_counts': {
-              'Test.One': {
-                'pass_count': 100,
-                'fail_count': 0
-              }
-            },
-            'step_metadata': {
-              'swarm_task_ids': ['task1', 'task2']
+        'result': {
+            'r0': {
+                'gl_tests': {
+                    'status': 'passed',
+                    'valid': True,
+                    'pass_fail_counts': {
+                        'Test.One': {
+                            'pass_count': 100,
+                            'fail_count': 0
+                        }
+                    },
+                    'step_metadata': {
+                        'swarm_task_ids': ['task1', 'task2']
+                    }
+                }
             }
-          }
         }
-      }
     }
 
     self.assertIsNone(
-      process_flake_try_job_result_pipeline._GetSwarmingTaskIdForTryJob(
-        report, revision, step_name, test_name))
+        process_flake_try_job_result_pipeline._GetSwarmingTaskIdForTryJob(
+            report, revision, step_name, test_name))
 
   def testGetSwarmingTaskIdForTryJobOnlyOneTask(self):
     revision = 'r0'
     step_name = 'gl_tests'
     test_name = 'Test.One'
     report = {
-      'result': {
-        'r0': {
-          'gl_tests': {
-            'status': 'passed',
-            'valid': True,
-            'pass_fail_counts': {
-              'Test.One': {
-                'pass_count': 100,
-                'fail_count': 0
-              }
-            },
-            'step_metadata': {
-              'swarm_task_ids': ['task1']
+        'result': {
+            'r0': {
+                'gl_tests': {
+                    'status': 'passed',
+                    'valid': True,
+                    'pass_fail_counts': {
+                        'Test.One': {
+                            'pass_count': 100,
+                            'fail_count': 0
+                        }
+                    },
+                    'step_metadata': {
+                        'swarm_task_ids': ['task1']
+                    }
+                }
             }
-          }
         }
-      }
     }
 
     self.assertEquals(
-      process_flake_try_job_result_pipeline._GetSwarmingTaskIdForTryJob(
-        report, revision, step_name, test_name), 'task1')
+        process_flake_try_job_result_pipeline._GetSwarmingTaskIdForTryJob(
+            report, revision, step_name, test_name), 'task1')
 
   def testGetSwarmingTaskIdForTryJobTestNotExist(self):
     revision = 'r0'
     step_name = 'gl_tests'
     test_name = 'Test.One'
     report = {
-      'result': {
-        'r0': {
-          'gl_tests': {
-            'status': 'passed',
-            'valid': True,
-            'pass_fail_counts': {},
-            'step_metadata': {
-              'swarm_task_ids': ['task1']
+        'result': {
+            'r0': {
+                'gl_tests': {
+                    'status': 'passed',
+                    'valid': True,
+                    'pass_fail_counts': {},
+                    'step_metadata': {
+                        'swarm_task_ids': ['task1']
+                    }
+                }
             }
-          }
         }
-      }
     }
 
     self.assertEquals(
-      process_flake_try_job_result_pipeline._GetSwarmingTaskIdForTryJob(
-        report, revision, step_name, test_name), 'task1')
+        process_flake_try_job_result_pipeline._GetSwarmingTaskIdForTryJob(
+            report, revision, step_name, test_name), 'task1')
 
   def testProcessFlakeTryJobResultPipelineTryJobFailed(self):
     master_name = 'm'
@@ -278,18 +269,12 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     commit_position = 4
     try_job_id = 'try_job_id'
     url = 'url'
-    try_job_result = {
-        'report': {
-            'result': {
-                revision: 'infra failed'
-            }
-        }
-    }
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
+    try_job_result = {'report': {'result': {revision: 'infra failed'}}}
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
     analysis.Save()
-    try_job = FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, revision)
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, revision)
     try_job.flake_results = [{
         'url': url,
         'report': try_job_result,
@@ -297,7 +282,8 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     }]
     try_job.try_job_ids = [try_job_id]
     try_job.put()
-    ProcessFlakeTryJobResultPipeline().run(
-        revision, commit_position, try_job_result, try_job.key.urlsafe(),
-        analysis.key.urlsafe())
+    ProcessFlakeTryJobResultPipeline().run(revision, commit_position,
+                                           try_job_result,
+                                           try_job.key.urlsafe(),
+                                           analysis.key.urlsafe())
     self.assertEqual([], analysis.data_points)

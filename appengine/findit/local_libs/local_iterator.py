@@ -1,7 +1,6 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Fetches entities and iterate over and process them."""
 
 from gae_libs import iterator
@@ -25,7 +24,6 @@ def ScriptIterate(query,
   """
   remote_api.EnableRemoteApi(app_id)
 
-  for entity in iterator.Iterate(query, projection=projection,
-                                 batch_size=batch_size,
-                                 batch_run=batch_run):
+  for entity in iterator.Iterate(
+      query, projection=projection, batch_size=batch_size, batch_run=batch_run):
     yield entity

@@ -12,9 +12,8 @@ from waterfall.send_notification_for_culprit_pipeline import (
 class RevertAndNotifyCulpritPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(
-      self, master_name, builder_name, build_number, culprits, heuristic_cls,
-      try_job_type):
+  def run(self, master_name, builder_name, build_number, culprits,
+          heuristic_cls, try_job_type):
     assert culprits
     # There is a try job result, checks if we can revert the culprit or send
     # notification.
@@ -34,8 +33,8 @@ class RevertAndNotifyCulpritPipeline(BasePipeline):
     else:
       # Checks if any of the culprits was also found by heuristic analysis.
       for culprit in culprits.itervalues():
-        force_notify = [
-            culprit['repo_name'], culprit['revision']] in heuristic_cls
+        force_notify = [culprit['repo_name'],
+                        culprit['revision']] in heuristic_cls
         yield SendNotificationForCulpritPipeline(
             master_name, builder_name, build_number, culprit['repo_name'],
             culprit['revision'], force_notify)

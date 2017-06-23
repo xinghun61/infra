@@ -5,9 +5,11 @@
 from collections import namedtuple
 
 
-class Region(namedtuple('Region',
-    ['start', 'count', 'revision', 'author_name', 'author_email',
-     'author_time'])):
+class Region(
+    namedtuple('Region', [
+        'start', 'count', 'revision', 'author_name', 'author_email',
+        'author_time'
+    ])):
   """A region of some (unspecified) file at a (known) revision."""
   __slots__ = ()
 
@@ -24,6 +26,7 @@ class Region(namedtuple('Region',
 
 class Blame(list):
   """A list of regions for a (known) revision of a (known) file."""
+
   def __init__(self, revision, path):
     super(Blame, self).__init__()
     self.revision = revision
@@ -49,8 +52,4 @@ class Blame(list):
     regions = []
     for region in self:
       regions.append(region.ToDict())
-    return {
-        'revision': self.revision,
-        'path': self.path,
-        'regions': regions
-    }
+    return {'revision': self.revision, 'path': self.path, 'regions': regions}

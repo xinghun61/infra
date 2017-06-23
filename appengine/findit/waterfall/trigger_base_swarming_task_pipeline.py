@@ -16,7 +16,6 @@ from waterfall import buildbot
 from waterfall import swarming_util
 from waterfall import waterfall_config
 
-
 NO_TASK = 'no_task'
 NO_TASK_EXCEPTION = 'no_task - exception'
 
@@ -32,9 +31,16 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     return 'findit/ref_task_id/%s/%s' % (
         ref_task_id, time_util.GetUTCNow().strftime('%Y-%m-%d %H:%M:%S %f'))
 
-  def _CreateNewSwarmingTaskRequest(
-      self, ref_task_id, ref_request, master_name, builder_name, build_number,
-      step_name, tests, iterations, hard_timeout_seconds=None):
+  def _CreateNewSwarmingTaskRequest(self,
+                                    ref_task_id,
+                                    ref_request,
+                                    master_name,
+                                    builder_name,
+                                    build_number,
+                                    step_name,
+                                    tests,
+                                    iterations,
+                                    hard_timeout_seconds=None):
     """Returns a SwarmingTaskRequest instance to run the given tests only."""
     # Make a copy of the referred request and drop or overwrite some fields.
     new_request = copy.deepcopy(ref_request)
@@ -56,8 +62,8 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     # Set the gtest_filter to run the given tests only.
     # Remove existing test filter first.
     new_request.extra_args = [
-        a for a in new_request.extra_args if (
-            not a.startswith('--gtest_filter') and
+        a for a in new_request.extra_args
+        if (not a.startswith('--gtest_filter') and
             not a.startswith('--test-launcher-filter-file'))
     ]
     new_request.extra_args.append('--gtest_filter=%s' % ':'.join(tests))
@@ -128,8 +134,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     # _NeedANewSwarmingTask as the arguments.
 
     # Should be overwritten in child method.
-    raise NotImplementedError(
-        '_GetArgs should be implemented in child class')
+    raise NotImplementedError('_GetArgs should be implemented in child class')
 
   def _GetSwarmingTask(self):
     # Get the appropriate kind of Swarming Task (Wf or Flake).
@@ -160,8 +165,8 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
       return True
     else:
       if (force or (swarming_task.parameters and iterations_to_rerun and
-          swarming_task.parameters.get('iterations_to_rerun') !=
-          iterations_to_rerun)):
+                    swarming_task.parameters.get('iterations_to_rerun') !=
+                    iterations_to_rerun)):
         # Triggering a new swarming task on the same build for flaky analysis.
         # Resets the existing swarming task.
         swarming_task.Reset()
@@ -199,21 +204,21 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     raise NotImplementedError(
         '_GetIterationsToRerun should be implemented in child class')
 
-  def _ReferredBuildExceptionedOut(
-      self, master_name, builder_name, build_number, http_client):
+  def _ReferredBuildExceptionedOut(self, master_name, builder_name,
+                                   build_number, http_client):
     """Checks if the build had exception, if so don't run the step."""
-    json_data = buildbot.GetBuildDataFromBuildMaster(
-        master_name, builder_name, build_number, http_client)
+    json_data = buildbot.GetBuildDataFromBuildMaster(master_name, builder_name,
+                                                     build_number, http_client)
     if not json_data:
-      logging.error('Failed to get build data for %s, %s, %s' % (
-          master_name, builder_name, build_number))
+      logging.error('Failed to get build data for %s, %s, %s' %
+                    (master_name, builder_name, build_number))
       return False
 
     try:
       build_data = json.loads(json_data)
     except ValueError:
-      logging.error('Failed to decode build data for %s, %s, %s' % (
-          master_name, builder_name, build_number))
+      logging.error('Failed to decode build data for %s, %s, %s' %
+                    (master_name, builder_name, build_number))
       return False
 
     build_result = buildbot.GetBuildResult(build_data)
@@ -221,8 +226,15 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     return build_result == buildbot.EXCEPTION
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, step_name, tests,
-          iterations_to_rerun=None, hard_timeout_seconds=None, force=False):
+  def run(self,
+          master_name,
+          builder_name,
+          build_number,
+          step_name,
+          tests,
+          iterations_to_rerun=None,
+          hard_timeout_seconds=None,
+          force=False):
     """Triggers a new Swarming task to run the given tests.
 
     Args:
@@ -239,8 +251,8 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     Returns:
       task_id (str): The new Swarming task that re-run the given tests.
     """
-    call_args = self._GetArgs(master_name, builder_name,
-                              build_number, step_name, tests)
+    call_args = self._GetArgs(master_name, builder_name, build_number,
+                              step_name, tests)
     # Check if a new Swarming Task is really needed.
     if not self._NeedANewSwarmingTask(
         *call_args, iterations_to_rerun=iterations_to_rerun, force=force):
@@ -253,16 +265,15 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
         master_name, builder_name, build_number, http_client,
         {'stepname': step_name})
     if len(swarming_task_items) < 1:
-      if self._ReferredBuildExceptionedOut(
-          master_name, builder_name, build_number, http_client):
+      if self._ReferredBuildExceptionedOut(master_name, builder_name,
+                                           build_number, http_client):
         return NO_TASK_EXCEPTION
       return NO_TASK
 
     ref_task_id = swarming_task_items[0]['task_id']
 
     # 1. Retrieve Swarming task parameters from a given Swarming task id.
-    ref_request = swarming_util.GetSwarmingTaskRequest(
-        ref_task_id, http_client)
+    ref_request = swarming_util.GetSwarmingTaskRequest(ref_task_id, http_client)
 
     # 2. Update/Overwrite parameters for the re-run.
     iterations_to_rerun = iterations_to_rerun or self._GetIterationsToRerun()

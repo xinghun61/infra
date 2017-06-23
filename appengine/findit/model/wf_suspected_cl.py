@@ -95,6 +95,6 @@ class WfSuspectedCL(BaseSuspectedCL):
     return instance
 
   def GetBuildInfo(self, master_name, builder_name, build_number):
-    build_key = BaseBuildModel.CreateBuildId(
-        master_name, builder_name, build_number)
+    build_key = BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                             build_number)
     return self.builds.get(build_key)

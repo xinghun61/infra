@@ -82,7 +82,6 @@ _MOCK_SWARMING_SETTINGS = {
     'per_iteration_timeout_seconds': 60,
 }
 
-
 _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS = {
     'download_interval_seconds': 10,
     'memcache_master_download_expiration_seconds': 3600,
@@ -130,9 +129,10 @@ _MOCK_VERSION_NUMBER = 12
 
 
 class ConfigTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/config', config.Configuration),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/config', config.Configuration),
+      ], debug=True)
 
   def testGetConfigurationSettings(self):
     config_data = {
@@ -148,9 +148,8 @@ class ConfigTest(testing.AppengineTestCase):
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
-    wf_config.FinditConfig.Get().Update(users.GetCurrentUser(), True,
-                                        message='message',
-                                        **config_data)
+    wf_config.FinditConfig.Get().Update(
+        users.GetCurrentUser(), True, message='message', **config_data)
 
     response = self.test_app.get('/config', params={'format': 'json'})
     self.assertEquals(response.status_int, 200)
@@ -187,12 +186,12 @@ class ConfigTest(testing.AppengineTestCase):
         'check_flake_settings': _MOCK_CHECK_FLAKE_SETTINGS,
         'code_review_settings': _MOCK_CODE_REVIEW_SETTINGS,
     }
-    wf_config.FinditConfig.Get().Update(users.GetCurrentUser(), True,
-                                        message='message',
-                                        **config_data)
+    wf_config.FinditConfig.Get().Update(
+        users.GetCurrentUser(), True, message='message', **config_data)
 
     response = self.test_app.get(
-        '/config', params={'version': 1, 'format': 'json'})
+        '/config', params={'version': 1,
+                           'format': 'json'})
     self.assertEquals(response.status_int, 200)
 
     expected_response = {
@@ -230,12 +229,18 @@ class ConfigTest(testing.AppengineTestCase):
         webtest.app.AppError,
         re.compile('The requested version is invalid or not found.',
                    re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/config', params={'version': 0, 'format': 'json'})
+        self.test_app.get,
+        '/config',
+        params={'version': 0,
+                'format': 'json'})
     self.assertRaisesRegexp(
         webtest.app.AppError,
         re.compile('The requested version is invalid or not found.',
                    re.MULTILINE | re.DOTALL),
-        self.test_app.get, '/config', params={'version': 2, 'format': 'json'})
+        self.test_app.get,
+        '/config',
+        params={'version': 2,
+                'format': 'json'})
 
   def testIsListOfType(self):
     self.assertFalse(config._IsListOfType({}, basestring))
@@ -245,197 +250,221 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertTrue(config._IsListOfType(['a', 'b'], basestring))
 
   def testValidateSupportedMastersDict(self):
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping(
-        _MOCK_STEPS_FOR_MASTERS_RULES_OLD_FORMAT))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping(
+            _MOCK_STEPS_FOR_MASTERS_RULES_OLD_FORMAT))
     self.assertFalse(config._ValidateMastersAndStepsRulesMapping(None))
     self.assertFalse(config._ValidateMastersAndStepsRulesMapping([]))
     self.assertFalse(config._ValidateMastersAndStepsRulesMapping({}))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': [],  # Should be a dict.
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': [],  # Should be a dict.
         }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {},
-        # 'global' is missing.
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {},
+            # 'global' is missing.
         }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {},
-        'global': []  # Should be a dict.
-    }))
-    self.assertTrue(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {},
-        'global': {}
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            3: {},  # Key should be a string.
-        },
-        'global': {}
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master': [],  # Value should be a dict.
-        },
-        'global': {}
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master': {
-                'check_global': 1  # Should be a bool.
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {},
+            'global': []  # Should be a dict.
+        }))
+    self.assertTrue(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {},
+            'global': {}
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                3: {},  # Key should be a string.
             },
-        },
-        'global': {}
-    }))
-    self.assertTrue(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master': {},
-        },
-        'global': {}
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master': {
-                'supported_steps': {},  # Should be a list.
-            }
-        },
-        'global': {}
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master': {
-                'supported_steps': [],  # List should not be empty.
-            }
-        },
-        'global': {}
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master': {
-                'supported_steps': [1],  # List should be of strings.
-            }
-        },
-        'global': {}
-    }))
-    self.assertTrue(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master': {
-                'supported_steps': ['step1'],
-            }
-        },
-        'global': {}
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master': {
-                'supported_steps': ['step1'],
-                'unsupported_steps': 'blabla',  # Should be a list.
-            }
-        },
-        'global': {}
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master': {
-                'supported_steps': ['step1'],
-                'unsupported_steps': [],  # List should not be empty.
-            }
-        },
-        'global': {}
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master': {
-                'supported_steps': ['step1'],
-                'unsupported_steps': [{}],  # List should be of strings.
-            }
-        },
-        'global': {}
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master': {
-                'supported_steps': ['step1'],
-                'unsupported_steps': ['step1'],  # Should not overlap.
-            }
-        },
-        'global': {}
-    }))
-    self.assertTrue(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master': {
-                'supported_steps': ['step1'],
-                'unsupported_steps': ['step2'],
-            }
-        },
-        'global': {}
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master1': {
-                'supported_steps': ['step1'],
-                'unsupported_steps': ['step2'],
+            'global': {}
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master': [],  # Value should be a dict.
             },
-        },
-        'global': {
-            'unsupported_steps': 1  # Should be a list.
-        }
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master1': {
-                'supported_steps': ['step1'],
-                'unsupported_steps': ['step2'],
+            'global': {}
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master': {
+                    'check_global': 1  # Should be a bool.
+                },
             },
-        },
-        'global': {
-            'unsupported_steps': []  # Should not be empty.
-        }
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master1': {
-                'supported_steps': ['step1'],
-                'unsupported_steps': ['step2'],
+            'global': {}
+        }))
+    self.assertTrue(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master': {},
             },
-        },
-        'global': {
-            'unsupported_steps': [1]  # Should be a list of strings.
-        }
-    }))
-    self.assertTrue(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master1': {
-                'supported_steps': ['step1'],
-                'unsupported_steps': ['step2'],
+            'global': {}
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master': {
+                    'supported_steps': {},  # Should be a list.
+                }
             },
-        },
-        'global': {
-            'unsupported_steps': ['step3']
-        }
-    }))
-    self.assertTrue(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master1': {
-                'supported_steps': ['step1'],
-                'unsupported_steps': ['step2'],
-                'check_global': True  # 'check_global' is optional.
+            'global': {}
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master': {
+                    'supported_steps': [],  # List should not be empty.
+                }
             },
-        },
-        'global': {
-            'unsupported_steps': ['step3']
-        }
-    }))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({
-        'supported_masters': {
-            'master1': {
-                'supported_steps': ['step1'],
-                'unsupported_steps': ['step2'],  # Should not be specified.
-                'check_global': False
+            'global': {}
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master': {
+                    'supported_steps': [1],  # List should be of strings.
+                }
             },
-        },
-        'global': {
-            'unsupported_steps': ['step3']
-        }
-    }))
+            'global': {}
+        }))
+    self.assertTrue(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master': {
+                    'supported_steps': ['step1'],
+                }
+            },
+            'global': {}
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master': {
+                    'supported_steps': ['step1'],
+                    'unsupported_steps': 'blabla',  # Should be a list.
+                }
+            },
+            'global': {}
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master': {
+                    'supported_steps': ['step1'],
+                    'unsupported_steps': [],  # List should not be empty.
+                }
+            },
+            'global': {}
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master': {
+                    'supported_steps': ['step1'],
+                    'unsupported_steps': [{}],  # List should be of strings.
+                }
+            },
+            'global': {}
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master': {
+                    'supported_steps': ['step1'],
+                    'unsupported_steps': ['step1'],  # Should not overlap.
+                }
+            },
+            'global': {}
+        }))
+    self.assertTrue(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master': {
+                    'supported_steps': ['step1'],
+                    'unsupported_steps': ['step2'],
+                }
+            },
+            'global': {}
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master1': {
+                    'supported_steps': ['step1'],
+                    'unsupported_steps': ['step2'],
+                },
+            },
+            'global': {
+                'unsupported_steps': 1  # Should be a list.
+            }
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master1': {
+                    'supported_steps': ['step1'],
+                    'unsupported_steps': ['step2'],
+                },
+            },
+            'global': {
+                'unsupported_steps': []  # Should not be empty.
+            }
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master1': {
+                    'supported_steps': ['step1'],
+                    'unsupported_steps': ['step2'],
+                },
+            },
+            'global': {
+                'unsupported_steps': [1]  # Should be a list of strings.
+            }
+        }))
+    self.assertTrue(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master1': {
+                    'supported_steps': ['step1'],
+                    'unsupported_steps': ['step2'],
+                },
+            },
+            'global': {
+                'unsupported_steps': ['step3']
+            }
+        }))
+    self.assertTrue(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master1': {
+                    'supported_steps': ['step1'],
+                    'unsupported_steps': ['step2'],
+                    'check_global': True  # 'check_global' is optional.
+                },
+            },
+            'global': {
+                'unsupported_steps': ['step3']
+            }
+        }))
+    self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {
+                'master1': {
+                    'supported_steps': ['step1'],
+                    'unsupported_steps': ['step2'],  # Should not be specified.
+                    'check_global': False
+                },
+            },
+            'global': {
+                'unsupported_steps': ['step3']
+            }
+        }))
 
   def testValidatingMastersAndStepRulesRemovesDuplicates(self):
     valid_rules_with_duplicates = {
@@ -452,125 +481,135 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping(
             valid_rules_with_duplicates))
-    self.assertEqual(
-        {
-            'supported_masters': {
-                'master1': {
-                    'supported_steps': ['step1', 'step1'],
-                    'unsupported_steps': ['step2', 'step2'],
-                },
+    self.assertEqual({
+        'supported_masters': {
+            'master1': {
+                'supported_steps': ['step1', 'step1'],
+                'unsupported_steps': ['step2', 'step2'],
             },
-            'global': {
-                'unsupported_steps': ['step3', 'step3']
-            }
         },
-        valid_rules_with_duplicates)
+        'global': {
+            'unsupported_steps': ['step3', 'step3']
+        }
+    }, valid_rules_with_duplicates)
 
   def testValidateTrybotMapping(self):
-    self.assertTrue(config._ValidateTrybotMapping({
-        'master1': {
-            'builder1': {
-                'mastername': 'tryserver1',
-                'waterfall_trybot': 'trybot1',
+    self.assertTrue(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'mastername': 'tryserver1',
+                    'waterfall_trybot': 'trybot1',
+                }
             }
-        }
-    }))
-    self.assertTrue(config._ValidateTrybotMapping({
-        'master1': {
-            'builder1': {
-                'mastername': 'tryserver1',
-                'waterfall_trybot': 'trybot1',
-                'flake_trybot': 'trybot1_flake'
+        }))
+    self.assertTrue(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'mastername': 'tryserver1',
+                    'waterfall_trybot': 'trybot1',
+                    'flake_trybot': 'trybot1_flake'
+                }
             }
-        }
-    }))
-    self.assertTrue(config._ValidateTrybotMapping({
-        'master1': {
-            'builder1': {
-                'mastername': 'tryserver1',
-                'waterfall_trybot': 'trybot1',
-                'strict_regex': True,
+        }))
+    self.assertTrue(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'mastername': 'tryserver1',
+                    'waterfall_trybot': 'trybot1',
+                    'strict_regex': True,
+                }
             }
-        }
-    }))
-    self.assertFalse(config._ValidateTrybotMapping({
-        'master1': {
-            'builder1': {
-                'mastername': 'tryserver1',
-                'waterfall_trybot': 'trybot1',
-                'strict_regex': 'a',
+        }))
+    self.assertFalse(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'mastername': 'tryserver1',
+                    'waterfall_trybot': 'trybot1',
+                    'strict_regex': 'a',
+                }
             }
-        }
-    }))
-    self.assertTrue(config._ValidateTrybotMapping({
-        'master1': {
-            'builder1': {
-                'mastername': 'tryserver1',
-                'waterfall_trybot': 'trybot1',
-                'not_run_tests': True,
+        }))
+    self.assertTrue(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'mastername': 'tryserver1',
+                    'waterfall_trybot': 'trybot1',
+                    'not_run_tests': True,
+                }
             }
-        }
-    }))
-    self.assertTrue(config._ValidateTrybotMapping({
-        'master1': {
-            'builder1': {
-                'swarmbucket_mastername': 'tryserver1',
-                'swarmbucket_trybot': 'trybot1',
+        }))
+    self.assertTrue(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'swarmbucket_mastername': 'tryserver1',
+                    'swarmbucket_trybot': 'trybot1',
+                }
             }
-        }
-    }))
-    self.assertFalse(config._ValidateTrybotMapping({
-        'master1': {
-            'builder1': {
-                'swarmbucket_mastername': 'tryserver1',
-                'waterfall_trybot': 'trybot1',
+        }))
+    self.assertFalse(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'swarmbucket_mastername': 'tryserver1',
+                    'waterfall_trybot': 'trybot1',
+                }
             }
-        }
-    }))
-    self.assertFalse(config._ValidateTrybotMapping({
-        'master1': {
-            'builder1': {
-                'swarmbucket_mastername': 'tryserver1',
-                'swarmbucket_trybot': ['trybot1'],
+        }))
+    self.assertFalse(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'swarmbucket_mastername': 'tryserver1',
+                    'swarmbucket_trybot': ['trybot1'],
+                }
             }
-        }
-    }))
-    self.assertFalse(config._ValidateTrybotMapping({
-        'master1': {
-            'builder1': {
-                'swarmbucket_trybot': 'trybot2',
-                'mastername': 'tryserver1',
-                'waterfall_trybot': 'trybot1',
+        }))
+    self.assertFalse(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'swarmbucket_trybot': 'trybot2',
+                    'mastername': 'tryserver1',
+                    'waterfall_trybot': 'trybot1',
+                }
             }
-        }
-    }))
-    self.assertFalse(config._ValidateTrybotMapping({
-        'master1': {
-            'builder1': {
-                'mastername': 'tryserver1',
-                'waterfall_trybot': 'trybot1',
-                'not_run_tests': 1,  # Should be a bool.
+        }))
+    self.assertFalse(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'mastername': 'tryserver1',
+                    'waterfall_trybot': 'trybot1',
+                    'not_run_tests': 1,  # Should be a bool.
+                }
             }
-        }
-    }))
-    self.assertFalse(config._ValidateTrybotMapping({
-        'master1': {
-            'builder1': {
-                'mastername': 'tryserver1',
-                'waterfall_trybot': {},  # Should be a string.
-                'flake_trybot': 'trybot2',
+        }))
+    self.assertFalse(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'mastername': 'tryserver1',
+                    'waterfall_trybot': {},  # Should be a string.
+                    'flake_trybot': 'trybot2',
+                }
             }
-        }
-    }))
-    self.assertFalse(config._ValidateTrybotMapping({
-        'master1': {
-            'builder1': {
-                'mastername': 'tryserver1',
-                'waterfall_trybot': 'trybot1',
-                'flake_trybot': 1,  # Should be a string.
+        }))
+    self.assertFalse(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'mastername': 'tryserver1',
+                    'waterfall_trybot': 'trybot1',
+                    'flake_trybot': 1,  # Should be a string.
+                }
             }
-        }
-    }))
+        }))
     self.assertFalse(config._ValidateTrybotMapping(['a']))
     self.assertFalse(config._ValidateTrybotMapping({'a': ['b']}))
     self.assertFalse(config._ValidateTrybotMapping({'a': {'b': ['1']}}))
@@ -579,336 +618,368 @@ class ConfigTest(testing.AppengineTestCase):
   def testValidateTryJobSettings(self):
     self.assertFalse(config._ValidateTryJobSettings([]))
     self.assertFalse(config._ValidateTryJobSettings({}))
-    self.assertFalse(config._ValidateTryJobSettings({
-        'server_query_interval_seconds': '1',  # Should be an int.
-        'job_timeout_hours': 1,
-        'allowed_response_error_times': 1,
-        'max_seconds_look_back_for_group': 1,
-        'pubsub_topic': 'projects/findit/topics/jobs',
-        'pubsub_token': 'DummyT0k3n$trin9z0rz',
-    }))
-    self.assertFalse(config._ValidateTryJobSettings({
-        'server_query_interval_seconds': 1,
-        'job_timeout_hours': '1',  # Should be an int.
-        'allowed_response_error_times': 1,
-        'max_seconds_look_back_for_group': 1,
-        'pubsub_topic': 'projects/findit/topics/jobs',
-        'pubsub_token': 'DummyT0k3n$trin9z0rz',
-    }))
-    self.assertFalse(config._ValidateTryJobSettings({
-        'server_query_interval_seconds': 1,
-        'job_timeout_hours': 1,
-        'allowed_response_error_times': '1',  # Should be an int.
-        'max_seconds_look_back_for_group': 1,
-        'pubsub_topic': 'projects/findit/topics/jobs',
-        'pubsub_token': 'DummyT0k3n$trin9z0rz',
-    }))
-    self.assertFalse(config._ValidateTryJobSettings({
-        'server_query_interval_seconds': 1,
-        'job_timeout_hours': 1,
-        'allowed_response_error_times': 1,
-        'max_seconds_look_back_for_group': 'a',  # Should be an int.
-        'pubsub_topic': 'projects/findit/topics/jobs',
-        'pubsub_token': 'DummyT0k3n$trin9z0rz',
-    }))
-    self.assertFalse(config._ValidateTryJobSettings({
-        'server_query_interval_seconds': 1,
-        'job_timeout_hours': 1,
-        'allowed_response_error_times': 1,
-        'max_seconds_look_back_for_group': 1,
-        'pubsub_topic': 1,  # Should be str.
-        'pubsub_token': 'DummyT0k3n$trin9z0rz',
-    }))
-    self.assertFalse(config._ValidateTryJobSettings({
-        'server_query_interval_seconds': 1,
-        'job_timeout_hours': 1,
-        'allowed_response_error_times': 1,
-        'max_seconds_look_back_for_group': 1,
-        'pubsub_topic': 'projects/findit/topics/jobs',
-        'pubsub_token': 1,  # Should be str.
-    }))
+    self.assertFalse(
+        config._ValidateTryJobSettings({
+            'server_query_interval_seconds': '1',  # Should be an int.
+            'job_timeout_hours': 1,
+            'allowed_response_error_times': 1,
+            'max_seconds_look_back_for_group': 1,
+            'pubsub_topic': 'projects/findit/topics/jobs',
+            'pubsub_token': 'DummyT0k3n$trin9z0rz',
+        }))
+    self.assertFalse(
+        config._ValidateTryJobSettings({
+            'server_query_interval_seconds': 1,
+            'job_timeout_hours': '1',  # Should be an int.
+            'allowed_response_error_times': 1,
+            'max_seconds_look_back_for_group': 1,
+            'pubsub_topic': 'projects/findit/topics/jobs',
+            'pubsub_token': 'DummyT0k3n$trin9z0rz',
+        }))
+    self.assertFalse(
+        config._ValidateTryJobSettings({
+            'server_query_interval_seconds': 1,
+            'job_timeout_hours': 1,
+            'allowed_response_error_times': '1',  # Should be an int.
+            'max_seconds_look_back_for_group': 1,
+            'pubsub_topic': 'projects/findit/topics/jobs',
+            'pubsub_token': 'DummyT0k3n$trin9z0rz',
+        }))
+    self.assertFalse(
+        config._ValidateTryJobSettings({
+            'server_query_interval_seconds': 1,
+            'job_timeout_hours': 1,
+            'allowed_response_error_times': 1,
+            'max_seconds_look_back_for_group': 'a',  # Should be an int.
+            'pubsub_topic': 'projects/findit/topics/jobs',
+            'pubsub_token': 'DummyT0k3n$trin9z0rz',
+        }))
+    self.assertFalse(
+        config._ValidateTryJobSettings({
+            'server_query_interval_seconds': 1,
+            'job_timeout_hours': 1,
+            'allowed_response_error_times': 1,
+            'max_seconds_look_back_for_group': 1,
+            'pubsub_topic': 1,  # Should be str.
+            'pubsub_token': 'DummyT0k3n$trin9z0rz',
+        }))
+    self.assertFalse(
+        config._ValidateTryJobSettings({
+            'server_query_interval_seconds': 1,
+            'job_timeout_hours': 1,
+            'allowed_response_error_times': 1,
+            'max_seconds_look_back_for_group': 1,
+            'pubsub_topic': 'projects/findit/topics/jobs',
+            'pubsub_token': 1,  # Should be str.
+        }))
     self.assertTrue(config._ValidateTryJobSettings(_MOCK_TRY_JOB_SETTINGS))
 
   def testValidateSwarmingSettings(self):
     self.assertFalse(config._ValidateSwarmingSettings([]))
     self.assertFalse(config._ValidateSwarmingSettings({}))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': ['chromium-swarm.appspot.com'],  # Should be a string.
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': 10
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': '150',  # Should be an int.
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': 10
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': {},  # Should be an int.
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': 10
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': [],  # Should be an int.
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': 10
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': None,  # should be an int.
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': 10
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 1,  # Should be a string.
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': 10
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 3.2,  # Should be a string.
-        'iterations_to_rerun': 10,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': 10
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 1.0,  # Should be an int.
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': 10
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 1,
-        'get_swarming_task_id_timeout_seconds': '300',  # Should be an int.
-        'get_swarming_task_id_wait_seconds': 10
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 1,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': []  # Should be an int.
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 1,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_secondds': 10,
-        'server_retry_timeout_hours': {}  # Should be an int.
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 1,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_secondds': 10,
-        'server_retry_timeout_hours': 1,
-        'maximum_server_contact_retry_interval_seconds': ''  # Should be an int.
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 1,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_secondds': 10,
-        'server_retry_timeout_hours': 1,
-        'maximum_server_contact_retry_interval_seconds': 2,
-        'should_retry_server': 3  # Should be a bool.
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': 10,
-        'server_retry_timeout_hours': 1,
-        'maximum_server_contact_retry_interval_seconds': 1,
-        'should_retry_server': False,
-        'minimum_number_of_available_bots': '5',  # Should be an int.
-        'minimum_percentage_of_available_bots': 0.1
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': 10,
-        'server_retry_timeout_hours': 1,
-        'maximum_server_contact_retry_interval_seconds': 1,
-        'should_retry_server': False,
-        'minimum_number_of_available_bots': 5,
-        'minimum_percentage_of_available_bots': 10  # Should be a float.
-    }))
-    self.assertFalse(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': 10,
-        'server_retry_timeout_hours': 1,
-        'maximum_server_contact_retry_interval_seconds': 1,
-        'should_retry_server': False,
-        'minimum_number_of_available_bots': 5,
-        'minimum_percentage_of_available_bots': 0.1,
-        'per_iteration_timeout_seconds': 'a'  # Should be an int.
-    }))
-    self.assertTrue(config._ValidateSwarmingSettings({
-        'server_host': 'chromium-swarm.appspot.com',
-        'default_request_priority': 150,
-        'request_expiration_hours': 20,
-        'server_query_interval_seconds': 60,
-        'task_timeout_hours': 23,
-        'isolated_server': 'https://isolateserver.appspot.com',
-        'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-        'iterations_to_rerun': 10,
-        'get_swarming_task_id_timeout_seconds': 300,
-        'get_swarming_task_id_wait_seconds': 10,
-        'server_retry_timeout_hours': 1,
-        'maximum_server_contact_retry_interval_seconds': 1,
-        'should_retry_server': False,
-        'minimum_number_of_available_bots': 5,
-        'minimum_percentage_of_available_bots': 0.1,
-        'per_iteration_timeout_seconds': 60,
-    }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': ['chromium-swarm.appspot.com'
+                           ],  # Should be a string.
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 10,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_seconds': 10
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': '150',  # Should be an int.
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 10,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_seconds': 10
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': {},  # Should be an int.
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 10,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_seconds': 10
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': [],  # Should be an int.
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 10,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_seconds': 10
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': None,  # should be an int.
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 10,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_seconds': 10
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 1,  # Should be a string.
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 10,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_seconds': 10
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 3.2,  # Should be a string.
+            'iterations_to_rerun': 10,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_seconds': 10
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 1.0,  # Should be an int.
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_seconds': 10
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 1,
+            'get_swarming_task_id_timeout_seconds': '300',  # Should be an int.
+            'get_swarming_task_id_wait_seconds': 10
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 1,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_seconds': []  # Should be an int.
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 1,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_secondds': 10,
+            'server_retry_timeout_hours': {}  # Should be an int.
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 1,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_secondds': 10,
+            'server_retry_timeout_hours': 1,
+            'maximum_server_contact_retry_interval_seconds':
+                ''  # Should be an int.
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 1,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_secondds': 10,
+            'server_retry_timeout_hours': 1,
+            'maximum_server_contact_retry_interval_seconds': 2,
+            'should_retry_server': 3  # Should be a bool.
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 10,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_seconds': 10,
+            'server_retry_timeout_hours': 1,
+            'maximum_server_contact_retry_interval_seconds': 1,
+            'should_retry_server': False,
+            'minimum_number_of_available_bots': '5',  # Should be an int.
+            'minimum_percentage_of_available_bots': 0.1
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 10,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_seconds': 10,
+            'server_retry_timeout_hours': 1,
+            'maximum_server_contact_retry_interval_seconds': 1,
+            'should_retry_server': False,
+            'minimum_number_of_available_bots': 5,
+            'minimum_percentage_of_available_bots': 10  # Should be a float.
+        }))
+    self.assertFalse(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 10,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_seconds': 10,
+            'server_retry_timeout_hours': 1,
+            'maximum_server_contact_retry_interval_seconds': 1,
+            'should_retry_server': False,
+            'minimum_number_of_available_bots': 5,
+            'minimum_percentage_of_available_bots': 0.1,
+            'per_iteration_timeout_seconds': 'a'  # Should be an int.
+        }))
+    self.assertTrue(
+        config._ValidateSwarmingSettings({
+            'server_host': 'chromium-swarm.appspot.com',
+            'default_request_priority': 150,
+            'request_expiration_hours': 20,
+            'server_query_interval_seconds': 60,
+            'task_timeout_hours': 23,
+            'isolated_server': 'https://isolateserver.appspot.com',
+            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
+            'iterations_to_rerun': 10,
+            'get_swarming_task_id_timeout_seconds': 300,
+            'get_swarming_task_id_wait_seconds': 10,
+            'server_retry_timeout_hours': 1,
+            'maximum_server_contact_retry_interval_seconds': 1,
+            'should_retry_server': False,
+            'minimum_number_of_available_bots': 5,
+            'minimum_percentage_of_available_bots': 0.1,
+            'per_iteration_timeout_seconds': 60,
+        }))
 
   def testValidateDownloadBuildDataSettings(self):
     self.assertFalse(config._ValidateDownloadBuildDataSettings({}))
-    self.assertFalse(config._ValidateDownloadBuildDataSettings({
-        'download_interval_seconds': {},  # Should be an int.
-        'memcache_master_download_expiration_seconds': 10,
-        'use_chrome_build_extract': True
+    self.assertFalse(
+        config._ValidateDownloadBuildDataSettings({
+            'download_interval_seconds': {},  # Should be an int.
+            'memcache_master_download_expiration_seconds': 10,
+            'use_chrome_build_extract': True
         }))
-    self.assertFalse(config._ValidateDownloadBuildDataSettings({
-        'download_interval_seconds': 10,
-        'memcache_master_download_expiration_seconds': [],  # Should be an int.
-        'use_chrome_build_extract': True
+    self.assertFalse(
+        config._ValidateDownloadBuildDataSettings({
+            'download_interval_seconds': 10,
+            'memcache_master_download_expiration_seconds': [
+            ],  # Should be an int.
+            'use_chrome_build_extract': True
         }))
-    self.assertFalse(config._ValidateDownloadBuildDataSettings({
-        'download_interval_seconds': 10,
-        'memcache_master_download_expiration_seconds': 3600,
-        'use_chrome_build_extract': 'blabla'  # Should be a bool.
+    self.assertFalse(
+        config._ValidateDownloadBuildDataSettings({
+            'download_interval_seconds': 10,
+            'memcache_master_download_expiration_seconds': 3600,
+            'use_chrome_build_extract': 'blabla'  # Should be a bool.
         }))
-    self.assertTrue(config._ValidateDownloadBuildDataSettings({
-        'download_interval_seconds': 10,
-        'memcache_master_download_expiration_seconds': 3600,
-        'use_chrome_build_extract': False
+    self.assertTrue(
+        config._ValidateDownloadBuildDataSettings({
+            'download_interval_seconds': 10,
+            'memcache_master_download_expiration_seconds': 3600,
+            'use_chrome_build_extract': False
         }))
 
   def testConfigurationDictIsValid(self):
-    self.assertTrue(config._ConfigurationDictIsValid({
-        'steps_for_masters_rules': {
-            'supported_masters': {
-                'master1': {
-                    'unsupported_steps': ['step1', 'step2'],
+    self.assertTrue(
+        config._ConfigurationDictIsValid({
+            'steps_for_masters_rules': {
+                'supported_masters': {
+                    'master1': {
+                        'unsupported_steps': ['step1', 'step2'],
+                    },
+                    'master2': {
+                        'supported_steps': ['step3'],
+                        'check_global': False
+                    }
                 },
-                'master2': {
-                    'supported_steps': ['step3'],
-                    'check_global': False
+                'global': {
+                    'unsupported_steps': ['step5'],
                 }
-            },
-            'global': {
-                'unsupported_steps': ['step5'],
             }
-        }
-    }))
+        }))
     self.assertFalse(config._ConfigurationDictIsValid([]))
-    self.assertFalse(config._ConfigurationDictIsValid({
-        'this_is_not_a_valid_property': []
-    }))
+    self.assertFalse(
+        config._ConfigurationDictIsValid({
+            'this_is_not_a_valid_property': []
+        }))
 
   def testFormatTimestamp(self):
     self.assertIsNone(config._FormatTimestamp(None))
@@ -922,33 +993,41 @@ class ConfigTest(testing.AppengineTestCase):
     mocked_ValidateAuthToken.side_effect = [True]
 
     params = {
-        'format': 'json',
-        'steps_for_masters_rules': json.dumps({
-            'supported_masters': {
-                'a': {
+        'format':
+            'json',
+        'steps_for_masters_rules':
+            json.dumps({
+                'supported_masters': {
+                    'a': {},
+                    'b': {
+                        'supported_steps': ['1'],
+                        'unsupported_steps': ['2', '3', '4'],
+                    },
+                    'c': {
+                        'supported_steps': ['5'],
+                        'check_global': False
+                    }
                 },
-                'b': {
-                    'supported_steps': ['1'],
-                    'unsupported_steps': ['2', '3', '4'],
-                },
-                'c': {
-                    'supported_steps': ['5'],
-                    'check_global': False
+                'global': {
+                    'unsupported_steps': ['1']
                 }
-            },
-            'global': {
-                'unsupported_steps': ['1']
-            }
-        }),
-        'builders_to_trybots': json.dumps(_MOCK_BUILDERS_TO_TRYBOTS),
-        'try_job_settings': json.dumps(_MOCK_TRY_JOB_SETTINGS),
-        'swarming_settings': json.dumps(_MOCK_SWARMING_SETTINGS),
-        'download_build_data_settings': json.dumps(
-            _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS),
-        'action_settings': json.dumps(_MOCK_ACTION_SETTINGS),
-        'check_flake_settings': json.dumps(_MOCK_CHECK_FLAKE_SETTINGS),
-        'code_review_settings': json.dumps(_MOCK_CODE_REVIEW_SETTINGS),
-        'message': 'reason',
+            }),
+        'builders_to_trybots':
+            json.dumps(_MOCK_BUILDERS_TO_TRYBOTS),
+        'try_job_settings':
+            json.dumps(_MOCK_TRY_JOB_SETTINGS),
+        'swarming_settings':
+            json.dumps(_MOCK_SWARMING_SETTINGS),
+        'download_build_data_settings':
+            json.dumps(_MOCK_DOWNLOAD_BUILD_DATA_SETTINGS),
+        'action_settings':
+            json.dumps(_MOCK_ACTION_SETTINGS),
+        'check_flake_settings':
+            json.dumps(_MOCK_CHECK_FLAKE_SETTINGS),
+        'code_review_settings':
+            json.dumps(_MOCK_CODE_REVIEW_SETTINGS),
+        'message':
+            'reason',
     }
 
     response = self.test_app.post('/config', params=params)
@@ -956,8 +1035,7 @@ class ConfigTest(testing.AppengineTestCase):
     expected_response = {
         'masters': {
             'supported_masters': {
-                'a': {
-                },
+                'a': {},
                 'b': {
                     'supported_steps': ['1'],
                     'unsupported_steps': ['2', '3', '4'],
@@ -990,14 +1068,14 @@ class ConfigTest(testing.AppengineTestCase):
 
   def testValidateActionSettings(self):
     self.assertFalse(config._ValidateActionSettings({}))
-    self.assertFalse(config._ValidateActionSettings(
-        {
+    self.assertFalse(
+        config._ValidateActionSettings({
             'cr_notification_build_threshold': 2,
             'cr_notification_latency_limit_minutes': 1000,
             'revert_compile_culprit': 'True',  # Should be boolean.
         }))
-    self.assertTrue(config._ValidateActionSettings(
-        {
+    self.assertTrue(
+        config._ValidateActionSettings({
             'cr_notification_build_threshold': 2,
             'cr_notification_latency_limit_minutes': 1000,
             'revert_compile_culprit': True
@@ -1005,48 +1083,48 @@ class ConfigTest(testing.AppengineTestCase):
 
   def testValidateFlakeAnalyzerTryJobRerunSettings(self):
     self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings({}))
-    self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerTryJobRerunSettings({
             'lower_flake_threshold': 1,  # Should be a float.
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 100,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerTryJobRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 'a',  # Should be a float.
             'max_flake_in_a_row': 4,
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 100,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerTryJobRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': [],  # Should be an int.
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 100,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerTryJobRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
             'max_stable_in_a_row': {},  # Should be an int.
             'iterations_to_rerun': 100,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerTryJobRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
             'max_stable_in_a_row': 4,
             'iterations_to_rerun': 3.2,  # Should be an int.
         }))
-    self.assertTrue(config._ValidateFlakeAnalyzerTryJobRerunSettings(
-        {
+    self.assertTrue(
+        config._ValidateFlakeAnalyzerTryJobRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
@@ -1056,8 +1134,8 @@ class ConfigTest(testing.AppengineTestCase):
 
   def testValidateFlakeAnalyzerSwarmingRerunSettings(self):
     self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings({}))
-    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
             'lower_flake_threshold': 1,  # Should be a float.
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
@@ -1067,8 +1145,8 @@ class ConfigTest(testing.AppengineTestCase):
             'use_nearby_neighbor': True,
             'max_iterations_to_rerun': 800,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 'a',  # Should be a float.
             'max_flake_in_a_row': 4,
@@ -1078,8 +1156,8 @@ class ConfigTest(testing.AppengineTestCase):
             'use_nearby_neighbor': True,
             'max_iterations_to_rerun': 800,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': [],  # Should be an int.
@@ -1089,8 +1167,8 @@ class ConfigTest(testing.AppengineTestCase):
             'use_nearby_neighbor': True,
             'max_iterations_to_rerun': 800,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
@@ -1100,8 +1178,8 @@ class ConfigTest(testing.AppengineTestCase):
             'use_nearby_neighbor': True,
             'max_iterations_to_rerun': 800,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
@@ -1111,8 +1189,8 @@ class ConfigTest(testing.AppengineTestCase):
             'use_nearby_neighbor': True,
             'max_iterations_to_rerun': 800,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
@@ -1122,8 +1200,8 @@ class ConfigTest(testing.AppengineTestCase):
             'use_nearby_neighbor': True,
             'max_iterations_to_rerun': 800,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
@@ -1133,8 +1211,8 @@ class ConfigTest(testing.AppengineTestCase):
             'use_nearby_neighbor': [],  # Should be a bool.
             'max_iterations_to_rerun': 800,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
@@ -1144,8 +1222,8 @@ class ConfigTest(testing.AppengineTestCase):
             'update_monorail_bug': 'True',  # Should be a bool.
             'max_iterations_to_rerun': 800,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
@@ -1157,8 +1235,8 @@ class ConfigTest(testing.AppengineTestCase):
             'dive_rate_threshold': 0.4,
             'max_iterations_to_rerun': 800,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
@@ -1169,8 +1247,8 @@ class ConfigTest(testing.AppengineTestCase):
             'dive_rate_threshold': 40,  # Should be a float.
             'max_iterations_to_rerun': 800,
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
@@ -1183,8 +1261,8 @@ class ConfigTest(testing.AppengineTestCase):
             'dive_rate_threshold': 0.4,
             'max_iterations_to_rerun': 800.0,  # Should be an int.
         }))
-    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
-        {
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
@@ -1198,8 +1276,8 @@ class ConfigTest(testing.AppengineTestCase):
             'max_iterations_to_rerun': 800,
             'per_iteration_timeout_seconds': {}  # Should be an int.
         }))
-    self.assertTrue(config._ValidateFlakeAnalyzerSwarmingRerunSettings(
-        {
+    self.assertTrue(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
             'lower_flake_threshold': 0.02,
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
@@ -1215,17 +1293,20 @@ class ConfigTest(testing.AppengineTestCase):
         }))
 
   def testValidateCodeReviewSettings(self):
-    self.assertTrue(config._ValidateCodeReviewSettings({
-        'rietveld_hosts': ['abc.com'],
-        'gerrit_hosts': ['def.com'],
-        'commit_bot_emails': ['commit-bot@abc.com'],
-    }))
-    self.assertFalse(config._ValidateCodeReviewSettings({
-        'rietveld_hosts': 'abc.com',
-        'gerrit_hosts': 'def.com',
-    }))
-    self.assertFalse(config._ValidateCodeReviewSettings({
-        'rietveld_hosts': 'abc.com',
-        'gerrit_hosts': 'def.com',
-        'commit_bot_emails': 'commit-bot@abc.com',
-    }))
+    self.assertTrue(
+        config._ValidateCodeReviewSettings({
+            'rietveld_hosts': ['abc.com'],
+            'gerrit_hosts': ['def.com'],
+            'commit_bot_emails': ['commit-bot@abc.com'],
+        }))
+    self.assertFalse(
+        config._ValidateCodeReviewSettings({
+            'rietveld_hosts': 'abc.com',
+            'gerrit_hosts': 'def.com',
+        }))
+    self.assertFalse(
+        config._ValidateCodeReviewSettings({
+            'rietveld_hosts': 'abc.com',
+            'gerrit_hosts': 'def.com',
+            'commit_bot_emails': 'commit-bot@abc.com',
+        }))

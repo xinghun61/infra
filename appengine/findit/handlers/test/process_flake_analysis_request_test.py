@@ -16,18 +16,19 @@ from handlers import process_flake_analysis_request
 
 
 class ProcessFlakeAnalysisRequestsTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/process-flake-analysis-request',
-       process_flake_analysis_request.ProcessFlakeAnalysisRequest),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/process-flake-analysis-request',
+           process_flake_analysis_request.ProcessFlakeAnalysisRequest),
+      ],
+      debug=True)
 
   def testNonAdminCanNotSendRequest(self):
     self.test_app.post(
         '/process-flake-analysis-request?format=json', params='', status=401)
 
-  @mock.patch.object(
-      process_flake_analysis_request.flake_analysis_service,
-      'ScheduleAnalysisForFlake')
+  @mock.patch.object(process_flake_analysis_request.flake_analysis_service,
+                     'ScheduleAnalysisForFlake')
   def testAdminCanRequestAnalysis(self, mocked_func):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 

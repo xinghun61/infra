@@ -42,10 +42,10 @@ class RotationsTest(testing.AppengineTestCase):
   def setUp(self):
     super(RotationsTest, self).setUp()
     self.http_client = DummyHttpClient()
-    self.http_patcher = mock.patch(
-        'common.rotations.HTTP_CLIENT', self.http_client)
-    self.date_patcher = mock.patch(
-        'libs.time_util.GetPSTNow', lambda: datetime.datetime(2017, 1, 1))
+    self.http_patcher = mock.patch('common.rotations.HTTP_CLIENT',
+                                   self.http_client)
+    self.date_patcher = mock.patch('libs.time_util.GetPSTNow',
+                                   lambda: datetime.datetime(2017, 1, 1))
     self.http_patcher.start()
     self.date_patcher.start()
 
@@ -56,8 +56,14 @@ class RotationsTest(testing.AppengineTestCase):
   def testCurrentSheriffs(self):
     response = json.dumps({
         'calendar': [
-            {'date': '2016-12-31', 'participants': [[], ['foo', 'bar']]},
-            {'date': '2017-01-01', 'participants': [['ham', 'eggs'], []]},
+            {
+                'date': '2016-12-31',
+                'participants': [[], ['foo', 'bar']]
+            },
+            {
+                'date': '2017-01-01',
+                'participants': [['ham', 'eggs'], []]
+            },
         ],
         'rotations': ['dummy1', 'dummy2']
     })
@@ -67,8 +73,14 @@ class RotationsTest(testing.AppengineTestCase):
   def testCurrentSheriffsMissingSheriff(self):
     response = json.dumps({
         'calendar': [
-            {'date': '2016-12-31', 'participants': [[], ['foo', 'bar']]},
-            {'date': '2017-01-01', 'participants': [['ham', 'eggs'], []]},
+            {
+                'date': '2016-12-31',
+                'participants': [[], ['foo', 'bar']]
+            },
+            {
+                'date': '2017-01-01',
+                'participants': [['ham', 'eggs'], []]
+            },
         ],
         'rotations': ['dummy1', 'dummy2']
     })
@@ -78,8 +90,14 @@ class RotationsTest(testing.AppengineTestCase):
   def testCurrentSheriffsBadRotationName(self):
     response = json.dumps({
         'calendar': [
-            {'date': '2016-12-31', 'participants': [[], ['foo', 'bar']]},
-            {'date': '2017-01-01', 'participants': [['ham', 'eggs'], []]},
+            {
+                'date': '2016-12-31',
+                'participants': [[], ['foo', 'bar']]
+            },
+            {
+                'date': '2017-01-01',
+                'participants': [['ham', 'eggs'], []]
+            },
         ],
         'rotations': ['dummy1', 'dummy2']
     })
@@ -89,7 +107,10 @@ class RotationsTest(testing.AppengineTestCase):
   def testCurrentSheriffsMissingDate(self):
     response = json.dumps({
         'calendar': [
-            {'date': '2016-12-31', 'participants': [[], ['foo', 'bar']]},
+            {
+                'date': '2016-12-31',
+                'participants': [[], ['foo', 'bar']]
+            },
         ],
         'rotations': ['dummy1', 'dummy2']
     })

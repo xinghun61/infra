@@ -13,8 +13,8 @@ from waterfall.trigger_swarming_task_pipeline import TriggerSwarmingTaskPipeline
 
 
 @ndb.transactional
-def _GetStepsThatNeedToTriggerSwarmingTasks(
-    master_name, builder_name, build_number, failure_info, force):
+def _GetStepsThatNeedToTriggerSwarmingTasks(master_name, builder_name,
+                                            build_number, failure_info, force):
   """Gets first time failed steps and tests.
 
    Gets first time failed steps and tests which haven't triggered swarming tasks
@@ -45,8 +45,8 @@ def _GetStepsThatNeedToTriggerSwarmingTasks(
       if not force:
         # Updates analysis.failure_result_map only when the analysis runs at the
         # first time.
-        task_key = '%s/%s/%s' % (
-          master_name, builder_name, test_failure['first_failure'])
+        task_key = '%s/%s/%s' % (master_name, builder_name,
+                                 test_failure['first_failure'])
         failure_result_map[failed_step][failed_test] = task_key
 
       if test_failure['first_failure'] == test_failure['current_failure']:
@@ -62,7 +62,11 @@ class TriggerSwarmingTasksPipeline(BasePipeline):
   """Root Pipeline to trigger swarming tasks."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, failure_info,
+  def run(self,
+          master_name,
+          builder_name,
+          build_number,
+          failure_info,
           force=False):
     if (not failure_info or not failure_info['failed_steps'] or
         not failure_info['failure_type'] == failure_type.TEST):
@@ -72,5 +76,9 @@ class TriggerSwarmingTasksPipeline(BasePipeline):
         master_name, builder_name, build_number, failure_info, force)
     for step_name, base_tests in steps.iteritems():
       yield TriggerSwarmingTaskPipeline(
-          master_name, builder_name, build_number, step_name, base_tests,
+          master_name,
+          builder_name,
+          build_number,
+          step_name,
+          base_tests,
           force=force)

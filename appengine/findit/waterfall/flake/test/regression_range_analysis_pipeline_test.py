@@ -32,8 +32,8 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
 
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(
-      regression_range_analysis_pipeline, '_GetBuildInfo', _MockedGetBuildInfo)
+  @mock.patch.object(regression_range_analysis_pipeline, '_GetBuildInfo',
+                     _MockedGetBuildInfo)
   def testGetBoundedRangeForCommitPositionFromBuild(self):
     self.assertEqual(
         (1, 1),
@@ -114,8 +114,10 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     data_point_4.commit_position = 50
     data_point_4.previous_build_commit_position = 40
 
-    data_points = [data_point_1, data_point_4, data_point_2, DataPoint(),
-                   data_point_0]
+    data_points = [
+        data_point_1, data_point_4, data_point_2,
+        DataPoint(), data_point_0
+    ]
 
     expected_dict = {
         1: _CommitPositionRange(11, 20),
@@ -123,14 +125,12 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
         4: _CommitPositionRange(41, 50),
     }
 
-    builds_to_commits = (
-        regression_range_analysis_pipeline._BuildNumbersToCommitPositionsDict(
-            data_points))
+    builds_to_commits = (regression_range_analysis_pipeline.
+                         _BuildNumbersToCommitPositionsDict(data_points))
 
     for build_number in builds_to_commits.iterkeys():
-      self.assertEqual(
-          expected_dict[build_number].ToDict(),
-          builds_to_commits[build_number].ToDict())
+      self.assertEqual(expected_dict[build_number].ToDict(),
+                       builds_to_commits[build_number].ToDict())
 
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testGetBuildInfo(self, mocked_fn):
@@ -138,77 +138,70 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     build_info.commit_position = 100
     mocked_fn.return_value = build_info
 
-    self.assertEqual(
-        123,
-        regression_range_analysis_pipeline._GetBuildInfo(
-            'm', 'b', 123).build_number)
+    self.assertEqual(123,
+                     regression_range_analysis_pipeline._GetBuildInfo(
+                         'm', 'b', 123).build_number)
 
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[10, 9])
   def testGetLatestBuildNumber(self, _):
-    self.assertEqual(
-        10,
-        regression_range_analysis_pipeline._GetLatestBuildNumber('m', 'b'))
+    self.assertEqual(10,
+                     regression_range_analysis_pipeline._GetLatestBuildNumber(
+                         'm', 'b'))
 
+  @mock.patch.object(regression_range_analysis_pipeline, '_GetBuildInfo',
+                     _MockedGetBuildInfo)
   @mock.patch.object(
-      regression_range_analysis_pipeline, '_GetBuildInfo', _MockedGetBuildInfo)
-  @mock.patch.object(regression_range_analysis_pipeline,
-                     '_GetLatestBuildNumber', return_value=11)
+      regression_range_analysis_pipeline,
+      '_GetLatestBuildNumber',
+      return_value=11)
   def testGetNearestBuild(self, _):
     # Test exact match.
-    self.assertEqual(
-        2,
-        regression_range_analysis_pipeline._GetNearestBuild(
-            'm', 'b', 2, 2, 30).build_number)
+    self.assertEqual(2,
+                     regression_range_analysis_pipeline._GetNearestBuild(
+                         'm', 'b', 2, 2, 30).build_number)
 
-    self.assertEqual(
-        2,
-        regression_range_analysis_pipeline._GetNearestBuild(
-            'm', 'b', 1, 10, 30).build_number)
+    self.assertEqual(2,
+                     regression_range_analysis_pipeline._GetNearestBuild(
+                         'm', 'b', 1, 10, 30).build_number)
 
-    self.assertEqual(
-        3,
-        regression_range_analysis_pipeline._GetNearestBuild(
-            'm', 'b', 0, 10, 35).build_number)
+    self.assertEqual(3,
+                     regression_range_analysis_pipeline._GetNearestBuild(
+                         'm', 'b', 0, 10, 35).build_number)
 
-    self.assertEqual(
-        4,
-        regression_range_analysis_pipeline._GetNearestBuild(
-            'm', 'b', 1, 9, 45).build_number)
+    self.assertEqual(4,
+                     regression_range_analysis_pipeline._GetNearestBuild(
+                         'm', 'b', 1, 9, 45).build_number)
 
-    self.assertEqual(
-        5,
-        regression_range_analysis_pipeline._GetNearestBuild(
-            'm', 'b', 0, 10, 60).build_number)
+    self.assertEqual(5,
+                     regression_range_analysis_pipeline._GetNearestBuild(
+                         'm', 'b', 0, 10, 60).build_number)
 
-    self.assertEqual(
-        11,
-        regression_range_analysis_pipeline._GetNearestBuild(
-            'm', 'b', 0, None, 1000).build_number)
+    self.assertEqual(11,
+                     regression_range_analysis_pipeline._GetNearestBuild(
+                         'm', 'b', 0, None, 1000).build_number)
 
-    self.assertEqual(
-        0,
-        regression_range_analysis_pipeline._GetNearestBuild(
-            'm', 'b', None, 6, 1).build_number)
+    self.assertEqual(0,
+                     regression_range_analysis_pipeline._GetNearestBuild(
+                         'm', 'b', None, 6, 1).build_number)
 
-    self.assertEqual(
-        1,
-        regression_range_analysis_pipeline._GetNearestBuild(
-            'm', 'b', None, 6, 12).build_number)
+    self.assertEqual(1,
+                     regression_range_analysis_pipeline._GetNearestBuild(
+                         'm', 'b', None, 6, 12).build_number)
 
-    self.assertEqual(
-        3,
-        regression_range_analysis_pipeline._GetNearestBuild(
-            'm', 'b', 1, None, 35).build_number)
+    self.assertEqual(3,
+                     regression_range_analysis_pipeline._GetNearestBuild(
+                         'm', 'b', 1, None, 35).build_number)
 
-    self.assertEqual(
-        4,
-        regression_range_analysis_pipeline._GetNearestBuild(
-            'm', 'b', 2, 6, 50).build_number)
+    self.assertEqual(4,
+                     regression_range_analysis_pipeline._GetNearestBuild(
+                         'm', 'b', 2, 6, 50).build_number)
 
+  @mock.patch.object(regression_range_analysis_pipeline, '_GetBuildInfo',
+                     _MockedGetBuildInfo)
   @mock.patch.object(
-      regression_range_analysis_pipeline, '_GetBuildInfo', _MockedGetBuildInfo)
-  @mock.patch.object(regression_range_analysis_pipeline,
-                     '_GetLatestBuildNumber', return_value=6)
+      regression_range_analysis_pipeline,
+      '_GetLatestBuildNumber',
+      return_value=6)
   def testGetEarliestBuildNumberFromRelativeBuildNumber(self, _):
     data_point_1 = DataPoint()
     data_point_1.build_number = 1
@@ -233,14 +226,18 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
         regression_range_analysis_pipeline._GetEarliestContainingBuildNumber(
             100, analysis))
 
-  @mock.patch.object(regression_range_analysis_pipeline,
-                     '_BuildNumbersToCommitPositionsDict',
-                     return_value={3: _CommitPositionRange(21, 30)})
-  @mock.patch.object(regression_range_analysis_pipeline,
-                     '_GetBoundedRangeForCommitPosition',
-                     return_value=(3, 3))
-  @mock.patch.object(regression_range_analysis_pipeline,
-                     '_GetBuildInfo', return_value=BuildInfo('m', 'b', 3))
+  @mock.patch.object(
+      regression_range_analysis_pipeline,
+      '_BuildNumbersToCommitPositionsDict',
+      return_value={3: _CommitPositionRange(21, 30)})
+  @mock.patch.object(
+      regression_range_analysis_pipeline,
+      '_GetBoundedRangeForCommitPosition',
+      return_value=(3, 3))
+  @mock.patch.object(
+      regression_range_analysis_pipeline,
+      '_GetBuildInfo',
+      return_value=BuildInfo('m', 'b', 3))
   def testGetEarliestBuildNumberExactMatch(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     self.assertEqual(
@@ -248,19 +245,23 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
         regression_range_analysis_pipeline._GetEarliestContainingBuildNumber(
             100, analysis))
 
-  @mock.patch.object(regression_range_analysis_pipeline,
-                     '_GetBoundedRangeForCommitPosition',
-                     return_value=(None, None))
-  @mock.patch.object(regression_range_analysis_pipeline,
-                     '_GetBuildInfo', return_value=BuildInfo('m', 'b', 123))
-  @mock.patch.object(regression_range_analysis_pipeline,
-                     '_GetLatestBuildNumber', return_value=123)
+  @mock.patch.object(
+      regression_range_analysis_pipeline,
+      '_GetBoundedRangeForCommitPosition',
+      return_value=(None, None))
+  @mock.patch.object(
+      regression_range_analysis_pipeline,
+      '_GetBuildInfo',
+      return_value=BuildInfo('m', 'b', 123))
+  @mock.patch.object(
+      regression_range_analysis_pipeline,
+      '_GetLatestBuildNumber',
+      return_value=123)
   def testGetEarliestBuildNumberNoDataPoints(self, *_):
     self.assertEqual(
         123,
         regression_range_analysis_pipeline._GetEarliestContainingBuildNumber(
-            100,
-            MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')))
+            100, MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')))
 
   def testRemoveStablePointsFromAnalysisWithinRange(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -272,10 +273,12 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     }
     data_points = [
         DataPoint.Create(
-            pass_rate=1.0, build_number=100, commit_position=1000,
+            pass_rate=1.0,
+            build_number=100,
+            commit_position=1000,
             iterations=100),
-        DataPoint.Create(
-            pass_rate=0.5, build_number=101, commit_position=1100)]
+        DataPoint.Create(pass_rate=0.5, build_number=101, commit_position=1100)
+    ]
     analysis.data_points = data_points
     regression_range_analysis_pipeline._RemoveStablePointsWithinRange(
         analysis, 99, 101, 200)
@@ -309,7 +312,9 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
         regression_range_analysis_pipeline._CanStartManualAnalysis(analysis))
 
   @mock.patch.object(
-      buildbot, 'GetStepLog', return_value={'dimensions': {'os': 'OS'}})
+      buildbot, 'GetStepLog', return_value={'dimensions': {
+          'os': 'OS'
+      }})
   def testRegressionRangeAnalysisPipeline(self, _):
     input_lower_bound = 900
     input_upper_bound = 1000
@@ -325,21 +330,29 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     analysis.data_points = [
-        DataPoint.Create(commit_position=input_upper_bound,
-                         previous_build_commit_position=990,
-                         build_number=upper_bound_build_number),
-        DataPoint.Create(commit_position=input_lower_bound,
-                         previous_build_commit_position=890,
-                         build_number=lower_bound_build_number)]
+        DataPoint.Create(
+            commit_position=input_upper_bound,
+            previous_build_commit_position=990,
+            build_number=upper_bound_build_number),
+        DataPoint.Create(
+            commit_position=input_lower_bound,
+            previous_build_commit_position=890,
+            build_number=lower_bound_build_number)
+    ]
     analysis.Save()
 
     self.MockPipeline(
-        RecursiveFlakePipeline, 'task_id',
+        RecursiveFlakePipeline,
+        'task_id',
         expected_args=[
             analysis.key.urlsafe(), upper_bound_build_number,
             lower_bound_build_number, upper_bound_build_number,
-            iterations_to_rerun, {'dimensions': {'os': 'OS'}}, False, False, 0,
-            0, False],
+            iterations_to_rerun, {
+                'dimensions': {
+                    'os': 'OS'
+                }
+            }, False, False, 0, 0, False
+        ],
         expected_kwargs={})
 
     pipeline_job = RegressionRangeAnalysisPipeline(
@@ -349,19 +362,24 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(
-      buildbot, 'GetStepLog', return_value={'dimensions': {'os': 'OS'}})
+      buildbot, 'GetStepLog', return_value={'dimensions': {
+          'os': 'OS'
+      }})
   def testRegressionRangeAnalysisPipelineCantStartIfStillRunning(self, _):
     input_lower_bound = 900
     input_upper_bound = 1000
     analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
     analysis.status = analysis_status.RUNNING
     analysis.data_points = [
-        DataPoint.Create(commit_position=1000,
-                         previous_build_commit_position=990,
-                         build_number=100),
-        DataPoint.Create(commit_position=900,
-                         previous_build_commit_position=890,
-                         build_number=90)]
+        DataPoint.Create(
+            commit_position=1000,
+            previous_build_commit_position=990,
+            build_number=100),
+        DataPoint.Create(
+            commit_position=900,
+            previous_build_commit_position=890,
+            build_number=90)
+    ]
     analysis.Save()
 
     self.MockPipeline(
@@ -382,10 +400,12 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     }
     data_points = [
         DataPoint.Create(
-            pass_rate=1.0, build_number=100, commit_position=1000,
+            pass_rate=1.0,
+            build_number=100,
+            commit_position=1000,
             iterations=100),
-        DataPoint.Create(
-            pass_rate=0.5, build_number=101, commit_position=1100)]
+        DataPoint.Create(pass_rate=0.5, build_number=101, commit_position=1100)
+    ]
     analysis.data_points = data_points
     regression_range_analysis_pipeline._RemoveStablePointsWithinRange(
         analysis, 102, 105, 50)
@@ -393,7 +413,9 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(data_points, analysis.data_points)
 
   @mock.patch.object(
-      buildbot, 'GetStepLog', return_value={'dimensions': {'os': 'OS'}})
+      buildbot, 'GetStepLog', return_value={'dimensions': {
+          'os': 'OS'
+      }})
   def testRegressionRangeAnalysisPipelineEndToEnd(self, _):
     input_lower_bound = 1400
     input_upper_bound = 1450
@@ -412,51 +434,68 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
     data_points = [
-        DataPoint.Create(build_number=150,  # Original triggering build.
-                         pass_rate=0.8,     # Flaky.
-                         commit_position=1500,
-                         previous_build_commit_position=1490,
-                         iterations=100),
-        DataPoint.Create(build_number=149,  # Exponential lookback.
-                         pass_rate=0.8,     # Still flaky.
-                         commit_position=1490,
-                         previous_build_commit_position=1480,
-                         iterations=100),
-        DataPoint.Create(build_number=147,  # Exponential lookback.
-                         pass_rate=0.8,     # Still flaky.
-                         commit_position=1470,
-                         previous_build_commit_position=1460),
-        DataPoint.Create(build_number=144,  # Exponential lookback.
-                         pass_rate=1.0,     # "Stable" however not actually.
-                         commit_position=1440,
-                         previous_build_commit_position=1430,
-                         iterations=100),   # Iteration count not high enough.
-        DataPoint.Create(build_number=140,  # Exponential lookback.
-                         pass_rate=1.0,     # Actually stable.
-                         commit_position=1400,
-                         previous_build_commit_position=1390,
-                         iterations=100),
-        DataPoint.Create(build_number=145,  # Suspeccted build.
-                         pass_rate=0.8,     # False positive.
-                         commit_position=1450,
-                         previous_build_commit_position=1440,
-                         iterations=100)]
+        DataPoint.Create(
+            build_number=150,  # Original triggering build.
+            pass_rate=0.8,  # Flaky.
+            commit_position=1500,
+            previous_build_commit_position=1490,
+            iterations=100),
+        DataPoint.Create(
+            build_number=149,  # Exponential lookback.
+            pass_rate=0.8,  # Still flaky.
+            commit_position=1490,
+            previous_build_commit_position=1480,
+            iterations=100),
+        DataPoint.Create(
+            build_number=147,  # Exponential lookback.
+            pass_rate=0.8,  # Still flaky.
+            commit_position=1470,
+            previous_build_commit_position=1460),
+        DataPoint.Create(
+            build_number=144,  # Exponential lookback.
+            pass_rate=1.0,  # "Stable" however not actually.
+            commit_position=1440,
+            previous_build_commit_position=1430,
+            iterations=100),  # Iteration count not high enough.
+        DataPoint.Create(
+            build_number=140,  # Exponential lookback.
+            pass_rate=1.0,  # Actually stable.
+            commit_position=1400,
+            previous_build_commit_position=1390,
+            iterations=100),
+        DataPoint.Create(
+            build_number=145,  # Suspeccted build.
+            pass_rate=0.8,  # False positive.
+            commit_position=1450,
+            previous_build_commit_position=1440,
+            iterations=100)
+    ]
     analysis.data_points = data_points
     analysis.Save()
 
     self.MockPipeline(
-        RecursiveFlakePipeline, 'task_id',
+        RecursiveFlakePipeline,
+        'task_id',
         expected_args=[
             analysis.key.urlsafe(), upper_bound_build_number,
             lower_bound_build_number, upper_bound_build_number,
-            input_iterations_to_rerun, {'dimensions': {'os': 'OS'}}, False,
-            False, 0, 0, False],
+            input_iterations_to_rerun, {
+                'dimensions': {
+                    'os': 'OS'
+                }
+            }, False, False, 0, 0, False
+        ],
         expected_kwargs={})
     self.MockPipeline(
-        NextBuildNumberPipeline, '',
+        NextBuildNumberPipeline,
+        '',
         expected_args=[
-            analysis.key.urlsafe(), 145, 140, 145, 200,
-            {'dimensions': {'os': 'OS'}}, False, False, 0, 0],
+            analysis.key.urlsafe(), 145, 140, 145, 200, {
+                'dimensions': {
+                    'os': 'OS'
+                }
+            }, False, False, 0, 0
+        ],
         expected_kwargs={})
 
     pipeline_job = RegressionRangeAnalysisPipeline(
@@ -465,9 +504,11 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     self.assertEqual(
-        [data_points[0],
-         data_points[1],
-         data_points[2],
-         # 3 and 4 removed due to being stable and thus unreliable.
-         data_points[5]],
+        [
+            data_points[0],
+            data_points[1],
+            data_points[2],
+            # 3 and 4 removed due to being stable and thus unreliable.
+            data_points[5]
+        ],
         analysis.data_points)

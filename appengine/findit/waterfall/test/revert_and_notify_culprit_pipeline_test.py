@@ -32,14 +32,16 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     heuristic_cls = [[repo_name, revision]]
     try_job_type = failure_type.TEST
 
-    self.MockPipeline(SendNotificationForCulpritPipeline,
-                      None,
-                      expected_args=[master_name, builder_name, build_number,
-                                     repo_name, revision, True])
+    self.MockPipeline(
+        SendNotificationForCulpritPipeline,
+        None,
+        expected_args=[
+            master_name, builder_name, build_number, repo_name, revision, True
+        ])
 
-    pipeline = RevertAndNotifyCulpritPipeline(
-        master_name, builder_name, build_number, culprits,
-        heuristic_cls, try_job_type)
+    pipeline = RevertAndNotifyCulpritPipeline(master_name, builder_name,
+                                              build_number, culprits,
+                                              heuristic_cls, try_job_type)
     pipeline.start(queue_name=DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -58,19 +60,22 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     heuristic_cls = [[repo_name, revision]]
     try_job_type = failure_type.COMPILE
 
-    self.MockPipeline(CreateRevertCLPipeline,
-                      create_revert_cl_pipeline.CREATED_BY_SHERIFF,
-                      expected_args=[master_name, builder_name, build_number,
-                                     repo_name, revision])
-    self.MockPipeline(SendNotificationForCulpritPipeline,
-                      None,
-                      expected_args=[
-                          master_name, builder_name, build_number, repo_name,
-                          revision, True,
-                          create_revert_cl_pipeline.CREATED_BY_SHERIFF])
+    self.MockPipeline(
+        CreateRevertCLPipeline,
+        create_revert_cl_pipeline.CREATED_BY_SHERIFF,
+        expected_args=[
+            master_name, builder_name, build_number, repo_name, revision
+        ])
+    self.MockPipeline(
+        SendNotificationForCulpritPipeline,
+        None,
+        expected_args=[
+            master_name, builder_name, build_number, repo_name, revision, True,
+            create_revert_cl_pipeline.CREATED_BY_SHERIFF
+        ])
 
-    pipeline = RevertAndNotifyCulpritPipeline(
-        master_name, builder_name, build_number, culprits,
-        heuristic_cls, try_job_type)
+    pipeline = RevertAndNotifyCulpritPipeline(master_name, builder_name,
+                                              build_number, culprits,
+                                              heuristic_cls, try_job_type)
     pipeline.start(queue_name=DEFAULT_QUEUE)
     self.execute_queued_tasks()

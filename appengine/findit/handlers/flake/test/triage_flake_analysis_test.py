@@ -22,8 +22,8 @@ class TriageFlakeAnalysisTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.status = analysis_status.COMPLETED
     analysis.suspected_flake_build_number = 100
-    analysis.culprit = FlakeCulprit.Create(
-        'chromium', 'r1000', 1000, 'url', 0.8)
+    analysis.culprit = FlakeCulprit.Create('chromium', 'r1000', 1000, 'url',
+                                           0.8)
     analysis.put()
 
     triage_flake_analysis._UpdateSuspectedFlakeAnalysis(
@@ -60,9 +60,7 @@ class TriageFlakeAnalysisTest(wf_testcase.WaterfallTestCase):
 
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 
-    response = self.test_app.post(
-        '/waterfall/triage_flake_analysis',
-        params={})
+    response = self.test_app.post('/waterfall/triage_flake_analysis', params={})
 
     self.assertEqual(200, response.status_int)
     self.assertEqual({'success': False}, response.json_body)

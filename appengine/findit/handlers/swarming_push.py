@@ -46,7 +46,10 @@ class SwarmingPush(BaseHandler):
       swarming_hour_limit = waterfall_config.GetSwarmingSettings().get(
           'server_retry_timeout_hours', 2)
       if not token.ValidateAuthToken(
-          'swarming_pubsub', auth_token, 'swarming', action_id=notification_id,
+          'swarming_pubsub',
+          auth_token,
+          'swarming',
+          action_id=notification_id,
           valid_hours=swarming_hour_limit):
         return {'return_code': 400}
 
@@ -64,8 +67,11 @@ class SwarmingPush(BaseHandler):
             target = swarming_task.callback_target or (
                 appengine_util.GetTargetNameForModule(
                     constants.WATERFALL_BACKEND))
-            taskqueue.add(method='GET', url=url, target=target,
-                          queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+            taskqueue.add(
+                method='GET',
+                url=url,
+                target=target,
+                queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
             return {}
           else:
             logging.warning('The swarming task referenced by pubsub does not '

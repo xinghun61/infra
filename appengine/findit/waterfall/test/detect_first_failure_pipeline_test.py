@@ -41,8 +41,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
   def _TimeBeforeNowBySeconds(self, seconds):
     return datetime.datetime.utcnow() - datetime.timedelta(0, seconds, 0)
 
-  def _CreateAndSaveWfAnanlysis(
-      self, master_name, builder_name, build_number, status):
+  def _CreateAndSaveWfAnanlysis(self, master_name, builder_name, build_number,
+                                status):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = status
     analysis.put()
@@ -60,8 +60,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 123
 
-    self._CreateAndSaveWfAnanlysis(
-        master_name, builder_name, build_number, analysis_status.RUNNING)
+    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
+                                   analysis_status.RUNNING)
 
     # Setup build data for builds:
     # 122: mock a build in datastore to ensure it is not fetched again.
@@ -105,8 +105,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 100
 
-    self._CreateAndSaveWfAnanlysis(
-        master_name, builder_name, build_number, analysis_status.RUNNING)
+    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
+                                   analysis_status.RUNNING)
 
     # Setup build data for builds:
     # 100: net_unitests failed, unit_tests failed.
@@ -144,8 +144,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 124
 
-    self._CreateAndSaveWfAnanlysis(
-        master_name, builder_name, build_number, analysis_status.RUNNING)
+    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
+                                   analysis_status.RUNNING)
 
     # Setup build data for builds:
     mock_fn.side_effect = [
@@ -172,8 +172,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 121
 
-    self._CreateAndSaveWfAnanlysis(
-        master_name, builder_name, build_number, analysis_status.RUNNING)
+    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
+                                   analysis_status.RUNNING)
 
     # Setup build data for builds:
     mock_fn.return_value = self._GetBuildData(master_name, builder_name, 121)
@@ -189,8 +189,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 120
 
-    self._CreateAndSaveWfAnanlysis(
-        master_name, builder_name, build_number, analysis_status.RUNNING)
+    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
+                                   analysis_status.RUNNING)
 
     # Setup build data for builds:
     mock_fn.return_value = self._GetBuildData(master_name, builder_name, 120)
@@ -206,8 +206,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 2
 
-    self._CreateAndSaveWfAnanlysis(
-        master_name, builder_name, build_number, analysis_status.RUNNING)
+    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
+                                   analysis_status.RUNNING)
 
     # Setup build data for builds:
     mock_fn.side_effect = [
@@ -247,8 +247,11 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
         return zlib.compress(f.read())
       return f.read()
 
-  def _MockUrlFetchWithSwarmingData(
-      self, master_name, builder_name, build_number, step_name=None):
+  def _MockUrlFetchWithSwarmingData(self,
+                                    master_name,
+                                    builder_name,
+                                    build_number,
+                                    step_name=None):
     url = ('https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/'
            'list?tags=%s&tags=%s&tags=%s') % (
                urllib.quote('master:%s' % master_name),
@@ -271,12 +274,14 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     cursor_url = ('%s&cursor=thisisacursor') % url
 
     self.mocked_urlfetch.register_handler(url, response)
-    self.mocked_urlfetch.register_handler(
-        cursor_url, json.dumps(cursor_swarming_data))
+    self.mocked_urlfetch.register_handler(cursor_url,
+                                          json.dumps(cursor_swarming_data))
 
-  def _MockUrlfetchWithIsolatedData(
-      self, isolated_data=None, file_url=None,
-      file_name=None, build_number=None):
+  def _MockUrlfetchWithIsolatedData(self,
+                                    isolated_data=None,
+                                    file_url=None,
+                                    file_name=None,
+                                    build_number=None):
     if isolated_data:  # Mocks POST requests to isolated server.
       url = '%s/_ah/api/isolateservice/v1/retrieve' % (
           isolated_data['isolatedserver'])
@@ -296,7 +301,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
       content = self._GetSwarmingData('isolated', file_name)
 
     self.mocked_urlfetch.register_handler(
-        url, content,
+        url,
+        content,
         data=(json.dumps(post_data, sort_keys=True, separators=(',', ':'))
               if post_data else None))
 
@@ -308,15 +314,11 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     step.isolated = True
     step.put()
 
-    failed_step = {
-        'current_failure': 223,
-        'first_failure': 221,
-        'tests': {}
-    }
+    failed_step = {'current_failure': 223, 'first_failure': 221, 'tests': {}}
 
     pipeline = DetectFirstFailurePipeline()
-    pipeline._InitiateTestLevelFirstFailureAndSaveLog(
-        json_data, step, failed_step)
+    pipeline._InitiateTestLevelFirstFailureAndSaveLog(json_data, step,
+                                                      failed_step)
 
     expected_failed_step = {
         'current_failure': 223,
@@ -345,15 +347,15 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     step_name = 'abc_test'
     failed_steps = {
         'abc_test': {
-            'current_failure': 221,
-            'first_failure': 221,
-            'list_isolated_data': [
-                {
-                    'isolatedserver': 'https://isolateserver.appspot.com',
-                    'namespace': 'default-gzip',
-                    'digest': 'isolatedhashabctest-223'
-                }
-            ]
+            'current_failure':
+                221,
+            'first_failure':
+                221,
+            'list_isolated_data': [{
+                'isolatedserver': 'https://isolateserver.appspot.com',
+                'namespace': 'default-gzip',
+                'digest': 'isolatedhashabctest-223'
+            }]
         }
     }
     builds = {
@@ -377,8 +379,9 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     mock_module.GetIsolatedDataForFailedBuild.return_value = True
     mock_module.RetrieveShardedTestResultsFromIsolatedServer.return_value = (
-      json.loads(self._GetSwarmingData(
-          'isolated-plain', 'm_b_223_abc_test_flaky.json')))
+        json.loads(
+            self._GetSwarmingData('isolated-plain',
+                                  'm_b_223_abc_test_flaky.json')))
 
     pipeline = DetectFirstFailurePipeline()
     pipeline._CheckFirstKnownFailureForSwarmingTests(
@@ -411,8 +414,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     for n in xrange(222, 220, -1):
       # Mock retrieving data from swarming server for a single step.
-      self._MockUrlFetchWithSwarmingData(
-          master_name, builder_name, n, 'abc_test')
+      self._MockUrlFetchWithSwarmingData(master_name, builder_name, n,
+                                         'abc_test')
 
       # Mock retrieving hash to output.json from isolated server.
       isolated_data = {
@@ -422,8 +425,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
           },
           'digest': 'isolatedhashabctest-%d' % n
       }
-      self._MockUrlfetchWithIsolatedData(
-          isolated_data, build_number=n)
+      self._MockUrlfetchWithIsolatedData(isolated_data, build_number=n)
       # Mock retrieving url to output.json from isolated server.
       file_hash_data = {
           'isolatedserver': 'https://isolateserver.appspot.com',
@@ -432,14 +434,12 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
           },
           'digest': 'abctestoutputjsonhash-%d' % n
       }
-      self._MockUrlfetchWithIsolatedData(
-          file_hash_data, build_number=n)
+      self._MockUrlfetchWithIsolatedData(file_hash_data, build_number=n)
 
       # Mock downloading output.json from isolated server.
       self._MockUrlfetchWithIsolatedData(
-          None,
-          ('https://isolateserver.storage.googleapis.com/default-gzip/'
-           'm_b_%d_abc_test' % n),
+          None, ('https://isolateserver.storage.googleapis.com/default-gzip/'
+                 'm_b_%d_abc_test' % n),
           '%s_%s_%d_%s.json' % (master_name, builder_name, n, 'abc_test'))
 
     pipeline = DetectFirstFailurePipeline()
@@ -516,16 +516,17 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
             'last_pass': 221
         },
         'abc_test': {
-            'current_failure': 223,
-            'first_failure': 222,
-            'last_pass': 221,
-            'list_isolated_data': [
-                {
-                    'isolatedserver': 'https://isolateserver.appspot.com',
-                    'namespace': 'default-gzip',
-                    'digest': 'isolatedhashabctest-223'
-                }
-            ],
+            'current_failure':
+                223,
+            'first_failure':
+                222,
+            'last_pass':
+                221,
+            'list_isolated_data': [{
+                'isolatedserver': 'https://isolateserver.appspot.com',
+                'namespace': 'default-gzip',
+                'digest': 'isolatedhashabctest-223'
+            }],
             'tests': {
                 'Unittest2.Subtest1': {
                     'current_failure': 223,
@@ -586,17 +587,17 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 223
 
-    self._CreateAndSaveWfAnanlysis(
-        master_name, builder_name, build_number, analysis_status.RUNNING)
+    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
+                                   analysis_status.RUNNING)
 
     # Mock data for retrieving data from swarming server for a build.
     self._MockUrlFetchWithSwarmingData(master_name, builder_name, 223)
 
     mock_fn.side_effect = [
-      self._GetBuildData( master_name, builder_name, 223),
-      self._GetBuildData(master_name, builder_name, 222),
-      self._GetBuildData(master_name, builder_name, 221),
-      self._GetBuildData(master_name, builder_name, 220)
+        self._GetBuildData(master_name, builder_name, 223),
+        self._GetBuildData(master_name, builder_name, 222),
+        self._GetBuildData(master_name, builder_name, 221),
+        self._GetBuildData(master_name, builder_name, 220)
     ]
     for n in xrange(223, 219, -1):  # pragma: no branch.
       # Setup build data for builds:
@@ -605,8 +606,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
         break
 
       # Mock data for retrieving data from swarming server for a single step.
-      self._MockUrlFetchWithSwarmingData(
-          master_name, builder_name, n, 'abc_test')
+      self._MockUrlFetchWithSwarmingData(master_name, builder_name, n,
+                                         'abc_test')
 
       # Mock data for retrieving hash to output.json from isolated server.
       isolated_data = {
@@ -629,9 +630,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
       # Mock data for downloading output.json from isolated server.
       self._MockUrlfetchWithIsolatedData(
-          None,
-          ('https://isolateserver.storage.googleapis.com/default-gzip/'
-           'm_b_%d_abc_test' % n),
+          None, ('https://isolateserver.storage.googleapis.com/default-gzip/'
+                 'm_b_%d_abc_test' % n),
           '%s_%s_%d_%s.json' % (master_name, builder_name, n, 'abc_test'))
 
     step_221 = WfStep.Create(master_name, builder_name, 221, 'abc_test')
@@ -645,16 +645,17 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     expected_failed_steps = {
         'abc_test': {
-            'current_failure': 223,
-            'first_failure': 222,
-            'last_pass': 221,
-            'list_isolated_data': [
-                {
-                    'isolatedserver': 'https://isolateserver.appspot.com',
-                    'namespace': 'default-gzip',
-                    'digest': 'isolatedhashabctest-223'
-                }
-            ],
+            'current_failure':
+                223,
+            'first_failure':
+                222,
+            'last_pass':
+                221,
+            'list_isolated_data': [{
+                'isolatedserver': 'https://isolateserver.appspot.com',
+                'namespace': 'default-gzip',
+                'digest': 'isolatedhashabctest-223'
+            }],
             'tests': {
                 'Unittest2.Subtest1': {
                     'current_failure': 223,
@@ -683,7 +684,8 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
               'Wljcm9zZWNvbmRzXG5FUlJPUjp4X3Rlc3QuY2M6MTIzNAphL2IvdTJzMS5jYzo1'
               'Njc6IEZhaWx1cmUK", '
               '"Unittest3.Subtest2": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="}'),
-        221: '{"Unittest3.Subtest3": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="}'
+        221:
+            '{"Unittest3.Subtest3": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCg=="}'
     }
 
     for n in xrange(223, 220, -1):
@@ -695,6 +697,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
 
   def testRunPipelineForCompileFailure(self):
+
     def _MockExtractBuildInfo(*_):
       build_info = BuildInfo('m', 'b', 25409)
       build_info.failed_steps = {

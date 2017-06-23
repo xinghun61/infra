@@ -49,17 +49,22 @@ class MetaDictSerializerTest(unittest.TestCase):
 
   def testFromList(self):
     """Tests ``FromList`` method."""
-    meta_dict = MockedMetaDict(
-        {'a': MockedMetaDict({'b': 1, 'c': 3}), 'd': 2, 'e': 0})
+    meta_dict = MockedMetaDict({
+        'a': MockedMetaDict({
+            'b': 1,
+            'c': 3
+        }),
+        'd': 2,
+        'e': 0
+    })
     serializer = GetSerializer(meta_dict)
-    self.assertDictEqual(serializer.FromList(serializer.ToList(meta_dict)),
-                         meta_dict)
+    self.assertDictEqual(
+        serializer.FromList(serializer.ToList(meta_dict)), meta_dict)
 
   def testFromListRaisesException(self):
     """Tests ``FromList`` raises exception when lengths mismatch."""
     meta_dict = MetaDict({'a': MetaDict({'b': 1, 'c': 3}), 'd': 2, 'e': 0})
     serializer = GetSerializer(meta_dict)
     self.assertRaisesRegexp(
-        Exception,
-        'The element list should have the same length as serializer',
+        Exception, 'The element list should have the same length as serializer',
         serializer.FromList, [], MockedMetaDict)

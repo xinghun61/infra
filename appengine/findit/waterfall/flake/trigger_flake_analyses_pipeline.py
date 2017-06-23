@@ -32,8 +32,7 @@ class TriggerFlakeAnalysesPipeline(BasePipeline):
       return
 
     for step in analysis.failure_result_map.iterkeys():
-      task = WfSwarmingTask.Get(
-          master_name, builder_name, build_number, step)
+      task = WfSwarmingTask.Get(master_name, builder_name, build_number, step)
 
       if not task:  # pragma: no cover
         continue
@@ -51,14 +50,13 @@ class TriggerFlakeAnalysesPipeline(BasePipeline):
       # now.
       test_name = flaky_tests[0]
       request = FlakeAnalysisRequest.Create(test_name, False, None)
-      request.AddBuildStep(
-          master_name, builder_name, build_number, step,
-          time_util.GetUTCNow())
+      request.AddBuildStep(master_name, builder_name, build_number, step,
+                           time_util.GetUTCNow())
       scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
           request, 'findit-for-me@appspot.gserviceaccount.com', False,
           triggering_sources.FINDIT_PIPELINE)
 
       if scheduled:  # pragma: no branch
-        logging.info('%s/%s/%s has %s flaky tests.',
-                     master_name, builder_name, build_number, len(flaky_tests))
+        logging.info('%s/%s/%s has %s flaky tests.', master_name, builder_name,
+                     build_number, len(flaky_tests))
         logging.info('A flake analysis has been triggered for %s', test_name)

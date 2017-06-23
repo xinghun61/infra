@@ -49,7 +49,10 @@ class TryJobPush(BaseHandler):
       try_job_hour_limit = waterfall_config.GetTryJobSettings().get(
           'job_timeout_hours', 10)
       if not token.ValidateAuthToken(
-          'try_job_pubsub', auth_token, 'try_job', action_id=notification_id,
+          'try_job_pubsub',
+          auth_token,
+          'try_job',
+          action_id=notification_id,
           valid_hours=try_job_hour_limit):
         return {'return_code': 400}
 
@@ -65,8 +68,11 @@ class TryJobPush(BaseHandler):
             target = try_job_data.callback_target or (
                 appengine_util.GetTargetNameForModule(
                     constants.WATERFALL_BACKEND))
-            taskqueue.add(method='GET', url=url, target=target,
-                          queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+            taskqueue.add(
+                method='GET',
+                url=url,
+                target=target,
+                queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
             return {}
           else:
             logging.warning('The tryjob referenced by pubsub does not have an '
@@ -79,8 +85,8 @@ class TryJobPush(BaseHandler):
       else:
         # We raise an exception instead of accepting the push because we might
         # be an older version (than the one that sent the new message type)
-        raise Exception('Unsupported message type %s' % user_data[
-            'Message-Type'])
+        raise Exception(
+            'Unsupported message type %s' % user_data['Message-Type'])
     except KeyError:
       raise Exception('The message was not in the expected format: \n'
                       '{"message": {\n'

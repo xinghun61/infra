@@ -17,17 +17,21 @@ from waterfall import waterfall_config
 class ScheduleTryJobPipeline(BasePipeline):
   """A base pipeline for scheduling a new try job for current build."""
 
-  def _GetBuildProperties(
-      self, master_name, builder_name, build_number, good_revision,
-      bad_revision, try_job_type, suspected_revisions):
+  def _GetBuildProperties(self, master_name, builder_name, build_number,
+                          good_revision, bad_revision, try_job_type,
+                          suspected_revisions):
     properties = {
-        'recipe': 'findit/chromium/%s' % (
-            failure_type.GetDescriptionForFailureType(try_job_type)),
-        'good_revision': good_revision,
-        'bad_revision': bad_revision,
-        'target_mastername': master_name,
-        'referenced_build_url': buildbot.CreateBuildUrl(
-            master_name, builder_name, build_number)
+        'recipe':
+            'findit/chromium/%s' %
+            (failure_type.GetDescriptionForFailureType(try_job_type)),
+        'good_revision':
+            good_revision,
+        'bad_revision':
+            bad_revision,
+        'target_mastername':
+            master_name,
+        'referenced_build_url':
+            buildbot.CreateBuildUrl(master_name, builder_name, build_number)
     }
 
     if suspected_revisions:
@@ -35,23 +39,22 @@ class ScheduleTryJobPipeline(BasePipeline):
 
     return properties
 
-  def _OnTryJobTriggered(
-      self, try_job_type, master_name, builder_name):  # pragma: no cover.
-    monitoring.try_jobs.increment(
-        {
-            'operation': 'trigger',
-            'type': try_job_type,
-            'master_name': master_name,
-            'builder_name': builder_name
-        })
+  def _OnTryJobTriggered(self, try_job_type, master_name,
+                         builder_name):  # pragma: no cover.
+    monitoring.try_jobs.increment({
+        'operation': 'trigger',
+        'type': try_job_type,
+        'master_name': master_name,
+        'builder_name': builder_name
+    })
 
   def _GetTrybot(self, master_name, builder_name):  # pragma: no cover.
     """Returns the master and builder on the tryserver to run the try job. """
     return waterfall_config.GetWaterfallTrybot(master_name, builder_name)
 
-  def _TriggerTryJob(
-      self, master_name, builder_name, properties,
-      additional_parameters, try_job_type, cache_name, dimensions):
+  def _TriggerTryJob(self, master_name, builder_name, properties,
+                     additional_parameters, try_job_type, cache_name,
+                     dimensions):
 
     tryserver_mastername, tryserver_buildername = self._GetTrybot(
         master_name, builder_name)
@@ -62,19 +65,18 @@ class ScheduleTryJobPipeline(BasePipeline):
     # This is a no-op if the tryjob is not on swarmbucket.
     swarming_util.AssignWarmCacheHost(try_job, cache_name,
                                       HttpClientAppengine())
-    error, build = buildbucket_client.TriggerTryJobs(
-        [try_job], self.pipeline_id)[0]
+    error, build = buildbucket_client.TriggerTryJobs([try_job],
+                                                     self.pipeline_id)[0]
 
     self._OnTryJobTriggered(try_job_type, master_name, builder_name)
 
     if error:  # pragma: no cover
-      raise pipeline.Retry(
-          'Error "%s" occurred. Reason: "%s"' % (error.message, error.reason))
+      raise pipeline.Retry('Error "%s" occurred. Reason: "%s"' % (error.message,
+                                                                  error.reason))
 
     return build.id
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(
-      self, master_name, builder_name, build_number, good_revision,
-      bad_revision, try_job_type, suspected_revisions):
+  def run(self, master_name, builder_name, build_number, good_revision,
+          bad_revision, try_job_type, suspected_revisions):
     raise NotImplementedError()

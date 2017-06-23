@@ -14,7 +14,6 @@ from gae_libs.handlers.base_handler import Permission
 from libs import time_util
 from model.wf_analysis import WfAnalysis
 
-
 _COUNT = 500
 
 
@@ -33,18 +32,22 @@ def _GetStartEndDates(start, end, midnight_today):
     return datetime.strptime(start, '%Y-%m-%d'), midnight_tomorrow
 
   # Both start and end are specified, get everything in between.
-  return (datetime.strptime(start, '%Y-%m-%d'),
-          datetime.strptime(end, '%Y-%m-%d'))
+  return (datetime.strptime(start, '%Y-%m-%d'), datetime.strptime(
+      end, '%Y-%m-%d'))
 
 
 def _Serialize(analysis):
   return {
-      'master_name': analysis.master_name,
-      'builder_name': analysis.builder_name,
-      'build_number': analysis.build_number,
-      'analysis_type': failure_type.GetDescriptionForFailureType(
-          analysis.failure_type),
-      'build_start_time': time_util.FormatDatetime(analysis.build_start_time),
+      'master_name':
+          analysis.master_name,
+      'builder_name':
+          analysis.builder_name,
+      'build_number':
+          analysis.build_number,
+      'analysis_type':
+          failure_type.GetDescriptionForFailureType(analysis.failure_type),
+      'build_start_time':
+          time_util.FormatDatetime(analysis.build_start_time),
   }
 
 
@@ -60,11 +63,9 @@ class PipelineErrorsDashboard(BaseHandler):
     start_date, end_date = _GetStartEndDates(start, end, midnight_today)
 
     analyses = WfAnalysis.query(
-        ndb.AND(
-            WfAnalysis.build_start_time >= start_date,
-            WfAnalysis.build_start_time < end_date,
-            WfAnalysis.aborted == True)).order(
-                -WfAnalysis.build_start_time).fetch(_COUNT)
+        ndb.AND(WfAnalysis.build_start_time >= start_date,
+                WfAnalysis.build_start_time < end_date, WfAnalysis.aborted ==
+                True)).order(-WfAnalysis.build_start_time).fetch(_COUNT)
 
     analyses_data = []
 
@@ -77,7 +78,4 @@ class PipelineErrorsDashboard(BaseHandler):
         'analyses': analyses_data,
     }
 
-    return {
-        'template': 'pipeline_errors_dashboard.html',
-        'data': data
-    }
+    return {'template': 'pipeline_errors_dashboard.html', 'data': data}

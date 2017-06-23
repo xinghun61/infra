@@ -113,8 +113,8 @@ class FlakeAnalysisRequest(VersionedModel):
     instance.bug_id = bug_id
     return instance
 
-  def AddBuildStep(
-      self, master_name, builder_name, build_number, step_name, reported_time):
+  def AddBuildStep(self, master_name, builder_name, build_number, step_name,
+                   reported_time):
     """Adds a build step in which the flake is found."""
     for s in self.build_steps:
       if s.master_name == master_name and s.builder_name == builder_name:
@@ -127,8 +127,8 @@ class FlakeAnalysisRequest(VersionedModel):
         return True
 
     self.build_steps.append(
-        BuildStep.Create(
-            master_name, builder_name, build_number, step_name, reported_time))
+        BuildStep.Create(master_name, builder_name, build_number, step_name,
+                         reported_time))
     return True
 
   def CopyFrom(self, other):

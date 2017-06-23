@@ -17,6 +17,7 @@ class _DummyModel(BaseAnalysis):
     key = ndb.Key('_DummyModel', key_string)
     return _DummyModel(key=key)
 
+
 # Complains when we modify properties of DummyModel
 # pylint: disable=attribute-defined-outside-init
 class BaseModelTest(unittest.TestCase):

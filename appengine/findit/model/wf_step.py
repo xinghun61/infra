@@ -20,22 +20,20 @@ class WfStep(BaseBuildModel):
     return self.key.pairs()[1][1]
 
   @staticmethod
-  def _CreateKey(
-      master_name, builder_name, build_number, step_name):  # pragma: no cover
-    build_id = BaseBuildModel.CreateBuildId(
-        master_name, builder_name, build_number)
+  def _CreateKey(master_name, builder_name, build_number,
+                 step_name):  # pragma: no cover
+    build_id = BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                            build_number)
     return ndb.Key('WfBuild', build_id, 'WfStep', step_name)
 
   @classmethod
-  def Create(
-      cls, master_name, builder_name, build_number,
-      step_name):  # pragma: no cover
-    return cls(key=cls._CreateKey(
-                          master_name, builder_name, build_number, step_name))
+  def Create(cls, master_name, builder_name, build_number,
+             step_name):  # pragma: no cover
+    return cls(key=cls._CreateKey(master_name, builder_name, build_number,
+                                  step_name))
 
   @classmethod
-  def Get(
-      cls, master_name, builder_name, build_number,
-      step_name):  # pragma: no cover
-    return cls._CreateKey(
-        master_name, builder_name, build_number, step_name).get()
+  def Get(cls, master_name, builder_name, build_number,
+          step_name):  # pragma: no cover
+    return cls._CreateKey(master_name, builder_name, build_number,
+                          step_name).get()

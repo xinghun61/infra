@@ -13,28 +13,29 @@ from testing_utils import testing
 
 
 class PipelineErrorsDashboardTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/pipeline-errors-dashboard',
-       pipeline_errors_dashboard.PipelineErrorsDashboard),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/pipeline-errors-dashboard',
+           pipeline_errors_dashboard.PipelineErrorsDashboard),
+      ],
+      debug=True)
 
   def testGetStartEndDates(self):
     midnight = datetime(2017, 3, 19, 0, 0, 0)
     self.assertEqual(
         (datetime(2017, 3, 18, 0, 0, 0), datetime(2017, 3, 20, 0, 0, 0)),
         pipeline_errors_dashboard._GetStartEndDates(None, None, midnight))
-    self.assertEqual(
-        (None, datetime(2017, 3, 20, 0, 0, 0)),
-        pipeline_errors_dashboard._GetStartEndDates(
-            None, '2017-03-19', midnight))
-    self.assertEqual(
-        (datetime(2017, 3, 18, 0, 0, 0), datetime(2017, 3, 20, 0, 0, 0)),
-        pipeline_errors_dashboard._GetStartEndDates(
-            '2017-03-18', None, midnight))
-    self.assertEqual(
-        (datetime(2017, 3, 15, 0, 0, 0), datetime(2017, 3, 16, 0, 0, 0)),
-        pipeline_errors_dashboard._GetStartEndDates(
-            '2017-03-15', '2017-03-16', midnight))
+    self.assertEqual((None, datetime(2017, 3, 20, 0, 0, 0)),
+                     pipeline_errors_dashboard._GetStartEndDates(
+                         None, '2017-03-19', midnight))
+    self.assertEqual((datetime(2017, 3, 18, 0, 0, 0), datetime(
+        2017, 3, 20, 0, 0, 0)),
+                     pipeline_errors_dashboard._GetStartEndDates(
+                         '2017-03-18', None, midnight))
+    self.assertEqual((datetime(2017, 3, 15, 0, 0, 0), datetime(
+        2017, 3, 16, 0, 0, 0)),
+                     pipeline_errors_dashboard._GetStartEndDates(
+                         '2017-03-15', '2017-03-16', midnight))
 
   def testGet(self):
     ok_analysis = WfAnalysis.Create('m1', 'b1', 1)

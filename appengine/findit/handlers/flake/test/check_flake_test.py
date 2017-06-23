@@ -29,9 +29,10 @@ from waterfall.test import wf_testcase
 
 
 class CheckFlakeTest(wf_testcase.WaterfallTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/waterfall/flake', check_flake.CheckFlake),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/waterfall/flake', check_flake.CheckFlake),
+      ], debug=True)
 
   @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testPostWithBadUrl(self, _):
@@ -45,8 +46,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'format': 'json',
         },
         status=400)
-    self.assertEqual(
-        'Unknown build info!', response.json_body.get('error_message'))
+    self.assertEqual('Unknown build info!',
+                     response.json_body.get('error_message'))
 
   @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testPostWithoutStepName(self, _):
@@ -59,11 +60,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'format': 'json',
         },
         status=400)
-    self.assertEqual(
-        'Step name must be specified', response.json_body.get('error_message'))
+    self.assertEqual('Step name must be specified',
+                     response.json_body.get('error_message'))
 
-  @mock.patch.object(flake_analysis_service, 'ScheduleAnalysisForFlake',
-                     return_value=False)
+  @mock.patch.object(
+      flake_analysis_service, 'ScheduleAnalysisForFlake', return_value=False)
   @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testNotScheduleAnalysisButExistingAnalysisWasDeleted(self, *_):
     master_name = 'm'
@@ -77,8 +78,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     previous_analysis.Save()
 
     previous_request = FlakeAnalysisRequest.Create(test_name, False, None)
-    build_step = BuildStep.Create(
-        master_name, builder_name, build_number - 1, step_name, None)
+    build_step = BuildStep.Create(master_name, builder_name, build_number - 1,
+                                  step_name, None)
     build_step.wf_master_name = build_step.master_name
     build_step.wf_builder_name = build_step.builder_name
     build_step.wf_build_number = build_step.build_number - 1
@@ -95,20 +96,24 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     response = self.test_app.post(
         '/waterfall/flake',
         params={
-            'url': buildbot.CreateBuildUrl(
-                master_name, builder_name, build_number),
-            'step_name': step_name,
-            'test_name': test_name,
-            'xsrf_token': 'abc',
-            'format': 'json',
+            'url':
+                buildbot.CreateBuildUrl(master_name, builder_name,
+                                        build_number),
+            'step_name':
+                step_name,
+            'test_name':
+                test_name,
+            'xsrf_token':
+                'abc',
+            'format':
+                'json',
         },
         status=404)
-    self.assertEqual(
-        'Flake analysis was deleted unexpectedly!',
-        response.json_body.get('error_message'))
+    self.assertEqual('Flake analysis was deleted unexpectedly!',
+                     response.json_body.get('error_message'))
 
-  @mock.patch.object(flake_analysis_service, 'ScheduleAnalysisForFlake',
-                     return_value=True)
+  @mock.patch.object(
+      flake_analysis_service, 'ScheduleAnalysisForFlake', return_value=True)
   @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testCorpUserCanScheduleANewAnalysis(self, *_):
     master_name = 'm'
@@ -117,8 +122,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
     analysis.Save()
 
     self.mock_current_user(user_email='test@google.com', is_admin=False)
@@ -126,11 +131,15 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     response = self.test_app.post(
         '/waterfall/flake',
         params={
-            'url': buildbot.CreateBuildUrl(
-                master_name, builder_name, build_number),
-            'step_name': step_name,
-            'test_name': test_name,
-            'xsrf_token': 'abc',
+            'url':
+                buildbot.CreateBuildUrl(master_name, builder_name,
+                                        build_number),
+            'step_name':
+                step_name,
+            'test_name':
+                test_name,
+            'xsrf_token':
+                'abc',
         },
         status=302)
     expected_url_surfix = (
@@ -151,18 +160,20 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     response = self.test_app.post(
         '/waterfall/flake',
         params={
-            'url': buildbot.CreateBuildUrl(
-                master_name, builder_name, build_number),
-            'step_name': step_name,
-            'test_name': test_name,
-            'format': 'json',
+            'url':
+                buildbot.CreateBuildUrl(master_name, builder_name,
+                                        build_number),
+            'step_name':
+                step_name,
+            'test_name':
+                test_name,
+            'format':
+                'json',
         },
-        status=403
-    )
-    self.assertEqual(
-        ('No permission to schedule an analysis for flaky test. '
-         'Please log in with your @google.com account first.'),
-        response.json_body.get('error_message'))
+        status=403)
+    self.assertEqual(('No permission to schedule an analysis for flaky test. '
+                      'Please log in with your @google.com account first.'),
+                     response.json_body.get('error_message'))
 
   def testMissingKeyGet(self):
     response = self.test_app.get(
@@ -175,7 +186,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     response = self.test_app.post(
-        '/waterfall/flake', params={'format': 'json', 'rerun': '1'}, status=404)
+        '/waterfall/flake', params={'format': 'json',
+                                    'rerun': '1'}, status=404)
     self.assertEqual('No key was provided.',
                      response.json_body.get('error_message'))
 
@@ -188,7 +200,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     response = self.test_app.get(
         '/waterfall/flake',
-        params={'format': 'json', 'key': analysis.key.urlsafe()},
+        params={'format': 'json',
+                'key': analysis.key.urlsafe()},
         status=404)
     self.assertEqual('Analysis of flake is not found.',
                      response.json_body.get('error_message'))
@@ -204,21 +217,27 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     response = self.test_app.post(
-      '/waterfall/flake',
-      params={'format': 'json', 'rerun': '1', 'key': analysis.key.urlsafe()},
-      status=404)
+        '/waterfall/flake',
+        params={'format': 'json',
+                'rerun': '1',
+                'key': analysis.key.urlsafe()},
+        status=404)
     self.assertEqual('Analysis of flake is not found.',
                      response.json_body.get('error_message'))
 
-  @mock.patch.object(check_flake, '_GetSuspectedFlakeInfo',
-                     return_value={
-                         'build_number': 100,
-                         'commit_position': 12345,
-                         'git_hash': 'git_hash_1',
-                         'triage_result': 0})
-  @mock.patch.object(check_flake, '_GetCoordinatesData',
-                     return_value=[[12345, 0.9, '1', 100, 'git_hash_2',
-                                    12344, 'git_hash_1']])
+  @mock.patch.object(
+      check_flake,
+      '_GetSuspectedFlakeInfo',
+      return_value={
+          'build_number': 100,
+          'commit_position': 12345,
+          'git_hash': 'git_hash_1',
+          'triage_result': 0
+      })
+  @mock.patch.object(
+      check_flake,
+      '_GetCoordinatesData',
+      return_value=[[12345, 0.9, '1', 100, 'git_hash_2', 12344, 'git_hash_1']])
   def testAnyoneCanViewScheduledAnalysis(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -227,8 +246,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
     success_rate = .9
 
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
     data_point = DataPoint()
     data_point.build_number = int(build_number)
     data_point.pass_rate = success_rate
@@ -244,38 +263,58 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     self.mock_current_user(user_email='test@example.com', is_admin=False)
 
-    response = self.test_app.get('/waterfall/flake', params={
-        'key': analysis.key.urlsafe(),
-        'format': 'json'})
+    response = self.test_app.get(
+        '/waterfall/flake',
+        params={'key': analysis.key.urlsafe(),
+                'format': 'json'})
 
     expected_check_flake_result = {
-        'key': analysis.key.urlsafe(),
-        'pass_rates': [[12345, 0.9, '1', 100, 'git_hash_2', 12344,
-                        'git_hash_1']],
-        'analysis_status': STATUS_TO_DESCRIPTION.get(analysis.status),
-        'master_name': master_name,
-        'builder_name': builder_name,
-        'build_number': int(build_number),
-        'step_name': step_name,
-        'test_name': test_name,
-        'request_time': '2016-10-01 12:10:00 UTC',
-        'build_level_number': 1,
-        'revision_level_number': 0,
-        'error': None,
-        'iterations_to_rerun': 100,
-        'pending_time': '00:00:05',
-        'duration': '00:59:55',
+        'key':
+            analysis.key.urlsafe(),
+        'pass_rates': [[
+            12345, 0.9, '1', 100, 'git_hash_2', 12344, 'git_hash_1'
+        ]],
+        'analysis_status':
+            STATUS_TO_DESCRIPTION.get(analysis.status),
+        'master_name':
+            master_name,
+        'builder_name':
+            builder_name,
+        'build_number':
+            int(build_number),
+        'step_name':
+            step_name,
+        'test_name':
+            test_name,
+        'request_time':
+            '2016-10-01 12:10:00 UTC',
+        'build_level_number':
+            1,
+        'revision_level_number':
+            0,
+        'error':
+            None,
+        'iterations_to_rerun':
+            100,
+        'pending_time':
+            '00:00:05',
+        'duration':
+            '00:59:55',
         'suspected_flake': {
             'build_number': 100,
             'commit_position': 12345,
             'git_hash': 'git_hash_1',
             'triage_result': 0
         },
-        'version_number': 1,
-        'show_input_ui': False,
-        'show_rerun_ui': False,
+        'version_number':
+            1,
+        'show_input_ui':
+            False,
+        'show_rerun_ui':
+            False,
         'culprit': {},
-        'try_job_status': None,
+        'try_job_status':
+            None,
         'last_attempted_swarming_task': {
             'task_id': None,
             'build_number': None
@@ -296,19 +335,28 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 
-    response = self.test_app.post('/waterfall/flake', params={
-        'url': buildbot.CreateBuildUrl(master_name, builder_name, build_number),
-        'step_name': step_name,
-        'test_name': test_name,
-        'format': 'json'}, status=403)
+    response = self.test_app.post(
+        '/waterfall/flake',
+        params={
+            'url':
+                buildbot.CreateBuildUrl(master_name, builder_name,
+                                        build_number),
+            'step_name':
+                step_name,
+            'test_name':
+                test_name,
+            'format':
+                'json'
+        },
+        status=403)
 
     self.assertEqual(
         'Invalid XSRF token. Please log in or refresh the page first.',
         response.json_body.get('error_message'))
 
   @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
-  @mock.patch.object(flake_analysis_service, 'ScheduleAnalysisForFlake',
-                     return_value=False)
+  @mock.patch.object(
+      flake_analysis_service, 'ScheduleAnalysisForFlake', return_value=False)
   def testRequestAnalysisWhenThereIsExistingAnalysis(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -321,8 +369,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     previous_analysis.Save()
 
     previous_request = FlakeAnalysisRequest.Create(test_name, False, None)
-    build_step = BuildStep.Create(
-        master_name, builder_name, build_number, step_name, None)
+    build_step = BuildStep.Create(master_name, builder_name, build_number,
+                                  step_name, None)
     build_step.wf_master_name = build_step.master_name
     build_step.wf_builder_name = build_step.builder_name
     build_step.wf_build_number = build_step.build_number
@@ -333,25 +381,38 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 
-    response = self.test_app.post('/waterfall/flake', params={
-        'url': buildbot.CreateBuildUrl(master_name, builder_name, build_number),
-        'step_name': step_name,
-        'test_name': test_name,
-        'format': 'json'}, status=302)
+    response = self.test_app.post(
+        '/waterfall/flake',
+        params={
+            'url':
+                buildbot.CreateBuildUrl(master_name, builder_name,
+                                        build_number),
+            'step_name':
+                step_name,
+            'test_name':
+                test_name,
+            'format':
+                'json'
+        },
+        status=302)
     expected_url_surfix = (
         '/waterfall/flake?redirect=1&key=%s' % previous_analysis.key.urlsafe())
     self.assertTrue(
         response.headers.get('Location', '').endswith(expected_url_surfix))
 
-  @mock.patch.object(check_flake, '_GetSuspectedFlakeInfo',
-                     return_value={
-                         'build_number': 100,
-                         'commit_position': 12345,
-                         'git_hash': 'a_git_hash',
-                         'triage_result': 0})
-  @mock.patch.object(check_flake, '_GetCoordinatesData',
-                     return_value=[[12345, 0.9, '1', 100, 'git_hash_2',
-                                    12344, 'git_hash_1']])
+  @mock.patch.object(
+      check_flake,
+      '_GetSuspectedFlakeInfo',
+      return_value={
+          'build_number': 100,
+          'commit_position': 12345,
+          'git_hash': 'a_git_hash',
+          'triage_result': 0
+      })
+  @mock.patch.object(
+      check_flake,
+      '_GetCoordinatesData',
+      return_value=[[12345, 0.9, '1', 100, 'git_hash_2', 12344, 'git_hash_1']])
   def testAnyoneCanViewExistingAnalysis(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -374,37 +435,58 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.algorithm_parameters = {'iterations_to_rerun': 100}
     analysis.Save()
 
-    response = self.test_app.get('/waterfall/flake', params={
-        'key': analysis.key.urlsafe(), 'format': 'json'})
+    response = self.test_app.get(
+        '/waterfall/flake',
+        params={'key': analysis.key.urlsafe(),
+                'format': 'json'})
 
     expected_check_flake_result = {
-        'key': analysis.key.urlsafe(),
-        'pass_rates': [[12345, 0.9, '1', 100, 'git_hash_2', 12344,
-                        'git_hash_1']],
-        'analysis_status': STATUS_TO_DESCRIPTION.get(analysis.status),
-        'master_name': master_name,
-        'builder_name': builder_name,
-        'build_number': build_number - 1,
-        'step_name': step_name,
-        'test_name': test_name,
-        'request_time': '2016-10-01 12:10:00 UTC',
-        'build_level_number': 1,
-        'revision_level_number': 0,
-        'error': None,
-        'iterations_to_rerun': 100,
-        'pending_time': '00:00:05',
-        'duration': '00:59:55',
+        'key':
+            analysis.key.urlsafe(),
+        'pass_rates': [[
+            12345, 0.9, '1', 100, 'git_hash_2', 12344, 'git_hash_1'
+        ]],
+        'analysis_status':
+            STATUS_TO_DESCRIPTION.get(analysis.status),
+        'master_name':
+            master_name,
+        'builder_name':
+            builder_name,
+        'build_number':
+            build_number - 1,
+        'step_name':
+            step_name,
+        'test_name':
+            test_name,
+        'request_time':
+            '2016-10-01 12:10:00 UTC',
+        'build_level_number':
+            1,
+        'revision_level_number':
+            0,
+        'error':
+            None,
+        'iterations_to_rerun':
+            100,
+        'pending_time':
+            '00:00:05',
+        'duration':
+            '00:59:55',
         'suspected_flake': {
             'build_number': 100,
             'commit_position': 12345,
             'git_hash': 'a_git_hash',
             'triage_result': 0
         },
-        'version_number': 1,
-        'show_input_ui': False,
-        'show_rerun_ui': False,
+        'version_number':
+            1,
+        'show_input_ui':
+            False,
+        'show_rerun_ui':
+            False,
         'culprit': {},
-        'try_job_status': None,
+        'try_job_status':
+            None,
         'last_attempted_swarming_task': {
             'task_id': None,
             'build_number': None
@@ -415,8 +497,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_check_flake_result, response.json_body)
 
-  @mock.patch.object(flake_analysis_service, 'ScheduleAnalysisForFlake',
-                     return_value=False)
+  @mock.patch.object(
+      flake_analysis_service, 'ScheduleAnalysisForFlake', return_value=False)
   @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testRequestUnsupportedAnalysis(self, *_):
     master_name = 'm'
@@ -426,40 +508,48 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
 
     previous_request = FlakeAnalysisRequest.Create(test_name, False, None)
-    previous_request.AddBuildStep(
-        master_name, builder_name, build_number, step_name, None)
+    previous_request.AddBuildStep(master_name, builder_name, build_number,
+                                  step_name, None)
     previous_request.swarmed = False
     previous_request.supported = False
 
     response = self.test_app.post(
         '/waterfall/flake',
         params={
-            'url': buildbot.CreateBuildUrl(
-                master_name, builder_name, build_number),
-            'step_name': step_name,
-            'test_name': test_name,
-            'format': 'json',
-            'xsrf_token': 'abc',
+            'url':
+                buildbot.CreateBuildUrl(master_name, builder_name,
+                                        build_number),
+            'step_name':
+                step_name,
+            'test_name':
+                test_name,
+            'format':
+                'json',
+            'xsrf_token':
+                'abc',
         },
-        status = 400,
-    )
+        status=400,)
     self.assertEqual(
         ('Flake analysis is not supported for "s/t". Either '
          'the test type is not supported or the test is not swarmed yet.'),
         response.json_body.get('error_message'))
 
-  @mock.patch.object(check_flake, '_GetSuspectedFlakeInfo',
-                     return_value={
-                         'build_number': 100,
-                         'commit_position': 12345,
-                         'git_hash': 'a_git_hash',
-                         'triage_result': 0})
-  @mock.patch.object(check_flake, '_GetCoordinatesData',
-                     return_value=[[12345, 0.9, '1', 100, 'git_hash_2',
-                                    12344, 'git_hash_1']])
+  @mock.patch.object(
+      check_flake,
+      '_GetSuspectedFlakeInfo',
+      return_value={
+          'build_number': 100,
+          'commit_position': 12345,
+          'git_hash': 'a_git_hash',
+          'triage_result': 0
+      })
+  @mock.patch.object(
+      check_flake,
+      '_GetCoordinatesData',
+      return_value=[[12345, 0.9, '1', 100, 'git_hash_2', 12344, 'git_hash_1']])
   @mock.patch.object(users, 'is_current_user_admin', return_value=True)
-  @mock.patch.object(flake_analysis_service, 'ScheduleAnalysisForFlake',
-                     return_value=True)
+  @mock.patch.object(
+      flake_analysis_service, 'ScheduleAnalysisForFlake', return_value=True)
   def testGetTriageHistory(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -470,17 +560,18 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     triage_result = 2
     user_name = 'test'
 
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
     analysis.status = analysis_status.COMPLETED
     analysis.suspected_flake_build_number = 100
     analysis.Save()
     analysis.UpdateTriageResult(
         triage_result, {'build_number': suspected_flake_build_number}, 'test')
 
-    response = self.test_app.get('/waterfall/flake', params={
-        'key': analysis.key.urlsafe(),
-        'format': 'json'})
+    response = self.test_app.get(
+        '/waterfall/flake',
+        params={'key': analysis.key.urlsafe(),
+                'format': 'json'})
 
     # Because TriagedResult uses auto_now=True, a direct dict comparison will
     # always fail. Instead only compare the relevant fields for trige_history.
@@ -488,25 +579,18 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(len(triage_history), 1)
     self.assertEqual(triage_history[0].get('triage_result'), 'Correct')
     self.assertEqual(triage_history[0].get('user_name'), user_name)
-    self.assertEqual(
-        triage_history[0].get('suspect_info', {}).get('build_number'),
-        suspected_flake_build_number)
+    self.assertEqual(triage_history[0].get(
+        'suspect_info', {}).get('build_number'), suspected_flake_build_number)
 
   def testValidateInput(self):
     self.assertIsNone(CheckFlake()._ValidateInput('s', 't', None))
     self.assertIsNone(CheckFlake()._ValidateInput('s', 't', '654321'))
-    self.assertEqual(
-        CheckFlake()._ValidateInput(
-            None, 't', '').get('data', {}).get('error_message'),
-        'Step name must be specified')
-    self.assertEqual(
-        CheckFlake()._ValidateInput(
-            's', None, '').get('data', {}).get('error_message'),
-        'Test name must be specified')
-    self.assertEqual(
-        CheckFlake()._ValidateInput(
-            's', 't', 'a').get('data', {}).get('error_message'),
-        'Bug id must be an int')
+    self.assertEqual(CheckFlake()._ValidateInput(None, 't', '').get(
+        'data', {}).get('error_message'), 'Step name must be specified')
+    self.assertEqual(CheckFlake()._ValidateInput('s', None, '').get(
+        'data', {}).get('error_message'), 'Test name must be specified')
+    self.assertEqual(CheckFlake()._ValidateInput('s', 't', 'a').get(
+        'data', {}).get('error_message'), 'Bug id must be an int')
 
   def testGetSuspectedFlakeInfoWhenNoSuspectedBuildNumber(self):
     self.assertEqual({}, check_flake._GetSuspectedFlakeInfo(None))
@@ -555,8 +639,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'url': url,
         'confidence': None,
     }
-    self.assertEqual(expected_result,
-                     check_flake._GetCulpritInfo(analysis))
+    self.assertEqual(expected_result, check_flake._GetCulpritInfo(analysis))
 
   def testGetCoordinatesDataNoDataPoints(self):
     self.assertEqual([], check_flake._GetCoordinatesData(None))
@@ -572,8 +655,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
     success_rate = .9
     try_job_url = 'try_job_url'
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
     data_point_1 = DataPoint()
     data_point_1.build_number = build_number
     data_point_1.pass_rate = success_rate
@@ -595,26 +678,23 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.data_points.append(data_point_2)
     analysis.Save()
 
-    expected_result = [
-        {
-            'commit_position': 2,
-            'pass_rate': success_rate,
-            'task_id': None,
-            'build_number': build_number - 3,
-            'git_hash': 'git_hash_2',
-            'try_job_url': try_job_url
-        },
-        {
-            'commit_position': 5,
-            'pass_rate': success_rate,
-            'task_id': None,
-            'build_number': build_number,
-            'git_hash': 'git_hash_5',
-            'lower_bound_commit_position': 2,
-            'lower_bound_git_hash': 'git_hash_2',
-            'try_job_url': try_job_url
-        }
-    ]
+    expected_result = [{
+        'commit_position': 2,
+        'pass_rate': success_rate,
+        'task_id': None,
+        'build_number': build_number - 3,
+        'git_hash': 'git_hash_2',
+        'try_job_url': try_job_url
+    }, {
+        'commit_position': 5,
+        'pass_rate': success_rate,
+        'task_id': None,
+        'build_number': build_number,
+        'git_hash': 'git_hash_5',
+        'lower_bound_commit_position': 2,
+        'lower_bound_git_hash': 'git_hash_2',
+        'try_job_url': try_job_url
+    }]
     self.assertEqual(expected_result, check_flake._GetCoordinatesData(analysis))
 
   def testGetNumbersOfDataPointGroups(self):
@@ -632,13 +712,9 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.last_attempted_swarming_task_id = 'a1b2c3d4'
     analysis.last_attempted_build_number = 122
-    expected_result = {
-        'task_id': 'a1b2c3d4',
-        'build_number': 122
-    }
-    self.assertEqual(
-        expected_result,
-        check_flake._GetLastAttemptedSwarmingTaskDetails(analysis))
+    expected_result = {'task_id': 'a1b2c3d4', 'build_number': 122}
+    self.assertEqual(expected_result,
+                     check_flake._GetLastAttemptedSwarmingTaskDetails(analysis))
 
   def testGetLastAttemptedTryJobDetailsNoRevision(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -658,11 +734,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
     revision = 'r1'
 
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
     analysis.last_attempted_revision = revision
-    try_job = FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, revision)
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, revision)
     try_job.put()
     self.assertEqual({}, check_flake._GetLastAttemptedTryJobDetails(analysis))
 
@@ -675,11 +751,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     revision = 'r1'
     try_job_id = '12345'
 
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
     analysis.last_attempted_revision = revision
-    try_job = FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, revision)
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, revision)
     try_job.try_job_ids = [try_job_id]
     try_job.put()
     self.assertEqual({}, check_flake._GetLastAttemptedTryJobDetails(analysis))
@@ -695,12 +771,12 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     try_job_url = 'url'
     status = analysis_status.RUNNING
 
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
     analysis.last_attempted_revision = revision
     analysis.put()
-    try_job = FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, revision)
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, revision)
     try_job.try_job_ids = [try_job_id]
     try_job.status = status
     try_job.put()
@@ -709,12 +785,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     try_job_data.try_job_key = try_job.key
     try_job_data.try_job_url = try_job_url
     try_job_data.put()
-    self.assertEqual(
-        {
-            'url': try_job_url,
-            'status': analysis_status.STATUS_TO_DESCRIPTION.get(status)
-        },
-        check_flake._GetLastAttemptedTryJobDetails(analysis))
+    self.assertEqual({
+        'url': try_job_url,
+        'status': analysis_status.STATUS_TO_DESCRIPTION.get(status)
+    }, check_flake._GetLastAttemptedTryJobDetails(analysis))
 
   def testGetDurationForAnalysisWhenPending(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
@@ -735,8 +809,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.end_time = datetime.datetime(2017, 06, 06, 00, 43, 00)
     self.assertEqual('00:43:00', check_flake._GetDurationForAnalysis(analysis))
 
-  @mock.patch.object(check_flake.token, 'ValidateAuthToken',
-                     return_value=True)
+  @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testRerunFailsWhenUnauthorized(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.Save()
@@ -747,9 +820,11 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 
     response = self.test_app.post(
-      '/waterfall/flake',
-      params={'format': 'json', 'rerun': '1', 'key': analysis.key.urlsafe()},
-      status=403)
+        '/waterfall/flake',
+        params={'format': 'json',
+                'rerun': '1',
+                'key': analysis.key.urlsafe()},
+        status=403)
     self.assertEqual('Only admin is allowed to rerun.',
                      response.json_body.get('error_message'))
 
@@ -762,12 +837,14 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     response = self.test_app.post(
-      '/waterfall/flake',
-      params={'format': 'json', 'rerun': '1', 'key': analysis.key.urlsafe()},
-      status=400)
+        '/waterfall/flake',
+        params={'format': 'json',
+                'rerun': '1',
+                'key': analysis.key.urlsafe()},
+        status=400)
     self.assertEqual(
-      'Cannot rerun analysis if one is currently running or pending.',
-      response.json_body.get('error_message'))
+        'Cannot rerun analysis if one is currently running or pending.',
+        response.json_body.get('error_message'))
 
   @mock.patch.object(check_flake.token, 'ValidateAuthToken', return_value=True)
   def testRequestRerunWhenAuthorized(self, *_):
@@ -777,8 +854,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name)
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
     analysis.original_master_name = master_name
     analysis.original_builder_name = builder_name
     analysis.original_build_number = build_number
@@ -793,12 +870,17 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     self.mock_current_user(user_email='test@google.com', is_admin=True)
 
-    with mock.patch.object(CheckFlake, '_CreateAndScheduleFlakeAnalysis',
-                           return_value=(analysis, True)) as scheduler:
-      self.test_app.post('/waterfall/flake', params={
-        'key': analysis.key.urlsafe(),
-        'rerun': '1',
-        'format': 'json'})
+    with mock.patch.object(
+        CheckFlake,
+        '_CreateAndScheduleFlakeAnalysis',
+        return_value=(analysis, True)) as scheduler:
+      self.test_app.post(
+          '/waterfall/flake',
+          params={
+              'key': analysis.key.urlsafe(),
+              'rerun': '1',
+              'format': 'json'
+          })
       scheduler.assert_called_with(master_name, builder_name, build_number,
                                    step_name, test_name, 1, True)
       self.assertNotEqual(original_key, analysis.key)

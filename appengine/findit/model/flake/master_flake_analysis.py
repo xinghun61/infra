@@ -58,11 +58,17 @@ class DataPoint(ndb.Model):
   iterations = ndb.IntegerProperty(indexed=False)
 
   @staticmethod
-  def Create(
-      build_number=None, pass_rate=None, task_id=None, commit_position=None,
-      git_hash=None, previous_build_commit_position=None,
-      previous_build_git_hash=None, blame_list=None, try_job_url=None,
-      has_valid_artifact=True, iterations=None):
+  def Create(build_number=None,
+             pass_rate=None,
+             task_id=None,
+             commit_position=None,
+             git_hash=None,
+             previous_build_commit_position=None,
+             previous_build_git_hash=None,
+             blame_list=None,
+             try_job_url=None,
+             has_valid_artifact=True,
+             iterations=None):
     data_point = DataPoint()
     data_point.build_number = build_number
     data_point.pass_rate = pass_rate
@@ -105,8 +111,8 @@ class DataPoint(ndb.Model):
     length = len(self.blame_list)
     assert (commit_position > self.commit_position - length and
             commit_position <= self.commit_position)
-    return self.blame_list[
-        length - (self.commit_position - commit_position) - 1]
+    return self.blame_list[length
+                           - (self.commit_position - commit_position) - 1]
 
   def GetDictOfCommitPositionAndRevision(self):
     """Gets a dict of commit_position:revision items for this data_point."""
@@ -119,8 +125,8 @@ class DataPoint(ndb.Model):
     return blamed_cls
 
 
-class MasterFlakeAnalysis(
-    BaseAnalysis, BaseBuildModel, VersionedModel, TriagedModel):
+class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
+                          TriagedModel):
   """Represents an analysis of a flaky test on a Waterfall test cycle."""
 
   @ndb.ComputedProperty
@@ -145,16 +151,16 @@ class MasterFlakeAnalysis(
   def iterations_to_rerun(self):
     if not self.algorithm_parameters:
       return -1
-    return (self.algorithm_parameters.get('swarming_rerun', {}).get(
-        'iterations_to_rerun') or self.algorithm_parameters.get(
-            'iterations_to_rerun'))
+    return (self.algorithm_parameters.get('swarming_rerun',
+                                          {}).get('iterations_to_rerun') or
+            self.algorithm_parameters.get('iterations_to_rerun'))
 
   @staticmethod
-  def _CreateAnalysisId(
-      master_name, builder_name, build_number, step_name, test_name):
+  def _CreateAnalysisId(master_name, builder_name, build_number, step_name,
+                        test_name):
     encoded_test_name = base64.urlsafe_b64encode(test_name)
-    return '%s/%s/%s/%s/%s' % (
-        master_name, builder_name, build_number, step_name, encoded_test_name)
+    return '%s/%s/%s/%s/%s' % (master_name, builder_name, build_number,
+                               step_name, encoded_test_name)
 
   @staticmethod
   def GetBuildConfigurationFromKey(master_flake_analysis_key):
@@ -179,14 +185,22 @@ class MasterFlakeAnalysis(
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   @classmethod
-  def GetVersion(cls, master_name, builder_name, build_number, step_name,
-                 test_name, version=None):  # pragma: no cover.
+  def GetVersion(cls,
+                 master_name,
+                 builder_name,
+                 build_number,
+                 step_name,
+                 test_name,
+                 version=None):  # pragma: no cover.
     return super(MasterFlakeAnalysis, cls).GetVersion(
         key=MasterFlakeAnalysis._CreateAnalysisId(
             master_name, builder_name, build_number, step_name, test_name),
         version=version)
 
-  def UpdateTriageResult(self, triage_result, suspect_info, user_name,
+  def UpdateTriageResult(self,
+                         triage_result,
+                         suspect_info,
+                         user_name,
                          version_number=None):
     """Updates triage result for a flake analysis.
 
@@ -256,8 +270,8 @@ class MasterFlakeAnalysis(
         return data_point.commit_position
     return None
 
-  def GetDataPointsWithinBuildNumberRange(
-      self, lower_bound_build_number, upper_bound_build_number):
+  def GetDataPointsWithinBuildNumberRange(self, lower_bound_build_number,
+                                          upper_bound_build_number):
     """Filters data_points by lower and upper bound build numbers.
 
       All data points within the build number range will be returned, including
@@ -289,12 +303,12 @@ class MasterFlakeAnalysis(
     return filter(position_in_bounds, self.data_points)
 
   def RemoveDataPointWithBuildNumber(self, build_number):
-    self.data_points = filter(
-        lambda x: x.build_number != build_number, self.data_points)
+    self.data_points = filter(lambda x: x.build_number != build_number,
+                              self.data_points)
 
   def RemoveDataPointWithCommitPosition(self, commit_position):
-    self.data_points = filter(
-        lambda x: x.commit_position != commit_position, self.data_points)
+    self.data_points = filter(lambda x: x.commit_position != commit_position,
+                              self.data_points)
 
   # The original build/step/test in which a flake actually occurred.
   # A CQ trybot step has to be mapped to a Waterfall buildbot step.

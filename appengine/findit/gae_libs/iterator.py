@@ -1,7 +1,6 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Fetches entities and iterate over and process them."""
 
 DEFAULT_BATCH_SIZE = 1000
@@ -28,9 +27,8 @@ def Iterate(query,
   """
   cursor = None
   while True:
-    entities, next_cursor, more = query.fetch_page(batch_size,
-                                                   projection=projection,
-                                                   start_cursor=cursor)
+    entities, next_cursor, more = query.fetch_page(
+        batch_size, projection=projection, start_cursor=cursor)
     if not more and not entities:
       break
 

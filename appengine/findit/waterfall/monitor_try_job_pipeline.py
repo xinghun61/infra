@@ -46,21 +46,19 @@ def _GetError(buildbucket_response, buildbucket_error, timed_out, no_report):
   """
 
   if buildbucket_error:
-    return (
-        {
-            'message': buildbucket_error.message,
-            'reason': buildbucket_error.reason
-        },
-        try_job_error.BUILDBUCKET_REQUEST_ERROR)
+    return ({
+        'message': buildbucket_error.message,
+        'reason': buildbucket_error.reason
+    }, try_job_error.BUILDBUCKET_REQUEST_ERROR)
 
   if timed_out:
-    return (
-        {
-            'message': 'Try job monitoring was abandoned.',
-            'reason': 'Timeout after %s hours' % (
-                waterfall_config.GetTryJobSettings().get('job_timeout_hours'))
-        },
-        try_job_error.TIMEOUT)
+    return ({
+        'message':
+            'Try job monitoring was abandoned.',
+        'reason':
+            'Timeout after %s hours' %
+            (waterfall_config.GetTryJobSettings().get('job_timeout_hours'))
+    }, try_job_error.TIMEOUT)
 
   if buildbucket_response:
     # Check buildbucket_response.
@@ -68,68 +66,58 @@ def _GetError(buildbucket_response, buildbucket_error, timed_out, no_report):
     if buildbucket_failure_reason == 'BUILD_FAILURE':
       # Generic buildbucket-reported error which can occurr if an exception is
       # thrown, disk is full, compile fails during a test try job, etc.
-      return (
-          {
-              'message': 'Buildbucket reported a general error.',
-              'reason': MonitorTryJobPipeline.UNKNOWN
-          },
-          try_job_error.INFRA_FAILURE
-      )
+      return ({
+          'message': 'Buildbucket reported a general error.',
+          'reason': MonitorTryJobPipeline.UNKNOWN
+      }, try_job_error.INFRA_FAILURE)
     elif buildbucket_failure_reason == 'INFRA_FAILURE':
-      return (
-          {
-              'message': ('Try job encountered an infra issue during '
-                          'execution.'),
-              'reason': MonitorTryJobPipeline.UNKNOWN
-          },
-          try_job_error.INFRA_FAILURE
-      )
+      return ({
+          'message': ('Try job encountered an infra issue during '
+                      'execution.'),
+          'reason':
+              MonitorTryJobPipeline.UNKNOWN
+      }, try_job_error.INFRA_FAILURE)
     elif buildbucket_failure_reason:
-      return (
-          {
-              'message': buildbucket_failure_reason,
-              'reason': MonitorTryJobPipeline.UNKNOWN
-          },
-          try_job_error.UNKNOWN
-      )
+      return ({
+          'message': buildbucket_failure_reason,
+          'reason': MonitorTryJobPipeline.UNKNOWN
+      }, try_job_error.UNKNOWN)
 
     # Check result_details_json for errors.
     result_details_json = json.loads(
         buildbucket_response.get('result_details_json', '{}')) or {}
     error = result_details_json.get('error', {})
     if error:
-      return (
-          {
-              'message': 'Buildbucket reported an error.',
-              'reason': error.get('message', MonitorTryJobPipeline.UNKNOWN)
-          },
-          try_job_error.CI_REPORTED_ERROR)
+      return ({
+          'message': 'Buildbucket reported an error.',
+          'reason': error.get('message', MonitorTryJobPipeline.UNKNOWN)
+      }, try_job_error.CI_REPORTED_ERROR)
 
     if no_report:
-      return (
-          {
-              'message': 'No result report was found.',
-              'reason': MonitorTryJobPipeline.UNKNOWN
-          },
-          try_job_error.UNKNOWN
-      )
+      return ({
+          'message': 'No result report was found.',
+          'reason': MonitorTryJobPipeline.UNKNOWN
+      }, try_job_error.UNKNOWN)
 
   return None, None
 
 
-def _OnTryJobError(try_job_type, error_dict,
-                   master_name, builder_name):  # pragma: no cover
-  monitoring.try_job_errors.increment(
-      {
-          'type': try_job_type,
-          'error': error_dict.get('message', 'unknown'),
-          'master_name': master_name,
-          'builder_name': builder_name
-      })
+def _OnTryJobError(try_job_type, error_dict, master_name,
+                   builder_name):  # pragma: no cover
+  monitoring.try_job_errors.increment({
+      'type': try_job_type,
+      'error': error_dict.get('message', 'unknown'),
+      'master_name': master_name,
+      'builder_name': builder_name
+  })
 
 
-def _UpdateTryJobMetadata(try_job_data, try_job_type, buildbucket_build,
-                          buildbucket_error, timed_out, report=None):
+def _UpdateTryJobMetadata(try_job_data,
+                          try_job_type,
+                          buildbucket_build,
+                          buildbucket_error,
+                          timed_out,
+                          report=None):
   buildbucket_response = {}
 
   if buildbucket_build:
@@ -144,10 +132,9 @@ def _UpdateTryJobMetadata(try_job_data, try_job_type, buildbucket_build,
 
     if try_job_type != failure_type.FLAKY_TEST:  # pragma: no branch
       if report:
-        try_job_data.number_of_commits_analyzed = len(
-          report.get('result', {}))
+        try_job_data.number_of_commits_analyzed = len(report.get('result', {}))
         try_job_data.regression_range_size = report.get(
-          'metadata', {}).get('regression_range_size')
+            'metadata', {}).get('regression_range_size')
       else:
         try_job_data.number_of_commits_analyzed = 0
         try_job_data.regression_range_size = None
@@ -158,8 +145,8 @@ def _UpdateTryJobMetadata(try_job_data, try_job_type, buildbucket_build,
 
   # report should only be {} when error happens on getting report after try job
   # completed. If try job is still running, report will be set to None.
-  error_dict, error_code = _GetError(
-      buildbucket_response, buildbucket_error, timed_out, report == {})
+  error_dict, error_code = _GetError(buildbucket_response, buildbucket_error,
+                                     timed_out, report == {})
 
   if error_dict:
     try_job_data.error = error_dict
@@ -195,8 +182,10 @@ def _UpdateLastBuildbucketResponse(try_job_data, build):
   if not build or not build.response:  # pragma: no cover
     return
 
-  if not _DictsAreEqual(try_job_data.last_buildbucket_response,
-                        build.response, exclude_keys=['utcnow_ts']):
+  if not _DictsAreEqual(
+      try_job_data.last_buildbucket_response,
+      build.response,
+      exclude_keys=['utcnow_ts']):
     try_job_data.last_buildbucket_response = build.response
     try_job_data.put()
 
@@ -226,11 +215,11 @@ def _RecordCacheStats(build, report):
         if last_checked_out_revision else None)
 
     cached_revision = report.get('previously_cached_revision')
-    cached_cp= git_repo.GetChangeLog(
+    cached_cp = git_repo.GetChangeLog(
         cached_revision).commit_position if cached_revision else None
 
-    bad_revision = json.loads(build.response.get('parameters_json', '{}')
-                              ).get('properties', {}).get('bad_revision')
+    bad_revision = json.loads(build.response.get('parameters_json', '{}')).get(
+        'properties', {}).get('bad_revision')
     bad_cp = git_repo.GetChangeLog(
         bad_revision).commit_position if bad_revision else None
 
@@ -258,8 +247,13 @@ class MonitorTryJobPipeline(BasePipeline):
   UNKNOWN = 'UNKNOWN'
 
   @ndb.transactional
-  def _UpdateTryJobResult(self, urlsafe_try_job_key, try_job_type, try_job_id,
-                          try_job_url, status, result_content=None):
+  def _UpdateTryJobResult(self,
+                          urlsafe_try_job_key,
+                          try_job_type,
+                          try_job_id,
+                          try_job_url,
+                          status,
+                          result_content=None):
     """Updates try job result based on response try job status and result."""
     result = {
         'report': result_content,
@@ -289,7 +283,6 @@ class MonitorTryJobPipeline(BasePipeline):
     try_job.put()
 
     return result_to_update
-
 
   def __init__(self, *args, **kwargs):
     super(MonitorTryJobPipeline, self).__init__(*args, **kwargs)
@@ -331,7 +324,8 @@ class MonitorTryJobPipeline(BasePipeline):
 
     if not try_job_data:
       logging.error('%(kind)s entity does not exist for id %(id)s: creating it',
-                    {'kind': try_job_kind, 'id': try_job_id})
+                    {'kind': try_job_kind,
+                     'id': try_job_id})
       try_job_data = try_job_kind.Create(try_job_id)
       try_job_data.try_job_key = ndb.Key(urlsafe=urlsafe_try_job_key)
 
@@ -344,8 +338,8 @@ class MonitorTryJobPipeline(BasePipeline):
 
     timeout_hours = waterfall_config.GetTryJobSettings().get(
         'job_timeout_hours')
-    default_pipeline_wait_seconds = waterfall_config.GetTryJobSettings(
-        ).get( 'server_query_interval_seconds')
+    default_pipeline_wait_seconds = waterfall_config.GetTryJobSettings().get(
+        'server_query_interval_seconds')
     max_error_times = waterfall_config.GetTryJobSettings().get(
         'allowed_response_error_times')
 
@@ -369,8 +363,8 @@ class MonitorTryJobPipeline(BasePipeline):
         'backoff_time': backoff_time,
     }
 
-    callback_url = self.get_callback_url(callback_params=json.dumps(
-        self.last_params))
+    callback_url = self.get_callback_url(
+        callback_params=json.dumps(self.last_params))
 
     try_job_data.callback_url = callback_url
     try_job_data.callback_target = appengine_util.GetTargetNameForModule(
@@ -394,8 +388,8 @@ class MonitorTryJobPipeline(BasePipeline):
         try_job_id = self.args[2]
       if try_job_id:
         taskqueue.Queue(
-            constants.WATERFALL_ANALYSIS_QUEUE).delete_tasks_by_name([
-                try_job_id + '_cleanup_task'])
+            constants.WATERFALL_ANALYSIS_QUEUE).delete_tasks_by_name(
+                [try_job_id + '_cleanup_task'])
       else:
         logging.error('Did not receive a try_job_id at construction.')
     except taskqueue.BadTaskStateError, e:  # pragma: no cover
@@ -405,7 +399,8 @@ class MonitorTryJobPipeline(BasePipeline):
   def delay_callback(self, countdown, callback_params, name=None):
     target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
     task = self.get_callback_task(
-        countdown=countdown, target=target,
+        countdown=countdown,
+        target=target,
         params={'callback_params': json.dumps(callback_params)},
         name=name)
     task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
@@ -470,66 +465,61 @@ class MonitorTryJobPipeline(BasePipeline):
                 'default_pipeline_wait_seconds': default_pipeline_wait_seconds,
                 'timeout_hours': timeout_hours,
                 'backoff_time': backoff_time * 2,
-            }
-        )
+            })
         return
       else:  # pragma: no cover
         # Buildbucket has responded error more than 5 times, retry pipeline.
-        _UpdateTryJobMetadata(
-            try_job_data, try_job_type, build, error, False)
-        raise pipeline.Retry(
-            'Error "%s" occurred. Reason: "%s"' % (error.message,
-                                                   error.reason))
+        _UpdateTryJobMetadata(try_job_data, try_job_type, build, error, False)
+        raise pipeline.Retry('Error "%s" occurred. Reason: "%s"' %
+                             (error.message, error.reason))
     elif build.status == BuildbucketBuild.COMPLETED:
-      swarming_task_id = buildbot.GetSwarmingTaskIdFromUrl(
-          build.url)
+      swarming_task_id = buildbot.GetSwarmingTaskIdFromUrl(build.url)
 
       if swarming_task_id:
         try:
-          report = json.loads(swarming_util.GetStepLog(
-              try_job_id, 'report', HttpClientAppengine(), 'report'))
+          report = json.loads(
+              swarming_util.GetStepLog(try_job_id, 'report',
+                                       HttpClientAppengine(), 'report'))
           if report:
             _RecordCacheStats(build, report)
         except (ValueError, TypeError) as e:  # pragma: no cover
           report = {}
-          logging.exception(
-              'Failed to load result report for swarming/%s '
-              'due to exception %s.' % (swarming_task_id, e.message))
+          logging.exception('Failed to load result report for swarming/%s '
+                            'due to exception %s.' % (swarming_task_id,
+                                                      e.message))
       else:
         try_job_master_name, try_job_builder_name, try_job_build_number = (
             buildbot.ParseBuildUrl(build.url))
 
         try:
-          report = json.loads(buildbot.GetStepLog(
-              try_job_master_name, try_job_builder_name, try_job_build_number,
-              'report', HttpClientAppengine(), 'report'))
+          report = json.loads(
+              buildbot.GetStepLog(try_job_master_name, try_job_builder_name,
+                                  try_job_build_number, 'report',
+                                  HttpClientAppengine(), 'report'))
         except (ValueError, TypeError) as e:  # pragma: no cover
           report = {}
           logging.exception(
-              'Failed to load result report for %s/%s/%s due to exception %s.'
-              % (try_job_master_name, try_job_builder_name,
-                 try_job_build_number, e.message))
+              'Failed to load result report for %s/%s/%s due to exception %s.' %
+              (try_job_master_name, try_job_builder_name, try_job_build_number,
+               e.message))
 
-      _UpdateTryJobMetadata(
-          try_job_data, try_job_type, build, error, False,
-          report if report else {})
+      _UpdateTryJobMetadata(try_job_data, try_job_type, build, error, False,
+                            report if report else {})
       result_to_update = self._UpdateTryJobResult(
-          urlsafe_try_job_key, try_job_type, try_job_id,
-          build.url, BuildbucketBuild.COMPLETED, report)
+          urlsafe_try_job_key, try_job_type, try_job_id, build.url,
+          BuildbucketBuild.COMPLETED, report)
       self.complete(result_to_update[-1])
       return
     else:
       error_count = 0
       backoff_time = default_pipeline_wait_seconds
-      if build.status == BuildbucketBuild.STARTED and not (
-          already_set_started):
+      if build.status == BuildbucketBuild.STARTED and not (already_set_started):
         # It is possible this branch is skipped if a fast build goes from
         # 'SCHEDULED' to 'COMPLETED' between queries, so start_time may be
         # unavailable.
         start_time = time_util.MicrosecondsToDatetime(build.updated_time)
-        self._UpdateTryJobResult(
-            urlsafe_try_job_key, try_job_type, try_job_id,
-            build.url, BuildbucketBuild.STARTED)
+        self._UpdateTryJobResult(urlsafe_try_job_key, try_job_type, try_job_id,
+                                 build.url, BuildbucketBuild.STARTED)
 
         already_set_started = True
 
@@ -551,17 +541,14 @@ class MonitorTryJobPipeline(BasePipeline):
                 'default_pipeline_wait_seconds': default_pipeline_wait_seconds,
                 'timeout_hours': timeout_hours,
                 'backoff_time': backoff_time,
-            })
-        )
+            }))
         try_job_data.put()
 
     if time.time() > deadline:  # pragma: no cover
-      _UpdateTryJobMetadata(
-          try_job_data, try_job_type, build, error, True)
+      _UpdateTryJobMetadata(try_job_data, try_job_type, build, error, True)
       # Explicitly abort the whole pipeline.
-      raise pipeline.Abort(
-          'Try job %s timed out after %d hours.' % (
-              try_job_id, timeout_hours))
+      raise pipeline.Abort('Try job %s timed out after %d hours.' %
+                           (try_job_id, timeout_hours))
 
     # Ensure last_buildbucket_response is always the most recent
     # whenever available during intermediate queries.

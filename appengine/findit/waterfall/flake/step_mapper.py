@@ -26,8 +26,8 @@ def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
   # 0. Get step_metadata.
   step_metadata = buildbot.GetStepLog(
       cq_build_step.master_name, cq_build_step.builder_name,
-      cq_build_step.build_number, cq_build_step.step_name,
-      http_client, 'step_metadata')
+      cq_build_step.build_number, cq_build_step.step_name, http_client,
+      'step_metadata')
   if not step_metadata:
     logging.error('Couldn\'t get step_metadata')
     return no_matching_result
@@ -39,7 +39,7 @@ def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
   if not wf_master_name or not wf_builder_name:
     # Either waterfall_mastername or waterfall_buildername doesn't exist.
     logging.info('%s/%s has no matching Waterfall buildbot',
-                  cq_build_step.master_name, cq_build_step.builder_name)
+                 cq_build_step.master_name, cq_build_step.builder_name)
     return no_matching_result  # No matching Waterfall buildbot.
 
   # 2. Get "name" of the CQ trybot step.
@@ -57,8 +57,8 @@ def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
 
   # TODO: cache and throttle QPS to the same master.
   # 3. Retrieve latest completed build cycle on the buildbot.
-  builds = buildbot.GetRecentCompletedBuilds(
-      wf_master_name, wf_builder_name, http_client)
+  builds = buildbot.GetRecentCompletedBuilds(wf_master_name, wf_builder_name,
+                                             http_client)
   if not builds:
     logging.error('Couldn\'t find latest builds.')
     return no_matching_result  # No name of the step.
@@ -66,15 +66,14 @@ def _GetMatchingWaterfallBuildStep(cq_build_step, http_client):
   # 4. Check whether there is matching step.
   tasks = swarming_util.ListSwarmingTasksDataByTags(
       wf_master_name, wf_builder_name, builds[0], http_client,
-      {'name': name, 'os': os_name})
+      {'name': name,
+       'os': os_name})
   if tasks:  # One matching buildbot is found.
-    wf_step_name = swarming_util.GetTagValue(
-        tasks[0].get('tags', []), 'stepname')
-    logging.info(
-        '%s/%s/%s is mapped to %s/%s/%s',
-        cq_build_step.master_name, cq_build_step.builder_name,
-        cq_build_step.step_name, wf_master_name, wf_builder_name,
-        wf_step_name)
+    wf_step_name = swarming_util.GetTagValue(tasks[0].get('tags', []),
+                                             'stepname')
+    logging.info('%s/%s/%s is mapped to %s/%s/%s', cq_build_step.master_name,
+                 cq_build_step.builder_name, cq_build_step.step_name,
+                 wf_master_name, wf_builder_name, wf_step_name)
     return (wf_master_name, wf_builder_name, builds[0], wf_step_name,
             step_metadata)
 
@@ -136,5 +135,4 @@ def FindMatchingWaterfallStep(build_step, test_name):
           isinstance(output.get('all_tests'), list) and
           test_name in output.get('all_tests', []) and
           isinstance(output.get('per_iteration_data'), list) and
-          all(isinstance(i, dict) for i in output.get('per_iteration_data'))
-      )
+          all(isinstance(i, dict) for i in output.get('per_iteration_data')))

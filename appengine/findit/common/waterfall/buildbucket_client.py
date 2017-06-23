@@ -1,7 +1,6 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """"Serves as a client for selected APIs in Buildbucket."""
 
 import collections
@@ -13,7 +12,6 @@ from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 from common.waterfall.pubsub_callback import MakeTryJobPubsubCallback
 from model.wf_try_bot_cache import WfTryBotCache
-
 
 # TODO: save these settings in datastore and create a role account.
 _ROLE_EMAIL = 'IF_BREAK_CONTACT_stgao@chromium.org'
@@ -37,15 +35,16 @@ def _GetBucketName(master_name):
   return '%s%s' % (buildbot_prefix, master_name)
 
 
-class TryJob(collections.namedtuple(
-    'TryJobNamedTuple',
-    ('master_name', 'builder_name', 'revision', 'properties', 'tags',
-     'additional_build_parameters', 'cache_name', 'dimensions'))
-):
+class TryJob(
+    collections.namedtuple('TryJobNamedTuple',
+                           ('master_name', 'builder_name', 'revision',
+                            'properties', 'tags', 'additional_build_parameters',
+                            'cache_name', 'dimensions'))):
   """Represents a try-job to be triggered through Buildbucket.
 
   Tag for "user_agent" should not be set, as it will be added automatically.
   """
+
   def _AddSwarmbucketOverrides(self, parameters):
     assert self.cache_name
     parameters['swarming'] = {
@@ -58,7 +57,8 @@ class TryJob(collections.namedtuple(
     }
     if 'recipe' in self.properties:
       parameters['swarming']['override_builder_cfg']['recipe'] = {
-          'name': self.properties['recipe']}
+          'name': self.properties['recipe']
+      }
     if self.dimensions:
       parameters['swarming']['override_builder_cfg']['dimensions'] = (
           self.dimensions)
@@ -99,9 +99,9 @@ class TryJob(collections.namedtuple(
     bucket = _GetBucketName(self.master_name)
     return bucket.startswith(_LUCI_PREFIX)
 
+
 # Make the last two members optional.
 TryJob.__new__.__defaults__ = (None, None)
-
 
 
 class BuildbucketBuild(object):
@@ -183,17 +183,12 @@ def TriggerTryJobs(try_jobs, notification_id=''):
   for try_job in try_jobs:
     status_code, content = HttpClientAppengine().Put(
         _BUILDBUCKET_PUT_GET_ENDPOINT,
-        json.dumps(
-            try_job.ToBuildbucketRequest(notification_id)), headers=headers)
+        json.dumps(try_job.ToBuildbucketRequest(notification_id)),
+        headers=headers)
     if status_code == 200:  # pragma: no cover
       json_results.append(json.loads(content))
     else:
-      error_content = {
-          'error': {
-              'reason': status_code,
-              'message': content
-          }
-      }
+      error_content = {'error': {'reason': status_code, 'message': content}}
       json_results.append(error_content)
 
   return _ConvertFuturesToResults(json_results)
@@ -222,12 +217,7 @@ def GetTryJobs(build_ids):
     if status_code == 200:  # pragma: no cover
       json_results.append(json.loads(content))
     else:
-      error_content = {
-          'error': {
-              'reason': status_code,
-              'message': content
-          }
-      }
+      error_content = {'error': {'reason': status_code, 'message': content}}
       json_results.append(error_content)
 
   return _ConvertFuturesToResults(json_results)

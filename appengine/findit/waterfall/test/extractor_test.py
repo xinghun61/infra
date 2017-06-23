@@ -9,6 +9,7 @@ from waterfall.failure_signal import FailureSignal
 
 
 class ExtractorTest(unittest.TestCase):
+
   def testExtractFiles(self):
     cases = {
         'a/b/c.h:1 at d/e/f.cpp(2)': {

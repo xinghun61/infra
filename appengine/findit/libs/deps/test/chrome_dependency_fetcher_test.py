@@ -86,8 +86,7 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
 
     self.mock(gitiles_repository, 'GitilesRepository', MockGitilesRepository)
 
-    content = self.deps_downloader.Load(
-        'https://src.git', revision, 'DEPS')
+    content = self.deps_downloader.Load('https://src.git', revision, 'DEPS')
     self.assertEqual(expected_content, content)
 
   def testUseFallbackDEPS(self):
@@ -102,8 +101,8 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
 
     self.mock(gitiles_repository, 'GitilesRepository', MockGitilesRepository)
 
-    content = self.deps_downloader.Load(
-        'https://src.git', revision, 'NONEXISTENT_DEPS')
+    content = self.deps_downloader.Load('https://src.git', revision,
+                                        'NONEXISTENT_DEPS')
     self.assertEqual(expected_content, content)
 
   def testUseSlaveDEPS(self):
@@ -121,16 +120,16 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
 
     self.mock(gitiles_repository, 'GitilesRepository', MockGitilesRepository)
 
-    content = self.deps_downloader.Load(
-        'https://src.git', revision, 'slave.DEPS')
+    content = self.deps_downloader.Load('https://src.git', revision,
+                                        'slave.DEPS')
     self.assertEqual(expected_content, content)
 
   def testFailedToPullDEPSFile(self):
     MockGitilesRepository.RESPONSES = {}
 
     self.assertRaisesRegexp(Exception, 'Failed to pull DEPS file.',
-                            self.deps_downloader.Load,
-                            'https://src.git', 'abc', 'DEPS')
+                            self.deps_downloader.Load, 'https://src.git', 'abc',
+                            'DEPS')
 
   def testDEPSDownloaderForChromeVersion(self):
 
@@ -140,15 +139,14 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
     self.mock(HttpClientAppengine, '_Get', _MockGet)
     deps_downloader = chrome_dependency_fetcher.DEPSDownloader(
         gitiles_repository.GitilesRepository.Factory(HttpClientAppengine()))
-    content = deps_downloader.Load(
-        'http://chrome-internal', '50.0.1234.0', 'DEPS')
+    content = deps_downloader.Load('http://chrome-internal', '50.0.1234.0',
+                                   'DEPS')
     self.assertEqual(content, 'Dummy DEPS content')
 
     self.assertRaisesRegexp(
         Exception,
         'Failed to pull DEPS file from http://chrome, at revision 50.0.1234.1.',
-        self.deps_downloader.Load,
-        'http://chrome', '50.0.1234.1', 'DEPS')
+        self.deps_downloader.Load, 'http://chrome', '50.0.1234.1', 'DEPS')
 
   def testGetDependency(self):
     src_path = 'src/'
@@ -216,22 +214,31 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
     self.assertEqual(expected_dependency_dict, dependency_dict)
 
   def testGetDependencyRolls(self):
+
     def MockGetDependency(revision, os_platform, _=False):
       self.assertEqual('unix', os_platform)
       if revision == 'rev2':
         return {
-            'src/': Dependency('src/', 'https://url_src', 'rev2', 'DEPS'),
-            'src/dep1': Dependency('src/dep1', 'https://url_dep1', '9', 'DEPS'),
-            'src/dep2': Dependency('src/dep2', 'https://url_dep2', '5', 'DEPS'),
-            'src/dep4': Dependency('src/dep4', 'https://url_dep4', '1', 'DEPS'),
+            'src/':
+                Dependency('src/', 'https://url_src', 'rev2', 'DEPS'),
+            'src/dep1':
+                Dependency('src/dep1', 'https://url_dep1', '9', 'DEPS'),
+            'src/dep2':
+                Dependency('src/dep2', 'https://url_dep2', '5', 'DEPS'),
+            'src/dep4':
+                Dependency('src/dep4', 'https://url_dep4', '1', 'DEPS'),
         }
       else:
         self.assertEqual('rev1', revision)
         return {
-            'src/': Dependency('src/', 'https://url_src', 'rev1', 'DEPS'),
-            'src/dep1': Dependency('src/dep1', 'https://url_dep1', '7', 'DEPS'),
-            'src/dep2': Dependency('src/dep2', 'https://url_dep2', '5', 'DEPS'),
-            'src/dep3': Dependency('src/dep3', 'https://url_dep3', '3', 'DEPS'),
+            'src/':
+                Dependency('src/', 'https://url_src', 'rev1', 'DEPS'),
+            'src/dep1':
+                Dependency('src/dep1', 'https://url_dep1', '7', 'DEPS'),
+            'src/dep2':
+                Dependency('src/dep2', 'https://url_dep2', '5', 'DEPS'),
+            'src/dep3':
+                Dependency('src/dep3', 'https://url_dep3', '3', 'DEPS'),
         }
 
     self.mock(self.chrome_dep_fetcher, 'GetDependency', MockGetDependency)
@@ -263,17 +270,17 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
                      [roll.ToDict() for roll in deps_rolls])
 
   def testGetDependencyRollsDict(self):
-    def _MockGetDependencyRolls(old_revision, new_revision,
-                                        *_, **kargs):
+
+    def _MockGetDependencyRolls(old_revision, new_revision, *_, **kargs):
       dependency_rolls = [
           DependencyRoll('src/dep1', 'https://url_dep1', '7', '9'),
           DependencyRoll('src/dep2', 'https://url_dep2', '3', None)
       ]
       if not kargs['skip_chromium_roll']:
-        dependency_rolls.append(DependencyRoll(
-            'src/',
-            'https://chromium.googlesource.com/chromium/src.git',
-            old_revision, new_revision))
+        dependency_rolls.append(
+            DependencyRoll('src/',
+                           'https://chromium.googlesource.com/chromium/src.git',
+                           old_revision, new_revision))
 
       return dependency_rolls
 
@@ -285,19 +292,23 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
         DependencyRoll('src/dep2', 'https://url_dep2', '3', None)
     ]
     self.assertEqual(
-        self.chrome_dep_fetcher.GetDependencyRolls('4', '5', 'all',
-                                                   skip_chromium_roll=True),
+        self.chrome_dep_fetcher.GetDependencyRolls(
+            '4', '5', 'all', skip_chromium_roll=True),
         expected_deps_rolls_skip_chromium)
 
     expected_deps_rolls_dict = {
-        'src/dep1': DependencyRoll('src/dep1', 'https://url_dep1', '7', '9'),
-        'src/dep2': DependencyRoll('src/dep2', 'https://url_dep2', '3', None),
-        'src/': DependencyRoll(
-            'src/',
-            'https://chromium.googlesource.com/chromium/src.git', '4', '5'),
+        'src/dep1':
+            DependencyRoll('src/dep1', 'https://url_dep1', '7', '9'),
+        'src/dep2':
+            DependencyRoll('src/dep2', 'https://url_dep2', '3', None),
+        'src/':
+            DependencyRoll('src/',
+                           'https://chromium.googlesource.com/chromium/src.git',
+                           '4', '5'),
     }
-    self.assertEqual(self.chrome_dep_fetcher.GetDependencyRollsDict(
-        '4', '5', 'all'), expected_deps_rolls_dict)
+    self.assertEqual(
+        self.chrome_dep_fetcher.GetDependencyRollsDict('4', '5', 'all'),
+        expected_deps_rolls_dict)
 
   def testIsChromeVersion(self):
     self.assertTrue(chrome_dependency_fetcher.IsChromeVersion('50.0.1234.1'))

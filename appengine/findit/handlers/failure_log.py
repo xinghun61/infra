@@ -34,8 +34,7 @@ class FailureLog(BaseHandler):
           'Url "%s" is not pointing to a step.' % url, 501)
     master_name, builder_name, build_number, step_name = step_info
 
-    step = WfStep.Get(master_name, builder_name, build_number,
-                      step_name)
+    step = WfStep.Get(master_name, builder_name, build_number, step_name)
 
     if not step:
       return BaseHandler.CreateError('No failure log available.', 404)

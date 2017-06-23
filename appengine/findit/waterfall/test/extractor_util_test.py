@@ -27,66 +27,64 @@ class ExtractorUtilTest(unittest.TestCase):
       self.assertEqual(expected_result, result, 'Failed case: "%s"' % case)
 
   def testPathSeparatorPattern(self):
-    self._VerifyPattern(
-        extractor_util.PATH_SEPARATOR_PATTERN,
-        ['\\', '\\\\', '/', '//'])
+    self._VerifyPattern(extractor_util.PATH_SEPARATOR_PATTERN,
+                        ['\\', '\\\\', '/', '//'])
 
   def testFileNamePattern(self):
-    self._VerifyPattern(
-        extractor_util.FILE_NAME_PATTERN,
-        ['.', '..', 'abc123', 'third_party', 'libc++', 'abc-def', 'a.b'])
+    self._VerifyPattern(extractor_util.FILE_NAME_PATTERN, [
+        '.', '..', 'abc123', 'third_party', 'libc++', 'abc-def', 'a.b'
+    ])
 
   def testFileExtensionPattern(self):
-    self._VerifyPattern(
-        extractor_util.FILE_EXTENSION_PATTERN,
-        extractor_util.SUPPORTED_FILE_EXTENSIONS)
+    self._VerifyPattern(extractor_util.FILE_EXTENSION_PATTERN,
+                        extractor_util.SUPPORTED_FILE_EXTENSIONS)
 
   def testRootDirPattern(self):
-    self._VerifyPattern(
-        extractor_util.ROOT_DIR_PATTERN,
-        ['/', 'c:\\\\', 'c:/', 'C://'])
+    self._VerifyPattern(extractor_util.ROOT_DIR_PATTERN,
+                        ['/', 'c:\\\\', 'c:/', 'C://'])
 
   def testFilePathLinePattern(self):
     cases = {
-        'at Object.Test.runAccessibilityAudit (test_api.js:315:17)':
-            [('test_api.js', '315')],
-        'FATAL:content_setting_bubble_cocoa.mm(286)] Check failed: false.':
-            [('content_setting_bubble_cocoa.mm', '286')],
-        ' src/third_party/libc++/trunk/include/complex.h ':
-            [('src/third_party/libc++/trunk/include/complex.h', '')],
-        'Cacher at tools/telemetry/telemetry/decorators.py:31':
-            [('tools/telemetry/telemetry/decorators.py', '31')],
-        'content/browser/appcache/appcache_manifest_parser.cc':
-            [('content/browser/appcache/appcache_manifest_parser.cc', '')],
-        'included from ../../base/memory/weak_ptr.h:68:0,':
-            [('../../base/memory/weak_ptr.h', '68')],
-        'blabla E:\\a\\.\\b\\..\\c\\d.txt(blabla)':
-            [('E:\\a\\.\\b\\..\\c\\d.txt', '')],
-        'blabla /a/b/../../c/./d.cc':
-            [('/a/b/../../c/./d.cc', '')],
-        'libgfx.a(gfx.render_text_harfbuzz.o)':
-            [('gfx.render_text_harfbuzz.o', '')],
-        'blabla a/b.cpp:234 include c/d.h':
-            [('a/b.cpp', '234'), ('c/d.h', '')],
-        'ERROR at //BUILD.gn:246:7: Item not found':
-            [('//BUILD.gn', '246')],
-        'At a.java:[line 123]':
-            [('a.java', '123')]
+        'at Object.Test.runAccessibilityAudit (test_api.js:315:17)': [
+            ('test_api.js', '315')
+        ],
+        'FATAL:content_setting_bubble_cocoa.mm(286)] Check failed: false.': [
+            ('content_setting_bubble_cocoa.mm', '286')
+        ],
+        ' src/third_party/libc++/trunk/include/complex.h ': [
+            ('src/third_party/libc++/trunk/include/complex.h', '')
+        ],
+        'Cacher at tools/telemetry/telemetry/decorators.py:31': [
+            ('tools/telemetry/telemetry/decorators.py', '31')
+        ],
+        'content/browser/appcache/appcache_manifest_parser.cc': [
+            ('content/browser/appcache/appcache_manifest_parser.cc', '')
+        ],
+        'included from ../../base/memory/weak_ptr.h:68:0,': [
+            ('../../base/memory/weak_ptr.h', '68')
+        ],
+        'blabla E:\\a\\.\\b\\..\\c\\d.txt(blabla)': [
+            ('E:\\a\\.\\b\\..\\c\\d.txt', '')
+        ],
+        'blabla /a/b/../../c/./d.cc': [('/a/b/../../c/./d.cc', '')],
+        'libgfx.a(gfx.render_text_harfbuzz.o)': [('gfx.render_text_harfbuzz.o',
+                                                  '')],
+        'blabla a/b.cpp:234 include c/d.h': [('a/b.cpp', '234'), ('c/d.h', '')],
+        'ERROR at //BUILD.gn:246:7: Item not found': [('//BUILD.gn', '246')],
+        'At a.java:[line 123]': [('a.java', '123')]
     }
     self._VerifyPattern(extractor_util.FILE_PATH_LINE_PATTERN, cases)
 
   def testPythonStackTraceFramePattern1(self):
     cases = {
-        '  File "a/b/c.py", line 109, in abc':
-            [('a/b/c.py', '109', 'abc')],
+        '  File "a/b/c.py", line 109, in abc': [('a/b/c.py', '109', 'abc')],
     }
     self._VerifyPattern(extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_1,
                         cases)
 
   def testPythonStackTraceFramePattern2(self):
     cases = {
-        '  abc at a/b/c.py:123':
-            [('abc', 'a/b/c.py', '123')],
+        '  abc at a/b/c.py:123': [('abc', 'a/b/c.py', '123')],
     }
     self._VerifyPattern(extractor_util.PYTHON_STACK_TRACE_FRAME_PATTERN_2,
                         cases)
@@ -95,9 +93,8 @@ class ExtractorUtilTest(unittest.TestCase):
     self.assertRegexpMatches(
         ' #1 0x110c7f21c in MaybeHandleDebugURL render_frame_impl.cc:341:5',
         extractor_util.CPP_STACK_TRACE_FRAME_PATTERN)
-    self.assertRegexpMatches(
-        '@@bla@ #1 0x110c7f21c in function file.cc:341:5',
-        extractor_util.CPP_STACK_TRACE_FRAME_PATTERN)
+    self.assertRegexpMatches('@@bla@ #1 0x110c7f21c in function file.cc:341:5',
+                             extractor_util.CPP_STACK_TRACE_FRAME_PATTERN)
     self.assertNotRegexpMatches(
         '../../chrome/test/ppapi/ppapi_test.cc:263: Failure',
         extractor_util.CPP_STACK_TRACE_FRAME_PATTERN)

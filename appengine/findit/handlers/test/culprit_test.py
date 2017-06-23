@@ -17,34 +17,43 @@ from model.wf_suspected_cl import WfSuspectedCL
 
 class CulpritTest(testing.AppengineTestCase):
   app_module = webapp2.WSGIApplication(
-      [('/culprit', culprit.Culprit), ], debug=True)
+      [
+          ('/culprit', culprit.Culprit),
+      ], debug=True)
 
   def testGetCulpritSuccess(self):
     suspected_cl = WfSuspectedCL.Create('chromium', 'r1', 123)
     suspected_cl.builds['m/b1/1'] = {
-        'approaches': [analysis_approach_type.TRY_JOB]}
+        'approaches': [analysis_approach_type.TRY_JOB]
+    }
     suspected_cl.builds['m/b1/2'] = {
-        'approaches': [analysis_approach_type.TRY_JOB]}
+        'approaches': [analysis_approach_type.TRY_JOB]
+    }
     suspected_cl.builds['m/b2/2'] = {
-        'approaches': [analysis_approach_type.HEURISTIC]}
+        'approaches': [analysis_approach_type.HEURISTIC]
+    }
     suspected_cl.cr_notification_status = status.COMPLETED
     suspected_cl.cr_notification_time = datetime(2016, 06, 24, 10, 03, 00)
     suspected_cl.put()
 
     expected_result = {
-        'project_name': 'chromium',
-        'revision': 'r1',
-        'commit_position': 123,
-        'cr_notified': True,
-        'cr_notification_time': '2016-06-24 10:03:00 UTC',
-        'builds': [
-            {
-                'master_name': 'm',
-                'builder_name': 'b1',
-                'build_number': '1',
-            }
-        ],
-        'key': suspected_cl.key.urlsafe(),
+        'project_name':
+            'chromium',
+        'revision':
+            'r1',
+        'commit_position':
+            123,
+        'cr_notified':
+            True,
+        'cr_notification_time':
+            '2016-06-24 10:03:00 UTC',
+        'builds': [{
+            'master_name': 'm',
+            'builder_name': 'b1',
+            'build_number': '1',
+        }],
+        'key':
+            suspected_cl.key.urlsafe(),
     }
 
     response = self.test_app.get(
@@ -55,11 +64,9 @@ class CulpritTest(testing.AppengineTestCase):
   def testLegacyData(self):
     culprit_cl = WfCulprit(builds=[['m', 'b', 1]])
     builds = culprit._GetBuildInfoAsDict(culprit_cl)
-    expected_builds = [
-        {
-            'master_name': 'm',
-            'builder_name': 'b',
-            'build_number': 1,
-        }
-    ]
+    expected_builds = [{
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 1,
+    }]
     self.assertEqual(expected_builds, builds)

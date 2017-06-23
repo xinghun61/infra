@@ -40,12 +40,12 @@ def _FindNeighbor(invalid_run_point, all_builds):
 
   Returns: New build to check.
   """
-  return (invalid_run_point - 1 if invalid_run_point + 1 in all_builds else
-          invalid_run_point + 1)
+  return (invalid_run_point - 1
+          if invalid_run_point + 1 in all_builds else invalid_run_point + 1)
 
 
-def _SequentialSearch(
-    analyzed_points, lower_boundary_index, all_builds, invalid_builds):
+def _SequentialSearch(analyzed_points, lower_boundary_index, all_builds,
+                      invalid_builds):
   """Determines the next run number for sequential search, or the culprit.
 
       Should only be called by _ExponentialSearch when sequential search
@@ -70,8 +70,8 @@ def _SequentialSearch(
   """
 
   lower_boundary = analyzed_points[lower_boundary_index].run_point_number
-  run_after_lower_boundary = (
-      analyzed_points[lower_boundary_index - 1].run_point_number)
+  run_after_lower_boundary = (analyzed_points[lower_boundary_index
+                                              - 1].run_point_number)
   if run_after_lower_boundary == lower_boundary + 1:
     # Sequential search is done, return culprit.
     return None, run_after_lower_boundary, None
@@ -180,8 +180,8 @@ def _ExponentialSearch(data_points,
         # consider the virtual previous run is stable.
         previous_pass_rate = valid_points[i - 1].pass_rate if i > 0 else 0
 
-        if IsStable(
-            previous_pass_rate, lower_flake_threshold, upper_flake_threshold):
+        if IsStable(previous_pass_rate, lower_flake_threshold,
+                    upper_flake_threshold):
           next_run_point = run_point_number - flakes_in_a_row
           continue
 
@@ -205,15 +205,15 @@ def _ExponentialSearch(data_points,
 
         # Dived out.
         # Flake region must have been found, ready for sequential search.
-        return _SequentialSearch(
-            valid_points, i - dives_in_a_row + 1, all_builds, invalid_builds)
+        return _SequentialSearch(valid_points, i - dives_in_a_row + 1,
+                                 all_builds, invalid_builds)
       else:
         step_size = flakes_in_a_row
         next_run_point = run_point_number - step_size
 
-  next_run_point = (
-      next_run_point if next_run_point >= lower_bound_run_point_number else
-      lower_bound_run_point_number)
+  next_run_point = (next_run_point
+                    if next_run_point >= lower_bound_run_point_number else
+                    lower_bound_run_point_number)
   result = None
 
   while next_run_point in invalid_builds:
@@ -245,13 +245,13 @@ def _GetBisectRange(data_points, algorithm_settings):
   assert len(data_points) >= 2
   lower_flake_threshold = algorithm_settings.get('lower_flake_threshold')
   upper_flake_threshold = algorithm_settings.get('upper_flake_threshold')
-  assert not IsStable(
-      data_points[-1].pass_rate, lower_flake_threshold, upper_flake_threshold)
+  assert not IsStable(data_points[-1].pass_rate, lower_flake_threshold,
+                      upper_flake_threshold)
 
   latest_stable_index = 0
   for i, data_point in enumerate(data_points):
-    if IsStable(
-        data_point.pass_rate, lower_flake_threshold, upper_flake_threshold):
+    if IsStable(data_point.pass_rate, lower_flake_threshold,
+                upper_flake_threshold):
       latest_stable_index = i
 
   return (data_points[latest_stable_index].run_point_number,
@@ -298,5 +298,5 @@ def GetNextRunPointNumber(data_points,
     next_run_point, suspected_point = _Bisect(data_points, algorithm_settings)
     return next_run_point, suspected_point, None
 
-  return _ExponentialSearch(
-      data_points, algorithm_settings, lower_bound_run_point_number)
+  return _ExponentialSearch(data_points, algorithm_settings,
+                            lower_bound_run_point_number)

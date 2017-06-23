@@ -21,10 +21,11 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     step_name = 's'
     tests = ['t']
-    self.assertEqual(
-        (master_name, builder_name, build_number, step_name, tests[0]),
-        TriggerFlakeSwarmingTaskPipeline()._GetArgs(
-            master_name, builder_name, build_number, step_name, tests))
+    self.assertEqual((master_name, builder_name, build_number, step_name,
+                      tests[0]),
+                     TriggerFlakeSwarmingTaskPipeline()._GetArgs(
+                         master_name, builder_name, build_number, step_name,
+                         tests))
 
   def testGetSwarmingTask(self):
     master_name = 'm'
@@ -33,8 +34,8 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     test_name = 't'
 
-    FlakeSwarmingTask.Create(
-        master_name, builder_name, build_number, step_name, test_name).put()
+    FlakeSwarmingTask.Create(master_name, builder_name, build_number, step_name,
+                             test_name).put()
 
     task = TriggerFlakeSwarmingTaskPipeline()._GetSwarmingTask(
         master_name, builder_name, build_number, step_name, test_name)
@@ -63,18 +64,26 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
     expected_iterations = 50
     self.UpdateUnitTestConfigSettings(
         config_property='check_flake_settings',
-        override_data={'swarming_rerun': {
-            'iterations_to_rerun': expected_iterations}})
-    self.assertEqual(
-        expected_iterations,
-        TriggerFlakeSwarmingTaskPipeline()._GetIterationsToRerun())
+        override_data={
+            'swarming_rerun': {
+                'iterations_to_rerun': expected_iterations
+            }
+        })
+    self.assertEqual(expected_iterations,
+                     TriggerFlakeSwarmingTaskPipeline()._GetIterationsToRerun())
 
-  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags',
-                     return_value=[{'task_id': '1'}])
-  @mock.patch.object(swarming_util, 'TriggerSwarmingTask',
-                     return_value=('new_task_id', None))
-  @mock.patch.object(TriggerFlakeSwarmingTaskPipeline, '_GetSwarmingTaskName',
-                     return_value='new_task_id')
+  @mock.patch.object(
+      swarming_util,
+      'ListSwarmingTasksDataByTags',
+      return_value=[{
+          'task_id': '1'
+      }])
+  @mock.patch.object(
+      swarming_util, 'TriggerSwarmingTask', return_value=('new_task_id', None))
+  @mock.patch.object(
+      TriggerFlakeSwarmingTaskPipeline,
+      '_GetSwarmingTaskName',
+      return_value='new_task_id')
   @mock.patch.object(swarming_util, 'GetSwarmingTaskRequest')
   def testRerunSwarmingTaskForSameBuild(self, mock_fn, *_):
     master_name = 'm'
@@ -99,31 +108,54 @@ class TriggerFlakeSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
         'parent_task_id': 'pti',
         'priority': 25,
         'properties': {
-            'command': 'cmd',
-            'dimensions': [{'key': 'k', 'value': 'v'}],
+            'command':
+                'cmd',
+            'dimensions': [{
+                'key': 'k',
+                'value': 'v'
+            }],
             'env': [
-                {'key': 'a', 'value': '1'},
-                {'key': 'GTEST_SHARD_INDEX', 'value': '1'},
-                {'key': 'GTEST_TOTAL_SHARDS', 'value': '5'},
+                {
+                    'key': 'a',
+                    'value': '1'
+                },
+                {
+                    'key': 'GTEST_SHARD_INDEX',
+                    'value': '1'
+                },
+                {
+                    'key': 'GTEST_TOTAL_SHARDS',
+                    'value': '5'
+                },
             ],
-            'execution_timeout_secs': 60 * 60,
+            'execution_timeout_secs':
+                60 * 60,
             'extra_args': [
                 '--flag=value',
                 '--gtest_filter=d.f',
                 '--test-launcher-filter-file=path/to/filter/file',
             ],
-            'grace_period_secs': 30,
-            'idempotent': True,
-            'inputs_ref': {'a': 1},
-            'io_timeout_secs': 1200,
+            'grace_period_secs':
+                30,
+            'idempotent':
+                True,
+            'inputs_ref': {
+                'a': 1
+            },
+            'io_timeout_secs':
+                1200,
         },
         'tags': ['master:m', 'buildername:b', 'name:s'],
         'user': 'user',
     })
 
     new_task_id = flake_pipeline.run(
-        master_name, builder_name, build_number, step_name, [test_name],
-        iterations_to_rerun=iterations, hard_timeout_seconds=None)
+        master_name,
+        builder_name,
+        build_number,
+        step_name, [test_name],
+        iterations_to_rerun=iterations,
+        hard_timeout_seconds=None)
 
     self.assertEqual('new_task_id', new_task_id)
 

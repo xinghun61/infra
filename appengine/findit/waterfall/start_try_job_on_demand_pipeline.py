@@ -58,18 +58,17 @@ def _GetSuspectsFromHeuristicResult(heuristic_result):
   return list(suspected_revisions)
 
 
-def _GetReliableTests(
-    master_name, builder_name, build_number, failure_info):
+def _GetReliableTests(master_name, builder_name, build_number, failure_info):
   task_results = {}
   for step_name, step_failure in failure_info['failed_steps'].iteritems():
     if not StepHasFirstTimeFailure(step_failure.get('tests', {}), build_number):
       continue
-    task = WfSwarmingTask.Get(
-        master_name, builder_name, build_number, step_name)
+    task = WfSwarmingTask.Get(master_name, builder_name, build_number,
+                              step_name)
 
     if not task or not task.classified_tests:
-      logging.error('No result for swarming task %s/%s/%s/%s' % (
-          master_name, builder_name, build_number, step_name))
+      logging.error('No result for swarming task %s/%s/%s/%s' %
+                    (master_name, builder_name, build_number, step_name))
       continue
 
     if not task.reliable_tests:
@@ -83,8 +82,8 @@ def _GetReliableTests(
 class StartTryJobOnDemandPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, failure_info,
-          signals, heuristic_result, build_completed, force_try_job):
+  def run(self, master_name, builder_name, build_number, failure_info, signals,
+          heuristic_result, build_completed, force_try_job):
     """Starts a try job if one is needed for the given failure."""
 
     if not build_completed:  # Only start try-jobs for completed builds.
@@ -125,8 +124,8 @@ class StartTryJobOnDemandPipeline(BasePipeline):
       # So here the try_job_type is failure_type.TEST.
 
       # Gets the swarming tasks' results.
-      task_results = _GetReliableTests(
-          master_name, builder_name, build_number, failure_info)
+      task_results = _GetReliableTests(master_name, builder_name, build_number,
+                                       failure_info)
 
       parent_mastername = failure_info.get('parent_mastername') or master_name
       parent_buildername = failure_info.get('parent_buildername') or (
@@ -141,9 +140,9 @@ class StartTryJobOnDemandPipeline(BasePipeline):
           try_job_type, suspected_revisions, cache_name, dimensions,
           task_results)
 
-    try_job_result = yield MonitorTryJobPipeline(
-        try_job_key.urlsafe(), try_job_type, try_job_id)
+    try_job_result = yield MonitorTryJobPipeline(try_job_key.urlsafe(),
+                                                 try_job_type, try_job_id)
 
-    yield IdentifyTryJobCulpritPipeline(
-        master_name, builder_name, build_number, try_job_type,
-        try_job_id, try_job_result)
+    yield IdentifyTryJobCulpritPipeline(master_name, builder_name, build_number,
+                                        try_job_type, try_job_id,
+                                        try_job_result)

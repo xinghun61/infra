@@ -33,8 +33,9 @@ class VersionedModelTest(testing.AppengineTestCase):
     self.assertEqual('m1', _Entity.Create('m1')._root_id)
 
   def testCreate(self):
-    self.assertEqual(_Entity(key=ndb.Key('_EntityRoot', 'm1', '_Entity', 0)),
-                     _Entity.Create('m1'))
+    self.assertEqual(
+        _Entity(key=ndb.Key('_EntityRoot', 'm1', '_Entity', 0)),
+        _Entity.Create('m1'))
 
   def testGetMostRecentVersionWhenNoData(self):
     self.assertIsNone(_Entity.GetVersion())
@@ -123,6 +124,7 @@ class VersionedModelTest(testing.AppengineTestCase):
       _Entity(key=ndb.Key('_EntityRoot', 1, '_Entity', 1), value=1).put()
       _Entity(key=ndb.Key('_EntityRoot', 1, '_Entity', 2), value=2).put()
       return original_ndb_transaction(func, **options)
+
     self.mock(ndb, 'transaction', MockNdbTransaction)
 
     entity = _Entity.Create()
@@ -139,6 +141,7 @@ class VersionedModelTest(testing.AppengineTestCase):
       # version first before the transaction is called.
       _Entity(key=ndb.Key('_EntityRoot', 1, '_Entity', 1), value=1).put()
       return original_ndb_transaction(func, **options)
+
     self.mock(ndb, 'transaction', MockNdbTransaction)
 
     entity = _Entity.Create()
@@ -155,6 +158,7 @@ class VersionedModelTest(testing.AppengineTestCase):
       # new entity.
       _Entity(key=ndb.Key('_EntityRoot', 1, '_Entity', 1), value=1).put()
       return original_save(*args, **kwargs)
+
     self.mock(VersionedModel, 'Save', MockSave)
 
     entity = _Entity.Create()
@@ -167,11 +171,13 @@ class VersionedModelTest(testing.AppengineTestCase):
     original_ndb_transaction = ndb.transaction
 
     calls = []
+
     def MockNdbTransaction(func, **options):
       if len(calls) < 1:
         calls.append(1)
         raise datastore_errors.Timeout()
       return original_ndb_transaction(func, **options)
+
     self.mock(ndb, 'transaction', MockNdbTransaction)
 
     entity = _Entity.Create()
@@ -185,11 +191,13 @@ class VersionedModelTest(testing.AppengineTestCase):
     original_ndb_transaction = ndb.transaction
 
     calls = []
+
     def MockNdbTransaction(func, **options):
       if len(calls) < 1:
         calls.append(1)
         raise datastore_errors.BadRequestError()
       return original_ndb_transaction(func, **options)
+
     self.mock(ndb, 'transaction', MockNdbTransaction)
 
     entity = _Entity.Create()

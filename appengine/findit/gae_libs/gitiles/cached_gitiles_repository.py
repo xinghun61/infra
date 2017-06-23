@@ -13,13 +13,17 @@ CACHE_EXPIRE_TIME_SECONDS = 24 * 60 * 60
 
 class CachedGitilesRepository(GitilesRepository):
 
-  @Cached(CompressedMemCache(), namespace='Gitiles-json-view',
-          expire_time=CACHE_EXPIRE_TIME_SECONDS)
+  @Cached(
+      CompressedMemCache(),
+      namespace='Gitiles-json-view',
+      expire_time=CACHE_EXPIRE_TIME_SECONDS)
   def _SendRequestForJsonResponse(self, url, params=None):  # pragma: no cover
     return super(CachedGitilesRepository, self)._SendRequestForJsonResponse(
         url, params=params)
 
-  @Cached(PickledMemCache(), namespace='Gitiles-text-view',
-          expire_time=CACHE_EXPIRE_TIME_SECONDS)
+  @Cached(
+      PickledMemCache(),
+      namespace='Gitiles-text-view',
+      expire_time=CACHE_EXPIRE_TIME_SECONDS)
   def _SendRequestForTextResponse(self, url):  # pragma: no cover
     return super(CachedGitilesRepository, self)._SendRequestForTextResponse(url)

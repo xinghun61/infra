@@ -10,12 +10,11 @@ from waterfall import waterfall_config
 
 from google.appengine.api import memcache
 
-
 _MEMCACHE_MASTER_DOWNLOAD_LOCK = 'master-download-lock-%s'
 
 
-def WaitUntilDownloadAllowed(
-    master_name, timeout_seconds=90):  # pragma: no cover
+def WaitUntilDownloadAllowed(master_name,
+                             timeout_seconds=90):  # pragma: no cover
   """Waits until next download from the specified master is allowed.
 
   Returns:
@@ -25,9 +24,8 @@ def WaitUntilDownloadAllowed(
   client = memcache.Client()
   key = _MEMCACHE_MASTER_DOWNLOAD_LOCK % master_name
   deadline = time.time() + timeout_seconds
-  download_interval_seconds = (
-      waterfall_config.GetDownloadBuildDataSettings().get(
-          'download_interval_seconds'))
+  download_interval_seconds = (waterfall_config.GetDownloadBuildDataSettings()
+                               .get('download_interval_seconds'))
   memcache_master_download_expiration_seconds = (
       waterfall_config.GetDownloadBuildDataSettings().get(
           'memcache_master_download_expiration_seconds'))
@@ -35,9 +33,7 @@ def WaitUntilDownloadAllowed(
   while True:
     info = client.gets(key)
     if not info or time.time() - info['time'] >= download_interval_seconds:
-      new_info = {
-          'time': time.time()
-      }
+      new_info = {'time': time.time()}
       if not info:
         success = client.add(
             key, new_info, time=memcache_master_download_expiration_seconds)

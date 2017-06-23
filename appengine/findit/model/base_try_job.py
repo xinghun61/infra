@@ -11,16 +11,14 @@ class BaseTryJob(ndb.Model):
   """Represents a base try job result."""
 
   # The status of the try job.
-  status = ndb.IntegerProperty(
-      default=analysis_status.PENDING, indexed=False)
+  status = ndb.IntegerProperty(default=analysis_status.PENDING, indexed=False)
 
   # A list of try job IDs associated with each try job for collecting metadata.
   try_job_ids = ndb.JsonProperty(indexed=False, compressed=True)
 
   @property
   def completed(self):
-    return self.status in (
-        analysis_status.COMPLETED, analysis_status.ERROR)
+    return self.status in (analysis_status.COMPLETED, analysis_status.ERROR)
 
   @property
   def failed(self):

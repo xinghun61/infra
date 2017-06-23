@@ -11,7 +11,6 @@ from model import revert_cl_status
 from model.tree_closure import TreeClosure
 from model.wf_suspected_cl import WfSuspectedCL
 
-
 _NOT_AVAILABLE = 'N/A'
 _DEFAULT_PAGE_SIZE = 1000
 
@@ -20,19 +19,19 @@ def _CalculateMetrics(numbers):
   # (https://crbug.com/720186) Workaround the error in running Findit locally.
   import numpy
   return {
-      'average': (
-          time_util.SecondsToHMS(numpy.average(numbers)) if numbers else
-          _NOT_AVAILABLE),
-      'total': len(numbers),
+      'average': (time_util.SecondsToHMS(numpy.average(numbers))
+                  if numbers else _NOT_AVAILABLE),
+      'total':
+          len(numbers),
       'ninetieth_percentile': (
-          time_util.SecondsToHMS(numpy.percentile(numbers, 90)) if numbers else
-          _NOT_AVAILABLE),
+          time_util.SecondsToHMS(numpy.percentile(numbers, 90))
+          if numbers else _NOT_AVAILABLE),
       'seventieth_percentile': (
-          time_util.SecondsToHMS(numpy.percentile(numbers, 70)) if numbers else
-          _NOT_AVAILABLE),
+          time_util.SecondsToHMS(numpy.percentile(numbers, 70))
+          if numbers else _NOT_AVAILABLE),
       'fiftieth_percentile': (
-          time_util.SecondsToHMS(numpy.percentile(numbers, 50)) if numbers else
-          _NOT_AVAILABLE)
+          time_util.SecondsToHMS(numpy.percentile(numbers, 50))
+          if numbers else _NOT_AVAILABLE)
   }
 
 
@@ -91,28 +90,36 @@ def _GenerateFinditMetrics(suspected_cls):
         continue
 
       # Fallback to updated_time if cr_notification_time is not set.
-      findit_time = (
-          suspected_cl.cr_notification_time or suspected_cl.updated_time)
+      findit_time = (suspected_cl.cr_notification_time or
+                     suspected_cl.updated_time)
       time_delta = findit_time - sheriff_action_time
       slower_than_sheriff_times.append(time_delta.total_seconds())
 
   return {
-      'revert_cls_detected': revert_cls_detected,
-      'revert_cls_created': revert_cls_created,
-      'revert_cls_committed': revert_cls_committed,
-      'duplicate_revert_cls': duplicate_revert_cls,
-      'sheriffs_faster': len(slower_than_sheriff_times),
-      'findit_faster': len(faster_than_sheriff_times),
-      'false_positives': false_positives,
-      'faster_than_sheriff_metrics': _CalculateMetrics(
-          faster_than_sheriff_times),
-      'slower_than_sheriff_metrics': _CalculateMetrics(
-          slower_than_sheriff_times)
+      'revert_cls_detected':
+          revert_cls_detected,
+      'revert_cls_created':
+          revert_cls_created,
+      'revert_cls_committed':
+          revert_cls_committed,
+      'duplicate_revert_cls':
+          duplicate_revert_cls,
+      'sheriffs_faster':
+          len(slower_than_sheriff_times),
+      'findit_faster':
+          len(faster_than_sheriff_times),
+      'false_positives':
+          false_positives,
+      'faster_than_sheriff_metrics':
+          _CalculateMetrics(faster_than_sheriff_times),
+      'slower_than_sheriff_metrics':
+          _CalculateMetrics(slower_than_sheriff_times)
   }
 
 
-def _GetAnalysesWithinDateRange(
-    start_date, end_date, page_size=_DEFAULT_PAGE_SIZE):
+def _GetAnalysesWithinDateRange(start_date,
+                                end_date,
+                                page_size=_DEFAULT_PAGE_SIZE):
   all_suspected_cls = []
   more = True
   cursor = None
@@ -129,10 +136,8 @@ def _GetAnalysesWithinDateRange(
 
 def _GenerateTreeClosureMetrics(tree_name, step_name, start_date, end_date):
   query = TreeClosure.query(
-      TreeClosure.tree_name == tree_name,
-      TreeClosure.step_name == step_name,
-      TreeClosure.closed_time >= start_date,
-      TreeClosure.closed_time < end_date)
+      TreeClosure.tree_name == tree_name, TreeClosure.step_name == step_name,
+      TreeClosure.closed_time >= start_date, TreeClosure.closed_time < end_date)
 
   all_closures = list(query)  # Run the query and convert results to a list.
 
@@ -169,12 +174,9 @@ class AutoRevertMetrics(BaseHandler):
 
     suspected_cls = _GetAnalysesWithinDateRange(start_date, end_date)
     data = _GenerateFinditMetrics(suspected_cls)
-    data['tree_closures'] = _GenerateTreeClosureMetrics(
-        'chromium', 'compile', start_date, end_date)
+    data['tree_closures'] = _GenerateTreeClosureMetrics('chromium', 'compile',
+                                                        start_date, end_date)
     data['start_date'] = time_util.FormatDatetime(start_date)
     data['end_date'] = time_util.FormatDatetime(end_date)
 
-    return {
-        'template': 'auto_revert_metrics.html',
-        'data': data
-    }
+    return {'template': 'auto_revert_metrics.html', 'data': data}

@@ -20,13 +20,13 @@ class WfAnalysis(BaseBuildModel):
   @staticmethod
   def _CreateKey(master_name, builder_name, build_number):  # pragma: no cover
     return ndb.Key('WfAnalysis',
-                   BaseBuildModel.CreateBuildId(
-                       master_name, builder_name, build_number))
+                   BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                                build_number))
 
   @staticmethod
   def Create(master_name, builder_name, build_number):  # pragma: no cover
-    analysis = WfAnalysis(
-        key=WfAnalysis._CreateKey(master_name, builder_name, build_number))
+    analysis = WfAnalysis(key=WfAnalysis._CreateKey(master_name, builder_name,
+                                                    build_number))
     analysis.failure_result_map = analysis.failure_result_map or {}
     return analysis
 
@@ -36,8 +36,7 @@ class WfAnalysis(BaseBuildModel):
 
   @property
   def completed(self):
-    return self.status in (
-        analysis_status.COMPLETED, analysis_status.ERROR)
+    return self.status in (analysis_status.COMPLETED, analysis_status.ERROR)
 
   @property
   def duration(self):
@@ -71,16 +70,14 @@ class WfAnalysis(BaseBuildModel):
     if not self.completed or self.failed:
       return None
 
-    if self.result_status in (
-        result_status.FOUND_CORRECT,
-        result_status.NOT_FOUND_CORRECT,
-        result_status.FOUND_CORRECT_DUPLICATE):
+    if self.result_status in (result_status.FOUND_CORRECT,
+                              result_status.NOT_FOUND_CORRECT,
+                              result_status.FOUND_CORRECT_DUPLICATE):
       return True
 
-    if self.result_status in (
-        result_status.FOUND_INCORRECT,
-        result_status.NOT_FOUND_INCORRECT,
-        result_status.FOUND_INCORRECT_DUPLICATE):
+    if self.result_status in (result_status.FOUND_INCORRECT,
+                              result_status.NOT_FOUND_INCORRECT,
+                              result_status.FOUND_INCORRECT_DUPLICATE):
       return False
 
     return None
@@ -89,9 +86,8 @@ class WfAnalysis(BaseBuildModel):
   def is_duplicate(self):
     """Returns whether the analysis result is a duplicate or not."""
 
-    return self.result_status in (
-        result_status.FOUND_CORRECT_DUPLICATE,
-        result_status.FOUND_INCORRECT_DUPLICATE)
+    return self.result_status in (result_status.FOUND_CORRECT_DUPLICATE,
+                                  result_status.FOUND_INCORRECT_DUPLICATE)
 
   def Reset(self):  # pragma: no cover
     """Resets to the state as if no analysis is run."""
@@ -139,8 +135,7 @@ class WfAnalysis(BaseBuildModel):
   # The url path to the pipeline status page.
   pipeline_status_path = ndb.StringProperty(indexed=False)
   # The status of the analysis.
-  status = ndb.IntegerProperty(
-      default=analysis_status.PENDING, indexed=False)
+  status = ndb.IntegerProperty(default=analysis_status.PENDING, indexed=False)
   # When the analysis was requested.
   request_time = ndb.DateTimeProperty(indexed=False)
   # When the analysis actually started.

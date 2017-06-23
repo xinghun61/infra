@@ -65,10 +65,10 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     build_id = 'build_id'
     analysis_key = ndb.Key('key', 1)
 
-    try_job = FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, git_hash)
-    ScheduleFlakeTryJobPipeline()._CreateTryJobData(
-        build_id, try_job.key, analysis_key.urlsafe())
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, git_hash)
+    ScheduleFlakeTryJobPipeline()._CreateTryJobData(build_id, try_job.key,
+                                                    analysis_key.urlsafe())
 
     try_job_data = FlakeTryJobData.Get(build_id)
 
@@ -86,8 +86,12 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     url = 'url'
     analysis_key = ndb.Key('key', 1)
     build = WfBuild.Create(master_name, builder_name, build_number)
-    build.data = {'properties': {'parent_mastername': 'pm',
-                                 'parent_buildername': 'pb'}}
+    build.data = {
+        'properties': {
+            'parent_mastername': 'pm',
+            'parent_buildername': 'pb'
+        }
+    }
     build.put()
     response = {
         'build': {
@@ -99,16 +103,16 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     results = [(None, buildbucket_client.BuildbucketBuild(response['build']))]
     mock_module.TriggerTryJobs.return_value = results
 
-    FlakeTryJob.Create(
-        master_name, builder_name, step_name, test_name, git_hash).put()
+    FlakeTryJob.Create(master_name, builder_name, step_name, test_name,
+                       git_hash).put()
 
     try_job_pipeline = ScheduleFlakeTryJobPipeline()
-    try_job_id = try_job_pipeline.run(
-        master_name, builder_name, step_name, test_name, git_hash,
-        analysis_key.urlsafe(), None, None)
+    try_job_id = try_job_pipeline.run(master_name, builder_name, step_name,
+                                      test_name, git_hash,
+                                      analysis_key.urlsafe(), None, None)
 
-    try_job = FlakeTryJob.Get(
-        master_name, builder_name, step_name, test_name, git_hash)
+    try_job = FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
+                              git_hash)
     try_job_data = FlakeTryJobData.Get(build_id)
 
     self.assertEqual(build_id, try_job_id)
@@ -123,8 +127,12 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
     build = WfBuild.Create(master_name, builder_name, build_number)
-    build.data = {'properties': {'parent_mastername': 'pm',
-                                 'parent_buildername': 'pb'}}
+    build.data = {
+        'properties': {
+            'parent_mastername': 'pm',
+            'parent_buildername': 'pb'
+        }
+    }
     build.put()
     response = {
         'build': {

@@ -96,20 +96,17 @@ class WfAnalysisTest(unittest.TestCase):
       self.assertIsNone(analysis.correct)
 
   def testWfAnalysisHasCorrectResult(self):
-    for status in (
-        result_status.FOUND_CORRECT,
-        result_status.NOT_FOUND_CORRECT,
-        result_status.FOUND_CORRECT_DUPLICATE):
+    for status in (result_status.FOUND_CORRECT, result_status.NOT_FOUND_CORRECT,
+                   result_status.FOUND_CORRECT_DUPLICATE):
       analysis = WfAnalysis.Create('m', 'b', 123)
       analysis.status = analysis_status.COMPLETED
       analysis.result_status = status
       self.assertTrue(analysis.correct)
 
   def testWfAnalysisHasIncorrectResult(self):
-    for status in (
-        result_status.FOUND_INCORRECT,
-        result_status.NOT_FOUND_INCORRECT,
-        result_status.FOUND_INCORRECT_DUPLICATE):
+    for status in (result_status.FOUND_INCORRECT,
+                   result_status.NOT_FOUND_INCORRECT,
+                   result_status.FOUND_INCORRECT_DUPLICATE):
       analysis = WfAnalysis.Create('m', 'b', 123)
       analysis.status = analysis_status.COMPLETED
       analysis.result_status = status
@@ -147,22 +144,18 @@ class WfAnalysisTest(unittest.TestCase):
     self.assertEqual('test', analysis.failure_type_str)
 
   def testWfAnalysisIsDuplicate(self):
-    for status in (
-        result_status.FOUND_CORRECT_DUPLICATE,
-        result_status.FOUND_INCORRECT_DUPLICATE):
+    for status in (result_status.FOUND_CORRECT_DUPLICATE,
+                   result_status.FOUND_INCORRECT_DUPLICATE):
       analysis = WfAnalysis.Create('m', 'b', 123)
       analysis.result_status = status
       self.assertTrue(analysis.is_duplicate)
 
   def testWfAnalysisIsNotDuplicate(self):
-    for status in (
-        result_status.FOUND_CORRECT,
-        result_status.FOUND_INCORRECT,
-        result_status.NOT_FOUND_INCORRECT,
-        result_status.FOUND_UNTRIAGED,
-        result_status.NOT_FOUND_UNTRIAGED,
-        result_status.NOT_FOUND_CORRECT,
-        None):
+    for status in (result_status.FOUND_CORRECT, result_status.FOUND_INCORRECT,
+                   result_status.NOT_FOUND_INCORRECT,
+                   result_status.FOUND_UNTRIAGED,
+                   result_status.NOT_FOUND_UNTRIAGED,
+                   result_status.NOT_FOUND_CORRECT, None):
       analysis = WfAnalysis.Create('m', 'b', 123)
       analysis.result_status = status
       self.assertFalse(analysis.is_duplicate)

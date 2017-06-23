@@ -8,7 +8,6 @@ import unittest
 
 from libs.math.vectors import vsum
 
-
 BIG = 1e100
 LITTLE = 1
 
@@ -38,11 +37,11 @@ class VectorsTest(unittest.TestCase):
     different components just so we don't do the same thing over and over;
     there's nothing special about negation or doubling.
     """
-    vs = [np.array([x, -x, 2*x]) for x in self._xs]
+    vs = [np.array([x, -x, 2 * x]) for x in self._xs]
     total = vsum(vs)
     self.assertIsNotNone(total)
 
-    self.assertListEqual([LITTLE, -LITTLE, 2*LITTLE], total.tolist())
+    self.assertListEqual([LITTLE, -LITTLE, 2 * LITTLE], total.tolist())
 
   def testVsumEmptyWithoutShape(self):
     """Ensure ``vsum`` returns ``None`` when expected.
@@ -70,6 +69,7 @@ class VectorsTest(unittest.TestCase):
 
   def testVsumWithNonFloatVector(self):
     """Tests that ``vsum`` works for list of float-like objects."""
+
     class MimicFloat(object):
 
       def __init__(self, value):
@@ -85,5 +85,5 @@ class VectorsTest(unittest.TestCase):
     mimic_float_lists = [[MimicFloat(number) for number in l] for l in lists]
     array_mimic_float_lists = [np.array(l) for l in mimic_float_lists]
 
-    self.assertListEqual(vsum(array_lists).tolist(),
-                         vsum(array_mimic_float_lists).tolist())
+    self.assertListEqual(
+        vsum(array_lists).tolist(), vsum(array_mimic_float_lists).tolist())

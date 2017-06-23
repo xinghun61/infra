@@ -36,8 +36,8 @@ class FailureSignal(object):
     # TODO: Merge keywords later after we add support for keywords.
     for file_path, line_numbers in other_signal['files'].iteritems():
       if file_path in self.files:
-        self.files[file_path].extend(
-            x for x in line_numbers if x not in self.files[file_path])
+        self.files[file_path].extend(x for x in line_numbers
+                                     if x not in self.files[file_path])
       else:
         self.files[file_path] = line_numbers[:]
 
@@ -45,8 +45,8 @@ class FailureSignal(object):
     for target in new_failed_targets:
       self.AddTarget(target)
     self.failed_output_nodes = list(
-        set(self.failed_output_nodes +
-            other_signal.get('failed_output_nodes', [])))
+        set(self.failed_output_nodes + other_signal.get('failed_output_nodes',
+                                                        [])))
 
   def ToDict(self):
     json_dict = {

@@ -1,7 +1,6 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Parse output of local git commands into Gitile response format."""
 
 from collections import namedtuple
@@ -54,6 +53,7 @@ INITIAL_TO_CHANGE_TYPE = {
 
 class RegionInfo(namedtuple('RegionInfo', ['start', 'count', 'revision'])):
   __slots__ = ()
+
   def __new__(cls, start, count, revision):
     return super(cls, RegionInfo).__new__(cls, int(start), int(count), revision)
 
@@ -90,6 +90,7 @@ class GitBlameParser(GitParser):
   Returns:
   A list of parsed Blame objects.
   """
+
   def __call__(self, output, path, revision):  # pylint:disable=W
     if not output:
       return None
@@ -103,17 +104,15 @@ class GitBlameParser(GitParser):
       if match:
         if region_info:
           blame.AddRegion(
-              Region(region_info.start,
-                     region_info.count,
-                     region_info.revision,
+              Region(region_info.start, region_info.count, region_info.revision,
                      commit_info[region_info.revision]['author_name'],
                      commit_info[region_info.revision]['author_email'],
                      commit_info[region_info.revision]['author_time']))
 
         region_info = RegionInfo(
-            start = int(match.group(2)),
-            count = int(match.group(3)),
-            revision = match.group(1))
+            start=int(match.group(2)),
+            count=int(match.group(3)),
+            revision=match.group(1))
 
       elif region_info:
         # Sample: author test@google.com.
@@ -124,8 +123,8 @@ class GitBlameParser(GitParser):
         elif AUTHOR_MAIL_PATTERN.match(line):
           commit_info[region_info.revision]['author_email'] = (
               commit_util.NormalizeEmail(
-                  AUTHOR_MAIL_PATTERN.match(line).group(1).replace(
-                      '<', '').replace('>', '')))
+                  AUTHOR_MAIL_PATTERN.match(line).group(1).replace('<', '')
+                  .replace('>', '')))
         # Sample: author-time 1311863160.
         elif AUTHOR_TIME_PATTERN.match(line):
           commit_info[region_info.revision]['author_time'] = (
@@ -135,17 +134,16 @@ class GitBlameParser(GitParser):
           time_zone = time_util.TimeZoneInfo(
               AUTHOR_TIMEZONE_PATTERN.match(line).group(1))
           commit_info[region_info.revision]['author_time'] = (
-              time_zone.LocalToUTC(datetime.fromtimestamp(
-                  int(commit_info[region_info.revision]['author_time']))))
+              time_zone.LocalToUTC(
+                  datetime.fromtimestamp(
+                      int(commit_info[region_info.revision]['author_time']))))
 
     if region_info:
       blame.AddRegion(
-          Region(region_info.start,
-                 region_info.count,
-                 region_info.revision,
-                 commit_info[region_info.revision]['author_name'],
-                 commit_info[region_info.revision]['author_email'],
-                 commit_info[region_info.revision]['author_time']))
+          Region(region_info.start, region_info.count, region_info.revision,
+                 commit_info[region_info.revision]['author_name'], commit_info[
+                     region_info.revision]['author_email'], commit_info[
+                         region_info.revision]['author_time']))
 
     return blame if blame else None
 
@@ -171,7 +169,7 @@ def GetFileChangeInfo(change_type, path1, path2):
     return FileChangeInfo.Rename(path1, path2)
 
   # TODO(http://crbug.com/659346): write coverage test for this branch
-  if change_type.lower() == ChangeType.COPY: # pragma: no cover
+  if change_type.lower() == ChangeType.COPY:  # pragma: no cover
     return FileChangeInfo.Copy(path1, path2)
 
   return None
@@ -209,7 +207,7 @@ class GitChangeLogParser(GitParser):
       return None
 
     is_message_line = False
-    info = {'author':{}, 'committer': {}, 'message': '', 'touched_files': []}
+    info = {'author': {}, 'committer': {}, 'message': '', 'touched_files': []}
     for line in output.splitlines():
       if MESSAGE_START_PATTERN.match(line):
         is_message_line = True
@@ -251,10 +249,10 @@ class GitChangeLogParser(GitParser):
         # For rename, copy, the pattern is like:
         # :100644 100644 3f2e 20a5 R078 path1 path2
         info['touched_files'].append(
-            GetFileChangeInfo(GetChangeType(match.group(5)),
-                                            match.group(6),
-                                            None if len(match.groups()) < 7
-                                            else match.group(7)))
+            GetFileChangeInfo(
+                GetChangeType(match.group(5)),
+                match.group(6), None
+                if len(match.groups()) < 7 else match.group(7)))
 
     # If commit is not parsed, the changelog will be {'author': {}, 'committer':
     # {}, 'message': ''}, return None instead.
@@ -264,8 +262,7 @@ class GitChangeLogParser(GitParser):
     change_info = commit_util.ExtractChangeInfo(info['message'])
     info['commit_position'] = change_info.get('commit_position')
     info['code_review_url'] = change_info.get('code_review_url')
-    info['reverted_revision'] = commit_util.GetRevertedRevision(
-        info['message'])
+    info['reverted_revision'] = commit_util.GetRevertedRevision(info['message'])
     info['commit_url'] = '%s/+/%s' % (repo_url, info['revision'])
 
     return ChangeLog.FromDict(info)

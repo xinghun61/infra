@@ -42,8 +42,8 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     if not was_aborted:
       return
 
-    analysis = WfAnalysis.Get(
-        self.master_name, self.builder_name, self.build_number)
+    analysis = WfAnalysis.Get(self.master_name, self.builder_name,
+                              self.build_number)
     # Heuristic analysis could have already completed, while triggering the
     # try job kept failing and lead to the abortion.
     if not analysis.completed:
@@ -75,8 +75,8 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     # https://github.com/GoogleCloudPlatform/appengine-pipelines/wiki/Python
 
     # Heuristic Approach.
-    failure_info = yield DetectFirstFailurePipeline(
-        master_name, builder_name, build_number)
+    failure_info = yield DetectFirstFailurePipeline(master_name, builder_name,
+                                                    build_number)
     change_logs = yield PullChangelogPipeline(failure_info)
     deps_info = yield ExtractDEPSInfoPipeline(failure_info, change_logs)
     signals = yield ExtractSignalPipeline(failure_info)
@@ -88,18 +88,18 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
       # Swarming rerun.
       # Triggers swarming tasks when first time test failure happens.
       # This pipeline will run before build completes.
-      yield TriggerSwarmingTasksPipeline(
-          master_name, builder_name, build_number, failure_info, force)
+      yield TriggerSwarmingTasksPipeline(master_name, builder_name,
+                                         build_number, failure_info, force)
 
-      yield ProcessSwarmingTasksResultPipeline(
-          master_name, builder_name, build_number, failure_info,
-          build_completed)
+      yield ProcessSwarmingTasksResultPipeline(master_name, builder_name,
+                                               build_number, failure_info,
+                                               build_completed)
 
       # Checks if first time failures happen and starts a try job if yes.
-      yield StartTryJobOnDemandPipeline(
-          master_name, builder_name, build_number, failure_info,
-          signals, heuristic_result, build_completed, force)
+      yield StartTryJobOnDemandPipeline(master_name, builder_name, build_number,
+                                        failure_info, signals, heuristic_result,
+                                        build_completed, force)
 
       # Trigger flake analysis on flaky tests, if any.
-      yield TriggerFlakeAnalysesPipeline(
-          master_name, builder_name, build_number)
+      yield TriggerFlakeAnalysesPipeline(master_name, builder_name,
+                                         build_number)

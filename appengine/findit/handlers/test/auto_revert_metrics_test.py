@@ -17,9 +17,11 @@ from testing_utils import testing
 
 
 class AutoRevertMetricsTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/auto-revert-metrics', auto_revert_metrics.AutoRevertMetrics),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/auto-revert-metrics', auto_revert_metrics.AutoRevertMetrics),
+      ],
+      debug=True)
 
   def testCalculateMetrics(self):
     expected_stats = {
@@ -29,8 +31,8 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
         'seventieth_percentile': '00:00:01',
         'fiftieth_percentile': '00:00:01'
     }
-    self.assertEqual(
-        expected_stats, auto_revert_metrics._CalculateMetrics([1, 2]))
+    self.assertEqual(expected_stats,
+                     auto_revert_metrics._CalculateMetrics([1, 2]))
 
   def testGetAnalysesWithinDateRange(self):
     start_date = datetime(2017, 4, 8, 0, 0)
@@ -109,10 +111,11 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
         }
     }
 
-    metrics = auto_revert_metrics._GenerateFinditMetrics(
-        [reverted_suspected_cl, duplicate_fast_suspected_cl,
-         duplicate_slow_suspected_cl, false_positive_suspected_cl,
-         slow_suspected_cl, false_positive_suspected_cl_no_revert])
+    metrics = auto_revert_metrics._GenerateFinditMetrics([
+        reverted_suspected_cl, duplicate_fast_suspected_cl,
+        duplicate_slow_suspected_cl, false_positive_suspected_cl,
+        slow_suspected_cl, false_positive_suspected_cl_no_revert
+    ])
 
     self.assertEqual(expected_metrics, metrics)
 
@@ -125,8 +128,7 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
             auto_opened=False,
             possible_flake=True,
             has_revert=False,
-            step_name='compile',
-        ),
+            step_name='compile',),
         TreeClosure(
             tree_name='chromium',
             closed_time=datetime(2017, 03, 15),
@@ -134,8 +136,7 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
             auto_opened=False,
             possible_flake=True,
             has_revert=False,
-            step_name='bot_update',
-        ),
+            step_name='bot_update',),
         TreeClosure(
             tree_name='chromium',
             closed_time=datetime(2017, 03, 15, 10, 10, 10),
@@ -143,8 +144,7 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
             auto_opened=True,
             possible_flake=False,
             has_revert=False,
-            step_name='compile',
-        ),
+            step_name='compile',),
         TreeClosure(
             tree_name='chromium',
             closed_time=datetime(2017, 03, 15, 17, 10, 10),
@@ -152,8 +152,7 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
             auto_opened=False,
             possible_flake=False,
             has_revert=False,
-            step_name='compile',
-        ),
+            step_name='compile',),
         TreeClosure(
             tree_name='chromium',
             closed_time=datetime(2017, 03, 15, 19, 10, 10),
@@ -161,8 +160,7 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
             auto_opened=False,
             possible_flake=True,
             has_revert=False,
-            step_name='compile',
-        ),
+            step_name='compile',),
         TreeClosure(
             tree_name='chromium',
             closed_time=datetime(2017, 03, 16, 21, 10, 10),
@@ -170,8 +168,7 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
             auto_opened=False,
             possible_flake=False,
             has_revert=True,
-            step_name='compile',
-        ),
+            step_name='compile',),
         TreeClosure(
             tree_name='chromium',
             closed_time=datetime(2017, 04, 15, 17, 10, 10),
@@ -179,8 +176,7 @@ class AutoRevertMetricsTest(testing.AppengineTestCase):
             auto_opened=False,
             possible_flake=False,
             has_revert=False,
-            step_name='compile',
-        ),
+            step_name='compile',),
     ])
 
     metrics = auto_revert_metrics._GenerateTreeClosureMetrics(

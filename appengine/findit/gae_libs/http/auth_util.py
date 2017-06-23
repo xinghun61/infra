@@ -10,12 +10,12 @@ from google.appengine.api import oauth
 from google.appengine.api import users
 from google.appengine.api.app_identity import app_identity
 
-
 _EMAIL_SCOPE = 'https://www.googleapis.com/auth/userinfo.email'
 _HOST_REGEX_TO_SCOPES = [
-    (re.compile(r'^.*\.googlesource\.com$'),  # Gerrit.
-     'https://www.googleapis.com/auth/gerritcodereview'),
-    (re.compile(r'^codereview\.chromium\.org$'),  _EMAIL_SCOPE),  # Rietveld.
+    (
+        re.compile(r'^.*\.googlesource\.com$'),  # Gerrit.
+        'https://www.googleapis.com/auth/gerritcodereview'),
+    (re.compile(r'^codereview\.chromium\.org$'), _EMAIL_SCOPE),  # Rietveld.
 ]
 
 

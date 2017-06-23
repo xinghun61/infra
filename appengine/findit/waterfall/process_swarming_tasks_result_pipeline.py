@@ -22,9 +22,8 @@ class ProcessSwarmingTasksResultPipeline(BasePipeline):
   """Root Pipeline to process results of swarming reruns."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(
-      self, master_name, builder_name, build_number, failure_info,
-      build_completed):
+  def run(self, master_name, builder_name, build_number, failure_info,
+          build_completed):
     task_results = []
 
     # Waits for build to complete to process the results of swarming reruns.
@@ -33,12 +32,12 @@ class ProcessSwarmingTasksResultPipeline(BasePipeline):
 
     for step_name, step_failure in failure_info['failed_steps'].iteritems():
       step_has_first_time_failure = StepHasFirstTimeFailure(
-        step_failure.get('tests', {}), build_number)
+          step_failure.get('tests', {}), build_number)
       if not step_has_first_time_failure:
         continue
       task_result = yield ProcessSwarmingTaskResultPipeline(
-        master_name, builder_name, build_number, step_name)
+          master_name, builder_name, build_number, step_name)
       task_results.append(task_result)
 
-    yield UpdateAnalysisWithFlakeInfoPipeline(
-      master_name, builder_name, build_number, *task_results)
+    yield UpdateAnalysisWithFlakeInfoPipeline(master_name, builder_name,
+                                              build_number, *task_results)

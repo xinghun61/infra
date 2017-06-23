@@ -11,7 +11,6 @@ from model.flake.flake_try_job_data import FlakeTryJobData
 from waterfall import waterfall_config
 from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
 
-
 _DEFAULT_ITERATIONS_TO_RERUN = 100
 
 
@@ -19,9 +18,8 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
   """A pipeline for scheduling a new flake try job for a flaky test."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def _GetBuildProperties(
-      self, master_name, builder_name, canonical_step_name, test_name,
-      git_hash, iterations_to_rerun):
+  def _GetBuildProperties(self, master_name, builder_name, canonical_step_name,
+                          test_name, git_hash, iterations_to_rerun):
     iterations = iterations_to_rerun or _DEFAULT_ITERATIONS_TO_RERUN
 
     return {
@@ -50,8 +48,15 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
     try_job_data.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, canonical_step_name,
-          test_name, git_hash, urlsafe_analysis_key, cache_name, dimensions,
+  def run(self,
+          master_name,
+          builder_name,
+          canonical_step_name,
+          test_name,
+          git_hash,
+          urlsafe_analysis_key,
+          cache_name,
+          dimensions,
           iterations_to_rerun=None):
     """Triggers a flake try job.
 
@@ -73,16 +78,16 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
     Returns:
       build_id (str): Id of the triggered try job.
     """
-    properties = self._GetBuildProperties(
-        master_name, builder_name, canonical_step_name, test_name, git_hash,
-        iterations_to_rerun)
+    properties = self._GetBuildProperties(master_name, builder_name,
+                                          canonical_step_name, test_name,
+                                          git_hash, iterations_to_rerun)
     build_id = self._TriggerTryJob(
         master_name, builder_name, properties, {},
         failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
         cache_name, dimensions)
 
-    try_job = FlakeTryJob.Get(
-        master_name, builder_name, canonical_step_name, test_name, git_hash)
+    try_job = FlakeTryJob.Get(master_name, builder_name, canonical_step_name,
+                              test_name, git_hash)
     try_job.flake_results.append({'try_job_id': build_id})
     try_job.try_job_ids.append(build_id)
     try_job.put()

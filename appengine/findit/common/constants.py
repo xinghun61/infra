@@ -1,15 +1,12 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Includes all the constants of module names, queue names, url paths, etc."""
 
 import os
 
-
 # Names of all modules.
 WATERFALL_BACKEND = 'waterfall-backend'
-
 
 # Names of all queues.
 DEFAULT_QUEUE = 'default'
@@ -17,7 +14,6 @@ WATERFALL_ANALYSIS_QUEUE = 'waterfall-analysis-queue'
 WATERFALL_TRY_JOB_QUEUE = 'waterfall-try-job-queue'
 WATERFALL_FAILURE_ANALYSIS_REQUEST_QUEUE = 'waterfall-failure-analysis-request'
 WATERFALL_FLAKE_ANALYSIS_REQUEST_QUEUE = 'waterfall-flake-analysis-request'
-
 
 # Waterfall-related.
 WATERFALL_PROCESS_FAILURE_ANALYSIS_REQUESTS_URL = (
@@ -27,7 +23,6 @@ WATERFALL_PROCESS_FLAKE_ANALYSIS_REQUEST_URL = (
 WATERFALL_ALERTS_URL = 'https://sheriff-o-matic.appspot.com/alerts'
 COMPILE_STEP_NAME = 'compile'
 
-
 # TODO: move this to config.
 # Whitelisted app ids for authorized access.
 WHITELISTED_APP_ACCOUNTS = [
@@ -35,7 +30,6 @@ WHITELISTED_APP_ACCOUNTS = [
     'findit-for-me@appspot.gserviceaccount.com',
     'sheriff-o-matic@appspot.gserviceaccount.com'
 ]
-
 
 # Directory of html templates.
 HTML_TEMPLATE_DIR = os.path.realpath(

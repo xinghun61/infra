@@ -37,6 +37,7 @@ def _AllFailedStepsPassed(passed_steps, current_failed_steps):
       return False
   return True
 
+
 def GetPossibleRevertInfoFromRevision(revision):
   """Parse message to get information of reverting and reverted cls."""
   git_repo = CachedGitilesRepository(
@@ -53,17 +54,23 @@ def GetPossibleRevertInfoFromRevision(revision):
   reverted_cl_change_log = git_repo.GetChangeLog(reverted_revision)
 
   data = {
-      'action': 'Reverted',
-      'fixed_revision': reverted_revision,
+      'action':
+          'Reverted',
+      'fixed_revision':
+          reverted_revision,
       'fixed_cl_review_url': (reverted_cl_change_log.code_review_url
-          if reverted_cl_change_log else None),
+                              if reverted_cl_change_log else None),
       'fixed_cl_commit_position': (reverted_cl_change_log.commit_position
-          if reverted_cl_change_log else None),
-      'fixing_revision': revision,
-      'fixing_cl_review_url': change_log.code_review_url,
-      'fixing_cl_commit_position': change_log.commit_position
+                                   if reverted_cl_change_log else None),
+      'fixing_revision':
+          revision,
+      'fixing_cl_review_url':
+          change_log.code_review_url,
+      'fixing_cl_commit_position':
+          change_log.commit_position
   }
   return data
+
 
 def _CheckReverts(master_name, builder_name, current_build_number):
   """Checks each cl in current build to see if some of them are reverted.
@@ -102,13 +109,13 @@ def _CheckReverts(master_name, builder_name, current_build_number):
   while not steps_pass:
     # Breaks the loop after the first green build
     # or all the current failed steps pass.
-    build = build_util.DownloadBuildData(
-        master_name, builder_name, build_number)
+    build = build_util.DownloadBuildData(master_name, builder_name,
+                                         build_number)
     if not build or not build.data:
       return []
 
-    build_info = buildbot.ExtractBuildInfo(
-        master_name, builder_name, build_number, build.data)
+    build_info = buildbot.ExtractBuildInfo(master_name, builder_name,
+                                           build_number, build.data)
     if build_number <= current_build_number:
       # All the cls in builds prior to the current build(included)
       # should be checked for reverts.
@@ -127,16 +134,15 @@ def _CheckReverts(master_name, builder_name, current_build_number):
       if (fixed_revision in blamed_cls and
           build_number > blamed_cls[fixed_revision] and
           build_number > current_build_number):
-          # If a CL and its reverting cl are in the same build,
-          # it doesn't have any impact on the build failure.
-          # And possible fix should take effect after the current build.
+        # If a CL and its reverting cl are in the same build,
+        # it doesn't have any impact on the build failure.
+        # And possible fix should take effect after the current build.
         cls_info['fixed_build_number'] = blamed_cls[fixed_revision]
-        cls_info['fixed_build_url'] = (
-            buildbot.CreateBuildUrl(
-                master_name, builder_name, blamed_cls[fixed_revision]))
+        cls_info['fixed_build_url'] = (buildbot.CreateBuildUrl(
+            master_name, builder_name, blamed_cls[fixed_revision]))
         cls_info['fixing_build_number'] = build_number
-        cls_info['fixing_build_url'] = (
-            buildbot.CreateBuildUrl(master_name, builder_name, build_number))
+        cls_info['fixing_build_url'] = (buildbot.CreateBuildUrl(
+            master_name, builder_name, build_number))
         reverted_cls.append(cls_info)
     build_number += 1
 

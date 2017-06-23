@@ -52,13 +52,12 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
 
     repo_url = 'https://repo/path'
     self.mock(local_git_repository.LocalGitRepository,
-        '_CloneOrUpdateRepoIfNeeded', lambda *_: None)
+              '_CloneOrUpdateRepoIfNeeded', lambda *_: None)
     repo = local_git_repository.LocalGitRepository(repo_url)
     self.assertEqual(repo.repo_url, repo_url)
 
   def testGetChangeLog(self):
-    output = textwrap.dedent(
-        """
+    output = textwrap.dedent("""
         commit revision
         tree tree_revision
         parents parent_revision
@@ -76,29 +75,28 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
         --Message end--
 
         :100644 100644 25f95f c766f1 M      src/a/b.py
-        """
-    )
+        """)
 
     expected_changelog = change_log.ChangeLog(
         change_log.Contributor('Test', 'test@google.com',
                                datetime(2016, 7, 13, 20, 37, 6)),
         change_log.Contributor('Test', 'test@google.com',
-                               datetime(2016, 7, 13, 20, 37, 6)),
-        'revision', None, 'blabla',
+                               datetime(2016, 7, 13, 20, 37,
+                                        6)), 'revision', None, 'blabla',
         [change_log.FileChangeInfo('modify', 'src/a/b.py', 'src/a/b.py')],
         'https://repo/path/+/revision', None, None)
     self.mock(script_util, 'GetCommandOutput', lambda *_: output)
     # TODO: compare the objects directly, rather than via ToDict
-    self.assertDictEqual(self.local_repo.GetChangeLog('revision').ToDict(),
-                         expected_changelog.ToDict())
+    self.assertDictEqual(
+        self.local_repo.GetChangeLog('revision').ToDict(),
+        expected_changelog.ToDict())
 
   def testGetChangeLogNoneCommandOutput(self):
     self.mock(script_util, 'GetCommandOutput', lambda *_: None)
     self.assertIsNone(self.local_repo.GetChangeLog('revision'))
 
   def testGetChangeLogs(self):
-    output = textwrap.dedent(
-        """
+    output = textwrap.dedent("""
         **Changelog start**
         commit rev1
         tree 27b0421273ed4aea25e497c6d26d9c7db6481852
@@ -137,24 +135,23 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
         --Message end--
 
         :100644 100644 7280f df186 A      b/c.py
-        """
-    )
+        """)
 
     expected_changelogs = [
         change_log.ChangeLog(
             change_log.Contributor('author1', 'author1@chromium.org',
                                    datetime(2016, 6, 2, 10, 55, 38)),
             change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
-                                   datetime(2016, 6, 2, 10, 57, 13)),
-            'rev1', None, 'Message 1',
+                                   datetime(2016, 6, 2, 10, 57,
+                                            13)), 'rev1', None, 'Message 1',
             [change_log.FileChangeInfo('delete', 'a/b.py', None)],
             'https://repo/path/+/rev1', None, None),
         change_log.ChangeLog(
             change_log.Contributor('author2', 'author2@chromium.org',
                                    datetime(2016, 6, 2, 10, 53, 3)),
             change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
-                                   datetime(2016, 6, 2, 10, 54, 14)),
-            'rev2', None, 'Message 2',
+                                   datetime(2016, 6, 2, 10, 54,
+                                            14)), 'rev2', None, 'Message 2',
             [change_log.FileChangeInfo('add', None, 'b/c.py')],
             'https://repo/path/+/rev2', None, None),
     ]
@@ -179,8 +176,7 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
     self.assertIsNone(self.local_repo.GetChangeDiff('rev'))
 
   def testGetBlame(self):
-    output = textwrap.dedent(
-        """
+    output = textwrap.dedent("""
         revision_hash 18 18 3
         author test@google.com
         author-mail <test@google.com@2bbb7eff-a529-9590-31e7-b0007b416f81>
@@ -196,13 +192,13 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
                      *  blabla line 2
         revision_hash 20 20
                      *  blabla line 3
-        """
-    )
+        """)
     self.mock(script_util, 'GetCommandOutput', lambda *_: output)
     expected_blame = blame.Blame('src/core/SkFont.h', 'rev')
     expected_blame.AddRegions([
-      blame.Region(18, 3, 'revision_hash', 'test@google.com', 'test@google.com',
-                   datetime(2013, 03, 11, 17, 13, 36))])
+        blame.Region(18, 3, 'revision_hash', 'test@google.com',
+                     'test@google.com', datetime(2013, 03, 11, 17, 13, 36))
+    ])
 
     blame_result = self.local_repo.GetBlame('src/core/SkFont.h', 'rev')
     self.assertTrue(blame_result.revision, expected_blame.revision)
@@ -224,7 +220,9 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
     self.assertIsNone(self.local_repo.GetSource('file_path', 'rev'))
 
   def testGetLocalGitCommandOutput(self):
+
     class _MockProcess(object):
+
       def __init__(self, command, *_):
         self.command = command
 

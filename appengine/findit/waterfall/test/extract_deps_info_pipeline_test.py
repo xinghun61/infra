@@ -16,6 +16,7 @@ class ExtractDEPSInfoPipelineTest(testing.AppengineTestCase):
   app_module = pipeline_handlers._APP
 
   def testExtractDEPSInfo(self):
+
     def MockGetDependency(_, revision, os_platform):
       self.assertEqual('unix', os_platform)
       if revision == 'rev2':

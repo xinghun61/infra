@@ -46,13 +46,13 @@ class WfTryJob(BaseTryJob, BaseBuildModel):
   @staticmethod
   def _CreateKey(master_name, builder_name, build_number):
     return ndb.Key('WfTryJob',
-                   BaseBuildModel.CreateBuildId(
-                       master_name, builder_name, build_number))
+                   BaseBuildModel.CreateBuildId(master_name, builder_name,
+                                                build_number))
 
   @staticmethod
   def Create(master_name, builder_name, build_number):
-    try_job = WfTryJob(
-        key=WfTryJob._CreateKey(master_name, builder_name, build_number))
+    try_job = WfTryJob(key=WfTryJob._CreateKey(master_name, builder_name,
+                                               build_number))
     try_job.compile_results = try_job.compile_results or []
     try_job.test_results = try_job.test_results or []
     try_job.try_job_ids = try_job.try_job_ids or []
@@ -60,8 +60,7 @@ class WfTryJob(BaseTryJob, BaseBuildModel):
 
   @staticmethod
   def Get(master_name, builder_name, build_number):
-    return WfTryJob._CreateKey(
-        master_name, builder_name, build_number).get()
+    return WfTryJob._CreateKey(master_name, builder_name, build_number).get()
 
   @classmethod
   def GetBuildNumber(cls, key):

@@ -12,15 +12,14 @@ import sys
 import time
 from threading import Thread
 
-_APPENGINE_SDK_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
-                                  os.path.pardir, os.path.pardir,
-                                  os.path.pardir, os.path.pardir,
-                                  'google_appengine')
+_APPENGINE_SDK_DIR = os.path.join(
+    os.path.dirname(__file__), os.path.pardir, os.path.pardir, os.path.pardir,
+    os.path.pardir, os.path.pardir, 'google_appengine')
 sys.path.insert(1, _APPENGINE_SDK_DIR)
 from google.appengine.ext import ndb
 
-_FINDIT_DIR = os.path.join(os.path.dirname(__file__),
-                           os.path.pardir, os.path.pardir)
+_FINDIT_DIR = os.path.join(
+    os.path.dirname(__file__), os.path.pardir, os.path.pardir)
 sys.path.insert(1, _FINDIT_DIR)
 from local_libs import remote_api
 
@@ -38,7 +37,6 @@ google.__path__.insert(0, os.path.join(_THIRD_PARTY_DIR, 'google'))
 
 from handlers import handlers_util
 from waterfall import swarming_util
-
 
 NOW = time_util.GetUTCNow()
 START_DATE, END_DATE = datetime.datetime(2017, 1, 1), NOW
@@ -65,26 +63,25 @@ def _BigFetch(query, page_size=MAX_ENTITIES_PER_REQUEST):
 
 
 def _FetchAnalyses(start_date, end_date):
-  analyses_query = WfAnalysis.query(
-      WfAnalysis.build_start_time >= start_date,
-      WfAnalysis.build_start_time < end_date)
+  analyses_query = WfAnalysis.query(WfAnalysis.build_start_time >= start_date,
+                                    WfAnalysis.build_start_time < end_date)
 
   return _BigFetch(analyses_query)
 
 
 def _GetPickleFilePath():
   findit_tmp_dir = os.environ.get('TMP_DIR', os.getcwd())
-  return (os.path.join(findit_tmp_dir, 'analyses.pickle'),
-          os.path.join(findit_tmp_dir, 'records.pickle'))
+  return (os.path.join(findit_tmp_dir, 'analyses.pickle'), os.path.join(
+      findit_tmp_dir, 'records.pickle'))
 
 
 def _SaveAnalyses(analyses, records):
   pickled_analyses = pickle.dumps(analyses)
   pickled_records = pickle.dumps(records)
   analyses_path, records_path = _GetPickleFilePath()
-  with open(analyses_path , 'w') as f:
+  with open(analyses_path, 'w') as f:
     f.write(pickled_analyses)
-  with open(records_path , 'w') as f:
+  with open(records_path, 'w') as f:
     f.write(pickled_records)
 
 
@@ -96,8 +93,9 @@ def _LoadAnalyses():
     pickled_records = f.read()
   print 'Loading pickled analyses...'
   analyses = pickle.loads(pickled_analyses)
-  times = [x.build_start_time for x in analyses
-           if hasattr(x, 'build_start_time')]
+  times = [
+      x.build_start_time for x in analyses if hasattr(x, 'build_start_time')
+  ]
   records = pickle.loads(pickled_records)
   return analyses, min(times), max(times), records
 
@@ -117,8 +115,8 @@ def _GetTimesFromPipeline(pid):
         suffixes[cls] = '.' + str(old_index + 1)
       result['pl.' + cls + '.start' + suffixes.get(cls, '')] = (
           _UnknownToDatetime(start))
-      result['pl.' + cls + '.end' + suffixes.get(cls, '')] = (
-          _UnknownToDatetime(end))
+      result['pl.'
+             + cls + '.end' + suffixes.get(cls, '')] = (_UnknownToDatetime(end))
   return result
 
 
@@ -155,8 +153,8 @@ def _GetTimes(q, r):
 
       result.update(tryjobs_times)
       if a.pipeline_status_path:
-        pipeline_root = re.search(r'(?<=root\=)[^&]*', a.pipeline_status_path
-                                  ).group(0)
+        pipeline_root = re.search(r'(?<=root\=)[^&]*',
+                                  a.pipeline_status_path).group(0)
         result.update(_GetTimesFromPipeline(pipeline_root))
       r.put((a.key, result))
     except Exception, e:
@@ -173,7 +171,10 @@ def _GetTimesFromBuildbot(buildbot_url):
   # http://build.chromium.org/p/<master>/builders/<builder>/builds/<number>
   master, _, builder, _, buildnum = str(buildbot_url).split('/')[4:]
   data = json.dumps({
-      'master': master, 'builder': builder, 'buildNum': buildnum})
+      'master': master,
+      'builder': builder,
+      'buildNum': buildnum
+  })
 
   _, response = CLIENT_SINGLETON.Post(
       milo_url, data, headers={'Content-Type': 'application/json'})
@@ -214,7 +215,7 @@ def _UnknownToDatetime(unknown):
   if isinstance(unknown, basestring):
     for fmt in ('%Y-%m-%dT%H:%M:%S.%f', '%Y-%m-%dT%H:%M:%S'):
       try:
-        return datetime.datetime.strptime(unknown,fmt)
+        return datetime.datetime.strptime(unknown, fmt)
       except ValueError:
         pass
   # This is only used to guess whether the time given is in seconds or ms
@@ -223,7 +224,7 @@ def _UnknownToDatetime(unknown):
     ts = float(unknown)
     if ts > epoch:
       if ts > epoch * 1000:
-          ts = float(ts)/1000
+        ts = float(ts) / 1000
     return datetime.datetime.fromtimestamp(ts)
   except (TypeError, ValueError):
     # Couldn't cast it, return the original value.
@@ -248,9 +249,10 @@ def _Denest(d):
         insertions.update(_PrependKeys(k + '.', v))
         removals.append(k)
     for k in removals:
-      del(d[k])
+      del (d[k])
     d.update(insertions)
   return d
+
 
 def main():
   # TODO: add options to limit the date range to fetch

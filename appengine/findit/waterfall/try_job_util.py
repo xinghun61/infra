@@ -128,28 +128,33 @@ def GetSuspectedCLsWithFailures(heuristic_result):
         for suspected_cl in test.get('suspected_cls', []):
           suspected_cls_with_failures.append([
               _RemovePlatformFromStepName(failure['step_name']),
-              suspected_cl['revision'],
-              test['test_name']])
+              suspected_cl['revision'], test['test_name']
+          ])
     else:
       for suspected_cl in failure['suspected_cls']:
         suspected_cls_with_failures.append([
             _RemovePlatformFromStepName(failure['step_name']),
-            suspected_cl['revision'],
-            None])
+            suspected_cl['revision'], None
+        ])
 
   return suspected_cls_with_failures
 
 
-def _LinkAnalysisToBuildFailureGroup(
-    master_name, builder_name, build_number, failure_group_key):
+def _LinkAnalysisToBuildFailureGroup(master_name, builder_name, build_number,
+                                     failure_group_key):
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   analysis.failure_group_key = failure_group_key
   analysis.put()
 
 
-def _CreateBuildFailureGroup(
-    master_name, builder_name, build_number, build_failure_type, blame_list,
-    suspected_tuples, output_nodes=None, failed_steps_and_tests=None):
+def _CreateBuildFailureGroup(master_name,
+                             builder_name,
+                             build_number,
+                             build_failure_type,
+                             blame_list,
+                             suspected_tuples,
+                             output_nodes=None,
+                             failed_steps_and_tests=None):
   new_group = WfFailureGroup.Create(master_name, builder_name, build_number)
   new_group.created_time = time_util.GetUTCNow()
   new_group.build_failure_type = build_failure_type
@@ -181,9 +186,9 @@ def _GetMatchingFailureGroups(build_failure_type):
   earliest_time = time_util.GetUTCNow() - timedelta(
       seconds=waterfall_config.GetTryJobSettings().get(
           'max_seconds_look_back_for_group'))
-  return WfFailureGroup.query(ndb.AND(
-      WfFailureGroup.build_failure_type == build_failure_type,
-      WfFailureGroup.created_time >= earliest_time)).fetch()
+  return WfFailureGroup.query(
+      ndb.AND(WfFailureGroup.build_failure_type == build_failure_type,
+              WfFailureGroup.created_time >= earliest_time)).fetch()
 
 
 def _GetMatchingCompileFailureGroups(output_nodes):
@@ -194,8 +199,10 @@ def _GetMatchingCompileFailureGroups(output_nodes):
 
 def _GetMatchingTestFailureGroups(failed_steps_and_tests):
   groups = _GetMatchingFailureGroups(failure_type.TEST)
-  return [group for group in groups
-          if group.failed_steps_and_tests == failed_steps_and_tests]
+  return [
+      group for group in groups
+      if group.failed_steps_and_tests == failed_steps_and_tests
+  ]
 
 
 def _IsBuildFailureUniqueAcrossPlatforms(
@@ -226,15 +233,15 @@ def _IsBuildFailureUniqueAcrossPlatforms(
   # Create a new WfFailureGroup if we've encountered a unique build failure.
   if existing_group:
     logging.info('A group already exists, no need for a new try job.')
-    _LinkAnalysisToBuildFailureGroup(
-        master_name, builder_name, build_number,
-        [existing_group.master_name, existing_group.builder_name,
-         existing_group.build_number])
+    _LinkAnalysisToBuildFailureGroup(master_name, builder_name, build_number, [
+        existing_group.master_name, existing_group.builder_name,
+        existing_group.build_number
+    ])
   else:
     logging.info('A new try job should be run for this unique build failure.')
-    _CreateBuildFailureGroup(
-        master_name, builder_name, build_number, build_failure_type, blame_list,
-        suspected_tuples, output_nodes, failed_steps_and_tests)
+    _CreateBuildFailureGroup(master_name, builder_name, build_number,
+                             build_failure_type, blame_list, suspected_tuples,
+                             output_nodes, failed_steps_and_tests)
     _LinkAnalysisToBuildFailureGroup(master_name, builder_name, build_number,
                                      [master_name, builder_name, build_number])
 
@@ -242,8 +249,8 @@ def _IsBuildFailureUniqueAcrossPlatforms(
 
 
 @ndb.transactional
-def _ReviveOrCreateTryJobEntity(
-    master_name, builder_name, build_number, force_try_job):
+def _ReviveOrCreateTryJobEntity(master_name, builder_name, build_number,
+                                force_try_job):
   try_job_entity_revived_or_created = True
   try_job = WfTryJob.Get(master_name, builder_name, build_number)
 
@@ -260,8 +267,8 @@ def _ReviveOrCreateTryJobEntity(
   return try_job_entity_revived_or_created, try_job.key
 
 
-def _NeedANewCompileTryJob(
-    master_name, builder_name, build_number, failure_info):
+def _NeedANewCompileTryJob(master_name, builder_name, build_number,
+                           failure_info):
 
   compile_failure = failure_info['failed_steps'].get('compile', {})
   if compile_failure:
@@ -276,12 +283,12 @@ def _NeedANewCompileTryJob(
   return False
 
 
-def GetBuildKeyForBuildInfoInFailureResultMap(
-    master_name, builder_name, build_number):
+def GetBuildKeyForBuildInfoInFailureResultMap(master_name, builder_name,
+                                              build_number):
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   failure_result_map = analysis.failure_result_map
-  current_build_key = build_util.CreateBuildId(
-      master_name, builder_name, build_number)
+  current_build_key = build_util.CreateBuildId(master_name, builder_name,
+                                               build_number)
   for step_keys in failure_result_map.itervalues():
     for test_key in step_keys.itervalues():
       if test_key == current_build_key:
@@ -289,24 +296,28 @@ def GetBuildKeyForBuildInfoInFailureResultMap(
   return False
 
 
-def _NeedANewTestTryJob(
-    master_name, builder_name, build_number, failure_info, force_try_job):
+def _NeedANewTestTryJob(master_name, builder_name, build_number, failure_info,
+                        force_try_job):
   if failure_info['failure_type'] != failure_type.TEST:
     return False
 
   if (not force_try_job and
       waterfall_config.ShouldSkipTestTryJobs(master_name, builder_name)):
-    logging.info('Test try jobs on %s, %s are not supported yet.',
-                 master_name, builder_name)
+    logging.info('Test try jobs on %s, %s are not supported yet.', master_name,
+                 builder_name)
     return False
 
-  return GetBuildKeyForBuildInfoInFailureResultMap(
-      master_name, builder_name, build_number)
+  return GetBuildKeyForBuildInfoInFailureResultMap(master_name, builder_name,
+                                                   build_number)
 
 
-def NeedANewWaterfallTryJob(
-    master_name, builder_name, build_number, failure_info, signals,
-    heuristic_result, force_try_job=False):
+def NeedANewWaterfallTryJob(master_name,
+                            builder_name,
+                            build_number,
+                            failure_info,
+                            signals,
+                            heuristic_result,
+                            force_try_job=False):
 
   tryserver_mastername, tryserver_buildername = (
       waterfall_config.GetWaterfallTrybot(master_name, builder_name))
@@ -325,8 +336,8 @@ def NeedANewWaterfallTryJob(
       return False, None
 
   if try_job_type == failure_type.COMPILE:
-    need_new_try_job = _NeedANewCompileTryJob(
-        master_name, builder_name, build_number, failure_info)
+    need_new_try_job = _NeedANewCompileTryJob(master_name, builder_name,
+                                              build_number, failure_info)
   else:
     need_new_try_job = _NeedANewTestTryJob(
         master_name, builder_name, build_number, failure_info, force_try_job)

@@ -17,8 +17,10 @@ from model.wf_swarming_task import WfSwarmingTask
 
 
 class SwarmingPushTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/pubsub/swarmingpush', SwarmingPush),], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/pubsub/swarmingpush', SwarmingPush),
+      ], debug=True)
 
   def setUp(self):
     super(SwarmingPushTest, self).setUp()
@@ -27,24 +29,32 @@ class SwarmingPushTest(testing.AppengineTestCase):
   @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
   @mock.patch('logging.warning')
   def testSwarmingPushMissingTask(self, logging_mock, _):
-    self.test_app.post('/pubsub/swarmingpush', params={
-        'data': json.dumps({
-            'message':{
-                'attributes':{
-                    'auth_token': 'auth_token',
-                },
-                'data': base64.b64encode(json.dumps({
-                    'task_id': '12345',
-                    'userdata': json.dumps({
-                        'Message-Type': 'SwarmingTaskStatusChange',
-                    }),
-                })),
-            },
-        }),
-        'format': 'json',
-    })
+    self.test_app.post(
+        '/pubsub/swarmingpush',
+        params={
+            'data':
+                json.dumps({
+                    'message': {
+                        'attributes': {
+                            'auth_token': 'auth_token',
+                        },
+                        'data':
+                            base64.b64encode(
+                                json.dumps({
+                                    'task_id':
+                                        '12345',
+                                    'userdata':
+                                        json.dumps({
+                                            'Message-Type':
+                                                'SwarmingTaskStatusChange',
+                                        }),
+                                })),
+                    },
+                }),
+            'format':
+                'json',
+        })
     self.assertTrue(logging_mock.called)
-
 
   # ill formed notification (bad token)
   @mock.patch.object(token, 'ValidateAuthToken', return_value=False)
@@ -52,22 +62,31 @@ class SwarmingPushTest(testing.AppengineTestCase):
     # We expect a 400 error, and a webtest.webtest.AppError (not in path,
     # catching plain Exception)
     with self.assertRaisesRegexp(Exception, '.*400.*'):
-      _ = self.test_app.post('/pubsub/swarmingpush', params={
-          'data': json.dumps({
-              'message':{
-                  'attributes':{
-                      'auth_token': 'BadTokenString',
-                  },
-                  'data': base64.b64encode(json.dumps({
-                      'task_id': '12345',
-                      'userdata': json.dumps({
-                          'Message-Type': 'SwarmingTaskStatusChange',
-                      }),
-                  })),
-              },
-          }),
-        'format': 'json',
-      })
+      _ = self.test_app.post(
+          '/pubsub/swarmingpush',
+          params={
+              'data':
+                  json.dumps({
+                      'message': {
+                          'attributes': {
+                              'auth_token': 'BadTokenString',
+                          },
+                          'data':
+                              base64.b64encode(
+                                  json.dumps({
+                                      'task_id':
+                                          '12345',
+                                      'userdata':
+                                          json.dumps({
+                                              'Message-Type':
+                                                  'SwarmingTaskStatusChange',
+                                          }),
+                                  })),
+                      },
+                  }),
+              'format':
+                  'json',
+          })
 
   # Send notification with unsupported message-type
   @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
@@ -75,23 +94,32 @@ class SwarmingPushTest(testing.AppengineTestCase):
     # We expect a 500 error, and a webtest.webtest.AppError (not in path,
     # catching plain Exception)
     with self.assertRaisesRegexp(Exception, '.*500.*'):
-      _ = self.test_app.post('/pubsub/swarmingpush', params={
-          'data': json.dumps({
-              'message':{
-                  'attributes':{
-                      'auth_token': 'auth_token',
-                  },
-                  'data': base64.b64encode(json.dumps({
-                      'task_id': '8988270260466361040',
-                      'userdata': json.dumps({
-                          # Should break beacause of this
-                          'Message-Type': 'HyperLoopSpaceJump',
-                      }),
-                  })),
-              },
-          }),
-        'format': 'json',
-      })
+      _ = self.test_app.post(
+          '/pubsub/swarmingpush',
+          params={
+              'data':
+                  json.dumps({
+                      'message': {
+                          'attributes': {
+                              'auth_token': 'auth_token',
+                          },
+                          'data':
+                              base64.b64encode(
+                                  json.dumps({
+                                      'task_id':
+                                          '8988270260466361040',
+                                      'userdata':
+                                          json.dumps({
+                                              # Should break beacause of this
+                                              'Message-Type':
+                                                  'HyperLoopSpaceJump',
+                                          }),
+                                  })),
+                      },
+                  }),
+              'format':
+                  'json',
+          })
 
   # Send well formed notification
   @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
@@ -102,22 +130,31 @@ class SwarmingPushTest(testing.AppengineTestCase):
     task.put()
 
     with mock.patch('google.appengine.api.taskqueue.add') as mock_queue:
-      self.test_app.post('/pubsub/swarmingpush', params={
-          'data': json.dumps({
-              'message':{
-                  'attributes':{
-                      'auth_token': 'auth_token',
-                  },
-                  'data': base64.b64encode(json.dumps({
-                      'task_id': '12345',
-                      'userdata': json.dumps({
-                          'Message-Type': 'SwarmingTaskStatusChange',
-                      }),
-                  })),
-              },
-          }),
-          'format': 'json',
-      })
+      self.test_app.post(
+          '/pubsub/swarmingpush',
+          params={
+              'data':
+                  json.dumps({
+                      'message': {
+                          'attributes': {
+                              'auth_token': 'auth_token',
+                          },
+                          'data':
+                              base64.b64encode(
+                                  json.dumps({
+                                      'task_id':
+                                          '12345',
+                                      'userdata':
+                                          json.dumps({
+                                              'Message-Type':
+                                                  'SwarmingTaskStatusChange',
+                                          }),
+                                  })),
+                      },
+                  }),
+              'format':
+                  'json',
+          })
       mock_queue.assert_called_once()
 
   @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
@@ -129,20 +166,29 @@ class SwarmingPushTest(testing.AppengineTestCase):
 
     # This should not break, so that pubsub does not keep retrying. We'll only
     # log a message.
-    self.test_app.post('/pubsub/swarmingpush', params={
-        'data': json.dumps({
-            'message':{
-                'attributes':{
-                    'auth_token': 'auth_token',
-                },
-                'data': base64.b64encode(json.dumps({
-                    'task_id': '12345',
-                    'userdata': json.dumps({
-                        'Message-Type': 'SwarmingTaskStatusChange',
-                    }),
-                })),
-            },
-        }),
-        'format': 'json',
-    })
+    self.test_app.post(
+        '/pubsub/swarmingpush',
+        params={
+            'data':
+                json.dumps({
+                    'message': {
+                        'attributes': {
+                            'auth_token': 'auth_token',
+                        },
+                        'data':
+                            base64.b64encode(
+                                json.dumps({
+                                    'task_id':
+                                        '12345',
+                                    'userdata':
+                                        json.dumps({
+                                            'Message-Type':
+                                                'SwarmingTaskStatusChange',
+                                        }),
+                                })),
+                    },
+                }),
+            'format':
+                'json',
+        })
     self.assertTrue(logging_mock.called)

@@ -92,27 +92,27 @@ class MasterFlakeAnalysisTest(TestCase):
 
   def testMasterFlakeAnalysisUpdateTriageResultCorrect(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.UpdateTriageResult(
-        triage_status.TRIAGED_CORRECT, {'build_number': 100}, 'test')
+    analysis.UpdateTriageResult(triage_status.TRIAGED_CORRECT,
+                                {'build_number': 100}, 'test')
     self.assertEqual(analysis.result_status, result_status.FOUND_CORRECT)
 
   def testMasterFlakeAnalysisUpdateTriageResultIncorrect(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.UpdateTriageResult(
-        triage_status.TRIAGED_INCORRECT, {'build_number': 100}, 'test')
+    analysis.UpdateTriageResult(triage_status.TRIAGED_INCORRECT,
+                                {'build_number': 100}, 'test')
     self.assertEqual(analysis.result_status, result_status.FOUND_INCORRECT)
 
   def testMasterFlakeAnalysisUpdateTriageResultCorrectCulprit(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.UpdateTriageResult(
-        triage_status.TRIAGED_CORRECT, {'culprit_revision': 'rev'}, 'test')
+    analysis.UpdateTriageResult(triage_status.TRIAGED_CORRECT,
+                                {'culprit_revision': 'rev'}, 'test')
     self.assertEqual(analysis.result_status, result_status.FOUND_CORRECT)
     self.assertTrue(analysis.correct_culprit)
 
   def testMasterFlakeAnalysisUpdateTriageResultIncorrectCulprit(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.UpdateTriageResult(
-        triage_status.TRIAGED_INCORRECT, {'culprit_revision': 'rev'}, 'test')
+    analysis.UpdateTriageResult(triage_status.TRIAGED_INCORRECT,
+                                {'culprit_revision': 'rev'}, 'test')
     self.assertEqual(analysis.result_status, result_status.FOUND_INCORRECT)
     self.assertFalse(analysis.correct_culprit)
 
@@ -141,7 +141,10 @@ class MasterFlakeAnalysisTest(TestCase):
   def testGetErrorMessage(self):
     cases = [
         (None, None),
-        ('error', {'message': 'error', 'code': 'code'}),
+        ('error', {
+            'message': 'error',
+            'code': 'code'
+        }),
     ]
     for expected_error_message, error in cases:
       analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -151,7 +154,10 @@ class MasterFlakeAnalysisTest(TestCase):
   def testGetIterationsToRerun(self):
     cases = [
         (-1, {}),
-        (5, {'key': 'value', 'iterations_to_rerun': 5}),
+        (5, {
+            'key': 'value',
+            'iterations_to_rerun': 5
+        }),
     ]
     for expected_rerun, algorithm_parameters in cases:
       analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -165,15 +171,13 @@ class MasterFlakeAnalysisTest(TestCase):
     step_name = 's'
     test_name = 't'
 
-    key = MasterFlakeAnalysis.Create(
-        master_name, builder_name, build_number, step_name, test_name).key
+    key = MasterFlakeAnalysis.Create(master_name, builder_name, build_number,
+                                     step_name, test_name).key
 
-    self.assertEqual(
-        (None, None),
-        MasterFlakeAnalysis.GetBuildConfigurationFromKey(None))
-    self.assertEqual(
-        (master_name, builder_name),
-        MasterFlakeAnalysis.GetBuildConfigurationFromKey(key))
+    self.assertEqual((None, None),
+                     MasterFlakeAnalysis.GetBuildConfigurationFromKey(None))
+    self.assertEqual((master_name, builder_name),
+                     MasterFlakeAnalysis.GetBuildConfigurationFromKey(key))
 
   def testGetDataPointOfSuspectedBuildNoSuspectedFlakeBuildNumber(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -228,11 +232,7 @@ class MasterFlakeAnalysisTest(TestCase):
     data_point.blame_list = ['r1', 'r2', 'r3']
     data_point.commit_position = 100
 
-    expected_CLs = {
-        100: 'r3',
-        99: 'r2',
-        98: 'r1'
-    }
+    expected_CLs = {100: 'r3', 99: 'r2', 98: 'r1'}
 
     self.assertEqual(expected_CLs,
                      data_point.GetDictOfCommitPositionAndRevision())
@@ -241,11 +241,10 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
         DataPoint.Create(build_number=100, commit_position=1000),
-        DataPoint.Create(build_number=101, commit_position=1100)]
+        DataPoint.Create(build_number=101, commit_position=1100)
+    ]
     self.assertIsNone(analysis.GetCommitPositionOfBuild(102))
-    self.assertEqual(
-        1000,
-        analysis.GetCommitPositionOfBuild(100))
+    self.assertEqual(1000, analysis.GetCommitPositionOfBuild(100))
 
   def testGetCommitPositionOfBuildNoDataPoints(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
@@ -256,28 +255,25 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis.data_points = [
         DataPoint.Create(build_number=100, commit_position=1000),
         DataPoint.Create(build_number=101, commit_position=1100),
-        DataPoint.Create(build_number=110, commit_position=2000)]
-    self.assertEqual(
-        analysis.data_points,
-        analysis.GetDataPointsWithinBuildNumberRange(100, 110))
-    self.assertEqual(
-        [analysis.data_points[-1]],
-        analysis.GetDataPointsWithinBuildNumberRange(110, 120))
-    self.assertEqual(
-        analysis.data_points,
-        analysis.GetDataPointsWithinBuildNumberRange(None, None))
+        DataPoint.Create(build_number=110, commit_position=2000)
+    ]
+    self.assertEqual(analysis.data_points,
+                     analysis.GetDataPointsWithinBuildNumberRange(100, 110))
+    self.assertEqual([analysis.data_points[-1]],
+                     analysis.GetDataPointsWithinBuildNumberRange(110, 120))
+    self.assertEqual(analysis.data_points,
+                     analysis.GetDataPointsWithinBuildNumberRange(None, None))
 
   def testGetDataPointsWithinBuildNumberRangeNoDataPoints(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    self.assertEqual(
-        [],
-        analysis.GetDataPointsWithinBuildNumberRange(100, 110))
+    self.assertEqual([], analysis.GetDataPointsWithinBuildNumberRange(100, 110))
 
   def testRemoveDataPointWithBuildNumber(self):
     data_points = [
         DataPoint.Create(build_number=100, commit_position=1000),
         DataPoint.Create(build_number=101, commit_position=1100),
-        DataPoint.Create(build_number=110, commit_position=2000)]
+        DataPoint.Create(build_number=110, commit_position=2000)
+    ]
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = data_points
     analysis.RemoveDataPointWithBuildNumber(110)
@@ -294,7 +290,8 @@ class MasterFlakeAnalysisTest(TestCase):
     data_points = [
         DataPoint.Create(build_number=100, commit_position=1000),
         DataPoint.Create(build_number=101, commit_position=1100),
-        DataPoint.Create(build_number=110, commit_position=2000)]
+        DataPoint.Create(build_number=110, commit_position=2000)
+    ]
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = data_points
     analysis.RemoveDataPointWithCommitPosition(2000)

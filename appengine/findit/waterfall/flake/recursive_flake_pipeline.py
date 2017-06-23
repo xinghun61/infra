@@ -33,11 +33,9 @@ from waterfall.process_flake_swarming_task_result_pipeline import (
 from waterfall.trigger_flake_swarming_task_pipeline import (
     TriggerFlakeSwarmingTaskPipeline)
 
-
 _DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6
 _DEFAULT_MAX_BUILD_NUMBERS = 500
 _DEFAULT_ITERATIONS_TO_RERUN = 100
-
 
 _BASE_COUNT_DOWN_SECONDS = 2 * 60
 # Tries to start the RecursiveFlakePipeline on peak hours at most 5 times.
@@ -45,7 +43,6 @@ _MAX_RETRY_TIMES = 5
 
 _MINIMUM_NUMBER_BOT = 5
 _MINIMUM_PERCENT_BOT = 0.1
-
 
 # In order not to hog resources on the swarming server, set the timeout to a
 # non-configurable 3 hours.
@@ -81,9 +78,12 @@ def _ShouldRunTryJobs(analysis, suspected_build, user_specified_range):
            _HasSufficientConfidenceToRunTryJobs(analysis)))
 
 
-def _UpdateAnalysisStatusUponCompletion(
-    analysis, suspected_build, status, error, build_confidence_score=None,
-    user_specified_range=False):
+def _UpdateAnalysisStatusUponCompletion(analysis,
+                                        suspected_build,
+                                        status,
+                                        error,
+                                        build_confidence_score=None,
+                                        user_specified_range=False):
   """Sets an analysis' fields upon cessation of an analysis.
 
   Args:
@@ -110,9 +110,9 @@ def _UpdateAnalysisStatusUponCompletion(
 
   analysis.try_job_status = analysis.try_job_status or analysis_status.SKIPPED
 
-  analysis.result_status = (
-      result_status.NOT_FOUND_UNTRIAGED if suspected_build is None else
-      result_status.FOUND_UNTRIAGED)
+  analysis.result_status = (result_status.NOT_FOUND_UNTRIAGED
+                            if suspected_build is None else
+                            result_status.FOUND_UNTRIAGED)
 
   if error:
     analysis.error = error
@@ -137,8 +137,8 @@ def _UpdateAnalysisStatusAndStartTime(analysis):
     analysis.put()
 
 
-def _IsSwarmingTaskSufficientForCacheHit(
-    flake_swarming_task, number_of_iterations):
+def _IsSwarmingTaskSufficientForCacheHit(flake_swarming_task,
+                                         number_of_iterations):
   """Determines whether or not a swarming task is sufficient for a cache hit.
 
   Args:
@@ -158,14 +158,15 @@ def _IsSwarmingTaskSufficientForCacheHit(
     return False
 
   # Cached swarming task must either be scheduled, in progress, or completed.
-  return flake_swarming_task.status in [analysis_status.PENDING,
-                                        analysis_status.RUNNING,
-                                        analysis_status.COMPLETED]
+  return flake_swarming_task.status in [
+      analysis_status.PENDING, analysis_status.RUNNING,
+      analysis_status.COMPLETED
+  ]
 
 
-def _GetListOfNearbyBuildNumbers(
-    preferred_run_build_number, lower_bound_build_number,
-    upper_bound_build_number, maximum_threshold):
+def _GetListOfNearbyBuildNumbers(preferred_run_build_number,
+                                 lower_bound_build_number,
+                                 upper_bound_build_number, maximum_threshold):
   """Gets a list of numbers within range near preferred_run_build_number.
 
   Args:
@@ -182,9 +183,9 @@ def _GetListOfNearbyBuildNumbers(
     [1000, 999, 1001, 998, 1002].
   """
   lower_bound = lower_bound_build_number or 0
-  upper_bound = (
-      upper_bound_build_number if upper_bound_build_number is not None else
-      preferred_run_build_number + maximum_threshold)
+  upper_bound = (upper_bound_build_number
+                 if upper_bound_build_number is not None else
+                 preferred_run_build_number + maximum_threshold)
   nearby_build_numbers = [preferred_run_build_number]
 
   for i in range(1, maximum_threshold + 1):
@@ -197,10 +198,10 @@ def _GetListOfNearbyBuildNumbers(
   return nearby_build_numbers
 
 
-def _GetBestBuildNumberToRun(
-    master_name, builder_name, preferred_run_build_number, step_name, test_name,
-    lower_bound_build_number, upper_bound_build_number, step_size,
-    number_of_iterations):
+def _GetBestBuildNumberToRun(master_name, builder_name,
+                             preferred_run_build_number, step_name, test_name,
+                             lower_bound_build_number, upper_bound_build_number,
+                             step_size, number_of_iterations):
   """Finds the optimal nearby swarming task build number to use for a cache hit.
 
   Builds are searched back looking for something either already completed or in
@@ -261,12 +262,9 @@ def _GetBestBuildNumberToRun(
 
 
 def _CanEstimateExecutionTimeFromReferenceSwarmingTask(swarming_task):
-  return (swarming_task and
-          not swarming_task.error and
-          swarming_task.started_time and
-          swarming_task.completed_time and
-          swarming_task.tests_statuses and
-          swarming_task.parameters and
+  return (swarming_task and not swarming_task.error and
+          swarming_task.started_time and swarming_task.completed_time and
+          swarming_task.tests_statuses and swarming_task.parameters and
           swarming_task.parameters.get('iterations_to_rerun'))
 
 
@@ -274,16 +272,16 @@ def _GetHardTimeoutSeconds(master_name, builder_name, reference_build_number,
                            step_name, iterations_to_rerun):
   flake_settings = waterfall_config.GetCheckFlakeSettings()
   flake_swarming_settings = flake_settings.get('swarming_rerun', {})
-  reference_task = WfSwarmingTask.Get(
-      master_name, builder_name, reference_build_number, step_name)
+  reference_task = WfSwarmingTask.Get(master_name, builder_name,
+                                      reference_build_number, step_name)
 
   if _CanEstimateExecutionTimeFromReferenceSwarmingTask(reference_task):
     delta = reference_task.completed_time - reference_task.started_time
     execution_time = delta.total_seconds()
     number_of_tests = len(reference_task.tests_statuses)
     number_of_iterations = reference_task.parameters['iterations_to_rerun']
-    time_per_test_per_iteration = (
-        execution_time / (number_of_iterations * number_of_tests))
+    time_per_test_per_iteration = (execution_time /
+                                   (number_of_iterations * number_of_tests))
     estimated_execution_time = (
         time_per_test_per_iteration * iterations_to_rerun)
   else:
@@ -295,23 +293,30 @@ def _GetHardTimeoutSeconds(master_name, builder_name, reference_build_number,
   # execution time.
   estimated_time_needed = estimated_execution_time * 2
 
-  return min(max(estimated_time_needed, _ONE_HOUR_IN_SECONDS),
-             _MAX_TIMEOUT_SECONDS)
+  return min(
+      max(estimated_time_needed, _ONE_HOUR_IN_SECONDS), _MAX_TIMEOUT_SECONDS)
 
 
 def _GetIterationsToRerun(user_specified_iterations, analysis):
   return user_specified_iterations or analysis.algorithm_parameters.get(
-      'swarming_rerun', {}).get(
-          'iterations_to_rerun', _DEFAULT_ITERATIONS_TO_RERUN)
+      'swarming_rerun', {}).get('iterations_to_rerun',
+                                _DEFAULT_ITERATIONS_TO_RERUN)
 
 
 class RecursiveFlakePipeline(BasePipeline):
 
-  def __init__(
-      self, analysis_urlsafe_key, preferred_run_build_number,
-      lower_bound_build_number, upper_bound_build_number,
-      user_specified_iterations, step_metadata=None, manually_triggered=False,
-      use_nearby_neighbor=False, step_size=0, retries=0, force=False):
+  def __init__(self,
+               analysis_urlsafe_key,
+               preferred_run_build_number,
+               lower_bound_build_number,
+               upper_bound_build_number,
+               user_specified_iterations,
+               step_metadata=None,
+               manually_triggered=False,
+               use_nearby_neighbor=False,
+               step_size=0,
+               retries=0,
+               force=False):
     """Pipeline to determine and analyze the regression range of a flaky test.
 
     Args:
@@ -393,8 +398,8 @@ class RecursiveFlakePipeline(BasePipeline):
         waterfall_config.GetSwarmingSettings().get(
             'minimum_percentage_of_available_bots', _MINIMUM_PERCENT_BOT))
     dimensions = step_metadata.get('dimensions')
-    bot_counts = swarming_util.GetSwarmingBotCounts(
-        dimensions, HttpClientAppengine())
+    bot_counts = swarming_util.GetSwarmingBotCounts(dimensions,
+                                                    HttpClientAppengine())
 
     total_count = bot_counts.get('count') or -1
     available_count = bot_counts.get('available', 0)
@@ -421,11 +426,18 @@ class RecursiveFlakePipeline(BasePipeline):
     self._LogUnexpectedAbort()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, analysis_urlsafe_key, preferred_run_build_number,
-          lower_bound_build_number, upper_bound_build_number,
-          user_specified_iterations, step_metadata=None,
-          manually_triggered=False, use_nearby_neighbor=False, step_size=0,
-          retries=0, force=False):
+  def run(self,
+          analysis_urlsafe_key,
+          preferred_run_build_number,
+          lower_bound_build_number,
+          upper_bound_build_number,
+          user_specified_iterations,
+          step_metadata=None,
+          manually_triggered=False,
+          use_nearby_neighbor=False,
+          step_size=0,
+          retries=0,
+          force=False):
     """Pipeline to determine and analyze the regression range of a flaky test.
 
     Args:
@@ -483,8 +495,12 @@ class RecursiveFlakePipeline(BasePipeline):
           iterations) if use_nearby_neighbor else preferred_run_build_number
 
       task_id = yield TriggerFlakeSwarmingTaskPipeline(
-          self.master_name, self.builder_name, actual_run_build_number,
-          self.step_name, [self.test_name], iterations, hard_timeout_seconds,
+          self.master_name,
+          self.builder_name,
+          actual_run_build_number,
+          self.step_name, [self.test_name],
+          iterations,
+          hard_timeout_seconds,
           force=force)
 
       with pipeline.InOrder():
@@ -493,20 +509,27 @@ class RecursiveFlakePipeline(BasePipeline):
             self.step_name, task_id, self.triggering_build_number,
             self.test_name, analysis.version_number)
         yield NextBuildNumberPipeline(
-            analysis.key.urlsafe(), actual_run_build_number,
-            lower_bound_build_number, upper_bound_build_number,
-            user_specified_iterations, step_metadata=step_metadata,
+            analysis.key.urlsafe(),
+            actual_run_build_number,
+            lower_bound_build_number,
+            upper_bound_build_number,
+            user_specified_iterations,
+            step_metadata=step_metadata,
             use_nearby_neighbor=use_nearby_neighbor,
             manually_triggered=manually_triggered)
     else:
       retries += 1
 
       pipeline_job = RecursiveFlakePipeline(
-          analysis_urlsafe_key, preferred_run_build_number,
-          lower_bound_build_number, upper_bound_build_number,
-          user_specified_iterations, step_metadata=step_metadata,
+          analysis_urlsafe_key,
+          preferred_run_build_number,
+          lower_bound_build_number,
+          upper_bound_build_number,
+          user_specified_iterations,
+          step_metadata=step_metadata,
           manually_triggered=manually_triggered,
-          use_nearby_neighbor=use_nearby_neighbor, step_size=step_size,
+          use_nearby_neighbor=use_nearby_neighbor,
+          step_size=step_size,
           retries=retries)
 
       # Disable attribute 'target' defined outside __init__ pylint warning,
@@ -515,16 +538,16 @@ class RecursiveFlakePipeline(BasePipeline):
           appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
 
       if retries > _MAX_RETRY_TIMES:
-        pipeline_job._StartOffPSTPeakHours(
-            queue_name=self.queue_name or constants.DEFAULT_QUEUE)
+        pipeline_job._StartOffPSTPeakHours(queue_name=self.queue_name or
+                                           constants.DEFAULT_QUEUE)
         logging.info('Retrys exceed max count, RecursiveFlakePipeline on '
                      'MasterFlakeAnalysis %s/%s/%s/%s/%s will start off peak '
                      'hour', self.master_name, self.builder_name,
                      self.triggering_build_number, self.step_name,
                      self.test_name)
       else:
-        pipeline_job._RetryWithDelay(
-            queue_name=self.queue_name or constants.DEFAULT_QUEUE)
+        pipeline_job._RetryWithDelay(queue_name=self.queue_name or
+                                     constants.DEFAULT_QUEUE)
         countdown = retries * _BASE_COUNT_DOWN_SECONDS
         logging.info('No available swarming bots, RecursiveFlakePipeline on '
                      'MasterFlakeAnalysis %s/%s/%s/%s/%s will be tried after'
@@ -571,8 +594,7 @@ def _GetFullBlamedCLsAndLowerBound(suspected_build_point, data_points):
   be revisions in B2 and B3, and lower bound should be B1.commit_position + 1.
   """
   blamed_cls = suspected_build_point.GetDictOfCommitPositionAndRevision()
-  _, invalid_points = lookback_algorithm.GetCategorizedDataPoints(
-      data_points)
+  _, invalid_points = lookback_algorithm.GetCategorizedDataPoints(data_points)
   if not invalid_points:
     return blamed_cls, suspected_build_point.previous_build_commit_position + 1
 
@@ -598,8 +620,8 @@ def _UpdateAnalysisWithSwarmingTaskError(flake_swarming_task, analysis):
       'message': 'The last swarming task did not complete as expected'
   }
 
-  _UpdateAnalysisStatusUponCompletion(
-      analysis, None, analysis_status.ERROR, error)
+  _UpdateAnalysisStatusUponCompletion(analysis, None, analysis_status.ERROR,
+                                      error)
 
 
 def _UpdateAnalysisAlgorithmParameters(analysis):
@@ -609,8 +631,8 @@ def _UpdateAnalysisAlgorithmParameters(analysis):
     analysis.put()
 
 
-def _GetEarliestBuildNumber(
-    lower_bound_build_number, triggering_build_number, algorithm_settings):
+def _GetEarliestBuildNumber(lower_bound_build_number, triggering_build_number,
+                            algorithm_settings):
   if lower_bound_build_number is not None:
     return lower_bound_build_number
 
@@ -624,8 +646,8 @@ def _GetLatestBuildNumber(upper_bound_build_number, triggering_build_number):
   return upper_bound_build_number or triggering_build_number
 
 
-def _IsFinished(next_build_number, earliest_build_number,
-                latest_build_number, iterations_to_rerun):
+def _IsFinished(next_build_number, earliest_build_number, latest_build_number,
+                iterations_to_rerun):
   """Determines whether or not to stop checking more build numbers.
 
     An analysis at the build number level is complete if the next suggested
@@ -680,18 +702,22 @@ def _GetBuildConfidenceScore(suspected_build, data_points):
   if suspected_build is None:
     return None
 
-  return confidence.SteppinessForBuild(
-      data_points, suspected_build)
+  return confidence.SteppinessForBuild(data_points, suspected_build)
 
 
 class NextBuildNumberPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   # Unused argument - pylint: disable=W0613
-  def run(self, analysis_urlsafe_key, current_build_number,
-          lower_bound_build_number, upper_bound_build_number,
-          user_specified_iterations, step_metadata=None,
-          use_nearby_neighbor=False, manually_triggered=False):
+  def run(self,
+          analysis_urlsafe_key,
+          current_build_number,
+          lower_bound_build_number,
+          upper_bound_build_number,
+          user_specified_iterations,
+          step_metadata=None,
+          use_nearby_neighbor=False,
+          manually_triggered=False):
     """Pipeline for determining the build number to analyze.
 
     Args:
@@ -738,8 +764,8 @@ class NextBuildNumberPipeline(BasePipeline):
         lower_bound_build_number, upper_bound_build_number)
     data_points = _NormalizeDataPoints(data_points_within_range)
     next_build_number, suspected_build, updated_iterations_to_rerun = (
-        lookback_algorithm.GetNextRunPointNumber(
-            data_points, algorithm_settings))
+        lookback_algorithm.GetNextRunPointNumber(data_points,
+                                                 algorithm_settings))
 
     if updated_iterations_to_rerun and user_specified_iterations is None:
       # The lookback algorithm determined the build needs to be rerun with more
@@ -750,8 +776,8 @@ class NextBuildNumberPipeline(BasePipeline):
 
     earliest_build_number = _GetEarliestBuildNumber(
         lower_bound_build_number, triggering_build_number, algorithm_settings)
-    latest_build_number = _GetLatestBuildNumber(
-        upper_bound_build_number, triggering_build_number)
+    latest_build_number = _GetLatestBuildNumber(upper_bound_build_number,
+                                                triggering_build_number)
 
     if _IsFinished(next_build_number, earliest_build_number,
                    latest_build_number, updated_iterations_to_rerun):
@@ -761,13 +787,16 @@ class NextBuildNumberPipeline(BasePipeline):
 
       # Force try jobs to run if the user supplied a regression range and a
       # suspected build was identified as a result.
-      user_specified_range = _UserSpecifiedRange(
-          lower_bound_build_number, upper_bound_build_number)
+      user_specified_range = _UserSpecifiedRange(lower_bound_build_number,
+                                                 upper_bound_build_number)
 
       # Update suspected build and the confidence score.
       _UpdateAnalysisStatusUponCompletion(
-          analysis, suspected_build, analysis_status.COMPLETED,
-          None, build_confidence_score=build_confidence_score,
+          analysis,
+          suspected_build,
+          analysis_status.COMPLETED,
+          None,
+          build_confidence_score=build_confidence_score,
           user_specified_range=user_specified_range)
 
       if build_confidence_score is None:
@@ -783,18 +812,18 @@ class NextBuildNumberPipeline(BasePipeline):
         assert suspected_build_point
 
         blamed_cls, lower_bound_commit_position = (
-            _GetFullBlamedCLsAndLowerBound(
-                suspected_build_point, analysis.data_points))
+            _GetFullBlamedCLsAndLowerBound(suspected_build_point,
+                                           analysis.data_points))
         if blamed_cls:
           if len(blamed_cls) > 1:
             start_commit_position = suspected_build_point.commit_position - 1
             start_revision = blamed_cls[start_commit_position]
-            build_info = build_util.GetBuildInfo(
-                master_name, builder_name, triggering_build_number)
+            build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                                 triggering_build_number)
             parent_mastername = build_info.parent_mastername or master_name
             parent_buildername = build_info.parent_buildername or builder_name
-            cache_name = swarming_util.GetCacheName(
-                parent_mastername, parent_buildername)
+            cache_name = swarming_util.GetCacheName(parent_mastername,
+                                                    parent_buildername)
             dimensions = waterfall_config.GetTrybotDimensions(
                 parent_mastername, parent_buildername)
             logging.info('Running try-jobs against commits in regressions')
@@ -810,26 +839,28 @@ class NextBuildNumberPipeline(BasePipeline):
                 analysis.data_points, suspected_build_point.commit_position)
             culprit = recursive_flake_try_job_pipeline.CreateCulprit(
                 suspected_build_point.git_hash,
-                suspected_build_point.commit_position,
-                culprit_confidence_score)
-            UpdateAnalysisUponCompletion(
-                analysis, culprit, analysis_status.COMPLETED, None)
+                suspected_build_point.commit_position, culprit_confidence_score)
+            UpdateAnalysisUponCompletion(analysis, culprit,
+                                         analysis_status.COMPLETED, None)
         else:
           logging.error('Cannot run flake try jobs against empty blame list')
           error = {
               'error': 'Could not start try jobs',
               'message': 'Empty blame list'
           }
-          UpdateAnalysisUponCompletion(
-              analysis, None, analysis_status.ERROR, error)
+          UpdateAnalysisUponCompletion(analysis, None, analysis_status.ERROR,
+                                       error)
 
       yield UpdateFlakeBugPipeline(analysis.key.urlsafe())
       return
 
     pipeline_job = RecursiveFlakePipeline(
-        analysis_urlsafe_key, next_build_number,
-        lower_bound_build_number, upper_bound_build_number,
-        user_specified_iterations, step_metadata=step_metadata,
+        analysis_urlsafe_key,
+        next_build_number,
+        lower_bound_build_number,
+        upper_bound_build_number,
+        user_specified_iterations,
+        step_metadata=step_metadata,
         manually_triggered=manually_triggered,
         use_nearby_neighbor=use_nearby_neighbor,
         step_size=(current_build_number - next_build_number))

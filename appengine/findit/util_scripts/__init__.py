@@ -5,7 +5,6 @@
 import os
 import sys
 
-
 _THIS_DIR = os.path.dirname(os.path.realpath(__file__))
 
 # TODO(katesonia): Figure out why os.getenv('APPLICATION_ID') always return

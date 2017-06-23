@@ -17,9 +17,8 @@ class ConfidenceTest(wf_testcase.WaterfallTestCase):
         DataPoint(build_number=99, pass_rate=0.95),
         DataPoint(build_number=100, pass_rate=0.9),
     ]
-    self.assertRaises(
-        AssertionError, confidence._Steppiness,
-        data_points, lambda x: x.build_number, 90)
+    self.assertRaises(AssertionError, confidence._Steppiness, data_points,
+                      lambda x: x.build_number, 90)
     mocked_steppiness.assert_not_called()
 
   @mock.patch.object(confidence.find_step, 'Steppiness')
@@ -28,8 +27,8 @@ class ConfidenceTest(wf_testcase.WaterfallTestCase):
         DataPoint(build_number=99, pass_rate=0.95),
         DataPoint(build_number=100, pass_rate=0.9),
     ]
-    steppiness = confidence._Steppiness(
-        data_points, lambda x: x.build_number, 100)
+    steppiness = confidence._Steppiness(data_points, lambda x: x.build_number,
+                                        100)
     self.assertEqual(0, steppiness)
     mocked_steppiness.assert_not_called()
 
@@ -40,8 +39,8 @@ class ConfidenceTest(wf_testcase.WaterfallTestCase):
         DataPoint(build_number=100, pass_rate=0.5),
     ]
     mocked_steppiness.side_effect = [1]
-    steppiness = confidence._Steppiness(
-        data_points, lambda x: x.build_number, 100)
+    steppiness = confidence._Steppiness(data_points, lambda x: x.build_number,
+                                        100)
     self.assertEqual(1, steppiness)
     mocked_steppiness.assert_called_once_with([1, 1, 1, 1, 0.5], 4)
 
@@ -58,7 +57,7 @@ class ConfidenceTest(wf_testcase.WaterfallTestCase):
     mocked_steppiness.side_effect = [0]
     steppiness = confidence.SteppinessForBuild(data_points, 99)
     self.assertEqual(0, steppiness)
-    mocked_steppiness.assert_called_once_with([1, 1, 1, 1, 1] , 3)
+    mocked_steppiness.assert_called_once_with([1, 1, 1, 1, 1], 3)
 
   @mock.patch.object(confidence.find_step, 'Steppiness')
   def testCommitPosition(self, mocked_steppiness):
@@ -72,4 +71,4 @@ class ConfidenceTest(wf_testcase.WaterfallTestCase):
     mocked_steppiness.side_effect = [0]
     steppiness = confidence.SteppinessForCommitPosition(data_points, 99)
     self.assertEqual(0, steppiness)
-    mocked_steppiness.assert_called_once_with([1, 1, 1, 1, 1] , 3)
+    mocked_steppiness.assert_called_once_with([1, 1, 1, 1, 1], 3)

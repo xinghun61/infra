@@ -18,14 +18,16 @@ class LocalCacheTest(testing.AppengineTestCase):
   def testLocalCache(self):
     fake_dir = 'fake_dir'
     cacher = local_cache.LocalCache(cache_dir=fake_dir)
+
     def _MockPathExists(path, *_):
-      return False if path == os.path.join(
-          fake_dir, 'uncached_key') else True
+      return False if path == os.path.join(fake_dir, 'uncached_key') else True
+
     self.mock(os.path, 'exists', _MockPathExists)
 
     value = 'val'
-    with mock.patch('__builtin__.open', mock.mock_open(
-        read_data=zlib.compress(pickle.dumps(value)))) as m:
+    with mock.patch(
+        '__builtin__.open',
+        mock.mock_open(read_data=zlib.compress(pickle.dumps(value)))) as m:
       cacher.Set('a', 'b')
       m.assert_called_once_with(os.path.join(fake_dir, 'a'), 'wb')
       self.assertEqual(value, cacher.Get('key'))

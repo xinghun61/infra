@@ -20,21 +20,27 @@ from waterfall.build_info import BuildInfo
 
 
 class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/process-failure-analysis-requests',
-       process_failure_analysis_requests.ProcessFailureAnalysisRequests),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/process-failure-analysis-requests',
+           process_failure_analysis_requests.ProcessFailureAnalysisRequests),
+      ],
+      debug=True)
 
   def _MockGetBuildInfo(self, build_info):
+
     def MockedGetBuildInfo(*_):
       return build_info
+
     self.mock(build_util, 'GetBuildInfo', MockedGetBuildInfo)
 
   def _MockScheduleAnalysisIfNeeded(self, requests):
+
     def Mocked_ScheduleAnalysisIfNeeded(*args, **kwargs):
       requests.append((args, kwargs))
-    self.mock(build_failure_analysis_pipelines,
-              'ScheduleAnalysisIfNeeded', Mocked_ScheduleAnalysisIfNeeded)
+
+    self.mock(build_failure_analysis_pipelines, 'ScheduleAnalysisIfNeeded',
+              Mocked_ScheduleAnalysisIfNeeded)
 
   def testWhenBuildDataIsNotAvailable(self):
     self._MockGetBuildInfo(None)
@@ -76,7 +82,9 @@ class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
   def testNonAdminCanNotSendRequest(self):
     self.test_app.post(
         '/process-failure-analysis-requests?format=json',
-        params=json.dumps({'builds': []}),
+        params=json.dumps({
+            'builds': []
+        }),
         status=401)
 
   def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(self):
@@ -100,7 +108,9 @@ class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
 
     response = self.test_app.post(
         '/process-failure-analysis-requests',
-        params=json.dumps({'builds': builds}))
+        params=json.dumps({
+            'builds': builds
+        }))
     self.assertEquals(200, response.status_int)
     self.assertEqual(1, len(requests))
     self.assertTrue(requests[0][1]['build_completed'])

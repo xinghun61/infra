@@ -8,11 +8,12 @@ from libs.deps.dependency import Dependency, DependencyRoll
 
 
 class DependencyTest(unittest.TestCase):
+
   def testParentChild(self):
-    parent = Dependency(
-        'a/', 'https://cr.googlesource.com/cr/a.git', '12a', 'DEPS')
-    child = Dependency(
-        'a/b/', 'https://cr.googlesource.com/cr/b.git', '12b', 'DEPS')
+    parent = Dependency('a/', 'https://cr.googlesource.com/cr/a.git', '12a',
+                        'DEPS')
+    child = Dependency('a/b/', 'https://cr.googlesource.com/cr/b.git', '12b',
+                       'DEPS')
 
     child.SetParent(parent)
     self.assertTrue(child.parent == parent)
@@ -20,10 +21,10 @@ class DependencyTest(unittest.TestCase):
     self.assertTrue(child == parent.children[child.path])
 
   def testToDict(self):
-    root_dep = Dependency(
-        'a/', 'https://cr.googlesource.com/cr/a.git', '12a', 'DEPS')
-    sub_dep = Dependency(
-        'a/b/', 'https://cr.googlesource.com/cr/b.git', '12b', 'DEPS')
+    root_dep = Dependency('a/', 'https://cr.googlesource.com/cr/a.git', '12a',
+                          'DEPS')
+    sub_dep = Dependency('a/b/', 'https://cr.googlesource.com/cr/b.git', '12b',
+                         'DEPS')
     expected_dep_tree_dict = {
         'path': 'a/',
         'repo_url': 'https://cr.googlesource.com/cr/a.git',
@@ -31,12 +32,11 @@ class DependencyTest(unittest.TestCase):
         'deps_file': 'DEPS',
         'children': {
             'a/b/': {
-              'path': 'a/b/',
-              'repo_url': 'https://cr.googlesource.com/cr/b.git',
-              'revision': '12b',
-              'deps_file': 'DEPS',
-              'children': {
-              }
+                'path': 'a/b/',
+                'repo_url': 'https://cr.googlesource.com/cr/b.git',
+                'revision': '12b',
+                'deps_file': 'DEPS',
+                'children': {}
             }
         }
     }
@@ -46,18 +46,23 @@ class DependencyTest(unittest.TestCase):
 
   def testDependencyForChromeVersion(self):
     dep = Dependency(
-        'a/b/', 'https://cr.googlesource.com/cr/b.git', '12b', 'DEPS',
-        deps_repo_url='https://chrome-internal', deps_repo_revision='master')
+        'a/b/',
+        'https://cr.googlesource.com/cr/b.git',
+        '12b',
+        'DEPS',
+        deps_repo_url='https://chrome-internal',
+        deps_repo_revision='master')
 
     self.assertEqual(dep.deps_repo_url, 'https://chrome-internal')
     self.assertEqual(dep.deps_repo_revision, 'master')
 
 
 class DependencyRollTest(unittest.TestCase):
+
   def testToDict(self):
-    dep_roll = DependencyRoll(
-        'third_party/dep/', 'https://cr.googlesource.com/cr/dep.git',
-        'rev1', 'rev2')
+    dep_roll = DependencyRoll('third_party/dep/',
+                              'https://cr.googlesource.com/cr/dep.git', 'rev1',
+                              'rev2')
     expected_dep_roll_dict = {
         'path': 'third_party/dep/',
         'repo_url': 'https://cr.googlesource.com/cr/dep.git',

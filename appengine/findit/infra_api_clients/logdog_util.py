@@ -1,7 +1,6 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """Utilities for interacting with LUCI's LogDog service."""
 
 import base64
@@ -21,7 +20,6 @@ third_party = os.path.join(
 sys.path.insert(0, third_party)
 google.__path__.insert(0, os.path.join(third_party, 'google'))
 from logdog import annotations_pb2
-
 
 _BUILDBOT_LOGDOG_REQUEST_PATH = 'bb/%s/%s/%s/+/%s'
 _LOGDOG_ENDPOINT = 'https://%s/prpc/logdog.Logs'
@@ -47,13 +45,10 @@ def _ProcessStringForLogDog(base_string):
 
 def _GetLogForPath(host, project, path, http_client):
   base_error_log = 'Error when fetch log: %s'
-  data = {
-      'project': project,
-      'path': path
-  }
+  data = {'project': project, 'path': path}
 
-  response_json = rpc_util.DownloadJsonData(
-      _LOGDOG_GET_ENDPOINT % host, data, http_client)
+  response_json = rpc_util.DownloadJsonData(_LOGDOG_GET_ENDPOINT % host, data,
+                                            http_client)
   if not response_json:
     logging.error(base_error_log % 'cannot get json log.')
     return None
@@ -90,13 +85,10 @@ def _GetLogForPath(host, project, path, http_client):
 def _GetAnnotationsProtoForPath(host, project, path, http_client):
   base_error_log = 'Error when load annotations protobuf: %s'
 
-  data = {
-      'project': project,
-      'path': path
-  }
+  data = {'project': project, 'path': path}
 
-  response_json = rpc_util.DownloadJsonData(
-      _LOGDOG_TAIL_ENDPOINT % host, data, http_client)
+  response_json = rpc_util.DownloadJsonData(_LOGDOG_TAIL_ENDPOINT % host, data,
+                                            http_client)
   if not response_json:
     return None
 
@@ -160,12 +152,12 @@ def _GetLogLocationFromBuildbucketBuild(buildbucket_build):
   host = project = path = None
   # The log location is a property on buildbot builds and a tag on swarming
   # builds.
-  result_details = json.loads(buildbucket_build.get(
-      'result_details_json', '{}'))
+  result_details = json.loads(
+      buildbucket_build.get('result_details_json', '{}'))
   # TODO(robertocn): An upcoming change will make it unnecessary to retrieve
   # run_id. crbug.com/718191
-  run_id = result_details.get('swarming', {}).get('task_result', {}).get(
-      'run_id')
+  run_id = result_details.get('swarming', {}).get('task_result',
+                                                  {}).get('run_id')
   # First try to get it from properties,
   log_location = result_details.get('properties', {}).get('log_location')
 
@@ -210,8 +202,8 @@ def GetStepLogLegacy(master_name, builder_name, build_number, step_name,
                      log_type, http_client):
   host = 'luci-logdog.appspot.com'
   project = 'chromium'
-  path = _BUILDBOT_LOGDOG_REQUEST_PATH % (
-      master_name, _ProcessStringForLogDog(builder_name), build_number,
-      'recipes/annotations')
+  path = _BUILDBOT_LOGDOG_REQUEST_PATH % (master_name,
+                                          _ProcessStringForLogDog(builder_name),
+                                          build_number, 'recipes/annotations')
   annotations = _GetAnnotationsProtoForPath(host, project, path, http_client)
   return _GetLog(annotations, step_name, log_type, http_client)

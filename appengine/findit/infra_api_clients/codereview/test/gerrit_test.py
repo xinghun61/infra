@@ -38,21 +38,30 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
   def _SetReviewersResponse(self, host, change_id, reviewers):
     url = 'https://%s/a/changes/%s/detail' % (host, change_id)
     response = self._MakeResponse({
-      'status': 'MERGED',
-      'owner': {
-          'email': 'abc@chromium.org'
-      },
-      'current_revision': 'fakerevision',
-      'revisions': {
-          'fakerevision': {
-            '_number': 1,
-            'commit': {
-                'committer': {'email': 'dummy@test.com'},
-                'message': 'some message'}}},
-      'messages': [],
-      'submitted': '2017-03-24 01:07:39.000000000',
-      'reviewers': {'REVIEWER':[{'email': x} for x in reviewers]},
-      'subject': 'fake subject'
+        'status': 'MERGED',
+        'owner': {
+            'email': 'abc@chromium.org'
+        },
+        'current_revision': 'fakerevision',
+        'revisions': {
+            'fakerevision': {
+                '_number': 1,
+                'commit': {
+                    'committer': {
+                        'email': 'dummy@test.com'
+                    },
+                    'message': 'some message'
+                }
+            }
+        },
+        'messages': [],
+        'submitted': '2017-03-24 01:07:39.000000000',
+        'reviewers': {
+            'REVIEWER': [{
+                'email': x
+            } for x in reviewers]
+        },
+        'subject': 'fake subject'
     })
     self.SetResponse(url, (200, response))
 
@@ -106,15 +115,14 @@ class GerritTest(testing.AppengineTestCase):
 
   def testGetCodeReviewUrl(self):
     change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'
-    self.assertEqual(
-      'https://server.host.name/q/%s' % change_id,
-      self.gerrit.GetCodeReviewUrl(change_id))
+    self.assertEqual('https://server.host.name/q/%s' % change_id,
+                     self.gerrit.GetCodeReviewUrl(change_id))
 
   def testPostMessage(self):
     change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'
     response_str = '{}'
-    self.http_client._SetPostMessageResponse(
-      self.server_hostname, change_id, response_str)
+    self.http_client._SetPostMessageResponse(self.server_hostname, change_id,
+                                             response_str)
     # This message should not change when being urlencoded or jsonized
     message = 'FinditWasHere'
     self.assertTrue(self.gerrit.PostMessage(change_id, message))
@@ -124,8 +132,8 @@ class GerritTest(testing.AppengineTestCase):
   def testPostMessageNoEmail(self):
     change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'
     response_str = '{}'
-    self.http_client._SetPostMessageResponse(
-      self.server_hostname, change_id, response_str)
+    self.http_client._SetPostMessageResponse(self.server_hostname, change_id,
+                                             response_str)
     # This message should not change when being urlencoded or jsonized
     message = 'FinditWasHere'
     self.assertTrue(self.gerrit.PostMessage(change_id, message, False))
@@ -138,10 +146,10 @@ class GerritTest(testing.AppengineTestCase):
                                            ['old@dummy.org'])
     self.http_client._AddReviewerResponse(self.server_hostname, change_id,
                                           'new@dummy.org')
-    self.http_client._SetPostMessageResponse(
-        self.server_hostname, change_id, '{}')
-    self.assertTrue(self.gerrit.AddReviewers(
-        change_id, ['new@dummy.org'], 'message'))
+    self.http_client._SetPostMessageResponse(self.server_hostname, change_id,
+                                             '{}')
+    self.assertTrue(
+        self.gerrit.AddReviewers(change_id, ['new@dummy.org'], 'message'))
 
   def testAddReviewerNewAliased(self):
     change_id = 'Iabc12345'
@@ -149,30 +157,29 @@ class GerritTest(testing.AppengineTestCase):
                                            ['old@dummy.org'])
     self.http_client._AddReviewerResponse(self.server_hostname, change_id,
                                           'new@dummy.org')
-    self.http_client._SetPostMessageResponse(
-        self.server_hostname, change_id, '{}')
-    self.assertTrue(self.gerrit.AddReviewers(
-        change_id, ['alias@dummy.org'], 'message'))
+    self.http_client._SetPostMessageResponse(self.server_hostname, change_id,
+                                             '{}')
+    self.assertTrue(
+        self.gerrit.AddReviewers(change_id, ['alias@dummy.org'], 'message'))
 
   def testAddReviewerExisting(self):
     change_id = 'Iabc12345'
     self.http_client._SetReviewersResponse(self.server_hostname, change_id,
                                            ['old@dummy.org'])
-    self.http_client._SetPostMessageResponse(
-        self.server_hostname, change_id, '{}')
-    self.assertTrue(self.gerrit.AddReviewers(
-        change_id, ['old@dummy.org'], 'message'))
+    self.http_client._SetPostMessageResponse(self.server_hostname, change_id,
+                                             '{}')
+    self.assertTrue(
+        self.gerrit.AddReviewers(change_id, ['old@dummy.org'], 'message'))
 
   def testAddReviewerExistingAliased(self):
     change_id = 'Iabc12345'
     self.http_client._SetReviewersResponse(self.server_hostname, change_id,
                                            ['old@dummy.org'])
-    self.http_client._AddReviewerResponse(self.server_hostname, change_id,
-                                          None)
-    self.http_client._SetPostMessageResponse(
-        self.server_hostname, change_id, '{}')
-    self.assertTrue(self.gerrit.AddReviewers(
-        change_id, ['alias@dummy.org'], 'message'))
+    self.http_client._AddReviewerResponse(self.server_hostname, change_id, None)
+    self.http_client._SetPostMessageResponse(self.server_hostname, change_id,
+                                             '{}')
+    self.assertTrue(
+        self.gerrit.AddReviewers(change_id, ['alias@dummy.org'], 'message'))
 
   def testAddReviewerMany(self):
     change_id = 'Iabc12345'
@@ -182,12 +189,12 @@ class GerritTest(testing.AppengineTestCase):
                                           'new@dummy.org')
     self.http_client._AddReviewerResponse(self.server_hostname, change_id,
                                           'newtoo@dummy.org')
-    self.http_client._SetPostMessageResponse(
-        self.server_hostname, change_id, '{}')
-    self.assertTrue(self.gerrit.AddReviewers(
-        change_id,
-        ['new@dummy.org', 'newtoo@dummy.org', 'old@dummy.org'],
-        'message'))
+    self.http_client._SetPostMessageResponse(self.server_hostname, change_id,
+                                             '{}')
+    self.assertTrue(
+        self.gerrit.AddReviewers(change_id, [
+            'new@dummy.org', 'newtoo@dummy.org', 'old@dummy.org'
+        ], 'message'))
 
   def testAddReviewerFailure(self):
     change_id = 'Iabc12345'
@@ -201,45 +208,56 @@ class GerritTest(testing.AppengineTestCase):
         self.gerrit,
         '_Get',
         return_value={
-            'change_id': 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7',
-            'status': 'MERGED',
+            'change_id':
+                'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7',
+            'status':
+                'MERGED',
             'owner': {
                 'email': 'abc@chromium.org'
             },
-            'submitted': '2017-03-24 01:07:39.000000000',
+            'submitted':
+                '2017-03-24 01:07:39.000000000',
             'reviewers': {
-                'REVIEWER': [
-                    {'email': 'one@chromium.org'},
-                    {'email': 'commit-bot@chromium.org'},
-                    {'email': 'two@chromium.org'},
-                    {'email': 'three@chromium.org'}
-                ],
-                'CC': [{'email': 'four@chromium.org'}]
-           },
+                'REVIEWER': [{
+                    'email': 'one@chromium.org'
+                }, {
+                    'email': 'commit-bot@chromium.org'
+                }, {
+                    'email': 'two@chromium.org'
+                }, {
+                    'email': 'three@chromium.org'
+                }],
+                'CC': [{
+                    'email': 'four@chromium.org'
+                }]
+            },
             'messages': [{
-                'author': {'email': 'two@chromium.org'},
+                'author': {
+                    'email': 'two@chromium.org'
+                },
                 'date': '2017-03-24 00:58:25.000000000',
                 'message': 'Patch Set 3: Commit-Queue+2',
                 '_revision_number': 3
             }],
-            'current_revision': '4bd07b5148508d3d100d9d4eafb9f4d233d7fa15',
+            'current_revision':
+                '4bd07b5148508d3d100d9d4eafb9f4d233d7fa15',
             'revisions': {
                 '4bd07b5148508d3d100d9d4eafb9f4d233d7fa15': {
-                  '_number': 3,
-                  'commit': {
-                      'committer': {
-                          'email': 'commit-bot@chromium.org'
-                      },
-                      'message': 'some message'
-                  }
-               }
-           },
-           'subject': 'subject'
+                    '_number': 3,
+                    'commit': {
+                        'committer': {
+                            'email': 'commit-bot@chromium.org'
+                        },
+                        'message': 'some message'
+                    }
+                }
+            },
+            'subject':
+                'subject'
         }):
       cl_info = self.gerrit.GetClDetails(change_id)
-    self.assertNotEqual(
-      cl_info.commit_attempts.values()[0].last_cq_timestamp,
-      cl_info.commits[0].timestamp)
+    self.assertNotEqual(cl_info.commit_attempts.values()[0].last_cq_timestamp,
+                        cl_info.commits[0].timestamp)
 
   def testGetClInfoManualCommit(self):
     change_id = 'I7ecd56d7d0c3fef90cfe998a29b948c5032980e4'
@@ -255,9 +273,15 @@ class GerritTest(testing.AppengineTestCase):
             'submitted': '2017-03-08 04:43:30.000000000',
             'reviewers': {
                 'REVIEWER': [
-                    {'email': 'one@chromium.org'},
-                    {'email': 'two@chromium.org'},
-                    {'email': 'three@chromium.org' },
+                    {
+                        'email': 'one@chromium.org'
+                    },
+                    {
+                        'email': 'two@chromium.org'
+                    },
+                    {
+                        'email': 'three@chromium.org'
+                    },
                 ],
                 'CC': []
             },
@@ -268,18 +292,17 @@ class GerritTest(testing.AppengineTestCase):
                     '_number': 2,
                     'commit': {
                         'committer': {
-                          'email': 'one@chromium.org',
+                            'email': 'one@chromium.org',
                         },
                         'message': 'some message'
                     }
                 }
             },
-           'subject': 'subject'
+            'subject': 'subject'
         }):
       cl_info = self.gerrit.GetClDetails(change_id)
-    self.assertEqual(
-      cl_info.commit_attempts.values()[0].last_cq_timestamp,
-      cl_info.commits[0].timestamp)
+    self.assertEqual(cl_info.commit_attempts.values()[0].last_cq_timestamp,
+                     cl_info.commits[0].timestamp)
 
   def testGetClInfoRevertedCommit(self):
     change_id = 'I4303e1b7166aaab873587a3fda0ec907d3d8ace0'
@@ -287,40 +310,48 @@ class GerritTest(testing.AppengineTestCase):
         self.gerrit,
         '_Get',
         side_effect=[{
-            'change_id': 'I4303e1b7166aaab873587a3fda0ec907d3d8ace0',
-            'status': 'MERGED',
+            'change_id':
+                'I4303e1b7166aaab873587a3fda0ec907d3d8ace0',
+            'status':
+                'MERGED',
             'owner': {
                 'email': 'abc@chromium.org'
             },
-            'submitted': '2017-02-27 18:56:54.000000000',
-            '_number': 446905,
+            'submitted':
+                '2017-02-27 18:56:54.000000000',
+            '_number':
+                446905,
             'reviewers': {
-                'REVIEWER': [
-                    {'email': 'one@chromium.org'},
-                    {'email': 'commit-bot@chromium.org'},
-                    {'email': 'two@chromium.org'}
-                ],
+                'REVIEWER': [{
+                    'email': 'one@chromium.org'
+                }, {
+                    'email': 'commit-bot@chromium.org'
+                }, {
+                    'email': 'two@chromium.org'
+                }],
                 'CC': []
             },
-            'messages': [
-                {
-                    'id': 'b7d6785c324297ec4f1e6b2de34cf83f4c58e87c',
-                    'author': {'email': 'one@chromium.org'},
-                    'date': '2017-02-27 18:47:15.000000000',
-                    'message': 'Patch Set 1: Commit-Queue+2',
-                    '_revision_number': 1
+            'messages': [{
+                'id': 'b7d6785c324297ec4f1e6b2de34cf83f4c58e87c',
+                'author': {
+                    'email': 'one@chromium.org'
                 },
-                {
-                    'id': 'b9e04aec4bffed0284c1f53cc5a9c88818807368',
-                    'tag': 'autogenerated:gerrit:revert',
-                    'author': {'email': 'one@chromium.org'},
-                    'date': '2017-02-27 19:04:51.000000000',
-                    'message': 'Created a revert of this change as '
-                               'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
-                    '_revision_number': 2
-                }
-            ],
-            'current_revision': 'edda1046ce724695004242e943f59f5e1b2d00ff',
+                'date': '2017-02-27 18:47:15.000000000',
+                'message': 'Patch Set 1: Commit-Queue+2',
+                '_revision_number': 1
+            }, {
+                'id': 'b9e04aec4bffed0284c1f53cc5a9c88818807368',
+                'tag': 'autogenerated:gerrit:revert',
+                'author': {
+                    'email': 'one@chromium.org'
+                },
+                'date': '2017-02-27 19:04:51.000000000',
+                'message': 'Created a revert of this change as '
+                           'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
+                '_revision_number': 2
+            }],
+            'current_revision':
+                'edda1046ce724695004242e943f59f5e1b2d00ff',
             'revisions': {
                 'edda1046ce724695004242e943f59f5e1b2d00ff': {
                     '_number': 2,
@@ -328,52 +359,50 @@ class GerritTest(testing.AppengineTestCase):
                         'committer': {
                             'email': 'commit-bot@chromium.org',
                         },
-                      'message': 'cl title\n\nsome description\n\n'
-                                 'NOAUTOREVERT= True\n\nChange-Id: '
-                                 'someid\nReviewed-on: cl_url\nCommit-Queue: '
-                                 'owner\nReviewed-by: reviewers\n\n'
-                                 'BUGS : 12345, 67890'
+                        'message': 'cl title\n\nsome description\n\n'
+                                   'NOAUTOREVERT= True\n\nChange-Id: '
+                                   'someid\nReviewed-on: cl_url\nCommit-Queue: '
+                                   'owner\nReviewed-by: reviewers\n\n'
+                                   'BUGS : 12345, 67890'
                     },
                 }
             },
-           'subject': 'subject'
+            'subject':
+                'subject'
         }, {
-            'change_id': 'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
-            'status': 'MERGED',
-            'submitted': '2017-02-27 19:05:03.000000000',
+            'change_id':
+                'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
+            'status':
+                'MERGED',
+            'submitted':
+                '2017-02-27 19:05:03.000000000',
             'owner': {
                 'email': 'abc@chromium.org'
             },
-            '_number': 446788,
+            '_number':
+                446788,
             'reviewers': {
-                'REVIEWER': [
-                    {
-                        'email': 'one@chromium.org',
-
-                    },
-                    {
-                        'email': 'commit-bot@chromium.org',
-
-                    },
-                    {
-                        'email': 'two@chromium.org',
-
-                    }
-                ]
+                'REVIEWER': [{
+                    'email': 'one@chromium.org',
+                }, {
+                    'email': 'commit-bot@chromium.org',
+                }, {
+                    'email': 'two@chromium.org',
+                }]
             },
             'messages': [
                 {
                     'id': '30496ce351a43c0b74d812e9e40b440f5acff9d5',
                     'author': {
                         'email': 'one@chromium.org',
-
                     },
                     'date': '2017-02-27 19:04:53.000000000',
                     'message': 'Patch Set 1: Code-Review+1 Commit-Queue+2',
                     '_revision_number': 1
                 },
             ],
-            'current_revision': 'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824',
+            'current_revision':
+                'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824',
             'revisions': {
                 'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824': {
                     '_number': 2,
@@ -391,86 +420,106 @@ class GerritTest(testing.AppengineTestCase):
                     },
                 }
             },
-           'subject': 'subject'
+            'subject':
+                'subject'
         }]):
       cl_info = self.gerrit.GetClDetails(change_id)
     self.assertEqual(cl_info.serialize(), {
-        'server_hostname': 'server.host.name',
-        'auto_revert_off': True,
-        'owner_email': 'abc@chromium.org',
-        'reviewers': ['one@chromium.org',
-                      'commit-bot@chromium.org',
-                      'two@chromium.org'],
-        'closed': True,
-        'commits': [{'patchset_id': 2,
-                      'timestamp': '2017-02-27 18:56:54 UTC',
-                       'revision': 'edda1046ce724695004242e943f59f5e1b2d00ff'}],
+        'server_hostname':
+            'server.host.name',
+        'auto_revert_off':
+            True,
+        'owner_email':
+            'abc@chromium.org',
+        'reviewers': [
+            'one@chromium.org', 'commit-bot@chromium.org', 'two@chromium.org'
+        ],
+        'closed':
+            True,
+        'commits': [{
+            'patchset_id': 2,
+            'timestamp': '2017-02-27 18:56:54 UTC',
+            'revision': 'edda1046ce724695004242e943f59f5e1b2d00ff'
+        }],
         'cc': [],
-        'subject': 'subject',
-        'description': 'cl title\n\nsome description\n\n'
-                       'NOAUTOREVERT= True\n\nChange-Id: '
-                       'someid\nReviewed-on: cl_url\nCommit-Queue: '
-                       'owner\nReviewed-by: reviewers\n\n'
-                       'BUGS : 12345, 67890',
-        'change_id': 'I4303e1b7166aaab873587a3fda0ec907d3d8ace0',
-        'reverts': [{'patchset_id': 2,
-                     'reverting_user_email': 'one@chromium.org',
-                     'timestamp': '2017-02-27 19:04:51 UTC',
-                     'reverting_cl': {
-                         'server_hostname': 'server.host.name',
-                         'auto_revert_off': True,
-                         'owner_email': 'abc@chromium.org',
-                         'reviewers': ['one@chromium.org',
-                                       'commit-bot@chromium.org',
-                                       'two@chromium.org'],
-                         'closed': True,
-                         'commits': [{
-                             'patchset_id': 2,
-                             'timestamp': '2017-02-27 19:05:03 UTC',
-                             'revision':
-                                   'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824'}],
-                         'cc': [],
-                         'subject': 'subject',
-                         'description': 'cl title\n\nsome description\n\n'
-                                        'NOAUTOREVERT=TRUE\n\nChange-Id: '
-                                        'someid\nReviewed-on: cl_url\n'
-                                        'Commit-Queue: '
-                                        'owner\nReviewed-by: reviewers\n\n'
-                                        'BUG: 123455',
-                         'change_id':
-                               'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
-                               'reverts': [],
-                               'commit_attempts': [{
-                                   'patchset_id': 1,
-                                   'timestamp': '2017-02-27 19:04:53 UTC',
-                                   'committing_user_email':
-                                       'one@chromium.org'}]}}],
-        'commit_attempts': [{'patchset_id': 1,
-                             'timestamp': '2017-02-27 18:47:15 UTC',
-                             'committing_user_email': 'one@chromium.org'}]})
+        'subject':
+            'subject',
+        'description':
+            'cl title\n\nsome description\n\n'
+            'NOAUTOREVERT= True\n\nChange-Id: '
+            'someid\nReviewed-on: cl_url\nCommit-Queue: '
+            'owner\nReviewed-by: reviewers\n\n'
+            'BUGS : 12345, 67890',
+        'change_id':
+            'I4303e1b7166aaab873587a3fda0ec907d3d8ace0',
+        'reverts': [{
+            'patchset_id': 2,
+            'reverting_user_email': 'one@chromium.org',
+            'timestamp': '2017-02-27 19:04:51 UTC',
+            'reverting_cl': {
+                'server_hostname':
+                    'server.host.name',
+                'auto_revert_off':
+                    True,
+                'owner_email':
+                    'abc@chromium.org',
+                'reviewers': [
+                    'one@chromium.org', 'commit-bot@chromium.org',
+                    'two@chromium.org'
+                ],
+                'closed':
+                    True,
+                'commits': [{
+                    'patchset_id': 2,
+                    'timestamp': '2017-02-27 19:05:03 UTC',
+                    'revision': 'bd1db4534d7dc3f3f9c693ca0ac3e67caf484824'
+                }],
+                'cc': [],
+                'subject':
+                    'subject',
+                'description':
+                    'cl title\n\nsome description\n\n'
+                    'NOAUTOREVERT=TRUE\n\nChange-Id: '
+                    'someid\nReviewed-on: cl_url\n'
+                    'Commit-Queue: '
+                    'owner\nReviewed-by: reviewers\n\n'
+                    'BUG: 123455',
+                'change_id':
+                    'If02ca1cd494579d6bb92a157bf1819e3689cd6b1',
+                'reverts': [],
+                'commit_attempts': [{
+                    'patchset_id': 1,
+                    'timestamp': '2017-02-27 19:04:53 UTC',
+                    'committing_user_email': 'one@chromium.org'
+                }]
+            }
+        }],
+        'commit_attempts': [{
+            'patchset_id': 1,
+            'timestamp': '2017-02-27 18:47:15 UTC',
+            'committing_user_email': 'one@chromium.org'
+        }]
+    })
 
   def testCreateRevertSuccessful(self):
     change_id = 'I123456'
 
     reverting_change_id = 'I987654'
-    response = self.http_client._MakeResponse(
-      {'change_id': reverting_change_id})
+    response = self.http_client._MakeResponse({
+        'change_id': reverting_change_id
+    })
     url = 'https://%s/a/changes/%s/revert' % (self.server_hostname, change_id)
     self.http_client.SetResponse(url, (200, response))
 
     with mock.patch.object(
-        self.gerrit,
-        '_GenerateRevertCLDescription',
-        return_value='Reason'):
-      self.assertEqual(reverting_change_id, self.gerrit.CreateRevert(
-          'Reason', change_id))
+        self.gerrit, '_GenerateRevertCLDescription', return_value='Reason'):
+      self.assertEqual(reverting_change_id,
+                       self.gerrit.CreateRevert('Reason', change_id))
 
   def testCreateRevertFailure(self):
     change_id = 'I123456'
     with mock.patch.object(
-        self.gerrit,
-        '_GenerateRevertCLDescription',
-        return_value='Reason'):
+        self.gerrit, '_GenerateRevertCLDescription', return_value='Reason'):
       self.assertFalse(self.gerrit.CreateRevert('Reason', change_id))
 
   def testRequestAddsAuthenticationPrefix(self):
@@ -483,8 +532,10 @@ class GerritTest(testing.AppengineTestCase):
     url, _payload, _headers = self.http_client.requests[0]
     self.assertEqual('https://server.host.name/a/changes/123', url)
 
-  @mock.patch.object(time_util, 'GetUTCNow',
-                     return_value= datetime.datetime(2017, 6, 1, 1, 0, 0))
+  @mock.patch.object(
+      time_util,
+      'GetUTCNow',
+      return_value=datetime.datetime(2017, 6, 1, 1, 0, 0))
   def testGenerateRevertCLDescription(self, _):
     change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'
     reason = 'Reason'
@@ -500,38 +551,44 @@ class GerritTest(testing.AppengineTestCase):
         '> Cq-Include-Trybots: m1.b1:m2.b2\n'
         '# Not skipping CQ checks because original CL landed > 1 day ago.\n'
         'BUGS : 12345, 67890\n'
-        'Cq-Include-Trybots: m1.b1:m2.b2'
-    )
+        'Cq-Include-Trybots: m1.b1:m2.b2')
 
     with mock.patch.object(
         self.gerrit,
         '_Get',
         return_value={
-            'change_id': 'I4303e1b7166aaab873587a3fda0ec907d3d8ace0',
-            'status': 'MERGED',
+            'change_id':
+                'I4303e1b7166aaab873587a3fda0ec907d3d8ace0',
+            'status':
+                'MERGED',
             'owner': {
                 'email': 'abc@chromium.org'
             },
-            'submitted': '2017-02-27 18:56:54.000000000',
-            '_number': 446905,
+            'submitted':
+                '2017-02-27 18:56:54.000000000',
+            '_number':
+                446905,
             'reviewers': {
-                'REVIEWER': [
-                    {'email': 'one@chromium.org'},
-                    {'email': 'commit-bot@chromium.org'},
-                    {'email': 'two@chromium.org'}
-                ],
+                'REVIEWER': [{
+                    'email': 'one@chromium.org'
+                }, {
+                    'email': 'commit-bot@chromium.org'
+                }, {
+                    'email': 'two@chromium.org'
+                }],
                 'CC': []
             },
-            'messages': [
-                {
-                    'id': 'b7d6785c324297ec4f1e6b2de34cf83f4c58e87c',
-                    'author': {'email': 'one@chromium.org'},
-                    'date': '2017-02-27 18:47:15.000000000',
-                    'message': 'Patch Set 1: Commit-Queue+2',
-                    '_revision_number': 1
-                }
-            ],
-            'current_revision': 'edda1046ce724695004242e943f59f5e1b2d00ff',
+            'messages': [{
+                'id': 'b7d6785c324297ec4f1e6b2de34cf83f4c58e87c',
+                'author': {
+                    'email': 'one@chromium.org'
+                },
+                'date': '2017-02-27 18:47:15.000000000',
+                'message': 'Patch Set 1: Commit-Queue+2',
+                '_revision_number': 1
+            }],
+            'current_revision':
+                'edda1046ce724695004242e943f59f5e1b2d00ff',
             'revisions': {
                 'edda1046ce724695004242e943f59f5e1b2d00ff': {
                     '_number': 2,
@@ -539,28 +596,29 @@ class GerritTest(testing.AppengineTestCase):
                         'committer': {
                             'email': 'commit-bot@chromium.org',
                         },
-                      'message': 'cl title\n\nsome description\n\n'
-                                 'NOAUTOREVERT= True\n\nChange-Id: '
-                                 'someid\nReviewed-on: cl_url\nCommit-Queue: '
-                                 'owner\nReviewed-by: reviewers\n\n'
-                                 'BUGS : 12345, 67890\n'
-                                 'Cq-Include-Trybots: m1.b1:m2.b2'
+                        'message': 'cl title\n\nsome description\n\n'
+                                   'NOAUTOREVERT= True\n\nChange-Id: '
+                                   'someid\nReviewed-on: cl_url\nCommit-Queue: '
+                                   'owner\nReviewed-by: reviewers\n\n'
+                                   'BUGS : 12345, 67890\n'
+                                   'Cq-Include-Trybots: m1.b1:m2.b2'
                     },
                 }
             },
-           'subject': 'cl title'
+            'subject':
+                'cl title'
         }):
 
-      self.assertEqual(
-          expected_description,
-          self.gerrit._GenerateRevertCLDescription(change_id, reason))
+      self.assertEqual(expected_description,
+                       self.gerrit._GenerateRevertCLDescription(
+                           change_id, reason))
 
   def testGetBugLine(self):
     expected_results = {
-      'message': '',
-      'BUG: 24343\n': 'BUG: 24343',
-      'Bug: 23234\n': 'Bug: 23234',
-      'issue: 34254\n': 'issue: 34254'
+        'message': '',
+        'BUG: 24343\n': 'BUG: 24343',
+        'Bug: 23234\n': 'Bug: 23234',
+        'issue: 34254\n': 'issue: 34254'
     }
 
     for k, v in expected_results.iteritems():
@@ -568,16 +626,22 @@ class GerritTest(testing.AppengineTestCase):
 
   def testGetCQTryBotLine(self):
     expected_results = {
-      'message': '',
-      'cq-include-trybots: m1.b1:m2.b2\n': 'cq-include-trybots: m1.b1:m2.b2',
-      'CQ_INCLUDE_TRYBOTS= m1.b1:m2.b2 \n': 'CQ_INCLUDE_TRYBOTS= m1.b1:m2.b2',
-      'Cq_Include_Trybots= m1.b1:m2.b2\n': 'Cq_Include_Trybots= m1.b1:m2.b2'
+        'message':
+            '',
+        'cq-include-trybots: m1.b1:m2.b2\n':
+            'cq-include-trybots: m1.b1:m2.b2',
+        'CQ_INCLUDE_TRYBOTS= m1.b1:m2.b2 \n':
+            'CQ_INCLUDE_TRYBOTS= m1.b1:m2.b2',
+        'Cq_Include_Trybots= m1.b1:m2.b2\n':
+            'Cq_Include_Trybots= m1.b1:m2.b2'
     }
     for k, v in expected_results.iteritems():
       self.assertEqual(v, self.gerrit._GetCQTryBotLine(k))
 
-  @mock.patch.object(time_util, 'GetUTCNow',
-                     return_value= datetime.datetime(2017, 2, 7, 1, 0, 0))
+  @mock.patch.object(
+      time_util,
+      'GetUTCNow',
+      return_value=datetime.datetime(2017, 2, 7, 1, 0, 0))
   def testGetCQFlagsOrExplanationWithinOneDay(self, _):
     time = datetime.datetime(2017, 2, 7, 0, 0, 0)
     self.assertEqual('No-Presubmit: true\nNo-Tree-Checks: true\nNo-Try: true\n',

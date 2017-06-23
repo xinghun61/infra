@@ -1,7 +1,6 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
 """This module provides a decorator to cache the results of a function.
 
   Examples:
@@ -84,7 +83,10 @@ class CacheDecorator(object):
     function should be pickleable.
   """
 
-  def __init__(self, cache, namespace=None, expire_time=0,
+  def __init__(self,
+               cache,
+               namespace=None,
+               expire_time=0,
                key_generator=_DefaultKeyGenerator):
     """
     Args:
@@ -169,6 +171,7 @@ class Cached(CacheDecorator):
 
   def __call__(self, func):
     """Decorator to cache a function's results."""
+
     @functools.wraps(func)
     def Wrapped(*args, **kwargs):
       key = self._key_generator(func, args, kwargs, namespace=self._namespace)
@@ -203,6 +206,7 @@ class GeneratorCached(CacheDecorator):
 
   def __call__(self, func):
     """Decorator to cache a generator function."""
+
     @functools.wraps(func)
     def Wrapped(*args, **kwargs):
       key = self._key_generator(func, args, kwargs, namespace=self._namespace)

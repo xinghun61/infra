@@ -9,6 +9,7 @@ class Cache(object):
   Subclasses should implement the Get/Set functions.
   TODO: Add a Delete function (default to no-op) if needed later.
   """
+
   def Get(self, key):
     """Returns the cached data for the given key if available.
 

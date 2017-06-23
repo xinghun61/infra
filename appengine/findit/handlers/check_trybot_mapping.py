@@ -14,8 +14,8 @@ from waterfall import buildbot
 
 def _GetSupportedMasters():
   """Lists the supported main waterfall masters Findit runs analyses on."""
-  return FinditConfig.Get().steps_for_masters_rules.get(
-      'supported_masters', {}).keys()
+  return FinditConfig.Get().steps_for_masters_rules.get('supported_masters',
+                                                        {}).keys()
 
 
 def _GetBuildersOnMasters(masters, http_client):
@@ -104,14 +104,14 @@ class CheckTrybotMapping(BaseHandler):
   def HandleGet(self):
     http_client = HttpClientAppengine()
     supported_masters = _GetSupportedMasters()
-    main_waterfall_builders = _GetBuildersOnMasters(
-        supported_masters, http_client)
+    main_waterfall_builders = _GetBuildersOnMasters(supported_masters,
+                                                    http_client)
     trybot_config = FinditConfig.Get().builders_to_trybots
     covered_builders = _GetCoveredBuilders(trybot_config)
-    missing_builders = _GetDiffBetweenDicts(
-        main_waterfall_builders, covered_builders)
-    deprecated_builders = _GetDiffBetweenDicts(
-        covered_builders, main_waterfall_builders)
+    missing_builders = _GetDiffBetweenDicts(main_waterfall_builders,
+                                            covered_builders)
+    deprecated_builders = _GetDiffBetweenDicts(covered_builders,
+                                               main_waterfall_builders)
     unused_variable_builders = _GetUnusedVariableBuilders(
         trybot_config, http_client)
 

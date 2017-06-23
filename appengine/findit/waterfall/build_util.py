@@ -9,7 +9,6 @@ from waterfall import buildbot
 from waterfall import lock_util
 from waterfall import waterfall_config
 
-
 HTTP_CLIENT_LOGGING_ERRORS = HttpClientAppengine()
 HTTP_CLIENT_NO_404_ERROR = HttpClientAppengine(no_error_logging_statuses=[404])
 CHROME_BUILD_EXTRACT = 'CBE'
@@ -18,9 +17,8 @@ BUILDBOT_MASTER = 'BM'
 
 def _BuildDataNeedUpdating(build):
   return (not build.data or (
-      not build.completed and (
-          time_util.GetUTCNow() - build.last_crawled_time
-          ).total_seconds() >= 300))
+      not build.completed and
+      (time_util.GetUTCNow() - build.last_crawled_time).total_seconds() >= 300))
 
 
 def DownloadBuildData(master_name, builder_name, build_number):
@@ -73,14 +71,14 @@ def GetBuildInfo(master_name, builder_name, build_number):
   if not build.data:
     return None
 
-  return buildbot.ExtractBuildInfo(
-      master_name, builder_name, build_number, build.data)
+  return buildbot.ExtractBuildInfo(master_name, builder_name, build_number,
+                                   build.data)
 
 
 def GetBuildEndTime(master_name, builder_name, build_number):
   build = DownloadBuildData(master_name, builder_name, build_number)
-  build_info = buildbot.ExtractBuildInfo(
-      master_name, builder_name, build_number, build.data)
+  build_info = buildbot.ExtractBuildInfo(master_name, builder_name,
+                                         build_number, build.data)
   return build_info.build_end_time
 
 

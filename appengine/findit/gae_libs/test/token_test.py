@@ -28,9 +28,10 @@ class DummyHandler(base_handler.BaseHandler):
 
 
 class TokenTest(testing.AppengineTestCase):
-  app_module = webapp2.WSGIApplication([
-      ('/test-token', DummyHandler),
-  ], debug=True)
+  app_module = webapp2.WSGIApplication(
+      [
+          ('/test-token', DummyHandler),
+      ], debug=True)
 
   @mock.patch('os.urandom')
   def testGenerateRandomHexKey(self, mocked_urandom):
@@ -56,26 +57,28 @@ class TokenTest(testing.AppengineTestCase):
 
   @mock.patch.object(time_util, 'GetUTCNow')
   def testGeneratedXSRFTokenIsValidForSameUserAndSameAction(self, mock_now):
-    mock_now.side_effect = [datetime(2017, 6, 13, 0, 0, 0),
-                            datetime(2017, 6, 13, 0, 1, 0)]
+    mock_now.side_effect = [
+        datetime(2017, 6, 13, 0, 0, 0),
+        datetime(2017, 6, 13, 0, 1, 0)
+    ]
     xsrf_token = token.GenerateAuthToken('key', 'email', 'action')
-    self.assertTrue(token.ValidateAuthToken(
-        'key', xsrf_token, 'email', 'action'))
+    self.assertTrue(
+        token.ValidateAuthToken('key', xsrf_token, 'email', 'action'))
 
   def testGeneratedXSRFTokenIsInvalidForSameUserButDifferentAction(self):
     xsrf_token = token.GenerateAuthToken('key', 'email', 'action1')
-    self.assertFalse(token.ValidateAuthToken(
-        'key', xsrf_token, 'email', 'action2'))
+    self.assertFalse(
+        token.ValidateAuthToken('key', xsrf_token, 'email', 'action2'))
 
   def testGeneratedXSRFTokenIsInvalidForDifferentUserButSameAction(self):
     xsrf_token = token.GenerateAuthToken('key', 'email1', 'action')
-    self.assertFalse(token.ValidateAuthToken('key', xsrf_token, 'email2',
-                                             'action'))
+    self.assertFalse(
+        token.ValidateAuthToken('key', xsrf_token, 'email2', 'action'))
 
   def testGeneratedXSRFTokenIsInvalidForDifferentUserAndAction(self):
     xsrf_token = token.GenerateAuthToken('key', 'email1', 'action1')
-    self.assertFalse(token.ValidateAuthToken('key', xsrf_token, 'email2',
-                                             'action2'))
+    self.assertFalse(
+        token.ValidateAuthToken('key', xsrf_token, 'email2', 'action2'))
 
   @mock.patch('gae_libs.token.GenerateAuthToken')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail', lambda: None)
@@ -92,8 +95,10 @@ class TokenTest(testing.AppengineTestCase):
     mocked_GenerateAuthToken.side_effect = ['token']
     response = self.test_app.get('/test-token?format=json')
     self.assertEqual(200, response.status_int)
-    self.assertEqual({'key': 'value', 'xsrf_token': 'token'},
-                     response.json_body)
+    self.assertEqual({
+        'key': 'value',
+        'xsrf_token': 'token'
+    }, response.json_body)
     mocked_GenerateAuthToken.assert_not_called()
 
   @mock.patch('gae_libs.token.ValidateAuthToken')
@@ -109,8 +114,8 @@ class TokenTest(testing.AppengineTestCase):
     mocked_ValidateAuthToken.side_effect = [False]
     self.test_app.post(
         '/test-token?format=json', {'xsrf_token': 'token'}, status=403)
-    mocked_ValidateAuthToken.assert_called_once_with(
-        'site', 'token', 'test@google.com', 'test')
+    mocked_ValidateAuthToken.assert_called_once_with('site', 'token',
+                                                     'test@google.com', 'test')
 
   @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail', lambda: 'test@google.com')
@@ -118,13 +123,12 @@ class TokenTest(testing.AppengineTestCase):
     mocked_ValidateAuthToken.side_effect = [True]
     response = self.test_app.post(
         '/test-token?format=json', {'xsrf_token': 'token'}, status=200)
-    mocked_ValidateAuthToken.assert_called_once_with(
-        'site', 'token', 'test@google.com', 'test')
+    mocked_ValidateAuthToken.assert_called_once_with('site', 'token',
+                                                     'test@google.com', 'test')
     self.assertEqual({'key': 'value'}, response.json_body)
 
-
-  @mock.patch.object(time_util, 'GetUTCNow',
-                     return_value=datetime(2017, 06, 13, 0, 0, 0))
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2017, 06, 13, 0, 0, 0))
   def testValidateAuthTokenSucceed(self, _):
     tested_token = token.GenerateAuthToken('key', 'email')
     self.assertTrue(token.ValidateAuthToken('key', tested_token, 'email'))
@@ -136,20 +140,20 @@ class TokenTest(testing.AppengineTestCase):
     tested_token = base64.urlsafe_b64encode('token')
     self.assertFalse(token.ValidateAuthToken('key', tested_token, 'email'))
 
-  @mock.patch.object(time_util, 'GetUTCNow',
-                     return_value=datetime(2017, 06, 13, 2, 0, 0))
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2017, 06, 13, 2, 0, 0))
   def testValidateAuthTokenExpired(self, _):
     tested_token = token.GenerateAuthToken(
         'key', 'email', when=datetime(2017, 06, 13, 0, 0, 0))
 
     self.assertFalse(token.ValidateAuthToken('key', tested_token, 'email'))
 
-  @mock.patch.object(time_util, 'GetUTCNow',
-                     return_value=datetime(2017, 06, 13, 0, 0, 0))
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2017, 06, 13, 0, 0, 0))
   def testValidateAuthTokenLengthDifferent(self, _):
     token_created_timestamp = time_util.ConvertToTimestamp(
         datetime(2017, 06, 13, 0, 0, 0))
-    tested_token = base64.urlsafe_b64encode(
-        'token:' + str(token_created_timestamp))
+    tested_token = base64.urlsafe_b64encode('token:' +
+                                            str(token_created_timestamp))
 
     self.assertFalse(token.ValidateAuthToken('key', tested_token, 'email'))

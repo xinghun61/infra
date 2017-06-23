@@ -1,8 +1,6 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
-
 """This handler is to collect tree closures. It runs in a cron job."""
 
 from datetime import timedelta
@@ -19,7 +17,6 @@ from libs import time_util
 from model.tree_closure import TreeClosure
 from model.tree_closure import TreeStatus
 from waterfall import buildbot
-
 
 _MONITORED_TREES = {
     'chromium': 'https://chromium-status.appspot.com/allstatus',
@@ -50,8 +47,7 @@ def _CreateTreeStatus(tree_status_entry):
       time=time_util.DatetimeFromString(tree_status_entry['date']),
       message=tree_status_entry['message'],
       state=tree_status_entry['general_state'],
-      username=tree_status_entry['username'],
-  )
+      username=tree_status_entry['username'],)
 
 
 def _RetrieveTreeStatus(tree_name, start_time, end_time=None):
@@ -140,8 +136,7 @@ def _CreateTreeClosure(tree_name, statuses, first_open_status):
       builder_name=builder_name,
       build_id=build_id,
       step_name=step_name,
-      key=ndb.Key(TreeClosure, key_str_id),
-  )
+      key=ndb.Key(TreeClosure, key_str_id),)
 
 
 def _DetectTreeClosureForTree(tree_name, all_statuses):
@@ -179,10 +174,9 @@ def _DetectTreeClosureForTree(tree_name, all_statuses):
     if first_open_index is not None:
       # The identified closure might not be complete with all the open statuses.
       tree_closures.append(
-          _CreateTreeClosure(
-              tree_name,
-              all_statuses[close_index:latest_open_index+1],
-              all_statuses[first_open_index]))
+          _CreateTreeClosure(tree_name, all_statuses[
+              close_index:latest_open_index + 1], all_statuses[
+                  first_open_index]))
     else:
       # The previous tree closure was complete with all the open statuses,
       # because a new tree closure started and was incomplete.
