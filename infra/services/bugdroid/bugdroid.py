@@ -26,25 +26,6 @@ from infra.services.bugdroid import scm_helper
 import infra_libs.logs
 from infra_libs import ts_mon
 
-loggers = {}
-
-
-def GetLogger(logger_id):
-  """Logging setup for pollers."""
-
-  if logger_id in loggers:
-    return loggers[logger_id]
-
-  logger = logging.getLogger(logger_id)
-  infra_libs.logs.add_handler(logger)
-
-  # We need to include the logger ID (i.e. "%(name)s") in the formatter string.
-  logger.handlers[0].setFormatter(logging.Formatter(
-      '[%(severity)s%(iso8601)s %(process)d %(thread)d '
-      '%(fullModuleName)s:%(lineno)s] %(name)s - %(message)s'))
-  loggers[logger_id] = logger
-  return logger
-
 
 class BugdroidGitPollerHandler(poller_handlers.BasePollerHandler):
   """Handler for updating bugs with information from commits."""
@@ -76,33 +57,28 @@ class BugdroidGitPollerHandler(poller_handlers.BasePollerHandler):
 
     label = '%s-%s' % (self.issues_labels.get('merge', 'merge-merged'), branch)
     issue.add_label(label)
-    if self.logger:
-      self.logger.debug('Adding %s', label)
+    self.logger.debug('Adding %s', label)
 
     label = self.issues_labels.get('approved', 'merge-approved')
     if issue.has_label(label):
       issue.remove_label(label)
-      if self.logger:
-        self.logger.debug('Removing %s', label)
+      self.logger.debug('Removing %s', label)
 
     mstone = branch_utils.get_mstone(branch, False)
     if mstone:
       label = 'merge-approved-%s' % mstone
       if issue.has_label(label):
         issue.remove_label(label)
-        if self.logger:
-          self.logger.debug('Removing %s' % label)
+        self.logger.debug('Removing %s', label)
 
   def ProcessLogEntry(self, log_entry):
     project_bugs = log_parser.get_issues(
         log_entry, default_project=self.default_project)
-    if self.logger:
-      self.logger.info('Processing commit %s : bugs %s' %
-                       (log_entry.revision, str(project_bugs)))
+    self.logger.info('Processing commit %s : bugs %s',
+                     log_entry.revision, str(project_bugs))
     if project_bugs:
       comment = self._CreateMessage(log_entry)
-      if self.logger:
-        self.logger.debug(comment)
+      self.logger.debug(comment)
 
       for project, bugs in project_bugs.iteritems():
         for bug in bugs:
@@ -115,8 +91,7 @@ class BugdroidGitPollerHandler(poller_handlers.BasePollerHandler):
                                scm_helper.GetBranch(log_entry, full=True) in
                                self.no_merge):
               self._ApplyMergeMergedLabel(issue, branch)
-            if self.logger:
-              self.logger.debug('Attempting to save issue: %d' % issue.id)
+            self.logger.debug('Attempting to save issue: %d', issue.id)
             if not self.test_mode:
               self.monorail_client.update_issue(
                   project, issue, log_parser.should_send_email(log_entry.msg))
@@ -220,8 +195,7 @@ class Bugdroid(object):
     t = config_service.decode_repo_type(config.repo_type)
     interval_minutes = 1
     default_project = config.default_project
-    logger = GetLogger(name)
-
+    logger = logging.getLogger(name)
     if t == 'git':
       poller = gitiles_poller.GitilesPoller(
           config.repo_url,
@@ -259,8 +233,7 @@ class Bugdroid(object):
 
   def Execute(self):
     for poller in self.pollers:
-      if poller.logger:
-        poller.logger.info('Starting Poller "%s".', poller.poller_id)
+      poller.logger.info('Starting Poller "%s".', poller.poller_id)
       poller.start()
     for poller in self.pollers:
       poller.join()

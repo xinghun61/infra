@@ -55,7 +55,7 @@ class BugdroidGitPollerHandlerTest(unittest.TestCase):
     handler.ProcessLogEntry(self._make_commit('Message with no bugs'))
 
     self.logger.info.assert_called_once_with(
-        'Processing commit abcdef : bugs {}')
+        'Processing commit %s : bugs %s', 'abcdef', '{}')
     self.assertFalse(self.monorail_client.get_issue.called)
     self.assertFalse(self.monorail_client.update_issue.called)
 
@@ -68,7 +68,7 @@ class BugdroidGitPollerHandlerTest(unittest.TestCase):
     handler.ProcessLogEntry(self._make_commit('Message\nBug: 1234'))
 
     self.logger.info.assert_called_once_with(
-        "Processing commit abcdef : bugs {'foo': [1234]}")
+        'Processing commit %s : bugs %s', 'abcdef', "{'foo': [1234]}")
     self.monorail_client.get_issue.assert_called_once_with('foo', 1234)
     self.monorail_client.update_issue.assert_called_once_with(
         'foo', issue, True)
@@ -113,7 +113,7 @@ class BugdroidGitPollerHandlerTest(unittest.TestCase):
     handler.ProcessLogEntry(self._make_commit('Message\nBug: bar:1234'))
 
     self.logger.info.assert_called_once_with(
-        "Processing commit abcdef : bugs {'bar': [1234]}")
+        'Processing commit %s : bugs %s', 'abcdef', "{'bar': [1234]}")
     self.monorail_client.get_issue.assert_called_once_with('bar', 1234)
     self.monorail_client.update_issue.assert_called_once_with(
         'bar', issue, True)
@@ -138,7 +138,7 @@ class BugdroidGitPollerHandlerTest(unittest.TestCase):
     handler.ProcessLogEntry(self._make_commit('Message\nBug: 1234'))
 
     self.logger.info.assert_called_once_with(
-        "Processing commit abcdef : bugs {'foo': [1234]}")
+        'Processing commit %s : bugs %s', 'abcdef', "{'foo': [1234]}")
     self.monorail_client.get_issue.assert_called_once_with('foo', 1234)
     self.monorail_client.update_issue.assert_called_once_with(
         'foo', issue, True)
@@ -301,7 +301,8 @@ class BugdroidTest(unittest.TestCase):
       ''')
 
     mock_poller = mock_poller_ctor.return_value
-    mock_poller.logger = None
+    mock_poller.poller_id = 'id'
+    mock_poller.logger = mock.Mock()
 
     b = bugdroid.Bugdroid(self.config_file, None, True, self.temp_dir)
     self.assertEquals(mock_poller, b.pollers[0])

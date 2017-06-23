@@ -24,16 +24,6 @@ import infra_libs
 import oauth2client.client
 
 
-DEFAULT_LOGGER = logging.getLogger(__name__)
-DEFAULT_LOGGER.addHandler(logging.NullHandler())
-DEFAULT_LOGGER.setLevel(logging.DEBUG)
-formatter = logging.Formatter(
-    '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-sh = logging.StreamHandler()
-sh.setLevel(logging.DEBUG)
-sh.setFormatter(formatter)
-DEFAULT_LOGGER.addHandler(sh)
-
 DIRBASE = os.path.splitext(os.path.basename(__file__))[0]
 DATADIR = os.path.join(os.environ.get('HOME', ''), 'appdata', DIRBASE)
 
@@ -41,12 +31,12 @@ DATA_URL = 'https://bugdroid-data.appspot.com/_ah/api/bugdroid/v1/data'
 
 
 def get_data(http):
-  DEFAULT_LOGGER.info('Getting data files from gcs...')
+  logging.info('Getting data files from gcs...')
   _, content = http.request(DATA_URL,
                             headers={'Content-Type': 'application/json'})
   data_json = json.loads(content)
   data_files = json.loads(data_json['data_files'])
-  DEFAULT_LOGGER.info('Writing %d data files to %s', len(data_files), DATADIR)
+  logging.info('Writing %d data files to %s', len(data_files), DATADIR)
   for data_file in data_files:
     content = base64.b64decode(data_file['file_content'])
     file_path = os.path.join(DATADIR, data_file['file_name'])
@@ -55,7 +45,7 @@ def get_data(http):
 
 
 def update_data(http):
-  DEFAULT_LOGGER.info('Updating data files to gcs...')
+  logging.info('Updating data files to gcs...')
   result = []
   for data_file in os.listdir(DATADIR):
     if os.path.isdir(data_file):
@@ -99,6 +89,12 @@ def parse_args(args):  # pragma: no cover
   ts_mon.process_argparse_options(opts)
   loop_opts = outer_loop.process_argparse_options(opts)
 
+  # We need to include the logger ID (i.e. "%(name)s") in the formatter string.
+  # Override the root logging handler set by infra_libs.logs.
+  logging.root.handlers[0].setFormatter(logging.Formatter(
+      '[%(severity)s%(iso8601)s %(process)d %(thread)d '
+      '%(fullModuleName)s:%(lineno)s] (%(name)s) %(message)s'))
+
   return opts, loop_opts
 
 
@@ -120,7 +116,7 @@ def main(args):  # pragma: no cover
   opts, loop_opts = parse_args(args)
 
   if not os.path.isdir(opts.datadir):
-    DEFAULT_LOGGER.info('Creating data directory.')
+    logging.info('Creating data directory.')
     os.makedirs(opts.datadir)
 
   with open(opts.credentials_db) as data_file:
@@ -142,8 +138,7 @@ def main(args):  # pragma: no cover
   if not opts.configfile:
     update_data(_create_http(creds_data))
 
-  DEFAULT_LOGGER.info('Outer loop finished with result %r',
-                      loop_results.success)
+  logging.info('Outer loop finished with result %r', loop_results.success)
 
   return 0 if loop_results.success else 1
 
