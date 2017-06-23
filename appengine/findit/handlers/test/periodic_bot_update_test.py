@@ -54,7 +54,7 @@ class PeriodicBotUpdateTest(wf_testcase.WaterfallTestCase):
                         'recipe': {
                             'name': 'findit/chromium/preemptive_bot_update'
                         },
-                        'dimensions': ['id:bot1'],
+                        'dimensions': ['id:bot1', 'pool:Chrome.Findit'],
                         'caches': [{
                             'path': 'builder',
                             'name': 'builder_908bcf0b6984d585a05cf6c94016'

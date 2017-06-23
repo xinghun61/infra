@@ -37,7 +37,7 @@ def _BotUpdateTryJob(bot_id, platform):
       [],  # tags.
       None,  # additional_build_parameters.
       cache_name,
-      ['id:%s' % bot_id])  # dimensions.
+      ['id:%s' % bot_id, 'pool:%s' % _FINDIT_SWARMING_POOL])  # dimensions.
 
 
 def _TriggerUpdateJobs():
