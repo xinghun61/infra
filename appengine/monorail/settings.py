@@ -238,7 +238,7 @@ else:
     banner_message = 'This staging site does not send emails.'
     # The Google Cloud SQL databases to use.
     db_cloud_project = app_id
-    db_replica_prefix = 'replica-8-'
+    db_replica_prefix = 'replica-9-'
 
   elif app_id == 'monorail-prod':
     send_all_email_to = None  # Deliver it to the intended users.
