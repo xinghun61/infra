@@ -278,7 +278,8 @@ _ISSUE_REF_RE = re.compile(r"""
 _CRBUG_REF_RE = re.compile(r"""
     (?P<prefix>\b(https?://)?crbug.com/)
     ((?P<project_name>\b[-a-z0-9]+)(?P<separator>/))?
-    (?P<local_id>\d+)\b""", re.IGNORECASE | re.VERBOSE)
+    (?P<local_id>\d+)\b
+    (?P<anchor>\#c[0-9]+)?""", re.IGNORECASE | re.VERBOSE)
 
 # Once the overall issue reference has been detected, pick out the specific
 # issue project:id items within it.  Often there is just one, but the "and|or"
@@ -393,11 +394,12 @@ def _IssueProjectKey(project_name, local_id):
 class IssueRefRun(object):
   """A text run that links to a referenced issue."""
 
-  def __init__(self, issue, is_closed, project_name, content):
+  def __init__(self, issue, is_closed, project_name, content, anchor):
     self.tag = 'a'
     self.css_class = 'closed_ref' if is_closed else None
     self.title = issue.summary
-    self.href = '/p/%s/issues/detail?id=%d' % (project_name, issue.local_id)
+    self.href = '/p/%s/issues/detail?id=%d%s' % (
+        project_name, issue.local_id, anchor)
 
     self.content = content
     if is_closed:
@@ -462,6 +464,7 @@ def _ReplaceSingleIssueRef(
   """Replace one issue reference with a link, or the original text."""
   content = submatch.group(0)
   project_name = submatch.group('project_name')
+  anchor = submatch.groupdict().get('anchor') or ''
   if project_name:
     project_name = project_name.lstrip().rstrip(':#')
   else:
@@ -471,9 +474,11 @@ def _ReplaceSingleIssueRef(
   local_id = int(submatch.group('local_id'))
   issue_key = _IssueProjectKey(project_name, local_id)
   if issue_key in open_dict:
-    return IssueRefRun(open_dict[issue_key], False, project_name, content)
+    return IssueRefRun(
+        open_dict[issue_key], False, project_name, content, anchor)
   elif issue_key in closed_dict:
-    return IssueRefRun(closed_dict[issue_key], True, project_name, content)
+    return IssueRefRun(
+        closed_dict[issue_key], True, project_name, content, anchor)
   else:  # Don't link to non-existent issues.
     return template_helpers.TextRun(content)
 

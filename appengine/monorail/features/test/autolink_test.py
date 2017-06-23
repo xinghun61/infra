@@ -631,6 +631,13 @@ class TrackerAutolinkTest(unittest.TestCase):
     self.assertEquals('/p/chromium/issues/detail?id=13', result[0].href)
     self.assertEquals(' http://crbug.com/13 ', result[0].content)
 
+    result = self.DoReplaceIssueRef(
+        'and http://crbug.com/13#c17', regex=autolink._CRBUG_REF_RE,
+        single_issue_regex=autolink._CRBUG_REF_RE,
+        default_project_name='chromium')
+    self.assertEquals('/p/chromium/issues/detail?id=13#c17', result[0].href)
+    self.assertEquals(' http://crbug.com/13#c17 ', result[0].content)
+
   def testParseProjectNameMatch(self):
     golden = 'project-name'
     variations = ['%s', '  %s', '%s  ', '%s:', '%s#', '%s#:', '%s:#', '%s :#',
