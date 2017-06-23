@@ -25,17 +25,13 @@ import logging
 import os
 import sys
 
-import infra.services.bugdroid.gob_helper as gob_helper
-import infra.services.bugdroid.poller_handlers as poller_handlers
+from infra.services.bugdroid import gob_helper
+from infra.services.bugdroid import poller_handlers
 from infra.services.bugdroid.poll import Poller
 
 
 DEFAULT_LOGGER = logging.getLogger(__name__)
 DEFAULT_LOGGER.addHandler(logging.NullHandler())
-
-
-class HaltProcessing(Exception):
-  pass
 
 
 class FileDict(collections.MutableMapping):
@@ -166,30 +162,31 @@ class GitilesPoller(Poller):
         new_refs[key] = refs[key]
     return new_refs
 
-  def _WarmUpHandlers(self):
-    for handler in self.handlers:
-      handler.WarmUp()
-
   def _ProcessGitLogEntry(self, log_entry):
     self.logger.debug('Received git log entry\n%s' % log_entry.msg)
     if log_entry.ignored:
       self.logger.debug('Not processing ignored commit %s.', log_entry.commit)
+      self.commits_metric.increment(
+          {'poller': 'gitiles', 'project': self.poller_id, 'status': 'ignored'})
       return
     for handler in self.handlers:
       try:
         handler.ProcessLogEntry(log_entry)
-      except HaltProcessing as e:
-        self.logger.exception('Halting in %s', handler)
-        raise e
       except Exception as e:
         # Log it here so that we see where it's breaking.
         self.logger.exception('Uncaught Exception in %s', handler)
+        self.commits_metric.increment(
+            {'poller': 'gitiles', 'project': self.poller_id, 'status': 'error'})
         # Some handlers aren't that important, but other ones should always
         # succeed, and should abort processing if they don't.
         if handler.must_succeed:
           raise e
         self.logger.info('Handler is not fatal. Continuing.')
         continue
+      else:
+        self.commits_metric.increment(
+            {'poller': 'gitiles', 'project': self.poller_id,
+             'status': 'success'})
 
   def _ProcessRefs(self, refs, filter_refs=None, store_only=False):
     """Detect changes to watched branches and process new commits.
@@ -234,9 +231,6 @@ class GitilesPoller(Poller):
 
         try:
           self._ProcessGitLogEntry(entry)
-        except HaltProcessing:
-          self.logger.error('HaltProcessing caught - Terminating program')
-          sys.exit(1)
         except Exception:
           self.logger.error('Aborting processing of "%s" commits.', key)
           break
@@ -253,8 +247,6 @@ class GitilesPoller(Poller):
                         self.__class__.__name__, type(handler))
 
   def execute(self):
-    self._WarmUpHandlers()
-
     # Pocess remaining initialization commits. Most likely these are just older,
     # baseline commits, and the poller has already processed well past them, but
     # it's possible that someone updated the baseline to something after what

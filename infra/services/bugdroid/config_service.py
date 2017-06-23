@@ -22,50 +22,41 @@ DEFAULT_NO_MERGE_REFS = ['refs/heads/master', 'refs/heads/git-svn']
 
 
 def get_repos(credentials_db, configfile=None):
-  repo_cfg = None
+  if configfile:
+    logging.info('Read repo configs from local file %s', configfile)
+    with open(configfile, 'r') as f:
+      content_text = f.read()
 
-  try:
-    if configfile:
-      logging.info('Read repo configs from local file %s', configfile)
-      with open(configfile, 'r') as f:
-        content_text = f.read()
-      
-    else:
-      logging.info('Read repo configs from luci-config.')
-      with open(credentials_db) as data_file:    
-        creds_data = json.load(data_file)
-      credentials = OAuth2Credentials(
-          None, creds_data['client_id'], creds_data['client_secret'],
-          creds_data['refresh_token'], None,
-          'https://accounts.google.com/o/oauth2/token',
-          'bugdroid-config-service')
-      if not credentials:
-        logging.error('Invalid credentail file')
-        return None
+  else:
+    logging.info('Read repo configs from luci-config.')
+    with open(credentials_db) as data_file:
+      creds_data = json.load(data_file)
+    credentials = OAuth2Credentials(
+        None, creds_data['client_id'], creds_data['client_secret'],
+        creds_data['refresh_token'], None,
+        'https://accounts.google.com/o/oauth2/token',
+        'bugdroid-config-service')
+    if not credentials:
+      logging.error('Invalid credentail file')
+      return None
 
-      http = httplib2.Http()
-      http = credentials.authorize(http)
-      headers={'Content-Type': 'application/json; charset=UTF-8'}
-      resp, content = http.request(LUCI_CONFIG_URL, headers=headers)
-      if resp.status != 200:
-        logging.error('Invalid response from luci-config: %d', resp.status)
-        return None
-      content_json = json.loads(content)
-      config_content = content_json['content']
-      content_text = base64.b64decode(config_content)
+    http = httplib2.Http()
+    http = credentials.authorize(http)
+    headers={'Content-Type': 'application/json; charset=UTF-8'}
+    resp, content = http.request(LUCI_CONFIG_URL, headers=headers)
+    if resp.status != 200:
+      logging.error('Invalid response from luci-config: %d', resp.status)
+      return None
+    content_json = json.loads(content)
+    config_content = content_json['content']
+    content_text = base64.b64decode(config_content)
 
-    if content_text:
-      cfg = repo_config_pb2.RepoConfigs()
-      protobuf.text_format.Merge(content_text, cfg)
-      for repo in cfg.repos:
-        if not repo.no_merge_refs:
-          repo.no_merge_refs.extend(DEFAULT_NO_MERGE_REFS)
-      repo_cfg = cfg
-  except Exception as ex:
-      logging.exception(
-          'Failed to read repo configs: %s', str(ex))
-
-  return repo_cfg
+  cfg = repo_config_pb2.RepoConfigs()
+  protobuf.text_format.Merge(content_text, cfg)
+  for repo in cfg.repos:
+    if not repo.no_merge_refs:
+      repo.no_merge_refs.extend(DEFAULT_NO_MERGE_REFS)
+  return cfg
 
 
 def _decode_enum(enum_type, enum_val):
@@ -87,4 +78,4 @@ def decode_path_url_template(enum_val):
 
 
 def decode_repo_type(enum_val):
-  return _decode_enum(repo_config_pb2.RepoTye, enum_val)
+  return _decode_enum(repo_config_pb2.RepoType, enum_val)

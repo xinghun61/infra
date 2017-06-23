@@ -271,16 +271,21 @@ class RestApiHelper(object):
   def __init__(self, api_url, logger=None):
     self._api_url = api_url
     self.logger = logger or DEFAULT_LOGGER
+    self.headers = {}
 
     # Add a Basic auth handler using credentials from netrc.
     urlp = urlparse.urlparse(self._api_url)
-    nrc = netrc.netrc()
     self.http = httplib2_utils.InstrumentedHttp('gob:%s' % urlp.path)
-    self.headers = {}
-    if urlp.netloc in nrc.hosts:
-      self.headers['Authorization'] = 'OAuth %s' % nrc.hosts[urlp.netloc][2]
+
+    try:
+      nrc = netrc.netrc()
+    except IOError:
+      logging.exception('Failed to authenticate REST API client')
     else:
-      logging.warning('No auth token found for host %s!' % urlp.netloc)
+      if urlp.netloc in nrc.hosts:
+        self.headers['Authorization'] = 'OAuth %s' % nrc.hosts[urlp.netloc][2]
+      else:
+        logging.warning('No auth token found for host %s!' % urlp.netloc)
 
 
 class GitilesHelper(RestApiHelper):
