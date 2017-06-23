@@ -48,7 +48,7 @@ def _SequentialSearch(
     analyzed_points, lower_boundary_index, all_builds, invalid_builds):
   """Determines the next run number for sequential search, or the culprit.
 
-      Should only be called by GetNextRunPointNumber when sequential search
+      Should only be called by _ExponentialSearch when sequential search
       is ready.
 
   Args:
@@ -92,8 +92,9 @@ def _SequentialSearch(
   return next_run_point, result, None
 
 
-def GetNextRunPointNumber(data_points, algorithm_settings,
-                          lower_bound_run_point_number=None):
+def _ExponentialSearch(data_points,
+                       algorithm_settings,
+                       lower_bound_run_point_number=None):
   """Determines the next numerical point to check flakiness on.
 
   Args:
@@ -219,3 +220,83 @@ def GetNextRunPointNumber(data_points, algorithm_settings,
     next_run_point = _FindNeighbor(next_run_point, all_builds)
 
   return next_run_point, result, None
+
+
+def BisectPoint(lower_bound, upper_bound):
+  assert upper_bound >= 0
+  assert lower_bound >= 0
+  assert upper_bound >= lower_bound
+  return lower_bound + (upper_bound - lower_bound) / 2
+
+
+def _GetBisectRange(data_points, algorithm_settings):
+  """Gets the latest lower/upper bounds to bisect.
+
+  Args:
+    data_points (list): A list of data points within a range sorted in ascending
+        order by run_point_number.
+    algorithm_settings (dict): The parameter settings used for analysis to help
+        determine a flaky vs stable data point.
+
+  Returns:
+    lower_bound (int), upper_bound (int): The run number of the latest stable
+        data_point and run number of the earliest subsequent flaky data point.
+  """
+  assert len(data_points) >= 2
+  lower_flake_threshold = algorithm_settings.get('lower_flake_threshold')
+  upper_flake_threshold = algorithm_settings.get('upper_flake_threshold')
+  assert not IsStable(
+      data_points[-1].pass_rate, lower_flake_threshold, upper_flake_threshold)
+
+  latest_stable_index = 0
+  for i, data_point in enumerate(data_points):
+    if IsStable(
+        data_point.pass_rate, lower_flake_threshold, upper_flake_threshold):
+      latest_stable_index = i
+
+  return (data_points[latest_stable_index].run_point_number,
+          data_points[latest_stable_index + 1].run_point_number)
+
+
+def _Bisect(data_points, algorithm_settings):
+  """Bisects a regression range or returns a culprit.
+
+  Args:
+    data_points (list): A list of data points sorted in ascending order by
+        run point number expected to contain at least one stable point
+        followed by a flaky point somewhere later in the list.
+    algorithm_settings (dict): The pramaters used during analysis.
+
+  Returns:
+    (int, int): The next point to run and suspected run point number. If the
+        next run number is determined, there will be no suspected point and vice
+        versa.
+  """
+  lower_bound, upper_bound = _GetBisectRange(data_points, algorithm_settings)
+  next_run_point = BisectPoint(lower_bound, upper_bound)
+
+  if next_run_point == lower_bound:
+    return None, upper_bound
+
+  return next_run_point, None
+
+
+def _ShouldRunBisect(lower_bound_run_point_number,
+                     upper_bound_run_point_number):
+  """Determines whether or not bisect should be run."""
+  return (lower_bound_run_point_number is not None and
+          upper_bound_run_point_number is not None)
+
+
+def GetNextRunPointNumber(data_points,
+                          algorithm_settings,
+                          lower_bound_run_point_number=None,
+                          upper_bound_run_point_number=None):
+  """Determines the next point to analyze to be handled by the caller."""
+  if _ShouldRunBisect(lower_bound_run_point_number,
+                      upper_bound_run_point_number):
+    next_run_point, suspected_point = _Bisect(data_points, algorithm_settings)
+    return next_run_point, suspected_point, None
+
+  return _ExponentialSearch(
+      data_points, algorithm_settings, lower_bound_run_point_number)

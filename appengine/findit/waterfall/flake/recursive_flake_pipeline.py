@@ -137,8 +137,6 @@ def _UpdateAnalysisStatusAndStartTime(analysis):
     analysis.put()
 
 
-
-
 def _IsSwarmingTaskSufficientForCacheHit(
     flake_swarming_task, number_of_iterations):
   """Determines whether or not a swarming task is sufficient for a cache hit.

@@ -330,8 +330,8 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
           logging.info('Retries exceed max count, RecursiveFlakeTryJobPipeline '
                        'on MasterFlakeAnalysis %s/%s/%s/%s/%s will start off '
                        'peak hours', analysis.master_name,
-                        analysis.builder_name, analysis.build_number,
-                        analysis.step_name, analysis.test_name)
+                       analysis.builder_name, analysis.build_number,
+                       analysis.step_name, analysis.test_name)
         else:
           pipeline_job._RetryWithDelay(
               queue_name=self.queue_name or constants.DEFAULT_QUEUE)
@@ -365,8 +365,7 @@ def _NormalizeDataPoints(data_points):
                                                  data_point.pass_rate))
                             for data_point in data_points]
 
-  return sorted(normalized_data_points, key=lambda k: k.run_point_number,
-                reverse=True)
+  return sorted(normalized_data_points, key=lambda k: k.run_point_number)
 
 
 def _GetNormalizedTryJobDataPoints(
@@ -441,7 +440,9 @@ class NextCommitPositionPipeline(BasePipeline):
         upper_bound_commit_position)
     next_commit_position, suspected_commit_position, _ = (
         lookback_algorithm.GetNextRunPointNumber(
-            data_points, algorithm_settings, lower_bound_commit_position))
+            data_points, algorithm_settings,
+            lower_bound_run_point_number=lower_bound_commit_position,
+            upper_bound_run_point_number=upper_bound_commit_position))
 
     if suspected_commit_position is not None:  # Finished.
       confidence_score = confidence.SteppinessForCommitPosition(

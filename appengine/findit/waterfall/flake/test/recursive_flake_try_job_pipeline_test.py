@@ -36,23 +36,6 @@ from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 _DEFAULT_CACHE_NAME = swarming_util.GetCacheName(None, None)
 
 
-def _GenerateDataPoint(
-    pass_rate=None, build_number=None, task_id=None, try_job_url=None,
-    commit_position=None, git_hash=None, previous_build_commit_position=None,
-    previous_build_git_hash=None, blame_list=None):
-  data_point = DataPoint()
-  data_point.pass_rate = pass_rate
-  data_point.build_number = build_number
-  data_point.task_id = task_id
-  data_point.try_job_url = try_job_url
-  data_point.commit_position = commit_position
-  data_point.git_hash = git_hash
-  data_point.previous_build_commit_position = previous_build_commit_position
-  data_point.previous_build_git_hash = previous_build_git_hash
-  data_point.blame_list = blame_list if blame_list else []
-  return data_point
-
-
 class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
@@ -262,13 +245,13 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.status = analysis_status.COMPLETED
     analysis.try_job_status = analysis_status.RUNNING
     analysis.data_points = [
-        _GenerateDataPoint(
+        DataPoint.Create(
             pass_rate=0.9, commit_position=100, build_number=12345,
             previous_build_commit_position=90, blame_list=[
                 'r91', 'r92', 'r93', 'r94', 'r95', 'r96', 'r97', 'r98', 'r99',
                 'r100']),
-        _GenerateDataPoint(
-            pass_rate=0.9, commit_position=99)]
+        DataPoint.Create(
+            pass_rate=0.9, commit_position=90)]
     analysis.suspected_flake_build_number = 12345
     analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
     analysis.Save()
@@ -276,7 +259,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(
         recursive_flake_try_job_pipeline.RecursiveFlakeTryJobPipeline,
         '',
-        expected_args=[analysis.key.urlsafe(), 97, 'r97', 90, 100, None,
+        expected_args=[analysis.key.urlsafe(), 95, 'r95', 90, 100, None,
                        _DEFAULT_CACHE_NAME, None],
         expected_kwargs={'retries': 0, 'rerun': False})
 
@@ -315,15 +298,15 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.status = analysis_status.COMPLETED
     analysis.try_job_status = analysis_status.RUNNING
     analysis.data_points = [
-        _GenerateDataPoint(
+        DataPoint.Create(
             pass_rate=0.9, commit_position=100, build_number=12345,
             previous_build_commit_position=90, blame_list=[
                 'r91', 'r92', 'r93', 'r94', 'r95', 'r96', 'r97', 'r98', 'r99',
                 'r100']),
-        _GenerateDataPoint(pass_rate=0.9, commit_position=99, try_job_url='u1'),
-        _GenerateDataPoint(pass_rate=0.9, commit_position=97, try_job_url='u2'),
-        _GenerateDataPoint(pass_rate=0.9, commit_position=95, try_job_url='u4'),
-        _GenerateDataPoint(pass_rate=1.0, commit_position=94, try_job_url='u3')]
+        DataPoint.Create(pass_rate=0.9, commit_position=99, try_job_url='u1'),
+        DataPoint.Create(pass_rate=0.9, commit_position=97, try_job_url='u2'),
+        DataPoint.Create(pass_rate=0.9, commit_position=95, try_job_url='u4'),
+        DataPoint.Create(pass_rate=1.0, commit_position=94, try_job_url='u3')]
     analysis.suspected_flake_build_number = 12345
     analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
     analysis.Save()
@@ -378,10 +361,11 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.status = analysis_status.COMPLETED
     analysis.try_job_status = analysis_status.RUNNING
     analysis.data_points = [
-        _GenerateDataPoint(
+        DataPoint.Create(
             pass_rate=0.9, commit_position=commit_position, build_number=12345,
             previous_build_commit_position=98, blame_list=['r99', 'r100']),
-        _GenerateDataPoint(pass_rate=-1, commit_position=99, try_job_url='id1')]
+        DataPoint.Create(pass_rate=-1, commit_position=99, try_job_url='id1'),
+        DataPoint.Create(pass_rate=-1, commit_position=98)]
     analysis.suspected_flake_build_number = 12345
     analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
     analysis.Save()
@@ -665,8 +649,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     suspected_flake_commit_position = 100,
     suspected_flake_lower_bound = 90
     data_points = [
-        _GenerateDataPoint(pass_rate=0.8, commit_position=100,
-                           build_number=suspected_flake_build_number)]
+        DataPoint.Create(pass_rate=0.8, commit_position=100,
+                         build_number=suspected_flake_build_number)]
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.suspected_flake_build_number = suspected_flake_build_number
     analysis.data_points = data_points
@@ -680,12 +664,12 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   def testGetTryJobDataPointsWithTryJobs(self):
     suspected_flake_build_number = 12345
     all_data_points = [
-        _GenerateDataPoint(pass_rate=0.8, commit_position=100,
-                           build_number=suspected_flake_build_number),
-        _GenerateDataPoint(pass_rate=1.0, commit_position=90,
-                           build_number=suspected_flake_build_number - 1),
-        _GenerateDataPoint(pass_rate=0.8, commit_position=99,
-                           try_job_url='url')]
+        DataPoint.Create(pass_rate=0.8, commit_position=100,
+                         build_number=suspected_flake_build_number),
+        DataPoint.Create(pass_rate=1.0, commit_position=90,
+                         build_number=suspected_flake_build_number - 1),
+        DataPoint.Create(pass_rate=0.8, commit_position=99,
+                         try_job_url='url')]
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.suspected_flake_build_number = suspected_flake_build_number
@@ -693,9 +677,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     normalized_data_points = _GetNormalizedTryJobDataPoints(
         analysis, 91, 100)
 
-    self.assertEqual(normalized_data_points[0].run_point_number, 100)
+    self.assertEqual(normalized_data_points[0].run_point_number, 99)
     self.assertEqual(normalized_data_points[0].pass_rate, 0.8)
-    self.assertEqual(normalized_data_points[1].run_point_number, 99)
+    self.assertEqual(normalized_data_points[1].run_point_number, 100)
     self.assertEqual(normalized_data_points[1].pass_rate, 0.8)
 
   @mock.patch.object(RecursiveFlakeTryJobPipeline, 'was_aborted',
@@ -793,7 +777,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, step_name, test_name, revision)
     # Buildbot.
     with mock.patch('waterfall.waterfall_config.GetWaterfallTrybot',
-                    return_value= ('tryserver.chromium.linux', 'b_variable')):
+                    return_value=('tryserver.chromium.linux', 'b_variable')):
       # Continue if the job is not to be run on swarmbucket.
       self.assertTrue(recursive_flake_try_job_pipeline._CanStartTryJob(
           try_job, False, 0))
@@ -808,12 +792,12 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
       self.assertTrue(recursive_flake_try_job_pipeline._CanStartTryJob(
           try_job, False, 100))
       with mock.patch('waterfall.swarming_util.GetSwarmingBotCounts',
-                      return_value= {'count': 10, 'available': 10}):
+                      return_value={'count': 10, 'available': 10}):
         # Continue if enough bots are available.
         self.assertTrue(recursive_flake_try_job_pipeline._CanStartTryJob(
             try_job, False, 0))
       with mock.patch('waterfall.swarming_util.GetSwarmingBotCounts',
-                      return_value= {'count': 10, 'available': 4}):
+                      return_value={'count': 10, 'available': 4}):
         # Delay the job if not enough bots are available.
         self.assertFalse(recursive_flake_try_job_pipeline._CanStartTryJob(
             try_job, False, 0))
