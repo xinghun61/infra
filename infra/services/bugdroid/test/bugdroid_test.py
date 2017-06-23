@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import argparse
 import logging
 import os
 import mock
@@ -308,3 +309,12 @@ class BugdroidTest(unittest.TestCase):
     b.Execute()
     mock_poller.start.assert_called_once_with()
     mock_poller.join.assert_called_once_with()
+
+
+class InnerLoopTest(unittest.TestCase):
+  @mock.patch('infra.services.bugdroid.bugdroid.Bugdroid', autospec=True)
+  def test_inner_loop(self, mock_bugdroid):
+    self.assertTrue(bugdroid.inner_loop(argparse.Namespace(
+        configfile='foo', credentials_db='bar', datadir='baz')))
+    mock_bugdroid.assert_called_once_with('foo', 'bar', True, 'baz')
+    mock_bugdroid.return_value.Execute.assert_called_once_with()

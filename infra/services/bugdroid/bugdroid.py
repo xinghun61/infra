@@ -268,6 +268,7 @@ class Bugdroid(object):
 
 def inner_loop(opts):
   Bugdroid(opts.configfile, opts.credentials_db, True, opts.datadir).Execute()
+  return True
 
 
 class Error(Exception):
