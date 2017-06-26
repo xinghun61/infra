@@ -6,3 +6,7 @@ util_scripts/tmp
 
 # Polymer
 third_party/bower_components
+
+# Project files
+.idea/*
+.vscode/*
