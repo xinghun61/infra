@@ -320,6 +320,7 @@
         for (let i in alerts) {
           let alert = alerts[i];
           let ann = this.computeAnnotation(annotations, alert);
+
           if (ann.groupID) {
             if (!(ann.groupID in groups)) {
               let group = {
@@ -338,8 +339,7 @@
               }
 
               // Group name is stored using the groupID annotation.
-              let groupAnn =
-                  this.computeAnnotation(annotations, group);
+              let groupAnn = this.computeAnnotation(annotations, group);
               if (groupAnn.groupID) {
                 group.title = groupAnn.groupID;
               }
@@ -357,8 +357,9 @@
             if (alert.start_time < group.start_time) {
               group.start_time = alert.start_time;
             }
-            group.links = group.links.concat(alert.links);
-            group.tags = group.tags.concat(alert.tags);
+            if (alert.links) group.links = group.links.concat(alert.links);
+            if (alert.tags) group.tags = group.tags.concat(alert.tags);
+
             if (alert.extension) {
               this._mergeStages(group.extension.stages, alert.extension.stages,
                                 alert.extension.builders);
@@ -673,17 +674,12 @@
       this._uncheckAll();
     },
 
-    _hasGroupAll: function(checkedAlerts, tree) {
+    _hasGroupAll: function(checkedAlerts) {
       // If more than two of the checked alerts are a group...
       let groups = checkedAlerts.filter((alert) => {
         return alert && alert.grouped;
       });
-      return checkedAlerts.length > 1 && groups.length < 2 &&
-             this._isCrOSTree(tree.name);
-    },
-
-    _isCrOSTree: function(treeName) {
-      return treeName && (treeName == 'chromeos' || treeName == 'gardener');
+      return checkedAlerts.length > 1 && groups.length < 2;
     },
 
     _handleUngroup: function(evt) {

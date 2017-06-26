@@ -224,7 +224,7 @@
               <iron-icon class="snooze-icon" icon="[[_snoozeIcon]]"></iron-icon>
               [[_snoozeText]]
             </button>
-            <button id="group" on-tap="_group" alt="Group" hidden$="[[!_hasGroup]]">
+            <button id="group" on-tap="_group" alt="Group">
               <iron-icon class="group-icon" icon="editor:merge-type"></iron-icon>
               Group
             </button>
@@ -257,8 +257,8 @@
               <a class="alert-link" target="_blank" href$="[[_linkify(linkStyle, link.href)]]">[[link.title]]</a>
             </template>
           </div>
-          <som-extension-trooper-failure tree-name="[[treeName]]" type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-trooper-failure>
-          <som-extension-build-failure type="[[alert.type]]" extension="[[alert.extension]]" link-style="[[linkStyle]]"></som-extension-build-failure>
+          <som-extension-trooper-failure tree-name="[[treeName]]" type="[[alert.type]]" extension="[[_getExtension(selectedAlert, alert)]]" link-style="[[linkStyle]]"></som-extension-trooper-failure>
+          <som-extension-build-failure type="[[alert.type]]" extension="[[_getExtension(selectedAlert, alert)]]" link-style="[[linkStyle]]"></som-extension-build-failure>
           <som-extension-cros-failure type="[[alert.type]]" extension="[[_getExtension(selectedAlert, alert)]]" link-style="[[linkStyle]]"></som-extension-cros-failure>
         </div>
       </div>

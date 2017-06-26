@@ -84,8 +84,8 @@
       (<small class="link" on-tap="_uncheckAll">Unselect all?</small>)
       <button on-tap="_handleLinkBugBulk">Link Bug to All</button>
       <button on-tap="_handleSnoozeBulk">Snooze All</button>
-      <button on-tap="_handleGroupBulk"
-        hidden$="[[!_hasGroupAll(_checkedAlerts, tree)]]">Group All</button>
+      <button on-tap="_handleGroupBulk" hidden$="[[!_hasGroupAll(_checkedAlerts)]]">
+        Group All</button>
     </div>
     <iron-pages attr-for-selected="id" selected="[[_currentAlertView]]">
       <div id="alertListPage">

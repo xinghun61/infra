@@ -208,10 +208,6 @@
       return treeName && (treeName == 'chromeos' || treeName == 'gardener');
     },
 
-    _computeHasGroup: function(treeName) {
-      return this._isCrOSTree(treeName);
-    },
-
     _computeHasUngroup: function(alert) {
       return alert && !!alert.grouped;
     },
@@ -232,8 +228,8 @@
     },
 
     _haveLinks: function(selected, alert) {
-      return (selected || !alert.grouped) && alert && alert.links &&
-             alert.links.length > 0;
+      let links = this._getLinks(selected, alert);
+      return links && links.length > 0;
     },
 
     _removeBug: function(evt) {
@@ -286,7 +282,7 @@
         return selected;
       }
 
-      if (alert.grouped && alert.alerts) {
+      if (selected && alert.grouped && alert.alerts) {
         // This alert is a group, search for the selected sub-alert.
         let subAlert = alert.alerts.find((a) => {
           return a.key == selected;
@@ -296,9 +292,6 @@
           // Return the selected alert.
           return subAlert;
         }
-
-        // Return the group extensions.
-        return alert;
       }
 
       return alert;
