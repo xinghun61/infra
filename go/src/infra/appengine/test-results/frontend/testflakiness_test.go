@@ -11,14 +11,19 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"sync"
 	"testing"
 
 	"github.com/luci/gae/impl/memory"
+	"github.com/luci/luci-go/common/proto/milo"
+	milo_api "github.com/luci/luci-go/milo/api/proto"
+	"github.com/luci/luci-go/server/auth/authtest"
 	"github.com/luci/luci-go/server/router"
 	. "github.com/smartystreets/goconvey/convey"
 	"golang.org/x/net/context"
 	bigquery "google.golang.org/api/bigquery/v2"
+	grpc "google.golang.org/grpc"
 )
 
 type expectedRequest struct {
@@ -334,6 +339,52 @@ func TestFlakinessList(t *testing.T) {
 	})
 }
 
+type mockBuildInfoClient struct {
+	miloDB map[string]string // key is 'master/builder/build_number', value is step name
+	c      C
+}
+
+func (cl *mockBuildInfoClient) Get(ctx context.Context, in *milo_api.BuildInfoRequest, opts ...grpc.CallOption) (*milo_api.BuildInfoResponse, error) {
+	key := in.GetBuildbot().MasterName + "/" + in.GetBuildbot().BuilderName + "/" + strconv.FormatInt(in.GetBuildbot().BuildNumber, 10)
+	stepName, ok := cl.miloDB[key]
+	cl.c.So(ok, ShouldBeTrue)
+	resp := &milo_api.BuildInfoResponse{
+		Project: "chromium",
+		Step: &milo.Step{
+			Name: "steps",
+			Substep: []*milo.Step_Substep{
+				{
+					Substep: &milo.Step_Substep_Step{
+						Step: &milo.Step{
+							Name: stepName,
+							StdoutStream: &milo.LogdogStream{
+								Name: "recipes/steps/" + stepName + "/0/stdout",
+							},
+						},
+					},
+				},
+			},
+		},
+		AnnotationStream: &milo.LogdogStream{
+			Server: "luci-logdog.appspot.com",
+			Prefix: "bb/" + key,
+		},
+	}
+	return resp, nil
+}
+
+type mockTestFlakinessService struct {
+	bic mockBuildInfoClient
+}
+
+func (p mockTestFlakinessService) GetBuildInfoClient(ctx context.Context) (milo_api.BuildInfoClient, error) {
+	return &p.bic, nil
+}
+
+func (p mockTestFlakinessService) GetBQService(aeCtx context.Context) (*bigquery.Service, error) {
+	return nil, nil
+}
+
 func TestFlakinessData(t *testing.T) {
 	t.Parallel()
 
@@ -361,7 +412,7 @@ func TestFlakinessData(t *testing.T) {
 											]}`,
 				},
 				{
-					Query: falseRejectionBuildsQuery,
+					Query: cqFlakyBuildsQuery,
 					Params: `[{"name":"testname","parameterType":{"type":"STRING"},` +
 						`"parameterValue":{"value":"Foo.Bar"}}]`,
 					Path: "/projects/test-results-hrd/queries",
@@ -389,33 +440,83 @@ func TestFlakinessData(t *testing.T) {
 		So(err, ShouldBeNil)
 		bq.BasePath = server.URL + "/"
 		ctx := memory.UseWithAppID(context.Background(), "test-results-hrd")
+		ctx = authtest.MockAuthConfig(ctx)
 
-		data, err := getFlakinessData(ctx, bq, "Foo.Bar")
+		bic := mockBuildInfoClient{
+			miloDB: map[string]string{
+				"master1/builder1/1": "step1",
+				"master2/builder2/2": "step2",
+				"master3/builder3/3": "step3",
+				"master3/builder3/4": "step3",
+				"master4/builder4/5": "step4",
+				"master4/builder4/6": "step4",
+			},
+			c: c,
+		}
+
+		data, err := getFlakinessData(ctx, mockTestFlakinessService{bic}, bq, "Foo.Bar")
 		So(err, ShouldBeNil)
 
 		So(data.FlakyBuilds, ShouldResemble, []FlakyBuild{
 			{
-				"https://build.chromium.org/p/master1/builders/builder1/builds/1",
-				"not-implemented",
+				"https://luci-milo.appspot.com/buildbot/master1/builder1/1",
+				"https://luci-logdog.appspot.com/v/?s=chromium%2Fbb%2Fmaster1%2Fbuilder1%2F1%2F%2B%2Frecipes%2Fsteps%2Fstep1%2F0%2Fstdout",
 			},
 			{
-				"https://build.chromium.org/p/master2/builders/builder2/builds/2",
-				"not-implemented",
+				"https://luci-milo.appspot.com/buildbot/master2/builder2/2",
+				"https://luci-logdog.appspot.com/v/?s=chromium%2Fbb%2Fmaster2%2Fbuilder2%2F2%2F%2B%2Frecipes%2Fsteps%2Fstep2%2F0%2Fstdout",
 			},
 		})
-		So(data.FalseRejectionBuilds, ShouldResemble, []FalseRejectionBuild{
+		So(data.CQFlakyBuilds, ShouldResemble, []CQFlakyBuild{
 			{
-				"https://build.chromium.org/p/master3/builders/builder3/builds/3",
-				"not-implemented",
-				"https://build.chromium.org/p/master3/builders/builder3/builds/4",
-				"not-implemented",
+				"https://luci-milo.appspot.com/buildbot/master3/builder3/3",
+				"https://luci-logdog.appspot.com/v/?s=chromium%2Fbb%2Fmaster3%2Fbuilder3%2F3%2F%2B%2Frecipes%2Fsteps%2Fstep3%2F0%2Fstdout",
+				"https://luci-milo.appspot.com/buildbot/master3/builder3/4",
+				"https://luci-logdog.appspot.com/v/?s=chromium%2Fbb%2Fmaster3%2Fbuilder3%2F4%2F%2B%2Frecipes%2Fsteps%2Fstep3%2F0%2Fstdout",
 			},
 			{
-				"https://build.chromium.org/p/master4/builders/builder4/builds/5",
-				"not-implemented",
-				"https://build.chromium.org/p/master4/builders/builder4/builds/6",
-				"not-implemented",
+				"https://luci-milo.appspot.com/buildbot/master4/builder4/5",
+				"https://luci-logdog.appspot.com/v/?s=chromium%2Fbb%2Fmaster4%2Fbuilder4%2F5%2F%2B%2Frecipes%2Fsteps%2Fstep4%2F0%2Fstdout",
+				"https://luci-milo.appspot.com/buildbot/master4/builder4/6",
+				"https://luci-logdog.appspot.com/v/?s=chromium%2Fbb%2Fmaster4%2Fbuilder4%2F6%2F%2B%2Frecipes%2Fsteps%2Fstep4%2F0%2Fstdout",
 			},
 		})
+	})
+}
+
+func TestCachedDataHandler(t *testing.T) {
+	t.Parallel()
+
+	Convey("cachedDataHandler", t, func(c C) {
+		rec := httptest.NewRecorder()
+		ctx := &router.Context{
+			Context: memory.Use(context.Background()),
+			Writer:  rec,
+		}
+
+		calledFunc := false
+		cachedDataHandler(
+			ctx, mockTestFlakinessService{}, "mockFunc", "mockKey", []string{},
+			func(context.Context, testFlakinessService, *bigquery.Service) (interface{}, error) {
+				calledFunc = true
+				return []string{"abc", "cde", "efg"}, nil
+			},
+		)
+		So(calledFunc, ShouldBeTrue)
+		So(rec.Result().StatusCode, ShouldEqual, http.StatusOK)
+		So(rec.Body.String(), ShouldEqual, "[\"abc\",\"cde\",\"efg\"]")
+		rec.Body.Reset()
+
+		calledFunc = false
+		cachedDataHandler(
+			ctx, mockTestFlakinessService{}, "mockFunc", "mockKey", []string{},
+			func(context.Context, testFlakinessService, *bigquery.Service) (interface{}, error) {
+				calledFunc = true
+				return []string{"abc", "cde", "efg"}, nil
+			},
+		)
+		So(calledFunc, ShouldBeFalse)
+		So(rec.Result().StatusCode, ShouldEqual, http.StatusOK)
+		So(rec.Body.String(), ShouldEqual, "[\"abc\",\"cde\",\"efg\"]")
 	})
 }

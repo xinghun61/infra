@@ -14,13 +14,22 @@ import (
 
 	"github.com/luci/gae/service/info"
 	"github.com/luci/gae/service/memcache"
+
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/proto/milo"
 	"github.com/luci/luci-go/common/retry"
+	"github.com/luci/luci-go/common/sync/parallel"
+	"github.com/luci/luci-go/grpc/prpc"
+	"github.com/luci/luci-go/logdog/common/types"
+	"github.com/luci/luci-go/logdog/common/viewer"
+	"github.com/luci/luci-go/luci_config/common/cfgtypes"
+	milo_api "github.com/luci/luci-go/milo/api/proto"
+	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
+
 	"golang.org/x/net/context"
 	"golang.org/x/oauth2/google"
-	"golang.org/x/sync/errgroup"
 	bigquery "google.golang.org/api/bigquery/v2"
 	"google.golang.org/appengine"
 )
@@ -76,16 +85,23 @@ const flakyBuildsQuery = `
   FROM
     plx.google.chrome_infra.recent_flaky_test_failures.all
   WHERE
-    test_name = @testname;`
+    test_name = @testname
+	LIMIT
+	  100;`
 
-// TODO(sergiyb): Implement query.
-const falseRejectionBuildsQuery = `
+const cqFlakyBuildsQuery = `
   SELECT
-    'not-implemented' as master,
-    'not-implemented' as builder,
-    'not-implemented' as passed_build_number,
-    'not-implemented' as failed_build_number,
-    'not-implemented' as step_name;`
+    master,
+    builder,
+    passed_build_number,
+    failed_build_number,
+    step_name
+  FROM
+    plx.google.chrome_infra.test_cq_flaky_builds.all
+  WHERE
+    test_name = @testname
+  LIMIT
+	  100;`
 
 // Set 50 second timeout for the BigQuery queries, which leaves 10 seconds for
 // overhead before HTTP timeout. The query will actually continue to run after
@@ -133,7 +149,8 @@ type FlakinessListItem struct {
 	NormalizedStepName string  `json:"normalized_step_name"`
 	TotalFlakyFailures uint64  `json:"total_flaky_failures"`
 	TotalTries         uint64  `json:"total_tries"`
-	CQFalseRejections  uint64  `json:"cq_false_rejections"`
+	// TODO(sergiyb): rename to CQFlakyBuilds
+	CQFalseRejections uint64 `json:"cq_false_rejections"`
 }
 
 // FlakyBuild represents a build in which a test has passed and failed.
@@ -142,8 +159,8 @@ type FlakyBuild struct {
 	LogURL   string `json:"log_url"`
 }
 
-// FalseRejectionBuild represent a build, which has failed due to a flaky test.
-type FalseRejectionBuild struct {
+// CQFlakyBuild represent a build, which has failed due to a flaky test.
+type CQFlakyBuild struct {
 	PassedBuildURL string `json:"passed_build_url"`
 	PassedLogURL   string `json:"passed_log_url"`
 	FailedBuildURL string `json:"failed_build_url"`
@@ -152,8 +169,8 @@ type FalseRejectionBuild struct {
 
 // FlakyTestDetails represents detailed information about a flaky test.
 type FlakyTestDetails struct {
-	FlakyBuilds          []FlakyBuild          `json:"flaky_builds"`
-	FalseRejectionBuilds []FalseRejectionBuild `json:"false_rejection_builds"`
+	FlakyBuilds   []FlakyBuild   `json:"flaky_builds"`
+	CQFlakyBuilds []CQFlakyBuild `json:"cq_flaky_builds"`
 }
 
 // Group represents infromation about flakiness of a group of tests.
@@ -240,7 +257,7 @@ func getFlakinessList(ctx context.Context, bq *bigquery.Service, group Group) ([
 
 		totalFlakyFailures, err := strconv.ParseUint(totalFlakyFailuresStr, 10, 64)
 		if err != nil {
-			return nil, errors.Annotate(err).Reason("Failed to convert total_flaky_failures value to uint64").Err()
+			return nil, errors.Annotate(err).Reason("failed to convert total_flaky_failures value to uint64").Err()
 		}
 
 		totalTriesStr, ok := row.F[3].V.(string)
@@ -250,7 +267,7 @@ func getFlakinessList(ctx context.Context, bq *bigquery.Service, group Group) ([
 
 		totalTries, err := strconv.ParseUint(totalTriesStr, 10, 64)
 		if err != nil {
-			return nil, errors.Annotate(err).Reason("Failed to convert total_tries value to uint64").Err()
+			return nil, errors.Annotate(err).Reason("failed to convert total_tries value to uint64").Err()
 		}
 
 		flakinessStr, ok := row.F[4].V.(string)
@@ -260,7 +277,7 @@ func getFlakinessList(ctx context.Context, bq *bigquery.Service, group Group) ([
 
 		flakiness, err := strconv.ParseFloat(flakinessStr, 64)
 		if err != nil {
-			return nil, errors.Annotate(err).Reason("Failed to convert flakiness value to float64").Err()
+			return nil, errors.Annotate(err).Reason("failed to convert flakiness value to float64").Err()
 		}
 
 		cqFalseRejectionsStr, ok := row.F[5].V.(string)
@@ -270,7 +287,7 @@ func getFlakinessList(ctx context.Context, bq *bigquery.Service, group Group) ([
 
 		cqFalseRejections, err := strconv.ParseUint(cqFalseRejectionsStr, 10, 64)
 		if err != nil {
-			return nil, errors.Annotate(err).Reason("Failed to convert cq_false_rejections value to uint64").Err()
+			return nil, errors.Annotate(err).Reason("failed to convert cq_false_rejections value to uint64").Err()
 		}
 
 		data = append(data, FlakinessListItem{
@@ -286,21 +303,77 @@ func getFlakinessList(ctx context.Context, bq *bigquery.Service, group Group) ([
 	return data, nil
 }
 
-func getBuildURL(master, builder string, buildNumber uint64) string {
+func getBuildURL(s testFlakinessService, master, builder string, buildNumber uint64) string {
 	return fmt.Sprintf(
-		"https://build.chromium.org/p/%s/builders/%s/builds/%d",
+		"https://luci-milo.appspot.com/buildbot/%s/%s/%d",
 		strings.TrimPrefix(master, "master."), builder, buildNumber)
 }
 
-func getStdoutLogURL(master, builder string, buildNumber uint64, stepName string) string {
-	// TODO(sergiyb): Query list of logs for a build from Milo using pRPC endpoint
-	// https://luci-milo.appspot.com/rpcexplorer/services/milo.BuildInfo/Get and
-	// format logdog URL for the matching step using GetURL function from package
-	// luci/luci-go/logdog/common/viewer.
-	return "not-implemented"
+func findStep(step *milo.Step, stepName string) *milo.Step {
+	if step.Name == stepName {
+		return step
+	}
+
+	for _, substep := range step.Substep {
+		if cs := substep.GetStep(); cs != nil {
+			if detectedStep := findStep(cs, stepName); detectedStep != nil {
+				return detectedStep
+			}
+		}
+	}
+
+	return nil
 }
 
-func getFlakyBuildsForTest(ctx context.Context, bq *bigquery.Service, test string) ([]FlakyBuild, error) {
+func getStdoutLogURL(ctx context.Context, s testFlakinessService, master, builder string, buildNumber uint64, stepName string) (string, error) {
+	ctx, cancelFunc := context.WithTimeout(ctx, 30*time.Second)
+	defer cancelFunc()
+	buildInfoClient, err := s.GetBuildInfoClient(ctx)
+	if err != nil {
+		return "", err
+	}
+
+	resp, err := buildInfoClient.Get(ctx, &milo_api.BuildInfoRequest{
+		Build: &milo_api.BuildInfoRequest_Buildbot{
+			Buildbot: &milo_api.BuildInfoRequest_BuildBot{
+				MasterName:  strings.TrimPrefix(master, "master."),
+				BuilderName: builder,
+				BuildNumber: int64(buildNumber),
+			},
+		},
+	})
+	if err != nil {
+		logging.WithError(err).Errorf(ctx, "Failed to retrieve BuildInfo for a build")
+		return "", err
+	}
+
+	step := findStep(resp.Step, stepName)
+	if step == nil {
+		return "", errors.Reason("failed to find step %(step)q").D("step", stepName).Err()
+	}
+
+	stream := step.StdoutStream
+	if resp.AnnotationStream != nil {
+		if stream.Server == "" {
+			stream.Server = resp.AnnotationStream.Server
+		}
+		if stream.Prefix == "" {
+			stream.Prefix = resp.AnnotationStream.Prefix
+		}
+	}
+
+	if stream.Server == "" || resp.Project == "" || stream.Prefix == "" || stream.Name == "" {
+		return "", errors.New("missing pieces needed to get log stream URL")
+	}
+
+	return viewer.GetURL(
+		stream.Server,
+		cfgtypes.ProjectName(resp.Project),
+		types.StreamName(stream.Prefix).Join(types.StreamName(stream.Name)),
+	), nil
+}
+
+func getFlakyBuildsForTest(ctx context.Context, s testFlakinessService, mr parallel.MultiRunner, bq *bigquery.Service, test string) ([]FlakyBuild, error) {
 	queryParams := []*bigquery.QueryParameter{
 		{
 			Name:           "testname",
@@ -314,43 +387,54 @@ func getFlakyBuildsForTest(ctx context.Context, bq *bigquery.Service, test strin
 		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
 	}
 
-	flakyBuilds := make([]FlakyBuild, 0, len(rows))
-	for _, row := range rows {
-		master, ok := row.F[0].V.(string)
-		if !ok {
-			return nil, errors.New("query returned non-string master column")
+	flakyBuilds := make([]FlakyBuild, len(rows))
+	err = mr.RunMulti(func(taskC chan<- func() error) {
+		for idx, row := range rows {
+			idx, row := idx, row
+			taskC <- func() (err error) {
+				master, ok := row.F[0].V.(string)
+				if !ok {
+					return errors.New("query returned non-string master column")
+				}
+
+				builder, ok := row.F[1].V.(string)
+				if !ok {
+					return errors.New("query returned non-string builder column")
+				}
+
+				buildNumberStr, ok := row.F[2].V.(string)
+				if !ok {
+					return errors.New("query returned non-string build_number column")
+				}
+
+				buildNumber, err := strconv.ParseUint(buildNumberStr, 10, 64)
+				if err != nil {
+					return errors.Annotate(err).Reason("failed to convert build_number value to int64").Err()
+				}
+
+				stepName, ok := row.F[3].V.(string)
+				if !ok {
+					return errors.New("query returned non-string step_name column")
+				}
+
+				var logURL string
+				if logURL, err = getStdoutLogURL(ctx, s, master, builder, buildNumber, stepName); err != nil {
+					return err
+				}
+
+				flakyBuilds[idx] = FlakyBuild{
+					BuildURL: getBuildURL(s, master, builder, buildNumber),
+					LogURL:   logURL,
+				}
+				return nil
+			}
 		}
+	})
 
-		builder, ok := row.F[1].V.(string)
-		if !ok {
-			return nil, errors.New("query returned non-string builder column")
-		}
-
-		buildNumberStr, ok := row.F[2].V.(string)
-		if !ok {
-			return nil, errors.New("query returned non-string build_number column")
-		}
-
-		buildNumber, err := strconv.ParseUint(buildNumberStr, 10, 64)
-		if err != nil {
-			return nil, errors.Annotate(err).Reason("Failed to convert build_number value to uint64").Err()
-		}
-
-		stepName, ok := row.F[3].V.(string)
-		if !ok {
-			return nil, errors.New("query returned non-string step_name column")
-		}
-
-		flakyBuilds = append(flakyBuilds, FlakyBuild{
-			BuildURL: getBuildURL(master, builder, buildNumber),
-			LogURL:   getStdoutLogURL(master, builder, buildNumber, stepName),
-		})
-	}
-
-	return flakyBuilds, nil
+	return flakyBuilds, err
 }
 
-func getCQFalseRejectionBuildsForTest(ctx context.Context, bq *bigquery.Service, test string) ([]FalseRejectionBuild, error) {
+func getCQFalseRejectionBuildsForTest(ctx context.Context, s testFlakinessService, mr parallel.MultiRunner, bq *bigquery.Service, test string) ([]CQFlakyBuild, error) {
 	queryParams := []*bigquery.QueryParameter{
 		{
 			Name:           "testname",
@@ -359,82 +443,138 @@ func getCQFalseRejectionBuildsForTest(ctx context.Context, bq *bigquery.Service,
 		},
 	}
 
-	rows, err := executeBQQuery(ctx, bq, falseRejectionBuildsQuery, queryParams)
+	rows, err := executeBQQuery(ctx, bq, cqFlakyBuildsQuery, queryParams)
 	if err != nil {
 		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
 	}
 
-	falseRejectionBuilds := make([]FalseRejectionBuild, 0, len(rows))
-	for _, row := range rows {
-		master, ok := row.F[0].V.(string)
-		if !ok {
-			return nil, errors.New("query returned non-string master column")
+	cqFlakyBuilds := make([]CQFlakyBuild, len(rows))
+	err = mr.RunMulti(func(taskC chan<- func() error) {
+		for idx, row := range rows {
+			idx, row := idx, row
+			taskC <- func() (err error) {
+				master, ok := row.F[0].V.(string)
+				if !ok {
+					return errors.New("query returned non-string master column")
+				}
+
+				builder, ok := row.F[1].V.(string)
+				if !ok {
+					return errors.New("query returned non-string builder column")
+				}
+
+				passedBuildNumberStr, ok := row.F[2].V.(string)
+				if !ok {
+					return errors.New("query returned non-string passed_build_number column")
+				}
+
+				passedBuildNumber, err := strconv.ParseUint(passedBuildNumberStr, 10, 64)
+				if err != nil {
+					return errors.Annotate(err).Reason("failed to convert passed_build_number value to int64").Err()
+				}
+
+				failedBuildNumberStr, ok := row.F[3].V.(string)
+				if !ok {
+					return errors.New("query returned non-string failed_build_number column")
+				}
+
+				failedBuildNumber, err := strconv.ParseUint(failedBuildNumberStr, 10, 64)
+				if err != nil {
+					return errors.Annotate(err).Reason("failed to convert failed_build_number value to int64").Err()
+				}
+
+				stepName, ok := row.F[4].V.(string)
+				if !ok {
+					return errors.New("query returned non-string step_name column")
+				}
+
+				var passedLogURL, failedLogURL string
+				err = parallel.FanOutIn(func(taskC chan<- func() error) {
+					taskC <- func() (err error) {
+						passedLogURL, err = getStdoutLogURL(ctx, s, master, builder, passedBuildNumber, stepName)
+						return err
+					}
+
+					taskC <- func() (err error) {
+						failedLogURL, err = getStdoutLogURL(ctx, s, master, builder, failedBuildNumber, stepName)
+						return err
+					}
+				})
+
+				if err != nil {
+					return err
+				}
+
+				cqFlakyBuilds[idx] = CQFlakyBuild{
+					PassedBuildURL: getBuildURL(s, master, builder, passedBuildNumber),
+					PassedLogURL:   passedLogURL,
+					FailedBuildURL: getBuildURL(s, master, builder, failedBuildNumber),
+					FailedLogURL:   failedLogURL,
+				}
+				return nil
+			}
 		}
+	})
 
-		builder, ok := row.F[1].V.(string)
-		if !ok {
-			return nil, errors.New("query returned non-string builder column")
-		}
-
-		passedBuildNumberStr, ok := row.F[2].V.(string)
-		if !ok {
-			return nil, errors.New("query returned non-string passed_build_number column")
-		}
-
-		passedBuildNumber, err := strconv.ParseUint(passedBuildNumberStr, 10, 64)
-		if err != nil {
-			return nil, errors.Annotate(err).Reason("Failed to convert passed_build_number value to uint64").Err()
-		}
-
-		failedBuildNumberStr, ok := row.F[3].V.(string)
-		if !ok {
-			return nil, errors.New("query returned non-string failed_build_number column")
-		}
-
-		failedBuildNumber, err := strconv.ParseUint(failedBuildNumberStr, 10, 64)
-		if err != nil {
-			return nil, errors.Annotate(err).Reason("Failed to convert failed_build_number value to uint64").Err()
-		}
-
-		stepName, ok := row.F[4].V.(string)
-		if !ok {
-			return nil, errors.New("query returned non-string step_name column")
-		}
-
-		falseRejectionBuilds = append(falseRejectionBuilds, FalseRejectionBuild{
-			PassedBuildURL: getBuildURL(master, builder, passedBuildNumber),
-			PassedLogURL:   getStdoutLogURL(master, builder, passedBuildNumber, stepName),
-			FailedBuildURL: getBuildURL(master, builder, failedBuildNumber),
-			FailedLogURL:   getStdoutLogURL(master, builder, failedBuildNumber, stepName),
-		})
-	}
-
-	return falseRejectionBuilds, nil
+	return cqFlakyBuilds, err
 }
 
-func getFlakinessData(aeCtx context.Context, bq *bigquery.Service, test string) (*FlakyTestDetails, error) {
+func getFlakinessData(aeCtx context.Context, s testFlakinessService, bq *bigquery.Service, test string) (*FlakyTestDetails, error) {
 	var flakyBuilds []FlakyBuild
-	var falseRejectionBuilds []FalseRejectionBuild
-	var g errgroup.Group
+	var cqFlakyBuilds []CQFlakyBuild
+	err := parallel.RunMulti(aeCtx, 50, func(mr parallel.MultiRunner) error {
+		var err error
+		if flakyBuilds, err = getFlakyBuildsForTest(aeCtx, s, mr, bq, test); err != nil {
+			return err
+		}
 
-	g.Go(func() (err error) {
-		flakyBuilds, err = getFlakyBuildsForTest(aeCtx, bq, test)
-		return
+		if cqFlakyBuilds, err = getCQFalseRejectionBuildsForTest(aeCtx, s, mr, bq, test); err != nil {
+			return err
+		}
+
+		return nil
 	})
-
-	g.Go(func() (err error) {
-		falseRejectionBuilds, err = getCQFalseRejectionBuildsForTest(aeCtx, bq, test)
-		return
-	})
-
-	if err := g.Wait(); err != nil {
-		return &FlakyTestDetails{}, err
-	}
 
 	return &FlakyTestDetails{
-		FlakyBuilds:          flakyBuilds,
-		FalseRejectionBuilds: falseRejectionBuilds,
-	}, nil
+		FlakyBuilds:   flakyBuilds,
+		CQFlakyBuilds: cqFlakyBuilds,
+	}, err
+}
+
+type testFlakinessService interface {
+	GetBuildInfoClient(context.Context) (milo_api.BuildInfoClient, error)
+	GetBQService(aeCtx context.Context) (*bigquery.Service, error)
+}
+
+type prodTestFlakinessService struct{}
+
+func (p prodTestFlakinessService) GetBuildInfoClient(ctx context.Context) (milo_api.BuildInfoClient, error) {
+	authTransport, err := auth.GetRPCTransport(ctx, auth.AsUser)
+	if err != nil {
+		return nil, err
+	}
+
+	options := prpc.DefaultOptions()
+	return milo_api.NewBuildInfoPRPCClient(&prpc.Client{
+		Host:    "luci-milo.appspot.com",
+		C:       &http.Client{Transport: authTransport},
+		Options: options,
+	}), nil
+}
+
+func (p prodTestFlakinessService) GetBQService(aeCtx context.Context) (*bigquery.Service, error) {
+	hc, err := google.DefaultClient(aeCtx, bigquery.BigqueryScope)
+	if err != nil {
+		return nil, errors.Annotate(err).Reason("failed to create http client").Err()
+	}
+
+	hc.Timeout = time.Minute // Increase timeout for BigQuery HTTP requests
+	bq, err := bigquery.New(hc)
+	if err != nil {
+		return nil, errors.Annotate(err).Reason("failed to create service object").Err()
+	}
+
+	return bq, nil
 }
 
 func testFlakinessDataHandler(ctx *router.Context) {
@@ -445,18 +585,20 @@ func testFlakinessDataHandler(ctx *router.Context) {
 		return
 	}
 
+	ctx.Context = appengine.WithContext(ctx.Context, ctx.Request)
 	cachedDataHandler(
 		ctx,
+		prodTestFlakinessService{},
 		"testFlakinessDataHandler",
 		fmt.Sprintf(flakinessDataKeyTemplate, test),
 		new(FlakyTestDetails),
-		func(aeCtx context.Context, bq *bigquery.Service) (interface{}, error) {
-			return getFlakinessData(aeCtx, bq, test)
+		func(aeCtx context.Context, s testFlakinessService, bq *bigquery.Service) (interface{}, error) {
+			return getFlakinessData(aeCtx, s, bq, test)
 		},
 	)
 }
 
-func cachedDataHandler(ctx *router.Context, funcName string, key string, data interface{}, fetchData func(aeCtx context.Context, bq *bigquery.Service) (interface{}, error)) {
+func cachedDataHandler(ctx *router.Context, s testFlakinessService, funcName string, key string, data interface{}, fetchData func(aeCtx context.Context, s testFlakinessService, bq *bigquery.Service) (interface{}, error)) {
 	// Check if we have recent results in memcache.
 	memcacheItem, err := memcache.GetKey(ctx.Context, key)
 	if err == nil {
@@ -469,14 +611,13 @@ func cachedDataHandler(ctx *router.Context, funcName string, key string, data in
 		}
 	}
 
-	aeCtx := appengine.WithContext(ctx.Context, ctx.Request)
-	bq, err := createBQService(aeCtx)
+	bq, err := s.GetBQService(ctx.Context)
 	if err != nil {
 		writeError(ctx, err, funcName, "failed create BigQuery client")
 		return
 	}
 
-	data, err = fetchData(aeCtx, bq)
+	data, err = fetchData(ctx.Context, s, bq)
 	if err != nil {
 		writeError(ctx, err, funcName, "failed to get flakiness data")
 		return
@@ -511,36 +652,23 @@ func testFlakinessListHandler(ctx *router.Context) {
 		return
 	}
 
+	ctx.Context = appengine.WithContext(ctx.Context, ctx.Request)
 	cachedDataHandler(
 		ctx,
+		prodTestFlakinessService{},
 		"testFlakinessListHandler",
 		fmt.Sprintf(flakinessListKeyTemplate, kind, name),
 		new([]FlakinessListItem),
-		func(aeCtx context.Context, bq *bigquery.Service) (interface{}, error) {
+		func(aeCtx context.Context, s testFlakinessService, bq *bigquery.Service) (interface{}, error) {
 			return getFlakinessList(aeCtx, bq, Group{Name: name, Kind: kind})
 		},
 	)
 }
 
-func createBQService(aeCtx context.Context) (*bigquery.Service, error) {
-	hc, err := google.DefaultClient(aeCtx, bigquery.BigqueryScope)
-	if err != nil {
-		return nil, errors.Annotate(err).Reason("failed to create http client").Err()
-	}
-
-	hc.Timeout = time.Minute // Increase timeout for BigQuery HTTP requests
-	bq, err := bigquery.New(hc)
-	if err != nil {
-		return nil, errors.Annotate(err).Reason("failed to create service object").Err()
-	}
-
-	return bq, nil
-}
-
 var retryFactory = retry.Default
 
 func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, params []*bigquery.QueryParameter) ([]*bigquery.TableRow, error) {
-	logging.Infof(ctx, "Executing query `%s` with params %#v", query, params)
+	logging.Debugf(ctx, "Executing query `%s` with params `%#v`", query, params)
 
 	bqProjectID := info.AppID(ctx)
 	useLegacySQL := false
@@ -617,6 +745,7 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, par
 		pageToken = resultsResponse.PageToken
 	}
 
+	logging.Debugf(ctx, "Received %d results", len(rows))
 	return rows, nil
 }
 
@@ -634,7 +763,7 @@ func getGroupsForQuery(ctx context.Context, bq *bigquery.Service, query, kind, n
 			groups = append(groups, Group{Name: value, Kind: kind})
 		case nil:
 			if nilKind == "" {
-				return nil, errors.New("Unexpected NULL value for a group")
+				return nil, errors.New("unexpected NULL value for a group")
 			}
 			groups = append(groups, Group{Name: nilKind, Kind: nilKind})
 		default:
@@ -647,37 +776,35 @@ func getGroupsForQuery(ctx context.Context, bq *bigquery.Service, query, kind, n
 
 func getFlakinessGroups(ctx context.Context, bq *bigquery.Service) ([]Group, error) {
 	var teamGroups, dirGroups, suiteGroups []Group
-	var g errgroup.Group
+	err := parallel.FanOutIn(func(taskC chan<- func() error) {
+		taskC <- func() (err error) {
+			teamGroups, err = getGroupsForQuery(ctx, bq, teamsQuery, TeamKind, UnknownTeamKind)
+			return
+		}
 
-	g.Go(func() (err error) {
-		teamGroups, err = getGroupsForQuery(ctx, bq, teamsQuery, TeamKind, UnknownTeamKind)
-		return
+		taskC <- func() (err error) {
+			dirGroups, err = getGroupsForQuery(ctx, bq, dirsQuery, DirKind, UnknownDirKind)
+			return
+		}
+
+		taskC <- func() (err error) {
+			suiteGroups, err = getGroupsForQuery(ctx, bq, suitesQuery, TestSuiteKind, "")
+			return
+		}
 	})
 
-	g.Go(func() (err error) {
-		dirGroups, err = getGroupsForQuery(ctx, bq, dirsQuery, DirKind, UnknownDirKind)
-		return
-	})
-
-	g.Go(func() (err error) {
-		suiteGroups, err = getGroupsForQuery(ctx, bq, suitesQuery, TestSuiteKind, "")
-		return
-	})
-
-	if err := g.Wait(); err != nil {
-		return nil, err
-	}
-
-	return append(teamGroups, append(dirGroups, suiteGroups...)...), nil
+	return append(teamGroups, append(dirGroups, suiteGroups...)...), err
 }
 
 func testFlakinessGroupsHandler(ctx *router.Context) {
+	ctx.Context = appengine.WithContext(ctx.Context, ctx.Request)
 	cachedDataHandler(
 		ctx,
+		prodTestFlakinessService{},
 		"testFlakinessGroupsHandler",
 		flakinessGroupsKey,
 		new([]Group),
-		func(aeCtx context.Context, bq *bigquery.Service) (interface{}, error) {
+		func(aeCtx context.Context, s testFlakinessService, bq *bigquery.Service) (interface{}, error) {
 			return getFlakinessGroups(aeCtx, bq)
 		},
 	)
