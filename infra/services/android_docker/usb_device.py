@@ -71,6 +71,9 @@ def get_android_devices(filter_devices):
   # assigned.
   if filter_devices:
     android_devices = [d for d in android_devices if d.serial in filter_devices]
+    if not android_devices:
+      logging.error('Requested devices %s not found on host.', filter_devices)
+      return []
 
   # Scan for connected battors and link each one to its android device if any
   # are present.
