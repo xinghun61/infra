@@ -131,19 +131,3 @@ class RerunPipelineTest(AppengineTestCase):
     self.execute_queued_tasks()
     self.assertTrue(mock_predator_for_client.called)
     self.assertEqual(mock_reinitialize.call_count, 1)
-
-  #@mock.patch('common.model.fracas_crash_analysis.'
-  #            'FracasCrashAnalysis.ReInitialize')
-  #@mock.patch('common.crash_pipeline.PredatorForClientID')
-  #def testPipelineRunRaiseException(self, mock_predator_for_client,
-  #                                  mock_reinitialize):
-  #  """Test ``RerunPipeline`` raises exception."""
-  #  crash_keys = [crash.key.urlsafe() for crash in self.crash_analyses]
-  #  def raiseException(*_):
-  #    raise Exception('OOM!')
-  #  #mock_run.side_effect = raiseException
-  #  self.mock(crash_pipeline.CrashAnalysisPipeline, 'run', raiseException)
-  #  with self.assertRaisesRegexp(Exception, 'OOM!'):
-  #    pipeline = crash_pipeline.RerunPipeline(CrashClient.FRACAS, crash_keys)
-  #    pipeline.start()
-  #    self.execute_queued_tasks()

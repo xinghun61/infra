@@ -6,6 +6,7 @@ import webapp2
 
 import gae_ts_mon
 
+from backend.handlers import rerun_analyses
 from backend.handlers import rerun_analysis
 from backend.handlers import update_component_config
 from backend.handlers import update_inverted_index
@@ -20,6 +21,7 @@ gae_ts_mon.initialize(pipeline_backend_application)
 backend_handler_mappings = [
     ('/process/update-component-config',
      update_component_config.UpdateComponentConfig),
+    ('/process/rerun-analyses', rerun_analyses.RerunAnalyses),
     ('/process/rerun-analysis', rerun_analysis.RerunAnalysis),
     ('/process/update-inverted-index',
      update_inverted_index.UpdateInvertedIndex),
