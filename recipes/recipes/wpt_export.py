@@ -41,7 +41,7 @@ def RunSteps(api):
   script = api.path['checkout'].join('third_party', 'WebKit', 'Tools',
                                      'Scripts', 'wpt-export')
   args = [
-    '--github-credentials-json',
+    '--credentials-json',
     '/creds/github/wpt-export.json',
   ]
   api.python('create PR or merge in-flight PR', script, args)

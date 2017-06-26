@@ -130,7 +130,7 @@
       "python",
       "-u",
       "[START_DIR]/src/third_party/WebKit/Tools/Scripts/wpt-export",
-      "--github-credentials-json",
+      "--credentials-json",
       "/creds/github/wpt-export.json"
     ],
     "name": "create PR or merge in-flight PR"
