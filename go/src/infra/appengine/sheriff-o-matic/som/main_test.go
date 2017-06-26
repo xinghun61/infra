@@ -181,7 +181,7 @@ func TestMain(t *testing.T) {
 
 						datastore.Put(c, &AlertJSON{
 							ID:       "1",
-							Tree:     datastore.MakeKey(c, "Tree", "chromium"),
+							Tree:     datastore.MakeKey(c, "Tree", "milo.chromium"),
 							Date:     time.Unix(1, 0).UTC(),
 							Contents: asBytes,
 						})

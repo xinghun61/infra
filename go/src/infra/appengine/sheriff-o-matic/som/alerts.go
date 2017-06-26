@@ -45,7 +45,7 @@ func GetAlertsHandler(ctx *router.Context) {
 	tree := p.ByName("tree")
 
 	if tree == "trooper" || tree == "milo.trooper" {
-		data, err := getTrooperAlerts(c, tree == "milo.trooper")
+		data, err := getTrooperAlerts(c)
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
 			return

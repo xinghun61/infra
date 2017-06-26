@@ -34,7 +34,7 @@ type swarmingAlerts struct {
 	Error       []string                        `json:"errors"`
 }
 
-func getTrooperAlerts(c context.Context, useMilo bool) ([]byte, error) {
+func getTrooperAlerts(c context.Context) ([]byte, error) {
 	swarmAlerts := make(chan *swarmingAlerts)
 	go func() {
 		swarmAlerts <- getSwarmingAlerts(c)
@@ -55,9 +55,8 @@ func getTrooperAlerts(c context.Context, useMilo bool) ([]byte, error) {
 	for _, t := range trees {
 		q := datastore.NewQuery("AlertJSON")
 		name := t.Name
-		if useMilo {
-			name = "milo." + name
-		}
+		name = "milo." + name
+
 		q = q.Ancestor(datastore.MakeKey(c, "Tree", name))
 		q = q.Eq("Resolved", false)
 
