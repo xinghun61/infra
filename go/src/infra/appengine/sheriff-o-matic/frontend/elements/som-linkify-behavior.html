@@ -5,6 +5,7 @@
         if (u.hostname.includes('chromium.org')) {
           u.hostname = 'luci-milo.appspot.com';
           u.pathname = u.pathname.replace('/p/', '/buildbot/');
+          u.pathname = u.pathname.replace('/i/', '/buildbot/');
           u.pathname = u.pathname.replace('/builders/', '/');
         }
         u.protocol = 'https:';
