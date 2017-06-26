@@ -259,6 +259,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.start_time = datetime.datetime(2016, 10, 01, 12, 10, 05)
     analysis.end_time = datetime.datetime(2016, 10, 01, 13, 10, 00)
     analysis.algorithm_parameters = {'iterations_to_rerun': 100}
+    analysis.pipeline_status_path = 'pipelinestatus'
     analysis.Save()
 
     self.mock_current_user(user_email='test@example.com', is_admin=False)
@@ -308,9 +309,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         },
         'version_number':
             1,
-        'show_input_ui':
-            False,
-        'show_rerun_ui':
+        'show_admin_options':
             False,
         'culprit': {},
         'try_job_status':
@@ -320,6 +319,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'build_number': None
         },
         'last_attempted_try_job': {},
+        'pipeline_status_path':
+            'pipelinestatus',
     }
 
     self.assertEquals(200, response.status_int)
@@ -433,6 +434,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.start_time = datetime.datetime(2016, 10, 01, 12, 10, 05)
     analysis.end_time = datetime.datetime(2016, 10, 01, 13, 10, 00)
     analysis.algorithm_parameters = {'iterations_to_rerun': 100}
+    analysis.pipeline_status_path = 'pipelinestatus'
     analysis.Save()
 
     response = self.test_app.get(
@@ -480,9 +482,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         },
         'version_number':
             1,
-        'show_input_ui':
-            False,
-        'show_rerun_ui':
+        'show_admin_options':
             False,
         'culprit': {},
         'try_job_status':
@@ -492,6 +492,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'build_number': None
         },
         'last_attempted_try_job': {},
+        'pipeline_status_path':
+            'pipelinestatus',
     }
 
     self.assertEqual(200, response.status_int)

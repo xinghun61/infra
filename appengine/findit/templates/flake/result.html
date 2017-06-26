@@ -410,31 +410,49 @@
         <div id="build-container">Build: <a id="build-link" target="_blank"></a></div>
       </div>
     </div>
-    {% if show_input_ui %}
-      <form action="/waterfall/flake/analyze_regression_range" name="regression_range_rerun" method="post">
+  {% if show_admin_options %}
+    <div style="border: 1px solid black">
+      <!-- Diagnositic information -->
+      <h4>Pipeline information</h4>
+      <p>
+        <a href="{{ pipeline_status_path }}" target="_blank">pipeline status</a>
+      </p>
+
+      <!-- Rerun options -->
+      <h4>Rerun options</h4>
+      <form action="/waterfall/flake/analyze_regression_range"
+            name="regression_range_rerun" method="post">
         <div>
           <input type="hidden" name="xsrf_token" value="{{ xsrf_token }}" />
           <input type="hidden" name="key" value="{{ key }}" />
           <table>
             <tr>
-              <td>Analyze a commit position range (<a class="range-help-info" href="javascript:">?</a>):</td>
-              <td><input type="text" name="lower_bound_commit_position" placeholder="Lower bound" size="10"</td>
-              <td><input type="text" name="upper_bound_commit_position" placeholder="Upper bound" size="10"</td>
-              <td> # Iterations:<input type="text" name="iterations_to_rerun" placeholder="{{ iterations_to_rerun }}" value={{ iterations_to_rerun }} size="1"<td>
+              <td>
+                Analyze a commit position range (<a class="range-help-info"
+                                                    href="javascript:">?</a>):
+              </td>
+              <td><input type="text" name="lower_bound_commit_position"
+                         placeholder="Lower bound" size="10"</td>
+              <td><input type="text" name="upper_bound_commit_position"
+                         placeholder="Upper bound" size="10"</td>
+              <td>
+                # Iterations:<input type="text" name="iterations_to_rerun"
+                                    placeholder="{{ iterations_to_rerun }}"
+                                    value={{ iterations_to_rerun }} size="1">
+              <td>
               <td><input type="submit" value="Analyze"></td>
             </tr>
           </table>
         </div>
       </form>
-    {% endif %}
-  {% if show_rerun_ui %}
-    <form action="/waterfall/flake" method="post">
-      <input type="hidden" name="debug" value="1" />
-      <input type="hidden" name="rerun" value="1" />
-      <input type="hidden" name="key" value="{{key}}" />
-      <input type="hidden" name="xsrf_token" value="{{xsrf_token}}" />
-      <input type="submit" value="Rerun Analysis" />
-    </form>
+      <form action="/waterfall/flake" method="post">
+        <input type="hidden" name="debug" value="1" />
+        <input type="hidden" name="rerun" value="1" />
+        <input type="hidden" name="key" value="{{key}}" />
+        <input type="hidden" name="xsrf_token" value="{{xsrf_token}}" />
+        <input type="submit" value="Rerun Analysis" />
+      </form>
+    </div>
   {% endif %}
   <br>
     <br>

@@ -145,9 +145,14 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
       self.assertIsNotNone(analysis)
 
   @mock.patch.object(buildbot, 'GetStepLog', return_value={})
+  @mock.patch.object(initialize_flake_pipeline, '_NeedANewAnalysis')
   @mock.patch(
       'waterfall.flake.initialize_flake_pipeline.RecursiveFlakePipeline')
-  def testStartPipelineForNewAnalysis(self, mocked_pipeline, _):
+  @mock.patch('waterfall.flake.initialize_flake_pipeline.MasterFlakeAnalysis')
+  def testStartPipelineForNewAnalysis(self, mocked_analysis, mocked_pipeline,
+                                      mocked_need_analysis, *_):
+    mocked_analysis.pipeline_status_path.return_value = 'status'
+    mocked_need_analysis.return_value = (True, mocked_analysis)
     test = TestInfo('m', 'b 1', 123, 's', 't')
     analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
         test,

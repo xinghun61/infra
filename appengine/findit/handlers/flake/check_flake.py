@@ -418,10 +418,10 @@ class CheckFlake(BaseHandler):
             analysis.error_message,
         'iterations_to_rerun':
             analysis.iterations_to_rerun,
-        'show_input_ui':
+        'show_admin_options':
             self._ShowCustomRunOptions(analysis),
-        'show_rerun_ui':
-            self._ShowCustomRunOptions(analysis)
+        'pipeline_status_path':
+            analysis.pipeline_status_path
     }
 
     if (users.is_current_user_admin() and analysis.completed and
