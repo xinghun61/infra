@@ -67,6 +67,10 @@
         width: 100%;
         font-style: italic;
       }
+      .autosnoozeText input {
+        width: 60px;
+        display: inline-block;
+      }
       .buttons {
         margin-top: 1em;
       }
@@ -112,9 +116,13 @@
     <paper-dialog id="bugDialog" with-backdrop>
       <h2>Enter bug number</h2>
       <paper-input autofocus id="bug" label="Bug # or URL" auto-validate minlength="3"></paper-input>
-      <label class="checkbox">
+      <label class="checkbox autosnoozeCheckbox">
         <input type="checkbox" id="autosnooze" checked />
-        Autosnooze this alert
+        <div class="autosnoozeText">
+          Autosnooze alert for
+          <input type="text" id="autosnoozeTime" value$="[[_defaultSnoozeTime]]" />
+          min
+        </div>
       </label>
       <div>
         <a hidden$="[[_filedBug]]" id="fileBugLink" target="_blank" on-tap="_fileBugClicked">
@@ -160,7 +168,8 @@
     <iron-a11y-keys target="[[_snoozeTimeInput]]" keys="enter" on-keys-pressed="_snooze"></iron-a11y-keys>
     <paper-dialog id="snoozeDialog" with-backdrop>
       <h2>Snooze</h2>
-      <paper-input autofocus label="Amount of time (minutes):" id="snoozeTime" auto-validate allowed-pattern="[0-9]"></paper-input>
+      <paper-input autofocus label="Amount of time (minutes):" id="snoozeTime" value="[[_defaultSnoozeTime]]"
+        auto-validate allowed-pattern="[0-9]"></paper-input>
       <div class="error">[[_snoozeErrorMessage]]</div>
       <div class="buttons">
         <button dialog-dismiss>

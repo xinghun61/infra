@@ -1,7 +1,11 @@
 (function() {
   'use strict';
 
-  const DEFAULT_SNOOZE_TIME_MIN = 60;
+  // Default snooze times per tree in minutes.
+  const DefaultSnoozeTimes = {
+    'chromium.perf': 60 * 24,
+    '*': 60,
+  };
   const ONE_MIN_MS = 1000 * 60;
 
   Polymer({
@@ -56,10 +60,9 @@
           return this.$.commentText;
         }
       },
-      // TODO(zhangtiff): Change snooze time per tree.
       _defaultSnoozeTime: {
         type: Number,
-        value: DEFAULT_SNOOZE_TIME_MIN,
+        computed: '_computeDefaultSnoozeTime(tree.name)',
       },
       _fileBugModel: Object,
       _fileBugCallback: Function,
@@ -245,6 +248,9 @@
           '&comment=' + encodeURIComponent(this._commentForBug(this._fileBugModel));
       this._filedBug = false;
       this._bugErrorMessage = '';
+
+      let autosnoozeTime = parseInt(this.$.autosnoozeTime.value, 10);
+      this.$.autosnoozeTime.value = autosnoozeTime || this._defaultSnoozeTime;
       this.$.bugDialog.open();
     },
 
@@ -257,7 +263,6 @@
     handleSnooze: function(alerts, callback) {
       this._snoozeCallback = callback;
       this._snoozeModel = alerts;
-      this.$.snoozeTime.value = this._defaultSnoozeTime;
       this._snoozeErrorMessage = '';
       this.$.snoozeDialog.open();
     },
@@ -331,7 +336,13 @@
     _saveBug: function() {
       let data = {bugs: [this.$.bug.value.trim()]};
       if (this.$.autosnooze.checked) {
-        data.snoozeTime = Date.now() + ONE_MIN_MS * this._defaultSnoozeTime;
+        let autosnoozeTime = parseInt(this.$.autosnoozeTime.value, 10);
+        if (isNaN(autosnoozeTime)) {
+          this._bugErrorMessage = 'Please enter a valid snooze time.';
+          return;
+        }
+        let snoozeTime = autosnoozeTime || this._defaultSnoozeTime;
+        data.snoozeTime = Date.now() + ONE_MIN_MS * snoozeTime;
       }
       let promises = this._fileBugModel.map((alert) => {
         return this.sendAnnotation(alert.key, 'add', data);
@@ -360,7 +371,6 @@
           })});
       Promise.all(promises).then(
           (response) => {
-            this.$.snoozeTime.value = '';
             this.$.snoozeDialog.close();
 
             if (this._snoozeCallback) {
@@ -410,6 +420,13 @@
         return null;
       }
       return this.computeAnnotation(annotations, model, this.collapseByDefault);
+    },
+
+    _computeDefaultSnoozeTime: function(treeName) {
+      if (treeName in DefaultSnoozeTimes) {
+        return DefaultSnoozeTimes[treeName];
+      }
+      return DefaultSnoozeTimes['*'];
     },
 
     _computeFileBugLabels: function(tree) {

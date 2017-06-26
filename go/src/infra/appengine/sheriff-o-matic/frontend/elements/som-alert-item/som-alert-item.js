@@ -193,6 +193,9 @@
       if (duration.minutes()) {
         text += duration.minutes() + 'm ';
       }
+      if (text == '') {
+        text += duration.seconds() + 's ';
+      }
       return text + 'left';
     },
 
