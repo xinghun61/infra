@@ -5,6 +5,9 @@ api_version: 1
 threadsafe: true
 
 handlers:
+- url: /migrate
+  script: main.app
+  login: admin
 - url: /issues/.*
   script: main.app
   login: admin

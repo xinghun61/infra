@@ -9,6 +9,7 @@ import webapp2
 from google.appengine.api import app_identity
 from handlers import flake_issues
 from handlers import lemur_test
+from handlers import migrate
 from handlers.all_flake_occurrences import AllFlakeOccurrences
 from handlers.cron_dispatch import CronDispatch
 from handlers.index import Index
@@ -28,6 +29,7 @@ handlers = [
   (r'/lemur_test', lemur_test.ProcessNewFlakes),
   (r'/lemur_update_cache', lemur_test.OnlyUpdateCache),
   (r'/lemur_process_flakes', lemur_test.OnlyProcessFlakes),
+  (r'/migrate', migrate.Migrate),
 ]
 
 def is_monitoring_enabled():
