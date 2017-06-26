@@ -10,11 +10,8 @@ dispatch:
 - url: "*/driver/*"
   module: driver
 
-- url: "*/gerrit-poller/*"
-  module: gerrit-poller
-
-- url: "*/gerrit-reporter/*"
-  module: gerrit-reporter
+- url: "*/gerrit/*"
+  module: gerrit
 
 - url: "*/tracker/*"
   module: tracker

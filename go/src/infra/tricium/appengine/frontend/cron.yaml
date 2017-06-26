@@ -1,8 +1,8 @@
 cron:
 - description: "Gerrit poll"
-  url: /gerrit-poller/poll
+  url: /gerrit/internal/poll
   schedule: every 1 mins
-  target: gerrit-poller
+  target: gerrit
 - description: "Config cache refresh"
   url: /admin/config/cache/manager
   schedule: every 10 mins

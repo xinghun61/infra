@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package gerritreporter
+package gerrit
 
 import (
 	"testing"
@@ -11,7 +11,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 
 	"infra/tricium/api/admin/v1"
-	"infra/tricium/appengine/common"
 	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
 )
@@ -31,7 +30,7 @@ func TestReportLaunchedRequest(t *testing.T) {
 		Convey("Report launched request", func() {
 			err := reportLaunched(ctx, &admin.ReportLaunchedRequest{
 				RunId: run.ID,
-			}, common.MockGerritAPI)
+			}, &mockRestAPI{})
 			So(err, ShouldBeNil)
 		})
 	})

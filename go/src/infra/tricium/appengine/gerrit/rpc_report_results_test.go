@@ -2,39 +2,27 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package gerritreporter
+package gerrit
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 
 	ds "github.com/luci/gae/service/datastore"
 	. "github.com/smartystreets/goconvey/convey"
-
-	"golang.org/x/net/context"
 
 	"infra/tricium/api/admin/v1"
 	trit "infra/tricium/appengine/common/testing"
 	"infra/tricium/appengine/common/track"
 )
 
-type mockGerritAPI struct {
-	LastMsg      string
-	LastComments []*track.Comment
-}
-
-func (m *mockGerritAPI) PostReviewMessage(c context.Context, host, change, revision, msg string) error {
-	m.LastMsg = msg
-	return nil
-}
-func (m *mockGerritAPI) PostRobotComments(c context.Context, host, change, revision string, runID int64, comments []*track.Comment) error {
-	m.LastComments = comments
-	return nil
-}
-
-func TestReportCompletedRequest(t *testing.T) {
+func TestReportResultsRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
+
+		analyzerName := "Lint"
 
 		request := &track.AnalyzeRequest{
 			GitRepo: "https://chromium-review.googlesource.com",
@@ -45,7 +33,6 @@ func TestReportCompletedRequest(t *testing.T) {
 		run := &track.WorkflowRun{ID: 1, Parent: requestKey}
 		So(ds.Put(ctx, run), ShouldBeNil)
 		runKey := ds.KeyForObj(ctx, run)
-		analyzerName := "Hello"
 		So(ds.Put(ctx, &track.AnalyzerRun{
 			ID:     analyzerName,
 			Parent: runKey,
@@ -55,28 +42,38 @@ func TestReportCompletedRequest(t *testing.T) {
 			ID:          1,
 			Parent:      analyzerKey,
 			Name:        analyzerName,
-			NumComments: 1,
-		}), ShouldBeNil)
-		analyzerName = "Lint"
-		So(ds.Put(ctx, &track.AnalyzerRun{
-			ID:     analyzerName,
-			Parent: runKey,
-		}), ShouldBeNil)
-		analyzerKey = ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
-		So(ds.Put(ctx, &track.AnalyzerRunResult{
-			ID:          1,
-			Parent:      analyzerKey,
-			Name:        analyzerName,
 			NumComments: 2,
 		}), ShouldBeNil)
+		workerName := analyzerName + "_UBUNTU"
+		So(ds.Put(ctx, &track.WorkerRun{
+			ID:     workerName,
+			Parent: analyzerKey,
+		}), ShouldBeNil)
+		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
+		json1, err := json.Marshal(fmt.Sprintf("{\"category\": %s,\"message\":\"Line too long\"}", analyzerName))
+		So(err, ShouldBeNil)
+		json2, err := json.Marshal(fmt.Sprintf("{\"category\": %s,\"message\":\"Line too short\"}", analyzerName))
+		So(err, ShouldBeNil)
+		results := []*track.Comment{
+			{
+				Parent:  workerKey,
+				Comment: json1,
+			},
+			{
+				Parent:  workerKey,
+				Comment: json2,
+			},
+		}
+		So(ds.Put(ctx, results), ShouldBeNil)
 
-		Convey("Report completed request", func() {
-			mock := &mockGerritAPI{}
-			err := reportCompleted(ctx, &admin.ReportCompletedRequest{
-				RunId: run.ID,
+		Convey("Report results request", func() {
+			mock := &mockRestAPI{}
+			err := reportResults(ctx, &admin.ReportResultsRequest{
+				RunId:    run.ID,
+				Analyzer: analyzerName,
 			}, mock)
 			So(err, ShouldBeNil)
-			So(mock.LastMsg, ShouldContainSubstring, "3 results")
+			So(len(mock.LastComments), ShouldEqual, len(results))
 		})
 	})
 }

@@ -2,11 +2,9 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package gerritreporter
+package gerrit
 
 import (
-	"encoding/json"
-	"fmt"
 	"testing"
 
 	ds "github.com/luci/gae/service/datastore"
@@ -17,12 +15,10 @@ import (
 	"infra/tricium/appengine/common/track"
 )
 
-func TestReportResultsRequest(t *testing.T) {
+func TestReportCompletedRequest(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
-
-		analyzerName := "Lint"
 
 		request := &track.AnalyzeRequest{
 			GitRepo: "https://chromium-review.googlesource.com",
@@ -33,6 +29,7 @@ func TestReportResultsRequest(t *testing.T) {
 		run := &track.WorkflowRun{ID: 1, Parent: requestKey}
 		So(ds.Put(ctx, run), ShouldBeNil)
 		runKey := ds.KeyForObj(ctx, run)
+		analyzerName := "Hello"
 		So(ds.Put(ctx, &track.AnalyzerRun{
 			ID:     analyzerName,
 			Parent: runKey,
@@ -42,38 +39,28 @@ func TestReportResultsRequest(t *testing.T) {
 			ID:          1,
 			Parent:      analyzerKey,
 			Name:        analyzerName,
+			NumComments: 1,
+		}), ShouldBeNil)
+		analyzerName = "Lint"
+		So(ds.Put(ctx, &track.AnalyzerRun{
+			ID:     analyzerName,
+			Parent: runKey,
+		}), ShouldBeNil)
+		analyzerKey = ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
+		So(ds.Put(ctx, &track.AnalyzerRunResult{
+			ID:          1,
+			Parent:      analyzerKey,
+			Name:        analyzerName,
 			NumComments: 2,
 		}), ShouldBeNil)
-		workerName := analyzerName + "_UBUNTU"
-		So(ds.Put(ctx, &track.WorkerRun{
-			ID:     workerName,
-			Parent: analyzerKey,
-		}), ShouldBeNil)
-		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
-		json1, err := json.Marshal(fmt.Sprintf("{\"category\": %s,\"message\":\"Line too long\"}", analyzerName))
-		So(err, ShouldBeNil)
-		json2, err := json.Marshal(fmt.Sprintf("{\"category\": %s,\"message\":\"Line too short\"}", analyzerName))
-		So(err, ShouldBeNil)
-		results := []*track.Comment{
-			{
-				Parent:  workerKey,
-				Comment: json1,
-			},
-			{
-				Parent:  workerKey,
-				Comment: json2,
-			},
-		}
-		So(ds.Put(ctx, results), ShouldBeNil)
 
-		Convey("Report results request", func() {
-			mock := &mockGerritAPI{}
-			err := reportResults(ctx, &admin.ReportResultsRequest{
-				RunId:    run.ID,
-				Analyzer: analyzerName,
+		Convey("Report completed request", func() {
+			mock := &mockRestAPI{}
+			err := reportCompleted(ctx, &admin.ReportCompletedRequest{
+				RunId: run.ID,
 			}, mock)
 			So(err, ShouldBeNil)
-			So(len(mock.LastComments), ShouldEqual, len(results))
+			So(mock.LastMsg, ShouldContainSubstring, "3 results")
 		})
 	})
 }

@@ -2,8 +2,8 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-// Package gerritreporter implements the Tricium Gerrit reporter.
-package gerritreporter
+// Package gerrit implements the Tricium Gerrit integration.
+package gerrit
 
 import (
 	"net/http"
@@ -19,9 +19,11 @@ func init() {
 	r := router.New()
 	base := common.MiddlewareForInternal()
 
-	r.POST("/gerrit-reporter/internal/launched", base, launchedHandler)
-	r.POST("/gerrit-reporter/internal/completed", base, completedHandler)
-	r.POST("/gerrit-reporter/internal/results", base, resultsHandler)
+	r.GET("/gerrit/internal/poll", base, pollHandler)
+
+	r.POST("/gerrit/internal/report-launched", base, launchedHandler)
+	r.POST("/gerrit/internal/report-completed", base, completedHandler)
+	r.POST("/gerrit/internal/report-results", base, resultsHandler)
 
 	// Configure pRPC server.
 	s := common.NewRPCServer()

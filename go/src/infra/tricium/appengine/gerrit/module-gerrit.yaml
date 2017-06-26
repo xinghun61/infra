@@ -1,5 +1,5 @@
 application: tricium-dev
-module: gerrit-reporter
+module: gerrit
 runtime: go
 api_version: go1
 
@@ -10,11 +10,7 @@ handlers:
   secure: always
   login: admin
 
-- url: /gerrit-reporter/queue
+- url: /gerrit/internal/.*
   script: _go_app
   secure: always
   login: admin
-
-- url: /.*
-  script: _go_app
-  secure: always

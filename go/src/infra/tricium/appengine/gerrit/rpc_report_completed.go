@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package gerritreporter
+package gerrit
 
 import (
 	"bytes"
@@ -27,13 +27,13 @@ func (r *gerritReporter) ReportCompleted(c context.Context, req *admin.ReportCom
 	if req.RunId == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
 	}
-	if err := reportCompleted(c, req, common.GerritServer); err != nil {
+	if err := reportCompleted(c, req, GerritServer); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to report completed to Gerrit: %v", err)
 	}
 	return &admin.ReportCompletedResponse{}, nil
 }
 
-func reportCompleted(c context.Context, req *admin.ReportCompletedRequest, gerrit common.GerritAPI) error {
+func reportCompleted(c context.Context, req *admin.ReportCompletedRequest, gerrit API) error {
 	request := &track.AnalyzeRequest{ID: req.RunId}
 	var analyzerResults []*track.AnalyzerRunResult
 	ops := []func() error{

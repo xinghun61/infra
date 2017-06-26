@@ -2,19 +2,24 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file.
 
-package common
+package gerrit
 
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/auth"
 
+	gr "golang.org/x/build/gerrit"
 	"golang.org/x/net/context"
+
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common/track"
 )
@@ -23,15 +28,24 @@ const (
 	gerritScope = "https://www.googleapis.com/auth/gerritcodereview"
 )
 
-// GerritAPI specifies the Gerrit service API tuned to the needs of Tricium.
-type GerritAPI interface {
+// API specifies the Gerrit REST API tuned to the needs of Tricium.
+type API interface {
+	// QueryChanges sends one query for changes to Gerrit using the provided poll data and offset.
+	//
+	// The poll data is assumed to correspond to the last seen change before this poll. Within one
+	// poll, the offset is used to handle consecutive calls to this function.
+	// A list of changes is returned in the same order as they were returned by Gerrit.
+	// The result tuple includes a boolean value to indicate of the result was truncated and
+	// more queries should be sent to get the full list of changes. For new queries within the same
+	// poll, this function should be called again with an increased offset.
+	QueryChanges(c context.Context, host, project string, lastTimestamp time.Time, offset int) ([]gr.ChangeInfo, bool, error)
 	// PostReviewMessage posts a review message to a change.
 	PostReviewMessage(c context.Context, host, change, revision, message string) error
 	// PostRobotComments posts robot comments to a change.
 	PostRobotComments(c context.Context, host, change, revision string, runID int64, comments []*track.Comment) error
 }
 
-// GerritServer implements the GerritAPI for the Gerrit service.
+// GerritServer implements RestAPI for the Gerrit service.
 var GerritServer gerritServer
 
 type gerritServer struct {
@@ -60,12 +74,49 @@ type commentRange struct {
 	EndCharacter   int `json:"end_character,omitempty"`
 }
 
-// PostReviewMessage implements the GerritAPI.
+func (gerritServer) QueryChanges(c context.Context, host, project string, lastTimestamp time.Time, offset int) ([]gr.ChangeInfo, bool, error) {
+	var changes []gr.ChangeInfo
+	// Compose, connect, and send.
+	url := composeChangesQueryURL(host, project, lastTimestamp, offset)
+	logging.Debugf(c, "Using URL: %s", url)
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return changes, false, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(scope))
+	if err != nil {
+		return changes, false, err
+	}
+	client := &http.Client{Transport: transport}
+	resp, err := client.Do(req)
+	if err != nil {
+		return changes, false, err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return changes, false, err
+	}
+	// Read and convert response.
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return changes, false, err
+	}
+	// Remove the magic Gerrit prefix.
+	body = bytes.TrimPrefix(body, []byte(")]}'\n"))
+	if err = json.Unmarshal(body, &changes); err != nil {
+		return changes, false, err
+	}
+	// Check if changes were truncated.
+	more := len(changes) > 0 && changes[len(changes)-1].MoreChanges
+	return changes, more, nil
+}
+
 func (g gerritServer) PostReviewMessage(c context.Context, host, change, revision, message string) error {
 	return g.setReview(c, host, change, revision, &reviewInput{Message: message})
 }
 
-// PostRobotComments implements the GerritAPI.
 func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revision string, runID int64, comments []*track.Comment) error {
 	robos := map[string][]*robotCommentInput{}
 	for _, c := range comments {
@@ -93,6 +144,22 @@ func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revis
 		})
 	}
 	return g.setReview(ctx, host, change, revision, &reviewInput{RobotComments: robos})
+}
+
+// composeChangesQueryURL composes the URL used to query Gerrit for updated changes.
+//
+// The provided GerritProject object provides Gerrit instance, project, and timestamp
+// of last poll.
+// The offset is used to handle paging and should be incremented during a poll to get
+// all results.
+func composeChangesQueryURL(host, project string, lastTimestamp time.Time, offset int) string {
+	ts := lastTimestamp.Format(timeStampLayout)
+	v := url.Values{}
+	v.Add("start", strconv.Itoa(offset))
+	v.Add("o", "CURRENT_REVISION")
+	v.Add("o", "CURRENT_FILES")
+	v.Add("q", fmt.Sprintf("project:%s after:\"%s\"", project, ts))
+	return fmt.Sprintf("%s/a/changes/?%s", host, v.Encode())
 }
 
 func (gerritServer) setReview(c context.Context, host, change, revision string, r *reviewInput) error {
@@ -125,22 +192,24 @@ func (gerritServer) setReview(c context.Context, host, change, revision string, 
 	return nil
 }
 
-// MockGerritAPI mocks the GerritAPI interface for testing.
-var MockGerritAPI mockGerritAPI
-
-type mockGerritAPI struct {
+// mockRestAPI mocks the GerritAPI interface for testing.
+//
+// Remembers the last posted message and comments.
+type mockRestAPI struct {
+	LastMsg      string
+	LastComments []*track.Comment
 }
 
-// PostReviewMessage is a mock function for the MockGerritAPI.
-//
-// For any testing actually using the return value, create a new mock.
-func (mockGerritAPI) PostReviewMessage(c context.Context, host, change, revision, message string) error {
+func (*mockRestAPI) QueryChanges(c context.Context, host, project string, ts time.Time, offset int) ([]gr.ChangeInfo, bool, error) {
+	return []gr.ChangeInfo{}, false, nil
+}
+
+func (m *mockRestAPI) PostReviewMessage(c context.Context, host, change, revision, msg string) error {
+	m.LastMsg = msg
 	return nil
 }
 
-// PostRobotComments is a mock function for the MockGerritAPI.
-//
-// For any testing actually using the return value, create a new mock.
-func (mockGerritAPI) PostRobotComments(c context.Context, host, change, revision string, runID int64, comments []*track.Comment) error {
+func (m *mockRestAPI) PostRobotComments(c context.Context, host, change, revision string, runID int64, comments []*track.Comment) error {
+	m.LastComments = comments
 	return nil
 }
