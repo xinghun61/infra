@@ -7,6 +7,8 @@ from gae_libs.pipeline_wrapper import BasePipeline
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
+from waterfall.send_notification_to_irc_pipeline import (
+    SendNotificationToIrcPipeline)
 
 
 class RevertAndNotifyCulpritPipeline(BasePipeline):
@@ -27,9 +29,10 @@ class RevertAndNotifyCulpritPipeline(BasePipeline):
 
       revert_status = yield CreateRevertCLPipeline(
           master_name, builder_name, build_number, repo_name, revision)
+      yield SendNotificationToIrcPipeline(repo_name, revision, revert_status)
       yield SendNotificationForCulpritPipeline(
-          master_name, builder_name, build_number, culprit['repo_name'],
-          culprit['revision'], force_notify, revert_status)
+          master_name, builder_name, build_number, repo_name, revision,
+          force_notify, revert_status)
     else:
       # Checks if any of the culprits was also found by heuristic analysis.
       for culprit in culprits.itervalues():
