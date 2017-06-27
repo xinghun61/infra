@@ -27,9 +27,7 @@ import (
 )
 
 const (
-	instance = "https://chromium-review.googlesource.com"
-	scope    = "https://www.googleapis.com/auth/gerritcodereview"
-	project  = "playground/gerrit-tricium"
+	scope = "https://www.googleapis.com/auth/gerritcodereview"
 )
 
 // The timestamp format used by Gerrit (using the reference date). All timestamps are in UTC.
@@ -56,34 +54,6 @@ type Change struct {
 	Parent       *ds.Key `gae:"$parent"`
 	LastRevision string
 }
-
-// ChangeDetails includes information needed to analyse an updated patch set.
-type ChangeDetails struct {
-	Instance        string
-	Project         string
-	ChangeID        string
-	CurrentRevision string
-	ChangeURL       string
-	GitRef          string
-	FileChanges     []FileChangeDetails
-}
-
-// FileChangeDetails includes information for a file change.
-//
-// The status field corresponds to the FileInfo status field
-// used by Gerrit, where "A"=Added, "D"=Deleted, "R"=Renamed,
-// "C"=Copied, "W"=Rewritten, and "M"=Modified (same as not set).
-type FileChangeDetails struct {
-	Path   string
-	Status string
-}
-
-// FileChangesByPath is used to sort FileChangeDetails lexically on path name.
-type FileChangesByPath []FileChangeDetails
-
-func (f FileChangesByPath) Len() int           { return len(f) }
-func (f FileChangesByPath) Swap(i, j int)      { f[i], f[j] = f[j], f[i] }
-func (f FileChangesByPath) Less(i, j int) bool { return f[i].Path < f[j].Path }
 
 // byUpdateTime sorts changes based on update timestamps.
 type byUpdatedTime []gr.ChangeInfo
@@ -112,7 +82,7 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 		details := pd.GetGerritDetails()
 		if details != nil {
 			ops = append(ops, func() error {
-				return pollProject(c, details.Host, details.Project, gerrit)
+				return pollProject(c, pd.Name, details.Host, details.Project, gerrit)
 			})
 		}
 	}
@@ -126,9 +96,9 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 // The timestamp of the most recent change in the last poll is used in the next poll,
 // (as the value of 'after' in the query string). If no previous poll has been logged,
 // then a time corresponding to zero is used (time.Time{}).
-func pollProject(c context.Context, instance, project string, gerrit API) error {
+func pollProject(c context.Context, triciumProject, instance, gerritProject string, gerrit API) error {
 	// Get last poll data for the given instance/project.
-	p := &Project{ID: gerritProjectID(instance, project)}
+	p := &Project{ID: gerritProjectID(instance, gerritProject)}
 	if err := ds.Get(c, p); err != nil {
 		if err != ds.ErrNoSuchEntity {
 			return fmt.Errorf("failed to get Project entity: %v", err)
@@ -136,16 +106,16 @@ func pollProject(c context.Context, instance, project string, gerrit API) error 
 		logging.Infof(c, "Found no previous entry for id:%s", p.ID)
 		err = nil
 		p.Instance = instance
-		p.Project = project
+		p.Project = gerritProject
 	}
 
 	// If no previous poll, store current time and return.
 	if p.LastPoll.IsZero() {
 		logging.Infof(c, "No previous poll for %s/%s. Storing current timestamp and stopping.",
-			instance, project)
-		p.ID = gerritProjectID(instance, project)
+			instance, gerritProject)
+		p.ID = gerritProjectID(instance, gerritProject)
 		p.Instance = instance
-		p.Project = project
+		p.Project = gerritProject
 		p.LastPoll = clock.Now(c).UTC()
 		logging.Debugf(c, "Storing project data: %+v", p)
 		if err := ds.Put(c, p); err != nil {
@@ -244,7 +214,7 @@ func pollProject(c context.Context, instance, project string, gerrit API) error 
 	//
 	// Running after the transaction because each seen change will result in one
 	// enqueued task and there is a limit on the number of action in a transaction.
-	return enqueueAnalyzeRequests(c, diff)
+	return enqueueAnalyzeRequests(c, triciumProject, diff)
 }
 
 // extractUpdates extracts change updates.
@@ -320,7 +290,7 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 }
 
 // enqueueAnalyzeRequests enqueues Analyze requests for the provided Gerrit changes.
-func enqueueAnalyzeRequests(ctx context.Context, changes []gr.ChangeInfo) error {
+func enqueueAnalyzeRequests(ctx context.Context, project string, changes []gr.ChangeInfo) error {
 	var tasks []*tq.Task
 	for _, c := range changes {
 		var paths []string
@@ -334,7 +304,7 @@ func enqueueAnalyzeRequests(ctx context.Context, changes []gr.ChangeInfo) error 
 		sort.Strings(paths)
 		// TODO(emso): Mapping between Gerrit project name and that used in Tricium?
 		req := &tricium.AnalyzeRequest{
-			Project:        c.Project,
+			Project:        project,
 			GitRef:         c.Revisions[c.CurrentRevision].Ref,
 			Paths:          paths,
 			Consumer:       tricium.Consumer_GERRIT,

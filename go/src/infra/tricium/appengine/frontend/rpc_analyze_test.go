@@ -35,6 +35,13 @@ func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.Service
 		Projects: []*tricium.ProjectDetails{
 			{
 				Name: project,
+				RepoDetails: &tricium.RepoDetails{
+					Kind: tricium.RepoDetails_GIT,
+					GitDetails: &tricium.GitRepoDetails{
+						Repository: "https://chromium.googlesource.com/playground/gerrit-tricium",
+						Ref:        "master",
+					},
+				},
 			},
 		},
 	}, nil

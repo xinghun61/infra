@@ -43,9 +43,6 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	if req.Project == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing project")
 	}
-	if req.GitRef == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing git ref")
-	}
 	if len(req.Paths) == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
 	}
@@ -79,29 +76,48 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		return "", codes.PermissionDenied, fmt.Errorf("no request access for project %q", req.Project)
 	}
 	// TODO(emso): Verify that there is no current run for this request (map hashed requests to run IDs).
-	// TODO(emso): Read Git repo info from the configuration projects/ endpoint.
-	// TODO(emso): Verify that a project has Gerrit details if a Gerrit reporter has been selected.
+	sc, err := cp.GetServiceConfig(c)
+	if err != nil {
+		return "", codes.Internal, fmt.Errorf("failed to get service config: %v", err)
+	}
 	request := &track.AnalyzeRequest{
 		Received: clock.Now(c).UTC(),
 		Project:  req.Project,
 		Paths:    req.Paths,
-		GitRepo:  repo,
 		GitRef:   req.GitRef,
 		Consumer: req.Consumer,
+	}
+	pd := tricium.LookupProjectDetails(sc, req.Project)
+	if pd == nil {
+		return "", codes.Internal, fmt.Errorf("failed to lookup project details, project: %s", req.Project)
+	}
+	if pd.RepoDetails.Kind == tricium.RepoDetails_GIT {
+		rd := pd.RepoDetails.GitDetails
+		request.GitRepo = rd.Repository
+		if request.GitRef == "" {
+			request.GitRef = rd.Ref
+		}
+	} else {
+		return "", codes.Internal, fmt.Errorf("unsupported repository kind in project details: %s", pd.RepoDetails.Kind)
 	}
 	if req.Consumer == tricium.Consumer_GERRIT {
 		request.GerritChange = req.GerritChange
 		request.GerritRevision = req.GerritRevision
+		gd := pd.GetGerritDetails()
+		if gd == nil {
+			return "", codes.Internal, fmt.Errorf("missing Gerrit details for project, project: %s", req.Project)
+		}
+		request.GitRepo = fmt.Sprintf("%s/%s", gd.Host, gd.Project)
 	}
 	requestRes := &track.AnalyzeRequestResult{
 		ID:    1,
 		State: tricium.State_PENDING,
 	}
 	lr := &admin.LaunchRequest{
-		Project: req.Project,
-		Paths:   req.Paths,
-		GitRepo: repo,
-		GitRef:  req.GitRef,
+		Project: request.Project,
+		Paths:   request.Paths,
+		GitRepo: request.GitRepo,
+		GitRef:  request.GitRef,
 	}
 
 	// This is a cross-group transaction because first AnalyzeRequest is stored to get the ID,
