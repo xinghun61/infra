@@ -12,9 +12,7 @@ from google.appengine.ext import ndb
 _UMA_SAMPLING_PROFILER_URL_TEMPLATE = (
     'https://uma.googleplex.com/p/chrome/callstacks?q=%s')
 
-# These values are based on the proto enum definition at:
-# https://cs.chromium.org/chromium/src/components/metrics/proto/execution_context.proto
-_PROCESS_ID = {
+_PROCESS_TYPE_TO_INT = {
     'UNKNOWN_PROCESS': 0,
     'BROWSER_PROCESS': 1,
     'RENDERER_PROCESS': 2,
@@ -26,18 +24,17 @@ _PROCESS_ID = {
     'PPAPI_BROKER_PROCESS': 8,
 }
 
-_CHANNEL_ID = {
+_CHANNEL_TO_INT = {
     'canary': 1, 'dev': 2, 'beta': 3, 'stable': 4
 }
 
-# TODO(cweakliam): Refactor this later to not inherit from CrashAnalysis.
+# TODO(cweakliam): Rename CrashAnalysis to something more generic now that
+# Predator deals with regressions as well as crashes
 
 
 class UMASamplingProfilerAnalysis(CrashAnalysis):
   """Represents an analysis of a UMA Sampling Profiler Regression."""
   # customized properties for UMA regression.
-  # TODO(cweakliam): Add indexed=False to some of these later, if we turn out
-  # not to need them to be indexed.
   process_type = ndb.StringProperty()
   startup_phase = ndb.StringProperty()
   thread_type = ndb.StringProperty()
@@ -81,11 +78,12 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
 
   @property
   def crash_url(self):
-    process_number = _PROCESS_ID[self.process_type]
+    process_number = _PROCESS_TYPE_TO_INT[self.process_type]
     primary_version = self.chrome_releases[1]['version']
     secondary_version = self.chrome_releases[0]['version']
-    primary_channel_number = _CHANNEL_ID[self.chrome_releases[1]['channel']]
-    secondary_channel_number = _CHANNEL_ID[self.chrome_releases[0]['channel']]
+    primary_channel_number = _CHANNEL_TO_INT[self.chrome_releases[1]['channel']]
+    secondary_channel_number = (
+        _CHANNEL_TO_INT[self.chrome_releases[0]['channel']])
     params = {
         'editor': {
             'primarySelector': {
@@ -101,11 +99,11 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
             'displayDiff': True
         },
         'visualizer': {
-            'flame_view_model': {
-                'flame_graph_model': {
-                    'zoom_to_node': self.subtree_id
-                }
-            }
+          'flame_view_model': {
+              'flame_graph_model': {
+                  'zoom_to_node': self.subtree_id
+              }
+          }
         }
     }
     return (_UMA_SAMPLING_PROFILER_URL_TEMPLATE
@@ -137,5 +135,5 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
         'subtree_stacks': self.subtree_stacks,
     }
     if self.startup_phase:
-      output_json['startup_phase'] = self.startup_phase
+        output_json['startup_phase'] = self.startup_phase
     return output_json

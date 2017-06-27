@@ -5,28 +5,26 @@
 from analysis.changelist_classifier import ChangelistClassifier
 from analysis.linear.feature import WrapperMetaFeature
 from analysis.linear.weight import MetaWeight
-from analysis.linear.weight import Weight
 from analysis.predator import Predator
 from analysis.type_enums import CrashClient
 from analysis.uma_sampling_profiler_data import UMASamplingProfilerData
-from common.findit import Findit
 from common.model.uma_sampling_profiler_analysis import (
     UMASamplingProfilerAnalysis)
+from common.predator_app import PredatorApp
 from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
 
 
-# TODO(cweakliam): This is currently just a skeleton. Implementation will come
-# later.
-class PredatorForUMASamplingProfiler(Findit):
-  """Find culprits for regression reports from the UMA Sampling Profiler."""
+# TODO(cweakliam): There are currently no heuristics for the UMA Sampling
+# Profiler, so this is not yet used. It will be used once those are developed.
+class PredatorForUMASamplingProfiler(PredatorApp):
+  """Finds culprits for regressions/improvements from UMA Sampling Profiler."""
 
   @classmethod
   def _ClientID(cls):
     return CrashClient.UMA_SAMPLING_PROFILER
 
   def __init__(self, get_repository, config):
-    super(PredatorForUMASamplingProfiler, self).__init__(get_repository,
-                                                          config)
+    super(PredatorForUMASamplingProfiler, self).__init__(get_repository, config)
     meta_weight = MetaWeight({
         # weights go here
     })

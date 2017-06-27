@@ -18,7 +18,7 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
   """Tests ``UMASamplingProfilerAnalysis`` class."""
 
   def _GetDummyUMASamplingProfilerAnalysis(self):
-    """Returns an ``UMASamplingProfilerAnalysis`` with custom fields filled."""
+    """Return an ``UMASamplingProfilerAnalysis`` with custom fields filled."""
     analysis = UMASamplingProfilerAnalysis()
     analysis.process_type = 'BROWSER_PROCESS'
     analysis.startup_phase = 'MAIN_LOOP_START'
@@ -90,7 +90,7 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
     self.assertEqual(analysis.chrome_releases, regression_data.chrome_releases)
 
   def testClientId(self):
-    """Tests the ``client_id`` field."""
+    """Test the ``client_id`` field."""
     analysis = UMASamplingProfilerAnalysis()
     self.assertEqual(analysis.client_id, CrashClient.UMA_SAMPLING_PROFILER)
 
