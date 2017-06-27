@@ -3,7 +3,11 @@ cron:
   url: /internal/cron/ts_mon/housekeeping
   schedule: every 1 minutes
 
-- description: Update bug queue
+- description: Update android bug queue
+  url: /_cron/refresh/bugqueue/sheriff-android
+  schedule: every 1 minutes
+
+- description: Update chromium bug queue
   url: /_cron/refresh/bugqueue/sheriff-chromium
   schedule: every 1 minutes
 
@@ -66,4 +70,3 @@ cron:
   retry_parameters:
     min_backoff_seconds: 2.5
     max_doublings: 5
-
