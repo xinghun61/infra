@@ -77,14 +77,24 @@ def _NeedANewAnalysis(normalized_test,
         normalized_test.test_name)
     PopulateAnalysisInfo(analysis)
     _, saved = analysis.Save()
+    logging.info('Couldn\'t find analysis.')
+    logging.info('Need a new analysis? %r', saved)
+    logging.info('analysis key: %s', analysis.key)
     return saved, analysis
   elif (analysis.status == analysis_status.PENDING or
         analysis.status == analysis_status.RUNNING):
+    logging.info('Analysis was in state: %s, can\'t ' +
+                 'rerun until state is COMPLETED, or FAILED', analysis.status)
+    logging.info('Need a new analysis? %r', False)
+    logging.info('analysis key: %s', analysis.key)
     return False, analysis
   elif allow_new_analysis and force and analysis.status in (
       analysis_status.ERROR, analysis_status.COMPLETED):
     PopulateAnalysisInfo(analysis)
     _, saved = analysis.Save()
+    logging.info('Force given, populated info.')
+    logging.info('Need a new analysis? %r', False)
+    logging.info('analysis key: %s', analysis.key)
     return saved, analysis
   else:
     return False, analysis
@@ -152,6 +162,9 @@ def ScheduleAnalysisIfNeeded(
         normalized_test.build_number, normalized_test.step_name,
         HttpClientAppengine(), 'step_metadata')
 
+    logging.info('Initializing flake analysis pipeline for key: %s',
+                 analysis.key)
+
     pipeline_job = RecursiveFlakePipeline(
         analysis.key.urlsafe(),
         normalized_test.build_number,
@@ -169,5 +182,9 @@ def ScheduleAnalysisIfNeeded(
                  normalized_test.master_name, normalized_test.builder_name,
                  normalized_test.build_number, normalized_test.step_name,
                  pipeline_job.pipeline_status_path())
+  else:
+    logging.info('A flake analysis not necessary for build %s, %s, %s, %s',
+                 normalized_test.master_name, normalized_test.builder_name,
+                 normalized_test.build_number, normalized_test.step_name)
 
   return analysis

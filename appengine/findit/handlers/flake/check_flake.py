@@ -296,6 +296,10 @@ class CheckFlake(BaseHandler):
       bug_id = analysis.bug_id
       analysis.Reset()
       analysis.Save()
+
+      logging.info(
+          'Rerun button pushed, analysis will be reset and triggered.\n' +
+          'Analysis key: %s', key)
     else:
       # If the key hasn't been specified, then we get the information from
       # other URL parameters.
@@ -363,6 +367,8 @@ class CheckFlake(BaseHandler):
             'return_code': 404,
         }
 
+    logging.info('Analysis: %s has a scheduled status of: %r', analysis.key,
+                 scheduled)
     return self.CreateRedirect(
         '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
 
