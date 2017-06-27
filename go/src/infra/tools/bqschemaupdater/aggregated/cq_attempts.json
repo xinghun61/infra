@@ -1,0 +1,20 @@
+{
+	"dataset_id": "aggregated",
+	"table_id": "cq_attempts",
+	"name": "CQ Attempts",
+	"fields": [
+		{
+			"name": "attempt_start_msec",
+			"type": "FLOAT",
+			"is_required": true
+		},
+		{
+			"name": "first_start_msec",
+			"type": "INTEGER"
+		},
+		{
+			"name": "last_start_msec",
+			"type": "INTEGER"
+		}
+	]
+}
