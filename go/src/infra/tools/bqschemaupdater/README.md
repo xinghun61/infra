@@ -10,4 +10,4 @@ The operations supported by this tool include:
 
 * Creating a new table
 * Adding NULLABLE or REPEATED columns to an existing table
-* Making REQUIRED fields NULLABLE in an existing table#
+* Making REQUIRED fields NULLABLE in an existing table

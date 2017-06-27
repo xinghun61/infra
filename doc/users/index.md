@@ -13,4 +13,5 @@
 ## User guides
 
 * [The builders.pyl file format for masters](services/buildbot/builders.pyl.md)
-* [Recipes](recipes.md)
+* [recipes](recipes.md)
+* [Event Pipeline](event_pipeline.md)
