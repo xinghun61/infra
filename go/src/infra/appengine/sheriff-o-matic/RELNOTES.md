@@ -1,3 +1,32 @@
+# Release Notes sheriff-o-matic 2017-06-27
+
+- 8 commits, 4 bugs affected since 8e25b38 (2017-06-20T21:41:26Z)
+- 2 Authors:
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [SoM: Make bug queue look for exact label matches.](https://chromium-review.googlesource.com/550557) (zhangtiff@google.com)
+- [SoM: Fix internal builder links for milo.](https://chromium-review.googlesource.com/549091) (zhangtiff@google.com)
+- [SoM: Make trooper tree use milo.](https://chromium-review.googlesource.com/549008) (zhangtiff@google.com)
+- [SoM: Add tree-specific default snooze times and make autsnooze time configurable.](https://chromium-review.googlesource.com/549081) (zhangtiff@google.com)
+- [SoM: Enable grouping for all trees.](https://chromium-review.googlesource.com/544083) (zhangtiff@google.com)
+- [[som] Move CL-generating logic to async worker queue.](https://chromium-review.googlesource.com/543912) (seanmccullough@chromium.org)
+- [[som] TA/DA: Break CL-generating logic into an async worker task](https://chromium-review.googlesource.com/541582) (seanmccullough@chromium.org)
+- [[som] update RELNOTES.md for this week's push](https://chromium-review.googlesource.com/541605) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/603982](https://crbug.com/603982)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/690852](https://crbug.com/690852)
+  -  [https://crbug.com/736399](https://crbug.com/736399)
+  -  [https://crbug.com/736838](https://crbug.com/736838)
+
+
 # Release Notes sheriff-o-matic 2017-06-20
 
 - 7 commits, 3 bugs affected since 41148d3 (2017-06-13T23:18:55Z)
