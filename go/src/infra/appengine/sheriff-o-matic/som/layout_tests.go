@@ -51,6 +51,9 @@ type QueuedUpdate struct {
 	// ChangeID is blank until the CL has been created by the worker task, at
 	// which point it gets assigned to the Gerrit change ID created.
 	ChangeID string
+	// ErrorMessage is blank unless the worker encountered an error while trying
+	// to generate the CL.
+	ErrorMessage string
 }
 
 // GetLayoutTestsHandler returns a JSON summary of webkit layout tests and
@@ -101,16 +104,26 @@ func LayoutTestExpectationChangeWorker(ctx *router.Context) {
 
 	c, cancelFunc := context.WithTimeout(c, 600*time.Second)
 	defer cancelFunc()
+	updateID := r.FormValue("updateID")
+	writeUpdate := func(changeID string, err error) {
+		logging.Errorf(c, "writeUpdate: %v %v", changeID, err)
+		if err := writeQueuedUpdate(c, updateID, changeID, err); err != nil {
+			logging.Errorf(c, "getting from datastore: %v", err.Error())
+			errStatus(c, w, http.StatusInternalServerError, err.Error())
+		}
+	}
 
 	fs, err := te.LoadAll(c)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		writeUpdate("", err)
 		return
 	}
 
 	newExp := &shortExp{}
 	if err := json.Unmarshal([]byte(r.FormValue("change")), newExp); err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		writeUpdate("", err)
 		return
 	}
 
@@ -125,18 +138,22 @@ func LayoutTestExpectationChangeWorker(ctx *router.Context) {
 
 	if err := fs.UpdateExpectation(stmt); err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		writeUpdate("", err)
 		return
 	}
 
 	client, err := getGerritClient(c)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		writeUpdate("", err)
 		return
 	}
 
 	logging.Infof(c, "creating a CL editing %d files", len(fs.ToCL()))
 	changeID, err := createCL(client, "chromium/src", "master", fmt.Sprintf("update %s expecations", stmt.TestName), fs.ToCL())
 	if err != nil {
+		logging.Errorf(c, "error creating CL: %v", err.Error())
+		writeUpdate(changeID, err)
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -150,15 +167,23 @@ func LayoutTestExpectationChangeWorker(ctx *router.Context) {
 	}); err != nil {
 		logging.Errorf(c, "creating CL: %v", err.Error())
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		writeUpdate(changeID, err)
+		return
 	}
 
 	if _, err := client.Changes.PublishDraftChange(changeID, "NONE"); err != nil {
 		logging.Errorf(c, "publishing change: %v", err.Error())
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		writeUpdate(changeID, err)
 		return
 	}
 
-	updateID := r.FormValue("updateID")
+	writeUpdate(changeID, nil)
+
+	w.Write([]byte(changeID))
+}
+
+func writeQueuedUpdate(c context.Context, updateID, changeID string, err error) error {
 	queuedUpdate := &QueuedUpdate{
 		ID: updateID,
 	}
@@ -166,19 +191,19 @@ func LayoutTestExpectationChangeWorker(ctx *router.Context) {
 	if err := datastore.RunInTransaction(c, func(c context.Context) error {
 		if err := datastore.Get(c, queuedUpdate); err != nil {
 			logging.Errorf(c, "getting from datastore: %v", err.Error())
-			errStatus(c, w, http.StatusInternalServerError, err.Error())
 			return err
 		}
-
 		queuedUpdate.ChangeID = changeID
+		if err != nil {
+			queuedUpdate.ErrorMessage = err.Error()
+		}
 		return datastore.Put(c, queuedUpdate)
 	}, nil); err != nil {
 		logging.Errorf(c, "updating datastore: %v", err.Error())
-		errStatus(c, w, http.StatusInternalServerError, err.Error())
-		return
+		return err
 	}
 
-	w.Write([]byte(changeID))
+	return nil
 }
 
 // PostLayoutTestExpectationChangeHandler enqueues an asynchronous task to
@@ -192,6 +217,7 @@ func PostLayoutTestExpectationChangeHandler(ctx *router.Context) {
 
 	newExp := &shortExp{}
 	if err := json.NewDecoder(r.Body).Decode(newExp); err != nil {
+		logging.Errorf(c, "decoding body: %v", err)
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -209,6 +235,7 @@ func PostLayoutTestExpectationChangeHandler(ctx *router.Context) {
 		}
 		return datastore.Put(c, queuedUpdate)
 	}, nil); err != nil {
+		logging.Errorf(c, "allocating id: %v", err)
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -218,6 +245,8 @@ func PostLayoutTestExpectationChangeHandler(ctx *router.Context) {
 	params.Set("updateID", queuedUpdate.ID)
 	body, err := json.Marshal(newExp)
 	if err != nil {
+
+		logging.Errorf(c, "marshaling newExp: %v", err)
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -226,6 +255,7 @@ func PostLayoutTestExpectationChangeHandler(ctx *router.Context) {
 	task := taskqueue.NewPOSTTask("/_ah/queue/changetestexpectations", params)
 
 	if err := taskqueue.Add(c, changeQueue, task); err != nil {
+		logging.Errorf(c, "adding to task queue: %v", err)
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -236,6 +266,7 @@ func PostLayoutTestExpectationChangeHandler(ctx *router.Context) {
 
 	respBytes, err := json.Marshal(resp)
 	if err != nil {
+		logging.Errorf(c, "marshaling response: %v", err)
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -264,6 +295,8 @@ func GetTestExpectationCLStatusHandler(ctx *router.Context) {
 
 	resp := map[string]interface{}{
 		"ChangeID": queuedUpdate.ChangeID,
+		// TODO: return something other than 200 OK when this isn't blank?
+		"ErrorMessage": queuedUpdate.ErrorMessage,
 	}
 
 	respBytes, err := json.Marshal(resp)

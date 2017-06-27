@@ -38,6 +38,7 @@
     "moment": "^2.17.1",
     "moment-timezone": "^0.5.10",
     "marked-element": "^1.3.0",
-    "vaadin-grid": "^2.0.2"
+    "vaadin-grid": "^2.0.2",
+    "paper-progress": "^2.0.1"
   }
 }

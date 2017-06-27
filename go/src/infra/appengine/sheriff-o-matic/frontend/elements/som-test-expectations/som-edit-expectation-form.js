@@ -62,6 +62,19 @@
     },
 
     _addBug: function(evt) {
+      this._newBugError = '';
+      let bug = this.$.newBug.value;
+      let parser = document.createElement('a');
+      parser.href = bug;
+      if (!bug.startsWith('https://')) {
+        parser.href = 'https://' + bug;
+      }
+      if (isNaN(parseInt(bug)) && parser.hostname != 'bugs.chromium.org' &&
+        parser.hostname != 'crbug.com') {
+        this._newBugError = 'Invalid bug';
+        return
+      }
+
       this.push('_editValue.Bugs', this.$.newBug.value);
       this.$.newBug.value = '';
     },
