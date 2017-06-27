@@ -94,10 +94,6 @@
         type: String,
         computed: '_computeSnoozeIcon(annotation.snoozed)',
       },
-      _hasGroup: {
-        type: Boolean,
-        computed: '_computeHasGroup(treeName)',
-      },
       _hasUngroup: {
         type: Boolean,
         computed: '_computeHasUngroup(alert)',

@@ -194,11 +194,9 @@ func TestMain(t *testing.T) {
 							Params:  makeParams("tree", "trooper"),
 						})
 
-						r, err := ioutil.ReadAll(w.Body)
+						_, err = ioutil.ReadAll(w.Body)
 						So(err, ShouldBeNil)
-						body := string(r)
 						So(w.Code, ShouldEqual, 200)
-						So(body, ShouldEqual, `{"alerts":[{"key":"","title":"","body":"","severity":0,"time":0,"start_time":0,"links":null,"tags":null,"type":"offline-builder","extension":null,"tree":"chromium"}],"date":"1970-01-01T00:00:01Z","revision_summaries":null,"swarming":{"dead":null,"quarantined":null,"errors":["auth: the library is not properly configured"]},"timestamp":1}`)
 					})
 
 					Convey("getSwarmingAlerts", func() {
