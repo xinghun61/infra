@@ -15,6 +15,7 @@ class CrashClient(object):
   FRACAS = 'fracas'
   CRACAS = 'cracas'
   CLUSTERFUZZ = 'clusterfuzz'
+  UMA_SAMPLING_PROFILER = 'uma sampling profiler'
 
 
 class LanguageType(object):

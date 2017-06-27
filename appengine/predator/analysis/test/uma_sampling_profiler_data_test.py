@@ -12,7 +12,7 @@ from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
 from libs.deps.dependency import Dependency
 from libs.deps.dependency import DependencyRoll
 
-_TEST_DATA = {
+TEST_DATA = {
   'thread_type': 'UI_THREAD',
   'collection_trigger': 'PROCESS_STARTUP',
   'process_type': 'BROWSER_PROCESS',
@@ -73,7 +73,7 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
 
   def _GetDummyUMAData(self):
     return UMASamplingProfilerData(
-        _TEST_DATA, ChromeDependencyFetcher(self.GetMockRepoFactory()))
+        TEST_DATA, ChromeDependencyFetcher(self.GetMockRepoFactory()))
 
   def testTopLevelInfo(self):
     """Tests that the fields for top-level information are set correctly."""
