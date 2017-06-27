@@ -128,6 +128,18 @@ PREFERRED_DOMAIN_NAMES = {
   },
 }
 
+# We are in the process of turning Rietveld read-only. To that end, we
+# are refusing uploads to projects which are fully supported on other
+# review systems.
+READ_ONLY_PROJECTS = [
+  'build',
+  'depot_tools',
+  'infra',
+  'infra_experimental',
+  'pdfium',
+  'skia',
+]
+
 UPLOAD_PY_SOURCE = os.path.join(os.path.dirname(__file__), 'upload.py')
 
 # Default values for patch rendering

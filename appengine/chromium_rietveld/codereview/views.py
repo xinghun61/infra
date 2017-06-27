@@ -1418,6 +1418,12 @@ def _make_new(request, form):
     return (None, None)
   data, url, separate_patches = data_url
 
+  project = form.cleaned_data['project']
+  if project in django_settings.READ_ONLY_PROJECTS:
+    form.errors['data'] = (
+      'Project %s has been marked read-only, no new issues allowed.' % project)
+    return (None, None)
+
   reviewers, required_reviewers = _get_emails(form, 'reviewers')
   if not form.is_valid() or reviewers is None:
     return (None, None)
@@ -1433,7 +1439,6 @@ def _make_new(request, form):
   first_issue_id, _ = models.Issue.allocate_ids(1)
   issue_key = ndb.Key(models.Issue, first_issue_id)
 
-  project = form.cleaned_data['project']
   target_ref = form.cleaned_data.get('target_ref', None)
   cq_dry_run = form.cleaned_data.get('cq_dry_run', False)
   cq_dry_run_triggered_by = account.email if cq_dry_run else ''
