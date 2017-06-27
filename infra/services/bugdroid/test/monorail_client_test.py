@@ -102,3 +102,29 @@ class MonorailClientTest(unittest.TestCase):
     self.client.update_issue('foo', issue)
 
     self.assertFalse(self.insert.called)
+
+  @mock.patch('logging.debug')
+  def test_unicode_decode_error(self, mock_debug):
+    http = self.insert.return_value
+    http.postproc.side_effect = UnicodeDecodeError('', '', 1, 2, '')
+
+    # The real Http.execute calls postproc.  Postproc calls str.decode which
+    # sometimes raises a UnicodeDecodeError.  We make our postproc raise that
+    # UnicodeDecodeError by setting the side_effect above.
+    # monorail_client monkey-patches the postproc method to catch that exception
+    # and log it.
+    def fake_execute(*_args, **_kwargs):
+      # This calls the wrapped function, which calls the original one we set
+      # the side_effect on above.
+      http.postproc({'foo': 'bar'}, 'blah blah')
+    http.execute.side_effect = fake_execute
+
+    issue = monorail_client.Issue(123, [])
+    issue.set_comment('hello')
+
+    with self.assertRaises(UnicodeDecodeError):
+      self.client.update_issue('foo', issue)
+
+    mock_debug.assert_called_once_with(
+        'Error decoding UTF-8 HTTP response.  Response headers:\n%r\n'
+        'Response body:\n%r', {'foo': 'bar'}, 'blah blah')

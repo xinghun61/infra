@@ -117,10 +117,26 @@ class MonorailClient(object):
     if issue.comment:
       body['content'] = issue.comment
 
-    self.client.issues().comments().insert(projectId=project_name,
-                                           issueId=issue.id,
-                                           sendEmail=send_email,
-                                           body=body).execute(num_retries=5)
+    req = self.client.issues().comments().insert(projectId=project_name,
+                                                 issueId=issue.id,
+                                                 sendEmail=send_email,
+                                                 body=body)
+
+    # Hack to investigate crbug/625036.  Replace the content handler inside
+    # googleapiclient's HttpRequest with one that also logs the response that
+    # causes a UnicodeDecodeError.
+    original_postproc = req.postproc
+    def request_postproc(resp, content):
+      try:
+        return original_postproc(resp, content)
+      except UnicodeDecodeError:
+        logging.debug(
+            'Error decoding UTF-8 HTTP response.  Response headers:\n%r\n'
+            'Response body:\n%r', resp, content)
+        raise
+    req.postproc = request_postproc
+
+    req.execute(num_retries=5)
 
     # Clear the issue comment once it's been saved (shouldn't be re-used)
     issue.comment = ''
