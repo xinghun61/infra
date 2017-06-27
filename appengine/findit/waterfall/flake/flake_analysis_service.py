@@ -217,9 +217,7 @@ def ScheduleAnalysisForFlake(request,
   assert len(request.build_steps), 'At least 1 build step is needed!'
 
   if not IsAuthorizedUser(user_email, is_admin):
-    logging.info(
-        'Schedule failed because user is not authorized. user:%s, admin:%s',
-        user_email, is_admin)
+    logging.info('user:%s, admin:%s', user_email, is_admin)
     return None
   request.user_emails = [user_email]
 
@@ -257,7 +255,7 @@ def ScheduleAnalysisForFlake(request,
           key=request.name, version=version_number)
       request.analyses.append(analysis.key)
       request.put()
-      logging.info('A new analysis was triggered successfully with key: %s',
+      logging.info('A new analysis was triggered successfully: %s',
                    analysis.key)
       monitoring.flakes.increment({
           'operation': 'analyze',
