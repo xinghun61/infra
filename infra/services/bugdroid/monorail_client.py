@@ -7,6 +7,7 @@ import httplib2
 import json
 import logging
 import oauth2client.client
+import ssl
 import time
 
 from apiclient.errors import HttpError
@@ -50,6 +51,33 @@ def build_client(discovery_url, http, api_name, api_version):
   return client
 
 
+class SSLErrorLoggingHttp(object):
+  """A httplib2.Http object that logs ssl.SSLError.  For crbug/625036."""
+
+  def __init__(self, http):
+    """
+    Args:
+      http: an httplib2.Http instance
+    """
+    self._http = http
+
+  def request(self, *args, **kwargs):
+    try:
+      return self._http.request(*args, **kwargs)
+    except ssl.SSLError:
+      logging.exception('SSL error in Monorail API request.  Will be retried')
+      raise
+
+  def __getattr__(self, name):
+    return getattr(self._http, name)
+
+  def __setattr__(self, name, value):
+    if name == '_http':
+      self.__dict__[name] = value
+    else:
+      setattr(self._http, name, value)
+
+
 class MonorailClient(object):
 
   def __init__(self, credential_store, client=None):
@@ -70,6 +98,7 @@ class MonorailClient(object):
 
       http = httplib2_utils.InstrumentedHttp('monorail')
       http = credentials.authorize(http)
+      http = SSLErrorLoggingHttp(http)
       client = build_client(MONORAIL_PROD_URL, http, 'monorail', 'v1')
 
     self.client = client
