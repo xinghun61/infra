@@ -66,7 +66,7 @@ func (b *battery) GetTemperature() float64 {
 
 type build struct {
 	ID      string `json:"build.id"`
-	Product string `json:"build_product"`
+	Product string `json:"build.product"`
 	Board   string `json:"product.board"`
 	Device  string `json:"product.device"`
 }
