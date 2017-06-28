@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import collections
+import logging
 import webapp2
 
 from model.flake import Flake, FlakeType, Issue
@@ -47,12 +48,13 @@ def _get_flake_types_from_flake(flake):
 
   for flaky_run_key in flake.occurrences:
     flaky_run = flaky_run_key.get()
-    flake_type_keys.extend([
-        _get_or_put_flake_type(flake_occurrence.name, flake.name,
-                               flake.issue_last_updated)
-        for flake_occurrence in flaky_run.flakes
-        if flake_occurrence.failure == flake.name
-    ])
+    if flaky_run is not None:
+      flake_type_keys.extend([
+          _get_or_put_flake_type(flake_occurrence.name, flake.name,
+                                 flake.issue_last_updated)
+          for flake_occurrence in flaky_run.flakes
+          if flake_occurrence.failure == flake.name
+      ])
 
   return flake_type_keys
 
@@ -66,15 +68,20 @@ class Migrate(webapp2.RequestHandler):
       self.response.set_status(400)
       return
 
-    flakes = Flake.query().fetch()
+    flakes = Flake.query(Flake.issue_id > 0).fetch()
     flake_types_by_issue = collections.defaultdict(list)
-    for flake in flakes:
-      if flake.issue_id:
-        flake_types_by_issue[flake.issue_id].extend(
-            _get_flake_types_from_flake(flake))
+    for flake_number, flake in enumerate(flakes, 1):
+      flake_types_by_issue[flake.issue_id].extend(
+          _get_flake_types_from_flake(flake))
+      if flake_number % 500 == 0:  # pragma: no cover
+        logging.info('Processed %d flakes so far.' % flake_number)
+
+    logging.info('Done processing FlakeTypes. Starting to process Issues')
 
     for issue_id, flake_type_keys in flake_types_by_issue.iteritems():
       # We might have found the same flake_type more than once.
       flake_type_keys = list(set(flake_type_keys))
       Issue(project='chromium', issue_id=issue_id,
             flake_type_keys=flake_type_keys).put()
+
+    logging.info('Done processing Issues. Migration completed.')

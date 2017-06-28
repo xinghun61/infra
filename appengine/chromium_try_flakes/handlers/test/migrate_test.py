@@ -163,3 +163,55 @@ class MigrateTestCase(testing.AppengineTestCase):
     self.assertEqual(issue.issue_id, 2)
     self.assertEqual(issue.project, 'chromium')
     self.assertEqual(issue.flake_type_keys, [flake_type_1.key])
+
+  def test_ignores_null_flaky_runs(self):
+    last_updated = datetime.datetime.now()
+
+    fake_build_key = BuildRun(buildnumber=1, result=1,
+                              time_finished=last_updated).put()
+
+    flake_run_key = FlakyRun(
+        failure_run=fake_build_key,
+        success_run=fake_build_key,
+        failure_run_time_finished=last_updated,
+        flakes=[
+            FlakeOccurrence(name='fake_step', failure='fake_test_name'),
+            FlakeOccurrence(name='fake_step2', failure='fake_test_name')
+    ]).put()
+
+    null_flake_run_key = ndb.Key('FlakyRun', 'fake-key')
+
+    Flake(issue_id=1, is_step=False, name='fake_test_name',
+          issue_last_updated=last_updated,
+          occurrences=[
+              flake_run_key,
+              null_flake_run_key,
+          ]).put()
+
+    self.test_app.get('/migrate')
+
+    flake_types = FlakeType.query().fetch()
+    self.assertEqual(len(flake_types), 2)
+
+    flake_type_1 = flake_types[0]
+    self.assertEqual(flake_type_1.project, 'chromium')
+    self.assertEqual(flake_type_1.step_name, 'fake_step')
+    self.assertEqual(flake_type_1.test_name, 'fake_test_name')
+    self.assertIsNone(flake_type_1.config)
+    self.assertEqual(flake_type_1.last_updated, last_updated)
+
+    flake_type_2 = flake_types[1]
+    self.assertEqual(flake_type_2.project, 'chromium')
+    self.assertEqual(flake_type_2.step_name, 'fake_step2')
+    self.assertEqual(flake_type_2.test_name, 'fake_test_name')
+    self.assertIsNone(flake_type_2.config)
+    self.assertEqual(flake_type_2.last_updated, last_updated)
+
+    issues = Issue.query().fetch()
+    self.assertEqual(len(issues), 1)
+
+    issue = issues[0]
+    self.assertEqual(issue.issue_id, 1)
+    self.assertEqual(issue.project, 'chromium')
+    self.assertEqual(sorted(issue.flake_type_keys),
+                     sorted(flake_type.key for flake_type in flake_types))
