@@ -303,6 +303,7 @@ def commit(
     upload_cmd.append('--tbr-owners')
   if not no_commit:
     upload_cmd.append('-c')
+    upload_cmd.append('-s') # This gets rid of the "WIP" bit
   else:
     LOGGER.info('CQ bit not set, please commit manually. (--no-commit)')
   subprocess.check_call(upload_cmd, cwd=target)
