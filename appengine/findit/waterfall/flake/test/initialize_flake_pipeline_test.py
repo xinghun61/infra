@@ -139,7 +139,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
       test = TestInfo(master_name, builder_name, build_number, step_name,
                       test_name)
       need_analysis, analysis = initialize_flake_pipeline._NeedANewAnalysis(
-          test, test, None, allow_new_analysis=True, force=True)
+          test, test, None, allow_new_analysis=True, force=False)
 
       self.assertFalse(need_analysis)
       self.assertIsNotNone(analysis)

@@ -885,5 +885,4 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
           })
       scheduler.assert_called_with(master_name, builder_name, build_number,
                                    step_name, test_name, 1, True)
-      self.assertNotEqual(original_key, analysis.key)
-      self.assertEqual(analysis.version_number, 2)
+      self.assertEqual(original_key, analysis.key)

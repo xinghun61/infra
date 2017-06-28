@@ -294,8 +294,6 @@ class CheckFlake(BaseHandler):
       step_name = analysis.original_step_name
       test_name = analysis.original_test_name
       bug_id = analysis.bug_id
-      analysis.Reset()
-      analysis.Save()
 
       logging.info(
           'Rerun button pushed, analysis will be reset and triggered.\n' +
