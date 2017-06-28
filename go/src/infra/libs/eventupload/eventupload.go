@@ -166,10 +166,6 @@ type BatchUploader struct {
 	mu      sync.Mutex
 	pending []interface{}
 	started bool
-
-	// testUploadConfirmC, if not nil, will have a struct{} written to it each
-	// time an upload occurs.
-	testUploadConfirmC chan struct{}
 }
 
 func (bu *BatchUploader) start() {
@@ -192,11 +188,6 @@ func (bu *BatchUploader) start() {
 			select {
 			case <-bu.TickC:
 				bu.upload()
-				if bu.testUploadConfirmC != nil {
-					// Testing: Notify that the upload has completed for test
-					// synchronization.
-					bu.testUploadConfirmC <- struct{}{}
-				}
 			case <-bu.stopc:
 				return
 			}

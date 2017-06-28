@@ -19,9 +19,7 @@ type eventUploader interface {
 	Put(ctx context.Context, src interface{}) error
 }
 
-type mockUploader struct {
-	uploaded []interface{}
-}
+type mockUploader chan []fakeEvent
 
 func testContext() context.Context {
 	ctx := context.Background()
@@ -29,19 +27,35 @@ func testContext() context.Context {
 	return ctx
 }
 
-func (u *mockUploader) Put(ctx context.Context, src interface{}) error {
-	u.uploaded = append(u.uploaded, src)
+func (u mockUploader) Put(ctx context.Context, src interface{}) error {
+	srcs := src.([]interface{})
+	var fes []fakeEvent
+	for _, fe := range srcs {
+		fes = append(fes, fe.(fakeEvent))
+	}
+	u <- fes
 	return nil
 }
 
 type fakeEvent struct{}
 
+func expectPutCalled(t *testing.T, u mockUploader, want []fakeEvent) {
+	select {
+	case got := <-u:
+		if !reflect.DeepEqual(got, want) {
+			t.Errorf("got: %v; want: %v", got, want)
+		}
+	case <-time.After(50 * time.Millisecond):
+		t.Errorf("timed out waiting for upload")
+	}
+}
+
 func TestClose(t *testing.T) {
 	t.Parallel()
 
 	ctx := testContext()
-	u := mockUploader{}
-	bu, err := NewBatchUploader(ctx, &u)
+	u := make(mockUploader, 1)
+	bu, err := NewBatchUploader(ctx, u)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -66,35 +80,29 @@ func TestClose(t *testing.T) {
 	if got, want := len(bu.pending), 0; got != want {
 		t.Errorf("got: %d; want: %d", got, want)
 	}
-	if got, want := len(u.uploaded), 1; got != want {
-		t.Errorf("got: %d; want: %d", got, want)
-	}
+	expectPutCalled(t, u, []fakeEvent{{}})
 }
 
 func TestUpload(t *testing.T) {
 	t.Parallel()
 
 	ctx := testContext()
-	u := mockUploader{}
+	u := make(mockUploader, 1)
 	bu, err := NewBatchUploader(ctx, &u)
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer bu.Close()
 
-	bu.testUploadConfirmC = make(chan struct{})
 	tickc := make(chan time.Time)
 	bu.TickC = tickc
 
 	bu.Stage(fakeEvent{})
-	if got, want := len(u.uploaded), 0; got != want {
+	if got, want := len(u), 0; got != want {
 		t.Errorf("got: %d; want: %d", got, want)
 	}
 	tickc <- time.Time{}
-	<-bu.testUploadConfirmC // Synchronize with upload.
-	if got, want := len(u.uploaded), 1; got != want {
-		t.Errorf("got: %d; want: %d", got, want)
-	}
+	expectPutCalled(t, u, []fakeEvent{{}})
 }
 
 func TestPrepareSrc(t *testing.T) {
@@ -130,7 +138,7 @@ func TestCounterMetric(t *testing.T) {
 	t.Parallel()
 
 	ctx := testContext()
-	u := mockUploader{}
+	u := make(mockUploader, 1)
 	bu, err := NewBatchUploader(ctx, &u)
 	if err != nil {
 		t.Fatal(err)
@@ -164,7 +172,7 @@ func TestStage(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		ctx := testContext()
-		u := mockUploader{}
+		u := make(mockUploader, 1)
 		bu, err := NewBatchUploader(ctx, &u)
 		if err != nil {
 			t.Fatal(err)
