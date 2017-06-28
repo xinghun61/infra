@@ -44,6 +44,11 @@
         value: false,
         computed: '_computeShowTestExpectations(_selectedPage)',
       },
+      _showTreeStatus: {
+        type: Boolean,
+        value: false,
+        computed: '_computeShowTreeStatus(_selectedPage)',
+      },
       _tree: {
         type: Object,
         computed: '_computeTree(_pathIdentifier, _trees)',
@@ -74,6 +79,10 @@
           'test-expectations': {
             pageId: 'testExpectations',
             displayText: 'Layout Test Expectations',
+          },
+          'status': {
+            pageId: 'treeStatus',
+            displayText: 'Tree Statuses',
           },
         },
       },
@@ -187,6 +196,10 @@
 
     _computeShowTestExpectations: function(selectedPage) {
       return selectedPage == 'testExpectations';
+    },
+
+    _computeShowTreeStatus: function(selectedPage) {
+      return selectedPage == 'treeStatus';
     },
   });
 })();

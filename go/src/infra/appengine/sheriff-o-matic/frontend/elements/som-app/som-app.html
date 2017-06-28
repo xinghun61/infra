@@ -20,6 +20,8 @@
 <link rel="import" href="../../elements/pages/som-help.html">
 <link rel="import" href="../../elements/pages/som-rotation-calendar.html">
 
+<link rel="import" href="../../elements/tree-status/som-all-status/som-all-status.html">
+
 <script src="../../bower_components/moment/min/moment.min.js"></script>
 <script src="../../bower_components/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
 
@@ -181,6 +183,9 @@
           </template>
           <template is="dom-if" if="[[_showTestExpectations]]">
             <som-test-expectations class="page-body" id="testExpectations"></som-test-expectations>
+          </template>
+          <template is="dom-if" if="[[_showTreeStatus]]">
+            <som-all-status class="page-body page-body-padded" id="treeStatus" trees="[[_trees]]"></som-all-status>
           </template>
         </iron-pages>
       </paper-header-panel>

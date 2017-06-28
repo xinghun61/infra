@@ -1,0 +1,28 @@
+<script>
+  'use strict';
+  const StatusApps = {
+    'android': 'https://c-status.appspot.com/',
+    'chromium': 'https://chromium-status.appspot.com',
+    'chromeos': 'https://chromiumos-status.appspot.com',
+    'dart': 'https://dart-status.appspot.com/',
+    'naclports': 'https://naclports-status.appspot.com/',
+    'nativeclient': 'https://nativeclient-status.appspot.com/',
+    'trooper': 'https://infra-status.appspot.com/',
+    'v8-roll': 'https://v8-roll.appspot.com/',
+    'v8': 'https://v8-status.appspot.com/',
+    'webrtc': 'https://webrtc-status.appspot.com/',
+  };
+
+  let TreeStatusBehavior = {
+    hasStatusApp: function(treeName) {
+      return treeName in StatusApps;
+    },
+
+    getStatusApp: function(treeName) {
+      if (this.hasStatusApp(treeName)) {
+        return StatusApps[treeName];
+      }
+      return null;
+    },
+  };
+</script>

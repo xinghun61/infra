@@ -4,6 +4,8 @@
   Polymer({
     is: 'som-tree-status',
 
+    behaviors: [TreeStatusBehavior],
+
     properties: {
       treeName: {
         type: String,
@@ -16,26 +18,18 @@
       },
       _hasStatusApp: {
         type: Boolean,
-        computed: '_computeHasStatusApp(treeName, _statusApps)',
+        computed: 'hasStatusApp(treeName)',
       },
       _hideNotice: {
         type: Boolean,
         computed: '_computeHideNotice(_hasStatusApp, _hasError)',
         value: true,
       },
-      _statusApps: {
-        type: Object,
-        value: {
-          'chromium': 'https://chromium-status.appspot.com',
-          'chromeos': 'https://chromiumos-status.appspot.com',
-          'trooper': 'https://infra-status.appspot.com/',
-        },
-      },
       _statusErrorJson: Object,
       _statusJson: Object,
       _statusUrl: {
         type: String,
-        computed: '_computeStatusUrl(treeName, _statusApps)',
+        computed: 'getStatusApp(treeName)',
       },
       // Processed JSON data
       _email: {
@@ -71,19 +65,8 @@
       return hasStatusApp && !!json && Object.keys(json).length > 0;
     },
 
-    _computeHasStatusApp: function(treeName, statusApps) {
-      return treeName in statusApps;
-    },
-
     _computeHideNotice: function(hasStatusApp, hasError) {
       return !hasStatusApp || hasError;
-    },
-
-    _computeStatusUrl: function(treeName, statusApps) {
-      if (!this._hasStatusApp) {
-        return '';
-      }
-      return statusApps[treeName];
     },
 
     // Processing JSON data for display

@@ -1,10 +1,14 @@
-<link rel="import" href="../../bower_components/polymer/polymer.html">
-<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
 
-<link rel="import" href="../../elements/som-marked-element/som-marked-element.html">
+<link rel="import" href="../../../elements/som-marked-element/som-marked-element.html">
+
+<link rel="import" href="../som-tree-status-styles.html">
+<link rel="import" href="../som-tree-status-behavior.html">
 
 <dom-module id="som-tree-status">
   <template>
+    <style include="som-tree-status-styles"></style>
     <style>
     #error,
     #treeStatus {
@@ -15,18 +19,8 @@
       border: 1px solid #ccc;
       color: #222;
     }
-    #error,
-    .closed {
+    #error {
       background-color: #E98080;
-    }
-    .maintenance {
-      background-color: #FF80FF;
-    }
-    .open {
-      background-color: #8FDF5F;
-    }
-    .throttled {
-      background-color: #FFFC6C;
     }
     a, a:visited,
     som-marked-element /deep/ a, som-marked-element /deep/ a:visited {

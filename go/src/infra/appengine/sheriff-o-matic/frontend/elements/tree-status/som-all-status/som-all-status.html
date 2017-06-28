@@ -1,0 +1,33 @@
+<link rel="import" href="../../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../../elements/som-header-styles.html">
+
+<link rel="import" href="../../../elements/tree-status/som-tree-status/som-tree-status.html">
+
+<link rel="import" href="../som-tree-status-behavior.html">
+
+<dom-module id="som-all-status">
+  <template>
+    <style include="som-header-styles"></style>
+    <style>
+      .tree-status-container {
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 1em;
+      }
+    </style>
+    <template is="dom-repeat" items="[[_statusList]]" as="status">
+      <div class="tree-status-container">
+        <h2>
+          <span>
+            [[status.name]] Tree Status
+            <span hidden$="[[!status.tree]]">
+              (<a href$="/[[status.key]]">View Tree</a>)
+            </span>
+          </span>
+        </h2>
+        <som-tree-status tree-name="[[status.key]]"></som-tree-status>
+      </div>
+    </template>
+  </template>
+  <script src="som-all-status.js"></script>
+</dom-module>
