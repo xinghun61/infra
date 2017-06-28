@@ -76,9 +76,13 @@ class CacheManager(object):
 
   def _ProcessInvalidationRows(self, rows):
     """Invalidate cache entries indicated by database rows."""
+    already_done = set()
     for timestep, kind, key in rows:
       self.processed_invalidations_up_to = max(
           self.processed_invalidations_up_to, timestep)
+      if (kind, key) in already_done:
+        continue
+      already_done.add((kind, key))
       for cache in self.cache_registry[kind]:
         if key == INVALIDATE_ALL_KEYS:
           cache.LocalInvalidateAll()

@@ -103,6 +103,25 @@ class CacheManagerServiceTest(unittest.TestCase):
     self.assertTrue(ram_cache.HasItem(33))
     self.assertFalse(ram_cache.HasItem(34))
 
+  def testDoDistributedInvalidation_Redundant(self):
+    ram_cache = self.cache_manager.MakeCache('issue')
+    ram_cache.CacheAll({
+        33: 'issue 33',
+        34: 'issue 34',
+        })
+    rows = [(1, 'issue', 34),
+            (2, 'project', 789),
+            (3, 'issue', 39),
+            (4, 'project', 789),
+            (5, 'issue', 39)]
+    self.SetUpDoDistributedInvalidation(rows)
+    self.mox.ReplayAll()
+    self.cache_manager.DoDistributedInvalidation(self.cnxn)
+    self.mox.VerifyAll()
+    self.assertEqual(5, self.cache_manager.processed_invalidations_up_to)
+    self.assertTrue(ram_cache.HasItem(33))
+    self.assertFalse(ram_cache.HasItem(34))
+
   def testStoreInvalidateRows_UnknownKind(self):
     self.assertRaises(
         AssertionError,
