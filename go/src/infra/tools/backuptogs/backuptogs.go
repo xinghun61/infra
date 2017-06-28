@@ -12,9 +12,9 @@ import (
 
 	"cloud.google.com/go/storage"
 
-	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/retry"
+	"github.com/luci/luci-go/common/retry/transient"
 	"github.com/luci/luci-go/common/tsmon/metric"
 	"github.com/luci/luci-go/common/tsmon/types"
 )
@@ -94,11 +94,11 @@ func writeToGS(ctx context.Context, filename string, bucket *storage.BucketHandl
 	// TODO set metadata on obj
 
 	var written int64
-	err := retry.Retry(ctx, retry.TransientOnly(retry.Default), func() (err error) {
+	err := retry.Retry(ctx, transient.Only(retry.Default), func() (err error) {
 		gsWriter := obj.NewWriter(ctx)
 		defer func() {
 			if errGs := gsWriter.Close(); errGs != nil {
-				err = errors.WrapTransient(fmt.Errorf("Failed to close gcsWriter: %v", errGs))
+				err = transient.Tag.Apply(fmt.Errorf("Failed to close gcsWriter: %v", errGs))
 				return
 			}
 			bytesStored.Add(ctx, gsWriter.Attrs().Size)
@@ -124,7 +124,7 @@ func writeToGS(ctx context.Context, filename string, bucket *storage.BucketHandl
 
 		if written, err = io.Copy(zipWriter, f); err != nil {
 			// FIXME determine if error really is transient
-			return errors.WrapTransient(fmt.Errorf("Failed to backup file '%s': %v", filename, err))
+			return transient.Tag.Apply(fmt.Errorf("Failed to backup file '%s': %v", filename, err))
 		}
 
 		return nil

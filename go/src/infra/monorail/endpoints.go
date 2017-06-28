@@ -19,8 +19,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/retry/transient"
 )
 
 // epClient implements MonorailClient by sending requests to Monorail's
@@ -81,7 +81,7 @@ func (c *epClient) call(ctx context.Context, method, urlSuffix string, request, 
 	logging.Debugf(ctx, "%s %s %s", method, req.URL, reqBuf.Bytes())
 	res, err := ctxhttp.Do(ctx, client, req)
 	if err != nil {
-		return errors.WrapTransient(err)
+		return transient.Tag.Apply(err)
 	}
 	defer res.Body.Close()
 
@@ -92,7 +92,7 @@ func (c *epClient) call(ctx context.Context, method, urlSuffix string, request, 
 		if res.StatusCode == http.StatusNotFound || res.StatusCode > 500 {
 			// Cloud Endpoints often flake with HTTP 404.
 			// Treat such responses transient errors.
-			err = errors.WrapTransient(err)
+			err = transient.Tag.Apply(err)
 		}
 		return err
 	}

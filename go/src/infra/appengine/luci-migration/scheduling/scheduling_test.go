@@ -15,7 +15,7 @@ import (
 	"github.com/luci/gae/impl/memory"
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/api/buildbucket/buildbucket/v1"
-	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/retry/transient"
 
 	"infra/appengine/luci-migration/bbutil"
 	"infra/appengine/luci-migration/config"
@@ -250,7 +250,7 @@ func TestScheduling(t *testing.T) {
 				putResponseCode = 500
 				err := HandleNotification(c, b, bbService)
 				So(err, ShouldNotBeNil)
-				So(errors.IsTransient(err), ShouldBeTrue)
+				So(transient.Tag.In(err), ShouldBeTrue)
 			})
 
 			Convey("returns non-transient error on Buildbucket HTTP 403", func() {
@@ -263,7 +263,7 @@ func TestScheduling(t *testing.T) {
 				putResponseCode = 403
 				err := HandleNotification(c, b, bbService)
 				So(err, ShouldNotBeNil)
-				So(errors.IsTransient(err), ShouldBeFalse)
+				So(transient.Tag.In(err), ShouldBeFalse)
 			})
 
 			Convey("returns non-transient error on Buildbucket HTTP 404", func() {
@@ -276,7 +276,7 @@ func TestScheduling(t *testing.T) {
 				putResponseCode = 404
 				err := HandleNotification(c, b, bbService)
 				So(err, ShouldNotBeNil)
-				So(errors.IsTransient(err), ShouldBeFalse)
+				So(transient.Tag.In(err), ShouldBeFalse)
 			})
 		})
 	})

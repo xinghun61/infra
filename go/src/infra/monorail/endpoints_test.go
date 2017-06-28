@@ -12,9 +12,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/luci/luci-go/common/errors"
 	"golang.org/x/net/context"
 
+	"github.com/luci/luci-go/common/retry/transient"
 	. "github.com/luci/luci-go/common/testing/assertions"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -128,7 +128,7 @@ func TestEndpointsClient(t *testing.T) {
 					client := NewEndpointsClient(nil, serv.URL)
 					_, err := client.InsertComment(ctx, req)
 					So(err, ShouldNotBeNil)
-					So(errors.IsTransient(err), ShouldBeTrue)
+					So(transient.Tag.In(err), ShouldBeTrue)
 				}
 				Convey("With HTTP 404", func() {
 					test(404)

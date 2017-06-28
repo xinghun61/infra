@@ -10,6 +10,7 @@ import (
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/retry"
+	"github.com/luci/luci-go/common/retry/transient"
 )
 
 // Search searches for builds and sends them to the builds channel
@@ -27,15 +28,15 @@ import (
 func Search(c context.Context, req *buildbucket.SearchCall, minCreationDate time.Time, builds chan<- *buildbucket.ApiCommonBuildMessage) error {
 	for {
 		var batch *buildbucket.ApiSearchResponseMessage
-		err := retry.Retry(c, retry.TransientOnly(retry.Default),
+		err := retry.Retry(c, transient.Only(retry.Default),
 			func() error {
 				reqCtx, _ := context.WithTimeout(c, time.Minute)
 				res, err := req.Context(reqCtx).Do()
 				switch apiErr, _ := err.(*googleapi.Error); {
 				case apiErr != nil && apiErr.Code >= 500:
-					return errors.WrapTransient(err)
+					return transient.Tag.Apply(err)
 				case err == context.DeadlineExceeded && c.Err() == nil:
-					return errors.WrapTransient(err)
+					return transient.Tag.Apply(err)
 				case err != nil:
 					return err
 				case res.Error != nil:

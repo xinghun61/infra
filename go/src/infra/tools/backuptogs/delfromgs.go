@@ -11,6 +11,7 @@ import (
 
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/retry"
+	"github.com/luci/luci-go/common/retry/transient"
 	"github.com/luci/luci-go/common/tsmon/metric"
 	"github.com/luci/luci-go/common/tsmon/types"
 )
@@ -39,7 +40,7 @@ func delFromGS(ctx context.Context, bucket *storage.BucketHandle, prefix string,
 				default:
 				}
 				objName := prefix + filepath.ToSlash(filename)
-				errorChan <- retry.Retry(ctx, retry.TransientOnly(retry.Default), func() error {
+				errorChan <- retry.Retry(ctx, transient.Only(retry.Default), func() error {
 					if err := bucket.Object(objName).Delete(ctx); err != nil {
 						if err == storage.ErrObjectNotExist {
 							return nil

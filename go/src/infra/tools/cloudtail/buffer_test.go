@@ -15,6 +15,7 @@ import (
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/clock/testclock"
 	"github.com/luci/luci-go/common/errors"
+	"github.com/luci/luci-go/common/retry/transient"
 	"github.com/luci/luci-go/common/tsmon"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -198,7 +199,7 @@ func (c *fakeClient) PushEntries(ctx context.Context, entries []*Entry) error {
 	}
 	if c.transientErrors > 0 {
 		c.transientErrors--
-		return errors.WrapTransient(fmt.Errorf("transient error"))
+		return errors.New("transient error", transient.Tag)
 	}
 	if c.fatalErrors > 0 {
 		c.fatalErrors--

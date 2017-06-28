@@ -20,6 +20,7 @@ import (
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/retry/transient"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
 )
@@ -259,7 +260,7 @@ func (c *loggingClient) debugWriteFunc(ctx context.Context, req *cloudlog.WriteL
 	fmt.Println("----------")
 	if os.Getenv("CLOUDTAIL_DEBUG_EMULATE_429") != "" {
 		c.sleepOnRateLimiting(ctx)
-		return errors.WrapTransient(fmt.Errorf("emulated HTTP 429"))
+		return errors.New("emulated HTTP 429", transient.Tag)
 	}
 	return nil
 }
@@ -275,14 +276,14 @@ func (c *loggingClient) cloudLoggingWriteFunc(ctx context.Context, req *cloudlog
 
 	if apiErr, _ := err.(*googleapi.Error); apiErr != nil {
 		if apiErr.Code >= 500 {
-			return errors.WrapTransient(err)
+			return transient.Tag.Apply(err)
 		}
 		// HTTP 429 error happens when Cloud Logging is trying to throttle request
 		// rate. This is global condition, so we keep the sleeping logic in the
 		// loggingClient itself.
 		if apiErr.Code == 429 {
 			c.sleepOnRateLimiting(ctx)
-			return errors.WrapTransient(err)
+			return transient.Tag.Apply(err)
 		}
 		return err
 	}
@@ -294,7 +295,7 @@ func (c *loggingClient) cloudLoggingWriteFunc(ctx context.Context, req *cloudlog
 
 	// Non API errors are usually transient, like connection timeout or DNS
 	// resolution problems.
-	return errors.WrapTransient(err)
+	return transient.Tag.Apply(err)
 }
 
 func (c *loggingClient) sleepOnRateLimiting(ctx context.Context) {

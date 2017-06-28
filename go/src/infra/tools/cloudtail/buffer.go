@@ -11,8 +11,8 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/retry/transient"
 )
 
 // Default config for PushBuffer if none is provided.
@@ -326,7 +326,7 @@ func (b *pushBufferImpl) pushWithRetries(ctx context.Context, entries []*Entry) 
 			return nil
 		case ctx.Err() != nil:
 			return ctx.Err()
-		case attempt >= b.MaxPushAttempts || !errors.IsTransient(err):
+		case attempt >= b.MaxPushAttempts || !transient.Tag.In(err):
 			return err
 		}
 		logging.WithError(err).Warningf(ctx, "failed to send %d entries, retrying in %s...", len(entries), delay)

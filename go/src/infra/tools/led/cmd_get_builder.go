@@ -21,6 +21,7 @@ import (
 	"github.com/luci/luci-go/common/cli"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/retry/transient"
 )
 
 const bbHostDefault = "cr-buildbucket.appspot.com"
@@ -110,7 +111,7 @@ func (c *cmdGetBuilder) grabBuilderDefinition(ctx context.Context, bucket, build
 	}
 	answer, err := sbucket.GetTaskDef(args).Context(ctx).Do()
 	if err != nil {
-		return nil, errors.WrapTransient(err)
+		return nil, transient.Tag.Apply(err)
 	}
 
 	newTask := &swarming.SwarmingRpcsNewTaskRequest{}

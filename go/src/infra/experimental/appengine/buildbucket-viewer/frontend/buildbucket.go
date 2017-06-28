@@ -15,6 +15,7 @@ import (
 	"github.com/luci/luci-go/common/errors"
 	log "github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/retry"
+	"github.com/luci/luci-go/common/retry/transient"
 
 	"golang.org/x/net/context"
 	"google.golang.org/api/googleapi"
@@ -84,13 +85,13 @@ func buildBucketSearch(c context.Context, svc *bbapi.Service, buckets []string, 
 		}
 
 		var res *bbapi.ApiSearchResponseMessage
-		err := retry.Retry(c, retry.TransientOnly(retry.Default), func() error {
+		err := retry.Retry(c, transient.Only(retry.Default), func() error {
 			var err error
 			if res, err = req.Context(c).Do(); err != nil {
 				// If this is a transient error, wrap it in a transient wrapper.
 				if apiErr, ok := err.(*googleapi.Error); ok {
 					if apiErr.Code >= http.StatusInternalServerError {
-						err = errors.WrapTransient(err)
+						err = transient.Tag.Apply(err)
 					}
 				}
 				return err

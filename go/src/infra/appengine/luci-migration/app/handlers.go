@@ -23,6 +23,7 @@ import (
 	"github.com/luci/luci-go/common/data/rand/mathrand"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/retry/transient"
 	"github.com/luci/luci-go/common/sync/parallel"
 	"github.com/luci/luci-go/grpc/prpc"
 	"github.com/luci/luci-go/milo/api/proto"
@@ -144,11 +145,11 @@ func handleBuildbucketPubSub(c *router.Context) error {
 	// Create a Buildbucket client.
 	transport, err := auth.GetRPCTransport(c.Context, auth.AsSelf)
 	if err != nil {
-		return errors.Annotate(err).Reason("could not get RPC transport").Transient().Err()
+		return errors.Annotate(err).Reason("could not get RPC transport").Tag(transient.Tag).Err()
 	}
 	bb, err := buildbucket.New(&http.Client{Transport: transport})
 	if err != nil {
-		return errors.Annotate(err).Reason("could not create buildbucket service").Transient().Err()
+		return errors.Annotate(err).Reason("could not create buildbucket service").Tag(transient.Tag).Err()
 	}
 	bb.BasePath = fmt.Sprintf("https://%s/api/buildbucket/v1/", msg.Hostname)
 
@@ -226,7 +227,7 @@ func errHandler(f func(c *router.Context) error) router.Handler {
 func taskHandler(f func(c *router.Context) error) router.Handler {
 	return func(c *router.Context) {
 		switch err := f(c); {
-		case errors.IsTransient(err):
+		case transient.Tag.In(err):
 			logging.WithError(err).Errorf(c.Context, "transient error")
 			http.Error(c.Writer, "Please retry", http.StatusInternalServerError)
 

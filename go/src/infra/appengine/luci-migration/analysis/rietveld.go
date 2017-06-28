@@ -7,8 +7,8 @@ import (
 	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 
-	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/retry"
+	"github.com/luci/luci-go/common/retry/transient"
 
 	"infra/appengine/luci-migration/bbutil/buildset"
 	"io"
@@ -31,7 +31,7 @@ func is404(c context.Context, h *http.Client, url string) (is404 bool, err error
 	err = retry.Retry(c, retry.Default, func() error {
 		res, err := ctxhttp.Get(c, h, url)
 		if err != nil {
-			return errors.WrapTransient(err)
+			return transient.Tag.Apply(err)
 		}
 		io.Copy(ioutil.Discard, res.Body) // ensure connection can be reused
 		res.Body.Close()
@@ -44,7 +44,7 @@ func is404(c context.Context, h *http.Client, url string) (is404 bool, err error
 		case res.StatusCode < 500:
 			return fmt.Errorf("HTTP %d", res.StatusCode)
 		default:
-			return errors.WrapTransient(fmt.Errorf("HTTP %d", res.StatusCode))
+			return transient.Tag.Apply(fmt.Errorf("HTTP %d", res.StatusCode))
 		}
 	}, nil)
 	return

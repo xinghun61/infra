@@ -27,6 +27,7 @@ import (
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/retry"
+	"github.com/luci/luci-go/common/retry/transient"
 	"github.com/luci/luci-go/common/system/environ"
 	"github.com/luci/luci-go/common/system/exitcode"
 	"github.com/luci/luci-go/common/system/filesystem"
@@ -255,7 +256,7 @@ func (gr *gitRunner) runWithRetries(c context.Context) (int, error) {
 	defer cancelFunc()
 
 	var brfErr error
-	err := retry.Retry(c, retry.TransientOnly(gr.Retry), func() (err error) {
+	err := retry.Retry(c, transient.Only(gr.Retry), func() (err error) {
 		var trigger Trigger
 
 		makeMonitor := func() *Monitor {
@@ -274,18 +275,18 @@ func (gr *gitRunner) runWithRetries(c context.Context) (int, error) {
 
 		if rc != 0 {
 			// Did we hit a transient error?
-			transient := false
+			trans := false
 			if s := stdoutPM.Found; s != "" {
 				logging.Warningf(c, "Transient error string identified in STDOUT: %q", s)
-				transient = true
+				trans = true
 			}
 			if s := stderrPM.Found; s != "" {
 				logging.Warningf(c, "Transient error string identified in STDERR: %q", s)
-				transient = true
+				trans = true
 			}
 
-			if transient {
-				return errors.WrapTransient(errors.New("transient error string encountered"))
+			if trans {
+				return errors.New("transient error string encountered", transient.Tag)
 			}
 		}
 
@@ -304,7 +305,7 @@ func (gr *gitRunner) runWithRetries(c context.Context) (int, error) {
 	})
 
 	switch {
-	case err != nil && !errors.IsTransient(err):
+	case err != nil && !transient.Tag.In(err):
 		// Hard failure.
 		return 0, err
 

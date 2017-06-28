@@ -29,6 +29,7 @@ import (
 	"github.com/luci/luci-go/common/api/buildbucket/buildbucket/v1"
 	"github.com/luci/luci-go/common/errors"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/retry/transient"
 
 	"infra/appengine/luci-migration/bbutil"
 	"infra/appengine/luci-migration/config"
@@ -255,7 +256,7 @@ func schedule(c context.Context, req *buildbucket.ApiPutRequestMessage, service 
 		}
 
 		return errors.Annotate(err).Reason("could not schedule a build").
-			Transient(). // Cause a retry by returning a transient error
+			Tag(transient.Tag). // Cause a retry by returning a transient error
 			Err()
 	}
 
