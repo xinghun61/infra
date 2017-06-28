@@ -128,9 +128,9 @@ class SwarmbucketApi(remote.Service):
       build_request = build_request.normalize()
 
       identity = auth.get_current_identity()
-      if not acl.can_add_build(build_request.bucket):
+      if not acl.can_view_build(build_request):
         raise endpoints.ForbiddenException(
-            '%s cannot schedule builds in bucket %s' %
+            '%s cannot view builds in bucket %s' %
             (identity, build_request.bucket))
 
       build = build_request.create_build(1, identity)
