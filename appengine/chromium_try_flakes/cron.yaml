@@ -39,9 +39,6 @@ cron:
   url: /cron/delete_old_flake_occurrences
   schedule: every 24 hours
 
-- description: Process new flakes from chrome_infra.cq_flaky_failures
-  url: /cron/process_new_flakes
-
 - description: Migrate Flakes to FlakeTypes and Issues
   url: /migrate
   schedule: every 2000 hours
