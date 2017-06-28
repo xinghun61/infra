@@ -310,6 +310,40 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     self.data_points = filter(lambda x: x.commit_position != commit_position,
                               self.data_points)
 
+  def Update(self, **kwargs):
+    """Updates fields according to what's specified in kwargs.
+
+      Fields specified in kwargs will be updated accordingly, while those not
+      present in kwargs will be untouched.
+
+    Args:
+      algorithm_parameters (dict): The analysis' algorithm parameters.
+      confidence_in_suspected_build (float): Confidence score for the suspected
+          build number.
+      culprit (FlakeCulprit): The culprit change that caused flakiness.
+      end_time (datetime): The timestamp that the overall analysis is completed.
+      error (dict): Dict containing error information.
+      last_attempted_swarming_revision (str): The last attempted try job
+          revision.
+      last_attempted_swarming_revision (str): The ID of the last attempted
+          swarming task.
+      result_status (int): The triage result status of this analysis.
+      status (int): The status of the regression-range identification analysis.
+      start_time (datetime): The timestamp that the overall analysis started.
+      suspected_builld (int): The suspected build number.
+      try_job_status (int): The status of try job/culprit analysis.
+    """
+    any_changes = False
+
+    for arg, value in kwargs.iteritems():
+      current_value = getattr(self, arg, None)
+      if current_value != value:
+        setattr(self, arg, value)
+        any_changes = True
+
+    if any_changes:
+      self.put()
+
   # The original build/step/test in which a flake actually occurred.
   # A CQ trybot step has to be mapped to a Waterfall buildbot step.
   # A gtest suite.PRE_PRE_test has to be normalized to suite.test.

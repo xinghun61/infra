@@ -15,10 +15,11 @@ from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
 from libs import time_util
-from model import result_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
+from waterfall import swarming_util
+from waterfall import waterfall_config
 from waterfall.flake import confidence
 from waterfall.flake import lookback_algorithm
 from waterfall.flake.lookback_algorithm import NormalizedDataPoint
@@ -26,10 +27,7 @@ from waterfall.flake.process_flake_try_job_result_pipeline import (
     ProcessFlakeTryJobResultPipeline)
 from waterfall.flake.schedule_flake_try_job_pipeline import (
     ScheduleFlakeTryJobPipeline)
-from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
-from waterfall import swarming_util
-from waterfall import waterfall_config
 
 _GIT_REPO = CachedGitilesRepository(
     HttpClientAppengine(), 'https://chromium.googlesource.com/chromium/src.git')
@@ -56,24 +54,6 @@ def CreateCulprit(revision,
                                   confidence_score)
 
   return culprit
-
-
-def UpdateAnalysisUponCompletion(flake_analysis, culprit, status, error):
-  flake_analysis.end_time = time_util.GetUTCNow()
-  flake_analysis.try_job_status = status
-
-  if error:
-    flake_analysis.error = error
-  else:
-    flake_analysis.last_attempted_swarming_task_id = None
-    flake_analysis.last_attempted_revision = None
-    if culprit:
-      flake_analysis.culprit = culprit
-      flake_analysis.result_status = result_status.FOUND_UNTRIAGED
-    else:
-      flake_analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
-
-  flake_analysis.put()
 
 
 @ndb.transactional
@@ -447,9 +427,10 @@ class NextCommitPositionPipeline(BasePipeline):
 
     # Don't call another pipeline if the previous try job failed.
     if try_job_data.error:
-      UpdateAnalysisUponCompletion(flake_analysis, None, analysis_status.ERROR,
-                                   try_job_data.error)
-      yield UpdateFlakeBugPipeline(flake_analysis.key.urlsafe())
+      flake_analysis.Update(
+          try_job_status=analysis_status.ERROR,
+          error=try_job_data.error,
+          end_time=time_util.GetUTCNow())
       return
 
     algorithm_settings = flake_analysis.algorithm_parameters.get(
@@ -474,10 +455,10 @@ class NextCommitPositionPipeline(BasePipeline):
           suspected_commit_position)
       culprit = CreateCulprit(culprit_revision, suspected_commit_position,
                               confidence_score)
-      UpdateAnalysisUponCompletion(flake_analysis, culprit,
-                                   analysis_status.COMPLETED, None)
-
-      yield UpdateFlakeBugPipeline(flake_analysis.key.urlsafe())
+      flake_analysis.Update(
+          culprit=culprit,
+          try_job_status=analysis_status.COMPLETED,
+          end_time=time_util.GetUTCNow())
       return
 
     next_revision = suspected_build_data_point.GetRevisionAtCommitPosition(

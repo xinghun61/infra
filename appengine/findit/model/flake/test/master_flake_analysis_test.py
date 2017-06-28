@@ -303,3 +303,14 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis.RemoveDataPointWithCommitPosition(1100)
 
     self.assertEqual([], analysis.data_points)
+
+  def testUpdate(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Update(status=analysis_status.COMPLETED)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
+
+  def testUpdateSameValue(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.try_job_status = analysis_status.COMPLETED
+    analysis.Update(try_job_status=analysis_status.COMPLETED)
+    self.assertEqual(analysis_status.COMPLETED, analysis.try_job_status)

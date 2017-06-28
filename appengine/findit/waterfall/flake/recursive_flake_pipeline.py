@@ -16,17 +16,13 @@ from libs import time_util
 from model import result_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.wf_swarming_task import WfSwarmingTask
-from waterfall import build_util
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
 from waterfall.flake import lookback_algorithm
-from waterfall.flake import recursive_flake_try_job_pipeline
+from waterfall.flake.initialize_flake_try_job_pipeline import (
+    InitializeFlakeTryJobPipeline)
 from waterfall.flake.lookback_algorithm import NormalizedDataPoint
-from waterfall.flake.recursive_flake_try_job_pipeline import (
-    RecursiveFlakeTryJobPipeline)
-from waterfall.flake.recursive_flake_try_job_pipeline import (
-    UpdateAnalysisUponCompletion)
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
@@ -50,40 +46,11 @@ _ONE_HOUR_IN_SECONDS = 60 * 60
 _MAX_TIMEOUT_SECONDS = 3 * _ONE_HOUR_IN_SECONDS
 
 
-def _HasSufficientConfidenceToRunTryJobs(analysis):
-  # Based on analysis of historical data, 60% confidence could filter out almost
-  # all false positives.
-  minimum_confidence_score = analysis.algorithm_parameters.get(
-      'minimum_confidence_score_to_run_tryjobs',
-      _DEFAULT_MINIMUM_CONFIDENCE_SCORE)
-  return analysis.confidence_in_suspected_build >= minimum_confidence_score
-
-
-def _ShouldRunTryJobs(analysis, suspected_build, user_specified_range):
-  """Whether try jobs are expected to run.
-
-    In order for try jobs to run, a suspected build must be identified. If the
-    suspected build is identified as part of analyzing a user-specified range,
-    try jobs will be run regardless of confidence.
-
-  Args:
-    analysis (MasterFlakeAnalysis): The analysis being run.
-    suspected_build (int): A suspected build in which the flakiness started, or
-        None.
-    user_specified_range (bool): Whether a user supplied a regression range to
-        analyze.
-  """
-  return (suspected_build is not None and
-          (user_specified_range or
-           _HasSufficientConfidenceToRunTryJobs(analysis)))
-
-
-def _UpdateAnalysisStatusUponCompletion(analysis,
-                                        suspected_build,
-                                        status,
-                                        error,
-                                        build_confidence_score=None,
-                                        user_specified_range=False):
+def _UpdateAnalysisResults(analysis,
+                           suspected_build,
+                           status,
+                           error,
+                           build_confidence_score=None):
   """Sets an analysis' fields upon cessation of an analysis.
 
   Args:
@@ -97,7 +64,6 @@ def _UpdateAnalysisStatusUponCompletion(analysis,
     user_specified_range (bool): Whether the user supplied a rerun of a specific
         range, which will force try jobs to start regardless of confidence.
   """
-  analysis.end_time = time_util.GetUTCNow()
   analysis.status = status
 
   if (suspected_build is not None and
@@ -115,6 +81,7 @@ def _UpdateAnalysisStatusUponCompletion(analysis,
                             result_status.FOUND_UNTRIAGED)
 
   if error:
+    analysis.end_time = time_util.GetUTCNow()
     analysis.error = error
   else:
     # Clear info about the last attempted swarming task since it will be stored
@@ -122,19 +89,7 @@ def _UpdateAnalysisStatusUponCompletion(analysis,
     analysis.last_attempted_swarming_task_id = None
     analysis.last_attempted_build_number = None
 
-    if _ShouldRunTryJobs(analysis, suspected_build, user_specified_range):
-      # Analysis is not finished yet: try jobs are about to be run.
-      analysis.try_job_status = None
-      analysis.end_time = None
-
   analysis.put()
-
-
-def _UpdateAnalysisStatusAndStartTime(analysis):
-  if analysis.status != analysis_status.RUNNING:
-    analysis.status = analysis_status.RUNNING
-    analysis.start_time = time_util.GetUTCNow()
-    analysis.put()
 
 
 def _IsSwarmingTaskSufficientForCacheHit(flake_swarming_task,
@@ -482,7 +437,8 @@ class RecursiveFlakePipeline(BasePipeline):
     if can_start_analysis:
       # Bots are available or pipeline starts off peak hours, trigger the task.
       analysis = self.analysis_urlsafe_key.get()
-      _UpdateAnalysisStatusAndStartTime(analysis)
+      analysis.Update(
+          start_time=time_util.GetUTCNow(), status=analysis_status.RUNNING)
 
       iterations = _GetIterationsToRerun(user_specified_iterations, analysis)
       hard_timeout_seconds = _GetHardTimeoutSeconds(
@@ -587,30 +543,6 @@ def _UpdateIterationsToRerun(analysis, iterations_to_rerun):
       'iterations_to_rerun'] = iterations_to_rerun
 
 
-def _GetFullBlamedCLsAndLowerBound(suspected_build_point, data_points):
-  """Gets Full blame list and lower bound of try jobs.
-
-  For cases like B1(Stable) - B2(Exception) - B3(Flaky), the blame list should
-  be revisions in B2 and B3, and lower bound should be B1.commit_position + 1.
-  """
-  blamed_cls = suspected_build_point.GetDictOfCommitPositionAndRevision()
-  _, invalid_points = lookback_algorithm.GetCategorizedDataPoints(data_points)
-  if not invalid_points:
-    return blamed_cls, suspected_build_point.previous_build_commit_position + 1
-
-  build_lower_bound = suspected_build_point.build_number
-  point_lower_bound = suspected_build_point
-  invalid_points.sort(key=lambda k: k.build_number, reverse=True)
-  for data_point in invalid_points:
-    if data_point.build_number != build_lower_bound - 1:
-      break
-    build_lower_bound = data_point.build_number
-    blamed_cls.update(data_point.GetDictOfCommitPositionAndRevision())
-    point_lower_bound = data_point
-
-  return blamed_cls, point_lower_bound.previous_build_commit_position + 1
-
-
 def _UpdateAnalysisWithSwarmingTaskError(flake_swarming_task, analysis):
   # Report the last flake swarming task's error that it encountered.
   logging.error('Error in Swarming task')
@@ -619,16 +551,8 @@ def _UpdateAnalysisWithSwarmingTaskError(flake_swarming_task, analysis):
       'error': 'Swarming task failed',
       'message': 'The last swarming task did not complete as expected'
   }
-
-  _UpdateAnalysisStatusUponCompletion(analysis, None, analysis_status.ERROR,
-                                      error)
-
-
-def _UpdateAnalysisAlgorithmParameters(analysis):
-  if not analysis.algorithm_parameters:
-    flake_settings = waterfall_config.GetCheckFlakeSettings()
-    analysis.algorithm_parameters = flake_settings
-    analysis.put()
+  analysis.Update(status=analysis_status.ERROR, error=error,
+                  end_time=time_util.GetUTCNow())
 
 
 def _GetEarliestBuildNumber(lower_bound_build_number, triggering_build_number,
@@ -756,7 +680,8 @@ class NextBuildNumberPipeline(BasePipeline):
       yield UpdateFlakeBugPipeline(analysis.key.urlsafe())
       return
 
-    _UpdateAnalysisAlgorithmParameters(analysis)
+    analysis.Update(
+        algorithm_parameters=waterfall_config.GetCheckFlakeSettings())
     algorithm_settings = analysis.algorithm_parameters.get('swarming_rerun')
 
     # Figure out what build_number to trigger a swarming rerun on next, if any.
@@ -781,92 +706,21 @@ class NextBuildNumberPipeline(BasePipeline):
 
     if _IsFinished(next_build_number, earliest_build_number,
                    latest_build_number, updated_iterations_to_rerun):
-      # Use steppiness as the confidence score.
       build_confidence_score = _GetBuildConfidenceScore(
           suspected_build, data_points_within_range)
 
-      # Force try jobs to run if the user supplied a regression range and a
-      # suspected build was identified as a result.
       user_specified_range = _UserSpecifiedRange(lower_bound_build_number,
                                                  upper_bound_build_number)
 
-      # Update suspected build and the confidence score.
-      _UpdateAnalysisStatusUponCompletion(
+      _UpdateAnalysisResults(
           analysis,
           suspected_build,
           analysis_status.COMPLETED,
           None,
-          build_confidence_score=build_confidence_score,
-          user_specified_range=user_specified_range)
+          build_confidence_score=build_confidence_score)
 
-      if build_confidence_score is None:
-        logging.info(('Skipping try jobs due to no suspected flake build being '
-                      'identified'))
-      elif not (_HasSufficientConfidenceToRunTryJobs(analysis) or
-                user_specified_range):
-        logging.info(('Skipping try jobs due to insufficient confidence in '
-                      'suspected build'))
-      else:
-        # Hook up with try-jobs.
-        suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
-        assert suspected_build_point
-
-        blamed_cls, lower_bound_commit_position = (
-            _GetFullBlamedCLsAndLowerBound(suspected_build_point,
-                                           analysis.data_points))
-        if blamed_cls:
-          if len(blamed_cls) > 1:
-            start_commit_position = suspected_build_point.commit_position - 1
-            start_revision = blamed_cls[start_commit_position]
-            build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                                 triggering_build_number)
-            parent_mastername = build_info.parent_mastername or master_name
-            parent_buildername = build_info.parent_buildername or builder_name
-            cache_name = swarming_util.GetCacheName(parent_mastername,
-                                                    parent_buildername)
-            dimensions = waterfall_config.GetTrybotDimensions(
-                parent_mastername, parent_buildername)
-            logging.info('Running try-jobs against commits in regressions')
-            yield RecursiveFlakeTryJobPipeline(
-                analysis.key.urlsafe(), start_commit_position, start_revision,
-                lower_bound_commit_position,
-                suspected_build_point.commit_position,
-                user_specified_iterations, cache_name, dimensions)
-            return  # No update to bug yet.
-          else:
-            logging.info('Single commit in the blame list of suspected build')
-            culprit_confidence_score = confidence.SteppinessForCommitPosition(
-                analysis.data_points, suspected_build_point.commit_position)
-            culprit = recursive_flake_try_job_pipeline.CreateCulprit(
-                suspected_build_point.git_hash,
-                suspected_build_point.commit_position, culprit_confidence_score)
-            UpdateAnalysisUponCompletion(analysis, culprit,
-                                         analysis_status.COMPLETED, None)
-        else:
-          logging.error('Cannot run flake try jobs against empty blame list')
-          error = {
-              'error': 'Could not start try jobs',
-              'message': 'Empty blame list'
-          }
-          UpdateAnalysisUponCompletion(analysis, None, analysis_status.ERROR,
-                                       error)
-
-      yield UpdateFlakeBugPipeline(analysis.key.urlsafe())
-      return
-
-    pipeline_job = RecursiveFlakePipeline(
-        analysis_urlsafe_key,
-        next_build_number,
-        lower_bound_build_number,
-        upper_bound_build_number,
-        user_specified_iterations,
-        step_metadata=step_metadata,
-        manually_triggered=manually_triggered,
-        use_nearby_neighbor=use_nearby_neighbor,
-        step_size=(current_build_number - next_build_number))
-
-    # Disable attribute 'target' defined outside __init__ pylint warning,
-    # because pipeline generates its own __init__ based on run function.
-    pipeline_job.target = (  # pylint: disable=W0201
-        appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
-    pipeline_job.start(queue_name=self.queue_name or constants.DEFAULT_QUEUE)
+      with pipeline.InOrder():
+        yield InitializeFlakeTryJobPipeline(analysis_urlsafe_key,
+                                            user_specified_iterations,
+                                            user_specified_range)
+        yield UpdateFlakeBugPipeline(analysis_urlsafe_key)

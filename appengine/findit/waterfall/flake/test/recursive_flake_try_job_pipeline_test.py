@@ -27,8 +27,7 @@ from waterfall.flake.recursive_flake_try_job_pipeline import (
     NextCommitPositionPipeline)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     RecursiveFlakeTryJobPipeline)
-from waterfall.flake.recursive_flake_try_job_pipeline import (
-    UpdateAnalysisUponCompletion)
+from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
@@ -340,7 +339,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         expected_args=[],
         expected_kwargs={})
     self.MockPipeline(
-        recursive_flake_try_job_pipeline.UpdateFlakeBugPipeline,
+        UpdateFlakeBugPipeline,
         '',
         expected_args=[analysis.key.urlsafe()],
         expected_kwargs={})
@@ -445,7 +444,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     self.MockPipeline(
-        recursive_flake_try_job_pipeline.UpdateFlakeBugPipeline,
+        UpdateFlakeBugPipeline,
         '',
         expected_args=[analysis.key.urlsafe()],
         expected_kwargs={})
@@ -487,42 +486,6 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(revision, culprit.revision)
     self.assertIsNone(culprit.url)
     self.assertEqual(repo_name, culprit.repo_name)
-
-  def testUpdateAnalysisUponCompletionFound(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.last_attempted_revision = 'a1b2c3d4'
-    culprit = FlakeCulprit.Create('repo_name', 'a1b2c3d4', 12345, 'url')
-    UpdateAnalysisUponCompletion(analysis, culprit, analysis_status.COMPLETED,
-                                 None)
-    self.assertIsNone(analysis.error)
-    self.assertIsNone(analysis.last_attempted_revision)
-    self.assertIsNone(analysis.last_attempted_swarming_task_id)
-    self.assertEqual(culprit.revision, analysis.culprit.revision)
-    self.assertEqual(analysis_status.COMPLETED, analysis.try_job_status)
-    self.assertEqual(result_status.FOUND_UNTRIAGED, analysis.result_status)
-
-  def testUpdateAnalysisUponCompletionNotFound(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.last_attempted_revision = 'a1b2c3d4'
-    UpdateAnalysisUponCompletion(analysis, None, analysis_status.COMPLETED,
-                                 None)
-    self.assertIsNone(analysis.error)
-    self.assertIsNone(analysis.last_attempted_revision)
-    self.assertIsNone(analysis.last_attempted_swarming_task_id)
-    self.assertIsNone(analysis.culprit)
-    self.assertEqual(analysis_status.COMPLETED, analysis.try_job_status)
-    self.assertEqual(result_status.NOT_FOUND_UNTRIAGED, analysis.result_status)
-
-  def testUpdateAnalysisUponCompletionError(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.last_attempted_revision = 'a1b2c3d4'
-    UpdateAnalysisUponCompletion(analysis, None, analysis_status.ERROR,
-                                 {'error': 'errror'})
-    self.assertIsNotNone(analysis.error)
-    self.assertEqual('a1b2c3d4', analysis.last_attempted_revision)
-    self.assertIsNone(analysis.culprit)
-    self.assertEqual(analysis_status.ERROR, analysis.try_job_status)
-    self.assertIsNone(analysis.result_status)
 
   def testGetTryJobNew(self):
     existing_try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'a1b2c3d4')
