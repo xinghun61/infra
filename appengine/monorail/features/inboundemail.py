@@ -226,7 +226,7 @@ class InboundEmail(webapp2.RequestHandler):
     cc_ids = []
     status = 'Available'
 
-    labels = ['Infra-Troopers-Alerts', 'Restrict-View-Google', 'Priority-2']
+    labels = ['Infra-Troopers-Alerts', 'Restrict-View-Google', 'Pri-2']
     field_values = []
     component_ids = []
     body = 'Filed by %s on behalf of %s\n\n%s' % (author_addr, from_addr, body)
