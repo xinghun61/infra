@@ -12,7 +12,7 @@ threadsafe: no
 
 instance_class: F4
 automatic_scaling:
-  min_idle_instances: 30
+  min_idle_instances: 40
   max_pending_latency: 0.2s
 
 handlers:
