@@ -43,7 +43,7 @@
 
         ready() {
           super.ready();
-          this.$.treeStatusAjax.generateRequest();
+          this.refresh();
         }
         static get properties() {
           return {
@@ -97,6 +97,10 @@
 
         _computeHasError(json) {
           return !!json;
+        }
+
+        refresh() {
+          this.$.treeStatusAjax.generateRequest();
         }
       }
       customElements.define(TreeStatus.is, TreeStatus);
