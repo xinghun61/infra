@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<title>iconTest</title>
+<meta charset="utf-8">
+<link rel="import" href="/../elements/incident-icon.html">
+<script src="/../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/../bower_components/web-component-tester/browser.js"></script>
+<!–-These tests were written in the PTZ. These may fail if run in a different time zone.-–>
+
+<test-fixture id="icon-test">
+  <template>
+    <incident-icon></incident-icon>
+  </template>
+</test-fixture>
+
+<script>
+  (function() {
+    'use strict';
+
+    suite('incident-icon', function() {
+      var element;
+      setup(function(){
+        element = fixture('icon-test');
+        element.dates = [];
+        let lastDate = new Date(1498114800000); // 22/06/2017 PTZ
+        for (let i = 6; i >= 0; i--) {
+          let date = new Date(lastDate);
+          date.setDate(lastDate.getDate() - i);
+          element.dates.push(date);
+        }
+      });
+
+      test('incident within time range', function(done) {
+        element.incident = {
+          severity: 'RED',
+          start_time: '1497693923', // 17/06/2017 3:05:23 PTZ
+          end_time: '1497787570', // 18/06/2017 5:6:10 PTZ
+        };
+
+        flush(function () {
+          assert.equal(element._iconColorClass, 'red');
+          assert.equal(
+              element.$.jsLeft.classList.value, 'left red', 'left color');
+          assert.equal(
+              element.$.jsRight.classList.value, 'right red', 'right color');
+          done();
+        });
+      });
+
+      test('incident exceeds dashboard range', function(done) {
+        element.incident = {
+          severity: 'YELLOW',
+          start_time: '1497573492', // 15/06/2017 17:38:12 PTZ
+          end_time: '1498264692', // 23/06/2017 17:38:12 PTZ
+        };
+        flush(function () {
+          assert.equal(element._iconColorClass, 'yellow');
+          assert.equal(element.$.jsLeft.classList.value,
+                       'left yellow hidden', 'left classes');
+          assert.equal(element.$.jsRight.classList.value,
+                       'right yellow hidden', 'right classes');
+          assert.equal(
+              element.style.getPropertyValue('--incident-width'), '100%',
+              'check width');
+          assert.equal(
+              element.style.getPropertyValue('--incident-left'), '0%',
+             'check left');
+          done();
+        });
+      });
+    });
+  })();
+</script>
