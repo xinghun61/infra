@@ -30,21 +30,14 @@ class DependencyAnalyzerTest(AnalysisTestCase):
     self.assertEqual(dep_data.regression_version_deps,
                      regression_version_deps)
 
-  def testRegressionVersionDepsReturnsCache(self):
-    """Tests that ``regression_version_deps`` returns cached value."""
-    dep_data = self._GetDummyDependencyAnalyzer()
-    regression_version_deps = {
-        'src/': Dependency('src/', 'https://repo', 'rev')
-    }
-    dep_data._regression_version_deps = regression_version_deps
-    self.assertEqual(dep_data.regression_version_deps,
-                     regression_version_deps)
-
-  def testDependencies(self):
-    """Tests ``GetDependencies`` gets filtered ``_regression_version_deps``."""
+  @mock.patch(
+      'analysis.dependency_analyzer.DependencyAnalyzer.regression_version_deps',
+      new_callable=mock.PropertyMock)
+  def testDependencies(self, mock_regression_version_deps):
+    """Tests ``GetDependencies`` gets filtered ``regression_version_deps``."""
     dep_data = self._GetDummyDependencyAnalyzer()
     chromium_dep = Dependency('src/', 'https://repo', 'rev1')
-    dep_data._regression_version_deps = {
+    mock_regression_version_deps.return_value = {
         chromium_dep.path: chromium_dep,
         'src/dummy': Dependency('src/dummy', 'https://r', 'rev2')
     }

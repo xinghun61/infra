@@ -8,6 +8,7 @@ from analysis import detect_regression_range
 from analysis.chromecrash_parser import ChromeCrashParser
 from analysis.crash_data import CrashData
 from analysis.dependency_analyzer import DependencyAnalyzer
+from decorators import cached_property
 
 
 class ChromeCrashData(CrashData):
@@ -94,13 +95,7 @@ class ChromeCrashData(CrashData):
     self._historical_metadata = crash_data['customized_data'][
         'historical_metadata']
 
-    # Delay the stacktrace parsing to the first time when stacktrace property
-    # gets called.
     self._top_n_frames = top_n_frames
-    self._stacktrace = None
-    self._regression_range = None
-    self._dependencies = None
-    self._dependency_rolls = None
     self._dependency_analyzer = DependencyAnalyzer(self._platform,
                                                    self._crashed_version,
                                                    self.regression_range,
@@ -114,55 +109,41 @@ class ChromeCrashData(CrashData):
   def historical_metadata(self):
     return self._historical_metadata
 
-  @property
+  @cached_property
   def stacktrace(self):
     """Parses stacktrace and returns parsed ``Stacktrace`` object."""
-    if self._stacktrace:
-      return self._stacktrace
-
-    self._stacktrace = ChromeCrashParser().Parse(
+    stacktrace = ChromeCrashParser().Parse(
         self._stacktrace_str,
         self._dependency_analyzer.regression_version_deps,
         signature=self.signature, top_n_frames=self._top_n_frames)
-    if not self._stacktrace:
+    if not stacktrace:
       logging.warning('Failed to parse the stacktrace %s',
                       self._stacktrace_str)
-    return self._stacktrace
+    return stacktrace
 
-  @property
+  @cached_property
   def regression_range(self):
     """Detects regression range from ``historical_metadata`` and returns it."""
-    if self._regression_range:
-      return self._regression_range
-
     regression_range = detect_regression_range.DetectRegressionRange(
         self.historical_metadata)
     if regression_range is None: # pragma: no cover
       logging.warning('Got ``None`` for the regression range.')
     else:
-      self._regression_range = tuple(regression_range)
+      regression_range = tuple(regression_range)
 
-    return self._regression_range
+    return regression_range
 
-  @property
+  @cached_property
   def dependencies(self):
     """Get all dependencies that are in the crash stack of stacktrace."""
-    if self._dependencies:
-      return self._dependencies
-
-    self._dependencies = self._dependency_analyzer.GetDependencies(
+    return self._dependency_analyzer.GetDependencies(
         [self.stacktrace.crash_stack] if self.stacktrace else [])
-    return self._dependencies
 
-  @property
+  @cached_property
   def dependency_rolls(self):
     """Gets all dependency rolls of ``dependencies`` in regression range."""
-    if self._dependency_rolls:
-      return self._dependency_rolls
-
-    self._dependency_rolls = self._dependency_analyzer.GetDependencyRolls(
+    return self._dependency_analyzer.GetDependencyRolls(
         [self.stacktrace.crash_stack] if self.stacktrace else [])
-    return self._dependency_rolls
 
   @property
   def identifiers(self):

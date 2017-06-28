@@ -144,14 +144,6 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
                                     stack_frame0)
     self._VerifyTwoStacktracesEqual(actual_stack_trace, expected_stacktrace)
 
-  def testParseStacktraceReturnsCache(self):
-    """Tests that ``stacktrace`` returns cached ``_stacktrace`` value."""
-    uma_data = self._GetDummyUMAData()
-    stack = stacktrace.CallStack(1)
-    expected_stacktrace = stacktrace.Stacktrace([stack], stack)
-    uma_data._stacktrace = expected_stacktrace
-    self._VerifyTwoStacktracesEqual(uma_data.stacktrace, expected_stacktrace)
-
   @mock.patch('analysis.uma_sampling_profiler_parser.UMASamplingProfilerParser'
               '.Parse')
   @mock.patch('libs.deps.chrome_dependency_fetcher.'
@@ -164,8 +156,10 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
     uma_data = self._GetDummyUMAData()
     self.assertIsNone(uma_data.stacktrace)
 
+  @mock.patch('analysis.uma_sampling_profiler_data.UMASamplingProfilerData'
+              '.stacktrace', new_callable=mock.PropertyMock)
   @mock.patch('analysis.dependency_analyzer.DependencyAnalyzer.GetDependencies')
-  def testDependencies(self, mock_get_dependencies):
+  def testDependencies(self, mock_get_dependencies, mock_stacktrace):
     """Tests that ``dependencies``` calls GetDependencies."""
     uma_data = self._GetDummyUMAData()
     dependencies = {'src/': Dependency('src/', 'https://repo', 'rev')}
@@ -173,14 +167,16 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
     stack = stacktrace.CallStack(0, frame_list=[
         stacktrace.StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [5])])
     stacktrace_field = stacktrace.Stacktrace([stack], stack)
-    uma_data._stacktrace = stacktrace_field
+    mock_stacktrace.return_value = stacktrace_field
 
     self.assertEqual(uma_data.dependencies, dependencies)
     mock_get_dependencies.assert_called_with(uma_data.stacktrace.stacks)
 
+  @mock.patch('analysis.uma_sampling_profiler_data.UMASamplingProfilerData'
+              '.stacktrace', new_callable=mock.PropertyMock)
   @mock.patch(
       'analysis.dependency_analyzer.DependencyAnalyzer.GetDependencyRolls')
-  def testDependencyRolls(self, mock_get_dependency_rolls):
+  def testDependencyRolls(self, mock_get_dependency_rolls, mock_stacktrace):
     """Tests that ``dependency_rolls``` calls GetDependencyRolls."""
     uma_data = self._GetDummyUMAData()
     dep_roll = {'src/': DependencyRoll('src/', 'https://repo', 'rev0', 'rev3')}
@@ -188,21 +184,7 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
     stack = stacktrace.CallStack(0, frame_list=[
         stacktrace.StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [5])])
     stacktrace_field = stacktrace.Stacktrace([stack], stack)
-    uma_data._stacktrace = stacktrace_field
+    mock_stacktrace.return_value = stacktrace_field
 
     self.assertEqual(uma_data.dependency_rolls, dep_roll)
     mock_get_dependency_rolls.assert_called_with(uma_data.stacktrace.stacks)
-
-  def testDependenciesReturnsCache(self):
-    """Tests that ``dependencies`` returns cached ``_dependencies`` value."""
-    uma_data = self._GetDummyUMAData()
-    deps = {'src/': Dependency('src/', 'https://repo', 'rev')}
-    uma_data._dependencies = deps
-    self.assertEqual(uma_data.dependencies, deps)
-
-  def testDependencyRollsReturnsCache(self):
-    """Tests ``dependency_rolls`` returns cached ``_dependency_rolls``."""
-    uma_data = self._GetDummyUMAData()
-    dep_roll = {'src/': DependencyRoll('src/', 'https://repo', 'rev0', 'rev3')}
-    uma_data._dependency_rolls = dep_roll
-    self.assertEqual(uma_data.dependency_rolls, dep_roll)

@@ -4,6 +4,8 @@
 
 import logging
 
+from decorators import cached_property
+
 
 class DependencyAnalyzer(object):
 
@@ -34,8 +36,6 @@ class DependencyAnalyzer(object):
     self._regression_version = regression_version
     self._regression_range = regression_range
     self._dep_fetcher = dep_fetcher
-
-    self._regression_version_deps = None
 
   def GetDependencies(self, stacks_list):
     """Get all dependencies that are in the given stacks."""
@@ -84,18 +84,13 @@ class DependencyAnalyzer(object):
         in self.GetDependencies(stacks_list)
     }
 
-  @property
+  @cached_property
   def regression_version_deps(self):
     """Gets all dependencies related to regression_version.
 
     N.B. All dependencies will be returned, no matter whether they appeared in
     stacktrace or are related to the crash/regression or not.
     """
-    if self._regression_version_deps:
-      return self._regression_version_deps
-
-    self._regression_version_deps = self._dep_fetcher.GetDependency(
+    return self._dep_fetcher.GetDependency(
         self._regression_version, self._platform) if self._dep_fetcher else {}
-
-    return self._regression_version_deps
 

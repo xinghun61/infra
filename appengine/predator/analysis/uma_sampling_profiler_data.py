@@ -7,6 +7,7 @@ import logging
 from analysis.crash_data import CrashData
 from analysis.dependency_analyzer import DependencyAnalyzer
 from analysis.uma_sampling_profiler_parser import UMASamplingProfilerParser
+from decorators import cached_property
 
 # TODO(cweakliam): Rename CrashData to something more generic now that Predator
 # deals with regressions as well as crashes
@@ -80,27 +81,21 @@ class UMASamplingProfilerData(CrashData):
 
     self._crashed_version = regression_data['chrome_releases'][1]['version']
     self._stacktrace_str = ''
-    self._stacktrace = None
 
-    self._dependencies = None
-    self._dependency_rolls = None
     self._dependency_analyzer = DependencyAnalyzer(self._platform,
                                                    self._crashed_version,
                                                    self.regression_range,
                                                    dep_fetcher)
 
-  @property
+  @cached_property
   def stacktrace(self):
     """Parses ``subtree_stacks`` dict and returns ``Stacktrace`` object."""
-    if self._stacktrace:
-      return self._stacktrace
-
-    self._stacktrace = UMASamplingProfilerParser().Parse(
+    stacktrace = UMASamplingProfilerParser().Parse(
         self.subtree_stacks, self._dependency_analyzer.regression_version_deps)
-    if not self._stacktrace:
+    if not stacktrace:
       logging.warning('Failed to parse the stacktrace %s',
                       self.subtree_stacks)
-    return self._stacktrace
+    return stacktrace
 
   @property
   def regression_range(self):
@@ -109,27 +104,17 @@ class UMASamplingProfilerData(CrashData):
     after = self.chrome_releases[1]['version']
     return before, after
 
-  @property
+  @cached_property
   def dependencies(self):
     """Get all dependencies that are in the stacktrace."""
-    if self._dependencies:
-      return self._dependencies
-
-    self._dependencies = self._dependency_analyzer.GetDependencies(
+    return self._dependency_analyzer.GetDependencies(
         self.stacktrace.stacks if self.stacktrace else [])
 
-    return self._dependencies
-
-  @property
+  @cached_property
   def dependency_rolls(self):
     """Gets all dependency rolls of ``dependencies`` in regression range."""
-    if self._dependency_rolls:
-      return self._dependency_rolls
-
-    self._dependency_rolls = self._dependency_analyzer.GetDependencyRolls(
+    return self._dependency_analyzer.GetDependencyRolls(
         self.stacktrace.stacks if self.stacktrace else [])
-
-    return self._dependency_rolls
 
   @property
   def identifiers(self):

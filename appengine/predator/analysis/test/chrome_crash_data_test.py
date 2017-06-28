@@ -54,44 +54,29 @@ class ChromeCrashDataTest(AnalysisTestCase):
       mock_parse.return_value = stacktrace
       self._VerifyTwoStacktracesEqual(crash_data.stacktrace, stacktrace)
 
-  def testParseStacktraceReturnsCache(self):
-    """Tests that ``stacktrace`` returns cached ``_stacktrace`` value."""
-    crash_data = ChromeCrashData(self.GetDummyChromeCrashData(), None)
-    stack = CallStack(1)
-    stacktrace = Stacktrace([stack], stack)
-    crash_data._stacktrace = stacktrace
-    self._VerifyTwoStacktracesEqual(crash_data.stacktrace, stacktrace)
-
   def testDetectRegressionRangeFailed(self):
     """Tests that ``regression_range`` is None when detection failed."""
-    crash_data = ChromeCrashData(
-        self.GetDummyChromeCrashData(),
-        ChromeDependencyFetcher(self.GetMockRepoFactory()))
-
     with mock.patch('analysis.detect_regression_range.DetectRegressionRange',
                     lambda *_: None):
+      crash_data = ChromeCrashData(
+          self.GetDummyChromeCrashData(),
+          ChromeDependencyFetcher(self.GetMockRepoFactory()))
       self.assertIsNone(crash_data.regression_range)
 
   def testDetectRegressionRangeSucceeded(self):
     """Tests detecting ``regression_range``."""
-    crash_data = ChromeCrashData(
-        self.GetDummyChromeCrashData(),
-        ChromeDependencyFetcher(self.GetMockRepoFactory()))
-
     regression_range = ('1', '3')
     with mock.patch('analysis.detect_regression_range.DetectRegressionRange',
                     lambda *_: regression_range):
+      crash_data = ChromeCrashData(
+          self.GetDummyChromeCrashData(),
+          ChromeDependencyFetcher(self.GetMockRepoFactory()))
       self.assertEqual(crash_data.regression_range, regression_range)
 
-  def testDetectRegressionRangeReturnsCache(self):
-    """Tests that ``regression_range`` returns cached ``_regression_range``."""
-    crash_data = ChromeCrashData(self.GetDummyChromeCrashData(), None)
-    regression_range = ('1', '5')
-    crash_data._regression_range = regression_range
-    self.assertEqual(crash_data.regression_range, regression_range)
-
+  @mock.patch('analysis.chrome_crash_data.ChromeCrashData.stacktrace',
+              new_callable=mock.PropertyMock)
   @mock.patch('analysis.dependency_analyzer.DependencyAnalyzer.GetDependencies')
-  def testDependencies(self, mock_get_dependencies):
+  def testDependencies(self, mock_get_dependencies, mock_stacktrace):
     """Tests that ``dependencies`` calls GetDependencies."""
     crash_data = ChromeCrashData(self.GetDummyChromeCrashData(), None)
     crashed_version_deps = {'src/': Dependency('src/', 'https://repo', 'rev')}
@@ -99,15 +84,17 @@ class ChromeCrashDataTest(AnalysisTestCase):
     stack = CallStack(0, frame_list=[
         StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [5])])
     stacktrace = Stacktrace([stack], stack)
-    crash_data._stacktrace = stacktrace
+    mock_stacktrace.return_value = stacktrace
 
     self.assertEqual(crash_data.dependencies, crashed_version_deps)
     mock_get_dependencies.assert_called_with(
         [crash_data.stacktrace.crash_stack])
 
+  @mock.patch('analysis.chrome_crash_data.ChromeCrashData.stacktrace',
+              new_callable=mock.PropertyMock)
   @mock.patch('analysis.dependency_analyzer.DependencyAnalyzer'
               '.GetDependencyRolls')
-  def testDependencyRolls(self, mock_get_dependency_rolls):
+  def testDependencyRolls(self, mock_get_dependency_rolls, mock_stacktrace):
     """Tests that ``dependency_rolls`` calls GetDependencyRolls."""
     crash_data = ChromeCrashData(self.GetDummyChromeCrashData(), None)
     dep_roll = {'src/': DependencyRoll('src/', 'https://repo', 'rev0', 'rev3')}
@@ -115,25 +102,11 @@ class ChromeCrashDataTest(AnalysisTestCase):
     stack = CallStack(0, frame_list=[
         StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [5])])
     stacktrace = Stacktrace([stack], stack)
-    crash_data._stacktrace = stacktrace
+    mock_stacktrace.return_value = stacktrace
 
     self.assertEqual(crash_data.dependency_rolls, dep_roll)
     mock_get_dependency_rolls.assert_called_with(
         [crash_data.stacktrace.crash_stack])
-
-  def testDependenciesReturnsCache(self):
-    """Tests that ``dependencies`` returns cached ``_dependencies`` value."""
-    crash_data = ChromeCrashData(self.GetDummyChromeCrashData(), None)
-    deps = {'src/': Dependency('src/', 'https://repo', 'rev')}
-    crash_data._dependencies = deps
-    self.assertEqual(crash_data.dependencies, deps)
-
-  def testDependencyRollsReturnsCache(self):
-    """Tests ``dependency_rolls`` returns cached ``_dependency_rolls``."""
-    crash_data = ChromeCrashData(self.GetDummyChromeCrashData(), None)
-    dep_roll = {'src/': DependencyRoll('src/', 'https://repo', 'rev0', 'rev3')}
-    crash_data._dependency_rolls = dep_roll
-    self.assertEqual(crash_data.dependency_rolls, dep_roll)
 
   def testIdentifiers(self):
     crash_data = ChromeCrashData(
