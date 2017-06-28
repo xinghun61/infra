@@ -227,12 +227,14 @@ class IssueTrackerAPITestCase(unittest.TestCase):
               lambda: 'x-staging')
   def test_uses_staging_instance(self):
     issue_tracker.IssueTrackerAPI('my-project')
-    self.build_client.assert_called_with(
+    self.build_client.assert_called_once_with(
         'monorail', 'v1', 'https://monorail-staging.appspot.com/_ah/api/'
-        'discovery/v1/apis/{api}/{apiVersion}/rest')
+        'discovery/v1/apis/{api}/{apiVersion}/rest', http=mock.ANY)
+    self.assertEqual(self.build_client.call_args[1]["http"].timeout, 60)
 
   def test_uses_prod_instance_by_default(self):
     issue_tracker.IssueTrackerAPI('my-project')
-    self.build_client.assert_called_with(
+    self.build_client.assert_called_once_with(
         'monorail', 'v1', 'https://monorail-prod.appspot.com/_ah/api/'
-        'discovery/v1/apis/{api}/{apiVersion}/rest')
+        'discovery/v1/apis/{api}/{apiVersion}/rest', http=mock.ANY)
+    self.assertEqual(self.build_client.call_args[1]["http"].timeout, 60)

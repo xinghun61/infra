@@ -4,6 +4,8 @@
 
 """Provides API wrapper for the codesite issue tracker"""
 
+import httplib2
+
 from endpoints_client import endpoints
 from issue_tracker.issue import Issue
 from issue_tracker.comment import Comment
@@ -28,7 +30,8 @@ class IssueTrackerAPI(object):
     else:
       discovery_url = DISCOVERY_URL % '-prod'
 
-    self.client = endpoints.build_client('monorail', 'v1', discovery_url)
+    self.client = endpoints.build_client(
+        'monorail', 'v1', discovery_url, http=httplib2.Http(timeout=60))
 
   def create(self, issue, send_email=True):
     body = {}
