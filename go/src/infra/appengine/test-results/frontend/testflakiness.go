@@ -86,8 +86,8 @@ const flakyBuildsQuery = `
     plx.google.chrome_infra.recent_flaky_test_failures.all
   WHERE
     test_name = @testname
-	LIMIT
-	  100;`
+  LIMIT
+    100;`
 
 const cqFlakyBuildsQuery = `
   SELECT
@@ -101,7 +101,7 @@ const cqFlakyBuildsQuery = `
   WHERE
     test_name = @testname
   LIMIT
-	  100;`
+    100;`
 
 // Set 50 second timeout for the BigQuery queries, which leaves 10 seconds for
 // overhead before HTTP timeout. The query will actually continue to run after
@@ -326,8 +326,6 @@ func findStep(step *milo.Step, stepName string) *milo.Step {
 }
 
 func getStdoutLogURL(ctx context.Context, s testFlakinessService, master, builder string, buildNumber uint64, stepName string) (string, error) {
-	ctx, cancelFunc := context.WithTimeout(ctx, 30*time.Second)
-	defer cancelFunc()
 	buildInfoClient, err := s.GetBuildInfoClient(ctx)
 	if err != nil {
 		return "", err
@@ -523,16 +521,17 @@ func getFlakinessData(aeCtx context.Context, s testFlakinessService, bq *bigquer
 	var flakyBuilds []FlakyBuild
 	var cqFlakyBuilds []CQFlakyBuild
 	err := parallel.RunMulti(aeCtx, 50, func(mr parallel.MultiRunner) error {
-		var err error
-		if flakyBuilds, err = getFlakyBuildsForTest(aeCtx, s, mr, bq, test); err != nil {
-			return err
-		}
+		return mr.RunMulti(func(taskC chan<- func() error) {
+			taskC <- func() (err error) {
+				flakyBuilds, err = getFlakyBuildsForTest(aeCtx, s, mr, bq, test)
+				return
+			}
 
-		if cqFlakyBuilds, err = getCQFalseRejectionBuildsForTest(aeCtx, s, mr, bq, test); err != nil {
-			return err
-		}
-
-		return nil
+			taskC <- func() (err error) {
+				cqFlakyBuilds, err = getCQFalseRejectionBuildsForTest(aeCtx, s, mr, bq, test)
+				return
+			}
+		})
 	})
 
 	return &FlakyTestDetails{
@@ -568,7 +567,6 @@ func (p prodTestFlakinessService) GetBQService(aeCtx context.Context) (*bigquery
 		return nil, errors.Annotate(err).Reason("failed to create http client").Err()
 	}
 
-	hc.Timeout = time.Minute // Increase timeout for BigQuery HTTP requests
 	bq, err := bigquery.New(hc)
 	if err != nil {
 		return nil, errors.Annotate(err).Reason("failed to create service object").Err()
@@ -677,7 +675,7 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, par
 		Query:           query,
 		UseLegacySql:    &useLegacySQL,
 		QueryParameters: params,
-	})
+	}).Context(ctx)
 
 	var response *bigquery.QueryResponse
 	err := retry.Retry(ctx, retryFactory, func() error {
@@ -793,7 +791,8 @@ func getFlakinessGroups(ctx context.Context, bq *bigquery.Service) ([]Group, err
 		}
 	})
 
-	return append(teamGroups, append(dirGroups, suiteGroups...)...), err
+	groups := make([]Group, 0, len(teamGroups)+len(dirGroups)+len(suiteGroups))
+	return append(append(append(groups, teamGroups...), dirGroups...), suiteGroups...), err
 }
 
 func testFlakinessGroupsHandler(ctx *router.Context) {

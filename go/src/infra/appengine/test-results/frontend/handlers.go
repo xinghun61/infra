@@ -12,6 +12,8 @@ import (
 	"net/http"
 	"time"
 
+	"golang.org/x/net/context"
+
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/appengine/gaeauth/server"
@@ -36,7 +38,7 @@ const (
 func init() {
 	r := router.New()
 
-	baseMW := gaemiddleware.BaseProd()
+	baseMW := gaemiddleware.BaseProd().Extend(timeoutMiddleware)
 	getMW := baseMW.Extend(templatesMiddleware())
 	authMW := baseMW.Extend(
 		auth.Authenticate(&server.OAuth2Method{Scopes: []string{server.EmailScope}}),
@@ -72,6 +74,13 @@ func init() {
 	r.GET("/data/test_flakiness/data", baseMW, testFlakinessDataHandler)
 
 	http.DefaultServeMux.Handle("/", r)
+}
+
+func timeoutMiddleware(c *router.Context, next router.Handler) {
+	newCtx, cancelFunc := context.WithTimeout(c.Context, time.Minute)
+	defer cancelFunc()
+	c.Context = newCtx
+	next(c)
 }
 
 // templatesMiddleware returns the templates middleware.
