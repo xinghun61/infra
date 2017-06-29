@@ -297,7 +297,7 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
 
     autoroll_settings = picked_details['spec']['autoroll_recipe_options']
 
-    upload_args =  []
+    upload_args = ['--send-mail']
     if roll_result['trivial']:
       s = autoroll_settings['trivial']
       extra_tbr = s.get('tbr_emails')
@@ -313,7 +313,6 @@ class RecipeAutorollerApi(recipe_api.RecipeApi):
       extra_r = s.get('extra_reviewers')
       if extra_r:
         upload_args.append('--reviewers=%s' % (','.join(extra_r)))
-        upload_args.append('--send-mail')
 
       upload_args.append('--r-owners')
 

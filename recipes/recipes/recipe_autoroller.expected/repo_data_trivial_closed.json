@@ -406,6 +406,7 @@
     "cmd": [
       "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
       "upload",
+      "--send-mail",
       "--tbrs=foo@bar.example.com,meep@example.com",
       "--tbr-owners",
       "--use-commit-queue",

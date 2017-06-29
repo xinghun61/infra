@@ -372,8 +372,8 @@
     "cmd": [
       "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
       "upload",
-      "--reviewers=foo@chromium.org,foo@bar.example.com,meep@example.com",
       "--send-mail",
+      "--reviewers=foo@chromium.org,foo@bar.example.com,meep@example.com",
       "--r-owners",
       "--cq-dry-run",
       "--cc=foo@chromium.org",
