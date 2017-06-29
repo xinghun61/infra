@@ -33,7 +33,7 @@ func combineIsolates(ctx context.Context, arc *archiver.Archiver, isoHashes ...i
 	iso.Includes = isoHashes
 	isolated, err := json.Marshal(iso)
 	if err != nil {
-		return "", errors.Annotate(err).Reason("encoding ISOLATED.json").Err()
+		return "", errors.Annotate(err, "encoding ISOLATED.json").Err()
 	}
 	promise := arc.Push("ISOLATED.json", isolatedclient.NewBytesSource(isolated), 0)
 	promise.WaitForHashed()
@@ -61,7 +61,7 @@ func isolateDirectory(ctx context.Context, arc *archiver.Archiver, dir string) (
 
 		relPath, err := filepath.Rel(dir, fullPath)
 		if err != nil {
-			return errors.Annotate(err).Reason("relpath of %(full)q").D("full", fullPath).Err()
+			return errors.Annotate(err, "relpath of %q", fullPath).Err()
 		}
 
 		if fi.Mode().IsRegular() {
@@ -74,13 +74,13 @@ func isolateDirectory(ctx context.Context, arc *archiver.Archiver, dir string) (
 		if (fi.Mode() & os.ModeSymlink) != 0 {
 			val, err := os.Readlink(fullPath)
 			if err != nil {
-				return errors.Annotate(err).Reason("reading link of %(full)q").D("full", fullPath).Err()
+				return errors.Annotate(err, "reading link of %q", fullPath).Err()
 			}
 			iso.Files[relPath] = isolated.SymLink(val)
 			return nil
 		}
 
-		return errors.Reason("don't know how to process: %(fi)s").D("fi", fi).Err()
+		return errors.Reason("don't know how to process: %s", fi).Err()
 	})
 	if err != nil {
 		return "", err
@@ -95,7 +95,7 @@ func isolateDirectory(ctx context.Context, arc *archiver.Archiver, dir string) (
 
 	isolated, err := json.Marshal(iso)
 	if err != nil {
-		return "", errors.Annotate(err).Reason("encoding ISOLATED.json").Err()
+		return "", errors.Annotate(err, "encoding ISOLATED.json").Err()
 	}
 
 	promise := arc.Push("ISOLATED.json", isolatedclient.NewBytesSource(isolated), 0)

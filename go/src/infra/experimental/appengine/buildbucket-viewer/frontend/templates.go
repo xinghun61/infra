@@ -68,11 +68,11 @@ func getDefaultTemplateArgs(c context.Context, req *http.Request) (templates.Arg
 
 	loginURL, err := auth.LoginURL(c, loginRedirect)
 	if err != nil {
-		return nil, errors.Annotate(err).InternalReason("failed to generate login URL").Err()
+		return nil, errors.Annotate(err, "").InternalReason("failed to generate login URL").Err()
 	}
 	logoutURL, err := auth.LogoutURL(c, loginRedirect)
 	if err != nil {
-		return nil, errors.Annotate(err).InternalReason("failed to generate logout URL").Err()
+		return nil, errors.Annotate(err, "").InternalReason("failed to generate logout URL").Err()
 	}
 	return templates.Args{
 		"LoginURL":  loginURL,

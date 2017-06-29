@@ -77,10 +77,7 @@ func (b *BuilderID) String() string {
 func (b *BuilderID) Parse(str string) error {
 	sep := strings.IndexRune(str, builderIDSep)
 	if sep == -1 {
-		return errors.Reason("no %(sep)q in %(id)q").
-			D("sep", builderIDSep).
-			D("id", str).
-			Err()
+		return errors.Reason("no %q in %q", builderIDSep, str).Err()
 	}
 
 	b.Master = str[:sep]

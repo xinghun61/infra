@@ -44,18 +44,14 @@ func (rr *recipeRun) command(ctx context.Context, tdir string, env environ.Env) 
 	// Pass properties in a file.
 	propertiesPath := filepath.Join(tdir, "properties.json")
 	if err := encodeJSONToPath(propertiesPath, rr.properties); err != nil {
-		return nil, errors.Annotate(err).Reason("could not write properties file at %(path)q").
-			D("path", propertiesPath).
-			Err()
+		return nil, errors.Annotate(err, "could not write properties file at %q", propertiesPath).Err()
 	}
 
 	// Write our operational arguments.
 	log.Debugf(ctx, "Using operational args: %s", rr.opArgs.String())
 	opArgsPath := filepath.Join(tdir, "op_args.json")
 	if err := encodeJSONToPath(opArgsPath, &rr.opArgs); err != nil {
-		return nil, errors.Annotate(err).Reason("could not write arguments file at %(path)q").
-			D("path", opArgsPath).
-			Err()
+		return nil, errors.Annotate(err, "could not write arguments file at %q", opArgsPath).Err()
 	}
 
 	// Build our command (arguments first).
@@ -85,18 +81,14 @@ func getRecipesPath(repoDir string) (string, error) {
 	recipesCfg := filepath.Join(repoDir, "infra", "config", "recipes.cfg")
 	fileContents, err := ioutil.ReadFile(recipesCfg)
 	if err != nil {
-		return "", errors.Annotate(err).Reason("could not read recipes.cfg at %(path)q").
-			D("path", recipesCfg).
-			Err()
+		return "", errors.Annotate(err, "could not read recipes.cfg at %q", recipesCfg).Err()
 	}
 
 	var cfg struct {
 		RecipesPath string `json:"recipes_path"`
 	}
 	if err := json.Unmarshal(fileContents, &cfg); err != nil {
-		return "", errors.Annotate(err).Reason("could not parse recipes.cfg at %(path)q").
-			D("path", recipesCfg).
-			Err()
+		return "", errors.Annotate(err, "could not parse recipes.cfg at %q", recipesCfg).Err()
 	}
 	return cfg.RecipesPath, nil
 }
@@ -110,9 +102,7 @@ func prepareRecipeRunWorkDir(workdir string) (string, error) {
 
 	abs, err := filepath.Abs(workdir)
 	if err != nil {
-		return "", errors.Annotate(err).Reason("could not make %(workDir)q absolute").
-			D("workDir", workdir).
-			Err()
+		return "", errors.Annotate(err, "could not make %q absolute", workdir).Err()
 	}
 	workdir = abs
 
@@ -121,14 +111,10 @@ func prepareRecipeRunWorkDir(workdir string) (string, error) {
 		return workdir, ensureDir(workdir)
 
 	case err != nil:
-		return "", errors.Annotate(err).Reason("could not read dir %(dir)q").
-			D("dir", workdir).
-			Err()
+		return "", errors.Annotate(err, "could not read dir %q", workdir).Err()
 
 	case hasFiles:
-		return "", errors.Annotate(err).Reason("workdir %(workDir)q is not empty").
-			D("workDir", workdir).
-			Err()
+		return "", errors.Annotate(err, "workdir %q is not empty", workdir).Err()
 
 	default:
 		return workdir, nil

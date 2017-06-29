@@ -58,14 +58,12 @@ func (p *SystemProbe) ResolveSelf(argv0 string) error {
 	// Get the authoritative executable from the system.
 	exec, err := os.Executable()
 	if err != nil {
-		return errors.Annotate(err).Reason("failed to get executable").Err()
+		return errors.Annotate(err, "failed to get executable").Err()
 	}
 
 	execStat, err := os.Stat(exec)
 	if err != nil {
-		return errors.Annotate(err).Reason("failed to stat executable: %(path)s").
-			D("path", exec).
-			Err()
+		return errors.Annotate(err, "failed to stat executable: %s", exec).Err()
 	}
 
 	// Before using "os.Executable" result, which is known to resolve symlinks on
@@ -165,9 +163,7 @@ func (p *SystemProbe) Locate(c context.Context, cached string, env environ.Env) 
 	}
 
 	return "", errors.Reason("could not find target in system").
-		D("target", p.Target).
-		D("PATH", origPATH).
-		Err()
+		InternalReason("target(%s)/PATH(%s)", p.Target, origPATH).Err()
 }
 
 // checkDir checks "checkDir" for our Target executable. It ignores
@@ -261,7 +257,7 @@ func (p *SystemProbe) checkForWrapper(c context.Context, path string, checkEnv e
 				}
 
 				logging.Warningf(c, "Failed to run check command [%s] with environment: %s", path, strings.Join(checkEnv.Sorted(), " "))
-				return 0, errors.Annotate(err).Reason("failed to run check command").Err()
+				return 0, errors.Annotate(err, "failed to run check command").Err()
 			}
 			return 0, nil
 		}

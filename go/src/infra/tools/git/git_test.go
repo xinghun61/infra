@@ -578,11 +578,11 @@ func (ta *testAgent) readRequest() error {
 	// Read in our request.
 	d, err := ioutil.ReadFile(ta.inPath)
 	if err != nil {
-		return errors.Annotate(err).Reason("failed to read input params").Err()
+		return errors.Annotate(err, "failed to read input params").Err()
 	}
 
 	if err := json.Unmarshal(d, &ta.in); err != nil {
-		return errors.Annotate(err).Reason("failed to unmarshal input params").Err()
+		return errors.Annotate(err, "failed to unmarshal input params").Err()
 	}
 
 	return nil
@@ -590,7 +590,7 @@ func (ta *testAgent) readRequest() error {
 
 func (ta *testAgent) writeResponse() (err error) {
 	if err := atomicWriteJSON(&ta.out, ta.outPath); err != nil {
-		return errors.Annotate(err).Reason("failed to write output JSON").Err()
+		return errors.Annotate(err, "failed to write output JSON").Err()
 	}
 
 	return nil
@@ -637,16 +637,16 @@ func (ta *testAgent) processRequest(c context.Context, args []string, rc *int) e
 	if ta.in.ReadStdin {
 		var err error
 		if ta.out.Stdin, err = ioutil.ReadAll(os.Stdin); err != nil {
-			return errors.Annotate(err).Reason("failed to read STDIN").Err()
+			return errors.Annotate(err, "failed to read STDIN").Err()
 		}
 	}
 
 	// Write STDOUT / STDERR.
 	if _, err := os.Stdout.Write(ta.in.Stdout); err != nil {
-		return errors.Annotate(err).Reason("failed to write STDOUT").Err()
+		return errors.Annotate(err, "failed to write STDOUT").Err()
 	}
 	if _, err := os.Stderr.Write(ta.in.Stderr); err != nil {
-		return errors.Annotate(err).Reason("failed to write STDERR").Err()
+		return errors.Annotate(err, "failed to write STDERR").Err()
 	}
 
 	if d := ta.in.CreateDirectory; d != "" {
@@ -656,7 +656,7 @@ func (ta *testAgent) processRequest(c context.Context, args []string, rc *int) e
 		}
 
 		if err := filesystem.MakeDirs(d); err != nil {
-			return errors.Annotate(err).Reason("failed to create directory").Err()
+			return errors.Annotate(err, "failed to create directory").Err()
 		}
 	}
 
@@ -693,20 +693,20 @@ func (it *countingRetryIterator) Next(context.Context, error) time.Duration {
 func atomicWriteJSON(obj interface{}, path string) (err error) {
 	fd, err := ioutil.TempFile(filepath.Dir(path), filepath.Base(path))
 	if err != nil {
-		return errors.Annotate(err).Reason("failed to create output tempfile").Err()
+		return errors.Annotate(err, "failed to create output tempfile").Err()
 	}
 
 	if err := json.NewEncoder(fd).Encode(obj); err != nil {
 		fd.Close()
-		return errors.Annotate(err).Reason("failed to encode JSON").Err()
+		return errors.Annotate(err, "failed to encode JSON").Err()
 	}
 
 	if err := fd.Close(); err != nil {
-		return errors.Annotate(err).Reason("failed to close output file").Err()
+		return errors.Annotate(err, "failed to close output file").Err()
 	}
 
 	if err := os.Rename(fd.Name(), path); err != nil {
-		return errors.Annotate(err).Reason("failed to install output file").Err()
+		return errors.Annotate(err, "failed to install output file").Err()
 	}
 
 	return nil

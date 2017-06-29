@@ -23,7 +23,7 @@ var commitHashRe = regexp.MustCompile("^[a-z0-9]{40}$")
 // If checkoutDir is a non-empty dir and not a Git repository, return an error.
 func checkoutRepository(c context.Context, checkoutDir, repoURL, revision string) error {
 	if !validRevisionRe.MatchString(revision) {
-		return errors.Reason("invalid revision %(rev)q").D("rev", revision).Err()
+		return errors.Reason("invalid revision %q", revision).Err()
 	}
 
 	// Ensure checkoutDir either does not exist, empty or a valid Git repo.
@@ -31,29 +31,21 @@ func checkoutRepository(c context.Context, checkoutDir, repoURL, revision string
 	case os.IsNotExist(err):
 		// Checkout dir does not exist.
 		if err := ensureDir(checkoutDir); err != nil {
-			return errors.Annotate(err).Reason("could not create directory %(dir)").
-				D("dir", checkoutDir).
-				Err()
+			return errors.Annotate(err, "could not create directory %q", checkoutDir).Err()
 		}
 
 	case err != nil:
-		return errors.Annotate(err).Reason("could not stat checkout dir %(dir)q").
-			D("dir", checkoutDir).
-			Err()
+		return errors.Annotate(err, "could not stat checkout dir %q", checkoutDir).Err()
 
 	default:
 		// checkoutDir exists. Is it a valid Git repo?
 		if err := git(c, checkoutDir, "rev-parse").Run(); err != nil {
 			if _, ok := err.(*exec.ExitError); !ok {
-				return errors.Annotate(err).Reason("git-rev-parse failed in %(dir)q").
-					D("dir", checkoutDir).
-					Err()
+				return errors.Annotate(err, "git-rev-parse failed in %q", checkoutDir).Err()
 			}
 			// This is not a Git repo. Is it empty?
 			if hasFiles, err := dirHasFiles(checkoutDir); err != nil {
-				return errors.Annotate(err).Reason("could not read dir %(dir)q").
-					D("dir", checkoutDir).
-					Err()
+				return errors.Annotate(err, "could not read dir %q", checkoutDir).Err()
 			} else if hasFiles {
 				return inputError("workdir %q is a non-git non-empty directory", checkoutDir)
 			}
@@ -80,7 +72,7 @@ func checkoutRepository(c context.Context, checkoutDir, repoURL, revision string
 
 	logging.Infof(c, "fetching repository %q, ref %q...", repoURL, fetchRef)
 	if err := runGit(c, checkoutDir, "fetch", repoURL, fetchRef); err != nil {
-		return errors.Annotate(err).Reason("could not fetch").Err()
+		return errors.Annotate(err, "could not fetch").Err()
 	}
 	return runGit(c, checkoutDir, "checkout", "-q", "-f", checkoutRef)
 }
@@ -113,7 +105,7 @@ func runGit(c context.Context, workDir string, args ...string) error {
 	logging.Infof(c, "%s$ %s\n", renderedWorkDir, strings.Join(cmd.Args, " "))
 	cmd.Stdout = os.Stdout
 	if err := cmd.Run(); err != nil {
-		return errors.Annotate(err).Reason("failed to run %(args)q").D("args", cmd.Args).Err()
+		return errors.Annotate(err, "failed to run %q", cmd.Args).Err()
 	}
 	return nil
 }

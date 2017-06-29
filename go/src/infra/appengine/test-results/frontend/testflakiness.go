@@ -185,7 +185,7 @@ func writeError(ctx *router.Context, err error, funcName string, msg string) {
 		err = errors.New(reason)
 	}
 
-	errors.Log(ctx.Context, errors.Annotate(err).Reason(reason).Err())
+	errors.Log(ctx.Context, errors.Annotate(err, reason).Err())
 	http.Error(ctx.Writer, "Internal Server Error", http.StatusInternalServerError)
 }
 
@@ -235,7 +235,7 @@ func getFlakinessList(ctx context.Context, bq *bigquery.Service, group Group) ([
 	rows, err := executeBQQuery(
 		ctx, bq, fmt.Sprintf(flakesQuery, filter), queryParams)
 	if err != nil {
-		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
+		return nil, errors.Annotate(err, "failed to execute query").Err()
 	}
 
 	data := make([]FlakinessListItem, 0, len(rows))
@@ -257,7 +257,7 @@ func getFlakinessList(ctx context.Context, bq *bigquery.Service, group Group) ([
 
 		totalFlakyFailures, err := strconv.ParseUint(totalFlakyFailuresStr, 10, 64)
 		if err != nil {
-			return nil, errors.Annotate(err).Reason("failed to convert total_flaky_failures value to uint64").Err()
+			return nil, errors.Annotate(err, "failed to convert total_flaky_failures value to uint64").Err()
 		}
 
 		totalTriesStr, ok := row.F[3].V.(string)
@@ -267,7 +267,7 @@ func getFlakinessList(ctx context.Context, bq *bigquery.Service, group Group) ([
 
 		totalTries, err := strconv.ParseUint(totalTriesStr, 10, 64)
 		if err != nil {
-			return nil, errors.Annotate(err).Reason("failed to convert total_tries value to uint64").Err()
+			return nil, errors.Annotate(err, "failed to convert total_tries value to uint64").Err()
 		}
 
 		flakinessStr, ok := row.F[4].V.(string)
@@ -277,7 +277,7 @@ func getFlakinessList(ctx context.Context, bq *bigquery.Service, group Group) ([
 
 		flakiness, err := strconv.ParseFloat(flakinessStr, 64)
 		if err != nil {
-			return nil, errors.Annotate(err).Reason("failed to convert flakiness value to float64").Err()
+			return nil, errors.Annotate(err, "failed to convert flakiness value to float64").Err()
 		}
 
 		cqFalseRejectionsStr, ok := row.F[5].V.(string)
@@ -287,7 +287,7 @@ func getFlakinessList(ctx context.Context, bq *bigquery.Service, group Group) ([
 
 		cqFalseRejections, err := strconv.ParseUint(cqFalseRejectionsStr, 10, 64)
 		if err != nil {
-			return nil, errors.Annotate(err).Reason("failed to convert cq_false_rejections value to uint64").Err()
+			return nil, errors.Annotate(err, "failed to convert cq_false_rejections value to uint64").Err()
 		}
 
 		data = append(data, FlakinessListItem{
@@ -347,7 +347,7 @@ func getStdoutLogURL(ctx context.Context, s testFlakinessService, master, builde
 
 	step := findStep(resp.Step, stepName)
 	if step == nil {
-		return "", errors.Reason("failed to find step %(step)q").D("step", stepName).Err()
+		return "", errors.Reason("failed to find step %q", stepName).Err()
 	}
 
 	stream := step.StdoutStream
@@ -382,7 +382,7 @@ func getFlakyBuildsForTest(ctx context.Context, s testFlakinessService, mr paral
 
 	rows, err := executeBQQuery(ctx, bq, flakyBuildsQuery, queryParams)
 	if err != nil {
-		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
+		return nil, errors.Annotate(err, "failed to execute query").Err()
 	}
 
 	flakyBuilds := make([]FlakyBuild, len(rows))
@@ -407,7 +407,7 @@ func getFlakyBuildsForTest(ctx context.Context, s testFlakinessService, mr paral
 
 				buildNumber, err := strconv.ParseUint(buildNumberStr, 10, 64)
 				if err != nil {
-					return errors.Annotate(err).Reason("failed to convert build_number value to int64").Err()
+					return errors.Annotate(err, "failed to convert build_number value to int64").Err()
 				}
 
 				stepName, ok := row.F[3].V.(string)
@@ -443,7 +443,7 @@ func getCQFalseRejectionBuildsForTest(ctx context.Context, s testFlakinessServic
 
 	rows, err := executeBQQuery(ctx, bq, cqFlakyBuildsQuery, queryParams)
 	if err != nil {
-		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
+		return nil, errors.Annotate(err, "failed to execute query").Err()
 	}
 
 	cqFlakyBuilds := make([]CQFlakyBuild, len(rows))
@@ -468,7 +468,7 @@ func getCQFalseRejectionBuildsForTest(ctx context.Context, s testFlakinessServic
 
 				passedBuildNumber, err := strconv.ParseUint(passedBuildNumberStr, 10, 64)
 				if err != nil {
-					return errors.Annotate(err).Reason("failed to convert passed_build_number value to int64").Err()
+					return errors.Annotate(err, "failed to convert passed_build_number value to int64").Err()
 				}
 
 				failedBuildNumberStr, ok := row.F[3].V.(string)
@@ -478,7 +478,7 @@ func getCQFalseRejectionBuildsForTest(ctx context.Context, s testFlakinessServic
 
 				failedBuildNumber, err := strconv.ParseUint(failedBuildNumberStr, 10, 64)
 				if err != nil {
-					return errors.Annotate(err).Reason("failed to convert failed_build_number value to int64").Err()
+					return errors.Annotate(err, "failed to convert failed_build_number value to int64").Err()
 				}
 
 				stepName, ok := row.F[4].V.(string)
@@ -564,12 +564,12 @@ func (p prodTestFlakinessService) GetBuildInfoClient(ctx context.Context) (milo_
 func (p prodTestFlakinessService) GetBQService(aeCtx context.Context) (*bigquery.Service, error) {
 	hc, err := google.DefaultClient(aeCtx, bigquery.BigqueryScope)
 	if err != nil {
-		return nil, errors.Annotate(err).Reason("failed to create http client").Err()
+		return nil, errors.Annotate(err, "failed to create http client").Err()
 	}
 
 	bq, err := bigquery.New(hc)
 	if err != nil {
-		return nil, errors.Annotate(err).Reason("failed to create service object").Err()
+		return nil, errors.Annotate(err, "failed to create service object").Err()
 	}
 
 	return bq, nil
@@ -685,7 +685,7 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, par
 	}, nil)
 
 	if err != nil {
-		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
+		return nil, errors.Annotate(err, "failed to execute query").Err()
 	}
 
 	// Check if BQ has returned results or wait for them in a loop. Unfortunately
@@ -713,7 +713,7 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, par
 				return err
 			}, nil)
 			if err != nil {
-				return nil, errors.Annotate(err).Reason("failed to retrieve results").Err()
+				return nil, errors.Annotate(err, "failed to retrieve results").Err()
 			}
 			if resultsResponse.JobComplete {
 				rows = make([]*bigquery.TableRow, 0, resultsResponse.TotalRows)
@@ -736,7 +736,7 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, par
 		}, nil)
 
 		if err != nil {
-			return nil, errors.Annotate(err).Reason("failed to retrive additional results").Err()
+			return nil, errors.Annotate(err, "failed to retrive additional results").Err()
 		}
 
 		rows = append(rows, resultsResponse.Rows...)
@@ -750,7 +750,7 @@ func executeBQQuery(ctx context.Context, bq *bigquery.Service, query string, par
 func getGroupsForQuery(ctx context.Context, bq *bigquery.Service, query, kind, nilKind string) ([]Group, error) {
 	rows, err := executeBQQuery(ctx, bq, query, nil)
 	if err != nil {
-		return nil, errors.Annotate(err).Reason("failed to execute query").Err()
+		return nil, errors.Annotate(err, "failed to execute query").Err()
 	}
 
 	var groups []Group

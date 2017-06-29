@@ -173,13 +173,13 @@ func parseRietveldURL(p *url.URL) (ret *rietveldCL, err error) {
 	ret = &rietveldCL{host: p.Host}
 	toks := urlTrimSplit(p.Path)
 	if len(toks) < 1 {
-		err = errors.Reason("len(path segments) < 1; %(path)q").D("path", p.Path).Err()
+		err = errors.Reason("len(path segments) < 1; %q", p.Path).Err()
 		return
 	}
 
 	ret.issue, err = strconv.ParseUint(toks[0], 10, 0)
 	if err != nil {
-		err = errors.Annotate(err).Reason("issue is not a number").D("path", p.Path).Err()
+		err = errors.Annotate(err, "issue is not a number: %q", p.Path).Err()
 		return
 	}
 
@@ -187,19 +187,19 @@ func parseRietveldURL(p *url.URL) (ret *rietveldCL, err error) {
 		return
 	}
 	if !strings.HasPrefix(p.Fragment, "ps") {
-		err = errors.Reason("URL has #fagment, but doesn't start with `ps`").Err()
+		err = errors.Reason("URL has #fagment, but doesn't start with `ps`: %q", p.Fragment).Err()
 		return
 	}
 
 	_, err = fmt.Sscanf(p.Fragment, "ps%d", &ret.patchset)
-	err = errors.Annotate(err).Reason("parsing patchset url #fragment").Err()
+	err = errors.Annotate(err, "parsing patchset url #fragment").Err()
 	return
 }
 
 func parseCrChangeListURL(clURL string) (cl, error) {
 	p, err := url.Parse(clURL)
 	if err != nil {
-		err = errors.Annotate(err).Reason("URL_TO_CHANGELIST is invalid").Err()
+		err = errors.Annotate(err, "URL_TO_CHANGELIST is invalid").Err()
 		return nil, err
 	}
 	toks := urlTrimSplit(p.Path)
@@ -209,7 +209,7 @@ func parseCrChangeListURL(clURL string) (cl, error) {
 			// https://<gerrit_host>/#/c/<issue>/<patchset>
 			toks = urlTrimSplit(p.Fragment)
 			if len(toks) < 1 || toks[0] != "c" {
-				return nil, errors.Reason("bad format for (old) gerrit URL: %(orig)q").D("orig", clURL).Err()
+				return nil, errors.Reason("bad format for (old) gerrit URL: %q", clURL).Err()
 			}
 		} else {
 			// https://<gerrit_host>/c/<issue>
@@ -217,14 +217,14 @@ func parseCrChangeListURL(clURL string) (cl, error) {
 		}
 		toks = toks[1:]
 		ret, err := parseGerrit(p, toks)
-		err = errors.Annotate(err).Reason("bad format for gerrit URL: %(orig)q").D("orig", clURL).Err()
+		err = errors.Annotate(err, "bad format for gerrit URL: %q", clURL).Err()
 		return ret, err
 	}
 
 	// https://<rietveld_host>/<issue>
 	// https://<rietveld_host>/<issue>/#ps<patchset>
 	ret, err := parseRietveldURL(p)
-	err = errors.Annotate(err).Reason("bad format for rietveld URL: %(orig)q").D("orig", clURL).Err()
+	err = errors.Annotate(err, "bad format for rietveld URL: %q", clURL).Err()
 	return ret, err
 }
 

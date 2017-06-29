@@ -235,9 +235,7 @@ func getPEP425CIPDTemplateForTag(tag *vpython.PEP425Tag) (map[string]string, err
 	// want to use 32-bit Python wheels.
 	platform := cipd.PlatformForPEP425Tag(tag)
 	if platform == "" {
-		return nil, errors.Reason("failed to infer CIPD platform for tag [%(tag)s]").
-			D("tag", tag.TagString()).
-			Err()
+		return nil, errors.Reason("failed to infer CIPD platform for tag [%s]", tag).Err()
 	}
 	template["platform"] = platform
 

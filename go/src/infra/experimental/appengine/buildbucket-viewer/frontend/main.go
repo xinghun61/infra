@@ -119,12 +119,12 @@ func (w *errorResponseWriter) handleErr(c context.Context, err error) {
 	}
 
 	// Log error lines to logger.
-	rendered := errors.RenderStack(err)
-	for _, line := range rendered.ToLines(
+	rendered := errors.RenderStack(err,
 		"github.com/luci/luci-go/server/router",
 		"github.com/luci/luci-go/appengine/gaemiddleware",
 		"net/http",
-	) {
+	)
+	for _, line := range rendered {
 		log.Errorf(c, "E> %s", line)
 	}
 

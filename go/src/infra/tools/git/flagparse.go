@@ -150,9 +150,7 @@ func (fs FlagSplitter) Split(args []string, stopAtFirstPositional bool) (pf Pars
 			}
 
 		default:
-			panic(errors.Reason("don't know how to handle flag (%(flag)s) with more than one arg").
-				D("flag", arg).
-				Err())
+			panic(errors.Reason("don't know how to handle flag (%s) with more than one arg", arg).Err())
 		}
 
 		if pf.Flags == nil {

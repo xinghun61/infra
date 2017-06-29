@@ -23,16 +23,16 @@ import (
 func encodeJSONToPath(path string, obj interface{}) (err error) {
 	fd, err := os.Create(path)
 	if err != nil {
-		return errors.Annotate(err).Reason("failed to create output file").Err()
+		return errors.Annotate(err, "failed to create output file").Err()
 	}
 	defer func() {
 		closeErr := fd.Close()
 		if closeErr != nil && err == nil {
-			err = errors.Annotate(closeErr).Reason("failed to close output file").Err()
+			err = errors.Annotate(closeErr, "failed to close output file").Err()
 		}
 	}()
 	if err = json.NewEncoder(fd).Encode(obj); err != nil {
-		return errors.Annotate(err).Reason("failed to write encoded object").Err()
+		return errors.Annotate(err, "failed to write encoded object").Err()
 	}
 	return nil
 }
@@ -49,9 +49,7 @@ func unmarshalJSONWithNumber(data []byte, dest interface{}) error {
 // Returned errors are annotated.
 func ensureDir(path string) error {
 	if err := os.MkdirAll(path, 0755); err != nil && !os.IsExist(err) {
-		return errors.Annotate(err).Reason("could not create temp dir %(dir)q").
-			D("dir", path).
-			Err()
+		return errors.Annotate(err, "could not create temp dir %q", path).Err()
 	}
 	return nil
 }
@@ -67,9 +65,7 @@ func dirHasFiles(path string) (bool, error) {
 
 	names, err := dir.Readdirnames(1)
 	if err != nil && err != io.EOF {
-		return false, errors.Annotate(err).Reason("could not read dir %(dir)q").
-			D("dir", path).
-			Err()
+		return false, errors.Annotate(err, "could not read dir %q", path).Err()
 	}
 
 	return len(names) > 0, nil

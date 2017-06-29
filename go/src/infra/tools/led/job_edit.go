@@ -204,7 +204,7 @@ func (ejd *EditJobDefinition) SwarmingHostname(host string) {
 	}
 	ejd.tweak(func(jd *JobDefinition) error {
 		if err := validateHost(host); err != nil {
-			return errors.Annotate(err).Reason("SwarmingHostname").Err()
+			return errors.Annotate(err, "SwarmingHostname").Err()
 		}
 		jd.SwarmingHostname = host
 		return nil

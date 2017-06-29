@@ -52,13 +52,13 @@ type cmdGetSwarm struct {
 
 func (c *cmdGetSwarm) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
 	if len(args) != 1 {
-		err = errors.Reason("expected 1 positional argument: %(args)q").D("args", args).Err()
+		err = errors.Reason("expected 1 positional argument: %q", args).Err()
 		return
 	}
 	c.taskID = args[0]
 
 	if err = validateHost(c.swarmingHost); err != nil {
-		err = errors.Annotate(err).Reason("SwarmingHostname").Err()
+		err = errors.Annotate(err, "SwarmingHostname").Err()
 		return
 	}
 

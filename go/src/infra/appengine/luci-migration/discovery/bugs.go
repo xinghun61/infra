@@ -51,7 +51,7 @@ func createBuilderBug(c context.Context, client monorail.MonorailClient, builder
 	}
 	descBuf := &bytes.Buffer{}
 	if err := builderBugDescriptionTmpl.Execute(descBuf, descArgs); err != nil {
-		return 0, errors.Annotate(err).Reason("could not execute description template").Err()
+		return 0, errors.Annotate(err, "could not execute description template").Err()
 	}
 
 	// excludes invalid chars from a label, like Monorail server does.
@@ -88,7 +88,7 @@ func createBuilderBug(c context.Context, client monorail.MonorailClient, builder
 
 	res, err := client.InsertIssue(c, req)
 	if err != nil {
-		return 0, errors.Annotate(err).Reason("InsertIssue RPC failed").Err()
+		return 0, errors.Annotate(err, "InsertIssue RPC failed").Err()
 	}
 
 	return int(res.Issue.Id), nil

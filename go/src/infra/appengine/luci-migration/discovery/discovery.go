@@ -51,9 +51,7 @@ func (d *Builders) Discover(c context.Context, master *config.Master) error {
 	// Fetch builder names of a master.
 	names, err := d.fetchBuilderNames(c, master)
 	if err != nil {
-		return errors.Annotate(err).Reason("could not fetch builder names from master %(master)s").
-			D("master", master.Name).
-			Err()
+		return errors.Annotate(err, "could not fetch builder names from master %s", master.Name).Err()
 	}
 
 	// Check which builders we don't know about.
@@ -120,9 +118,7 @@ func (d *Builders) registerBuilder(c context.Context, master *config.Master, nam
 	builder.IssueID.Project = monorailProject
 	var err error
 	if builder.IssueID.ID, err = createBuilderBug(c, d.Monorail, builder); err != nil {
-		return errors.Annotate(err).Reason("could not create a monorail bug for builder %(ID)q").
-			D("ID", &builder.ID).
-			Err()
+		return errors.Annotate(err, "could not create a monorail bug for builder %q", &builder.ID).Err()
 	}
 
 	// Save.
@@ -141,7 +137,7 @@ func (d *Builders) fetchBuilderNames(c context.Context, master *config.Master) (
 	// this is inefficient, but there is no better API
 	res, err := d.Buildbot.GetCompressedMasterJSON(c, &milo.MasterRequest{Name: master.Name})
 	if err != nil {
-		return nil, errors.Annotate(err).Reason("GetCompressedMasterJSON RPC failed").Err()
+		return nil, errors.Annotate(err, "GetCompressedMasterJSON RPC failed").Err()
 	}
 	ungzip, err := gzip.NewReader(bytes.NewReader(res.Data))
 	if err != nil {

@@ -408,7 +408,7 @@ func (r *dataEntryReader) Read(buf []byte) (int, error) {
 
 		logging.Debugf(r, "Read loading DataEntry ID: %v", de.ID)
 		if err := datastore.Get(r, de); err != nil {
-			return count, errors.Annotate(err).Reason("failed to load DataEntry object").Err()
+			return count, errors.Annotate(err, "failed to load DataEntry object").Err()
 		}
 
 		// Entry loaded. Re-enter our read loop.

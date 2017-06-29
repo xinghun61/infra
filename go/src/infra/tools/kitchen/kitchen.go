@@ -5,11 +5,11 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 
 	"github.com/maruel/subcommands"
 	"golang.org/x/net/context"
@@ -76,13 +76,8 @@ func logAnnotatedErr(ctx context.Context, err error) {
 		return
 	}
 
-	var buf bytes.Buffer
-	if _, derr := errors.RenderStack(err).DumpTo(&buf); derr != nil {
-		// This can't really fail, since we're rendering to a Buffer.
-		panic(derr)
-	}
-
-	log.Errorf(ctx, "Annotated error stack:\n%s", buf.String())
+	log.Errorf(ctx, "Annotated error stack:\n%s",
+		strings.Join(errors.RenderStack(err), "\n"))
 }
 
 // InputError indicates an error in the kitchen's input, e.g. command line flag
@@ -97,7 +92,7 @@ func (e InputError) Error() string { return string(e) }
 func inputError(format string, args ...interface{}) error {
 	// We don't use D to keep signature of this function simple
 	// and to keep UserError as a leaf.
-	return errors.Annotate(InputError(fmt.Sprintf(format, args...))).Err()
+	return errors.Annotate(InputError(fmt.Sprintf(format, args...)), "").Err()
 }
 
 // infraFailure converts an error to a build.InfraFailure protobuf message.
@@ -112,7 +107,7 @@ func infraFailure(err error) *build.InfraFailure {
 		failure.Type = build.InfraFailure_CANCELED
 	default:
 		failure.Type = build.InfraFailure_BOOTSTRAPPER_ERROR
-		failure.BootstrapperCallStack = errors.RenderStack(err).ToLines()
+		failure.BootstrapperCallStack = errors.RenderStack(err)
 	}
 
 	return failure

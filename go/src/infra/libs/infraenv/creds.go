@@ -41,7 +41,7 @@ func findCredentialFile(dirs []string, name string) (string, error) {
 				continue
 			}
 
-			return "", errors.Annotate(err).Reason("failed to check [%(path)s]").D("path", candidate).Err()
+			return "", errors.Annotate(err, "failed to check [%s]", candidate).Err()
 		}
 
 		return candidate, nil

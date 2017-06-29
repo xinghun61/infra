@@ -34,9 +34,7 @@ func cmdErr(err error, reason string) error {
 				outErr = outErr[:128] + "..."
 			}
 		}
-		err = errors.Annotate(err).
-			Reason(reason+": %(outErr)s").
-			D("outErr", outErr).Err()
+		err = errors.Annotate(err, reason+": %s", outErr).Err()
 	}
 	return err
 }
@@ -59,10 +57,10 @@ func validateHost(host string) error {
 	// 'Hostname' should equal the original string.
 	p, err := url.Parse(fmt.Sprintf("https://user:pass@%s:100/path", host))
 	if err != nil {
-		return errors.Annotate(err).Reason("bad url %(url)q").D("url", host).Err()
+		return errors.Annotate(err, "bad url %q", host).Err()
 	}
 	if p.Scheme != "https" || p.Port() != "100" || p.Path != "/path" || p.User.String() != "user:pass" || p.Hostname() != host {
-		return errors.Reason("must only specify hostname: %(url)q").D("url", host).Err()
+		return errors.Reason("must only specify hostname: %q", host).Err()
 	}
 	return nil
 }

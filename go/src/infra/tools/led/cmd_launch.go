@@ -51,7 +51,7 @@ type cmdLaunch struct {
 
 func (c *cmdLaunch) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
 	if len(args) > 0 {
-		err = errors.Reason("unexpected positional arguments: %(args)q").D("args", args).Err()
+		err = errors.Reason("unexpected positional arguments: %q", args).Err()
 		return
 	}
 	return c.authFlags.Options()

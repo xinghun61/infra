@@ -24,11 +24,11 @@ func (st *State) FromENV(v string) error {
 
 	d, err := base64.StdEncoding.DecodeString(v)
 	if err != nil {
-		return errors.Annotate(err).Reason("failed to decode base 64").Err()
+		return errors.Annotate(err, "failed to decode base 64").Err()
 	}
 
 	if err := proto.Unmarshal(d, st); err != nil {
-		return errors.Annotate(err).Reason("failed to unmarshal state").Err()
+		return errors.Annotate(err, "failed to unmarshal state").Err()
 	}
 
 	return nil
@@ -38,7 +38,7 @@ func (st *State) FromENV(v string) error {
 func (st *State) ToENV() string {
 	d, err := proto.Marshal(st)
 	if err != nil {
-		panic(errors.Annotate(err).Reason("failed to marshal wrapper state").Err())
+		panic(errors.Annotate(err, "failed to marshal wrapper state").Err())
 	}
 	return base64.StdEncoding.EncodeToString(d)
 }

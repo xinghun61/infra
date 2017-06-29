@@ -58,17 +58,17 @@ type cmdGetBuilder struct {
 
 func (c *cmdGetBuilder) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, bucket, builder string, err error) {
 	if len(args) != 1 {
-		err = errors.Reason("unexpected positional arguments: %(args)q").D("args", args).Err()
+		err = errors.Reason("unexpected positional arguments: %q", args).Err()
 		return
 	}
 	if err = validateHost(c.bbHost); err != nil {
-		err = errors.Annotate(err).Err()
+		err = errors.Annotate(err, "").Err()
 		return
 	}
 
 	toks := strings.SplitN(args[0], ":", 2)
 	if len(toks) != 2 {
-		err = errors.Reason("cannot parse bucket:builder: %(arg)q").D("arg", args[0]).Err()
+		err = errors.Reason("cannot parse bucket:builder: %q", args[0]).Err()
 		return
 	}
 	bucket, builder = toks[0], toks[1]

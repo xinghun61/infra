@@ -77,7 +77,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 		globalTags[logDogViewerURLTag] = c.BuildURL
 	}
 	if err := c.mode.addLogDogGlobalTags(globalTags, rr.properties, env); err != nil {
-		return 0, nil, errors.Annotate(err).Reason("failed to add global tags").Err()
+		return 0, nil, errors.Annotate(err, "failed to add global tags").Err()
 	}
 	for k, v := range flags.GlobalTags {
 		globalTags[k] = v
@@ -86,11 +86,11 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	// Create our stream server instance.
 	streamServer, err := c.getLogDogStreamServer(withNonCancel(ctx))
 	if err != nil {
-		return 0, nil, errors.Annotate(err).Reason("failed to generate stream server").Err()
+		return 0, nil, errors.Annotate(err, "failed to generate stream server").Err()
 	}
 
 	if err := streamServer.Listen(); err != nil {
-		return 0, nil, errors.Annotate(err).Reason("failed to listen on stream server").Err()
+		return 0, nil, errors.Annotate(err, "failed to listen on stream server").Err()
 	}
 	defer func() {
 		if streamServer != nil {
@@ -126,7 +126,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 
 	proc, err := rr.command(procCtx, filepath.Join(c.TempDir, "rr"), env)
 	if err != nil {
-		return 0, nil, errors.Annotate(err).Reason("failed to build recipe comamnd").Err()
+		return 0, nil, errors.Annotate(err, "failed to build recipe comamnd").Err()
 	}
 
 	// Register and instantiate our LogDog Output.
@@ -149,7 +149,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 			// local bot deployment.
 			credPath, err := infraenv.GetLogDogServiceAccountJSON()
 			if err != nil {
-				return 0, nil, errors.Annotate(err).Reason("failed to get LogDog service account JSON path").Err()
+				return 0, nil, errors.Annotate(err, "failed to get LogDog service account JSON path").Err()
 			}
 			authOpts.ServiceAccountJSONPath = credPath
 			authOpts.Method = auth.ServiceAccountMethod
@@ -170,7 +170,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 
 		var err error
 		if o, err = ocfg.Register(ctx); err != nil {
-			return 0, nil, errors.Annotate(err).Reason("failed to create LogDog Output instance").Err()
+			return 0, nil, errors.Annotate(err, "failed to create LogDog Output instance").Err()
 		}
 	} else {
 		// Debug: Use a file output.
@@ -199,12 +199,12 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	ncCtx := withNonCancel(ctx)
 	b, err := butler.New(ncCtx, butlerCfg)
 	if err != nil {
-		return 0, nil, errors.Annotate(err).Reason("failed to create Butler instance").Err()
+		return 0, nil, errors.Annotate(err, "failed to create Butler instance").Err()
 	}
 	defer func() {
 		b.Activate()
 		if ierr := b.Wait(); ierr != nil {
-			ierr = errors.Annotate(ierr).Reason("failed to Wait() for Butler").Err()
+			ierr = errors.Annotate(ierr, "failed to Wait() for Butler").Err()
 			logAnnotatedErr(ctx, ierr)
 
 			// Promote to function output error if we don't have one yet.
@@ -220,14 +220,14 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	// Build pipes for our STDOUT and STDERR streams.
 	stdout, err := proc.StdoutPipe()
 	if err != nil {
-		err = errors.Annotate(err).Reason("failed to get STDOUT pipe").Err()
+		err = errors.Annotate(err, "failed to get STDOUT pipe").Err()
 		return
 	}
 	defer stdout.Close()
 
 	stderr, err := proc.StderrPipe()
 	if err != nil {
-		err = errors.Annotate(err).Reason("failed to get STDERR pipe").Err()
+		err = errors.Annotate(err, "failed to get STDERR pipe").Err()
 		return
 	}
 	defer stderr.Close()
@@ -236,7 +236,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	printCommand(ctx, proc)
 
 	if err = proc.Start(); err != nil {
-		err = errors.Annotate(err).Reason("failed to start command").Err()
+		err = errors.Annotate(err, "failed to start command").Err()
 		return
 	}
 	defer func() {
@@ -250,7 +250,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 		if waitRC, has := exitcode.Get(ierr); has {
 			rc = waitRC
 		} else {
-			ierr = errors.Annotate(ierr).Reason("failed to Wait() for process").Err()
+			ierr = errors.Annotate(ierr, "failed to Wait() for process").Err()
 			logAnnotatedErr(ctx, ierr)
 
 			// Promote to function output error if we don't have one yet.
@@ -310,7 +310,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	// Run the process' output streams through Annotee. This will block until
 	// they are all consumed.
 	if err = annoteeProcessor.RunStreams(streams); err != nil {
-		err = errors.Annotate(err).Reason("failed to process streams through Annotee").Err()
+		err = errors.Annotate(err, "failed to process streams through Annotee").Err()
 		return
 	}
 

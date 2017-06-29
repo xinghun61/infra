@@ -72,7 +72,7 @@ func (c *cmdEditCl) validateFlags(ctx context.Context, args []string) (authOpts 
 
 	c.changelistURL = args[0]
 	if _, err = parseCrChangeListURL(c.changelistURL); err != nil {
-		err = errors.Annotate(err).Reason("invalid URL_TO_CHANGESET").Err()
+		err = errors.Annotate(err, "invalid URL_TO_CHANGESET").Err()
 		return
 	}
 

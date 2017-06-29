@@ -77,12 +77,12 @@ func handleAnalyzeBuilder(c *router.Context) error {
 	}
 	transport, err := auth.GetRPCTransport(c.Context, auth.AsSelf)
 	if err != nil {
-		return errors.Annotate(err).Reason("could not get RPC transport").Err()
+		return errors.Annotate(err, "could not get RPC transport").Err()
 	}
 	httpClient := &http.Client{Transport: transport}
 	bb, err := buildbucket.New(httpClient)
 	if err != nil {
-		return errors.Annotate(err).Reason("could not create buildbucket client").Err()
+		return errors.Annotate(err, "could not create buildbucket client").Err()
 	}
 	bb.BasePath = fmt.Sprintf("https://%s/api/buildbucket/v1/", cfg.BuildbucketHostname)
 
@@ -104,7 +104,7 @@ func handleAnalyzeBuilder(c *router.Context) error {
 		analysis.BucketBuilder{Bucket: builder.LUCIBuildbucketBucket, Builder: builder.LUCIBuildbucketBuilder},
 	)
 	if err != nil {
-		return errors.Annotate(err).Reason("analysis failed").Err()
+		return errors.Annotate(err, "analysis failed").Err()
 	}
 	logging.Infof(c.Context, "analysis finshed in %s", clock.Since(c.Context, started))
 	logging.Infof(c.Context, "status: %s", migration.Status)

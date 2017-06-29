@@ -32,12 +32,13 @@ func main() {
 func validateProjectConfig(path string) error {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
-		return errors.Annotate(err).Reason("failed to read file").D("path", path).Err()
+		return errors.Annotate(err, "failed to read file").
+			InternalReason("path(%s)", path).Err()
 	}
 
 	var pc settings.ProjectConfig
 	if err := proto.UnmarshalText(string(data), &pc); err != nil {
-		return errors.Annotate(err).Reason("failed to unmarshal protobuf").Err()
+		return errors.Annotate(err, "failed to unmarshal protobuf").Err()
 	}
 
 	return nil

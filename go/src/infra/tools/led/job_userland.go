@@ -39,7 +39,7 @@ func (u *Userland) apply(ctx context.Context, arc *archiver.Archiver, args *cook
 				}
 				newHash, err := combineIsolates(ctx, arc, toCombine...)
 				if err != nil {
-					return errors.Annotate(err).Reason("combining isolateds").Err()
+					return errors.Annotate(err, "combining isolateds").Err()
 				}
 				isoHash = string(newHash)
 			}

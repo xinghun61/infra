@@ -36,7 +36,7 @@ func getAllViewsHandler(c context.Context, req *http.Request, resp http.Response
 	pcfgs, err := getAllProjectConfigs(c)
 	if err != nil {
 		return makeHTTPError(http.StatusInternalServerError,
-			errors.Annotate(err).InternalReason("could not load project configs").Err())
+			errors.Annotate(err, "").InternalReason("could not load project configs").Err())
 	}
 	return renderProjectConfigs(c, req, resp, pcfgs, "")
 }
@@ -44,7 +44,7 @@ func getAllViewsHandler(c context.Context, req *http.Request, resp http.Response
 func getProjectViewsHandler(c context.Context, req *http.Request, resp http.ResponseWriter, p httprouter.Params) error {
 	projectName := cfgtypes.ProjectName(p.ByName("project"))
 	if err := projectName.Validate(); err != nil {
-		return errors.Annotate(err).Reason("invalid project name").Err()
+		return errors.Annotate(err, "invalid project name").Err()
 	}
 
 	// Get all view project configs.
@@ -64,7 +64,7 @@ func getProjectViewsHandler(c context.Context, req *http.Request, resp http.Resp
 
 	default:
 		return makeHTTPError(http.StatusInternalServerError,
-			errors.Annotate(err).InternalReason("could not load project configs").Err())
+			errors.Annotate(err, "").InternalReason("could not load project configs").Err())
 	}
 	return renderProjectConfigs(c, req, resp, projMap, errorMsg)
 }
@@ -110,7 +110,7 @@ func renderProjectConfigs(c context.Context, req *http.Request, resp http.Respon
 
 	args, err := getDefaultTemplateArgs(c, req)
 	if err != nil {
-		return errors.Annotate(err).InternalReason("failed to get default template args").Err()
+		return errors.Annotate(err, "").InternalReason("failed to get default template args").Err()
 	}
 	args["Views"] = allViews
 	args["ErrorMessage"] = errorMsg
@@ -121,7 +121,7 @@ func renderProjectConfigs(c context.Context, req *http.Request, resp http.Respon
 func getViewHandler(c context.Context, req *http.Request, resp http.ResponseWriter, p httprouter.Params) error {
 	projectName := cfgtypes.ProjectName(p.ByName("project"))
 	if err := projectName.Validate(); err != nil {
-		return makeHTTPError(http.StatusBadRequest, errors.Annotate(err).Reason("invalid project name").Err())
+		return makeHTTPError(http.StatusBadRequest, errors.Annotate(err, "invalid project name").Err())
 	}
 
 	viewName := p.ByName("view")
@@ -133,25 +133,24 @@ func getViewHandler(c context.Context, req *http.Request, resp http.ResponseWrit
 	pcfg, err := getProjectConfig(c, projectName)
 	if err != nil {
 		return makeHTTPError(http.StatusNotFound,
-			errors.Annotate(err).InternalReason("could not get project %(project)q config").
-				D("project", projectName).Err())
+			errors.Annotate(err, "").InternalReason("could not get project %q config", projectName).Err())
 	}
 
 	// Load our application settings.
 	s, err := getSettings(c, false)
 	if err != nil {
-		return errors.Annotate(err).InternalReason("failed to load settings").Err()
+		return errors.Annotate(err, "").InternalReason("failed to load settings").Err()
 	}
 
 	view := pcfg.View[viewName]
 	if view == nil {
-		return makeHTTPError(http.StatusNotFound, errors.Reason("undefined view %(view)q").D("view", viewName).Err())
+		return makeHTTPError(http.StatusNotFound, errors.Reason("undefined view %q", viewName).Err())
 	}
 
 	// Render the view.
 	r, err := getBuildSetRenderer(c, req, s)
 	if err != nil {
-		return errors.Annotate(err).InternalReason("failed to get build set renderer").Err()
+		return errors.Annotate(err, "").InternalReason("failed to get build set renderer").Err()
 	}
 	return r.render(view, resp)
 }

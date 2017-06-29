@@ -27,7 +27,7 @@ func (s *Systemland) genSwarmingTask(ctx context.Context, uid string) (st *swarm
 			var prefix logdog_types.StreamName
 			prefix, err = generateLogdogStream(ctx, uid)
 			if err != nil {
-				err = errors.Annotate(err).Reason("generating logdog prefix").Err()
+				err = errors.Annotate(err, "generating logdog prefix").Err()
 				return
 			}
 			args.LogDogFlags.AnnotationURL.Path = logdog_types.StreamPath(strings.Replace(

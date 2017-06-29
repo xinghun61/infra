@@ -95,22 +95,19 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		// The ready-to-run recipe is already present on the file system.
 		recipesPath, err := exec.LookPath(filepath.Join(c.CheckoutDir, "recipes"))
 		if err != nil {
-			return fail(errors.Annotate(err).Reason("could not find bundled recipes").Err())
+			return fail(errors.Annotate(err, "could not find bundled recipes").Err())
 		}
 		c.rr.cmdPrefix = []string{recipesPath}
 	} else {
 		// Fetch the recipe.
 		if err := checkoutRepository(ctx, c.CheckoutDir, c.RepositoryURL, c.Revision); err != nil {
-			return fail(errors.Annotate(err).Reason("could not checkout %(repo)q at %(rev)q to %(path)q").
-				D("repo", c.RepositoryURL).
-				D("rev", c.Revision).
-				D("path", c.CheckoutDir).
-				Err())
+			return fail(errors.Annotate(err, "could not checkout %q at %q to %q",
+				c.RepositoryURL, c.Revision, c.CheckoutDir).Err())
 		}
 		// Read the path to the recipes.py within the fetched repo.
 		recipesPath, err := getRecipesPath(c.CheckoutDir)
 		if err != nil {
-			return fail(errors.Annotate(err).Reason("could not read recipes.cfg").Err())
+			return fail(errors.Annotate(err, "could not read recipes.cfg").Err())
 		}
 		c.rr.cmdPrefix = []string{
 			"python",
@@ -122,7 +119,7 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 	var err error
 	c.rr.workDir, err = prepareRecipeRunWorkDir(c.rr.workDir)
 	if err != nil {
-		return fail(errors.Annotate(err).Reason("failed to prepare workdir").Err())
+		return fail(errors.Annotate(err, "failed to prepare workdir").Err())
 	}
 
 	// Tell the recipe to write the result protobuf message to a file and read
@@ -135,13 +132,13 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		result.AnnotationUrl = c.CookFlags.LogDogFlags.AnnotationURL.String()
 		rv, result.Annotations, err = c.runWithLogdogButler(ctx, &c.rr, env)
 		if err != nil {
-			return fail(errors.Annotate(err).Reason("failed to run recipe").Err())
+			return fail(errors.Annotate(err, "failed to run recipe").Err())
 		}
 	} else {
 		// This code is reachable only in buildbot mode.
 		recipeCmd, err := c.rr.command(ctx, filepath.Join(c.TempDir, "rr"), env)
 		if err != nil {
-			return fail(errors.Annotate(err).Reason("failed to build recipe command").Err())
+			return fail(errors.Annotate(err, "failed to build recipe command").Err())
 		}
 		printCommand(ctx, recipeCmd)
 
@@ -152,7 +149,7 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		var hasRV bool
 		rv, hasRV = exitcode.Get(err)
 		if !hasRV {
-			return fail(errors.Annotate(err).Reason("failed to run recipe").Err())
+			return fail(errors.Annotate(err, "failed to run recipe").Err())
 		}
 	}
 	result.RecipeExitCode = &build.OptionalInt32{Value: int32(rv)}
@@ -162,25 +159,21 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 	if err != nil {
 		// The recipe result file must exist and be readable.
 		// If it is not, it is a fatal error.
-		return fail(errors.Annotate(err).Reason("could not read recipe result file at %(path)q").
-			D("path", c.rr.outputResultJSONFile).
-			Err())
+		return fail(errors.Annotate(err,
+			"could not read recipe result file at %q", c.rr.outputResultJSONFile).Err())
 	}
 	defer recipeResultFile.Close()
 
 	if c.RecipeResultByteLimit > 0 {
 		st, err := recipeResultFile.Stat()
 		if err != nil {
-			return fail(errors.Annotate(err).Reason("could not stat recipe result file at %(path)q").
-				D("path", c.rr.outputResultJSONFile).
-				Err())
+			return fail(errors.Annotate(err,
+				"could not stat recipe result file at %q", c.rr.outputResultJSONFile).Err())
 		}
 
 		if sz := st.Size(); sz > int64(c.RecipeResultByteLimit) {
-			return fail(errors.Reason("recipe result file is %(size)d bytes which is more than %(limit)d").
-				D("size", sz).
-				D("limit", c.RecipeResultByteLimit).
-				Err())
+			return fail(errors.Reason("recipe result file is %d bytes which is more than %d",
+				sz, c.RecipeResultByteLimit).Err())
 		}
 	}
 
@@ -189,7 +182,7 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		AllowUnknownFields: true,
 	}).Unmarshal(recipeResultFile, result.RecipeResult)
 	if err != nil {
-		return fail(errors.Annotate(err).Reason("could not parse recipe result").Err())
+		return fail(errors.Annotate(err, "could not parse recipe result").Err())
 	}
 
 	// TODO(nodir): verify consistency between result.Build and result.RecipeResult.
@@ -256,7 +249,7 @@ func (c *cookRun) pathModuleProperties() (map[string]string, error) {
 func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, error) {
 	props, err := parseProperties(c.Properties, c.PropertiesFile)
 	if err != nil {
-		return nil, errors.Annotate(err).Reason("could not parse properties").Err()
+		return nil, errors.Annotate(err, "could not parse properties").Err()
 	}
 	if props == nil {
 		props = map[string]interface{}{}
@@ -293,12 +286,10 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 	props["path_config"] = "generic"
 
 	if err := c.mode.addProperties(props, env); err != nil {
-		return nil, errors.Annotate(err).Reason("chosen mode could not add properties").Err()
+		return nil, errors.Annotate(err, "chosen mode could not add properties").Err()
 	}
 	if _, ok := props[PropertyBotID]; !ok {
-		return nil, errors.Reason("chosen mode didn't add %(p)s property").
-			D("p", PropertyBotID).
-			Err()
+		return nil, errors.Reason("chosen mode didn't add %s property", PropertyBotID).Err()
 	}
 
 	err = migration.TransformProperties(props)
@@ -366,7 +357,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	if c.TempDir == "" {
 		tdir, err := ioutil.TempDir("", "kitchen")
 		if err != nil {
-			return fail(errors.Annotate(err).Reason("failed to create temporary directory").Err())
+			return fail(errors.Annotate(err, "failed to create temporary directory").Err())
 		}
 		c.TempDir = tdir
 		defer func() {
@@ -383,7 +374,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	}
 	propsJSON, err := json.MarshalIndent(c.rr.properties, "", "  ")
 	if err != nil {
-		return fail(errors.Annotate(err).Reason("could not marshal properties to JSON").Err())
+		return fail(errors.Annotate(err, "could not marshal properties to JSON").Err())
 	}
 	log.Infof(ctx, "using properties:\n%s", propsJSON)
 
@@ -411,7 +402,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 			// Order is not stable, but that is okay.
 			jv, err := json.Marshal(v)
 			if err != nil {
-				return fail(errors.Annotate(err).Err())
+				return fail(errors.Annotate(err, "").Err())
 			}
 			annotate("SET_BUILD_PROPERTY", k, string(jv))
 		}
@@ -422,7 +413,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	// In practice, we do it so that kitchen uses the installed git wrapper.
 	path, _ := env.Get("PATH")
 	if err := os.Setenv("PATH", path); err != nil {
-		return fail(errors.Annotate(err).Reason("failed to update process PATH").Err())
+		return fail(errors.Annotate(err, "failed to update process PATH").Err())
 	}
 
 	// Run the recipe.
@@ -440,9 +431,7 @@ func (c *cookRun) flushResult(result *build.BuildRunResult) (err error) {
 
 	defer func() {
 		if err != nil {
-			err = errors.Annotate(err).Reason("could not write result file at %(path)q").
-				D("path", c.OutputResultJSONPath).
-				Err()
+			err = errors.Annotate(err, "could not write result file at %q", c.OutputResultJSONPath).Err()
 		}
 	}()
 
@@ -453,7 +442,7 @@ func (c *cookRun) flushResult(result *build.BuildRunResult) (err error) {
 	defer func() {
 		err = f.Close()
 		if err != nil {
-			err = errors.Annotate(err).Reason("could not close file").Err()
+			err = errors.Annotate(err, "could not close file").Err()
 		}
 	}()
 	m := jsonpb.Marshaler{EmitDefaults: true}

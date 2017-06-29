@@ -197,12 +197,12 @@ func getBuildSetRenderer(c context.Context, req *http.Request, s *settings.Setti
 	// as the current user.
 	transport, err := auth.GetRPCTransport(c, auth.AsUser)
 	if err != nil {
-		return nil, errors.Annotate(err).InternalReason("failed to get RPC transport").Err()
+		return nil, errors.Annotate(err, "").InternalReason("failed to get RPC transport").Err()
 	}
 
 	svc, err := bbapi.New(&http.Client{Transport: transport})
 	if err != nil {
-		return nil, errors.Annotate(err).InternalReason("failed to get BuildBucket client").Err()
+		return nil, errors.Annotate(err, "").InternalReason("failed to get BuildBucket client").Err()
 	}
 	svc.BasePath = fmt.Sprintf("https://%s/_ah/api/buildbucket/v1/", s.BuildbucketHost)
 
@@ -270,7 +270,7 @@ func (r *buildSetRenderer) render(v *settings.View, w io.Writer) error {
 	}.Debugf(r, "Rendering build sets.")
 	args, err := getDefaultTemplateArgs(r, r.req)
 	if err != nil {
-		return errors.Annotate(err).InternalReason("failed to get default template args").Err()
+		return errors.Annotate(err, "").InternalReason("failed to get default template args").Err()
 	}
 	args["Title"] = title
 	args["BuildSets"] = buildSets
@@ -305,7 +305,7 @@ func (r *buildSetRenderer) loadCalculatedValue(cv settings.View_Tag_CalculatedVa
 
 	v, err := p.Get(r)
 	if err != nil {
-		return "", errors.Annotate(err).Err()
+		return "", errors.Annotate(err, "").Err()
 	}
 	return v.(string), nil
 }
@@ -316,7 +316,7 @@ func (r *buildSetRenderer) fetchViewSection(s *settings.View_Section) (*buildSet
 		if cv := tag.GetCalc(); cv != settings.View_Tag_EMPTY {
 			val, err := r.loadCalculatedValue(cv)
 			if err != nil {
-				return nil, errors.Annotate(err).InternalReason("failed to load calculated value").Err()
+				return nil, errors.Annotate(err, "").InternalReason("failed to load calculated value").Err()
 			}
 
 			tag.Tagval = &settings.View_Tag_Value{
@@ -356,7 +356,7 @@ func (r *buildSetRenderer) fetchViewSection(s *settings.View_Section) (*buildSet
 
 	searchBuilds, err := buildBucketSearch(r, r.bbService, s.Bucket, tags, s.Canary, result, failureReason, int(s.MaxBuilds))
 	if err != nil {
-		return nil, errors.Annotate(err).InternalReason("BuildBucket Search() error").Err()
+		return nil, errors.Annotate(err, "").InternalReason("BuildBucket Search() error").Err()
 	}
 
 	// Translate our BuildBucket response into internal "build"s.
@@ -484,31 +484,31 @@ func (r *buildSetRenderer) resolveCalculatedValue(c context.Context, cv settings
 	switch cv {
 	case settings.View_Tag_LATEST_PALADIN_BUILD:
 		if v, err = r.queryLatestForTags(c, r.MasterBucket, "buildset", "master:False", "build_type:paladin"); err != nil {
-			return "", errors.Annotate(err).Err()
+			return "", errors.Annotate(err, "").Err()
 		}
 
 	case settings.View_Tag_LATEST_PFQ_BUILD:
 		if v, err = r.queryLatestForTags(c, r.MasterBucket, "buildset", "master:False", "build_type:pfq"); err != nil {
-			return "", errors.Annotate(err).Err()
+			return "", errors.Annotate(err, "").Err()
 		}
 
 	case settings.View_Tag_LATEST_CANARY_BUILD:
 		if v, err = r.queryLatestForTags(c, r.MasterBucket, "buildset", "master:False", "build_type:release"); err != nil {
-			return "", errors.Annotate(err).Err()
+			return "", errors.Annotate(err, "").Err()
 		}
 
 	case settings.View_Tag_LATEST_RELEASE_BUILD:
 		if v, err = r.queryLatestForTags(c, r.ReleaseBucket, "buildset", "master:False", "build_type:release"); err != nil {
-			return "", errors.Annotate(err).Err()
+			return "", errors.Annotate(err, "").Err()
 		}
 
 	case settings.View_Tag_LATEST_TOOLCHAIN_BUILD:
 		if v, err = r.queryLatestForTags(c, r.MasterBucket, "buildset", "master:False", "build_type:toolchain"); err != nil {
-			return "", errors.Annotate(err).Err()
+			return "", errors.Annotate(err, "").Err()
 		}
 
 	default:
-		return "", errors.Reason("unknown calculated value %(value)q").D("value", cv).Err()
+		return "", errors.Reason("unknown calculated value %q", cv).Err()
 	}
 
 	// Add this value to memcache.
@@ -532,13 +532,13 @@ func (r *buildSetRenderer) queryLatestForTags(c context.Context, bucket, extract
 
 	builds, err := buildBucketSearch(c, r.bbService, []string{bucket}, tags, settings.Trinary_UNSPECIFIED, "", "", 1)
 	if err != nil {
-		return "", errors.Annotate(err).InternalReason("failed to search for %(extract)q").
-			D("extract", extractTag).D("bucket", bucket).D("tags", tags).Err()
+		return "", errors.Annotate(err, "").InternalReason(
+			"failed to search for %q: bucket(%q)/tags(%v)", extractTag, bucket, tags).Err()
 	}
 
 	if len(builds) < 1 {
-		return "", errors.Annotate(err).InternalReason("no matching builds").
-			D("extract", extractTag).D("bucket", bucket).D("tags", tags).Err()
+		return "", errors.Annotate(err, "").InternalReason(
+			"no matching builds: extract(%q)/bucket(%q)/tags(%v)", extractTag, bucket, tags).Err()
 	}
 	build := builds[0]
 
@@ -554,8 +554,8 @@ func (r *buildSetRenderer) queryLatestForTags(c context.Context, bucket, extract
 		}
 	}
 
-	return "", errors.Reason("matching build %(id)d was missing %(extract)q tag").
-		D("id", build.Id).D("extract", extractTag).D("bucket", bucket).D("tags", tags).Err()
+	return "", errors.Reason("matching build %d was missing %q tag", build.Id, extractTag).
+		InternalReason("bucket(%q)/tags(%v)", bucket, tags).Err()
 }
 
 type sortableBuildSlice struct {
@@ -600,7 +600,7 @@ func maybeGetMiloURL(host string, build *build) (string, error) {
 		// Is this a BuildBot URL?
 		parts := buildBotURLRegexp.FindStringSubmatch(u)
 		if len(parts) < 5 {
-			return "", errors.Reason("URL is not a BuildBot build URL").D("url", u).Err()
+			return "", errors.Reason("URL is not a BuildBot build URL: %q", u).Err()
 		}
 
 		master, builder, buildNumber := parts[2], parts[3], parts[4]

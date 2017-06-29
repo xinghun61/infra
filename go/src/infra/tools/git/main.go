@@ -120,7 +120,7 @@ func mainImpl(c context.Context, argv []string, env environ.Env, stdin io.Reader
 	}
 
 	if st.GitPath, err = gitProbe.Locate(c, st.GitPath, env); err != nil {
-		errors.Log(c, errors.Annotate(err).Reason("failed to locate system Git").Err())
+		errors.Log(c, errors.Annotate(err, "failed to locate system Git").Err())
 		return gitWrapperErrorReturnCode
 	}
 	logging.Debugf(c, "Identified system Git at: %s", st.GitPath)
@@ -138,7 +138,7 @@ func mainImpl(c context.Context, argv []string, env environ.Env, stdin io.Reader
 	}
 	rc, err := cmd.Run(c, argv[1:], env)
 	if err != nil {
-		errors.Log(c, errors.Annotate(err).Reason("failed to run Git").Err())
+		errors.Log(c, errors.Annotate(err, "failed to run Git").Err())
 		return gitWrapperErrorReturnCode
 	}
 

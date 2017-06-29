@@ -92,7 +92,7 @@ func decodeJobDefinition(ctx context.Context) (*JobDefinition, error) {
 	jd := &JobDefinition{}
 	err := json.NewDecoder(os.Stdin).Decode(jd)
 	atomic.StoreUint32(&done, 1)
-	return jd, errors.Annotate(err).Reason("decoding JobDefinition").Err()
+	return jd, errors.Annotate(err, "decoding JobDefinition").Err()
 }
 
 func editMode(ctx context.Context, cb func(jd *JobDefinition) error) error {
@@ -108,7 +108,7 @@ func editMode(ctx context.Context, cb func(jd *JobDefinition) error) error {
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "  ")
 	if err := enc.Encode(jd); err != nil {
-		return errors.Annotate(err).Reason("encoding JobDefinition").Err()
+		return errors.Annotate(err, "encoding JobDefinition").Err()
 	}
 
 	return nil

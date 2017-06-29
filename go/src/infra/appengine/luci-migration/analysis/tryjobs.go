@@ -68,7 +68,7 @@ func (t *Tryjobs) Analyze(c context.Context, buildbotBuilder, luciBuilder Bucket
 
 	detailsBuf := &bytes.Buffer{}
 	if err := tmplDetails.Execute(detailsBuf, comp); err != nil {
-		return nil, "", errors.Annotate(err).Reason("could not render report template").Err()
+		return nil, "", errors.Annotate(err, "could not render report template").Err()
 	}
 	return &comp.BuilderMigration, detailsBuf.String(), nil
 }

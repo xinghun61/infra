@@ -29,7 +29,7 @@ func (e InputError) Error() string { return string(e) }
 func inputError(format string, args ...interface{}) error {
 	// We don't use D to keep signature of this function simple
 	// and to keep UserError as a leaf.
-	return errors.Annotate(InputError(fmt.Sprintf(format, args...))).Err()
+	return errors.Annotate(InputError(fmt.Sprintf(format, args...)), "").Err()
 }
 
 // Normalize normalizes the contents of CookFlags, returning non-nil if there is

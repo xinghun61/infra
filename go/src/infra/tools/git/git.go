@@ -191,9 +191,8 @@ func (gc *GitCommand) removeCloneDirBetweenRetries(cloneDir string) betweenRetry
 		if st, err := os.Stat(cloneDir); err == nil && st.IsDir() {
 			logging.Infof(c, "Cleaning up `clone` target directory for retry: %s", cloneDir)
 			if err := filesystem.RemoveAll(cloneDir); err != nil {
-				return errors.Annotate(err).Reason("failed to remove 'clone' directory in between retries").
-					D("cloneDir", cloneDir).
-					Err()
+				return errors.Annotate(err, "failed to remove 'clone' directory in between retries").
+					InternalReason("cloneDir(%s)", cloneDir).Err()
 			}
 		}
 		return nil
@@ -364,7 +363,7 @@ func (gr *gitRunner) runOnce(c context.Context, stdoutPM, stderrPM *Monitor) (in
 
 		pipe, err := fn()
 		if err != nil {
-			return nil, errors.Annotate(err).Reason("failed to create pipe").Err()
+			return nil, errors.Annotate(err, "failed to create pipe").Err()
 		}
 
 		r := io.Reader(pipe)
@@ -391,16 +390,16 @@ func (gr *gitRunner) runOnce(c context.Context, stdoutPM, stderrPM *Monitor) (in
 
 	stdoutFn, err := linkMonitor(stdoutPM, cmd.StdoutPipe, gr.getStdout())
 	if err != nil {
-		return 0, errors.Annotate(err).Reason("failed to create STDOUT pipe").Err()
+		return 0, errors.Annotate(err, "failed to create STDOUT pipe").Err()
 	}
 
 	stderrFn, err := linkMonitor(stderrPM, cmd.StderrPipe, gr.getStderr())
 	if err != nil {
-		return 0, errors.Annotate(err).Reason("failed to create STDERR pipe").Err()
+		return 0, errors.Annotate(err, "failed to create STDERR pipe").Err()
 	}
 
 	if err := cmd.Start(); err != nil {
-		return 0, errors.Annotate(err).Reason("failed to start process").Err()
+		return 0, errors.Annotate(err, "failed to start process").Err()
 	}
 
 	// Begin our monitor goroutines.
@@ -421,7 +420,7 @@ func (gr *gitRunner) runOnce(c context.Context, stdoutPM, stderrPM *Monitor) (in
 		if rc, ok := exitcode.Get(err); ok {
 			return rc, nil
 		}
-		return 0, errors.Annotate(err).Reason("failed to complete process").Err()
+		return 0, errors.Annotate(err, "failed to complete process").Err()
 	}
 
 	// If our pipes hit any errors, propagate them.
@@ -472,7 +471,7 @@ func (gr *gitRunner) runGitVersion(c context.Context) (int, error) {
 	if rc, ok := exitcode.Get(err); ok {
 		return rc, nil
 	}
-	return 0, errors.Annotate(err).Reason("failed to execute process").Err()
+	return 0, errors.Annotate(err, "failed to execute process").Err()
 }
 
 func (gr *gitRunner) runDirect(c context.Context) (int, error) {
@@ -484,7 +483,7 @@ func (gr *gitRunner) runDirect(c context.Context) (int, error) {
 	if rc, ok := exitcode.Get(err); ok {
 		return rc, nil
 	}
-	return 0, errors.Annotate(err).Reason("failed to execute process").Err()
+	return 0, errors.Annotate(err, "failed to execute process").Err()
 }
 
 // Monitor continuously monitors a Reader for expression lines. If one is
@@ -533,7 +532,7 @@ func (m *Monitor) Consume(r io.Reader) error {
 			case io.EOF:
 				eof = true
 			default:
-				return errors.Annotate(err).Reason("failed to process stream").Err()
+				return errors.Annotate(err, "failed to process stream").Err()
 			}
 
 			// Don't process empty lines. Likewise, if we were triggered during the
@@ -556,7 +555,7 @@ func (m *Monitor) Consume(r io.Reader) error {
 	// the void, since we don't actually need to process it.
 	if !eof {
 		if _, err := io.Copy(devNull{}, r); err != nil {
-			return errors.Annotate(err).Reason("failed to consume stream remainder").Err()
+			return errors.Annotate(err, "failed to consume stream remainder").Err()
 		}
 	}
 	return nil

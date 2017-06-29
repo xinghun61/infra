@@ -32,12 +32,12 @@ func parseQueryParams(q string) ([]queryParam, error) {
 
 		var err error
 		if params[i].key, err = url.QueryUnescape(parts[0]); err != nil {
-			return nil, errors.Annotate(err).InternalReason("failed to unescape %(key)q").D("key", parts[0]).Err()
+			return nil, errors.Annotate(err, "").InternalReason("failed to unescape %q", parts[0]).Err()
 		}
 
 		if len(parts) > 1 {
 			if params[i].value, err = url.QueryUnescape(parts[1]); err != nil {
-				return nil, errors.Annotate(err).InternalReason("failed to unescape %(value)q").D("value", parts[1]).Err()
+				return nil, errors.Annotate(err, "").InternalReason("failed to unescape %q", parts[1]).Err()
 			}
 		}
 	}

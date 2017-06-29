@@ -23,7 +23,7 @@ import (
 func getQueryHandler(c context.Context, req *http.Request, resp http.ResponseWriter, p httprouter.Params) error {
 	params, err := parseQueryParams(req.URL.RawQuery)
 	if err != nil {
-		return makeHTTPError(http.StatusBadRequest, errors.Annotate(err).Reason("invalid query string").Err())
+		return makeHTTPError(http.StatusBadRequest, errors.Annotate(err, "invalid query string").Err())
 	}
 
 	// Assemble our BuildBucket params.
@@ -56,12 +56,12 @@ func getQueryHandler(c context.Context, req *http.Request, resp http.ResponseWri
 		case "refresh": // Page refresh, in seconds.
 			secs, err := strconv.ParseUint(param.value, 10, 32)
 			if err != nil {
-				return makeHTTPError(http.StatusBadRequest, errors.Reason("invalid 32-bit 'refresh' integer: %(param)q").
-					D("param", param.value).Err())
+				return makeHTTPError(http.StatusBadRequest,
+					errors.Reason("invalid 32-bit 'refresh' integer: %q", param.value).Err())
 			}
 			if secs == 0 {
-				return makeHTTPError(http.StatusBadRequest, errors.Reason("'refresh' parameter must be a positive number").
-					D("param", param.value).Err())
+				return makeHTTPError(http.StatusBadRequest,
+					errors.Reason("'refresh' parameter must be a positive number: %q", param.value).Err())
 			}
 			view.RefreshInterval = google.NewDuration(time.Duration(secs) * time.Second)
 			continue
@@ -86,7 +86,7 @@ func getQueryHandler(c context.Context, req *http.Request, resp http.ResponseWri
 				// Calculated Tag
 				cv, ok := proto.EnumValueMap("settings.View_Tag_CalculatedValue")[v]
 				if !ok {
-					return makeHTTPError(http.StatusBadRequest, errors.Reason("unknown calculated value %(name)q").D("name", v).Err())
+					return makeHTTPError(http.StatusBadRequest, errors.Reason("unknown calculated value %q", v).Err())
 				}
 
 				viewTag.Tagval = &settings.View_Tag_Calc{
@@ -116,7 +116,7 @@ func getQueryHandler(c context.Context, req *http.Request, resp http.ResponseWri
 			// Calculated Tag
 			info, ok := proto.EnumValueMap("settings.View_Section_Show_Info")[param.value]
 			if !ok {
-				return makeHTTPError(http.StatusBadRequest, errors.Reason("unknown show info value %(name)q").D("name", param.value).Err())
+				return makeHTTPError(http.StatusBadRequest, errors.Reason("unknown show info value %q", param.value).Err())
 			}
 
 			cur.Show = append(cur.Show, &settings.View_Section_Show{
@@ -128,15 +128,15 @@ func getQueryHandler(c context.Context, req *http.Request, resp http.ResponseWri
 		case "result": // Result status.
 			rv, ok := proto.EnumValueMap("settings.View_Section_Result")[param.value]
 			if !ok {
-				return makeHTTPError(http.StatusBadRequest, errors.Reason("unknown result string %(value)q").D("value", param.value).Err())
+				return makeHTTPError(http.StatusBadRequest, errors.Reason("unknown result string %q", param.value).Err())
 			}
 			cur.Result = settings.View_Section_Result(rv)
 
 		case "max": // Max builds
 			mb, err := strconv.ParseInt(param.value, 10, 32)
 			if err != nil {
-				return makeHTTPError(http.StatusBadRequest, errors.Reason("invalid 32-bit 'max' integer: %(param)q").
-					D("param", param.value).Err())
+				return makeHTTPError(http.StatusBadRequest,
+					errors.Reason("invalid 32-bit 'max' integer: %q", param.value).Err())
 			}
 			cur.MaxBuilds = int32(mb)
 
@@ -144,7 +144,7 @@ func getQueryHandler(c context.Context, req *http.Request, resp http.ResponseWri
 			cur.Canary = parseTrinary(param.value)
 
 		default:
-			return makeHTTPError(http.StatusBadRequest, errors.Reason("unknown parameter: %(param)q").D("param", param.key).Err())
+			return makeHTTPError(http.StatusBadRequest, errors.Reason("unknown parameter: %q", param.key).Err())
 		}
 	}
 	if err := addSectionIfAvailable(); err != nil {
@@ -154,12 +154,12 @@ func getQueryHandler(c context.Context, req *http.Request, resp http.ResponseWri
 	// Get our application settings.
 	s, err := getSettings(c, true)
 	if err != nil {
-		return errors.Annotate(err).InternalReason("failed to load settings").Err()
+		return errors.Annotate(err, "").InternalReason("failed to load settings").Err()
 	}
 
 	r, err := getBuildSetRenderer(c, req, s)
 	if err != nil {
-		return errors.Annotate(err).InternalReason("failed to get build set renderer").Err()
+		return errors.Annotate(err, "").InternalReason("failed to get build set renderer").Err()
 	}
 	return r.render(&view, resp)
 }

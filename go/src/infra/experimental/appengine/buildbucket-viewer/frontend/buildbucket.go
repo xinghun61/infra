@@ -104,10 +104,10 @@ func buildBucketSearch(c context.Context, svc *bbapi.Service, buckets []string, 
 			}.Warningf(c, "Transient error during Search(), retrying after delay.")
 		})
 		if err != nil {
-			return nil, errors.Annotate(err).InternalReason("BuildBucket Search() error").Err()
+			return nil, errors.Annotate(err, "").InternalReason("BuildBucket Search() error").Err()
 		}
 		if err := res.Error; err != nil {
-			return nil, errors.Annotate(makeBuildBucketError(err)).InternalReason("error during Search()").Err()
+			return nil, errors.Annotate(makeBuildBucketError(err), "").InternalReason("error during Search()").Err()
 		}
 
 		builds = append(builds, res.Builds...)
@@ -125,10 +125,7 @@ func buildBucketSearch(c context.Context, svc *bbapi.Service, buckets []string, 
 }
 
 func makeBuildBucketError(e *bbapi.ApiErrorMessage) error {
-	return errors.Reason("BuildBucket error: %(message)s").
-		D("message", e.Message).
-		D("reason", e.Reason).
-		Err()
+	return errors.Reason("BuildBucket error: %s", e.Message).InternalReason(e.Reason).Err()
 }
 
 func splitTag(v string) (key string, value string) {

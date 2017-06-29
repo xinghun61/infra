@@ -63,7 +63,7 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 			fs := flag.NewFlagSet("kitchen_cook", flag.ContinueOnError)
 			ret.S.KitchenArgs.Register(fs)
 			if err := fs.Parse(r.Properties.Command[2:]); err != nil {
-				return nil, errors.Annotate(err).Reason("parsing kitchen cook args").Err()
+				return nil, errors.Annotate(err, "parsing kitchen cook args").Err()
 			}
 			ret.S.SwarmingTask.Properties.Command = nil
 			if !ret.S.KitchenArgs.LogDogFlags.AnnotationURL.IsZero() {
@@ -117,12 +117,12 @@ func (jd *JobDefinition) GetSwarmingNewTask(ctx context.Context, uid string, arc
 	// apply systemland stuff
 	st, args, err := jd.S.genSwarmingTask(ctx, uid)
 	if err != nil {
-		return nil, errors.Annotate(err).Reason("applying Systemland").Err()
+		return nil, errors.Annotate(err, "applying Systemland").Err()
 	}
 
 	// apply anything from userland
 	if err := jd.U.apply(ctx, arc, args, st); err != nil {
-		return nil, errors.Annotate(err).Reason("applying Userland").Err()
+		return nil, errors.Annotate(err, "applying Userland").Err()
 	}
 
 	if args != nil {
@@ -150,7 +150,7 @@ func exfiltrateMap(m map[string]string) []*swarming.SwarmingRpcsStringPair {
 func generateLogdogStream(ctx context.Context, uid string) (prefix logdog_types.StreamName, err error) {
 	buf := make([]byte, 32)
 	if _, err := cryptorand.Read(ctx, buf); err != nil {
-		return "", errors.Annotate(err).Reason("generating random token").Err()
+		return "", errors.Annotate(err, "generating random token").Err()
 	}
 	return logdog_types.MakeStreamName("", "led", uid, hex.EncodeToString(buf))
 }

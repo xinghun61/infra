@@ -92,7 +92,7 @@ func cronDiscoverBuilders(c *router.Context) error {
 
 	transport, err := auth.GetRPCTransport(c.Context, auth.AsSelf)
 	if err != nil {
-		return errors.Annotate(err).Reason("could not get RPC transport").Err()
+		return errors.Annotate(err, "could not get RPC transport").Err()
 	}
 	httpClient := &http.Client{Transport: transport}
 
@@ -145,11 +145,11 @@ func handleBuildbucketPubSub(c *router.Context) error {
 	// Create a Buildbucket client.
 	transport, err := auth.GetRPCTransport(c.Context, auth.AsSelf)
 	if err != nil {
-		return errors.Annotate(err).Reason("could not get RPC transport").Tag(transient.Tag).Err()
+		return errors.Annotate(err, "could not get RPC transport").Tag(transient.Tag).Err()
 	}
 	bb, err := buildbucket.New(&http.Client{Transport: transport})
 	if err != nil {
-		return errors.Annotate(err).Reason("could not create buildbucket service").Tag(transient.Tag).Err()
+		return errors.Annotate(err, "could not create buildbucket service").Tag(transient.Tag).Err()
 	}
 	bb.BasePath = fmt.Sprintf("https://%s/api/buildbucket/v1/", msg.Hostname)
 
@@ -247,11 +247,11 @@ func parsePubSubJSON(r io.Reader, data interface{}) error {
 		}
 	}
 	if err := json.NewDecoder(r).Decode(&req); err != nil {
-		return errors.Annotate(err).Reason("could not parse pubsub message").Err()
+		return errors.Annotate(err, "could not parse pubsub message").Err()
 	}
 
 	if err := json.Unmarshal(req.Message.Data, data); err != nil {
-		return errors.Annotate(err).Reason("could not parse pubsub message data").Err()
+		return errors.Annotate(err, "could not parse pubsub message data").Err()
 	}
 
 	return nil

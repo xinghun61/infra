@@ -35,8 +35,8 @@ func getSettings(c context.Context, fallback bool) (*settings.Settings, error) {
 			}.Errorf(c, "Failed to get application settings; using defaults.")
 			return &settings.Settings{}, nil
 		}
-		return nil, errors.Annotate(err).InternalReason("failed to load settings").
-			D("configSet", configSet).D("path", path).Err()
+		return nil, errors.Annotate(err, "").InternalReason(
+			"failed to load settings: configSet(%q)/path(%q)", configSet, path).Err()
 	}
 
 	// Validate
@@ -53,8 +53,8 @@ func getProjectConfig(c context.Context, p cfgtypes.ProjectName) (*settings.Proj
 	// Fetch configuration from config service.
 	var pc settings.ProjectConfig
 	if err := cfgclient.Get(c, cfgclient.AsUser, configSet, path, textproto.Message(&pc), nil); err != nil {
-		return nil, errors.Annotate(err).InternalReason("failed to load config path %(path)q from project %(project)q").
-			D("path", path).D("configSet", configSet).D("project", p).Err()
+		return nil, errors.Annotate(err, "").InternalReason(
+			"failed to load config path %q from project %q, configSet(%q)", path, p, configSet).Err()
 	}
 	return &pc, nil
 }
@@ -75,8 +75,7 @@ func getAllProjectConfigs(c context.Context) (map[cfgtypes.ProjectName]*settings
 			merr = et // Will selectively load into map in success path.
 
 		default:
-			return nil, errors.Annotate(err).Reason("failed to load project configs at %(path)q").
-				D("path", path).Err()
+			return nil, errors.Annotate(err, "failed to load project configs at %q", path).Err()
 		}
 	}
 

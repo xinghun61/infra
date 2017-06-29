@@ -73,7 +73,7 @@ func handleCompletedBuildbotBuild(c context.Context, build *buildbucket.ApiCommo
 	case err == datastore.ErrNoSuchEntity:
 		return nil // no, we don't care about it
 	case err != nil:
-		return errors.Annotate(err).Reason("could not read builder %(id)s").D("id", &builder.ID).Err()
+		return errors.Annotate(err, "could not read builder %s", &builder.ID).Err()
 	}
 	if builder.SchedulingType != config.SchedulingType_TRYJOBS {
 		// we don't support non-tryjob yet
@@ -93,7 +93,7 @@ func handleCompletedBuildbotBuild(c context.Context, build *buildbucket.ApiCommo
 	case err != nil:
 		return err
 	case revision == "":
-		return errors.Reason("could not find got_revision in build %(id)d").D("id", build.Id).Err()
+		return errors.Reason("could not find got_revision in build %d", build.Id).Err()
 	}
 
 	// Prepare new build request.
@@ -160,7 +160,7 @@ func handleFailedLUCIBuild(c context.Context, build *buildbucket.ApiCommonBuildM
 			buildSet = v
 		}
 		if err != nil {
-			return errors.Annotate(err).Reason("invalid tag %(tag)q").D("tag", t).Err()
+			return errors.Annotate(err, "invalid tag %q", t).Err()
 		}
 	}
 	switch {
@@ -183,7 +183,7 @@ func handleFailedLUCIBuild(c context.Context, build *buildbucket.ApiCommonBuildM
 	)
 	switch newerBuilds, err := bbutil.SearchAll(c, req, bbutil.ParseTimestamp(build.CreatedTs+1)); {
 	case err != nil:
-		return errors.Annotate(err).Reason("failed to search newer builds").Err()
+		return errors.Annotate(err, "failed to search newer builds").Err()
 	case len(newerBuilds) > 0:
 		logging.Infof(c, "not retrying because build %d is newer", newerBuilds[0].Id)
 		return nil
@@ -217,7 +217,7 @@ func withLock(c context.Context, buildID int64, f func() error) error {
 		return nil
 
 	case err != nil:
-		return errors.Annotate(err).Reason("could not lock on build %(id)d").D("id", buildID).Err()
+		return errors.Annotate(err, "could not lock on build %d", buildID).Err()
 	}
 
 	unlock := true
@@ -250,19 +250,17 @@ func schedule(c context.Context, req *buildbucket.ApiPutRequestMessage, service 
 			// Retries won't help. Return a non-transient error.
 			// The bucket should be configured first, it is OK to skip some
 			// builds.
-			return errors.Annotate(err).Reason("not allowed to schedule builds in bucket %(bucket)q").
-				D("bucket", req.Bucket).
-				Err()
+			return errors.Annotate(err, "not allowed to schedule builds in bucket %q", req.Bucket).Err()
 		}
 
-		return errors.Annotate(err).Reason("could not schedule a build").
+		return errors.Annotate(err, "could not schedule a build").
 			Tag(transient.Tag). // Cause a retry by returning a transient error
 			Err()
 	}
 
 	resJSON, err := json.MarshalIndent(res, "", "  ")
 	if err != nil {
-		panic(errors.Annotate(err).Reason("could not marshal JSON response back to JSON").Err())
+		panic(errors.Annotate(err, "could not marshal JSON response back to JSON").Err())
 	}
 	logging.Infof(c, "scheduled new build: %s", resJSON)
 	return nil
@@ -290,7 +288,7 @@ func gotRevision(build *buildbucket.ApiCommonBuildMessage) (string, error) {
 		}
 	}
 	if err := json.Unmarshal([]byte(build.ResultDetailsJson), &resultDetails); err != nil {
-		return "", errors.Annotate(err).Reason("could not parse buildbot build result details").Err()
+		return "", errors.Annotate(err, "could not parse buildbot build result details").Err()
 	}
 	return resultDetails.Properties.GotRevision, nil
 }

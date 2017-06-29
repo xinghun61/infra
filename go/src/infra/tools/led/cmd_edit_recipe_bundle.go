@@ -61,7 +61,7 @@ type cmdEditRecipeBundle struct {
 
 func (c *cmdEditRecipeBundle) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
 	if len(args) > 0 {
-		err = errors.Reason("unexpected positional arguments: %(args)q").D("args", args).Err()
+		err = errors.Reason("unexpected positional arguments: %q", args).Err()
 		return
 	}
 
@@ -71,12 +71,12 @@ func (c *cmdEditRecipeBundle) validateFlags(ctx context.Context, args []string) 
 			return
 		}
 		if v == "" {
-			err = errors.Reason("override %(key)q has empty repo path").D("key", k).Err()
+			err = errors.Reason("override %q has empty repo path", k).Err()
 			return
 		}
 		v, err = filepath.Abs(v)
 		if err != nil {
-			err = errors.Annotate(err).Reason("override %(key)q").D("key", k).Err()
+			err = errors.Annotate(err, "override %q", k).Err()
 			return
 		}
 		c.overrides[k] = v
@@ -84,10 +84,10 @@ func (c *cmdEditRecipeBundle) validateFlags(ctx context.Context, args []string) 
 		var fi os.FileInfo
 		switch fi, err = os.Stat(v); {
 		case err != nil:
-			err = errors.Annotate(err).Reason("override %(key)q").D("key", k).Err()
+			err = errors.Annotate(err, "override %q", k).Err()
 			return
 		case !fi.IsDir():
-			err = errors.Reason("override %(key)q: not a directory").D("key", k).Err()
+			err = errors.Reason("override %q: not a directory", k).Err()
 			return
 		}
 	}
@@ -98,7 +98,7 @@ func (c *cmdEditRecipeBundle) validateFlags(ctx context.Context, args []string) 
 func (c *cmdEditRecipeBundle) prepBundle(ctx context.Context, recipesPy, subdir string) (string, error) {
 	retDir, err := ioutil.TempDir("", "luci-editor-bundle")
 	if err != nil {
-		return "", errors.Annotate(err).Reason("generating bundle tempdir").Err()
+		return "", errors.Annotate(err, "generating bundle tempdir").Err()
 	}
 
 	args := []string{
@@ -144,11 +144,10 @@ func (c *cmdEditRecipeBundle) findRecipesPy(ctx context.Context) (string, error)
 	pth := filepath.Join(repoRoot, "infra", "config", "recipes.cfg")
 	switch st, err := os.Stat(pth); {
 	case err != nil:
-		return "", errors.Annotate(err).Reason("reading recipes.cfg").Err()
+		return "", errors.Annotate(err, "reading recipes.cfg").Err()
 
 	case !st.Mode().IsRegular():
-		return "", errors.Reason("%(path)q is not a regular file").
-			D("path", pth).Err()
+		return "", errors.Reason("%q is not a regular file", pth).Err()
 	}
 
 	type recipesJSON struct {
@@ -158,14 +157,12 @@ func (c *cmdEditRecipeBundle) findRecipesPy(ctx context.Context) (string, error)
 
 	f, err := os.Open(pth)
 	if err != nil {
-		return "", errors.Reason("reading recipes.cfg: %(path)q").
-			D("path", pth).Err()
+		return "", errors.Reason("reading recipes.cfg: %q", pth).Err()
 	}
 	defer f.Close()
 
 	if err := json.NewDecoder(f).Decode(rj); err != nil {
-		return "", errors.Reason("parsing recipes.cfg: %(path)q").
-			D("path", pth).Err()
+		return "", errors.Reason("parsing recipes.cfg: %q", pth).Err()
 	}
 
 	return filepath.Join(
