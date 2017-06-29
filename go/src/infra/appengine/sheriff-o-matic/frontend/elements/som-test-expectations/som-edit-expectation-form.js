@@ -21,17 +21,15 @@
           'Crash',
           'Failure',
           'Pass',
-          'Rebaseline',
           'Slow',
           'Skip',
           'Timeout',
-          'WontFix',
-          'Missing',
-          'NeedsRebaseline',
           'NeedsManualRebaseline',
         ],
       },
       modifierValues: {
+        // Note: these values are defined in
+        // third_party/WebKit/Tools/Scripts/webkitpy/layout_tests/models/test_expectations.py
         type: Array,
         value: [
           'Mac',
@@ -44,9 +42,6 @@
           'Win7',
           'Win10',
           'Linux',
-          'Linux32',
-          'Precise',
-          'Trusty',
           'Android',
           'Release',
           'Debug',
