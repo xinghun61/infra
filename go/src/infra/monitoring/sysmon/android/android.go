@@ -142,9 +142,17 @@ func updateFromFile(c context.Context, f deviceStatusFile) {
 		}
 		battTemp.Set(c, d.Battery.GetTemperature(), name)
 		battCharge.Set(c, d.Battery.Level, name)
-		devOS.Set(c, d.Build.ID, name)
-		devStatus.Set(c, d.GetStatus(), name)
-		devType.Set(c, d.Build.GetName(), name)
+		if d.Build.ID != "" {
+			devOS.Set(c, d.Build.ID, name)
+		}
+		devStatusValue := d.GetStatus()
+		if devStatusValue != "" {
+			devStatus.Set(c, devStatusValue, name)
+		}
+		devTypeValue := d.Build.GetName()
+		if devTypeValue != "" {
+			devType.Set(c, devTypeValue, name)
+		}
 		devUptime.Set(c, d.Uptime, name)
 		memFree.Set(c, d.Mem.Avail, name)
 		memTotal.Set(c, d.Mem.Total, name)
