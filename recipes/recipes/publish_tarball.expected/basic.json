@@ -329,8 +329,8 @@
       "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
       "--json-output",
       "/path/to/tmp/json",
-      "--symlinks",
       "copytree",
+      "--symlinks",
       "[START_DIR]/src",
       "[TMP_BASE]/tmp_tmp_3/src"
     ],
@@ -887,8 +887,8 @@
       "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
       "--json-output",
       "/path/to/tmp/json",
-      "--symlinks",
       "copytree",
+      "--symlinks",
       "[START_DIR]/src",
       "[TMP_BASE]/tmp_tmp_5/src"
     ],
