@@ -462,7 +462,8 @@
       if (!time) {
         return '';
       }
-      return new Date(time).toLocaleString(false, {timeZoneName: 'short'});
+      return new moment(Date(time).toLocaleString(false, {
+        timeZoneName: 'short'}));
     },
 
     _removeComment: function(evt) {
