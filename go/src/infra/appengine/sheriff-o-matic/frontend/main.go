@@ -215,9 +215,6 @@ func init() {
 	r.GET("/_cron/annotations/refresh/", basemw, som.RefreshAnnotationsHandler)
 	r.POST("/_/clientmon", basemw, som.PostClientMonHandler)
 
-	// TODO(seanmccullough): figure out how to move this handler to the analyzer backend.
-	r.POST("/_ah/queue/changetestexpectations", basemw, som.LayoutTestExpectationChangeWorker)
-
 	// Ingore reqeuests from builder-alerts rather than 404.
 	r.GET("/alerts", gaemiddleware.BaseProd(), noopHandler)
 	r.POST("/alerts", gaemiddleware.BaseProd(), noopHandler)

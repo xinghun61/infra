@@ -33,6 +33,7 @@ func init() {
 	r := router.New()
 	basemw := base()
 	gaemiddleware.InstallHandlers(r)
+	r.POST("/_ah/queue/changetestexpectations", basemw, som.LayoutTestExpectationChangeWorker)
 	r.GET("/_cron/analyze/:tree", basemw, som.GetAnalyzeHandler)
 
 	http.DefaultServeMux.Handle("/", r)

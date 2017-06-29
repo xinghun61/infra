@@ -9,6 +9,11 @@ handlers:
   secure: always
   login: admin
 
+- url: /_ah/queue/.*
+  script: _go_app
+  secure: always
+  login: admin
+
 skip_files:
 - ^(.*/)?#.*#$
 - ^(.*/)?.*~$

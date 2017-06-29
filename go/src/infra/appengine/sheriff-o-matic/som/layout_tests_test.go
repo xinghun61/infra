@@ -33,6 +33,15 @@ const (
 	gitilesPrefix = "https://chromium.googlesource.com/chromium/src/+/master/"
 )
 
+// TODO(seanmccullough): Clean up this mocking mess.
+type mck struct {
+	giMock
+}
+
+func (m mck) ModuleHostname(a, b, c string) (string, error) {
+	return "", nil
+}
+
 func TestGetLayoutTestsHandler(t *testing.T) {
 	Convey("get layout tests", t, func() {
 		c := gaetesting.TestingContext()
@@ -70,7 +79,7 @@ func TestPostLayoutTestExpectationChangeHandler(t *testing.T) {
 	Convey("basic", t, func() {
 		c := gaetesting.TestingContext()
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
-			return giMock{dummy.Info(), "", time.Now(), nil}
+			return mck{giMock{dummy.Info(), "", time.Now(), nil}}
 		})
 		tqt := tq.GetTestable(c)
 		tqt.CreateQueue(changeQueue)
@@ -111,7 +120,7 @@ func TestLayoutTestExpectationChangeWorker(t *testing.T) {
 		c := gaetesting.TestingContext()
 		c = gologger.StdConfig.Use(c)
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
-			return giMock{dummy.Info(), "", time.Now(), nil}
+			return mck{giMock{dummy.Info(), "", time.Now(), nil}}
 		})
 		gt := &testhelper.MockGitilesTransport{Responses: map[string]string{}}
 		for _, path := range te.LayoutTestExpectations {

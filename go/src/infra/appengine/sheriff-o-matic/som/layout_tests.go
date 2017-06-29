@@ -13,6 +13,7 @@ import (
 	te "infra/libs/testexpectations"
 
 	"github.com/luci/gae/service/datastore"
+	"github.com/luci/gae/service/info"
 	"github.com/luci/gae/service/taskqueue"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/auth"
@@ -245,7 +246,6 @@ func PostLayoutTestExpectationChangeHandler(ctx *router.Context) {
 	params.Set("updateID", queuedUpdate.ID)
 	body, err := json.Marshal(newExp)
 	if err != nil {
-
 		logging.Errorf(c, "marshaling newExp: %v", err)
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return
@@ -253,6 +253,14 @@ func PostLayoutTestExpectationChangeHandler(ctx *router.Context) {
 
 	params.Set("change", string(body))
 	task := taskqueue.NewPOSTTask("/_ah/queue/changetestexpectations", params)
+
+	workerHost, err := info.ModuleHostname(c, "analyzer", "", "")
+	if err != nil {
+		logging.Errorf(c, "getting worker backend hostname: %v", err)
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	task.Header["Host"] = []string{workerHost}
 
 	if err := taskqueue.Add(c, changeQueue, task); err != nil {
 		logging.Errorf(c, "adding to task queue: %v", err)
