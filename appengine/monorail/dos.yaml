@@ -115,3 +115,5 @@ blacklist:
     description: someone crawling our issues 2017-05-08
   - subnet: 129.21.128.147
     description: flooded with requests to issue.get without issue_id, many 404s
+  - subnet: 2a01:4f8:10b:170b::2
+    description: scans all project-zero attachments 2017-06-28
