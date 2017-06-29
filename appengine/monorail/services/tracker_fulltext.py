@@ -114,12 +114,18 @@ def _CreateIssueSearchDocuments(
         ' '.join(component_paths),
         ' '.join(field_values),
         ' '.join(tracker_bizobj.GetLabels(issue)))
-    assert comments, 'issues should always have at least the description'
-    description = _ExtractCommentText(comments[0], users_by_id)
-    description = description[:framework_constants.MAX_FTS_FIELD_SIZE]
-    all_comments = ' '. join(
-        _ExtractCommentText(c, users_by_id) for c in comments[1:])
-    all_comments = all_comments[:framework_constants.MAX_FTS_FIELD_SIZE]
+    if comments:
+      description = _ExtractCommentText(comments[0], users_by_id)
+      description = description[:framework_constants.MAX_FTS_FIELD_SIZE]
+      all_comments = ' '. join(
+          _ExtractCommentText(c, users_by_id) for c in comments[1:])
+      all_comments = all_comments[:framework_constants.MAX_FTS_FIELD_SIZE]
+    else:
+      description = ''
+      all_comments = ''
+      logging.info(
+          'Issue %s:%r has zero indexable comments',
+          issue.project_name, issue.local_id)
 
     custom_fields = _BuildCustomFTSFields(issue)
     doc = search.Document(

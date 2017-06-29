@@ -93,6 +93,24 @@ class TrackerFulltextTest(unittest.TestCase):
                      issue_doc.fields[3].value)
     self.assertEqual('', issue_doc.fields[4].value)
 
+  def testCreateIssueSearchDocuments_NoIndexableComments(self):
+    """Sometimes all comments on a issue are spam or deleted."""
+    self.SetUpCreateIssueSearchDocuments()
+    self.mox.ReplayAll()
+    config_dict = {123: tracker_bizobj.MakeDefaultProjectIssueConfig(123)}
+    self.comment.deleted_by = 111L
+    tracker_fulltext._CreateIssueSearchDocuments(
+        [self.issue], {self.issue.issue_id: [self.comment]}, self.users_by_id,
+        config_dict)
+    self.mox.VerifyAll()
+    self.assertEqual(1, len(self.docs))
+    issue_doc = self.docs[0]
+    self.assertEqual(5, len(issue_doc.fields))
+    self.assertEqual(123, issue_doc.fields[0].value)
+    self.assertEqual('test summary', issue_doc.fields[1].value)
+    self.assertEqual('', issue_doc.fields[3].value)
+    self.assertEqual('', issue_doc.fields[4].value)
+
   def testCreateIssueSearchDocuments_CustomFields(self):
     self.SetUpCreateIssueSearchDocuments()
     self.mox.ReplayAll()
