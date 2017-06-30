@@ -8,6 +8,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"infra/monitoring/analyzer"
 	"infra/monitoring/client"
 	testhelper "infra/monitoring/client/test"
 	"infra/monitoring/messages"
@@ -230,111 +231,19 @@ func TestStoreAlertsSummary(t *testing.T) {
 			return giMock{dummy.Info(), "", clock.Now(c), nil}
 		})
 		c = setUpGitiles(c)
-		err := storeAlertsSummary(c, nil, "some tree", &messages.AlertsSummary{
+		a := analyzer.New(5, 100)
+		err := storeAlertsSummary(c, a, "some tree", &messages.AlertsSummary{
 			Alerts: []messages.Alert{
 				{
-					Title:     "foo",
-					Extension: messages.BuildFailure{},
+					Title: "foo",
+					Extension: messages.BuildFailure{
+						RegressionRanges: []*messages.RegressionRange{
+							{Repo: "some repo", URL: "about:blank", Positions: []string{}, Revisions: []string{}},
+						},
+					},
 				},
 			},
 		})
 		So(err, ShouldBeNil)
-	})
-}
-
-func TestGetMiloDiffHandler(t *testing.T) {
-	Convey("MiloDiffHandler", t, func() {
-		c := gaetesting.TestingContext()
-		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
-			return giMock{dummy.Info(), "", time.Now(), nil}
-		})
-		c = setUpGitiles(c)
-		w := httptest.NewRecorder()
-
-		Convey("bad request", func() {
-			ctx := &router.Context{
-				Context: c,
-				Writer:  w,
-				Request: makeGetRequest(),
-				Params:  makeParams("tree", "unknown.tree"),
-			}
-			GetMiloDiffHandler(ctx)
-
-			So(w.Code, ShouldEqual, http.StatusNotFound)
-		})
-
-		Convey("ok request", func() {
-			c = client.WithReader(c, testhelper.MockReader{
-				BuildExtracts: map[string]*messages.BuildExtract{
-					"chromium": {},
-				},
-			})
-
-			ta := datastore.GetTestable(c)
-			ta.AddIndexes(&datastore.IndexDefinition{
-				Kind:     "AlertsJSON",
-				Ancestor: true,
-				SortBy: []datastore.IndexColumn{
-					{
-						Property:   "Date",
-						Descending: true,
-					},
-				},
-			})
-
-			alertsJSON := &AlertsJSON{
-				Tree:     datastore.MakeKey(c, "Tree", "chromium"),
-				Date:     clock.Now(c).UTC(),
-				Contents: []byte("{}"),
-			}
-
-			err := datastore.Put(c, alertsJSON)
-			So(err, ShouldBeNil)
-
-			alertsJSONMilo := &AlertsJSON{
-				Tree:     datastore.MakeKey(c, "Tree", "milo.chromium"),
-				Date:     clock.Now(c).UTC(),
-				Contents: []byte("{'some': 'value'}"),
-			}
-
-			err = datastore.Put(c, alertsJSONMilo)
-			So(err, ShouldBeNil)
-
-			ctx := &router.Context{
-				Context: c,
-				Writer:  w,
-				Request: makeGetRequest(),
-				Params:  makeParams("tree", "chromium"),
-			}
-
-			alertsJSON, err = getAlertsForTree(c, "chromium")
-			So(err, ShouldBeNil)
-
-			GetMiloDiffHandler(ctx)
-			So(w.Code, ShouldEqual, http.StatusOK)
-		})
-
-		Convey("ok request, no gitiles", func() {
-			c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
-				return giMock{dummy.Info(), "", time.Now(), nil}
-			})
-			c = urlfetch.Set(c, &testhelper.MockGitilesTransport{})
-
-			c = client.WithReader(c, testhelper.MockReader{
-				BuildExtracts: map[string]*messages.BuildExtract{
-					"chromium": {},
-				},
-			})
-
-			ctx := &router.Context{
-				Context: c,
-				Writer:  w,
-				Request: makeGetRequest(),
-				Params:  makeParams("tree", "chromium"),
-			}
-			GetMiloDiffHandler(ctx)
-
-			So(w.Code, ShouldEqual, http.StatusInternalServerError)
-		})
 	})
 }
