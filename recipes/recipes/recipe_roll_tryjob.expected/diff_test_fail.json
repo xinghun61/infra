@@ -63,10 +63,10 @@
       "recipe_engine@HEAD"
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/recipe_engine",
-    "env": {
-      "GIT_HTTP_LOW_SPEED_LIMIT": "1000",
-      "GIT_HTTP_LOW_SPEED_TIME": "300",
-      "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
+    "env_prefixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
     },
     "infra_step": true,
     "name": "bot_update (without patch)",
@@ -123,10 +123,10 @@
       "depot_tools@HEAD"
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/depot_tools",
-    "env": {
-      "GIT_HTTP_LOW_SPEED_LIMIT": "1000",
-      "GIT_HTTP_LOW_SPEED_TIME": "300",
-      "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
+    "env_prefixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
     },
     "infra_step": true,
     "name": "bot_update (without patch) (2)",
@@ -219,10 +219,10 @@
       "recipe_engine@HEAD"
     ],
     "cwd": "[CACHE]/recipe_roll_tryjob/recipe_engine",
-    "env": {
-      "GIT_HTTP_LOW_SPEED_LIMIT": "1000",
-      "GIT_HTTP_LOW_SPEED_TIME": "300",
-      "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
+    "env_prefixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
     },
     "infra_step": true,
     "name": "bot_update",
