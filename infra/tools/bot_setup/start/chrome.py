@@ -9,6 +9,8 @@ import httplib2
 import json
 import os
 import sys
+import tempfile
+import zipfile
 
 from oauth2client import gce
 
@@ -18,8 +20,11 @@ from .util import call, rmtree
 IS_WINDOWS = sys.platform.startswith('win')
 
 
+# This is built via https://build.chromium.org/p/chromium.infra/builders/
+# depot_tools%20zip%20uploader
+# We assume this is reasonably updated.
 DEPOT_TOOLS_URL = (
-    'https://chromium.googlesource.com/chromium/tools/depot_tools.git')
+    'https://storage.googleapis.com/chrome-infra/depot_tools.zip')
 SLAVE_DEPS_URL = (
     'https://chrome-internal.googlesource.com/chrome/tools/build/slave.DEPS')
 INTERNAL_DEPS_URL = (
@@ -51,6 +56,8 @@ else:
   TEMP_DEPOT_TOOLS = '/tmp/depot_tools'
 
 
+# TODO(hinoka): Really, we only need this copy of depot_tools for gclient.
+# fetching a gclient-only cipd package is going to be more lightweight.
 def ensure_depot_tools():
   """Fetches depot_tools to temp dir to use it to fetch the gclient solution."""
   # We don't really want to trust that the existing version of depot_tools
@@ -60,7 +67,21 @@ def ensure_depot_tools():
   parent = os.path.dirname(TEMP_DEPOT_TOOLS)
   if not os.path.exists(parent):
     os.makedirs(parent)
-  call([GIT, 'clone', DEPOT_TOOLS_URL], cwd=parent)
+  tmpdir = tempfile.mkdtemp()
+  tmpzip = os.path.join(tmpdir, 'depot_tools.zip')
+  with open(tmpzip, 'wb') as f:
+    http = httplib2.Http()
+    response, content = http.request(DEPOT_TOOLS_URL, 'GET')
+    if response['status'] != '200':
+      # Request did not succeed. Try again.
+      print 'response: %s' % response
+      print 'content: %s' % content
+      print 'Error fetching depot_tools.'
+      raise httplib.HTTPException('HTTP status %s != 200' % response['status'])
+    f.write(content)
+  with zipfile.ZipFile(tmpzip, 'r') as f:
+    f.extractall(TEMP_DEPOT_TOOLS)
+  rmtree(tmpdir)
   return TEMP_DEPOT_TOOLS
 
 
