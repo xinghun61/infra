@@ -41,6 +41,7 @@
         type: String,
         computed: '_computeToggleIcon(_opened)',
       },
+      tooltip: String,
       // Note that this is the collapsed state of the whole category.
       _opened: {
         type: Boolean,
