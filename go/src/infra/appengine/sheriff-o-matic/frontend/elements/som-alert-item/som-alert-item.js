@@ -82,17 +82,9 @@
         type: Number,
         computed: '_computeNumComments(annotation.comments)',
       },
-      _snoozeText: {
-        type: String,
-        computed: '_computeSnoozeText(annotation.snoozed)',
-      },
       _snoozeTimeLeft: {
         type: String,
         computed: '_computeSnoozeTimeLeft(annotation.snoozeTime)',
-      },
-      _snoozeIcon: {
-        type: String,
-        computed: '_computeSnoozeIcon(annotation.snoozed)',
       },
       _hasUngroup: {
         type: Boolean,
@@ -172,10 +164,6 @@
       return 0;
     },
 
-    _computeSnoozeText: function(snoozed) {
-      return snoozed ? 'Unsnooze' : 'Snooze';
-    },
-
     _computeSnoozeTimeLeft: function(snoozeTime) {
       if (!snoozeTime)
         return '';
@@ -197,10 +185,6 @@
 
     _computeCssClass: function(snoozed) {
       return snoozed ? 'snoozed' : '';
-    },
-
-    _computeSnoozeIcon: function(snoozed) {
-      return snoozed ? 'alarm-off' : 'alarm';
     },
 
     _isCrOSTree: function(treeName) {

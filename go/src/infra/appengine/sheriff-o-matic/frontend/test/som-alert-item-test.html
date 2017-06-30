@@ -69,16 +69,18 @@
       });
     });
 
-    test('snoozed affects snoozed text', function() {
+    test('snooze hides snooze button', function() {
       element.annotation = {
         snoozed: false,
       };
-      assert.equal(element.$.snooze.title.trim(), 'Snooze');
+      assert.equal(element.$.snooze.hidden, false);
+      assert.equal(element.$.unsnooze.hidden, true);
 
       element.annotation = {
         snoozed: true,
       };
-      assert.equal(element.$.snooze.title.trim(), 'Unsnooze');
+      assert.equal(element.$.snooze.hidden, true);
+      assert.equal(element.$.unsnooze.hidden, false);
     });
 
     test('snoozed adds text to header', function(done) {
@@ -111,18 +113,6 @@
         snoozed: true,
       };
       assert.include(element.$.root.className, 'snoozed');
-    });
-
-    test('snoozed affects snoozed icon', function() {
-      element.annotation = {
-        snoozed: false,
-      };
-      assert.equal(element.$.snooze.icon, 'alarm');
-
-      element.annotation = {
-        snoozed: true,
-      };
-      assert.equal(element.$.snooze.icon, 'alarm-off');
     });
 
     test('file bug fires an event', function(done) {
