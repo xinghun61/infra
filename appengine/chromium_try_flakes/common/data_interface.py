@@ -32,7 +32,6 @@ NEW_FLAKES_QUERY = (
     '      pass_build_id,'
     '      patch_url '
     '    )'
-    '    LIMIT 10'
     '  ) '
     'FROM'
     '  plx.google.chrome_infra.cq_flaky_failures.all '
@@ -40,8 +39,7 @@ NEW_FLAKES_QUERY = (
     '  project,'
     '  step_name,'
     '  test_name,'
-    '  config'
-    ' LIMIT 5;'
+    '  config;'
 )
 
 N_SLICES = 100
