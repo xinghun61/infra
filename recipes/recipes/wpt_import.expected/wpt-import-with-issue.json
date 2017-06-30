@@ -164,7 +164,9 @@
       "[START_DIR]/src/third_party/WebKit/Tools/Scripts/wpt-import",
       "--auto-update",
       "--auth-refresh-token-json",
-      "/creds/refresh_tokens/blink-w3c-test-autoroller"
+      "/creds/refresh_tokens/blink-w3c-test-autoroller",
+      "--credentials-json",
+      "/creds/github/wpt-import.json"
     ],
     "cwd": "[START_DIR]/src/third_party/WebKit",
     "name": "Import changes from WPT to Chromium"
