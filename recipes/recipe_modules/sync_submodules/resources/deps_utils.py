@@ -19,10 +19,8 @@ class VarImpl(object):
     raise Exception('Var is not defined: %s' % var_name)
 
 
-def GetDepsContent(deps_path):
-  """Read a DEPS file and return all the sections."""
-  with open(deps_path, 'rU') as fh:
-    content = fh.read()
+def GetDepsContent(deps_content):
+  """Return all the sections of a DEPSf file content."""
   local_scope = {}
   var = VarImpl(local_scope)
   global_scope = {
@@ -34,16 +32,16 @@ def GetDepsContent(deps_path):
       'hooks': [],
       'vars': {},
       'recursedeps': [],
+      'use_relative_paths': False,
   }
-  exec(content, global_scope, local_scope)
-  local_scope.setdefault('deps', {})
-  local_scope.setdefault('deps_os', {})
-  local_scope.setdefault('include_rules', [])
-  local_scope.setdefault('skip_child_includes', [])
-  local_scope.setdefault('hooks', [])
-  local_scope.setdefault('vars', {})
-  local_scope.setdefault('recursedeps', [])
-
-  return (local_scope['deps'], local_scope['deps_os'],
-          local_scope['include_rules'], local_scope['skip_child_includes'],
-          local_scope['hooks'], local_scope['vars'], local_scope['recursedeps'])
+  exec(deps_content, global_scope, local_scope)
+  return {
+    'deps': local_scope.get('deps', {}),
+    'deps_os': local_scope.get('deps_os', {}),
+    'include_rules': local_scope.get('include_rules', []),
+    'skip_child_includes': local_scope.get('skip_child_includes', []),
+    'hooks': local_scope.get('hooks', []),
+    'vars': local_scope.get('vars', {}),
+    'recursedeps': local_scope.get('recursedeps', []),
+    'use_relative_paths': local_scope.get('use_relative_paths', False),
+    }

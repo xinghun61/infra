@@ -35,7 +35,8 @@ class AbsolutePath(config_types.BasePath):
 class SyncSubmodulesApi(recipe_api.RecipeApi):
   def __call__(self, source, dest, source_ref='refs/heads/master',
                dest_ref='refs/heads/master', extra_submodules=None,
-               deps_path_prefix=None):
+               deps_path_prefix=None, enable_recurse_deps=False,
+               disable_path_prefix=False):
     """
     Args:
       source: URL of the git repository to mirror.
@@ -46,6 +47,8 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
           submodules.
       deps_path_prefix: path prefix used to filter out DEPS. DEPS with the
           prefix are included.
+      enable_recurse_deps: enable collecting submodules for recurse deps repos
+      disable_path_prefix: disable filtering out DEPS by path prefix.
     """
 
     if extra_submodules is None:  # pragma: nocover
@@ -96,6 +99,10 @@ class SyncSubmodulesApi(recipe_api.RecipeApi):
         '--path-prefix', deps_path_prefix,
         self.m.path.join(checkout_dir, 'DEPS'),
     ]
+    if enable_recurse_deps:
+      deps2submodules_cmd.append('--enable-recurse-deps')
+    if disable_path_prefix:
+      deps2submodules_cmd.append('--disable-path-prefix')
     for extra_submodule in extra_submodules:
       deps2submodules_cmd.extend(['--extra-submodule', extra_submodule])
     with self.m.context(cwd=overlay_repo_dir):
