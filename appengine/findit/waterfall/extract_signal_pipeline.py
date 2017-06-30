@@ -198,4 +198,9 @@ class ExtractSignalPipeline(BasePipeline):
         signals[step_name] = extractors.ExtractSignal(
             master_name, builder_name, step_name, None, failure_log).ToDict()
 
+    # Saves signals in analysis in case heuristic pipeline aborts unexpectedly.
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    analysis.signals = signals
+    analysis.put()
+
     return signals

@@ -179,3 +179,8 @@ class WfAnalysis(BaseBuildModel):
   # [master_name, builder_name, build_number] of the build failure that opened
   # the failure_group. Example: ['m', 'b1', 1].
   failure_group_key = ndb.JsonProperty(indexed=False)
+
+  # Failure info, result of DetectFirtstFailurePipeline.
+  failure_info = ndb.JsonProperty(indexed=False)
+  # Signals, result of ExtractSignalPipeline.
+  signals = ndb.JsonProperty(indexed=False)

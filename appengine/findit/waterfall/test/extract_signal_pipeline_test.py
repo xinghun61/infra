@@ -86,6 +86,9 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(FAILURE_SIGNALS, signals)
 
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertEqual(FAILURE_SIGNALS, analysis.signals)
+
   @mock.patch.object(buildbot, 'GetStepLog', return_value=ABC_TEST_FAILURE_LOG)
   def testWfStepStdioLogNotDownloadedYet(self, _):
     master_name = 'm'

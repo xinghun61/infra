@@ -2,6 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
+from common import constants
 from gae_libs import appengine_util
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
@@ -32,9 +35,15 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     self.master_name = master_name
     self.builder_name = builder_name
     self.build_number = build_number
+    self.build_completed = build_completed
+    self.force = force
 
-  def _LogUnexpectedAborting(self, was_aborted):
-    """Marks the WfAnalysis status as error, indicating that it was aborted.
+  def _HandleUnexpectedAborting(self, was_aborted):
+    """Handle unexpected aborting gracefully.
+
+    Marks the WfAnalysis status as error, indicating that it was aborted.
+    If one of heuristic pipelines caused the abortion, continue try job analysis
+    by start a new pipeline.
 
     Args:
       was_aborted (bool): True if the pipeline was aborted, otherwise False.
@@ -46,14 +55,42 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
                               self.build_number)
     # Heuristic analysis could have already completed, while triggering the
     # try job kept failing and lead to the abortion.
+    run_try_job = False
     if not analysis.completed:
+      # Heuristic analysis is aborted.
       analysis.status = analysis_status.ERROR
       analysis.result_status = None
+
+      if analysis.failure_info:
+        # We need failure_info to run try jobs,
+        # while signals is optional for compile try jobs.
+        run_try_job = True
     analysis.aborted = True
     analysis.put()
 
+    # This will only run try job but not flake analysis.
+    # TODO (chanli): Also run flake analysis when heuristic analysis or
+    # try job analysis aborts.
+    self._ContinueTryJobPipeline(run_try_job, analysis.failure_info,
+                                 analysis.signals)
+
   def finalized(self):
-    self._LogUnexpectedAborting(self.was_aborted)
+    self._HandleUnexpectedAborting(self.was_aborted)
+
+  def _ContinueTryJobPipeline(self, run_try_job, failure_info, signals):
+    if not run_try_job:
+      return
+
+    try_job_pipeline = StartTryJobOnDemandPipeline(
+        self.master_name, self.builder_name, self.build_number, failure_info,
+        signals, None, self.build_completed, self.force)
+    try_job_pipeline.target = appengine_util.GetTargetNameForModule(
+        constants.WATERFALL_BACKEND)
+    try_job_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    logging.info(
+        'A try job pipeline for build %s, %s, %s starts after heuristic '
+        'analysis was aborted.' % (self.master_name, self.builder_name,
+                                   self.build_number))
 
   def _ResetAnalysis(self, master_name, builder_name, build_number):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
@@ -75,13 +112,14 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     # https://github.com/GoogleCloudPlatform/appengine-pipelines/wiki/Python
 
     # Heuristic Approach.
-    failure_info = yield DetectFirstFailurePipeline(master_name, builder_name,
-                                                    build_number)
+    failure_info = yield DetectFirstFailurePipeline(
+        master_name, builder_name, build_number)
     change_logs = yield PullChangelogPipeline(failure_info)
     deps_info = yield ExtractDEPSInfoPipeline(failure_info, change_logs)
     signals = yield ExtractSignalPipeline(failure_info)
     heuristic_result = yield IdentifyCulpritPipeline(
-        failure_info, change_logs, deps_info, signals, build_completed)
+        failure_info, change_logs, deps_info, signals,
+        build_completed)
 
     # Try job approach.
     with pipeline.InOrder():
@@ -96,9 +134,9 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
                                                build_completed)
 
       # Checks if first time failures happen and starts a try job if yes.
-      yield StartTryJobOnDemandPipeline(master_name, builder_name, build_number,
-                                        failure_info, signals, heuristic_result,
-                                        build_completed, force)
+      yield StartTryJobOnDemandPipeline(
+          master_name, builder_name, build_number, failure_info,
+          signals, heuristic_result, build_completed, force)
 
       # Trigger flake analysis on flaky tests, if any.
       yield TriggerFlakeAnalysesPipeline(master_name, builder_name,

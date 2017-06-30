@@ -497,6 +497,7 @@ class DetectFirstFailurePipeline(BasePipeline):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     analysis.not_passed_steps = build_info.not_passed_steps
     analysis.build_failure_type = build_failure_type
+    analysis.failure_info = failure_info
     analysis.put()
 
     return failure_info

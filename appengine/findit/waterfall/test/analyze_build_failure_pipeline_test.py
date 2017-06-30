@@ -2,16 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import os
+import mock
 
 from common import constants
-from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from waterfall import analyze_build_failure_pipeline
-from waterfall import buildbot
-from waterfall import lock_util
 from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
 from waterfall.test import wf_testcase
 
@@ -23,9 +20,13 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
              master_name,
              builder_name,
              build_number,
-             status=analysis_status.PENDING):
+             status=analysis_status.PENDING,
+             failure_info=None,
+             signals=None):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = status
+    analysis.failure_info = failure_info
+    analysis.signals = signals
     analysis.put()
 
   def testBuildFailurePipelineFlow(self):
@@ -108,7 +109,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
 
     root_pipeline = AnalyzeBuildFailurePipeline(master_name, builder_name,
                                                 build_number, False, False)
-    root_pipeline._LogUnexpectedAborting(True)
+    root_pipeline._HandleUnexpectedAborting(True)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
@@ -129,8 +130,36 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
 
     root_pipeline = AnalyzeBuildFailurePipeline(master_name, builder_name,
                                                 build_number, False, False)
-    root_pipeline._LogUnexpectedAborting(True)
+    root_pipeline._HandleUnexpectedAborting(True)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
     self.assertNotEqual(analysis_status.ERROR, analysis.status)
+
+  @mock.patch(
+      'waterfall.analyze_build_failure_pipeline.StartTryJobOnDemandPipeline')
+  def testAnalyzeBuildFailurePipelineStartTryJob(self, mocked_pipeline):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+
+    failure_info = {
+        'compile': {
+            'last_pass': 122,
+            'current_failure': 123,
+            'first_failure': 123
+        }
+    }
+
+    self._Setup(
+        master_name,
+        builder_name,
+        build_number,
+        status=analysis_status.RUNNING,
+        failure_info=failure_info)
+
+    root_pipeline = AnalyzeBuildFailurePipeline(master_name, builder_name,
+                                                build_number, False, False)
+    root_pipeline._HandleUnexpectedAborting(True)
+    mocked_pipeline.assert_has_calls(
+        [mock.call().start(queue_name=constants.DEFAULT_QUEUE)])
