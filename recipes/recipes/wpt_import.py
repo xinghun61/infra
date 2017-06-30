@@ -2,9 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Updates web-platform-tests.
+"""Imports changes from web-platform-tests into Chromium.
 
-See: //docs/testing/web_platform_tests.md in chromium/src.
+This recipe runs the wpt-import script. The import process involves
+first fetching the latest changes from web-platform-tests, then running
+the tests via try jobs and and updating any baselines and expectations,
+before committing to Chromium.
+
+See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 """
 
 import contextlib
@@ -26,7 +31,7 @@ DEPS = [
 def RunSteps(api):
   api.gclient.set_config('chromium')
   api.bot_update.ensure_checkout()
-  api.git('config', 'user.name', 'Blink W3C Test Autoroller',
+  api.git('config', 'user.name', 'Chromium WPT Sync',
           name='set git config user.name')
   api.git('config', 'user.email', 'blink-w3c-test-autoroller@chromium.org',
           name='set git config user.email')
@@ -54,7 +59,7 @@ def RunSteps(api):
     ]
     try:
       with api.context(cwd=blink_dir):
-        api.python('update wpt', script, args)
+        api.python('Import changes from WPT to Chromium', script, args)
     finally:
       git_cl_issue_link(api)
 

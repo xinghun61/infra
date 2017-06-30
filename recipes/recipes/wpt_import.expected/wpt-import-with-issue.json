@@ -106,7 +106,7 @@
       "git",
       "config",
       "user.name",
-      "Blink W3C Test Autoroller"
+      "Chromium WPT Sync"
     ],
     "cwd": "[START_DIR]/src",
     "infra_step": true,
@@ -167,7 +167,7 @@
       "/creds/refresh_tokens/blink-w3c-test-autoroller"
     ],
     "cwd": "[START_DIR]/src/third_party/WebKit",
-    "name": "update wpt"
+    "name": "Import changes from WPT to Chromium"
   },
   {
     "cmd": [

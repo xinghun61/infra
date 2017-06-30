@@ -2,17 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-"""Looks for exportable commits and exports them to GitHub.
+"""Exports commits in Chromium to the web-platform-tests repo.
 
-Runs the web-platform-tests exporter. The exporter expects to be run as a
-recurring job at a short interval. Each iteration, it will do one of two
-things:
+This recipe runs the wpt-export script; it is expected to be run as a
+recurring job at a short interval. It creates pull requests on GitHub
+for Chromium commits that contain exportable changes, merges these
+pull requests.
 
-1. If an in-flight PR in the WPT repo exists, merge it.
-2. Pull Chromium and WPT, find the earliest exportable commit since the
-   last WPT export, and create a PR on GitHub for it.
-
-More details in the script at third_party/WebKit/Tools/Scripts/wpt-export.
+See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 """
 
 import contextlib
@@ -32,7 +29,8 @@ DEPS = [
 def RunSteps(api):
   api.gclient.set_config('chromium')
   api.bot_update.ensure_checkout()
-  api.git('config', '--global', 'user.name', 'Chromium WPT Sync',
+  api.git('config', '--global', 'user.name',
+          'Chromium WPT Sync',
           name='set git config user.name')
   api.git('config', '--global', 'user.email',
           'blink-w3c-test-autoroller@chromium.org',
@@ -44,7 +42,7 @@ def RunSteps(api):
     '--credentials-json',
     '/creds/github/wpt-export.json',
   ]
-  api.python('create PR or merge in-flight PR', script, args)
+  api.python('Export Chromium commits and in-flight CLs to WPT', script, args)
 
 
 def GenTests(api):

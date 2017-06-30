@@ -133,7 +133,7 @@
       "--credentials-json",
       "/creds/github/wpt-export.json"
     ],
-    "name": "create PR or merge in-flight PR"
+    "name": "Export Chromium commits and in-flight CLs to WPT"
   },
   {
     "name": "$result",
