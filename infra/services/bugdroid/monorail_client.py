@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import apiclient.discovery
+import apiclient.http
 import httplib2
 import json
 import logging
@@ -22,7 +23,7 @@ MONORAIL_PROD_URL = ('https://monorail-prod.appspot.com/_ah/api/discovery/'
                      'v1/apis/{api}/{apiVersion}/rest')
 
 
-def build_client(discovery_url, http, api_name, api_version):
+def build_client(discovery_url, request_builder, api_name, api_version):
   # This occassionally hits a 503 "Backend Error". Hopefully a simple retry
   # can recover.
   tries_left = 5
@@ -33,7 +34,7 @@ def build_client(discovery_url, http, api_name, api_version):
       client = apiclient.discovery.build(
           api_name, api_version,
           discoveryServiceUrl=discovery_url,
-          http=http)
+          requestBuilder=request_builder)
       break
     except HttpError as e:
       if tries_left:
@@ -81,27 +82,33 @@ class SSLErrorLoggingHttp(object):
 class MonorailClient(object):
 
   def __init__(self, credential_store, client=None):
+    self._credentials = None
+
     if client is None:  # pragma: no cover
       with open(credential_store) as data_file:
         creds_data = json.load(data_file)
 
-      credentials = OAuth2Credentials(
+      self._credentials = OAuth2Credentials(
           None, creds_data['client_id'], creds_data['client_secret'],
           creds_data['refresh_token'], None,
           'https://accounts.google.com/o/oauth2/token',
           'python-issue-tracker-manager/2.0')
 
-      if credentials.invalid:
+      if self._credentials.invalid:
         raise Exception(
             'Failed to create credentials from credential store: %s.' %
             credential_store)
 
-      http = httplib2_utils.InstrumentedHttp('monorail')
-      http = credentials.authorize(http)
-      http = SSLErrorLoggingHttp(http)
-      client = build_client(MONORAIL_PROD_URL, http, 'monorail', 'v1')
+      client = build_client(
+          MONORAIL_PROD_URL, self._http_request_builder, 'monorail', 'v1')
 
     self.client = client
+
+  def _http_request_builder(self, _http, *args, **kwargs):
+    http = httplib2_utils.InstrumentedHttp('monorail')
+    http = self._credentials.authorize(http)
+    http = SSLErrorLoggingHttp(http)
+    return apiclient.http.HttpRequest(http, *args, **kwargs)
 
   def _authenticate(self, storage, service_acct, client_id,
                     client_secret, api_scope):
