@@ -8,9 +8,14 @@ import logging
 import urllib2
 import webapp2
 
+from google.appengine.ext import ndb
+
 from common import data_interface, monorail_interface
-from model.flake import FlakeType, Issue
+from model.flake import FlakeType, Issue, FlakeUpdate, FlakeUpdateSingleton
 from handlers.update_issues import update_issue_ids
+
+
+MAX_UPDATES_PER_DAY = 10
 
 
 class FlakeInfo(object):
@@ -31,6 +36,7 @@ class FlakeInfo(object):
 
     return self_tuple < other_tuple
 
+
 def _get_flake_timestamp(flake):
   return datetime.datetime.utcfromtimestamp(float(flake[0]) / 1000)
 
@@ -45,14 +51,40 @@ def _count_flakes_since_last_update(flakes_list, last_update):
   return flakes_count
 
 
+def _get_project_key(project):
+  project_key = ndb.Key('FlakeUpdateSingleton', project)
+  if not project_key.get():
+    FlakeUpdateSingleton(key=project_key).put()
+  return project_key
+
+
+def _project_has_no_updates_left(project):
+  project_key = _get_project_key(project)
+  yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+  return FlakeUpdate.query(FlakeUpdate.time_updated > yesterday,
+                           ancestor=project_key).count() >= MAX_UPDATES_PER_DAY
+
+
+def _add_update_for_project(project):
+  project_key = _get_project_key(project)
+  FlakeUpdate(parent=project_key).put()
+
+
 def _get_updates_and_new_flakes(flakes_data):
   query_futures = []
   new_flakes_by_project = defaultdict(list)
-  for (project, step_name, test_name, config), flakes in flakes_data.items():
+
+  flakes_data_items = sorted(flakes_data.items())
+  for (project, step_name, test_name, config), flakes in flakes_data_items:
+    if _project_has_no_updates_left(project):
+      continue
+
     flake_types = FlakeType.query(FlakeType.project == project,
                                   FlakeType.step_name == step_name,
                                   FlakeType.test_name == test_name,
                                   FlakeType.config == config).fetch(1)
+
+    last_updated = max(_get_flake_timestamp(flake) for flake in flakes)
 
     if flake_types:
       flake_type = flake_types[0]
@@ -63,23 +95,37 @@ def _get_updates_and_new_flakes(flakes_data):
       flake_info = FlakeInfo(flake_type=flake_type, flakes_count=flakes_count)
       query_future = Issue.query(
           Issue.flake_type_keys == flake_type.key).fetch_async()
-      query_futures.append((query_future, flake_info))
+      query_futures.append((query_future, flake_info, last_updated))
     else:
       flakes_count = len(flakes)
       flake_type = FlakeType(project=project, step_name=step_name,
                              test_name=test_name, config=config,
-                             last_updated=datetime.datetime.min)
+                             last_updated=last_updated)
+      flake_type.put()
       flake_info = FlakeInfo(flake_type=flake_type, flakes_count=flakes_count)
-      new_flakes_by_project[flake_type.project].append(flake_info)
+      new_flakes_by_project[project].append(flake_info)
 
-    flake_type.last_updated = max(
-        _get_flake_timestamp(flake) for flake in flakes)
-    flake_type.put()
+  # We create a single Issue for all new FlakeTypes of a given project, hence a
+  # single update needs to be added.
+  for project in new_flakes_by_project:
+    _add_update_for_project(project)
 
   new_flakes_by_issue = defaultdict(list)
-  for query_future, flake_info in query_futures:
+  for query_future, flake_info, last_updated in query_futures:
     for issue in query_future.get_result():
+      if issue.key not in new_flakes_by_issue:
+        # We count each Issue only once when we first see it (i.e here), since
+        # all the FlakeType updates for a single Issue will be reported in a
+        # single comment.
+        if _project_has_no_updates_left(issue.project):
+          continue
+        _add_update_for_project(project)
       new_flakes_by_issue[issue.key].append(flake_info)
+      # We wait until here to update the FlakeType entity's last_updated_field,
+      # since we don't want to mark new flakes as updated if the project had no
+      # updates left.
+      flake_info.flake_type.last_updated = last_updated
+      flake_info.flake_type.put()
 
   return new_flakes_by_project, new_flakes_by_issue
 

@@ -13,7 +13,7 @@ from common import data_interface
 from common.test.mocks import MockIssue, MockIssueTrackerAPI, MonorailDB
 import main
 import handlers.lemur_test
-from model.flake import Issue, FlakeType
+from model.flake import Issue, FlakeType, FlakeUpdate, FlakeUpdateSingleton
 from testing_utils import testing
 
 
@@ -115,7 +115,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
   def test_creates_issues_by_project(self):
     # We only generate data for failure_utc_msec, since it's the only field we
-    # Acare about. The rest of the fields (master_name, builder_name,
+    # care about. The rest of the fields (master_name, builder_name,
     # fail_build_id, etc) are not used to create or update the issues.
     fake_flakes_data = {
         ('webrtc', 'step_name1', 'test_name1', 'config'): [
@@ -232,7 +232,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
   def test_updates_issues(self):
     # We only generate data for failure_utc_msec, since it's the only field we
-    # Acare about. The rest of the fields (master_name, builder_name,
+    # care about. The rest of the fields (master_name, builder_name,
     # fail_build_id, etc) are not used to create or update the issues.
     fake_flakes_data = {
         ('webrtc', 'step_name1', 'test_name1', 'config'): [
@@ -288,7 +288,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
   def test_no_new_updates_issues(self):
     # We only generate data for failure_utc_msec, since it's the only field we
-    # Acare about. The rest of the fields (master_name, builder_name,
+    # care about. The rest of the fields (master_name, builder_name,
     # fail_build_id, etc) are not used to create or update the issues.
     fake_flakes_data = {
         ('webrtc', 'step_name1', 'test_name1', 'config'): [
@@ -323,3 +323,166 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
       self.test_app.get('/lemur_test')
 
     self.assertEqual(len(monorail_issue.comments), 0)
+
+  def test_doesnt_create_issues_if_limit_exceeded(self):
+    # We only generate data for failure_utc_msec, since it's the only field we
+    # care about. The rest of the fields (master_name, builder_name,
+    # fail_build_id, etc) are not used to create or update the issues.
+    fake_flakes_data = {
+        ('webrtc', 'step_name1', None, None): [
+            [str(1000 * failure_time)] for failure_time in range(10)
+        ],
+    }
+
+    fake_bq_response = [
+        self._desanitize_row(list(key) + [value])
+        for key, value in fake_flakes_data.items()
+    ]
+
+    with mock.patch('common.data_interface._execute_query',
+                    lambda *args, **kwargs: fake_bq_response):
+      with mock.patch('handlers.lemur_test.MAX_UPDATES_PER_DAY', 0):
+        self.test_app.get('/lemur_test')
+
+    issues = Issue.query().fetch()
+    self.assertEqual(len(issues), 0)
+
+    flake_types = FlakeType.query().fetch()
+    self.assertEqual(len(flake_types), 0)
+
+  def test_doesnt_update_issues_if_limit_exceeded(self):
+    # We only generate data for failure_utc_msec, since it's the only field we
+    # care about. The rest of the fields (master_name, builder_name,
+    # fail_build_id, etc) are not used to create or update the issues.
+    fake_flakes_data = {
+        ('webrtc', 'step_name1', None, None): [
+            [str(1000 * failure_time)] for failure_time in range(10)
+        ],
+    }
+
+    flake_type_keys = [
+        FlakeType(project='webrtc',
+                  step_name='step_name1',
+                  last_updated=datetime.datetime.min).put(),
+    ]
+    monorail_issue = self.monorail_db.create(MockIssue({}), 'webrtc')
+    Issue(project=monorail_issue.project_id, issue_id=monorail_issue.id,
+          flake_type_keys=flake_type_keys).put()
+
+    fake_bq_response = [
+        self._desanitize_row(list(key) + [value])
+        for key, value in fake_flakes_data.items()
+    ]
+
+    with mock.patch('common.data_interface._execute_query',
+                    lambda *args, **kwargs: fake_bq_response):
+      with mock.patch('handlers.lemur_test.MAX_UPDATES_PER_DAY', 0):
+        self.test_app.get('/lemur_test')
+
+    # Check that the issue was not updated
+    self.assertEqual(len(monorail_issue.comments), 0)
+
+    # Check that the flake_types' last_updated field was not updated
+    for flake_type_key in flake_type_keys:
+      self.assertEqual(flake_type_key.get().last_updated,
+                       datetime.datetime.min)
+
+  def test_limit_resets_next_day(self):
+    # We only generate data for failure_utc_msec, since it's the only field we
+    # care about. The rest of the fields (master_name, builder_name,
+    # fail_build_id, etc) are not used to create or update the issues.
+    fake_flakes_data = {
+        ('webrtc', 'step_name1', None, None): [
+            [str(1000 * failure_time)] for failure_time in range(10)
+        ],
+        ('webrtc', 'step_name2', None, None): [
+            [str(1000 * failure_time)] for failure_time in range(10)
+        ],
+    }
+
+    flake_type_keys = [
+        FlakeType(project='webrtc',
+                  step_name='step_name1',
+                  last_updated=datetime.datetime.min).put(),
+        FlakeType(project='webrtc',
+                  step_name='step_name2',
+                  last_updated=datetime.datetime.min).put(),
+    ]
+    monorail_issue = self.monorail_db.create(MockIssue({}), 'webrtc')
+    Issue(project=monorail_issue.project_id, issue_id=monorail_issue.id,
+          flake_type_keys=flake_type_keys).put()
+
+    fake_bq_response = [
+        self._desanitize_row(list(key) + [value])
+        for key, value in fake_flakes_data.items()
+    ]
+
+    # There was an update yesterday.
+    project_key = ndb.Key('FlakeUpdateSingleton', 'webrtc')
+    yesterday = datetime.datetime.utcnow() - datetime.timedelta(days=1)
+    FlakeUpdateSingleton(key=project_key).put()
+    FlakeUpdate(parent=project_key, time_updated=yesterday).put()
+
+    with mock.patch('common.data_interface._execute_query',
+                    lambda *args, **kwargs: fake_bq_response):
+      with mock.patch('handlers.lemur_test.MAX_UPDATES_PER_DAY', 1):
+        self.test_app.get('/lemur_test')
+
+    # Check that monorail_issue was updated
+    self.assertEqual(len(monorail_issue.comments), 1)
+
+    # Check that flake_types' last_updated field was updated
+    for flake_type_key in flake_type_keys:
+      self.assertNotEqual(flake_type_key.get().last_updated,
+                          datetime.datetime.min)
+
+  def test_updates_flake_types_until_limit(self):
+    # We only generate data for failure_utc_msec, since it's the only field we
+    # care about. The rest of the fields (master_name, builder_name,
+    # fail_build_id, etc) are not used to create or update the issues.
+    fake_flakes_data = {
+        ('webrtc', 'step_name1', None, None): [
+            [str(1000 * failure_time)] for failure_time in range(10)
+        ],
+        ('webrtc', 'step_name2', None, None): [
+            [str(1000 * failure_time)] for failure_time in range(10)
+        ],
+    }
+
+    flake_type_key1 = FlakeType(project='webrtc',
+                                step_name='step_name1',
+                                last_updated=datetime.datetime.min).put()
+    monorail_issue1 = self.monorail_db.create(MockIssue({}), 'webrtc')
+    Issue(project=monorail_issue1.project_id, issue_id=monorail_issue1.id,
+          flake_type_keys=[flake_type_key1]).put()
+
+    flake_type_key2 = FlakeType(project='webrtc',
+                                step_name='step_name2',
+                                last_updated=datetime.datetime.min).put()
+    monorail_issue2 = self.monorail_db.create(MockIssue({}), 'webrtc')
+    Issue(project=monorail_issue2.project_id, issue_id=monorail_issue2.id,
+          flake_type_keys=[flake_type_key2]).put()
+
+    fake_bq_response = [
+        self._desanitize_row(list(key) + [value])
+        for key, value in fake_flakes_data.items()
+    ]
+
+    with mock.patch('common.data_interface._execute_query',
+                    lambda *args, **kwargs: fake_bq_response):
+      with mock.patch('handlers.lemur_test.MAX_UPDATES_PER_DAY', 1):
+        self.test_app.get('/lemur_test')
+
+    # Check that monorail_issue1 was updated
+    self.assertEqual(len(monorail_issue1.comments), 1)
+
+    # Check that flake_type1' last_updated field was updated
+    self.assertNotEqual(flake_type_key1.get().last_updated,
+                        datetime.datetime.min)
+
+    # Check that monorail_issue2 wasn't updated
+    self.assertEqual(len(monorail_issue2.comments), 0)
+
+    # Check that flake_type1' last_updated field wasn't updated
+    self.assertEqual(flake_type_key2.get().last_updated,
+                     datetime.datetime.min)
