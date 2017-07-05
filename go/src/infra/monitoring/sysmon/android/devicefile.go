@@ -40,6 +40,7 @@ type deviceStatusFile struct {
 type deviceStatus struct {
 	Battery   battery     `json:"battery"`
 	Build     build       `json:"build"`
+	IMEI      string      `json:"imei"`
 	Mem       memory      `json:"mem"`
 	Processes int64       `json:"processes"`
 	State     string      `json:"state"`

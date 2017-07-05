@@ -33,7 +33,8 @@ var (
 	devStatus = metric.NewString("dev/mobile/status",
 		"operational state of device",
 		nil,
-		field.String("device_id"))
+		field.String("device_id"),
+		field.String("imei"))
 	devType = metric.NewString("dev/mobile/type",
 		"device hardware or type",
 		nil,
@@ -147,7 +148,7 @@ func updateFromFile(c context.Context, f deviceStatusFile) {
 		}
 		devStatusValue := d.GetStatus()
 		if devStatusValue != "" {
-			devStatus.Set(c, devStatusValue, name)
+			devStatus.Set(c, devStatusValue, name, d.IMEI)
 		}
 		devTypeValue := d.Build.GetName()
 		if devTypeValue != "" {

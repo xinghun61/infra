@@ -72,6 +72,7 @@ func TestMetrics(t *testing.T) {
 						ID:    "KTU84P",
 						Board: "hammerhead",
 					},
+					IMEI: "123456789",
 					Mem: memory{
 						Avail: 1279052,
 						Total: 1899548,
@@ -108,7 +109,7 @@ func TestMetrics(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(s, ShouldEqual, "KTU84P")
 
-		s, err = devStatus.Get(c, "02eccd9208ead9ab")
+		s, err = devStatus.Get(c, "02eccd9208ead9ab", "123456789")
 		So(err, ShouldBeNil)
 		So(s, ShouldEqual, "good")
 

@@ -115,6 +115,7 @@ func TestLoadFile(t *testing.T) {
 							ID:    "KTU84P",
 							Board: "hammerhead",
 						},
+						IMEI: "358239051612770",
 						Mem: memory{
 							Avail: 1279052,
 							Total: 1899548,
