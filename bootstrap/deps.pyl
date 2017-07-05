@@ -13,12 +13,26 @@
     'repo': 'external/bitbucket.org/stoneleaf/aenum',
     'rev': '7b45559677564c3e193c4e8a3ff8511637e15cd0',
   },
+  'apache_beam': {
+    'build': '0',
+    'gs': 'eae09f8bd00264ab297f93c28929fb381daad5d4.zip',
+    'version': '2.0.0',
+    'only_on': [
+      'linux_i686',
+      'linux_x86_64',
+    ],
+  },
   'argcomplete': {
     'version': '0.8.0',
     'build': '0',
     'repo': 'external/github.com/kislyuk/argcomplete',
     'rev': 'a88dcaae3132003ae123d39a2cd9924113b8f985',
     'implicit': True,  # Required by expect_tests
+  },
+  'avro': {
+    'build': '0',
+    'gs': 'e1f36a7f8c542cb18df0c1b0970e25a0943a6ffe.tar.gz',
+    'version': '1.8.1'
   },
   'backports.ssl_match_hostname': {
     'build': '0',
@@ -51,12 +65,26 @@
     'rev': '4e2faeead034005cda1bcb096afde921527a748f',
     'implicit': True,  # Required by expect_tests
   },
+  'crcmod': {
+    'build': '0',
+    'gs': '61d9fea169099b87c2e36ce572d2d25e0fd2de59.tar.gz',
+    'version': '1.7',
+    'only_on': [
+      'linux_i686',
+      'linux_x86_64',
+    ],
+  },
   'cryptography': {
     'version': '1.4',
     'build': '0',
     'repo': 'external/github.com/pyca/cryptography',
     'rev': '69365ce2041081fe6b109496bbb9c56f86ccb7b5',
     'implicit': True,  # Required by pyOpenSSL
+  },
+  'dill': {
+    'build': '0',
+    'gs': '98ae6835db2bd5f1b7f1bc420275c1e9709f1a64.zip',
+    'version': '0.2.6'
   },
   'docker': {
     'version': '2.0.1',
@@ -81,6 +109,11 @@
     'build': '0',
     'repo': 'infra/testing/expect_tests',
     'rev': 'a3d5a2bcda6876ad4b6dfcbaef3fa6cff77f350b',
+  },
+  'futures': {
+    'build': '0',
+    'gs': 'e6815bea6a2881218df730347732f67ec5e89108.tar.gz',
+    'version': '3.1.1'
   },
   'google_api_python_client': {
     'version': '1.4.2',
@@ -112,6 +145,15 @@
     'build': '0',
     'gs': '8c6401edab67c15dd52beda9ccce2294d478b3c7.tar.gz',
     'version': '0.24.1'
+  },
+  'grpcio': {
+    'build': '0',
+    'gs': 'cffa63ea492cd7a8336df0a48a24fd7455a61fae.tar.gz',
+    'only_on': [
+      'linux_i686',
+      'linux_x86_64',
+    ],
+    'version': '1.4.0',
   },
   'httplib2': {
     'version': '0.9',
