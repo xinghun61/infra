@@ -12,7 +12,7 @@ infra/tools/protoc/linux-amd64    protobuf_version:v3.2.0
 infra/nodejs/nodejs/linux-amd64   node_version:6.10.3
 
 # TODO: move this to depot_tools eventually?
-infra/tools/authutil/linux-amd64  git_revision:92db82258d3a6ea6f35f80588038372297b03eaf
+infra/tools/authutil/linux-amd64  git_revision:5cf65fdf804a9b3f3023f79d5b3cab2a88ccd09e
 
 # ADB binary.
 infra/adb/linux-amd64             adb_version:1.0.36
@@ -21,4 +21,4 @@ infra/adb/linux-amd64             adb_version:1.0.36
 infra/fastboot/linux-amd64        fastboot_version:5943271ace17
 
 # LogDog tool.
-infra/tools/luci/logdog/logdog/linux-amd64  git_revision:01e09c6fb5e45dd38c38cf43a5c5e46f826a3fd1
+infra/tools/luci/logdog/logdog/linux-amd64  git_revision:5cf65fdf804a9b3f3023f79d5b3cab2a88ccd09e

@@ -9,4 +9,4 @@
 infra/tools/protoc/windows  protobuf_version:v3.2.0
 
 # LogDog tool.
-infra/tools/luci/logdog/logdog/windows-amd64  git_revision:01e09c6fb5e45dd38c38cf43a5c5e46f826a3fd1
+infra/tools/luci/logdog/logdog/windows-amd64  git_revision:5cf65fdf804a9b3f3023f79d5b3cab2a88ccd09e
