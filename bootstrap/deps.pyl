@@ -18,7 +18,6 @@
     'gs': 'eae09f8bd00264ab297f93c28929fb381daad5d4.zip',
     'version': '2.0.0',
     'only_on': [
-      'linux_i686',
       'linux_x86_64',
     ],
   },
@@ -70,7 +69,6 @@
     'gs': '61d9fea169099b87c2e36ce572d2d25e0fd2de59.tar.gz',
     'version': '1.7',
     'only_on': [
-      'linux_i686',
       'linux_x86_64',
     ],
   },
