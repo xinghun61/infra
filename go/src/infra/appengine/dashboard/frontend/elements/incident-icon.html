@@ -19,105 +19,103 @@
     </i>
   </template>
   <script>
-    (function() {
-      'use strict';
+    'use strict';
 
-      class IncidentIcon extends Polymer.Element {
-        static get is() {return 'incident-icon'; }
+    class IncidentIcon extends Polymer.Element {
+      static get is() {return 'incident-icon'; }
 
-        ready() {
-          super.ready();
-        }
+      ready() {
+        super.ready();
+      }
 
-        static get properties() {
-          return {
-            _iconColorClass: {
-              type: String,
-              computed: '_computeColor(incident)',
-            },
-            incident: {
-              type: Object,
-              value: {start_time: 0, end_time: 0, severity: 'yellow'},
-            },
-            // Array of Date objects
-            dates: {
-              type: Array,
-              value: [],
-            },
-          }
-        }
-
-        static get observers() {
-          return [
-            '_computeStyle(incident, dates)'
-          ]
-        }
-
-        _computeColor(incident) {
-          return incident.severity.toLowerCase();
-        }
-
-        /**
-         * This calculates the width and left start position (percentages)
-         * that the icon should have based on the start/end_time of the
-         * incident and which time period the dashboard is currently displaying.
-         * If the incident started before or ended after the visible time span,
-         * the left/right end icons should not be shown and the icon should
-         * instead start/end with the middle icon, to represent the incident
-         * going onto the next week.
-         * @param {Object} incident - Object containing incident's data..
-         * @param {Date[]} dates - The list of dates being shown on the	dashbaord.
-        */
-         _computeStyle(incident, dates) {
-          let startPosition = this.getDatePosition(incident.start_time, dates);
-          if (startPosition === undefined) {
-            // start_time is before first date on the dashboard.
-            startPosition = 0;
-            this.$.jsLeft.classList.add('hidden');
-          }
-          else {
-            this.$.jsLeft.classList.remove('hidden');
-          }
-
-          let endPosition = this.getDatePosition(incident.end_time, dates);
-          if (endPosition === undefined) {
-            // end_time is after last date on the dashboard.
-            endPosition = 100;
-            this.$.jsRight.classList.add('hidden');
-          }
-          else {
-            this.$.jsRight.classList.remove('hidden');
-          }
-          this.updateStyles({
-            '--incident-left': `${startPosition}%`,
-            '--incident-width': `${endPosition - startPosition}%`,
-          });
-        }
-
-        /**
-         * getDatePosition returns a start position of an incident based on the
-         * start_time unix and where that time falls within the given dates.
-         * @param {string} incidentUnix - string Unix timestamp of start time.
-         * @param {Date[]} dates - The list of dates being shown on the
-         * dashbaord.
-        */
-        getDatePosition(incidentUnix, dates) {
-          const NUM_DAYS_DISPLAYED = 7;
-          const TIME_INCREMENTS_PER_DAY = 168;
-          let position;
-          let incidentDate = new Date(incidentUnix * 1000);
-          let time = incidentDate.getHours();
-          dates.forEach((date, i) => {
-            if (date.setHours(0, 0, 0) === incidentDate.setHours(0, 0, 0)) {
-              position = i / NUM_DAYS_DISPLAYED;
-              position = (position + time / TIME_INCREMENTS_PER_DAY) * 100;
-            }
-          });
-          return position;
+      static get properties() {
+        return {
+          _iconColorClass: {
+            type: String,
+            computed: '_computeColor(incident)',
+          },
+          incident: {
+            type: Object,
+            value: () => {
+              return {start_time: 0, end_time: 0, severity: 'yellow'}; },
+          },
+          // Array of Date objects
+          dates: {
+            type: Array,
+            value: [],
+          },
         }
       }
 
-      customElements.define(IncidentIcon.is, IncidentIcon);
-    })();
+      static get observers() {
+        return [
+          '_computeStyle(incident, dates)'
+        ]
+      }
+
+      _computeColor(incident) {
+        return incident.severity.toLowerCase();
+      }
+
+      /**
+       * This calculates the width and left start position (percentages)
+       * that the icon should have based on the start/end_time of the
+       * incident and which time period the dashboard is currently displaying.
+       * If the incident started before or ended after the visible time span,
+       * the left/right end icons should not be shown and the icon should
+       * instead start/end with the middle icon, to represent the incident
+       * going onto the next week.
+       * @param {Object} incident - Object containing incident's data.
+       * @param {Date[]} dates - The list of dates shown on the dashbaord.
+      */
+       _computeStyle(incident, dates) {
+        let startPosition = this.getDatePosition(incident.start_time, dates);
+        if (startPosition === undefined) {
+          // start_time is before first date on the dashboard.
+          startPosition = 0;
+          this.$.jsLeft.classList.add('hidden');
+        }
+        else {
+          this.$.jsLeft.classList.remove('hidden');
+        }
+
+        let endPosition = this.getDatePosition(incident.end_time, dates);
+        if (endPosition === undefined) {
+          // end_time is after last date on the dashboard.
+          endPosition = 100;
+          this.$.jsRight.classList.add('hidden');
+        }
+        else {
+          this.$.jsRight.classList.remove('hidden');
+        }
+        this.updateStyles({
+          '--incident-left': `${startPosition}%`,
+          '--incident-width': `${endPosition - startPosition}%`,
+        });
+      }
+
+      /**
+       * getDatePosition returns a start position of an incident based on the
+       * start_time unix and where that time falls within the given dates.
+       * @param {string} incidentUnix - string Unix timestamp of start time.
+       * @param {Date[]} dates - The list of dates being shown on the
+       * dashbaord.
+      */
+      getDatePosition(incidentUnix, dates) {
+        const NUM_DAYS_DISPLAYED = 7;
+        const TIME_INCREMENTS_PER_DAY = 168;
+        let position;
+        let incidentDate = new Date(incidentUnix * 1000);
+        let time = incidentDate.getHours();
+        dates.forEach((date, i) => {
+          if (date.setHours(0, 0, 0) === incidentDate.setHours(0, 0, 0)) {
+            position = i / NUM_DAYS_DISPLAYED;
+            position = (position + time / TIME_INCREMENTS_PER_DAY) * 100;
+          }
+        });
+        return position;
+      }
+    }
+    customElements.define(IncidentIcon.is, IncidentIcon);
   </script>
 </dom-module>

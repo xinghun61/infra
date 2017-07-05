@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<title>serviceRowTest</title>
+<meta charset="utf-8">
+<link rel="import" href="/../elements/service-row.html">
+<script src="/../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/../bower_components/web-component-tester/browser.js"></script>
+
+<test-fixture id="row-test">
+  <template>
+    <service-row></service-row>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict'
+
+  suite('service-row', function() {
+    var element;
+    setup(function() {
+      element = fixture('row-test');
+      let lastDate = new Date(1498114800000); // 22/06/2017 PTZ
+      for (let i = 6; i >= 0; i--) {
+        let date = new Date(lastDate);
+        date.setDate(lastDate.getDate() - i);
+        element.dates.push(date);
+      }
+      element.incidents = [
+        {
+          severity: 'RED',
+          start_time: '1496693923',
+          end_time: '1497788570',
+        },{
+          severity: 'YELLOW',
+          start_time: '1497293923',
+          end_time: '1497789570',
+        },{
+          severity: 'YELLOW',
+          start_time: '1497793923',
+          end_time: '1497783570',
+        },
+      ];
+    });
+
+    test('test properties are passed', function(done) {
+      flush(function() {
+        let row = element.shadowRoot.querySelector('span');
+        assert.equal(row.querySelectorAll('incident-icon').length, 3);
+        row.querySelectorAll(
+            'incident-icon').forEach((incidentIcon, index) => {
+              assert.equal(incidentIcon.incident, element.incidents[index]);
+              assert.equal(incidentIcon.dates, element.dates);
+            });
+        done();
+      });
+    });
+  });
+</script>
