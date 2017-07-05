@@ -44,11 +44,11 @@ var Menu = function(target, opt_onShow) {
   this.menu.role = 'listbox';
   this.hide();
   this.addCategory('default');
-  this.addEvent(this.trigger, 'click', this.wrap(this.toggle));
-  this.addEvent(window, 'resize', this.wrap(this.adjustSizeAndLocation));
+  this.addEvent(this.trigger, 'click', this.toggle.bind(this));
+  this.addEvent(window, 'resize', this.adjustSizeAndLocation.bind(this));
 
   // Hide the menu if a user clicks outside the menu widget
-  this.addEvent(document, 'click', this.wrap(this.hide));
+  this.addEvent(document, 'click', this.hide.bind(this));
   this.addEvent(this.menu, 'click', this.stopPropagation());
   this.addEvent(this.trigger, 'click', this.stopPropagation());
 };
@@ -166,24 +166,6 @@ Menu.prototype.addOnOpen = function(eventCallback) {
   var eventIndex = this.onOpenEvents.length;
   this.onOpenEvents.push(eventCallback);
   return eventIndex;
-};
-
-/**
- * Used throughout the code, this method wraps any supplied function
- * in a closure that calls the supplied function in the context of either
- * the optional thisObj parameter or instance of the menu this function
- * is called from.
- * @param {Function} callback the function to wrap and embed context
- *     within.
- * @param {Object} opt_thisObj an alternate 'this' object to use instead
- *     of this instance of Menu.
- */
-Menu.prototype.wrap = function(callback, opt_thisObj) {
-  var closured_callback = callback;
-  var this_object = opt_thisObj || this;
-  return (function() {
-    closured_callback.apply(this_object);
-  });
 };
 
 /**
@@ -494,7 +476,7 @@ Menu.prototype.out = function() {
     clearTimeout(this.thread);
     this.thread = -1;
   }
-  this.thread = setTimeout(this.wrap(this.hide), 400);
+  this.thread = setTimeout(this.hide.bind(this), 400);
 };
 
 /**
@@ -515,7 +497,8 @@ Menu.prototype.stopPropagation = function() {
 /**
  * Toggles the menu between hide/show.
  */
-Menu.prototype.toggle = function() {
+Menu.prototype.toggle = function(event) {
+  event.preventDefault();
   if (this.menu.style.display == 'none') {
     this.show();
   } else {
