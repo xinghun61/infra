@@ -20,9 +20,6 @@ per-file luci*.py=vadimsh@chromium.org
 
 per-file publish_tarball.py=phajdan.jr@chromium.org
 
-per-file rebaseline_o_matic.py=joelo@chromium.org
-per-file rebaseline_o_matic.py=wkorman@chromium.org
-
 per-file recipe_autoroller.py=iannucci@chromium.org
 per-file recipe_autoroller.py=phajdan.jr@chromium.org
 
