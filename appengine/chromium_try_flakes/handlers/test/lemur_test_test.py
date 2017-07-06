@@ -128,7 +128,7 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
             [str(1000 * failure_time)] for failure_time in range(2, 7)
         ],
         ('chromium', 'step_name1', None, None): [
-            [str(1000 * failure_time)] for failure_time in range(3, 5)
+            [str(1000 * failure_time)] for failure_time in range(2, 5)
         ],
         ('chromium', 'step_name3', 'test_name3', 'config2'): [
             [str(1000 * failure_time)] for failure_time in range(4, 9)
@@ -159,14 +159,14 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
         'This issue was created automatically by the chromium-try-flakes app. '
         'Please find the right owner to fix the respective test/step and assign'
         ' this issue to them.\n\n'
-        'We have detected 12 recent flakes for the following flake types:\n\n'
-        '2 new flaky failures for:\n'
+        'We have detected 13 recent flakes for the following flake types:\n\n'
+        '3 new flaky failures for:\n'
         '  Step Name:      step_name1\n'
         '  Test Name:      None\n'
         '  Config:         None\n'
         'To see them point your browser to:\n'
         '  http://fake_url/recent_flakes?project=chromium&step_name=step_name1'
-        '&test_name=&config=&highlight=2&updated_before=4\n\n'
+        '&test_name=&config=&highlight=3&updated_before=4\n\n'
         '5 new flaky failures for:\n'
         '  Step Name:      step_name2\n'
         '  Test Name:      test_name2\n'

@@ -44,6 +44,9 @@ NEW_FLAKES_QUERY = (
 
 N_SLICES = 100
 
+# Ignore FlakeTypes with less than MIN_NUMBER_OF_FLAKES occurrences.
+MIN_NUMBER_OF_FLAKES = 3
+
 
 def _build_bigquery_service():  # pragma: no cover
   credentials = oauth2client.appengine.AppAssertionCredentials(
@@ -186,4 +189,10 @@ def get_flakes_data():
       s.data for s in sorted(slices, key=lambda s: s.idx))))
   # We create a dict where we index by the 4 first elements of the table, i.e.
   # the flake type.
-  return dict(_split_list(row, position=4) for row in flakes_cache)
+  # We do this only when the number of flakes for the flake type is at least
+  # MIN_NUMBER_OF_FLAKES.
+  return dict(
+      _split_list(row, position=4)
+      for row in flakes_cache
+      if len(row[4]) >= MIN_NUMBER_OF_FLAKES
+  )
