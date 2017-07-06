@@ -11,7 +11,10 @@ Oncall hours: we have 3 oncall sites each covering during their site's work offi
 + EMEA covers 0900 - 1700 UTC
 + MTV  covers 1800 - 0100 UTC (1000 - 1800 MTV)
 
-APAC and EMEA sites primarily respond to P0s for critical infrastructures and are pager-driven.
+APAC and EMEA sites primarily respond to P0s for critical infrastructures and
+are pager-driven. If you have created a P0 issue and don't see a response from
+EMEA/APAC trooper in the first 30 minutes, please ping them to make sure they
+are aware of the issue.
 
 The primary way to contact a trooper is via [crbug.com](http://crbug.com) using
 the templates and priorities established below. If you need to find the current
