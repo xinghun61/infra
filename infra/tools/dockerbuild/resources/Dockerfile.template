@@ -1,0 +1,150 @@
+# Copyright 2017 The Chromium Authors. All rights reserved.
+# Use of this source code is governed by a BSD-style license that can be
+# found in the LICENSE file.
+
+# Dockerfile to build a Python wheel building Docker image starting from a
+# dockcross image.
+
+FROM ${dockcross_base}
+
+# Fix a bug in "dockcross" on some platforms where "cpp" points to an invalid
+# path (see #132).
+#
+# We create a symlink from the declared CPP to its real thingy (CPP-4.9).
+RUN /bin/bash -c "\
+  if [ ! -e $$CPP ]; then  \
+    ln -s $$CPP-4.9 $$CPP; \
+  fi"
+
+# Setup cross-compile parameters.
+#
+# Link "lib64" to "lib" in our cross-compile enviornment so we only have to care
+# about one "lib" path.
+ENV CROSS_PREFIX="${cross_prefix}"
+ENV \
+  LDFLAGS="$$LDFLAGS -L$${CROSS_PREFIX}/lib" \
+  PKG_CONFIG_PATH=$${CROSS_PREFIX}/lib/pkgconfig
+RUN \
+  mkdir -p $${CROSS_PREFIX}/bin/ && \
+  mkdir -p $${CROSS_PREFIX}/lib/python2.7/site-packages/ && \
+  mkdir -p $${CROSS_PREFIX}/include/ && \
+  ln -s $${CROSS_PREFIX}/lib $${CROSS_PREFIX}/lib64
+
+# Build environment prefix.
+ENV LOCAL_PREFIX="/usr/host"
+ENV PATH=$${LOCAL_PREFIX}/bin:$${PATH}
+
+# Configure our setup script root.
+ENV SETUP_ROOT=/opt/setup
+WORKDIR $${SETUP_ROOT}
+COPY ${resources_relpath}/install-util.sh .
+
+# install-00-packages.sh
+COPY ${resources_relpath}/install-00-packages.sh .
+RUN \
+  chmod +x ./install-00-packages.sh \
+&& ./install-00-packages.sh
+
+# Build system Perl, needed by "cryptography" package.
+WORKDIR $${SETUP_ROOT}/perl
+COPY \
+  ${resources_relpath}/install-01-perl.sh \
+  ${perl5_relpath} \
+  ./
+RUN \
+  chmod +x ./install-01-perl.sh \
+&& ARCHIVE_PATH=$$(basename ${perl5_relpath}) \
+  ./install-01-perl.sh \
+&& rm -rf $${SETUP_ROOT}/perl
+
+# Build libraries for the cross-compiled environment.
+#
+# - libffi: Our cross-compiled Python needs to link against this.
+# - zlib: Useful for cross-compiled enviornments.
+WORKDIR $${SETUP_ROOT}/x-lib
+COPY \
+  ${resources_relpath}/install-02-cross-lib.sh \
+  ${libffi_relpath} \
+  ${zlib_relpath} \
+  ./
+RUN \
+  chmod +x ./install-02-cross-lib.sh \
+&& ARCHIVE_PATH=$$(basename ${libffi_relpath}) \
+  ./install-02-cross-lib.sh \
+&& ARCHIVE_PATH=$$(basename ${zlib_relpath}) \
+  NO_HOST=1 \
+  ./install-02-cross-lib.sh \
+&& rm -rf $${SETUP_ROOT}/x-lib
+ENV CFLAGS="-I$${CROSS_PREFIX}/include $$CFLAGS"
+ENV CFLAGS="-I$${CROSS_PREFIX}/lib/${libffi_lib_dir}/include $$CFLAGS"
+
+# Configure cross-compile LDFLAGS.
+
+# Build system and cross-compiled Python.
+WORKDIR $${SETUP_ROOT}/python
+COPY \
+  ${resources_relpath}/install-03-python.sh \
+  ${python27_relpath} \
+  ${resources_relpath}/config.site.xcc_python \
+  ./
+RUN \
+  chmod +x ./install-03-python.sh \
+&& ARCHIVE_PATH=$$(basename ${python27_relpath}) \
+  CROSS_UNICODE=${python27_unicode} \
+  CROSS_CONFIG_SITE=config.site.xcc_python \
+  ./install-03-python.sh \
+&& rm -rf $${SETUP_ROOT}/python
+ENV \
+  PYTHONPATH="$${LOCAL_PREFIX}/lib/python2.7/site-packages" \
+  LDFLAGS="-L${cross_python_prefix}/lib $$LDFLAGS" \
+  CFLAGS="-I${cross_python_prefix}/include/python2.7 $$CFLAGS" \
+  PYTHONXCPREFIX="${cross_python_prefix}" \
+  XPYTHONPATH="$${CROSS_PREFIX}/lib/python2.7/site-packages"
+
+# Install host "pip", needed to build wheels via "setup.py".
+WORKDIR $${SETUP_ROOT}
+COPY ${get_pip_relpath} ./
+RUN \
+  $${LOCAL_PREFIX}/bin/python \
+    ./$$(basename ${get_pip_relpath}) \
+    --prefix="$$LOCAL_PREFIX"
+
+# Part of Python's binary distribution directly calls "cc", ignoring the
+# enviornment variable overrides. We will use the alternatives system to set
+# this to be the cross-compiling CC by default.
+RUN update-alternatives --install /usr/bin/cc cc $$CC 100 && \
+    update-alternatives --install /usr/bin/gcc gcc $$CC 100
+
+# Note:
+#
+# libffi_lib_dir will look something like: "libffi-<version>".
+WORKDIR $${SETUP_ROOT}/x-cffi
+COPY \
+  ${resources_relpath}/install-04-cross-cffi.sh \
+  ${cffi_relpath} \
+  ./
+RUN \
+  chmod +x ./install-04-cross-cffi.sh \
+&& ARCHIVE_PATH=$$(basename ${cffi_relpath}) \
+  ./install-04-cross-cffi.sh \
+&& rm -rf $${SETUP_ROOT}/x-cffi
+
+###
+# CLEANUP
+###
+
+# Remove our SETUP_ROOT. Any current contents of this will remain in the base
+# Docker layers, so this doesn't save disk space, but it does clean up the
+# final image's filesystem.
+RUN rm -rf "${SETUP_ROOT}"
+
+# Install auxiliary "pip" wheels into default Python environment.
+RUN pip install virtualenv cffi distutilscross auditwheel numpy
+
+# Enter our "/work" (Dockcross script expectation).
+WORKDIR /work
+
+# Set the default Docker image value for the "dockcross" script.
+ENV DEFAULT_DOCKCROSS_IMAGE ${image_id}
+
+MAINTAINER "Chrome Operations Team (chrome-infra@chromium.org)"
