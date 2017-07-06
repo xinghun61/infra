@@ -83,6 +83,12 @@ class AutolinkTest(unittest.TestCase):
     self.assertIn('b@example.com', comp_refs)
     self.assertTrue(len(comp_refs) == 1)
 
+  def testGetAllReferencedArtifacts_TooBig(self):
+    all_ref_artifacts = self.aa.GetAllReferencedArtifacts(
+        None, self.comments, max_total_length=10)
+
+    self.assertEqual(autolink._SKIP_AUTOLINKING, all_ref_artifacts)
+
   def testMarkupAutolinks(self):
     all_ref_artifacts = self.aa.GetAllReferencedArtifacts(None, self.comments)
     result = self.aa.MarkupAutolinks(
@@ -135,6 +141,13 @@ class AutolinkTest(unittest.TestCase):
     self.assertEqual('example.org', result[4].content)
     self.assertEqual('example.org', result[4].href)
 
+  def testMarkupAutolinks_TooBig(self):
+    all_ref_artifacts = self.aa.GetAllReferencedArtifacts(
+        None, self.comments, max_total_length=10)
+    result = self.aa.MarkupAutolinks(
+        None, [template_helpers.TextRun(self.comment1)], all_ref_artifacts)
+    self.assertEqual(1, len(result))
+    self.assertEqual(self.comment1, result[0].content)
 
 class EmailAutolinkTest(unittest.TestCase):
 

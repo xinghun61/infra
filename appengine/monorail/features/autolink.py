@@ -40,6 +40,11 @@ from proto import project_pb2
 from tracker import tracker_helpers
 
 
+# If the total length of all comments is too large, we don't autolink.
+_MAX_TOTAL_LENGTH = 50 * 1024  # 50KB
+# Special all_referenced_artifacts value used to indicate that the
+# text content is too big to autolink quickly.
+_SKIP_AUTOLINKING = 'skip autolinking'
 
 _CLOSING_TAG_RE = re.compile('</[a-z0-9]+>$', re.IGNORECASE)
 
@@ -509,17 +514,25 @@ class Autolink(object):
                                      match_to_reference_function,
                                      autolink_re_subst_dict)
 
-  def GetAllReferencedArtifacts(self, mr, comment_text_list):
+  def GetAllReferencedArtifacts(
+      self, mr, comment_text_list, max_total_length=_MAX_TOTAL_LENGTH):
     """Call callbacks to lookup all artifacts possibly referenced.
 
     Args:
       mr: information parsed out of the user HTTP request.
       comment_text_list: list of comment content strings.
+      max_total_length: int max number of characters to accept:
+          if more than this, then skip autolinking entirely.
 
     Returns:
       Opaque object that can be pased to MarkupAutolinks.  It's
-      structure happens to be {component_name: artifact_list, ...}.
+      structure happens to be {component_name: artifact_list, ...},
+      or the special value _SKIP_AUTOLINKING.
     """
+    total_len = sum(len(comment_text) for comment_text in comment_text_list)
+    if total_len > max_total_length:
+      return _SKIP_AUTOLINKING
+
     all_referenced_artifacts = {}
     for comp, (lookup, match_to_refs, re_dict) in self.registry.iteritems():
       refs = set()
@@ -547,6 +560,9 @@ class Autolink(object):
       List of text runs for the entire user comment, some of which may have
       attribures that cause them to render as links in render-rich-text.ezt.
     """
+    if all_referenced_artifacts == _SKIP_AUTOLINKING:
+      return text_runs
+
     items = self.registry.items()
     items.sort()  # Process components in determinate alphabetical order.
     for component, (_lookup, _match_ref, re_subst_dict) in items:
