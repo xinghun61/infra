@@ -4,6 +4,7 @@
 
 from datetime import datetime
 import mock
+import textwrap
 
 from common import constants
 from common import rotations
@@ -47,22 +48,30 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[123])
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
-  @mock.patch.object(_CODEREVIEW, 'CreateRevert', return_value='54321')
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  @mock.patch.object(_CODEREVIEW, 'CreateRevert')
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testRevertCLSucceed(self, mock_fn, *_):
+  def testRevertCLSucceed(self, mock_fn, mock_revert, *_):
     repo_name = 'chromium'
     revision = 'rev1'
+    commit_position = 123
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
         Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
     cl_info.owner_email = 'abc@chromium.org'
     mock_fn.return_value = cl_info
+    mock_revert.return_value = '54321'
 
-    WfSuspectedCL.Create(repo_name, revision, 123).put()
+    culprit = WfSuspectedCL.Create(repo_name, revision, commit_position)
+    culprit.builds = {
+      'm/b/1': {
+          'status': None
+      }
+    }
+    culprit.put()
     pipeline = CreateRevertCLPipeline('m', 'b', 123, repo_name, revision)
     revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
 
@@ -72,6 +81,15 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.COMPLETED)
     self.assertIsNotNone(culprit.revert_cl)
+
+    reason = textwrap.dedent("""
+        Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
+        culprit for failures in the build cycles as shown on:
+        https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
+        Sample Build: %s""") % (
+            commit_position, culprit.key.urlsafe(),
+            buildbot.CreateBuildUrl('m', 'b', '1'))
+    mock_revert.assert_called_with(reason, self.review_change_id, '20001')
 
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
