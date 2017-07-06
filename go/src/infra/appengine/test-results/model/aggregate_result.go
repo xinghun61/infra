@@ -255,7 +255,7 @@ func (info *BuilderInfo) computeFailuresByType() error {
 	}
 
 	if info.FixableCounts == nil {
-		return errors.New("model: nil FixableCounts")
+		return errors.New("uploaded file is missing required num_failures_by_type field")
 	}
 
 	res := make(map[string][]int)
