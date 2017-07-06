@@ -53,12 +53,6 @@ The config file contains a JSON object with the following fields:
                             The service will be restarted when a new version is
                             detected.
 
-The below fields have been deprecated.
-
-* __root_directory__  - (DEPRECATED)
-                        The directory that contains a CIPD_VERSION.json file.
-                        Please use __cipd_version_file__ instead.
-
 Example:
 
     {

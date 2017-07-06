@@ -51,19 +51,6 @@ def parse_config(content, filename='<unknown>'):
   if 'cmd' in config:
     config['cmd'] = [str(x) for x in config['cmd']]
 
-  # TODO(dsansome): Remove this support for the legacy root_directory option.
-  if config.get('root_directory'):
-    if config.get('cipd_version_file'):
-      LOGGER.error("'root_directory' and 'cipd_version_file' fields cannot "
-                   "both be specified.  File: %s", filename)
-      error_occurred = True
-    else:
-      LOGGER.warning("'root_directory' field is deprecated.  Please use "
-                     "'cipd_version_file' instead. File: %s", filename)
-      config['cipd_version_file'] = os.path.join(
-          config['root_directory'], 'CIPD_VERSION.json')
-      del config['root_directory']
-
   # 'environment', 'resources', 'stop_time', 'working_directory' are optional.
 
   # We gathered enough errors, bail out.

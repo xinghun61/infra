@@ -36,18 +36,6 @@ class ParseConfigTest(unittest.TestCase):
     c = config_watcher.parse_config('{"name": "foo", "cmd": [1, 2]}')
     self.assertEquals(['1', '2'], c['cmd'])
 
-  def test_root_directory_with_cipd_version_file(self):
-    c = config_watcher.parse_config(
-        '{"name": "foo", "cmd": [], "root_directory": "dir", '
-        '"cipd_version_file": "bar"}')
-    self.assertIsNone(c)
-
-  def test_root_directory_sets_cipd_version_file(self):
-    c = config_watcher.parse_config(
-        '{"name": "foo", "cmd": [], "root_directory": "dir"}')
-    self.assertEquals(os.path.join('dir', 'CIPD_VERSION.json'),
-                      c['cipd_version_file'])
-
 
 class ConfigWatcherTest(unittest.TestCase):
   def setUp(self):
