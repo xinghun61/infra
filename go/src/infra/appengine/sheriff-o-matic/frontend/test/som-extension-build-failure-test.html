@@ -134,7 +134,7 @@
           ],
         },
         suspected_cls: [
-          {revision: '1234', confidence: 0},
+          {revision: '1234', confidence: 0, commmit_position: 123},
         ],
       };
       flush(() => {
@@ -154,10 +154,10 @@
           ],
         },
         suspected_cls: [
-          {revision: '1234', confidence: 0},
-          {revision: '1234', confidence: 0},
-          {revision: '12345', confidence: 0},
-          {revision: '1234', confidence: 0},
+          {revision: '1234', confidence: 0, commmit_position: 123},
+          {revision: '1234', confidence: 0, commmit_position: 123},
+          {revision: '12345', confidence: 0, commmit_position: 125},
+          {revision: '1234', confidence: 0, commmit_position: 123},
         ],
       };
 

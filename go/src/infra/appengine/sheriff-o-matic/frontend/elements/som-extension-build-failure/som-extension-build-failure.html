@@ -168,7 +168,7 @@
                  for culprit
               </strong>
                 <a target="_blank" href$=[[_linkForCL(cl.revision)]] class="suspect-cl-link">
-                  [[_textForCL(cl.revision)]]</a><strong class="revert-cl">. PLEASE REVIEW.
+                  [[_textForCL(cl.commit_position, cl.revision)]]</a><strong class="revert-cl">. PLEASE REVIEW.
               </strong>
             </template>
             <template is="dom-if" if="[[!_haveRevertCL(cl)]]">
@@ -178,7 +178,7 @@
                 (<a target="_blank" href="https://goto.google.com/findit-manual">?</a>)
                 [[_finditApproach(cl)]]
                 <a target="_blank" href$=[[_linkForCL(cl.revision)]] class="suspect-cl-link">
-                  [[_textForCL(cl.revision)]]
+                  [[_textForCL(cl.commit_position, cl.revision)]]
                 </a>
                 with [[_finditConfidence(cl)]]% confidence.
               </strong>

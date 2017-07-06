@@ -187,8 +187,11 @@
       return len.toString() + ' tests failed';
     },
 
-    _textForCL: function(cl) {
-      return cl.substring(0, 7);
+    _textForCL: function(commit_position, revision) {
+      if (commit_position == null) {
+        return revision.substring(0, 7);
+      }
+      return commit_position;
     },
 
     _hasSuspect: function(test) {
