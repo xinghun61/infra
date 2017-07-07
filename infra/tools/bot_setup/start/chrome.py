@@ -61,7 +61,7 @@ else:
 def ensure_depot_tools():
   """Fetches depot_tools to temp dir to use it to fetch the gclient solution."""
   # We don't really want to trust that the existing version of depot_tools
-  # is pristine and uncorrupted.  So delete it and re-clone.
+  # is pristine and uncorrupted.  So delete it and re-download.
   print 'Setting up depot_tools in %s' % TEMP_DEPOT_TOOLS
   rmtree(TEMP_DEPOT_TOOLS)
   parent = os.path.dirname(TEMP_DEPOT_TOOLS)
@@ -82,6 +82,9 @@ def ensure_depot_tools():
   with zipfile.ZipFile(tmpzip, 'r') as f:
     f.extractall(TEMP_DEPOT_TOOLS)
   rmtree(tmpdir)
+  if sys.platform.startswith('linux'):
+    os.chmod(os.path.join(TEMP_DEPOT_TOOLS, GCLIENT_BIN), 0755)
+    os.chmod(os.path.join(TEMP_DEPOT_TOOLS, 'update_depot_tools'), 0755)
   return TEMP_DEPOT_TOOLS
 
 
