@@ -34,8 +34,6 @@ from appengine_module.test_results.handlers import monitoring
 
 routes = [
     ('/internal/monitoring/upload', monitoring.EventMonUploader),
-    # TODO(sergiyb): Remove after migrating back to an old endpoint above.
-    ('/internal/monitoring/test_res/upload', monitoring.EventMonUploader),
 ]
 
 app = webapp2.WSGIApplication(routes, debug=True)

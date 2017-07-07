@@ -6,7 +6,7 @@ threadsafe: true
 instance_class: F4
 
 handlers:
-- url: /internal/monitoring/.*
+- url: /internal/monitoring/upload
   script: appengine_module.test_results.main.app
   login: admin
   secure: always
