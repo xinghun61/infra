@@ -285,3 +285,6 @@ import:
 - package: github.com/aryann/difflib
   repo: https://chromium.googlesource.com/external/github.com/aryann/difflib.git
   version: master
+- package: github.com/jmoiron/sqlx
+  repo: https://chromium.googlesource.com/external/github.com/jmoiron/sqlx.git
+  version: master
