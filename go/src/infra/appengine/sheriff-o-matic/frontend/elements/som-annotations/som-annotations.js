@@ -10,7 +10,7 @@
 
   Polymer({
     is: 'som-annotations',
-    behaviors: [AnnotationManagerBehavior],
+    behaviors: [AnnotationManagerBehavior, PostBehavior],
     properties: {
       // All alert annotations. Includes values from localState.
       annotations: {
@@ -99,7 +99,6 @@
       _ungroupErrorMessage: String,
       _ungroupModel: Object,
       user: String,
-      xsrfToken: String,
     },
 
     ready: function() {
@@ -136,50 +135,6 @@
                     change)
           .then(jsonParsePromise)
           .then(this._postResponse.bind(this));
-    },
-
-    // FIXME: Move to common behavior if other code does POST requests.
-    postJSON: function(url, data, options) {
-      options = options || {};
-      options.body = JSON.stringify({
-        xsrf_token: this.xsrfToken,
-        data: data,
-      });
-      options.method = 'POST';
-      options.credentials = 'include';
-      return new Promise((resolve, reject) => {
-        window.fetch(url, options).then((value) => {
-          if (!value.ok) {
-            value.text().then((txt) => {
-              if (!(value.status == 403 && txt.includes('token expired'))) {
-                reject(txt);
-                return;
-              }
-
-              // We need to refresh our XSRF token!
-              window.fetch('/api/v1/xsrf_token', {credentials: 'include'})
-                  .then((respData) => {
-                    return respData.json();
-                  })
-                  .then((jsonData) => {
-                    // Clone options because sinon.spy args from different calls
-                    // to window.fetch clobber each other in this scenario.
-                    let opts = JSON.parse(JSON.stringify(options));
-                    this.xsrfToken = jsonData['token'];
-                    opts.body = JSON.stringify({
-                      xsrf_token: this.xsrfToken,
-                      data: data,
-                    });
-                    window.fetch(url, opts).then(resolve, reject);
-                  });
-            });
-            return;
-          }
-
-          resolve(value);
-        }, reject);
-      })
-
     },
 
     _computeAnnotations: function(annotationsJson) {

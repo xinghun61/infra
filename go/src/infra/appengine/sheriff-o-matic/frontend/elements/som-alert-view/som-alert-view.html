@@ -5,6 +5,8 @@
 
 <link rel="import" href="../../elements/som-alert-type-behavior.html">
 <link rel="import" href="../../elements/som-annotation-manager-behavior.html">
+<link rel="import" href="../../elements/som-post-behavior.html">
+
 <link rel="import" href="../../elements/som-header-styles.html">
 <link rel="import" href="../../elements/som-input-styles.html">
 <link rel="import" href="../../elements/som-utility-styles.html">
@@ -78,8 +80,7 @@
         tree="[[tree]]"
         collapse-by-default="[[collapseByDefault]]"
         local-state="{{localState}}"
-        user="[[user]]"
-        xsrf-token="{{xsrfToken}}"></som-annotations>
+        user="[[user]]"></som-annotations>
     <div id="bulkAlertActions" hidden$="[[!_checkedAlerts.length]]">
       You have selected [[_checkedAlerts.length]] alerts.
       (<small class="link" on-tap="_uncheckAll">Unselect all?</small>)

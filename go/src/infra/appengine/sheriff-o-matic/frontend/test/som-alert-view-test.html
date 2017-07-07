@@ -224,5 +224,20 @@
       });
     });
   });
+
+  suite('alert actions', function() {
+    test('_resolveAlerts sends a request', function() {
+      window.fetch.returns(Promise.resolve());
+      element.tree = {'name': 'test'};
+
+      element._resolveAlerts([{'key': 'hello'}]);
+
+      assert.isTrue(window.fetch.calledTwice);
+
+      let call = window.fetch.getCall(1);
+
+      assert.equal('/api/v1/resolve/test', call.args[0]);
+    });
+  });
 })();
 </script>

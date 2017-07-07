@@ -6,7 +6,7 @@
 
   Polymer({
     is: 'som-alert-view',
-    behaviors: [AnnotationManagerBehavior, AlertTypeBehavior],
+    behaviors: [AnnotationManagerBehavior, AlertTypeBehavior, PostBehavior],
     properties: {
       _activeRequests: {
         type: Number,
@@ -129,7 +129,6 @@
         value: false,
       },
       linkStyle: String,
-      xsrfToken: String,
     },
 
     created: function() {
@@ -688,15 +687,15 @@
 
     _handleResolve: function(evt) {
       let alert = evt.target.get('alert');
-      let tree = evt.target.get('tree');
       if (alert.grouped) {
-        this._resolveAlerts(tree, alert.alerts);
+        this._resolveAlerts(alert.alerts);
       } else {
-        this._resolveAlerts(tree, [alert]);
+        this._resolveAlerts([alert]);
       }
     },
 
-    _resolveAlerts: function(tree, alerts) {
+    _resolveAlerts: function(alerts) {
+      let tree = this.tree.name;
       let url = '/api/v1/resolve/' + encodeURIComponent(tree);
       let keys = alerts.map((a) => {
         return a.key;
@@ -705,7 +704,7 @@
         'keys': keys,
         'resolved': true,
       };
-      this.$.annotations.postJSON(url, request)
+      this.postJSON(url, request)
           .then(jsonParsePromise)
           .then(this._resolveResponse.bind(this));
     },

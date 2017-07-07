@@ -89,7 +89,6 @@
       user: String,
       collapseByDefault: Boolean,
       linkStyle: String,
-      xsrfToken: String,
     },
 
     _refresh: function() {
