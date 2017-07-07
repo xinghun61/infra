@@ -34,9 +34,11 @@ PROPERTIES = {
 }
 
 
-def _get_project_config(api, project, config):
-  result = api.luci_config.get_project_config(project, config)
-  return api.json.loads(result['content'])
+def _get_recipes_path(api, recipes_cfg_path):
+  current_cfg = api.json.read(
+    'read recipes.cfg',
+    recipes_cfg_path, step_test_data=lambda: api.json.test_api.output({}))
+  return current_cfg.json.output.get('recipes_path', '')
 
 
 def _checkout_project(api, workdir, project, project_config, patch):
@@ -58,8 +60,6 @@ def RunSteps(api, upstream_project, downstream_project):
   downstream_workdir = workdir_base.join(downstream_project)
 
   project_data = api.luci_config.get_projects()
-  downstream_recipes_cfg = _get_project_config(
-      api, downstream_project, 'recipes.cfg')
 
   upstream_checkout = _checkout_project(
       api, upstream_workdir, upstream_project,
@@ -68,8 +68,10 @@ def RunSteps(api, upstream_project, downstream_project):
       api, downstream_workdir, downstream_project,
       project_data[downstream_project], patch=False)
 
+  downstream_recipes_path = _get_recipes_path(
+      api, downstream_checkout.join('infra', 'config', 'recipes.cfg'))
   downstream_recipes_py = downstream_checkout.join(
-          downstream_recipes_cfg['recipes_path'], 'recipes.py')
+      downstream_recipes_path, 'recipes.py')
 
   try:
     orig_downstream_test = api.python('test (without patch)',
@@ -151,24 +153,12 @@ def RunSteps(api, upstream_project, downstream_project):
              manual_change_footer, downstream_project))
 
 
-# TODO(phajdan.jr): recipe engine itself should provide mock configs.
-def _make_recipe_config(api, name):
-  return api.json.dumps({
-    'api_version': 2,
-    'project_id': name,
-    'recipes_path': '',
-  }, sort_keys=True)
-
-
 def GenTests(api):
   yield (
     api.test('basic') +
     api.properties.generic(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
-    api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
-    api.luci_config.get_project_config(
-        'depot_tools', 'recipes.cfg',
-        _make_recipe_config(api, 'depot_tools'))
+    api.luci_config.get_projects(('recipe_engine', 'depot_tools'))
   )
 
   yield (
@@ -176,9 +166,6 @@ def GenTests(api):
     api.properties.generic(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
-    api.luci_config.get_project_config(
-        'depot_tools', 'recipes.cfg',
-        _make_recipe_config(api, 'depot_tools')) +
     api.step_data('test (without patch)', retcode=1)
   )
 
@@ -187,9 +174,6 @@ def GenTests(api):
     api.properties.generic(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
-    api.luci_config.get_project_config(
-        'depot_tools', 'recipes.cfg',
-        _make_recipe_config(api, 'depot_tools')) +
     api.step_data('train (without patch)', retcode=1)
   )
 
@@ -198,9 +182,6 @@ def GenTests(api):
     api.properties.generic(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
-    api.luci_config.get_project_config(
-        'depot_tools', 'recipes.cfg',
-        _make_recipe_config(api, 'depot_tools')) +
     api.step_data('test (with patch)', retcode=1)
   )
 
@@ -209,9 +190,6 @@ def GenTests(api):
     api.properties.generic(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
-    api.luci_config.get_project_config(
-        'depot_tools', 'recipes.cfg',
-        _make_recipe_config(api, 'depot_tools')) +
     api.step_data('train (with patch)', retcode=1)
   )
 
@@ -220,9 +198,6 @@ def GenTests(api):
     api.properties.generic(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
-    api.luci_config.get_project_config(
-        'depot_tools', 'recipes.cfg',
-        _make_recipe_config(api, 'depot_tools')) +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1)
   )
@@ -232,9 +207,6 @@ def GenTests(api):
     api.properties.tryserver(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
-    api.luci_config.get_project_config(
-        'depot_tools', 'recipes.cfg',
-        _make_recipe_config(api, 'depot_tools')) +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
     api.step_data('diff (train)', retcode=1) +
@@ -249,9 +221,6 @@ def GenTests(api):
     api.properties.tryserver(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
-    api.luci_config.get_project_config(
-        'depot_tools', 'recipes.cfg',
-        _make_recipe_config(api, 'depot_tools')) +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
     api.step_data('diff (train)', retcode=1) +
