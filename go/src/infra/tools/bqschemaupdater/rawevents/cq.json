@@ -14,6 +14,16 @@
 			"name": "action",
 			"description": "Type of CQ event, e.g. PATCH_COMMITTED.",
 			"type": "STRING"
+		},
+		{
+			"name": "attempt_start_usec",
+			"description": "Timestamp when the CQ attempt was started (user clicked on CQ bit).",
+			"type": "INTEGER"
+		},
+		{
+			"name": "cq_name",
+			"description": "Name of the CQ that sends this event.",
+			"type": "STRING"
 		}
 	]
 }
