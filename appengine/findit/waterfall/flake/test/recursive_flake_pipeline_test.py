@@ -130,7 +130,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={
             'step_metadata': None,
             'use_nearby_neighbor': False,
-            'manually_triggered': False
+            'manually_triggered': False,
+            'force': False,
         })
 
     pipeline_job = RecursiveFlakePipeline(
@@ -193,7 +194,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={
             'step_metadata': None,
             'use_nearby_neighbor': False,
-            'manually_triggered': False
+            'manually_triggered': False,
+            'force': False,
         })
 
     pipeline_job = RecursiveFlakePipeline(
@@ -255,7 +257,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={
             'step_metadata': None,
             'use_nearby_neighbor': False,
-            'manually_triggered': False
+            'manually_triggered': False,
+            'force': False,
         })
 
     pipeline_job = RecursiveFlakePipeline(
@@ -317,7 +320,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={
             'step_metadata': None,
             'use_nearby_neighbor': False,
-            'manually_triggered': False
+            'manually_triggered': False,
+            'force': True,
         })
 
     pipeline_job = RecursiveFlakePipeline(
@@ -991,7 +995,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={
             'step_metadata': None,
             'use_nearby_neighbor': False,
-            'manually_triggered': False
+            'manually_triggered': False,
+            'force': False,
         })
 
     pipeline_job = RecursiveFlakePipeline(
@@ -1163,3 +1168,34 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                      recursive_flake_pipeline._GetHardTimeoutSeconds(
                          master_name, builder_name, build_number, step_name,
                          10))
+
+  @mock.patch.object(recursive_flake_pipeline, '_IsFinished',
+                     return_value=False)
+  @mock.patch.object(lookback_algorithm, 'GetNextRunPointNumber',
+                     return_value=(122, None, None))
+  def testNextBuildNumberPipelineStartsRecursiveFlakePipeline(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.put()
+
+    flake_swarming_task = FlakeSwarmingTask.Create(master_name, builder_name,
+                                                   build_number, step_name,
+                                                   test_name)
+    flake_swarming_task.put()
+
+    self.MockPipeline(
+        RecursiveFlakePipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), 122, None, None, None, None,
+                       False, False, 1, 0, False],
+        expected_kwargs={})
+
+    pipeline_job = NextBuildNumberPipeline(analysis.key.urlsafe(), build_number,
+                                           None, None, None)
+    pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()

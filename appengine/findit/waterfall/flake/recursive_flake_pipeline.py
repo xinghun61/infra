@@ -450,6 +450,13 @@ class RecursiveFlakePipeline(BasePipeline):
           upper_bound_build_number, step_size,
           iterations) if use_nearby_neighbor else preferred_run_build_number
 
+      logging.info(('%s/%s/%s/%s/%s Bots are avialable to analyze build %s with'
+                    ' %s iterations and %dsec timeout'),
+                   analysis.master_name, analysis.builder_name,
+                   analysis.build_number, analysis.step_name,
+                   analysis.test_name, actual_run_build_number, iterations,
+                   hard_timeout_seconds)
+
       task_id = yield TriggerFlakeSwarmingTaskPipeline(
           self.master_name,
           self.builder_name,
@@ -472,10 +479,10 @@ class RecursiveFlakePipeline(BasePipeline):
             user_specified_iterations,
             step_metadata=step_metadata,
             use_nearby_neighbor=use_nearby_neighbor,
-            manually_triggered=manually_triggered)
+            manually_triggered=manually_triggered,
+            force=force)
     else:
       retries += 1
-
       pipeline_job = RecursiveFlakePipeline(
           analysis_urlsafe_key,
           preferred_run_build_number,
@@ -486,7 +493,8 @@ class RecursiveFlakePipeline(BasePipeline):
           manually_triggered=manually_triggered,
           use_nearby_neighbor=use_nearby_neighbor,
           step_size=step_size,
-          retries=retries)
+          retries=retries,
+          force=force)
 
       # Disable attribute 'target' defined outside __init__ pylint warning,
       # because pipeline generates its own __init__ based on run function.
@@ -545,7 +553,7 @@ def _UpdateIterationsToRerun(analysis, iterations_to_rerun):
 
 def _UpdateAnalysisWithSwarmingTaskError(flake_swarming_task, analysis):
   # Report the last flake swarming task's error that it encountered.
-  logging.error('Error in Swarming task')
+  logging.error('Error in Swarming task %s', flake_swarming_task)
 
   error = flake_swarming_task.error or {
       'error': 'Swarming task failed',
@@ -641,7 +649,8 @@ class NextBuildNumberPipeline(BasePipeline):
           user_specified_iterations,
           step_metadata=None,
           use_nearby_neighbor=False,
-          manually_triggered=False):
+          manually_triggered=False,
+          force=False):
     """Pipeline for determining the build number to analyze.
 
     Args:
@@ -669,6 +678,10 @@ class NextBuildNumberPipeline(BasePipeline):
     step_name = analysis.step_name
     test_name = analysis.test_name
 
+    logging.info('%s/%s/%s/%s/%s completed analysis on build number %s for ',
+                 master_name, builder_name, triggering_build_number, step_name,
+                 test_name, current_build_number)
+
     flake_swarming_task = FlakeSwarmingTask.Get(
         master_name, builder_name, current_build_number, step_name, test_name)
 
@@ -687,10 +700,18 @@ class NextBuildNumberPipeline(BasePipeline):
     # Figure out what build_number to trigger a swarming rerun on next, if any.
     data_points_within_range = analysis.GetDataPointsWithinBuildNumberRange(
         lower_bound_build_number, upper_bound_build_number)
+    logging.info(('%s/%s/%s/%s/%s Determining next data point to analyze based '
+                  'on %s '), master_name, builder_name, triggering_build_number,
+                 step_name, test_name, data_points_within_range)
     data_points = _NormalizeDataPoints(data_points_within_range)
     next_build_number, suspected_build, updated_iterations_to_rerun = (
         lookback_algorithm.GetNextRunPointNumber(data_points,
                                                  algorithm_settings))
+    logging.info(('%s/%s/%s/%s/%s next_build_number: %s, suspected_build: %s '
+                  'updated_iterations_to_rerun: %s'), master_name, builder_name,
+                 triggering_build_number, step_name, test_name,
+                 next_build_number, suspected_build,
+                 updated_iterations_to_rerun)
 
     if updated_iterations_to_rerun and user_specified_iterations is None:
       # The lookback algorithm determined the build needs to be rerun with more
@@ -706,6 +727,9 @@ class NextBuildNumberPipeline(BasePipeline):
 
     if _IsFinished(next_build_number, earliest_build_number,
                    latest_build_number, updated_iterations_to_rerun):
+      logging.info('%s/%s/%s/%s/%s Regression range analysis completed',
+                   master_name, builder_name, triggering_build_number,
+                   step_name, test_name)
       build_confidence_score = _GetBuildConfidenceScore(
           suspected_build, data_points_within_range)
 
@@ -724,3 +748,26 @@ class NextBuildNumberPipeline(BasePipeline):
                                             user_specified_iterations,
                                             user_specified_range)
         yield UpdateFlakeBugPipeline(analysis_urlsafe_key)
+    else:
+      logging.info(('%s/%s/%s/%s/%s Starting RecursiveFlakePipeline on the '
+                    'next build number: %s'), master_name, builder_name,
+                   triggering_build_number, step_name, test_name,
+                   next_build_number)
+      pipeline_job = RecursiveFlakePipeline(
+          analysis_urlsafe_key,
+          next_build_number,
+          lower_bound_build_number,
+          upper_bound_build_number,
+          user_specified_iterations,
+          step_metadata=step_metadata,
+          manually_triggered=manually_triggered,
+          use_nearby_neighbor=use_nearby_neighbor,
+          step_size=(current_build_number - next_build_number),
+          retries=0,
+          force=force)
+
+      # Disable attribute 'target' defined outside __init__ pylint warning,
+      # because pipeline generates its own __init__ based on run function.
+      pipeline_job.target = (  # pylint: disable=W0201
+          appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
+      pipeline_job.start(queue_name=self.queue_name or constants.DEFAULT_QUEUE)
