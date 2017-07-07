@@ -34,7 +34,6 @@ go build
 # Looks good? Create CL for review...
 ./bqshemaupdater rawevents/<table-id>.json  # Actually create the table
 ```
-
 # Sending events
 
 Once you have a table, you can send events to it!
@@ -61,3 +60,12 @@ internal.
 1. Make sure that file is available to your service. For CQ, this takes the form
    of passing the name of the credentials file to the service on start. [See
    CL.](https://chrome-internal-review.googlesource.com/c/405268/)
+
+## From Python
+
+### Dependencies
+
+You will need the
+[google-cloud-bigquery](https://pypi.python.org/pypi/google-cloud-bigquery)
+library in your environment. infra.git/ENV has this dependency already, so you
+only need to add it if you are working outside that environment.
