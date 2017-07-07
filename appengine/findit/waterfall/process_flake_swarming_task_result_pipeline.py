@@ -53,6 +53,10 @@ class ProcessFlakeSwarmingTaskResultPipeline(
                                  flake_swarming_task,
                                  has_valid_artifact=True):
     """Update MasterFlakeAnalysis to include result of the swarming task."""
+    if master_build_number is None:
+      # Bail out if this swarming task is run outside of a flake analysis.
+      return
+
     master_flake_analysis = MasterFlakeAnalysis.GetVersion(
         master_name,
         builder_name,
@@ -138,6 +142,9 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     flake_swarming_task.successes = successes
     flake_swarming_task.put()
 
+    # TODO(crbug.com/739502): Due to supporting triggering flake swarming tasks
+    # outside of the context of flake analyses, de-couple updates to
+    # MasterFlakeAnalysis from processing flake swarming task results.
     self._UpdateMasterFlakeAnalysis(
         master_name, builder_name, build_number, step_name, master_build_number,
         test_name, version_number, pass_rate, flake_swarming_task)
@@ -163,6 +170,10 @@ class ProcessFlakeSwarmingTaskResultPipeline(
                                      build_number, step_name, task_id, *args):
     # Saves the last-attempted swarming task id to the corresponding analysis.
     master_build_number, test_name, version_number = args
+    if master_build_number is None:
+      # Bail out if this swarming task is run outside of a flake analysis.
+      return
+
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name,
         builder_name,

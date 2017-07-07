@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import base64
-import copy
 from collections import defaultdict
 from datetime import timedelta
 import hashlib
@@ -23,6 +22,7 @@ from google.appengine.ext import ndb
 from common.waterfall import buildbucket_client
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http import auth_util
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from infra_api_clients import logdog_util
 from libs import time_util
 from model.wf_try_bot_cache import WfTryBot
@@ -81,6 +81,9 @@ BOT_COUNT_URL = 'https://%s/_ah/api/swarming/v1/bots/count%s'
 NEW_TASK_URL = 'https://%s/_ah/api/swarming/v1/tasks/new'
 TASK_ID_URL = 'https://%s/_ah/api/swarming/v1/task/%s/request'
 TASK_RESULT_URL = 'https://%s/_ah/api/swarming/v1/task/%s/result'
+
+DEFAULT_MINIMUM_NUMBER_AVAILABLE_BOTS = 5
+DEFAULT_MINIMUM_PERCENTAGE_AVAILABLE_BOTS = 0.1
 
 
 def _SwarmingHost():
@@ -582,6 +585,30 @@ def _DimensionsToQueryString(dimensions):
   # Url looks like 'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/bots
   # /count?dimensions=os:Windows-7-SP1&dimensions=cpu:x86-64'
   return '?dimensions=%s' % dimension_qs
+
+
+def BotsAvailableForTask(step_metadata):
+  """Check if there are available bots for a swarming task's dimensions."""
+  if not step_metadata:
+    return False
+
+  minimum_number_of_available_bots = (
+      waterfall_config.GetSwarmingSettings().get(
+          'minimum_number_of_available_bots',
+          DEFAULT_MINIMUM_NUMBER_AVAILABLE_BOTS))
+  minimum_percentage_of_available_bots = (
+      waterfall_config.GetSwarmingSettings().get(
+          'minimum_percentage_of_available_bots',
+          DEFAULT_MINIMUM_PERCENTAGE_AVAILABLE_BOTS))
+  dimensions = step_metadata.get('dimensions')
+  bot_counts = GetSwarmingBotCounts(dimensions, HttpClientAppengine())
+
+  total_count = bot_counts.get('count') or -1
+  available_count = bot_counts.get('available', 0)
+  available_rate = float(available_count) / total_count
+
+  return (available_count > minimum_number_of_available_bots and
+          available_rate > minimum_percentage_of_available_bots)
 
 
 def GetSwarmingBotCounts(dimensions, http_client):

@@ -5,6 +5,7 @@
 from google.appengine.ext import ndb
 
 from libs import analysis_status
+from waterfall.flake import triggering_sources
 
 
 class BaseSwarmingTask(ndb.Model):
@@ -40,13 +41,20 @@ class BaseSwarmingTask(ndb.Model):
   # A URL to call back the pipeline monitoring the progress of this task.
   callback_url = ndb.StringProperty(indexed=False)
 
-  # A target name for the callback
+  # A target name for the callback.
   callback_target = ndb.StringProperty(indexed=False)
 
   # parameters need to be stored and analyzed later.
   parameters = ndb.JsonProperty(default={}, indexed=False, compressed=True)
 
   canonical_step_name = ndb.StringProperty(indexed=False)
+
+  # The number of seconds this task is expected to complete within.
+  timeout_seconds = ndb.IntegerProperty(indexed=False)
+
+  # From where this task was requested.
+  triggering_source = ndb.IntegerProperty(
+      indexed=False, default=triggering_sources.FINDIT_PIPELINE)
 
   def Reset(self):
     """Resets the task as if it's a new task."""

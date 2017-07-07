@@ -17,6 +17,7 @@ import findit_api
 from libs import analysis_status
 from model import analysis_approach_type
 from model.base_suspected_cl import RevertCL
+from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_swarming_task import WfSwarmingTask
@@ -24,6 +25,7 @@ from model.wf_try_job import WfTryJob
 from waterfall import build_util
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
+from waterfall.flake import step_mapper
 
 
 class FinditApiTest(testing.EndpointsTestCase):
@@ -1280,3 +1282,294 @@ class FinditApiTest(testing.EndpointsTestCase):
         'AnalyzeBuildFailures',
         body=builds)
     mocked_func.assert_not_called()
+
+  @mock.patch.object(
+      findit_api, '_AsyncProcessFlakeSwarmingTaskRequest', return_value=None)
+  def testUnauthorizedRequestToTriggerFlakeSwarmingTask(self, mocked_func):
+    self.mock_current_user(user_email='test@blabla.com', is_admin=False)
+
+    flake_request = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 123,
+        'step_name': 's',
+        'test_name': 't',
+        'total_reruns': 100,
+    }
+
+    self.assertRaisesRegexp(
+        webtest.app.AppError,
+        re.compile('.*401 Unauthorized.*', re.MULTILINE | re.DOTALL),
+        self.call_api,
+        'TriggerFlakeSwarmingTask',
+        body=flake_request)
+    mocked_func.assert_not_called()
+
+  @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
+  def testTriggerNewFlakeSwarmingTask(self, mocked_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+
+    def MockedFindMatchingWaterfallStep(build_step, _):
+      build_step.wf_master_name = master_name
+      build_step.wf_builder_name = builder_name
+      build_step.wf_build_number = build_number
+      build_step.wf_step_name = step_name
+      build_step.supported = True
+
+    mocked_fn.side_effect = MockedFindMatchingWaterfallStep
+    self.mock_current_user(user_email='test@google.com')
+
+    flake_request = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': step_name,
+        'test_name': test_name,
+        'total_reruns': 100,
+    }
+    response = self.call_api('TriggerFlakeSwarmingTask', body=flake_request)
+    self.assertEqual(200, response.status_int)
+    self.assertTrue(response.json_body.get('queued'))
+
+  @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
+  def testTriggerExistingFlakeSwarmingTaskInProgress(self, mocked_fn):
+    self.mock_current_user(user_email='test@google.com')
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    total_reruns = 200
+    task_id = 'a_task_id'
+    timeout_seconds = 2 * 60 * 60
+
+    def MockedFindMatchingWaterfallStep(build_step, _):
+      build_step.wf_master_name = master_name
+      build_step.wf_builder_name = builder_name
+      build_step.wf_build_number = build_number
+      build_step.wf_step_name = step_name
+      build_step.supported = True
+
+    mocked_fn.side_effect = MockedFindMatchingWaterfallStep
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.tries = total_reruns
+    task.status = analysis_status.RUNNING
+    task.task_id = 'a_task_id'
+    task.timeout_seconds = timeout_seconds
+    task.put()
+
+    flake_request = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': step_name,
+        'test_name': test_name,
+        'total_reruns': total_reruns,
+    }
+
+    response = self.call_api('TriggerFlakeSwarmingTask', body=flake_request)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual({
+        'completed': False,
+        'task_id': task_id,
+        'timeout_seconds': str(timeout_seconds)
+    }, response.json_body)
+
+  @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
+  def testTriggerExistingFlakeSwarmingTaskAlreadyCompleted(self, mocked_fn):
+    self.mock_current_user(user_email='test@google.com')
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    total_reruns = 200
+    passes = 175
+    failures = total_reruns - passes
+    task_id = 'a_task_id'
+    timeout_seconds = 2 * 60 * 60
+
+    def MockedFindMatchingWaterfallStep(build_step, _):
+      build_step.wf_master_name = master_name
+      build_step.wf_builder_name = builder_name
+      build_step.wf_build_number = build_number
+      build_step.wf_step_name = step_name
+      build_step.supported = True
+
+    mocked_fn.side_effect = MockedFindMatchingWaterfallStep
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.tries = total_reruns
+    task.successes = passes
+    task.status = analysis_status.COMPLETED
+    task.task_id = 'a_task_id'
+    task.timeout_seconds = timeout_seconds
+    task.put()
+
+    flake_request = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': step_name,
+        'test_name': test_name,
+        'total_reruns': total_reruns,
+    }
+
+    response = self.call_api('TriggerFlakeSwarmingTask', body=flake_request)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual({
+        'task_id': task_id,
+        'completed': True,
+        'total_reruns': str(total_reruns),
+        'pass_count': str(passes),
+        'fail_count': str(failures),
+        'timeout_seconds': str(timeout_seconds)
+    }, response.json_body)
+
+  @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
+  def testTriggerExistingFlakeSwarmingTaskError(self, mocked_fn):
+    self.mock_current_user(user_email='test@google.com')
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    total_reruns = 100
+    step_name = 's'
+    test_name = 't'
+    error = {'error': 'e', 'message': 'm'}
+    task_id = 'a_task_id'
+    timeout_seconds = 60 * 60
+
+    def MockedFindMatchingWaterfallStep(build_step, _):
+      build_step.wf_master_name = master_name
+      build_step.wf_builder_name = builder_name
+      build_step.wf_build_number = build_number
+      build_step.wf_step_name = step_name
+      build_step.supported = True
+
+    mocked_fn.side_effect = MockedFindMatchingWaterfallStep
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.tries = total_reruns
+    task.status = analysis_status.ERROR
+    task.task_id = 'a_task_id'
+    task.error = error
+    task.timeout_seconds = timeout_seconds
+    task.put()
+
+    flake_request = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': step_name,
+        'test_name': test_name,
+        'total_reruns': total_reruns,
+    }
+
+    response = self.call_api('TriggerFlakeSwarmingTask', body=flake_request)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual({
+        'task_id': task_id,
+        'completed': False,
+        'error': True,
+        'timeout_seconds': str(timeout_seconds)
+    }, response.json_body)
+
+  @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
+  def testTriggerExistingFlakeSwarmingTaskNotYetStarted(self, mocked_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    total_reruns = 100
+    step_name = 's'
+    test_name = 't'
+
+    def MockedFindMatchingWaterfallStep(build_step, _):
+      build_step.wf_master_name = master_name
+      build_step.wf_builder_name = builder_name
+      build_step.wf_build_number = build_number
+      build_step.wf_step_name = step_name
+      build_step.supported = True
+
+    mocked_fn.side_effect = MockedFindMatchingWaterfallStep
+    self.mock_current_user(user_email='test@google.com')
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.queued = True
+    task.put()
+
+    flake_request = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': step_name,
+        'test_name': test_name,
+        'total_reruns': total_reruns,
+    }
+
+    response = self.call_api('TriggerFlakeSwarmingTask', body=flake_request)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual({'queued': True}, response.json_body)
+
+  @mock.patch.object(findit_api, '_AsyncProcessFlakeSwarmingTaskRequest')
+  @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
+  def testTriggerNewFlakeSwarmingTaskException(self, mocked_waterfall_step,
+                                               mocked_request):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+
+    def MockedFindMatchingWaterfallStep(build_step, _):
+      build_step.wf_master_name = master_name
+      build_step.wf_builder_name = builder_name
+      build_step.wf_build_number = build_number
+      build_step.wf_step_name = step_name
+      build_step.supported = True
+
+    self.mock_current_user(user_email='test@google.com')
+    mocked_request.side_effect = Exception()
+    mocked_waterfall_step.side_effect = MockedFindMatchingWaterfallStep
+
+    flake_request = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': step_name,
+        'test_name': test_name,
+    }
+
+    response = self.call_api('TriggerFlakeSwarmingTask', body=flake_request)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual({'queued': False}, response.json_body)
+
+  @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
+  def testTriggerNewFlakeSwarmingTaskNotSupported(self, mocked_fn):
+
+    def MockedFindMatchingWaterfallStep(build_step, _):
+      build_step.supported = False
+
+    mocked_fn.side_effect = MockedFindMatchingWaterfallStep
+
+    self.mock_current_user(user_email='test@google.com')
+
+    flake_request = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 123,
+        'step_name': 's',
+        'test_name': 't',
+    }
+
+    response = self.call_api('TriggerFlakeSwarmingTask', body=flake_request)
+    self.assertEqual(200, response.status_int)
+    self.assertEqual({'supported': False}, response.json_body)

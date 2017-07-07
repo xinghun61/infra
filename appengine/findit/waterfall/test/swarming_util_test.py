@@ -1492,3 +1492,18 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
       random_func.side_effect = [seconds_delay, None]
       self.assertEqual(mocked_utc_eta,
                        swarming_util.GetETAToStartAnalysis(False))
+
+  @mock.patch.object(swarming_util, 'GetSwarmingBotCounts')
+  def testCheckBotsAvailability(self, mock_fn):
+    step_metadata = {'dimensions': {'os': 'OS'}}
+
+    mock_fn.return_value = {
+        'count': 20,
+        'dead': 1,
+        'quarantined': 0,
+        'busy': 5,
+        'available': 14
+    }
+
+    self.assertFalse(swarming_util.BotsAvailableForTask(None))
+    self.assertTrue(swarming_util.BotsAvailableForTask(step_metadata))

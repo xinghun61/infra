@@ -29,6 +29,7 @@ from handlers import periodic_bot_update
 from handlers import pipeline_errors_dashboard
 from handlers import process_failure_analysis_requests
 from handlers import process_flake_analysis_request
+from handlers import process_flake_swarming_task_request
 from handlers import swarming_push
 from handlers import triage_suspected_cl
 from handlers import try_job_dashboard
@@ -117,6 +118,8 @@ waterfall_backend_web_pages_handler_mappings = [
      process_failure_analysis_requests.ProcessFailureAnalysisRequests),
     ('/waterfall/process-flake-analysis-request',
      process_flake_analysis_request.ProcessFlakeAnalysisRequest),
+    ('/waterfall/process-flake-swarming-task-request',
+     process_flake_swarming_task_request.ProcessFlakeSwarmingTaskRequest),
 ]
 waterfall_backend_web_application = webapp2.WSGIApplication(
     waterfall_backend_web_pages_handler_mappings, debug=False)

@@ -8,7 +8,6 @@ from google.appengine.ext import ndb
 
 from common import constants
 from gae_libs import appengine_util
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
@@ -36,9 +35,6 @@ _DEFAULT_ITERATIONS_TO_RERUN = 100
 _BASE_COUNT_DOWN_SECONDS = 2 * 60
 # Tries to start the RecursiveFlakePipeline on peak hours at most 5 times.
 _MAX_RETRY_TIMES = 5
-
-_MINIMUM_NUMBER_BOT = 5
-_MINIMUM_PERCENT_BOT = 0.1
 
 # In order not to hog resources on the swarming server, set the timeout to a
 # non-configurable 3 hours.
@@ -341,28 +337,6 @@ class RecursiveFlakePipeline(BasePipeline):
     kwargs['countdown'] = kwargs.get('retries', 1) * _BASE_COUNT_DOWN_SECONDS
     self.start(*args, **kwargs)
 
-  def _BotsAvailableForTask(self, step_metadata):
-    """Check if there are available bots for this task's dimensions."""
-    if not step_metadata:
-      return False
-
-    minimum_number_of_available_bots = (
-        waterfall_config.GetSwarmingSettings().get(
-            'minimum_number_of_available_bots', _MINIMUM_NUMBER_BOT))
-    minimum_percentage_of_available_bots = (
-        waterfall_config.GetSwarmingSettings().get(
-            'minimum_percentage_of_available_bots', _MINIMUM_PERCENT_BOT))
-    dimensions = step_metadata.get('dimensions')
-    bot_counts = swarming_util.GetSwarmingBotCounts(dimensions,
-                                                    HttpClientAppengine())
-
-    total_count = bot_counts.get('count') or -1
-    available_count = bot_counts.get('available', 0)
-    available_rate = float(available_count) / total_count
-
-    return (available_count > minimum_number_of_available_bots and
-            available_rate > minimum_percentage_of_available_bots)
-
   def _LogUnexpectedAbort(self):
     if not self.was_aborted:
       return
@@ -431,7 +405,7 @@ class RecursiveFlakePipeline(BasePipeline):
     """
     # If retries has not exceeded max count and there are available bots,
     # we can start the analysis.
-    can_start_analysis = (self._BotsAvailableForTask(step_metadata)
+    can_start_analysis = (swarming_util.BotsAvailableForTask(step_metadata)
                           if retries <= _MAX_RETRY_TIMES else True)
 
     if can_start_analysis:
@@ -451,11 +425,10 @@ class RecursiveFlakePipeline(BasePipeline):
           iterations) if use_nearby_neighbor else preferred_run_build_number
 
       logging.info(('%s/%s/%s/%s/%s Bots are avialable to analyze build %s with'
-                    ' %s iterations and %dsec timeout'),
-                   analysis.master_name, analysis.builder_name,
-                   analysis.build_number, analysis.step_name,
-                   analysis.test_name, actual_run_build_number, iterations,
-                   hard_timeout_seconds)
+                    ' %s iterations and %dsec timeout'), analysis.master_name,
+                   analysis.builder_name, analysis.build_number,
+                   analysis.step_name, analysis.test_name,
+                   actual_run_build_number, iterations, hard_timeout_seconds)
 
       task_id = yield TriggerFlakeSwarmingTaskPipeline(
           self.master_name,
@@ -559,8 +532,8 @@ def _UpdateAnalysisWithSwarmingTaskError(flake_swarming_task, analysis):
       'error': 'Swarming task failed',
       'message': 'The last swarming task did not complete as expected'
   }
-  analysis.Update(status=analysis_status.ERROR, error=error,
-                  end_time=time_util.GetUTCNow())
+  analysis.Update(
+      status=analysis_status.ERROR, error=error, end_time=time_util.GetUTCNow())
 
 
 def _GetEarliestBuildNumber(lower_bound_build_number, triggering_build_number,

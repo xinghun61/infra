@@ -13,7 +13,6 @@ from waterfall import build_util
 from waterfall import process_flake_swarming_task_result_pipeline
 from waterfall import swarming_util
 from waterfall.build_info import BuildInfo
-from waterfall import process_flake_swarming_task_result_pipeline
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
 from waterfall.test import (process_base_swarming_task_result_pipeline_test as
@@ -188,3 +187,31 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         process_flake_swarming_task_result_pipeline._GetCommitsBetweenRevisions(
             'r0', 'r4'), ['r1', 'r2', 'r3', 'r4'])
+
+  # TODO(crbug.com/739502): Remove this test,
+  def testUpdateMasterFlakeAnalysisBailOut(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    pipeline_job = ProcessFlakeSwarmingTaskResultPipeline(
+        master_name, builder_name, build_number, step_name, test_name)
+    pipeline_job._UpdateMasterFlakeAnalysis(master_name, builder_name,
+                                            build_number, step_name, None,
+                                            test_name, 1, 0.5, None)
+
+  # TODO(crbug.com/739502): Remove this test,
+  def testSaveLastAttemptedSwarmingTask(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    task_id = 'task_id'
+    version_number = 1
+    pipeline_job = ProcessFlakeSwarmingTaskResultPipeline(
+        master_name, builder_name, build_number, step_name, test_name)
+    pipeline_job._SaveLastAttemptedSwarmingTask(
+        master_name, builder_name, build_number, step_name, task_id, None,
+        test_name, version_number)

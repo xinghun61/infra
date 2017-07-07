@@ -86,8 +86,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     flake_swarming_task.error = error
     flake_swarming_task.put()
 
-  @mock.patch.object(
-      RecursiveFlakePipeline, '_BotsAvailableForTask', return_value=True)
+  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
   def testRecursiveFlakePipeline(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -145,8 +144,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
-  @mock.patch.object(
-      RecursiveFlakePipeline, '_BotsAvailableForTask', return_value=True)
+  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
   def testRecursiveFlakePipelineWithUserInput(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -209,8 +207,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
-  @mock.patch.object(
-      RecursiveFlakePipeline, '_BotsAvailableForTask', return_value=True)
+  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
   def testRecursiveFlakePipelineWithUpperLowerBounds(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -272,8 +269,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
-  @mock.patch.object(
-      RecursiveFlakePipeline, '_BotsAvailableForTask', return_value=True)
+  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
   def testRecursiveFlakePipelineWithForceFlag(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -334,8 +330,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
-  @mock.patch.object(
-      RecursiveFlakePipeline, '_BotsAvailableForTask', return_value=True)
+  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
   def testNextBuildPipelineForNewRecursionFirstFlake(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -865,7 +860,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis_status.RUNNING, analysis.status)
 
   @mock.patch.object(recursive_flake_pipeline, '_BASE_COUNT_DOWN_SECONDS', 0)
-  @mock.patch.object(RecursiveFlakePipeline, '_BotsAvailableForTask')
+  @mock.patch.object(swarming_util, 'BotsAvailableForTask')
   def testTryLaterIfNoAvailableBots(self, mock_fn):
     mock_fn.side_effect = [False, True]
 
@@ -923,36 +918,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
-  def testCheckBotsAvailabilityNone(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    analysis.Save()
-
-    self.assertFalse(
-        RecursiveFlakePipeline(analysis.key.urlsafe(), 100, None, None, None)
-        ._BotsAvailableForTask(None))
-
-  @mock.patch.object(swarming_util, 'GetSwarmingBotCounts')
-  def testCheckBotsAvailability(self, mock_fn):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    analysis.Save()
-
-    step_metadata = {'dimensions': {'os': 'OS'}}
-
-    mock_fn.return_value = {
-        'count': 20,
-        'dead': 1,
-        'quarantined': 0,
-        'busy': 5,
-        'available': 14
-    }
-
-    self.assertTrue(
-        RecursiveFlakePipeline(analysis.key.urlsafe(), 100, None, None, None)
-        ._BotsAvailableForTask(step_metadata))
-
   @mock.patch.object(swarming_util, 'GetETAToStartAnalysis', return_value=None)
-  @mock.patch.object(
-      RecursiveFlakePipeline, '_BotsAvailableForTask', return_value=False)
+  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=False)
   def testRetriesExceedMax(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -1169,10 +1136,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                          master_name, builder_name, build_number, step_name,
                          10))
 
-  @mock.patch.object(recursive_flake_pipeline, '_IsFinished',
-                     return_value=False)
-  @mock.patch.object(lookback_algorithm, 'GetNextRunPointNumber',
-                     return_value=(122, None, None))
+  @mock.patch.object(
+      recursive_flake_pipeline, '_IsFinished', return_value=False)
+  @mock.patch.object(
+      lookback_algorithm,
+      'GetNextRunPointNumber',
+      return_value=(122, None, None))
   def testNextBuildNumberPipelineStartsRecursiveFlakePipeline(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -1183,16 +1152,17 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                                           build_number, step_name, test_name)
     analysis.put()
 
-    flake_swarming_task = FlakeSwarmingTask.Create(master_name, builder_name,
-                                                   build_number, step_name,
-                                                   test_name)
+    flake_swarming_task = FlakeSwarmingTask.Create(
+        master_name, builder_name, build_number, step_name, test_name)
     flake_swarming_task.put()
 
     self.MockPipeline(
         RecursiveFlakePipeline,
         '',
-        expected_args=[analysis.key.urlsafe(), 122, None, None, None, None,
-                       False, False, 1, 0, False],
+        expected_args=[
+            analysis.key.urlsafe(), 122, None, None, None, None, False, False,
+            1, 0, False
+        ],
         expected_kwargs={})
 
     pipeline_job = NextBuildNumberPipeline(analysis.key.urlsafe(), build_number,

@@ -288,6 +288,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     # Update swarming task info.
     swarming_task = self._GetSwarmingTask(*call_args)
     swarming_task.task_id = task_id
+    swarming_task.timeout_seconds = hard_timeout_seconds
     swarming_task.parameters['tests'] = tests
     swarming_task.parameters['iterations_to_rerun'] = iterations_to_rerun
     swarming_task.parameters['ref_name'] = swarming_util.GetTagValue(
