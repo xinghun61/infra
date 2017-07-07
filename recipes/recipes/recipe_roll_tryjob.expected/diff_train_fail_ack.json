@@ -347,8 +347,13 @@
       "/path/to/tmp/json"
     ],
     "name": "parse description",
+    "stdin": "Recipe-Manual-Change-depot_tools: ack",
     "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@{}@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"Recipe-Manual-Change-depot_tools\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"ack\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
     ]
   },
@@ -356,19 +361,16 @@
     "cmd": [
       "python",
       "-u",
-      "import sys; sys.exit(1)"
+      "import sys; sys.exit(0)"
     ],
     "name": "result",
     "~followup_annotations": [
-      "step returned non-zero exit code: 1",
-      "@@@STEP_TEXT@Add Recipe-Manual-Change-depot_tools footer to the CL to acknowledge the change will require manual code changes in 'depot_tools' repo@@@",
-      "@@@STEP_FAILURE@@@"
+      "@@@STEP_TEXT@Recognized manual change ACK footer (['ack']).@@@"
     ]
   },
   {
     "name": "$result",
-    "reason": "Step('result') failed with return_code 1",
     "recipe_result": null,
-    "status_code": 1
+    "status_code": 0
   }
 ]

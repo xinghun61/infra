@@ -10,12 +10,14 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
+  'depot_tools/tryserver',
   'recipe_engine/context',
   'recipe_engine/file',
   'recipe_engine/json',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
+  'recipe_engine/raw_io',
   'recipe_engine/step',
 ]
 
@@ -136,10 +138,17 @@ def RunSteps(api, upstream_project, downstream_project):
   if train_diff.retcode == 0:
     return
 
-  api.python.failing_step(
-    'result',
-    ('Landing this upstream patch will require code changes '
-     'in %r repo' % downstream_project))
+  manual_change_footer = 'Recipe-Manual-Change-%s' % downstream_project
+  footer_contents = api.tryserver.get_footer(manual_change_footer)
+  if footer_contents:
+    api.python.succeeding_step(
+        'result', 'Recognized manual change ACK footer (%r).' % footer_contents)
+  else:
+    api.python.failing_step(
+        'result',
+        ('Add %s footer to the CL to acknowledge the change will require '
+         'manual code changes in %r repo') % (
+             manual_change_footer, downstream_project))
 
 
 # TODO(phajdan.jr): recipe engine itself should provide mock configs.
@@ -220,7 +229,7 @@ def GenTests(api):
 
   yield (
     api.test('diff_train_fail') +
-    api.properties.generic(
+    api.properties.tryserver(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
     api.luci_config.get_project_config(
@@ -228,5 +237,28 @@ def GenTests(api):
         _make_recipe_config(api, 'depot_tools')) +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
-    api.step_data('diff (train)', retcode=1)
+    api.step_data('diff (train)', retcode=1) +
+    api.override_step_data(
+        'git_cl description', stdout=api.raw_io.output('')) +
+    api.override_step_data(
+        'parse description', api.json.output({}))
+  )
+
+  yield (
+    api.test('diff_train_fail_ack') +
+    api.properties.tryserver(
+        upstream_project='recipe_engine', downstream_project='depot_tools') +
+    api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
+    api.luci_config.get_project_config(
+        'depot_tools', 'recipes.cfg',
+        _make_recipe_config(api, 'depot_tools')) +
+    api.step_data('test (with patch)', retcode=1) +
+    api.step_data('diff (test)', retcode=1) +
+    api.step_data('diff (train)', retcode=1) +
+    api.override_step_data(
+        'git_cl description', stdout=api.raw_io.output(
+            'Recipe-Manual-Change-depot_tools: ack')) +
+    api.override_step_data(
+        'parse description', api.json.output(
+            {'Recipe-Manual-Change-depot_tools': ['ack']}))
   )
