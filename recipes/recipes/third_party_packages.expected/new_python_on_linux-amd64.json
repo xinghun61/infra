@@ -220,24 +220,19 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
-      "[START_DIR]/python/_support/readline-7.0",
-      "511"
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/readline-7.0"
     ],
     "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
     "name": "python.readline-7.0.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@",
-      "@@@STEP_LOG_LINE@python.inline@@@@",
-      "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
-      "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
-      "@@@STEP_LOG_LINE@python.inline@mode = int(sys.argv[2])@@@",
-      "@@@STEP_LOG_LINE@python.inline@if not os.path.isdir(path):@@@",
-      "@@@STEP_LOG_LINE@python.inline@  if os.path.exists(path):@@@",
-      "@@@STEP_LOG_LINE@python.inline@    print \"%s exists but is not a dir\" % path@@@",
-      "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
-      "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
-      "@@@STEP_LOG_END@python.inline@@@"
+      "@@@STEP_NEST_LEVEL@2@@@"
     ]
   },
   {
@@ -286,24 +281,19 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
-      "[START_DIR]/python/_support/termcap-1.3.1",
-      "511"
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/termcap-1.3.1"
     ],
     "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
     "name": "python.termcap-1.3.1.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@",
-      "@@@STEP_LOG_LINE@python.inline@@@@",
-      "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
-      "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
-      "@@@STEP_LOG_LINE@python.inline@mode = int(sys.argv[2])@@@",
-      "@@@STEP_LOG_LINE@python.inline@if not os.path.isdir(path):@@@",
-      "@@@STEP_LOG_LINE@python.inline@  if os.path.exists(path):@@@",
-      "@@@STEP_LOG_LINE@python.inline@    print \"%s exists but is not a dir\" % path@@@",
-      "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
-      "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
-      "@@@STEP_LOG_END@python.inline@@@"
+      "@@@STEP_NEST_LEVEL@2@@@"
     ]
   },
   {
@@ -352,24 +342,19 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
-      "[START_DIR]/python/_support/zlib-1.2.11",
-      "511"
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/zlib-1.2.11"
     ],
     "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
     "name": "python.zlib-1.2.11.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@",
-      "@@@STEP_LOG_LINE@python.inline@@@@",
-      "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
-      "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
-      "@@@STEP_LOG_LINE@python.inline@mode = int(sys.argv[2])@@@",
-      "@@@STEP_LOG_LINE@python.inline@if not os.path.isdir(path):@@@",
-      "@@@STEP_LOG_LINE@python.inline@  if os.path.exists(path):@@@",
-      "@@@STEP_LOG_LINE@python.inline@    print \"%s exists but is not a dir\" % path@@@",
-      "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
-      "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
-      "@@@STEP_LOG_END@python.inline@@@"
+      "@@@STEP_NEST_LEVEL@2@@@"
     ]
   },
   {
@@ -419,24 +404,19 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport sys, os\npath = sys.argv[1]\nmode = int(sys.argv[2])\nif not os.path.isdir(path):\n  if os.path.exists(path):\n    print \"%s exists but is not a dir\" % path\n    sys.exit(1)\n  os.makedirs(path, mode)\n",
-      "[START_DIR]/python/_support/openssl-1.1.0e",
-      "511"
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/openssl-1.1.0e"
     ],
     "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
     "name": "python.openssl-1.1.0e.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@",
-      "@@@STEP_LOG_LINE@python.inline@@@@",
-      "@@@STEP_LOG_LINE@python.inline@import sys, os@@@",
-      "@@@STEP_LOG_LINE@python.inline@path = sys.argv[1]@@@",
-      "@@@STEP_LOG_LINE@python.inline@mode = int(sys.argv[2])@@@",
-      "@@@STEP_LOG_LINE@python.inline@if not os.path.isdir(path):@@@",
-      "@@@STEP_LOG_LINE@python.inline@  if os.path.exists(path):@@@",
-      "@@@STEP_LOG_LINE@python.inline@    print \"%s exists but is not a dir\" % path@@@",
-      "@@@STEP_LOG_LINE@python.inline@    sys.exit(1)@@@",
-      "@@@STEP_LOG_LINE@python.inline@  os.makedirs(path, mode)@@@",
-      "@@@STEP_LOG_END@python.inline@@@"
+      "@@@STEP_NEST_LEVEL@2@@@"
     ]
   },
   {
@@ -489,11 +469,15 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
       "*static*\nLIBTERMCAP_PREFIX=[START_DIR]/python/_support/termcap-1.3.1/prefix\nbinascii binascii.c -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include [START_DIR]/python/_support/zlib-1.2.11/prefix/lib/libz.a\nzlib zlibmodule.c -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include [START_DIR]/python/_support/zlib-1.2.11/prefix/lib/libz.a\nreadline readline.c -I[START_DIR]/python/_support/readline-7.0/prefix/include -I[START_DIR]/python/_support/termcap-1.3.1/prefix/include [START_DIR]/python/_support/readline-7.0/prefix/lib/libreadline.a [START_DIR]/python/_support/termcap-1.3.1/prefix/lib/libtermcap.a\n_hashlib _hashopenssl.c -I[START_DIR]/python/_support/openssl-1.1.0e/prefix/include [START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libssl.a [START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libcrypto.a\n_ssl _ssl.c -DUSE_SSL -I[START_DIR]/python/_support/openssl-1.1.0e/prefix/include [START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libssl.a [START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libcrypto.a\n",
       "[START_DIR]/python/checkout/Modules/Setup.local"
     ],
     "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
     "name": "python.Configure static modules",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
@@ -552,11 +536,15 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
       "[START_DIR]/python/package/lib/python2.7/ssl.py",
       "/path/to/tmp/"
     ],
     "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
     "name": "python.provision SSL.read ssl.py",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -566,11 +554,15 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
       "RECIPE[infra::third_party_packages].resources/python_ssl_suffix.py",
       "/path/to/tmp/"
     ],
     "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
     "name": "python.provision SSL.read ssl.py addendum",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -580,11 +572,15 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
       "\n",
       "[START_DIR]/python/package/lib/python2.7/ssl.py"
     ],
     "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
     "name": "python.provision SSL.write ssl.py",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"

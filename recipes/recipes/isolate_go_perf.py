@@ -16,7 +16,6 @@ DEPS = [
   'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/raw_io',
-  'recipe_engine/shutil',
   'recipe_engine/step',
   'recipe_engine/time',
 ]
@@ -78,7 +77,7 @@ def build_isolate(api):
   go_bin = api.path['checkout'].join('go', 'bin')
   # Make sure we actually build go binary, as opposed to accidentally re-using
   # old data.
-  api.shutil.rmtree(name='clean go bin', path=go_bin)
+  api.file.rmtree('clean go bin', go_bin)
   api.python('go third parties', go_env, ['go', 'version'])
   api.python('build luci-go', go_env,
              ['go', 'install', 'github.com/luci/luci-go/client/cmd/...'])

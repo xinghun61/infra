@@ -187,21 +187,21 @@ staging and prod environments.
 &mdash; **def [RunSteps](/recipes/recipes/infra_repo_trybot.py#19)(api):**
 ### *recipes* / [isolate\_go\_perf](/recipes/recipes/isolate_go_perf.py)
 
-[DEPS](/recipes/recipes/isolate_go_perf.py#5): [build/perf\_dashboard][build/recipe_modules/perf_dashboard], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/shutil][recipe_engine/recipe_modules/shutil], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
+[DEPS](/recipes/recipes/isolate_go_perf.py#5): [build/perf\_dashboard][build/recipe_modules/perf_dashboard], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
 
-&mdash; **def [RunSteps](/recipes/recipes/isolate_go_perf.py#32)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/isolate_go_perf.py#31)(api):**
 
-&mdash; **def [build\_isolate](/recipes/recipes/isolate_go_perf.py#76)(api):**
+&mdash; **def [build\_isolate](/recipes/recipes/isolate_go_perf.py#75)(api):**
 
-&mdash; **def [download\_test\_data](/recipes/recipes/isolate_go_perf.py#101)(api):**
+&mdash; **def [download\_test\_data](/recipes/recipes/isolate_go_perf.py#100)(api):**
 
-&mdash; **def [get\_file\_size](/recipes/recipes/isolate_go_perf.py#140)(api, name, path):**
+&mdash; **def [get\_file\_size](/recipes/recipes/isolate_go_perf.py#139)(api, name, path):**
 
 Returns file size if file exists, else None
 
-&mdash; **def [post\_to\_perf\_dashboard](/recipes/recipes/isolate_go_perf.py#115)(api, taken_seconds, revision, tstamp_iso_str, tstamp_unix):**
+&mdash; **def [post\_to\_perf\_dashboard](/recipes/recipes/isolate_go_perf.py#114)(api, taken_seconds, revision, tstamp_iso_str, tstamp_unix):**
 
-&mdash; **def [upload\_isolate](/recipes/recipes/isolate_go_perf.py#88)(api, isolate):**
+&mdash; **def [upload\_isolate](/recipes/recipes/isolate_go_perf.py#87)(api, isolate):**
 ### *recipes* / [lkgr\_finder](/recipes/recipes/lkgr_finder.py)
 
 [DEPS](/recipes/recipes/lkgr_finder.py#8): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/url][recipe_engine/recipe_modules/url]
@@ -310,19 +310,19 @@ A continuous builder which runs recipe tests.
 &mdash; **def [RunSteps](/recipes/recipes/sync_submodules.py#20)(api, enable_recurse_deps, disable_path_prefix):**
 ### *recipes* / [third\_party\_packages](/recipes/recipes/third_party_packages.py)
 
-[DEPS](/recipes/recipes/third_party_packages.py#16): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/shutil][recipe_engine/recipe_modules/shutil], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/url][recipe_engine/recipe_modules/url]
+[DEPS](/recipes/recipes/third_party_packages.py#16): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/url][recipe_engine/recipe_modules/url]
 
 This recipe builds and packages third party software, such as Git.
 
-&mdash; **def [CreatePackage](/recipes/recipes/third_party_packages.py#895)(api, name, workdir, root, version, install_mode):**
+&mdash; **def [CreatePackage](/recipes/recipes/third_party_packages.py#888)(api, name, workdir, root, version, install_mode):**
 
-&mdash; **def [DoesPackageExist](/recipes/recipes/third_party_packages.py#902)(api, name, version):**
+&mdash; **def [DoesPackageExist](/recipes/recipes/third_party_packages.py#895)(api, name, version):**
 
-&mdash; **def [EnsurePackage](/recipes/recipes/third_party_packages.py#855)(api, workdir, repo_url, package_name_prefix, install, tag, version, cipd_install_mode):**
+&mdash; **def [EnsurePackage](/recipes/recipes/third_party_packages.py#848)(api, workdir, repo_url, package_name_prefix, install, tag, version, cipd_install_mode):**
 
 Ensures that the specified CIPD package exists.
 
-&mdash; **def [GetDryRun](/recipes/recipes/third_party_packages.py#880)(api):**
+&mdash; **def [GetDryRun](/recipes/recipes/third_party_packages.py#873)(api):**
 
 Returns the "dry_run" property value.
 
@@ -330,31 +330,31 @@ To enable dry run, set "dry_run" to either be a string, specifying a specific
 package name to build, or a true value to perform a full dry run. If missing
 or a false value, this recipe will perform a production run.
 
-&mdash; **def [GetLatestGitForWindowsRelease](/recipes/recipes/third_party_packages.py#824)(api):**
+&mdash; **def [GetLatestGitForWindowsRelease](/recipes/recipes/third_party_packages.py#817)(api):**
 
 Returns a tuple (version, archive_url) for the latest release.
 
 Raises a StepFailure if a suitable release is not found.
 
-&mdash; **def [GetLatestReleaseTag](/recipes/recipes/third_party_packages.py#907)(api, repo_url, prefix='v'):**
+&mdash; **def [GetLatestReleaseTag](/recipes/recipes/third_party_packages.py#900)(api, repo_url, prefix='v'):**
 
-&mdash; **def [IsWhitelisted](/recipes/recipes/third_party_packages.py#890)(api, key):**
+&mdash; **def [IsWhitelisted](/recipes/recipes/third_party_packages.py#883)(api, key):**
 
-&emsp; **@recipe_api.composite_step**<br>&mdash; **def [PackageGit](/recipes/recipes/third_party_packages.py#539)(api):**
+&emsp; **@recipe_api.composite_step**<br>&mdash; **def [PackageGit](/recipes/recipes/third_party_packages.py#532)(api):**
 
-&mdash; **def [PackageGitForUnix](/recipes/recipes/third_party_packages.py#551)(api, workdir, support):**
+&mdash; **def [PackageGitForUnix](/recipes/recipes/third_party_packages.py#544)(api, workdir, support):**
 
 Builds Git on Unix and uploads it to a CIPD server.
 
-&mdash; **def [PackageGitForWindows](/recipes/recipes/third_party_packages.py#720)(api, workdir):**
+&mdash; **def [PackageGitForWindows](/recipes/recipes/third_party_packages.py#713)(api, workdir):**
 
 Repackages Git for Windows to CIPD.
 
-&emsp; **@recipe_api.composite_step**<br>&mdash; **def [PackagePythonForUnix](/recipes/recipes/third_party_packages.py#321)(api):**
+&emsp; **@recipe_api.composite_step**<br>&mdash; **def [PackagePythonForUnix](/recipes/recipes/third_party_packages.py#320)(api):**
 
 Builds Python for Unix and uploads it to CIPD.
 
-&mdash; **def [RunSteps](/recipes/recipes/third_party_packages.py#55)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/third_party_packages.py#54)(api):**
 ### *recipes* / [wpt\_export](/recipes/recipes/wpt_export.py)
 
 [DEPS](/recipes/recipes/wpt_export.py#17): [build/chromium][build/recipe_modules/chromium], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python]
@@ -413,7 +413,6 @@ Runs a step which adds a link to the current CL if there is one.
 [recipe_engine/recipe_modules/properties]: https://github.com/luci/recipes-py/blob/12e7ca450489763234b7380edddfddc8d9e3cb8f/README.recipes.md#recipe_modules--properties
 [recipe_engine/recipe_modules/python]: https://github.com/luci/recipes-py/blob/12e7ca450489763234b7380edddfddc8d9e3cb8f/README.recipes.md#recipe_modules--python
 [recipe_engine/recipe_modules/raw_io]: https://github.com/luci/recipes-py/blob/12e7ca450489763234b7380edddfddc8d9e3cb8f/README.recipes.md#recipe_modules--raw_io
-[recipe_engine/recipe_modules/shutil]: https://github.com/luci/recipes-py/blob/12e7ca450489763234b7380edddfddc8d9e3cb8f/README.recipes.md#recipe_modules--shutil
 [recipe_engine/recipe_modules/step]: https://github.com/luci/recipes-py/blob/12e7ca450489763234b7380edddfddc8d9e3cb8f/README.recipes.md#recipe_modules--step
 [recipe_engine/recipe_modules/tempfile]: https://github.com/luci/recipes-py/blob/12e7ca450489763234b7380edddfddc8d9e3cb8f/README.recipes.md#recipe_modules--tempfile
 [recipe_engine/recipe_modules/time]: https://github.com/luci/recipes-py/blob/12e7ca450489763234b7380edddfddc8d9e3cb8f/README.recipes.md#recipe_modules--time

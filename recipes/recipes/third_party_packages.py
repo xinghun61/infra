@@ -24,7 +24,6 @@ DEPS = [
   'recipe_engine/platform',
   'recipe_engine/properties',
   'recipe_engine/python',
-  'recipe_engine/shutil',
   'recipe_engine/step',
   'recipe_engine/url',
 ]
@@ -184,7 +183,7 @@ class SupportPrefix(object):
     workdir = self._base.join(build_name)
 
     with api.step.nest(build_name):
-      api.shutil.makedirs('workdir', workdir)
+      api.file.ensure_directory('makedirs workdir', workdir)
 
       with api.context(cwd=workdir):
         self._built[key] = build_fn()
@@ -452,7 +451,7 @@ def PackagePythonForUnix(api):
       ]
 
     setup_local = api.context.cwd.join('Modules', 'Setup.local')
-    api.shutil.write(
+    api.file.write_text(
         'Configure static modules',
         setup_local,
         '\n'.join(setup_local_content + ['']),
@@ -478,17 +477,11 @@ def PackagePythonForUnix(api):
         # We do this here instead of "usercustomize.py" because the latter isn't
         # propagated when a VirtualEnv is cut.
         ssl_py = python_libdir.join('ssl.py')
-        ssl_py_content = api.shutil.read(
-            'read ssl.py',
-            ssl_py)
-        ssl_py_content += '\n' + api.shutil.read(
-            'read ssl.py addendum',
-            api.resource('python_ssl_suffix.py'),
+        ssl_py_content = api.file.read_text('read ssl.py', ssl_py)
+        ssl_py_content += '\n' + api.file.read_text(
+          'read ssl.py addendum', api.resource('python_ssl_suffix.py'),
         )
-        api.shutil.write(
-            'write ssl.py',
-            ssl_py,
-            ssl_py_content)
+        api.file.write_text('write ssl.py', ssl_py, ssl_py_content)
 
     # Install "pip", "setuptools", and "wheel". The explicit versions are those
     # that are included in the package.
@@ -672,7 +665,7 @@ def PackageGitForUnix(api, workdir, support):
     # Write our custom make entries. The "config.mak" file gets loaded AFTER
     # all the default, automatic (configure), and uname (system) entries get
     # processed, so these are final overrides.
-    api.shutil.write(
+    api.file.write_text(
         'Makefile specialization',
         api.context.cwd.join('config.mak'),
         '\n'.join(custom_make_entries + []))
@@ -681,7 +674,7 @@ def PackageGitForUnix(api, workdir, support):
     # "GIT-VERSION-GEN" script to pull the Git version. We name ours after
     # the Git tag that we pulled and our Chromium-specific suffix, e.g.:
     # v2.12.2.chromium4
-    api.shutil.write(
+    api.file.write_text(
         'Version file',
         api.context.cwd.join('version'),
         '%s%s' % (tag, GIT_PACKAGE_VERSION_SUFFIX))
@@ -729,7 +722,7 @@ def PackageGitForWindows(api, workdir):
     return
 
   # Download the archive.
-  api.shutil.makedirs('ensure workdir', workdir)
+  api.file.ensure_directory('makedirs ensure workdir', workdir)
   archive_path = workdir.join('archive.sfx')
   api.url.get_file(
       archive_url,
