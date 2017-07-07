@@ -53,15 +53,17 @@ def ls(prefix):
   from pip._vendor import requests  # pylint: disable=E0611
   for retry in range(4):
     try:
-      data = requests.get(STORAGE_URL, params=dict(
+      r = requests.get(STORAGE_URL, params=dict(
           prefix=prefix,
           fields='items(name,md5Hash)'
-      )).json()
+      ))
+      r.raise_for_status()
+      data = r.json()
       break
-    except requests.exceptions.SSLError as ex:
+    except (requests.exceptions.SSLError, requests.exceptions.HTTPError) as ex:
       delay = 4 ** (retry-1)
       print >> sys.stderr, (
-        "caught SSLError: %s: retrying in %f sec" % (ex, delay))
+        "caught an error: %s: retrying in %f sec" % (ex, delay))
       time.sleep(delay)
       continue
   else:
