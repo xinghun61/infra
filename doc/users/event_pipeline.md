@@ -34,3 +34,30 @@ go build
 # Looks good? Create CL for review...
 ./bqshemaupdater rawevents/<table-id>.json  # Actually create the table
 ```
+
+# Sending events
+
+Once you have a table, you can send events to it!
+
+## Credentials
+
+You need to ensure the machines that will be running the code which sends events
+have proper credentials. At this point, you may need to enlist the help of a
+Chrome Operations Googler, as many of the following resources and repos are
+internal.
+
+1. Choose a [service
+   account](https://cloud.google.com/docs/authentication/#service_accounts).
+   This account may be a service account that is already associated with the
+   service, or it may be a new one that you create.
+1. Give that service account the "BigQuery Data Editor" IAM role using the
+   [cloud console](https://console.cloud.google.com) under "IAM & Admin" >>
+   "IAM" in the `chrome-infra-events` project. You'll need the proper privileges
+   to do this. If you don't have them, ask a Chrome Infrastructure team member
+   for help.
+1. If you have created a new private key for an account, you'll need to add it
+   to puppet. [More
+   info.](https://chrome-internal.googlesource.com/infra/puppet/+/master/README.md)
+1. Make sure that file is available to your service. For CQ, this takes the form
+   of passing the name of the credentials file to the service on start. [See
+   CL.](https://chrome-internal-review.googlesource.com/c/405268/)
