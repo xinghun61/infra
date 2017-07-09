@@ -143,12 +143,12 @@
 
  <script type="text/javascript" nonce="[nonce]">
 runOnLoad(function() {
-  var dismissLinks = document.getElementsByClassName("dismiss_cue");
+  var dismissLinks = document.querySelectorAll(".dismiss_cue");
   for (var i = 0; i < dismissLinks.length; ++i) {
    var dismissCue = dismissLinks[[]i];
      dismissCue.addEventListener("click", function(event) {
          _CS_dismissCue("[format "js"][cue][end]");
-         if (dismissCue.href == "#")
+         if (this.getAttribute("href") === "#")
            event.preventDefault();
      });
   }
