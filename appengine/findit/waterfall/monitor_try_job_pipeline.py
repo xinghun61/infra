@@ -477,9 +477,8 @@ class MonitorTryJobPipeline(BasePipeline):
 
       if swarming_task_id:
         try:
-          report = json.loads(
-              swarming_util.GetStepLog(try_job_id, 'report',
-                                       HttpClientAppengine(), 'report'))
+          report = swarming_util.GetStepLog(
+              try_job_id, 'report', HttpClientAppengine(), 'report')
           if report:
             _RecordCacheStats(build, report)
         except (ValueError, TypeError) as e:  # pragma: no cover
@@ -492,10 +491,9 @@ class MonitorTryJobPipeline(BasePipeline):
             buildbot.ParseBuildUrl(build.url))
 
         try:
-          report = json.loads(
-              buildbot.GetStepLog(try_job_master_name, try_job_builder_name,
-                                  try_job_build_number, 'report',
-                                  HttpClientAppengine(), 'report'))
+          report = buildbot.GetStepLog(
+              try_job_master_name, try_job_builder_name, try_job_build_number,
+              'report', HttpClientAppengine(), 'report')
         except (ValueError, TypeError) as e:  # pragma: no cover
           report = {}
           logging.exception(

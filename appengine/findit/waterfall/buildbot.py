@@ -366,7 +366,6 @@ def GetStepLog(master_name,
                log_type='stdout'):
   """Returns sepcific log of the specified step."""
 
-  # 1. Get log.
   data = logdog_util.GetStepLogLegacy(master_name, builder_name, build_number,
                                       full_step_name, log_type, http_client)
   if not data:
@@ -376,7 +375,11 @@ def GetStepLog(master_name,
     else:
       return None
 
-  if log_type.lower() == 'step_metadata':  # pragma: no branch
-    return json.loads(data) if data else None
+  if log_type.lower() != 'stdout':
+    try:
+      return json.loads(data) if data else None
+    except ValueError:
+      logging.error('Failed to json load data for %s. Data is: %s.' % (
+          log_type, data))
 
   return data

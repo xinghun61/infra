@@ -159,7 +159,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mock_buildbucket.GetTryJobs.return_value = [
         (None, buildbucket_client.BuildbucketBuild(build_response))
     ]
-    mock_report.return_value = json.dumps(report)
+    mock_report.return_value = report
 
     pipeline = MonitorTryJobPipeline()
     pipeline.start_test()
@@ -238,7 +238,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mock_buildbucket.GetTryJobs.return_value = [
         (None, buildbucket_client.BuildbucketBuild(build_response))
     ]
-    mock_report.return_value = json.dumps(report)
+    mock_report.return_value = report
 
     pipeline = MonitorTryJobPipeline()
     pipeline.start_test()
@@ -348,7 +348,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         [(None, buildbucket_client.BuildbucketBuild(data[4]['build']))],
     ]
     mock_buildbucket.GetTryJobs.side_effect = get_tryjobs_responses
-    mock_report.return_value = json.dumps(report)
+    mock_report.return_value = report
 
     pipeline = MonitorTryJobPipeline()
     pipeline.start_test()
@@ -469,7 +469,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         [(None, buildbucket_client.BuildbucketBuild(data[4]['build']))],
     ]
     mock_buildbucket.GetTryJobs.side_effect = get_tryjobs_responses
-    mock_report.return_value = json.dumps(report)
+    mock_report.return_value = report
 
     pipeline = MonitorTryJobPipeline()
     pipeline.start_test()
@@ -561,7 +561,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mock_buildbucket.GetTryJobs.return_value = [
         (None, buildbucket_client.BuildbucketBuild(build_response))
     ]
-    mock_report.return_value = json.dumps(report)
+    mock_report.return_value = report
 
     pipeline = MonitorTryJobPipeline()
     pipeline.start_test()
@@ -857,7 +857,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mock_buildbucket.GetTryJobs.return_value = [
         (None, buildbucket_client.BuildbucketBuild(build_response))
     ]
-    mock_report.return_value = json.dumps(report)
+    mock_report.return_value = report
 
     pipeline = MonitorTryJobPipeline(try_job.key.urlsafe(),
                                      failure_type.COMPILE, try_job_id)
@@ -969,7 +969,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mock_buildbucket.GetTryJobs.return_value = [
         (None, buildbucket_client.BuildbucketBuild(build_response))
     ]
-    mock_report.return_value = json.dumps(report)
+    mock_report.return_value = report
 
     pipeline = MonitorTryJobPipeline()
     pipeline.start_test()
@@ -1059,7 +1059,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mock_buildbucket.GetTryJobs.return_value = [
         (None, buildbucket_client.BuildbucketBuild(build_response))
     ]
-    mock_report.return_value = json.dumps(report)
+    mock_report.return_value = report
 
     pipeline = MonitorTryJobPipeline()
     pipeline.start_test()
@@ -1125,7 +1125,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mock_buildbucket.GetTryJobs.return_value = [
         (None, buildbucket_client.BuildbucketBuild(build_response))
     ]
-    mock_report.return_value = json.dumps({})
+    mock_report.return_value = {}
 
     pipeline = MonitorTryJobPipeline()
     pipeline.start_test()

@@ -7,13 +7,11 @@ from datetime import datetime
 import gzip
 import io
 import json
+import logging
 import mock
 import os
-import sys
 import unittest
 import urllib
-
-import google
 
 from common import rpc_util
 from infra_api_clients import logdog_util
@@ -549,6 +547,18 @@ class BuildBotTest(unittest.TestCase):
                      buildbot.GetStepLog(self.master_name, self.builder_name,
                                          self.build_number, self.step_name,
                                          self.http_client))
+
+  @mock.patch.object(
+      logdog_util, 'GetStepLogLegacy', return_value='log')
+  @mock.patch.object(
+      logging, 'error')
+  def testGetStepLogNotJosonLoadable(self, mocked_log, _):
+    self.assertEqual('log',
+                     buildbot.GetStepLog(self.master_name, self.builder_name,
+                                         self.build_number, self.step_name,
+                                         self.http_client, 'step_metadata'))
+    mocked_log.assert_called_with(
+        'Failed to json load data for step_metadata. Data is: log.')
 
   def testGetSwarmingTaskIdFromUrl(self):
     swarm_url = 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10'
