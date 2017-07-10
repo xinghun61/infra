@@ -72,8 +72,7 @@ class EventMonUploaderTest(testing.AppengineTestCase):
     TestFile.add_file(
         'master', 'builder', 'ui_tests', 123, 'full_results.json',
         json.dumps(TEST_JSON))
-    response = self.test_app.post(
-        '/internal/monitoring/test_res/upload', REQ_PAYLOAD)
+    response = self.test_app.post('/internal/monitoring/upload', REQ_PAYLOAD)
 
     self.assertEqual(200, response.status_int)
     events = self.read_event_mon_file()
@@ -102,28 +101,25 @@ class EventMonUploaderTest(testing.AppengineTestCase):
         [event_mon.protos.chrome_infra_log_pb2.TestResultsEvent.PASS])
 
   def test_returns_400_on_missing_request_payload(self):
-    self.test_app.post('/internal/monitoring/test_res/upload', status=400)
+    self.test_app.post('/internal/monitoring/upload', status=400)
     self.assertEqual(0, len(self.read_event_mon_file()))
 
   def test_returns_400_on_non_json_request_payload(self):
-    self.test_app.post(
-        '/internal/monitoring/test_res/upload', 'foobar', status=400)
+    self.test_app.post('/internal/monitoring/upload', 'foobar', status=400)
     self.assertEqual(0, len(self.read_event_mon_file()))
 
   def test_returns_400_on_missing_request_params(self):
-    self.test_app.post('/internal/monitoring/test_res/upload', '{}', status=400)
+    self.test_app.post('/internal/monitoring/upload', '{}', status=400)
     self.assertEqual(0, len(self.read_event_mon_file()))
 
-  def test_returns_400_on_missing_file(self):
-    self.test_app.post(
-        '/internal/monitoring/test_res/upload', REQ_PAYLOAD, status=400)
+  def test_returns_404_on_missing_file(self):
+    self.test_app.post('/internal/monitoring/upload', REQ_PAYLOAD, status=404)
     self.assertEqual(0, len(self.read_event_mon_file()))
 
   def test_does_not_crash_on_missing_required_fields_in_json(self):
     TestFile.add_file(
         'master', 'builder', 'ui_tests', 123, 'full_results.json', '{}')
-    response = self.test_app.post(
-        '/internal/monitoring/test_res/upload', REQ_PAYLOAD)
+    response = self.test_app.post('/internal/monitoring/upload', REQ_PAYLOAD)
     self.assertEqual(200, response.status_int)
     events = self.read_event_mon_file()
     self.assertEqual(1, len(events))
@@ -136,8 +132,7 @@ class EventMonUploaderTest(testing.AppengineTestCase):
     TestFile.add_file(
         'master', 'builder', 'ui_tests', 123, 'full_results.json',
         json.dumps(TEST_JSON))
-    response = self.test_app.post(
-        '/internal/monitoring/test_loc/upload', REQ_PAYLOAD)
+    response = self.test_app.post('/internal/monitoring/upload', REQ_PAYLOAD)
 
     self.assertEqual(200, response.status_int)
     events = self.read_event_mon_file()
@@ -157,16 +152,10 @@ class EventMonUploaderTest(testing.AppengineTestCase):
   def test_does_not_crash_on_missing_fields_when_uploading_test_locations(self):
     TestFile.add_file(
         'master', 'builder', 'ui_tests', 123, 'full_results.json', '{}')
-    response = self.test_app.post(
-        '/internal/monitoring/test_loc/upload', REQ_PAYLOAD)
+    response = self.test_app.post('/internal/monitoring/upload', REQ_PAYLOAD)
     self.assertEqual(200, response.status_int)
     events = self.read_event_mon_file()
     self.assertEqual(1, len(events))
     self.assertFalse(
         events[0].test_locations_event.HasField('usec_since_epoch'))
     self.assertEqual(0, len(events[0].test_locations_event.locations))
-
-  def test_handles_invalid_requests_for_uploading_test_locations(self):
-    self.test_app.post(
-        '/internal/monitoring/test_loc/upload', REQ_PAYLOAD, status=400)
-    self.assertEqual(0, len(self.read_event_mon_file()))

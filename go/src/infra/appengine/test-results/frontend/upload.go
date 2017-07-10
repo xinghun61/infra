@@ -288,19 +288,6 @@ func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 	return datastore.Put(c, &tf)
 }
 
-func uploadTestLocations(c context.Context, testLocs *map[string]model.TestLocation) {
-	if serializedTestLocs, err := json.Marshal(testLocs); err != nil {
-		logging.WithError(err).Errorf(c, "Failed to serialize test_locations")
-	} else {
-		// TODO(sergiyb): Implement actual upload. For now we need to measure
-		// serialized size to determine whether we can pass this via taskqueue
-		// params and move all processing to a different handler or whether we have
-		// to do some processing as part of upload handler.
-		logging.Debugf(c, "Size of serialized test_locations dict is %d",
-			len(serializedTestLocs))
-	}
-}
-
 func createTestResUploadTask(c context.Context, f *model.FullResult, p *UploadParams) {
 	payload, err := json.Marshal(struct {
 		Master      string       `json:"master"`
@@ -316,16 +303,16 @@ func createTestResUploadTask(c context.Context, f *model.FullResult, p *UploadPa
 		StepName:    p.StepName,
 	})
 	if err != nil {
-		logging.WithError(err).Errorf(c, "taskqueue: %s", testResultMonPath)
+		logging.WithError(err).Errorf(c, "taskqueue: %s", monitoringPath)
 		return
 	}
 
 	h := make(http.Header)
 	h.Set("Content-Type", "application/json")
 
-	logging.Debugf(c, "adding taskqueue task for [%s], with payload size %d", testResultMonPath, len(payload))
+	logging.Debugf(c, "adding taskqueue task for [%s]", monitoringPath)
 	if err := taskqueue.Add(c, monitoringQueueName, &taskqueue.Task{
-		Path:    testResultMonPath,
+		Path:    monitoringPath,
 		Payload: payload,
 		Header:  h,
 		Method:  "POST",
@@ -350,17 +337,6 @@ func updateFullResults(c context.Context, data io.Reader) error {
 	if err := dec.Decode(&f); err != nil {
 		logging.WithError(err).Errorf(c, "updateFullResults: unmarshal JSON")
 		return statusError{err, http.StatusBadRequest}
-	}
-
-	wg := sync.WaitGroup{}
-	if f.TestLocations != nil {
-		testLocs := f.TestLocations
-		f.TestLocations = nil // remove test locations to reduce NDB storage costs
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			uploadTestLocations(c, testLocs)
-		}()
 	}
 
 	if f.Builder != p.Builder {
@@ -395,6 +371,8 @@ func updateFullResults(c context.Context, data io.Reader) error {
 		}
 		return statusError{err, code}
 	}
+
+	wg := sync.WaitGroup{}
 
 	wg.Add(1)
 	go func() {
