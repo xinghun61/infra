@@ -477,6 +477,15 @@ class QueryParsingUnitTest(unittest.TestCase):
                  ['cost--2'], []),
         cond1)
 
+    # Searches with ':' and an email domain only.
+    ast = query2ast.ParseUserQuery(
+        'reporter:@google.com', '', BUILTIN_ISSUE_FIELDS, self.default_config)
+    cond1 = ast.conjunctions[0].conds[0]
+    self.assertEqual(
+        MakeCond(TEXT_HAS,
+                 [BUILTIN_ISSUE_FIELDS['reporter']], ['@google.com'], []),
+        cond1)
+
 
   def testParseUserQuery_SearchWithinCustomFields(self):
     """Enums are treated as labels, other fields are kept as fields."""

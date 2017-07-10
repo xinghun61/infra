@@ -84,7 +84,7 @@ TERM_RE = re.compile(
 OP_RE = re.compile(
     r'^(?P<prefix>[-_\w]*?)'
     r'(?P<op>%s)'
-    r'(?P<value>([-\w][-\*,./:<=>@\w]*|"[^"]+"))$' %
+    r'(?P<value>([-@\w][-\*,./:<=>@\w]*|"[^"]*"))$' %
     OPS_PATTERN,
     flags=re.UNICODE)
 

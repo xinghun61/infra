@@ -41,6 +41,7 @@ class UsersServicer(monorail_pb2.UsersServicer):
 
 
 def RegisterApiHandlers(registry):
+  # pylint: disable=abstract-class-instantiated
   server = grpc.Server(service_modules=[
       monorail_pb2])
   monorail_pb2.add_UsersServicer_to_server(UsersServicer(), server)
