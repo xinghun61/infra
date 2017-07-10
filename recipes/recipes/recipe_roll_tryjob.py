@@ -131,7 +131,7 @@ def RunSteps(api, upstream_project, downstream_project):
   try:
     train_diff = api.python('diff (train)',
         downstream_recipes_py,
-        ['train', 'diff',
+        ['test', 'diff',
          '--baseline', api.json.input(orig_downstream_train.json.output),
          '--actual', api.json.input(patched_downstream_train.json.output)])
   except api.step.StepFailure as ex:

@@ -314,7 +314,7 @@
       "python",
       "-u",
       "[CACHE]/recipe_roll_tryjob/depot_tools/depot_tools/recipes.py",
-      "train",
+      "test",
       "diff",
       "--baseline",
       "{}",
