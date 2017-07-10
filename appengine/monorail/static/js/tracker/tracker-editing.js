@@ -1738,6 +1738,17 @@ function HTL_deleteHotlist(form) {
 }
 
 function HTL_toggleIssuesShown(toggleIssuesButton) {
-  $('can').value = toggleIssuesButton.value;
-  $('toggleissuesform').submit();
+  let can = toggleIssuesButton.value;
+  let hotlist_name = $('hotlist_name').value;
+  let url = `${hotlist_name}?can=${can}`;
+  let hidden_cols = $('colcontrol').classList.value;
+  if (window.location.href.includes('&colspec') || hidden_cols) {
+    let col_spec = TKR_getColspecElement().value;
+    let sort = '';
+    if ($('sort')) {
+      sort = $('sort').value.split(' ').join('+');
+    }
+    url += `&sort=${sort}&colspec=${TKR_getColspecElement().value}`;
+  }
+  TKR_go(url);
 }

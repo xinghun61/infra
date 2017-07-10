@@ -39,6 +39,3 @@
   </tr>
 </table>
 
-<form id="toggleissuesform" method="GET" action="/u/[viewed_user_id]/hotlists/[hotlist.name]">
-  <input type="hidden" id="can" name="can">
-</form>
