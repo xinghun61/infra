@@ -43,6 +43,8 @@
       "[CACHE]/git",
       "--cleanup-dir",
       "[CLEANUP]/bot_update",
+      "--rietveld_server",
+      "https://codereview.chromium.org",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -103,6 +105,8 @@
       "[CACHE]/git",
       "--cleanup-dir",
       "[CLEANUP]/bot_update",
+      "--rietveld_server",
+      "https://codereview.chromium.org",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -213,6 +217,12 @@
       "[CACHE]/git",
       "--cleanup-dir",
       "[CLEANUP]/bot_update",
+      "--issue",
+      "12853011",
+      "--patchset",
+      "1",
+      "--rietveld_server",
+      "https://codereview.chromium.org",
       "--output_json",
       "/path/to/tmp/json",
       "--revision",
@@ -301,21 +311,46 @@
   },
   {
     "cmd": [
+      "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
+      "description",
+      "-d",
+      "--rietveld",
+      "https://codereview.chromium.org/12853011"
+    ],
+    "name": "git_cl description",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
       "python",
       "-u",
-      "[CACHE]/recipe_roll_tryjob/depot_tools/depot_tools/recipes.py",
-      "test",
-      "diff",
-      "--baseline",
-      "{}",
-      "--actual",
-      "{}"
+      "RECIPE_PACKAGE_REPO[depot_tools]/git_footers.py",
+      "--json",
+      "/path/to/tmp/json"
     ],
-    "name": "diff (train)"
+    "name": "parse description",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "import sys; sys.exit(1)"
+    ],
+    "name": "result",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_TEXT@Add Recipe-Nontrivial-Roll-depot_tools: ack footer to the CL to acknowledge the change will require nontrivial roll in 'depot_tools' repo@@@",
+      "@@@STEP_FAILURE@@@"
+    ]
   },
   {
     "name": "$result",
+    "reason": "Step('result') failed with return_code 1",
     "recipe_result": null,
-    "status_code": 0
+    "status_code": 1
   }
 ]

@@ -128,6 +128,30 @@ def RunSteps(api, upstream_project, downstream_project):
   if test_diff.retcode == 0:
     return
 
+  cl_footers = api.tryserver.get_footers()
+
+  nontrivial_roll_footer = 'Recipe-Nontrivial-Roll-%s' % downstream_project
+  manual_change_footer = 'Recipe-Manual-Change-%s' % downstream_project
+  nontrivial_roll_footer_contents = cl_footers.get(nontrivial_roll_footer)
+  manual_change_footer_contents = cl_footers.get(manual_change_footer)
+
+  if nontrivial_roll_footer_contents:
+    api.python.succeeding_step(
+        'result',
+        ('Recognized nontrivial roll ACK footer (%r).' %
+             nontrivial_roll_footer_contents))
+  elif manual_change_footer_contents:
+    api.python.succeeding_step(
+        'result',
+        ('Recognized manual change ACK footer (%r).' %
+             manual_change_footer_contents))
+  else:
+    api.python.failing_step(
+        'result',
+        ('Add %s: ack footer to the CL to acknowledge the change will require '
+         'nontrivial roll in %r repo') % (
+             nontrivial_roll_footer, downstream_project))
+
   try:
     train_diff = api.python('diff (train)',
         downstream_recipes_py,
@@ -140,15 +164,15 @@ def RunSteps(api, upstream_project, downstream_project):
   if train_diff.retcode == 0:
     return
 
-  manual_change_footer = 'Recipe-Manual-Change-%s' % downstream_project
-  footer_contents = api.tryserver.get_footer(manual_change_footer)
-  if footer_contents:
+  if manual_change_footer_contents:
     api.python.succeeding_step(
-        'result', 'Recognized manual change ACK footer (%r).' % footer_contents)
+        'result',
+        ('Recognized manual change ACK footer (%r).' %
+             manual_change_footer_contents))
   else:
     api.python.failing_step(
         'result',
-        ('Add %s footer to the CL to acknowledge the change will require '
+        ('Add %s: ack footer to the CL to acknowledge the change will require '
          'manual code changes in %r repo') % (
              manual_change_footer, downstream_project))
 
@@ -195,11 +219,30 @@ def GenTests(api):
 
   yield (
     api.test('diff_test_fail') +
-    api.properties.generic(
+    api.properties.tryserver(
         upstream_project='recipe_engine', downstream_project='depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
     api.step_data('test (with patch)', retcode=1) +
-    api.step_data('diff (test)', retcode=1)
+    api.step_data('diff (test)', retcode=1) +
+    api.override_step_data(
+        'git_cl description', stdout=api.raw_io.output('')) +
+    api.override_step_data(
+        'parse description', api.json.output({}))
+  )
+
+  yield (
+    api.test('diff_test_fail_ack') +
+    api.properties.tryserver(
+        upstream_project='recipe_engine', downstream_project='depot_tools') +
+    api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
+    api.step_data('test (with patch)', retcode=1) +
+    api.step_data('diff (test)', retcode=1) +
+    api.override_step_data(
+        'git_cl description', stdout=api.raw_io.output(
+            'Recipe-Nontrivial-Roll-depot_tools: ack')) +
+    api.override_step_data(
+        'parse description', api.json.output(
+            {'Recipe-Nontrivial-Roll-depot_tools': ['ack']}))
   )
 
   yield (
@@ -211,9 +254,11 @@ def GenTests(api):
     api.step_data('diff (test)', retcode=1) +
     api.step_data('diff (train)', retcode=1) +
     api.override_step_data(
-        'git_cl description', stdout=api.raw_io.output('')) +
+        'git_cl description', stdout=api.raw_io.output(
+            'Recipe-Nontrivial-Roll-depot_tools: ack')) +
     api.override_step_data(
-        'parse description', api.json.output({}))
+        'parse description', api.json.output(
+            {'Recipe-Nontrivial-Roll-depot_tools': ['ack']}))
   )
 
   yield (

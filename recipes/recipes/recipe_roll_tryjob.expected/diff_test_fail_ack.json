@@ -329,10 +329,10 @@
       "/path/to/tmp/json"
     ],
     "name": "parse description",
-    "stdin": "Recipe-Manual-Change-depot_tools: ack",
+    "stdin": "Recipe-Nontrivial-Roll-depot_tools: ack",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"Recipe-Manual-Change-depot_tools\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"Recipe-Nontrivial-Roll-depot_tools\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    \"ack\"@@@",
       "@@@STEP_LOG_LINE@json.output@  ]@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
@@ -347,7 +347,7 @@
     ],
     "name": "result",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Recognized manual change ACK footer (['ack']).@@@"
+      "@@@STEP_TEXT@Recognized nontrivial roll ACK footer (['ack']).@@@"
     ]
   },
   {
@@ -362,22 +362,7 @@
       "--actual",
       "{}"
     ],
-    "name": "diff (train)",
-    "~followup_annotations": [
-      "step returned non-zero exit code: 1",
-      "@@@STEP_FAILURE@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "import sys; sys.exit(0)"
-    ],
-    "name": "result (2)",
-    "~followup_annotations": [
-      "@@@STEP_TEXT@Recognized manual change ACK footer (['ack']).@@@"
-    ]
+    "name": "diff (train)"
   },
   {
     "name": "$result",

@@ -311,24 +311,6 @@
   },
   {
     "cmd": [
-      "python",
-      "-u",
-      "[CACHE]/recipe_roll_tryjob/depot_tools/depot_tools/recipes.py",
-      "test",
-      "diff",
-      "--baseline",
-      "{}",
-      "--actual",
-      "{}"
-    ],
-    "name": "diff (train)",
-    "~followup_annotations": [
-      "step returned non-zero exit code: 1",
-      "@@@STEP_FAILURE@@@"
-    ]
-  },
-  {
-    "cmd": [
       "RECIPE_PACKAGE_REPO[depot_tools]/git_cl.py",
       "description",
       "-d",
@@ -347,9 +329,43 @@
       "/path/to/tmp/json"
     ],
     "name": "parse description",
+    "stdin": "Recipe-Nontrivial-Roll-depot_tools: ack",
     "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@{}@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"Recipe-Nontrivial-Roll-depot_tools\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"ack\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "import sys; sys.exit(0)"
+    ],
+    "name": "result",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Recognized nontrivial roll ACK footer (['ack']).@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[CACHE]/recipe_roll_tryjob/depot_tools/depot_tools/recipes.py",
+      "test",
+      "diff",
+      "--baseline",
+      "{}",
+      "--actual",
+      "{}"
+    ],
+    "name": "diff (train)",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_FAILURE@@@"
     ]
   },
   {
@@ -358,16 +374,16 @@
       "-u",
       "import sys; sys.exit(1)"
     ],
-    "name": "result",
+    "name": "result (2)",
     "~followup_annotations": [
       "step returned non-zero exit code: 1",
-      "@@@STEP_TEXT@Add Recipe-Manual-Change-depot_tools footer to the CL to acknowledge the change will require manual code changes in 'depot_tools' repo@@@",
+      "@@@STEP_TEXT@Add Recipe-Manual-Change-depot_tools: ack footer to the CL to acknowledge the change will require manual code changes in 'depot_tools' repo@@@",
       "@@@STEP_FAILURE@@@"
     ]
   },
   {
     "name": "$result",
-    "reason": "Step('result') failed with return_code 1",
+    "reason": "Step('result (2)') failed with return_code 1",
     "recipe_result": null,
     "status_code": 1
   }
