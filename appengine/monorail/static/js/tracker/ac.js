@@ -770,7 +770,7 @@ var ac_everTyped = false;
  * @private
  */
 function ac_checkCompletions() {
-  if (!ac_suppressCompletions) {
+  if (ac_focusedInput && !ac_suppressCompletions) {
     var caret = ac_getCaretPosition_(ac_focusedInput);
     var completable = ac_store.completable(ac_focusedInput.value, caret);
 
