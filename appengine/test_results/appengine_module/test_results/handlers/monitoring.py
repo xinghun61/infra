@@ -6,11 +6,13 @@ import json
 import logging
 import webapp2
 
+from google.appengine.ext import db
 from google.appengine.api import taskqueue
 
 from appengine_module.test_results.handlers import util
 from appengine_module.test_results.model.jsonresults import JsonResults
 from appengine_module.test_results.model.testfile import TestFile
+from appengine_module.test_results.model.testlocation import TestLocation
 from infra_libs import ts_mon
 from infra_libs import event_mon
 
@@ -23,6 +25,36 @@ class EventMonUploader(webapp2.RequestHandler):
        ts_mon.StringField('master'),
        ts_mon.StringField('builder'),
        ts_mon.StringField('test_type')])
+
+  @staticmethod
+  def _filter_new_locations(locations):
+    test_names = locations.keys()
+    loc_entities = TestLocation.get_by_key_name(test_names)
+    new_locations = {}
+    for i, loc_entity in enumerate(loc_entities):
+      test_name = test_names[i]
+      location = locations[test_name]
+      if (loc_entity is None or loc_entity.file != location.get('file') or
+          loc_entity.line != location.get('line')):
+        new_locations[test_name] = location
+        # We don't want to block on put operations and should some of them fail,
+        # we'll just end up reporting some locations a few times, which is
+        # acceptable unless it starts to happen to frequently. See
+        # https://crbug.com/740554 for more details.
+        db.put_async(TestLocation(key_name=test_name, file=location.get('file'),
+                                  line=location.get('line')))
+
+        # Limit number of reported test locations to avoid exceeding 10MiB
+        # request limit on the event_mon endpoint. The missing test locations
+        # will be still reported when these tests are run again. Eventually the
+        # number of new locations will decrease sufficiently that this check
+        # will be rarely used and thus all test locations will be reported
+        # promptly.
+        if len(new_locations) >= 1000:
+          logging.warn('Ignoring new locations to avoid exceeding request size')
+          break
+
+    return new_locations
 
   def post(self):
     if not self.request.body:
@@ -108,6 +140,7 @@ class EventMonUploader(webapp2.RequestHandler):
           float(file_json['seconds_since_epoch']) * 1000 * 1000)
 
     test_locs_json = file_json.get('test_locations') or {}
+    test_locs_json = self._filter_new_locations(test_locs_json)
     for name, loc in test_locs_json.iteritems():
       location = test_locations.locations.add()
       location.test_name = name

@@ -8,10 +8,11 @@ import tempfile
 import webapp2
 
 from appengine_module.testing_utils import testing
-
 from appengine_module.test_results import main
 from appengine_module.test_results.handlers.monitoring import EventMonUploader
 from appengine_module.test_results.model.testfile import TestFile
+from appengine_module.test_results.model.testlocation import TestLocation
+from google.appengine.ext import db
 from infra_libs import event_mon
 
 
@@ -159,3 +160,36 @@ class EventMonUploaderTest(testing.AppengineTestCase):
     self.assertFalse(
         events[0].test_locations_event.HasField('usec_since_epoch'))
     self.assertEqual(0, len(events[0].test_locations_event.locations))
+
+  def test_filters_and_registers_new_locations_correctly(self):
+    # Report a new test. We use transactions to ensure that async_put operations
+    # complete and so that we can check if entities were created as we expect.
+    new_locations = db.run_in_transaction(
+        EventMonUploader._filter_new_locations,
+        {'foo': {'file': 'foo.cc', 'line': 123}})
+    self.assertEqual(new_locations.get('foo'), {'file': 'foo.cc', 'line': 123})
+    entity = TestLocation.get_by_key_name('foo')
+    self.assertIsNotNone(entity)
+    self.assertEqual(entity.file, 'foo.cc')
+    self.assertEqual(entity.line, 123)
+
+    # Report an existing test, but with a new location.
+    new_locations = db.run_in_transaction(
+        EventMonUploader._filter_new_locations,
+        {'foo': {'file': 'foo.cc', 'line': 156}})
+    self.assertEqual(new_locations.get('foo'), {'file': 'foo.cc', 'line': 156})
+    entity = TestLocation.get_by_key_name('foo')
+    self.assertIsNotNone(entity)
+    self.assertEqual(entity.file, 'foo.cc')
+    self.assertEqual(entity.line, 156)
+
+    # Report an existing test with the same location.
+    new_locations = EventMonUploader._filter_new_locations(
+        {'foo': {'file': 'foo.cc', 'line': 156}})
+    self.assertNotIn('foo', new_locations)
+
+  def test_ignores_over_1000_new_locations(self):
+    locations = {'test%d' % i: {'file': 'numerical_tests.cc', 'line': i * 10}
+                 for i in range(1500)}
+    new_locations = EventMonUploader._filter_new_locations(locations)
+    self.assertEqual(len(new_locations), 1000)
