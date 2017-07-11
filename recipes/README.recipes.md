@@ -27,7 +27,6 @@
   * [luci_py](#recipes-luci_py)
   * [master_manager_config](#recipes-master_manager_config)
   * [publish_tarball](#recipes-publish_tarball)
-  * [rebaseline_o_matic](#recipes-rebaseline_o_matic) &mdash; Generates new baselines for Blink layout tests that need rebaselining.
   * [recipe_autoroller](#recipes-recipe_autoroller) &mdash; Rolls recipes.
   * [recipe_roll_tryjob](#recipes-recipe_roll_tryjob)
   * [recipe_simulation](#recipes-recipe_simulation) &mdash; A continuous builder which runs recipe tests.
@@ -256,20 +255,6 @@ installations.
 &emsp; **@recipe_api.composite_step**<br>&mdash; **def [export\_tarball](/recipes/recipes/publish_tarball.py#35)(api, args, source, destination):**
 
 &mdash; **def [gsutil\_upload](/recipes/recipes/publish_tarball.py#31)(api, source, bucket, dest, args):**
-### *recipes* / [rebaseline\_o\_matic](/recipes/recipes/rebaseline_o_matic.py)
-
-[DEPS](/recipes/recipes/rebaseline_o_matic.py#15): [build/chromium][build/recipe_modules/chromium], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
-
-Generates new baselines for Blink layout tests that need rebaselining.
-
-Intended to be called periodically. Syncs to the Blink repo and runs
-'webkit-patch auto-rebaseline', which processes entries in
-LayoutTests/TestExpectations that are marked with 'NeedsRebaseline'.
-
-Slaves running this recipe will require SVN access credentials for submitting
-patches with the new baselines.
-
-&mdash; **def [RunSteps](/recipes/recipes/rebaseline_o_matic.py#28)(api):**
 ### *recipes* / [recipe\_autoroller](/recipes/recipes/recipe_autoroller.py)
 
 [DEPS](/recipes/recipes/recipe_autoroller.py#7): [build/luci\_config][build/recipe_modules/luci_config], [recipe\_autoroller](#recipe_modules-recipe_autoroller), [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
@@ -388,12 +373,12 @@ See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 
 Runs a step which adds a link to the current CL if there is one.
 
-[build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/74127908c240c9233f571f7c27f8b7378ac14139/scripts/slave/README.recipes.md#recipe_modules-chromium
-[build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/74127908c240c9233f571f7c27f8b7378ac14139/scripts/slave/README.recipes.md#recipe_modules-luci_config
-[build/recipe_modules/perf_dashboard]: https://chromium.googlesource.com/chromium/tools/build.git/+/74127908c240c9233f571f7c27f8b7378ac14139/scripts/slave/README.recipes.md#recipe_modules-perf_dashboard
-[build/recipe_modules/service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/74127908c240c9233f571f7c27f8b7378ac14139/scripts/slave/README.recipes.md#recipe_modules-service_account
-[build/recipe_modules/trigger]: https://chromium.googlesource.com/chromium/tools/build.git/+/74127908c240c9233f571f7c27f8b7378ac14139/scripts/slave/README.recipes.md#recipe_modules-trigger
-[build/recipe_modules/zip]: https://chromium.googlesource.com/chromium/tools/build.git/+/74127908c240c9233f571f7c27f8b7378ac14139/scripts/slave/README.recipes.md#recipe_modules-zip
+[build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/09cdf45ae0a8e39bd8918bd93e2300b4866f4c8b/scripts/slave/README.recipes.md#recipe_modules-chromium
+[build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/09cdf45ae0a8e39bd8918bd93e2300b4866f4c8b/scripts/slave/README.recipes.md#recipe_modules-luci_config
+[build/recipe_modules/perf_dashboard]: https://chromium.googlesource.com/chromium/tools/build.git/+/09cdf45ae0a8e39bd8918bd93e2300b4866f4c8b/scripts/slave/README.recipes.md#recipe_modules-perf_dashboard
+[build/recipe_modules/service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/09cdf45ae0a8e39bd8918bd93e2300b4866f4c8b/scripts/slave/README.recipes.md#recipe_modules-service_account
+[build/recipe_modules/trigger]: https://chromium.googlesource.com/chromium/tools/build.git/+/09cdf45ae0a8e39bd8918bd93e2300b4866f4c8b/scripts/slave/README.recipes.md#recipe_modules-trigger
+[build/recipe_modules/zip]: https://chromium.googlesource.com/chromium/tools/build.git/+/09cdf45ae0a8e39bd8918bd93e2300b4866f4c8b/scripts/slave/README.recipes.md#recipe_modules-zip
 [depot_tools/recipe_modules/bot_update]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/9cb802ca48eb8f8ec22fe6f3f63fb29d33f4a7fd/recipes/README.recipes.md#recipe_modules-bot_update
 [depot_tools/recipe_modules/cipd]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/9cb802ca48eb8f8ec22fe6f3f63fb29d33f4a7fd/recipes/README.recipes.md#recipe_modules-cipd
 [depot_tools/recipe_modules/depot_tools]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/9cb802ca48eb8f8ec22fe6f3f63fb29d33f4a7fd/recipes/README.recipes.md#recipe_modules-depot_tools
