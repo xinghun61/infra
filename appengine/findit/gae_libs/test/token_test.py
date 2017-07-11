@@ -62,23 +62,31 @@ class TokenTest(testing.AppengineTestCase):
         datetime(2017, 6, 13, 0, 1, 0)
     ]
     xsrf_token = token.GenerateAuthToken('key', 'email', 'action')
-    self.assertTrue(
-        token.ValidateAuthToken('key', xsrf_token, 'email', 'action'))
+    valid, expired = token.ValidateAuthToken(
+        'key', xsrf_token, 'email', 'action')
+    self.assertTrue(valid)
+    self.assertFalse(expired)
 
   def testGeneratedXSRFTokenIsInvalidForSameUserButDifferentAction(self):
     xsrf_token = token.GenerateAuthToken('key', 'email', 'action1')
-    self.assertFalse(
-        token.ValidateAuthToken('key', xsrf_token, 'email', 'action2'))
+    valid, expired = token.ValidateAuthToken(
+        'key', xsrf_token, 'email', 'action2')
+    self.assertFalse(valid)
+    self.assertFalse(expired)
 
   def testGeneratedXSRFTokenIsInvalidForDifferentUserButSameAction(self):
     xsrf_token = token.GenerateAuthToken('key', 'email1', 'action')
-    self.assertFalse(
-        token.ValidateAuthToken('key', xsrf_token, 'email2', 'action'))
+    valid, expired = token.ValidateAuthToken(
+        'key', xsrf_token, 'email2', 'action')
+    self.assertFalse(valid)
+    self.assertFalse(expired)
 
   def testGeneratedXSRFTokenIsInvalidForDifferentUserAndAction(self):
     xsrf_token = token.GenerateAuthToken('key', 'email1', 'action1')
-    self.assertFalse(
-        token.ValidateAuthToken('key', xsrf_token, 'email2', 'action2'))
+    valid, expired = token.ValidateAuthToken(
+        'key', xsrf_token, 'email2', 'action2')
+    self.assertFalse(valid)
+    self.assertFalse(expired)
 
   @mock.patch('gae_libs.token.GenerateAuthToken')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail', lambda: None)
@@ -102,16 +110,9 @@ class TokenTest(testing.AppengineTestCase):
     mocked_GenerateAuthToken.assert_not_called()
 
   @mock.patch('gae_libs.token.ValidateAuthToken')
-  @mock.patch('gae_libs.http.auth_util.GetUserEmail', lambda: None)
-  def testInvalidXSRFTokenIfUserNotLogin(self, mocked_ValidateAuthToken):
-    self.test_app.post(
-        '/test-token?format=json', {'xsrf_token': 'token'}, status=403)
-    mocked_ValidateAuthToken.assert_not_called()
-
-  @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail', lambda: 'test@google.com')
   def testInvalidXSRFTokenForUserLogin(self, mocked_ValidateAuthToken):
-    mocked_ValidateAuthToken.side_effect = [False]
+    mocked_ValidateAuthToken.side_effect = [(False, False)]
     self.test_app.post(
         '/test-token?format=json', {'xsrf_token': 'token'}, status=403)
     mocked_ValidateAuthToken.assert_called_once_with('site', 'token',
@@ -120,7 +121,7 @@ class TokenTest(testing.AppengineTestCase):
   @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch('gae_libs.http.auth_util.GetUserEmail', lambda: 'test@google.com')
   def testValidXSRFTokenForUserLogin(self, mocked_ValidateAuthToken):
-    mocked_ValidateAuthToken.side_effect = [True]
+    mocked_ValidateAuthToken.side_effect = [(True, False)]
     response = self.test_app.post(
         '/test-token?format=json', {'xsrf_token': 'token'}, status=200)
     mocked_ValidateAuthToken.assert_called_once_with('site', 'token',
@@ -131,22 +132,29 @@ class TokenTest(testing.AppengineTestCase):
       time_util, 'GetUTCNow', return_value=datetime(2017, 06, 13, 0, 0, 0))
   def testValidateAuthTokenSucceed(self, _):
     tested_token = token.GenerateAuthToken('key', 'email')
-    self.assertTrue(token.ValidateAuthToken('key', tested_token, 'email'))
+    valid, expired = token.ValidateAuthToken('key', tested_token, 'email')
+    self.assertTrue(valid)
+    self.assertFalse(expired)
 
   def testValidateAuthTokenNoToken(self):
-    self.assertFalse(token.ValidateAuthToken('key', None, 'email'))
+    valid, expired = token.ValidateAuthToken('key', None, 'email')
+    self.assertFalse(valid)
+    self.assertFalse(expired)
 
   def testValidateAuthTokenDateInvalid(self):
     tested_token = base64.urlsafe_b64encode('token')
-    self.assertFalse(token.ValidateAuthToken('key', tested_token, 'email'))
+    valid, expired = token.ValidateAuthToken('key', tested_token, 'email')
+    self.assertFalse(valid)
+    self.assertFalse(expired)
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 06, 13, 2, 0, 0))
   def testValidateAuthTokenExpired(self, _):
     tested_token = token.GenerateAuthToken(
         'key', 'email', when=datetime(2017, 06, 13, 0, 0, 0))
-
-    self.assertFalse(token.ValidateAuthToken('key', tested_token, 'email'))
+    valid, expired = token.ValidateAuthToken('key', tested_token, 'email')
+    self.assertTrue(valid)
+    self.assertTrue(expired)
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 06, 13, 0, 0, 0))
@@ -155,5 +163,6 @@ class TokenTest(testing.AppengineTestCase):
         datetime(2017, 06, 13, 0, 0, 0))
     tested_token = base64.urlsafe_b64encode('token:' +
                                             str(token_created_timestamp))
-
-    self.assertFalse(token.ValidateAuthToken('key', tested_token, 'email'))
+    valid, expired = token.ValidateAuthToken('key', tested_token, 'email')
+    self.assertFalse(valid)
+    self.assertFalse(expired)

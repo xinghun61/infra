@@ -210,7 +210,8 @@ class HelpTriageTest(testing.AppengineTestCase):
                                         118)
     self.assertEqual(expected_results, results)
 
-  @mock.patch.object(help_triage.token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(help_triage.token, 'ValidateAuthToken',
+                     return_value=(True, False))
   def testHelpTriageHandler(self, _):
     build_url = buildbot.CreateBuildUrl(self.master_name, self.builder_name,
                                         121)
@@ -238,7 +239,8 @@ class HelpTriageTest(testing.AppengineTestCase):
     self.assertEqual(200, response.status_int)
     self.assertEqual(EXPECTED_RESULTS_121, response.json_body)
 
-  @mock.patch.object(help_triage.token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(help_triage.token, 'ValidateAuthToken',
+                     return_value=(True, False))
   def testHelpTriageHandlerReturnNoneForGreenBuild(self, _):
     build_url = buildbot.CreateBuildUrl(self.master_name, self.builder_name,
                                         123)

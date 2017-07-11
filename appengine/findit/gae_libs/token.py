@@ -80,34 +80,37 @@ def ValidateAuthToken(key_name, token, user_id, action_id='', valid_hours=1):
 
   Returns:
     A bool whether the token is valid.
+    A bool if the token is expired.
   """
+
   if not token:
-    return False
+    return False, False
   try:
     decoded = base64.urlsafe_b64decode(str(token))
     token_time = datetime.utcfromtimestamp(int(decoded.split(_DELIMITER)[-1]))
   except (TypeError, ValueError):
-    return False
+    return False, False
 
   current_time = time_util.GetUTCNow()
+  expired = False
   # If the token is too old it's not valid.
   if current_time - token_time > timedelta(hours=valid_hours):
-    return False
+    expired = True
 
   # The given token should match the generated one with the same time.
   expected_token = GenerateAuthToken(
       key_name, user_id, action_id=action_id, when=token_time)
   if len(token) != len(expected_token):
-    return False
+    return False, expired
 
   # Perform constant time comparison to avoid timing attacks.
   different = 0
   for x, y in zip(token, expected_token):
     different |= ord(x) ^ ord(y)
   if different:
-    return False
+    return False, expired
 
-  return True
+  return True, expired
 
 
 class AddXSRFToken(object):
@@ -143,8 +146,9 @@ class VerifyXSRFToken(object):
     def VerifyToken(handler, *args, **kwargs):
       user_email = auth_util.GetUserEmail()
       xsrf_token = str(handler.request.get('xsrf_token'))
-      if (not user_email or not ValidateAuthToken('site', xsrf_token,
-                                                  user_email, self._action_id)):
+      valid, expired = ValidateAuthToken('site', xsrf_token,
+                                         user_email, self._action_id)
+      if (not user_email or not valid or expired):
         return handler.CreateError(
             'Invalid XSRF token. Please log in or refresh the page first.',
             return_code=403)

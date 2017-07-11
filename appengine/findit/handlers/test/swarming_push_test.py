@@ -10,7 +10,6 @@ import webapp2
 
 from testing_utils import testing
 
-from common.waterfall import pubsub_callback
 from gae_libs import token
 from handlers.swarming_push import SwarmingPush
 from model.wf_swarming_task import WfSwarmingTask
@@ -26,7 +25,7 @@ class SwarmingPushTest(testing.AppengineTestCase):
     super(SwarmingPushTest, self).setUp()
 
   # Send well formed notification for job that does not exist
-  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   @mock.patch('logging.warning')
   def testSwarmingPushMissingTask(self, logging_mock, _):
     self.test_app.post(
@@ -57,11 +56,11 @@ class SwarmingPushTest(testing.AppengineTestCase):
     self.assertTrue(logging_mock.called)
 
   # ill formed notification (bad token)
-  @mock.patch.object(token, 'ValidateAuthToken', return_value=False)
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(False, False))
   def testSwarmingPushBadToken(self, _):
     # We expect a 400 error, and a webtest.webtest.AppError (not in path,
     # catching plain Exception)
-    with self.assertRaisesRegexp(Exception, '.*400.*'):
+    with self.assertRaisesRegexp(Exception, '.*403.*'):
       _ = self.test_app.post(
           '/pubsub/swarmingpush',
           params={
@@ -89,7 +88,7 @@ class SwarmingPushTest(testing.AppengineTestCase):
           })
 
   # Send notification with unsupported message-type
-  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   def testSwarmingPushUnsupportedMessageType(self, _):
     # We expect a 500 error, and a webtest.webtest.AppError (not in path,
     # catching plain Exception)
@@ -122,7 +121,7 @@ class SwarmingPushTest(testing.AppengineTestCase):
           })
 
   # Send well formed notification
-  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   def testSwarmingPush(self, _):
     task = WfSwarmingTask.Create('m', 'b', 1, 'test')
     task.task_id = '12345'
@@ -157,7 +156,7 @@ class SwarmingPushTest(testing.AppengineTestCase):
           })
       mock_queue.assert_called_once()
 
-  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   @mock.patch('logging.warning')
   def testSwarmingPushMissingCallback(self, logging_mock, _):
     task = WfSwarmingTask.Create('m', 'b', 1, 'test')
@@ -192,3 +191,33 @@ class SwarmingPushTest(testing.AppengineTestCase):
                 'json',
         })
     self.assertTrue(logging_mock.called)
+
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, True))
+  @mock.patch('logging.warning')
+  def testSwarmingPushTokenExpired(self, logging_mock, _):
+    self.test_app.post(
+        '/pubsub/swarmingpush',
+        params={
+            'data':
+                json.dumps({
+                    'message': {
+                        'attributes': {
+                            'auth_token': 'auth_token',
+                        },
+                        'data':
+                            base64.b64encode(
+                                json.dumps({
+                                    'task_id':
+                                        '12345',
+                                    'userdata':
+                                        json.dumps({
+                                            'Message-Type':
+                                                'SwarmingTaskStatusChange',
+                                        }),
+                                })),
+                    },
+                }),
+            'format':
+                'json',
+        })
+    logging_mock.called_once_with('This swarming push is expired.')

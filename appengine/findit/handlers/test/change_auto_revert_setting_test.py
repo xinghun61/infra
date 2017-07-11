@@ -32,7 +32,7 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_response, response.json_body)
 
-  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   def testChangeAutoRevertSettingPost(self, _):
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 
@@ -43,7 +43,7 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
     redirect_url = '/waterfall/change-auto-revert-setting'
     self.assertTrue(response.headers.get('Location', '').endswith(redirect_url))
 
-  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   def testChangeAutoRevertSettingPostFailed(self, _):
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 

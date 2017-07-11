@@ -28,7 +28,7 @@ class TryJobPushTest(testing.AppengineTestCase):
     super(TryJobPushTest, self).setUp()
 
   # Send well formed notification for job that does not exist
-  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   @mock.patch('logging.warning')
   def testTryJobPushMissingJob(self, logging_mock, _):
     self.test_app.post(
@@ -61,11 +61,11 @@ class TryJobPushTest(testing.AppengineTestCase):
     self.assertTrue(logging_mock.called)
 
   # ill formed notification (bad token)
-  @mock.patch.object(token, 'ValidateAuthToken', return_value=False)
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(False, False))
   def testTryJobPushBadToken(self, _):
     # We expect a 400 error, and a webtest.webtest.AppError (not in path,
     # catching plain Exception)
-    with self.assertRaisesRegexp(Exception, '.*400.*'):
+    with self.assertRaisesRegexp(Exception, '.*403.*'):
       _ = self.test_app.post(
           '/pubsub/tryjobpush',
           params={
@@ -112,7 +112,7 @@ class TryJobPushTest(testing.AppengineTestCase):
           })
 
   # Send notification with unsupported message-type
-  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   def testTryJobPushUnsupportedMessageType(self, _):
     # We expect a 500 error, and a webtest.webtest.AppError (not in path,
     # catching plain Exception)
@@ -147,7 +147,7 @@ class TryJobPushTest(testing.AppengineTestCase):
           })
 
   # Send well formed notification
-  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   def testTryJobPush(self, _):
     try_job_in_progress = WfTryJobData.Create(12345)
     try_job_in_progress.try_job_key = WfTryJob.Create('m', 'b', 1).key
@@ -189,7 +189,7 @@ class TryJobPushTest(testing.AppengineTestCase):
           })
       mock_queue.assert_called_once()
 
-  @mock.patch.object(token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
   @mock.patch('logging.warning')
   def testTryJobPushMissingCallback(self, logging_mock, _):
     try_job_in_progress = WfTryJobData.Create(12345)
@@ -232,3 +232,35 @@ class TryJobPushTest(testing.AppengineTestCase):
                 'json',
         })
     self.assertTrue(logging_mock.called)
+
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, True))
+  @mock.patch('logging.warning')
+  def testTryJobPushTokenExpired(self, logging_mock, _):
+    self.test_app.post(
+        '/pubsub/tryjobpush',
+        params={
+            'data':
+                json.dumps({
+                    'message': {
+                        'attributes': {
+                            'auth_token': 'some_token',
+                            'build_id': '12345',  # Shouldn't matter
+                        },
+                        'data':
+                            base64.b64encode(
+                                json.dumps({
+                                    'build': {
+                                        'id': '12345'
+                                    },
+                                    'user_data':
+                                        json.dumps({
+                                            'Message-Type':
+                                                'BuildbucketStatusChange',
+                                        }),
+                                })),
+                    },
+                }),
+            'format':
+                'json',
+        })
+    logging_mock.called_once_with('This try job push is expired.')

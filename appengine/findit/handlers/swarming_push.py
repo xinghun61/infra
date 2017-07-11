@@ -44,14 +44,18 @@ class SwarmingPush(BaseHandler):
       user_data = json.loads(message['userdata'])
       notification_id = user_data.get('Notification-Id', '')
       swarming_hour_limit = waterfall_config.GetSwarmingSettings().get(
-          'server_retry_timeout_hours', 2)
-      if not token.ValidateAuthToken(
+          'task_timeout_hours', 24)
+      valid, expired = token.ValidateAuthToken(
           'swarming_pubsub',
           auth_token,
           'swarming',
           action_id=notification_id,
-          valid_hours=swarming_hour_limit):
-        return {'return_code': 400}
+          valid_hours=swarming_hour_limit)
+      if not valid:
+        return {'return_code': 403}
+      elif expired:
+        logging.warning('This swarming push is expired.')
+        return {}
 
       task_id = message['task_id']
 

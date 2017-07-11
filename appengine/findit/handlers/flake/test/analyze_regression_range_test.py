@@ -51,8 +51,8 @@ class AnalyzeRegressionRangeTest(wf_testcase.WaterfallTestCase):
             '2', '1'))
 
   @mock.patch.object(users, 'is_current_user_admin', return_value=True)
-  @mock.patch.object(
-      analyze_regression_range.token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(analyze_regression_range.token, 'ValidateAuthToken',
+                     return_value=(True, False))
   def testPost(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.put()
@@ -72,8 +72,8 @@ class AnalyzeRegressionRangeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(200, response.status_int)
 
   @mock.patch.object(users, 'is_current_user_admin', return_value=True)
-  @mock.patch.object(
-      analyze_regression_range.token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(analyze_regression_range.token, 'ValidateAuthToken',
+                     return_value=(True, False))
   @mock.patch.object(
       analyze_regression_range, '_ValidateInput', return_value=False)
   def testPostWithInvalidInput(self, *_):
@@ -98,8 +98,8 @@ class AnalyzeRegressionRangeTest(wf_testcase.WaterfallTestCase):
                      response.json_body.get('error_message'))
 
   @mock.patch.object(users, 'is_current_user_admin', return_value=True)
-  @mock.patch.object(
-      analyze_regression_range.token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(analyze_regression_range.token, 'ValidateAuthToken',
+                     return_value=(True, False))
   @mock.patch.object(
       analyze_regression_range, '_ValidateInput', return_value=True)
   def testPostMissingAnalysis(self, *_):

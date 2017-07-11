@@ -48,13 +48,17 @@ class TryJobPush(BaseHandler):
       notification_id = user_data.get('Notification-Id', '')
       try_job_hour_limit = waterfall_config.GetTryJobSettings().get(
           'job_timeout_hours', 10)
-      if not token.ValidateAuthToken(
+      valid, expired = token.ValidateAuthToken(
           'try_job_pubsub',
           auth_token,
           'try_job',
           action_id=notification_id,
-          valid_hours=try_job_hour_limit):
-        return {'return_code': 400}
+          valid_hours=try_job_hour_limit)
+      if not valid:
+        return {'return_code': 403}
+      elif expired:
+        logging.warning('This try job push is expired.')
+        return {}
 
       if user_data['Message-Type'] == 'BuildbucketStatusChange':
         for kind in ['WfTryJobData', 'FlakeTryJobData']:

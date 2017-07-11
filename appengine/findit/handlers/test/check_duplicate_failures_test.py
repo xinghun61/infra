@@ -60,8 +60,8 @@ class CheckDuplicateFailuresTest(testing.AppengineTestCase):
       analyses.append(analysis)
     return analyses
 
-  @mock.patch.object(
-      check_duplicate_failures.token, 'ValidateAuthToken', return_value=True)
+  @mock.patch.object(check_duplicate_failures.token, 'ValidateAuthToken',
+                     return_value=(True, False))
   def testCheckDuplicateFailuresHandler(self, _):
     self._CreateAnalyses('m', 'b', 5)
     self.mock_current_user(user_email='test@google.com', is_admin=True)

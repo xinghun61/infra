@@ -990,7 +990,7 @@ class ConfigTest(testing.AppengineTestCase):
   @mock.patch('gae_libs.token.ValidateAuthToken')
   def testPostConfigurationSettings(self, mocked_ValidateAuthToken):
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    mocked_ValidateAuthToken.side_effect = [True]
+    mocked_ValidateAuthToken.side_effect = [(True, False)]
 
     params = {
         'format':

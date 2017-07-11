@@ -279,7 +279,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch('gae_libs.token.ValidateAuthToken')
   def testInvalidBuildUrlForPostRequest(self, mocked_ValidateAuthToken):
-    mocked_ValidateAuthToken.side_effect = [True]
+    mocked_ValidateAuthToken.side_effect = [(True, False)]
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 
     build_url = 'an/invalid/url'
@@ -295,7 +295,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
   @mock.patch('gae_libs.token.ValidateAuthToken')
   def testNonAdminCannotRequestAnalysisOfFailureOnUnsupportedMaster(
       self, mocked_ValidateAuthToken):
-    mocked_ValidateAuthToken.side_effect = [True]
+    mocked_ValidateAuthToken.side_effect = [(True, False)]
     master_name = 'm2'
     builder_name = 'b 1'
     build_number = 123
@@ -315,7 +315,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
   @mock.patch('gae_libs.token.ValidateAuthToken')
   def testCorpUserCanViewAnalysisOfFailureOnUnsupportedMaster(
       self, mocked_ValidateAuthToken):
-    mocked_ValidateAuthToken.side_effect = [True]
+    mocked_ValidateAuthToken.side_effect = [(True, False)]
     master_name = 'm2'
     builder_name = 'b 1'
     build_number = 123
@@ -338,7 +338,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(build_util, 'GetBuildInfo', return_value=None)
   @mock.patch('gae_libs.token.ValidateAuthToken')
   def testCannotGetBuildInfo(self, mocked_ValidateAuthToken, _):
-    mocked_ValidateAuthToken.side_effect = [True]
+    mocked_ValidateAuthToken.side_effect = [(True, False)]
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
@@ -360,7 +360,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
   @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testCannotRerunIncompleteBuild(self, mock_fn, mocked_ValidateAuthToken):
-    mocked_ValidateAuthToken.side_effect = [True]
+    mocked_ValidateAuthToken.side_effect = [(True, False)]
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123
@@ -388,7 +388,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(
       self, mock_fn, mocked_ValidateAuthToken):
-    mocked_ValidateAuthToken.side_effect = [True]
+    mocked_ValidateAuthToken.side_effect = [(True, False)]
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -412,7 +412,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testNotEveryoneCanRequestNewAnalysisOfFailureOnSupportedMaster(
       self, mock_fn, mocked_ValidateAuthToken):
-    mocked_ValidateAuthToken.side_effect = [True]
+    mocked_ValidateAuthToken.side_effect = [(True, False)]
     master_name = 'm'
     builder_name = 'b 1'
     build_number = 123

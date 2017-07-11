@@ -91,7 +91,7 @@ class FinditConfig(VersionedConfig):
   #     'maximum_server_contact_retry_interval_seconds': 1,
   #     'should_retry_server': False,
   #     'minimum_number_of_available_bots': 5,
-  #     'minimum_percentage_of_available_bots': 0.1
+  #     'minimum_percentage_of_available_bots': 0.1,
   # }
   swarming_settings = ndb.JsonProperty(indexed=False, default={})
 
