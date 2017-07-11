@@ -16,7 +16,7 @@ help:
 
 build:
 	cd frontend && bower install
-	cd frontend && vulcanize src/test-results.html -o src/test-results.vulcanized.html
+	cd frontend && vulcanize src/test-results.html --out-html src/test-results.vulcanized.html
 
 clean:
 	cd frontend && rm -f src/test-results.vulcanized.html
