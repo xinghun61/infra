@@ -1,0 +1,124 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/elements/service-row.html">
+
+<dom-module id="status-table">
+  <template>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      .card {
+        color: rgba(0, 0, 0, 0.87);
+        font: 1.2em "Roboto Regular";
+      }
+      div.layout > div {
+        width: 800px;
+      }
+      .footer,
+      th {
+        height: 56px;
+      }
+      .header {
+        height: 64px;
+        line-height: 64px; // vertically center text
+      }
+      table {
+        border-collapse: collapse;
+        font-size: .81em;
+        padding: 24px;
+        width: 100%;
+      }
+      th {
+        color: rgba(0, 0, 0, 0.54);
+        font: .76em "Roboto Medium";
+      }
+      th:first-child {
+        text-align: left;
+      }
+      tr {
+        border: solid silver;
+        border-width: 1px 0;
+        height: 48px;
+      }
+      tr:first-child {
+        border-top: none;
+      }
+      tr:last-child {
+        border-bottom: none;
+      }
+    </style>
+    <div class="layout horizontal center-justified">
+      <div class="card">
+        <p class="header">Services not Covered by an SLA</p>
+        <table>
+          <tr>
+            <th>Current Status</th>
+            <template is="dom-repeat" items="[[formattedDates]]">
+              <th>[[item]]</th>
+            </template>
+          </tr>
+          <template is="dom-repeat" items="[[services]]">
+            <tr>
+              <td>[[item.name]]</td>
+              <td colspan="7">
+                <service-row incidents="[[item.incidents]]"
+                  dates="[[dates]]"></service-row>
+              </td>
+            </tr>
+          </template>
+          <tr class="footer"><!--add table-footer here--></tr>
+        </table>
+      </div>
+    </div>
+  </template>
+  <script>
+    'use strict';
+
+    class StatusTable extends Polymer.Element {
+      static get is() { return 'status-table'; }
+
+      ready() {
+        super.ready();
+      }
+
+      static get properties() {
+        return {
+          services: {
+            type: Array,
+            value: () => { return []; },
+          },
+        // All dates shown on the dashboard should be the same across all
+        // elements on the page.
+          formattedDates: {
+            type: Array,
+            value: [],
+          },
+          dates: {
+            type: Array,
+            value: [],
+          },
+        }
+      }
+      static get observers() {
+        return [
+          '_computePrettyDates(dates.splices)',
+        ]
+      }
+
+      _computePrettyDates(datesSplices) {
+        if (datesSplices) {
+          let newDates = datesSplices.indexSplices[
+              datesSplices.indexSplices.length-1].object;
+          this.formattedDates = [];
+          newDates.forEach((date) => {
+            this.push('formattedDates',
+              (`${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`));
+          });
+        }
+      }
+    }
+    customElements.define(StatusTable.is, StatusTable);
+  </script>
+</dom-module>

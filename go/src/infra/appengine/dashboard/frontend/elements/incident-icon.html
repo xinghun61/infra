@@ -8,15 +8,16 @@
       .incident {
         left: var(--incident-left);
         width: var(--incident-width);
-        position: absolute !important;
       }
     </style>
     <link rel="stylesheet" type="text/css" href="/static/icons.css">
-    <i id="jsIncident" class="incident">
-      <i id="jsLeft" class$="left [[_iconColorClass]]"></i>
-      <i class$="center [[_iconColorClass]]"></i>
-      <i id="jsRight" class$="right [[_iconColorClass]]"></i>
-    </i>
+    <div class="container">
+      <i id="jsIncident" class="incident">
+        <i id="jsLeft" class$="left [[_computeColor(incident)]]"></i>
+        <i class$="center [[_computeColor(incident)]]"></i>
+        <i id="jsRight" class$="right [[_computeColor(incident)]]"></i>
+      </i>
+    </div>
   </template>
   <script>
     'use strict';
@@ -30,14 +31,10 @@
 
       static get properties() {
         return {
-          _iconColorClass: {
-            type: String,
-            computed: '_computeColor(incident)',
-          },
           incident: {
             type: Object,
             value: () => {
-              return {start_time: 0, end_time: 0, severity: 'yellow'}; },
+              return {startTime: 0, endTime: 0, severity: 'yellow'}; },
           },
           // Array of Date objects
           dates: {
@@ -69,7 +66,7 @@
        * @param {Date[]} dates - The list of dates shown on the dashbaord.
       */
        _computeStyle(incident, dates) {
-        let startPosition = this.getDatePosition(incident.start_time, dates);
+        let startPosition = this.getDatePosition(incident.startTime, dates);
         if (startPosition === undefined) {
           // start_time is before first date on the dashboard.
           startPosition = 0;
@@ -79,7 +76,7 @@
           this.$.jsLeft.classList.remove('hidden');
         }
 
-        let endPosition = this.getDatePosition(incident.end_time, dates);
+        let endPosition = this.getDatePosition(incident.endTime, dates);
         if (endPosition === undefined) {
           // end_time is after last date on the dashboard.
           endPosition = 100;
@@ -105,7 +102,7 @@
         const NUM_DAYS_DISPLAYED = 7;
         const TIME_INCREMENTS_PER_DAY = 168;
         let position;
-        let incidentDate = new Date(incidentUnix * 1000);
+        let incidentDate = new Date(parseInt(incidentUnix, 10) * 1000);
         let time = incidentDate.getHours();
         dates.forEach((date, i) => {
           if (date.setHours(0, 0, 0) === incidentDate.setHours(0, 0, 0)) {

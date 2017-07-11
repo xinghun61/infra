@@ -31,12 +31,12 @@
     test('incident within time range', function(done) {
       element.incident = {
         severity: 'RED',
-        start_time: '1497693923', // 17/06/2017 3:05:23 PTZ
-        end_time: '1497787570', // 18/06/2017 5:6:10 PTZ
+        startTime: '1497693923', // 17/06/2017 3:05:23 PTZ
+        endTime: '1497787570', // 18/06/2017 5:6:10 PTZ
       };
 
       flush(function () {
-        assert.equal(element._iconColorClass, 'red');
+        assert.equal(element._computeColor(element.incident), 'red');
         assert.equal(
             element.$.jsLeft.classList.value, 'left red', 'left color');
         assert.equal(
@@ -48,11 +48,11 @@
     test('incident exceeds dashboard range', function(done) {
       element.incident = {
         severity: 'YELLOW',
-        start_time: '1497573492', // 15/06/2017 17:38:12 PTZ
-        end_time: '1498264692', // 23/06/2017 17:38:12 PTZ
+        startTime: '1497573492', // 15/06/2017 17:38:12 PTZ
+        endTime: '1498264692', // 23/06/2017 17:38:12 PTZ
       };
       flush(function () {
-        assert.equal(element._iconColorClass, 'yellow');
+        assert.equal(element._computeColor(element.incident), 'yellow');
         assert.equal(element.$.jsLeft.classList.value,
                      'left yellow hidden', 'left classes');
         assert.equal(element.$.jsRight.classList.value,

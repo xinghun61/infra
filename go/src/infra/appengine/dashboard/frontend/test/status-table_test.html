@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<title>statusTableTest</title>
+<meta charset="utf-8">
+<link rel="import" href="/../elements/status-table.html">
+<script src="/../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/../bower_components/web-component-tester/browser.js"></script>
+
+<test-fixture id="table-test">
+  <template>
+    <status-table></status-table>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('status-table', function() {
+    var element;
+    setup(function(){
+      element = fixture('table-test');
+      let lastDate = new Date(1498114800000); // 22/06/2017 PTZ
+      for (let i = 6; i >= 0; i--) {
+        let date = new Date(lastDate);
+        date.setDate(lastDate.getDate() - i);
+        element.push('dates', date);
+      }
+
+      let service = {name: 'Monorail'}
+      service.incidents = [
+        {
+          severity: 'RED',
+          startTime: '1497693923',
+          endTime: '1497787570',
+        },{
+          severity: 'YELLOW',
+          startTime: '1497693723',
+          endTime: '1497787520',
+        },{
+          severity: 'YELLOW',
+          startTime: '1497693723',
+          endTime: '1497787590',
+        },
+      ];
+
+      let serviceTwo = {name: 'Sheriff-O-Matic'}
+      serviceTwo.incidents = [
+        {
+          severity: 'YELLOW',
+          startTime: '1497653923',
+          endTime: '1497799570',
+        },{
+          severity: 'RED',
+          startTime: '1497773923',
+          endTime: '1497787570',
+        },
+      ];
+
+      let serviceThree = {name: 'Code Search'}
+      serviceThree.incidents = [
+        {
+          severity: 'YELLOW',
+          startTime: '1497653923',
+          endTime: '1497799570',
+        },{
+          severity: 'YELLOW',
+          startTime: '1497773923',
+          endTime: '1497787570',
+        },
+      ];
+
+      element.push('services', service, serviceTwo, serviceThree);
+
+    });
+
+    test('test elements created', function(done) {
+
+      flush(function () {
+        done();
+      });
+
+    });
+  });
+</script>

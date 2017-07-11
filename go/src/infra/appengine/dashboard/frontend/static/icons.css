@@ -1,16 +1,16 @@
 .circle {
   border-radius: 50%;
   display: inline-block;
-  height: 12px;
-  width: 12px;
+  height: 10px;
+  width: 10px;
   vertical-align: -1px;
 
 }
 .circle-container {
-    margin: .5px;
+  margin: .5px;
 }
 .container {
-    padding: .5px 0px;
+  padding: .6px 0px;
 }
 .green {
   background-color: green;
@@ -26,16 +26,16 @@
 .right,
 .left {
   display: table-cell;
-  height: 12px;
-  width: 6px;
+  height: 10px;
+  width: 5px;
 }
 .right {
-  border-bottom-right-radius: 12px;
-  border-top-right-radius: 12px;
+  border-bottom-right-radius: 10px;
+  border-top-right-radius: 10px;
 }
 .left {
-  border-bottom-left-radius: 12px;
-  border-top-left-radius: 12px;
+  border-bottom-left-radius: 10px;
+  border-top-left-radius: 10px;
 }
 .yellow {
   background-color: gold;
