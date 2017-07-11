@@ -141,7 +141,37 @@
         1417473528.554072, 
         1417473537.641876
       ]
-    } 
+    },
+    {
+      "isFinished": true,
+      "isStarted": true,
+      "logs": [
+        [
+          "stdio",
+          "http://build.chromium.org/p/chromium.win/builders/XP%20Tests%20%281%29/builds/34239/steps/browser_tests%20on%20Windows-XP-SP3/logs/stdio"
+        ],
+        [
+          "reason",
+          "http://build.chromium.org/p/chromium.win/builders/XP%20Tests%20%281%29/builds/34239/steps/browser_tests%20on%20Windows-XP-SP3/logs/stdio"
+        ]
+      ],
+      "name": "Failure reason",
+      "results": [
+        2,
+        [
+          "failed",
+          "Failure reason"
+        ]
+      ],
+      "step_number": 3,
+      "text": [
+        "Failure reason"
+      ],
+      "times": [
+        1417470721.764065,
+        1417473526.554072
+      ]
+    }
   ], 
   "text": [
     "failed", 

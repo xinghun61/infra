@@ -400,6 +400,7 @@ class BuildBotTest(unittest.TestCase):
     expected_not_passed_steps = [
         'steps',
         'net_unittests on Windows-XP-SP3',
+        'Failure reason',
     ]
 
     build_info = buildbot.ExtractBuildInfo(master_name, builder_name,

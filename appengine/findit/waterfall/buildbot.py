@@ -326,6 +326,11 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
     if step_result not in (SUCCESS, WARNINGS):
       build_info.not_passed_steps.append(step_name)
 
+    if step_name == 'Failure reason':
+      # 'Failure reason' is always red when the build breaks or has exception,
+      # but it is not a failed step.
+      continue
+
     step_logs = step_data.get('logs')
     if step_logs and 'preamble' == step_logs[0][0]:
       # Skip a annotating step like "steps" or "slave_steps", which wraps other
