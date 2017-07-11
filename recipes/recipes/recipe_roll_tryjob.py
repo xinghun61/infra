@@ -130,8 +130,10 @@ def RunSteps(api, upstream_project, downstream_project):
 
   cl_footers = api.tryserver.get_footers()
 
-  nontrivial_roll_footer = 'Recipe-Nontrivial-Roll-%s' % downstream_project
-  manual_change_footer = 'Recipe-Manual-Change-%s' % downstream_project
+  nontrivial_roll_footer = api.tryserver.normalize_footer_name(
+      'Recipe-Nontrivial-Roll-%s' % downstream_project)
+  manual_change_footer = api.tryserver.normalize_footer_name(
+      'Recipe-Manual-Change-%s' % downstream_project)
   nontrivial_roll_footer_contents = cl_footers.get(nontrivial_roll_footer)
   manual_change_footer_contents = cl_footers.get(manual_change_footer)
 
@@ -239,10 +241,10 @@ def GenTests(api):
     api.step_data('diff (test)', retcode=1) +
     api.override_step_data(
         'git_cl description', stdout=api.raw_io.output(
-            'Recipe-Nontrivial-Roll-depot_tools: ack')) +
+            'Recipe-Nontrivial-Roll-Depot_Tools: ack')) +
     api.override_step_data(
         'parse description', api.json.output(
-            {'Recipe-Nontrivial-Roll-depot_tools': ['ack']}))
+            {'Recipe-Nontrivial-Roll-Depot_Tools': ['ack']}))
   )
 
   yield (
@@ -255,10 +257,10 @@ def GenTests(api):
     api.step_data('diff (train)', retcode=1) +
     api.override_step_data(
         'git_cl description', stdout=api.raw_io.output(
-            'Recipe-Nontrivial-Roll-depot_tools: ack')) +
+            'Recipe-Nontrivial-Roll-Depot_Tools: ack')) +
     api.override_step_data(
         'parse description', api.json.output(
-            {'Recipe-Nontrivial-Roll-depot_tools': ['ack']}))
+            {'Recipe-Nontrivial-Roll-Depot_Tools': ['ack']}))
   )
 
   yield (
@@ -271,8 +273,8 @@ def GenTests(api):
     api.step_data('diff (train)', retcode=1) +
     api.override_step_data(
         'git_cl description', stdout=api.raw_io.output(
-            'Recipe-Manual-Change-depot_tools: ack')) +
+            'Recipe-Manual-Change-Depot_Tools: ack')) +
     api.override_step_data(
         'parse description', api.json.output(
-            {'Recipe-Manual-Change-depot_tools': ['ack']}))
+            {'Recipe-Manual-Change-Depot_Tools': ['ack']}))
   )

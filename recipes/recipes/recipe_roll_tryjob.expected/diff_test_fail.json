@@ -343,7 +343,7 @@
     "name": "result",
     "~followup_annotations": [
       "step returned non-zero exit code: 1",
-      "@@@STEP_TEXT@Add Recipe-Nontrivial-Roll-depot_tools: ack footer to the CL to acknowledge the change will require nontrivial roll in 'depot_tools' repo@@@",
+      "@@@STEP_TEXT@Add Recipe-Nontrivial-Roll-Depot_Tools: ack footer to the CL to acknowledge the change will require nontrivial roll in 'depot_tools' repo@@@",
       "@@@STEP_FAILURE@@@"
     ]
   },

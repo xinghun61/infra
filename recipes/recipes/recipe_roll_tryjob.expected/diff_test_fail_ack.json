@@ -329,10 +329,10 @@
       "/path/to/tmp/json"
     ],
     "name": "parse description",
-    "stdin": "Recipe-Nontrivial-Roll-depot_tools: ack",
+    "stdin": "Recipe-Nontrivial-Roll-Depot_Tools: ack",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"Recipe-Nontrivial-Roll-depot_tools\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"Recipe-Nontrivial-Roll-Depot_Tools\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    \"ack\"@@@",
       "@@@STEP_LOG_LINE@json.output@  ]@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",

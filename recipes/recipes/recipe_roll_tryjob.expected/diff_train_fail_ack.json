@@ -329,10 +329,10 @@
       "/path/to/tmp/json"
     ],
     "name": "parse description",
-    "stdin": "Recipe-Manual-Change-depot_tools: ack",
+    "stdin": "Recipe-Manual-Change-Depot_Tools: ack",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"Recipe-Manual-Change-depot_tools\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"Recipe-Manual-Change-Depot_Tools\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    \"ack\"@@@",
       "@@@STEP_LOG_LINE@json.output@  ]@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
