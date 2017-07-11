@@ -33,7 +33,7 @@ class EventMonUploader(webapp2.RequestHandler):
 
   @staticmethod
   def _find_new_locations(locations):
-    test_names = locations.keys()
+    test_names = sorted(locations.keys())
     loc_entities = TestLocation.get_by_key_name(test_names)
     new_locations = {}
     for i, loc_entity in enumerate(loc_entities):
@@ -56,7 +56,10 @@ class EventMonUploader(webapp2.RequestHandler):
         # will be rarely used and thus all test locations will be reported
         # promptly.
         if len(new_locations) >= 1000:
-          logging.warn('Ignoring new locations to avoid exceeding request size')
+          logging.warn(
+              'Found over 1000 new test locations after processing %d reported '
+              'locations from total %d. Ignoring the rest to avoid exceeding '
+              'request size.', i+1, len(loc_entities))
           break
 
     return new_locations
@@ -64,7 +67,12 @@ class EventMonUploader(webapp2.RequestHandler):
   def add_test_locations(self, event, req_params):
     # Find new test locations and report them if any.
     test_locs = req_params.file_json.get('test_locations') or {}
+    logging.debug(
+        'Filtering out new test locations reported from master %s, builder %s, '
+        'build %s, step_name %s', req_params.master, req_params.builder,
+        req_params.build_number, req_params.step_name)
     new_test_locs = self._find_new_locations(test_locs)
+    logging.debug('Found %d new locations', len(new_test_locs))
     if new_test_locs:
       test_locations = event.proto.test_locations_event
       test_locations.bucket_name = req_params.master
