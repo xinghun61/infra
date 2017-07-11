@@ -106,7 +106,8 @@ class HotlistDetails(servlet.Servlet):
         if not framework_bizobj.IsValidHotlistName(name):
           mr.errors.name = _MSG_INVALID_HOTLIST_NAME
         elif self.services.features.LookupHotlistIDs(
-            mr.cnxn, [name], [mr.auth.user_id]) and mr.hotlist.name != name:
+            mr.cnxn, [name], [mr.auth.user_id]) and (
+                mr.hotlist.name.lower() != name.lower()):
           mr.errors.name = _MSG_HOTLIST_NAME_NOT_AVAIL
     if 'default_col_spec' in post_data:
       default_col_spec = post_data['default_col_spec']
