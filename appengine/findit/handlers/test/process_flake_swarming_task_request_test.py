@@ -9,14 +9,14 @@ import webapp2
 from testing_utils import testing
 
 from handlers.process_flake_swarming_task_request import (
-    ProcessFlakeSwarmingTasksRequest)
+    ProcessFlakeSwarmingTaskRequest)
 
 
 class ProcessFlakeSwarmingTaskRequestTest(testing.AppengineTestCase):
   app_module = webapp2.WSGIApplication(
       [
           ('/process-flake-swarming-task-request',
-           ProcessFlakeSwarmingTasksRequest),
+           ProcessFlakeSwarmingTaskRequest),
       ],
       debug=True)
 

@@ -10,7 +10,7 @@ from gae_libs.handlers.base_handler import Permission
 from waterfall.flake import trigger_flake_swarming_task_service_pipeline
 
 
-class ProcessFlakeSwarmingTasksRequest(BaseHandler):
+class ProcessFlakeSwarmingTaskRequest(BaseHandler):
   """Processes a request to trigger a flake swarming task on demaind."""
 
   PERMISSION_LEVEL = Permission.CORP_USER
