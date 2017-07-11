@@ -173,7 +173,7 @@ class Repository(object):
       path = os.path.join(download_dir, 'file')
       util.LOGGER.debug('Downloading source to: [%s]', path)
       with open(path, 'wb') as fd:
-        filename = src.download_to(fd)
+        filename = self._DOWNLOAD_MAP[src.download_type](fd, src.download_meta)
 
       # Move the downloaded "file" into the package under its download name and
       # package it.
