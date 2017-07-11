@@ -119,7 +119,10 @@ class EventMonUploaderTest(testing.AppengineTestCase):
 
   def test_does_not_crash_on_missing_required_fields_in_json(self):
     TestFile.add_file(
-        'master', 'builder', 'ui_tests', 123, 'full_results.json', '{}')
+        'master', 'builder', 'ui_tests', 123, 'full_results.json',
+        # Specify some test locations so that we also test same logic inside
+        # location reporting block.
+        json.dumps({'test_locations': {'foo': {'file': 'bar.cc', 'line': 10}}}))
     response = self.test_app.post('/internal/monitoring/upload', REQ_PAYLOAD)
     self.assertEqual(200, response.status_int)
     events = self.read_event_mon_file()
@@ -165,7 +168,7 @@ class EventMonUploaderTest(testing.AppengineTestCase):
     # Report a new test. We use transactions to ensure that async_put operations
     # complete and so that we can check if entities were created as we expect.
     new_locations = db.run_in_transaction(
-        EventMonUploader._filter_new_locations,
+        EventMonUploader._find_new_locations,
         {'foo': {'file': 'foo.cc', 'line': 123}})
     self.assertEqual(new_locations.get('foo'), {'file': 'foo.cc', 'line': 123})
     entity = TestLocation.get_by_key_name('foo')
@@ -175,7 +178,7 @@ class EventMonUploaderTest(testing.AppengineTestCase):
 
     # Report an existing test, but with a new location.
     new_locations = db.run_in_transaction(
-        EventMonUploader._filter_new_locations,
+        EventMonUploader._find_new_locations,
         {'foo': {'file': 'foo.cc', 'line': 156}})
     self.assertEqual(new_locations.get('foo'), {'file': 'foo.cc', 'line': 156})
     entity = TestLocation.get_by_key_name('foo')
@@ -184,12 +187,12 @@ class EventMonUploaderTest(testing.AppengineTestCase):
     self.assertEqual(entity.line, 156)
 
     # Report an existing test with the same location.
-    new_locations = EventMonUploader._filter_new_locations(
+    new_locations = EventMonUploader._find_new_locations(
         {'foo': {'file': 'foo.cc', 'line': 156}})
     self.assertNotIn('foo', new_locations)
 
   def test_ignores_over_1000_new_locations(self):
     locations = {'test%d' % i: {'file': 'numerical_tests.cc', 'line': i * 10}
                  for i in range(1500)}
-    new_locations = EventMonUploader._filter_new_locations(locations)
+    new_locations = EventMonUploader._find_new_locations(locations)
     self.assertEqual(len(new_locations), 1000)

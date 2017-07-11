@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
 import json
 import logging
 import webapp2
@@ -17,6 +18,10 @@ from infra_libs import ts_mon
 from infra_libs import event_mon
 
 
+RequestParams = collections.namedtuple('RequestParams', [
+  'master', 'builder', 'build_number', 'test_type', 'step_name', 'file_json'])
+
+
 class EventMonUploader(webapp2.RequestHandler):
   num_test_results = ts_mon.CounterMetric(
       'test_results/num_test_results',
@@ -27,7 +32,7 @@ class EventMonUploader(webapp2.RequestHandler):
        ts_mon.StringField('test_type')])
 
   @staticmethod
-  def _filter_new_locations(locations):
+  def _find_new_locations(locations):
     test_names = locations.keys()
     loc_entities = TestLocation.get_by_key_name(test_names)
     new_locations = {}
@@ -56,64 +61,45 @@ class EventMonUploader(webapp2.RequestHandler):
 
     return new_locations
 
-  def post(self):
-    if not self.request.body:
-      logging.error('Missing request payload')
-      self.response.set_status(400)
-      return
+  def add_test_locations(self, event, req_params):
+    # Find new test locations and report them if any.
+    test_locs = req_params.file_json.get('test_locations') or {}
+    new_test_locs = self._find_new_locations(test_locs)
+    if new_test_locs:
+      test_locations = event.proto.test_locations_event
+      test_locations.bucket_name = req_params.master
+      test_locations.builder_name = req_params.builder
+      test_locations.build_number = int(req_params.build_number)
+      test_locations.step_name = req_params.step_name
+      if 'seconds_since_epoch' in req_params.file_json:
+        test_locations.usec_since_epoch = long(
+            float(req_params.file_json['seconds_since_epoch']) * 1000 * 1000)
 
-    try:
-      payload = json.loads(self.request.body)
-    except ValueError:
-      logging.error('Failed to parse request payload as JSON')
-      self.response.set_status(400)
-      return
+      for name, loc in new_test_locs.iteritems():
+        location = test_locations.locations.add()
+        location.test_name = name
+        location.file = loc['file']
+        location.line = int(loc['line'])
 
-    # Retrieve test json from datastore based on task parameters.
-    master = payload.get('master')
-    builder = payload.get('builder')
-    build_number = payload.get('build_number')
-    test_type = payload.get('test_type')
-    step_name = payload.get('step_name')
-    if (not master or not builder or build_number is None or not test_type or
-        not step_name):
-      logging.error(
-          'Missing required parameters: (master=%s, builder=%s, '
-          'build_number=%s, test_type=%s, step_name=%s)' %
-          (master, builder, build_number, test_type, step_name))
-      self.response.set_status(400)
-      return
-
-    files = TestFile.get_files(
-        master, builder, test_type, build_number, 'full_results.json',
-        load_data=True, limit=1)
-    if not files:
-      logging.error('Failed to find full_results.json for (%s, %s, %s, %s)' % (
-                    master, builder, build_number, test_type))
-      self.response.set_status(404)
-      return
-    file_json = JsonResults.load_json(files[0].data)
-
-    # Create a proto event and send it to event_mon.
-    event = event_mon.Event('POINT')
+  def add_test_results(self, event, req_params):
     test_results = event.proto.test_results
-    test_results.master_name = master
-    test_results.builder_name = builder
-    test_results.build_number = int(build_number)
-    test_results.test_type = test_type
-    test_results.step_name = step_name
-    if 'interrupted' in file_json:
-      test_results.interrupted = file_json['interrupted']
-    if 'version' in file_json:
-      test_results.version = file_json['version']
-    if 'seconds_since_epoch' in file_json:
+    test_results.master_name = req_params.master
+    test_results.builder_name = req_params.builder
+    test_results.build_number = int(req_params.build_number)
+    test_results.test_type = req_params.test_type
+    test_results.step_name = req_params.step_name
+    if 'interrupted' in req_params.file_json:
+      test_results.interrupted = req_params.file_json['interrupted']
+    if 'version' in req_params.file_json:
+      test_results.version = req_params.file_json['version']
+    if 'seconds_since_epoch' in req_params.file_json:
       test_results.usec_since_epoch = long(
-          float(file_json['seconds_since_epoch']) * 1000 * 1000)
+          float(req_params.file_json['seconds_since_epoch']) * 1000 * 1000)
 
     def convert_test_result_type(json_val):
       self.num_test_results.increment({
-          'result_type': json_val, 'master': master, 'builder': builder,
-          'test_type': test_type})
+          'result_type': json_val, 'master': req_params.master,
+          'builder': req_params.builder, 'test_type': req_params.test_type})
       try:
         return (event_mon.protos.chrome_infra_log_pb2.TestResultsEvent.
                 TestResultType.Value(json_val.upper().replace('+', '_')))
@@ -121,7 +107,8 @@ class EventMonUploader(webapp2.RequestHandler):
         return event_mon.protos.chrome_infra_log_pb2.TestResultsEvent.UNKNOWN
 
     tests = util.flatten_tests_trie(
-        file_json.get('tests', {}), file_json.get('path_delimiter', '/'))
+        req_params.file_json.get('tests', {}),
+        req_params.file_json.get('path_delimiter', '/'))
     for name, test in tests.iteritems():
       test_result = test_results.tests.add()
       test_result.test_name = name
@@ -130,21 +117,51 @@ class EventMonUploader(webapp2.RequestHandler):
       test_result.expected.extend(
           convert_test_result_type(res) for res in test['expected'])
 
-    test_locations = event.proto.test_locations_event
-    test_locations.bucket_name = master
-    test_locations.builder_name = builder
-    test_locations.build_number = int(build_number)
-    test_locations.step_name = step_name
-    if 'seconds_since_epoch' in file_json:
-      test_locations.usec_since_epoch = long(
-          float(file_json['seconds_since_epoch']) * 1000 * 1000)
+  def parse_request(self):
+    if not self.request.body:
+      logging.error('Missing request payload')
+      self.response.set_status(400)
+      return None
 
-    test_locs_json = file_json.get('test_locations') or {}
-    test_locs_json = self._filter_new_locations(test_locs_json)
-    for name, loc in test_locs_json.iteritems():
-      location = test_locations.locations.add()
-      location.test_name = name
-      location.file = loc['file']
-      location.line = int(loc['line'])
+    try:
+      payload = json.loads(self.request.body)
+    except ValueError:
+      logging.error('Failed to parse request payload as JSON')
+      self.response.set_status(400)
+      return None
 
-    event.send()
+    # Retrieve test json from datastore based on task parameters.
+    master = payload.get('master')
+    builder = payload.get('builder')
+    build_number = payload.get('build_number')
+    test_type = payload.get('test_type')
+    step_name = payload.get('step_name')
+    if (not master or not builder or build_number is None or not test_type or 
+        not step_name):
+      logging.error(
+          'Missing required parameters: (master=%s, builder=%s, '
+          'build_number=%s, test_type=%s, step_name=%s)' %
+          (master, builder, build_number, test_type, step_name))
+      self.response.set_status(400)
+      return None
+
+    files = TestFile.get_files(
+        master, builder, test_type, build_number, 'full_results.json',
+        load_data=True, limit=1)
+    if not files:
+      logging.error('Failed to find full_results.json for (%s, %s, %s, %s)' % (
+                    master, builder, build_number, test_type))
+      self.response.set_status(404)
+      return None
+
+    file_json = JsonResults.load_json(files[0].data)
+    return RequestParams(
+        master, builder, build_number, test_type, step_name, file_json)
+
+  def post(self):
+    req_params = self.parse_request()
+    if req_params:
+      event = event_mon.Event('POINT')
+      self.add_test_results(event, req_params)
+      self.add_test_locations(event, req_params)
+      event.send()
