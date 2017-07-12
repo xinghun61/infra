@@ -1,3 +1,52 @@
+Release Notes sheriff-o-matic 2017-07-12
+
+- 16 commits, 10 bugs affected since 2fa0645 (2017-06-27T22:39:09Z)
+- 5 Authors:
+  - chanli@chromium.org
+  - bevc@google.com
+  - seanmccullough@chromium.org
+  - renjietang@google.com
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [[som] logdiff: inline temp template](https://chromium-review.googlesource.com/568245) (seanmccullough@chromium.org)
+- [[som] use datastore for diffs](https://chromium-review.googlesource.com/544785) (renjietang@google.com)
+- [SoM: Fix resolve button.](https://chromium-review.googlesource.com/563466) (zhangtiff@google.com)
+- [[SoM-Findit] Use commit_position instead of revision.](https://chromium-review.googlesource.com/560577) (chanli@chromium.org)
+- [SoM: Add hint tooltips to give users more context on different features.](https://chromium-review.googlesource.com/553408) (zhangtiff@google.com)
+- [[som] cleanup: remove milo alert diff handler, tsmon metrics](https://chromium-review.googlesource.com/558005) (seanmccullough@chromium.org)
+- [SoM: Replace go links with goto.google.com](https://chromium-review.googlesource.com/549696) (zhangtiff@google.com)
+- [SoM: Add severity title tooltips.](https://chromium-review.googlesource.com/557384) (zhangtiff@google.com)
+- [[som] Remove deprecated layout test expectation values](https://chromium-review.googlesource.com/556463) (seanmccullough@chromium.org)
+- [[som] Move task queue workers to backend (analyzer) service.](https://chromium-review.googlesource.com/556933) (seanmccullough@chromium.org)
+- [Changing date format for comments on alerts](https://chromium-review.googlesource.com/556959) (bevc@google.com)
+- [SoM: Add page to view all tree statuses.](https://chromium-review.googlesource.com/549075) (zhangtiff@google.com)
+- [[som] Add status message, polling for async CL worker to expectations UI](https://chromium-review.googlesource.com/550602) (seanmccullough@chromium.org)
+- [SoM: Remove flaky check from trooper alerts test.](https://chromium-review.googlesource.com/550979) (zhangtiff@google.com)
+- [SoM: Add cron to update android bug queue.](https://chromium-review.googlesource.com/550843) (zhangtiff@google.com)
+- [[som] Clean up client to remove CBE references.](https://chromium-review.googlesource.com/568623) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- bevc@google.com:
+  -  [https://crbug.com/726258](https://crbug.com/726258)
+
+- chanli@chromium.org:
+  -  [https://crbug.com/737709](https://crbug.com/737709)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/603982](https://crbug.com/603982)
+  -  [https://crbug.com/737720](https://crbug.com/737720)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/637341](https://crbug.com/637341)
+  -  [https://crbug.com/707995](https://crbug.com/707995)
+  -  [https://crbug.com/733672](https://crbug.com/733672)
+  -  [https://crbug.com/737169](https://crbug.com/737169)
+  -  [https://crbug.com/737724](https://crbug.com/737724)
+  -  [https://crbug.com/739937](https://crbug.com/739937)
+
 # Release Notes sheriff-o-matic 2017-06-27
 
 - 8 commits, 4 bugs affected since 8e25b38 (2017-06-20T21:41:26Z)
