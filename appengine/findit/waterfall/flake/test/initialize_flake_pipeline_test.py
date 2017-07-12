@@ -163,8 +163,52 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
         queue_name=constants.DEFAULT_QUEUE)
 
     self.assertIsNotNone(analysis)
-    mocked_pipeline.assert_has_calls(
-        [mock.call().start(queue_name=constants.DEFAULT_QUEUE)])
+    mocked_pipeline.assert_has_calls([
+        mock.call(
+            mocked_analysis.key.urlsafe(),
+            123,
+            None,
+            None,
+            None,
+            step_metadata={},
+            force=False,
+            use_nearby_neighbor=True,
+            manually_triggered=False),
+        mock.call().start(queue_name=constants.DEFAULT_QUEUE),
+    ])
+
+  @mock.patch.object(buildbot, 'GetStepLog', return_value={})
+  @mock.patch.object(initialize_flake_pipeline, '_NeedANewAnalysis')
+  @mock.patch(
+      'waterfall.flake.initialize_flake_pipeline.RecursiveFlakePipeline')
+  @mock.patch('waterfall.flake.initialize_flake_pipeline.MasterFlakeAnalysis')
+  def testStartPipelineForNewAnalysisWithForceFlag(
+      self, mocked_analysis, mocked_pipeline, mocked_need_analysis, *_):
+    mocked_analysis.pipeline_status_path.return_value = 'status'
+    mocked_need_analysis.return_value = (True, mocked_analysis)
+    test = TestInfo('m', 'b 1', 123, 's', 't')
+    analysis = initialize_flake_pipeline.ScheduleAnalysisIfNeeded(
+        test,
+        test,
+        bug_id=None,
+        allow_new_analysis=True,
+        force=True,
+        queue_name=constants.DEFAULT_QUEUE)
+
+    self.assertIsNotNone(analysis)
+    mocked_pipeline.assert_has_calls([
+        mock.call(
+            mocked_analysis.key.urlsafe(),
+            123,
+            None,
+            None,
+            None,
+            step_metadata={},
+            force=True,
+            use_nearby_neighbor=True,
+            manually_triggered=False),
+        mock.call().start(queue_name=constants.DEFAULT_QUEUE),
+    ])
 
   @mock.patch('waterfall.flake.recursive_flake_pipeline.RecursiveFlakePipeline')
   def testNotStartPipelineForNewAnalysis(self, mocked_pipeline):

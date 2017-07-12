@@ -172,7 +172,8 @@ def ScheduleAnalysisIfNeeded(
         None,
         step_metadata=step_metadata,
         manually_triggered=manually_triggered,
-        use_nearby_neighbor=use_nearby_neighbor)
+        use_nearby_neighbor=use_nearby_neighbor,
+        force=force)
     pipeline_job.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)
     pipeline_job.start(queue_name=queue_name)
