@@ -288,3 +288,9 @@ import:
 - package: github.com/jmoiron/sqlx
   repo: https://chromium.googlesource.com/external/github.com/jmoiron/sqlx.git
   version: master
+- package: github.com/mattes/migrate
+  repo: https://chromium.googlesource.com/external/github.com/mattes/migrate.git
+  version: master
+  subpackages:
+  - database/mysql
+  - source/file
