@@ -34,8 +34,7 @@ const (
 	// http timeout errors are logged as "use of closed network connection"
 	timeout = 5 * time.Second
 
-	chromeBuildExtractURL = "https://chrome-build-extract.appspot.com"
-	clientReaderKey       = contextKey("infra-client-reader")
+	clientReaderKey = contextKey("infra-client-reader")
 )
 
 var (
@@ -238,76 +237,12 @@ func cacheKeyForBuild(master *messages.MasterLocation, builder string, number in
 }
 
 func (r *reader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
-	r.bLock.Lock()
-	build, ok := r.bCache[cacheKeyForBuild(master, builder, buildNum)]
-	r.bLock.Unlock()
-	if ok {
-		return build, nil
-	}
-
-	build = &messages.Build{}
-	URL := fmt.Sprintf("%s/p/%s/builders/%s/builds/%d?json=1",
-		chromeBuildExtractURL, master.Name(), builder, buildNum)
-
-	expvars.Add("Build", 1)
-	defer expvars.Add("Build", -1)
-	code, err := r.hc.getJSON(ctx, URL, build)
-
-	// TODO(martiniss): Remove this, and replace with milo access with correct
-	// credentials.
-	if code == 404 || code == 403 || code == 401 {
-		// FIXME: Don't directly poll so many builders.
-		expvars.Add("DirectPoll", 1)
-		defer expvars.Add("DirectPoll", -1)
-		URL = fmt.Sprintf("%s/json/builders/%s/builds/%d",
-			master, builder, buildNum)
-		if code, err := r.hc.getJSON(ctx, URL, build); err != nil {
-			logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, master.String(), err)
-			return nil, err
-		}
-		return build, nil
-	}
-
-	if err != nil {
-		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
-		return nil, err
-	}
-
-	if build.Finished {
-		r.bLock.Lock()
-		r.bCache[cacheKeyForBuild(master, builder, buildNum)] = build
-		r.bLock.Unlock()
-	}
-
-	return build, nil
+	panic("Use miloReader for Build data. CBE is no longer used.")
 }
 
 func (r *reader) LatestBuilds(ctx context.Context, master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
-	v := url.Values{}
-	v.Add("master", master.Name())
-	v.Add("builder", builder)
 
-	URL := fmt.Sprintf("%s/get_builds?%s", chromeBuildExtractURL, v.Encode())
-	res := struct {
-		Builds []*messages.Build `json:"builds"`
-	}{}
-
-	expvars.Add("LatestBuilds", 1)
-	defer expvars.Add("LatestBuilds", -1)
-	if code, err := r.hc.getJSON(ctx, URL, &res); err != nil {
-		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
-		return nil, err
-	}
-
-	r.bLock.Lock()
-	for _, b := range res.Builds {
-		if cacheable(b) {
-			r.bCache[cacheKeyForBuild(master, builder, b.Number)] = b
-		}
-	}
-	r.bLock.Unlock()
-
-	return res.Builds, nil
+	panic("Use miloReader for LatestBuilds data. CBE is no longer used.")
 }
 
 func contains(arr []string, s string) bool {
@@ -356,31 +291,7 @@ func (r *reader) TestResults(ctx context.Context, master *messages.MasterLocatio
 }
 
 func (r *reader) BuildExtract(ctx context.Context, masterURL *messages.MasterLocation) (*messages.BuildExtract, error) {
-	URL := fmt.Sprintf("%s/get_master/%s", chromeBuildExtractURL, masterURL.Name())
-	ret := &messages.BuildExtract{}
-
-	expvars.Add("BuildExtract", 1)
-	defer expvars.Add("BuildExtract", -1)
-	code, err := r.hc.getJSON(ctx, URL, ret)
-
-	if code == 404 || code == 403 || code == 401 {
-		// FIXME: Don't directly poll so many builders.
-		URL = fmt.Sprintf("%s/json", masterURL.String())
-		expvars.Add("DirectPoll", 1)
-		defer expvars.Add("DirectPoll", -1)
-		if code, err := r.hc.getJSON(ctx, URL, ret); err != nil {
-			logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, masterURL.String(), err)
-			return nil, err
-		}
-		return ret, nil
-	}
-
-	if err != nil {
-		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
-		return nil, err
-	}
-
-	return ret, nil
+	panic("Use miloReader for BuildExtract. CBE is no longer used.")
 }
 
 func (r *reader) StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
