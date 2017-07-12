@@ -3,46 +3,53 @@
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 
 <dom-module id="som-log-diff">
-    <template>
-        <style>
-            .add {
-                background-color: #eaffea;
-                width: auto;
-                height: auto;
-                overflow: auto;
-            }
-            .common {
-                width: auto;
-                height: auto;
-                overflow: auto;
-            }
-            .del {
-                background-color: #ffecec;
-                width: auto;
-                height: auto;
-                overflow: auto;
-            }
-        </style>
-        <iron-ajax
-                id = "fetchDiffLines"
-                auto
-                url = "/api/v1/logdiff/chromium"
-                handle-as="json"
-                last-response="{{_diffLines}}"
-        ></iron-ajax>
+  <template>
+    <style>
+      .add {
+        background-color: #eaffea;
+        width: auto;
+        height: auto;
+        overflow: auto;
+      }
+      .common {
+        width: auto;
+        height: auto;
+        overflow: auto;
+      }
+      .del {
+        background-color: #ffecec;
+        width: auto;
+        height: auto;
+        overflow: auto;
+      }
+    </style>
+    <iron-ajax
+      id="fetchDiffLines"
+      auto
+      url="[[url]]"
+      handle-as="json"
+      on-error="stillLoading"
+      last-response="{{_diffLines}}"
+    ></iron-ajax>
 
-        <template is="dom-repeat" items="[[_diffLines]]">
-            <template is="dom-if" if="[[isCommon(item.Delta)]]">
-                <p class="common">{{item.Payload}}</p>
-            </template>
-            <template is="dom-if" if="[[isAdd(item.Delta)]]">
-                <p class="add">{{_computeAdd(item.Payload)}}</p>
-            </template>
-            <template is="dom-if" if="[[isDel(item.Delta)]]">
-                <p class="del">{{_computeDel(item.Payload)}}</p>
-            </template>
+    <template is="dom-if" if="[[isComplete]]">
+      <template is="dom-repeat" items="[[_diffLines]]">
+        <template is="dom-if" if="[[isCommon(item.Delta)]]">
+          <p class="common">[[item.Payload]]</p>
         </template>
-
+        <template is="dom-if" if="[[isAdd(item.Delta)]]">
+          <p class="add">[[_computeAdd(item.Payload)]]</p>
+        </template>
+        <template is="dom-if" if="[[isDel(item.Delta)]]">
+          <p class="del">[[_computeDel(item.Payload)]]</p>
+        </template>
+      </template>
     </template>
-    <script src="som-log-diff.js"></script>
+
+    <template is="dom-if" if="[[!isComplete]]">
+      <p>Still loading. Refresh in 10 seconds</p>
+    </template>
+
+  </template>
+  <script src="som-log-diff.js"></script>
 </dom-module>

@@ -1,4 +1,7 @@
 queue:
+- name: logdiff
+  rate: 1/s
+
 - name: changetestexpectations
   rate: 5/s
 

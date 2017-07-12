@@ -205,8 +205,8 @@ func init() {
 	r.POST("/api/v1/testexpectation", protected, som.PostLayoutTestExpectationChangeHandler)
 	r.GET("/api/v1/testexpectation/:id", protected, som.GetTestExpectationCLStatusHandler)
 	r.GET("/logos/:tree", protected, som.GetTreeLogoHandler)
-	r.GET("/api/v1/logdiff/:tree", protected, som.LogDiffHandler)
-	r.GET("/logdiff/:tree", protected, som.GetLogDiffHandler)
+	r.GET("/api/v1/logdiff/:master/:builder/:buildNum1/:buildNum2", protected, som.LogDiffJSONHandler)
+	r.GET("/logdiff/:master/:builder/:buildNum1/:buildNum2", protected, som.GetLogDiffHandler)
 
 	// Non-public endpoints.
 	r.GET("/_cron/refresh/bugqueue/:label", basemw, som.RefreshBugQueueHandler)

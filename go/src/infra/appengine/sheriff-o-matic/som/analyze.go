@@ -3,7 +3,10 @@ package som
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -12,12 +15,19 @@ import (
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
 
+	"github.com/luci/gae/service/datastore"
+	"github.com/luci/gae/service/info"
+	tq "github.com/luci/gae/service/taskqueue"
 	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
+)
+
+const (
+	logdiffQueue = "logdiff"
 )
 
 var (
@@ -139,8 +149,71 @@ func GetAnalyzeHandler(ctx *router.Context) {
 		logging.Errorf(c, "error storing alerts: %v", err)
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 	}
-
+	if tree == "chromium" {
+		if err := enqueueLogDiffTask(c, alerts); err != nil {
+			errStatus(c, w, http.StatusInternalServerError, err.Error())
+		}
+	}
 	w.Write([]byte("ok"))
+}
+
+func enqueueLogDiffTask(ctx context.Context, alerts []messages.Alert) error {
+	for _, alert := range alerts {
+		if bf, ok := alert.Extension.(messages.BuildFailure); ok {
+			for _, builder := range bf.Builders {
+				params := strings.Split(builder.URL, "/")
+				buildNum2 := builder.FirstFailure - 1
+				buildNum1 := builder.LatestFailure
+				// This is checking if there's redundant data in datastore already
+				var diffs []*LogDiff
+				q := datastore.NewQuery("LogDiff")
+				q = q.Eq("Master", params[4]).Eq("Builder", builder.Name).Eq("BuildNum1", buildNum1).Eq("BuildNum2", buildNum2)
+				err := datastore.GetAll(ctx, q, &diffs)
+				if err != nil {
+					logging.Errorf(ctx, "err with getting data from datastore: %v", err)
+				}
+				if len(diffs) != 0 {
+					continue
+				}
+				err = datastore.RunInTransaction(ctx, func(ctx context.Context) error {
+					data := &LogDiff{nil, params[4], builder.Name, buildNum1, buildNum2, "", false}
+					if err := datastore.AllocateIDs(ctx, data); err != nil {
+						logging.Errorf(ctx, "error allocating id: %v", err)
+						return err
+					}
+					values := url.Values{}
+					values.Set("lastFail", strconv.Itoa(int(buildNum1)))
+					values.Set("lastPass", strconv.Itoa(int(buildNum2)))
+					// TODO(seanmccullough): add master name in AlertedBuilder
+					values.Set("master", params[4])
+					values.Set("builder", builder.Name)
+					values.Set("ID", data.ID)
+					if err := datastore.Put(ctx, data); err != nil {
+						logging.Errorf(ctx, "storing data: %v", err)
+						return err
+					}
+					t := tq.NewPOSTTask("/_ah/queue/logdiff", values)
+
+					workerHost, err := info.ModuleHostname(ctx, "analyzer", "", "")
+					if err != nil {
+						logging.Errorf(ctx, "err routing worker to analyzer: %v", err)
+						return err
+					}
+					t.Header["HOST"] = []string{workerHost}
+
+					if err := tq.Add(ctx, logdiffQueue, t); err != nil {
+						logging.Errorf(ctx, "error enqueuing task: %v", err)
+						return err
+					}
+					return nil
+				}, nil)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func storeAlertsSummary(c context.Context, a *analyzer.Analyzer, tree string, alertsSummary *messages.AlertsSummary) error {

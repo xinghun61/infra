@@ -35,6 +35,7 @@ func init() {
 	gaemiddleware.InstallHandlers(r)
 	r.POST("/_ah/queue/changetestexpectations", basemw, som.LayoutTestExpectationChangeWorker)
 	r.GET("/_cron/analyze/:tree", basemw, som.GetAnalyzeHandler)
+	r.POST("/_ah/queue/logdiff", basemw, som.LogdiffWorker)
 
 	http.DefaultServeMux.Handle("/", r)
 }

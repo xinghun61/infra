@@ -16,11 +16,13 @@ import (
 	"github.com/luci/gae/impl/dummy"
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/info"
+	tq "github.com/luci/gae/service/taskqueue"
 	"github.com/luci/gae/service/urlfetch"
 	"github.com/luci/luci-go/appengine/gaetesting"
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/server/router"
 
+	"github.com/luci/luci-go/common/logging/gologger"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -28,6 +30,7 @@ func newTestContext() context.Context {
 	ctx := gaetesting.TestingContext()
 	ta := datastore.GetTestable(ctx)
 	ta.Consistent(true)
+	ctx = gologger.StdConfig.Use(ctx)
 	return ctx
 }
 
@@ -245,5 +248,55 @@ func TestStoreAlertsSummary(t *testing.T) {
 			},
 		})
 		So(err, ShouldBeNil)
+	})
+}
+
+func TestEnqueueLogDiffTask(t *testing.T) {
+	Convey("success", t, func() {
+		c := gaetesting.TestingContext()
+		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
+			return mck{giMock{dummy.Info(), "", time.Now(), nil}}
+		})
+		tqt := tq.GetTestable(c)
+		tqt.CreateQueue("logdiff")
+		alerts := []messages.Alert{
+			{
+				Title: "foo",
+				Extension: messages.BuildFailure{
+					RegressionRanges: []*messages.RegressionRange{
+						{Repo: "some repo", URL: "about:blank", Positions: []string{}, Revisions: []string{}},
+					},
+					Builders: []messages.AlertedBuilder{
+						{Name: "chromium.test", URL: "https://uberchromegw.corp.google.com/i/chromium.webkit/builders/WebKit%20Win7%20%28dbg%29", FirstFailure: 15038, LatestFailure: 15038},
+					},
+				},
+			},
+		}
+		err := enqueueLogDiffTask(c, alerts)
+		So(err, ShouldBeNil)
+	})
+
+	Convey("fail with non existing queue", t, func() {
+		c := gaetesting.TestingContext()
+		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
+			return mck{giMock{dummy.Info(), "", time.Now(), nil}}
+		})
+		tqt := tq.GetTestable(c)
+		tqt.CreateQueue("badqueue")
+		alerts := []messages.Alert{
+			{
+				Title: "foo",
+				Extension: messages.BuildFailure{
+					RegressionRanges: []*messages.RegressionRange{
+						{Repo: "some repo", URL: "about:blank", Positions: []string{}, Revisions: []string{}},
+					},
+					Builders: []messages.AlertedBuilder{
+						{Name: "chromium.test", URL: "https://uberchromegw.corp.google.com/i/chromium.webkit/builders/WebKit%20Win7%20%28dbg%29", FirstFailure: 15038, LatestFailure: 15038},
+					},
+				},
+			},
+		}
+		err := enqueueLogDiffTask(c, alerts)
+		So(err, ShouldNotBeNil)
 	})
 }
