@@ -329,15 +329,12 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
       # This situation happens in flake analysis: if the step with flaky test
       # didn't exist in checked build or the build had exception so the step
       # with flaky test didn't run at all, we should skip the build.
-      has_valid_artifact = task_id != NO_TASK_EXCEPTION
       task.task_id = None
       task.status = analysis_status.SKIPPED
+      task.has_valid_artifact = task_id != NO_TASK_EXCEPTION
+      task.tries = 0
       task.put()
-      self._UpdateMasterFlakeAnalysis(
-          *call_args,
-          pass_rate=-1,
-          flake_swarming_task=task,
-          has_valid_artifact=has_valid_artifact)
+
       self.complete(
           self._GetPipelineResult(step_name, step_name_no_platform, task))
       return

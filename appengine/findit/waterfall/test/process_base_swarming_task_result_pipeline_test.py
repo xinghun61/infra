@@ -10,10 +10,7 @@ from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
-from waterfall import build_util
-from waterfall import process_flake_swarming_task_result_pipeline
 from waterfall import swarming_util
-from waterfall.build_info import BuildInfo
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
 from waterfall.process_flake_swarming_task_result_pipeline import (
@@ -167,18 +164,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
                       ._CheckTestsRunStatuses(_SAMPLE_FAILURE_LOG))
     self.assertEqual(_EXPECTED_TESTS_STATUS, tests_statuses)
 
-  @mock.patch.object(
-      process_flake_swarming_task_result_pipeline,
-      '_GetCommitsBetweenRevisions',
-      return_value=['r4', 'r3', 'r2', 'r1'])
-  @mock.patch.object(build_util, 'GetBuildInfo')
-  def testMonitorSwarmingTaskTimeOut(self, mocked_fn, _):
-    build_info = BuildInfo(self.master_name, self.builder_name,
-                           self.build_number)
-    build_info.commit_position = 12345
-    build_info.chromium_revision = 'a1b2c3d4'
-    mocked_fn.return_value = build_info
-
+  def testMonitorSwarmingTaskTimeOut(self):
     # Override swarming config settings to force a timeout.
     override_swarming_settings = {'task_timeout_hours': -1}
     self.UpdateUnitTestConfigSettings('swarming_settings',
@@ -448,19 +434,8 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
         datetime.datetime(2016, 2, 10, 18, 33, 9), task.completed_time)
     self.assertEqual('abc_tests', task.canonical_step_name)
 
-  @mock.patch.object(
-      process_flake_swarming_task_result_pipeline,
-      '_GetCommitsBetweenRevisions',
-      return_value=['r4', 'r3', 'r2', 'r1'])
-  @mock.patch.object(build_util, 'GetBuildInfo')
-  def testMonitorSwarmingTaskStepNotExist(self, mocked_fn, _):
+  def testMonitorSwarmingTaskStepNotExist(self):
     task_id = NO_TASK
-
-    build_info = BuildInfo(self.master_name, self.build_number,
-                           self.build_number)
-    build_info.commit_position = 12345
-    build_info.chromium_revision = 'a1b2c3d4'
-    mocked_fn.return_value = build_info
 
     task = FlakeSwarmingTask.Create(self.master_name, self.builder_name,
                                     self.build_number, self.step_name,
@@ -485,23 +460,12 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     _, step_name_no_platform = pipeline.outputs.default.value
 
     self.assertIsNone(task.task_id)
+    self.assertTrue(task.has_valid_artifact)
     self.assertEqual(analysis_status.SKIPPED, task.status)
-    self.assertEqual(-1, analysis.data_points[-1].pass_rate)
     self.assertIsNone(step_name_no_platform)
 
-  @mock.patch.object(
-      process_flake_swarming_task_result_pipeline,
-      '_GetCommitsBetweenRevisions',
-      return_value=['r4', 'r3', 'r2', 'r1'])
-  @mock.patch.object(build_util, 'GetBuildInfo')
-  def testMonitorSwarmingTaskBuildException(self, mocked_fn, _):
+  def testMonitorSwarmingTaskBuildException(self):
     task_id = NO_TASK_EXCEPTION
-
-    build_info = BuildInfo(self.master_name, self.build_number,
-                           self.build_number)
-    build_info.commit_position = 12345
-    build_info.chromium_revision = 'a1b2c3d4'
-    mocked_fn.return_value = build_info
 
     task = FlakeSwarmingTask.Create(self.master_name, self.builder_name,
                                     self.build_number, self.step_name,
@@ -520,9 +484,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
                  self.step_name, task_id, self.build_number, self.test_name, 1)
 
     self.assertIsNone(task.task_id)
-    self.assertEqual(analysis_status.SKIPPED, task.status)
-    self.assertEqual(-1, analysis.data_points[-1].pass_rate)
-    self.assertFalse(analysis.data_points[-1].has_valid_artifact)
+    self.assertFalse(task.has_valid_artifact)
 
   def testMonitorSwarmingTaskFailedToTriggerUndetectedError(self):
     task = FlakeSwarmingTask.Create(self.master_name, self.builder_name,

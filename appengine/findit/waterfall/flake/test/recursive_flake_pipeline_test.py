@@ -24,6 +24,10 @@ from waterfall.flake.recursive_flake_pipeline import NextBuildNumberPipeline
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     RecursiveFlakeTryJobPipeline)
+from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
+    SaveLastAttemptedSwarmingTaskIdPipeline)
+from waterfall.flake.update_flake_analysis_data_points_pipeline import (
+    UpdateFlakeAnalysisDataPointsPipeline)
 from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
@@ -114,12 +118,24 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={'force': False})
 
     self.MockPipeline(
+        SaveLastAttemptedSwarmingTaskIdPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), task_id, run_build_number],
+        expected_kwargs={})
+
+    self.MockPipeline(
         recursive_flake_pipeline.ProcessFlakeSwarmingTaskResultPipeline,
         'test_result_future',
         expected_args=[
             master_name, builder_name, run_build_number, step_name, task_id,
             master_build_number, test_name, analysis.version_number
         ],
+        expected_kwargs={})
+
+    self.MockPipeline(
+        UpdateFlakeAnalysisDataPointsPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), run_build_number],
         expected_kwargs={})
 
     self.MockPipeline(
@@ -174,12 +190,24 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={'force': False})
 
     self.MockPipeline(
+        SaveLastAttemptedSwarmingTaskIdPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), task_id, run_build_number],
+        expected_kwargs={})
+
+    self.MockPipeline(
         recursive_flake_pipeline.ProcessFlakeSwarmingTaskResultPipeline,
         'test_result_future',
         expected_args=[
             master_name, builder_name, run_build_number, step_name, task_id,
             master_build_number, test_name, analysis.version_number
         ],
+        expected_kwargs={})
+
+    self.MockPipeline(
+        UpdateFlakeAnalysisDataPointsPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), run_build_number],
         expected_kwargs={})
 
     self.MockPipeline(
@@ -236,6 +264,12 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={'force': False})
 
     self.MockPipeline(
+        SaveLastAttemptedSwarmingTaskIdPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), task_id, run_build_number],
+        expected_kwargs={})
+
+    self.MockPipeline(
         recursive_flake_pipeline.ProcessFlakeSwarmingTaskResultPipeline,
         'test_result_future',
         expected_args=[
@@ -243,6 +277,11 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
             master_build_number, test_name, analysis.version_number
         ],
         expected_kwargs={})
+
+    self.MockPipeline(
+        UpdateFlakeAnalysisDataPointsPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), run_build_number])
 
     self.MockPipeline(
         recursive_flake_pipeline.NextBuildNumberPipeline,
@@ -298,12 +337,24 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={'force': True})
 
     self.MockPipeline(
+        SaveLastAttemptedSwarmingTaskIdPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), task_id, run_build_number],
+        expected_kwargs={})
+
+    self.MockPipeline(
         recursive_flake_pipeline.ProcessFlakeSwarmingTaskResultPipeline,
         'test_result_future',
         expected_args=[
             master_name, builder_name, run_build_number, step_name, task_id,
             master_build_number, test_name, analysis.version_number
         ],
+        expected_kwargs={})
+
+    self.MockPipeline(
+        UpdateFlakeAnalysisDataPointsPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), run_build_number],
         expected_kwargs={})
 
     self.MockPipeline(
@@ -947,12 +998,24 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={'force': False})
 
     self.MockPipeline(
+        SaveLastAttemptedSwarmingTaskIdPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), task_id, build_number],
+        expected_kwargs={})
+
+    self.MockPipeline(
         recursive_flake_pipeline.ProcessFlakeSwarmingTaskResultPipeline,
         'test_result_future',
         expected_args=[
             master_name, builder_name, run_build_number, step_name, task_id,
             master_build_number, test_name, analysis.version_number
         ],
+        expected_kwargs={})
+
+    self.MockPipeline(
+        UpdateFlakeAnalysisDataPointsPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), build_number],
         expected_kwargs={})
 
     self.MockPipeline(

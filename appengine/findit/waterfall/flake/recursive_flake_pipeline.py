@@ -23,6 +23,10 @@ from waterfall.flake.initialize_flake_try_job_pipeline import (
     InitializeFlakeTryJobPipeline)
 from waterfall.flake.lookback_algorithm import NormalizedDataPoint
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
+from waterfall.flake.update_flake_analysis_data_points_pipeline import (
+    UpdateFlakeAnalysisDataPointsPipeline)
+from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
+    SaveLastAttemptedSwarmingTaskIdPipeline)
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
 from waterfall.trigger_flake_swarming_task_pipeline import (
@@ -440,10 +444,17 @@ class RecursiveFlakePipeline(BasePipeline):
           force=force)
 
       with pipeline.InOrder():
+        yield SaveLastAttemptedSwarmingTaskIdPipeline(
+            analysis_urlsafe_key, task_id, actual_run_build_number)
+
         yield ProcessFlakeSwarmingTaskResultPipeline(
             self.master_name, self.builder_name, actual_run_build_number,
             self.step_name, task_id, self.triggering_build_number,
             self.test_name, analysis.version_number)
+
+        yield UpdateFlakeAnalysisDataPointsPipeline(analysis_urlsafe_key,
+                                                    actual_run_build_number)
+
         yield NextBuildNumberPipeline(
             analysis.key.urlsafe(),
             actual_run_build_number,

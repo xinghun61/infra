@@ -10,7 +10,6 @@ from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import build_util
-from waterfall import process_flake_swarming_task_result_pipeline
 from waterfall import swarming_util
 from waterfall.build_info import BuildInfo
 from waterfall.process_flake_swarming_task_result_pipeline import (
@@ -37,17 +36,7 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.mock(swarming_util, 'GetSwarmingTaskResultById',
               self._MockedGetSwarmingTaskResultById)
 
-  @mock.patch.object(
-      process_flake_swarming_task_result_pipeline,
-      '_GetCommitsBetweenRevisions',
-      return_value=['r4', 'r3', 'r2', 'r1'])
-  @mock.patch.object(build_util, 'GetBuildInfo')
-  def testCheckTestsRunStatuses(self, mocked_fn, _):
-    build_info = BuildInfo(self.master_name, self.build_number,
-                           self.build_number)
-    build_info.commit_position = 12345
-    build_info.chromium_revision = 'a1b2c3d4'
-    mocked_fn.return_value = build_info
+  def testCheckTestsRunStatuses(self):
     analysis = MasterFlakeAnalysis.Create(self.master_name, self.builder_name,
                                           self.build_number, self.step_name,
                                           self.test_name)
@@ -66,71 +55,6 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
         ProcessFlakeSwarmingTaskResultPipeline._CheckTestsRunStatuses(
             self.pipeline, base_test._SAMPLE_FAILURE_LOG, *call_params))
     self.assertEqual(base_test._EXPECTED_TESTS_STATUS, tests_statuses)
-
-  @mock.patch.object(
-      process_flake_swarming_task_result_pipeline,
-      '_GetCommitsBetweenRevisions',
-      return_value=['r4', 'r3', 'r2', 'r1'])
-  @mock.patch.object(build_util, 'GetBuildInfo')
-  def testCheckTestsRunStatusesZeroBuildNumber(self, mocked_fn, _):
-    build_info = BuildInfo(self.master_name, self.build_number, 0)
-    build_info.commit_position = 12345
-    build_info.chromium_revision = 'a1b2c3d4'
-    mocked_fn.return_value = build_info
-
-    analysis = MasterFlakeAnalysis.Create(self.master_name, self.builder_name,
-                                          0, self.step_name, self.test_name)
-    analysis.Save()
-
-    task = FlakeSwarmingTask.Create(self.master_name, self.builder_name, 0,
-                                    self.step_name, self.test_name)
-    task.put()
-
-    ProcessFlakeSwarmingTaskResultPipeline()._CheckTestsRunStatuses(
-        {}, self.master_name, self.builder_name, 0, self.step_name, 0,
-        self.test_name, 1)
-    self.assertIsNone(analysis.data_points[0].previous_build_commit_position)
-
-  @mock.patch.object(
-      process_flake_swarming_task_result_pipeline,
-      '_GetCommitsBetweenRevisions',
-      return_value=['r4', 'r3', 'r2', 'r1'])
-  @mock.patch.object(build_util, 'GetBuildInfo')
-  def testCheckTestsRunStatusesWhenTestDoesNotExist(self, mocked_fn, _):
-    build_info = BuildInfo(self.master_name, self.builder_name,
-                           self.build_number)
-    build_info.commit_position = 12345
-    build_info.chromium_revision = 'a1b2c3d4'
-    mocked_fn.return_value = build_info
-
-    test_name = 'TestSuite1.new_test'
-    analysis = MasterFlakeAnalysis.Create(self.master_name, self.builder_name,
-                                          self.build_number, self.step_name,
-                                          test_name)
-    analysis.Save()
-
-    task = FlakeSwarmingTask.Create(self.master_name, self.builder_name,
-                                    self.build_number, self.step_name,
-                                    test_name)
-    task.put()
-
-    pipeline = ProcessFlakeSwarmingTaskResultPipeline()
-    tests_statuses = pipeline._CheckTestsRunStatuses(
-        base_test._SAMPLE_FAILURE_LOG, self.master_name, self.builder_name,
-        self.build_number, self.step_name, self.build_number, test_name,
-        self.version_number)
-
-    self.assertEqual(base_test._EXPECTED_TESTS_STATUS, tests_statuses)
-
-    task = FlakeSwarmingTask.Get(self.master_name, self.builder_name,
-                                 self.build_number, self.step_name, test_name)
-    self.assertEqual(0, task.tries)
-    self.assertEqual(0, task.successes)
-
-    analysis = MasterFlakeAnalysis.GetVersion(
-        self.master_name, self.builder_name, self.build_number, self.step_name,
-        test_name, self.version_number)
-    self.assertTrue(analysis.data_points[-1].pass_rate < 0)
 
   @mock.patch.object(
       swarming_util,
@@ -177,41 +101,3 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
         datetime.datetime(2016, 2, 10, 18, 32, 9, 90550), task.started_time)
     self.assertEqual(
         datetime.datetime(2016, 2, 10, 18, 33, 9), task.completed_time)
-    self.assertEqual(analysis.last_attempted_swarming_task_id, 'task_id1')
-
-  @mock.patch.object(
-      CachedGitilesRepository,
-      'GetCommitsBetweenRevisions',
-      return_value=['r4', 'r3', 'r2', 'r1'])
-  def testGetCommitsBetweenRevisions(self, _):
-    self.assertEqual(
-        process_flake_swarming_task_result_pipeline._GetCommitsBetweenRevisions(
-            'r0', 'r4'), ['r1', 'r2', 'r3', 'r4'])
-
-  # TODO(crbug.com/739502): Remove this test,
-  def testUpdateMasterFlakeAnalysisBailOut(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    step_name = 's'
-    test_name = 't'
-    pipeline_job = ProcessFlakeSwarmingTaskResultPipeline(
-        master_name, builder_name, build_number, step_name, test_name)
-    pipeline_job._UpdateMasterFlakeAnalysis(master_name, builder_name,
-                                            build_number, step_name, None,
-                                            test_name, 1, 0.5, None)
-
-  # TODO(crbug.com/739502): Remove this test,
-  def testSaveLastAttemptedSwarmingTask(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    step_name = 's'
-    test_name = 't'
-    task_id = 'task_id'
-    version_number = 1
-    pipeline_job = ProcessFlakeSwarmingTaskResultPipeline(
-        master_name, builder_name, build_number, step_name, test_name)
-    pipeline_job._SaveLastAttemptedSwarmingTask(
-        master_name, builder_name, build_number, step_name, task_id, None,
-        test_name, version_number)

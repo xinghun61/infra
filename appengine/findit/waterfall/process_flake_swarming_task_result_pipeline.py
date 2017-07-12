@@ -2,35 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging
-
-from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from model.flake.flake_swarming_task import FlakeSwarmingTask
-from model.flake.master_flake_analysis import DataPoint
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from waterfall import build_util
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
-
-_CHROMIUM_REPO_URL = 'https://chromium.googlesource.com/chromium/src.git'
-
-
-def _GetCommitsBetweenRevisions(start_revision, end_revision):
-  """Gets the revisions between start_revision and end_revision.
-
-  Args:
-    start_revision (str): The revision for which to get changes after. This
-        revision is not included in the returned list.
-    end_revision (str): The last revision in the range to return.
-
-  Returns:
-    A list of revisions sorted in order by oldest to newest.
-  """
-  repo = CachedGitilesRepository(HttpClientAppengine(), _CHROMIUM_REPO_URL)
-  commits = repo.GetCommitsBetweenRevisions(start_revision, end_revision)
-  commits.reverse()
-  return commits
 
 
 class ProcessFlakeSwarmingTaskResultPipeline(
@@ -41,69 +15,9 @@ class ProcessFlakeSwarmingTaskResultPipeline(
   generate a dict for statuses for each test run.
   """
 
-  def _UpdateMasterFlakeAnalysis(self,
-                                 master_name,
-                                 builder_name,
-                                 build_number,
-                                 step_name,
-                                 master_build_number,
-                                 test_name,
-                                 version_number,
-                                 pass_rate,
-                                 flake_swarming_task,
-                                 has_valid_artifact=True):
-    """Update MasterFlakeAnalysis to include result of the swarming task."""
-    if master_build_number is None:
-      # Bail out if this swarming task is run outside of a flake analysis.
-      return
-
-    master_flake_analysis = MasterFlakeAnalysis.GetVersion(
-        master_name,
-        builder_name,
-        master_build_number,
-        step_name,
-        test_name,
-        version=version_number)
-    logging.info(
-        'Updating MasterFlakeAnalysis swarming task data %s/%s/%s/%s/%s',
-        master_name, builder_name, master_build_number, step_name, test_name)
-
-    data_point = DataPoint()
-    data_point.build_number = build_number
-    data_point.pass_rate = pass_rate
-    data_point.task_id = flake_swarming_task.task_id
-    data_point.has_valid_artifact = has_valid_artifact
-    data_point.iterations = flake_swarming_task.tries
-
-    # Include git information about each build that was run.
-    build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                         build_number)
-    data_point.commit_position = build_info.commit_position
-    data_point.git_hash = build_info.chromium_revision
-
-    if build_number > 0:
-      previous_build = build_util.GetBuildInfo(master_name, builder_name,
-                                               build_number - 1)
-      data_point.previous_build_commit_position = previous_build.commit_position
-      data_point.previous_build_git_hash = previous_build.chromium_revision
-      data_point.blame_list = _GetCommitsBetweenRevisions(
-          previous_build.chromium_revision, build_info.chromium_revision)
-    else:
-      data_point.blame_list = build_info.blame_list
-
-    master_flake_analysis.data_points.append(data_point)
-
-    results = flake_swarming_task.GetFlakeSwarmingTaskData()
-    # TODO(lijeffrey): Determine whether or not this flake swarming task
-    # was a cache hit (already ran results for more iterations than were
-    # requested) and update results['cache_hit'] accordingly.
-    master_flake_analysis.swarming_rerun_results.append(results)
-    master_flake_analysis.put()
-
   # Arguments number differs from overridden method - pylint: disable=W0221
   def _CheckTestsRunStatuses(self, output_json, master_name, builder_name,
-                             build_number, step_name, master_build_number,
-                             test_name, version_number):
+                             build_number, step_name, test_name):
     """Checks result status for each test run and saves the numbers accordingly.
 
     Args:
@@ -112,9 +26,7 @@ class ProcessFlakeSwarmingTaskResultPipeline(
       builder_name (dict): Name of builder of swarming rerun.
       build_number (int): Build Number of swarming rerun.
       step_name (dict): Name of step of swarming rerun.
-      master_build_number (int): Build number of corresponding mfa.
       test_name (string): Name of test of swarming rerun.
-      version_number (int): The version to save analysis results and ` to.
 
     Returns:
       tests_statuses (dict): A dict of different statuses for each test.
@@ -131,69 +43,22 @@ class ProcessFlakeSwarmingTaskResultPipeline(
     tries = tests_statuses.get(test_name, {}).get('total_run', 0)
     successes = tests_statuses.get(test_name, {}).get('SUCCESS', 0)
 
-    if tries > 0:
-      pass_rate = successes * 1.0 / tries
-    else:
-      pass_rate = -1  # Special value to indicate test is not existing.
-
     flake_swarming_task = FlakeSwarmingTask.Get(
         master_name, builder_name, build_number, step_name, test_name)
     flake_swarming_task.tries = tries
     flake_swarming_task.successes = successes
     flake_swarming_task.put()
 
-    # TODO(crbug.com/739502): Due to supporting triggering flake swarming tasks
-    # outside of the context of flake analyses, de-couple updates to
-    # MasterFlakeAnalysis from processing flake swarming task results.
-    self._UpdateMasterFlakeAnalysis(
-        master_name, builder_name, build_number, step_name, master_build_number,
-        test_name, version_number, pass_rate, flake_swarming_task)
-
     return tests_statuses
 
   def _GetArgs(self, master_name, builder_name, build_number, step_name, *args):
-    master_build_number = args[0]
     test_name = args[1]
-    version_number = args[2]
-    return (master_name, builder_name, build_number, step_name,
-            master_build_number, test_name, version_number)
+    return master_name, builder_name, build_number, step_name, test_name
 
   # Unused Argument - pylint: disable=W0612,W0613
   # Arguments number differs from overridden method - pylint: disable=W0221
   def _GetSwarmingTask(self, master_name, builder_name, build_number, step_name,
-                       master_build_number, test_name, _):
+                       test_name):
     # Gets the appropriate kind of swarming task (FlakeSwarmingTask).
     return FlakeSwarmingTask.Get(master_name, builder_name, build_number,
                                  step_name, test_name)
-
-  def _SaveLastAttemptedSwarmingTask(self, master_name, builder_name,
-                                     build_number, step_name, task_id, *args):
-    # Saves the last-attempted swarming task id to the corresponding analysis.
-    master_build_number, test_name, version_number = args
-    if master_build_number is None:
-      # Bail out if this swarming task is run outside of a flake analysis.
-      return
-
-    analysis = MasterFlakeAnalysis.GetVersion(
-        master_name,
-        builder_name,
-        master_build_number,
-        step_name,
-        test_name,
-        version=version_number)
-    analysis.last_attempted_build_number = build_number
-    analysis.last_attempted_swarming_task_id = task_id
-    analysis.put()
-
-  # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self,
-          master_name,
-          builder_name,
-          build_number,
-          step_name,
-          task_id=None,
-          *args):
-    self._SaveLastAttemptedSwarmingTask(master_name, builder_name, build_number,
-                                        step_name, task_id, *args)
-    super(ProcessFlakeSwarmingTaskResultPipeline, self).run(
-        master_name, builder_name, build_number, step_name, task_id, *args)

@@ -20,6 +20,7 @@ class FlakeSwarmingTaskData(ndb.Model):
   cache_hit = ndb.IntegerProperty(indexed=False)
   number_of_iterations = ndb.IntegerProperty(indexed=False)
   number_of_passes = ndb.IntegerProperty(indexed=False)
+  has_valid_artifact = ndb.BooleanProperty(indexed=False)
 
 
 class FlakeSwarmingTask(BaseSwarmingTask, BaseBuildModel):
@@ -71,6 +72,7 @@ class FlakeSwarmingTask(BaseSwarmingTask, BaseBuildModel):
     flake_swarming_task_data.number_of_iterations = self.tries
     flake_swarming_task_data.number_of_passes = self.successes
     flake_swarming_task_data.status = self.status
+    flake_swarming_task_data.has_valid_artifact = self.has_valid_artifact
     # TODO(lijeffrey): Determine cache_hit.
     return flake_swarming_task_data
 
@@ -81,6 +83,9 @@ class FlakeSwarmingTask(BaseSwarmingTask, BaseBuildModel):
 
   # Whether this task is expected to be run.
   queued = ndb.BooleanProperty(default=False)
+
+  # Whether this task has valid artifact.
+  has_valid_artifact = ndb.BooleanProperty(default=True)
 
   def Reset(self):
     """Resets the task as if it's a new task."""
