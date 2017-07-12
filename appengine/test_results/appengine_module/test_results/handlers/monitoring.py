@@ -7,7 +7,7 @@ import json
 import logging
 import webapp2
 
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 from google.appengine.api import taskqueue
 
 from appengine_module.test_results.handlers import util
@@ -34,20 +34,19 @@ class EventMonUploader(webapp2.RequestHandler):
   @staticmethod
   def _find_new_locations(locations):
     test_names = sorted(locations.keys())
-    loc_entities = TestLocation.get_by_key_name(test_names)
+    loc_entities = ndb.get_multi(
+        ndb.Key(TestLocation, test_name) for test_name in test_names)
     new_locations = {}
+    new_loc_entities = []
     for i, loc_entity in enumerate(loc_entities):
       test_name = test_names[i]
-      location = locations[test_name]
-      if (loc_entity is None or loc_entity.file != location.get('file') or
-          loc_entity.line != location.get('line')):
-        new_locations[test_name] = location
-        # We don't want to block on put operations and should some of them fail,
-        # we'll just end up reporting some locations a few times, which is
-        # acceptable unless it starts to happen to frequently. See
-        # https://crbug.com/740554 for more details.
-        db.put_async(TestLocation(key_name=test_name, file=location.get('file'),
-                                  line=location.get('line')))
+      loc = locations[test_name]
+      if (loc_entity is None or loc_entity.file != loc.get('file') or
+          loc_entity.line != loc.get('line')):
+        new_locations[test_name] = loc
+        new_loc_entities.append(TestLocation(
+          key=ndb.Key(TestLocation, test_name),
+          file=loc.get('file'), line=loc.get('line')))
 
         # Limit number of reported test locations to avoid exceeding 10MiB
         # request limit on the event_mon endpoint. The missing test locations
@@ -61,6 +60,11 @@ class EventMonUploader(webapp2.RequestHandler):
               'locations from total %d. Ignoring the rest to avoid exceeding '
               'request size.', i+1, len(loc_entities))
           break
+
+    # We don't want to block on put_multi operation and should it fail, we'll
+    # just end up reporting these locations more than once, which is acceptable
+    # unless it starts to happen to frequently (crbug.com/740554).
+    ndb.put_multi_async(new_loc_entities)
 
     return new_locations
 
@@ -166,6 +170,7 @@ class EventMonUploader(webapp2.RequestHandler):
     return RequestParams(
         master, builder, build_number, test_type, step_name, file_json)
 
+  @ndb.toplevel
   def post(self):
     req_params = self.parse_request()
     if req_params:

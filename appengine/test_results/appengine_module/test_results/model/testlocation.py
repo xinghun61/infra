@@ -2,10 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from google.appengine.ext import db
+from google.appengine.ext import ndb
 
 
-class TestLocation(db.Model):  # pylint: disable=W0232
+class TestLocation(ndb.Model):  # pylint: disable=W0232
   # Entity's key is the name of the test.
-  file = db.StringProperty()
-  line = db.IntegerProperty()
+  file = ndb.StringProperty()
+  line = ndb.IntegerProperty()
