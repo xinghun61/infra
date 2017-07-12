@@ -45,7 +45,11 @@ const (
 // logger. We only log gRPC prints if our logger is configured to log
 // debug-level or lower, which it isn't by default.
 func disableGRPCLogging(ctx context.Context) {
-	grpcLogging.Install(log.Get(ctx), log.IsLogging(ctx, log.Debug))
+	level := log.Debug
+	if !log.IsLogging(ctx, log.Debug) {
+		level = grpcLogging.Suppress
+	}
+	grpcLogging.Install(log.Get(ctx), level)
 }
 
 // runWithLogdogButler runs the supplied command through the a LogDog Butler
