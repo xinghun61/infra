@@ -18,6 +18,7 @@ from libs.math.vectors import vsum
 EPSILON = 0.00001
 _FEATURE_TO_REASON_PRIORITY = {'MinDistance': 0,
                                'TopFrameIndex': -1,
+                               'FilePathIdf': -2,
                                'TouchCrashedDirectory': -3,
                                'TouchCrashedFile': -4}
 

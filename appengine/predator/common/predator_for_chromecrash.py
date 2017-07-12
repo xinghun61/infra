@@ -10,6 +10,7 @@ from analysis import detect_regression_range
 from analysis.changelist_classifier import ChangelistClassifier
 from analysis.chromecrash_parser import ChromeCrashParser
 from analysis.chrome_crash_data import ChromeCrashData
+from analysis.linear.changelist_features.file_path_idf import FilePathIdfFeature
 from analysis.linear.changelist_features.number_of_touched_files import (
     NumberOfTouchedFilesFeature)
 from analysis.linear.changelist_features.min_distance import MinDistanceFeature
@@ -57,6 +58,7 @@ class PredatorForChromeCrash(PredatorApp):  # pylint: disable=W0223
             'MinDistance': Weight(2.),
             'TopFrameIndex': Weight(1.),
             'TouchCrashedFile': Weight(1.),
+            'FilePathIdf': Weight(1.)
         }),
         'TouchCrashedDirectory': Weight(1.),
         'TouchCrashedComponent': Weight(0.),
@@ -66,10 +68,13 @@ class PredatorForChromeCrash(PredatorApp):  # pylint: disable=W0223
     min_distance_feature = MinDistanceFeature(get_repository)
     top_frame_index_feature = TopFrameIndexFeature()
     touch_crashed_file_feature = TouchCrashedFileFeature()
+    file_path_idf_feature = FilePathIdfFeature(ChromeCrashInvertedIndex)
+
     meta_feature = WrapperMetaFeature(
         [TouchCrashedFileMetaFeature([min_distance_feature,
                                       top_frame_index_feature,
-                                      touch_crashed_file_feature]),
+                                      touch_crashed_file_feature,
+                                      file_path_idf_feature]),
          TouchCrashedDirectoryFeature(),
          TouchCrashedComponentFeature(self._component_classifier),
          NumberOfTouchedFilesFeature()])
