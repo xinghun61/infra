@@ -82,7 +82,7 @@ td, th {
 
 var (
 	timestampRE = regexp.MustCompile("\\[[0-9]:[0-9][0-9]:[0-9][0-9]\\]")
-	diffSize    = metric.NewInt("sheriff_o_matic/analyzer/diff_size", "diff size over time", nil, field.String("diffsize"))
+	logdiffSize = metric.NewInt("sheriff_o_matic/analyzer/logdiff_size", "logdiff size over time", nil, field.String("tree"))
 )
 
 // LogDiff is the entity that will be stored in datastore.
@@ -252,7 +252,7 @@ func LogdiffWorker(ctx *router.Context) {
 		res2[i] = timestampRE.ReplaceAllString(line, "")
 	}
 	diffs := difflib.Diff(res1, res2)
-	diffSize.Set(c, int64(len(diffs)), "diffSize")
+	logdiffSize.Set(c, int64(len(diffs)), "chromium")
 	data, err := json.Marshal(diffs)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error marshaling JSON for logdiff: %v", err))
