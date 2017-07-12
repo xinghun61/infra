@@ -200,15 +200,24 @@ class AbstractTwoLevelCache(object):
       A pair: hits, misses.  Where hits is {key: value} and misses is
       a list of any keys that were not found anywhere.
     """
+    # These are used to detect a case where we would have used
+    # a stale business object.
+    ram_verify_dict = {}
+    memcache_verify_dict = {}
+
     if use_cache:
       result_dict, missed_keys = self.cache.GetAll(keys)
     else:
+      ram_verify_dict, _ = self.cache.GetAll(keys)
       result_dict, missed_keys = {}, list(keys)
 
-    if missed_keys and use_cache:
-      memcache_hits, missed_keys = self._ReadFromMemcache(missed_keys)
-      result_dict.update(memcache_hits)
-      self.cache.CacheAll(memcache_hits)
+    if missed_keys:
+      if use_cache:
+        memcache_hits, missed_keys = self._ReadFromMemcache(missed_keys)
+        result_dict.update(memcache_hits)
+        self.cache.CacheAll(memcache_hits)
+      else:
+        memcache_verify_dict, _ = self._ReadFromMemcache(missed_keys)
 
     while missed_keys:
       missed_batch = missed_keys[:self._FETCH_BATCH_SIZE]
@@ -218,6 +227,25 @@ class AbstractTwoLevelCache(object):
       if use_cache:
         self.cache.CacheAll(retrieved_dict)
         self._WriteToMemcache(retrieved_dict)
+
+    for key in ram_verify_dict:
+      if ram_verify_dict[key] != result_dict.get(key):
+        logging.warning('debugging issue2514: Found stale ram cache entry')
+        logging.warning('ramcache[%r]: %r', key, ram_verify_dict[key])
+        logging.warning('DB[%r]: %r', key, result_dict[key])
+
+      if (key in memcache_verify_dict and
+          ram_verify_dict[key] != memcache_verify_dict[key]):
+        logging.warning(
+          'debugging issue2514: Found disagreement between cache entries')
+        logging.warning('ramcache[%r]: %r', key, ram_verify_dict[key])
+        logging.warning('memcache[%r]: %r', key, result_dict[key])
+
+    for key in memcache_verify_dict:
+      if memcache_verify_dict[key] != result_dict.get(key):
+        logging.warning('debugging issue2514: Found stale memcache entry')
+        logging.warning('memcache[%r]: %r', key, memcache_verify_dict[key])
+        logging.warning('DB[%r]: %r', key, result_dict[key])
 
     still_missing_keys = [key for key in keys if key not in result_dict]
     return result_dict, still_missing_keys
