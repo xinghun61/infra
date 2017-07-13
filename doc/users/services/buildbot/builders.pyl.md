@@ -334,6 +334,22 @@ stripped.  So categories will often be specified like `"0builders"`,
 If set, forcibly kill builds that run longer than this many seconds. If unset
 (or None), builds may run indefinitely.
 
+### use_remote_run
+
+This is an *optional* boolean field. If set to true, it tells buildbot
+to use the 'remote_run' factory to configure builds. Users should usually
+set this to true at this point.
+
+### remote_run_repository
+
+This is an *optional* field that must be present and set to the repository
+the recipe is found in if `use_remote_run` is set to true.
+
+### no_output_timeout_s
+
+This is an *optional* field. If set, a build will be aborted if no output
+occurs for longer than the given number of seconds.
+
 ## Per-scheduler configurations
 
 ### type
