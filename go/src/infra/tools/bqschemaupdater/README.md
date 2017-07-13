@@ -1,5 +1,8 @@
 bqschemaupdater is a tool for adding and updating BigQuery table schema.
 
+It currently creates tables in the "chrome-infra-events" cloud project by
+default. We can add support for different projects when needed in the future.
+
 # Usage
 
 ```bqschemaupdater <path to json schema file> [--help] [--dry-run]```
