@@ -1000,6 +1000,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 									URL:           urlParse("https://build.chromium.org/p/fake.master/builders/fake.builder", t).String(),
 									FirstFailure:  4,
 									LatestFailure: 5,
+									LatestPassing: 3,
 									Count:         2,
 									StartTime:     messages.EpochTime(8),
 								},

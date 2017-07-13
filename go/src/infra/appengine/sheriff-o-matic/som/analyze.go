@@ -160,7 +160,7 @@ func enqueueLogDiffTask(ctx context.Context, alerts []messages.Alert) error {
 	for _, alert := range alerts {
 		if bf, ok := alert.Extension.(messages.BuildFailure); ok {
 			for _, builder := range bf.Builders {
-				buildNum2 := builder.FirstFailure - 1
+				buildNum2 := builder.LatestPassing
 				buildNum1 := builder.LatestFailure
 				master := builder.Master
 				// This is checking if there's redundant data in datastore already

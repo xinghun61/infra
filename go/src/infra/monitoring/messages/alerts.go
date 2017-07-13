@@ -210,6 +210,8 @@ type AlertedBuilder struct {
 	FirstFailure int64 `json:"first_failure"`
 	// LatestFailure is the build number of latest failure.
 	LatestFailure int64 `json:"latest_failure"`
+	// LatestPassing is the build number of latest passing build
+	LatestPassing int64 `json:"latest_passing"`
 	Count         int   `json:"count"`
 }
 

@@ -778,7 +778,10 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 
 		mergedAlert.Extension = mergedBF
 
-		for _, failingBuilder := range mergedBF.Builders {
+		for i, failingBuilder := range mergedBF.Builders {
+			if firstSuccessfulBuild != -1 {
+				mergedBF.Builders[i].LatestPassing = firstSuccessfulBuild
+			}
 			if failingBuilder.LatestFailure-failingBuilder.FirstFailure > 0 {
 				mergedAlert.Severity = messages.ReliableFailure
 			}
