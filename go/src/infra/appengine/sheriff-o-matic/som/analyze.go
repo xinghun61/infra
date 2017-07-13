@@ -6,7 +6,6 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
-	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -161,13 +160,13 @@ func enqueueLogDiffTask(ctx context.Context, alerts []messages.Alert) error {
 	for _, alert := range alerts {
 		if bf, ok := alert.Extension.(messages.BuildFailure); ok {
 			for _, builder := range bf.Builders {
-				params := strings.Split(builder.URL, "/")
 				buildNum2 := builder.FirstFailure - 1
 				buildNum1 := builder.LatestFailure
+				master := builder.Master
 				// This is checking if there's redundant data in datastore already
 				var diffs []*LogDiff
 				q := datastore.NewQuery("LogDiff")
-				q = q.Eq("Master", params[4]).Eq("Builder", builder.Name).Eq("BuildNum1", buildNum1).Eq("BuildNum2", buildNum2)
+				q = q.Eq("Master", master).Eq("Builder", builder.Name).Eq("BuildNum1", buildNum1).Eq("BuildNum2", buildNum2)
 				err := datastore.GetAll(ctx, q, &diffs)
 				if err != nil {
 					logging.Errorf(ctx, "err with getting data from datastore: %v", err)
@@ -176,7 +175,7 @@ func enqueueLogDiffTask(ctx context.Context, alerts []messages.Alert) error {
 					continue
 				}
 				err = datastore.RunInTransaction(ctx, func(ctx context.Context) error {
-					data := &LogDiff{nil, params[4], builder.Name, buildNum1, buildNum2, "", false}
+					data := &LogDiff{nil, master, builder.Name, buildNum1, buildNum2, "", false}
 					if err := datastore.AllocateIDs(ctx, data); err != nil {
 						logging.Errorf(ctx, "error allocating id: %v", err)
 						return err
@@ -184,8 +183,7 @@ func enqueueLogDiffTask(ctx context.Context, alerts []messages.Alert) error {
 					values := url.Values{}
 					values.Set("lastFail", strconv.Itoa(int(buildNum1)))
 					values.Set("lastPass", strconv.Itoa(int(buildNum2)))
-					// TODO(seanmccullough): add master name in AlertedBuilder
-					values.Set("master", params[4])
+					values.Set("master", master)
 					values.Set("builder", builder.Name)
 					values.Set("ID", data.ID)
 					if err := datastore.Put(ctx, data); err != nil {

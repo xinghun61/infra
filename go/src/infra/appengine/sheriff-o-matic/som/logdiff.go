@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"github.com/luci/gae/service/info"
 	"github.com/luci/luci-go/common/logging"
-	"regexp"
 )
 
 const (
@@ -81,7 +80,6 @@ td, th {
 )
 
 var (
-	timestampRE = regexp.MustCompile("\\[[0-9]:[0-9][0-9]:[0-9][0-9]\\]")
 	logdiffSize = metric.NewInt("sheriff_o_matic/analyzer/logdiff_size", "logdiff size over time", nil, field.String("tree"))
 )
 
@@ -243,13 +241,6 @@ func LogdiffWorker(ctx *router.Context) {
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error fetching log: %v", err))
 		return
-	}
-
-	for i, line := range res1 {
-		res1[i] = timestampRE.ReplaceAllString(line, "")
-	}
-	for i, line := range res2 {
-		res2[i] = timestampRE.ReplaceAllString(line, "")
 	}
 	diffs := difflib.Diff(res1, res2)
 	logdiffSize.Set(c, int64(len(diffs)), "chromium")
