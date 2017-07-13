@@ -104,10 +104,10 @@ def roll_prod(_args):
   print(
       'canary was committed %s' %
       git('log', '-1', '--format=%cr', CANARY_TEMPLATE_FILENAME))
-  # TODO(nodir): replace builder URLs with a monitoring link.
   print(
       'check builds in https://luci-milo.appspot.com/buildbucket/'
       'luci.chromium.try/LUCI%20linux_chromium_rel_ng')
+  print('check https://goto.google.com/buildbucket-canary-health')
   if raw_input('does canary look good? [N/y]: ').lower() != 'y':
     print('please fix it first')
     return 1
