@@ -151,22 +151,16 @@ def RunSteps(api, upstream_project, downstream_project):
   nontrivial_roll_footer = cl_footers.get(NONTRIVIAL_ROLL_FOOTER, [])
   manual_change_footer = cl_footers.get(MANUAL_CHANGE_FOOTER, [])
 
-  if downstream_project in nontrivial_roll_footer:
+  if downstream_project in manual_change_footer:
     api.python.succeeding_step(
         'result',
-        ('Recognized nontrivial roll ACK footer (%r).' %
-             NONTRIVIAL_ROLL_FOOTER))
-  elif downstream_project in manual_change_footer:
+        ('Recognized %s footer for %s.' %
+             (MANUAL_CHANGE_FOOTER, downstream_project)))
+  elif downstream_project in nontrivial_roll_footer:
     api.python.succeeding_step(
         'result',
-        ('Recognized manual change ACK footer (%r).' %
-             MANUAL_CHANGE_FOOTER))
-  else:
-    api.python.failing_step(
-        'result',
-        ('Add %s: %s footer to the CL to acknowledge the change will require '
-         'nontrivial roll in %r repo') % (
-             NONTRIVIAL_ROLL_FOOTER, downstream_project, downstream_project))
+        ('Recognized %s footer for %s.' %
+             (NONTRIVIAL_ROLL_FOOTER, downstream_project)))
 
   try:
     train_diff = api.python('diff (train)',
@@ -178,17 +172,24 @@ def RunSteps(api, upstream_project, downstream_project):
     train_diff = ex.result
 
   if train_diff.retcode == 0:
+    if (downstream_project not in manual_change_footer and
+        downstream_project not in nontrivial_roll_footer):
+      api.python.failing_step(
+          'result',
+          ('Add "%s: %s" footer to the CL to acknowledge the change will '
+           'require nontrivial roll in %r repo') % (
+               NONTRIVIAL_ROLL_FOOTER, downstream_project, downstream_project))
     return
 
   if downstream_project in manual_change_footer:
     api.python.succeeding_step(
         'result',
-        ('Recognized manual change ACK footer (%r).' %
-             MANUAL_CHANGE_FOOTER))
+        ('Recognized %s footer for %s.' %
+             (MANUAL_CHANGE_FOOTER, downstream_project)))
   else:
     api.python.failing_step(
         'result',
-        ('Add %s: %s footer to the CL to acknowledge the change will require '
+        ('Add "%s: %s" footer to the CL to acknowledge the change will require '
          'manual code changes in %r repo') % (
              MANUAL_CHANGE_FOOTER, downstream_project, downstream_project))
 

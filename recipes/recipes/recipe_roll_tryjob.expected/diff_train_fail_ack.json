@@ -377,7 +377,7 @@
     ],
     "name": "result",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Recognized manual change ACK footer ('Recipe-Manual-Change').@@@"
+      "@@@STEP_TEXT@Recognized Recipe-Manual-Change footer for depot_tools.@@@"
     ]
   },
   {
@@ -406,7 +406,7 @@
     ],
     "name": "result (2)",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Recognized manual change ACK footer ('Recipe-Manual-Change').@@@"
+      "@@@STEP_TEXT@Recognized Recipe-Manual-Change footer for depot_tools.@@@"
     ]
   },
   {

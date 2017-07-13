@@ -377,7 +377,7 @@
     ],
     "name": "result",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Recognized nontrivial roll ACK footer ('Recipe-Nontrivial-Roll').@@@"
+      "@@@STEP_TEXT@Recognized Recipe-Nontrivial-Roll footer for depot_tools.@@@"
     ]
   },
   {
@@ -407,7 +407,7 @@
     "name": "result (2)",
     "~followup_annotations": [
       "step returned non-zero exit code: 1",
-      "@@@STEP_TEXT@Add Recipe-Manual-Change: depot_tools footer to the CL to acknowledge the change will require manual code changes in 'depot_tools' repo@@@",
+      "@@@STEP_TEXT@Add \"Recipe-Manual-Change: depot_tools\" footer to the CL to acknowledge the change will require manual code changes in 'depot_tools' repo@@@",
       "@@@STEP_FAILURE@@@"
     ]
   },

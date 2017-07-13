@@ -377,7 +377,7 @@
     ],
     "name": "result",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Recognized nontrivial roll ACK footer ('Recipe-Nontrivial-Roll').@@@"
+      "@@@STEP_TEXT@Recognized Recipe-Nontrivial-Roll footer for depot_tools.@@@"
     ]
   },
   {

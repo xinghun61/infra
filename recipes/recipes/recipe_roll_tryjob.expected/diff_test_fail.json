@@ -368,12 +368,26 @@
     "cmd": [
       "python",
       "-u",
+      "[CACHE]/recipe_roll_tryjob/depot_tools/depot_tools/recipes.py",
+      "test",
+      "diff",
+      "--baseline",
+      "{}",
+      "--actual",
+      "{}"
+    ],
+    "name": "diff (train)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "import sys; sys.exit(1)"
     ],
     "name": "result",
     "~followup_annotations": [
       "step returned non-zero exit code: 1",
-      "@@@STEP_TEXT@Add Recipe-Nontrivial-Roll: depot_tools footer to the CL to acknowledge the change will require nontrivial roll in 'depot_tools' repo@@@",
+      "@@@STEP_TEXT@Add \"Recipe-Nontrivial-Roll: depot_tools\" footer to the CL to acknowledge the change will require nontrivial roll in 'depot_tools' repo@@@",
       "@@@STEP_FAILURE@@@"
     ]
   },
