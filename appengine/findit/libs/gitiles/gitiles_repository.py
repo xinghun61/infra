@@ -4,9 +4,9 @@
 
 import base64
 from datetime import datetime
-from datetime import timedelta
 import json
 import re
+import urllib
 
 from libs.gitiles import commit_util
 from libs.gitiles import diff
@@ -199,7 +199,7 @@ class GitilesRepository(GitRepository):
 
   def GetSource(self, path, revision):
     """Returns source code of the file at ``path`` of the given revision."""
-    url = '%s/+/%s/%s' % (self.repo_url, revision, path)
+    url = '%s/+/%s/%s' % (self.repo_url, urllib.quote(revision), path)
     return self._SendRequestForTextResponse(url)
 
   def GetChangeLogs(self, start_revision, end_revision, n=1000):
