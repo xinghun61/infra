@@ -100,4 +100,6 @@ class CrashAnalysisTest(AppengineTestCase):
   def testGetClientConfig(self):
     crash_config = CrashConfig.Get()
     self.assertIsNotNone(crash_config.GetClientConfig(CrashClient.FRACAS))
+    self.assertIsNotNone(
+        crash_config.GetClientConfig(CrashClient.UMA_SAMPLING_PROFILER))
     self.assertIsNone(crash_config.GetClientConfig('Unsupported_client'))

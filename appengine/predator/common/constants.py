@@ -8,14 +8,16 @@ import os
 CRASH_BACKEND = {
     'fracas': 'backend-fracas',
     'cracas': 'backend-cracas',
-    'clusterfuzz': 'backend-clusterfuzz'
+    'clusterfuzz': 'backend-clusterfuzz',
+    'uma sampling profiler': 'backend-uma-sampling-profiler',
 }
 
 
 CRASH_ANALYSIS_QUEUE = {
     'fracas': 'fracas-analysis-queue',
     'cracas': 'cracas-analysis-queue',
-    'clusterfuzz': 'clusterfuzz-analysis-queue'
+    'clusterfuzz': 'clusterfuzz-analysis-queue',
+    'uma sampling profiler': 'uma-sampling-profiler-analysis-queue',
 }
 
 

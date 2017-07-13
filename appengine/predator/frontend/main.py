@@ -42,6 +42,8 @@ frontend_web_pages_handler_mappings = [
     ('/_ah/push-handlers/crash/fracas', crash_handler.CrashHandler),
     ('/_ah/push-handlers/crash/cracas', crash_handler.CrashHandler),
     ('/_ah/push-handlers/crash/clusterfuzz', crash_handler.CrashHandler),
+    ('/_ah/push-handlers/regression/uma-sampling-profiler',
+     crash_handler.CrashHandler),
 ]
 frontend_app = webapp2.WSGIApplication(
     frontend_web_pages_handler_mappings, debug=False)

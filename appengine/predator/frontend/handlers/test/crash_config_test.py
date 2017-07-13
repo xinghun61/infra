@@ -26,6 +26,11 @@ _MOCK_FRACAS_CONFIG = {
     'top_n': 7
 }
 
+_MOCK_UMA_SAMPLING_PROFILER_CONFIG = {
+    'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+    'signature_blacklist_markers': ['Blacklist marker'],
+}
+
 _MOCK_COMPONENT_CONFIG = {
     'component_info': [
         {
@@ -56,6 +61,7 @@ _MOCK_PROJECT_CONFIG = {
 _MOCK_CONFIG = {
     'fracas': _MOCK_FRACAS_CONFIG,
     'cracas': _MOCK_FRACAS_CONFIG,
+    'uma_sampling_profiler': _MOCK_UMA_SAMPLING_PROFILER_CONFIG,
     'component_classifier': _MOCK_COMPONENT_CONFIG,
     'project_classifier': _MOCK_PROJECT_CONFIG
 }
@@ -147,6 +153,31 @@ class CrashConfigTest(TestCase):
     self.assertTrue(crash_config._ValidateChromeCrashConfig(
         _MOCK_FRACAS_CONFIG))
 
+  def testValidateUMASamplingProfilerConfig(self):
+    """Tests ``_ValidateUMASamplingProfilerConfig`` function."""
+    # Return False if config is not a dict
+    self.assertFalse(crash_config._ValidateUMASamplingProfilerConfig(None))
+
+    # Return False if config doesn't have "analysis_result_pubsub_topic".
+    self.assertFalse(crash_config._ValidateUMASamplingProfilerConfig({}))
+
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name'
+    }
+
+    # Return False if config doesn't have "signature_blacklist_markers".
+    self.assertFalse(crash_config._ValidateUMASamplingProfilerConfig(config))
+
+    # Return False if entries of "signature_blacklist_markers" are not strs.
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'signature_blacklist_markers': [None]
+    }
+    self.assertFalse(crash_config._ValidateUMASamplingProfilerConfig(config))
+
+    self.assertTrue(crash_config._ValidateUMASamplingProfilerConfig(
+        _MOCK_UMA_SAMPLING_PROFILER_CONFIG))
+
   def testValidateComponentClassifierConfig(self):
     """Tests ``_ValidateComponentClassifierConfig`` function."""
     # Return False if config is not a dict
@@ -210,6 +241,7 @@ class CrashConfigTest(TestCase):
     config = {
         'fracas': None,
         'cracas': None,
+        'uma_sampling_profiler': None,
         'component_classifier': None
     }
     self.assertFalse(crash_config._ConfigurationDictIsValid(config))

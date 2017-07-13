@@ -45,6 +45,13 @@ class CrashConfig(VersionedConfig):
   # }
   cracas = ndb.JsonProperty(indexed=False, default={})
 
+  # An example of uma-sampling-profiler-specific parameters:
+  # {
+  #   "analysis_result_pubsub_topic": "projects/project-name/topics/name",
+  #   "signature_blacklist_markers": [],
+  # }
+  uma_sampling_profiler = ndb.JsonProperty(indexed=False, default={})
+
   ################## Settings shared by Fracas/Clusterfuzz. ##################
   # An example of project classifier settings:
   # {
@@ -136,5 +143,6 @@ class CrashConfig(VersionedConfig):
     elif client_id == CrashClient.CLUSTERFUZZ:  # pragma: no cover.
       # TODO(katesonia): Add crash config of clusterfuzz.
       return None
-
+    elif client_id == CrashClient.UMA_SAMPLING_PROFILER:
+      return self.uma_sampling_profiler
     return None

@@ -101,6 +101,37 @@ def _ValidateChromeCrashConfig(chrome_crash_config):
   return True
 
 
+def _ValidateUMASamplingProfilerConfig(uma_profiler_config):
+  """Checks that a uma_profiler_config dict is properly formatted.
+
+  Args:
+    uma_profiler_config (dict): A dictionary that provides configuration of
+      the UMA Sampling Profiler client. E.g.:
+      {
+        'analysis_result_pubsub_topic': (
+            'projects/google.com:findit-for-me/topics/'
+            'result-for-uma-sampling-profiler'),
+        'signature_blacklist_markers': ['black sig1', 'black sig2'],
+      }
+  Return:
+    True if uma_profiler_config has the correct format, False if not.
+  """
+  if not isinstance(uma_profiler_config, dict):
+    return False
+
+  analysis_result_pubsub_topic = uma_profiler_config.get(
+      'analysis_result_pubsub_topic')
+  if not isinstance(analysis_result_pubsub_topic, basestring):
+    return False
+
+  signature_blacklist_markers = uma_profiler_config.get(
+      'signature_blacklist_markers')
+  if not _IsListOfStrings(signature_blacklist_markers):
+    return False
+
+  return True
+
+
 def _ValidateComponentClassifierConfig(component_classifier_config):
   """Checks that a component_classifier_config dict is properly formatted.
 
@@ -203,6 +234,7 @@ def _ValidateProjectClassifierConfig(project_classifier_config):
 _CONFIG_VALIDATION_FUNCTIONS = {
     'fracas': _ValidateChromeCrashConfig,
     'cracas': _ValidateChromeCrashConfig,
+    'uma_sampling_profiler': _ValidateUMASamplingProfilerConfig,
     'component_classifier': _ValidateComponentClassifierConfig,
     'project_classifier': _ValidateProjectClassifierConfig
 }
@@ -250,6 +282,7 @@ class CrashConfig(BaseHandler):
     data = {
         'fracas': settings.fracas,
         'cracas': settings.cracas,
+        'uma_sampling_profiler': settings.uma_sampling_profiler,
         'component_classifier': settings.component_classifier,
         'project_classifier': settings.project_classifier,
     }

@@ -11,6 +11,7 @@ from google.appengine.ext import ndb
 from analysis.type_enums import CrashClient
 from common import predator_for_chromecrash
 from common import predator_for_clusterfuzz
+from common import predator_for_uma_sampling_profiler
 from common import monitoring
 from common.exceptions import PredatorError
 from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
@@ -61,6 +62,8 @@ def PredatorForClientID(client_id, get_repository, config): # pragma: no cover
     cls = predator_for_chromecrash.PredatorForCracas
   elif client_id == CrashClient.CLUSTERFUZZ: # pragma: no cover
     cls = predator_for_clusterfuzz.PredatorForClusterfuzz
+  elif client_id == CrashClient.UMA_SAMPLING_PROFILER:
+    cls = predator_for_uma_sampling_profiler.PredatorForUMASamplingProfiler
   else: # pragma: no cover
     raise ValueError('PredatorForClientID: '
         'unknown or unsupported client %s' % client_id)
