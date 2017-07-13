@@ -359,11 +359,11 @@
       "/path/to/tmp/json"
     ],
     "name": "parse description",
-    "stdin": "Recipe-Manual-Change-Depot_Tools: ack",
+    "stdin": "Recipe-Manual-Change: depot_tools",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"Recipe-Manual-Change-Depot_Tools\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"ack\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"Recipe-Manual-Change\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"depot_tools\"@@@",
       "@@@STEP_LOG_LINE@json.output@  ]@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -377,7 +377,7 @@
     ],
     "name": "result",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Recognized manual change ACK footer (['ack']).@@@"
+      "@@@STEP_TEXT@Recognized manual change ACK footer ('Recipe-Manual-Change').@@@"
     ]
   },
   {
@@ -406,7 +406,7 @@
     ],
     "name": "result (2)",
     "~followup_annotations": [
-      "@@@STEP_TEXT@Recognized manual change ACK footer (['ack']).@@@"
+      "@@@STEP_TEXT@Recognized manual change ACK footer ('Recipe-Manual-Change').@@@"
     ]
   },
   {

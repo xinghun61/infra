@@ -34,6 +34,12 @@ PROPERTIES = {
 }
 
 
+NONTRIVIAL_ROLL_FOOTER = 'Recipe-Nontrivial-Roll'
+
+
+MANUAL_CHANGE_FOOTER = 'Recipe-Manual-Change'
+
+
 def _get_recipes_path(api, recipes_cfg_path):
   current_cfg = api.json.read(
     'read recipes.cfg',
@@ -142,29 +148,25 @@ def RunSteps(api, upstream_project, downstream_project):
 
   cl_footers = api.tryserver.get_footers()
 
-  nontrivial_roll_footer = api.tryserver.normalize_footer_name(
-      'Recipe-Nontrivial-Roll-%s' % downstream_project)
-  manual_change_footer = api.tryserver.normalize_footer_name(
-      'Recipe-Manual-Change-%s' % downstream_project)
-  nontrivial_roll_footer_contents = cl_footers.get(nontrivial_roll_footer)
-  manual_change_footer_contents = cl_footers.get(manual_change_footer)
+  nontrivial_roll_footer = cl_footers.get(NONTRIVIAL_ROLL_FOOTER, [])
+  manual_change_footer = cl_footers.get(MANUAL_CHANGE_FOOTER, [])
 
-  if nontrivial_roll_footer_contents:
+  if downstream_project in nontrivial_roll_footer:
     api.python.succeeding_step(
         'result',
         ('Recognized nontrivial roll ACK footer (%r).' %
-             nontrivial_roll_footer_contents))
-  elif manual_change_footer_contents:
+             NONTRIVIAL_ROLL_FOOTER))
+  elif downstream_project in manual_change_footer:
     api.python.succeeding_step(
         'result',
         ('Recognized manual change ACK footer (%r).' %
-             manual_change_footer_contents))
+             MANUAL_CHANGE_FOOTER))
   else:
     api.python.failing_step(
         'result',
-        ('Add %s: ack footer to the CL to acknowledge the change will require '
+        ('Add %s: %s footer to the CL to acknowledge the change will require '
          'nontrivial roll in %r repo') % (
-             nontrivial_roll_footer, downstream_project))
+             NONTRIVIAL_ROLL_FOOTER, downstream_project, downstream_project))
 
   try:
     train_diff = api.python('diff (train)',
@@ -178,17 +180,17 @@ def RunSteps(api, upstream_project, downstream_project):
   if train_diff.retcode == 0:
     return
 
-  if manual_change_footer_contents:
+  if downstream_project in manual_change_footer:
     api.python.succeeding_step(
         'result',
         ('Recognized manual change ACK footer (%r).' %
-             manual_change_footer_contents))
+             MANUAL_CHANGE_FOOTER))
   else:
     api.python.failing_step(
         'result',
-        ('Add %s: ack footer to the CL to acknowledge the change will require '
+        ('Add %s: %s footer to the CL to acknowledge the change will require '
          'manual code changes in %r repo') % (
-             manual_change_footer, downstream_project))
+             MANUAL_CHANGE_FOOTER, downstream_project, downstream_project))
 
 
 def GenTests(api):
@@ -253,10 +255,10 @@ def GenTests(api):
     api.step_data('diff (test)', retcode=1) +
     api.override_step_data(
         'git_cl description', stdout=api.raw_io.output(
-            'Recipe-Nontrivial-Roll-Depot_Tools: ack')) +
+            'Recipe-Nontrivial-Roll: depot_tools')) +
     api.override_step_data(
         'parse description', api.json.output(
-            {'Recipe-Nontrivial-Roll-Depot_Tools': ['ack']}))
+            {'Recipe-Nontrivial-Roll': ['depot_tools']}))
   )
 
   yield (
@@ -269,10 +271,10 @@ def GenTests(api):
     api.step_data('diff (train)', retcode=1) +
     api.override_step_data(
         'git_cl description', stdout=api.raw_io.output(
-            'Recipe-Nontrivial-Roll-Depot_Tools: ack')) +
+            'Recipe-Nontrivial-Roll: depot_tools')) +
     api.override_step_data(
         'parse description', api.json.output(
-            {'Recipe-Nontrivial-Roll-Depot_Tools': ['ack']}))
+            {'Recipe-Nontrivial-Roll': ['depot_tools']}))
   )
 
   yield (
@@ -285,8 +287,8 @@ def GenTests(api):
     api.step_data('diff (train)', retcode=1) +
     api.override_step_data(
         'git_cl description', stdout=api.raw_io.output(
-            'Recipe-Manual-Change-Depot_Tools: ack')) +
+            'Recipe-Manual-Change: depot_tools')) +
     api.override_step_data(
         'parse description', api.json.output(
-            {'Recipe-Manual-Change-Depot_Tools': ['ack']}))
+            {'Recipe-Manual-Change': ['depot_tools']}))
   )
