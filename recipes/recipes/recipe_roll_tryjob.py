@@ -41,17 +41,21 @@ def _get_recipes_path(api, recipes_cfg_path):
   return current_cfg.json.output.get('recipes_path', '')
 
 
-def _checkout_project(api, workdir, project, project_config, patch):
+def _checkout_project(
+    api, workdir, project, project_config, patch, revision=None):
   api.file.ensure_directory('%s checkout' % project, workdir)
 
   gclient_config = api.gclient.make_config()
+  gclient_config.got_revision_reverse_mapping['got_revision'] = project
   s = gclient_config.solutions.add()
   s.name = project
   s.url = project_config['repo_url']
+  if revision:
+    s.revision = revision
 
   with api.context(cwd=workdir):
-    return workdir.join(api.bot_update.ensure_checkout(
-        gclient_config=gclient_config, patch=patch).json.output['root'])
+    return api.bot_update.ensure_checkout(
+        gclient_config=gclient_config, patch=patch)
 
 
 def RunSteps(api, upstream_project, downstream_project):
@@ -61,12 +65,17 @@ def RunSteps(api, upstream_project, downstream_project):
 
   project_data = api.luci_config.get_projects()
 
-  upstream_checkout = _checkout_project(
+  upstream_checkout_step = _checkout_project(
       api, upstream_workdir, upstream_project,
       project_data[upstream_project], patch=False)
-  downstream_checkout = _checkout_project(
+  downstream_checkout_step = _checkout_project(
       api, downstream_workdir, downstream_project,
       project_data[downstream_project], patch=False)
+
+  upstream_checkout = upstream_workdir.join(
+      upstream_checkout_step.json.output['root'])
+  downstream_checkout = downstream_workdir.join(
+      downstream_checkout_step.json.output['root'])
 
   downstream_recipes_path = _get_recipes_path(
       api, downstream_checkout.join('infra', 'config', 'recipes.cfg'))
@@ -91,9 +100,12 @@ def RunSteps(api, upstream_project, downstream_project):
   except api.step.StepFailure as ex:
     orig_downstream_train = ex.result
 
+  upstream_revision = upstream_checkout_step.json.output[
+      'manifest'][upstream_project]['revision']
   _checkout_project(
        api, upstream_workdir, upstream_project,
-       project_data[upstream_project], patch=True)
+       project_data[upstream_project], patch=True,
+       revision=upstream_revision)
 
   try:
     patched_downstream_test = api.python('test (with patch)',
