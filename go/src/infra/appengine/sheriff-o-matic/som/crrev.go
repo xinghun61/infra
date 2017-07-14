@@ -1,10 +1,10 @@
 package som
 
 import (
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+
+	"infra/monitoring/client"
 
 	"golang.org/x/net/context"
 
@@ -26,43 +26,6 @@ var getOAuthClient = func(c context.Context) (*http.Client, error) {
 	return &http.Client{Transport: t}, nil
 }
 
-func getCrRevJSON(c context.Context, pos string) (map[string]string, error) {
-	itm := memcache.NewItem(c, fmt.Sprintf("crrev:%s", pos))
-	err := memcache.Get(c, itm)
-
-	if err == memcache.ErrCacheMiss {
-		hc, err := getOAuthClient(c)
-		if err != nil {
-			return nil, err
-		}
-
-		resp, err := hc.Get(fmt.Sprintf("https://cr-rev.appspot.com/_ah/api/crrev/v1/redirect/%s", pos))
-		if err != nil {
-			return nil, err
-		}
-
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-		itm.SetValue(body)
-		if err = memcache.Set(c, itm); err != nil {
-			return nil, fmt.Errorf("while setting memcache: %s", err)
-		}
-	} else if err != nil {
-		return nil, fmt.Errorf("while getting from memcache: %s", err)
-	}
-
-	m := map[string]string{}
-	err = json.Unmarshal(itm.Value(), &m)
-	if err != nil {
-		return nil, err
-	}
-
-	return m, nil
-}
-
 // GetRevRangeHandler returns a revision range queury for gitiles, given one or
 // two commit positions.
 func GetRevRangeHandler(ctx *router.Context) {
@@ -78,14 +41,16 @@ func GetRevRangeHandler(ctx *router.Context) {
 	itm := memcache.NewItem(c, fmt.Sprintf("revrange:%s..%s", start, end))
 	err := memcache.Get(c, itm)
 
+	// TODO: nix this double layer of caching.
 	if err == memcache.ErrCacheMiss {
-		startRev, err := getCrRevJSON(c, start)
+		crRev := client.GetCrRev(c)
+		startRev, err := crRev.GetRedirect(c, start)
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
 			return
 		}
 
-		endRev, err := getCrRevJSON(c, end)
+		endRev, err := crRev.GetRedirect(c, end)
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
 			return

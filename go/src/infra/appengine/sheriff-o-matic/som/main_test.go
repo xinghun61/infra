@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	client "infra/monitoring/client/test"
+	testclient "infra/monitoring/client/test"
 	"infra/monitoring/messages"
 	"infra/monorail"
 
@@ -32,7 +32,6 @@ import (
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/clock/testclock"
 	"github.com/luci/luci-go/common/logging/gologger"
-	"github.com/luci/luci-go/server/auth/authtest"
 	"github.com/luci/luci-go/server/auth/xsrf"
 	"github.com/luci/luci-go/server/router"
 
@@ -919,7 +918,7 @@ func TestMain(t *testing.T) {
 					return giMock{dummy.Info(), "", time.Now(), nil}
 				})
 
-				c = urlfetch.Set(c, &client.MockGitilesTransport{
+				c = urlfetch.Set(c, &testclient.MockGitilesTransport{
 					Responses: map[string]string{
 						gkTreesInternalURL: `{    "chromium": {
         "build-db": "waterfall_build_db.json",
@@ -1363,56 +1362,4 @@ func makeParams(items ...string) httprouter.Params {
 	}
 
 	return params
-}
-
-func TestRevRangeHandler(t *testing.T) {
-	t.Parallel()
-
-	Convey("get rev range", t, func() {
-		// crbug.com/725595 - This test does real network access.
-		SkipConvey("ok", func() {
-			c := gaetesting.TestingContext()
-			c = authtest.MockAuthConfig(c)
-			w := httptest.NewRecorder()
-
-			GetRevRangeHandler(&router.Context{
-				Context: c,
-				Writer:  w,
-				Request: makeGetRequest(),
-				Params:  makeParams("start", "123", "end", "456"),
-			})
-
-			So(w.Code, ShouldEqual, 301)
-		})
-		Convey("bad oauth", func() {
-			c := gaetesting.TestingContext()
-			c = authtest.MockAuthConfig(c)
-			w := httptest.NewRecorder()
-			oldOAuth := getOAuthClient
-			getOAuthClient = func(ctx context.Context) (*http.Client, error) {
-				return nil, fmt.Errorf("not today")
-			}
-			GetRevRangeHandler(&router.Context{
-				Context: c,
-				Writer:  w,
-				Request: makeGetRequest(),
-				Params:  makeParams("start", "123", "end", "456"),
-			})
-			getOAuthClient = oldOAuth
-			So(w.Code, ShouldEqual, http.StatusInternalServerError)
-		})
-		Convey("bad request", func() {
-			c := gaetesting.TestingContext()
-			c = authtest.MockAuthConfig(c)
-			w := httptest.NewRecorder()
-
-			GetRevRangeHandler(&router.Context{
-				Context: c,
-				Writer:  w,
-				Request: makeGetRequest(),
-			})
-
-			So(w.Code, ShouldEqual, 400)
-		})
-	})
 }

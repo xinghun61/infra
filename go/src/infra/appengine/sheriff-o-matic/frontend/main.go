@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"infra/appengine/sheriff-o-matic/som"
+	"infra/monitoring/client"
 
 	"golang.org/x/net/context"
 
@@ -136,7 +137,13 @@ func base(includeCookie bool) router.MiddlewareChain {
 	if includeCookie {
 		a.Methods = append(a.Methods, server.CookieAuth)
 	}
-	return gaemiddleware.BaseProd().Extend(a.GetMiddleware())
+	return gaemiddleware.BaseProd().Extend(a.GetMiddleware()).Extend(prodServiceClients)
+}
+
+func prodServiceClients(ctx *router.Context, next router.Handler) {
+	ctx.Context = client.WithCrRev(ctx.Context, "https://cr-rev.appspot.com")
+	// TODO(seanmccullough): Register other prod instances.
+	next(ctx)
 }
 
 func requireGoogler(c *router.Context, next router.Handler) {
