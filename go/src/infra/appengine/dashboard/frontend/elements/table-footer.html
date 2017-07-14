@@ -1,0 +1,45 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
+<link rel="import" href="/bower_components/paper-datatable-api/paper-datatable-api-icons.html">
+
+<dom-module id="table-footer">
+  <template>
+    <style>
+      .foot {
+        border-color: rgba(0, 0, 0, .7);
+        border-top: 1px solid;
+        color: rgba(0, 0, 0, .7);
+        font-size: .75em;
+        font-weight: normal;
+        height: 55px;
+        padding: 0 14px 0 0;
+      }
+
+      .foot paper-icon-button {
+        height: 24px;
+        margin-left: 24px;
+        padding: 0;
+        width: 24px;
+      }
+      .hidden,
+      .not-shown {
+        display: none;
+      }
+      .not-hidden,
+      .shown {
+        display: inline-block;
+      }
+    </style>
+    <div>
+      <paper-icon-button class$="[[prevButtonClass]]"
+          icon="paper-datatable-api-icons:chevron-left" on-tap="_goToPrevPage"></paper-icon-button>
+      <paper-icon-button class$="not-[[prevButtonClass]]"
+          icon="paper-datatable-api-icons:chevron-left" disabled on-tap="_goToPrevPage"></paper-icon-button>
+      <paper-icon-button class$="[[nextButtonClass]]"
+          icon="paper-datatable-api-icons:chevron-right" on-tap="_goToNextPage"></paper-icon-button>
+      <paper-icon-button class$="not-[[nextButtonClass]]"
+          icon="paper-datatable-api-icons:chevron-right" disabled on-tap="_goToNextPage"></paper-icon-button>
+    </div>
+  </template>
+  <script src="table-footer.js"></script>
+</dom-module>
