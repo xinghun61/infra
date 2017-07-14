@@ -63,9 +63,12 @@ def _GenerateComment(analysis):
     return _ERROR_COMMENT_TEMPLATE % (analysis.original_master_name,
                                       analysis.original_builder_name,
                                       analysis.key.urlsafe(),)
-  elif analysis.culprit is not None:
-    return _CULPRIT_COMMENT_TEMPLATE % (analysis.culprit.commit_position,
-                                        analysis.culprit.confidence * 100,
+  elif analysis.culprit_urlsafe_key is not None:
+    culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
+    assert culprit
+    assert analysis.confidence_in_culprit is not None
+    return _CULPRIT_COMMENT_TEMPLATE % (culprit.commit_position,
+                                        analysis.confidence_in_culprit * 100,
                                         analysis.original_master_name,
                                         analysis.original_builder_name,
                                         analysis.key.urlsafe(),)
@@ -110,7 +113,7 @@ def _ShouldUpdateBugForAnalysis(analysis):
     _LogBugNotUpdated('update_monorail_bug not set or is False')
     return False
 
-  if (not analysis.culprit and
+  if (not analysis.culprit_urlsafe_key and
       analysis.confidence_in_suspected_build < analysis.algorithm_parameters.
       get('minimum_confidence_score_to_run_tryjobs')):
     _LogBugNotUpdated('insufficient confidence in suspected build')

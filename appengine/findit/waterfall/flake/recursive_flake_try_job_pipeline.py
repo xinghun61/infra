@@ -37,21 +37,32 @@ _MAX_RETRY_TIMES = 5
 _BASE_COUNT_DOWN_SECONDS = 2 * 60
 
 
-def CreateCulprit(revision,
+@ndb.transactional
+def UpdateCulprit(analysis_urlsafe_key,
+                  revision,
                   commit_position,
-                  confidence_score,
                   repo_name='chromium'):
   """Sets culprit information."""
-  change_log = _GIT_REPO.GetChangeLog(revision)
+  culprit = (FlakeCulprit.Get(repo_name, revision) or
+             FlakeCulprit.Create(repo_name, revision, commit_position))
 
-  if change_log:
-    url = change_log.code_review_url or change_log.commit_url
-    culprit = FlakeCulprit.Create(repo_name, revision, commit_position, url,
-                                  confidence_score)
-  else:
-    logging.error('Unable to retrieve change logs for %s', revision)
-    culprit = FlakeCulprit.Create(repo_name, revision, commit_position, None,
-                                  confidence_score)
+  needs_updating = False
+
+  if culprit.url is None:
+    change_log = _GIT_REPO.GetChangeLog(revision)
+
+    if change_log:
+      culprit.url = change_log.code_review_url or change_log.commit_url
+      needs_updating = True
+    else:
+      logging.error('Unable to retrieve change logs for %s', revision)
+
+  if analysis_urlsafe_key not in culprit.flake_analysis_urlsafe_keys:
+    culprit.flake_analysis_urlsafe_keys.append(analysis_urlsafe_key)
+    needs_updating = True
+
+  if needs_updating:
+    culprit.put()
 
   return culprit
 
@@ -453,10 +464,11 @@ class NextCommitPositionPipeline(BasePipeline):
           flake_analysis.data_points, suspected_commit_position)
       culprit_revision = suspected_build_data_point.GetRevisionAtCommitPosition(
           suspected_commit_position)
-      culprit = CreateCulprit(culprit_revision, suspected_commit_position,
-                              confidence_score)
+      culprit = UpdateCulprit(flake_analysis.key.urlsafe(), culprit_revision,
+                              suspected_commit_position)
       flake_analysis.Update(
-          culprit=culprit,
+          culprit_urlsafe_key=culprit.key.urlsafe(),
+          confidence_in_culprit=confidence_score,
           try_job_status=analysis_status.COMPLETED,
           end_time=time_util.GetUTCNow())
       return

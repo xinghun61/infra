@@ -6,8 +6,6 @@ import datetime
 import mock
 import webapp2
 
-from google.appengine.datastore.datastore_query import Cursor
-
 from gae_libs import dashboard_util
 from handlers.flake import list_flakes
 from handlers.flake.list_flakes import _GetFlakeAnalysisFilterQuery
@@ -38,12 +36,14 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
                                         step_name,
                                         test_name,
                                         request_time,
-                                        status_code=None):
+                                        status_code=None,
+                                        culprit_urlsafe_key=None):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.request_time = request_time
     analysis.status = analysis_status.COMPLETED
     analysis.result_status = status_code
+    analysis.culprit_urlsafe_key = culprit_urlsafe_key
     analysis.put()
     return analysis
 
@@ -65,6 +65,7 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
     self.request_time2 = datetime.datetime(2016, 10, 02)
     self.result_status1 = result_status.FOUND_UNTRIAGED
     self.result_status2 = result_status.FOUND_CORRECT
+
     self.master_flake_analysis1 = self._CreateAndSaveMasterFlakeAnalysis(
         self.master_name1, self.builder_name1, self.build_number1,
         self.step_name1, self.test_name1, self.request_time1,
