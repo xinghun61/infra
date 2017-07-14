@@ -101,6 +101,11 @@ type LogDiff struct {
 	Complete bool
 }
 
+type logerr struct {
+	log []string
+	err error
+}
+
 // LogDiffJSONHandler will write log diff JSON as an API.
 func LogDiffJSONHandler(ctx *router.Context) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
@@ -231,18 +236,27 @@ func LogdiffWorker(ctx *router.Context) {
 		memcachingReader := client.NewMemcacheReader(miloReader)
 		c = client.WithReader(c, memcachingReader)
 	}
-	//TODO(renjietang): make goroutine to fetch logs concurrently
-	res1, err := client.StdioForStep(c, Master, builder, "steps", buildNum1)
-	if err != nil {
-		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error fetching log: %v", err))
-		return
-	}
+	logchan := make(chan *logerr)
+	go func() {
+		ret, err := client.StdioForStep(c, Master, builder, "steps", buildNum1)
+		logchan <- &logerr{
+			log: ret,
+			err: err,
+		}
+	}()
 	res2, err := client.StdioForStep(c, Master, builder, "steps", buildNum2)
+
+	res1 := <-logchan
+
+	if res1.err != nil {
+		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error fetching log: %v", res1.err))
+		return
+	}
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error fetching log: %v", err))
 		return
 	}
-	diffs := difflib.Diff(res1, res2)
+	diffs := difflib.Diff(res1.log, res2)
 	logdiffSize.Set(c, int64(len(diffs)), "chromium")
 	data, err := json.Marshal(diffs)
 	if err != nil {
