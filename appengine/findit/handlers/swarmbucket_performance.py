@@ -131,23 +131,23 @@ def _FormatRows(pairs):
     swarmbucket_job, buildbot_job = pair
     row_data['swarmbucket_builder'] = _GetBotFromBuildbucketResponse(
         swarmbucket_job.last_buildbucket_response)
-    row_data['swarmbucket_tryjob_id'] = swarmbucket_job.key.pairs()[0][1]
+    row_data['swarmbucket_try_job_id'] = swarmbucket_job.key.pairs()[0][1]
     row_data['swarmbucket_try_job_url'] = swarmbucket_job.try_job_url
     row_data['swarmbucket_completion_date'] = time_util.FormatDatetime(
         swarmbucket_job.end_time)
     if not swarmbucket_job.error_code and swarmbucket_job.end_time:
-      row_data['swarmbucket_swarm_run_time'] = (
+      row_data['swarmbucket_run_time'] = (
           swarmbucket_job.end_time -
           swarmbucket_job.start_time).total_seconds()
     if buildbot_job:
       row_data['buildbot_builder'] = _GetBotFromBuildbucketResponse(
           buildbot_job.last_buildbucket_response)
-      row_data['buildbot_tryjob_id'] = buildbot_job.key.pairs()[0][1]
+      row_data['buildbot_try_job_id'] = buildbot_job.key.pairs()[0][1]
       row_data['buildbot_try_job_url'] = buildbot_job.try_job_url
       row_data['buildbot_completion_date'] = time_util.FormatDatetime(
           buildbot_job.end_time)
       if not buildbot_job.error_code and buildbot_job.end_time:
-        row_data['buildbot_swarm_run_time'] = (
+        row_data['buildbot_run_time'] = (
             buildbot_job.end_time - buildbot_job.start_time).total_seconds()
     result.append(row_data)
   return result
@@ -162,6 +162,9 @@ class SwarmbucketPerformance(BaseHandler):
         self.request.get('start_date'),
         self.request.get('end_date'), swarmbucket_builders)
 
-    rows = _FormatRows(_FindJobPairs(recent_jobs, swarmbucket_builders))
+    jobs = _FormatRows(_FindJobPairs(recent_jobs, swarmbucket_builders))
 
-    return {'data': rows}
+    use_json = self.request.get('format') == 'json'
+    response = {} if use_json else {'template': 'swarmbucket_performance.html'}
+    response['data'] = {'jobs': jobs}
+    return response

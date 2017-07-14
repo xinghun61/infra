@@ -242,37 +242,39 @@ class SwarmbucketPerformanceTest(testing.AppengineTestCase):
             100, 110, 120, True)
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    response = self.test_app.get('/swarmbucket_performance')
-    self.assertEqual([{
-        "buildbot_tryjob_id": "bb2_bbr2",
+    response = self.test_app.get('/swarmbucket_performance?format=json')
+    self.assertEqual({'jobs': [{
+        "buildbot_try_job_id": "bb2_bbr2",
         "swarmbucket_builder": "luci.chromium/swarm_builder3",
         "buildbot_builder": "chromium/builder3",
-        "swarmbucket_swarm_run_time": 600.0,
+        "swarmbucket_run_time": 600.0,
         "buildbot_completion_date": "2017-01-01 02:00:00 UTC",
         "swarmbucket_completion_date": "2017-01-01 02:00:00 UTC",
         "swarmbucket_try_job_url": "https://fake.url/bb2_sbr1",
         "buildbot_try_job_url": "https://fake.url/bb2_bbr2",
-        "swarmbucket_tryjob_id": "bb2_sbr1"
+        "swarmbucket_try_job_id": "bb2_sbr1"
     }, {
-        "buildbot_tryjob_id": "bb_bbr1",
+        "buildbot_try_job_id": "bb_bbr1",
         "swarmbucket_builder": "luci.chromium/swarm_builder3",
         "buildbot_builder": "chromium/builder3",
-        "swarmbucket_swarm_run_time": 600.0,
+        "swarmbucket_run_time": 600.0,
         "buildbot_completion_date": "2017-01-01 02:00:00 UTC",
         "swarmbucket_completion_date": "2017-01-01 02:00:00 UTC",
-        "buildbot_swarm_run_time": 600.0,
+        "buildbot_run_time": 600.0,
         "buildbot_try_job_url": "https://fake.url/bb_bbr1",
         "swarmbucket_try_job_url": "https://fake.url/bb_sbr1",
-        "swarmbucket_tryjob_id": "bb_sbr1"
+        "swarmbucket_try_job_id": "bb_sbr1"
     }, {
         "swarmbucket_builder": "luci.chromium/swarm_builder3",
         "swarmbucket_completion_date": "2017-01-01 02:00:00 UTC",
-        "swarmbucket_swarm_run_time": 600.0,
-        "swarmbucket_tryjob_id": "sbr1",
+        "swarmbucket_run_time": 600.0,
+        "swarmbucket_try_job_id": "sbr1",
         "swarmbucket_try_job_url": "https://fake.url/sbr1"
     }, {
         "swarmbucket_builder": "luci.chromium/swarm_builder3",
         "swarmbucket_completion_date": "2017-01-01 02:00:00 UTC",
-        "swarmbucket_tryjob_id": "sbr2",
+        "swarmbucket_try_job_id": "sbr2",
         "swarmbucket_try_job_url": "https://fake.url/sbr2"
-    }], response.json_body)
+    }]}, response.json_body)
+    response = self.test_app.get('/swarmbucket_performance')
+    self.assertEquals(200, response.status_int)

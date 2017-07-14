@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<head>
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <title>Swarmbucket Performance</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+  <script src="/ui/js/common.js"></script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
+  <script>
+    function createUrl(parameters) {
+      var params = [];
+      for (var key in parameters) {
+        if (parameters[key] != undefined) {
+          params.push(key + '=' + parameters[key])
+        }
+      }
+
+      if (params.length == 0) {
+        return 'swarmbucket-performance';
+      } else {
+        return 'swarmbucket-performance?' + params.join('&');
+      }
+    };
+
+    function requestData(e) {
+      var parameters = {}
+      parameters['start_date'] = $('#start_date').val() == 'mm/dd/yyyy' ? undefined : $('#start_date').val();
+      parameters['end_date'] = $('#end_date').val() == 'mm/dd/yyyy' ? undefined : $('#end_date').val();
+      newUrl = createUrl(parameters);
+      window.location.replace(newUrl);
+      e.preventDefault();
+    };
+
+    $(function() {
+      document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+
+      $('.request-rerun').click(function() {
+        var jobId = encodeURIComponent($(this).getAttribute('data-job-id'));
+        var url = '/rerun-for-compare';
+        var params = {'try_job': 'jobId', 'xsrf_token': '{{ xsrf_token }}'};
+        $.post(url, params, function(data){
+          displayMessage(null, data['message'], 'Requested try job rerun for performance comparison', false);
+        });
+      });
+      $('.request-step-by-step').click(function() {
+        var sbJobUrl = encodeURIComponent($(this).getAttribute('data-sb-job-url'));
+        var bbJobUrl = encodeURIComponent($(this).getAttribute('data-bb-job-url'));
+        var url = '/step-by-step?try_job_a=' + sbJobUrl +'&try_job_b=' + bbJobUrl;
+        window.location.assign(url)
+      });
+      $('#submit').click(requestData);
+    });
+  </script>
+</head>
+<body>
+  <findit-app id="app">
+    <form>
+      Start date
+      <input type="date" id="start_date" value={{ start_date }}></input>
+      End date
+      <input type="date" id="end_date" value={{ end_date }}></input>
+      <input type="submit" id="submit"></input>
+    </form>
+    <br>
+    <b>Swarmbucket/Buildbot Jobs</b>
+    <div>
+      {% if jobs %}
+        <table>
+          <tr>
+            <th colspan="6"> Swarmbucket </th>
+            <th colspan="6"> Buildbot </th>
+            <th> &nbsp; </th>
+          </tr>
+          <tr>
+            <th>Builder</th>
+            <th>ID</th>
+            <th>Completion Time</th>
+            <th>Run Time</th>
+            <th>Status</th>
+            <th>Try Job URL</th>
+            <th>Builder</th>
+            <th>ID</th>
+            <th>Completion Time</th>
+            <th>Run Time</th>
+            <th>Status</th>
+            <th>Try Job URL</th>
+            <th>Compare</th>
+          </tr>
+          <tbody>
+            {% for row in jobs %}
+              <tr>
+                <td>{{ row.swarmbucket_builder }}</td>
+                <td>{{ row.swarmbucket_tryjob_id }}</td>
+                <td>{{ row.swarmbucket_completion_date }}</td>
+                <td>{{ row.swarmbucket_run_time }}</td>
+                <td>{{ row.swarmbucket_status }}</td>
+                <td>{{ row.swarmbucket_try_job_url }}</td>
+                {% if row.buildbot_builder %}
+                  <td>{{ row.buildbot_builder }}</td>
+                  <td>{{ row.buildbot_tryjob_id }}</td>
+                  <td>{{ row.buildbot_completion_date }}</td>
+                  <td>{{ row.buildbot_run_time }}</td>
+                  <td>{{ row.buildbot_status }}</td>
+                  <td>{{ row.buildbot_try_job_url }}</td>
+                  <td>  <button class="request-step-by-step" id="compare_button_{{ loop.index }}" data-sb-job-url="{{ row.swarmbucket_try_job_url }}" data-bb-job-url="{{ row.buildbot_try_job_url }}"> Compare runs step by step </button> </td>
+                {% else %}
+                  <td colspan=7>
+                    <button class="request-rerun" id="rerun_button_{{ loop.index }}" data-job-id="{{ row.swarmbucket_try_job_id }}"> Request buildbot job </button>
+                  </td>
+                {% endif %}
+              </tr>
+            {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+        No results
+      {% endif %}
+    </div>
+  </findit-app>
+</body>
