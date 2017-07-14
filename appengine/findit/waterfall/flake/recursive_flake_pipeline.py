@@ -22,11 +22,11 @@ from waterfall.flake import lookback_algorithm
 from waterfall.flake.initialize_flake_try_job_pipeline import (
     InitializeFlakeTryJobPipeline)
 from waterfall.flake.lookback_algorithm import NormalizedDataPoint
-from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
-from waterfall.flake.update_flake_analysis_data_points_pipeline import (
-    UpdateFlakeAnalysisDataPointsPipeline)
 from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
     SaveLastAttemptedSwarmingTaskIdPipeline)
+from waterfall.flake.update_flake_analysis_data_points_pipeline import (
+    UpdateFlakeAnalysisDataPointsPipeline)
+from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
 from waterfall.trigger_flake_swarming_task_pipeline import (
@@ -237,12 +237,12 @@ def _GetHardTimeoutSeconds(master_name, builder_name, reference_build_number,
     number_of_iterations = reference_task.parameters['iterations_to_rerun']
     time_per_test_per_iteration = (execution_time /
                                    (number_of_iterations * number_of_tests))
-    estimated_execution_time = (
-        time_per_test_per_iteration * iterations_to_rerun)
+    estimated_execution_time = int(
+        (time_per_test_per_iteration * iterations_to_rerun))
   else:
     # Use default settings if the reference task is unavailable or malformed.
     estimated_execution_time = flake_swarming_settings.get(
-        'default_per_iteration_timeout_seconds', 60) * iterations_to_rerun
+        'per_iteration_timeout_seconds', 60) * iterations_to_rerun
 
   # To account for variance and pending time, use a factor of 2x estimated
   # execution time.

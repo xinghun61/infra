@@ -1184,8 +1184,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     step_name = 's'
     reference_swarming_task = WfSwarmingTask.Create(master_name, builder_name,
                                                     build_number, step_name)
-    reference_swarming_task.completed_time = datetime(2017, 4, 16, 0, 0, 40)
-    reference_swarming_task.started_time = datetime(2017, 4, 16, 0, 0, 0)
+    reference_swarming_task.completed_time = datetime(2017, 4, 16, 0, 0, 40, 12)
+    reference_swarming_task.started_time = datetime(2017, 4, 16, 0, 0, 0, 10)
     reference_swarming_task.tests_statuses = {'1': 1, '2': 1}
     reference_swarming_task.parameters = {'iterations_to_rerun': 2}
     reference_swarming_task.put()
@@ -1194,10 +1194,10 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         override_data={'swarming_rerun': {
             'per_iteration_timeout_seconds': 1
         }})
-    self.assertEqual(60 * 60,
-                     recursive_flake_pipeline._GetHardTimeoutSeconds(
-                         master_name, builder_name, build_number, step_name,
-                         10))
+    timeout = recursive_flake_pipeline._GetHardTimeoutSeconds(
+        master_name, builder_name, build_number, step_name, 10)
+    self.assertTrue(isinstance(timeout, int))
+    self.assertEqual(60 * 60, timeout)
 
   @mock.patch.object(
       recursive_flake_pipeline, '_IsFinished', return_value=False)
