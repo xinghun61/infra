@@ -117,3 +117,7 @@ blacklist:
     description: flooded with requests to issue.get without issue_id, many 404s
   - subnet: 2a01:4f8:10b:170b::2
     description: scans all project-zero attachments 2017-06-28
+  - subnet: 157.48.10.58
+    description: trying lots of expliots, e.g., ../../../etc/passwd
+  - subnet: 79.142.73.140
+    description: hitting the same 404 URL several times a minute
