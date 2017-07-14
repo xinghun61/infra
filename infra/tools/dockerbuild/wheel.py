@@ -60,7 +60,7 @@ class Wheel(_Wheel):
 
   def default_filename(self):
     d = {
-        'name': self.spec.name,
+        'name': self.spec.name.replace('-', '_'),
         'version': self.spec.version,
         'pyversion': self.pyversion_str,
         'abi': self.abi,
@@ -100,11 +100,14 @@ class PlatformNotSupported(Exception):
 
 class Builder(object):
 
-  def __init__(self, spec, build_fn, arch_map=None, abi_map=None):
+  def __init__(self, spec, build_fn, arch_map=None, abi_map=None,
+               only_plat=None, skip_plat=None):
     self._spec = spec
     self._build_fn = build_fn
     self._arch_map = arch_map or {}
     self._abi_map = abi_map or {}
+    self._only_plat = frozenset(only_plat or ())
+    self._skip_plat = frozenset(skip_plat or ())
 
   @property
   def spec(self):
@@ -119,9 +122,10 @@ class Builder(object):
         filename=None)
 
     # Determine our package's wheel filename. This incorporates "abi" and "arch"
-    # override maps, are a priori knowledge of the package repository's layout.
-    # This can differ from the local platform value if the package was valid and
-    # built for multiple platforms, which seems to happen on Mac a lot.
+    # override maps, which are a priori knowledge of the package repository's
+    # layout. This can differ from the local platform value if the package was
+    # valid and built for multiple platforms, which seems to happen on Mac a
+    # lot.
     return wheel._replace(
         filename=wheel._replace(
           plat=wheel.plat._replace(
@@ -132,6 +136,11 @@ class Builder(object):
     )
 
   def build(self, wheel, system, rebuild=False):
+    if self._only_plat and wheel.plat.name not in self._only_plat:
+      raise PlatformNotSupported()
+    if wheel.plat.name in self._skip_plat:
+      raise PlatformNotSupported()
+
     pkg_path = os.path.join(system.pkg_dir, '%s.pkg' % (wheel.filename,))
     if not rebuild and os.path.isfile(pkg_path):
       util.LOGGER.info('Package is already built: %s', pkg_path)
@@ -153,9 +162,55 @@ class Builder(object):
     return pkg_path
 
 
+def check_run(system, dx, work_root, cmd, cwd=None):
+  """Runs a command |cmd|.
+
+  Args:
+    system (runtime.System): The System instance.
+    dx (dockcross.Image or None): The DockCross image to use. If None, the
+        command will be run on the local system.
+    work_root (str): The work root directory. If |dx| is not None, this will
+        be the directory mounted as "/work" in the Docker environment.
+    cmd (list): The command to run. Any components that are paths beginning
+        with |work_root| will be automatically made relative to |work_root|.
+    cwd (str or None): The working directory for the command. If None,
+        |work_root| will be used. Otherwise, |cwd| must be a subdirectory of
+        |work_root|.
+    """
+  if dx is None:
+    return system.check_run(cmd, cwd=cwd or work_root)
+  return dx.check_run(work_root, cmd, cwd=cwd)
+
+
+def check_run_script(system, dx, work_root, script, args=None, cwd=None):
+  """Runs a script, |script|.
+
+  An anonymous file will be created under |work_root| holding the specified
+  script.
+
+  Args:
+    script (list): A list of script lines to execute.
+    See "check_run" for full argument definition.
+  """
+  with util.anonfile(work_root, text=True) as fd:
+    for line in script:
+      fd.write(line)
+      fd.write('\n')
+  os.chmod(fd.name, 0755)
+
+  util.LOGGER.debug('Running script (path=%s): %s', fd.name, script)
+  cmd = [fd.name]
+  if args:
+    cmd.extend(args)
+  return check_run(system, dx, work_root, cmd, cwd=cwd)
+
+
 def _build_package(system, wheel):
   with system.temp_subdir('%s_%s' % wheel.spec.tuple) as tdir:
-    system.check_run(
+    check_run(
+        system,
+        None,
+        tdir,
         [
           'pip',
           'download',
@@ -171,45 +226,42 @@ def _build_package(system, wheel):
     shutil.copy(wheel_path, system.wheel_dir)
 
 
-def _build_generic(system, wheel, src):
+def _build_source(system, wheel, src, universal=False):
   dx = system.dockcross_image(wheel.plat)
   with system.temp_subdir('%s_%s' % wheel.spec.tuple) as tdir:
-
     build_dir = system.repo.ensure(src, tdir)
-    dx.check_run(
-        tdir,
-        [
-          'python2.7',
-          'setup.py',
-          'bdist_wheel',
-          '--plat-name', wheel.plat.wheel_plat,
-        ],
-        run_args=[
-          '-w=%s' % (dx.workrel(tdir, build_dir),),
-        ])
 
-    wheel_path = os.path.join(build_dir, 'dist', wheel.filename)
-    shutil.copy(wheel_path, system.wheel_dir)
+    bdist_wheel_opts = []
+    if universal:
+      bdist_wheel_opts.append('--universal')
+    else:
+      bdist_wheel_opts.append('--plat-name=%s' % (wheel.plat.wheel_plat,))
 
+    cmd = [
+      'pip',
+      'wheel',
+      '--no-deps',
+      '--only-binary=:all:',
+      '--wheel-dir', tdir,
+    ]
+    for opt in bdist_wheel_opts:
+      cmd += ['--build-option', opt]
+    cmd.append('.')
 
-def _build_universal(system, wheel, src):
-  with system.temp_subdir('%s_%s' % wheel.spec.tuple) as tdir:
-    build_dir = system.repo.ensure(src, tdir)
-    system.check_run(
-        [
-          sys.executable,
-          'setup.py',
-          'bdist_wheel',
-          '--universal',
-        ],
-        cwd=build_dir,
-    )
-    wheel_path = os.path.join(build_dir, 'dist', wheel.filename)
+    check_run(
+        system,
+        dx,
+        tdir, 
+        cmd,
+        cwd=build_dir)
+
+    wheel_path = os.path.join(tdir, wheel.filename)
     shutil.copy(wheel_path, system.wheel_dir)
 
 
 def _build_cryptography(system, wheel, src, openssl_src):
   dx = system.dockcross_image(wheel.plat)
+  assert dx, 'Docker image required for compilation.'
   with system.temp_subdir('%s_%s' % wheel.spec.tuple) as tdir:
     # Unpack "cryptography".
     crypt_dir = system.repo.ensure(src, tdir)
@@ -224,7 +276,9 @@ def _build_cryptography(system, wheel, src, openssl_src):
     # "Configure" must be run in the directory in which it builds, so we
     # `cd` into "openssl_dir" using dockcross "run_args".
     prefix = dx.workpath('prefix')
-    dx.check_run(
+    check_run_script(
+        system,
+        dx,
         tdir,
         [
           '#!/bin/bash',
@@ -242,17 +296,16 @@ def _build_cryptography(system, wheel, src, openssl_src):
           'make -j${NUM_CPU}',
           'make install',
         ],
-        script=True,
-        run_args=[
-          '-w=%s' % (dx.workrel(tdir, openssl_dir),),
-        ],
+        cwd=openssl_dir,
     )
 
     # Build "cryptography".
     d = {
       'prefix': prefix,
     }
-    dx.check_run(
+    check_run_script(
+        system,
+        dx,
         tdir,
         [
           '#!/bin/bash',
@@ -278,10 +331,8 @@ def _build_cryptography(system, wheel, src, openssl_src):
             '--force', 'bdist_wheel', '--plat-name', wheel.plat.wheel_plat,
           ]),
         ],
-        script=True,
-        run_args=[
-          '-w=%s' % (dx.workrel(tdir, crypt_dir),),
-        ])
+        cwd=crypt_dir,
+    )
 
     wheel_path = os.path.join(crypt_dir, 'dist', wheel.filename)
     shutil.copy(wheel_path, system.wheel_dir)
@@ -296,7 +347,7 @@ def BuildWheel(name, version, **kwargs):
   def build_fn(system, wheel):
     if wheel.plat.name in packaged:
       return _build_package(system, wheel)
-    return _build_generic(system, wheel, pypi_src)
+    return _build_source(system, wheel, pypi_src)
 
   return Builder(spec, build_fn, **kwargs)
 
@@ -320,10 +371,9 @@ def Packaged(name, version, only_plat, **kwargs):
   )
 
   def build_fn(system, wheel):
-    if wheel.plat.name not in only_plat:
-      raise PlatformNotSupported()
     return _build_package(system, wheel)
 
+  kwargs['only_plat'] = only_plat
   return Builder(spec, build_fn, **kwargs)
 
 
@@ -354,7 +404,7 @@ def UniversalSource(name, pypi_version, pyversions=None, pypi_name=None,
   )
 
   def build_fn(system, wheel):
-    return _build_universal(system, wheel, pypi_src)
+    return _build_source(system, wheel, pypi_src, universal=True)
 
   return Builder(spec, build_fn, **kwargs)
 
@@ -380,21 +430,7 @@ SPECS = {s.spec.tag: s for s in (
           'macosx_10_10_x86_64',
         ]),
       },
-  ),
-  BuildWheel('numpy', '1.6.1',
-      abi_map={
-        'windows-x86': 'none',
-        'windows-x64': 'none',
-      },
-      arch_map={
-        'mac-x64': '.'.join([
-          'macosx_10_6_intel',
-          'macosx_10_9_intel',
-          'macosx_10_9_x86_64',
-          'macosx_10_10_intel',
-          'macosx_10_10_x86_64',
-        ]),
-      },
+      skip_plat=('linux-arm64',),
   ),
 
   BuildWheel('psutil', '5.2.2',
@@ -460,6 +496,9 @@ SPECS = {s.spec.tag: s for s in (
       ],
   ),
 
+  BuildWheel('crcmod', '1.7', packaged=()),
+  BuildWheel('grpcio', '1.4.0'),
+
   Universal('appdirs', '1.4.3'),
   UniversalSource('Appium_Python_Client', '0.24',
                    pypi_name='Appium-Python-Client'),
@@ -469,6 +508,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('enum34', '1.1.6', pyversions=['py2', 'py3']),
   Universal('funcsigs', '1.0.2'),
   Universal('google_api_python_client', '1.6.2'),
+  UniversalSource('apache-beam', '2.0.0'),
   UniversalSource('httplib2', '0.10.3'),
   Universal('idna', '2.5'),
   Universal('ipaddress', '1.0.18', pyversions=['py2']),

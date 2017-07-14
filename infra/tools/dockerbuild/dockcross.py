@@ -282,25 +282,23 @@ class Image(collections.namedtuple('_Image', (
   def identifier(self):
     return self.docker_image.internal_id
 
-  def run(self, work_dir, cmd, **kwargs):
-    script = kwargs.pop('script', False)
-    run_args = kwargs.pop('run_args', None)
+  def run(self, work_dir, cmd, cwd=None, **kwargs):
+    assert len(cmd) >= 1, len(cmd)
+    cmd = list(cmd)
+    for i, arg in enumerate(cmd):
+      if arg.startswith(work_dir):
+        cmd[i] = self.workrel(work_dir, arg)
+
+    run_args = []
+    if cwd:
+      run_args.append('-w=%s' % (self.workrel(work_dir, cwd),))
+
     args = [
         self.bin,
     ]
     if run_args:
       args += ['-a', ' '.join(run_args)]
-    if script:
-      with util.anonfile(work_dir, text=True) as fd:
-        for line in cmd:
-          fd.write(line)
-          fd.write('\n')
-      os.chmod(fd.name, 0755)
-
-      util.LOGGER.debug('Running script (path=%s): %s', fd.name, cmd)
-      args += [self.workrel(work_dir, fd.name)]
-    else:
-      args += cmd
+    args += cmd
     return self.system.run(args, cwd=work_dir, **kwargs)
 
   def check_run(self, work_dir, cmd, **kwargs):
