@@ -74,6 +74,13 @@ class ProfilerStackFrameTest(AnalysisTestCase):
     self.assertEqual(frame.callee_lines, expected_callee_lines)
     self.assertEqual(language_type, LanguageType.CPP)
 
+  def testCrashedLineNumbersForProfilerStackFrame(self):
+    """Tests the ``crashed_line_numbers`` property."""
+    frame = ProfilerStackFrame(0, 0, 0, False, function_start_line=10)
+    self.assertEqual(frame.crashed_line_numbers, (10,))
+    frame2 = ProfilerStackFrame(0, 0, 0, False, function_start_line=None)
+    self.assertIsNone(frame2.crashed_line_numbers)
+
   def testBlameUrlForProfilerStackFrame(self):
     """Tests that ``ProfilerStackFrame.BlameUrl`` generates the correct url."""
     frame = ProfilerStackFrame(0, 0, float('inf'), False, 'src/', 'func',

@@ -37,13 +37,9 @@ class PredatorForUMASamplingProfiler(PredatorApp):
 
   def __init__(self, get_repository, config):
     super(PredatorForUMASamplingProfiler, self).__init__(get_repository, config)
-    # TODO(cweakliam): Add uma sampling profiler support for the MinDistance
-    # feature.
     meta_weight = MetaWeight({
         'TouchCrashedFileMeta': MetaWeight({
-            # Min distance feature isn't yet compatible with predator_for_uma,
-            # but will be soon.
-            # 'MinDistance': Weight(2.),
+            'MinDistance': Weight(2.),
             'TopFrameIndex': Weight(1.),
             'TouchCrashedFile': Weight(1.),
         }),
@@ -52,11 +48,12 @@ class PredatorForUMASamplingProfiler(PredatorApp):
         'NumberOfTouchedFiles': Weight(0.5)
     })
 
-    # min_distance_feature = MinDistanceFeature(get_repository)
+    min_distance_feature = MinDistanceFeature(get_repository)
     top_frame_index_feature = TopFrameIndexFeature()
     touch_crashed_file_feature = TouchCrashedFileFeature()
     meta_feature = WrapperMetaFeature(
-        [TouchCrashedFileMetaFeature([top_frame_index_feature,
+        [TouchCrashedFileMetaFeature([min_distance_feature,
+                                      top_frame_index_feature,
                                       touch_crashed_file_feature]),
          TouchCrashedDirectoryFeature(),
          TouchCrashedComponentFeature(self._component_classifier),

@@ -13,6 +13,7 @@ from analysis.linear.changelist_features.touch_crashed_file_meta import (
     CrashedFile)
 from analysis.linear.feature import ChangedFile
 from analysis.stacktrace import CallStack
+from analysis.stacktrace import ProfilerStackFrame
 from analysis.stacktrace import StackFrame
 from analysis.stacktrace import Stacktrace
 from analysis.suspect import Suspect
@@ -194,6 +195,10 @@ class MinDistanceTest(AnalysisTestCase):
                         repo_url='https://repo_url')
     frame2 = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [17],
                         repo_url='https://repo_url')
+    profiler_frame = ProfilerStackFrame(
+        0, -0.1, -5.3, True, function_start_line=13)
+    profiler_frame_without_line_number = ProfilerStackFrame(
+        0, -0.1, -5.3, True, function_start_line=None)
     touched_file = FileChangeInfo(ChangeType.MODIFY, 'file', 'file')
 
     blame = Blame('rev', 'src/')
@@ -220,6 +225,22 @@ class MinDistanceTest(AnalysisTestCase):
                                       FrameInfo(frame2, 0)],
            Dependency('src/', 'https://repo', 'wrong_rev'))
       self.assertIsNone(distance_info)
+
+      # Test with a ProfilerStackFrame
+      distance_info = feature.DistanceBetweenTouchedFileAndFrameInfos(
+          'rev', touched_file,
+          [FrameInfo(profiler_frame, 0),
+           FrameInfo(profiler_frame_without_line_number, 0)],
+           Dependency('src/', 'https://repo', 'rev'))
+      self.assertEqual(distance_info, min_distance.Distance(4, profiler_frame))
+
+      # Test that the distance remains at ``inf`` if the ProfilerStackFrames
+      # passed in do not have line numbers.
+      distance_info = feature.DistanceBetweenTouchedFileAndFrameInfos(
+          'rev', touched_file,
+           [FrameInfo(profiler_frame_without_line_number, 0)],
+           Dependency('src/', 'https://repo', 'rev'))
+      self.assertEqual(distance_info, min_distance.Distance(float('inf'), None))
 
   def testMinDistanceFeatureInfinityDistance(self):
     """Test that we return log(0) when the min_distance is infinity.
@@ -285,6 +306,6 @@ class MinDistanceTest(AnalysisTestCase):
                                       (frame.repo_url,
                                        report.crashed_version,
                                        frame.crashed_line_numbers[0])),
-                           reasons=['Distance between touched lines and crashed'
-                                    ' lines is %d, in frame #%d' % (
-                                        distance, frame.index)])])
+                           reasons=['Distance between touched lines and'
+                                    ' stacktrace lines is %d, in frame #%d'
+                                    % (distance, frame.index)])])

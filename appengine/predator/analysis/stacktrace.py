@@ -104,6 +104,12 @@ class ProfilerStackFrame(namedtuple('ProfilerStackFrame',
   def BlameUrl(self, revision):
     return _BlameUrl(self, revision)
 
+  @property
+  def crashed_line_numbers(self):
+    if self.function_start_line is None:
+      return None
+    return (self.function_start_line,)
+
   @staticmethod
   def Parse(frame_dict, index, deps):
     """Convert frame dict into ``ProfilerStackFrame`` object.

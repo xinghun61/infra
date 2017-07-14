@@ -151,6 +151,8 @@ class MinDistanceFeature(Feature):
       region_start = region.start
       region_end = region_start + region.count - 1
       for frame_info in frame_infos:
+        if not frame_info.frame.crashed_line_numbers:
+          continue
         frame_start = frame_info.frame.crashed_line_numbers[0]
         frame_end = frame_info.frame.crashed_line_numbers[-1]
         line_distance = DistanceBetweenLineRanges((frame_start, frame_end),
@@ -222,7 +224,7 @@ class MinDistanceFeature(Feature):
 
       value = LinearlyScaled(float(distance.distance), float(self._maximum))
       if distance.frame is not None:
-        reason = ('Minimum distance between changed lines and crashed lines '
+        reason = ('Minimum distance between changed lines and stacktrace lines '
                   'in %s is %d' % (os.path.basename(distance.frame.file_path),
                                    int(distance.distance)))
       else:
@@ -274,9 +276,9 @@ class MinDistanceFeature(Feature):
       frame_index_to_changed_files[distance.frame.index] = ChangedFile(
               name=file_name,
               blame_url=distance.frame.BlameUrl(crashed_version),
-              reasons=['Distance between touched lines and crashed lines is %d,'
-                       ' in frame #%d' % (distance.distance,
-                                          distance.frame.index)])
+              reasons=['Distance between touched lines and stacktrace lines is'
+                       ' %d, in frame #%d' % (distance.distance,
+                                              distance.frame.index)])
 
     if not frame_index_to_changed_files: # pragma: no cover
       logging.warning('Found no changed files for suspect: %s', str(suspect))
