@@ -6,6 +6,7 @@ import json
 
 from analysis.analysis_testcase import AnalysisTestCase
 from analysis.stacktrace import CalleeLine
+from analysis.stacktrace import CallStack
 from analysis.stacktrace import ProfilerStackFrame
 from analysis.type_enums import CallStackFormatType
 from analysis.type_enums import LanguageType
@@ -19,7 +20,7 @@ class UMASamplingProfilerParserTest(AnalysisTestCase):
     parser = UMASamplingProfilerParser()
     stacks = [{"frames": []}]
     deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
-    self.assertIsNone(parser.Parse(stacks, deps))
+    self.assertIsNone(parser.Parse(stacks, 0, deps))
 
   def testParseStacktrace(self):
     """Tests successfully parsing a stacktrace with two stacks."""
@@ -50,7 +51,7 @@ class UMASamplingProfilerParserTest(AnalysisTestCase):
         },
     ]
     deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
-    stacktrace = parser.Parse(stacks, deps)
+    stacktrace = parser.Parse(stacks, 0, deps)
 
     self.assertEqual(len(stacktrace), 2)
     self.assertEqual(len(stacktrace.stacks[0]), 2)
@@ -73,6 +74,37 @@ class UMASamplingProfilerParserTest(AnalysisTestCase):
         "filename": "chrome/app/chrome_exe_main_win.java",
     }]}]
     deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
-    stacktrace = parser.Parse(stacks, deps)
+    stacktrace = parser.Parse(stacks, 0, deps)
     self.assertEqual(stacktrace.stacks[0].language_type, LanguageType.JAVA)
 
+  def testFilterFramesBeforeSubtree(self):
+    """Tests that the frames before the subtree root are filtered out."""
+    parser = UMASamplingProfilerParser()
+    frame1 = {
+        'difference': 0, 'log_change_factor': 0, 'responsible': False
+    }
+    frame2 = {
+        'difference': 0.1, 'log_change_factor': 0.1, 'responsible': True
+    }
+    subtree_root_depth = 2
+    subtree_stacks = [
+        # In this case the root is the first ``frame2`` instance.
+        {'frames': [frame1, frame1, frame2, frame2]},
+        {'frames': [frame1, frame1, frame2, frame2, frame2]},
+    ]
+    deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
+
+    stacktrace = parser.Parse(subtree_stacks, subtree_root_depth, deps)
+
+    filtered_stacks = (
+        CallStack(0, [
+            ProfilerStackFrame(2, 0.1, 0.1, True),
+            ProfilerStackFrame(3, 0.1, 0.1, True),
+        ]),
+        CallStack(0, [
+            ProfilerStackFrame(2, 0.1, 0.1, True),
+            ProfilerStackFrame(3, 0.1, 0.1, True),
+            ProfilerStackFrame(4, 0.1, 0.1, True),
+        ]),
+    )
+    self.assertEqual(stacktrace.stacks, filtered_stacks)

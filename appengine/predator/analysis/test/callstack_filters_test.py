@@ -72,6 +72,38 @@ class KeepTopNFramesTest(AnalysisTestCase):
         callstack_filters.KeepTopNFrames()(stack_buffer), stack_buffer)
 
 
+class RemoveTopNFramesTest(AnalysisTestCase):
+  """Tests that ``RemoveTopNFrames`` works as expected."""
+
+  def testRemoveTopNFrames(self):
+    """Tests removing the top n frames of a callstack."""
+    frame_list = [
+        StackFrame(
+            0, 'src/', 'normal_func', 'f.cc', 'dummy/src/f.cc', [2]),
+        StackFrame(
+            1, 'src/', 'func', 'a.cc', 'a.cc', [1]),
+    ]
+
+    top_n = 1
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.RemoveTopNFrames(top_n)(
+            CallStackBuffer(0, frame_list=frame_list)),
+        CallStackBuffer(0, frame_list=frame_list[top_n:]))
+
+  def testDoNothingIfTopNFramesFieldIsEmpty(self):
+    """Tests that if top_n_frames is None, filter does nothing."""
+    frame_list = [
+        StackFrame(
+            0, 'src/', 'normal_func', 'f.cc', 'dummy/src/f.cc', [2]),
+        StackFrame(
+            1, 'src/', 'func', 'a.cc', 'a.cc', [1]),
+    ]
+
+    stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.RemoveTopNFrames()(stack_buffer), stack_buffer)
+
+
 class FilterJavaJreSdkFramesTest(AnalysisTestCase):
   """Tests that ``FilterJavaJreSdkFrames`` works as expected."""
 

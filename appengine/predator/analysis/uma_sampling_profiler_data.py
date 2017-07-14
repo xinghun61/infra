@@ -91,7 +91,8 @@ class UMASamplingProfilerData(CrashData):
   def stacktrace(self):
     """Parses ``subtree_stacks`` dict and returns ``Stacktrace`` object."""
     stacktrace = UMASamplingProfilerParser().Parse(
-        self.subtree_stacks, self._dependency_analyzer.regression_version_deps)
+        self.subtree_stacks, self.subtree_root_depth,
+        self._dependency_analyzer.regression_version_deps)
     if not stacktrace:
       logging.warning('Failed to parse the stacktrace %s',
                       self.subtree_stacks)

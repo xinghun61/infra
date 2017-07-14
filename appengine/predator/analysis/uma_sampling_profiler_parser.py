@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from analysis import callstack_filters
 from analysis.stacktrace import CallStackBuffer
 from analysis.stacktrace import ProfilerStackFrame
 from analysis.stacktrace import StacktraceBuffer
@@ -9,7 +10,7 @@ from analysis.stacktrace import StacktraceBuffer
 
 class UMASamplingProfilerParser(object):
 
-  def Parse(self, stacks, deps):
+  def Parse(self, stacks, subtree_root_depth, deps):
     """Parse the list of stacks provided by UMA into a ``Stacktrace`` object.
 
     Args:
@@ -32,12 +33,16 @@ class UMASamplingProfilerParser(object):
         },
         ...
       ]
+      subtree_root_depth (int): Depth of the subtree root. Frames above this
+        depth will be filtered out so that the ``Stacktrace`` object consists
+        only of the subtree.
       deps (dict): Map dependency path to its corresponding Dependency.
 
     Returns:
       ``Stacktrace`` object or ``None`` if the stacktrace is empty.
     """
-    stacktrace_buffer = StacktraceBuffer()
+    filters = [callstack_filters.RemoveTopNFrames(subtree_root_depth)]
+    stacktrace_buffer = StacktraceBuffer(filters=filters)
     for stack in stacks:
       # TODO(cweakliam) determine how best to calculate priority for a callstack
       # (or if I even need to)
