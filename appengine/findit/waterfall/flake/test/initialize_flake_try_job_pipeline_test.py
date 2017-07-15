@@ -4,8 +4,6 @@
 
 import mock
 
-from google.appengine.ext import ndb
-
 from common import constants
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
@@ -14,8 +12,8 @@ from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import build_util
 from waterfall import swarming_util
-from waterfall.flake import confidence
 from waterfall.flake import initialize_flake_try_job_pipeline
+from waterfall.flake import recursive_flake_try_job_pipeline
 from waterfall.flake.initialize_flake_try_job_pipeline import (
     InitializeFlakeTryJobPipeline)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
@@ -212,7 +210,9 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
       '_HasSufficientConfidenceToRunTryJobs',
       return_value=True)
   @mock.patch.object(
-      confidence, 'SteppinessForCommitPosition', return_value=0.8)
+      recursive_flake_try_job_pipeline,
+      'CreateCulprit',
+      return_value=FlakeCulprit.Create('cr', 'r1', 1000, 'http://', 0.8))
   def testInitializeFlakeTryJopPipelineSingleCommit(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.suspected_flake_build_number = 100
@@ -227,9 +227,6 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.Save()
 
-    expected_culprit = FlakeCulprit.Create('cr', 'r1', 1000, 'http://')
-    expected_culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
-
     self.MockPipeline(
         RecursiveFlakeTryJobPipeline, '', expected_args=[], expected_kwargs={})
 
@@ -238,16 +235,18 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
-    culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
-    self.assertIsNotNone(culprit)
-    self.assertEqual(1000, culprit.commit_position)
-    self.assertEqual([analysis.key.urlsafe()],
-                     culprit.flake_analysis_urlsafe_keys)
+    self.assertIsNotNone(analysis.culprit)
+    self.assertEqual(1000, analysis.culprit.commit_position)
+    self.assertEqual(0.8, analysis.culprit.confidence)
 
   @mock.patch.object(
       initialize_flake_try_job_pipeline,
       '_HasSufficientConfidenceToRunTryJobs',
       return_value=True)
+  @mock.patch.object(
+      recursive_flake_try_job_pipeline,
+      'CreateCulprit',
+      return_value=FlakeCulprit.Create('cr', 'r1', 1000, 'http://', 0.8))
   @mock.patch.object(build_util, 'GetBuildInfo', return_value=MockInfo())
   def testInitializeFlakeTryJobPipelineRunTryJobs(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')

@@ -88,11 +88,7 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
   def testGenerateCommentWithCulprit(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.status = analysis_status.COMPLETED
-    culprit = FlakeCulprit.Create('c', 'r', 123, 'http://')
-    culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
-    culprit.put()
-    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
-    analysis.confidence_in_culprit = 0.6713
+    analysis.culprit = FlakeCulprit.Create('c', 'r', 123, 'http://', 0.6713)
     comment = update_flake_bug_pipeline._GenerateComment(analysis)
     self.assertTrue('culprit r123 with confidence 67.1%' in comment, comment)
 

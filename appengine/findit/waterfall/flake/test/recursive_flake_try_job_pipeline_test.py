@@ -4,8 +4,6 @@
 
 import mock
 
-from google.appengine.ext import ndb
-
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.gitiles.change_log import ChangeLog
 
@@ -13,6 +11,8 @@ from common import constants
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
+from libs import time_util
+from model import result_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
@@ -22,6 +22,7 @@ from waterfall import swarming_util
 from waterfall.flake import recursive_flake_try_job_pipeline
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     _GetNormalizedTryJobDataPoints)
+from waterfall.flake.recursive_flake_try_job_pipeline import CreateCulprit
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     NextCommitPositionPipeline)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
@@ -349,7 +350,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
-    culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
+    culprit = analysis.culprit
     self.assertEqual(git_hash, culprit.revision)
     self.assertEqual(95, culprit.commit_position)
 
@@ -407,7 +408,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
-    culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
+    culprit = analysis.culprit
     self.assertEqual(git_hash, culprit.revision)
     self.assertEqual(100, culprit.commit_position)
 
@@ -459,80 +460,28 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(error, analysis.error)
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
-  def testUpdateCulpritNewCulprit(self, mocked_fn):
+  def testCreateCulprit(self, mocked_module):
     revision = 'a1b2c3d4'
     commit_position = 12345
     url = 'url'
     repo_name = 'repo_name'
     change_log = ChangeLog(None, None, revision, commit_position, None, None,
                            url, None)
-    mocked_fn.return_value = change_log
+    mocked_module.return_value = change_log
+    culprit = CreateCulprit(revision, commit_position, 0.6, repo_name)
 
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-
-    culprit = recursive_flake_try_job_pipeline.UpdateCulprit(
-        analysis.key.urlsafe(), revision, commit_position, repo_name)
-
-    self.assertIsNotNone(culprit)
-    self.assertEqual([analysis.key.urlsafe()],
-                     culprit.flake_analysis_urlsafe_keys)
+    self.assertEqual(commit_position, culprit.commit_position)
+    self.assertEqual(revision, culprit.revision)
     self.assertEqual(url, culprit.url)
     self.assertEqual(repo_name, culprit.repo_name)
-    self.assertEqual(revision, culprit.revision)
-
-  def testUpdateCulpritExistingCulprit(self):
-    revision = 'a1b2c3d4'
-    commit_position = 12345
-    url = 'url'
-    repo_name = 'repo_name'
-    analysis_urlsafe_key = 'urlsafe_key'
-
-    culprit = FlakeCulprit.Create(repo_name, revision, commit_position)
-    culprit.flake_analysis_urlsafe_keys = ['another_analysis_urlsafe_key']
-    culprit.url = url
-    culprit.put()
-
-    culprit = recursive_flake_try_job_pipeline.UpdateCulprit(
-        analysis_urlsafe_key, revision, commit_position, repo_name)
-
-    self.assertIsNotNone(culprit)
-    self.assertEqual(2, len(culprit.flake_analysis_urlsafe_keys))
-    self.assertIn(analysis_urlsafe_key, culprit.flake_analysis_urlsafe_keys)
-    self.assertEqual(url, culprit.url)
-    self.assertEqual(repo_name, culprit.repo_name)
-    self.assertEqual(revision, culprit.revision)
-
-  def testUpdateCulpritExistingCulpritAlreadyHasAnalyis(self):
-    revision = 'a1b2c3d4'
-    commit_position = 12345
-    url = 'url'
-    repo_name = 'repo_name'
-    analysis_urlsafe_key = 'urlsafe_key'
-    culprit = FlakeCulprit.Create(repo_name, revision, commit_position)
-    culprit.flake_analysis_urlsafe_keys = [analysis_urlsafe_key]
-    culprit.url = url
-    culprit.put()
-
-    culprit = recursive_flake_try_job_pipeline.UpdateCulprit(
-        analysis_urlsafe_key, revision, commit_position, repo_name)
-
-    self.assertIsNotNone(culprit)
-    self.assertEqual(1, len(culprit.flake_analysis_urlsafe_keys))
-    self.assertIn(analysis_urlsafe_key, culprit.flake_analysis_urlsafe_keys)
-    self.assertEqual(url, culprit.url)
-    self.assertEqual(repo_name, culprit.repo_name)
-    self.assertEqual(revision, culprit.revision)
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog', return_value=None)
-  def testUpdateCulpritNoLogs(self, _):
+  def testCreateCulpritNoLogs(self, _):
     revision = 'a1b2c3d4'
     commit_position = 12345
     repo_name = 'repo_name'
-    analysis_urlsafe_key = 'urlsfe_key'
-    culprit = recursive_flake_try_job_pipeline.UpdateCulprit(
-        analysis_urlsafe_key, revision, commit_position, repo_name)
+    culprit = CreateCulprit(revision, commit_position, 0.6, repo_name)
 
-    self.assertIn(analysis_urlsafe_key, culprit.flake_analysis_urlsafe_keys)
     self.assertEqual(commit_position, culprit.commit_position)
     self.assertEqual(revision, culprit.revision)
     self.assertIsNone(culprit.url)

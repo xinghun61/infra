@@ -125,8 +125,7 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis.correct_culprit = None
     analysis.data_points = [DataPoint()]
     analysis.suspected_flake_build_number = 123
-    analysis.culprit_urlsafe_key = FlakeCulprit.Create('r', 'a1b2c3d4', 12345,
-                                                       'url').key.urlsafe()
+    analysis.culprit = FlakeCulprit.Create('r', 'a1b2c3d4', 12345, 'url')
     analysis.try_job_status = analysis_status.COMPLETED
     analysis.Reset()
 
@@ -136,7 +135,7 @@ class MasterFlakeAnalysisTest(TestCase):
     self.assertIsNone(analysis.correct_culprit)
     self.assertIsNone(analysis.suspected_flake_build_number)
     self.assertEqual([], analysis.data_points)
-    self.assertIsNone(analysis.culprit_urlsafe_key)
+    self.assertIsNone(analysis.culprit)
     self.assertIsNone(analysis.try_job_status)
 
   def testGetErrorMessage(self):

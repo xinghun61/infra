@@ -2,7 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from google.appengine.ext import ndb
+from datetime import datetime
+from datetime import time
+from datetime import timedelta
+
+from google.appengine.datastore.datastore_query import Cursor
 
 from gae_libs import dashboard_util
 from gae_libs.handlers.base_handler import BaseHandler
@@ -94,10 +98,6 @@ class ListFlakes(BaseHandler):
       data['end_date'] = end_date
 
     for master_flake_analysis in analyses:
-      culprit = (ndb.Key(
-          urlsafe=master_flake_analysis.culprit_urlsafe_key).get()
-                 if master_flake_analysis.culprit_urlsafe_key else None)
-
       data['master_flake_analyses'].append({
           'build_analysis_status':
               master_flake_analysis.status_description,
@@ -107,8 +107,8 @@ class ListFlakes(BaseHandler):
               master_flake_analysis.builder_name,
           'confidence_in_suspected_build': (
               master_flake_analysis.confidence_in_suspected_build),
-          'culprit':
-              culprit.to_dict() if culprit else {},
+          'culprit': (master_flake_analysis.culprit.ToDict()
+                      if master_flake_analysis.culprit else {}),
           'key':
               master_flake_analysis.key.urlsafe(),
           'master_name':

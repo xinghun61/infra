@@ -147,13 +147,11 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
           logging.info('Single commit in the blame list of suspected build')
           culprit_confidence_score = confidence.SteppinessForCommitPosition(
               analysis.data_points, upper_bound_commit_position)
-          culprit = recursive_flake_try_job_pipeline.UpdateCulprit(
-              analysis_urlsafe_key, suspected_build_point.git_hash,
-              upper_bound_commit_position)
+          culprit = recursive_flake_try_job_pipeline.CreateCulprit(
+              suspected_build_point.git_hash, upper_bound_commit_position,
+              culprit_confidence_score)
           analysis.Update(
-              culprit_urlsafe_key=culprit.key.urlsafe(),
-              confidence_in_culprit=culprit_confidence_score,
-              try_job_status=analysis_status.COMPLETED)
+              culprit=culprit, try_job_status=analysis_status.COMPLETED)
       else:
         logging.error('Cannot run flake try jobs against empty blame list')
         error = {

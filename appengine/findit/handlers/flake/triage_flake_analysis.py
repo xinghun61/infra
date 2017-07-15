@@ -22,14 +22,14 @@ def _UpdateSuspectedFlakeAnalysis(key_urlsafe, triage_result, user_name):
   assert master_flake_analysis.status == analysis_status.COMPLETED
   assert master_flake_analysis.suspected_flake_build_number is not None
 
-  if master_flake_analysis.culprit_urlsafe_key:
-    culprit = ndb.Key(urlsafe=master_flake_analysis.culprit_urlsafe_key).get()
-    assert culprit
-
+  if master_flake_analysis.culprit:
     suspect_info = {
-        'culprit_revision': culprit.revision,
-        'culprit_commit_position': culprit.commit_position,
-        'culprit_url': culprit.url,
+        'culprit_revision':
+            master_flake_analysis.culprit.revision,
+        'culprit_commit_position':
+            master_flake_analysis.culprit.commit_position,
+        'culprit_url':
+            master_flake_analysis.culprit.url
     }
   else:
     suspect_info = {
