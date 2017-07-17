@@ -20,6 +20,7 @@ Predator has 2 dashboards for Fracas and Cracas.
 # Code structure
 
 * [analysis](analysis): Core of analysis for Chrome crashes.
+* [app] (app): The App Engine modules to provide heuristic analysis of Predator.
 * [scripts](scripts): Utility scripts to run locally on developer's workstation.
 * [first\_party](first_party): Libraries from sibling infra AppEngine app that Predator depends on, specifically including a few libs from [Findit](../findit).
 * [third\_party](third_party): Third-party libraries that Predator depends on.

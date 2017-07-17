@@ -9,6 +9,7 @@
 
 THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE:-$0}" )" && pwd )"
 PREDATOR_DIR="${THIS_SCRIPT_DIR}/.."
+PREDATOR_APP_DIR="${THIS_SCRIPT_DIR}/../app"
 INFRA_DIR="${PREDATOR_DIR}/../.."
 GOOGLE_APP_ENGINE_DIR="${INFRA_DIR}/../google_appengine"
 has_realpath="$(which realpath 1>/dev/null 2>/dev/null && echo 0)"

@@ -25,9 +25,9 @@ from local_libs.local_cache import LocalCache
 from analysis.chromecrash_parser import ChromeCrashParser
 from analysis.clusterfuzz_parser import ClusterfuzzParser
 from analysis.type_enums import CrashClient
-from common.crash_pipeline import PredatorForClientID
-from common.model import crash_analysis
-from common.model.crash_config import CrashConfig
+from app.common.crash_pipeline import PredatorForClientID
+from app.common.model import crash_analysis
+from app.common.model.crash_config import CrashConfig
 from libs.cache_decorator import Cached
 from local_libs import remote_api
 from local_libs.git_checkout.local_git_repository import LocalGitRepository

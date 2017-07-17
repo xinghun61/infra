@@ -12,7 +12,6 @@ import threading
 import traceback
 import zlib
 
-_SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 _ROOT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir)
 _FIRST_PARTY_DIR = os.path.join(_ROOT_DIR, 'first_party')
 sys.path.insert(1, _FIRST_PARTY_DIR)

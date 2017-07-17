@@ -23,6 +23,10 @@ line output, you could check the code coverage report shown in the output.
 
 # How to run Predator on a certain crash?
 
+Given the urlsafe encoding of the key of a CrashAnalysis, we can run local
+version of Predator on this crash.
+
+For example:
 Given a crash id ahpzfmdvb2dsZS5jb2 (This is a fake id for demonstration)
 
 From command line, run:

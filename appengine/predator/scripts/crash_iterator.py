@@ -16,12 +16,13 @@ from local_libs import script_util
 script_util.SetUpSystemPaths(_ROOT_DIR)
 
 from analysis.type_enums import CrashClient
+from app.common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
+from app.common.model.cracas_crash_analysis import CracasCrashAnalysis
+from app.common.model.fracas_crash_analysis import FracasCrashAnalysis
 from libs.cache_decorator import GeneratorCached
 from local_libs import local_iterator
 from local_libs.local_cache import LocalCache
-from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
-from common.model.cracas_crash_analysis import CracasCrashAnalysis
-from common.model.fracas_crash_analysis import FracasCrashAnalysis
+
 
 _DEFAULT_BATCH_SIZE = 1000
 _TODAY = date.today().strftime('%Y-%m-%d')
