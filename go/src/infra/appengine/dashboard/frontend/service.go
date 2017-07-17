@@ -65,7 +65,11 @@ func (s *dashboardService) GetAllServicesData(ctx context.Context, req *dashpb.G
 	} else {
 		lastDate = time.Unix(req.UptoTime, 0)
 	}
-	firstDate := lastDate.AddDate(0, 0, -6)
+	// Lower limit of date span is pushed back (from -6 to -7) for timezones that are behind
+	// UTC and may have a current time that is still one calendar day behind the UTC
+	// day. Incidents from the query that are too far back are filtered out
+	// in the front end when all Dates are local.
+	firstDate := lastDate.AddDate(0, 0, -7)
 
 	slaTemplateService, nonSLATemplateService, err := createServicesPageData(ctx, firstDate, lastDate)
 	if err != nil {
