@@ -7,6 +7,7 @@ from recipe_engine.recipe_api import Property, defer_results
 
 DEPS = [
   'build/luci_config',
+  'build/service_account',
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
@@ -31,6 +32,16 @@ PROPERTIES = {
       kind=str,
       help=('Project that includes |upstream_project| in recipes.cfg to be '
             'tested with upstream patch')),
+
+  # To generate an auth token for running locally, run
+  #   infra/cipd/authutil token
+  'auth_token': Property(default=None),
+  'service_account': Property(
+      default=None, kind=str,
+      help='The name of the service account to use when running on a bot. For '
+           'example, if you use "recipe-roll-tester", this recipe will try '
+           'to use the /creds/service_accounts/service-account-'
+           'recipe-roll-tester.json service account')
 }
 
 
@@ -64,10 +75,17 @@ def _checkout_project(
         gclient_config=gclient_config, patch=patch)
 
 
-def RunSteps(api, upstream_project, downstream_project):
+def RunSteps(
+    api, upstream_project, downstream_project, auth_token, service_account):
   workdir_base = api.path['cache'].join('recipe_roll_tryjob')
   upstream_workdir = workdir_base.join(upstream_project)
   downstream_workdir = workdir_base.join(downstream_project)
+
+  api.luci_config.set_config('basic')
+  if service_account:
+    auth_token = api.service_account.get_token(service_account)
+  if auth_token:
+    api.luci_config.c.auth_token = auth_token
 
   project_data = api.luci_config.get_projects()
 
@@ -198,7 +216,9 @@ def GenTests(api):
   yield (
     api.test('basic') +
     api.properties.generic(
-        upstream_project='recipe_engine', downstream_project='depot_tools') +
+        upstream_project='recipe_engine',
+        downstream_project='depot_tools',
+        service_account='recipe-roll-tester') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools'))
   )
 

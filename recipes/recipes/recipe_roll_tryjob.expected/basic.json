@@ -1,6 +1,15 @@
 [
   {
     "cmd": [
+      "/opt/infra-tools/authutil",
+      "token",
+      "-service-account-json=/creds/service_accounts/service-account-recipe-roll-tester.json"
+    ],
+    "name": "get access token",
+    "stdout": "/path/to/tmp/"
+  },
+  {
+    "cmd": [
       "vpython",
       "-u",
       "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
@@ -9,7 +18,9 @@
       "--status-json",
       "/path/to/tmp/json",
       "--outfile",
-      "/path/to/tmp/json"
+      "/path/to/tmp/json",
+      "--headers-json",
+      "{\"Authorization\": \"Bearer abc124\"}"
     ],
     "name": "Get luci-config projects"
   },
