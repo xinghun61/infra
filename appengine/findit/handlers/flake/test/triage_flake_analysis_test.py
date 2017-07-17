@@ -22,16 +22,20 @@ class TriageFlakeAnalysisTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.status = analysis_status.COMPLETED
     analysis.suspected_flake_build_number = 100
-    analysis.culprit = FlakeCulprit.Create('chromium', 'r1000', 1000, 'url',
-                                           0.8)
+    culprit = FlakeCulprit.Create('chromium', 'r1000', 1000, 'url')
+    culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
+    culprit.put()
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
     analysis.put()
 
     triage_flake_analysis._UpdateSuspectedFlakeAnalysis(
         analysis.key.urlsafe(), triage_status.TRIAGED_CORRECT, 'user')
     self.assertTrue(analysis.correct_culprit)
 
-  @mock.patch.object(triage_flake_analysis.token, 'ValidateAuthToken',
-                     return_value=(True, False))
+  @mock.patch.object(
+      triage_flake_analysis.token,
+      'ValidateAuthToken',
+      return_value=(True, False))
   def testPostWithTriageResults(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.status = analysis_status.COMPLETED
@@ -50,8 +54,10 @@ class TriageFlakeAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(200, response.status_int)
     self.assertEqual({'success': True}, response.json_body)
 
-  @mock.patch.object(triage_flake_analysis.token, 'ValidateAuthToken',
-                     return_value=(True, False))
+  @mock.patch.object(
+      triage_flake_analysis.token,
+      'ValidateAuthToken',
+      return_value=(True, False))
   def testPostMissingParameters(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.status = analysis_status.COMPLETED

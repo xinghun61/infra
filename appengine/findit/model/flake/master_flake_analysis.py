@@ -12,7 +12,6 @@ from model import triage_status
 from model.base_analysis import BaseAnalysis
 from model.base_build_model import BaseBuildModel
 from model.base_triaged_model import TriagedModel
-from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_swarming_task import FlakeSwarmingTaskData
 
 
@@ -242,7 +241,7 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     self.correct_culprit = None
     self.algorithm_parameters = None
     self.suspected_flake_build_number = None
-    self.culprit = None
+    self.culprit_urlsafe_key = None
     self.try_job_status = None
     self.data_points = []
     self.result_status = None
@@ -318,9 +317,12 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
 
     Args:
       algorithm_parameters (dict): The analysis' algorithm parameters.
+      confidence_in_culprit (float): Confidence score for the suspected culprit
+          CL, if any.
       confidence_in_suspected_build (float): Confidence score for the suspected
           build number.
-      culprit (FlakeCulprit): The culprit change that caused flakiness.
+      culprit_urlsafe_key (str): The urlsafe-key coresponding to a FlakeCulprit
+          that caused flakiness.
       end_time (datetime): The timestamp that the overall analysis is completed.
       error (dict): Dict containing error information.
       last_attempted_swarming_revision (str): The last attempted try job
@@ -393,8 +395,11 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   # The confidence in the suspected build to have introduced the flakiness.
   confidence_in_suspected_build = ndb.FloatProperty(indexed=False)
 
-  # The culprit CL associated with the try job results, if any.
-  culprit = ndb.LocalStructuredProperty(FlakeCulprit)
+  # The confidence in the suspected CL to have introduced the flakiness.
+  confidence_in_culprit = ndb.FloatProperty(indexed=False)
+
+  # The urlsafe key to a FlakeCulprit associated with the try job results.
+  culprit_urlsafe_key = ndb.StringProperty(indexed=False)
 
   # The status of try jobs, if any. None if analysis is still performing
   # swarming reruns, SKIPPED if try jobs will not be triggered, RUNNING when

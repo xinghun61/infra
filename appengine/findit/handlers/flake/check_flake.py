@@ -83,14 +83,17 @@ def _GetCulpritInfo(analysis):
           'url': str,
       }
   """
-  if analysis.culprit is None:
+  if analysis.culprit_urlsafe_key is None:
     return {}
 
+  culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
+  assert culprit
+
   return {
-      'commit_position': analysis.culprit.commit_position,
-      'git_hash': analysis.culprit.revision,
-      'url': analysis.culprit.url,
-      'confidence': analysis.culprit.confidence,
+      'commit_position': culprit.commit_position,
+      'git_hash': culprit.revision,
+      'url': culprit.url,
+      'confidence': analysis.confidence_in_culprit,
   }
 
 

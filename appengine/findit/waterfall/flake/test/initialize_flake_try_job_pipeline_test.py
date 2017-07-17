@@ -4,6 +4,8 @@
 
 import mock
 
+from google.appengine.ext import ndb
+
 from common import constants
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
@@ -12,6 +14,7 @@ from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import build_util
 from waterfall import swarming_util
+from waterfall.flake import confidence
 from waterfall.flake import initialize_flake_try_job_pipeline
 from waterfall.flake import recursive_flake_try_job_pipeline
 from waterfall.flake.initialize_flake_try_job_pipeline import (
@@ -207,13 +210,18 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       initialize_flake_try_job_pipeline,
-      '_HasSufficientConfidenceToRunTryJobs',
-      return_value=True)
+      '_HasSufficientConfidenceToRunTryJobs')
   @mock.patch.object(
-      recursive_flake_try_job_pipeline,
-      'CreateCulprit',
-      return_value=FlakeCulprit.Create('cr', 'r1', 1000, 'http://', 0.8))
-  def testInitializeFlakeTryJopPipelineSingleCommit(self, *_):
+      confidence, 'SteppinessForCommitPosition')
+  @mock.patch.object(
+      recursive_flake_try_job_pipeline, 'UpdateCulprit')
+  @mock.patch.object(
+      MasterFlakeAnalysis, 'Update')
+  def testInitializeFlakeTryJopPipelineSingleCommit(
+      self, mocked_update_analysis, mocked_update_culprit, mocked_stepiness,
+      mocked_confidence):
+    mocked_confidence.return_value = True
+    mocked_stepiness.return_value = 0.8
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.suspected_flake_build_number = 100
     analysis.confidence_in_suspected_build = 0.7
@@ -227,6 +235,9 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.Save()
 
+    expected_culprit = FlakeCulprit.Create('cr', 'r1', 1000, 'http://')
+    expected_culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
+
     self.MockPipeline(
         RecursiveFlakeTryJobPipeline, '', expected_args=[], expected_kwargs={})
 
@@ -235,18 +246,13 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
-    self.assertIsNotNone(analysis.culprit)
-    self.assertEqual(1000, analysis.culprit.commit_position)
-    self.assertEqual(0.8, analysis.culprit.confidence)
+    mocked_update_culprit.assert_called_once()
+    mocked_update_analysis.assert_called_once()
 
   @mock.patch.object(
       initialize_flake_try_job_pipeline,
       '_HasSufficientConfidenceToRunTryJobs',
       return_value=True)
-  @mock.patch.object(
-      recursive_flake_try_job_pipeline,
-      'CreateCulprit',
-      return_value=FlakeCulprit.Create('cr', 'r1', 1000, 'http://', 0.8))
   @mock.patch.object(build_util, 'GetBuildInfo', return_value=MockInfo())
   def testInitializeFlakeTryJobPipelineRunTryJobs(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
