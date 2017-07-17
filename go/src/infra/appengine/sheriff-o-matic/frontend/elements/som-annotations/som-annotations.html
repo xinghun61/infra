@@ -195,7 +195,10 @@
             <span class="comment-context">
               <a href="mailto:[[comment.user]]" class="user-info">
                 [[_computeUsername(comment.user)]]
-              </a> on [[_formatTimestamp(comment.time)]]
+              </a> on
+              <span class="comment-time">
+                [[_formatTimestamp(comment.time)]]
+              </span>
               <iron-icon icon="close" title="Remove" id="removeComment[[index]]"
                 hidden$="[[_computeHideDeleteComment(comment)]]" on-tap="_removeComment"></iron-icon>
             </span>

@@ -417,8 +417,7 @@
       if (!time) {
         return '';
       }
-      return new moment(Date(time).toLocaleString(false, {
-        timeZoneName: 'short'}));
+      return moment.tz(new Date(time), 'America/Los_Angeles');
     },
 
     _removeComment: function(evt) {

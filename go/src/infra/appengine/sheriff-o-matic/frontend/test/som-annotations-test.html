@@ -363,7 +363,7 @@
           }, {
             'text': 'bar',
             'user': 'hello@world.com',
-            'time': '2016-10-13T22:22:55.798814Z'
+            'time': '2016-10-17T22:22:55.798814Z'
           }]
       }];
       element._commentsModel = {key: 'commentkey'};
@@ -374,12 +374,16 @@
 
         let users = element.$.commentsList.getElementsByClassName('user-info');
         let text = element.$.commentsList.getElementsByClassName('comment-text');
+        let time = element.$.commentsList.getElementsByClassName('comment-time');
 
         assert.equal('test', users[0].textContent.trim());
         assert.equal('hello', users[1].textContent.trim());
 
         assert.equal('foo', text[0].markdown.trim());
         assert.equal('bar', text[1].markdown.trim());
+
+        assert.equal('Thu Oct 13 2016 15:22:55 GMT-0700', time[0].textContent.trim());
+        assert.equal('Mon Oct 17 2016 15:22:55 GMT-0700', time[1].textContent.trim());
         done();
       });
     });
