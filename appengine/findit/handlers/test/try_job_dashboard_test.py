@@ -275,3 +275,39 @@ class TryJobDashboardTest(testing.AppengineTestCase):
     self.assertEqual(response.status_int, 200)
     self.validateTryJobDisplayData([expected_try_job_completed_display_data],
                                    successfully_completed_try_jobs)
+
+  def testGetSwarmbucketLink(self):
+    try_job_completed = WfTryJobData.Create(3)
+    try_job_completed.try_job_key = WfTryJob.Create('m', 'b', 3).key
+    try_job_completed.try_job_type = 'compile'
+    try_job_completed.start_time = datetime(2016, 5, 4, 0, 0, 1)
+    try_job_completed.request_time = datetime(2016, 5, 4, 0, 0, 0)
+    try_job_completed.created_time = datetime(2016, 5, 4, 0, 0, 0)
+    try_job_completed.end_time = datetime(2016, 5, 4, 0, 0, 2)
+    try_job_completed.try_job_url = 'swarming/url3'
+    try_job_completed.culprits = {'compile': {'12345': 'failed'}}
+    try_job_completed.last_buildbucket_response = {'status': 'COMPLETED'}
+    try_job_completed.put()
+
+    response = self.test_app.get(
+        ('/try-job-dashboard?start_date=2016-05-03&category=waterfall'))
+    self.assertEqual(response.status_int, 200)
+    self.assertIn('swarmbucket link', response.body)
+
+  def testGetBuildbotLink(self):
+    try_job_completed = WfTryJobData.Create(3)
+    try_job_completed.try_job_key = WfTryJob.Create('m', 'b', 3).key
+    try_job_completed.try_job_type = 'compile'
+    try_job_completed.start_time = datetime(2016, 5, 4, 0, 0, 1)
+    try_job_completed.request_time = datetime(2016, 5, 4, 0, 0, 0)
+    try_job_completed.created_time = datetime(2016, 5, 4, 0, 0, 0)
+    try_job_completed.end_time = datetime(2016, 5, 4, 0, 0, 2)
+    try_job_completed.try_job_url = 'url3'
+    try_job_completed.culprits = {'compile': {'12345': 'failed'}}
+    try_job_completed.last_buildbucket_response = {'status': 'COMPLETED'}
+    try_job_completed.put()
+
+    response = self.test_app.get(
+        ('/try-job-dashboard?start_date=2016-05-03&category=waterfall'))
+    self.assertEqual(response.status_int, 200)
+    self.assertIn('buildbot link', response.body)

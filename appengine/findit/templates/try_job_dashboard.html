@@ -100,7 +100,13 @@
                 <td>{{ try_job_display_data.status }}</td>
                 <td>
                   {% if try_job_display_data.try_job_url %}
-                    <a href="{{ try_job_display_data.try_job_url }}" target="_blank">link</a>
+                    <a href="{{ try_job_display_data.try_job_url }}" target="_blank">
+                      {% if 'swarming' in try_job_display_data.try_job_url %}
+                        swarmbucket link
+                      {% else %}
+                        buildbot link
+                      {% endif %}
+                    </a>
                   {% endif %}
                 </td>
                 <td>
@@ -149,7 +155,13 @@
                 <td>{{ try_job_display_data.error }}</td>
                 <td>
                   {% if try_job_display_data.try_job_url %}
-                    <a href="{{ try_job_display_data.try_job_url }}" target="_blank">link</a>
+                    <a href="{{ try_job_display_data.try_job_url }}" target="_blank">
+                      {% if 'swarming' in try_job_display_data.try_job_url %}
+                        swarmbucket link
+                      {% else %}
+                        buildbot link
+                      {% endif %}
+                      </a>
                   {% endif %}
                 </td>
                 <td>
@@ -202,7 +214,13 @@
                 <td>{{ try_job_display_data.culprit_found }}</td>
                 <td>
                   {% if try_job_display_data.try_job_url %}
-                    <a href="{{ try_job_display_data.try_job_url }}" target="_blank">link</a>
+                    <a href="{{ try_job_display_data.try_job_url }}" target="_blank">
+                      {% if 'swarming' in try_job_display_data.try_job_url %}
+                        swarmbucket link
+                      {% else %}
+                        buildbot link
+                      {% endif %}
+                    </a>
                   {% endif %}
                 </td>
                 <td>
