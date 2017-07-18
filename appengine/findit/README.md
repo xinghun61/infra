@@ -36,7 +36,7 @@ Then open http://localhost:8080 for the home page.
 # How to run unit tests for Findit?
 
 From command line, run:
-  `make unittests`
+  `make test`
 
 If a code path branch is not tested and no line number is shown in the command
 line output, you could check the code coverage report shown in the output.
