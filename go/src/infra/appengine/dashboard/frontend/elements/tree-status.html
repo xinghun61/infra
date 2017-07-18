@@ -20,13 +20,14 @@
       }
     </style>
     <iron-ajax
-        id="treeStatusAjax"
-        url="https://infra-status.appspot.com/current?format=json"
-        method="GET"
-        handle-as="json"
-        last-error="{{_statusErrorJson}}"
-        last-response="{{_statusJson}}"
-        debounce-duration="300"></iron-ajax>
+      id="treeStatusAjax"
+      url="https://infra-status.appspot.com/current?format=json"
+      method="GET"
+      handle-as="json"
+      last-error="{{_statusErrorJson}}"
+      last-response="{{_statusJson}}"
+      on-response="_refresh"
+      debounce-duration="300"></iron-ajax>
     <div class="tree-banner" hidden$="[[!_hasError]]">
       Error fetching tree status
     </div>
@@ -38,12 +39,14 @@
     (function() {
       'use strict';
 
+      const RELOAD_TIME = 5 * 60 * 1000;
+
       class TreeStatus extends Polymer.Element {
         static get is() { return 'tree-status'; }
 
         ready() {
           super.ready();
-          this.refresh();
+          this.$.treeStatusAjax.generateRequest();
         }
         static get properties() {
           return {
@@ -99,8 +102,10 @@
           return !!json;
         }
 
-        refresh() {
-          this.$.treeStatusAjax.generateRequest();
+        _refresh() {
+          Polymer.Async.timeOut.run(() => {
+            this.$.treeStatusAjax.generateRequest();
+          }, RELOAD_TIME);
         }
       }
       customElements.define(TreeStatus.is, TreeStatus);
