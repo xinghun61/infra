@@ -1,6 +1,6 @@
 # Release Notes sheriff-o-matic 2017-07-18
 
-- 13 commits, 2 bugs affected since 95d93c0 (2017-07-12T22:25:49Z)
+- 8 commits, 2 bugs affected since 95d93c0 (2017-07-12T22:25:49Z)
 - 3 Authors:
   - renjietang@google.com
   - seanmccullough@chromium.org
@@ -16,11 +16,6 @@
 - [[som] remove regex filter. Added master name to AlertedBuilder.](https://chromium-review.googlesource.com/570658) (renjietang@google.com)
 - [[som] generalize tsmon to take multiple trees, but for now only chromium goes in](https://chromium-review.googlesource.com/569020) (renjietang@google.com)
 - [[som] Update release notes](https://chromium-review.googlesource.com/569012) (seanmccullough@chromium.org)
-- [[som] add field of latest passing build](https://chromium-review.googlesource.com/571402) (renjietang@google.com)
-- [[som] remove regex filter. Added master name to AlertedBuilder.](https://chromium-review.googlesource.com/570658) (renjietang@google.com)
-- [[som] Make crrev service mockable so tests don't hit network.](https://chromium-review.googlesource.com/570991) (seanmccullough@chromium.org)
-- [[som] add field of latest passing build](https://chromium-review.googlesource.com/571402) (renjietang@google.com)
-- [[som] remove regex filter. Added master name to AlertedBuilder.](https://chromium-review.googlesource.com/570658) (renjietang@google.com)
 
 
 ## Bugs updated, by author
@@ -30,7 +25,7 @@
 - zhangtiff@google.com:
   -  [https://crbug.com/743181](https://crbug.com/743181)
 
-Release Notes sheriff-o-matic 2017-07-12
+# Release Notes sheriff-o-matic 2017-07-12
 
 - 16 commits, 10 bugs affected since 2fa0645 (2017-06-27T22:39:09Z)
 - 5 Authors:
