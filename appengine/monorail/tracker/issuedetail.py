@@ -445,6 +445,9 @@ class IssueDetail(issuepeek.IssuePeek):
     if (mr.auth.user_id and
         'privacy_click_through' not in dismissed):
       help_data['cue'] = 'privacy_click_through'
+    elif (mr.auth.user_id and
+        'code_of_conduct' not in dismissed):
+      help_data['cue'] = 'code_of_conduct'
     elif (tracker_constants.JUMP_RE.match(mr.query) and
           'search_for_numbers' not in dismissed):
       jump_local_id = int(mr.query)

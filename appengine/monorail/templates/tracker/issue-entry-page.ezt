@@ -55,6 +55,7 @@
       </tr>
 
       <tr><td colspan="2">
+       [include "../features/cues-conduct.ezt"]
        <div id="attachmentareadeventry"></div>
       </td></tr>
 

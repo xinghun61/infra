@@ -185,7 +185,13 @@ class IssueDetailTest(unittest.TestCase):
     help_data = servlet.GatherHelpData(mr, {})
     self.assertEqual('privacy_click_through', help_data['cue'])
 
+    # And, the code of conduct cue card.
     mr.auth.user_pb.dismissed_cues = ['privacy_click_through']
+    help_data = servlet.GatherHelpData(mr, {})
+    self.assertEqual('code_of_conduct', help_data['cue'])
+
+    mr.auth.user_pb.dismissed_cues = [
+        'privacy_click_through', 'code_of_conduct']
     # User did not jump to an issue, no query at all.
     help_data = servlet.GatherHelpData(mr, {})
     self.assertEqual(None, help_data['cue'])

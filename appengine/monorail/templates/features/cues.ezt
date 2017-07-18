@@ -6,7 +6,7 @@
 
 [# Dialog box for privacy settings.]
 [is cue "privacy_click_through"]
-  <div id="cue" class="scrim">
+  <div class="scrim cue">
     <div id="privacy_dialog">
       <h2>Email display settings</h2>
 
@@ -42,9 +42,13 @@
     </div>
   </div>
 
+[else][is cue "code_of_conduct"]
+ [# Note: code-of-conduct cue card is implemented in cues-conduct.ezt which is
+    included from forms where users post text.]
+
 [else]
 
- <table align="center" border="0" cellspacing="0" cellpadding="0" id="cue">
+ <table align="center" border="0" cellspacing="0" cellpadding="0" class="cue">
   <tr><td><span>
     [# Cue cards to teach users how to join a project.]
     [is cue "how_to_join_project"]
@@ -138,7 +142,7 @@
   </td></tr>
  </table>
 [end]
-
+[end]
 
 
  <script type="text/javascript" nonce="[nonce]">

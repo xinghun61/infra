@@ -362,7 +362,7 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
   background: #f8f8f8;
 }
 
-#cue.scrim {
+.cue.scrim {
   position: fixed;
   z-index: 1;
   left: 0;

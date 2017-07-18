@@ -193,11 +193,17 @@ class IssueEntry(servlet.Servlet):
       A dict of values to drive on-page user help, to be added to page_data.
     """
     help_data = super(IssueEntry, self).GatherHelpData(mr, page_data)
+    dismissed = []
+    if mr.auth.user_pb:
+      dismissed = mr.auth.user_pb.dismissed_cues
     is_privileged_domain_user = framework_bizobj.IsPriviledgedDomainUser(
         mr.auth.user_pb.email)
     if (mr.auth.user_id and
-        'privacy_click_through' not in mr.auth.user_pb.dismissed_cues):
+        'privacy_click_through' not in dismissed):
       help_data['cue'] = 'privacy_click_through'
+    elif (mr.auth.user_id and
+        'code_of_conduct' not in dismissed):
+      help_data['cue'] = 'code_of_conduct'
 
     help_data.update({
         'is_privileged_domain_user': ezt.boolean(is_privileged_domain_user),

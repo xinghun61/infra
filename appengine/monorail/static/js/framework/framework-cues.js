@@ -21,7 +21,10 @@
  * @return {boolean} false to cancel any event.
  */
 function CS_dismissCue(cueId) {
-  $('cue').style.display = 'none';
+  var cueElements = document.querySelectorAll('.cue');
+  for (var i = 0; i < cueElements.length; ++i) {
+    cueElements[i].style.display = 'none';
+  }
 
   if (CS_env.token) {
     CS_setCue(cueId);

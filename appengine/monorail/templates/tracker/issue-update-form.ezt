@@ -31,6 +31,7 @@
        [end]
       <textarea cols="80" rows="8" name="comment" id="addCommentTextArea"
                 class="issue_text">[initial_comment]</textarea><br>
+      [include "../features/cues-conduct.ezt"]
       [if-any allow_attachments]
        <div id="attachmentarea"></div>
        <span id="attachprompt"><img width="16" height="16" src="/static/images/paperclip.png" border="0"
