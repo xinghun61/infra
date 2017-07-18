@@ -115,7 +115,7 @@ clean:
 
 
 ##### TMP ###
-TMPDIR := $(shell mkdir -p .tmp 2> /dev/null && echo .tmp)
+TMPDIR := $(shell mkdir -p .tmp 2> /dev/null && realpath .tmp)
 ifndef TMPDIR
 TMPDIR :=  $(shell mktemp -d)
 endif
