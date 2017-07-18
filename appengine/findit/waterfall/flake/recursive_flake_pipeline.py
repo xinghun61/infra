@@ -737,7 +737,7 @@ class NextBuildNumberPipeline(BasePipeline):
                     'next build number: %s'), master_name, builder_name,
                    triggering_build_number, step_name, test_name,
                    next_build_number)
-      pipeline_job = RecursiveFlakePipeline(
+      yield RecursiveFlakePipeline(
           analysis_urlsafe_key,
           next_build_number,
           lower_bound_build_number,
@@ -749,9 +749,3 @@ class NextBuildNumberPipeline(BasePipeline):
           step_size=(current_build_number - next_build_number),
           retries=0,
           force=force)
-
-      # Disable attribute 'target' defined outside __init__ pylint warning,
-      # because pipeline generates its own __init__ based on run function.
-      pipeline_job.target = (  # pylint: disable=W0201
-          appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
-      pipeline_job.start(queue_name=self.queue_name or constants.DEFAULT_QUEUE)
