@@ -197,5 +197,9 @@
     _hasSuspect: function(test) {
       return test && test.suspected_cls;
     },
+
+    _makeLogDiffUrl: function(master, name, buildNum1, buildNum2) {
+      return '/chromium/logdiff/' + master + '/' + name + '/' + buildNum1 + '/' + buildNum2;
+    },
   });
 })();

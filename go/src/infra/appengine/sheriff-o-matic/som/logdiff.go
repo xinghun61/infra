@@ -2,7 +2,6 @@ package som
 
 import (
 	"fmt"
-	"html/template"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -21,62 +20,10 @@ import (
 	"bytes"
 	"compress/zlib"
 	"encoding/json"
-	"github.com/luci/gae/service/info"
-	"github.com/luci/luci-go/common/logging"
 )
 
 const (
 	productionAnalyticsID = "UA-55762617-1"
-	logDiffTemplate       = `<!DOCTYPE html>
-
-<title>Log Diff</title>
-
-<script src="../../../../bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>
-<link rel="import" href="../../../../elements/som-log-diff/som-log-diff.html">
-
-<style>
-table {
-  font-family: arial, sans-serif;
-  border-collapse: collapse;
-  width: 100%;
-}
-
-td, th {
-  border: 1px solid #dddddd;
-  text-align:left;
-  padding: 8px;
-}
-</style>
-
-<body>
-  <table>
-    <tr>
-      <th>Master</th>
-      <th>Builder</th>
-      <th><a href="{{.url1}}">Most Recent Failing Log</a></th>
-      <th><a href="{{.url2}}">Last Passing Log</a></th>
-    </tr>
-    <tr>
-      <td>{{.master}}</td>
-      <td>{{.builder}}</td>
-      <td>{{.buildNum1}}</td>
-      <td>{{.buildNum2}}</td>
-    </tr>
-  </table>
-  <som-log-diff master="{{.master}}" builder="{{.builder}}" build-num1="{{.buildNum1}}" build-num2="{{.buildNum2}}"></som-log-diff>
-</body>
-
-<script>
-{{if not .IsDevAppServer}}
-  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
-
-  ga('create', '{{.AnalyticsID}}', 'auto');
-  ga('send', 'pageview');
-{{end}}
-</script>`
 )
 
 var (
@@ -156,44 +103,6 @@ func LogDiffJSONHandler(ctx *router.Context) {
 	w.Write(tmp.Bytes())
 }
 
-// GetLogDiffHandler is showing inline logdiff in a separate page.
-func GetLogDiffHandler(ctx *router.Context) {
-	c, w, p := ctx.Context, ctx.Writer, ctx.Params
-	rawURL := p.ByName("master")
-	builder := p.ByName("builder")
-	lo1, err := strconv.Atoi(p.ByName("buildNum1"))
-	if err != nil {
-		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error converting string to integer: %v", err))
-		return
-	}
-	lo2, err := strconv.Atoi(p.ByName("buildNum2"))
-	if err != nil {
-		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error converting string to integer: %v", err))
-		return
-	}
-	buildNum1 := int64(lo1)
-	buildNum2 := int64(lo2)
-	url1 := fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", rawURL, builder, buildNum1, "steps")
-	url2 := fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", rawURL, builder, buildNum2, "steps")
-	diffPage := template.Must(template.New("log-index").Parse(logDiffTemplate))
-
-	data := map[string]interface{}{
-		"master":         rawURL,
-		"builder":        builder,
-		"buildNum1":      buildNum1,
-		"buildNum2":      buildNum2,
-		"IsDevAppServer": info.IsDevAppServer(c),
-		"AnalyticsID":    productionAnalyticsID,
-		"url1":           url1,
-		"url2":           url2,
-	}
-	err = diffPage.Execute(w, data)
-	if err != nil {
-		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error rendering log-index: %v", err))
-		return
-	}
-}
-
 // LogdiffWorker is performing diff and storing on tasks in logdiff queue.
 func LogdiffWorker(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
@@ -270,11 +179,15 @@ func LogdiffWorker(ctx *router.Context) {
 	writer.Close()
 
 	diff := &LogDiff{ID: r.FormValue("ID")}
-	datastore.Get(c, diff)
+	if err := datastore.Get(c, diff); err != nil {
+		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error getting Logdiff shell: %v", err))
+		return
+	}
 	diff.Diffs = buffer.Bytes()
 	diff.Complete = true
 	err = datastore.Put(c, diff)
 	if err != nil {
-		logging.Errorf(c, "error putting data into datastore: %v", err)
+		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error storing Logdiff: %v", err))
+		return
 	}
 }

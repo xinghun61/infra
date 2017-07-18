@@ -9,6 +9,10 @@
         type: String,
         computed: '_computeExaminedAlertKey(_pathParts)',
       },
+      _logdiffAlertKey: {
+        type: String,
+        computed: '_computeLogDiffKey(_pathParts)',
+      },
       _fetchingAlerts: Boolean,
       _lastUpdated: {
         type: Object,
@@ -109,6 +113,16 @@
         }
       }
 
+      return '';
+    },
+
+    _computeLogDiffKey: function(pathParts) {
+      if(pathParts.length!=7) {
+        return '';
+      }
+      if(pathParts[2] == 'logdiff') {
+        return window.unescape(pathParts.slice(3).join('/'));
+      }
       return '';
     },
 

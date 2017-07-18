@@ -213,7 +213,6 @@ func init() {
 	r.GET("/api/v1/testexpectation/:id", protected, som.GetTestExpectationCLStatusHandler)
 	r.GET("/logos/:tree", protected, som.GetTreeLogoHandler)
 	r.GET("/api/v1/logdiff/:master/:builder/:buildNum1/:buildNum2", protected, som.LogDiffJSONHandler)
-	r.GET("/logdiff/:master/:builder/:buildNum1/:buildNum2", protected, som.GetLogDiffHandler)
 
 	// Non-public endpoints.
 	r.GET("/_cron/refresh/bugqueue/:label", basemw, som.RefreshBugQueueHandler)
@@ -238,7 +237,6 @@ func init() {
 	http.DefaultServeMux.Handle("/logos/", r)
 	http.DefaultServeMux.Handle("/alerts", r)
 	http.DefaultServeMux.Handle("/alertdiff/", r)
-	http.DefaultServeMux.Handle("/logdiff/", r)
 
 	http.DefaultServeMux.Handle("/", rootRouter)
 }

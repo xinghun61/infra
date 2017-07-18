@@ -14,29 +14,49 @@
         return [];
         },
       },
+      key: {
+        type: String,
+      },
       master: {
         type: String,
-        notify: true,
+        computed: 'computeMaster(key)',
       },
       builder: {
         type: String,
-        notify: true,
+        computed: 'computeBuilder(key)',
       },
       buildNum1: {
         type: String,
-        notify: true,
+        computed: 'computeBuildNum1(key)',
       },
       buildNum2: {
         type: String,
-        notify: true,
+        computed: 'computeBuildNum2(key)',
       },
       url: {
-        computed: 'computeURL(master, builder, buildNum1, buildNum2)',
+        type: String,
+        computed: 'computeURL(key)',
       },
-      isComplete: {
-        type: Boolean,
-        value: true,
-      },
+    },
+
+    computeMaster: function(key) {
+      let params = key.split('/');
+      return params[0];
+    },
+
+    computeBuilder: function(key) {
+      let params = key.split('/');
+      return params[1];
+    },
+
+    computeBuildNum1: function(key) {
+      let params = key.split('/');
+      return params[2];
+    },
+
+    computeBuildNum2: function(key) {
+      let params = key.split('/');
+      return params[3];
     },
 
     isDel: function(delta) {
@@ -59,13 +79,8 @@
       return '- ' + payload;
     },
 
-    computeURL: function(master, builder, buildNum1, buildNum2) {
-      return "/api/v1/logdiff/" + master + '/' + builder + '/' + buildNum1 + '/' + buildNum2;
-    },
-
-    stillLoading: function() {
-      this.isComplete = false;
-      return;
+    computeURL: function(key) {
+      return "/api/v1/logdiff/" + key;
     },
   });
 })();

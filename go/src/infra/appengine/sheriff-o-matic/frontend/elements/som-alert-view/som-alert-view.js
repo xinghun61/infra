@@ -56,7 +56,7 @@
       },
       _currentAlertView: {
         type: String,
-        computed: '_computeCurrentAlertView(_examinedAlert)',
+        computed: '_computeCurrentAlertView(_examinedAlert, logdiffKey)',
         value: 'alertListPage',
       },
       _examinedAlert: {
@@ -67,6 +67,7 @@
         },
       },
       examinedAlertKey: String,
+      logdiffKey: String,
       _fetchAlertsError: String,
       fetchingAlerts: {
         type: Boolean,
@@ -203,7 +204,10 @@
       return [tree.name];
     },
 
-    _computeCurrentAlertView: function(examinedAlert) {
+    _computeCurrentAlertView: function(examinedAlert,logdiffKey) {
+      if(logdiffKey) {
+        return "logdiffAlert";
+      }
       if (examinedAlert && examinedAlert.key) {
         return 'examineAlert';
       }
