@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"infra/appengine/sheriff-o-matic/som"
+	"infra/monitoring/client"
 
 	"github.com/luci/luci-go/appengine/gaeauth/server"
 	"github.com/luci/luci-go/appengine/gaemiddleware"
@@ -25,7 +26,12 @@ func base() router.MiddlewareChain {
 			server.CookieAuth,
 		},
 	}
-	return gaemiddleware.BaseProd().Extend(a.GetMiddleware())
+	return gaemiddleware.BaseProd().Extend(a.GetMiddleware()).Extend(prodServiceClients)
+}
+
+func prodServiceClients(ctx *router.Context, next router.Handler) {
+	ctx.Context = client.WithProdClients(ctx.Context)
+	next(ctx)
 }
 
 //// Routes.

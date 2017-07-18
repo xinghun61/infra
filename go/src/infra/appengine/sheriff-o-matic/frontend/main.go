@@ -141,8 +141,7 @@ func base(includeCookie bool) router.MiddlewareChain {
 }
 
 func prodServiceClients(ctx *router.Context, next router.Handler) {
-	ctx.Context = client.WithCrRev(ctx.Context, "https://cr-rev.appspot.com")
-	// TODO(seanmccullough): Register other prod instances.
+	ctx.Context = client.WithProdClients(ctx.Context)
 	next(ctx)
 }
 

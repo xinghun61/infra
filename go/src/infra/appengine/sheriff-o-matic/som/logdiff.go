@@ -137,11 +137,8 @@ func LogdiffWorker(ctx *router.Context) {
 		}
 		c = urlfetch.Set(c, transport)
 
-		miloReader, err := client.NewMiloReader(c, "")
-		if err != nil {
-			errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error creating milo client: %v", err))
-			return
-		}
+		miloReader := client.GetMilo(c)
+
 		memcachingReader := client.NewMemcacheReader(miloReader)
 		c = client.WithReader(c, memcachingReader)
 	}

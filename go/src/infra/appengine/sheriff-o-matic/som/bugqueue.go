@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"infra/monitoring/client"
 	"infra/monorail"
 
 	"golang.org/x/net/context"
@@ -32,23 +33,18 @@ const (
 var (
 	bugQueueLength = metric.NewInt("bug_queue_length", "Number of bugs in queue.",
 		nil, field.String("label"))
-	monorailEndpoint = "https://monorail-prod.appspot.com/_ah/api/monorail/v1/"
 )
 
 // A bit of a hack to let us mock getBugsFromMonorail.
 var getBugsFromMonorail = func(c context.Context, q string,
 	can monorail.IssuesListRequest_CannedQuery) (*monorail.IssuesListResponse, error) {
 	// Get authenticated monorail client.
-	ctx, cancel := context.WithDeadline(c, clock.Now(c).Add(time.Second*30))
+	c, cancel := context.WithDeadline(c, clock.Now(c).Add(time.Second*30))
 	defer cancel()
 
-	client, err := getOAuthClient(ctx)
-
-	if err != nil {
-		return nil, err
-	}
-
-	mr := monorail.NewEndpointsClient(client, monorailEndpoint)
+	logging.Infof(c, "about to get mr client")
+	mr := client.GetMonorail(c)
+	logging.Infof(c, "mr client: %v", mr)
 
 	// TODO(martiniss): make this look up request info based on Tree datastore
 	// object
@@ -63,6 +59,7 @@ var getBugsFromMonorail = func(c context.Context, q string,
 
 	res, err := mr.IssuesList(c, req)
 	if err != nil {
+		logging.Errorf(c, "error getting issuelist: %v", err)
 		return nil, err
 	}
 

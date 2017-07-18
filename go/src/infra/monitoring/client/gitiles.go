@@ -76,7 +76,7 @@ func GetGitiles(c context.Context, URL string) ([]byte, error) {
 	defer resp.Body.Close()
 
 	// This is currently only used for fetching gitiles files with ?format=text,
-	// which will returq the body base64 encoded. Response headers don't indicate
+	// which will return the body base64 encoded. Response headers don't indicate
 	// this encoding (sigh) so we may need to some extra logic here to make this
 	// decoding conditional on some other heuristic, like request parameters.
 	reader := base64.NewDecoder(base64.StdEncoding, resp.Body)

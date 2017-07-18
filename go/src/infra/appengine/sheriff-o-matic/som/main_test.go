@@ -16,6 +16,7 @@ import (
 	"testing"
 	"time"
 
+	"infra/monitoring/client"
 	testclient "infra/monitoring/client/test"
 	"infra/monitoring/messages"
 	"infra/monorail"
@@ -32,6 +33,7 @@ import (
 	"github.com/luci/luci-go/common/clock"
 	"github.com/luci/luci-go/common/clock/testclock"
 	"github.com/luci/luci-go/common/logging/gologger"
+	"github.com/luci/luci-go/server/auth/authtest"
 	"github.com/luci/luci-go/server/auth/xsrf"
 	"github.com/luci/luci-go/server/router"
 
@@ -45,12 +47,18 @@ func TestMain(t *testing.T) {
 
 	Convey("main", t, func() {
 		c := gaetesting.TestingContext()
+		c = authtest.MockAuthConfig(c)
 		c = gologger.StdConfig.Use(c)
 
 		cl := testclock.New(testclock.TestRecentTimeUTC)
 		c = clock.Set(c, cl)
 
 		w := httptest.NewRecorder()
+
+		monorailMux := http.NewServeMux()
+		monorailServer := httptest.NewServer(monorailMux)
+		defer monorailServer.Close()
+		c = client.WithMonorail(c, monorailServer.URL)
 
 		tok, err := xsrf.Token(c)
 		So(err, ShouldBeNil)

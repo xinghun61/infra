@@ -22,6 +22,7 @@ import (
 
 	"infra/appengine/test-results/model"
 	"infra/monitoring/messages"
+	"infra/monorail"
 
 	"github.com/luci/luci-go/common/logging"
 	"github.com/luci/luci-go/server/auth"
@@ -593,4 +594,38 @@ func getAsSelfOAuthClient(c context.Context) (*http.Client, error) {
 type simpleClient struct {
 	Host   string
 	Client *http.Client
+}
+
+// WithMonorail registers a new Monorail client instance pointed at baseURL.
+func WithMonorail(c context.Context, baseURL string) context.Context {
+	client, err := getAsSelfOAuthClient(c)
+
+	if err != nil {
+		panic("No OAuth client in context")
+	}
+
+	mr := monorail.NewEndpointsClient(client, baseURL+"/_ah/api/monorail/v1/")
+
+	c = context.WithValue(c, monorailKey, mr)
+	return c
+}
+
+// GetMonorail returns the currently registered monorail client, or panics.
+func GetMonorail(c context.Context) monorail.MonorailClient {
+	v := c.Value(monorailKey)
+	ret, ok := v.(monorail.MonorailClient)
+	if !ok {
+		panic("No Monorail client set in context")
+	}
+	return ret
+}
+
+// WithProdClients returns a context for connecting to production services.
+func WithProdClients(ctx context.Context) context.Context {
+	ctx = WithCrRev(ctx, "https://cr-rev.appspot.com")
+	// TODO: see if this will work with http:// prefix.
+	ctx = WithMilo(ctx, "luci-milo.appspot.com")
+	ctx = WithMonorail(ctx, "https://monorail-prod.appspot.com")
+
+	return ctx
 }
