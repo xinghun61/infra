@@ -521,7 +521,7 @@ class FeaturesServiceTest(unittest.TestCase):
     self.features_service.hotlist2issue_tbl.Select(
         self.cnxn, cols=features_svc.HOTLIST2ISSUE_COLS,
         hotlist_id=[hotlist_id],
-        order_by=[('rank DESC', ''), ('issue_id', '')]).AndReturn(issue_rows)
+        order_by=[('rank DESC', []), ('issue_id', [])]).AndReturn(issue_rows)
 
   def SetUpUpdateHotlist(self, hotlist_id, delta):
     self.features_service.hotlist_tbl.Update(

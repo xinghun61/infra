@@ -205,12 +205,13 @@ class IssueTwoLevelCacheTest(unittest.TestCase):
     self.issue_service.issuerelation_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUERELATION_COLS,
         issue_id=issue_ids, kind='blockedon',
-        order_by=[('rank DESC', []),
-                  ('dst_issue_id', '')]).AndReturn(self.blocked_on_rows)
+        order_by=[('issue_id', []), ('rank DESC', []),
+                  ('dst_issue_id', [])]).AndReturn(self.blocked_on_rows)
     self.issue_service.issuerelation_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUERELATION_COLS,
         dst_issue_id=issue_ids, kind='blockedon',
-        order_by=[('issue_id', '')]).AndReturn(self.blocking_rows)
+        order_by=[('issue_id', []), ('dst_issue_id', [])]
+        ).AndReturn(self.blocking_rows)
     self.issue_service.issuerelation_tbl.Select(
         self.cnxn, cols=issue_svc.ISSUERELATION_COLS,
         where=[('(issue_id IN (%s) OR dst_issue_id IN (%s))',

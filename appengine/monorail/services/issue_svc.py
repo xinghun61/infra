@@ -303,10 +303,10 @@ class IssueTwoLevelCache(caches.AbstractTwoLevelCache):
       ph = sql.PlaceHolders(issue_ids)
       blocked_on_rows = self.issue_service.issuerelation_tbl.Select(
           cnxn, cols=ISSUERELATION_COLS, issue_id=issue_ids, kind='blockedon',
-          order_by=[('rank DESC', []), ('dst_issue_id', '')])
+          order_by=[('issue_id', []), ('rank DESC', []), ('dst_issue_id', [])])
       blocking_rows = self.issue_service.issuerelation_tbl.Select(
           cnxn, cols=ISSUERELATION_COLS, dst_issue_id=issue_ids,
-          kind='blockedon', order_by=[('issue_id', '')])
+          kind='blockedon', order_by=[('issue_id', []), ('dst_issue_id', [])])
       unique_blocking = tuple(
           row for row in blocking_rows if row not in blocked_on_rows)
       merge_rows = self.issue_service.issuerelation_tbl.Select(

@@ -123,7 +123,7 @@ class HotlistTwoLevelCache(caches.AbstractTwoLevelCache):
         cnxn, cols=HOTLIST_COLS, id=keys)
     issue_rows = self.features_service.hotlist2issue_tbl.Select(
         cnxn, cols=HOTLIST2ISSUE_COLS, hotlist_id=keys,
-        order_by=[('rank DESC', ''), ('issue_id', '')])
+        order_by=[('rank DESC', []), ('issue_id', [])])
     role_rows = self.features_service.hotlist2user_tbl.Select(
         cnxn, cols=HOTLIST2USER_COLS, hotlist_id=keys)
     retrieved_dict = self._DeserializeHotlists(
