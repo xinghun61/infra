@@ -5,8 +5,10 @@
 from recipe_engine.recipe_api import Property
 
 DEPS = [
+    'build/service_account',
     'depot_tools/bot_update',
     'depot_tools/gclient',
+    'recipe_engine/context',
     'recipe_engine/path',
     'recipe_engine/properties',
     'recipe_engine/python',
@@ -35,7 +37,10 @@ def RunSteps(api, workflow, job_name):
           '--staging_location', 'gs://dataflow-chrome-infra/events/staging',
           '--temp_location', 'gs://dataflow-chrome-infra/events/temp',
           '--save_main_session']
-  api.python('Remote execute', workflow_path, args)
+  env = {'GOOGLE_APPLICATION_CREDENTIALS':
+         api.service_account.get_json_path('dataflow-launcher')}
+  with api.context(env=env):
+    api.python('Remote execute', workflow_path, args)
 
 def GenTests(api):
   yield api.test('basic') + api.properties(

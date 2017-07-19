@@ -85,6 +85,9 @@
       "gs://dataflow-chrome-infra/events/temp",
       "--save_main_session"
     ],
+    "env": {
+      "GOOGLE_APPLICATION_CREDENTIALS": "/creds/service_accounts/service-account-dataflow-launcher.json"
+    },
     "name": "Remote execute"
   },
   {
