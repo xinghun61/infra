@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from . import gcloud as tpp_gcloud
 from . import git as tpp_git
 from . import python as tpp_python
 
@@ -9,6 +10,10 @@ from recipe_engine import recipe_test_api
 
 
 class ThirdPartyPackagesTestApi(recipe_test_api.RecipeTestApi):
+
+  @property
+  def gcloud(self):
+    return tpp_gcloud
 
   @property
   def git(self):

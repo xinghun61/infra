@@ -32,6 +32,8 @@ def RunSteps(api, dry_run):
       api.third_party_packages.python.package()
     with api.step.nest('git'):
       api.third_party_packages.git.package()
+    with api.step.nest('gcloud'):
+      api.third_party_packages.gcloud.package()
 
 
 def GenTests(api):

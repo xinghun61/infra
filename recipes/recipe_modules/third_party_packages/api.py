@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from . import gcloud as tpp_gcloud
 from . import git as tpp_git
 from . import python as tpp_python
 from .support_prefix import SupportPrefix
@@ -36,6 +37,10 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
   @property
   def git(self):
     return self._get_singleton(tpp_git.GitApi)
+
+  @property
+  def gcloud(self):
+    return self._get_singleton(tpp_gcloud.GcloudApi)
 
   def support_prefix(self, base):
     return SupportPrefix(self, base)
