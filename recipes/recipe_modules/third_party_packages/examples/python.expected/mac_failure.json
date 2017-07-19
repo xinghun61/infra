@@ -1,9 +1,5 @@
 [
   {
-    "cmd": [],
-    "name": "python"
-  },
-  {
     "cmd": [
       "python",
       "-u",
@@ -15,9 +11,8 @@
       "--format",
       "json"
     ],
-    "name": "python.refs",
+    "name": "refs",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"HEAD\": null, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"refs/heads/master\": null, @@@",
@@ -49,10 +44,7 @@
       "[START_DIR]/python"
     ],
     "infra_step": true,
-    "name": "python.rmtree workdir",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "rmtree workdir"
   },
   {
     "cmd": [
@@ -69,9 +61,8 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium7",
+    "name": "cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium7",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
@@ -91,10 +82,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.git setup",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "git setup"
   },
   {
     "cmd": [
@@ -110,10 +98,7 @@
       "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
-    "name": "python.git fetch",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "git fetch"
   },
   {
     "cmd": [
@@ -127,10 +112,7 @@
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
     "infra_step": true,
-    "name": "python.git checkout",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "git checkout"
   },
   {
     "cmd": [
@@ -143,10 +125,9 @@
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
     "infra_step": true,
-    "name": "python.read revision",
+    "name": "read revision",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
     ]
   },
@@ -163,10 +144,7 @@
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
     "infra_step": true,
-    "name": "python.git clean",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "git clean"
   },
   {
     "cmd": [
@@ -185,9 +163,8 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.ensure_installed",
+    "name": "ensure_installed",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
@@ -233,10 +210,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.readline-7.0",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "readline-7.0"
   },
   {
     "cmd": [
@@ -255,9 +229,9 @@
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
     "infra_step": true,
-    "name": "python.readline-7.0.makedirs workdir",
+    "name": "readline-7.0.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -270,9 +244,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.readline-7.0.extract",
+    "name": "readline-7.0.extract",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -284,9 +258,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.readline-7.0.configure",
+    "name": "readline-7.0.configure",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -298,9 +272,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.readline-7.0.make",
+    "name": "readline-7.0.make",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -309,10 +283,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.termcap-1.3.1",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "termcap-1.3.1"
   },
   {
     "cmd": [
@@ -331,9 +302,9 @@
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
     "infra_step": true,
-    "name": "python.termcap-1.3.1.makedirs workdir",
+    "name": "termcap-1.3.1.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -346,9 +317,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.termcap-1.3.1.extract",
+    "name": "termcap-1.3.1.extract",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -360,9 +331,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.termcap-1.3.1.configure",
+    "name": "termcap-1.3.1.configure",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -374,9 +345,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.termcap-1.3.1.make",
+    "name": "termcap-1.3.1.make",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -385,10 +356,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.zlib-1.2.11",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "zlib-1.2.11"
   },
   {
     "cmd": [
@@ -407,9 +375,9 @@
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
     "infra_step": true,
-    "name": "python.zlib-1.2.11.makedirs workdir",
+    "name": "zlib-1.2.11.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -422,9 +390,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.zlib-1.2.11.extract",
+    "name": "zlib-1.2.11.extract",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -437,9 +405,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.zlib-1.2.11.configure",
+    "name": "zlib-1.2.11.configure",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -451,9 +419,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.zlib-1.2.11.make",
+    "name": "zlib-1.2.11.make",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -467,10 +435,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.symlink usr",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "symlink usr"
   },
   {
     "cmd": [],
@@ -478,10 +443,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.openssl-0.9.8zh",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "openssl-0.9.8zh"
   },
   {
     "cmd": [
@@ -500,9 +462,9 @@
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
     "infra_step": true,
-    "name": "python.openssl-0.9.8zh.makedirs workdir",
+    "name": "openssl-0.9.8zh.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -515,9 +477,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.openssl-0.9.8zh.extract",
+    "name": "openssl-0.9.8zh.extract",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -532,9 +494,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.openssl-0.9.8zh.configure",
+    "name": "openssl-0.9.8zh.configure",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -545,9 +507,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.openssl-0.9.8zh.make",
+    "name": "openssl-0.9.8zh.make",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -559,9 +521,9 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.openssl-0.9.8zh.install",
+    "name": "openssl-0.9.8zh.install",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -580,9 +542,8 @@
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
     "infra_step": true,
-    "name": "python.Configure static modules",
+    "name": "Configure static modules",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@Setup.local@*static*@@@",
       "@@@STEP_LOG_LINE@Setup.local@LIBTERMCAP_PREFIX=[START_DIR]/python/_support/termcap-1.3.1/prefix@@@",
       "@@@STEP_LOG_LINE@Setup.local@binascii binascii.c -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include [START_DIR]/python/_support/zlib-1.2.11/prefix/lib/libz.a@@@",
@@ -613,10 +574,7 @@
       "ac_cv_func_clock_gettime": "n",
       "ac_cv_func_getentropy": "n"
     },
-    "name": "python.configure",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "configure"
   },
   {
     "cmd": [
@@ -627,268 +585,16 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "python.make",
+    "name": "make",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "[START_DIR]/python/package/bin/python",
-      "[START_DIR]/python/_support/sources/get-pip.py",
-      "--ignore-installed",
-      "--no-cache-dir",
-      "--no-index",
-      "--find-links",
-      "[START_DIR]/python/_support/sources",
-      "--prefix",
-      "[START_DIR]/python/package",
-      "pip==9.0.1",
-      "setuptools==36.0.1",
-      "wheel==0.30.0a0"
-    ],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
-    "name": "python.pip",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "rmtree",
-      "[START_DIR]/python/package/include"
-    ],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
-    "infra_step": true,
-    "name": "python.cleanup include",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "rmtree",
-      "[START_DIR]/python/package/lib/libpython2.7.a"
-    ],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
-    "infra_step": true,
-    "name": "python.cleanup lib/libpython2.7.a",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "rmtree",
-      "[START_DIR]/python/package/lib/python2.7/test"
-    ],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
-    "infra_step": true,
-    "name": "python.cleanup lib/python2.7/test",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "rmtree",
-      "[START_DIR]/python/package/lib/python2.7/config"
-    ],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
-    "infra_step": true,
-    "name": "python.cleanup lib/python2.7/config",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "cipd",
-      "pkg-build",
-      "-in",
-      "[START_DIR]/python/package",
-      "-name",
-      "infra/python/cpython/mac-amd64",
-      "-out",
-      "[START_DIR]/python/package.cipd",
-      "-json-output",
-      "/path/to/tmp/json",
-      "-install-mode",
-      "copy"
-    ],
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
-    "name": "python.build mac-amd64",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/python/cpython/mac-amd64\"@@@",
-      "@@@STEP_LOG_LINE@json.output@  }@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "cipd",
-      "pkg-register",
-      "[START_DIR]/python/package.cipd",
-      "-json-output",
-      "/path/to/tmp/json",
-      "-service-account-json",
-      "/creds/service_accounts/service-account-cipd-builder.json",
-      "-tag",
-      "version:2.1.2.chromium7"
-    ],
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
-    "name": "python.register infra/python/cpython/mac-amd64",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/python/cpython/mac-amd64\"@@@",
-      "@@@STEP_LOG_LINE@json.output@  }@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [],
-    "name": "git"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "rmtree",
-      "[START_DIR]/git"
-    ],
-    "infra_step": true,
-    "name": "git.rmtree workdir",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
-      "--json-file",
-      "/path/to/tmp/json",
-      "--url",
-      "https://chromium.googlesource.com/external/github.com/git/git/+refs",
-      "--format",
-      "json"
-    ],
-    "name": "git.refs",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"HEAD\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/heads/master\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/not-a-version\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.1\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.2\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.3rc1\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.12.2.2\": null@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@",
-      "@@@STEP_LOG_LINE@refs@HEAD@@@",
-      "@@@STEP_LOG_LINE@refs@refs/heads/master@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/not-a-version@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.1@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.2@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.3rc1@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.12.2.2@@@",
-      "@@@STEP_LOG_END@refs@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "cipd",
-      "search",
-      "infra/git/mac-amd64",
-      "-tag",
-      "version:2.12.2.2.chromium10",
-      "-json-output",
-      "/path/to/tmp/json",
-      "-service-account-json",
-      "/creds/service_accounts/service-account-cipd-builder.json"
-    ],
-    "name": "git.cipd search infra/git/mac-amd64 version:2.12.2.2.chromium10",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-instance_id_1---\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/git/mac-amd64\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "import sys; sys.exit(0)"
-    ],
-    "name": "git.Synced",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_TEXT@Package is up to date.@@@"
+      "step returned non-zero exit code: 1",
+      "@@@STEP_FAILURE@@@"
     ]
   },
   {
     "name": "$result",
+    "reason": "Step('make') failed with return_code 1",
     "recipe_result": null,
-    "status_code": 0
+    "status_code": 1
   }
 ]

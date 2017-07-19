@@ -1,9 +1,5 @@
 [
   {
-    "cmd": [],
-    "name": "git"
-  },
-  {
     "cmd": [
       "python",
       "-u",
@@ -14,10 +10,7 @@
       "[START_DIR]\\git"
     ],
     "infra_step": true,
-    "name": "git.rmtree workdir",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "rmtree workdir"
   },
   {
     "cmd": [
@@ -25,16 +18,13 @@
       "-u",
       "RECIPE_MODULE[recipe_engine::url]\\resources\\pycurl.py",
       "--url",
-      "https://api.github.com/repos/git-for-windows/git/releases/latest",
+      "https://api.m.github.com/repos/git-for-windows/git/releases/latest",
       "--status-json",
       "/path/to/tmp/json",
       "--outfile",
       "/path/to/tmp/json"
     ],
-    "name": "git.get latest release",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "get latest release"
   },
   {
     "cmd": [
@@ -48,9 +38,8 @@
       "-service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/windows-amd64 version:2.12.2.2.chromium10",
+    "name": "cipd search infra/git/windows-amd64 version:2.12.2.2.chromium10",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
@@ -68,9 +57,8 @@
       "-u",
       "import sys; sys.exit(0)"
     ],
-    "name": "git.Synced",
+    "name": "Synced",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@Package is up to date.@@@"
     ]
   },

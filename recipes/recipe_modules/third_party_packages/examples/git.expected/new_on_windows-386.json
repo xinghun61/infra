@@ -1,9 +1,5 @@
 [
   {
-    "cmd": [],
-    "name": "git"
-  },
-  {
     "cmd": [
       "python",
       "-u",
@@ -14,10 +10,7 @@
       "[START_DIR]\\git"
     ],
     "infra_step": true,
-    "name": "git.rmtree workdir",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "rmtree workdir"
   },
   {
     "cmd": [
@@ -25,16 +18,13 @@
       "-u",
       "RECIPE_MODULE[recipe_engine::url]\\resources\\pycurl.py",
       "--url",
-      "https://api.github.com/repos/git-for-windows/git/releases/latest",
+      "https://api.m.github.com/repos/git-for-windows/git/releases/latest",
       "--status-json",
       "/path/to/tmp/json",
       "--outfile",
       "/path/to/tmp/json"
     ],
-    "name": "git.get latest release",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "get latest release"
   },
   {
     "cmd": [
@@ -48,9 +38,8 @@
       "-service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/windows-386 version:2.12.2.2.chromium10",
+    "name": "cipd search infra/git/windows-386 version:2.12.2.2.chromium10",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
@@ -70,10 +59,7 @@
       "[START_DIR]\\git"
     ],
     "infra_step": true,
-    "name": "git.makedirs ensure workdir",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "makedirs ensure workdir"
   },
   {
     "cmd": [
@@ -89,10 +75,7 @@
       "--headers-json",
       "{\"Accept\": \"application/octet-stream\"}"
     ],
-    "name": "git.fetch archive",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "fetch archive"
   },
   {
     "cmd": [
@@ -107,9 +90,8 @@
       "-service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json"
     ],
-    "name": "git.ensure_installed",
+    "name": "ensure_installed",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
@@ -129,10 +111,7 @@
       "-o[START_DIR]\\git\\package",
       "-y"
     ],
-    "name": "git.extract archive",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "extract archive"
   },
   {
     "cmd": [
@@ -143,10 +122,7 @@
       "--command=post-install.bat"
     ],
     "cwd": "[START_DIR]\\git\\package",
-    "name": "git.post-install",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "post-install"
   },
   {
     "cmd": [
@@ -158,10 +134,7 @@
       "false"
     ],
     "cwd": "[START_DIR]\\git\\package",
-    "name": "git.tweak core.autocrlf=false",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "tweak core.autocrlf=false"
   },
   {
     "cmd": [
@@ -173,10 +146,7 @@
       "false"
     ],
     "cwd": "[START_DIR]\\git\\package",
-    "name": "git.tweak core.filemode=false",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "tweak core.filemode=false"
   },
   {
     "cmd": [
@@ -188,10 +158,7 @@
       "true"
     ],
     "cwd": "[START_DIR]\\git\\package",
-    "name": "git.tweak core.preloadindex=true",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "tweak core.preloadindex=true"
   },
   {
     "cmd": [
@@ -203,10 +170,7 @@
       "true"
     ],
     "cwd": "[START_DIR]\\git\\package",
-    "name": "git.tweak core.fscache=true",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "tweak core.fscache=true"
   },
   {
     "cmd": [
@@ -216,15 +180,12 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "RECIPE[infra::third_party_packages].resources\\profile.d.python.sh",
+      "RECIPE_MODULE[infra::third_party_packages]\\resources\\git\\profile.d.python.sh",
       "[START_DIR]\\git\\package\\etc\\profile.d\\python.sh"
     ],
     "cwd": "[START_DIR]\\git\\package",
     "infra_step": true,
-    "name": "git.install etc/profile.d/python.sh",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "install etc/profile.d/python.sh"
   },
   {
     "cmd": [
@@ -234,15 +195,12 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "RECIPE[infra::third_party_packages].resources\\profile.d.vpython.sh",
+      "RECIPE_MODULE[infra::third_party_packages]\\resources\\git\\profile.d.vpython.sh",
       "[START_DIR]\\git\\package\\etc\\profile.d\\vpython.sh"
     ],
     "cwd": "[START_DIR]\\git\\package",
     "infra_step": true,
-    "name": "git.install etc/profile.d/vpython.sh",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "install etc/profile.d/vpython.sh"
   },
   {
     "cmd": [
@@ -257,9 +215,8 @@
       "-json-output",
       "/path/to/tmp/json"
     ],
-    "name": "git.build windows-386",
+    "name": "build windows-386",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
@@ -281,9 +238,8 @@
       "-tag",
       "version:2.12.2.2.chromium10"
     ],
-    "name": "git.register infra/git/windows-386",
+    "name": "register infra/git/windows-386",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",

@@ -7,6 +7,7 @@
   * [omahaproxy](#recipe_modules-omahaproxy)
   * [recipe_autoroller](#recipe_modules-recipe_autoroller)
   * [sync_submodules](#recipe_modules-sync_submodules)
+  * [third_party_packages](#recipe_modules-third_party_packages)
   * [wct](#recipe_modules-wct)
 
 **[Recipes](#Recipes)**
@@ -36,6 +37,8 @@
   * [sheriff-o-matic-wct](#recipes-sheriff-o-matic-wct)
   * [sync_submodules](#recipes-sync_submodules)
   * [third_party_packages](#recipes-third_party_packages) &mdash; This recipe builds and packages third party software, such as Git.
+  * [third_party_packages:examples/git](#recipes-third_party_packages_examples_git) &mdash; Recipe for 'git' building.
+  * [third_party_packages:examples/python](#recipes-third_party_packages_examples_python) &mdash; Recipe for 'python' building.
   * [wpt_export](#recipes-wpt_export) &mdash; Exports commits in Chromium to the web-platform-tests repo.
   * [wpt_import](#recipes-wpt_import) &mdash; Imports changes from web-platform-tests into Chromium.
 ## Recipe Modules
@@ -103,6 +106,31 @@ Args:
       prefix are included.
   enable_recurse_deps: enable collecting submodules for recurse deps repos
   disable_path_prefix: disable filtering out DEPS by path prefix.
+### *recipe_modules* / [third\_party\_packages](/recipes/recipe_modules/third_party_packages)
+
+[DEPS](/recipes/recipe_modules/third_party_packages/__init__.py#5): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/url][recipe_engine/recipe_modules/url]
+
+#### **class [ThirdPartyPackagesApi](/recipes/recipe_modules/third_party_packages/api.py#12)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+
+&mdash; **def [\_\_init\_\_](/recipes/recipe_modules/third_party_packages/api.py#14)(self, \*args, \*\*kwargs):**
+
+&mdash; **def [create\_package](/recipes/recipe_modules/third_party_packages/api.py#93)(self, name, workdir, root, version, install_mode):**
+
+&mdash; **def [does\_package\_exist](/recipes/recipe_modules/third_party_packages/api.py#89)(self, name, version):**
+
+&emsp; **@dry_run.setter**<br>&mdash; **def [dry\_run](/recipes/recipe_modules/third_party_packages/api.py#22)(self, v):**
+
+&mdash; **def [ensure\_package](/recipes/recipe_modules/third_party_packages/api.py#43)(self, workdir, repo_url, package_name_prefix, install, tag, version, cipd_install_mode):**
+
+Ensures that the specified CIPD package exists.
+
+&mdash; **def [get\_latest\_release\_tag](/recipes/recipe_modules/third_party_packages/api.py#66)(self, repo_url, prefix='v'):**
+
+&emsp; **@property**<br>&mdash; **def [git](/recipes/recipe_modules/third_party_packages/api.py#36)(self):**
+
+&emsp; **@property**<br>&mdash; **def [python](/recipes/recipe_modules/third_party_packages/api.py#32)(self):**
+
+&mdash; **def [support\_prefix](/recipes/recipe_modules/third_party_packages/api.py#40)(self, base):**
 ### *recipe_modules* / [wct](/recipes/recipe_modules/wct)
 
 [DEPS](/recipes/recipe_modules/wct/__init__.py#1): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -310,51 +338,31 @@ A continuous builder which runs recipe tests.
 &mdash; **def [RunSteps](/recipes/recipes/sync_submodules.py#20)(api, enable_recurse_deps, disable_path_prefix):**
 ### *recipes* / [third\_party\_packages](/recipes/recipes/third_party_packages.py)
 
-[DEPS](/recipes/recipes/third_party_packages.py#16): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/url][recipe_engine/recipe_modules/url]
+[DEPS](/recipes/recipes/third_party_packages.py#10): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [third\_party\_packages](#recipe_modules-third_party_packages), [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 This recipe builds and packages third party software, such as Git.
 
-&mdash; **def [CreatePackage](/recipes/recipes/third_party_packages.py#888)(api, name, workdir, root, version, install_mode):**
+&mdash; **def [RunSteps](/recipes/recipes/third_party_packages.py#24)(api, dry_run):**
+### *recipes* / [third\_party\_packages:examples/git](/recipes/recipe_modules/third_party_packages/examples/git.py)
 
-&mdash; **def [DoesPackageExist](/recipes/recipes/third_party_packages.py#895)(api, name, version):**
+[DEPS](/recipes/recipe_modules/third_party_packages/examples/git.py#14): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [third\_party\_packages](#recipe_modules-third_party_packages), [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/url][recipe_engine/recipe_modules/url]
 
-&mdash; **def [EnsurePackage](/recipes/recipes/third_party_packages.py#848)(api, workdir, repo_url, package_name_prefix, install, tag, version, cipd_install_mode):**
+Recipe for 'git' building.
 
-Ensures that the specified CIPD package exists.
+During testing, it may be useful to focus on building Git. This can be done by
+running this recipe module directly.
 
-&mdash; **def [GetDryRun](/recipes/recipes/third_party_packages.py#873)(api):**
+&mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages/examples/git.py#67)(api, dry_run):**
+### *recipes* / [third\_party\_packages:examples/python](/recipes/recipe_modules/third_party_packages/examples/python.py)
 
-Returns the "dry_run" property value.
+[DEPS](/recipes/recipe_modules/third_party_packages/examples/python.py#14): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [third\_party\_packages](#recipe_modules-third_party_packages), [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties]
 
-To enable dry run, set "dry_run" to either be a string, specifying a specific
-package name to build, or a true value to perform a full dry run. If missing
-or a false value, this recipe will perform a production run.
+Recipe for 'python' building.
 
-&mdash; **def [GetLatestGitForWindowsRelease](/recipes/recipes/third_party_packages.py#817)(api):**
+During testing, it may be useful to focus on building Python. This can be done
+by running this recipe module directly.
 
-Returns a tuple (version, archive_url) for the latest release.
-
-Raises a StepFailure if a suitable release is not found.
-
-&mdash; **def [GetLatestReleaseTag](/recipes/recipes/third_party_packages.py#900)(api, repo_url, prefix='v'):**
-
-&mdash; **def [IsWhitelisted](/recipes/recipes/third_party_packages.py#883)(api, key):**
-
-&emsp; **@recipe_api.composite_step**<br>&mdash; **def [PackageGit](/recipes/recipes/third_party_packages.py#532)(api):**
-
-&mdash; **def [PackageGitForUnix](/recipes/recipes/third_party_packages.py#544)(api, workdir, support):**
-
-Builds Git on Unix and uploads it to a CIPD server.
-
-&mdash; **def [PackageGitForWindows](/recipes/recipes/third_party_packages.py#713)(api, workdir):**
-
-Repackages Git for Windows to CIPD.
-
-&emsp; **@recipe_api.composite_step**<br>&mdash; **def [PackagePythonForUnix](/recipes/recipes/third_party_packages.py#320)(api):**
-
-Builds Python for Unix and uploads it to CIPD.
-
-&mdash; **def [RunSteps](/recipes/recipes/third_party_packages.py#54)(api):**
+&mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages/examples/python.py#47)(api, dry_run):**
 ### *recipes* / [wpt\_export](/recipes/recipes/wpt_export.py)
 
 [DEPS](/recipes/recipes/wpt_export.py#17): [build/chromium][build/recipe_modules/chromium], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python]

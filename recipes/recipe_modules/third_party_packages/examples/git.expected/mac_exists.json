@@ -1,0 +1,90 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/git"
+    ],
+    "infra_step": true,
+    "name": "rmtree workdir"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/git/git/+refs",
+      "--format",
+      "json"
+    ],
+    "name": "refs",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"HEAD\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/heads/master\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/not-a-version\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.1\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.2\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.3rc1\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.12.2.2\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@refs@HEAD@@@",
+      "@@@STEP_LOG_LINE@refs@refs/heads/master@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/not-a-version@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.1@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.2@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.3rc1@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v2.12.2.2@@@",
+      "@@@STEP_LOG_END@refs@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "infra/git/mac-amd64",
+      "-tag",
+      "version:2.12.2.2.chromium10",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "name": "cipd search infra/git/mac-amd64 version:2.12.2.2.chromium10",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-instance_id_1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/git/mac-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "import sys; sys.exit(0)"
+    ],
+    "name": "Synced",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Package is up to date.@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]

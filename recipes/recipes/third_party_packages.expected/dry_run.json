@@ -19,22 +19,10 @@
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"HEAD\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/heads/master\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/not-a-version\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.1\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.2\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.3rc1\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v3.0.0\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.2\": null@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@",
-      "@@@STEP_LOG_LINE@refs@HEAD@@@",
-      "@@@STEP_LOG_LINE@refs@refs/heads/master@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/not-a-version@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.1@@@",
       "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.2@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.3rc1@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v3.0.0@@@",
       "@@@STEP_LOG_END@refs@@@"
     ]
   },
@@ -559,7 +547,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "RECIPE[infra::third_party_packages].resources/python_ssl_suffix.py",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/python_ssl_suffix.py",
       "/path/to/tmp/"
     ],
     "cwd": "[START_DIR]/python/checkout",
@@ -739,21 +727,9 @@
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"HEAD\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/heads/master\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/not-a-version\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.1\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.2\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.3rc1\": null, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.12.2.2\": null@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@",
-      "@@@STEP_LOG_LINE@refs@HEAD@@@",
-      "@@@STEP_LOG_LINE@refs@refs/heads/master@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/not-a-version@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.1@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.2@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.3rc1@@@",
       "@@@STEP_LOG_LINE@refs@refs/tags/v2.12.2.2@@@",
       "@@@STEP_LOG_END@refs@@@"
     ]
@@ -867,8 +843,8 @@
       "-c",
       "user.email=third_party_packages@example.com",
       "am",
-      "RECIPE[infra::third_party_packages].resources/git_patches/0001-exec_cmd-self-resolution-and-relative-pathing.patch",
-      "RECIPE[infra::third_party_packages].resources/git_patches/0002-Infra-specific-extensions.patch"
+      "RECIPE_MODULE[infra::third_party_packages]/resources/git/patches/0001-exec_cmd-self-resolution-and-relative-pathing.patch",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/git/patches/0002-Infra-specific-extensions.patch"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,

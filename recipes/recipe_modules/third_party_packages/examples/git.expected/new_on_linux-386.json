@@ -1,102 +1,5 @@
 [
   {
-    "cmd": [],
-    "name": "python"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
-      "--json-file",
-      "/path/to/tmp/json",
-      "--url",
-      "https://chromium.googlesource.com/external/github.com/python/cpython/+refs",
-      "--format",
-      "json"
-    ],
-    "name": "python.refs",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"HEAD\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/heads/master\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/not-a-version\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.1\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.2\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.3rc1\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v3.0.0\": null@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@",
-      "@@@STEP_LOG_LINE@refs@HEAD@@@",
-      "@@@STEP_LOG_LINE@refs@refs/heads/master@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/not-a-version@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.1@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.2@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.3rc1@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v3.0.0@@@",
-      "@@@STEP_LOG_END@refs@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "rmtree",
-      "[START_DIR]/python"
-    ],
-    "infra_step": true,
-    "name": "python.rmtree workdir",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "cipd",
-      "search",
-      "infra/python/cpython/linux-amd64",
-      "-tag",
-      "version:2.1.2.chromium7",
-      "-json-output",
-      "/path/to/tmp/json",
-      "-service-account-json",
-      "/creds/service_accounts/service-account-cipd-builder.json"
-    ],
-    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium7",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-instance_id_1---\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/python/cpython/linux-amd64\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "import sys; sys.exit(0)"
-    ],
-    "name": "python.Synced",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_TEXT@Package is up to date.@@@"
-    ]
-  },
-  {
-    "cmd": [],
-    "name": "git"
-  },
-  {
     "cmd": [
       "python",
       "-u",
@@ -107,10 +10,7 @@
       "[START_DIR]/git"
     ],
     "infra_step": true,
-    "name": "git.rmtree workdir",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "rmtree workdir"
   },
   {
     "cmd": [
@@ -124,9 +24,8 @@
       "--format",
       "json"
     ],
-    "name": "git.refs",
+    "name": "refs",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"HEAD\": null, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"refs/heads/master\": null, @@@",
@@ -151,7 +50,7 @@
     "cmd": [
       "cipd",
       "search",
-      "infra/git/linux-amd64",
+      "infra/git/linux-386",
       "-tag",
       "version:2.12.2.2.chromium10",
       "-json-output",
@@ -159,9 +58,8 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "git.cipd search infra/git/linux-amd64 version:2.12.2.2.chromium10",
+    "name": "cipd search infra/git/linux-386 version:2.12.2.2.chromium10",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
@@ -178,10 +76,7 @@
       "--url",
       "https://chromium.googlesource.com/external/github.com/git/git"
     ],
-    "name": "git.git setup",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "git setup"
   },
   {
     "cmd": [
@@ -196,10 +91,7 @@
       "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
-    "name": "git.git fetch",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "git fetch"
   },
   {
     "cmd": [
@@ -210,10 +102,7 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "git.git checkout",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "git checkout"
   },
   {
     "cmd": [
@@ -223,10 +112,9 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "git.read revision",
+    "name": "read revision",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
     ]
   },
@@ -240,10 +128,7 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "git.git clean",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "git clean"
   },
   {
     "cmd": [
@@ -253,15 +138,12 @@
       "-c",
       "user.email=third_party_packages@example.com",
       "am",
-      "RECIPE[infra::third_party_packages].resources/git_patches/0001-exec_cmd-self-resolution-and-relative-pathing.patch",
-      "RECIPE[infra::third_party_packages].resources/git_patches/0002-Infra-specific-extensions.patch"
+      "RECIPE_MODULE[infra::third_party_packages]/resources/git/patches/0001-exec_cmd-self-resolution-and-relative-pathing.patch",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/git/patches/0002-Infra-specific-extensions.patch"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "git.git -c",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "git -c"
   },
   {
     "cmd": [
@@ -277,9 +159,8 @@
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
     "cwd": "[START_DIR]/git/checkout",
-    "name": "git.ensure_installed",
+    "name": "ensure_installed",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
@@ -322,10 +203,7 @@
   {
     "cmd": [],
     "cwd": "[START_DIR]/git/checkout",
-    "name": "git.zlib-1.2.11",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "zlib-1.2.11"
   },
   {
     "cmd": [
@@ -341,9 +219,9 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "git.zlib-1.2.11.makedirs workdir",
+    "name": "zlib-1.2.11.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -353,9 +231,9 @@
       "[START_DIR]/git/_support/sources/zlib-1.2.11.tar.gz"
     ],
     "cwd": "[START_DIR]/git/_support/zlib-1.2.11",
-    "name": "git.zlib-1.2.11.extract",
+    "name": "zlib-1.2.11.extract",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -365,9 +243,9 @@
       "--static"
     ],
     "cwd": "[START_DIR]/git/_support/zlib-1.2.11/zlib-1.2.11",
-    "name": "git.zlib-1.2.11.configure",
+    "name": "zlib-1.2.11.configure",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -376,18 +254,15 @@
       "install"
     ],
     "cwd": "[START_DIR]/git/_support/zlib-1.2.11/zlib-1.2.11",
-    "name": "git.zlib-1.2.11.make",
+    "name": "zlib-1.2.11.make",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
     "cmd": [],
     "cwd": "[START_DIR]/git/checkout",
-    "name": "git.openssl-1.1.0e",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "openssl-1.1.0e"
   },
   {
     "cmd": [
@@ -403,9 +278,9 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "git.openssl-1.1.0e.makedirs workdir",
+    "name": "openssl-1.1.0e.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -415,9 +290,9 @@
       "[START_DIR]/git/_support/sources/openssl-1.1.0e.tar.gz"
     ],
     "cwd": "[START_DIR]/git/_support/openssl-1.1.0e",
-    "name": "git.openssl-1.1.0e.extract",
+    "name": "openssl-1.1.0e.extract",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -425,12 +300,12 @@
       "./Configure",
       "--prefix=[START_DIR]/git/_support/openssl-1.1.0e/prefix",
       "no-shared",
-      "linux-x86_64"
+      "linux-x86"
     ],
     "cwd": "[START_DIR]/git/_support/openssl-1.1.0e/openssl-1.1.0e",
-    "name": "git.openssl-1.1.0e.configure",
+    "name": "openssl-1.1.0e.configure",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -438,9 +313,9 @@
       "make"
     ],
     "cwd": "[START_DIR]/git/_support/openssl-1.1.0e/openssl-1.1.0e",
-    "name": "git.openssl-1.1.0e.make",
+    "name": "openssl-1.1.0e.make",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -449,9 +324,9 @@
       "install_sw"
     ],
     "cwd": "[START_DIR]/git/_support/openssl-1.1.0e/openssl-1.1.0e",
-    "name": "git.openssl-1.1.0e.install",
+    "name": "openssl-1.1.0e.install",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -460,10 +335,7 @@
     "env": {
       "LIBS": "-ldl -lpthread"
     },
-    "name": "git.curl-7.54.0",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "curl-7.54.0"
   },
   {
     "cmd": [
@@ -482,9 +354,9 @@
       "LIBS": "-ldl -lpthread"
     },
     "infra_step": true,
-    "name": "git.curl-7.54.0.makedirs workdir",
+    "name": "curl-7.54.0.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -497,9 +369,9 @@
     "env": {
       "LIBS": "-ldl -lpthread"
     },
-    "name": "git.curl-7.54.0.extract",
+    "name": "curl-7.54.0.extract",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -516,9 +388,9 @@
     "env": {
       "LIBS": "-ldl -lpthread"
     },
-    "name": "git.curl-7.54.0.configure",
+    "name": "curl-7.54.0.configure",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -530,18 +402,15 @@
     "env": {
       "LIBS": "-ldl -lpthread"
     },
-    "name": "git.curl-7.54.0.make",
+    "name": "curl-7.54.0.make",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
     "cmd": [],
     "cwd": "[START_DIR]/git/checkout",
-    "name": "git.autoconf-2.69",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "autoconf-2.69"
   },
   {
     "cmd": [
@@ -557,9 +426,9 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "git.autoconf-2.69.makedirs workdir",
+    "name": "autoconf-2.69.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -569,9 +438,9 @@
       "[START_DIR]/git/_support/sources/autoconf-2.69.tar.gz"
     ],
     "cwd": "[START_DIR]/git/_support/autoconf-2.69",
-    "name": "git.autoconf-2.69.extract",
+    "name": "autoconf-2.69.extract",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -580,9 +449,9 @@
       "--prefix=[START_DIR]/git/_support/autoconf-2.69/prefix"
     ],
     "cwd": "[START_DIR]/git/_support/autoconf-2.69/autoconf-2.69",
-    "name": "git.autoconf-2.69.configure",
+    "name": "autoconf-2.69.configure",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -591,9 +460,9 @@
       "install"
     ],
     "cwd": "[START_DIR]/git/_support/autoconf-2.69/autoconf-2.69",
-    "name": "git.autoconf-2.69.make",
+    "name": "autoconf-2.69.make",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -609,10 +478,7 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "git.Makefile specialization",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "Makefile specialization"
   },
   {
     "cmd": [
@@ -627,10 +493,7 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "git.Version file",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "Version file"
   },
   {
     "cmd": [
@@ -646,10 +509,7 @@
         "[START_DIR]/git/_support/autoconf-2.69/prefix/bin"
       ]
     },
-    "name": "git.make configure",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "make configure"
   },
   {
     "cmd": [
@@ -670,10 +530,7 @@
         "[START_DIR]/git/_support/autoconf-2.69/prefix/bin"
       ]
     },
-    "name": "git.configure",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "configure"
   },
   {
     "cmd": [
@@ -689,10 +546,7 @@
         "[START_DIR]/git/_support/autoconf-2.69/prefix/bin"
       ]
     },
-    "name": "git.make install",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "make install"
   },
   {
     "cmd": [
@@ -701,7 +555,7 @@
       "-in",
       "[START_DIR]/git/package",
       "-name",
-      "infra/git/linux-amd64",
+      "infra/git/linux-386",
       "-out",
       "[START_DIR]/git/package.cipd",
       "-json-output",
@@ -709,13 +563,12 @@
       "-install-mode",
       "copy"
     ],
-    "name": "git.build linux-amd64",
+    "name": "build linux-386",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/git/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/git/linux-386\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -733,13 +586,12 @@
       "-tag",
       "version:2.12.2.2.chromium10"
     ],
-    "name": "git.register infra/git/linux-amd64",
+    "name": "register infra/git/linux-386",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/git/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/git/linux-386\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"

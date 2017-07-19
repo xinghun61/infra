@@ -1,9 +1,5 @@
 [
   {
-    "cmd": [],
-    "name": "python"
-  },
-  {
     "cmd": [
       "python",
       "-u",
@@ -15,9 +11,8 @@
       "--format",
       "json"
     ],
-    "name": "python.refs",
+    "name": "refs",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"HEAD\": null, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"refs/heads/master\": null, @@@",
@@ -49,16 +44,13 @@
       "[START_DIR]/python"
     ],
     "infra_step": true,
-    "name": "python.rmtree workdir",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "rmtree workdir"
   },
   {
     "cmd": [
       "cipd",
       "search",
-      "infra/python/cpython/linux-amd64",
+      "infra/python/cpython/linux-386",
       "-tag",
       "version:2.1.2.chromium7",
       "-json-output",
@@ -66,9 +58,8 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium7",
+    "name": "cipd search infra/python/cpython/linux-386 version:2.1.2.chromium7",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
@@ -85,10 +76,7 @@
       "--url",
       "https://chromium.googlesource.com/external/github.com/python/cpython"
     ],
-    "name": "python.git setup",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "git setup"
   },
   {
     "cmd": [
@@ -103,10 +91,7 @@
       "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
     },
     "infra_step": true,
-    "name": "python.git fetch",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "git fetch"
   },
   {
     "cmd": [
@@ -117,10 +102,7 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.git checkout",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "git checkout"
   },
   {
     "cmd": [
@@ -130,10 +112,9 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.read revision",
+    "name": "read revision",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
     ]
   },
@@ -147,10 +128,7 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.git clean",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "git clean"
   },
   {
     "cmd": [
@@ -166,9 +144,8 @@
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
     "cwd": "[START_DIR]/python/checkout",
-    "name": "python.ensure_installed",
+    "name": "ensure_installed",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
@@ -211,10 +188,7 @@
   {
     "cmd": [],
     "cwd": "[START_DIR]/python/checkout",
-    "name": "python.readline-7.0",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "readline-7.0"
   },
   {
     "cmd": [
@@ -230,9 +204,9 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.readline-7.0.makedirs workdir",
+    "name": "readline-7.0.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -242,9 +216,9 @@
       "[START_DIR]/python/_support/sources/readline-7.0.tar.gz"
     ],
     "cwd": "[START_DIR]/python/_support/readline-7.0",
-    "name": "python.readline-7.0.extract",
+    "name": "readline-7.0.extract",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -253,9 +227,9 @@
       "--prefix=[START_DIR]/python/_support/readline-7.0/prefix"
     ],
     "cwd": "[START_DIR]/python/_support/readline-7.0/readline-7.0",
-    "name": "python.readline-7.0.configure",
+    "name": "readline-7.0.configure",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -264,18 +238,15 @@
       "install"
     ],
     "cwd": "[START_DIR]/python/_support/readline-7.0/readline-7.0",
-    "name": "python.readline-7.0.make",
+    "name": "readline-7.0.make",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
     "cmd": [],
     "cwd": "[START_DIR]/python/checkout",
-    "name": "python.termcap-1.3.1",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "termcap-1.3.1"
   },
   {
     "cmd": [
@@ -291,9 +262,9 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.termcap-1.3.1.makedirs workdir",
+    "name": "termcap-1.3.1.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -303,9 +274,9 @@
       "[START_DIR]/python/_support/sources/termcap-1.3.1.tar.gz"
     ],
     "cwd": "[START_DIR]/python/_support/termcap-1.3.1",
-    "name": "python.termcap-1.3.1.extract",
+    "name": "termcap-1.3.1.extract",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -314,9 +285,9 @@
       "--prefix=[START_DIR]/python/_support/termcap-1.3.1/prefix"
     ],
     "cwd": "[START_DIR]/python/_support/termcap-1.3.1/termcap-1.3.1",
-    "name": "python.termcap-1.3.1.configure",
+    "name": "termcap-1.3.1.configure",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -325,18 +296,15 @@
       "install"
     ],
     "cwd": "[START_DIR]/python/_support/termcap-1.3.1/termcap-1.3.1",
-    "name": "python.termcap-1.3.1.make",
+    "name": "termcap-1.3.1.make",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
     "cmd": [],
     "cwd": "[START_DIR]/python/checkout",
-    "name": "python.zlib-1.2.11",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "zlib-1.2.11"
   },
   {
     "cmd": [
@@ -352,9 +320,9 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.zlib-1.2.11.makedirs workdir",
+    "name": "zlib-1.2.11.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -364,9 +332,9 @@
       "[START_DIR]/python/_support/sources/zlib-1.2.11.tar.gz"
     ],
     "cwd": "[START_DIR]/python/_support/zlib-1.2.11",
-    "name": "python.zlib-1.2.11.extract",
+    "name": "zlib-1.2.11.extract",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -376,9 +344,9 @@
       "--static"
     ],
     "cwd": "[START_DIR]/python/_support/zlib-1.2.11/zlib-1.2.11",
-    "name": "python.zlib-1.2.11.configure",
+    "name": "zlib-1.2.11.configure",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -387,18 +355,15 @@
       "install"
     ],
     "cwd": "[START_DIR]/python/_support/zlib-1.2.11/zlib-1.2.11",
-    "name": "python.zlib-1.2.11.make",
+    "name": "zlib-1.2.11.make",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
     "cmd": [],
     "cwd": "[START_DIR]/python/checkout",
-    "name": "python.openssl-1.1.0e",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "openssl-1.1.0e"
   },
   {
     "cmd": [
@@ -414,9 +379,9 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.openssl-1.1.0e.makedirs workdir",
+    "name": "openssl-1.1.0e.makedirs workdir",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -426,9 +391,9 @@
       "[START_DIR]/python/_support/sources/openssl-1.1.0e.tar.gz"
     ],
     "cwd": "[START_DIR]/python/_support/openssl-1.1.0e",
-    "name": "python.openssl-1.1.0e.extract",
+    "name": "openssl-1.1.0e.extract",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -436,12 +401,12 @@
       "./Configure",
       "--prefix=[START_DIR]/python/_support/openssl-1.1.0e/prefix",
       "no-shared",
-      "linux-x86_64"
+      "linux-x86"
     ],
     "cwd": "[START_DIR]/python/_support/openssl-1.1.0e/openssl-1.1.0e",
-    "name": "python.openssl-1.1.0e.configure",
+    "name": "openssl-1.1.0e.configure",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -449,9 +414,9 @@
       "make"
     ],
     "cwd": "[START_DIR]/python/_support/openssl-1.1.0e/openssl-1.1.0e",
-    "name": "python.openssl-1.1.0e.make",
+    "name": "openssl-1.1.0e.make",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -460,9 +425,9 @@
       "install_sw"
     ],
     "cwd": "[START_DIR]/python/_support/openssl-1.1.0e/openssl-1.1.0e",
-    "name": "python.openssl-1.1.0e.install",
+    "name": "openssl-1.1.0e.install",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -478,9 +443,8 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.Configure static modules",
+    "name": "Configure static modules",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@Setup.local@*static*@@@",
       "@@@STEP_LOG_LINE@Setup.local@LIBTERMCAP_PREFIX=[START_DIR]/python/_support/termcap-1.3.1/prefix@@@",
       "@@@STEP_LOG_LINE@Setup.local@binascii binascii.c -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include [START_DIR]/python/_support/zlib-1.2.11/prefix/lib/libz.a@@@",
@@ -508,10 +472,7 @@
       "CPPFLAGS": "-I[START_DIR]/python/_support/readline-7.0/prefix/include -I[START_DIR]/python/_support/termcap-1.3.1/prefix/include -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include",
       "LDFLAGS": "-L[START_DIR]/python/_support/readline-7.0/prefix/lib -L[START_DIR]/python/_support/termcap-1.3.1/prefix/lib -L[START_DIR]/python/_support/zlib-1.2.11/prefix/lib"
     },
-    "name": "python.configure",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "configure"
   },
   {
     "cmd": [
@@ -519,18 +480,12 @@
       "install"
     ],
     "cwd": "[START_DIR]/python/checkout",
-    "name": "python.make",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "make"
   },
   {
     "cmd": [],
     "cwd": "[START_DIR]/python/checkout",
-    "name": "python.provision SSL",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "provision SSL"
   },
   {
     "cmd": [
@@ -545,9 +500,9 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.provision SSL.read ssl.py",
+    "name": "provision SSL.read ssl.py",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -558,14 +513,14 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "RECIPE[infra::third_party_packages].resources/python_ssl_suffix.py",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/python_ssl_suffix.py",
       "/path/to/tmp/"
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.provision SSL.read ssl.py addendum",
+    "name": "provision SSL.read ssl.py addendum",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -581,9 +536,9 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.provision SSL.write ssl.py",
+    "name": "provision SSL.write ssl.py",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -602,10 +557,7 @@
       "wheel==0.30.0a0"
     ],
     "cwd": "[START_DIR]/python/checkout",
-    "name": "python.pip",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "pip"
   },
   {
     "cmd": [
@@ -619,10 +571,7 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.cleanup include",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "cleanup include"
   },
   {
     "cmd": [
@@ -636,10 +585,7 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.cleanup lib/libpython2.7.a",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "cleanup lib/libpython2.7.a"
   },
   {
     "cmd": [
@@ -653,10 +599,7 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.cleanup lib/python2.7/test",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "cleanup lib/python2.7/test"
   },
   {
     "cmd": [
@@ -670,10 +613,7 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "python.cleanup lib/python2.7/config",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
+    "name": "cleanup lib/python2.7/config"
   },
   {
     "cmd": [
@@ -682,7 +622,7 @@
       "-in",
       "[START_DIR]/python/package",
       "-name",
-      "infra/python/cpython/linux-amd64",
+      "infra/python/cpython/linux-386",
       "-out",
       "[START_DIR]/python/package.cipd",
       "-json-output",
@@ -690,13 +630,12 @@
       "-install-mode",
       "copy"
     ],
-    "name": "python.build linux-amd64",
+    "name": "build linux-386",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/python/cpython/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/python/cpython/linux-386\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
@@ -714,109 +653,15 @@
       "-tag",
       "version:2.1.2.chromium7"
     ],
-    "name": "python.register infra/python/cpython/linux-amd64",
+    "name": "register infra/python/cpython/linux-386",
     "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/python/cpython/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/python/cpython/linux-386\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [],
-    "name": "git"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "rmtree",
-      "[START_DIR]/git"
-    ],
-    "infra_step": true,
-    "name": "git.rmtree workdir",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
-      "--json-file",
-      "/path/to/tmp/json",
-      "--url",
-      "https://chromium.googlesource.com/external/github.com/git/git/+refs",
-      "--format",
-      "json"
-    ],
-    "name": "git.refs",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"HEAD\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/heads/master\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/not-a-version\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.1\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.2\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.3rc1\": null, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.12.2.2\": null@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@",
-      "@@@STEP_LOG_LINE@refs@HEAD@@@",
-      "@@@STEP_LOG_LINE@refs@refs/heads/master@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/not-a-version@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.1@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.2@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.3rc1@@@",
-      "@@@STEP_LOG_LINE@refs@refs/tags/v2.12.2.2@@@",
-      "@@@STEP_LOG_END@refs@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "cipd",
-      "search",
-      "infra/git/linux-amd64",
-      "-tag",
-      "version:2.12.2.2.chromium10",
-      "-json-output",
-      "/path/to/tmp/json",
-      "-service-account-json",
-      "/creds/service_accounts/service-account-cipd-builder.json"
-    ],
-    "name": "git.cipd search infra/git/linux-amd64 version:2.12.2.2.chromium10",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-instance_id_1---\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/git/linux-amd64\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  ]@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "import sys; sys.exit(0)"
-    ],
-    "name": "git.Synced",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@",
-      "@@@STEP_TEXT@Package is up to date.@@@"
     ]
   },
   {
