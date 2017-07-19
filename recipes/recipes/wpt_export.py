@@ -40,7 +40,7 @@ def RunSteps(api):
                                      'Scripts', 'wpt-export')
   args = [
     '--credentials-json',
-    '/creds/github/wpt-export.json',
+    '/creds/json/wpt-export.json',
   ]
   api.python('Export Chromium commits and in-flight CLs to WPT', script, args)
 

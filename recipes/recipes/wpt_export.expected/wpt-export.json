@@ -131,7 +131,7 @@
       "-u",
       "[START_DIR]/src/third_party/WebKit/Tools/Scripts/wpt-export",
       "--credentials-json",
-      "/creds/github/wpt-export.json"
+      "/creds/json/wpt-export.json"
     ],
     "name": "Export Chromium commits and in-flight CLs to WPT"
   },
