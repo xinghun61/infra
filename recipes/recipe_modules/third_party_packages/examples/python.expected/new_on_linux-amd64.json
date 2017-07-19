@@ -52,13 +52,13 @@
       "search",
       "infra/python/cpython/linux-amd64",
       "-tag",
-      "version:2.1.2.chromium7",
+      "version:2.1.2.chromium8",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium7",
+    "name": "cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium8",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
@@ -137,7 +137,7 @@
       "-root",
       "[START_DIR]/python/_support/sources",
       "-ensure-file",
-      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/termcap version:1.3.1\ninfra/third_party/source/zlib version:1.2.11",
+      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/termcap version:1.3.1\ninfra/third_party/source/zlib version:1.2.11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -171,6 +171,10 @@
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.0-----\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/readline\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:3.19.3--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/sqlite-autoconf\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.3.1---\", @@@",
@@ -211,9 +215,11 @@
   },
   {
     "cmd": [
-      "tar",
-      "-xzf",
-      "[START_DIR]/python/_support/sources/readline-7.0.tar.gz"
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/readline-7.0.tar.gz",
+      "[START_DIR]/python/_support/readline-7.0"
     ],
     "cwd": "[START_DIR]/python/_support/readline-7.0",
     "name": "readline-7.0.extract",
@@ -269,9 +275,11 @@
   },
   {
     "cmd": [
-      "tar",
-      "-xzf",
-      "[START_DIR]/python/_support/sources/termcap-1.3.1.tar.gz"
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/termcap-1.3.1.tar.gz",
+      "[START_DIR]/python/_support/termcap-1.3.1"
     ],
     "cwd": "[START_DIR]/python/_support/termcap-1.3.1",
     "name": "termcap-1.3.1.extract",
@@ -327,9 +335,11 @@
   },
   {
     "cmd": [
-      "tar",
-      "-xzf",
-      "[START_DIR]/python/_support/sources/zlib-1.2.11.tar.gz"
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/zlib-1.2.11.tar.gz",
+      "[START_DIR]/python/_support/zlib-1.2.11"
     ],
     "cwd": "[START_DIR]/python/_support/zlib-1.2.11",
     "name": "zlib-1.2.11.extract",
@@ -363,6 +373,72 @@
   {
     "cmd": [],
     "cwd": "[START_DIR]/python/checkout",
+    "name": "sqlite-autoconf-3190300"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/sqlite-autoconf-3190300"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "sqlite-autoconf-3190300.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/sqlite-autoconf-3190300.tar.gz",
+      "[START_DIR]/python/_support/sqlite-autoconf-3190300"
+    ],
+    "cwd": "[START_DIR]/python/_support/sqlite-autoconf-3190300",
+    "name": "sqlite-autoconf-3190300.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix",
+      "--enable-static",
+      "--disable-shared",
+      "--with-pic",
+      "--enable-fts5",
+      "--enable-json1",
+      "--enable-session"
+    ],
+    "cwd": "[START_DIR]/python/_support/sqlite-autoconf-3190300/sqlite-autoconf-3190300",
+    "name": "sqlite-autoconf-3190300.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install"
+    ],
+    "cwd": "[START_DIR]/python/_support/sqlite-autoconf-3190300/sqlite-autoconf-3190300",
+    "name": "sqlite-autoconf-3190300.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
     "name": "openssl-1.1.0e"
   },
   {
@@ -386,9 +462,11 @@
   },
   {
     "cmd": [
-      "tar",
-      "-xzf",
-      "[START_DIR]/python/_support/sources/openssl-1.1.0e.tar.gz"
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/openssl-1.1.0e.tar.gz",
+      "[START_DIR]/python/_support/openssl-1.1.0e"
     ],
     "cwd": "[START_DIR]/python/_support/openssl-1.1.0e",
     "name": "openssl-1.1.0e.extract",
@@ -469,8 +547,8 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
-      "CPPFLAGS": "-I[START_DIR]/python/_support/readline-7.0/prefix/include -I[START_DIR]/python/_support/termcap-1.3.1/prefix/include -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include",
-      "LDFLAGS": "-L[START_DIR]/python/_support/readline-7.0/prefix/lib -L[START_DIR]/python/_support/termcap-1.3.1/prefix/lib -L[START_DIR]/python/_support/zlib-1.2.11/prefix/lib"
+      "CPPFLAGS": "-I[START_DIR]/python/_support/readline-7.0/prefix/include -I[START_DIR]/python/_support/termcap-1.3.1/prefix/include -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include -I[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/include",
+      "LDFLAGS": "-L[START_DIR]/python/_support/readline-7.0/prefix/lib -L[START_DIR]/python/_support/termcap-1.3.1/prefix/lib -L[START_DIR]/python/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/lib"
     },
     "name": "configure"
   },
@@ -651,7 +729,7 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
       "-tag",
-      "version:2.1.2.chromium7"
+      "version:2.1.2.chromium8"
     ],
     "name": "register infra/python/cpython/linux-amd64",
     "~followup_annotations": [

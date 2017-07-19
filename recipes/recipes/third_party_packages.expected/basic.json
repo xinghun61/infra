@@ -48,13 +48,13 @@
       "search",
       "infra/python/cpython/linux-amd64",
       "-tag",
-      "version:2.1.2.chromium7",
+      "version:2.1.2.chromium8",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium7",
+    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium8",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",

@@ -12,7 +12,7 @@ PACKAGE_PREFIX = 'infra/python/cpython/'
 
 # This version suffix serves to distinguish different revisions of Python built
 # with this recipe.
-PACKAGE_VERSION_SUFFIX = '.chromium7'
+PACKAGE_VERSION_SUFFIX = '.chromium8'
 
 class PythonApi(util.ModuleShim):
 
@@ -44,10 +44,18 @@ class PythonApi(util.ModuleShim):
       readline = support.ensure_readline()
       termcap = support.ensure_termcap()
       zlib = support.ensure_zlib()
-      libs = (readline, termcap, zlib)
+      sqlite = support.ensure_sqlite()
+      libs = (readline, termcap, zlib, sqlite)
 
       cppflags = []
       ldflags = []
+
+      if self.m.platform.is_mac:
+        # Instruct Mac to prefer ".a" files in earlier library search paths
+        # rather than search all of the paths for a ".dylib" and then, failing
+        # that, do a second sweep for ".a".
+        ldflags.append('-Wl,-search_paths_first')
+
       for lib in libs:
         cppflags += lib.cppflags
         ldflags += lib.ldflags

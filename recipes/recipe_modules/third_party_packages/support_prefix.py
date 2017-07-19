@@ -77,6 +77,7 @@ class SupportPrefix(util.ModuleShim):
     'infra/third_party/source/termcap': 'version:1.3.1',
     'infra/third_party/source/zlib': 'version:1.2.11',
     'infra/third_party/source/curl': 'version:7.54.0',
+    'infra/third_party/source/sqlite-autoconf': 'version:3.19.3',
     'infra/third_party/pip-packages': 'version:9.0.1',
   }
 
@@ -130,15 +131,29 @@ class SupportPrefix(util.ModuleShim):
         self._built[key] = build_fn()
     return self._built[key]
 
-  def _ensure_and_build_archive(self, name, tag, build_fn, variant=None):
+  def _ensure_and_build_archive(self, name, tag, build_fn, archive_name=None,
+                                variant=None):
     sources = self.ensure_sources()
-    base = '%s-%s' % (name, tag.lstrip('version:'))
+    archive_name = archive_name or '%s-%s.tar.gz' % (
+        name, tag.lstrip('version:'))
+
+    base = archive_name
+    for ext in ('.tar.gz', '.tgz', '.zip'):
+      if base.endswith(ext):
+        base = base[:-len(ext)]
+        break
 
     def build_archive():
-      archive = sources.join('%s.tar.gz' % (base,))
+      archive = sources.join(archive_name)
       prefix = self.m.context.cwd.join('prefix')
 
-      self.m.step('extract', ['tar', '-xzf', archive])
+      self.m.python(
+          'extract',
+          self.resource('archive_util.py'),
+          [
+            archive,
+            self.m.context.cwd,
+          ])
       build = self.m.context.cwd.join(base) # Archive is extracted here.
 
       try:
@@ -190,8 +205,8 @@ class SupportPrefix(util.ModuleShim):
   def ensure_mac_native_openssl(self):
     return self._build_openssl('version:0.9.8zh', shell=True)
 
-  def _generic_build(self, name, tag, configure_args=None, libs=None,
-                     deps=None, shared_deps=None):
+  def _generic_build(self, name, tag, archive_name=None, configure_args=None,
+                     libs=None, deps=None, shared_deps=None):
     def build_fn(prefix):
       self.m.step('configure', [
         './configure',
@@ -199,7 +214,8 @@ class SupportPrefix(util.ModuleShim):
       ] + (configure_args or []))
       self.m.step('make', ['make', 'install'])
     return Source(
-        prefix=self._ensure_and_build_archive(name, tag, build_fn),
+        prefix=self._ensure_and_build_archive(
+          name, tag, build_fn, archive_name=archive_name),
         deps=deps or [],
         libs=libs or [name],
         shared_deps=shared_deps or [])
@@ -233,6 +249,18 @@ class SupportPrefix(util.ModuleShim):
   def ensure_zlib(self):
     return self._generic_build('zlib', 'version:1.2.11', libs=['z'],
                                configure_args=['--static'])
+
+  def ensure_sqlite(self):
+    return self._generic_build('sqlite', 'version:3.19.3', libs=['sqlite3'],
+        configure_args=[
+          '--enable-static',
+          '--disable-shared',
+          '--with-pic',
+          '--enable-fts5',
+          '--enable-json1',
+          '--enable-session',
+        ],
+        archive_name='sqlite-autoconf-3190300.tar.gz')
 
   def ensure_termcap(self):
     return self._generic_build('termcap', 'version:1.3.1')

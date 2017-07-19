@@ -32,7 +32,7 @@ class TestPython(unittest.TestCase):
 
   def test_package_import(self):
     for pkg in (
-        'ctypes', 'ssl', 'cStringIO', 'binascii', 'hashlib'):
+        'ctypes', 'ssl', 'cStringIO', 'binascii', 'hashlib', 'sqlite3'):
       script = 'import %s; print %s' % (pkg, pkg)
       rv = subprocess.call([self.python, '-c', script])
       self.assertEqual(rv, 0)
@@ -42,6 +42,16 @@ class TestPython(unittest.TestCase):
         self.HTTPS_REPO_URL)
     rv = subprocess.call([self.python, '-c', script])
     self.assertEqual(rv, 0)
+
+  def test_sqlite_version(self):
+    script = (
+        'import sqlite3; '
+        'print ".".join(str(x) for x in sqlite3.sqlite_version_info)')
+    proc = subprocess.Popen([self.python, '-c', script],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    stdout, _ = proc.communicate()
+    self.assertEqual(proc.returncode, 0)
+    self.assertEqual(stdout.strip(), '3.19.3') # Matches sqlite3 CIPD package.
 
 
 if __name__ == '__main__':
