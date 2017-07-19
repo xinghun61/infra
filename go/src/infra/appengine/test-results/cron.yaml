@@ -8,3 +8,7 @@ cron:
   - description: refresh list of top flaky tests
     url: /test_flakiness?groupKind=all&groupName=all
     schedule: every 1 hours
+  - description: delete old test results
+    url: /internal/cron/delete_old_results
+    # TODO(sergiyb): Reduce to every 1 hour after initial cleanup of old data.
+    schedule: every 10 minutes

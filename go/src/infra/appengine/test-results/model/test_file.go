@@ -62,8 +62,9 @@ func (b *BuildNum) FromProperty(p datastore.Property) error {
 
 // DataEntry represents a DataEntry record.
 type DataEntry struct {
-	ID   int64  `gae:"$id"`
-	Data []byte `gae:"data,noindex"`
+	ID      int64     `gae:"$id"`
+	Data    []byte    `gae:"data,noindex"`
+	Created time.Time `gae:"created"`
 }
 
 // TestFile represents a TestFile record.
@@ -236,7 +237,8 @@ func writeDataEntries(c context.Context, r io.Reader) ([]*datastore.Key, error) 
 
 		if count > 0 {
 			dataEntry := &DataEntry{
-				Data: buf[:count],
+				Data:    buf[:count],
+				Created: clock.Get(c).Now().UTC(),
 			}
 			if err := datastore.Put(c, dataEntry); err != nil {
 				logging.WithError(err).Errorf(c, "Failed to put DataEntry #%d.", len(keys))

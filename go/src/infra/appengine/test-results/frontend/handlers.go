@@ -38,9 +38,11 @@ const (
 func init() {
 	r := router.New()
 
-	baseMW := gaemiddleware.BaseProd().Extend(timeoutMiddleware)
-	getMW := baseMW.Extend(templatesMiddleware())
-	authMW := baseMW.Extend(
+	baseMW := gaemiddleware.BaseProd()
+	frontendMW := baseMW.Extend(timeoutMiddleware(time.Minute))
+	cronMW := baseMW.Extend(timeoutMiddleware(10 * time.Minute))
+	getMW := frontendMW.Extend(templatesMiddleware())
+	authMW := frontendMW.Extend(
 		auth.Authenticate(&server.OAuth2Method{Scopes: []string{server.EmailScope}}),
 	)
 
@@ -56,31 +58,37 @@ func init() {
 	// exactly one test file, but normally returns HTML. Consider separating JSON
 	// output into a /data/ endpoint, but make sure that all clients are updated.
 	r.GET("/testfile", getMW, getHandler)
-	r.GET("/revision_range", baseMW, revisionHandler)
+	r.GET("/revision_range", frontendMW, revisionHandler)
 
 	// POST endpoints.
 	r.POST("/testfile/upload", authMW.Extend(withParsedUploadForm), uploadHandler)
 
 	r.POST(
 		deleteKeysPath,
-		baseMW.Extend(gaemiddleware.RequireTaskQueue(deleteKeysQueueName)),
+		frontendMW.Extend(gaemiddleware.RequireTaskQueue(deleteKeysQueueName)),
 		deleteKeysHandler,
 	)
 
 	// Endpoints that return JSON and not expected to be used by humans.
-	r.GET("/data/builders", baseMW, getBuildersHandler)
-	r.GET("/data/test_flakiness/list", baseMW, testFlakinessListHandler)
-	r.GET("/data/test_flakiness/groups", baseMW, testFlakinessGroupsHandler)
-	r.GET("/data/test_flakiness/data", baseMW, testFlakinessDataHandler)
+	r.GET("/data/builders", frontendMW, getBuildersHandler)
+	r.GET("/data/test_flakiness/list", frontendMW, testFlakinessListHandler)
+	r.GET("/data/test_flakiness/groups", frontendMW, testFlakinessGroupsHandler)
+	r.GET("/data/test_flakiness/data", frontendMW, testFlakinessDataHandler)
+
+	// Internal cron handlers.
+	r.GET(
+		"/internal/cron/delete_old_results", cronMW, deleteOldResultsHandler)
 
 	http.DefaultServeMux.Handle("/", r)
 }
 
-func timeoutMiddleware(c *router.Context, next router.Handler) {
-	newCtx, cancelFunc := context.WithTimeout(c.Context, time.Minute)
-	defer cancelFunc()
-	c.Context = newCtx
-	next(c)
+func timeoutMiddleware(timeoutMs time.Duration) func(*router.Context, router.Handler) {
+	return func(c *router.Context, next router.Handler) {
+		newCtx, cancelFunc := context.WithTimeout(c.Context, timeoutMs)
+		defer cancelFunc()
+		c.Context = newCtx
+		next(c)
+	}
 }
 
 // templatesMiddleware returns the templates middleware.
