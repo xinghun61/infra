@@ -98,8 +98,9 @@ class GcloudApi(util.ModuleShim):
         properties)
 
     # Create CIPD bundle.
-    self.create_package(
-        package_name, workdir, base_dir, latest_version, 'copy')
+    package_file = self.build_package(package_name, workdir, base_dir, 'copy')
+    if not self.dry_run:
+      self.register_package(package_file, package_name, latest_version)
 
 
   def _get_latest_version(self, platform_name, platform_bits):

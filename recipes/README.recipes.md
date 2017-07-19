@@ -113,23 +113,25 @@ Args:
 
 #### **class [ThirdPartyPackagesApi](/recipes/recipe_modules/third_party_packages/api.py#13)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [create\_package](/recipes/recipe_modules/third_party_packages/api.py#98)(self, name, workdir, root, version, install_mode):**
+&mdash; **def [build\_package](/recipes/recipe_modules/third_party_packages/api.py#105)(self, name, workdir, root, install_mode):**
 
-&mdash; **def [does\_package\_exist](/recipes/recipe_modules/third_party_packages/api.py#94)(self, name, version):**
+&mdash; **def [does\_package\_exist](/recipes/recipe_modules/third_party_packages/api.py#101)(self, name, version):**
 
 &emsp; **@dry_run.setter**<br>&mdash; **def [dry\_run](/recipes/recipe_modules/third_party_packages/api.py#23)(self, v):**
 
-&mdash; **def [ensure\_package](/recipes/recipe_modules/third_party_packages/api.py#48)(self, workdir, repo_url, package_name_prefix, install, tag, version, cipd_install_mode):**
+&mdash; **def [ensure\_package](/recipes/recipe_modules/third_party_packages/api.py#48)(self, workdir, repo_url, package_name_prefix, install_fn, tag, version, cipd_install_mode, test_fn=None):**
 
 Ensures that the specified CIPD package exists.
 
 &emsp; **@property**<br>&mdash; **def [gcloud](/recipes/recipe_modules/third_party_packages/api.py#41)(self):**
 
-&mdash; **def [get\_latest\_release\_tag](/recipes/recipe_modules/third_party_packages/api.py#71)(self, repo_url, prefix='v'):**
+&mdash; **def [get\_latest\_release\_tag](/recipes/recipe_modules/third_party_packages/api.py#78)(self, repo_url, prefix='v'):**
 
 &emsp; **@property**<br>&mdash; **def [git](/recipes/recipe_modules/third_party_packages/api.py#37)(self):**
 
 &emsp; **@property**<br>&mdash; **def [python](/recipes/recipe_modules/third_party_packages/api.py#33)(self):**
+
+&mdash; **def [register\_package](/recipes/recipe_modules/third_party_packages/api.py#110)(self, package_file, name, version):**
 
 &mdash; **def [support\_prefix](/recipes/recipe_modules/third_party_packages/api.py#45)(self, base):**
 ### *recipe_modules* / [wct](/recipes/recipe_modules/wct)

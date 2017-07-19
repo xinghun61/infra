@@ -228,6 +228,12 @@ class PythonApi(util.ModuleShim):
             'cleanup %s' % ('/'.join(path_tuple),),
             target_dir.join(*path_tuple))
 
+    def test(package_path):
+      with self.m.context(env={'PYTHON_TEST_CIPD_PACKAGE': package_path}):
+        self.m.python(
+            'test',
+            self.resource('python', 'python_test.py'))
+
     base_env = {}
     if self.m.platform.is_mac:
       base_env['MACOSX_DEPLOYMENT_TARGET'] = '10.6'
@@ -241,4 +247,5 @@ class PythonApi(util.ModuleShim):
           tag,
           version,
           'copy',
+          test_fn=test,
       )

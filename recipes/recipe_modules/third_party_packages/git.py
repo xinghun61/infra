@@ -206,6 +206,7 @@ class GitApi(util.ModuleShim):
         # if they are symlinks, then these symlinks will be used as templates,
         # which is both incorrect and invalid.
         'copy',
+        test_fn=self._test_package,
     )
 
 
@@ -310,12 +311,9 @@ class GitApi(util.ModuleShim):
         self.resource('git', 'profile.d.vpython.sh'),
         package_dir.join('etc', 'profile.d', 'vpython.sh'))
 
-    self.create_package(
-        package_name,
-        workdir,
-        package_dir,
-        version,
-        None)
+    package_file = self.build_package(package_name, workdir, package_dir, None)
+    self._test_package(package_file)
+    self.register_package(package_file, package_name, version)
 
   def _get_latest_windows_release(self):
     """Returns a tuple (version, archive_url) for the latest release.
@@ -347,3 +345,9 @@ class GitApi(util.ModuleShim):
       raise self.m.step.StepFailure('could not find suitable asset')
     version += PACKAGE_VERSION_SUFFIX
     return version, asset['url']
+
+  def _test_package(self, package_path):
+    with self.m.context(env={'GIT_TEST_CIPD_PACKAGE': package_path}):
+      self.m.python(
+          'test',
+          self.resource('git', 'git_test.py'))

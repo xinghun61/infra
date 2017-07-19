@@ -503,6 +503,17 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/git/git_test.py"
+    ],
+    "env": {
+      "GIT_TEST_CIPD_PACKAGE": "[START_DIR]/git/package.cipd"
+    },
+    "name": "test"
+  },
+  {
+    "cmd": [
       "cipd",
       "pkg-register",
       "[START_DIR]/git/package.cipd",

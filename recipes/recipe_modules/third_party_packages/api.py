@@ -45,8 +45,8 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
   def support_prefix(self, base):
     return SupportPrefix(self, base)
 
-  def ensure_package(self, workdir, repo_url, package_name_prefix, install,
-                     tag, version, cipd_install_mode):
+  def ensure_package(self, workdir, repo_url, package_name_prefix, install_fn,
+                     tag, version, cipd_install_mode, test_fn=None):
     """Ensures that the specified CIPD package exists."""
     package_name = package_name_prefix + self.m.cipd.platform_suffix()
 
@@ -63,10 +63,17 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
         submodules=False)
 
     with self.m.context(cwd=checkout_dir):
-      install(package_dir, tag)
+      install_fn(package_dir, tag)
 
-    self.create_package(package_name, workdir, package_dir, version,
-                        cipd_install_mode)
+    package_file = self.build_package(package_name, workdir, package_dir,
+                                      cipd_install_mode)
+
+    if test_fn:
+      test_fn(package_file)
+
+    if not self.dry_run:
+      self.register_package(package_file, package_name, version)
+
 
   def get_latest_release_tag(self, repo_url, prefix='v'):
     result = None
@@ -95,8 +102,11 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
     search = self.m.cipd.search(name, 'version:' + version)
     return bool(search.json.output['result'] and not self.dry_run)
 
-  def create_package(self, name, workdir, root, version, install_mode):
+  def build_package(self, name, workdir, root, install_mode):
     package_file = workdir.join('package.cipd')
     self.m.cipd.build(root, package_file, name, install_mode=install_mode)
-    if not self.dry_run:
-      self.m.cipd.register(name, package_file, tags={'version': version})
+    return package_file
+
+  def register_package(self, package_file, name, version):
+    assert not self.dry_run
+    self.m.cipd.register(name, package_file, tags={'version': version})
