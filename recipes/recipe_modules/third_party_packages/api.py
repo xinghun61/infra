@@ -71,8 +71,7 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
     if test_fn:
       test_fn(package_file)
 
-    if not self.dry_run:
-      self.register_package(package_file, package_name, version)
+    self.register_package(package_file, package_name, version)
 
 
   def get_latest_release_tag(self, repo_url, prefix='v'):
@@ -108,5 +107,5 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
     return package_file
 
   def register_package(self, package_file, name, version):
-    assert not self.dry_run
-    self.m.cipd.register(name, package_file, tags={'version': version})
+    if not self.dry_run:
+      self.m.cipd.register(name, package_file, tags={'version': version})

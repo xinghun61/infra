@@ -17,7 +17,7 @@ DEPS = [
 ]
 
 PROPERTIES = {
-  'dry_run': Property(default=True, kind=bool),
+  'dry_run': Property(default=False, kind=bool),
 }
 
 
@@ -37,23 +37,45 @@ def RunSteps(api, dry_run):
 
 
 def GenTests(api):
-  yield (
-      api.test('basic') +
+  def GenTestData():
+    platform = 'linux-amd64'
+    def cipd_search(parent_step, package_name, version):
+      return api.step_data(
+          '%s.cipd search %s version:%s' % (
+              parent_step, package_name, version),
+          api.cipd.example_search(
+              package_name,
+              instances=0))
+
+    return (
       api.platform.name('linux') +
       api.platform.bits(64) +
-      api.properties(dry_run=False) +
       api.step_data('git.refs',
         api.gitiles.make_refs_test_data('refs/tags/v2.12.2.2')) +
+      cipd_search(
+        'git',
+        api.third_party_packages.git.PACKAGE_PREFIX + platform,
+        '2.12.2.2' + api.third_party_packages.git.PACKAGE_VERSION_SUFFIX) +
       api.step_data('python.refs',
-        api.gitiles.make_refs_test_data('refs/tags/v2.1.2'))
-  )
+        api.gitiles.make_refs_test_data('refs/tags/v2.1.2')) +
+      cipd_search(
+        'python',
+        api.third_party_packages.python.PACKAGE_PREFIX + platform,
+        '2.1.2' + api.third_party_packages.python.PACKAGE_VERSION_SUFFIX) +
+      cipd_search(
+        'gcloud',
+        api.third_party_packages.gcloud.PACKAGE_TEMPLATE % {
+          'platform': platform,
+        },
+        '1.2.3' + api.third_party_packages.gcloud.PACKAGE_VERSION_SUFFIX)
+    )
+
+  yield (
+      api.test('basic') +
+      GenTestData())
 
   yield (
       api.test('dry_run') +
-      api.platform.name('linux') +
-      api.platform.bits(64) +
-      api.step_data('git.refs',
-        api.gitiles.make_refs_test_data('refs/tags/v2.12.2.2')) +
-      api.step_data('python.refs',
-        api.gitiles.make_refs_test_data('refs/tags/v2.1.2'))
+      GenTestData() +
+      api.properties(dry_run=True)
   )
