@@ -192,6 +192,7 @@ class SwarmbucketPerformanceTest(testing.AppengineTestCase):
       "_GetStartEndDates",
       return_value=(datetime.datetime(2017, 1, 1, 0, 0, 0), datetime.datetime(
           2017, 1, 31, 0, 0, 0)))
+  @mock.patch('gae_libs.token.ValidateAuthToken', return_value=(True, False))
   def testHandler(self, *_):
 
     def _addRun(try_job_entity,
@@ -243,7 +244,7 @@ class SwarmbucketPerformanceTest(testing.AppengineTestCase):
 
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     response = self.test_app.get('/swarmbucket_performance?format=json')
-    self.assertEqual({'jobs': [{
+    self.assertEqual([{
         "buildbot_try_job_id": "bb2_bbr2",
         "swarmbucket_builder": "luci.chromium/swarm_builder3",
         "buildbot_builder": "chromium/builder3",
@@ -275,6 +276,6 @@ class SwarmbucketPerformanceTest(testing.AppengineTestCase):
         "swarmbucket_completion_date": "2017-01-01 02:00:00 UTC",
         "swarmbucket_try_job_id": "sbr2",
         "swarmbucket_try_job_url": "https://fake.url/sbr2"
-    }]}, response.json_body)
+    }], response.json_body['jobs'])
     response = self.test_app.get('/swarmbucket_performance')
     self.assertEquals(200, response.status_int)

@@ -34,9 +34,18 @@ class ScheduleCompileTryJobPipeline(ScheduleTryJobPipeline):
     try_job_data.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, good_revision,
-          bad_revision, try_job_type, compile_targets, suspected_revisions,
-          cache_name, dimensions):
+  def run(self,
+          master_name,
+          builder_name,
+          build_number,
+          good_revision,
+          bad_revision,
+          try_job_type,
+          compile_targets,
+          suspected_revisions,
+          cache_name,
+          dimensions,
+          force_buildbot=False):
     """
     Args:
       master_name (str): the master name of a build.
@@ -51,6 +60,9 @@ class ScheduleCompileTryJobPipeline(ScheduleTryJobPipeline):
           waterfall bots on the trybots.
       dimensions (list): A list of strings in the format
           ["key1:value1", "key2:value2"].
+      force_buildbot (bool): Whether to force a run on buildbot slaves, ignoring
+          swarmbucket configuration.
+
 
     Returns:
       build_id (str): id of the triggered try job.
@@ -64,7 +76,7 @@ class ScheduleCompileTryJobPipeline(ScheduleTryJobPipeline):
     build_id = self._TriggerTryJob(
         master_name, builder_name, properties, additional_parameters,
         failure_type.GetDescriptionForFailureType(failure_type.COMPILE),
-        cache_name, dimensions)
+        cache_name, dimensions, force_buildbot)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     try_job.compile_results.append({'try_job_id': build_id})

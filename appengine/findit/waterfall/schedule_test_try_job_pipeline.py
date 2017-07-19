@@ -36,9 +36,18 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
     try_job_data.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, good_revision,
-          bad_revision, try_job_type, suspected_revisions, cache_name,
-          dimensions, targeted_tests):
+  def run(self,
+          master_name,
+          builder_name,
+          build_number,
+          good_revision,
+          bad_revision,
+          try_job_type,
+          suspected_revisions,
+          cache_name,
+          dimensions,
+          targeted_tests,
+          force_buildbot=False):
     """
     Args:
       master_name (str): the master name of a build.
@@ -53,6 +62,8 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
       dimensions (list): A list of strings in the format
           ["key1:value1", "key2:value2"].
       targeted_tests (dict): a dict of reliable failed tests.
+      force_buildbot (bool): Whether to force a run on buildbot slaves, ignoring
+          swarmbucket configuration.
 
     Returns:
       build_id (str): id of the triggered try job.
@@ -71,7 +82,7 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
     build_id = self._TriggerTryJob(
         master_name, builder_name, properties, additional_parameters,
         failure_type.GetDescriptionForFailureType(failure_type.TEST),
-        cache_name, dimensions)
+        cache_name, dimensions, force_buildbot)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     try_job.test_results.append({'try_job_id': build_id})

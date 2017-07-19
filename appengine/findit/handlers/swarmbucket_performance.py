@@ -8,6 +8,7 @@ import logging
 from datetime import datetime
 from datetime import timedelta
 
+from gae_libs import token
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from libs import time_util
@@ -156,6 +157,7 @@ def _FormatRows(pairs):
 class SwarmbucketPerformance(BaseHandler):
   PERMISSION_LEVEL = Permission.ADMIN
 
+  @token.AddXSRFToken(action_id='swarmbucket_performance')
   def HandleGet(self):
     swarmbucket_builders = _GetSwarmbucketBuilders()
     recent_jobs = _FindRecentSwarmbucketJobs(

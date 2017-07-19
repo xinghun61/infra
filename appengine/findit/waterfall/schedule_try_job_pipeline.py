@@ -48,16 +48,24 @@ class ScheduleTryJobPipeline(BasePipeline):
         'builder_name': builder_name
     })
 
-  def _GetTrybot(self, master_name, builder_name):  # pragma: no cover.
+  def _GetTrybot(self, master_name, builder_name,
+                 force_buildbot=False):  # pragma: no cover.
     """Returns the master and builder on the tryserver to run the try job. """
-    return waterfall_config.GetWaterfallTrybot(master_name, builder_name)
+    return waterfall_config.GetWaterfallTrybot(master_name, builder_name,
+                                               force_buildbot)
 
-  def _TriggerTryJob(self, master_name, builder_name, properties,
-                     additional_parameters, try_job_type, cache_name,
-                     dimensions):
+  def _TriggerTryJob(self,
+                     master_name,
+                     builder_name,
+                     properties,
+                     additional_parameters,
+                     try_job_type,
+                     cache_name,
+                     dimensions,
+                     force_buildbot=False):
 
     tryserver_mastername, tryserver_buildername = self._GetTrybot(
-        master_name, builder_name)
+        master_name, builder_name, force_buildbot=force_buildbot)
 
     try_job = buildbucket_client.TryJob(
         tryserver_mastername, tryserver_buildername, None, properties, [],

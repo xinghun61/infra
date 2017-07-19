@@ -33,10 +33,10 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
         }
     }
 
-  def _GetTrybot(self, master_name, builder_name):
+  def _GetTrybot(self, master_name, builder_name, force_buildbot=False):
     """Overrides the base method to get a dedicated flake trybot instead."""
     try_master, try_builder = waterfall_config.GetFlakeTrybot(
-        master_name, builder_name)
+        master_name, builder_name, force_buildbot=force_buildbot)
     return try_master, try_builder
 
   @ndb.transactional

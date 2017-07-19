@@ -150,7 +150,7 @@ def StepIsSupportedForMaster(step_name, master_name):
            step_name not in global_unsupported_steps))
 
 
-def GetFlakeTrybot(wf_mastername, wf_buildername):
+def GetFlakeTrybot(wf_mastername, wf_buildername, force_buildbot=False):
   """Returns tryserver master and builder for running flake try jobs.
 
   Args:
@@ -162,6 +162,7 @@ def GetFlakeTrybot(wf_mastername, wf_buildername):
     The trybot mastername and buildername to re-run flake try jobs, or
     (None, None) if not supported.
   """
+  _ = force_buildbot  # Ignore this.
   bot_dict = _GetTrybotConfig(wf_mastername, wf_buildername)
   return bot_dict.get('mastername'), bot_dict.get('flake_trybot')
 
@@ -201,12 +202,14 @@ def _MergeDimensions(original, overrides):
   return ['%s:%s' % x for x in original_dict.items()]
 
 
-def GetWaterfallTrybot(wf_mastername, wf_buildername):
+def GetWaterfallTrybot(wf_mastername, wf_buildername, force_buildbot=False):
   """Returns tryserver master and builder for running reliable failure try jobs.
 
   Args:
     wf_mastername: The mastername of a waterfall builder.
     wf_buildername: The buildername of a waterfall builder.
+    force_buildbot(bool): Whether to ignore swarmbucket config and use buildbot
+        instead.
 
   Returns:
     (tryserver_mastername, tryserver_buildername)
@@ -216,9 +219,15 @@ def GetWaterfallTrybot(wf_mastername, wf_buildername):
     is returned.
   """
   bot_dict = _GetTrybotConfig(wf_mastername, wf_buildername)
-  mastername = bot_dict.get('swarmbucket_mastername',
-                            bot_dict.get('mastername'))
-  trybot = bot_dict.get('swarmbucket_trybot', bot_dict.get('waterfall_trybot'))
+
+  mastername = bot_dict.get('mastername')
+  trybot = bot_dict.get('waterfall_trybot')
+
+  if ('swarmbucket_mastername' in bot_dict and
+      'swarmbucket_trybot' in bot_dict and not force_buildbot):
+    mastername = bot_dict.get('swarmbucket_mastername')
+    trybot = bot_dict.get('swarmbucket_trybot')
+
   return mastername, trybot
 
 
