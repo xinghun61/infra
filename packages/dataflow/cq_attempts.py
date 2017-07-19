@@ -7,8 +7,9 @@ import time
 
 import apache_beam as beam
 
-from infra.dataflow.events import aggregate_objects
-from infra.dataflow.events import chops_beam
+from dataflow.common import chops_beam
+from dataflow.common import aggregate_objects
+
 
 ACTION_PATCH_START = 'PATCH_START'
 
@@ -41,6 +42,7 @@ class CombineEventsToAttempt(beam.CombineFn):
     return accumulator
 
   def merge_accumulators(self, accumulators):
+    accumulators = list(accumulators)
     if len(accumulators) == 0:
       return aggregate_objects.CQAttempt()
     if len(accumulators) == 1:

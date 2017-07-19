@@ -4,9 +4,9 @@
 
 import unittest
 
-import infra.dataflow.events.cq_attempts as job
+from dataflow import cq_attempts as job
 
-from infra.dataflow.events import aggregate_objects
+from dataflow.common import aggregate_objects
 
 
 class TestCQAttemptAccumulator(unittest.TestCase):

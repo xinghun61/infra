@@ -1,5 +1,0 @@
-[run]
-include = ./infra/dataflow/events/*
-
-[expect_tests]
-expected_coverage_min = 70

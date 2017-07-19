@@ -34,5 +34,7 @@ class BQRead(beam.io.iobase.Read):
 class BQWrite(beam.io.iobase.Write):
   """Write transform created from a BigQuerySink with convenient defaults."""
   def __init__(self, table, dataset='aggregated'):
-    sink = beam.io.BigQuerySink(table, dataset, project='chrome-infra-events')
+    write_disposition = beam.io.BigQueryDisposition.WRITE_APPEND
+    sink = beam.io.BigQuerySink(table, dataset, project='chrome-infra-events',
+                                write_disposition=write_disposition)
     super(BQWrite, self).__init__(sink)
