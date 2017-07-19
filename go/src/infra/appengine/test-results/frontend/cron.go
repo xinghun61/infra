@@ -33,7 +33,7 @@ func deleteEntities(ctx context.Context, keys *[]*datastore.Key) {
 
 	logging.Infof(ctx, "Deleting %d entities", len(keysToDelete))
 	if err := datastore.Delete(ctx, keysToDelete); err != nil {
-		logging.WithError(err).Warningf(ctx, "Failed to delete entities")
+		logging.WithError(err).Warningf(ctx, "failed to delete some entities")
 	}
 
 	// Remove deleted keys from the passed slice.
@@ -46,12 +46,14 @@ func deleteOldResultsHandler(rc *router.Context) {
 	storageHorizon := time.Now().Add(-timeToStoreFiles).UTC()
 	q := datastore.NewQuery("TestFile").Lt("date", storageHorizon)
 	keysToDelete := make([]*datastore.Key, 0, 600)
+	progress := false
 	err := datastore.Run(ctx, q, func(tf *model.TestFile) {
 		keysToDelete = append(keysToDelete, datastore.KeyForObj(ctx, tf))
 		keysToDelete = append(keysToDelete, tf.DataKeys...)
 
 		if len(keysToDelete) >= 500 {
 			deleteEntities(ctx, &keysToDelete)
+			progress = true
 		}
 	})
 
@@ -59,7 +61,12 @@ func deleteOldResultsHandler(rc *router.Context) {
 		for len(keysToDelete) > 0 {
 			deleteEntities(ctx, &keysToDelete)
 		}
-	} else {
-		logging.WithError(err).Warningf(ctx, "Failed to delete old results")
+	} else if !progress {
+		// Normally the error would be datastore timeout from the Run operation and
+		// we should not log it because we'll simply continue deleting entities in
+		// the next cron job run. However, if for some chance nothing got deleted
+		// before we've received the error, it may mean we are not making progress
+		// and thus should start logging warnings.
+		logging.WithError(err).Warningf(ctx, "no progress was made")
 	}
 }

@@ -11,4 +11,4 @@ cron:
   - description: delete old test results
     url: /internal/cron/delete_old_results
     # TODO(sergiyb): Reduce to every 1 hour after initial cleanup of old data.
-    schedule: every 10 minutes
+    schedule: every 1 minutes
