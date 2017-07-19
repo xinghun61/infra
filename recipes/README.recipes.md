@@ -16,6 +16,7 @@
   * [depot_tools_builder](#recipes-depot_tools_builder) &mdash; Recipe to build windows depot_tools bootstrap zipfile.
   * [gerrit_cq_test](#recipes-gerrit_cq_test)
   * [git_hash_metric](#recipes-git_hash_metric)
+  * [goma_hello_world](#recipes-goma_hello_world) &mdash; Compiles trivial C++ program using Goma.
   * [infra_continuous](#recipes-infra_continuous)
   * [infra_continuous_luci](#recipes-infra_continuous_luci) &mdash; Builds and tests infra.
   * [infra_repo_trybot](#recipes-infra_repo_trybot)
@@ -159,6 +160,16 @@ Recipe to build windows depot_tools bootstrap zipfile.
 [DEPS](/recipes/recipes/git_hash_metric.py#7): [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python]
 
 &mdash; **def [RunSteps](/recipes/recipes/git_hash_metric.py#13)(api):**
+### *recipes* / [goma\_hello\_world](/recipes/recipes/goma_hello_world.py)
+
+[DEPS](/recipes/recipes/goma_hello_world.py#12): [build/goma][build/recipe_modules/goma], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
+
+Compiles trivial C++ program using Goma.
+
+Intended to be used as a very simple litmus test of Goma health on LUCI staging
+environment. Linux and OSX only.
+
+&mdash; **def [RunSteps](/recipes/recipes/goma_hello_world.py#42)(api):**
 ### *recipes* / [infra\_continuous](/recipes/recipes/infra_continuous.py)
 
 [DEPS](/recipes/recipes/infra_continuous.py#7): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -378,6 +389,7 @@ See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 Runs a step which adds a link to the current CL if there is one.
 
 [build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/4f0b09caa6f368b0189e160cef9667d9c37de0d9/scripts/slave/README.recipes.md#recipe_modules-chromium
+[build/recipe_modules/goma]: https://chromium.googlesource.com/chromium/tools/build.git/+/4f0b09caa6f368b0189e160cef9667d9c37de0d9/scripts/slave/README.recipes.md#recipe_modules-goma
 [build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/4f0b09caa6f368b0189e160cef9667d9c37de0d9/scripts/slave/README.recipes.md#recipe_modules-luci_config
 [build/recipe_modules/perf_dashboard]: https://chromium.googlesource.com/chromium/tools/build.git/+/4f0b09caa6f368b0189e160cef9667d9c37de0d9/scripts/slave/README.recipes.md#recipe_modules-perf_dashboard
 [build/recipe_modules/service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/4f0b09caa6f368b0189e160cef9667d9c37de0d9/scripts/slave/README.recipes.md#recipe_modules-service_account
