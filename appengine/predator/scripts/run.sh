@@ -20,8 +20,8 @@ if [[ ${has_realpath} == "0" ]]; then
 fi
 APP_CFG="${GOOGLE_APP_ENGINE_DIR}/appcfg.py"
 
-DEFAULT_MODULE="${PREDATOR_DIR}/app.yaml"
-BACKEND_MODULES="${PREDATOR_DIR}/backend-clusterfuzz.yaml ${PREDATOR_DIR}/backend-fracas.yaml ${PREDATOR_DIR}/backend-cracas.yaml ${PREDATOR_DIR}/backend-uma-sampling-profiler.yaml ${PREDATOR_DIR}/backend-process.yaml"
+DEFAULT_MODULE="${PREDATOR_APP_DIR}/app.yaml"
+BACKEND_MODULES="${PREDATOR_APP_DIR}/backend-clusterfuzz.yaml ${PREDATOR_APP_DIR}/backend-fracas.yaml ${PREDATOR_APP_DIR}/backend-cracas.yaml ${PREDATOR_APP_DIR}/backend-uma-sampling-profiler.yaml ${PREDATOR_APP_DIR}/backend-process.yaml"
 
 
 if [[ -z "${USER}" ]]; then

@@ -2,7 +2,7 @@
 <body>
   Error: {{ error_message }}
   <br>
-  {% if login_url %}
-  <a href="{{login_url}}">Login</a>
+  {% if user_info %}
+  <a href="{{user_info.login_url}}">Login</a>
   {% endif %}
 </body>
