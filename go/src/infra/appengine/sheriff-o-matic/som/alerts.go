@@ -29,6 +29,8 @@ const (
 	maxAlertsAutoResolveCount = 100
 	// RevisionSummaryJSONs this recent will be returned
 	recentRevisions = time.Hour * 24 * 7
+	// AlertJSONs this recently resolved will be returned
+	recentResolved = time.Hour * 24 * 3
 )
 
 var (
@@ -73,6 +75,18 @@ func GetAlertsHandler(ctx *router.Context) {
 		return
 	}
 
+	q = datastore.NewQuery("AlertJSON")
+	q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
+	q = q.Eq("Resolved", true)
+	q = q.Gt("Date", clock.Get(c).Now().Add(-recentResolved))
+
+	resolvedResults := []*AlertJSON{}
+	err = datastore.GetAll(c, q, &resolvedResults)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	q = datastore.NewQuery("RevisionSummaryJSON")
 	q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
 	q = q.Gt("Date", clock.Get(c).Now().Add(-recentRevisions))
@@ -86,12 +100,27 @@ func GetAlertsHandler(ctx *router.Context) {
 
 	alertsSummary := &messages.AlertsSummary{
 		Alerts:            make([]messages.Alert, len(alertResults)),
+		Resolved:          make([]messages.Alert, len(resolvedResults)),
 		RevisionSummaries: make(map[string]messages.RevisionSummary),
 	}
 
 	for i, alertJSON := range alertResults {
 		err = json.Unmarshal(alertJSON.Contents,
 			&alertsSummary.Alerts[i])
+		if err != nil {
+			errStatus(c, w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		t := messages.EpochTime(alertJSON.Date.Unix())
+		if alertsSummary.Timestamp == 0 || t > alertsSummary.Timestamp {
+			alertsSummary.Timestamp = t
+		}
+	}
+
+	for i, alertJSON := range resolvedResults {
+		err = json.Unmarshal(alertJSON.Contents,
+			&alertsSummary.Resolved[i])
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
 			return
@@ -350,18 +379,21 @@ func ResolveAlertHandler(ctx *router.Context) {
 		alertJSONs[i].Tree = treeKey
 	}
 
-	err = datastore.RunInTransaction(c, func(c context.Context) error {
-		datastore.Get(c, alertJSONs)
-		for i := range resolveRequest.Keys {
-			if len(alertJSONs[i].Contents) == 0 {
-				return fmt.Errorf("Key %s not found", alertJSONs[i].ID)
-			}
-			alertJSONs[i].Resolved = resolveRequest.Resolved
-			alertJSONs[i].AutoResolved = false
-			alertJSONs[i].ResolvedDate = now
+	err = datastore.Get(c, alertJSONs)
+	if err != nil {
+		errStatus(c, w, http.StatusBadRequest, err.Error())
+		return
+	}
+	for i := range resolveRequest.Keys {
+		if len(alertJSONs[i].Contents) == 0 {
+			errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("Key %s not found", alertJSONs[i].ID))
+			return
 		}
-		return datastore.Put(c, alertJSONs)
-	}, nil)
+		alertJSONs[i].Resolved = resolveRequest.Resolved
+		alertJSONs[i].AutoResolved = false
+		alertJSONs[i].ResolvedDate = now
+	}
+	err = datastore.Put(c, alertJSONs)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return

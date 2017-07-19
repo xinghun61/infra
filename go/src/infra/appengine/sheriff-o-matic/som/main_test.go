@@ -73,6 +73,19 @@ func TestMain(t *testing.T) {
 					},
 				},
 			}
+			alertIdx := datastore.IndexDefinition{
+				Kind:     "AlertJSON",
+				Ancestor: true,
+				SortBy: []datastore.IndexColumn{
+					{
+						Property: "Resolved",
+					},
+					{
+						Property:   "Date",
+						Descending: false,
+					},
+				},
+			}
 			revisionSummaryIdx := datastore.IndexDefinition{
 				Kind:     "RevisionSummaryJSON",
 				Ancestor: true,
@@ -83,7 +96,7 @@ func TestMain(t *testing.T) {
 					},
 				},
 			}
-			indexes := []*datastore.IndexDefinition{&alertsIdx, &revisionSummaryIdx}
+			indexes := []*datastore.IndexDefinition{&alertsIdx, &alertIdx, &revisionSummaryIdx}
 			datastore.GetTestable(c).AddIndexes(indexes...)
 
 			Convey("GetTrees", func() {
@@ -115,19 +128,40 @@ func TestMain(t *testing.T) {
 				})
 				alertJSON := &AlertJSON{
 					ID:       "test",
-					Tree:     datastore.MakeKey(c, "Tree", "oak"),
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
 					Resolved: false,
+					Date:     time.Unix(1, 0).UTC(),
 					Contents: []byte(contents),
+				}
+				contents2, _ := json.Marshal(&messages.Alert{
+					Key: "test2",
+				})
+				oldResolvedJSON := &AlertJSON{
+					ID:       "test2",
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
+					Resolved: true,
+					Date:     time.Unix(1, 0).UTC(),
+					Contents: []byte(contents2),
+				}
+				contents3, _ := json.Marshal(&messages.Alert{
+					Key: "test3",
+				})
+				newResolvedJSON := &AlertJSON{
+					ID:       "test3",
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
+					Resolved: true,
+					Date:     clock.Now(c),
+					Contents: []byte(contents3),
 				}
 				oldRevisionSummaryJSON := &RevisionSummaryJSON{
 					ID:       "rev1",
-					Tree:     datastore.MakeKey(c, "Tree", "oak"),
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
 					Date:     time.Unix(1, 0).UTC(),
 					Contents: []byte(contents),
 				}
 				newRevisionSummaryJSON := &RevisionSummaryJSON{
 					ID:       "rev2",
-					Tree:     datastore.MakeKey(c, "Tree", "oak"),
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
 					Date:     clock.Now(c),
 					Contents: []byte(contents),
 				}
@@ -138,7 +172,7 @@ func TestMain(t *testing.T) {
 							Context: c,
 							Writer:  w,
 							Request: makeGetRequest(),
-							Params:  makeParams("tree", "oak"),
+							Params:  makeParams("tree", "chromeos"),
 						})
 
 						_, err := ioutil.ReadAll(w.Body)
@@ -149,13 +183,14 @@ func TestMain(t *testing.T) {
 					So(datastore.Put(c, alertJSON), ShouldBeNil)
 					So(datastore.Put(c, oldRevisionSummaryJSON), ShouldBeNil)
 					So(datastore.Put(c, newRevisionSummaryJSON), ShouldBeNil)
+					datastore.GetTestable(c).CatchupIndexes()
 
 					Convey("basic alerts", func() {
 						GetAlertsHandler(&router.Context{
 							Context: c,
 							Writer:  w,
 							Request: makeGetRequest(),
-							Params:  makeParams("tree", "oak"),
+							Params:  makeParams("tree", "chromeos"),
 						})
 
 						r, err := ioutil.ReadAll(w.Body)
@@ -164,6 +199,34 @@ func TestMain(t *testing.T) {
 						summary := &messages.AlertsSummary{}
 						err = json.Unmarshal(r, &summary)
 						So(err, ShouldBeNil)
+						So(summary.Alerts, ShouldHaveLength, 1)
+						So(summary.Alerts[0].Key, ShouldEqual, "test")
+						So(summary.Resolved, ShouldHaveLength, 0)
+						// TODO(seanmccullough): Remove all of the POST /alerts handling
+						// code and tests except for whatever chromeos needs.
+					})
+
+					So(datastore.Put(c, oldResolvedJSON), ShouldBeNil)
+					So(datastore.Put(c, newResolvedJSON), ShouldBeNil)
+
+					Convey("resolved alerts", func() {
+						GetAlertsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makeGetRequest(),
+							Params:  makeParams("tree", "chromeos"),
+						})
+
+						r, err := ioutil.ReadAll(w.Body)
+						So(err, ShouldBeNil)
+						So(w.Code, ShouldEqual, 200)
+						summary := &messages.AlertsSummary{}
+						err = json.Unmarshal(r, &summary)
+						So(err, ShouldBeNil)
+						So(summary.Alerts, ShouldHaveLength, 1)
+						So(summary.Alerts[0].Key, ShouldEqual, "test")
+						So(summary.Resolved, ShouldHaveLength, 1)
+						So(summary.Resolved[0].Key, ShouldEqual, "test3")
 						// TODO(seanmccullough): Remove all of the POST /alerts handling
 						// code and tests except for whatever chromeos needs.
 					})
@@ -233,7 +296,7 @@ func TestMain(t *testing.T) {
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`{"alerts":[{"key": "test"}], "timestamp": 12345.0, "revision_summaries":{"123": {"git_hash": "123"}}}`),
-						Params:  makeParams("tree", "oak"),
+						Params:  makeParams("tree", "chromeos"),
 					})
 
 					So(w.Code, ShouldEqual, http.StatusOK)
@@ -271,7 +334,7 @@ func TestMain(t *testing.T) {
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`{"alerts":[{"key": "test2"}], "timestamp": 12345.0}`),
-						Params:  makeParams("tree", "oak"),
+						Params:  makeParams("tree", "chromeos"),
 					})
 
 					r, err = ioutil.ReadAll(w.Body)
@@ -312,7 +375,7 @@ func TestMain(t *testing.T) {
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`{"alerts":[{"key": "test"}], "timestamp": 12345.0, "revision_summaries":{"123": {"git_hash": "123"}}}`),
-						Params:  makeParams("tree", "oak"),
+						Params:  makeParams("tree", "chromeos"),
 					})
 
 					So(w.Code, ShouldEqual, http.StatusOK)
@@ -360,7 +423,7 @@ func TestMain(t *testing.T) {
 					for i := 0; i < 123; i++ {
 						alert := &AlertJSON{
 							ID:       fmt.Sprintf("test %d", i),
-							Tree:     datastore.MakeKey(c, "Tree", "oak"),
+							Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
 							Resolved: false,
 							Contents: []byte(contents),
 						}
@@ -372,7 +435,7 @@ func TestMain(t *testing.T) {
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`{"alerts":[{"key": "test"}], "timestamp": 12345.0, "revision_summaries":{"123": {"git_hash": "123"}}}`),
-						Params:  makeParams("tree", "oak"),
+						Params:  makeParams("tree", "chromeos"),
 					})
 
 					So(w.Code, ShouldEqual, http.StatusOK)
@@ -700,15 +763,15 @@ func TestMain(t *testing.T) {
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(makeResolve(req, tok)),
-						Params:  makeParams("tree", "oak"),
+						Params:  makeParams("tree", "chromeos"),
 					})
 
-					So(w.Code, ShouldEqual, http.StatusInternalServerError)
+					So(w.Code, ShouldEqual, http.StatusBadRequest)
 
 					r, err := ioutil.ReadAll(w.Body)
 					So(err, ShouldBeNil)
 					body := string(r)
-					So(body, ShouldContainSubstring, "not found")
+					So(body, ShouldContainSubstring, "no such entity")
 
 					datastore.GetTestable(c).CatchupIndexes()
 					results = []*AlertJSON{}
@@ -726,7 +789,7 @@ func TestMain(t *testing.T) {
 						Context: c,
 						Writer:  w,
 						Request: makePostRequest(`not valid json`),
-						Params:  makeParams("tree", "oak"),
+						Params:  makeParams("tree", "chromeos"),
 					})
 
 					So(w.Code, ShouldEqual, http.StatusBadRequest)

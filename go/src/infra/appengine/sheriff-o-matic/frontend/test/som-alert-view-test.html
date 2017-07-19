@@ -82,9 +82,12 @@
           {extension: { builders: [{name: 'blahblah'}], reasons: [ {step: 'reasons'} ]} },
         ],
       };
+      let alertsResolvedData = {};
 
       let sortedAlerts = element._computeAlerts({
         base: alertsData
+      }, {
+        base: alertsResolvedData
       }, {
         'test key': {
           snoozeTime: Date.now() + 1000000,
@@ -105,9 +108,12 @@
         ],
         other: null
       };
+      let alertsResolvedData = {};
 
       let sortedAlerts = element._computeAlerts({
         base: alertsData
+      }, {
+        base: alertsResolvedData
       }, {
         'test key': {
           snoozeTime: Date.now() + 1000000,
@@ -119,7 +125,8 @@
     });
 
     test('ignores requests sent from stale trees', function(done) {
-      let oldRes = new window.Response('{"alerts": ["oldtreealert"]}', {
+      let oldRes = new window.Response(
+        '{"alerts": ["oldtreealert"], "resolved": []}', {
         status: 200,
         headers: {
           'Content-type': 'application/json',
@@ -130,7 +137,8 @@
         resolveOldPromise = resolve;
       });
 
-      let newRes = new window.Response('{"alerts": ["newtreealert"]}', {
+      let newRes = new window.Response(
+        '{"alerts": ["newtreealert"], "resolved": []}', {
         status: 200,
         headers: {
           'Content-type': 'application/json',
@@ -184,9 +192,12 @@
            title: 'j'},
         ]
       };
+      let alertsResolvedData = {};
 
       let sortedAlerts = element._computeAlerts({
         base: alertsData
+      }, {
+        base: alertsResolvedData
       }, {
         'test': {
           snoozeTime: Date.now() + 1000000,

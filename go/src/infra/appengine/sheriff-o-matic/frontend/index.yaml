@@ -10,6 +10,12 @@ indexes:
 # automatically uploaded to the admin console when you next deploy
 # your application using appcfg.py.
 
+- kind: AlertJSON
+  ancestor: yes
+  properties:
+  - name: Resolved
+  - name: Date
+
 - kind: AlertsJSON
   ancestor: yes
   properties:

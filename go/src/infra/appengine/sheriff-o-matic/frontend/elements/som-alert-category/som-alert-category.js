@@ -52,6 +52,10 @@
         value: false,
         observer: '_initializeCollapseState',
       },
+      isResolvedSection: {
+        type: Boolean,
+        value: false,
+      },
       linkStyle: String,
       xsrfToken: String,
     },

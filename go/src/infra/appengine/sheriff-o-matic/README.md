@@ -28,6 +28,7 @@ After initial checkout, make sure you have all of the bower dependencies
 installed. Also run this whenever bower.json is updated:
 
 ```sh
+cd frontend
 make deps
 ```
 
@@ -39,9 +40,11 @@ make devserver
 To run tests:
 ```sh
 # For go:
+cd som
 go test
 
 # For JS:
+cd frontend
 xvfb-run -a wct
 ```
 

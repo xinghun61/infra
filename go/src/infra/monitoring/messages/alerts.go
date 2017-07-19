@@ -75,6 +75,7 @@ func TimeToEpochTime(t time.Time) EpochTime {
 // AlertsSummary is the top-level entity in alerts.json.
 type AlertsSummary struct {
 	Alerts            []Alert                    `json:"alerts"`
+	Resolved          []Alert                    `json:"resolved"`
 	RevisionSummaries map[string]RevisionSummary `json:"revision_summaries"`
 	Timestamp         EpochTime                  `json:"timestamp"`
 }

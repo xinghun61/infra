@@ -230,6 +230,7 @@
           <label class="checkbox group-row">
             <input type="checkbox" class="group-checkbox" checked="{{target.checked::change}}" />
             <div>
+              <span id="resolvedTitle" hidden="[[!target.resolved]]">Resolved:&nbsp;</span>
               [[target.title]]
               <template is="dom-if" if="[[_haveSubAlerts(target)]]">
                 <span>

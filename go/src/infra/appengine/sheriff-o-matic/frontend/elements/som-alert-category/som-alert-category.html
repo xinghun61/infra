@@ -37,7 +37,10 @@
         <input type="checkbox" id="checkAll" on-tap="checkAll" class="category-checkbox"
           title="Select all alerts in this category." />
         <span class="category-title-text" title$="[[tooltip]]">
-          [[categoryTitle]] ([[alerts.length]] total)
+          [[categoryTitle]]
+        </span>
+        <span class="category-title-count" hidden$="[[!!isResolvedSection]]">
+          ([[alerts.length]] total)
         </span>
         (<a href="/help-som" target="_blank">Help?</a>)
       </span>

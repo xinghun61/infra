@@ -3,6 +3,8 @@
 
   // Time, in milliseconds, between each refresh of data from the server.
   const refreshDelayMs = 60 * 1000;
+  // Time, in milliseconds, to shows ungrouped resolved alerts.
+  const recentUngroupedResolvedMs = 24 * 3600 * 1000;
 
   Polymer({
     is: 'som-alert-view',
@@ -17,10 +19,16 @@
         value: function() {
           return [];
         },
-        computed: `_computeAlerts(_alertsData.*, annotations)`,
+        computed: `_computeAlerts(_alertsData.*, _alertsResolvedData.*, annotations)`,
       },
       // Map of stream to data, timestamp of latest updated data.
       _alertsData: {
+        type: Object,
+        value: function() {
+          return {};
+        },
+      },
+      _alertsResolvedData: {
         type: Object,
         value: function() {
           return {};
@@ -169,7 +177,13 @@
       if (isTrooperPage && bugs) {
         return bugs.length;
       } else if (!isTrooperPage && alerts) {
-        return alerts.length;
+        let count = 0;
+        for (let i in alerts) {
+          if (!alerts[i].resolved) {
+            count++;
+          }
+        }
+        return count;
       }
       return 0;
     },
@@ -184,6 +198,7 @@
         return;
 
       this._alertsData = {};
+      this._alertsResolvedData = {};
       this._fetchedAlerts = false;
 
       // Reorder sections on page based on per tree priorities.
@@ -272,6 +287,9 @@
                   this.set('_swarmingAlerts', json.swarming);
                   this.set(['_alertsData', this._alertStreamVarName(stream)],
                            json.alerts);
+                  this.set(['_alertsResolvedData',
+                            this._alertStreamVarName(stream)],
+                           json.resolved);
 
                   this.alertsTimes = {};
                   this.set(['alertsTimes', this._alertStreamVarName(stream)],
@@ -304,86 +322,107 @@
       }
     },
 
-    // TODO(zhangtiff): Refactor this function.
-    _computeAlerts: function(alertsData, annotations) {
-      if (!alertsData || !alertsData.base) {
+    _computeAlerts: function(alertsData, alertsResolvedData, annotations) {
+      if (!(alertsData && alertsData.base)) {
         return [];
       }
       alertsData = alertsData.base;
+      if (!(alertsResolvedData && alertsResolvedData.base)) {
+        alertsResolvedData = {}
+      } else {
+        alertsResolvedData = alertsResolvedData.base;
+      }
 
       let allAlerts = [];
+      let groups = {};
+      this._computeAlertsSet(alertsData, false, annotations, allAlerts, groups);
+      this._computeAlertsSet(alertsResolvedData, true, annotations, allAlerts,
+                             groups);
+
+      allAlerts = this._sortAlerts(allAlerts, annotations);
+      allAlerts = this._filterUngroupedResolved(allAlerts);
+
+      return allAlerts;
+    },
+
+    _computeAlertsSet: function(alertsData, resolved, annotations, alertItems,
+                                groups) {
       for (let tree in alertsData) {
         let alerts = alertsData[tree];
         if (!alerts) {
           continue;
         }
 
-        let alertItems = [];
-        let groups = {};
         for (let i in alerts) {
-          let alert = alerts[i];
-          let ann = this.computeAnnotation(annotations, alert);
-
-          if (ann.groupID) {
-            if (!(ann.groupID in groups)) {
-              let group = {
-                key: ann.groupID,
-                title: ann.groupID,
-                body: ann.groupID,
-                severity: alert.severity,
-                time: alert.time,
-                start_time: alert.start_time,
-                links: [],
-                tags: [],
-                type: alert.type,
-                extension: {stages: [], builders: [], grouped: true},
-                grouped: true,
-                alerts: [],
-              }
-
-              // Group name is stored using the groupID annotation.
-              let groupAnn = this.computeAnnotation(annotations, group);
-              if (groupAnn.groupID) {
-                group.title = groupAnn.groupID;
-              }
-
-              groups[ann.groupID] = group;
-              alertItems.push(group);
-            }
-            let group = groups[ann.groupID];
-            if (alert.severity < group.severity) {
-              group.severity = alert.severity;
-            }
-            if (alert.time > group.time) {
-              group.time = alert.time;
-            }
-            if (alert.start_time < group.start_time) {
-              group.start_time = alert.start_time;
-            }
-            if (alert.links) group.links = group.links.concat(alert.links);
-            if (alert.tags) group.tags = group.tags.concat(alert.tags);
-
-            if (alert.extension) {
-              this._mergeStages(group.extension.stages, alert.extension.stages,
-                                alert.extension.builders);
-              this._mergeBuilders(group.extension.builders,
-                                  alert.extension.builders,
-                                  alert.extension.stages);
-            }
-            group.alerts.push(alert);
-          } else {
-            // Ungrouped alert.
-            alertItems.push(alert);
-          }
+          this._computeAlert(alerts[i], resolved, annotations, alertItems,
+                             groups);
         }
-        allAlerts = allAlerts.concat(alertItems);
       }
+    },
 
-      if (!allAlerts) {
-        return [];
+    _computeAlert: function(alert, resolved, annotations, alertItems, groups) {
+      alert.resolved = resolved;
+
+      let ann = this.computeAnnotation(annotations, alert);
+      if (ann.groupID) {
+        if (!(ann.groupID in groups)) {
+          let group = {
+            key: ann.groupID,
+            title: ann.groupID,
+            body: ann.groupID,
+            severity: alert.severity,
+            time: alert.time,
+            start_time: alert.start_time,
+            links: [],
+            tags: [],
+            type: alert.type,
+            extension: {stages: [], builders: [], grouped: true},
+            grouped: true,
+            alerts: [],
+            resolved: resolved,
+          }
+
+          // Group name is stored using the groupID annotation.
+          let groupAnn = this.computeAnnotation(annotations, group);
+          if (groupAnn.groupID) {
+            group.title = groupAnn.groupID;
+          }
+
+          groups[ann.groupID] = group;
+          alertItems.push(group);
+        }
+        let group = groups[ann.groupID];
+        if (alert.severity < group.severity) {
+          group.severity = alert.severity;
+        }
+        if (alert.time > group.time) {
+          group.time = alert.time;
+        }
+        if (alert.start_time < group.start_time) {
+          group.start_time = alert.start_time;
+        }
+        if (alert.links) group.links = group.links.concat(alert.links);
+        if (alert.tags) group.tags = group.tags.concat(alert.tags);
+
+        if (alert.extension) {
+          this._mergeStages(group.extension.stages, alert.extension.stages,
+                            alert.extension.builders);
+          this._mergeBuilders(group.extension.builders,
+                              alert.extension.builders,
+                              alert.extension.stages);
+        }
+        group.alerts.push(alert);
+        if (resolved) {
+          group.resolved = true;
+        }
+      } else {
+        // Ungrouped alert.
+        alertItems.push(alert);
       }
+    },
 
-      allAlerts.sort((a, b) => {
+    _sortAlerts: function(alerts, annotations) {
+      alerts.sort((a, b) => {
         let aAnn = this.computeAnnotation(annotations, a);
         let bAnn = this.computeAnnotation(annotations, b);
 
@@ -397,6 +436,19 @@
         let bHasSuspectedCLs = b.extension && b.extension.suspected_cls;
         let aHasFindings = a.extension && a.extension.has_findings;
         let bHasFindings = b.extension && b.extension.has_findings;
+
+        // Resolved alerts last.
+        if (a.resolved != b.resolved) {
+          return a.resolved ? 1 : -1;
+        } else if (a.resolved) {
+          // Both alerts resolved, sort by count.
+          if (aBuilders < bBuilders) {
+            return 1;
+          }
+          if (aBuilders > bBuilders) {
+            return -1;
+          }
+        }
 
         if (a.severity != b.severity) {
           // Note: 3 is the severity number for Infra Failures.
@@ -462,7 +514,20 @@
         return aAnn.snoozed ? 1 : -1;
       });
 
-      return allAlerts;
+      return alerts;
+    },
+
+    _filterUngroupedResolved: function(alerts) {
+      return alerts.filter(function(alert) {
+        if (!alert.resolved || alert.grouped) {
+          return true;
+        }
+
+        // Ungrouped, resolved alerts: display for 1 day.
+        let alert_time = moment(alert.start_time * 1000);
+        let now = moment(new Date());
+        return (now - alert_time) < recentUngroupedResolvedMs;
+      });
     },
 
     _mergeExtensions: function(extension) {
@@ -561,6 +626,12 @@
 
     _alertItemsWithCategory: function(alerts, category, isTrooperPage) {
       return alerts.filter(function(alert) {
+        if (category == AlertSeverity.Resolved) {
+          return alert.resolved;
+        } else if (alert.resolved) {
+          return false;
+        }
+
         if (isTrooperPage) {
           return alert.tree == category;
         } else if (category == AlertSeverity.InfraFailure) {
@@ -576,7 +647,9 @@
       let categories = [];
       alerts.forEach(function(alert) {
         let cat = alert.severity;
-        if (isTrooperPage) {
+        if (alert.resolved) {
+          cat = AlertSeverity.Resolved;
+        } else if (isTrooperPage) {
           cat = alert.tree;
         } else if (this.isTrooperAlertType(alert.type)) {
           // When not on /trooper, collapse all of the trooper alerts into
@@ -614,11 +687,17 @@
         1003: 'Release branch failures',
         1004: 'Chrome PFQ informational failures',
         1005: 'Chromium PFQ informational failures',
+        // Special categories
+        10000: 'Recently resolved alerts',
       }[category];
     },
 
     _isInfraFailuresSection: function(category, isTrooperPage) {
       return !isTrooperPage && category === AlertSeverity.InfraFailure;
+    },
+
+    _isResolvedSection: function(category) {
+      return category === AlertSeverity.Resolved;
     },
 
     ////////////////////// Annotations ///////////////////////////
@@ -628,9 +707,11 @@
       // - must be of same type
       // - must not be with itself
       // - must not consist of two groups
+      // - must be unresolved or grouped
       return alerts.filter((a) => {
         return a.type == alert.type && a.key != alert.key &&
-               (!alert.grouped || !a.grouped);
+               (!alert.grouped || !a.grouped) &&
+               (!a.resolved || a.grouped);
       });
     },
 
@@ -667,7 +748,8 @@
     _handleGroup: function(evt) {
       let alert = evt.target.get('alert');
       this.$.annotations.handleGroup(
-          alert, this._computeGroupTargets(alert, this._alerts));
+          alert, this._computeGroupTargets(alert, this._alerts),
+          (alert, resolved) => {this._resolveAlerts(alert, resolved);});
     },
 
     _handleGroupBulk: function(evt) {
@@ -692,13 +774,27 @@
     _handleResolve: function(evt) {
       let alert = evt.target.get('alert');
       if (alert.grouped) {
-        this._resolveAlerts(alert.alerts);
+        this._resolveAlerts(alert.alerts, true);
       } else {
-        this._resolveAlerts([alert]);
+        this._resolveAlerts([alert], true);
       }
     },
 
-    _resolveAlerts: function(alerts) {
+    _handleResolveBulk: function(evt) {
+      this._resolveAlerts(this._checkedAlerts, true);
+      this._uncheckAll();
+    },
+
+    _handleUnresolve: function(evt) {
+      let alert = evt.target.get('alert');
+      if (alert.grouped) {
+        this._resolveAlerts(alert.alerts, false);
+      } else {
+        this._resolveAlerts([alert], false);
+      }
+    },
+
+    _resolveAlerts: function(alerts, resolved) {
       let tree = this.tree.name;
       let url = '/api/v1/resolve/' + encodeURIComponent(tree);
       let keys = alerts.map((a) => {
@@ -706,24 +802,51 @@
       });
       let request = {
         'keys': keys,
-        'resolved': true,
+        'resolved': resolved,
       };
       this.postJSON(url, request)
           .then(jsonParsePromise)
           .then(this._resolveResponse.bind(this));
     },
 
-    _resolveResponse: function(response) {
-      if (response.resolved) {
-        let alerts = this._alertsData[response.tree];
-        alerts = alerts.filter(function(alert) {
-          return !response.keys.find((key) => {
-            return alert.key == key;
-          });
-        });
-        // Ensure that the modification is captured.
-        this.set(['_alertsData', response.tree], alerts);
+    _findAlertIndexByKey: function(alerts, key) {
+      for (let i in alerts) {
+        if (alerts[i].key == key) {
+          return i;
+        }
       }
+      return -1;
+    },
+
+    _resolveResponse: function(response) {
+      for (let i in response.keys) {
+        // Search for the existing alert and remove it from the alerts data.
+        let key = response.keys[i];
+        let alerts = this._alertsData[response.tree];
+        let index = this._findAlertIndexByKey(alerts, key);
+        let alert;
+        if (index != -1) {
+          alert = alerts[index];
+          this.splice(['_alertsData', response.tree], index, 1 );
+        } else {
+          let alerts = this._alertsResolvedData[response.tree];
+          index = this._findAlertIndexByKey(alerts, key);
+          if (index != -1 ) {
+            alert = alerts[index];
+            this.splice(['_alertsResolvedData', response.tree], index, 1 );
+          }
+        }
+
+        // Re-add it to the correct structure.
+        if (alert) {
+          if (response.resolved) {
+            this.push(['_alertsResolvedData', response.tree], alert);
+          } else {
+            this.push(['_alertsData', response.tree], alert);
+          }
+        }
+      }
+
       return response;
     },
 

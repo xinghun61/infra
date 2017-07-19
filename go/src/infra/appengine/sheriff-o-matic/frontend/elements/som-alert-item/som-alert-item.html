@@ -84,7 +84,7 @@
      .no-toggle {
        cursor: default;
      }
-     .snoozed {
+     .dimmed {
        opacity: 0.5;
      }
      .sub-alert-list {
@@ -174,6 +174,7 @@
               class="no-toggle"
               checked="{{checked::change}}"
               title="Select alerts to apply annotation changes to multiple alerts at once." />
+            <span id="resolvedTitle" hidden="[[!alert.resolved]]">Resolved:&nbsp;</span>
             <template is="dom-if" if="[[_hasUngroup]]">
               <iron-a11y-keys target="[[_groupNameInput]]" keys="enter" on-keys-pressed="_updateGroupName"></iron-a11y-keys>
               Group:
@@ -250,6 +251,10 @@
               title="Resolving this alert will remove it from the view.">
               <iron-icon class="ungroup-icon" icon="check"></iron-icon>
               Resolve
+            </button>
+            <button id="unresolve" on-tap="_unresolve" alt="Unresolve" hidden$="[[!_hasUnresolve]]"
+              title="Unresolving this alert will return it to the view.">
+              Unresolve
             </button>
           </div>
         </div>

@@ -35,7 +35,10 @@
       flush(function() {
         assert.equal(
             element.$$('.category-title-text').textContent.trim(),
-            'Category (1 total)');
+            'Category');
+        assert.equal(
+            element.$$('.category-title-count').textContent.trim(),
+            '(1 total)');
         done();
       });
     });

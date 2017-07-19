@@ -68,7 +68,7 @@
       },
       _cssClass: {
         type: String,
-        computed: '_computeCssClass(annotation.snoozed)',
+        computed: '_computeCssClass(annotation.snoozed, alert.resolved)',
       },
       _duration: {
         type: String,
@@ -92,11 +92,15 @@
       },
       _hasResolve: {
         type: Boolean,
-        computed: '_computeHasResolve(treeName)',
+        computed: '_computeHasResolve(treeName, alert)',
+      },
+      _hasUnresolve: {
+        type: Boolean,
+        computed: '_computeHasUnresolve(treeName, alert)',
       },
       _isCollapsed: {
         type: Boolean,
-        computed: '_computeIsCollapsed(openState, annotation, collapseByDefault)',
+        computed: '_computeIsCollapsed(openState, alert, annotation, collapseByDefault)',
       },
       _startTime:
           {type: String, computed: '_formatTimestamp(alert.start_time)'},
@@ -183,8 +187,8 @@
       return text + 'left';
     },
 
-    _computeCssClass: function(snoozed) {
-      return snoozed ? 'snoozed' : '';
+    _computeCssClass: function(snoozed, resolved) {
+      return (snoozed || resolved) ? 'dimmed' : '';
     },
 
     _isCrOSTree: function(treeName) {
@@ -195,8 +199,12 @@
       return alert && !!alert.grouped;
     },
 
-    _computeHasResolve: function(treeName) {
-      return this._isCrOSTree(treeName);
+    _computeHasResolve: function(treeName, alert) {
+      return this._isCrOSTree(treeName) && !alert.resolved;
+    },
+
+    _computeHasUnresolve: function(treeName, alert) {
+      return this._isCrOSTree(treeName) && alert.resolved;
     },
 
     _linkBug: function(evt) {
@@ -248,6 +256,10 @@
       this.fire('resolve');
     },
 
+    _unresolve: function(evt) {
+      this.fire('unresolve');
+    },
+
     _updateGroupName: function(evt) {
       let value = evt.detail.keyboardEvent.target.value;
       this.fire('annotation-change', {
@@ -292,7 +304,7 @@
       this.$.alertCollapse.updateSize(String(this.$.alertCollapse.scrollHeight) + 'px');
     },
 
-    _computeIsCollapsed: function(openState, annotation, collapseByDefault) {
+    _computeIsCollapsed: function(openState, alert, annotation, collapseByDefault) {
       // If opened is not defined, fall back to defaults based on annotation
       // and collapseByDefault.
       if (openState == 'opened') {
@@ -300,7 +312,7 @@
       } else if (openState == 'closed') {
         return true;
       }
-      return annotation.snoozed || collapseByDefault;
+      return alert.resolved || annotation.snoozed || collapseByDefault;
     },
 
     _toggle: function(evt) {

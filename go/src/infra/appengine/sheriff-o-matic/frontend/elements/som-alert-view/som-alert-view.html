@@ -90,6 +90,7 @@
       <button on-tap="_handleSnoozeBulk">Snooze All</button>
       <button on-tap="_handleGroupBulk" hidden$="[[!_hasGroupAll(_checkedAlerts)]]">
         Group All</button>
+      <button on-tap="_handleResolveBulk">Resolve All</button>
     </div>
     <iron-pages attr-for-selected="id" selected="[[_currentAlertView]]">
       <div id="alertListPage">
@@ -135,6 +136,7 @@
                 tree-name="[[tree.name]]"
                 collapse-by-default="[[collapseByDefault]]"
                 is-infra-failures-section="[[_isInfraFailuresSection(cat, _isTrooperPage)]]"
+                is-resolved-section="[[_isResolvedSection(cat)]]"
                 link-style="[[linkStyle]]"
                 on-annotation-change="_handleAnnotation"
                 on-comment="_handleComment"
@@ -144,6 +146,7 @@
                 on-group="_handleGroup"
                 on-ungroup="_handleUngroup"
                 on-resolve="_handleResolve"
+                on-unresolve="_handleUnresolve"
                 on-checked="_handleChecked"
             ></som-alert-category>
           </template>

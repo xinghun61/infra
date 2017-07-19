@@ -222,8 +222,12 @@
       this.$.snoozeDialog.open();
     },
 
-    handleGroup: function(alert, targets) {
-      this._groupModel = {alert: alert, targets: targets};
+    handleGroup: function(alert, targets, resolveAlerts) {
+      this._groupModel = {
+          alert: alert,
+          targets: targets,
+          resolveAlerts: resolveAlerts,
+      };
       this._groupErrorMessage = '';
       this.$.groupDialog.open();
     },
@@ -447,13 +451,13 @@
 
       // Determine group ID.
       let groupAlert = null;
-      for (let a in alerts) {
-        if (alerts[a].grouped) {
+      for (let i in alerts) {
+        if (alerts[i].grouped) {
           if (groupAlert) {
             this._groupErrorMessage = 'attempting to group multiple groups';
             return;
           }
-          groupAlert = alerts[a];
+          groupAlert = alerts[i];
         }
       }
       let groupID = groupAlert ? groupAlert.key : this._generateUUID();
@@ -463,8 +467,36 @@
         return !a.grouped;
       });
 
+      // Data cleanup: If the group is resolved, ensure that all subalerts
+      // are resolved too.
+      if (groupAlert && groupAlert.resolved) {
+        console.log('resolved group');
+        for (let i in groupAlert.alerts) {
+          let subAlert = groupAlert.alerts[i];
+          if (!subAlert.resolved) {
+            console.log('need to resolve ' + subAlert.key + ' res ' + subAlert.resolved);
+            this._groupModel.resolveAlerts([subAlert], true);
+          }
+        }
+      } else if (groupAlert && !groupAlert.resolved) {
+        console.log('unresolved group');
+        for (let i in alerts) {
+          if (alerts[i].resolved) {
+            this._groupErrorMessage =
+                'attempting to group resolved alert with unresolved group';
+            return;
+          }
+        }
+      }
+
       // Create annotation for each ungrouped alert key.
       for (let i in alerts) {
+        // Grouping with a resolved group will resolve all unresolved issues.
+        if (groupAlert && groupAlert.resolved && !alerts[i].resolved) {
+          console.log('auto-resolving ' + alerts[i].key);
+          this._groupModel.resolveAlerts([alerts[i]], true);
+        }
+
         if (this._groupErrorMessage) {
           break;
         }

@@ -104,15 +104,33 @@
     });
 
     test('snoozed affects class', function() {
+      element.alert = {
+        resolved: false,
+      };
       element.annotation = {
         snoozed: false,
       };
-      assert.notInclude(element.$.root.className, 'snoozed');
+      assert.notInclude(element.$.root.className, 'dimmed');
 
       element.annotation = {
         snoozed: true,
       };
-      assert.include(element.$.root.className, 'snoozed');
+      assert.include(element.$.root.className, 'dimmed');
+    });
+
+    test('resolved affects class', function() {
+      element.alert = {
+        resolved: false,
+      };
+      element.annotation = {
+        snoozed: false,
+      };
+      assert.notInclude(element.$.root.className, 'dimmed');
+
+      element.alert = {
+        resolved: true,
+      };
+      assert.include(element.$.root.className, 'dimmed');
     });
 
     test('file bug fires an event', function(done) {
