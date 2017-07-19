@@ -337,11 +337,12 @@ class ProjectServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
 
   def SetUpUpdateProject(self, project_id, delta):
+    self.project_service.project_tbl.SelectValue(
+        self.cnxn, 'project_name', project_id=project_id).AndReturn('projN')
     self.project_service.project_tbl.Update(
         self.cnxn, delta, project_id=project_id)
 
   def testUpdateProject(self):
-    self.SetUpGetProjects()
     delta = {'summary': 'An even better one-line summary'}
     self.SetUpUpdateProject(234, delta)
     self.mox.ReplayAll()
@@ -351,6 +352,8 @@ class ProjectServiceTest(unittest.TestCase):
 
   def SetUpUpdateProjectRoles(
       self, project_id, owner_ids, committer_ids, contributor_ids):
+    self.project_service.project_tbl.SelectValue(
+        self.cnxn, 'project_name', project_id=project_id).AndReturn('projN')
     self.project_service.project_tbl.Update(
         self.cnxn, {'cached_content_timestamp': NOW}, project_id=project_id)
 
@@ -378,7 +381,6 @@ class ProjectServiceTest(unittest.TestCase):
     self.cnxn.Commit()
 
   def testUpdateProjectRoles(self):
-    self.SetUpGetProjects()
     self.SetUpUpdateProjectRoles(234, [111L, 222L], [333L], [])
     self.mox.ReplayAll()
     self.project_service.UpdateProjectRoles(
@@ -401,7 +403,6 @@ class ProjectServiceTest(unittest.TestCase):
     self.mox.VerifyAll()
 
   def testUpdateRecentActivity(self):
-    self.SetUpGetProjects()
     delta = {'recent_activity_timestamp': NOW}
     self.SetUpUpdateProject(234, delta)
     self.mox.ReplayAll()

@@ -359,10 +359,9 @@ class ProjectService(object):
       recent_activity=None, revision_url_format=None, home_page=None,
       docs_url=None, source_url=None, logo_gcs_id=None, logo_file_name=None):
     """Update the DB with the given project information."""
-    # This will be a newly constructed object, not from the cache and not
-    # shared with any other thread.
-    project = self.GetProject(cnxn, project_id, use_cache=False)
-    if not project:
+    exists = self.project_tbl.SelectValue(
+      cnxn, 'project_name', project_id=project_id)
+    if not exists:
       raise NoSuchProjectException()
 
     delta = {}
@@ -412,32 +411,15 @@ class ProjectService(object):
     if cached_content_timestamp is not None:
       delta['cached_content_timestamp'] = cached_content_timestamp
     self.project_tbl.Update(cnxn, delta, project_id=project_id)
-
     self.project_2lc.InvalidateKeys(cnxn, [project_id])
-
-    # Now update the full-text index.
-    if summary is not None:
-      project.summary = summary
-    if description is not None:
-      project.description = description
-    if state is not None:
-      project.state = state
-    if access is not None:
-      project.access = access
-    if only_owners_remove_restrictions is not None:
-      project.only_owners_remove_restrictions = (
-          only_owners_remove_restrictions)
-    if only_owners_see_contributors is not None:
-      project.only_owners_see_contributors = only_owners_see_contributors
 
   def UpdateProjectRoles(
       self, cnxn, project_id, owner_ids, committer_ids, contributor_ids,
       now=None):
     """Store the project's roles in the DB and set cached_content_timestamp."""
-    # This will be a newly constructed object, not from the cache and not
-    # shared with any other thread.
-    project = self.GetProject(cnxn, project_id, use_cache=False)
-    if not project:
+    exists = self.project_tbl.SelectValue(
+      cnxn, 'project_name', project_id=project_id)
+    if not exists:
       raise NoSuchProjectException()
 
     now = now or int(time.time())
@@ -468,10 +450,6 @@ class ProjectService(object):
 
     cnxn.Commit()
     self.project_2lc.InvalidateKeys(cnxn, [project_id])
-
-    project.owner_ids = owner_ids
-    project.committer_ids = committer_ids
-    project.contributor_ids = contributor_ids
 
   def MarkProjectDeletable(self, cnxn, project_id, config_service):
     """Update the project's state to make it DELETABLE and free up the name.
