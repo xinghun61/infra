@@ -16,7 +16,7 @@
 
   suite('status-table', function() {
     var element;
-    const baseDateTs = 1498114800; // 22/06/2017 PTZ
+    const baseDateTs = 1498114800000; // 22/06/2017 PTZ
     setup(function(){
       element = fixture('table-test');
       element.latestDateTs = baseDateTs;
@@ -78,7 +78,7 @@
           assert.equal(prettyDate, prettyDates[i]);
         });
         element.dates.reverse().forEach((date, i) => {
-          let ts = new Date(baseDateTs * 1000);
+          let ts = new Date(baseDateTs);
           assert.equal(ts.setDate(ts.getDate() -i), date.getTime());
         });
         done();

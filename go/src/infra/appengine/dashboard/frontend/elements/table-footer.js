@@ -25,10 +25,12 @@ class TableFooter extends Polymer.Element {
       },
       prevButtonClass: {
         type: String,
+        value: 'hidden',
         computed: '_computePrevButtonClass(tsPrev)',
       },
       nextButtonClass: {
         type: String,
+        value: 'hidden',
         computed: '_computeNextButtonClass(tsNext)',
       },
     }

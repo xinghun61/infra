@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<title>chopsDashAppTest</title>
+<meta charset="utf-8">
+<link rel="import" href="/../bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/../elements/chopsdash-app.html">
+<script src="/../bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/../bower_components/web-component-tester/browser.js"></script>
+
+<test-fixture id="chopsdash">
+  <template>
+    <chopsdash-app>
+    </chopsdash-app>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('chospdash-app', function() {
+    let element;
+    let server;
+    let countdownStub;
+    const responseHeaders = {
+      json: {'Content-Type': 'application/json'}
+    };
+    setup(function() {
+      element = fixture('chopsdash');
+      element.latestDateTs = 1500318743000 // July 17, 2017 12:12:23 PM DST
+      server = sinon.fakeServer.create();
+      countdownStub = sinon.stub(element, '_refreshCountdown');
+    });
+    teardown(function() {
+      server.restore();
+    });
+
+    test('test simple', function(done) {
+      server.respondWith(
+          'POST',
+          '/prpc/dashboard.ChopsServiceStatus/GetAllServicesData',
+          [
+            200,
+            responseHeaders.json,
+            ")]}'" + '{' +
+                '"services":[], ' +
+                '"nonslaServices":[' +
+                '{"name":"Commit-Queue",' +
+                '"incidents":[{' +
+                '"id":"0.keug6ersqamz","startTime":"1499797156",' +
+                '"endTime":"1499883556","severity":"YELLOW"}]}' +
+                ']}'
+          ]);
+      element._refreshData();
+      server.respond();
+      flush(function() {
+        sinon.assert.calledOnce(countdownStub);
+        done();
+      });
+    });
+    test('test no data', function(done) {
+      server.respondWith(
+          'POST',
+          '/prpc/dashboard.ChopsServiceStatus/GetAllServicesData',
+          [
+            200,
+            responseHeaders.json,
+            ")]}'" + '{' +
+                '"services":[], ' +
+                '"nonslaServices":[]}',
+          ]);
+      element.$.ajax.generateRequest();
+      server.respond();
+
+      flush(function () {
+        assert.equal(0, element.nonSLAServices.length);
+        assert.equal(0, element.services.length);
+        done();
+      });
+    });
+
+  });
+</script>

@@ -10,6 +10,7 @@
     "test"
   ],
   "dependencies": {
+    "app-layout": "PolymerElements/app-layout#2.0.0",
     "iron-ajax": "PolymerElements/iron-ajax#2.0.2",
     "iron-flex-layout": "PolymerElements/iron-flex-layout#2.0.0",
     "iron-icons": "PolymerElements/iron-icons",

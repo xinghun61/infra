@@ -1,5 +1,6 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
 <link rel="import" href="/elements/service-row.html">
+<link rel="import" href="/elements/table-footer.html">
 
 <dom-module id="status-table">
   <template>
@@ -10,11 +11,11 @@
         padding: 0;
       }
       .card {
+        background-color: white;
+        box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
         color: rgba(0, 0, 0, 0.87);
         font: 1.2em "Roboto Regular";
-      }
-      div.layout > div {
-        width: 800px;
+        padding: 24px;
       }
       .footer,
       th {
@@ -68,7 +69,11 @@
               </td>
             </tr>
           </template>
-          <tr class="footer"><!--add table-footer here--></tr>
+          <tr class="footer">
+            <td colspan="8">
+              <table-footer latest-date="{{latestDateTs}}"></table-footer>
+            </td>
+          </tr>
         </table>
       </div>
     </div>
@@ -91,7 +96,7 @@
           },
           latestDateTs: {
             type: Number,
-            value: 0,
+            notify: true,
           },
           // All dates shown on the dashboard should be the same across all
           // elements on the page.
@@ -115,7 +120,7 @@
       _updateDates(latestDateTs) {
         const weekLooper = 6;
         let lastDate =
-            latestDateTs ? new Date(latestDateTs * 1000) : new Date();
+            latestDateTs ? new Date(latestDateTs) : new Date();
         this.splice('dates', 0, this.dates.length);
         this.splice('formattedDates', 0, this.formattedDates.length);
         for (let i = weekLooper; i >= 0; i--) {
