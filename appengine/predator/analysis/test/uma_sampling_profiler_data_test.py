@@ -63,6 +63,8 @@ TEST_DATA = {
     }
   ],
   'subtree_id': 'AEF6F487C2EE7935',
+  'subtree_root_id': '9F4E0F78CF2B2668',
+  'subtree_change_ids': ['EEC7F9CAAE0BDE58', '817FAD6EAEBCCF14'],
   'subtree_root_depth': 0,
   'chrome_releases': [
     {
@@ -92,6 +94,9 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
     self.assertEquals(uma_data.startup_phase, 'MAIN_LOOP_START')
     self.assertEquals(uma_data.platform, 'win')
     self.assertEquals(uma_data.subtree_id, 'AEF6F487C2EE7935')
+    self.assertEquals(uma_data.subtree_root_id, '9F4E0F78CF2B2668')
+    self.assertEquals(uma_data.subtree_change_ids,
+                      ['EEC7F9CAAE0BDE58','817FAD6EAEBCCF14'])
     self.assertEquals(uma_data.subtree_root_depth, 0)
     self.assertEquals(uma_data.chrome_releases,
                       [{'version': '54.0.2834.0', 'channel': 'canary'},

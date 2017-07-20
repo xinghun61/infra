@@ -26,6 +26,8 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
     analysis.collection_trigger = 'PROCESS_STARTUP'
     analysis.subtree_root_depth = 19
     analysis.subtree_id = 'AEF6F487C2EE7935'
+    analysis.subtree_root_id = '9F4E0F78CF2B2668'
+    analysis.subtree_change_ids = ['EEC7F9CAAE0BDE58', '817FAD6EAEBCCF14']
     analysis.chrome_releases = [
         {'version': '54.0.2834.0', 'channel': 'canary'},
         {'version': '54.0.2835.0', 'channel': 'canary'}
@@ -43,6 +45,8 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
     self.assertIsNone(analysis.collection_trigger)
     self.assertIsNone(analysis.subtree_root_depth)
     self.assertIsNone(analysis.subtree_id)
+    self.assertIsNone(analysis.subtree_root_id)
+    self.assertIsNone(analysis.subtree_change_ids)
     self.assertIsNone(analysis.chrome_releases)
     self.assertIsNone(analysis.subtree_stacks)
 
@@ -85,6 +89,10 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
     self.assertEqual(analysis.thread_type, regression_data.thread_type)
     self.assertEqual(analysis.collection_trigger,
                      regression_data.collection_trigger)
+    self.assertEqual(analysis.subtree_id, regression_data.subtree_id)
+    self.assertEqual(analysis.subtree_root_id, regression_data.subtree_root_id)
+    self.assertEqual(analysis.subtree_change_ids,
+                     regression_data.subtree_change_ids)
     self.assertEqual(analysis.subtree_root_depth,
                      regression_data.subtree_root_depth)
     self.assertEqual(analysis.chrome_releases, regression_data.chrome_releases)
@@ -142,6 +150,8 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
         'collection_trigger': analysis.collection_trigger,
         'subtree_root_depth': analysis.subtree_root_depth,
         'subtree_id': analysis.subtree_id,
+        'subtree_root_id': analysis.subtree_root_id,
+        'subtree_change_ids': analysis.subtree_change_ids,
         'chrome_releases': analysis.chrome_releases,
         'subtree_stacks': analysis.subtree_stacks,
     }
@@ -160,6 +170,8 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
         'chrome_releases': analysis.chrome_releases,
         'subtree_root_depth': analysis.subtree_root_depth,
         'subtree_id': analysis.subtree_id,
+        'subtree_root_id': analysis.subtree_root_id,
+        'subtree_change_ids': analysis.subtree_change_ids,
         'subtree_stacks': analysis.subtree_stacks,
     }
 
@@ -177,6 +189,8 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
         'chrome_releases': analysis.chrome_releases,
         'subtree_root_depth': analysis.subtree_root_depth,
         'subtree_id': analysis.subtree_id,
+        'subtree_root_id': analysis.subtree_root_id,
+        'subtree_change_ids': analysis.subtree_change_ids,
         'subtree_stacks': analysis.subtree_stacks,
     }
 

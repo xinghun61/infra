@@ -61,6 +61,12 @@ class UMASamplingProfilerData(CrashData):
         'subtree_root_depth': 19,
         # Unique identifier for the subtree:
         'subtree_id': 'AEF6F487C2EE7935',
+        # Id of the subtree root function:
+        'subtree_root_id': '9F4E0F78CF2B2668',
+        # Ids of the significant changed nodes under the root.  In the case of a
+        # renamed function, one id will be present for the old function and one
+        # for the new function:
+        'subtree_change_ids': ['EEC7F9CAAE0BDE58','817FAD6EAEBCCF14'],
         'subtree_stacks': [<list of stacks in dict form>],
       }
       dep_fetcher (ChromeDependencyFetcher): Dependency fetcher that can fetch
@@ -75,6 +81,8 @@ class UMASamplingProfilerData(CrashData):
     self.chrome_releases = regression_data['chrome_releases']
     # Unique identifier for the subtree:
     self.subtree_id = regression_data['subtree_id']
+    self.subtree_root_id = regression_data['subtree_root_id']
+    self.subtree_change_ids = regression_data['subtree_change_ids']
     # Depth of the root of the subtree in the stacks, with the root at depth 0:
     self.subtree_root_depth = regression_data['subtree_root_depth']
     self.subtree_stacks = regression_data['subtree_stacks']

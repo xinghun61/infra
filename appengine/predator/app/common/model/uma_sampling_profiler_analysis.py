@@ -41,6 +41,8 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
   collection_trigger = ndb.StringProperty()
   chrome_releases = ndb.JsonProperty()
   subtree_id = ndb.StringProperty()
+  subtree_root_id = ndb.StringProperty()
+  subtree_change_ids = ndb.JsonProperty()
   subtree_root_depth = ndb.IntegerProperty()
   subtree_stacks = ndb.JsonProperty()
 
@@ -52,6 +54,8 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
     self.collection_trigger = None
     self.chrome_releases = None
     self.subtree_id = None
+    self.subtree_root_id = None
+    self.subtree_change_ids = None
     self.subtree_root_depth = None
     self.subtree_stacks = None
 
@@ -69,6 +73,8 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
     self.collection_trigger = regression_data.collection_trigger
     self.chrome_releases = regression_data.chrome_releases
     self.subtree_id = regression_data.subtree_id
+    self.subtree_root_id = regression_data.subtree_root_id
+    self.subtree_change_ids = regression_data.subtree_change_ids
     self.subtree_root_depth = regression_data.subtree_root_depth
     self.subtree_stacks = regression_data.subtree_stacks
 
@@ -118,6 +124,8 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
         'collection_trigger': self.collection_trigger,
         'chrome_releases': self.chrome_releases,
         'subtree_id': self.subtree_id,
+        'subtree_root_id': self.subtree_root_id,
+        'subtree_change_ids': self.subtree_change_ids,
         'subtree_root_depth': self.subtree_root_depth,
         'subtree_stacks': self.subtree_stacks,
     }
@@ -132,6 +140,8 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
         'chrome_releases': self.chrome_releases,
         'subtree_root_depth': self.subtree_root_depth,
         'subtree_id': self.subtree_id,
+        'subtree_root_id': self.subtree_root_id,
+        'subtree_change_ids': self.subtree_change_ids,
         'subtree_stacks': self.subtree_stacks,
     }
     if self.startup_phase:
