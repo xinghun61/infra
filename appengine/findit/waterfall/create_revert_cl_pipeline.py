@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
 import logging
 import textwrap
 
@@ -10,7 +9,6 @@ from google.appengine.ext import ndb
 
 from common import constants
 from common import rotations
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from infra_api_clients.codereview import codereview_util
 from libs import analysis_status as status
@@ -26,7 +24,6 @@ CREATED_BY_SHERIFF = 1
 ERROR = 2
 SKIPPED = 3
 
-NEWEST_BUILD_GREEN = 'Newest build is green.'
 CULPRIT_OWNED_BY_FINDIT = 'Culprit is a revert created by Findit.'
 AUTO_REVERT_OFF = 'Author of the culprit revision has turned off auto-revert.'
 REVERTED_BY_SHERIFF = 'Culprit has been reverted by a sheriff or the CL owner.'
@@ -76,38 +73,11 @@ def _UpdateCulprit(repo_name,
   return culprit
 
 
-def _LatestBuildFailed(master_name, builder_name, build_number):
-  http_client = HttpClientAppengine()
-  latest_build_numbers = buildbot.GetRecentCompletedBuilds(
-      master_name, builder_name, http_client)
-
-  for checked_build_number in latest_build_numbers:
-    if checked_build_number <= build_number:
-      return True
-
-    checked_build_data = buildbot.GetBuildDataFromBuildMaster(
-        master_name, builder_name, checked_build_number, http_client)
-
-    if not checked_build_data:
-      logging.error("Failed to get build data for %s/%s/%d" %
-                    (master_name, builder_name, checked_build_number))
-      return False
-
-    checked_build_result = buildbot.GetBuildResult(
-        json.loads(checked_build_data))
-
-    if checked_build_result in [buildbot.SUCCESS, buildbot.WARNINGS]:
-      return False
-
-  return True
-
-
 def _IsOwnerFindit(owner_email):
   return owner_email == constants.DEFAULT_SERVICE_ACCOUNT
 
 
-def _RevertCulprit(master_name, builder_name, build_number, repo_name, revision,
-                   pipeline_id):
+def _RevertCulprit(repo_name, revision, pipeline_id):
 
   if not _ShouldRevert(repo_name, revision, pipeline_id):
     # Either revert is done or skipped, use skipped as general case.
@@ -174,20 +144,11 @@ def _RevertCulprit(master_name, builder_name, build_number, repo_name, revision,
         skip_revert_reason=REVERTED_BY_SHERIFF)
     return CREATED_BY_SHERIFF
 
-  # 2. Reverts the culprit.
-  if not _LatestBuildFailed(master_name, builder_name, build_number):
-    # The latest build didn't fail, skip.
-    _UpdateCulprit(
-        repo_name,
-        revision,
-        status.SKIPPED,
-        skip_revert_reason=NEWEST_BUILD_GREEN)
-    return SKIPPED
-
   revert_change_id = None
   if findit_revert:
     revert_change_id = findit_revert.reverting_cl.change_id
 
+  # 2. Crreate revert CL.
   # TODO (chanli): Better handle cases where 2 analyses are trying to revert
   # at the same time.
   if not revert_change_id:
@@ -243,13 +204,8 @@ def _RevertCulprit(master_name, builder_name, build_number, repo_name, revision,
 
 class CreateRevertCLPipeline(BasePipeline):
 
-  def __init__(self, master_name, builder_name, build_number, repo_name,
-               revision):
-    super(CreateRevertCLPipeline, self).__init__(
-        master_name, builder_name, build_number, repo_name, revision)
-    self.master_name = master_name
-    self.builder_name = builder_name
-    self.build_number = build_number
+  def __init__(self, repo_name, revision):
+    super(CreateRevertCLPipeline, self).__init__(repo_name, revision)
     self.repo_name = repo_name
     self.revision = revision
 
@@ -269,9 +225,8 @@ class CreateRevertCLPipeline(BasePipeline):
     self._LogUnexpectedAborting(self.was_aborted)
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, repo_name, revision):
+  def run(self, repo_name, revision):
     if waterfall_config.GetActionSettings().get('revert_compile_culprit',
                                                 False):
-      return _RevertCulprit(master_name, builder_name, build_number, repo_name,
-                            revision, self.pipeline_id)
+      return _RevertCulprit(repo_name, revision, self.pipeline_id)
     return None

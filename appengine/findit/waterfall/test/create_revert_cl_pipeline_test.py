@@ -72,8 +72,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
       }
     }
     culprit.put()
-    pipeline = CreateRevertCLPipeline('m', 'b', 123, repo_name, revision)
-    revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
+    pipeline = CreateRevertCLPipeline(repo_name, revision)
+    revert_status = pipeline.run(repo_name, revision)
 
     self.assertEquals(revert_status,
                       create_revert_cl_pipeline.CREATED_BY_FINDIT)
@@ -109,8 +109,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     WfSuspectedCL.Create(repo_name, revision, 123).put()
 
-    pipeline = CreateRevertCLPipeline('m', 'b', 123, repo_name, revision)
-    revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
+    pipeline = CreateRevertCLPipeline(repo_name, revision)
+    revert_status = pipeline.run(repo_name, revision)
 
     self.assertEquals(revert_status,
                       create_revert_cl_pipeline.CREATED_BY_SHERIFF)
@@ -142,8 +142,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     mock_fn.return_value = cl_info
 
     WfSuspectedCL.Create(repo_name, revision, 123).put()
-    pipeline = CreateRevertCLPipeline('m', 'b', 123, repo_name, revision)
-    revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
+    pipeline = CreateRevertCLPipeline(repo_name, revision)
+    revert_status = pipeline.run(repo_name, revision)
 
     self.assertEquals(revert_status,
                       create_revert_cl_pipeline.CREATED_BY_FINDIT)
@@ -152,10 +152,6 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(culprit.revert_status, status.COMPLETED)
     self.assertIsNotNone(culprit.revert_cl)
 
-  @mock.patch.object(buildbot, 'GetBuildResult', return_value=buildbot.FAILURE)
-  @mock.patch.object(
-      buildbot, 'GetBuildDataFromBuildMaster', return_value='{"data": "data"}')
-  @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[124])
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
   @mock.patch.object(
@@ -180,8 +176,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_cl = RevertCL()
     culprit.revert_status = status.RUNNING
     culprit.put()
-    pipeline = CreateRevertCLPipeline('m', 'b', 123, repo_name, revision)
-    revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
+    pipeline = CreateRevertCLPipeline(repo_name, revision)
+    revert_status = pipeline.run(repo_name, revision)
 
     self.assertEquals(revert_status,
                       create_revert_cl_pipeline.CREATED_BY_FINDIT)
@@ -189,40 +185,6 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.COMPLETED)
     self.assertIsNotNone(culprit.revert_cl)
-
-  @mock.patch.object(buildbot, 'GetBuildResult', return_value=buildbot.SUCCESS)
-  @mock.patch.object(
-      buildbot, 'GetBuildDataFromBuildMaster', return_value='{"data": "data"}')
-  @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[124])
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
-  @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testLatestBuildSucceeded(self, mock_fn, *_):
-    repo_name = 'chromium'
-    revision = 'rev1'
-
-    cl_info = ClInfo(self.review_server_host, self.review_change_id)
-    cl_info.owner_email = 'abc@chromium.org'
-    cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
-    revert_cl = ClInfo('revert_review_host', '123V3127')
-    revert_cl.url = 'https://codereview.chromium.org/54321'
-    cl_info.reverts.append(
-        Revert('20001', revert_cl, constants.DEFAULT_SERVICE_ACCOUNT,
-               datetime(2017, 2, 1, 1, 0, 0)))
-    mock_fn.return_value = cl_info
-
-    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    culprit.put()
-    pipeline = CreateRevertCLPipeline('m', 'b', 123, repo_name, revision)
-    revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
-
-    self.assertEquals(revert_status, create_revert_cl_pipeline.SKIPPED)
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_status, status.SKIPPED)
-    self.assertEqual(culprit.skip_revert_reason,
-                     create_revert_cl_pipeline.NEWEST_BUILD_GREEN)
 
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
@@ -239,8 +201,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
-    pipeline = CreateRevertCLPipeline('m', 'b', 123, repo_name, revision)
-    revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
+    pipeline = CreateRevertCLPipeline(repo_name, revision)
+    revert_status = pipeline.run(repo_name, revision)
 
     self.assertEquals(revert_status, create_revert_cl_pipeline.SKIPPED)
 
@@ -265,8 +227,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
-    pipeline = CreateRevertCLPipeline('m', 'b', 123, repo_name, revision)
-    revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
+    pipeline = CreateRevertCLPipeline(repo_name, revision)
+    revert_status = pipeline.run(repo_name, revision)
 
     self.assertEquals(revert_status, create_revert_cl_pipeline.SKIPPED)
 
@@ -281,8 +243,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
 
-    pipeline = CreateRevertCLPipeline('m', 'b', 123, repo_name, revision)
-    revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
+    pipeline = CreateRevertCLPipeline(repo_name, revision)
+    revert_status = pipeline.run(repo_name, revision)
 
     self.assertIsNone(revert_status)
 
@@ -295,8 +257,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
 
-    pipeline = CreateRevertCLPipeline('m', 'b', 123, repo_name, revision)
-    revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
+    pipeline = CreateRevertCLPipeline(repo_name, revision)
+    revert_status = pipeline.run(repo_name, revision)
 
     self.assertEquals(revert_status, create_revert_cl_pipeline.SKIPPED)
 
@@ -307,8 +269,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.RUNNING
     culprit.put()
 
-    CreateRevertCLPipeline('m', 'b', 123, repo_name,
-                           revision)._LogUnexpectedAborting(True)
+    CreateRevertCLPipeline(repo_name, revision)._LogUnexpectedAborting(True)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEquals(culprit.revert_status, status.ERROR)
 
@@ -318,8 +279,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    CreateRevertCLPipeline('m', 'b', 123, repo_name,
-                           revision)._LogUnexpectedAborting(True)
+    CreateRevertCLPipeline(repo_name, revision)._LogUnexpectedAborting(True)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertIsNone(culprit.revert_status)
 
@@ -330,27 +290,11 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_pipeline_id = 'pipeline_id'
     culprit.put()
 
-    pipeline = CreateRevertCLPipeline('m', 'b', 123, repo_name, revision)
+    pipeline = CreateRevertCLPipeline(repo_name, revision)
     pipeline.start_test()
     pipeline._LogUnexpectedAborting(True)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_pipeline_id, 'pipeline_id')
-
-  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster', return_value=None)
-  @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[124])
-  def testIsLatestBuildFailedGetBuildDataFailed(self, *_):
-    self.assertFalse(
-        create_revert_cl_pipeline._LatestBuildFailed('m', 'b', 123))
-
-  @mock.patch.object(
-      buildbot, 'GetBuildDataFromBuildMaster', return_value='{"data": "data"}')
-  @mock.patch.object(
-      buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
-  @mock.patch.object(buildbot, 'GetBuildResult')
-  def testIsLatestBuildFailedPassedThenFailed(self, mock_fn, *_):
-    mock_fn.side_effect = [buildbot.FAILURE, buildbot.SUCCESS]
-    self.assertFalse(
-        create_revert_cl_pipeline._LatestBuildFailed('m', 'b', 123))
 
   def testRevertACulpritIsBeingReverted(self):
     repo_name = 'chromium'
@@ -361,9 +305,9 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_pipeline_id = 'pipeline_id'
     culprit.put()
 
-    pipeline = CreateRevertCLPipeline('m', 'b', 123, repo_name, revision)
+    pipeline = CreateRevertCLPipeline(repo_name, revision)
     pipeline.start_test()
-    revert_status = pipeline.run('m', 'b', 123, repo_name, revision)
+    revert_status = pipeline.run(repo_name, revision)
 
     self.assertEquals(revert_status, create_revert_cl_pipeline.SKIPPED)
 
