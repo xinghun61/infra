@@ -44,6 +44,14 @@ var Known = []*Master{
 		Identifier: "chromium.memory",
 	},
 	{
+		Name:       "ChromiumPerf",
+		Identifier: "chromium.perf",
+	},
+	{
+		Name:       "ChromiumPerfFYI",
+		Identifier: "chromium.perf.fyi",
+	},
+	{
 		Name:       "chromium.swarm",
 		Identifier: "chromium.swarm",
 	},
