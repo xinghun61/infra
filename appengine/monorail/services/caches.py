@@ -16,6 +16,7 @@ from protorpc import protobuf
 from google.appengine.api import memcache
 
 from framework import framework_constants
+from proto import tracker_pb2
 
 
 INVALIDATE_KIND_VALUES = ['user', 'project', 'issue', 'issue_id', 'hotlist']
@@ -229,22 +230,30 @@ class AbstractTwoLevelCache(object):
         self._WriteToMemcache(retrieved_dict)
 
     for key in ram_verify_dict:
-      if ram_verify_dict[key] != result_dict.get(key):
+      ram_obj = ram_verify_dict.get(key)
+      if isinstance(ram_obj, tracker_pb2.Issue):
+        ram_obj.blocking_iids = sorted(ram_obj.blocking_iids)
+      memcache_obj = memcache_verify_dict.get(key)
+      if isinstance(memcache_obj, tracker_pb2.Issue):
+        memcache_obj.blocking_iids = sorted(memcache_obj.blocking_iids)
+      if ram_obj != result_dict.get(key):
         logging.warning('debugging issue2514: Found stale ram cache entry')
-        logging.warning('ramcache[%r]: %r', key, ram_verify_dict[key])
+        logging.warning('ramcache[%r]: %r', key, ram_obj)
         logging.warning('DB[%r]: %r', key, result_dict[key])
 
-      if (key in memcache_verify_dict and
-          ram_verify_dict[key] != memcache_verify_dict[key]):
+      if (memcache_obj and ram_obj != memcache_obj):
         logging.warning(
           'debugging issue2514: Found disagreement between cache entries')
-        logging.warning('ramcache[%r]: %r', key, ram_verify_dict[key])
-        logging.warning('memcache[%r]: %r', key, result_dict[key])
+        logging.warning('ramcache[%r]: %r', key, ram_obj)
+        logging.warning('memcache[%r]: %r', key, memcache_obj)
 
     for key in memcache_verify_dict:
+      memcache_obj = memcache_verify_dict.get(key)
+      if isinstance(memcache_obj, tracker_pb2.Issue):
+        memcache_obj.blocking_iids = sorted(memcache_obj.blocking_iids)
       if memcache_verify_dict[key] != result_dict.get(key):
         logging.warning('debugging issue2514: Found stale memcache entry')
-        logging.warning('memcache[%r]: %r', key, memcache_verify_dict[key])
+        logging.warning('memcache[%r]: %r', key, memcache_obj)
         logging.warning('DB[%r]: %r', key, result_dict[key])
 
     still_missing_keys = [key for key in keys if key not in result_dict]
