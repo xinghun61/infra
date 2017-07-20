@@ -131,7 +131,7 @@ func TestLogDiffJSONHandler(t *testing.T) {
 			BuildNum1: 15038,
 			BuildNum2: 15037,
 			Complete:  true,
-			ID:        "test",
+			ID:        12345,
 		}
 		So(datastore.Put(c, logdiff), ShouldBeNil)
 		w := httptest.NewRecorder()
@@ -291,7 +291,7 @@ func TestLogdiffWorker(t *testing.T) {
 			BuildNum1: 15038,
 			BuildNum2: 15037,
 			Complete:  false,
-			ID:        "test",
+			ID:        12345,
 		}
 		So(datastore.Put(c, logdiff), ShouldBeNil)
 
@@ -301,7 +301,7 @@ func TestLogdiffWorker(t *testing.T) {
 		values.Set("lastPass", "15037")
 		values.Set("master", "chromium.test")
 		values.Set("builder", "test")
-		values.Set("ID", "test")
+		values.Set("ID", "12345")
 		r := makePostRequest(values.Encode())
 		r.PostForm = values
 
@@ -340,7 +340,7 @@ func TestLogdiffWorker(t *testing.T) {
 			BuildNum1: 15038,
 			BuildNum2: 15037,
 			Complete:  false,
-			ID:        "test",
+			ID:        12345,
 		}
 		So(datastore.Put(c, logdiff), ShouldBeNil)
 
@@ -350,7 +350,7 @@ func TestLogdiffWorker(t *testing.T) {
 		values.Set("lastPass", "15037")
 		values.Set("master", "chromium.test")
 		values.Set("builder", "test")
-		values.Set("ID", "test")
+		values.Set("ID", "12345")
 		r := makePostRequest(values.Encode())
 		r.PostForm = values
 
@@ -388,7 +388,7 @@ func TestLogdiffWorker(t *testing.T) {
 			BuildNum1: 15038,
 			BuildNum2: 15037,
 			Complete:  false,
-			ID:        "test",
+			ID:        12345,
 		}
 		So(datastore.Put(c, logdiff), ShouldBeNil)
 
@@ -398,7 +398,7 @@ func TestLogdiffWorker(t *testing.T) {
 		values.Set("lastPass", "")
 		values.Set("master", "chromium.test")
 		values.Set("builder", "test")
-		values.Set("ID", "test")
+		values.Set("ID", "12345")
 		r := makePostRequest(values.Encode())
 		r.PostForm = values
 
@@ -430,7 +430,7 @@ func TestLogdiffWorker(t *testing.T) {
 			BuildNum1: 15038,
 			BuildNum2: 15037,
 			Complete:  false,
-			ID:        "test",
+			ID:        12345,
 		}
 		So(datastore.Put(c, logdiff), ShouldBeNil)
 
@@ -440,7 +440,7 @@ func TestLogdiffWorker(t *testing.T) {
 		values.Set("lastPass", "15037")
 		values.Set("master", "chromium.test")
 		values.Set("builder", "test")
-		values.Set("ID", "test")
+		values.Set("ID", "12345")
 		r := makePostRequest(values.Encode())
 		r.PostForm = values
 

@@ -43,7 +43,7 @@ type LogDiff struct {
 	// BuildNum2 is the build number of the second log to be diffed.
 	BuildNum2 int64
 	// ID is for GAE purpose
-	ID string `gae:"$id"`
+	ID int64 `gae:"$id"`
 	// Complete is recording completeness
 	Complete bool
 }
@@ -163,7 +163,6 @@ func LogdiffWorker(ctx *router.Context) {
 		return
 	}
 	diffs := difflib.Diff(res1.log, res2)
-	logdiffSize.Set(c, int64(len(diffs)), "chromium")
 	data, err := json.Marshal(diffs)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error marshaling JSON for logdiff: %v", err))
@@ -175,13 +174,20 @@ func LogdiffWorker(ctx *router.Context) {
 	writer.Write(data)
 	writer.Close()
 
-	diff := &LogDiff{ID: r.FormValue("ID")}
+	stringID := r.FormValue("ID")
+	id, err := strconv.Atoi(stringID)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error converting string to integer: %v", err))
+		return
+	}
+	diff := &LogDiff{ID: int64(id)}
 	if err := datastore.Get(c, diff); err != nil {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error getting Logdiff shell: %v", err))
 		return
 	}
 	diff.Diffs = buffer.Bytes()
 	diff.Complete = true
+	logdiffSize.Set(c, int64(len(diff.Diffs)), "chromium")
 	err = datastore.Put(c, diff)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error storing Logdiff: %v", err))

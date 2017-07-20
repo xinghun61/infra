@@ -171,38 +171,34 @@ func enqueueLogDiffTask(ctx context.Context, alerts []messages.Alert) error {
 				if len(diffs) != 0 {
 					continue
 				}
+				data := &LogDiff{nil, master, builder.Name, buildNum1, buildNum2, 0, false}
 				err = datastore.RunInTransaction(ctx, func(ctx context.Context) error {
-					data := &LogDiff{nil, master, builder.Name, buildNum1, buildNum2, "", false}
-					if err := datastore.AllocateIDs(ctx, data); err != nil {
-						logging.Errorf(ctx, "error allocating id: %v", err)
-						return err
-					}
-					values := url.Values{}
-					values.Set("lastFail", strconv.Itoa(int(buildNum1)))
-					values.Set("lastPass", strconv.Itoa(int(buildNum2)))
-					values.Set("master", master)
-					values.Set("builder", builder.Name)
-					values.Set("ID", data.ID)
 					if err := datastore.Put(ctx, data); err != nil {
 						logging.Errorf(ctx, "storing data: %v", err)
-						return err
-					}
-					t := tq.NewPOSTTask("/_ah/queue/logdiff", values)
-
-					workerHost, err := info.ModuleHostname(ctx, "analyzer", "", "")
-					if err != nil {
-						logging.Errorf(ctx, "err routing worker to analyzer: %v", err)
-						return err
-					}
-					t.Header["HOST"] = []string{workerHost}
-
-					if err := tq.Add(ctx, logdiffQueue, t); err != nil {
-						logging.Errorf(ctx, "error enqueuing task: %v", err)
 						return err
 					}
 					return nil
 				}, nil)
 				if err != nil {
+					return err
+				}
+				values := url.Values{}
+				values.Set("lastFail", strconv.Itoa(int(buildNum1)))
+				values.Set("lastPass", strconv.Itoa(int(buildNum2)))
+				values.Set("master", master)
+				values.Set("builder", builder.Name)
+				values.Set("ID", strconv.Itoa(int(data.ID)))
+				t := tq.NewPOSTTask("/_ah/queue/logdiff", values)
+
+				workerHost, err := info.ModuleHostname(ctx, "analyzer", "", "")
+				if err != nil {
+					logging.Errorf(ctx, "err routing worker to analyzer: %v", err)
+					return err
+				}
+				t.Header["HOST"] = []string{workerHost}
+
+				if err := tq.Add(ctx, logdiffQueue, t); err != nil {
+					logging.Errorf(ctx, "error enqueuing task: %v", err)
 					return err
 				}
 			}
