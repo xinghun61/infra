@@ -34,13 +34,15 @@ def _BlameUrl(stackframe, revision):
                               stackframe.file_path)
 
 
-class CalleeLine(namedtuple('CalleeLine', ['line', 'sample_fraction'])):
-  """A line in a function where the next function in the stack is invoked.
+class FunctionLine(namedtuple('FunctionLine', ['line', 'sample_fraction'])):
+  """Execution data collected by a profiler about a line in a function.
 
+  Represents a line in a function where execution is occurring or the next
+  function in the stack is invoked.
   Attributes:
-    line (int): The line number where the next function is invoked.
+    line (int): The line number.
     sample_fraction (float): The fraction of stacks in the profiler sample where
-      that function is invoked. Number from 0 to 1.
+      that line is executed. Number from 0 to 1.
   """
   pass
 
@@ -48,7 +50,7 @@ class CalleeLine(namedtuple('CalleeLine', ['line', 'sample_fraction'])):
 class ProfilerStackFrame(namedtuple('ProfilerStackFrame',
     ['index', 'difference', 'log_change_factor', 'responsible', 'dep_path',
      'function', 'file_path', 'raw_file_path', 'repo_url',
-     'function_start_line', 'callee_lines'])):
+     'function_start_line', 'lines_old', 'lines_new'])):
   """Represents a frame in a stacktrace produced by a performance profiler.
 
   Represents the difference in performance for a given stack frame between one
@@ -80,26 +82,31 @@ class ProfilerStackFrame(namedtuple('ProfilerStackFrame',
     repo_url (str): Repo url of this frame.
     function_start_line (int): The line number for the first line of the
       function.
-    callee_lines (tuple of CalleeLines): Lines in this function where the next
-    function in the stack are invoked, along with the fraction of samples
-    distributed between them. E.g.:
-      (CalleeLine(line=490, sample_fraction=0.9),
-       CalleeLine(line=511, sample_fraction=0.1))
+    lines_old (tuple of FunctionLines): Lines in this function where execution
+      is occurring or the next function in the stack is invoked, along with the
+      fraction of samples distributed between them (recorded in the old version
+      of the code). E.g.:
+        (FunctionLine(line=490, sample_fraction=0.9),
+         FunctionLine(line=511, sample_fraction=0.1))
+    lines_new (tuple of FunctionLines): Same as ``lines_old``, but
+      recorded in the new version of the code.
   """
   __slots__ = ()
 
   def __new__(cls, index, difference, log_change_factor, responsible,
               dep_path=None, function=None, file_path=None, raw_file_path=None,
-              repo_url=None, function_start_line=None, callee_lines=None):
+              repo_url=None, function_start_line=None, lines_old=None,
+              lines_new=None):
     if index is None:
       raise TypeError('The index must be an int')
 
-    callee_lines = tuple(callee_lines) if callee_lines else None
+    lines_old = tuple(lines_old) if lines_old else None
+    lines_new = tuple(lines_new) if lines_new else None
 
     return super(cls, ProfilerStackFrame).__new__(
         cls, int(index), difference, log_change_factor, responsible, dep_path,
         function, file_path, raw_file_path, repo_url, function_start_line,
-        callee_lines)
+        lines_old, lines_new)
 
   def BlameUrl(self, revision):
     return _BlameUrl(self, revision)
@@ -139,17 +146,21 @@ class ProfilerStackFrame(namedtuple('ProfilerStackFrame',
 
     function_name = frame_dict.get('function_name')
     function_start_line = frame_dict.get('function_start_line')
-    callee_lines = frame_dict.get('callee_lines')
-    if callee_lines:
-      callee_lines = [CalleeLine(callee_line_dict['line'],
-                                 callee_line_dict['sample_fraction'])
-                      for callee_line_dict in callee_lines]
+    lines = frame_dict.get('lines')
+    if lines:
+      lines_old = [FunctionLine(line_dict['line'], line_dict['sample_fraction'])
+                   for line_dict in lines[0]]
+      lines_new = [FunctionLine(line_dict['line'], line_dict['sample_fraction'])
+                   for line_dict in lines[1]]
+    else:
+      lines_old = None
+      lines_new = None
 
     frame_object = ProfilerStackFrame(index, difference, log_change_factor,
                                       responsible, dep_path, function_name,
                                       normalized_file_path, raw_file_path,
                                       repo_url, function_start_line,
-                                      callee_lines)
+                                      lines_old, lines_new)
     language_type = LanguageType.JAVA if is_java else LanguageType.CPP
 
     return frame_object, language_type

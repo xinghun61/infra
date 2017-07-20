@@ -4,7 +4,7 @@
 
 from analysis.analysis_testcase import AnalysisTestCase
 from analysis.callstack_detectors import StartOfCallStack
-from analysis.stacktrace import CalleeLine
+from analysis.stacktrace import FunctionLine
 from analysis.stacktrace import CallStack
 from analysis.stacktrace import CallStackBuffer
 from analysis.stacktrace import ProfilerStackFrame
@@ -39,7 +39,8 @@ class ProfilerStackFrameTest(AnalysisTestCase):
     self.assertIsNone(frame.raw_file_path)
     self.assertIsNone(frame.repo_url)
     self.assertIsNone(frame.function_start_line)
-    self.assertIsNone(frame.callee_lines)
+    self.assertIsNone(frame.lines_old)
+    self.assertIsNone(frame.lines_new)
     self.assertEqual(language_type, LanguageType.CPP)
 
   def testParseFrame(self):
@@ -51,8 +52,16 @@ class ProfilerStackFrameTest(AnalysisTestCase):
         'filename': 'chrome/app/chrome_exe_main_win.cc',
         'function_name': 'wWinMain',
         'function_start_line': 484,
-        'callee_lines': [{'line': 490, 'sample_fraction': 0.9},
-                         {'line': 511, 'sample_fraction': 0.1}]
+        'lines': [
+            [
+                {'line': 490, 'sample_fraction': 0.7},
+                {'line': 511, 'sample_fraction': 0.3}
+            ],
+            [
+                {'line': 490, 'sample_fraction': 0.9},
+                {'line': 511, 'sample_fraction': 0.1}
+            ]
+        ]
     }
     deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
     frame, language_type = ProfilerStackFrame.Parse(frame_dict, 1, deps)
@@ -67,11 +76,16 @@ class ProfilerStackFrameTest(AnalysisTestCase):
     self.assertEqual(frame.raw_file_path, 'chrome/app/chrome_exe_main_win.cc')
     self.assertEqual(frame.repo_url, 'https://repo')
     self.assertEqual(frame.function_start_line, 484)
-    expected_callee_lines = (
-        CalleeLine(line=490, sample_fraction=0.9),
-        CalleeLine(line=511, sample_fraction=0.1),
+    expected_lines_old = (
+        FunctionLine(line=490, sample_fraction=0.7),
+        FunctionLine(line=511, sample_fraction=0.3),
     )
-    self.assertEqual(frame.callee_lines, expected_callee_lines)
+    expected_lines_new = (
+        FunctionLine(line=490, sample_fraction=0.9),
+        FunctionLine(line=511, sample_fraction=0.1),
+    )
+    self.assertEqual(frame.lines_old, expected_lines_old)
+    self.assertEqual(frame.lines_new, expected_lines_new)
     self.assertEqual(language_type, LanguageType.CPP)
 
   def testCrashedLineNumbersForProfilerStackFrame(self):

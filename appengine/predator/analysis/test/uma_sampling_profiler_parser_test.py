@@ -2,10 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
-
 from analysis.analysis_testcase import AnalysisTestCase
-from analysis.stacktrace import CalleeLine
 from analysis.stacktrace import CallStack
 from analysis.stacktrace import ProfilerStackFrame
 from analysis.type_enums import CallStackFormatType
@@ -62,7 +59,7 @@ class UMASamplingProfilerParserTest(AnalysisTestCase):
     self.assertEqual(stacktrace.stacks[0].priority, 0)
     self.assertEqual(stacktrace.stacks[0].language_type, LanguageType.CPP)
     self.assertEqual(stacktrace.stacks[0].format_type,
-                      CallStackFormatType.DEFAULT)
+                     CallStackFormatType.DEFAULT)
 
   def testParseJavaFrame(self):
     """Tests that the language_type is set properly when given a Java frame."""

@@ -28,8 +28,16 @@ TEST_DATA = {
           'log_change_factor': float('inf'),
           'function_name': 'wWinMain',
           'function_start_line': 484,
-          'callee_lines': [{'line': 490, 'sample_fraction': 0.9},
-                           {'line': 511, 'sample_fraction': 0.1}]
+          'lines': [
+              [
+                  {'line': 490, 'sample_fraction': 0.7},
+                  {'line': 511, 'sample_fraction': 0.3},
+              ],
+              [
+                  {'line': 490, 'sample_fraction': 0.9},
+                  {'line': 511, 'sample_fraction': 0.1},
+              ],
+          ]
         },
         {
           'responsible': False,
@@ -117,8 +125,10 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
         0, 0.1, float('inf'), False, 'chrome/', 'wWinMain',
         'app/chrome_exe_main_win.cc', 'chrome/app/chrome_exe_main_win.cc',
         'https://repo', 484,
-        (stacktrace.CalleeLine(line=490, sample_fraction=0.9),
-         stacktrace.CalleeLine(line=511, sample_fraction=0.1)))
+        (stacktrace.FunctionLine(line=490, sample_fraction=0.7),
+         stacktrace.FunctionLine(line=511, sample_fraction=0.3)),
+        (stacktrace.FunctionLine(line=490, sample_fraction=0.9),
+         stacktrace.FunctionLine(line=511, sample_fraction=0.1)))
     stack_frame1 = stacktrace.ProfilerStackFrame(
         1, 0.2, 6.1, False, 'chrome/', 'MainDllLoader::Launch(HINSTANCE__ *)',
         'app/main_dll_loader_win.cc', 'chrome/app/main_dll_loader_win.cc',
