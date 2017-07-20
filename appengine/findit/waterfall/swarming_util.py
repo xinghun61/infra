@@ -654,8 +654,12 @@ def GetStepLog(try_job_id, full_step_name, http_client, log_type='stdout'):
   data = logdog_util.GetStepLogForBuild(build.response, full_step_name,
                                         log_type, http_client)
 
-  if log_type.lower() == 'step_metadata':  # pragma: no branch
-    return json.loads(data) if data else None
+  if log_type.lower() != 'stdout':  # pragma: no branch
+    try:
+      return json.loads(data) if data else None
+    except ValueError:
+      logging.error('Failed to json load data for %s. Data is: %s.' % (
+          log_type, data))
 
   return data
 

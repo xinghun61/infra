@@ -5,6 +5,7 @@
 import collections
 from datetime import datetime
 import json
+import logging
 import mock
 import os
 import urllib
@@ -925,6 +926,19 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(
         swarming_util.GetStepLog(self.buildbucket_id, self.step_name,
                                  self.http_client))
+
+  @mock.patch.object(buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
+  @mock.patch.object(
+      logdog_util, 'GetStepLogForBuild', return_value='log')
+  @mock.patch.object(
+      logging, 'error')
+  def testGetStepLogNotJosonLoadable(self, mocked_log, *_):
+    self.assertEqual('log',
+                     swarming_util.GetStepLog(
+                         self.buildbucket_id, self.step_name,
+                         self.http_client, 'step_metadata'))
+    mocked_log.assert_called_with(
+        'Failed to json load data for step_metadata. Data is: log.')
 
   def testUpdateAnalysisResult(self):
     analysis_result = {
