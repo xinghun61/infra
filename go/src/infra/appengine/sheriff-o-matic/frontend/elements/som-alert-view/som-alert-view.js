@@ -8,18 +8,25 @@
 
   Polymer({
     is: 'som-alert-view',
-    behaviors: [AnnotationManagerBehavior, AlertTypeBehavior, PostBehavior],
+    behaviors: [AnnotationManagerBehavior, TimeBehavior, AlertTypeBehavior, PostBehavior],
     properties: {
       _activeRequests: {
         type: Number,
         value: 0,
+      },
+      _allAlerts: {
+        type: Array,
+        value: function() {
+          return [];
+        },
+        computed: `_computeAlerts(_alertsData.*, _alertsResolvedData.*, annotations)`,
       },
       _alerts: {
         type: Array,
         value: function() {
           return [];
         },
-        computed: `_computeAlerts(_alertsData.*, _alertsResolvedData.*, annotations)`,
+        computed: `_filterAlerts(_allAlerts, _filterPattern)`,
       },
       // Map of stream to data, timestamp of latest updated data.
       _alertsData: {
@@ -138,6 +145,9 @@
         value: false,
       },
       linkStyle: String,
+      _filterPattern: {
+        type: String,
+      },
     },
 
     created: function() {
@@ -527,6 +537,123 @@
         let alert_time = moment(alert.start_time * 1000);
         let now = moment(new Date());
         return (now - alert_time) < recentUngroupedResolvedMs;
+      });
+    },
+
+    _filterAlerts: function(allAlerts, pattern) {
+      let filteredAlerts = pattern ? this._filterByPattern(allAlerts, pattern) :
+                                     allAlerts;
+
+      return filteredAlerts;
+    },
+
+    _searchAlert: function(alert, re) {
+      if ((alert.key && alert.key.match(re)) ||
+          (alert.title && alert.title.match(re)) ||
+          (alert.body && alert.body.match(re))) {
+        return true;
+      }
+
+      let duration = this._calculateDuration(alert);
+      if (duration.match(re)) {
+        return true;
+      }
+
+      if (this._searchLinks(alert.links, re)) {
+        return true;
+      }
+
+      if (alert.grouped && alert.alerts) {
+        for (let subAlert of alert.alerts) {
+          if (this._searchAlert(subAlert, re)) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      if (alert.type == 'cros-failure') {
+        if (this._searchCrosExtension(alert.extension, re)) {
+          return true;
+        }
+      } else {
+        if (this._searchBuildExtension(alert.extension, re)) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+
+    _searchLinks: function(links, re) {
+      if (links) {
+        for (let link of links) {
+          if (link.title.match(re)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    },
+
+    _searchNotes: function(notes, re) {
+      if (notes) {
+        for (let note of notes) {
+          if (note.match(re)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    },
+
+    _searchCrosExtension: function(extension, re) {
+      if (extension) {
+        if (this._searchNotes(extension.notes, re)) {
+          return true;
+        }
+
+        if (extension.stages) {
+          for (let stage of extension.stages) {
+            let name_status = stage.name + ' ' + stage.status;
+            if (name_status.match(re) ||
+                this._searchLinks(stage.links, re) ||
+                this._searchNotes(stage.notes, re)) {
+              return true;
+            }
+          }
+        }
+      }
+
+      return false;
+    },
+
+    _searchBuildExtension: function(extension, re) {
+      if (extension) {
+        if (extension.builders) {
+          for (let builder of extension.builders) {
+            if (builder.name.match(re)) {
+              return true;
+            }
+          }
+        }
+        if (extension.reason) {
+          if ((extension.reason.name && extension.reason.name.match(re)) ||
+              this._searchNotes(extension.reason.test_names, re)) {
+            return true;
+          }
+        }
+      }
+
+      return false;
+    },
+
+    _filterByPattern: function(alerts, pattern) {
+      // Treat pattern as case-insensitive, unless there is a capital letter
+      // in the pattern.
+      let re = RegExp(pattern, pattern.match(/[A-Z]/) ? "" : "i");
+      return alerts.filter((alert) => {
+        return this._searchAlert(alert, re)
       });
     },
 

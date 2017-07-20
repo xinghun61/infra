@@ -250,5 +250,316 @@
       assert.equal('/api/v1/resolve/test', call.args[0]);
     });
   });
+
+  suite('filter', function() {
+    test('_filterAlerts with pattern', function(done) {
+      let pattern = 'hello';
+      let alerts = [
+        {
+          'key': 'alert1.hello',
+        },
+        {
+          'key': 'alert2',
+          'body': 'hello is like jello',
+        },
+        {
+          'key': 'alert3',
+          'title': 'not here',
+          'body': 'or here',
+        },
+        {
+          'key': 'alert4',
+          'title': 'hello world',
+        },
+        {
+          'key': 'alert5',
+          'title': 'Hello, World!',
+        },
+      ];
+      let filteredAlerts = element._filterAlerts(alerts, pattern);
+
+      flush(function() {
+        assert.equal(filteredAlerts.length, 4);
+        assert.equal(filteredAlerts[0].key, "alert1.hello");
+        assert.equal(filteredAlerts[1].key, "alert2");
+        assert.equal(filteredAlerts[2].key, "alert4");
+        assert.equal(filteredAlerts[3].key, "alert5");
+        done();
+      });
+    });
+
+    test('_filterAlerts without pattern', function(done) {
+      let pattern = '';
+      let alerts = [
+        {
+          'key': 'alert1.hello',
+        },
+        {
+          'key': 'alert2',
+          'body': 'hello is like jello',
+        },
+        {
+          'key': 'alert3',
+          'title': 'not here',
+          'body': 'or here',
+        },
+      ];
+      let filteredAlerts = element._filterAlerts(alerts, pattern);
+
+      flush(function() {
+        assert.equal(filteredAlerts.length, 3);
+        assert.equal(filteredAlerts[0].key, "alert1.hello");
+        assert.equal(filteredAlerts[1].key, "alert2");
+        assert.equal(filteredAlerts[2].key, "alert3");
+        done();
+      });
+    });
+
+    let crosExtension = {
+      'notes': [
+        'cros note1',
+        'cros note2',
+      ],
+      stages: [
+        {
+          'name': 'stage1',
+          'status': 'passed',
+          'links': [
+            {
+              'title': 'alert link1',
+              'href': 'http://locat',
+            },
+            {
+              'title': 'alert link2',
+              'href': 'http://locat2',
+            },
+          ],
+          'notes': [
+            'stage note1',
+            'stage note2',
+          ],
+        },
+        {
+          'name': 'stage2',
+          'status': 'failed',
+        },
+      ],
+    };
+
+    let basicAlert = {
+      'key': 'a basic key',
+      'title': 'this is a title',
+      'body': 'alert body',
+      'links': [
+        {
+          'title': 'alert link1',
+          'href': 'http://locat',
+        },
+        {
+          'title': 'alert link2',
+          'href': 'http://locat2',
+        },
+      ],
+      'type': 'cros-failure',
+      'extension': crosExtension,
+    };
+
+    let buildExtension = {
+      'builders': [
+        {
+          'name': 'a fine builder',
+        },
+      ],
+      'reason': {
+        'name': 'a good reason',
+        'test_names': [
+          'one test',
+          'two test',
+        ],
+      },
+    };
+
+    test('_searchAlert no match', function(done) {
+      let pattern = 'hello';
+      let match = element._searchAlert(basicAlert, pattern);
+
+      flush(function() {
+        assert.isFalse(match);
+        done();
+      });
+    });
+
+    test('_searchAlert key', function(done) {
+      let pattern = 'basic key';
+      let match = element._searchAlert(basicAlert, pattern);
+
+      flush(function() {
+        assert.isTrue(match);
+        done();
+      });
+    });
+
+    test('_searchAlert title', function(done) {
+      let pattern = 'is a title';
+      let match = element._searchAlert(basicAlert, pattern);
+
+      flush(function() {
+        assert.isTrue(match);
+        done();
+      });
+    });
+
+    test('_searchAlert links', function(done) {
+      let pattern = 'alert link2';
+      let match = element._searchAlert(basicAlert, pattern);
+
+      flush(function() {
+        assert.isTrue(match);
+        done();
+      });
+    });
+
+    test('_searchAlert group', function(done) {
+      let pattern = 'alert link2';
+      let groupAlert = {
+        'grouped': true,
+        'alerts': [{'key': 'fakeAlert'}, basicAlert],
+      };
+      let match = element._searchAlert(groupAlert, pattern);
+
+      flush(function() {
+        assert.isTrue(match);
+        done();
+      });
+    });
+
+    test('_searchAlert cros-failure', function(done) {
+      let pattern = 'stage2 failed';
+      let match = element._searchAlert(basicAlert, pattern);
+
+      flush(function() {
+        assert.isTrue(match);
+        done();
+      });
+    });
+
+    test('_searchNotes', function(done) {
+      let pattern = 'star';
+      let notes = [
+        'blah',
+        'blah blah',
+        'rocketstar',
+      ];
+      let match = element._searchNotes(notes, pattern);
+
+      flush(function() {
+        assert.isTrue(match);
+        done();
+      });
+    });
+
+    test('_searchCrosExtension no match', function(done) {
+      let pattern = 'cros note3';
+      let match = element._searchCrosExtension(crosExtension, pattern);
+
+      flush(function() {
+        assert.isFalse(match);
+        done();
+      });
+    });
+
+    test('_searchCrosExtension notes', function(done) {
+      let pattern = 'cros note2';
+      let match = element._searchCrosExtension(crosExtension, pattern);
+
+      flush(function() {
+        assert.isTrue(match);
+        done();
+      });
+    });
+
+    test('_searchCrosExtension stage status', function(done) {
+      let pattern = 'stage2 fail';
+      let match = element._searchCrosExtension(crosExtension, pattern);
+
+      flush(function() {
+        assert.isTrue(match);
+        done();
+      });
+    });
+
+    test('_searchCrosExtension stage links', function(done) {
+      let pattern = 'alert link2';
+      let match = element._searchCrosExtension(crosExtension, pattern);
+
+      flush(function() {
+        assert.isTrue(match);
+        done();
+      });
+    });
+
+    test('_searchCrosExtension stage notes', function(done) {
+      let pattern = 'stage note2';
+      let match = element._searchCrosExtension(crosExtension, pattern);
+
+      flush(function() {
+        assert.isTrue(match);
+        done();
+      });
+    });
+
+    test('_searchBuildExtension no match', function(done) {
+      let pattern = 'cros note3';
+      let match = element._searchBuildExtension(buildExtension, pattern);
+
+      flush(function() {
+        assert.isFalse(match);
+        done();
+      });
+    });
+
+    test('_searchBuildExtension test names', function(done) {
+      let pattern = 'two test';
+      let match = element._searchBuildExtension(buildExtension, pattern);
+
+      flush(function() {
+        assert.isTrue(match);
+        done();
+      });
+    });
+
+    test('_filterByPattern capital', function(done) {
+      let pattern = 'BIG';
+      let alerts = [
+        {'key': 'big up'},
+        {'key': 'small'},
+        {'key': 'BIGGER'},
+      ];
+      let filteredAlerts = element._filterByPattern(alerts, pattern);
+
+      flush(function() {
+        assert.equal(filteredAlerts.length, 1);
+        assert.equal(filteredAlerts[0].key, "BIGGER");
+        done();
+      });
+    });
+
+    test('_filterByPattern insenstive', function(done) {
+      let pattern = 'big';
+      let alerts = [
+        {'key': 'big up'},
+        {'key': 'small'},
+        {'key': 'BIGGER'},
+      ];
+      let filteredAlerts = element._filterByPattern(alerts, pattern);
+
+      flush(function() {
+        assert.equal(filteredAlerts.length, 2);
+        assert.equal(filteredAlerts[0].key, "big up");
+        assert.equal(filteredAlerts[1].key, "BIGGER");
+        done();
+      });
+    });
+  });
 })();
 </script>

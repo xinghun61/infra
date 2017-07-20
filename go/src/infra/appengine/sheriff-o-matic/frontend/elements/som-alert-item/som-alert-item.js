@@ -3,7 +3,7 @@
 
   Polymer({
     is: 'som-alert-item',
-    behaviors: [LinkifyBehavior, AlertTypeBehavior],
+    behaviors: [LinkifyBehavior, AlertTypeBehavior, TimeBehavior],
 
     /**
      * Fired when an alert requests that the link bug dialog be shown.
@@ -72,7 +72,7 @@
       },
       _duration: {
         type: String,
-        computed: '_calculateDuration(treeName, alert)'
+        computed: '_calculateDuration(alert)'
       },
       _latestTime: {
         type: String,
@@ -127,13 +127,6 @@
         }
         return {'id': bug};
       });
-    },
-
-    _calculateDuration(treeName, alert) {
-      let date = moment(alert.start_time * 1000).tz('America/Los_Angeles');
-      let duration =
-          date.format('M/DD/YYYY, h:mm a z') + ' (' + date.fromNow() + ')';
-      return duration;
     },
 
     _helpLinkForAlert: function(alert) {

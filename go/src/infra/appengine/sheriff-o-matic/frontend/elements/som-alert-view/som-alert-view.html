@@ -2,7 +2,9 @@
 
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
+<link rel="import" href="../../bower_components/paper-input/paper-input.html">
 
+<link rel="import" href="../../elements/som-time-behavior.html">
 <link rel="import" href="../../elements/som-alert-type-behavior.html">
 <link rel="import" href="../../elements/som-annotation-manager-behavior.html">
 <link rel="import" href="../../elements/som-post-behavior.html">
@@ -73,8 +75,19 @@
         flex-shrink: 0;
         margin-bottom: 0.5em;
       }
+      .search-bar {
+        display: flex;
+        flex-direction: row;
+        align-itmes: center;
+        font-size: smaller;
+        padding-top: 8px;
+      }
       iron-pages {
         padding: 1em 16px;
+      }
+      #filterInput {
+        margin-top: -32px;
+        width: 60%;
       }
     </style>
     <som-annotations id="annotations"
@@ -105,6 +118,9 @@
             <span hidden$="[[tree.help_link]]">
               <a href="/help-som">The Help Page</a>
             </span>
+          </div>
+          <div class="search-bar">
+            <iron-icon class="filter-icon" icon="search"></iron-icon><paper-input id="filterInput" value="{{_filterPattern}}"></paper-input>
           </div>
           <div class="notification" hidden$="[[!_isTrooperPage]]">
             Troopers, don't forget to check <a href="https://goto.google.com/trooper-pagers" target="_blank">go/trooper-pagers</a>

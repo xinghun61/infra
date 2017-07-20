@@ -1,0 +1,10 @@
+<script>
+    TimeBehavior = {
+      _calculateDuration(alert) {
+        let date = moment(alert.start_time * 1000).tz('America/Los_Angeles');
+        let duration =
+            date.format('M/DD/YYYY, h:mm a z') + ' (' + date.fromNow() + ')';
+        return duration;
+      },
+    };
+</script>
