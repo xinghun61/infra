@@ -6,6 +6,7 @@ package gerrit
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -28,10 +29,14 @@ const queryChangeLimit = 2
 
 //mockPollRestAPI allows for modification of change state returned by QueryChanges.
 type mockPollRestAPI struct {
+	sync.Mutex
 	changes map[string][]gr.ChangeInfo
 }
 
 func (m *mockPollRestAPI) QueryChanges(c context.Context, host, project string, ts time.Time, offset int) ([]gr.ChangeInfo, bool, error) {
+	m.Lock()
+	defer m.Unlock()
+
 	if m.changes == nil {
 		m.changes = make(map[string][]gr.ChangeInfo)
 	}
@@ -59,6 +64,9 @@ func (*mockPollRestAPI) PostRobotComments(c context.Context, host, change, revis
 }
 
 func (m *mockPollRestAPI) addChanges(host, project string, c []gr.ChangeInfo) {
+	m.Lock()
+	defer m.Unlock()
+
 	if m.changes == nil {
 		m.changes = make(map[string][]gr.ChangeInfo)
 	}
