@@ -63,37 +63,6 @@ class CrashHandler(BaseHandler):
         'channel': 'beta',
         'signature': '[ThreadWatcher UI hang] base::MessagePumpBase::Run'
     }
-
-    customized_data, client_id and crash_identifiers vary from client to client.
-    For example, for fracas,
-
-    customized_data: {
-      "trend_type": "d",  # *see supported types below
-      "channel": "beta",
-      "historical_metadata": [
-        {
-          "report_number": 0,
-          "cpm": 0.0,
-          "client_number": 0,
-          "chrome_version": "51.0.2704.103"
-        },
-        ...
-        {
-          "report_number": 10,
-          "cpm": 2.1,
-          "client_number": 8,
-          "chrome_version": "53.0.2768.0"
-        },
-      ]
-    }
-
-    crash_identifiers: {
-      "platform": "mac",
-      "version": "52.0.2743.41",
-      "process_type": "browser",
-      "channel": "beta",
-      "signature": "[ThreadWatcher UI hang] base::MessagePumpCFRunLoopBase::Run"
-    }
     """
     try:
       received_message = json.loads(self.request.body)

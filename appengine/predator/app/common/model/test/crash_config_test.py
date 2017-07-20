@@ -49,10 +49,10 @@ CONFIG_DATA = {
 }
 
 
-class CrashAnalysisTest(AppengineTestCase):
+class CrashConfigTest(AppengineTestCase):
 
   def setUp(self):
-    super(CrashAnalysisTest, self).setUp()
+    super(CrashConfigTest, self).setUp()
     CrashConfig.Get().Update(
         users.User(email='admin@chromium.org'), True, **CONFIG_DATA)
 

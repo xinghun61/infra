@@ -270,7 +270,10 @@ def EvaluateDeltaOnTestSet(git_hash1, git_hash2,
   Args:
     git_hash1 (str): A git hash of predator repository.
     git_hash2 (str): A git hash of predator repository.
-    crashes (list): A list of crashes to run delta test on.
+    client_id (CrashClient): Possible values are 'fracas', 'cracas',
+      'cluterfuzz'.
+    app_id (str): Appengine app id to query.
+    testset_path (str): file path to read the tsv testset file.
     verbose (bool): If True, print all the predator results.
 
   Return:

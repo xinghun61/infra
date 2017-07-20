@@ -64,7 +64,7 @@ def DistanceBetweenLineRanges((start1, end1), (start2, end2)):
       greater than or equal to ``start1``.
     start2 (int): the first line included in the second range.
     end2 (int): the last line included in the second range. Must be
-      greater than or equal to ``start1``.
+      greater than or equal to ``start2``.
 
   Returns:
     If the end of the earlier range comes before the start of the later

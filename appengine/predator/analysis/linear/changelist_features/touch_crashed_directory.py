@@ -17,8 +17,8 @@ from analysis.linear.feature import FeatureValue
 class TouchCrashedDirectoryFeature(Feature):
   """Returns either log one or log zero.
 
-  When a suspect touched crashed file, we return the log-domain
-  value 0 (aka normal-domain value of 1). When the there is no file match,
+  When a suspect touched crashed directory, we return the log-domain
+  value 0 (aka normal-domain value of 1). When the there is no directory match,
   we return log-domain value -inf (aka normal-domain value of 0).
   """
   @property
