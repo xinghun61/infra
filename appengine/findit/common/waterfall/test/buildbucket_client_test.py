@@ -212,7 +212,8 @@ class BuildBucketClientTest(testing.AppengineTestCase):
           headers=headers,
           data=try_job_request)
 
-  def testTriggerTryJobsSuccess(self):
+  def testTriggerTryJobs(self):
+    # Success.
     response = {
         'build': {
             'id': '1',
@@ -233,7 +234,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('url', build.url)
     self.assertEqual('SCHEDULED', build.status)
 
-  def testTriggerTryJobsFailure(self):
+    # Error.
     response = {
         'error': {
             'reason': 'error',
@@ -252,7 +253,7 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('message', error.message)
     self.assertIsNone(build)
 
-  def testTriggerTryJobsRequestFailure(self):
+    # Not Found
     response = 'Not Found'
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [], {})
     self._MockUrlFetch(None,
