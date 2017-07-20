@@ -13,8 +13,11 @@ import traceback
 import zlib
 
 _ROOT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir)
+_ROOT_APP_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir, 'app')
 _FIRST_PARTY_DIR = os.path.join(_ROOT_DIR, 'first_party')
 sys.path.insert(1, _FIRST_PARTY_DIR)
+sys.path.insert(1, _ROOT_APP_DIR)
+
 from local_libs import script_util
 script_util.SetUpSystemPaths(_ROOT_DIR)
 
