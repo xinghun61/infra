@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"time"
 
 	"golang.org/x/net/context"
@@ -45,7 +46,7 @@ func (a byTestName) Less(i, j int) bool { return a[i].TestName < a[j].TestName }
 // test expectations.
 type QueuedUpdate struct {
 	// ID is an opaque identifier assigned by datastore.
-	ID string `gae:"$id"`
+	ID int64 `gae:"$id"`
 	// Requester is the email address of the user who originally requested the
 	// change via SoM UI.
 	Requester string
@@ -105,10 +106,15 @@ func LayoutTestExpectationChangeWorker(ctx *router.Context) {
 
 	c, cancelFunc := context.WithTimeout(c, 600*time.Second)
 	defer cancelFunc()
-	updateID := r.FormValue("updateID")
+	updateID, err := strconv.Atoi(r.FormValue("updateID"))
+	if err != nil {
+		errStatus(c, w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	writeUpdate := func(changeID string, err error) {
 		logging.Errorf(c, "writeUpdate: %v %v", changeID, err)
-		if err := writeQueuedUpdate(c, updateID, changeID, err); err != nil {
+		if err := writeQueuedUpdate(c, int64(updateID), changeID, err); err != nil {
 			logging.Errorf(c, "getting from datastore: %v", err.Error())
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
 		}
@@ -184,7 +190,7 @@ func LayoutTestExpectationChangeWorker(ctx *router.Context) {
 	w.Write([]byte(changeID))
 }
 
-func writeQueuedUpdate(c context.Context, updateID, changeID string, err error) error {
+func writeQueuedUpdate(c context.Context, updateID int64, changeID string, err error) error {
 	queuedUpdate := &QueuedUpdate{
 		ID: updateID,
 	}
@@ -243,7 +249,7 @@ func PostLayoutTestExpectationChangeHandler(ctx *router.Context) {
 
 	params := url.Values{}
 	params.Set("requester", user.Email())
-	params.Set("updateID", queuedUpdate.ID)
+	params.Set("updateID", fmt.Sprintf("%d", queuedUpdate.ID))
 	body, err := json.Marshal(newExp)
 	if err != nil {
 		logging.Errorf(c, "marshaling newExp: %v", err)
@@ -289,11 +295,16 @@ func GetTestExpectationCLStatusHandler(ctx *router.Context) {
 	c, cancelFunc := context.WithTimeout(c, 60*time.Second)
 	defer cancelFunc()
 
-	updateID := p.ByName("id")
+	updateID, err := strconv.Atoi(p.ByName("id"))
+	if err != nil {
+		errStatus(c, w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	logging.Debugf(c, "fetching update ID %v", updateID)
 
 	queuedUpdate := &QueuedUpdate{
-		ID: updateID,
+		ID: int64(updateID),
 	}
 
 	if err := datastore.Get(c, queuedUpdate); err != nil {

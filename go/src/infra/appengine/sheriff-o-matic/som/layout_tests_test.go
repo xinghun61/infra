@@ -173,7 +173,7 @@ func TestLayoutTestExpectationChangeWorker(t *testing.T) {
 
 			LayoutTestExpectationChangeWorker(ctx)
 
-			So(w.Code, ShouldEqual, http.StatusInternalServerError)
+			So(w.Code, ShouldEqual, http.StatusBadRequest)
 		})
 
 		Convey("valid body, no queued update entity", func() {
@@ -196,7 +196,7 @@ func TestLayoutTestExpectationChangeWorker(t *testing.T) {
 			}
 			logging.Errorf(c, "values: %+v", values.Encode())
 			LayoutTestExpectationChangeWorker(ctx)
-			So(w.Code, ShouldEqual, http.StatusInternalServerError)
+			So(w.Code, ShouldEqual, http.StatusBadRequest)
 		})
 
 		Convey("valid body, valid queued update entity", func() {
