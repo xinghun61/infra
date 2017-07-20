@@ -149,12 +149,19 @@ def get_default_toolset():
   E.g. 'darwin-amd64'. Doesn't include version.
   """
   machine = platform.machine().lower()
-  if (machine == 'x86_64' and platform.system() == 'Linux' and
-      sys.maxsize == (2 ** 31) - 1):
-    # This is 32bit python on 64bit CPU on linux, which probably means the
-    # entire userland is 32bit and thus we should play along and install 32bit
-    # packages.
-    machine = 'x86'
+  if (machine == 'x86_64' and platform.system() == 'Linux'):
+    # This Linux may be running a 32-bit userspace, in which case we should play
+    # along and want to use 32-bit toolchain and packages.
+    dist, _, _ = platform.linux_distribution()
+    if dist.lower() in ('ubuntu', 'debian'):
+      # Use "dpkg" to authoritatively determine if we're running in a 32-bit
+      # userspace.
+      machine = subprocess.check_output(['dpkg', '--print-architecture'])
+      machine = machine.strip()
+    elif sys.maxsize == ((2 ** 31) - 1):
+      # We're a 32-bit Python, so assume that this means 32-bit userspace.
+      machine = 'x86'
+
   # Name arch the same way Go does it.
   arch = {
     'amd64': 'amd64',
