@@ -20,6 +20,11 @@
         type: Array,
         computed: '_computeSuspectedCls(extension)',
       },
+      tree: String,
+    },
+
+    _isChromium: function(tree) {
+      return tree == 'chromium';
     },
 
     _isCrosFailure: function(type) {

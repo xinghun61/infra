@@ -32,14 +32,14 @@
     ></iron-ajax>
 
     <template is="dom-repeat" items="[[_diffLines]]">
-      <template is="dom-if" if="[[isCommon(item.Delta)]]">
-        <p class="common">[[item.Payload]]</p>
+      <template is="dom-if" if="[[_isCommon(item.Delta)]]">
+        <pre class="common">  [[item.Payload]]</pre>
       </template>
-      <template is="dom-if" if="[[isAdd(item.Delta)]]">
-        <p class="add">[[_computeAdd(item.Payload)]]</p>
+      <template is="dom-if" if="[[_isAdd(item.Delta)]]">
+        <pre class="add">+ [[item.Payload]]</pre>
       </template>
-      <template is="dom-if" if="[[isDel(item.Delta)]]">
-        <p class="del">[[_computeDel(item.Payload)]]</p>
+      <template is="dom-if" if="[[_isDel(item.Delta)]]">
+        <pre class="del">- [[item.Payload]]</pre>
       </template>
     </template>
   </template>

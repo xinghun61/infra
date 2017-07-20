@@ -163,7 +163,9 @@ func LogdiffWorker(ctx *router.Context) {
 		return
 	}
 	diffs := difflib.Diff(res1.log, res2)
-	data, err := json.Marshal(diffs)
+	merged := mergeLines(diffs)
+
+	data, err := json.Marshal(merged)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error marshaling JSON for logdiff: %v", err))
 		return
@@ -193,4 +195,36 @@ func LogdiffWorker(ctx *router.Context) {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error storing Logdiff: %v", err))
 		return
 	}
+}
+
+// mergeLines will return a new diff where adjacent records with the same diff type are merged into one
+func mergeLines(diffs []difflib.DiffRecord) []difflib.DiffRecord {
+	if diffs == nil {
+		return nil
+	}
+	var merged []difflib.DiffRecord
+	// iterate through the lines
+	for i := 0; i < len(diffs); {
+		// simply copy it if it is the last record in the slice
+		if i == len(diffs)-1 {
+			merged = append(merged, diffs[i])
+			break
+		}
+		j := 1
+		curr := diffs[i]
+		for diffs[i+j].Delta == diffs[i].Delta {
+			// iteratively build a string that represents the merged line
+			curr.Payload += "\n" + diffs[i+1].Delta.String() + " " + diffs[i+j].Payload
+			j++
+			// stop if the end is reached
+			if i+j == len(diffs) {
+				break
+			}
+		}
+		// append the merged line
+		merged = append(merged, curr)
+		// go to the next unmerged line
+		i += j
+	}
+	return merged
 }

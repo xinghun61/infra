@@ -19,67 +19,59 @@
       },
       master: {
         type: String,
-        computed: 'computeMaster(key)',
+        computed: '_computeMaster(key)',
       },
       builder: {
         type: String,
-        computed: 'computeBuilder(key)',
+        computed: '_computeBuilder(key)',
       },
       buildNum1: {
         type: String,
-        computed: 'computeBuildNum1(key)',
+        computed: '_computeBuildNum1(key)',
       },
       buildNum2: {
         type: String,
-        computed: 'computeBuildNum2(key)',
+        computed: '_computeBuildNum2(key)',
       },
       url: {
         type: String,
-        computed: 'computeURL(key)',
+        computed: '_computeURL(key)',
       },
     },
 
-    computeMaster: function(key) {
+    _computeMaster: function(key) {
       let params = key.split('/');
       return params[0];
     },
 
-    computeBuilder: function(key) {
+    _computeBuilder: function(key) {
       let params = key.split('/');
       return params[1];
     },
 
-    computeBuildNum1: function(key) {
+    _computeBuildNum1: function(key) {
       let params = key.split('/');
       return params[2];
     },
 
-    computeBuildNum2: function(key) {
+    _computeBuildNum2: function(key) {
       let params = key.split('/');
       return params[3];
     },
 
-    isDel: function(delta) {
+    _isDel: function(delta) {
       return delta === 1;
     },
 
-    isCommon: function(delta) {
+    _isCommon: function(delta) {
       return delta === 0;
     },
 
-    isAdd: function (delta) {
+    _isAdd: function (delta) {
       return delta === 2;
     },
 
-    _computeAdd: function(payload) {
-      return '+ ' + payload;
-    },
-
-    _computeDel: function(payload) {
-      return '- ' + payload;
-    },
-
-    computeURL: function(key) {
+    _computeURL: function(key) {
       return "/api/v1/logdiff/" + key;
     },
   });
