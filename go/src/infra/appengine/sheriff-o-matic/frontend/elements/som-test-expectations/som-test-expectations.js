@@ -8,9 +8,15 @@
     is: 'som-test-expectations',
 
     properties: {
+      editedTestName: {
+        type: String,
+        value: '',
+        observer: '_editedTestNameChanged',
+      },
       _testExpectationsJson: {
         type: Array,
         value: [],
+        observer: '_testExpectationsJsonChanged',
       },
       _testExpectationsJsonError: {
         type: Object,
@@ -28,6 +34,18 @@
         type: String,
         value: '',
       },
+    },
+
+    _editedTestNameChanged: function(testName) {
+      if (testName && this._testExpectationsJson) {
+        this._openEditor(testName);
+      }
+    },
+
+    _testExpectationsJsonChanged: function(json) {
+      if (this.editedTestName && json) {
+        this._openEditor(this.editedTestName);
+      }
     },
 
     ready: function() {
@@ -149,12 +167,19 @@
     },
 
     _onStartEdit: function(evt) {
+        this.editedTestName = evt.target.value;
+    },
+
+    _openEditor: function(testName) {
+      if (!this._testExpectationsJson ||
+          !this._testExpectationsJson.length > 0) {
+        return;
+      }
       let expectation = this._testExpectationsJson.find((t) => {
-        return t.TestName == evt.target.value;
+        return t.TestName == testName;
       });
       this.$.editExpectationForm.set('expectation', expectation);
       this.$.editDialog.toggle();
-
     },
 
     _cancelPollingTask: function(evt) {

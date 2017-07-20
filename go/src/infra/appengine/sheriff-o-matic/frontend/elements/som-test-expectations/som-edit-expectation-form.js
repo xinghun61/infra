@@ -50,6 +50,9 @@
     },
 
     expectationChanged: function(evt) {
+      if (!this.expectation) {
+        return;
+      }
       // Make a copy of the expectation to edit in this form. Modify only
       // the copy, so we can cancel, or fire an edited event with old
       // and new values set in the details.

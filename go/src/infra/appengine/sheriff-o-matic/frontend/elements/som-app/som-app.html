@@ -182,7 +182,7 @@
             <som-rotation-calendar id="rotationCalendar" class="page-body page-body-padded"></som-rotation-calendar>
           </template>
           <template is="dom-if" if="[[_showTestExpectations]]">
-            <som-test-expectations class="page-body" id="testExpectations"></som-test-expectations>
+            <som-test-expectations class="page-body" id="testExpectations" edited-test-name="{{_editedTestName}}"></som-test-expectations>
           </template>
           <template is="dom-if" if="[[_showTreeStatus]]">
             <som-all-status class="page-body page-body-padded" id="treeStatus" trees="[[_trees]]"></som-all-status>

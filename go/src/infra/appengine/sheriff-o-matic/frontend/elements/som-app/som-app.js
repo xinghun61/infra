@@ -5,7 +5,11 @@
     is: 'som-app',
     properties: {
       alertsTimes: Object,
-      _examinedAlertKey: {
+      _editedTestName: {
+        type: String,
+        computed: '_computeEditedTestName(_pathParts)',
+      },
+       _examinedAlertKey: {
         type: String,
         computed: '_computeExaminedAlertKey(_pathParts)',
       },
@@ -100,6 +104,20 @@
       if (alertView) {
         alertView.refresh();
       }
+    },
+
+    _computeEditedTestName: function(pathParts) {
+      if (pathParts.length < 2) {
+        return '';
+      }
+      if (pathParts[1] == 'test-expectations') {
+        if (pathParts.length > 2) {
+          // Let som-test-expectaions element deal with the rest of the path.
+          return window.unescape(pathParts.slice(2).join('/'));
+        }
+      }
+
+      return '';
     },
 
     _computeExaminedAlertKey: function(pathParts) {
