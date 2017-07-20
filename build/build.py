@@ -584,6 +584,40 @@ def get_target_package_vars():
   }
 
 
+def get_linux_distribution():
+  """Returns (dist, version): the probed Linux distribution and version.
+
+  The standard "platform.linux_distribution()" has some detection shortcomings
+  and is generally unfavorable, see: http://bugs.python.org/issue1322
+  """
+  # On modern Python versions, "platform.linux_distribution" will detect Ubuntu
+  # as Debian due to a preference for "/etc/debian_version" during the probe.
+  # Override this to prefer Ubuntu.
+  if os.path.exists('/etc/lsb-release'):
+    lsb = {}
+    with open('/etc/lsb-release') as fd:
+      for line in fd:
+        line = line.strip()
+        if line.startswith('#'):
+          continue
+        parts = line.split('=', 1)
+        lsb[parts[0]] = (parts[1] if len(parts) == 2 else '')
+    dist, vers = lsb.get('DISTRIB_ID'), lsb.get('DISTRIB_RELEASE')
+    if dist and vers:
+      return dist, vers
+
+  # platform.linux_distribution() is ('Ubuntu', '14.04', ...).
+  return platform.linux_distribution()[:2]
+
+
+def get_linux_host_arch(dist):
+  """Returns: The Linux host architecture."""
+  if dist in ('ubuntu', 'debian'):
+    # Query "dpkg" to identify the userspace architecture.
+    return subprocess.check_output(['dpkg', '--print-architecture']).strip()
+  return platform.machine()
+
+
 def get_host_package_vars():
   """Returns a dict with variables that describe the current host environment.
 
@@ -608,20 +642,24 @@ def get_host_package_vars():
   if not platform_variant:
     raise ValueError('Unknown OS: %s' % sys.platform)
 
+  sys_arch = None
   if sys.platform == 'darwin':
     # platform.mac_ver()[0] is '10.9.5'.
     dist = platform.mac_ver()[0].split('.')
     os_ver = 'mac%s_%s' % (dist[0], dist[1])
   elif sys.platform == 'linux2':
-    # platform.linux_distribution() is ('Ubuntu', '14.04', ...).
-    dist = platform.linux_distribution()
-    os_ver = '%s%s' % (dist[0].lower(), dist[1].replace('.', '_'))
+    dist, vers = get_linux_distribution()
+    os_ver = '%s%s' % (dist.lower(), vers.replace('.', '_'))
+    sys_arch = get_linux_host_arch(dist.lower())
   elif IS_WINDOWS:
     # platform.version() is '6.1.7601'.
     dist = platform.version().split('.')
     os_ver = 'win%s_%s' % (dist[0], dist[1])
   else:
     raise ValueError('Unknown OS: %s' % sys.platform)
+
+  # If we didn't override our system architecture, identify it using "platform".
+  sys_arch = sys_arch or platform.machine()
 
   # amd64, 386, etc.
   platform_arch = {
@@ -632,9 +670,9 @@ def get_host_package_vars():
     'x86_64': 'amd64',
     'armv6l': 'armv6l',
     'armv7l': 'armv6l', # we prefer to use older instruction set for builds
-  }.get(platform.machine().lower())
+  }.get(sys_arch.lower())
   if not platform_arch:
-    raise ValueError('Unknown machine arch: %s' % platform.machine())
+    raise ValueError('Unknown machine arch: %s' % sys_arch)
 
   # Most 32-bit Linux Chrome Infra bots are in fact running 64-bit kernel with
   # 32-bit userland. Detect this case (based on bitness of the python
