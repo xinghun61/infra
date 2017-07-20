@@ -16,12 +16,13 @@ from waterfall import buildbot
 from waterfall import waterfall_config
 
 
-def _GetResultAndFailureResultMap(master_name, builder_name, build_number):
+def _GetResultAndFailureResultMap(master_name, builder_name, build_number,
+                                  use_group_info=False):
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
 
   # If this analysis is part of a group, get the build analysis that opened the
   # group.
-  if analysis and analysis.failure_group_key:
+  if use_group_info and analysis and analysis.failure_group_key:
     analysis = WfAnalysis.Get(*analysis.failure_group_key)
 
   if not analysis:
@@ -438,12 +439,13 @@ def _GetTryJobResultForCompile(failure_result_map):
 def GetAllTryJobResults(master_name,
                         builder_name,
                         build_number,
-                        show_debug_info=False):
+                        show_debug_info=False,
+                        use_group_info=False):
   culprits_info = {}
   is_test_failure = True
 
   analysis_result, failure_result_map = _GetResultAndFailureResultMap(
-      master_name, builder_name, build_number)
+      master_name, builder_name, build_number, use_group_info)
 
   if failure_result_map:
     for step_name in failure_result_map:
