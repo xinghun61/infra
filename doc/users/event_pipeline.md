@@ -78,3 +78,17 @@ for a simple example. (TODO: replace with a non-internal example that uses
 insertIDs.) The [API
 docs](https://googlecloudplatform.github.io/google-cloud-python/stable/bigquery-usage.html)
 can also be helpful.
+
+# Writing a Dataflow workflow
+
+TODO
+
+# Scheduling a Dataflow workflow
+
+We want Dataflow workflows like the ones that populate our aggregate tables
+(e.g. cq_attempts) to run at regular intervals. You can accomplish this by
+configuring a builder to run the
+[remote_execute_dataflow_workflow recipe](https://chromium.googlesource.com/infra/infra/+/master/recipes/recipes/remote_execute_dataflow_workflow.py)
+with the proper properties. See [this
+change](https://chrome-internal-review.googlesource.com/c/412934/) for an
+example.
