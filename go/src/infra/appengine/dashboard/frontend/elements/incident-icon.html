@@ -104,8 +104,9 @@
         let position;
         let incidentDate = new Date(parseInt(incidentUnix, 10) * 1000);
         let time = incidentDate.getHours();
+        let zeroHourDate = incidentDate.setHours(0, 0, 0, 0);
         dates.forEach((date, i) => {
-          if (date.setHours(0, 0, 0) === incidentDate.setHours(0, 0, 0)) {
+          if (date.setHours(0, 0, 0, 0) === zeroHourDate) {
             position = i / NUM_DAYS_DISPLAYED;
             position = (position + time / TIME_INCREMENTS_PER_DAY) * 100;
           }

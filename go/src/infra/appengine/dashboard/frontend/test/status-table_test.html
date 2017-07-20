@@ -16,14 +16,10 @@
 
   suite('status-table', function() {
     var element;
+    const baseDateTs = 1498114800; // 22/06/2017 PTZ
     setup(function(){
       element = fixture('table-test');
-      let lastDate = new Date(1498114800000); // 22/06/2017 PTZ
-      for (let i = 6; i >= 0; i--) {
-        let date = new Date(lastDate);
-        date.setDate(lastDate.getDate() - i);
-        element.push('dates', date);
-      }
+      element.latestDateTs = baseDateTs;
 
       let service = {name: 'Monorail'}
       service.incidents = [
@@ -73,8 +69,18 @@
     });
 
     test('test elements created', function(done) {
-
       flush(function () {
+        let prettyDates = [
+          "2017-6-16", "2017-6-17", "2017-6-18",
+          "2017-6-19", "2017-6-20", "2017-6-21", "2017-6-22"
+        ]
+        element.formattedDates.forEach((prettyDate, i) => {
+          assert.equal(prettyDate, prettyDates[i]);
+        });
+        element.dates.reverse().forEach((date, i) => {
+          let ts = new Date(baseDateTs * 1000);
+          assert.equal(ts.setDate(ts.getDate() -i), date.getTime());
+        });
         done();
       });
 

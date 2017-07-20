@@ -89,8 +89,12 @@
             type: Array,
             value: () => { return []; },
           },
-        // All dates shown on the dashboard should be the same across all
-        // elements on the page.
+          latestDateTs: {
+            type: Number,
+            value: 0,
+          },
+          // All dates shown on the dashboard should be the same across all
+          // elements on the page.
           formattedDates: {
             type: Array,
             value: [],
@@ -101,21 +105,27 @@
           },
         }
       }
+
       static get observers() {
         return [
-          '_computePrettyDates(dates.splices)',
+          '_updateDates(latestDateTs)',
         ]
       }
 
-      _computePrettyDates(datesSplices) {
-        if (datesSplices) {
-          let newDates = datesSplices.indexSplices[
-              datesSplices.indexSplices.length-1].object;
-          this.formattedDates = [];
-          newDates.forEach((date) => {
-            this.push('formattedDates',
-              (`${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`));
-          });
+      _updateDates(latestDateTs) {
+        const weekLooper = 6;
+        let lastDate =
+            latestDateTs ? new Date(latestDateTs * 1000) : new Date();
+        this.splice('dates', 0, this.dates.length);
+        this.splice('formattedDates', 0, this.formattedDates.length);
+        for (let i = weekLooper; i >= 0; i--) {
+          // date must be based on lastDate so setDate results in the
+          // accurate month.
+          let date = new Date(lastDate);
+          date.setDate(lastDate.getDate() - i);
+          this.push('dates', date);
+          this.push('formattedDates',
+            (`${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`));
         }
       }
     }
