@@ -15,6 +15,7 @@ GOOGLE_APP_ENGINE_DIR="${INFRA_DIR}/../google_appengine"
 has_realpath="$(which realpath 1>/dev/null 2>/dev/null && echo 0)"
 if [[ ${has_realpath} == "0" ]]; then
   PREDATOR_DIR="$(realpath ${PREDATOR_DIR})"
+  PREDATOR_APP_DIR="$(realpath ${PREDATOR_APP_DIR})"
   INFRA_DIR="$(realpath ${INFRA_DIR})"
   GOOGLE_APP_ENGINE_DIR="$(realpath ${GOOGLE_APP_ENGINE_DIR})"
 fi
@@ -55,10 +56,10 @@ print_command_for_queue_cron_dispatch() {
   echo "If there is any change to cron.yaml, dispatch.yaml, index.yaml, or"
   echo " queue.yaml since last deployment, please run appropriate commands"
   echo " below to update them:"
-  echo "  ${APP_CFG} update_cron -A ${app_id} ${PREDATOR_DIR}"
-  echo "  ${APP_CFG} update_dispatch -A ${app_id} ${PREDATOR_DIR}"
-  echo "  ${APP_CFG} update_indexes -A ${app_id} ${PREDATOR_DIR}"
-  echo "  ${APP_CFG} update_queues -A ${app_id} ${PREDATOR_DIR}"
+  echo "  ${APP_CFG} update_cron -A ${app_id} ${PREDATOR_APP_DIR}"
+  echo "  ${APP_CFG} update_dispatch -A ${app_id} ${PREDATOR_APP_DIR}"
+  echo "  ${APP_CFG} update_indexes -A ${app_id} ${PREDATOR_APP_DIR}"
+  echo "  ${APP_CFG} update_queues -A ${app_id} ${PREDATOR_APP_DIR}"
 }
 
 run_unittests() {
