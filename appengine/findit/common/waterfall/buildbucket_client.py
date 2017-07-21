@@ -11,7 +11,6 @@ from gae_libs.http import auth_util
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 from common.waterfall.pubsub_callback import MakeTryJobPubsubCallback
-from model.wf_try_bot_cache import WfTryBotCache
 
 # TODO: save these settings in datastore and create a role account.
 _ROLE_EMAIL = 'IF_BREAK_CONTACT_stgao@chromium.org'

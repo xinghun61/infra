@@ -2,11 +2,19 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import collections
 import json
+import mock
 
 from testing_utils import testing
 
+from gae_libs.http import auth_util
+from gae_libs.http import http_client_appengine
 from common.waterfall import buildbucket_client
+
+
+_Result = collections.namedtuple('Result',
+                                 ['content', 'status_code', 'headers'])
 
 
 class BuildBucketClientTest(testing.AppengineTestCase):
@@ -197,23 +205,10 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     parameters = json.loads(request_json['parameters_json'])
     self.assertEqual(expceted_parameters, parameters)
 
-  def _MockUrlFetch(self, build_id, try_job_request, content, status_code=200):
-    base_url = ('https://cr-buildbucket.appspot.com/api/buildbucket/v1/builds')
-    headers = {'Content-Type': 'application/json; charset=UTF-8'}
-    if build_id:
-      url = base_url + '/' + build_id
-      self.mocked_urlfetch.register_handler(
-          url, content, status_code=status_code, headers=headers)
-    else:
-      self.mocked_urlfetch.register_handler(
-          base_url,
-          content,
-          status_code=status_code,
-          headers=headers,
-          data=try_job_request)
-
-  def testTriggerTryJobs(self):
-    # Success.
+  @mock.patch.object(buildbucket_client.auth_util, 'GetAuthToken',
+                     return_value='token')
+  @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
+  def testTriggerTryJobsSuccess(self, mocked_fetch, _):
     response = {
         'build': {
             'id': '1',
@@ -222,9 +217,8 @@ class BuildBucketClientTest(testing.AppengineTestCase):
         }
     }
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {'a': 'b'}, [], {})
-    self._MockUrlFetch(None,
-                       json.dumps(try_job.ToBuildbucketRequest()),
-                       json.dumps(response))
+    mocked_fetch.return_value = _Result(
+        status_code=200, content=json.dumps(response), headers={})
     results = buildbucket_client.TriggerTryJobs([try_job])
     self.assertEqual(1, len(results))
     error, build = results[0]
@@ -234,7 +228,10 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('url', build.url)
     self.assertEqual('SCHEDULED', build.status)
 
-    # Error.
+  @mock.patch.object(buildbucket_client.auth_util, 'GetAuthToken',
+                     return_value='token')
+  @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
+  def testTriggerTryJobsFailure(self, mocked_fetch, _):
     response = {
         'error': {
             'reason': 'error',
@@ -242,9 +239,8 @@ class BuildBucketClientTest(testing.AppengineTestCase):
         }
     }
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [], {})
-    self._MockUrlFetch(None,
-                       json.dumps(try_job.ToBuildbucketRequest()),
-                       json.dumps(response))
+    mocked_fetch.return_value = _Result(
+        status_code=200, content=json.dumps(response), headers={})
     results = buildbucket_client.TriggerTryJobs([try_job])
     self.assertEqual(1, len(results))
     error, build = results[0]
@@ -253,12 +249,14 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('message', error.message)
     self.assertIsNone(build)
 
-    # Not Found
+  @mock.patch.object(buildbucket_client.auth_util, 'GetAuthToken',
+                     return_value='token')
+  @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
+  def testTriggerTryJobsRequestFailure(self, mocked_fetch, _):
     response = 'Not Found'
     try_job = buildbucket_client.TryJob('m', 'b', 'r', {}, [], {})
-    self._MockUrlFetch(None,
-                       json.dumps(try_job.ToBuildbucketRequest()), response,
-                       404)
+    mocked_fetch.return_value = _Result(
+        status_code=404, content=response, headers={})
     results = buildbucket_client.TriggerTryJobs([try_job])
     self.assertEqual(1, len(results))
     error, build = results[0]
@@ -267,9 +265,13 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('Not Found', error.message)
     self.assertIsNone(build)
 
-  def testGetTryJobsSuccess(self):
+  @mock.patch.object(buildbucket_client.auth_util, 'GetAuthToken',
+                     return_value='token')
+  @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
+  def testGetTryJobsSuccess(self, mocked_fetch, _):
     response = {'build': {'id': '1', 'url': 'url', 'status': 'STARTED'}}
-    self._MockUrlFetch('1', None, json.dumps(response))
+    mocked_fetch.return_value = _Result(
+        status_code=200, content=json.dumps(response), headers={})
     results = buildbucket_client.GetTryJobs(['1'])
     self.assertEqual(1, len(results))
     error, build = results[0]
@@ -279,14 +281,18 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('url', build.url)
     self.assertEqual('STARTED', build.status)
 
-  def testGetTryJobsFailure(self):
+  @mock.patch.object(buildbucket_client.auth_util, 'GetAuthToken',
+                     return_value='token')
+  @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
+  def testGetTryJobsFailure(self, mocked_fetch, _):
     response = {
         'error': {
             'reason': 'BUILD_NOT_FOUND',
             'message': 'message',
         }
     }
-    self._MockUrlFetch('2', None, json.dumps(response))
+    mocked_fetch.return_value = _Result(
+        status_code=200, content=json.dumps(response), headers={})
     results = buildbucket_client.GetTryJobs(['2'])
     self.assertEqual(1, len(results))
     error, build = results[0]
@@ -295,9 +301,13 @@ class BuildBucketClientTest(testing.AppengineTestCase):
     self.assertEqual('message', error.message)
     self.assertIsNone(build)
 
-  def testGetTryJobsRequestFailure(self):
+  @mock.patch.object(buildbucket_client.auth_util, 'GetAuthToken',
+                     return_value='token')
+  @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
+  def testGetTryJobsRequestFailure(self, mocked_fetch, _):
     response = 'Not Found'
-    self._MockUrlFetch('3', None, response, 404)
+    mocked_fetch.return_value = _Result(
+        status_code=404, content=response, headers={})
     results = buildbucket_client.GetTryJobs(['3'])
     self.assertEqual(1, len(results))
     error, build = results[0]
