@@ -52,13 +52,15 @@
         <tree-status></tree-status>
         <template is="dom-if" if="[[services.length]]">
           <div class="table">
-            <status-table services="[[services]]" latest-date-ts="{{latestDateTs}}">
+            <status-table services="[[services]]" title="Services Covered by an SLA"
+              latest-date-ts="{{latestDateTs}}">
           </status-table>
           </div>
         </template>
         <template is="dom-if" if="[[nonSLAServices.length]]">
           <div class="table">
-            <status-table services="[[nonSLAServices]]" latest-date-ts="{{latestDateTs}}">
+            <status-table services="[[nonSLAServices]]" title="Services not Covered by an SLA"
+              latest-date-ts="{{latestDateTs}}">
             </status-table>
           </div>
         </template>

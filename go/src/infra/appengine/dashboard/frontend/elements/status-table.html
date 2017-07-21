@@ -53,7 +53,7 @@
     <link rel="stylesheet" type="text/css" href="/static/icons.css">
     <div class="layout horizontal center-justified">
       <div class="card">
-        <p class="header">Services not Covered by an SLA</p>
+        <p class="header">[[title]]</p>
         <table>
           <tr>
             <th>Current Status</th>
@@ -97,6 +97,10 @@
 
       static get properties() {
         return {
+          title: {
+            type: String,
+            value: "",
+          },
           services: {
             type: Array,
             value: () => { return []; },
