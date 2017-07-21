@@ -50,6 +50,7 @@
         border-bottom: none;
       }
     </style>
+    <link rel="stylesheet" type="text/css" href="/static/icons.css">
     <div class="layout horizontal center-justified">
       <div class="card">
         <p class="header">Services not Covered by an SLA</p>
@@ -62,9 +63,15 @@
           </tr>
           <template is="dom-repeat" items="[[services]]">
             <tr>
-              <td>[[item.name]]</td>
+              <td>[[item.name]]
+                <template is="dom-repeat" items="[[_computeCurrentIncidents(item.incidents)]]">
+                  <span class="circle-container">
+                    <i class$="circle [[item]]"></i>
+                  </span>
+                </template>
+              </td>
               <td colspan="7">
-                <service-row incidents="[[item.incidents]]"
+                <service-row incidents="[[_computePreviousIncidents(item.incidents)]]"
                   dates="[[dates]]"></service-row>
               </td>
             </tr>
@@ -132,6 +139,27 @@
           this.push('formattedDates',
             (`${date.getFullYear()}-${date.getMonth()+1}-${date.getDate()}`));
         }
+      }
+
+      _computeCurrentIncidents(incidents) {
+        let currInc = [];
+        incidents.forEach(incident => {
+          if(incident['open']) {
+            currInc.push(incident['severity'].toLowerCase());
+          }
+        });
+        if (!currInc.length) { currInc.push('green'); }
+        return currInc;
+      }
+
+      _computePreviousIncidents(incidents) {
+        let prevInc = [];
+        incidents.forEach(incident => {
+          if (!incident['open']) {
+            prevInc.push(incident);
+          }
+        });
+        return prevInc;
       }
     }
     customElements.define(StatusTable.is, StatusTable);
