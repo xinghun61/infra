@@ -41,10 +41,10 @@
       });
 
       window.fetch.returns(Promise.resolve(res));
-
+      window.fetch.returns(Promise.resolve(res));
       element._updateAlerts(groups);
 
-      assert.isTrue(window.fetch.calledOnce);
+      assert.isTrue(window.fetch.calledTwice);
 
       flush(function() {
         assert.notEqual(element._fetchAlertsError, '');
@@ -125,47 +125,79 @@
     });
 
     test('ignores requests sent from stale trees', function(done) {
-      let oldRes = new window.Response(
-        '{"alerts": ["oldtreealert"], "resolved": []}', {
+      let oldUnresolvedRes = new window.Response(
+        '{"alerts": [{"key": "oldtreealert"}]}', {
         status: 200,
         headers: {
           'Content-type': 'application/json',
         }
       });
-      let resolveOldPromise;
-      let oldPromise = new Promise((resolve, reject) => {
-        resolveOldPromise = resolve;
+      let resolveOldUnresolvedPromise;
+      let oldUnresolvedPromise = new Promise((resolve, reject) => {
+        resolveOldUnresolvedPromise = resolve;
       });
 
-      let newRes = new window.Response(
-        '{"alerts": ["newtreealert"], "resolved": []}', {
+      let oldResolvedRes = new window.Response(
+        '{"resolved": [{"key": "oldtreeresolved"}]}', {
         status: 200,
         headers: {
           'Content-type': 'application/json',
         }
       });
-      let resolveNewPromise;
-      let newPromise = new Promise((resolve, reject) => {
-        resolveNewPromise = resolve;
+      let resolveOldResolvedPromise;
+      let oldResolvedPromise = new Promise((resolve, reject) => {
+        resolveOldResolvedPromise = resolve;
       });
 
-      window.fetch.returns(oldPromise);
+      let newUnresolvedRes = new window.Response(
+        '{"alerts": [{"key": "newtreealert"}]}', {
+        status: 200,
+        headers: {
+          'Content-type': 'application/json',
+        }
+      });
+      let resolveNewUnresolvedPromise;
+      let newUnresolvedPromise = new Promise((resolve, reject) => {
+        resolveNewUnresolvedPromise = resolve;
+      });
+
+      let newResolvedRes = new window.Response(
+        '{"resolved": [{"key": "newtreeresolved"}]}', {
+        status: 200,
+        headers: {
+          'Content-type': 'application/json',
+        }
+      });
+      let resolveNewResolvedPromise;
+      let newResolvedPromise = new Promise((resolve, reject) => {
+        resolveNewResolvedPromise = resolve;
+      });
+
+      window.fetch.onCall(0).returns(oldUnresolvedPromise);
+      window.fetch.onCall(1).returns(oldResolvedPromise);
+      window.fetch.onCall(2).returns(newUnresolvedPromise);
+      window.fetch.onCall(3).returns(newResolvedPromise);
+
       element.tree = {'name': 'oldtree'};
       assert.deepEqual(element._alertStreams, ['oldtree']);
-      assert.isTrue(window.fetch.calledOnce);
+      assert.equal(2, window.fetch.callCount);
 
-      window.fetch.returns(newPromise);
       element.tree = {'name': 'newtree'};
       assert.deepEqual(element._alertStreams, ['newtree']);
-      assert.isTrue(window.fetch.calledTwice);
+      assert.equal(4, window.fetch.callCount);
 
-      resolveNewPromise(newRes);
+      resolveNewUnresolvedPromise(newUnresolvedRes);
+      resolveNewResolvedPromise(newResolvedRes);
+      let expectedAlerts = {
+        'newtree': [{'key': 'newtreealert', 'resolved': false}]
+      };
       flush(() => {
-        assert.deepEqual(element._alertsData, {'newtree': ['newtreealert']});
+        assert.deepEqual(element._alertsData, expectedAlerts);
 
-        resolveOldPromise(oldRes);
+        resolveOldUnresolvedPromise(oldUnresolvedRes);
+        resolveOldResolvedPromise(oldResolvedRes);
         flush(() => {
-          assert.deepEqual(element._alertsData, {'newtree': ['newtreealert']});
+          assert.deepEqual(element._alertsData, expectedAlerts);
           done();
         });
       });
@@ -243,9 +275,9 @@
 
       element._resolveAlerts([{'key': 'hello'}]);
 
-      assert.isTrue(window.fetch.calledTwice);
+      assert.isTrue(window.fetch.calledThrice);
 
-      let call = window.fetch.getCall(1);
+      let call = window.fetch.getCall(2);
 
       assert.equal('/api/v1/resolve/test', call.args[0]);
     });

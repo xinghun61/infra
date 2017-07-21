@@ -503,6 +503,180 @@ func TestMain(t *testing.T) {
 
 			})
 
+			Convey("/unresolved", func() {
+				contents, _ := json.Marshal(&messages.Alert{
+					Key: "test",
+				})
+				alertJSON := &AlertJSON{
+					ID:       "test",
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
+					Resolved: false,
+					Date:     time.Unix(1, 0).UTC(),
+					Contents: []byte(contents),
+				}
+				contents2, _ := json.Marshal(&messages.Alert{
+					Key: "test2",
+				})
+				oldResolvedJSON := &AlertJSON{
+					ID:       "test2",
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
+					Resolved: true,
+					Date:     time.Unix(1, 0).UTC(),
+					Contents: []byte(contents2),
+				}
+				contents3, _ := json.Marshal(&messages.Alert{
+					Key: "test3",
+				})
+				newResolvedJSON := &AlertJSON{
+					ID:       "test3",
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
+					Resolved: true,
+					Date:     clock.Now(c),
+					Contents: []byte(contents3),
+				}
+				oldRevisionSummaryJSON := &RevisionSummaryJSON{
+					ID:       "rev1",
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
+					Date:     time.Unix(1, 0).UTC(),
+					Contents: []byte(contents),
+				}
+				newRevisionSummaryJSON := &RevisionSummaryJSON{
+					ID:       "rev2",
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
+					Date:     clock.Now(c),
+					Contents: []byte(contents),
+				}
+
+				Convey("GET", func() {
+					Convey("no alerts yet", func() {
+						GetUnresolvedAlertsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makeGetRequest(),
+							Params:  makeParams("tree", "chromeos"),
+						})
+
+						_, err := ioutil.ReadAll(w.Body)
+						So(err, ShouldBeNil)
+						So(w.Code, ShouldEqual, 200)
+					})
+
+					So(datastore.Put(c, alertJSON), ShouldBeNil)
+					So(datastore.Put(c, oldRevisionSummaryJSON), ShouldBeNil)
+					So(datastore.Put(c, newRevisionSummaryJSON), ShouldBeNil)
+					So(datastore.Put(c, oldResolvedJSON), ShouldBeNil)
+					So(datastore.Put(c, newResolvedJSON), ShouldBeNil)
+					datastore.GetTestable(c).CatchupIndexes()
+
+					Convey("basic alerts", func() {
+						GetUnresolvedAlertsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makeGetRequest(),
+							Params:  makeParams("tree", "chromeos"),
+						})
+
+						r, err := ioutil.ReadAll(w.Body)
+						So(err, ShouldBeNil)
+						So(w.Code, ShouldEqual, 200)
+						summary := &messages.AlertsSummary{}
+						err = json.Unmarshal(r, &summary)
+						So(err, ShouldBeNil)
+						So(summary.Alerts, ShouldHaveLength, 1)
+						So(summary.Alerts[0].Key, ShouldEqual, "test")
+						So(summary.Resolved, ShouldBeNil)
+					})
+				})
+			})
+
+			Convey("/resolved", func() {
+				contents, _ := json.Marshal(&messages.Alert{
+					Key: "test",
+				})
+				alertJSON := &AlertJSON{
+					ID:       "test",
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
+					Resolved: false,
+					Date:     time.Unix(1, 0).UTC(),
+					Contents: []byte(contents),
+				}
+				contents2, _ := json.Marshal(&messages.Alert{
+					Key: "test2",
+				})
+				oldResolvedJSON := &AlertJSON{
+					ID:       "test2",
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
+					Resolved: true,
+					Date:     time.Unix(1, 0).UTC(),
+					Contents: []byte(contents2),
+				}
+				contents3, _ := json.Marshal(&messages.Alert{
+					Key: "test3",
+				})
+				newResolvedJSON := &AlertJSON{
+					ID:       "test3",
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
+					Resolved: true,
+					Date:     clock.Now(c),
+					Contents: []byte(contents3),
+				}
+				oldRevisionSummaryJSON := &RevisionSummaryJSON{
+					ID:       "rev1",
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
+					Date:     time.Unix(1, 0).UTC(),
+					Contents: []byte(contents),
+				}
+				newRevisionSummaryJSON := &RevisionSummaryJSON{
+					ID:       "rev2",
+					Tree:     datastore.MakeKey(c, "Tree", "chromeos"),
+					Date:     clock.Now(c),
+					Contents: []byte(contents),
+				}
+
+				Convey("GET", func() {
+					Convey("no alerts yet", func() {
+						GetResolvedAlertsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makeGetRequest(),
+							Params:  makeParams("tree", "chromeos"),
+						})
+
+						_, err := ioutil.ReadAll(w.Body)
+						So(err, ShouldBeNil)
+						So(w.Code, ShouldEqual, 200)
+					})
+
+					So(datastore.Put(c, alertJSON), ShouldBeNil)
+					So(datastore.Put(c, oldRevisionSummaryJSON), ShouldBeNil)
+					So(datastore.Put(c, newRevisionSummaryJSON), ShouldBeNil)
+					So(datastore.Put(c, oldResolvedJSON), ShouldBeNil)
+					So(datastore.Put(c, newResolvedJSON), ShouldBeNil)
+					datastore.GetTestable(c).CatchupIndexes()
+
+					Convey("resolved alerts", func() {
+						GetResolvedAlertsHandler(&router.Context{
+							Context: c,
+							Writer:  w,
+							Request: makeGetRequest(),
+							Params:  makeParams("tree", "chromeos"),
+						})
+
+						r, err := ioutil.ReadAll(w.Body)
+						So(err, ShouldBeNil)
+						So(w.Code, ShouldEqual, 200)
+						summary := &messages.AlertsSummary{}
+						err = json.Unmarshal(r, &summary)
+						So(err, ShouldBeNil)
+						So(summary.Alerts, ShouldBeNil)
+						So(summary.Resolved, ShouldHaveLength, 1)
+						So(summary.Resolved[0].Key, ShouldEqual, "test3")
+						// TODO(seanmccullough): Remove all of the POST /alerts handling
+						// code and tests except for whatever chromeos needs.
+					})
+				})
+			})
+
 			Convey("/alert", func() {
 				contents, _ := json.Marshal(&messages.Alert{
 					Key: "test",

@@ -252,61 +252,75 @@
       return {};
     },
 
+    _handleAlertsResponse: function(response, stream) {
+      this._activeRequests -= 1;
+      if (this._activeRequests <= 0) {
+        this._fetchedAlerts = true;
+      }
+      if (response.status == 404) {
+        this._fetchAlertsError = 'Server responded with 404: ' +
+          stream + ' not found. ';
+        return false;
+      }
+      if (!response.ok) {
+        this._fetchAlertsError = 'Server responded with ' +
+          response.status + ': ' +
+          response.statusText;
+        return false;
+      }
+      return response.json();
+    },
+
+    _handleAlertsError: function(error) {
+      this._activeRequests -= 1;
+      this._fetchAlertsError = 'Could not connect to the server. ' + error;
+    },
+
+    _alertsSetData: function(json, stream) {
+      // Ignore old requests that finished after tree switch.
+      if (!this._alertStreams.includes(stream))
+        return;
+
+      if (json) {
+        if (json.swarming) {
+          this.set('_swarmingAlerts', json.swarming);
+        }
+        if (json.alerts && json.alerts.length) {
+          this.set(['_alertsData', this._alertStreamVarName(stream)],
+                   json.alerts);
+          this.alertsTimes = {};
+          if (json.timestamp) {
+            this.set(['alertsTimes', this._alertStreamVarName(stream)],
+                    json.timestamp);
+          }
+        }
+        if (json.resolved && json.resolved.length) {
+          this.set(['_alertsResolvedData', this._alertStreamVarName(stream)],
+                   json.resolved);
+        }
+      }
+    },
+
     _updateAlerts: function(alertStreams) {
       this._fetchAlertsError = '';
       if (alertStreams.length > 0) {
         this._fetchedAlerts = false;
-        this._activeRequests += alertStreams.length;
+        let apis = ['unresolved', 'resolved'];
+        this._activeRequests += alertStreams.length * apis.length;
 
-        alertStreams.forEach((stream) => {
-          let base = '/api/v1/alerts/';
-          if (window.location.href.indexOf('useMilo') != -1) {
-            base = base + 'milo.';
-          }
-          window.fetch(base + stream, {credentials: 'include'})
-              .then(
-                  (response) => {
-                    this._activeRequests -= 1;
-                    if (this._activeRequests <= 0) {
-                      this._fetchedAlerts = true;
-                    }
-                    if (response.status == 404) {
-                      this._fetchAlertsError = 'Server responded with 404: ' +
-                                               stream + ' not found. ';
-                      return false;
-                    }
-                    if (!response.ok) {
-                      this._fetchAlertsError = 'Server responded with ' +
-                                               response.status + ': ' +
-                                               response.statusText;
-                      return false;
-                    }
-                    return response.json();
-                  },
-                  (error) => {
-                    this._activeRequests -= 1;
-                    this._fetchAlertsError =
-                        'Could not connect to the server. ' + error;
-                  })
-              .then((json) => {
-                // Ignore old requests that finished after tree switch.
-                if (!this._alertStreams.includes(stream))
-                  return;
-
-                if (json) {
-                  this.set('_swarmingAlerts', json.swarming);
-                  this.set(['_alertsData', this._alertStreamVarName(stream)],
-                           json.alerts);
-                  this.set(['_alertsResolvedData',
-                            this._alertStreamVarName(stream)],
-                           json.resolved);
-
-                  this.alertsTimes = {};
-                  this.set(['alertsTimes', this._alertStreamVarName(stream)],
-                           json.timestamp);
-                }
-              });
-        });
+        for (let api of apis) {
+          alertStreams.forEach((stream) => {
+            let base = '/api/v1/' + api + '/';
+            if (window.location.href.indexOf('useMilo') != -1) {
+              base = base + 'milo.';
+            }
+            window.fetch(base + stream, {credentials: 'include'})
+                .then((resp) => {return this._handleAlertsResponse(resp,
+                                                                   stream)},
+                      (error) => {this._handleAlertsError(error)})
+                .then((json) => {this._alertsSetData(json, stream)});
+          });
+        }
       }
     },
 

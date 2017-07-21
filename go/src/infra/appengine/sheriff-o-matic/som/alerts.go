@@ -40,8 +40,8 @@ var (
 	ErrUnrecognizedTree = fmt.Errorf("Unrecognized tree name")
 )
 
-// GetAlertsHandler handles API requests for alerts.
-func GetAlertsHandler(ctx *router.Context) {
+// GetAlerts handles API requests for alerts.
+func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	tree := p.ByName("tree")
@@ -64,49 +64,57 @@ func GetAlertsHandler(ctx *router.Context) {
 		tree = "milo." + tree
 	}
 
-	q := datastore.NewQuery("AlertJSON")
-	q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
-	q = q.Eq("Resolved", false)
-
+	var q *datastore.Query
 	alertResults := []*AlertJSON{}
-	err := datastore.GetAll(c, q, &alertResults)
-	if err != nil {
-		errStatus(c, w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	revisionSummaryResults := []*RevisionSummaryJSON{}
+	if unresolved {
+		q = datastore.NewQuery("AlertJSON")
+		q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
+		q = q.Eq("Resolved", false)
 
-	q = datastore.NewQuery("AlertJSON")
-	q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
-	q = q.Eq("Resolved", true)
-	q = q.Gt("Date", clock.Get(c).Now().Add(-recentResolved))
+		err := datastore.GetAll(c, q, &alertResults)
+		if err != nil {
+			errStatus(c, w, http.StatusInternalServerError, err.Error())
+			return
+		}
+
+		q = datastore.NewQuery("RevisionSummaryJSON")
+		q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
+		q = q.Gt("Date", clock.Get(c).Now().Add(-recentRevisions))
+
+		err = datastore.GetAll(c, q, &revisionSummaryResults)
+		if err != nil {
+			errStatus(c, w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
 
 	resolvedResults := []*AlertJSON{}
-	err = datastore.GetAll(c, q, &resolvedResults)
-	if err != nil {
-		errStatus(c, w, http.StatusInternalServerError, err.Error())
-		return
-	}
+	if resolved {
+		q = datastore.NewQuery("AlertJSON")
+		q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
+		q = q.Eq("Resolved", true)
+		q = q.Gt("Date", clock.Get(c).Now().Add(-recentResolved))
 
-	q = datastore.NewQuery("RevisionSummaryJSON")
-	q = q.Ancestor(datastore.MakeKey(c, "Tree", tree))
-	q = q.Gt("Date", clock.Get(c).Now().Add(-recentRevisions))
-
-	revisionSummaryResults := []*RevisionSummaryJSON{}
-	err = datastore.GetAll(c, q, &revisionSummaryResults)
-	if err != nil {
-		errStatus(c, w, http.StatusInternalServerError, err.Error())
-		return
+		err := datastore.GetAll(c, q, &resolvedResults)
+		if err != nil {
+			errStatus(c, w, http.StatusInternalServerError, err.Error())
+			return
+		}
 	}
 
 	alertsSummary := &messages.AlertsSummary{
-		Alerts:            make([]messages.Alert, len(alertResults)),
-		Resolved:          make([]messages.Alert, len(resolvedResults)),
 		RevisionSummaries: make(map[string]messages.RevisionSummary),
+	}
+	if len(alertResults) >= 1 {
+		alertsSummary.Alerts = make([]messages.Alert, len(alertResults))
+	}
+	if len(resolvedResults) >= 1 {
+		alertsSummary.Resolved = make([]messages.Alert, len(resolvedResults))
 	}
 
 	for i, alertJSON := range alertResults {
-		err = json.Unmarshal(alertJSON.Contents,
-			&alertsSummary.Alerts[i])
+		err := json.Unmarshal(alertJSON.Contents, &alertsSummary.Alerts[i])
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
 			return
@@ -119,8 +127,7 @@ func GetAlertsHandler(ctx *router.Context) {
 	}
 
 	for i, alertJSON := range resolvedResults {
-		err = json.Unmarshal(alertJSON.Contents,
-			&alertsSummary.Resolved[i])
+		err := json.Unmarshal(alertJSON.Contents, &alertsSummary.Resolved[i])
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
 			return
@@ -134,7 +141,7 @@ func GetAlertsHandler(ctx *router.Context) {
 
 	for _, summaryJSON := range revisionSummaryResults {
 		var summary messages.RevisionSummary
-		err = json.Unmarshal(summaryJSON.Contents, &summary)
+		err := json.Unmarshal(summaryJSON.Contents, &summary)
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
 			return
@@ -149,6 +156,22 @@ func GetAlertsHandler(ctx *router.Context) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+}
+
+// GetAlertsHandler handles API requests for all alerts and revision summaries.
+func GetAlertsHandler(ctx *router.Context) {
+	GetAlerts(ctx, true, true)
+}
+
+// GetUnresolvedAlertsHandler handles API requests for unresolved alerts
+// and revision summaries.
+func GetUnresolvedAlertsHandler(ctx *router.Context) {
+	GetAlerts(ctx, true, false)
+}
+
+// GetResolvedAlertsHandler handles API requests for resolved alerts.
+func GetResolvedAlertsHandler(ctx *router.Context) {
+	GetAlerts(ctx, false, true)
 }
 
 // PostAlertsHandler handes alert writes sent by an alerts dispatcher instance.

@@ -194,6 +194,8 @@ func init() {
 
 	gaemiddleware.InstallHandlers(r)
 	r.GET("/api/v1/alerts/:tree", protected, som.GetAlertsHandler)
+	r.GET("/api/v1/unresolved/:tree", protected, som.GetUnresolvedAlertsHandler)
+	r.GET("/api/v1/resolved/:tree", protected, som.GetResolvedAlertsHandler)
 	r.GET("/api/v1/restarts/:tree", protected, som.GetRestartingMastersHandler)
 	r.GET("/api/v1/xsrf_token", protected, getXSRFToken)
 
