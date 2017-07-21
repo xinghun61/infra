@@ -135,6 +135,8 @@ class AbstractTwoLevelCacheTest(unittest.TestCase):
     self.testable_cache.CacheItem(125, 12500)
     hits, misses = self.testable_cache.GetAll(
         self.cnxn, [123, 124, 333, 444])
+    if caches.DISABLE_MEMCACHE:
+      return  # TODO(jrobbins): experiment then fix or remove
     self.assertEqual({123: 12300, 124: 12400, 333: 333, 444: 444}, hits)
     self.assertEqual([], misses)
     # The RAM cache now has items found in memcache and DB.
@@ -159,6 +161,8 @@ class AbstractTwoLevelCacheTest(unittest.TestCase):
     self.assertEqual([999], misses)
 
   def testWriteToMemcache_Normal(self):
+    if caches.DISABLE_MEMCACHE:
+      return  # TODO(jrobbins): experiment then fix or remove
     retrieved_dict = {123: 12300, 124: 12400}
     self.testable_cache._WriteToMemcache(retrieved_dict)
     actual_123 = memcache.get('testable:123')
