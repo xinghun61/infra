@@ -12,18 +12,20 @@ FINDIT_API = 2
 # An analysis was triggered using Findit's normal analysis pipeline.
 FINDIT_PIPELINE = 3
 
+SOURCES_TO_DESCRIPTIONS = {
+    FINDIT_UI: 'Findit UI',
+    FINDIT_API: 'Findit API',
+    FINDIT_PIPELINE: 'Findit pipeline'
+}
+
 
 def GetDescriptionForTriggeringSource(triggering_source, manually_triggered):
   """Returns a human-readable description for where a request came from."""
   template = 'The analysis was triggered %s through %s'
 
   def _GetTriggeringSourceDescription(triggering_source):
-    source_to_description = {
-        FINDIT_UI: 'Findit UI',
-        FINDIT_API: 'Findit API',
-        FINDIT_PIPELINE: 'Findit pipeline'
-    }
-    return source_to_description.get(triggering_source, 'other/unknown source')
+    return SOURCES_TO_DESCRIPTIONS.get(triggering_source,
+                                       'other/unknown source')
 
   def _GetTriggeringUserDescription(manually_triggered):
     return 'manually' if manually_triggered else 'automatically'
