@@ -11,6 +11,7 @@ environment. Linux and OSX only.
 
 DEPS = [
   'build/goma',
+  'recipe_engine/context',
   'recipe_engine/file',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -43,8 +44,8 @@ def RunSteps(api):
   root_dir = api.path['tmp_base']
 
   # TODO(vadimsh): We need to somehow pull clang binaries and use them instead
-  # of system-provided g++. Otherwise Goma will always fall back to local
-  # execution, since system-provided g++ is not whitelisted in Goma.
+  # of system-provided g++. Otherwise Goma may fall back to local execution,
+  # since system-provided g++ may not be whitelisted in Goma.
 
   # One static object file and one "dynamic", to test cache hit and cache miss.
   source_code = {
@@ -62,12 +63,20 @@ def RunSteps(api):
   out = root_dir.join('compiled_binary')
 
   try:
-    objs = []
-    for name in sorted(source_code):
-      obj = root_dir.join(name.replace('.cpp', '.o'))
-      api.step('compile %s' % name, [gcc, '-c', root_dir.join(name), '-o', obj])
-      objs.append(obj)
-    api.step('link', [gcc, '-o', out] + objs)
+    # We want goma proxy to actually hit the backends, so disable fallback to
+    # the local compiler.
+    gomacc_env = {
+      'GOMA_USE_LOCAL': 'false',
+      'GOMA_FALLBACK': 'false',
+    }
+    with api.context(env=gomacc_env):
+      objs = []
+      for name in sorted(source_code):
+        obj = root_dir.join(name.replace('.cpp', '.o'))
+        api.step(
+            'compile %s' % name, [gcc, '-c', root_dir.join(name), '-o', obj])
+        objs.append(obj)
+      api.step('link', [gcc, '-o', out] + objs)
   finally:
     api.goma.stop()
 

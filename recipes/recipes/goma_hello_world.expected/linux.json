@@ -134,6 +134,10 @@
       "-o",
       "[TMP_BASE]/hello_world.o"
     ],
+    "env": {
+      "GOMA_FALLBACK": "false",
+      "GOMA_USE_LOCAL": "false"
+    },
     "name": "compile hello_world.cpp"
   },
   {
@@ -144,6 +148,10 @@
       "-o",
       "[TMP_BASE]/module.o"
     ],
+    "env": {
+      "GOMA_FALLBACK": "false",
+      "GOMA_USE_LOCAL": "false"
+    },
     "name": "compile module.cpp"
   },
   {
@@ -154,6 +162,10 @@
       "[TMP_BASE]/hello_world.o",
       "[TMP_BASE]/module.o"
     ],
+    "env": {
+      "GOMA_FALLBACK": "false",
+      "GOMA_USE_LOCAL": "false"
+    },
     "name": "link"
   },
   {
