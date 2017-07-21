@@ -3,14 +3,11 @@
 
   Polymer({
     is: 'som-extension-cros-failure',
+    behaviors: [TreeBehavior],
 
     properties: {
       extension: {type: Object, value: null},
       type: {type: String, value: ''},
-    },
-
-    _isCrosFailure: function(type) {
-      return type == 'cros-failure';
     },
 
     _classForStage: function(stage) {

@@ -3,6 +3,7 @@
 <link rel="import" href="../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
 
 <link rel="import" href="../../elements/som-rev-range/som-rev-range.html">
+<link rel="import" href="../../elements/som-tree-behavior.html">
 <link rel="import" href="../../elements/som-linkify-behavior.html">
 
 <dom-module id="som-extension-build-failure">
@@ -58,7 +59,7 @@
        margin: .5em auto;
      }
     </style>
-    <template is="dom-if" if="[[!_isCrosFailure(type)]]">
+    <template is="dom-if" if="[[!_isCrOSFailure(type)]]">
       <div id="builders">
         <template is="dom-if" if="[[_haveBuilders(extension)]]">
           <div class="header">

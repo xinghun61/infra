@@ -44,7 +44,7 @@
       window.fetch.returns(Promise.resolve(res));
       element._updateAlerts(groups);
 
-      assert.isTrue(window.fetch.calledTwice);
+      assert.isTrue(window.fetch.calledOnce);
 
       flush(function() {
         assert.notEqual(element._fetchAlertsError, '');
@@ -178,16 +178,16 @@
       window.fetch.onCall(2).returns(newUnresolvedPromise);
       window.fetch.onCall(3).returns(newResolvedPromise);
 
-      element.tree = {'name': 'oldtree'};
-      assert.deepEqual(element._alertStreams, ['oldtree']);
+      // Use chromeos to request both unresolved and resolved.
+      element.tree = {'name': 'chromeos'};
+      assert.deepEqual(element._alertStreams, ['chromeos']);
       assert.equal(2, window.fetch.callCount);
 
       element.tree = {'name': 'newtree'};
       assert.deepEqual(element._alertStreams, ['newtree']);
-      assert.equal(4, window.fetch.callCount);
+      assert.equal(3, window.fetch.callCount);
 
       resolveNewUnresolvedPromise(newUnresolvedRes);
-      resolveNewResolvedPromise(newResolvedRes);
       let expectedAlerts = {
         'newtree': [{'key': 'newtreealert', 'resolved': false}]
       };
@@ -275,9 +275,9 @@
 
       element._resolveAlerts([{'key': 'hello'}]);
 
-      assert.isTrue(window.fetch.calledThrice);
+      assert.isTrue(window.fetch.calledTwice);
 
-      let call = window.fetch.getCall(2);
+      let call = window.fetch.getCall(1);
 
       assert.equal('/api/v1/resolve/test', call.args[0]);
     });

@@ -6,7 +6,7 @@
 
   Polymer({
     is: 'som-extension-build-failure',
-    behaviors: [LinkifyBehavior],
+    behaviors: [LinkifyBehavior, TreeBehavior],
 
     properties: {
       extension: {
@@ -25,10 +25,6 @@
 
     _isChromium: function(tree) {
       return tree == 'chromium';
-    },
-
-    _isCrosFailure: function(type) {
-      return type == 'cros-failure';
     },
 
     _haveBuilders: function(extension) {

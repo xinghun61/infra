@@ -8,7 +8,7 @@
 
   Polymer({
     is: 'som-alert-view',
-    behaviors: [AnnotationManagerBehavior, TimeBehavior, AlertTypeBehavior, PostBehavior],
+    behaviors: [AnnotationManagerBehavior, AlertTypeBehavior, PostBehavior, TimeBehavior, TreeBehavior],
     properties: {
       _activeRequests: {
         type: Number,
@@ -305,11 +305,15 @@
       this._fetchAlertsError = '';
       if (alertStreams.length > 0) {
         this._fetchedAlerts = false;
-        let apis = ['unresolved', 'resolved'];
-        this._activeRequests += alertStreams.length * apis.length;
 
-        for (let api of apis) {
-          alertStreams.forEach((stream) => {
+        alertStreams.forEach((stream) => {
+          let apis = ['unresolved'];
+          if (this._hasResolved(stream)) {
+            apis.push('resolved');
+          }
+
+          for (let api of apis) {
+            this._activeRequests += 1;
             let base = '/api/v1/' + api + '/';
             if (window.location.href.indexOf('useMilo') != -1) {
               base = base + 'milo.';
@@ -319,8 +323,8 @@
                                                                    stream)},
                       (error) => {this._handleAlertsError(error)})
                 .then((json) => {this._alertsSetData(json, stream)});
-          });
-        }
+          }
+        });
       }
     },
 
@@ -906,6 +910,10 @@
         return alert && alert.grouped;
       });
       return checkedAlerts.length > 1 && groups.length < 2;
+    },
+
+    _hasResolved: function(treeName) {
+      return this._isCrOSTree(treeName);
     },
 
     _handleUngroup: function(evt) {

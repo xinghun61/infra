@@ -3,7 +3,7 @@
 
   Polymer({
     is: 'som-alert-item',
-    behaviors: [LinkifyBehavior, AlertTypeBehavior, TimeBehavior],
+    behaviors: [LinkifyBehavior, AlertTypeBehavior, TimeBehavior, TreeBehavior],
 
     /**
      * Fired when an alert requests that the link bug dialog be shown.
@@ -182,10 +182,6 @@
 
     _computeCssClass: function(snoozed, resolved) {
       return (snoozed || resolved) ? 'dimmed' : '';
-    },
-
-    _isCrOSTree: function(treeName) {
-      return treeName && (treeName == 'chromeos' || treeName == 'gardener');
     },
 
     _computeHasUngroup: function(alert) {

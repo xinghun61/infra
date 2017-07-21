@@ -1,0 +1,10 @@
+<script>
+    TreeBehavior = {
+      _isCrOSFailure: function(alertType) {
+        return alertType == 'cros-failure';
+      },
+      _isCrOSTree: function(treeName) {
+        return treeName && (treeName == 'chromeos' || treeName == 'gardener');
+      },
+    };
+</script>
