@@ -2,6 +2,9 @@ cron:
   - description: tsmon house keeping
     url: /internal/cron/ts_mon/housekeeping
     schedule: every 1 minutes
+  - description: tsmon house keeping (python module)
+    url: /internal/cron/ts_mon/send
+    schedule: every 1 minutes
   - description: refresh list of test flakiness groups
     url: /data/test_flakiness/groups
     schedule: every 1 hours

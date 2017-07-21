@@ -1,5 +1,7 @@
 dispatch:
   - url: "*/internal/monitoring/upload"
     module: python
+  - url: "*/internal/cron/ts_mon/send"
+    module: python
   - url: "*/appengine_module/components/*"
     module: python
