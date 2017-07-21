@@ -5,8 +5,6 @@
 
 """Protocol buffers for Monorail features."""
 
-import time
-
 from features import features_constants
 from protorpc import messages
 
@@ -63,10 +61,16 @@ def MakeHotlist(name, hotlist_item_fields=None, **kwargs):
 
   return hotlist
 
+
+# For any issues that were added to hotlists before we started storing that
+# timestamp, just use the launch date of the feature as a default.
+ADDED_TS_FEATURE_LAUNCH_TS = 1484350000  # Jan 13, 2017
+
+
 def MakeHotlistItem(issue_id, rank=None, adder_id=None, date_added=None, note=None):
-  if date_added is None:
-    date_added=int(time.time())
-  item = Hotlist.HotlistItem(issue_id=issue_id, date_added=date_added)
+  item = Hotlist.HotlistItem(
+      issue_id=issue_id,
+      date_added=date_added or ADDED_TS_FEATURE_LAUNCH_TS)
   if rank is not None:
     item.rank = rank
   if adder_id is not None:

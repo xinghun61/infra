@@ -49,4 +49,4 @@ class FeaturesPb2Test(unittest.TestCase):
     self.assertEqual(None, item_2.rank)
     self.assertEqual(None, item_2.adder_id)
     self.assertEqual('', item_2.note)
-    self.assertIsNotNone(item_2.date_added)
+    self.assertEqual(features_pb2.ADDED_TS_FEATURE_LAUNCH_TS, item_2.date_added)
