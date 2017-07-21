@@ -35,6 +35,10 @@ func getSwarmCmd(authOpts auth.Options) *subcommands.Command {
 
 			ret.Flags.StringVar(&ret.swarmingHost, "S", "chromium-swarm.appspot.com",
 				"the swarming `host` to get the task from.")
+
+			ret.Flags.BoolVar(&ret.pinMachine, "pin-machine", false,
+				"Pin the dimensions of the JobDefinition to run on the same machine.")
+
 			return ret
 		},
 	}
@@ -48,6 +52,7 @@ type cmdGetSwarm struct {
 
 	taskID       string
 	swarmingHost string
+	pinMachine   bool
 }
 
 func (c *cmdGetSwarm) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, err error) {
@@ -65,6 +70,81 @@ func (c *cmdGetSwarm) validateFlags(ctx context.Context, args []string) (authOpt
 	return c.authFlags.Options()
 }
 
+// GetFromSwarmingTask retrieves and renders a JobDefinition from the given
+// swarming task, printing it to stdout and returning an error.
+func GetFromSwarmingTask(ctx context.Context, authOpts auth.Options, host, taskID string, pinMachine bool) error {
+	logging.Infof(ctx, "getting task definition: %q", taskID)
+	_, _, swarm, err := newSwarmClient(ctx, authOpts, host)
+	if err != nil {
+		return err
+	}
+
+	req, err := swarm.Task.Request(taskID).Do()
+	if err != nil {
+		return err
+	}
+
+	newTask := &swarming.SwarmingRpcsNewTaskRequest{
+		Name:           req.Name,
+		ExpirationSecs: req.ExpirationSecs,
+		Priority:       req.Priority,
+		Properties:     req.Properties,
+		// don't wan't these or some random person/service will get notified :
+		//PubsubTopic:    req.PubsubTopic,
+		//PubsubUserdata: req.PubsubUserdata,
+		Tags: req.Tags,
+		User: req.User,
+		//ServiceAccount: req.ServiceAccount,
+	}
+
+	jd, err := JobDefinitionFromNewTaskRequest(newTask)
+	if err != nil {
+		return err
+	}
+	jd.SwarmingHostname = host
+
+	logging.Infof(ctx, "getting task definition: done")
+
+	if pinMachine {
+		logging.Infof(ctx, "pinning swarming bot")
+
+		rslt, err := swarm.Task.Result(taskID).Do()
+		if err != nil {
+			return err
+		}
+		if len(rslt.BotDimensions) == 0 {
+			return errors.Reason("could not pin bot ID, task is %q", rslt.State).Err()
+		}
+
+		didIt := false
+		for _, d := range rslt.BotDimensions {
+			if d.Key == "id" {
+				pool, hadPool := jd.U.Dimensions["pool"]
+				jd.U.Dimensions = map[string]string{
+					"id": d.Value[0],
+				}
+				if hadPool {
+					jd.U.Dimensions["pool"] = pool
+				}
+				logging.Infof(ctx, "pinning swarming bot: done: %q", d.Value[0])
+				didIt = true
+				break
+			}
+		}
+		if !didIt {
+			return errors.New("could not pin bot ID (bot ID not found)")
+		}
+	}
+
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(jd); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (c *cmdGetSwarm) Run(a subcommands.Application, args []string, env subcommands.Env) int {
 	ctx := c.logCfg.Set(cli.GetContext(a, c, env))
 	authOpts, err := c.validateFlags(ctx, args)
@@ -74,42 +154,7 @@ func (c *cmdGetSwarm) Run(a subcommands.Application, args []string, env subcomma
 		return 1
 	}
 
-	logging.Infof(ctx, "getting task definition")
-	_, _, swarm, err := newSwarmClient(ctx, authOpts, c.swarmingHost)
-	if err != nil {
-		errors.Log(ctx, err)
-		return 1
-	}
-
-	req, err := swarm.Task.Request(c.taskID).Do()
-	if err != nil {
-		errors.Log(ctx, err)
-		return 1
-	}
-
-	jd, err := JobDefinitionFromNewTaskRequest(&swarming.SwarmingRpcsNewTaskRequest{
-		Name:           req.Name,
-		ExpirationSecs: req.ExpirationSecs,
-		Priority:       req.Priority,
-		Properties:     req.Properties,
-		// don't wan't these or some random person/service will get notified :)
-		//PubsubTopic:    req.PubsubTopic,
-		//PubsubUserdata: req.PubsubUserdata,
-		Tags: req.Tags,
-		User: req.User,
-		//ServiceAccount: req.ServiceAccount,
-	})
-	if err != nil {
-		errors.Log(ctx, err)
-		return 1
-	}
-	jd.SwarmingHostname = c.swarmingHost
-
-	logging.Infof(ctx, "getting task definition: done")
-
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(jd); err != nil {
+	if err = GetFromSwarmingTask(ctx, authOpts, c.swarmingHost, c.taskID, c.pinMachine); err != nil {
 		errors.Log(ctx, err)
 		return 1
 	}

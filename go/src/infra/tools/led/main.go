@@ -102,8 +102,8 @@ The spec (as it is) for JobDefinition is at:
 			// commands to obtain JobDescriptions. These all begin with `get`.
 			// TODO(iannucci): `get` to scrape from any URL
 			getSwarmCmd(authDefaults),
-			// TODO(iannucci): `get-milo` to scrape from milo
 			// TODO(iannucci): `get-buildbot` to emulate/scrape from a buildbot
+			getBuildCmd(authDefaults),
 			getBuilderCmd(authDefaults),
 
 			// commands to edit JobDescriptions.
