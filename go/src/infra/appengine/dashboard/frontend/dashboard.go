@@ -43,8 +43,8 @@ func init() {
 	r.GET("/", pageBase(), dashboard)
 	http.DefaultServeMux.Handle("/", r)
 
-	r.GET("/polymer", pageBase(), polymer)
-	http.DefaultServeMux.Handle("/polymer", r)
+	r.GET("/old", pageBase(), oldDashboard)
+	http.DefaultServeMux.Handle("/old", r)
 
 	var api prpc.Server
 	dashpb.RegisterChopsServiceStatusServer(&api, &dashboardService{})
@@ -53,6 +53,11 @@ func init() {
 }
 
 func dashboard(ctx *router.Context) {
+	c, w := ctx.Context, ctx.Writer
+	templates.MustRender(c, w, "pages/home.html", templates.Args{})
+}
+
+func oldDashboard(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
 	err := r.ParseForm()
 	if err != nil {
@@ -97,9 +102,4 @@ func dashboard(ctx *router.Context) {
 		"Dates":          dates,
 		"LastDate":       dates[6],
 	})
-}
-
-func polymer(ctx *router.Context) {
-	c, w := ctx.Context, ctx.Writer
-	templates.MustRender(c, w, "pages/home.html", templates.Args{})
 }
