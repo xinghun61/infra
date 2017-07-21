@@ -102,7 +102,7 @@ func testAnalyzeFailure(ctx context.Context, f *messages.BuildStep) (messages.Re
 
 	testsWithFinditResults, err := getFinditResultsForTests(ctx, f, failedTests)
 	if err != nil {
-		return nil, err
+		logging.Errorf(ctx, "Error calling Findit, but continuing: %v", err)
 	}
 
 	if failedTests != nil {
@@ -239,7 +239,6 @@ func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failed
 	finditResults, err := client.Findit(ctx, f.Master, f.Build.BuilderName, f.Build.Number, []string{name})
 	if err != nil {
 		logging.Warningf(ctx, "ignoring findit error: %s", err)
-		return nil, nil
 	}
 	finditResultsMap := map[string]*messages.FinditResult{}
 	for _, result := range finditResults {
