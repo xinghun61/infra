@@ -14,6 +14,7 @@
         value: function() {
           return {};
         },
+        observer: '_extensionChanged',
       },
       type: {type: String, value: ''},
       _suspectedCls: {
@@ -21,6 +22,28 @@
         computed: '_computeSuspectedCls(extension)',
       },
       tree: String,
+    },
+
+    _extensionChanged: function() {
+      // De-dupe testnames. TODO: do this in the analyzer.
+      if (!(this.extension && this.extension.reason &&
+          this.extension.reason.test_names)) {
+        return;
+      }
+      let testNames = this.extension.reason.test_names;
+      this.extension.reason.test_names = Array.from(new Set(testNames));
+      let tests = this.extension.reason.tests;
+      if (!tests) {
+        return;
+      }
+      let seen = new Map();
+      this.extension.reason.tests = tests.filter((test) => {
+        if (seen.has(test.test_name)) {
+          return false;
+        }
+        seen.set(test.test_name, true);
+        return true;
+      });
     },
 
     _isChromium: function(tree) {
@@ -155,6 +178,10 @@
       return url + encodeURIComponent(query);
     },
 
+    _linkToEditForTest: function(testName) {
+      return 'test-expectations/' + encodeURIComponent(testName);
+    },
+
     _linkForCL: function(cl) {
       return 'https://crrev.com/' + cl;
     },
@@ -174,8 +201,7 @@
       // when tests is actually defined. We are though, for some reason, and it
       // looks
       // like it might be some weird dom-repeat/Polymer bug. So check that tests
-      // is
-      // ok here anyways.
+      // is ok here anyways.
       if (tests == null) {
         return '';
       }
