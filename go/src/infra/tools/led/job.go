@@ -76,12 +76,7 @@ func JobDefinitionFromNewTaskRequest(r *swarming.SwarmingRpcsNewTaskRequest) (*J
 				ret.S.KitchenArgs.LogDogFlags.AnnotationURL.Path = prefix.AsPathPrefix(path)
 
 				ret.S.SwarmingTask.Tags = trimTags(ret.S.SwarmingTask.Tags, []string{
-					// this are all captured in KitchenArgs
-					"allow_milo:", // implied by KitchenArgs.LogDogFlags.AnnotationURL
-					"log_location:",
-					"recipe_name:",
-					"recipe_repository:",
-					"recipe_revision:",
+					"luci_project:",
 				})
 
 				if ret.S.KitchenArgs.RepositoryURL != "" && ret.S.KitchenArgs.Revision != "" {
@@ -155,15 +150,15 @@ func generateLogdogStream(ctx context.Context, uid string) (prefix logdog_types.
 	return logdog_types.MakeStreamName("", "led", uid, hex.EncodeToString(buf))
 }
 
-func trimTags(tags []string, trimPrefixes []string) []string {
-	quoted := make([]string, len(trimPrefixes))
-	for i, p := range trimPrefixes {
+func trimTags(tags []string, keepPrefixes []string) []string {
+	quoted := make([]string, len(keepPrefixes))
+	for i, p := range keepPrefixes {
 		quoted[i] = regexp.QuoteMeta(p)
 	}
 	re := regexp.MustCompile("(" + strings.Join(quoted, ")|(") + ")")
 	newTags := make([]string, 0, len(tags))
-	for _, t := range newTags {
-		if !re.MatchString(t) {
+	for _, t := range tags {
+		if re.MatchString(t) {
 			newTags = append(newTags, t)
 		}
 	}

@@ -130,17 +130,6 @@ func (c *cmdGetBuilder) grabBuilderDefinition(ctx context.Context, bucket, build
 		jd.SwarmingHostname = "chromium-swarm-dev.appspot.com"
 	}
 
-	// TODO(iannucci): this is a hack too; MILO should do real project
-	// authentication. This is grabbing X from *.X.*
-	bucketChunks := strings.Split(bucket, ".")
-	if len(bucketChunks) > 1 {
-		if bucketChunks[0] != "luci" {
-			logging.Warningf(ctx, "unsupported bucket %q: not setting luci_project", bucket)
-		} else {
-			jd.S.SwarmingTask.Tags = append(jd.S.SwarmingTask.Tags,
-				"luci_project:"+bucketChunks[1])
-		}
-	}
 	return jd, nil
 }
 
