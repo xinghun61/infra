@@ -149,9 +149,11 @@
       </tr>
 
       <tbody class="collapse">
+       [if-any page_perms.EditIssue]
        <tr class="ifCollapse">
         <td><a href="#" class="toggleCollapse">More options</a></td>
        </tr>
+       [end]
 
        <tr [if-any page_perms.EditIssue][else]style="display:none;"[end] class="ifExpand"><th style="white-space:nowrap"><label for="blocked_on">Blocked on:</label></th>
         <td class="inplace" colspan="2">
