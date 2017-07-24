@@ -308,6 +308,19 @@ func main() {
 		}
 	}
 
+	// De-dupe commits and bugs, as some CLs affect multiple paths and can show
+	// up multiple times.
+	commitByURL := map[string]*commit{}
+	dedupedCommits := []*commit{}
+	for _, c := range commits {
+		_, ok := commitByURL[c.ReviewURL]
+		if !ok {
+			dedupedCommits = append(dedupedCommits, c)
+		}
+		commitByURL[c.ReviewURL] = c
+	}
+	commits = dedupedCommits
+
 	if *date == "" {
 		today := time.Now().Format("2006-01-02")
 		date = &today
