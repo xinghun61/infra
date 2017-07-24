@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<head>
+  <link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <title>Culprit</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+  <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+  <link rel="import" href="/ui/elements/findit-app.html">
+</head>
+<body>
+  <findit-app id="app" page-header="Culprit">
+    <b>Project:</b> {{project_name}}<br>
+    <b>Commit:</b> <a href="https://crrev.com/{{commit_position or revision}}" target="_blank">{{commit_position or revision}}</a><br>
+    {% if cr_notified %}
+      <b>Notified:</b> Yes<br>
+      <b>Notification time:</b> {{cr_notification_time}}<br>
+    {% else %}
+      <b>Notified:</b> No<br>
+    {% endif %}
+
+    <h1>Analyses</h1>
+    <div id="analyses">
+      <table>
+        <thead>
+          <th></th>
+          <th>Master</th>
+          <th>Builder</th>
+          <th>Step</th>
+          <th>Test</th>
+        </thead>
+        <tbody>
+        {% for analysis in analyses %}
+          <tr>
+            <td>{{ loop.index }}</td>
+            <td>{{ analysis.master_name }}</td>
+            <td>{{ analysis.builder_name }}</td>
+            <td>{{ analysis.step_name }}</td>
+            <td>
+              <a href="https://findit-for-me.appspot.com/waterfall/flake?key={{ analysis.key }}" target="_blank">
+                {{ analysis.test_name }}
+              </a>
+            </td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <br>
+    <a href="https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=Test-Findit-Wrong&components=Tools>Test>FindIt>Flakiness&summary=Wrongly blame {{commit_position or revision}}&comment=Detail is https://findit-for-me.appspot.com/waterfall/culprit?key={{key}}&cc=stgao@chromium.org,chanli@chromium.org,lijeffrey@chromium.org, robertocn@chromium.org">File a bug for this wrong result here</a>
+  </findit-app>
+  <script>
+    document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+  </script>
+</body>
