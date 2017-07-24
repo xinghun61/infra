@@ -57,7 +57,7 @@ def RunSteps(api):
       '--auth-refresh-token-json',
       '/creds/refresh_tokens/blink-w3c-test-autoroller',
       '--credentials-json',
-      '/creds/github/wpt-import.json',
+      '/creds/json/wpt-import.json',
     ]
     try:
       with api.context(cwd=blink_dir):
