@@ -8,53 +8,70 @@ import time
 import apache_beam as beam
 
 from dataflow.common import chops_beam
-from dataflow.common import aggregate_objects
-
-
-ACTION_PATCH_START = 'PATCH_START'
+from dataflow.common import objects
 
 
 class CombineEventsToAttempt(beam.CombineFn):
+  ACTION_PATCH_START = 'PATCH_START'
+
+  def __init__(self):
+    super(CombineEventsToAttempt, self).__init__()
+    self.action_affects_fields = {
+        self.ACTION_PATCH_START: (['first_start_msec', 'last_start_msec']),
+    }
+    self.min_timestamp_fields = set([
+        'first_start_msec',
+    ])
+    self.max_timestamp_fields = set([
+        'last_start_msec',
+    ])
+
+  @staticmethod
+  def choose_min(old, new):
+    if new is not None and (old is None or new < old):
+      return new
+    return old
+
   def create_accumulator(self):
-    return aggregate_objects.CQAttempt()
+    return []
 
   def add_input(self, accumulator, input_rows):
     for row in input_rows:
-      if row.get('attempt_start_usec') is None:
+      event = objects.CQEvent.from_bigquery_row(row)
+      if event.attempt_start_usec is None:
         logging.warn('recieved row with null attempt_start_usec: %s', row)
         continue
 
-      timestamp = row.get('timestamp_millis')
-      if timestamp is None:
+      if event.timestamp_millis is None:
         logging.warn('recieved raw with null timestamp: %s', row)
         continue
 
-      attempt_start_msec = row.get('attempt_start_usec') / 1000
-      assert (accumulator.attempt_start_msec is None or
-              accumulator.attempt_start_msec == attempt_start_msec)
-      accumulator.attempt_start_msec = attempt_start_msec
-      action = row.get('action')
-
-      if action == ACTION_PATCH_START:
-        accumulator.update_first_start(timestamp)
-        accumulator.update_last_start(timestamp)
-
+      accumulator.append(event)
     return accumulator
 
   def merge_accumulators(self, accumulators):
-    accumulators = list(accumulators)
-    if len(accumulators) == 0:
-      return aggregate_objects.CQAttempt()
-    if len(accumulators) == 1:
-      return accumulators[0]
-    merged = accumulators[0]
-    for a in accumulators[1:]:
-      merged.update_first_start(a.first_start_msec)
-      merged.update_last_start(a.last_start_msec)
+    merged = self.create_accumulator()
+    for a in list(accumulators):
+      merged += a
     return merged
 
-  def extract_output(self, a):
-    return a.as_bigquery_row()
+  def extract_output(self, accumulator):
+    attempt = objects.CQAttempt()
+    for event in accumulator:
+      attempt_start_msec = event.attempt_start_usec / 1000
+      assert(attempt.attempt_start_msec is None or
+             attempt.attempt_start_msec == attempt_start_msec)
+      attempt.attempt_start_msec = attempt_start_msec
+
+      affected_fields = self.action_affects_fields[event.action]
+      for field in affected_fields:
+        if field in self.min_timestamp_fields:
+          attempt.__dict__[field] = self.choose_min(attempt.__dict__.get(field),
+                                                    event.timestamp_millis)
+        if field in self.max_timestamp_fields:
+          attempt.__dict__[field] = max(attempt.__dict__.get(field),
+                                        event.timestamp_millis)
+    return attempt.as_bigquery_row()
 
 
 def main():

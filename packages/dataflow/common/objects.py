@@ -6,6 +6,9 @@
 class BigQueryObject(object):
   """A BigQueryObject holds data that will be read from/written to BigQuery."""
 
+  def __eq__(self, other):
+    return self.__dict__ == other.__dict__
+
   @staticmethod
   def get_bigquery_attributes():
     """Returns a list of attributes that exist in the BigQuery schema.
@@ -24,11 +27,24 @@ class BigQueryObject(object):
     return {attr: self.__dict__.get(attr)
             for attr in self.get_bigquery_attributes()}
 
+  @classmethod
+  def from_bigquery_row(cls, row):
+    """Creates an instance of cls from a BigQuery row.
+
+       Args:
+         row: dictionary in the form {field: value} where field is in
+         get_bigquery_attributes().
+    """
+    obj = cls()
+    for field, value in row.items():
+      obj.__dict__[field] = value
+    return obj
+
 
 class CQAttempt(BigQueryObject):
   """A CQAttempt represents a single CQ attempt.
 
-     It is created by aggregating all CQ events for a given attempt.
+     It is created by aggregating all CQEvents for a given attempt.
   """
   def __init__(self):
     self.attempt_start_msec = None
@@ -54,3 +70,22 @@ class CQAttempt(BigQueryObject):
       return
     if self.last_start_msec is None or new_timestamp > self.first_start_msec:
       self.last_start_msec = new_timestamp
+
+
+class CQEvent(BigQueryObject):
+  """A CQEvent represents event data reported to BigQuery from CQ.
+
+     CQEvents are aggregated to make CQAttempts.
+  """
+  def __init__(self):
+    self.timestamp_millis = None
+    self.action = None
+    self.attempt_start_usec = None
+
+  @staticmethod
+  def get_bigquery_attributes():
+    return [
+        'timestamp_millis',
+        'action',
+        'attempt_start_usec',
+    ]

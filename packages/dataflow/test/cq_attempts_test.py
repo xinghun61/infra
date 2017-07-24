@@ -6,89 +6,82 @@ import unittest
 
 from dataflow import cq_attempts as job
 
-from dataflow.common import aggregate_objects
+from dataflow.common import objects
 
 
 class TestCQAttemptAccumulator(unittest.TestCase):
   def setUp(self):
     self.attempt_start_usec = 1493833887566000
     self.attempt_start_msec = self.attempt_start_usec / 1000
-    self.patch_start = 1493833887688
+    self.timestamp_msec = 1493833887688
+    self.earlier_timestamp = self.timestamp_msec - 1
+    self.later_timestamp = self.timestamp_msec + 1
     self.combFn = job.CombineEventsToAttempt()
-    self.basic_accumulator = self.new_basic_accumulator()
 
-  def new_basic_accumulator(self):
-    basic_accumulator = aggregate_objects.CQAttempt()
-    basic_accumulator.attempt_start_msec = self.attempt_start_msec
-    basic_accumulator.first_start_msec = self.patch_start
-    basic_accumulator.last_start_msec = self.patch_start
-    return basic_accumulator
+  def basic_event(self, action=None, timestamp_millis=None,
+                  attempt_start_usec=None):
+    event = objects.CQEvent()
+    event.attempt_start_usec = (attempt_start_usec if attempt_start_usec else
+                                self.attempt_start_usec)
+    event.timestamp_millis = (timestamp_millis if timestamp_millis else
+                              self.timestamp_msec)
+    event.action = action if action else self.combFn.ACTION_PATCH_START
+    return event
 
-  def test_add_first_start(self):
-    accumulator = aggregate_objects.CQAttempt()
-    rows = [{
+  def test_null_attempt_start_not_included(self):
+    accumulator = self.combFn.add_input(self.combFn.create_accumulator(),
+                                        [{'attempt_start_usec': None}])
+    self.assertEqual(accumulator, [])
+
+  def test_null_timestamp_not_included(self):
+    accumulator = self.combFn.add_input(self.combFn.create_accumulator(),
+                                        [{'timestamp_millis': None}])
+    self.assertEqual(accumulator, [])
+
+  def test_add_input(self):
+    row = {
         'attempt_start_usec': self.attempt_start_usec,
-        'timestamp_millis': self.patch_start,
-        'action': job.ACTION_PATCH_START,
-    }]
-    accumulator = self.combFn.add_input(accumulator, rows)
-    self.assertEqual(accumulator.first_start_msec, self.patch_start)
-    self.assertEqual(accumulator.last_start_msec, self.patch_start)
+        'timestamp_millis': self.timestamp_msec,
+        'action': self.combFn.ACTION_PATCH_START,
+    }
+    event = objects.CQEvent.from_bigquery_row(row)
+    accumulator = self.combFn.add_input(self.combFn.create_accumulator(), [row])
+    self.assertEqual(accumulator, [event])
 
-  def test_add_null_start(self):
-    rows = [{
-        'attempt_start_usec': self.attempt_start_usec,
-        'timestamp_millis': None,
-        'action': job.ACTION_PATCH_START,
-    }]
-    self.combFn.add_input(self.basic_accumulator, rows)
-    self.assertEqual(self.basic_accumulator.first_start_msec, self.patch_start)
-    self.assertEqual(self.basic_accumulator.last_start_msec, self.patch_start)
+  def test_extract_min_timestamp_one_timestamp(self):
+    accumulator = [self.basic_event()]
+    attempt = self.combFn.extract_output(accumulator)
+    self.assertEqual(attempt['first_start_msec'], self.timestamp_msec)
 
-  def test_add_earlier_start(self):
-    earlier_patch_start = self.patch_start - 1
-    rows = [{
-        'attempt_start_usec': self.attempt_start_usec,
-        'timestamp_millis': earlier_patch_start,
-        'action': job.ACTION_PATCH_START,
-    }]
-    self.combFn.add_input(self.basic_accumulator, rows)
-    self.assertEqual(self.basic_accumulator.first_start_msec,
-                     earlier_patch_start)
-    self.assertEqual(self.basic_accumulator.last_start_msec, self.patch_start)
+  def test_extract_min_timestamp(self):
+    accumulator = [
+      self.basic_event(timestamp_millis=self.timestamp_msec),
+      self.basic_event(timestamp_millis=self.earlier_timestamp),
+      self.basic_event(timestamp_millis=self.later_timestamp),
+    ]
+    attempt = self.combFn.extract_output(accumulator)
+    self.assertEqual(attempt['first_start_msec'], self.earlier_timestamp)
 
-  def test_add_later_start(self):
-    later_patch_start = self.patch_start + 1
-    rows = [{
-        'attempt_start_usec': self.attempt_start_usec,
-        'timestamp_millis': later_patch_start,
-        'action': job.ACTION_PATCH_START,
-    }]
-    self.combFn.add_input(self.basic_accumulator, rows)
-    self.assertEqual(self.basic_accumulator.first_start_msec, self.patch_start)
-    self.assertEqual(self.basic_accumulator.last_start_msec, later_patch_start)
+  def test_extract_max_timestamp(self):
+    accumulator = [
+      self.basic_event(timestamp_millis=self.timestamp_msec),
+      self.basic_event(timestamp_millis=self.later_timestamp),
+      self.basic_event(timestamp_millis=self.earlier_timestamp),
+    ]
+    attempt = self.combFn.extract_output(accumulator)
+    self.assertEqual(attempt['last_start_msec'], self.later_timestamp)
 
-  def test_merge_null_start(self):
-    another = aggregate_objects.CQAttempt()
-    merged = self.combFn.merge_accumulators([self.basic_accumulator, another])
-    self.assertEqual(merged.first_start_msec, self.patch_start)
-    self.assertEqual(merged.last_start_msec, self.patch_start)
+  def test_extract_attempt_start(self):
+    accumulator = [self.basic_event()]
+    attempt = self.combFn.extract_output(accumulator)
+    self.assertEqual(attempt['attempt_start_msec'], self.attempt_start_msec)
 
-  def test_merge_earlier_start(self):
-    another = self.new_basic_accumulator()
-    earlier_patch_start = self.patch_start - 1
-    another.first_start_msec = earlier_patch_start
-    merged = self.combFn.merge_accumulators([self.basic_accumulator, another])
-    self.assertEqual(merged.first_start_msec, earlier_patch_start)
-    self.assertEqual(merged.last_start_msec, self.patch_start)
-
-  def test_merge_later_start(self):
-    another = self.new_basic_accumulator()
-    later_patch_start = self.patch_start + 1
-    another.last_start_msec = later_patch_start
-    merged = self.combFn.merge_accumulators([self.basic_accumulator, another])
-    self.assertEqual(merged.first_start_msec, self.patch_start)
-    self.assertEqual(merged.last_start_msec, later_patch_start)
+  def test_extract_different_attempt_start(self):
+    accumulator = [
+        self.basic_event(attempt_start_usec=self.attempt_start_usec),
+        self.basic_event(attempt_start_usec=self.attempt_start_usec+1)
+    ]
+    self.assertRaises(Exception, self.combFn.extract_output(accumulator))
 
 if __name__ == '__main__':
   unittest.main()
