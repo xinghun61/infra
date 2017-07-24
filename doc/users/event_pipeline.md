@@ -81,7 +81,27 @@ can also be helpful.
 
 # Writing a Dataflow workflow
 
-TODO
+## Recommended Reading
+
+The [beam documentation](https://beam.apache.org/documentation/) is a great
+place to get started.
+
+## Specifics for Chrome Infrastructure Workflows
+
+Workflows are in the `packages/dataflow` directory. `packages/dataflow/common`
+contains abstractions that you will likely want to use. Take a look at what is
+available there before beginning your workflow.
+
+## Development
+
+See the [dataflow package
+README](https://chromium.googlesource.com/infra/infra/+/master/packages/dataflow/)
+for more information.
+
+## Testing
+
+You should write tests for your pipeline. Tests can be run using test.py, e.g.
+`./test.py test packages/dataflow`.
 
 # Scheduling a Dataflow workflow
 
