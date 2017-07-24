@@ -21,7 +21,7 @@
        <td><select name="template_name" id="template_name" data-project-name="[projectname]">
         [for config.templates]
          [if-any config.templates.can_view]
-          <option value="[config.templates.name]" [is config.templates.name template_name]selected=selected[end]>[config.templates.name]</option>
+          <option value="[format "url"][config.templates.name][end]" [is config.templates.name template_name]selected=selected[end]>[config.templates.name]</option>
          [end]
         [end]
        </td>
