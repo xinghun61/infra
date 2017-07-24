@@ -105,7 +105,7 @@ def _main_wheel_build(args, system):
         continue
 
       util.LOGGER.info('Uploading CIPD package for: %s', package)
-      cipd.register_package(pkg_path, *package.tags)
+      system.cipd.register_package(pkg_path, *package.tags)
 
 
 def _main_run(args, system):
