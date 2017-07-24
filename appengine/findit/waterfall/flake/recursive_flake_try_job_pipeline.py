@@ -27,6 +27,8 @@ from waterfall.flake.process_flake_try_job_result_pipeline import (
     ProcessFlakeTryJobResultPipeline)
 from waterfall.flake.schedule_flake_try_job_pipeline import (
     ScheduleFlakeTryJobPipeline)
+from waterfall.flake.send_notification_for_flake_culprit_pipeline import (
+    SendNotificationForFlakeCulpritPipeline)
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
 _GIT_REPO = CachedGitilesRepository(
@@ -471,6 +473,8 @@ class NextCommitPositionPipeline(BasePipeline):
           confidence_in_culprit=confidence_score,
           try_job_status=analysis_status.COMPLETED,
           end_time=time_util.GetUTCNow())
+
+      yield SendNotificationForFlakeCulpritPipeline(urlsafe_flake_analysis_key)
       return
 
     next_revision = suspected_build_data_point.GetRevisionAtCommitPosition(

@@ -4,7 +4,6 @@
 
 from google.appengine.ext import ndb
 
-from libs import analysis_status as status
 from model.base_build_model import BaseBuildModel
 from model.base_suspected_cl import BaseSuspectedCL
 
@@ -70,20 +69,6 @@ class WfSuspectedCL(BaseSuspectedCL):
   # and if a CL caused a compile failure and another test failure,
   # the failure_type would be both.
   failure_type = ndb.IntegerProperty(indexed=True, repeated=True)
-
-  # When the code-review of this culprit was notified.
-  cr_notification_time = ndb.DateTimeProperty(indexed=True)
-
-  # The status of code-review notification: None, RUNNING, COMPLETED, ERROR.
-  cr_notification_status = ndb.IntegerProperty(indexed=True)
-
-  @property
-  def cr_notification_processed(self):
-    return self.cr_notification_status in (status.COMPLETED, status.RUNNING)
-
-  @property
-  def cr_notified(self):
-    return self.cr_notification_status == status.COMPLETED
 
   @classmethod
   def Create(cls, repo_name, revision, commit_position):  # pragma: no cover

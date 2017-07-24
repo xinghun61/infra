@@ -17,6 +17,8 @@ from waterfall.flake import lookback_algorithm
 from waterfall.flake import recursive_flake_try_job_pipeline
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     RecursiveFlakeTryJobPipeline)
+from waterfall.flake.send_notification_for_flake_culprit_pipeline import (
+    SendNotificationForFlakeCulpritPipeline)
 
 _DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6
 
@@ -154,6 +156,8 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
               culprit_urlsafe_key=culprit.key.urlsafe(),
               confidence_in_culprit=culprit_confidence_score,
               try_job_status=analysis_status.COMPLETED)
+
+          yield SendNotificationForFlakeCulpritPipeline(analysis_urlsafe_key)
       else:
         logging.error('Cannot run flake try jobs against empty blame list')
         error = {

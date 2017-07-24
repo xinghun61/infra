@@ -2,13 +2,18 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import datetime
+from datetime import datetime
 import mock
+
+from google.appengine.ext import ndb
 
 from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from libs import analysis_status
+from libs import time_util
 from model import analysis_approach_type
 from model import suspected_cl_status
+from model.base_suspected_cl import BaseSuspectedCL
 from model.suspected_cl_confidence import ConfidenceInformation
 from model.suspected_cl_confidence import SuspectedCLConfidence
 from model.wf_suspected_cl import WfSuspectedCL
@@ -59,7 +64,7 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
     failures = {'compile': []}
     top_score = 5
 
-    mocked_utcnow = datetime.datetime(2016, 10, 4, 0, 0, 0)
+    mocked_utcnow = datetime(2016, 10, 4, 0, 0, 0)
     self.MockUTCNow(mocked_utcnow)
 
     self.assertIsNone(WfSuspectedCL.Get(repo_name, revision))
@@ -577,3 +582,24 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(culprit_info['code_review_url'], 'code_review_url')
     self.assertEqual(culprit_info['review_server_host'], 'review_server_host')
     self.assertEqual(culprit_info['review_change_id'], 'review_change_id')
+
+  @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2017, 7, 17))
+  def testUpdateCulpritNotificationStatus(self, _):
+    culprit = BaseSuspectedCL.Create('repo', 'revision', 123)
+    culprit.put()
+    suspected_cl_util.UpdateCulpritNotificationStatus(culprit.key.urlsafe(),
+                                                      analysis_status.COMPLETED)
+    culprit = ndb.Key(urlsafe=culprit.key.urlsafe()).get()
+
+    self.assertEqual(culprit.cr_notification_status, analysis_status.COMPLETED)
+    self.assertEqual(datetime(2017, 7, 17), culprit.cr_notification_time)
+
+  def testUpdateCulpritNotificationStatusRunning(self):
+    culprit = BaseSuspectedCL.Create('repo', 'revision', 123)
+    culprit.put()
+
+    suspected_cl_util.UpdateCulpritNotificationStatus(culprit.key.urlsafe(),
+                                                      analysis_status.RUNNING)
+    culprit = ndb.Key(urlsafe=culprit.key.urlsafe()).get()
+
+    self.assertEqual(culprit.cr_notification_status, analysis_status.RUNNING)

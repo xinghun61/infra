@@ -10,7 +10,6 @@ from google.appengine.ext import ndb
 from gae_libs.pipeline_wrapper import BasePipeline
 from infra_api_clients.codereview import codereview_util
 from libs import analysis_status as status
-from libs import time_util
 from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import create_revert_cl_pipeline
@@ -56,25 +55,16 @@ def _ShouldSendNotification(repo_name, revision, build_num_threshold,
   return False
 
 
-@ndb.transactional
-def _UpdateNotificationStatus(repo_name, revision, new_status):
-  culprit = WfSuspectedCL.Get(repo_name, revision)
-  culprit.cr_notification_status = new_status
-  if culprit.cr_notified:
-    culprit.cr_notification_time = time_util.GetUTCNow()
-  culprit.put()
-
-
 def _SendNotificationForCulprit(repo_name, revision, commit_position,
                                 review_server_host, change_id, revert_status):
   code_review_settings = FinditConfig().Get().code_review_settings
   codereview = codereview_util.GetCodeReviewForReview(review_server_host,
                                                       code_review_settings)
+  culprit = WfSuspectedCL.Get(repo_name, revision)
+
   sent = False
   if codereview and change_id:
     # Occasionally, a commit was not uploaded for code-review.
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-
     action = 'identified'
     should_email = True
     if revert_status == create_revert_cl_pipeline.CREATED_BY_SHERIFF:
@@ -90,8 +80,9 @@ def _SendNotificationForCulprit(repo_name, revision, commit_position,
   else:
     logging.error('No code-review url for %s/%s', repo_name, revision)
 
-  _UpdateNotificationStatus(repo_name, revision, status.COMPLETED
-                            if sent else status.ERROR)
+  suspected_cl_util.UpdateCulpritNotificationStatus(culprit.key.urlsafe(),
+                                                    status.COMPLETED
+                                                    if sent else status.ERROR)
   return sent
 
 

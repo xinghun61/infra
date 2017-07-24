@@ -4,6 +4,7 @@
 
 from google.appengine.ext import ndb
 
+from libs import analysis_status
 from libs import time_util
 
 
@@ -65,6 +66,21 @@ class BaseSuspectedCL(ndb.Model):
   # The ID of the pipeline that is reverting the culprit, if any. This value
   # should be None if the culprit is not in the process of being reverted.
   revert_pipeline_id = ndb.StringProperty(indexed=False)
+
+  # When the code-review of this culprit was notified.
+  cr_notification_time = ndb.DateTimeProperty(indexed=True)
+
+  # The status of code-review notification: None, RUNNING, COMPLETED, ERROR.
+  cr_notification_status = ndb.IntegerProperty(indexed=True)
+
+  @property
+  def cr_notification_processed(self):
+    return self.cr_notification_status in (analysis_status.COMPLETED,
+                                           analysis_status.RUNNING)
+
+  @property
+  def cr_notified(self):
+    return self.cr_notification_status == analysis_status.COMPLETED
 
   @property
   def revert_cl_url(self):

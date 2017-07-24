@@ -160,3 +160,20 @@ def GetCulpritInfo(repo_name, revision):
       'review_server_host': change_log.review_server_host,
       'review_change_id': change_log.review_change_id
   }
+
+
+@ndb.transactional
+def UpdateCulpritNotificationStatus(culprit_urlsafe_key, new_status):
+  """Updates a culprit (WfSuspectedCL, FalkeCulprit)'s status.
+
+  Args:
+    culprit_urlsafe_key (str): A urlsafe key corresponding to the culprit to
+        update.
+  """
+  culprit = ndb.Key(urlsafe=culprit_urlsafe_key).get()
+  assert culprit
+
+  culprit.cr_notification_status = new_status
+  if culprit.cr_notified:
+    culprit.cr_notification_time = time_util.GetUTCNow()
+  culprit.put()

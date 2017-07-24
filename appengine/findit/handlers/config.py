@@ -214,7 +214,10 @@ def _ValidateActionSettings(settings):
           isinstance(settings.get('cr_notification_build_threshold'), int) and
           isinstance(
               settings.get('cr_notification_latency_limit_minutes'), int) and
-          isinstance(settings.get('revert_compile_culprit'), bool))
+          isinstance(settings.get('revert_compile_culprit'), bool) and
+          isinstance(
+              settings.get('cr_notification_should_notify_flake_culprit'),
+              bool))
 
 
 def _ValidateFlakeAnalyzerSwarmingRerunSettings(settings):
@@ -249,7 +252,8 @@ def _ValidateCheckFlakeSettings(settings):
       _ValidateFlakeAnalyzerTryJobRerunSettings(settings.get('try_job_rerun'))
       and isinstance(
           settings.get('minimum_confidence_score_to_run_tryjobs'), float) and
-      isinstance(settings.get('update_monorail_bug'), bool))
+      isinstance(settings.get('update_monorail_bug'), bool) and
+      isinstance(settings.get('minimum_confidence_to_update_cr'), float))
 
 
 def _ValidateCodeReviewSettings(settings):

@@ -91,6 +91,7 @@ _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS = {
 _MOCK_ACTION_SETTINGS = {
     'cr_notification_build_threshold': 2,
     'cr_notification_latency_limit_minutes': 1000,
+    'cr_notification_should_notify_flake_culprit': True,
     'revert_compile_culprit': True,
 }
 
@@ -116,7 +117,8 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
         'iterations_to_rerun': 100,
     },
     'update_monorail_bug': True,
-    'minimum_confidence_score_to_run_tryjobs': 0.6
+    'minimum_confidence_score_to_run_tryjobs': 0.6,
+    'minimum_confidence_to_update_cr': 0.5,
 }
 
 _MOCK_CODE_REVIEW_SETTINGS = {
@@ -1074,11 +1076,20 @@ class ConfigTest(testing.AppengineTestCase):
             'cr_notification_latency_limit_minutes': 1000,
             'revert_compile_culprit': 'True',  # Should be boolean.
         }))
+    self.assertFalse(
+        config._ValidateActionSettings({
+            'cr_notification_build_threshold': 2,
+            'cr_notification_latency_limit_minutes': 1000,
+            'cr_notification_should_notify_flake_culprit':
+                [],  # Should be boolean.
+            'revert_compile_culprit': True,
+        }))
     self.assertTrue(
         config._ValidateActionSettings({
             'cr_notification_build_threshold': 2,
             'cr_notification_latency_limit_minutes': 1000,
-            'revert_compile_culprit': True
+            'cr_notification_should_notify_flake_culprit': True,
+            'revert_compile_culprit': True,
         }))
 
   def testValidateFlakeAnalyzerTryJobRerunSettings(self):

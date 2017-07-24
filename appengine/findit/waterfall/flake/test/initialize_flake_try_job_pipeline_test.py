@@ -21,6 +21,8 @@ from waterfall.flake.initialize_flake_try_job_pipeline import (
     InitializeFlakeTryJobPipeline)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     RecursiveFlakeTryJobPipeline)
+from waterfall.flake.send_notification_for_flake_culprit_pipeline import (
+    SendNotificationForFlakeCulpritPipeline)
 from waterfall.test import wf_testcase
 
 _DEFAULT_CACHE_NAME = swarming_util.GetCacheName('pm', 'pb')
@@ -208,15 +210,11 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertIsNotNone(analysis.error)
 
-  @mock.patch.object(
-      initialize_flake_try_job_pipeline,
-      '_HasSufficientConfidenceToRunTryJobs')
-  @mock.patch.object(
-      confidence, 'SteppinessForCommitPosition')
-  @mock.patch.object(
-      recursive_flake_try_job_pipeline, 'UpdateCulprit')
-  @mock.patch.object(
-      MasterFlakeAnalysis, 'Update')
+  @mock.patch.object(initialize_flake_try_job_pipeline,
+                     '_HasSufficientConfidenceToRunTryJobs')
+  @mock.patch.object(confidence, 'SteppinessForCommitPosition')
+  @mock.patch.object(recursive_flake_try_job_pipeline, 'UpdateCulprit')
+  @mock.patch.object(MasterFlakeAnalysis, 'Update')
   def testInitializeFlakeTryJopPipelineSingleCommit(
       self, mocked_update_analysis, mocked_update_culprit, mocked_stepiness,
       mocked_confidence):
@@ -240,6 +238,11 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.MockPipeline(
         RecursiveFlakeTryJobPipeline, '', expected_args=[], expected_kwargs={})
+    self.MockPipeline(
+        SendNotificationForFlakeCulpritPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe()],
+        expected_kwargs={})
 
     pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
                                                  False)
@@ -277,6 +280,11 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         ],
         expected_kwargs={'rerun': False,
                          'retries': 0})
+    self.MockPipeline(
+        SendNotificationForFlakeCulpritPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe()],
+        expected_kwargs={})
 
     pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
                                                  False)

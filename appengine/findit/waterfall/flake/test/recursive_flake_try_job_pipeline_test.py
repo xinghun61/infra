@@ -26,6 +26,8 @@ from waterfall.flake.recursive_flake_try_job_pipeline import (
     NextCommitPositionPipeline)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     RecursiveFlakeTryJobPipeline)
+from waterfall.flake.send_notification_for_flake_culprit_pipeline import (
+    SendNotificationForFlakeCulpritPipeline)
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
@@ -342,6 +344,11 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         '',
         expected_args=[analysis.key.urlsafe()],
         expected_kwargs={})
+    self.MockPipeline(
+        SendNotificationForFlakeCulpritPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe()],
+        expected_kwargs={})
 
     pipeline_job = NextCommitPositionPipeline(analysis.key.urlsafe(),
                                               try_job.key.urlsafe(), 90, 100,
@@ -400,6 +407,11 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_try_job_pipeline.RecursiveFlakeTryJobPipeline,
         '',
         expected_args=[])
+    self.MockPipeline(
+        SendNotificationForFlakeCulpritPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe()],
+        expected_kwargs={})
 
     pipeline_job = NextCommitPositionPipeline(analysis.key.urlsafe(),
                                               try_job.key.urlsafe(), 98, 100,
