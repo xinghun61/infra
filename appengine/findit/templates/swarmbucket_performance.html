@@ -47,7 +47,7 @@
       $('.request-step-by-step').click(function() {
         var sbJobUrl = encodeURIComponent($(this).getAttribute('data-sb-job-url'));
         var bbJobUrl = encodeURIComponent($(this).getAttribute('data-bb-job-url'));
-        var url = '/step-by-step?try_job_a=' + sbJobUrl +'&try_job_b=' + bbJobUrl;
+        var url = '/step-by-step?swarmbucket_try_job=' + sbJobUrl +'&buildbot_try_job=' + bbJobUrl;
         window.location.assign(url)
       });
       $('#submit').click(requestData);

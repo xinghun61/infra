@@ -36,6 +36,8 @@ _MILO_BUILD_URL_PATTERN = re.compile(
     r'^https?://luci-milo\.appspot\.com/buildbot/([^/]+)/([^/]+)/(\d+)'
     '(?:/.*)?$')
 
+_MILO_BUILDINFO_ENDPOINT = ('https://luci-milo.appspot.com/'
+                            'prpc/milo.BuildInfo/Get')
 _MILO_ENDPOINT = 'https://luci-milo.appspot.com/prpc/milo.Buildbot'
 _MILO_ENDPOINT_BUILD = '%s/GetBuildbotBuildJSON' % _MILO_ENDPOINT
 _MILO_ENDPOINT_MASTER = '%s/GetCompressedMasterJSON' % _MILO_ENDPOINT
@@ -384,7 +386,38 @@ def GetStepLog(master_name,
     try:
       return json.loads(data) if data else None
     except ValueError:
-      logging.error('Failed to json load data for %s. Data is: %s.' % (
-          log_type, data))
+      logging.error('Failed to json load data for %s. Data is: %s.' % (log_type,
+                                                                       data))
 
   return data
+
+
+def ValidateBuildUrl(url):
+  return bool(
+      _MILO_MASTER_URL_PATTERN.match(url) or
+      _MILO_SWARMING_TASK_URL_PATTERN.match(url) or
+      _BUILD_URL_PATTERN.match(url))
+
+
+def GetBuildInfo(url, http_client):
+  request = None
+  triplet = ParseBuildUrl(url)
+  if triplet:
+    master, builder, build_number = triplet
+    request = {
+        'buildbot': {
+            'masterName': master,
+            'builderName': builder,
+            'buildNumber': build_number
+        }
+    }
+  else:
+    task_id = GetSwarmingTaskIdFromUrl(url)
+    request = {
+        'swarming': {
+            'host': 'chromium-swarm.appspot.com',
+            'task': task_id
+        }
+    }
+  return rpc_util.DownloadJsonData(_MILO_BUILDINFO_ENDPOINT, request,
+                                   http_client)

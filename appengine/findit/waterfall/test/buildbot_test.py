@@ -549,10 +549,8 @@ class BuildBotTest(unittest.TestCase):
                                          self.build_number, self.step_name,
                                          self.http_client))
 
-  @mock.patch.object(
-      logdog_util, 'GetStepLogLegacy', return_value='log')
-  @mock.patch.object(
-      logging, 'error')
+  @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value='log')
+  @mock.patch.object(logging, 'error')
   def testGetStepLogNotJosonLoadable(self, mocked_log, _):
     self.assertEqual('log',
                      buildbot.GetStepLog(self.master_name, self.builder_name,
@@ -569,3 +567,25 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual('3595be5002f4bc10',
                      buildbot.GetSwarmingTaskIdFromUrl(swarm_url))
     self.assertIsNone(buildbot.GetSwarmingTaskIdFromUrl(non_swarm_url))
+
+  def testValidateBuildUrl(self):
+    swarm_url = 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10'
+    non_swarm_url = ('https://luci-milo.appspot.com/buildbot/chromium.linux'
+                     '/Linux%20Builder/82087')
+    legacy_url = ('http://build.chromium.org/p/chromium/builders/Linux/builds'
+                  '/55833')
+    bad_url = 'https://badhost.com/bad/build/123'
+    self.assertTrue(buildbot.ValidateBuildUrl(swarm_url))
+    self.assertTrue(buildbot.ValidateBuildUrl(non_swarm_url))
+    self.assertTrue(buildbot.ValidateBuildUrl(legacy_url))
+    self.assertFalse(buildbot.ValidateBuildUrl(bad_url))
+
+  @mock.patch.object(rpc_util, 'DownloadJsonData')
+  def testGetBuildInfo(self, mock_fn):
+    with mock.patch.object(buildbot, 'ParseBuildUrl') as mock_parse:
+      mock_parse.return_value = ('m', 'b', 1)
+      buildbot.GetBuildInfo('fake_url', 'fake_http_client')
+      self.assertIn('buildbot', mock_fn.call_args[0][1])
+      mock_parse.return_value = None
+      buildbot.GetBuildInfo('fake_url', 'fake_http_client')
+      self.assertIn('swarming', mock_fn.call_args[0][1])
