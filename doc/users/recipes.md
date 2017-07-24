@@ -4,13 +4,11 @@ Recipes are a domain-specific language (embedded in python) for specifying
 sequences of subprocess calls in a cross-platform and testable way.
 
 * [User guide](https://chromium.googlesource.com/external/github.com/luci/recipes-py/+/master/doc/user_guide.md)
-* Recipes: [public](https://chromium.googlesource.com/chromium/tools/build.git/+/master/scripts/slave/recipes/);
-  [internal](https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave/+/master/recipes/).
-* Recipe modules:
-  [base library](https://chromium.googlesource.com/external/github.com/luci/recipes-py/+/master/recipe_modules/);
-  [depot_tools](https://chromium.googlesource.com/chromium/tools/depot_tools/+/master/recipe_modules/);
-  [public](https://chromium.googlesource.com/chromium/tools/build.git/+/master/scripts/slave/recipe_modules/);
-  [internal](https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave/+/master/recipe_modules/).
+* Recipe docs:
+  * [depot_tools](https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/master/recipes/README.recipes.md)
+  * [build](https://chromium.googlesource.com/chromium/tools/build.git/+/master/scripts/slave/README.recipes.md)
+  * [infra](https://chromium.googlesource.com/infra/infra.git/+/master/recipes/README.recipes.md)
+  * [internal](https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave.git/+/master/README.recipes.md)
 
 ## Recipe Roller
 
