@@ -120,10 +120,7 @@
               <a href="/help-som">The Help Page</a>
             </span>
           </div>
-          <div class="search-bar">
-            <iron-icon class="filter-icon" icon="search"></iron-icon><paper-input id="filterInput" value="{{_filterPattern}}"></paper-input>
-          </div>
-          <div class="notification" hidden$="[[!_isTrooperPage]]">
+         <div class="notification" hidden$="[[!_isTrooperPage]]">
             Troopers, don't forget to check <a href="https://goto.google.com/trooper-pagers" target="_blank">go/trooper-pagers</a>
             and <a href="https://goto.google.com/trooper-alerts" target="_blank">go/trooper-alerts</a> as well.
             For additional guidance, see: <a href="https://goto.google.com/trooper" target="_blank">The Trooper Playbook</a>
@@ -142,6 +139,10 @@
               <img src="/images/jparent-jump.gif" alt="Julie Jumping" title="Julie Jumping" />
             </div>
           </template>
+          <div class="search-bar">
+            <iron-icon class="filter-icon" icon="search"></iron-icon>
+            <paper-input id="filterInput" value="{{_filterPattern}}" placeholder="Filter alerts by regex"></paper-input>
+          </div>
           <template is="dom-repeat" items="[[_computeCategories(_alerts, _isTrooperPage)]]" as="cat">
             <som-alert-category
                 id="alertCategory[[cat]]"
