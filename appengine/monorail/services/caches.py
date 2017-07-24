@@ -22,10 +22,6 @@ from proto import tracker_pb2
 INVALIDATE_KIND_VALUES = ['user', 'project', 'issue', 'issue_id', 'hotlist']
 DEFAULT_MAX_SIZE = 10000
 
-# TODO(jrobbins): See if this eliminates stale cache entries, and if so, go
-# and ahead and remove the memcache code.
-DISABLE_MEMCACHE = True
-
 
 class RamCache(object):
   """An in-RAM cache with distributed invalidation."""
@@ -265,11 +261,6 @@ class AbstractTwoLevelCache(object):
 
   def _ReadFromMemcache(self, keys):
     """Read the given keys from memcache, return {key: value}, missing_keys."""
-    if DISABLE_MEMCACHE:
-      logging.info(
-          'Not reading %d keys because memcache is disabled', len(keys))
-      return {}, keys
-
     memcache_hits = {}
     cached_dict = memcache.get_multi(
         [self._KeyToStr(key) for key in keys], key_prefix=self.memcache_prefix)
@@ -295,12 +286,6 @@ class AbstractTwoLevelCache(object):
 
   def _WriteToMemcache(self, retrieved_dict):
     """Write entries for each key-value pair to memcache.  Encode PBs."""
-    if DISABLE_MEMCACHE:
-      logging.info(
-          'Not writing %d keys because memcache is disabled',
-          len(retrieved_dict))
-      return
-
     strs_to_cache = {
         self._KeyToStr(key): self._ValueToStr(value)
         for key, value in retrieved_dict.iteritems()}
