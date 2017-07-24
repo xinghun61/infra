@@ -6,15 +6,48 @@
 		{
 			"name": "attempt_start_msec",
 			"type": "FLOAT",
+			"description": "Time when the attempt starts. CQ calculates this by searching for the last 'The CQ bit checked by...' message, which corresponds to the moment when the user has clicked on the CQ checkbox",
 			"is_required": true
 		},
 		{
 			"name": "first_start_msec",
+			"description": "The time when CQ actually start processing the patch (first start message).",
 			"type": "INTEGER"
 		},
 		{
 			"name": "last_start_msec",
+			"description": "The time when last start message was posted.",
 			"type": "INTEGER"
+		},
+		{
+			"name": "first_stop_msec",
+			"description": "The time when first stop message was posted",
+			"type": "INTEGER"
+		},
+		{
+			"name": "last_stop_msec",
+			"description": "The time when CQ stopped processing the patchset (last stop message). This is when attempt ends.",
+			"type": "INTEGER"
+		},
+		{
+			"name": "committed",
+			"description": "True if the patch was committed in this attempt.",
+			"type": "BOOLEAN"
+		},
+		{
+			"name": "was_throttled",
+			"description": "True if the request was throttled due to too many CLs being committed.",
+			"type": "BOOLEAN"
+		},
+		{
+			"name": "waited_for_tree",
+			"description": "True if the request had to wait for an open tree.",
+			"type": "BOOLEAN"
+		},
+		{
+			"name": "cq_name",
+			"description": "CQ name",
+			"type": "STRING"
 		}
 	]
 }
