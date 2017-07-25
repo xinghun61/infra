@@ -79,7 +79,6 @@ _MOCK_SWARMING_SETTINGS = {
     'should_retry_server': False,  # No retry for unit testing.
     'minimum_number_of_available_bots': 5,
     'minimum_percentage_of_available_bots': 0.1,
-    'per_iteration_timeout_seconds': 60,
 }
 
 _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS = {
@@ -107,7 +106,10 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
         'dive_rate_threshold': 0.4,
         'use_nearby_neighbor': True,
         'max_iterations_to_rerun': 800,
-        'per_iteration_timeout_seconds': 60,
+        'target_timeout_seconds': 3600,
+        'timeout_per_test_seconds': 120,
+        'data_point_sample_size': 5,
+        'timeout_cushion_multiplier': 1.25,
     },
     'try_job_rerun': {
         'lower_flake_threshold': 0.02,
@@ -892,25 +894,6 @@ class ConfigTest(testing.AppengineTestCase):
             'minimum_number_of_available_bots': 5,
             'minimum_percentage_of_available_bots': 10  # Should be a float.
         }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 10,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10,
-            'server_retry_timeout_hours': 1,
-            'maximum_server_contact_retry_interval_seconds': 1,
-            'should_retry_server': False,
-            'minimum_number_of_available_bots': 5,
-            'minimum_percentage_of_available_bots': 0.1,
-            'per_iteration_timeout_seconds': 'a'  # Should be an int.
-        }))
     self.assertTrue(
         config._ValidateSwarmingSettings({
             'server_host': 'chromium-swarm.appspot.com',
@@ -928,7 +911,6 @@ class ConfigTest(testing.AppengineTestCase):
             'should_retry_server': False,
             'minimum_number_of_available_bots': 5,
             'minimum_percentage_of_available_bots': 0.1,
-            'per_iteration_timeout_seconds': 60,
         }))
 
   def testValidateDownloadBuildDataSettings(self):
@@ -1155,6 +1137,10 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 1000,
             'use_nearby_neighbor': True,
             'max_iterations_to_rerun': 800,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1166,6 +1152,10 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 1000,
             'use_nearby_neighbor': True,
             'max_iterations_to_rerun': 800,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1177,6 +1167,10 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 1000,
             'use_nearby_neighbor': True,
             'max_iterations_to_rerun': 800,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1188,6 +1182,10 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 1000,
             'use_nearby_neighbor': True,
             'max_iterations_to_rerun': 800,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1199,6 +1197,10 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 1000,
             'use_nearby_neighbor': True,
             'max_iterations_to_rerun': 800,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1210,6 +1212,10 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 'a',  # Should be an int.
             'use_nearby_neighbor': True,
             'max_iterations_to_rerun': 800,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1221,6 +1227,10 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 100,
             'use_nearby_neighbor': [],  # Should be a bool.
             'max_iterations_to_rerun': 800,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1232,6 +1242,10 @@ class ConfigTest(testing.AppengineTestCase):
             'max_build_numbers_to_look_back': 1000,
             'update_monorail_bug': 'True',  # Should be a bool.
             'max_iterations_to_rerun': 800,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1245,6 +1259,10 @@ class ConfigTest(testing.AppengineTestCase):
             'max_dive_in_a_row': 4.0,  # Should be an int.
             'dive_rate_threshold': 0.4,
             'max_iterations_to_rerun': 800,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1257,6 +1275,10 @@ class ConfigTest(testing.AppengineTestCase):
             'update_monorail_bug': True,
             'dive_rate_threshold': 40,  # Should be a float.
             'max_iterations_to_rerun': 800,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1271,6 +1293,10 @@ class ConfigTest(testing.AppengineTestCase):
             'max_dive_in_a_row': 4,
             'dive_rate_threshold': 0.4,
             'max_iterations_to_rerun': 800.0,  # Should be an int.
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1285,7 +1311,64 @@ class ConfigTest(testing.AppengineTestCase):
             'max_dive_in_a_row': 4,
             'dive_rate_threshold': 0.4,
             'max_iterations_to_rerun': 800,
-            'per_iteration_timeout_seconds': {}  # Should be an int.
+            'target_timeout_seconds': 1.0,  # Should be an int.
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
+        }))
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 100,
+            'max_build_numbers_to_look_back': 1000,
+            'use_nearby_neighbor': True,
+            'update_monorail_bug': True,
+            'max_dive_in_a_row': 4,
+            'dive_rate_threshold': 0.4,
+            'max_iterations_to_rerun': 800,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 1.0,  # Should be an int.
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
+        }))
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 100,
+            'max_build_numbers_to_look_back': 1000,
+            'use_nearby_neighbor': True,
+            'update_monorail_bug': True,
+            'max_dive_in_a_row': 4,
+            'dive_rate_threshold': 0.4,
+            'max_iterations_to_rerun': 800,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 1.0,  # Should be an int.
+            'timeout_cushion_multiplier': 1.25,
+        }))
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 100,
+            'max_build_numbers_to_look_back': 1000,
+            'use_nearby_neighbor': True,
+            'update_monorail_bug': True,
+            'max_dive_in_a_row': 4,
+            'dive_rate_threshold': 0.4,
+            'max_iterations_to_rerun': 800,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1,  # Should be a float.
         }))
     self.assertTrue(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1300,7 +1383,10 @@ class ConfigTest(testing.AppengineTestCase):
             'max_dive_in_a_row': 4,
             'dive_rate_threshold': 0.4,
             'max_iterations_to_rerun': 800,
-            'per_iteration_timeout_seconds': 60,
+            'target_timeout_seconds': 3600,
+            'timeout_per_test_seconds': 120,
+            'data_point_sample_size': 5,
+            'timeout_cushion_multiplier': 1.25,
         }))
 
   def testValidateCodeReviewSettings(self):

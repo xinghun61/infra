@@ -315,3 +315,94 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis.try_job_status = analysis_status.COMPLETED
     analysis.Update(try_job_status=analysis_status.COMPLETED)
     self.assertEqual(analysis_status.COMPLETED, analysis.try_job_status)
+
+  def testDataPointMerge(self):
+    data_point_1 = DataPoint.Create(
+        commit_position=1, pass_rate=1.0, iterations=10)
+    data_point_2 = DataPoint.Create(
+        commit_position=1, pass_rate=.5, iterations=10)
+    data_point_1.Merge(data_point_2)
+
+    expected = DataPoint.Create(
+        commit_position=1, pass_rate=0.75, iterations=20)
+    self.assertEqual(data_point_1, expected)
+
+  def testAppendOrMergeWithHit(self):
+    data_points = [
+        DataPoint.Create(
+            commit_position=1,
+            pass_rate=1.0,
+            iterations=10,
+            blame_list=["aa", "bb"])
+    ]
+    new_data_point = DataPoint.Create(
+        commit_position=1,
+        pass_rate=0.5,
+        iterations=10,
+        blame_list=["aa", "bb"])
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = data_points
+    analysis.AppendOrMergeDataPoint(new_data_point)
+
+    expected = [
+        DataPoint.Create(
+            commit_position=1,
+            pass_rate=0.75,
+            iterations=20,
+            blame_list=["aa", "bb"])
+    ]
+    self.assertEqual(analysis.data_points, expected)
+
+  def testAppendOrMergeWithMiss(self):
+    data_points = [
+        DataPoint.Create(
+            commit_position=1,
+            pass_rate=1.0,
+            iterations=10,
+            blame_list=["aa", "bb"])
+    ]
+    new_data_point = DataPoint.Create(
+        commit_position=2,
+        pass_rate=0.5,
+        iterations=10,
+        blame_list=["bb", "cc"])
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = data_points
+    analysis.AppendOrMergeDataPoint(new_data_point)
+
+    expected = [
+        DataPoint.Create(
+            commit_position=1,
+            pass_rate=1.0,
+            iterations=10,
+            blame_list=["aa", "bb"]),
+        DataPoint.Create(
+            commit_position=2,
+            pass_rate=0.5,
+            iterations=10,
+            blame_list=["bb", "cc"])
+    ]
+    self.assertEqual(analysis.data_points, expected)
+
+  def testFindMatchingDataPoint(self):
+    old_data_point = DataPoint.Create(
+        commit_position=1,
+        pass_rate=1.0,
+        iterations=10,
+        blame_list=["aa", "bb"])
+    new_data_point = DataPoint.Create(
+        commit_position=2,
+        pass_rate=0.5,
+        iterations=10,
+        blame_list=["bb", "cc"])
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [old_data_point]
+    self.assertIsNone(
+        analysis.FindMatchingDataPointWithCommitPosition(
+            new_data_point.commit_position))
+    self.assertEqual(old_data_point,
+                     analysis.FindMatchingDataPointWithCommitPosition(
+                         old_data_point.commit_position))

@@ -40,10 +40,10 @@ _BASE_COUNT_DOWN_SECONDS = 2 * 60
 # Tries to start the RecursiveFlakePipeline on peak hours at most 5 times.
 _MAX_RETRY_TIMES = 5
 
-# In order not to hog resources on the swarming server, set the timeout to a
-# non-configurable 3 hours.
-_ONE_HOUR_IN_SECONDS = 60 * 60
-_MAX_TIMEOUT_SECONDS = 3 * _ONE_HOUR_IN_SECONDS
+DEFAULT_TARGET_TIMEOUT_SECONDS = 60 * 60
+DEFAULT_TIMEOUT_PER_TEST_SECONDS = 120
+DEFAULT_DATA_POINT_SAMPLE_SIZE = 5
+DEFAULT_TIMEOUT_CUSHION_MULTIPLIER = 1.25
 
 
 def _UpdateAnalysisResults(analysis,
@@ -216,46 +216,57 @@ def _GetBestBuildNumberToRun(master_name, builder_name,
   return candidate_build_number or preferred_run_build_number
 
 
-def _CanEstimateExecutionTimeFromReferenceSwarmingTask(swarming_task):
-  return (swarming_task and not swarming_task.error and
-          swarming_task.started_time and swarming_task.completed_time and
-          swarming_task.tests_statuses and swarming_task.parameters and
-          swarming_task.parameters.get('iterations_to_rerun'))
+def _CalculateNumberOfIterations(analysis, iterations, timeout_per_test):
+  """ Calculates the number of iterations that will run.
 
+  Uses the total iterations, target timeout, and the timeout per test to
+  calculate the appropriate amount of test iterations to run.
 
-def _GetHardTimeoutSeconds(master_name, builder_name, reference_build_number,
-                           step_name, iterations_to_rerun):
-  flake_settings = waterfall_config.GetCheckFlakeSettings()
-  flake_swarming_settings = flake_settings.get('swarming_rerun', {})
-  reference_task = WfSwarmingTask.Get(master_name, builder_name,
-                                      reference_build_number, step_name)
+  Args:
+    analysis (MasterFlakeAnalysis): The analysis being run.
+    iterations (int): Total number of iterations left.
+    timeout_per_test (int): Time, in seconds, that each test will take.
 
-  if _CanEstimateExecutionTimeFromReferenceSwarmingTask(reference_task):
-    delta = reference_task.completed_time - reference_task.started_time
-    execution_time = delta.total_seconds()
-    number_of_tests = len(reference_task.tests_statuses)
-    number_of_iterations = reference_task.parameters['iterations_to_rerun']
-    time_per_test_per_iteration = (execution_time /
-                                   (number_of_iterations * number_of_tests))
-    estimated_execution_time = int(
-        (time_per_test_per_iteration * iterations_to_rerun))
-  else:
-    # Use default settings if the reference task is unavailable or malformed.
-    estimated_execution_time = flake_swarming_settings.get(
-        'per_iteration_timeout_seconds', 60) * iterations_to_rerun
-
-  # To account for variance and pending time, use a factor of 2x estimated
-  # execution time.
-  estimated_time_needed = estimated_execution_time * 2
-
-  return min(
-      max(estimated_time_needed, _ONE_HOUR_IN_SECONDS), _MAX_TIMEOUT_SECONDS)
+  Returns:
+    (int) Number of iterations to perform this loop
+  """
+  target_timeout = analysis.algorithm_parameters.get('swarming_rerun', {}).get(
+      'target_timeout_seconds', DEFAULT_TARGET_TIMEOUT_SECONDS)
+  iterations_this_loop = min(iterations, target_timeout / timeout_per_test)
+  assert iterations_this_loop > 0
+  return iterations_this_loop
 
 
 def _GetIterationsToRerun(user_specified_iterations, analysis):
   return user_specified_iterations or analysis.algorithm_parameters.get(
       'swarming_rerun', {}).get('iterations_to_rerun',
                                 _DEFAULT_ITERATIONS_TO_RERUN)
+
+
+def CalculateFlakeTaskTimeout(analysis):
+  """Estimates a timeout based on previous data points."""
+  # Check if there are no data points.
+  if not len(analysis.data_points):
+    return analysis.algorithm_parameters.get('swarming_rerun', {}).get(
+        'timeout_per_test_seconds', DEFAULT_TIMEOUT_PER_TEST_SECONDS)
+
+  sample_size = analysis.algorithm_parameters.get('swarming_rerun', {}).get(
+      'data_point_sample_size', DEFAULT_DATA_POINT_SAMPLE_SIZE)
+  # Gets list tail of DATA_POINT_SAMPLE_SIZE.
+  points = analysis.data_points[-sample_size:]
+  tasks = [
+      FlakeSwarmingTask.Get(analysis.master_name, analysis.builder_name,
+                            point.build_number, analysis.step_name,
+                            analysis.test_name) for point in points
+  ]
+  time_deltas = [task.completed_time - task.started_time for task in tasks]
+  time_seconds = [time_delta.seconds for time_delta in time_deltas]
+  total_time = sum(time_seconds)
+
+  cushion_multiplier = analysis.algorithm_parameters.get(
+      'swarming_rerun', {}).get('timeout_cushion_multiplier',
+                                DEFAULT_TIMEOUT_CUSHION_MULTIPLIER)
+  return int(cushion_multiplier * total_time / min(sample_size, len(points)))
 
 
 class RecursiveFlakePipeline(BasePipeline):
@@ -419,42 +430,57 @@ class RecursiveFlakePipeline(BasePipeline):
           start_time=time_util.GetUTCNow(), status=analysis_status.RUNNING)
 
       iterations = _GetIterationsToRerun(user_specified_iterations, analysis)
-      hard_timeout_seconds = _GetHardTimeoutSeconds(
-          self.master_name, self.builder_name, self.triggering_build_number,
-          self.step_name, iterations)
       actual_run_build_number = _GetBestBuildNumberToRun(
           self.master_name, self.builder_name, preferred_run_build_number,
           self.step_name, self.test_name, lower_bound_build_number,
           upper_bound_build_number, step_size,
           iterations) if use_nearby_neighbor else preferred_run_build_number
-
       logging.info(('%s/%s/%s/%s/%s Bots are avialable to analyze build %s with'
-                    ' %s iterations and %dsec timeout'), analysis.master_name,
+                    ' %s iterations'), analysis.master_name,
                    analysis.builder_name, analysis.build_number,
                    analysis.step_name, analysis.test_name,
-                   actual_run_build_number, iterations, hard_timeout_seconds)
+                   actual_run_build_number, iterations)
 
-      task_id = yield TriggerFlakeSwarmingTaskPipeline(
-          self.master_name,
-          self.builder_name,
-          actual_run_build_number,
-          self.step_name, [self.test_name],
-          iterations,
-          hard_timeout_seconds,
-          force=force)
-
+      target_timeout = analysis.algorithm_parameters.get(
+          'swarming_rerun', {}).get('target_timeout_seconds',
+                                    DEFAULT_TARGET_TIMEOUT_SECONDS)
+      remaining_iterations = iterations
+      # TODO (wylieb): Factor out InOrder content into its own pipeline.
+      # TODO (wylieb): Sample the pass/fail percent and decide how to continue.
       with pipeline.InOrder():
-        yield SaveLastAttemptedSwarmingTaskIdPipeline(
-            analysis_urlsafe_key, task_id, actual_run_build_number)
+        while remaining_iterations > 0:
+          # Calculate the timeout per test, and use that to set the timeout
+          # for the current iteration loops
+          timeout_per_test = CalculateFlakeTaskTimeout(analysis)
+          iterations_this_loop = _CalculateNumberOfIterations(
+              analysis, iterations, timeout_per_test)
 
-        yield ProcessFlakeSwarmingTaskResultPipeline(
-            self.master_name, self.builder_name, actual_run_build_number,
-            self.step_name, task_id, self.triggering_build_number,
-            self.test_name, analysis.version_number)
+          task_id = yield TriggerFlakeSwarmingTaskPipeline(
+              self.master_name,
+              self.builder_name,
+              actual_run_build_number,
+              self.step_name, [self.test_name],
+              iterations_this_loop,
+              target_timeout,
+              force=force)
+          yield SaveLastAttemptedSwarmingTaskIdPipeline(
+              analysis_urlsafe_key, task_id, actual_run_build_number)
+          yield ProcessFlakeSwarmingTaskResultPipeline(
+              self.master_name, self.builder_name, actual_run_build_number,
+              self.step_name, task_id, self.triggering_build_number,
+              self.test_name, analysis.version_number)
+          yield UpdateFlakeAnalysisDataPointsPipeline(analysis_urlsafe_key,
+                                                      actual_run_build_number)
 
-        yield UpdateFlakeAnalysisDataPointsPipeline(analysis_urlsafe_key,
-                                                    actual_run_build_number)
-
+          remaining_iterations -= iterations_this_loop
+          logging.info(
+              'Executed %d iterations for RecursiveFlakePipeline on '
+              'MasterFlakeAnalysis %s/%s/%s/%s/%s. Remaining iterations is '
+              'now %d/%d', iterations_this_loop, self.master_name,
+              self.builder_name, self.triggering_build_number, self.step_name,
+              self.test_name, remaining_iterations, iterations)
+        # After we have run all the iterations, and aggregated the result
+        # do the next build number.
         yield NextBuildNumberPipeline(
             analysis.key.urlsafe(),
             actual_run_build_number,

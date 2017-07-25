@@ -198,8 +198,7 @@ def _ValidateSwarmingSettings(settings):
               int) and isinstance(settings.get('should_retry_server'), bool) and
           isinstance(settings.get('minimum_number_of_available_bots'), int) and
           isinstance(
-              settings.get('minimum_percentage_of_available_bots'), float) and
-          isinstance(settings.get('per_iteration_timeout_seconds'), int))
+              settings.get('minimum_percentage_of_available_bots'), float))
 
 
 def _ValidateDownloadBuildDataSettings(settings):
@@ -232,7 +231,10 @@ def _ValidateFlakeAnalyzerSwarmingRerunSettings(settings):
           isinstance(settings.get('max_dive_in_a_row'), int) and
           isinstance(settings.get('dive_rate_threshold'), float) and
           isinstance(settings.get('max_iterations_to_rerun'), int) and
-          isinstance(settings.get('per_iteration_timeout_seconds'), int))
+          isinstance(settings.get('target_timeout_seconds'), int) and
+          isinstance(settings.get('timeout_per_test_seconds'), int) and
+          isinstance(settings.get('data_point_sample_size'), int) and
+          isinstance(settings.get('timeout_cushion_multiplier'), float))
 
 
 def _ValidateFlakeAnalyzerTryJobRerunSettings(settings):

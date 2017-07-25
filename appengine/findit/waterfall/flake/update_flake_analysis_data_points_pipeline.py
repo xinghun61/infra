@@ -111,7 +111,7 @@ class UpdateFlakeAnalysisDataPointsPipeline(BasePipeline):
         master_name, builder_name, master_build_number, step_name, test_name)
 
     data_point = _CreateDataPoint(flake_swarming_task)
-    flake_analysis.data_points.append(data_point)
+    flake_analysis.AppendOrMergeDataPoint(data_point)
 
     results = flake_swarming_task.GetFlakeSwarmingTaskData()
     flake_analysis.swarming_rerun_results.append(results)
