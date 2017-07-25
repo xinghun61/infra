@@ -22,3 +22,6 @@ infra/fastboot/linux-amd64        fastboot_version:5943271ace17
 
 # LogDog tool.
 infra/tools/luci/logdog/logdog/linux-amd64  git_revision:5cf65fdf804a9b3f3023f79d5b3cab2a88ccd09e
+
+# cloud_sql_proxy tool (https://cloud.google.com/sql/docs/mysql/sql-proxy)
+infra/tools/cloud_sql_proxy/linux-amd64  downloaded:2017_07_25

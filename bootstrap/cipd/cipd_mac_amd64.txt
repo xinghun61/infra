@@ -15,3 +15,6 @@ infra/tools/authutil/mac-amd64  git_revision:5cf65fdf804a9b3f3023f79d5b3cab2a88c
 
 # LogDog tool.
 infra/tools/luci/logdog/logdog/mac-amd64  git_revision:5cf65fdf804a9b3f3023f79d5b3cab2a88ccd09e
+
+# cloud_sql_proxy tool (https://cloud.google.com/sql/docs/mysql/sql-proxy)
+infra/tools/cloud_sql_proxy/mac-amd64  downloaded:2017_07_25

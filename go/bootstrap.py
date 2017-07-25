@@ -133,6 +133,7 @@ LAYOUT = Layout(
         'github.com/luci/luci-go/tools/cmd/...',
         'github.com/luci/luci-go/grpc/cmd/...',
         'github.com/luci/luci-go/deploytool/cmd/luci_deploy',
+        'infra/tools/cloudsqlhelper',
     ],
     go_paths=None,
     preserve_gopath=False,
