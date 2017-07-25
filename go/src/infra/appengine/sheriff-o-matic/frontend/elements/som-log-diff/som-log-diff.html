@@ -1,6 +1,8 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 
 <dom-module id="som-log-diff">
   <template>
@@ -22,6 +24,11 @@
         height: auto;
         overflow: auto;
       }
+      .collapse-button {
+        cursor: pointer;
+        background-color: #FFFF00;
+        font-size: 13px;
+      }
     </style>
     <iron-ajax
       id="fetchDiffLines"
@@ -33,7 +40,17 @@
 
     <template is="dom-repeat" items="[[_diffLines]]">
       <template is="dom-if" if="[[_isCommon(item.Delta)]]">
-        <pre class="common">  [[item.Payload]]</pre>
+        <template is="dom-if" if="[[_defaultOpen(item.Payload)]]">
+          <pre class="common">  [[item.Payload]]</pre>
+        </template>
+        <template is="dom-if" if="[[!_defaultOpen(item.Payload)]]">
+          <span class="collapse-button" on-tap="_changeStatus">
+            [[_computeButtonText(item.Payload)]]
+          </span>
+          <iron-collapse id="collapseLines" class="collapse" no-animation>
+            <pre class="common">  [[item.Payload]]</pre>
+          </iron-collapse>
+        </template>
       </template>
       <template is="dom-if" if="[[_isAdd(item.Delta)]]">
         <pre class="add">+ [[item.Payload]]</pre>

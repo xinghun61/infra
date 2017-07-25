@@ -67,12 +67,28 @@
       return delta === 0;
     },
 
-    _isAdd: function (delta) {
+    _isAdd: function(delta) {
       return delta === 2;
     },
 
     _computeURL: function(key) {
       return "/api/v1/logdiff/" + key;
+    },
+
+    _computeDiffLength: function(payload) {
+      return payload.split('\n').length;
+    },
+
+    _defaultOpen: function(payload) {
+      return this._computeDiffLength(payload) < 10;
+    },
+
+    _changeStatus: function(evt) {
+      evt.target.nextElementSibling.toggle();
+    },
+
+    _computeButtonText: function(payload) {
+      return '● Collapse/Expand (' + this._computeDiffLength(payload) + ' common lines)';
     },
   });
 })();

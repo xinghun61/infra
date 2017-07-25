@@ -52,6 +52,9 @@
        overflow-y: auto;
        padding-right: 20px;
      }
+     .logdiff {
+       cursor: pointer;
+     }
      #builders,
      #findit-results,
      #reasons,
@@ -72,7 +75,7 @@
                   [[_failureCountText(builder)]]
               </a>
               <template is="dom-if" if="[[_isChromium(tree)]]">
-                <a href$="[[_makeLogDiffUrl(builder.master, builder.name, builder.latest_failure, builder.latest_passing)]]" title="Log Diff">
+                <a class="logdiff" href$="[[_makeLogDiffUrl(builder.master, builder.name, builder.latest_failure, builder.latest_passing)]]" title="Log Diff">
                   Δ
                 </a>
               </template>
