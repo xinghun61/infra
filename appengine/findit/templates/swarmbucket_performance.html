@@ -37,7 +37,7 @@
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
 
       $('.request-rerun').click(function() {
-        var jobId = encodeURIComponent($(this).getAttribute('data-job-id'));
+        var jobId = encodeURIComponent($(this)[0].getAttribute('data-job-id'));
         var url = '/rerun-for-compare';
         var params = {'try_job': 'jobId', 'xsrf_token': '{{ xsrf_token }}'};
         $.post(url, params, function(data){
@@ -45,8 +45,8 @@
         });
       });
       $('.request-step-by-step').click(function() {
-        var sbJobUrl = encodeURIComponent($(this).getAttribute('data-sb-job-url'));
-        var bbJobUrl = encodeURIComponent($(this).getAttribute('data-bb-job-url'));
+        var sbJobUrl = encodeURIComponent($(this)[0].getAttribute('data-sb-job-url'));
+        var bbJobUrl = encodeURIComponent($(this)[0].getAttribute('data-bb-job-url'));
         var url = '/step-by-step?swarmbucket_try_job=' + sbJobUrl +'&buildbot_try_job=' + bbJobUrl;
         window.location.assign(url)
       });
