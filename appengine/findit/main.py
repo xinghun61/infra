@@ -30,6 +30,9 @@ from handlers import pipeline_errors_dashboard
 from handlers import process_failure_analysis_requests
 from handlers import process_flake_analysis_request
 from handlers import process_flake_swarming_task_request
+from handlers import rerun_for_compare
+from handlers import step_by_step_comparison
+from handlers import swarmbucket_performance
 from handlers import swarming_push
 from handlers import triage_suspected_cl
 from handlers import try_job_dashboard
@@ -75,6 +78,8 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/list-analyses', list_analyses.ListAnalyses),
     ('/pubsub/swarmingpush', swarming_push.SwarmingPush),
     ('/pubsub/tryjobpush', try_job_push.TryJobPush),
+    ('/rerun-for-compare', rerun_for_compare.RerunForCompare),
+    ('/step-by-step', step_by_step_comparison.StepByStepComparison),
     ('/waterfall/auto-revert-metrics', auto_revert_metrics.AutoRevertMetrics),
     ('/waterfall/build-failure', build_failure.BuildFailure),
     ('/waterfall/calculate-confidence-scores',
@@ -105,6 +110,8 @@ waterfall_frontend_web_pages_handler_mappings = [
     ('/waterfall/periodic-bot-update', periodic_bot_update.PeriodicBotUpdate),
     ('/waterfall/pipeline-errors-dashboard',
      pipeline_errors_dashboard.PipelineErrorsDashboard),
+    ('/waterfall/swarmbucket-performance',
+     swarmbucket_performance.SwarmbucketPerformance),
     ('/waterfall/triage-flake-analysis',
      triage_flake_analysis.TriageFlakeAnalysis),
     ('/waterfall/triage-suspected-cl', triage_suspected_cl.TriageSuspectedCl),
