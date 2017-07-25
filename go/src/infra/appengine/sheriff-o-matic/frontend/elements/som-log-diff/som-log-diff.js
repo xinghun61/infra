@@ -3,6 +3,8 @@
 
   Polymer({
     is:'som-log-diff',
+    behaviors: [LinkifyBehavior],
+
     properties: {
       tree: {
         value: 'chromium',
@@ -37,6 +39,19 @@
         type: String,
         computed: '_computeURL(key)',
       },
+      build1Url: {
+        type: String,
+        computed: '_computeBuildUrl(master, builder, buildNum1)',
+      },
+      build2Url: {
+        type: String,
+        computed: '_computeBuildUrl(master, builder, buildNum2)',
+      },
+    },
+
+    _computeBuildUrl: function(master, builder, buildNum) {
+      return "https://build.chromium.org/p/" + master+ "/builders/"
+          + builder + "/builds/" + buildNum;
     },
 
     _computeMaster: function(key) {

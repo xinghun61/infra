@@ -7,6 +7,7 @@
           u.pathname = u.pathname.replace('/p/', '/buildbot/');
           u.pathname = u.pathname.replace('/i/', '/buildbot/');
           u.pathname = u.pathname.replace('/builders/', '/');
+          u.pathname = u.pathname.replace('/builds/', '/');
         }
         u.protocol = 'https:';
         return u.toString();
