@@ -71,6 +71,7 @@
       "python",
       "-u",
       "[START_DIR]/infra/infra/dataflow/events/cq_attempts.py",
+      "--use-bootstrap",
       "--job_name",
       "cq-attempts",
       "--project",

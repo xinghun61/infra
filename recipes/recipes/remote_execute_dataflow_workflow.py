@@ -32,8 +32,9 @@ def RunSteps(api, workflow, job_name):
   workflow_path = workflow_path.join(*workflow.split('/'))
   setup_path = api.path['checkout'].join('infra', 'dataflow', 'events',
                                          'setup.py')
-  args = ['--job_name', job_name, '--project', 'chrome-infra-events',
-          '--runner', 'DataflowRunner', '--setup_file', setup_path,
+  args = ['--use-bootstrap', '--job_name', job_name,
+          '--project', 'chrome-infra-events', '--runner', 'DataflowRunner',
+          '--setup_file', setup_path,
           '--staging_location', 'gs://dataflow-chrome-infra/events/staging',
           '--temp_location', 'gs://dataflow-chrome-infra/events/temp',
           '--save_main_session']
