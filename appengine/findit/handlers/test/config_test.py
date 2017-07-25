@@ -94,6 +94,9 @@ _MOCK_ACTION_SETTINGS = {
     'cr_notification_latency_limit_minutes': 1000,
     'cr_notification_should_notify_flake_culprit': True,
     'revert_compile_culprit': True,
+    'commit_gerrit_revert': False,
+    'culprit_commit_limit_hours': 24,
+    'auto_commit_daily_threshold': 4,
 }
 
 _MOCK_CHECK_FLAKE_SETTINGS = {
@@ -1092,9 +1095,39 @@ class ConfigTest(testing.AppengineTestCase):
         config._ValidateActionSettings({
             'cr_notification_build_threshold': 2,
             'cr_notification_latency_limit_minutes': 1000,
-            'cr_notification_should_notify_flake_culprit':
-                [],  # Should be boolean.
+            'cr_notification_should_notify_flake_culprit': [
+            ],  # Should be boolean.
             'revert_compile_culprit': True,
+        }))
+    self.assertFalse(
+        config._ValidateActionSettings({
+            'cr_notification_build_threshold': 2,
+            'cr_notification_latency_limit_minutes': 1000,
+            'cr_notification_should_notify_flake_culprit': True,
+            'revert_compile_culprit': True,
+            'commit_gerrit_revert': 'False',  # Should be boolean.
+            'culprit_commit_limit_hours': 24,
+            'auto_commit_daily_threshold': 4,
+        }))
+    self.assertFalse(
+        config._ValidateActionSettings({
+            'cr_notification_build_threshold': 2,
+            'cr_notification_latency_limit_minutes': 1000,
+            'cr_notification_should_notify_flake_culprit': True,
+            'revert_compile_culprit': True,
+            'commit_gerrit_revert': False,
+            'culprit_commit_limit_hours': '24',  # Should be int.
+            'auto_commit_daily_threshold': 4,
+        }))
+    self.assertFalse(
+        config._ValidateActionSettings({
+            'cr_notification_build_threshold': 2,
+            'cr_notification_latency_limit_minutes': 1000,
+            'cr_notification_should_notify_flake_culprit': True,
+            'revert_compile_culprit': True,
+            'commit_gerrit_revert': False,
+            'culprit_commit_limit_hours': 24,
+            'auto_commit_daily_threshold': '4',  # Should be int.
         }))
     self.assertTrue(
         config._ValidateActionSettings({
@@ -1102,6 +1135,9 @@ class ConfigTest(testing.AppengineTestCase):
             'cr_notification_latency_limit_minutes': 1000,
             'cr_notification_should_notify_flake_culprit': True,
             'revert_compile_culprit': True,
+            'commit_gerrit_revert': False,
+            'culprit_commit_limit_hours': 24,
+            'auto_commit_daily_threshold': 4,
         }))
 
   def testValidateFlakeAnalyzerTryJobRerunSettings(self):

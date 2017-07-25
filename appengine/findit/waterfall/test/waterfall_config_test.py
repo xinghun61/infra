@@ -245,6 +245,9 @@ class MastersTest(wf_testcase.WaterfallTestCase):
         'cr_notification_latency_limit_minutes': 30,
         'cr_notification_should_notify_flake_culprit': True,
         'revert_compile_culprit': True,
+        'commit_gerrit_revert': True,
+        'culprit_commit_limit_hours': 24,
+        'auto_commit_daily_threshold': 4,
     }, waterfall_config.GetActionSettings())
 
   def testGetCheckFlakeSettings(self):
