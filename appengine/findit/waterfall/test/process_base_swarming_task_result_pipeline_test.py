@@ -4,7 +4,10 @@
 
 import datetime
 import json
+import logging
 import mock
+
+from google.appengine.api import taskqueue
 
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
@@ -545,6 +548,15 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         datetime.datetime(2016, 2, 10, 18, 33, 9), task.completed_time)
     self.assertEqual('abc_tests', task.canonical_step_name)
+
+  @mock.patch.object(logging, 'warning')
+  @mock.patch.object(ProcessBaseSwarmingTaskResultPipeline, 'get_callback_task',
+                     side_effect=taskqueue.TombstonedTaskError)
+  def testDelayCallbackException(self, _, mocked_logging):
+    pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.start_test()
+    pipeline.delay_callback(60, pipeline.last_params, name='name')
+    mocked_logging.assert_called()
 
   @mock.patch.object(
       swarming_util,

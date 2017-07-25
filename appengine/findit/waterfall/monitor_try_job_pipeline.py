@@ -398,12 +398,17 @@ class MonitorTryJobPipeline(BasePipeline):
 
   def delay_callback(self, countdown, callback_params, name=None):
     target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
-    task = self.get_callback_task(
-        countdown=countdown,
-        target=target,
-        params={'callback_params': json.dumps(callback_params)},
-        name=name)
-    task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+
+    try:
+      task = self.get_callback_task(
+          countdown=countdown,
+          target=target,
+          params={'callback_params': json.dumps(callback_params)},
+          name=name)
+      task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+    except taskqueue.TombstonedTaskError:
+      logging.warning(
+          'A task named %s has already been added to the task queue', name)
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def callback(self, *args, **kwargs):
@@ -511,7 +516,7 @@ class MonitorTryJobPipeline(BasePipeline):
     else:
       error_count = 0
       backoff_time = default_pipeline_wait_seconds
-      if build.status == BuildbucketBuild.STARTED and not (already_set_started):
+      if build.status == BuildbucketBuild.STARTED and not already_set_started:
         # It is possible this branch is skipped if a fast build goes from
         # 'SCHEDULED' to 'COMPLETED' between queries, so start_time may be
         # unavailable.

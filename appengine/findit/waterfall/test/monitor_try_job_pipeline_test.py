@@ -4,7 +4,10 @@
 
 from datetime import datetime
 import json
+import logging
 import mock
+
+from google.appengine.api import taskqueue
 
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
@@ -13,7 +16,6 @@ from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
-from model.wf_try_bot_cache import WfTryBotCache
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from waterfall import buildbot
@@ -1172,3 +1174,12 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                                              int(checked_out_revision)
                                              if checked_out_revision else None,
                                              synced_revision)
+
+  @mock.patch.object(logging, 'warning')
+  @mock.patch.object(MonitorTryJobPipeline, 'get_callback_task',
+                     side_effect=taskqueue.TombstonedTaskError)
+  def testDelayCallbackException(self, _, mocked_logging):
+    pipeline = MonitorTryJobPipeline()
+    pipeline.start_test()
+    pipeline.delay_callback(60, pipeline.last_params, name='name')
+    mocked_logging.assert_called()

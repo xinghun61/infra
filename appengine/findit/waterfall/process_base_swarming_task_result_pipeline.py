@@ -85,12 +85,17 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
 
   def delay_callback(self, countdown, callback_params, name=None):
     target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
-    task = self.get_callback_task(
-        countdown=countdown,
-        target=target,
-        params={'callback_params': json.dumps(callback_params)},
-        name=name)
-    task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+    try:
+      task = self.get_callback_task(
+          countdown=countdown,
+          target=target,
+          params={'callback_params': json.dumps(callback_params)},
+          name=name)
+      task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
+    except taskqueue.TombstonedTaskError:
+      assert name
+      logging.warning(
+          'A task named %s has already been added to the taskqueue', name)
 
   def finalized(self, *args, **kwargs):
     try:
