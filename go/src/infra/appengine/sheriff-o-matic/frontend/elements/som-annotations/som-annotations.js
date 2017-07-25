@@ -10,7 +10,7 @@
 
   Polymer({
     is: 'som-annotations',
-    behaviors: [AnnotationManagerBehavior, PostBehavior],
+    behaviors: [AnnotationManagerBehavior, PostBehavior, AlertTypeBehavior],
     properties: {
       // All alert annotations. Includes values from localState.
       annotations: {
@@ -190,17 +190,28 @@
       this._fileBugModel = alerts;
 
       let bugSummary = 'Bug filed from Sheriff-o-Matic';
+      let trooperBug = false;
+
       if (alerts) {
+        trooperBug = alerts.some((alert) => {
+          return this.isTrooperAlertType(alert.type);
+        });
         if (alerts.length > 1) {
           bugSummary = `${alerts[0].title} and ${alerts.length - 1} other alerts`;
         } else if (alerts.length > 0) {
           bugSummary = alerts[0].title;
         }
       }
+
+      let extras = '';
+      if (trooperBug) {
+        extras = '&template=Build%20Infrastructure';
+      }
+
       this.$.fileBugLink.href =
           'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=' +
           this._fileBugLabels.join(',') + '&summary=' + bugSummary +
-          '&comment=' + encodeURIComponent(this._commentForBug(this._fileBugModel));
+          '&comment=' + encodeURIComponent(this._commentForBug(this._fileBugModel)) + extras;
       this._filedBug = false;
       this._bugErrorMessage = '';
 
