@@ -1,3 +1,42 @@
+# Release Notes sheriff-o-matic 2017-07-25
+
+- 16 commits, 5 bugs affected since d3ab915 (2017-07-18T22:11:23Z)
+- 3 Authors:
+  - seanmccullough@chromium.org
+  - davidriley@chromium.org
+  - renjietang@google.com
+
+## Changes in this release
+
+- [[som] add link to log](https://chromium-review.googlesource.com/585406) (renjietang@google.com)
+- [[som] make collapsable](https://chromium-review.googlesource.com/582230) (renjietang@google.com)
+- [[som] Move alert filter input below bug queue, closer to alerts.](https://chromium-review.googlesource.com/583530) (seanmccullough@chromium.org)
+- [[som] de-dupe test names on the frontend.](https://chromium-review.googlesource.com/582201) (seanmccullough@chromium.org)
+- [SoM: do not show resolved alerts for non-CrOS trees](https://chromium-review.googlesource.com/580515) (davidriley@chromium.org)
+- [SoM: Split alerts retrieval into two calls.](https://chromium-review.googlesource.com/580029) (davidriley@chromium.org)
+- [[som] merge diff data and only show diff link for chromium](https://chromium-review.googlesource.com/580354) (renjietang@google.com)
+- [[som] Make test expectation editor deep-linkable to specfic tests.](https://chromium-review.googlesource.com/579794) (seanmccullough@chromium.org)
+- [[som] fix LogDIff datastore ID](https://chromium-review.googlesource.com/580292) (renjietang@google.com)
+- [[som] Fix QueuedUpdate ID field](https://chromium-review.googlesource.com/579657) (seanmccullough@chromium.org)
+- [SoM: Add filtering of shown alerts via regexp.](https://chromium-review.googlesource.com/578480) (davidriley@chromium.org)
+- [SoM: Add recently resolved section and unresolve action.](https://chromium-review.googlesource.com/576867) (davidriley@chromium.org)
+- [[som] cleanup: move milo and monorail clients to register w/Context](https://chromium-review.googlesource.com/576560) (seanmccullough@chromium.org)
+- [[som] add make target for remotely accessible devserver](https://chromium-review.googlesource.com/576858) (seanmccullough@chromium.org)
+- [[som] Manually fix RELNOTES.md](https://chromium-review.googlesource.com/576660) (seanmccullough@chromium.org)
+- [[som] Continue instead of returning on FindIt rpc errors](https://chromium-review.googlesource.com/582308) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- davidriley@chromium.org:
+  -  [https://crbug.com/693669](https://crbug.com/693669)
+  -  [https://crbug.com/725591](https://crbug.com/725591)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/603982](https://crbug.com/603982)
+  -  [https://crbug.com/712777](https://crbug.com/712777)
+  -  [https://crbug.com/721501](https://crbug.com/721501)
+
+
 # Release Notes sheriff-o-matic 2017-07-18
 
 - 8 commits, 2 bugs affected since 95d93c0 (2017-07-12T22:25:49Z)
