@@ -108,13 +108,6 @@ Available variables are defined in [build.py](build.py) in `get_package_vars`:
     * mac-386
     * windows-amd64
     * windows-386
-* `${os_ver}` defines major and minor version of the OS/Linux distribution.
-  It is useful if package depends on *.dll/*.so libraries provided by the OS.
-  Example values:
-    * ubuntu14_04
-    * mac10_9
-    * win6_1
-  Not set when cross-compiling.
 * `${python_version}` defines python version as '(major)(minor)' string,
   e.g '27'. Not set when cross-compiling.
 

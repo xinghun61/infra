@@ -1,5 +1,11 @@
-package: infra/infra_python/${platform}-${os_ver}
+package: infra/infra_python/${platform}
 description: Virtual environment + 'infra' package with infra.git python code.
+builders:
+  - infra-continuous-mac-10.9-64
+  - infra-continuous-precise-32
+  - infra-continuous-precise-64
+  - infra-continuous-win-32
+  - infra-continuous-win-64
 root: ../../
 uses_python_env: true
 go_packages:

@@ -159,6 +159,11 @@
       "-u",
       "[START_DIR]/infra/build/build.py"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "cipd - build packages"
   },
   {
@@ -167,6 +172,11 @@
       "-u",
       "[START_DIR]/infra/build/test_packages.py"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "cipd - test packages integrity"
   },
   {

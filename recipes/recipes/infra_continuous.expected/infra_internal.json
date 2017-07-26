@@ -21,7 +21,8 @@
     ],
     "env_prefixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_PACKAGE_REPO[depot_tools]",
+        "/opt/infra-system/bin"
       ]
     },
     "infra_step": true,
@@ -64,6 +65,11 @@
     "env": {
       "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
     },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "gclient runhooks"
   },
   {
@@ -74,6 +80,11 @@
       "test"
     ],
     "cwd": "[START_DIR]/infra_internal",
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "infra python tests"
   },
   {
@@ -84,6 +95,11 @@
       "go",
       "version"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "go third parties"
   },
   {
@@ -94,6 +110,11 @@
       "python",
       "[START_DIR]/infra_internal/go/test.py"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "infra go tests"
   },
   {
@@ -104,6 +125,11 @@
       "--builder",
       "infra-internal-continuous"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "cipd - build packages"
   },
   {
@@ -112,6 +138,11 @@
       "-u",
       "[START_DIR]/infra_internal/build/test_packages.py"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "cipd - test packages integrity"
   },
   {
@@ -132,6 +163,11 @@
       "git_repository:https://chrome-internal.googlesource.com/infra/infra_internal",
       "git_revision:0a18b32e3a93913e1090d1ee6b8965c6dc3116d6"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "cipd - upload packages",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",

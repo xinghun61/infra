@@ -21,7 +21,8 @@
     ],
     "env_prefixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_PACKAGE_REPO[depot_tools]",
+        "/opt/infra-system/bin"
       ]
     },
     "infra_step": true,
@@ -64,6 +65,11 @@
     "env": {
       "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
     },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "gclient runhooks"
   },
   {
@@ -74,6 +80,11 @@
       "test"
     ],
     "cwd": "[START_DIR]/infra",
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "infra python tests"
   },
   {
@@ -83,6 +94,11 @@
       "[START_DIR]/infra/glyco/tests/run_all_tests.py"
     ],
     "cwd": "[START_DIR]/infra",
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "Glyco tests"
   },
   {
@@ -93,6 +109,11 @@
       "go",
       "version"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "go third parties"
   },
   {
@@ -103,10 +124,20 @@
       "python",
       "[START_DIR]/infra/go/test.py"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "infra go tests"
   },
   {
     "cmd": [],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "cipd - not building packages",
     "~followup_annotations": [
       "@@@STEP_WARNINGS@@@"

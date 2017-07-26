@@ -21,7 +21,8 @@
     ],
     "env_prefixes": {
       "PATH": [
-        "RECIPE_PACKAGE_REPO[depot_tools]"
+        "RECIPE_PACKAGE_REPO[depot_tools]",
+        "/opt/infra-system/bin"
       ]
     },
     "infra_step": true,
@@ -64,6 +65,11 @@
     "env": {
       "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
     },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "gclient runhooks"
   },
   {
@@ -74,6 +80,11 @@
       "test"
     ],
     "cwd": "[START_DIR]/infra",
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "infra python tests"
   },
   {
@@ -83,6 +94,11 @@
       "[START_DIR]/infra/glyco/tests/run_all_tests.py"
     ],
     "cwd": "[START_DIR]/infra",
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "Glyco tests"
   },
   {
@@ -93,6 +109,11 @@
       "go",
       "version"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "go third parties"
   },
   {
@@ -103,6 +124,11 @@
       "python",
       "[START_DIR]/infra/go/test.py"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "infra go tests"
   },
   {
@@ -113,6 +139,11 @@
       "--builder",
       "infra-continuous-precise-64"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "cipd - build packages"
   },
   {
@@ -121,6 +152,11 @@
       "-u",
       "[START_DIR]/infra/build/test_packages.py"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "cipd - test packages integrity"
   },
   {
@@ -141,6 +177,11 @@
       "git_repository:https://chromium.googlesource.com/infra/infra",
       "git_revision:5e03a58dc0850e5137a8ebbce29610670c756aed"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "cipd - upload packages",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -171,6 +212,11 @@
       "GOARCH": "arm",
       "GOOS": "linux"
     },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "cipd - build packages [GOOS:linux GOARCH:arm]"
   },
   {
@@ -194,6 +240,11 @@
     "env": {
       "GOARCH": "arm",
       "GOOS": "linux"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
     },
     "name": "cipd - upload packages [GOOS:linux GOARCH:arm]",
     "~followup_annotations": [
@@ -225,6 +276,11 @@
       "GOARCH": "arm64",
       "GOOS": "linux"
     },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "cipd - build packages [GOOS:linux GOARCH:arm64]"
   },
   {
@@ -249,6 +305,11 @@
       "GOARCH": "arm64",
       "GOOS": "linux"
     },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "cipd - upload packages [GOOS:linux GOARCH:arm64]",
     "~followup_annotations": [
       "@@@STEP_LOG_END@json.output (invalid)@@@",
@@ -267,6 +328,11 @@
     "env": {
       "GOARCH": "mips64",
       "GOOS": "linux"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
     },
     "name": "cipd - build packages [GOOS:linux GOARCH:mips64]"
   },
@@ -292,6 +358,11 @@
       "GOARCH": "mips64",
       "GOOS": "linux"
     },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "cipd - upload packages [GOOS:linux GOARCH:mips64]",
     "~followup_annotations": [
       "@@@STEP_LOG_END@json.output (invalid)@@@",
@@ -309,6 +380,11 @@
       "rmcontents",
       "[START_DIR]/infra/go/bin"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "infra_step": true,
     "name": "clean go bin"
   },
@@ -321,6 +397,11 @@
       "install",
       "github.com/luci/luci-go/client/cmd/..."
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "build luci-go"
   },
   {
@@ -333,6 +414,11 @@
       "listdir",
       "[START_DIR]/infra/go/bin"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "infra_step": true,
     "name": "listing go bin",
     "stdout": "/path/to/tmp/",
@@ -355,6 +441,11 @@
     "env": {
       "DEPOT_TOOLS_GSUTIL_BIN_DIR": "[CACHE]/gsutil"
     },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "name": "upload go bin"
   },
   {
@@ -368,6 +459,11 @@
       "[START_DIR]/infra/go/bin/file 1.sha1",
       "/path/to/tmp/"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "infra_step": true,
     "name": "file 1 sha1",
     "~followup_annotations": [
@@ -385,6 +481,11 @@
       "[START_DIR]/infra/go/bin/file 2.sha1",
       "/path/to/tmp/"
     ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
     "infra_step": true,
     "name": "file 2 sha1",
     "~followup_annotations": [

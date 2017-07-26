@@ -4,6 +4,7 @@
 
 **[Recipe Modules](#Recipe-Modules)**
   * [conda](#recipe_modules-conda) &mdash; Functions to work with Miniconda python environment.
+  * [infra_system](#recipe_modules-infra_system)
   * [omahaproxy](#recipe_modules-omahaproxy)
   * [recipe_autoroller](#recipe_modules-recipe_autoroller)
   * [sync_submodules](#recipe_modules-sync_submodules)
@@ -21,6 +22,7 @@
   * [infra_continuous](#recipes-infra_continuous)
   * [infra_continuous_luci](#recipes-infra_continuous_luci) &mdash; Builds and tests infra.
   * [infra_repo_trybot](#recipes-infra_repo_trybot)
+  * [infra_system:examples/full](#recipes-infra_system_examples_full)
   * [isolate_go_perf](#recipes-isolate_go_perf)
   * [lkgr_finder](#recipes-lkgr_finder)
   * [luci_gae](#recipes-luci_gae)
@@ -65,6 +67,19 @@ Args:
 Returns:
   Instance of CondaEnv, that also optionally acts as context manager that
   deletes the environment on exit.
+### *recipe_modules* / [infra\_system](/recipes/recipe_modules/infra_system)
+
+[DEPS](/recipes/recipe_modules/infra_system/__init__.py#9): [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform]
+
+#### **class [InfraSystemApi](/recipes/recipe_modules/infra_system/api.py#10)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+
+API for interacting with a provisioned infrastructure system.
+
+&emsp; **@property**<br>&mdash; **def [sys\_bin\_path](/recipes/recipe_modules/infra_system/api.py#17)(self):**
+
+&emsp; **@contextlib.contextmanager**<br>&mdash; **def [system\_env](/recipes/recipe_modules/infra_system/api.py#23)(self):**
+
+Yields a context modified to operate on system paths.
 ### *recipe_modules* / [omahaproxy](/recipes/recipe_modules/omahaproxy)
 
 [DEPS](/recipes/recipe_modules/omahaproxy/__init__.py#1): [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/url][recipe_engine/recipe_modules/url]
@@ -203,13 +218,15 @@ environment. Linux and OSX only.
 &mdash; **def [RunSteps](/recipes/recipes/goma_hello_world.py#43)(api):**
 ### *recipes* / [infra\_continuous](/recipes/recipes/infra_continuous.py)
 
-[DEPS](/recipes/recipes/infra_continuous.py#7): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/infra_continuous.py#7): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [infra\_system](#recipe_modules-infra_system), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/infra_continuous.py#121)(api, mastername, buildername, buildnumber):**
+&mdash; **def [RunSteps](/recipes/recipes/infra_continuous.py#122)(api, mastername, buildername, buildnumber):**
 
-&mdash; **def [build\_cipd\_packages](/recipes/recipes/infra_continuous.py#37)(api, repo, rev, mastername, buildername, buildnumber, goos, goarch):**
+&mdash; **def [build\_cipd\_packages](/recipes/recipes/infra_continuous.py#38)(api, repo, rev, mastername, buildername, buildnumber, goos, goarch):**
 
-&mdash; **def [build\_luci](/recipes/recipes/infra_continuous.py#91)(api):**
+&mdash; **def [build\_luci](/recipes/recipes/infra_continuous.py#92)(api):**
+
+&mdash; **def [build\_main](/recipes/recipes/infra_continuous.py#156)(api, mastername, buildername, buildnumber, project_name, repo_name, rev):**
 ### *recipes* / [infra\_continuous\_luci](/recipes/recipes/infra_continuous_luci.py)
 
 [DEPS](/recipes/recipes/infra_continuous_luci.py#12): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -222,9 +239,14 @@ staging and prod environments.
 &mdash; **def [RunSteps](/recipes/recipes/infra_continuous_luci.py#23)(api):**
 ### *recipes* / [infra\_repo\_trybot](/recipes/recipes/infra_repo_trybot.py)
 
-[DEPS](/recipes/recipes/infra_repo_trybot.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/infra_repo_trybot.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [infra\_system](#recipe_modules-infra_system), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/infra_repo_trybot.py#19)(api):**
+&mdash; **def [RunSteps](/recipes/recipes/infra_repo_trybot.py#20)(api):**
+### *recipes* / [infra\_system:examples/full](/recipes/recipe_modules/infra_system/examples/full.py)
+
+[DEPS](/recipes/recipe_modules/infra_system/examples/full.py#5): [infra\_system](#recipe_modules-infra_system), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
+&mdash; **def [RunSteps](/recipes/recipe_modules/infra_system/examples/full.py#13)(api):**
 ### *recipes* / [isolate\_go\_perf](/recipes/recipes/isolate_go_perf.py)
 
 [DEPS](/recipes/recipes/isolate_go_perf.py#5): [build/perf\_dashboard][build/recipe_modules/perf_dashboard], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]

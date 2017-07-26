@@ -6,6 +6,7 @@ DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
+  'infra_system',
   'recipe_engine/context',
   'recipe_engine/path',
   'recipe_engine/platform',
@@ -78,13 +79,19 @@ def RunSteps(api):
     # Do slow *.cipd packaging tests only when touching build/* or DEPS. This
     # will build all registered packages (without uploading them), and run
     # package tests from build/tests/.
+    #
+    # When we run these tests, prefix the system binary path to PATH so that
+    # all Python invocations will use the system Python. This will ensure that
+    # packages are built and tested against the version of Python that they
+    # will run on,
     if any(f.startswith('build/') for f in files) or is_deps_roll:
-      api.python(
-          'cipd - build packages',
-          api.path['checkout'].join('build', 'build.py'))
-      api.python(
-          'cipd - test packages integrity',
-          api.path['checkout'].join('build', 'test_packages.py'))
+      with api.infra_system.system_env():
+        api.python(
+            'cipd - build packages',
+            api.path['checkout'].join('build', 'build.py'))
+        api.python(
+            'cipd - test packages integrity',
+            api.path['checkout'].join('build', 'test_packages.py'))
     else:
       api.step('skipping slow cipd packaging tests', cmd=None)
 

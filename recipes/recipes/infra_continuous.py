@@ -10,6 +10,7 @@ DEPS = [
   'depot_tools/depot_tools',
   'depot_tools/gclient',
   'depot_tools/infra_paths',
+  'infra_system',
   'recipe_engine/context',
   'recipe_engine/file',
   'recipe_engine/json',
@@ -129,14 +130,31 @@ def RunSteps(api, mastername, buildername, buildnumber):
     raise ValueError(
         'This recipe is not intended for builder %s. ' % buildername)
 
+  # Prefix the system binary path to PATH so that all Python invocations will
+  # use the system Python. This will ensure that packages built will be built
+  # aginst the system Python's paths.
+  #
+  # This is needed by the "infra_python" CIPD package, which incorporates the
+  # checkout's VirtualEnv into its packages. This, in turn, results in the CIPD
+  # package containing a reference to the Python that was used to create it. In
+  # order to control for this, we ensure that the Python is a system Python,
+  # which resides at a fixed path.
   api.gclient.set_config(project_name)
-  bot_update_step = api.bot_update.ensure_checkout()
-  api.gclient.runhooks()
+  with api.infra_system.system_env():
+    bot_update_step = api.bot_update.ensure_checkout()
+    api.gclient.runhooks()
 
-  # Whatever is checked out by bot_update. It is usually equal to
-  # api.properties['revision'] except when the build was triggered manually
-  # ('revision' property is missing in that case).
-  rev = bot_update_step.presentation.properties['got_revision']
+    # Whatever is checked out by bot_update. It is usually equal to
+    # api.properties['revision'] except when the build was triggered manually
+    # ('revision' property is missing in that case).
+    rev = bot_update_step.presentation.properties['got_revision']
+
+    build_main(api, mastername, buildername, buildnumber, project_name,
+               repo_name, rev)
+
+
+def build_main(api, mastername, buildername, buildnumber, project_name,
+               repo_name, rev):
 
   with api.step.defer_results():
     with api.context(cwd=api.path['checkout']):

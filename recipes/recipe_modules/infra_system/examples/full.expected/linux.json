@@ -1,0 +1,18 @@
+[
+  {
+    "cmd": [
+      "echo"
+    ],
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
+    "name": "dump env"
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]

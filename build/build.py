@@ -584,38 +584,15 @@ def get_target_package_vars():
   }
 
 
-def get_linux_distribution():
-  """Returns (dist, version): the probed Linux distribution and version.
-
-  The standard "platform.linux_distribution()" has some detection shortcomings
-  and is generally unfavorable, see: http://bugs.python.org/issue1322
+def get_linux_host_arch():
+  """Returns: The Linux host architecture, or None if it could not be resolved.
   """
-  # On modern Python versions, "platform.linux_distribution" will detect Ubuntu
-  # as Debian due to a preference for "/etc/debian_version" during the probe.
-  # Override this to prefer Ubuntu.
-  if os.path.exists('/etc/lsb-release'):
-    lsb = {}
-    with open('/etc/lsb-release') as fd:
-      for line in fd:
-        line = line.strip()
-        if line.startswith('#'):
-          continue
-        parts = line.split('=', 1)
-        lsb[parts[0]] = (parts[1] if len(parts) == 2 else '')
-    dist, vers = lsb.get('DISTRIB_ID'), lsb.get('DISTRIB_RELEASE')
-    if dist and vers:
-      return dist, vers
-
-  # platform.linux_distribution() is ('Ubuntu', '14.04', ...).
-  return platform.linux_distribution()[:2]
-
-
-def get_linux_host_arch(dist):
-  """Returns: The Linux host architecture."""
-  if dist in ('ubuntu', 'debian'):
+  try:
     # Query "dpkg" to identify the userspace architecture.
     return subprocess.check_output(['dpkg', '--print-architecture']).strip()
-  return platform.machine()
+  except OSError:
+    # This Linux distribution doesn't use "dpkg".
+    return None
 
 
 def get_host_package_vars():
@@ -643,20 +620,8 @@ def get_host_package_vars():
     raise ValueError('Unknown OS: %s' % sys.platform)
 
   sys_arch = None
-  if sys.platform == 'darwin':
-    # platform.mac_ver()[0] is '10.9.5'.
-    dist = platform.mac_ver()[0].split('.')
-    os_ver = 'mac%s_%s' % (dist[0], dist[1])
-  elif sys.platform == 'linux2':
-    dist, vers = get_linux_distribution()
-    os_ver = '%s%s' % (dist.lower(), vers.replace('.', '_'))
-    sys_arch = get_linux_host_arch(dist.lower())
-  elif IS_WINDOWS:
-    # platform.version() is '6.1.7601'.
-    dist = platform.version().split('.')
-    os_ver = 'win%s_%s' % (dist[0], dist[1])
-  else:
-    raise ValueError('Unknown OS: %s' % sys.platform)
+  if sys.platform == 'linux2':
+    sys_arch = get_linux_host_arch()
 
   # If we didn't override our system architecture, identify it using "platform".
   sys_arch = sys_arch or platform.machine()
@@ -685,8 +650,6 @@ def get_host_package_vars():
   return {
     # e.g. '.exe' or ''.
     'exe_suffix': EXE_SUFFIX,
-    # e.g. 'ubuntu14_04' or 'mac10_9' or 'win6_1'.
-    'os_ver': os_ver,
     # e.g. 'linux-amd64'
     'platform': '%s-%s' % (platform_variant, platform_arch),
     # e.g. '27' (dots are not allowed in package names).
@@ -908,7 +871,6 @@ def run(
   host_vars = get_host_package_vars()
   tags.append('build_host_hostname:' + socket.gethostname().split('.')[0])
   tags.append('build_host_platform:' + host_vars['platform'])
-  tags.append('build_host_os_ver:' + host_vars['os_ver'])
 
   all_packages = enumerate_packages(py_venv, package_def_dir, package_def_files)
   packages_to_build = [p for p in all_packages if p.should_build(builder,
@@ -987,6 +949,12 @@ def run(
       if build:
         info = build_pkg(cipd_exe, pkg_def, out_file, package_vars)
       if upload:
+        if pkg_def.uses_python_env and not builder:
+          print ('Not uploading %s, since it uses a system Python enviornment '
+                 'and that enviornment is only valid on builders.' % (
+                   pkg_def.name,))
+          continue
+
         info = upload_pkg(
             cipd_exe,
             out_file,
