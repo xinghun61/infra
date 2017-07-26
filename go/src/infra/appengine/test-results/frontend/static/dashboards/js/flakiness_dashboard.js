@@ -70,7 +70,6 @@ function generatePage(historyInstance)
     if (historyInstance.crossDashboardState.useTestData)
         return;
 
-    document.body.innerHTML = '<div id="loading-ui">LOADING...</div>';
     resourceLoader.showErrors();
 
     var currentBuilders = _currentBuilders();
