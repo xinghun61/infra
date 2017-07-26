@@ -41,7 +41,6 @@ def ScheduleFlakeSwarmingTask(master_name, builder_name, build_number,
       builder_name,
       build_number,
       step_name,
-      test_name,
       HttpClientAppengine(),
       'step_metadata')
 
