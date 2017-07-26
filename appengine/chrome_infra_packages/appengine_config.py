@@ -6,15 +6,8 @@
 
 components_auth_UI_APP_NAME = 'CIPD'
 
-import os
-
-APP_DIR = os.path.dirname(os.path.abspath(__file__))
-
-# AppEngine supplies its own "google" domain. Add our VirtualEnv's "google"
-# domain to the list of permissible "google" package paths.
-import google
-google.__path__.append(os.path.join(
-    APP_DIR, 'components', 'third_party', 'protobuf'))
+from components import utils
+utils.fix_protobuf_package()
 
 # Assert that "google.protobuf" imports.
 import google.protobuf
