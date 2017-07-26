@@ -50,3 +50,7 @@ def EnableRemoteApi(app_id='findit-for-me'):  # pragma: no cover
       secure=True,
       save_cookies=True)
   setattr(EnableRemoteApi, app_id, True)
+
+def EnableFinditRemoteApi():  # pragma: no cover
+  script_util.SetUpSystemPaths()
+  EnableRemoteApi(app_id='findit-for-me')
