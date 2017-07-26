@@ -68,10 +68,8 @@
   },
   {
     "cmd": [
-      "python",
-      "-u",
-      "[START_DIR]/infra/infra/dataflow/events/cq_attempts.py",
-      "--use-bootstrap",
+      "[START_DIR]/infra/ENV/bin/python",
+      "[START_DIR]/infra/packages/dataflow/cq_attempts.py",
       "--job_name",
       "cq-attempts",
       "--project",
@@ -79,7 +77,7 @@
       "--runner",
       "DataflowRunner",
       "--setup_file",
-      "[START_DIR]/infra/infra/dataflow/events/setup.py",
+      "[START_DIR]/infra/packages/dataflow/setup.py",
       "--staging_location",
       "gs://dataflow-chrome-infra/events/staging",
       "--temp_location",

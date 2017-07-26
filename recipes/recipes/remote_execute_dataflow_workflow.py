@@ -30,19 +30,20 @@ def RunSteps(api, workflow, job_name):
   api.gclient.runhooks()
   workflow_path = api.path['checkout']
   workflow_path = workflow_path.join(*workflow.split('/'))
-  setup_path = api.path['checkout'].join('infra', 'dataflow', 'events',
-                                         'setup.py')
-  args = ['--use-bootstrap', '--job_name', job_name,
-          '--project', 'chrome-infra-events', '--runner', 'DataflowRunner',
-          '--setup_file', setup_path,
-          '--staging_location', 'gs://dataflow-chrome-infra/events/staging',
-          '--temp_location', 'gs://dataflow-chrome-infra/events/temp',
-          '--save_main_session']
+  setup_path = api.path['checkout'].join('packages', 'dataflow', 'setup.py')
+  python_path = api.path['checkout'].join('ENV', 'bin', 'python')
   env = {'GOOGLE_APPLICATION_CREDENTIALS':
          api.service_account.get_json_path('dataflow-launcher')}
   with api.context(env=env):
-    api.python('Remote execute', workflow_path, args)
+    api.step('Remote execute', [python_path, workflow_path, '--job_name',
+                                job_name, '--project', 'chrome-infra-events',
+                                '--runner', 'DataflowRunner', '--setup_file',
+                                setup_path, '--staging_location',
+                                'gs://dataflow-chrome-infra/events/staging',
+                                '--temp_location',
+                                'gs://dataflow-chrome-infra/events/temp',
+                                '--save_main_session'])
 
 def GenTests(api):
   yield api.test('basic') + api.properties(
-      workflow='infra/dataflow/events/cq_attempts.py', job_name='cq-attempts')
+      workflow='packages/dataflow/cq_attempts.py', job_name='cq-attempts')
