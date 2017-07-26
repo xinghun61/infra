@@ -51,22 +51,24 @@ NONTRIVIAL_ROLL_FOOTER = 'Recipe-Nontrivial-Roll'
 MANUAL_CHANGE_FOOTER = 'Recipe-Manual-Change'
 
 
-def _get_recipes_path(api, recipes_cfg_path):
+def _get_recipe_dep(api, recipes_cfg_path, project):
+  """Extracts url and revision of |project| from given recipes.cfg."""
   current_cfg = api.json.read(
     'read recipes.cfg',
     recipes_cfg_path, step_test_data=lambda: api.json.test_api.output({}))
-  return current_cfg.json.output.get('recipes_path', '')
+  dep = current_cfg.json.output.get('deps', {}).get(project, {})
+  return dep.get('url'), dep.get('revision')
 
 
 def _checkout_project(
-    api, workdir, project, project_config, patch, revision=None):
+    api, workdir, project, url, patch, revision=None):
   api.file.ensure_directory('%s checkout' % project, workdir)
 
   gclient_config = api.gclient.make_config()
   gclient_config.got_revision_reverse_mapping['got_revision'] = project
   s = gclient_config.solutions.add()
   s.name = project
-  s.url = project_config['repo_url']
+  s.url = url
   if revision:
     s.revision = revision
 
@@ -80,6 +82,7 @@ def RunSteps(
   workdir_base = api.path['cache'].join('recipe_roll_tryjob')
   upstream_workdir = workdir_base.join(upstream_project)
   downstream_workdir = workdir_base.join(downstream_project)
+  engine_workdir = workdir_base.join('recipe_engine')
 
   api.luci_config.set_config('basic')
   if service_account:
@@ -91,25 +94,40 @@ def RunSteps(
 
   upstream_checkout_step = _checkout_project(
       api, upstream_workdir, upstream_project,
-      project_data[upstream_project], patch=False)
+      project_data[upstream_project]['repo_url'], patch=False)
   downstream_checkout_step = _checkout_project(
       api, downstream_workdir, downstream_project,
-      project_data[downstream_project], patch=False)
+      project_data[downstream_project]['repo_url'], patch=False)
 
   upstream_checkout = upstream_workdir.join(
       upstream_checkout_step.json.output['root'])
   downstream_checkout = downstream_workdir.join(
       downstream_checkout_step.json.output['root'])
 
-  downstream_recipes_path = _get_recipes_path(
-      api, downstream_checkout.join('infra', 'config', 'recipes.cfg'))
-  downstream_recipes_py = downstream_checkout.join(
-      downstream_recipes_path, 'recipes.py')
+  # Use recipe engine version matching the upstream one.
+  # This most closely simulates rolling the upstream change.
+  if upstream_project == 'recipe_engine':
+    engine_checkout = upstream_checkout
+  else:
+    engine_url, engine_revision = _get_recipe_dep(
+        api, upstream_checkout.join('infra', 'config', 'recipes.cfg'),
+        'recipe_engine')
+
+    engine_checkout_step = _checkout_project(
+        api, engine_workdir, 'recipe_engine',
+        engine_url, revision=engine_revision, patch=False)
+    engine_checkout = engine_workdir.join(
+        engine_checkout_step.json.output['root'])
+
+  downstream_recipes_cfg = downstream_checkout.join(
+      'infra', 'config', 'recipes.cfg')
+  recipes_py = engine_checkout.join('recipes.py')
 
   try:
     orig_downstream_test = api.python('test (without patch)',
-        downstream_recipes_py,
-        ['-O', '%s=%s' % (upstream_project, upstream_checkout),
+        recipes_py,
+        ['--package', downstream_recipes_cfg,
+         '-O', '%s=%s' % (upstream_project, upstream_checkout),
          'test', 'run', '--json', api.json.output()],
         step_test_data=lambda: api.json.test_api.output({}))
   except api.step.StepFailure as ex:
@@ -117,8 +135,9 @@ def RunSteps(
 
   try:
     orig_downstream_train = api.python('train (without patch)',
-        downstream_recipes_py,
-        ['-O', '%s=%s' % (upstream_project, upstream_checkout),
+        recipes_py,
+        ['--package', downstream_recipes_cfg,
+         '-O', '%s=%s' % (upstream_project, upstream_checkout),
          'test', 'train', '--json', api.json.output()],
         step_test_data=lambda: api.json.test_api.output({}))
   except api.step.StepFailure as ex:
@@ -128,13 +147,31 @@ def RunSteps(
       'manifest'][upstream_project]['revision']
   _checkout_project(
        api, upstream_workdir, upstream_project,
-       project_data[upstream_project], patch=True,
+       project_data[upstream_project]['repo_url'], patch=True,
        revision=upstream_revision)
+
+  downstream_revision = downstream_checkout_step.json.output[
+      'manifest'][downstream_project]['revision']
+  _checkout_project(
+       api, downstream_workdir, downstream_project,
+       project_data[downstream_project]['repo_url'], patch=False,
+       revision=downstream_revision)
+
+  # Since we patched upstream repo (potentially including recipes.cfg),
+  # make sure to keep our recipe engine checkout in sync.
+  if upstream_project != 'recipe_engine':
+    engine_url, engine_revision = _get_recipe_dep(
+        api, upstream_checkout.join('infra', 'config', 'recipes.cfg'),
+        'recipe_engine')
+    _checkout_project(
+        api, engine_workdir, 'recipe_engine',
+        engine_url, revision=engine_revision, patch=False)
 
   try:
     patched_downstream_test = api.python('test (with patch)',
-        downstream_recipes_py,
-        ['-O', '%s=%s' % (upstream_project, upstream_checkout),
+        recipes_py,
+        ['--package', downstream_recipes_cfg,
+         '-O', '%s=%s' % (upstream_project, upstream_checkout),
          'test', 'run', '--json', api.json.output()],
         step_test_data=lambda: api.json.test_api.output({}))
   except api.step.StepFailure as ex:
@@ -142,8 +179,9 @@ def RunSteps(
 
   try:
     patched_downstream_train = api.python('train (with patch)',
-        downstream_recipes_py,
-        ['-O', '%s=%s' % (upstream_project, upstream_checkout),
+        recipes_py,
+        ['--package', downstream_recipes_cfg,
+         '-O', '%s=%s' % (upstream_project, upstream_checkout),
          'test', 'train', '--json', api.json.output()],
         step_test_data=lambda: api.json.test_api.output({}))
   except api.step.StepFailure as ex:
@@ -154,8 +192,9 @@ def RunSteps(
 
   try:
     test_diff = api.python('diff (test)',
-        downstream_recipes_py,
-        ['test', 'diff',
+        recipes_py,
+        ['--package', downstream_recipes_cfg,
+         'test', 'diff',
          '--baseline', api.json.input(orig_downstream_test.json.output),
          '--actual', api.json.input(patched_downstream_test.json.output)])
   except api.step.StepFailure as ex:
@@ -182,8 +221,9 @@ def RunSteps(
 
   try:
     train_diff = api.python('diff (train)',
-        downstream_recipes_py,
-        ['test', 'diff',
+        recipes_py,
+        ['--package', downstream_recipes_cfg,
+         'test', 'diff',
          '--baseline', api.json.input(orig_downstream_train.json.output),
          '--actual', api.json.input(patched_downstream_train.json.output)])
   except api.step.StepFailure as ex:
@@ -312,4 +352,20 @@ def GenTests(api):
     api.override_step_data(
         'parse description', api.json.output(
             {'Recipe-Manual-Change': ['depot_tools']}))
+  )
+
+  yield (
+    api.test('diff_train_fail_ack_engine_checkout') +
+    api.properties.tryserver(
+        upstream_project='depot_tools', downstream_project='build') +
+    api.luci_config.get_projects(('depot_tools', 'build')) +
+    api.step_data('test (with patch)', retcode=1) +
+    api.step_data('diff (test)', retcode=1) +
+    api.step_data('diff (train)', retcode=1) +
+    api.override_step_data(
+        'git_cl description', stdout=api.raw_io.output(
+            'Recipe-Manual-Change: build')) +
+    api.override_step_data(
+        'parse description', api.json.output(
+            {'Recipe-Manual-Change': ['build']}))
   )

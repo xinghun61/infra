@@ -157,21 +157,9 @@
     "cmd": [
       "python",
       "-u",
-      "\nimport shutil\nimport sys\nshutil.copy(sys.argv[1], sys.argv[2])\n",
+      "[CACHE]/recipe_roll_tryjob/recipe_engine/recipe_engine/recipes.py",
+      "--package",
       "[CACHE]/recipe_roll_tryjob/depot_tools/depot_tools/infra/config/recipes.cfg",
-      "/path/to/tmp/json"
-    ],
-    "name": "read recipes.cfg",
-    "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@{}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "[CACHE]/recipe_roll_tryjob/depot_tools/depot_tools/recipes.py",
       "-O",
       "recipe_engine=[CACHE]/recipe_roll_tryjob/recipe_engine/recipe_engine",
       "test",
@@ -189,7 +177,9 @@
     "cmd": [
       "python",
       "-u",
-      "[CACHE]/recipe_roll_tryjob/depot_tools/depot_tools/recipes.py",
+      "[CACHE]/recipe_roll_tryjob/recipe_engine/recipe_engine/recipes.py",
+      "--package",
+      "[CACHE]/recipe_roll_tryjob/depot_tools/depot_tools/infra/config/recipes.cfg",
       "-O",
       "recipe_engine=[CACHE]/recipe_roll_tryjob/recipe_engine/recipe_engine",
       "test",
@@ -277,7 +267,79 @@
     "cmd": [
       "python",
       "-u",
-      "[CACHE]/recipe_roll_tryjob/depot_tools/depot_tools/recipes.py",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/recipe_roll_tryjob/depot_tools"
+    ],
+    "infra_step": true,
+    "name": "depot_tools checkout (2)"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
+      "--spec-path",
+      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'depot_tools', 'url': 'https://repo.repo/depot_tools'}]",
+      "--patch_root",
+      "depot_tools",
+      "--revision_mapping_file",
+      "{\"got_revision\": \"depot_tools\"}",
+      "--git-cache-dir",
+      "[CACHE]/git",
+      "--cleanup-dir",
+      "[CLEANUP]/bot_update",
+      "--output_json",
+      "/path/to/tmp/json",
+      "--revision",
+      "depot_tools@59bbfb4465019d8ed83bfe88fef566922953452a"
+    ],
+    "cwd": "[CACHE]/recipe_roll_tryjob/depot_tools",
+    "env_prefixes": {
+      "PATH": [
+        "RECIPE_PACKAGE_REPO[depot_tools]"
+      ]
+    },
+    "infra_step": true,
+    "name": "bot_update (without patch) (3)",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Some step text@@@",
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"depot_tools\": \"59bbfb4465019d8ed83bfe88fef566922953452a\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"depot_tools\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/depot_tools.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"59bbfb4465019d8ed83bfe88fef566922953452a\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"depot_tools\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"properties\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision\": \"59bbfb4465019d8ed83bfe88fef566922953452a\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision_cp\": \"refs/heads/master@{#91780}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"root\": \"depot_tools\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"step_text\": \"Some step text\"@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision@\"59bbfb4465019d8ed83bfe88fef566922953452a\"@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision_cp@\"refs/heads/master@{#91780}\"@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[CACHE]/recipe_roll_tryjob/recipe_engine/recipe_engine/recipes.py",
+      "--package",
+      "[CACHE]/recipe_roll_tryjob/depot_tools/depot_tools/infra/config/recipes.cfg",
       "-O",
       "recipe_engine=[CACHE]/recipe_roll_tryjob/recipe_engine/recipe_engine",
       "test",
@@ -295,7 +357,9 @@
     "cmd": [
       "python",
       "-u",
-      "[CACHE]/recipe_roll_tryjob/depot_tools/depot_tools/recipes.py",
+      "[CACHE]/recipe_roll_tryjob/recipe_engine/recipe_engine/recipes.py",
+      "--package",
+      "[CACHE]/recipe_roll_tryjob/depot_tools/depot_tools/infra/config/recipes.cfg",
       "-O",
       "recipe_engine=[CACHE]/recipe_roll_tryjob/recipe_engine/recipe_engine",
       "test",
