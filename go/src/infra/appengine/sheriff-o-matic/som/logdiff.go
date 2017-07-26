@@ -80,12 +80,12 @@ func LogDiffJSONHandler(ctx *router.Context) {
 		return
 	}
 	if len(diffs) <= 0 {
-		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("Can't find specified logdiff"))
+		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("Can't find specified logdiff"))
 		return
 	}
 
 	if !diffs[0].Complete {
-		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("Diff file in progress"))
+		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("Diff file in progress"))
 		return
 	}
 	data := diffs[0].Diffs

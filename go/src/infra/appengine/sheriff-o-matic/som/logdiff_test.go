@@ -104,7 +104,7 @@ func TestLogDiffJSONHandler(t *testing.T) {
 			Params:  makeParams("master", "chromium.test", "builder", "test", "buildNum1", "15038", "buildNum2", "15036"),
 		}
 		LogDiffJSONHandler(ctx)
-		So(w.Code, ShouldEqual, http.StatusInternalServerError)
+		So(w.Code, ShouldEqual, http.StatusNotFound)
 	})
 
 	Convey("bad request with bad diff data", t, func() {
@@ -262,7 +262,7 @@ func TestLogDiffJSONHandler(t *testing.T) {
 			Params:  makeParams("master", "chromium.test", "builder", "test", "buildNum1", "15038", "buildNum2", "15037"),
 		}
 		LogDiffJSONHandler(ctx)
-		So(w.Code, ShouldEqual, http.StatusInternalServerError)
+		So(w.Code, ShouldEqual, http.StatusNotFound)
 	})
 }
 
