@@ -22,10 +22,6 @@ indexes:
   - name: Date
     direction: desc
 
-- kind: LogDiff
-  properties:
-  - name: Builder
-
 - kind: RevisionSummaryJSON
   ancestor: yes
   properties:
