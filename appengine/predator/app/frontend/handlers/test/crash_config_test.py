@@ -21,7 +21,6 @@ _MOCK_FRACAS_CONFIG = {
         'canary': ['win', 'mac', 'linux'],
         'supported_channel': ['supported_platform'],
     },
-    'platform_rename': {'linux': 'unix'},
     'signature_blacklist_markers': ['Blacklist marker'],
     'top_n': 7
 }
@@ -94,20 +93,16 @@ class CrashConfigTest(TestCase):
     config = {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name'
     }
-    # Return False if config dict has not "platform_rename".
-    self.assertFalse(crash_config._ValidateChromeCrashConfig(config))
 
     # Return False if config doesn't have "signature_blacklist_markers".
     config = {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
-        'platform_rename': {}
     }
     self.assertFalse(crash_config._ValidateChromeCrashConfig(config))
 
     # Return False if entries of "signature_blacklist_markers" are not strs.
     config = {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
-        'platform_rename': {},
         'signature_blacklist_markers': [None]
     }
     self.assertFalse(crash_config._ValidateChromeCrashConfig(config))
@@ -116,7 +111,6 @@ class CrashConfigTest(TestCase):
     # "supported_platform_list_by_channel".
     config = {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
-        'platform_rename': {},
         'signature_blacklist_markers': []
     }
     self.assertFalse(crash_config._ValidateChromeCrashConfig(config))
@@ -125,7 +119,6 @@ class CrashConfigTest(TestCase):
     # formatted.
     config = {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
-        'platform_rename': {},
         'signature_blacklist_markers': [],
         'supported_platform_list_by_channel': {None: None}
     }
@@ -135,7 +128,6 @@ class CrashConfigTest(TestCase):
     # formatted.
     config = {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
-        'platform_rename': {},
         'signature_blacklist_markers': [],
         'supported_platform_list_by_channel': {'canary': None}
     }
@@ -144,7 +136,6 @@ class CrashConfigTest(TestCase):
     # Return False if config doesn't have "top_n".
     config = {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
-        'platform_rename': {},
         'signature_blacklist_markers': [],
         'supported_platform_list_by_channel': {}
     }

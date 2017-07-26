@@ -21,9 +21,6 @@ class PredatorTest(AppengineTestCase):
     super(PredatorTest, self).setUp()
     self.predator = self.GetMockPredatorApp(client_id=CrashClient.FRACAS)
 
-  def testPlatformRename(self):
-    self.assertEqual(self.predator.RenamePlatform('linux'), 'unix')
-
   def testCheckPolicyNoneClientConfig(self):
     unsupported_client = self.GetMockPredatorApp(client_id='unconfiged')
     crash_data = unsupported_client.GetCrashData(

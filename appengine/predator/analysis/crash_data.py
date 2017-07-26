@@ -8,6 +8,8 @@ from collections import namedtuple
 from analysis.chromecrash_parser import ChromeCrashParser
 from analysis.stacktrace import Stacktrace
 
+PLATFORM_TO_NORMALIZED_PLATFORM = {'linux': 'unix'}
+
 
 class CrashData(object):
   """An abstract class representing crash data sent by clients.
@@ -52,7 +54,7 @@ class CrashData(object):
     """
     self._crashed_version = crash_data['chrome_version']
     self._signature = crash_data['signature']
-    self._platform = crash_data['platform']
+    self._platform = self.NormalizePlatform(crash_data['platform'])
     self._stacktrace_str = crash_data['stack_trace'] or ''
 
   @property
@@ -73,7 +75,7 @@ class CrashData(object):
 
   @platform.setter
   def platform(self, platform):
-    self._platform = platform
+    self._platform = self.NormalizePlatform(platform)
 
   @property
   def stacktrace(self):
@@ -94,3 +96,7 @@ class CrashData(object):
   @property
   def identifiers(self):
     raise NotImplementedError()
+
+  def NormalizePlatform(self, platform):
+    """Normalizes platform name."""
+    return PLATFORM_TO_NORMALIZED_PLATFORM.get(platform, platform)

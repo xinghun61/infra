@@ -117,12 +117,6 @@ class PredatorApp(object):
     """
     return self._config.GetClientConfig(self.client_id)
 
-  # TODO(http://crbug.com/644476): rename to CanonicalizePlatform or
-  # something like that.
-  def RenamePlatform(self, platform):
-    """Remap the platform to a different one, based on the config."""
-    return self.client_config.get('platform_rename', {}).get(platform, platform)
-
   # TODO(http://crbug.com/644476): rename this to something like
   # _NewAnalysis, since it only does the "allocation" and needs to/will
   # be followed up with _InitializeAnalysis anyways.
@@ -199,9 +193,6 @@ class PredatorApp(object):
       logging.info('The analysis of %s is not supported, task will not be '
                    'scheduled.', str(crash_data.identifiers))
       return False
-
-    # Rename platform if configured.
-    crash_data.platform = self.RenamePlatform(crash_data.platform)
 
     model = self.GetAnalysis(crash_data.identifiers)
     if model and not model.failed:

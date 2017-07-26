@@ -33,3 +33,12 @@ class CrashDataTest(AnalysisTestCase):
 
     crash_data.platform = 'new platform'
     self.assertEqual(crash_data.platform, 'new platform')
+
+  def testNormalizePlatform(self):
+    """Tests that crash data normalize platform name."""
+    raw_crash_data = self.GetDummyChromeCrashData()
+    crash_data = CrashData(raw_crash_data)
+    crash_data.platform = 'linux'
+    self.assertEqual(crash_data.platform, 'unix')
+
+

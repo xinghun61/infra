@@ -51,9 +51,6 @@ def _ValidateChromeCrashConfig(chrome_crash_config):
   {
     'analysis_result_pubsub_topic': (
         'projects/google.com:findit-for-me/topics/result-for-cracas'),
-    'platform_rename': {
-      'linux': 'unix'
-    },
     'signature_blacklist_markers': ['black sig1', 'black sig2'],
     'supported_platform_list_by_channel': {
       'canary': [
@@ -72,10 +69,6 @@ def _ValidateChromeCrashConfig(chrome_crash_config):
   analysis_result_pubsub_topic = chrome_crash_config.get(
       'analysis_result_pubsub_topic')
   if not isinstance(analysis_result_pubsub_topic, basestring):
-    return False
-
-  platform_rename = chrome_crash_config.get('platform_rename')
-  if not isinstance(platform_rename, dict):
     return False
 
   signature_blacklist_markers = chrome_crash_config.get(
