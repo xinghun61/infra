@@ -27,6 +27,11 @@ DUMMY_CHANGELOG = ChangeLog.FromDict({
             'new_path': 'a.cc',
             'old_path': None,
         },
+        {
+            'change_type': 'rename',
+            'old_path': 'old_name.cc',
+            'new_path': 'new_name.cc',
+        },
     ],
     'commit_url':
         'https://repo.test/+/1',

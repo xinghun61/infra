@@ -29,27 +29,18 @@ class TouchCrashedFileMetaFeature(MetaFeature):
   ``TouchCrashedFileFeature``.
   """
 
-  def __init__(self, features):
+  def __init__(self, features, include_renamed_paths=False):
     """
     Args:
-      get_repository (callable): a function from DEP urls to ``Repository``
-        objects, so we can get changelogs and blame for each dep. Notably,
-        to keep the code here generic, we make no assumptions about
-        which subclass of ``Repository`` this function returns. Thus,
-        it is up to the caller to decide what class to return and handle
-        any other arguments that class may require (e.g., an http client
-        for ``GitilesRepository``).
-        This factory is needed because the ``MinDistanceFeature`` in this meta
-        feature needs to get blame for files touched by suspect.
-      max_line_distance (int): An upper bound on the min_distance to
-        consider. This argument is optional and defaults to
-        ``DEFAULT_MAX_LINE_DISTANCE``.
-      max_frame_index (int): An upper bound on the minimum frame index
-        to consider. This argument is optional and defaults to
-        ``DEFAULT_MAX_FRAME_INDEX``.
+      features (list of ``Feature``): List of features relating to a touched
+        file from the crash stacktrace, for example ``MinDistanceFeature``,
+        ``TopFrameIndexFeature``.
+      include_renamed_paths (boolean): Whether to also check for matches against
+        the old file path when a file has been renamed.
     """
     super(TouchCrashedFileMetaFeature, self).__init__({
         feature.name: feature for feature in features})
+    self._include_renamed_paths = include_renamed_paths
 
   def CrashedGroupFactory(self, frame):
     """Factory function to create ``CrashedFile``."""
@@ -64,7 +55,11 @@ class TouchCrashedFileMetaFeature(MetaFeature):
     Returns:
       Boolean indicating whether it is a match or not.
     """
-    return crash_util.IsSameFilePath(crashed_file.value, touched_file.new_path)
+    paths = [touched_file.new_path]
+    if self._include_renamed_paths:
+      paths.append(touched_file.old_path)
+    return any(crash_util.IsSameFilePath(crashed_file.value, path)
+               for path in paths)
 
   @property
   def name(self):

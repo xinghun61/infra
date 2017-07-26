@@ -78,3 +78,27 @@ class TouchCrashedFileMetaFeatureTest(AnalysisTestCase):
       feature_values = self._feature(report)(self._GetMockSuspect())
 
       self.assertEqual(1.0, feature_values['MinDistance'].value)
+
+  def testIncludeRenamedPathsFlag(self):
+    """Tests the ``include_renamed_paths`` flag."""
+    feature_with_flag = TouchCrashedFileMetaFeature(
+        [TouchCrashedFileFeature()],
+        include_renamed_paths=True)
+    feature_without_flag = TouchCrashedFileMetaFeature(
+        [TouchCrashedFileFeature()],
+        include_renamed_paths=False)
+
+    deps={'src/': Dependency('src/', 'https://repo', '6')}
+    # Stack frame in old version of file before it was renamed:
+    stackframe = CallStack(0, [StackFrame(0, 'src/', 'func', 'old_name.cc',
+                                          'old_name.cc', [4], 'https://repo')])
+    report = CrashReport('rev', 'sig', 'win',
+                         Stacktrace([stackframe], stackframe),
+                         ('rev0', 'rev9'), deps, None)
+
+    feature_values = feature_with_flag(report)(self._GetMockSuspect())
+    self.assertEqual(1.0, feature_values['TouchCrashedFile'].value)
+
+    feature_values = feature_without_flag(report)(self._GetMockSuspect())
+    self.assertEqual(0, feature_values['TouchCrashedFile'].value)
+

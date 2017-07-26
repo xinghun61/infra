@@ -54,7 +54,8 @@ class PredatorForUMASamplingProfiler(PredatorApp):
     meta_feature = WrapperMetaFeature(
         [TouchCrashedFileMetaFeature([min_distance_feature,
                                       top_frame_index_feature,
-                                      touch_crashed_file_feature]),
+                                      touch_crashed_file_feature],
+                                     include_renamed_paths=True),
          TouchCrashedDirectoryFeature(),
          TouchCrashedComponentFeature(self._component_classifier),
          NumberOfTouchedFilesFeature()])
