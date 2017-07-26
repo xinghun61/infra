@@ -59,5 +59,12 @@ crdx('setFeedbackButtonLink', 'https://goto.google.com/som-bug');
 
   ga('create', '{{.AnalyticsID}}', 'auto');
   ga('send', 'pageview');
+
+  // Track client-side navigations as individual page views.
+  window.addEventListener('location-changed', function() {
+    ga('set', 'page', window.location.pathname);
+    ga('send', 'pageview');
+  });
+
 {{end}}
 </script>
