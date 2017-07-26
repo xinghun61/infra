@@ -392,25 +392,30 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
   def testUpdateFirstFailureOnTestLevelThenUpdateStepLevel(self):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 223
+    build_number = 224
     step_name = 'abc_test'
     failed_step = {
-        'current_failure': 223,
+        'current_failure': 224,
         'first_failure': 221,
         'tests': {
             'Unittest2.Subtest1': {
-                'current_failure': 223,
+                'current_failure': 224,
                 'first_failure': 223,
                 'last_pass': 223,
                 'base_test_name': 'Unittest2.Subtest1'
             },
             'Unittest3.Subtest2': {
-                'current_failure': 223,
+                'current_failure': 224,
                 'first_failure': 223,
                 'base_test_name': 'Unittest3.Subtest2'
             }
         }
     }
+
+    step = WfStep.Create(master_name, builder_name, 223, step_name)
+    step.isolated = True
+    step.log_data = 'log'
+    step.put()
 
     for n in xrange(222, 220, -1):
       # Mock retrieving data from swarming server for a single step.
@@ -448,17 +453,17 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
         HttpClientAppengine())
 
     expected_failed_step = {
-        'current_failure': 223,
+        'current_failure': 224,
         'first_failure': 221,
         'tests': {
             'Unittest2.Subtest1': {
-                'current_failure': 223,
+                'current_failure': 224,
                 'first_failure': 222,
                 'last_pass': 221,
                 'base_test_name': 'Unittest2.Subtest1'
             },
             'Unittest3.Subtest2': {
-                'current_failure': 223,
+                'current_failure': 224,
                 'first_failure': 221,
                 'base_test_name': 'Unittest3.Subtest2'
             }

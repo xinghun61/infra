@@ -4,6 +4,7 @@
 
 import base64
 import json
+import logging
 
 from common import constants
 from common.waterfall import failure_type
@@ -345,8 +346,17 @@ class DetectFirstFailurePipeline(BasePipeline):
         raise pipeline.Retry(
             'Failed to get swarming test results for a previous build.')
 
-      failed_test_log = ({} if step.log_data == 'flaky' else
-                         json.loads(step.log_data))
+      if step.log_data == 'flaky':
+        failed_test_log = {}
+      else:
+        try:
+          failed_test_log = json.loads(step.log_data)
+        except ValueError:
+          logging.error(
+              'log_data %s of step %s/%s/%d/%s is not json loadable.' % (
+                  step.log_data, master_name, builder_name, build_number,
+                  step_name))
+          continue
       test_checking_list = unfinished_tests[:]
 
       for test_name in test_checking_list:
