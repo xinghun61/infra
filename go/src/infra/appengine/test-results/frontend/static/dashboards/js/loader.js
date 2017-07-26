@@ -36,10 +36,10 @@ var loader = loader || {};
 var TEST_RESULTS_PROTOCOL = (location.protocol == 'https:') ? 'https:' : 'http:';
 var TEST_RESULTS_SERVER = TEST_RESULTS_PROTOCOL + '//test-results.appspot.com/';
 
-function pathToBuilderResultsFile(builder) {
+function pathToResultsFile(testType, builder) {
     return TEST_RESULTS_SERVER + 'testfile?builder=' + builder.builderName +
            '&master=' + builder.masterName +
-           '&testtype=' + g_history.crossDashboardState.testType + '&name=';
+           '&testtype=' + testType + '&name=';
 }
 
 loader.request = function(url, success, error, opt_isBinaryData)
@@ -92,7 +92,13 @@ loader.Loader._flattenTrie = function(trie, prefix)
 loader.Loader.prototype = {
     load: function()
     {
-        this._builders = builders.getBuilders(this._history.crossDashboardState.testType);
+        this._testType = this._history.crossDashboardState.testType;
+        this._builders = builders.getBuilders(this._testType);
+        // TODO(sergiyb): Remove this when all layout tests are using swarming (crbug.com/524758).
+        if (this._testType == "webkit_layout_tests")
+          this._extraBuilders = builders.getBuilders("webkit_tests");
+        if (this._testType == "webkit_tests")
+          this._extraBuilders = builders.getBuilders("webkit_layout_tests");
         this._loadResultsFiles();
     },
     showErrors: function()
@@ -107,12 +113,18 @@ loader.Loader.prototype = {
     },
     _loadResultsFiles: function()
     {
-        if (this._builders && this._builders.length)
-            this._builders.forEach(this._loadResultsFileForBuilder.bind(this));
-        else
+        if (this._builders && this._builders.length) {
+            this._builders.forEach(this._loadResultsFile.bind(this, this._testType));
+            // TODO(sergiyb): Remove this when all layout tests are using swarming (crbug.com/524758).
+            if (this._testType == "webkit_layout_tests")
+              this._extraBuilders.forEach(this._loadResultsFile.bind(this, "webkit_tests"));
+            if (this._testType == "webkit_tests")
+              this._extraBuilders.forEach(this._loadResultsFile.bind(this, "webkit_layout_tests"));
+        } else {
             this._completeLoading();
+        }
     },
-    _loadResultsFileForBuilder: function(builder)
+    _loadResultsFile: function(testType, builder)
     {
         var resultsFilename;
         // FIXME: times_ms.json should store the actual buildnumber and
@@ -124,7 +136,7 @@ loader.Loader.prototype = {
         else
             resultsFilename = 'results-small.json';
 
-        var resultsFileLocation = pathToBuilderResultsFile(builder) + resultsFilename;
+        var resultsFileLocation = pathToResultsFile(testType, builder) + resultsFilename;
         loader.request(resultsFileLocation,
                 partial(function(loader, builder, xhr) {
                     loader._handleResultsFileLoaded(builder, xhr.responseText);
@@ -197,6 +209,14 @@ loader.Loader.prototype = {
                 this._builders.splice(c, 1);
         }
 
+        // TODO(sergiyb): Remove this when all layout tests are using swarming (crbug.com/524758).
+        if (this._testType == "webkit_layout_tests" || this._testType == "webkit_tests") {
+            for (var c = this._extraBuilders.length - 1; c >= 0; --c) {
+                if (this._extraBuilders[c].key() == builder.key())
+                    this._extraBuilders.splice(c, 1);
+            }
+        }
+
         // Proceed as if the resource had loaded.
         this._handleResourceLoad();
     },
@@ -212,6 +232,14 @@ loader.Loader.prototype = {
             var builderKey = this._builders[c].key();
             if (!g_resultsByBuilder[builderKey] && this._builderKeysThatFailedToLoad.indexOf(builderKey) < 0)
                 return false;
+        }
+        // TODO(sergiyb): Remove this when all layout tests are using swarming (crbug.com/524758).
+        if (this._testType == "webkit_layout_tests" || this._testType == "webkit_tests") {
+            for (var c = 0; c < this._extraBuilders.length; c++) {
+                var builderKey = this._extraBuilders[c].key();
+                if (!g_resultsByBuilder[builderKey] && this._builderKeysThatFailedToLoad.indexOf(builderKey) < 0)
+                    return false;
+            }
         }
         return true;
     },
