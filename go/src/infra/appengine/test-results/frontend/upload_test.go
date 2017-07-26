@@ -39,16 +39,12 @@ func (db AlwaysInWhitelistAuthDB) IsInWhitelist(c context.Context, ip net.IP, wh
 	return true, nil
 }
 
-func createTestUploadRequest(serverURL string, master string) *http.Request {
+func createTestUploadRequest(serverURL string, master string, data []byte) *http.Request {
 	var buf bytes.Buffer
 	multi := multipart.NewWriter(&buf)
-	// Form files.
-	f, err := os.Open(filepath.Join("testdata", "full_results_0.json"))
-	So(err, ShouldBeNil)
-	defer f.Close()
 	multiFile, err := multi.CreateFormFile("file", "full_results.json")
 	So(err, ShouldBeNil)
-	_, err = io.Copy(multiFile, f)
+	_, err = io.Copy(multiFile, bytes.NewReader(data))
 	So(err, ShouldBeNil)
 
 	// Form fieldatastore.
@@ -107,9 +103,16 @@ func TestUploadAndGetHandlers(t *testing.T) {
 	}
 
 	Convey("Upload and Get handlers", t, func() {
+		// Read test file data.
+		frFile, err := os.Open(filepath.Join("testdata", "full_results_0.json"))
+		So(err, ShouldBeNil)
+		defer frFile.Close()
+		frData, err := ioutil.ReadAll(frFile)
+		So(err, ShouldBeNil)
+
 		Convey("upload full_results.json", func() {
 			Convey("with whitelisted master", func() {
-				req := createTestUploadRequest(srv.URL, "chromium.chromiumos")
+				req := createTestUploadRequest(srv.URL, "chromium.chromiumos", frData)
 				resp, err := client.Do(req)
 				So(err, ShouldBeNil)
 				defer resp.Body.Close()
@@ -191,7 +194,19 @@ func TestUploadAndGetHandlers(t *testing.T) {
 			})
 
 			Convey("with non-whitelisted master", func() {
-				req := createTestUploadRequest(srv.URL, "non.whitelisted.master")
+				req := createTestUploadRequest(srv.URL, "non.whitelisted.master", frData)
+				resp, err := client.Do(req)
+				So(err, ShouldBeNil)
+				defer resp.Body.Close()
+				So(resp.StatusCode, ShouldEqual, http.StatusBadRequest)
+			})
+
+			// Regression test: timestamp 1500791325552 was reported by one of the
+			// test launchers and that broke our #plx pipelines.
+			Convey("with invalid timestamp value", func() {
+				frData := bytes.Replace(
+					frData, []byte("1406123456.0"), []byte("1500791325552.0"), 1)
+				req := createTestUploadRequest(srv.URL, "chromium.chromiumos", frData)
 				resp, err := client.Do(req)
 				So(err, ShouldBeNil)
 				defer resp.Body.Close()

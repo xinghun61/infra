@@ -345,6 +345,14 @@ func updateFullResults(c context.Context, data io.Reader) error {
 		return statusError{err, http.StatusBadRequest}
 	}
 
+	// Validate timestamp for the results: it should be within a day from now.
+	maxTimestamp := float64(time.Now().Add(24 * time.Hour).Unix())
+	if f.SecondsEpoch <= 0 || f.SecondsEpoch >= maxTimestamp {
+		err := errors.New("Invalid value for seconds_since_epoch")
+		logging.WithError(err).Errorf(c, "updateFullResults: validate input")
+		return statusError{err, http.StatusBadRequest}
+	}
+
 	logging.Debugf(c, "Processing full_results.json for master %s, builder %s, "+
 		"build %d, test type %s", p.Master, f.Builder, f.BuildNumber, p.TestType)
 
