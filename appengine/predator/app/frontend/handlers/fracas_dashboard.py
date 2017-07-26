@@ -6,6 +6,7 @@ from datetime import time
 from datetime import timedelta
 import json
 
+from analysis.type_enums import CrashClient
 from common.model.fracas_crash_analysis import FracasCrashAnalysis
 from frontend.handlers.dashboard import DashBoard
 from libs import time_util
@@ -19,4 +20,4 @@ class FracasDashBoard(DashBoard):
 
   @property
   def client(self):
-    return 'fracas'
+    return CrashClient.FRACAS

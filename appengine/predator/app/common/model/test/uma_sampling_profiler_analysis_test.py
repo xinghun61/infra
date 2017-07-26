@@ -140,6 +140,22 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
     }
     self.assertDictEqual(params_dict, expected_params)
 
+  def testChannel(self):
+    """Tests that the ``channel`` property is generated correctly."""
+    analysis = UMASamplingProfilerAnalysis()
+    analysis.chrome_releases = [
+        {'version': '54.0.2834.0', 'channel': 'canary'},
+        {'version': '54.0.2835.0', 'channel': 'canary'}
+    ]
+    self.assertEqual(analysis.channel, 'canary')
+
+    analysis.chrome_releases = [
+        {'version': '54.0.2834.0', 'channel': 'canary'},
+        {'version': '54.0.2835.0', 'channel': 'dev'}
+    ]
+    self.assertEqual(analysis.channel, 'canary/dev')
+
+
   def testCustomizedData(self):
     """Tests that ``customized_data`` returns the correct fields."""
     analysis = self._GetDummyUMASamplingProfilerAnalysis()

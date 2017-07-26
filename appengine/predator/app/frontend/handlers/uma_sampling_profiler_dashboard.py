@@ -3,16 +3,17 @@
 # found in the LICENSE file.
 
 from analysis.type_enums import CrashClient
-from common.model.cracas_crash_analysis import CracasCrashAnalysis
+from common.model.uma_sampling_profiler_analysis import (
+    UMASamplingProfilerAnalysis)
 from frontend.handlers.dashboard import DashBoard
 
 
-class CracasDashBoard(DashBoard):
+class UMASamplingProfilerDashboard(DashBoard):
 
   @property
   def crash_analysis_cls(self):
-    return CracasCrashAnalysis
+    return UMASamplingProfilerAnalysis
 
   @property
   def client(self):
-    return CrashClient.CRACAS
+    return CrashClient.UMA_SAMPLING_PROFILER

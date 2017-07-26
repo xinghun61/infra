@@ -116,6 +116,20 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
             % urllib.quote(json.dumps(params)))
 
   @property
+  def channel(self):
+    """The channel or channels of the two releases.
+
+    This property isn't stored in the datastore, since it is just derived from
+    the chrome_releases. It is mainly used when displaying an analysis on the
+    web dashboard.
+    """
+    channel_0 = self.chrome_releases[0]['channel']
+    channel_1 = self.chrome_releases[1]['channel']
+    if channel_0 == channel_1:
+      return channel_0
+    return '%s/%s' % (channel_0, channel_1)
+
+  @property
   def customized_data(self):
     return {
         'process_type': self.process_type,

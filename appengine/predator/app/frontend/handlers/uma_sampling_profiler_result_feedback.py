@@ -6,8 +6,8 @@ from analysis.type_enums import CrashClient
 from frontend.handlers.result_feedback import ResultFeedback
 
 
-class CracasResultFeedback(ResultFeedback):  # pragma: no cover
+class UMASamplingProfilerResultFeedback(ResultFeedback):
 
   @property
   def client(self):
-    return CrashClient.CRACAS
+    return CrashClient.UMA_SAMPLING_PROFILER

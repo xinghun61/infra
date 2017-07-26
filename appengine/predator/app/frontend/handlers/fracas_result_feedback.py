@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from analysis.type_enums import CrashClient
 from frontend.handlers.result_feedback import ResultFeedback
 
 
@@ -9,4 +10,4 @@ class FracasResultFeedback(ResultFeedback):
 
   @property
   def client(self):
-    return 'fracas'
+    return CrashClient.FRACAS
