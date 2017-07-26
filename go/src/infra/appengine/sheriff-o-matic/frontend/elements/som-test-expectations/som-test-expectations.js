@@ -163,6 +163,7 @@
     },
 
     _onCancelChangeCL: function(evt) {
+      this.editedTestName = '';
       this.$.editDialog.toggle();
     },
 
