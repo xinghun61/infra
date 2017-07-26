@@ -1096,6 +1096,7 @@ class IssueService(object):
       self, cnxn, issues, update_cols=None, just_derived=False,
       commit=True, invalidate=True):
     self.update_issues_called = True
+    assert all(issue.assume_stale == False for issue in issues)
     self.updated_issues.extend(issues)
 
   def EnqueueIssuesForIndexing(self, _cnxn, issues):
@@ -1190,7 +1191,8 @@ class IssueService(object):
 
     return result, misses
 
-  def GetAllIssuesInProject(self, _cnxn, project_id, min_local_id=None):
+  def GetAllIssuesInProject(
+      self, _cnxn, project_id, min_local_id=None, use_cache=True):
     self.get_all_issues_in_project_called = True
     if project_id in self.issues_by_project:
       return self.issues_by_project[project_id].values()

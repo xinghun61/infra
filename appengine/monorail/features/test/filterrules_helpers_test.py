@@ -98,9 +98,7 @@ class RecomputeAllDerivedFieldsTest(unittest.TestCase):
 
     filterrules_helpers.RecomputeAllDerivedFields(
         self.cnxn, self.services, self.project, self.config)
-    self.services.issue.UpdateIssues('no', ['1'])
     self.assertTrue(self.services.issue.get_all_issues_in_project_called)
-    self.assertTrue(self.services.issue.update_issues_called)
     self.assertTrue(self.services.issue.enqueue_issues_called)
 
     self.mox.VerifyAll()
@@ -188,9 +186,11 @@ class RecomputeAllDerivedFieldsTest(unittest.TestCase):
     test_issue_1 = fake.MakeTestIssue(
         project_id=self.project.project_id, local_id=1, issue_id=1001,
         summary='sum1', owner_id=100, status='New')
+    test_issue_1.assume_stale = False  # We will store this issue.
     test_issue_2 = fake.MakeTestIssue(
         project_id=self.project.project_id, local_id=2, issue_id=1002,
         summary='sum2', owner_id=100, status='New')
+    test_issue_2.assume_stale = False  # We will store this issue.
     test_issues = [test_issue_1, test_issue_2]
     self.services.issue.TestAddIssue(test_issue_1)
     self.services.issue.TestAddIssue(test_issue_2)

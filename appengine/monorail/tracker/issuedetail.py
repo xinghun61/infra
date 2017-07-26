@@ -1101,6 +1101,7 @@ class SetStarForm(jsonfeed.JsonFeed):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
+    # Because we will modify issues, load from DB rather than cache.
     issue = self.services.issue.GetIssueByLocalID(
         mr.cnxn, mr.project_id, mr.local_id, use_cache=False)
     config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)

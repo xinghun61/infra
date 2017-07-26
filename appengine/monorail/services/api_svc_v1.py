@@ -375,8 +375,9 @@ class MonorailApi(remote.Service):
   def issues_comments_insert(self, request):
     """Add a comment."""
     mar = self.mar_factory(request)
+    # Because we will modify issues, load from DB rather than cache.
     issue = self._services.issue.GetIssueByLocalID(
-        mar.cnxn, mar.project_id, request.issueId)
+        mar.cnxn, mar.project_id, request.issueId, use_cache=False)
     old_owner_id = tracker_bizobj.GetOwnerId(issue)
     if not permissions.CanCommentIssue(
         mar.auth.effective_ids, mar.perms, mar.project, issue,
@@ -447,8 +448,10 @@ class MonorailApi(remote.Service):
             request.updates.mergedInto)
         merge_into_project = self._services.project.GetProjectByName(
             mar.cnxn, merge_project_name or issue.project_name)
+        # Because we will modify issues, load from DB rather than cache.
         merge_into_issue = self._services.issue.GetIssueByLocalID(
-            mar.cnxn, merge_into_project.project_id, merge_local_id)
+            mar.cnxn, merge_into_project.project_id, merge_local_id,
+            use_cache=False)
         merge_allowed = tracker_helpers.IsMergeAllowed(
             merge_into_issue, mar, self._services)
         if not merge_allowed:

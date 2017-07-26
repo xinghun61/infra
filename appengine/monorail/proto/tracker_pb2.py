@@ -132,6 +132,9 @@ class Issue(messages.Message):
   field_values = messages.MessageField(FieldValue, 41, repeated=True)
 
   is_spam = messages.BooleanField(51, default=False)
+  # assume_stale is used in RAM to ensure that a value saved to the DB was
+  # loaded from the DB in the same request handler (not via the cache).
+  assume_stale = messages.BooleanField(57, default=True)
 
 
 class FieldID(messages.Enum):

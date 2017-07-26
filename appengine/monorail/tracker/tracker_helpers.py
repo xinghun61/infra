@@ -848,8 +848,9 @@ def ParseMergeFields(
   project = services.project.GetProjectByName(
       cnxn, merge_into_project_name or project_name)
   try:
+    # Because we will modify this issue, load from DB rather than cache.
     merge_into_issue = services.issue.GetIssueByLocalID(
-        cnxn, project.project_id, merge_into_id)
+        cnxn, project.project_id, merge_into_id, use_cache=False)
   except Exception:
     logging.info('merge_into issue not found: %r', merge_into_ref)
     errors.merge_into_id = 'No such issue'

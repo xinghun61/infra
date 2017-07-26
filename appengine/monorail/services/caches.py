@@ -7,6 +7,15 @@
 
 Monorail makes full use of the RAM of GAE frontends to reduce latency
 and load on the database.
+
+Even though these caches do invalidation, there are rare race conditions
+that can cause a somewhat stale object to be retrieved from memcache and
+then put into a RAM cache and used by a given GAE instance for some time.
+So, we only use these caches for operations that can tolerate somewhat
+stale data.  For example, displaying issues in a list or displaying brief
+info about related issues.  We never use the cache to load objects as
+part of a read-modify-save sequence because that could cause stored data
+to revert to a previous state.
 """
 
 import logging
@@ -201,15 +210,9 @@ class AbstractTwoLevelCache(object):
       A pair: hits, misses.  Where hits is {key: value} and misses is
       a list of any keys that were not found anywhere.
     """
-    # These are used to detect a case where we would have used
-    # a stale business object.
-    ram_verify_dict = {}
-    memcache_verify_dict = {}
-
     if use_cache:
       result_dict, missed_keys = self.cache.GetAll(keys)
     else:
-      ram_verify_dict, _ = self.cache.GetAll(keys)
       result_dict, missed_keys = {}, list(keys)
 
     if missed_keys:
@@ -217,8 +220,6 @@ class AbstractTwoLevelCache(object):
         memcache_hits, missed_keys = self._ReadFromMemcache(missed_keys)
         result_dict.update(memcache_hits)
         self.cache.CacheAll(memcache_hits)
-      else:
-        memcache_verify_dict, _ = self._ReadFromMemcache(missed_keys)
 
     while missed_keys:
       missed_batch = missed_keys[:self._FETCH_BATCH_SIZE]
@@ -228,33 +229,6 @@ class AbstractTwoLevelCache(object):
       if use_cache:
         self.cache.CacheAll(retrieved_dict)
         self._WriteToMemcache(retrieved_dict)
-
-    for key in ram_verify_dict:
-      ram_obj = ram_verify_dict.get(key)
-      if isinstance(ram_obj, tracker_pb2.Issue):
-        ram_obj.blocking_iids = sorted(ram_obj.blocking_iids)
-      memcache_obj = memcache_verify_dict.get(key)
-      if isinstance(memcache_obj, tracker_pb2.Issue):
-        memcache_obj.blocking_iids = sorted(memcache_obj.blocking_iids)
-      if ram_obj != result_dict.get(key):
-        logging.warning('debugging issue2514: Found stale ram cache entry')
-        logging.warning('ramcache[%r]: %r', key, ram_obj)
-        logging.warning('DB[%r]: %r', key, result_dict[key])
-
-      if (memcache_obj and ram_obj != memcache_obj):
-        logging.warning(
-          'debugging issue2514: Found disagreement between cache entries')
-        logging.warning('ramcache[%r]: %r', key, ram_obj)
-        logging.warning('memcache[%r]: %r', key, memcache_obj)
-
-    for key in memcache_verify_dict:
-      memcache_obj = memcache_verify_dict.get(key)
-      if isinstance(memcache_obj, tracker_pb2.Issue):
-        memcache_obj.blocking_iids = sorted(memcache_obj.blocking_iids)
-      if memcache_verify_dict[key] != result_dict.get(key):
-        logging.warning('debugging issue2514: Found stale memcache entry')
-        logging.warning('memcache[%r]: %r', key, memcache_obj)
-        logging.warning('DB[%r]: %r', key, result_dict[key])
 
     still_missing_keys = [key for key in keys if key not in result_dict]
     return result_dict, still_missing_keys

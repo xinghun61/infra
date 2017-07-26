@@ -95,9 +95,10 @@ def RecomputeAllDerivedFieldsNow(
   if lower_bound is not None and upper_bound is not None:
     issues = services.issue.GetIssuesByLocalIDs(
         cnxn, project.project_id, range(lower_bound, upper_bound),
-        shard_id=shard_id)
+        shard_id=shard_id, use_cache=False)
   else:
-    issues = services.issue.GetAllIssuesInProject(cnxn, project.project_id)
+    issues = services.issue.GetAllIssuesInProject(
+        cnxn, project.project_id, use_cache=False)
 
   rules = services.features.GetFilterRules(cnxn, project.project_id)
   predicate_asts = ParsePredicateASTs(rules, config, None)

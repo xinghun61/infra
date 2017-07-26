@@ -586,7 +586,8 @@ class IssueService(object):
 
     logging.info("AllocateNewLocalIDs")
 
-  def GetAllIssuesInProject(self, cnxn, project_id, min_local_id=None):
+  def GetAllIssuesInProject(
+      self, cnxn, project_id, min_local_id=None, use_cache=True):
     """Special query to efficiently get ALL issues in a project.
 
     This is not done while the user is waiting, only by backround tasks.
@@ -595,13 +596,15 @@ class IssueService(object):
       cnxn: connection to SQL database.
       project_id: the ID of the project.
       min_local_id: optional int to start at.
+      use_cache: optional boolean to turn off using the cache.
 
     Returns:
       A list of Issue protocol buffers for all issues.
     """
     all_local_ids = self.GetAllLocalIDsInProject(
         cnxn, project_id, min_local_id=min_local_id)
-    return self.GetIssuesByLocalIDs(cnxn, project_id, all_local_ids)
+    return self.GetIssuesByLocalIDs(
+        cnxn, project_id, all_local_ids, use_cache=use_cache)
 
   def GetAnyOnHandIssue(self, issue_ids, start=None, end=None):
     """Get any one issue from RAM or memcache, otherwise return None."""
@@ -611,6 +614,9 @@ class IssueService(object):
     """Get a dict {iid: issue} from the DB or cache."""
     issue_dict, _missed_iids = self.issue_2lc.GetAll(
         cnxn, issue_ids, use_cache=use_cache, shard_id=shard_id)
+    if not use_cache:
+      for issue in issue_dict.values():
+        issue.assume_stale = False
     return issue_dict
 
   def GetIssues(self, cnxn, issue_ids, use_cache=True, shard_id=None):
@@ -823,6 +829,10 @@ class IssueService(object):
     assert all(issue.project_id == project_id for issue in issues)
 
     for issue in issues:  # slow, but mysql will not allow REPLACE rows.
+      if issue.assume_stale:
+        # TODO(jrobbins): eventually make this raise an exception.
+        logging.error(
+          'debugging issue2514: Storing issue that might be stale: %r', issue)
       delta = {
           'project_id': issue.project_id,
           'local_id': issue.local_id,
@@ -1375,6 +1385,7 @@ class IssueService(object):
 
     # Get the issue and project configurations.
     config = self._config_service.GetProjectConfig(cnxn, project_id)
+    # Because we will modify the issue, load from DB rather than cache.
     issue = self.GetIssueByLocalID(cnxn, project_id, local_id, use_cache=False)
 
     old_effective_owner = tracker_bizobj.GetOwnerId(issue)
@@ -1681,6 +1692,11 @@ class IssueService(object):
     iids_to_invalidate = set()
 
     for target_issue in issues:
+      if target_issue.assume_stale:
+        # TODO(jrobbins): eventually make this raise an exception.
+        logging.error(
+          'debugging issue2514: Copying issue that might be stale: %r',
+          target_issue)
       new_issue = tracker_pb2.Issue()
       new_issue.project_id = dest_project.project_id
       new_issue.project_name = dest_project.project_name
@@ -1836,7 +1852,7 @@ class IssueService(object):
       deleted: boolean, True to soft-delete, False to undelete.
       user_service: persistence layer for users, used to lookup user IDs.
     """
-    issue = self.GetIssueByLocalID(cnxn, project_id, local_id)
+    issue = self.GetIssueByLocalID(cnxn, project_id, local_id, use_cache=False)
     issue.deleted = deleted
     self.UpdateIssue(cnxn, issue, update_cols=['deleted'])
     tracker_fulltext.IndexIssues(
@@ -2355,7 +2371,7 @@ class IssueService(object):
       self, cnxn, project_id, local_id, sequence_num, deleted_by_user_id,
       user_service, delete=True, reindex=True, is_spam=False):
     """Mark comment as un/deleted, which shows/hides it from average users."""
-    issue = self.GetIssueByLocalID(cnxn, project_id, local_id)
+    issue = self.GetIssueByLocalID(cnxn, project_id, local_id, use_cache=False)
 
     all_comments = self.GetCommentsForIssue(cnxn, issue.issue_id)
     try:
@@ -2468,7 +2484,7 @@ class IssueService(object):
       self, cnxn, project_id, local_id, seq_num, attach_id, user_service,
       delete=True, index_now=True):
     """Mark attachment as un/deleted, which shows/hides it from avg users."""
-    issue = self.GetIssueByLocalID(cnxn, project_id, local_id)
+    issue = self.GetIssueByLocalID(cnxn, project_id, local_id, use_cache=False)
     all_comments = self.GetCommentsForIssue(cnxn, issue.issue_id)
     try:
       issue_comment = all_comments[seq_num]

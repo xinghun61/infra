@@ -17,6 +17,7 @@ from google.appengine.ext import testbed
 import settings
 from framework import sql
 from proto import tracker_pb2
+from services import caches
 from services import issue_svc
 from services import service_manager
 from services import spam_svc
@@ -44,6 +45,24 @@ def MakeIssueService(project_service, config_service, cache_manager, my_mox):
     setattr(issue_service, table_var, my_mox.CreateMock(sql.SQLTableManager))
 
   return issue_service
+
+
+class TestableIssueTwoLevelCache(issue_svc.IssueTwoLevelCache):
+
+  def __init__(self, issue_list):
+    self.cache = caches.RamCache(None, 'issue')
+    self.memcache_prefix = 'issue:'
+    self.pb_class = tracker_pb2.Issue
+
+    self.issue_dict = {
+      issue.issue_id: issue
+      for issue in issue_list}
+
+  def FetchItems(self, cnxn, issue_ids, shard_id=None):
+    return {
+      issue_id: self.issue_dict[issue_id]
+      for issue_id in issue_ids
+      if issue_id in self.issue_dict}
 
 
 class IssueIDTwoLevelCacheTest(unittest.TestCase):
@@ -1013,7 +1032,9 @@ class IssueServiceTest(unittest.TestCase):
 
   def testSoftDeleteIssue(self):
     project = fake.Project(project_id=789)
-    issue_1, _issue_2 = self.SetUpGetIssues()
+    issue_1, issue_2 = self.SetUpGetIssues()
+    self.services.issue.issue_2lc = TestableIssueTwoLevelCache(
+        [issue_1, issue_2])
     self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
     delta = {'deleted': True}
     self.services.issue.issue_tbl.Update(
@@ -1342,7 +1363,9 @@ class IssueServiceTest(unittest.TestCase):
     self.assertTrue(comment.is_spam)
 
   def testSoftDeleteComment(self):
-    issue_1, _issue_2 = self.SetUpGetIssues()
+    issue_1, issue_2 = self.SetUpGetIssues()
+    self.services.issue.issue_2lc = TestableIssueTwoLevelCache(
+        [issue_1, issue_2])
     issue_1.attachment_count = 1
     self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
     self.SetUpGetComments([78901])
@@ -1383,7 +1406,9 @@ class IssueServiceTest(unittest.TestCase):
     pass
 
   def testSoftDeleteAttachment(self):
-    issue_1, _issue_2 = self.SetUpGetIssues()
+    issue_1, issue_2 = self.SetUpGetIssues()
+    self.services.issue.issue_2lc = TestableIssueTwoLevelCache(
+        [issue_1, issue_2])
     issue_1.attachment_count = 1
     self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
     self.SetUpGetComments([78901])

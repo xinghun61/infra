@@ -215,7 +215,8 @@ class IssueStarService(AbstractStarService):
     super(IssueStarService, self).SetStarsBatch(
         cnxn, issue_id, starrer_user_ids, starred)
 
-    issue = services.issue.GetIssue(cnxn, issue_id)
+    # Because we will modify issues, load from DB rather than cache.
+    issue = services.issue.GetIssue(cnxn, issue_id, use_cache=False)
     issue.star_count = self.CountItemStars(cnxn, issue_id)
     filterrules_helpers.ApplyFilterRules(cnxn, services, issue, config)
     # Note: only star_count could change due to the starring, but any

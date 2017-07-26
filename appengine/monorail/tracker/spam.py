@@ -48,7 +48,7 @@ class FlagSpamForm(servlet.Servlet):
     # Check perms here for both the single Issue and Comment case.
     if mr.local_id is not None:
       issue = self.services.issue.GetIssueByLocalID(
-          mr.cnxn, mr.project_id, mr.local_id)
+          mr.cnxn, mr.project_id, mr.local_id, use_cache=False)
       perms = self.MakePagePerms(
           mr, issue, permissions.FLAG_SPAM, permissions.VERDICT_SPAM)
       if not perms.FlagSpam:
@@ -75,7 +75,7 @@ class FlagSpamForm(servlet.Servlet):
       issue_list = [issue]
     elif mr.local_id_list is not None:
       issue_list = self.services.issue.GetIssuesByLocalIDs(
-          mr.cnxn, mr.project_id, mr.local_id_list)
+          mr.cnxn, mr.project_id, mr.local_id_list, use_cache=False)
     else:
       self.response.status = httplib.BAD_REQUEST
       return
@@ -117,7 +117,7 @@ class ModerationQueue(servlet.Servlet):
     mark_spam = "mark_spam" in post_data
 
     issues = self.services.issue.GetIssuesByLocalIDs(mr.cnxn,
-        mr.project.project_id, issue_local_ids)
+        mr.project.project_id, issue_local_ids, use_cache=False)
 
     self.services.spam.RecordManualIssueVerdicts(mr.cnxn,
         self.services.issue, issues, mr.auth.user_id, mark_spam)

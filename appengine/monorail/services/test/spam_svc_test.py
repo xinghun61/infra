@@ -56,6 +56,7 @@ class SpamServiceTest(unittest.TestCase):
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, reporter_id=111L, owner_id=456,
         summary='sum', status='Live', issue_id=78901)
+    issue.assume_stale = False  # We will store this issue.
 
     self.mock_report_tbl.InsertRows(self.cnxn,
         ['issue_id', 'reported_user_id', 'user_id'],
@@ -127,6 +128,7 @@ class SpamServiceTest(unittest.TestCase):
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, reporter_id=111L, owner_id=456,
         summary='sum', status='Live', issue_id=78901, is_spam=True)
+    issue.assume_stale = False  # We will store this issue.
     self.mock_report_tbl.Delete(self.cnxn, issue_id=[issue.issue_id],
         comment_id=None, user_id=111L)
     self.mock_report_tbl.Select(self.cnxn,
