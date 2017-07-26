@@ -58,12 +58,12 @@ class CombineEventsToAttempt(beam.CombineFn):
   def extract_output(self, accumulator):
     attempt = objects.CQAttempt()
     for event in accumulator:
-      attempt_start_msec = event.attempt_start_usec / 1000
+      attempt_start_msec = float(event.attempt_start_usec) / 1000
       assert(attempt.attempt_start_msec is None or
              attempt.attempt_start_msec == attempt_start_msec)
       attempt.attempt_start_msec = attempt_start_msec
 
-      affected_fields = self.action_affects_fields[event.action]
+      affected_fields = self.action_affects_fields.get(event.action, [])
       for field in affected_fields:
         if field in self.min_timestamp_fields:
           attempt.__dict__[field] = self.choose_min(attempt.__dict__.get(field),
@@ -75,13 +75,20 @@ class CombineEventsToAttempt(beam.CombineFn):
 
 
 def main():
-  q = ('SELECT timestamp_millis, action, attempt_start_usec '
-       'FROM `chrome-infra-events.raw_events.cq` '
-       'WHERE timestamp_micros(attempt_start_usec) > '
-       '  timestamp_sub(current_timestamp, interval 24 hour)')
+  # For historical reasons, attempt_start_usec (CQEvent) is stored as an integer
+  # and attempt_start_msec (CQAttempt) is stored as a float.
+  one_day_ago_usec = int(time.time() * 1000000) - 24 * 60 * 60 * 1000000
+  one_day_ago_msec = float(one_day_ago_usec) / 1000
+  # Delete the attempts we are about to recalculate so there aren't duplicates
+  delete_query = ('DELETE FROM `chrome-infra-events.aggregated.cq_attempts` '
+                  'WHERE attempt_start_msec > %d' % one_day_ago_msec)
+  select_query = ('SELECT timestamp_millis, action, attempt_start_usec '
+                  'FROM `chrome-infra-events.raw_events.cq` '
+                  'WHERE attempt_start_usec > %d' % one_day_ago_usec)
   p = chops_beam.EventsPipeline()
+  _ = (p | "truncate cq_attempts" >> chops_beam.BQRead(delete_query))
   _ = (p
-   | chops_beam.BQRead(q)
+   | chops_beam.BQRead(select_query)
    | beam.Map(lambda e: (e['attempt_start_usec'], e))
    | beam.GroupByKey()
    | beam.CombinePerKey(CombineEventsToAttempt())
