@@ -5,7 +5,7 @@
 import calendar
 import urllib2
 
-from issue_tracker import IssueTrackerAPI, Issue as MonorailIssue
+from monorail_api import IssueTrackerAPI, Issue as MonorailIssue
 
 PROJECT_CONFIG = {
     'chromium': {
@@ -127,6 +127,8 @@ def _get_new_flakes_description(flake_infos):
 
 def follow_duplication_chain(project, issue_id):
   seen_issues = []
+  # TODO(sergiyb): Pass api from the caller instead of creating it here. Also
+  # make sure to pass in use_staging=True for staging version of the app.
   api = IssueTrackerAPI(PROJECT_CONFIG[project]['monorail_project'])
   current_issue = api.getIssue(issue_id, project)
   # We need to check both status and merged_into, since it's possible to
@@ -142,6 +144,8 @@ def follow_duplication_chain(project, issue_id):
 
 
 def recreate_issue(project, old_issue_id, flake_types):
+  # TODO(sergiyb): Pass api from the caller instead of creating it here. Also
+  # make sure to pass in use_staging=True for staging version of the app.
   api = IssueTrackerAPI(PROJECT_CONFIG[project]['monorail_project'])
 
   summary = SUMMARY_TEMPLATE % {'flake_types_count': len(flake_types)}
@@ -170,6 +174,8 @@ def recreate_issue(project, old_issue_id, flake_types):
 
 
 def post_notice(project, issue_id, flake_types):
+  # TODO(sergiyb): Pass api from the caller instead of creating it here. Also
+  # make sure to pass in use_staging=True for staging version of the app.
   api = IssueTrackerAPI(PROJECT_CONFIG[project]['monorail_project'])
   # TODO(ehmaldonado): Add logic to re-add the queue label if not present.
   flake_types_description = '\n'.join(_get_flake_type_description(flake_type)
@@ -181,6 +187,8 @@ def post_notice(project, issue_id, flake_types):
 
 
 def create_issue(project, new_flake_infos):
+  # TODO(sergiyb): Pass api from the caller instead of creating it here. Also
+  # make sure to pass in use_staging=True for staging version of the app.
   api = IssueTrackerAPI(PROJECT_CONFIG[project]['monorail_project'])
 
   summary = SUMMARY_TEMPLATE % {'flake_types_count': len(new_flake_infos)}
@@ -205,6 +213,8 @@ def create_issue(project, new_flake_infos):
 
 
 def update_issue(project, issue_id, new_flakes):
+  # TODO(sergiyb): Pass api from the caller instead of creating it here. Also
+  # make sure to pass in use_staging=True for staging version of the app.
   api = IssueTrackerAPI(PROJECT_CONFIG[project]['monorail_project'])
   # TODO(ehmaldonado): Add logic to re-add the queue label if not present.
   comment = _get_new_flakes_description(new_flakes)

@@ -7,10 +7,8 @@
 import httplib2
 
 from endpoints_client import endpoints
-from issue_tracker.issue import Issue
-from issue_tracker.comment import Comment
-
-from google.appengine.api import app_identity
+from monorail_api.issue import Issue
+from monorail_api.comment import Comment
 
 
 DISCOVERY_URL = ('https://monorail%s.appspot.com/_ah/api/discovery/v1/apis/'
@@ -21,11 +19,10 @@ class IssueTrackerAPI(object):
   CAN_ALL = 'all'
 
   """A wrapper around the issue tracker api."""
-  def __init__(self, project_name):
+  def __init__(self, project_name, use_staging=False):
     self.project_name = project_name
 
-    app_id = app_identity.get_application_id()
-    if app_id.endswith('-staging'):
+    if use_staging:
       discovery_url = DISCOVERY_URL % '-staging'
     else:
       discovery_url = DISCOVERY_URL % '-prod'

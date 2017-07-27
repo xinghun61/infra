@@ -1,1 +1,0 @@
-../../third_party/six/six.py

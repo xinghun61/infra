@@ -4,9 +4,10 @@
 
 import logging
 
+from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 
-from issue_tracker import IssueTrackerAPI
+from monorail_api import IssueTrackerAPI
 
 from gae_libs.pipeline_wrapper import BasePipeline
 from waterfall import monitoring
@@ -139,7 +140,8 @@ class UpdateFlakeBugPipeline(BasePipeline):
       return False
 
     project_name = 'chromium'
-    issue_tracker = IssueTrackerAPI(project_name)
+    is_staging = app_identity.get_application_id().endswith('-staging')
+    issue_tracker = IssueTrackerAPI(project_name, use_staging=is_staging)
     issue = _GetIssue(analysis.bug_id, issue_tracker)
     if not issue:
       logging.warn('Bug %s/%s or the merged-into one seems deleted!',

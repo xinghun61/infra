@@ -23,9 +23,9 @@ from google.appengine.api import users
 from google.appengine.ext import ndb
 
 import apiclient.errors
-from findit import findit
+from findit_api import findit_api
 import gae_ts_mon
-from issue_tracker import issue_tracker_api, issue
+from monorail_api import issue_tracker_api, issue
 from model.flake import (
     Flake, FlakeOccurrence, FlakeUpdate, FlakeUpdateSingleton, FlakyRun)
 from model.build_run import BuildRun
@@ -146,6 +146,10 @@ class ProcessIssue(webapp2.RequestHandler):
       'Issues updated/created',
       [gae_ts_mon.StringField('operation')])
 
+  def __init__(self, *args, **kwargs):
+    super(ProcessIssue, self).__init__(*args, **kwargs)
+    self.is_staging = app_identity.get_application_id().endswith('-staging')
+
   @ndb.transactional
   def _get_flake_update_singleton_key(self):
     singleton_key = ndb.Key('FlakeUpdateSingleton', 'singleton')
@@ -235,10 +239,32 @@ class ProcessIssue(webapp2.RequestHandler):
     ndb.put_multi(new_flaky_runs)
 
   @staticmethod
+  def get_build_steps(flake, flaky_runs):
+    build_steps = []
+    for flaky_run in flaky_runs:
+      failure_run = flaky_run.failure_run.get()
+      patchset_build_run = flaky_run.failure_run.parent().get()
+      for occurrence in flaky_run.flakes:
+        if occurrence.failure == flake.name:
+          build_steps.append({
+              'master_name': patchset_build_run.master,
+              'builder_name': patchset_build_run.builder,
+              'build_number': failure_run.buildnumber,
+              'step_name': occurrence.name
+          })
+    return build_steps
+
+  @staticmethod
   @ndb.non_transactional
-  def _report_flakes_to_findit(flake, flaky_runs):
+  def _report_flakes_to_findit(flake, flaky_runs, use_staging):
+    if flake is None:
+      logging.warning('Failed to send flakes to FindIt', exc_info=True)
+      return
+
     try:
-      findit.FindItAPI().flake(flake, flaky_runs)
+      build_steps = ProcessIssue.get_build_steps(flake, flaky_runs)
+      findit_api.FindItAPI(use_staging=use_staging).flake(
+          flake.name, flake.is_step, flake.issue_id, build_steps)
     except (httplib.HTTPException, apiclient.errors.Error):
       logging.warning('Failed to send flakes to FindIt', exc_info=True)
 
@@ -318,7 +344,7 @@ class ProcessIssue(webapp2.RequestHandler):
     flake.num_reported_flaky_runs = len(flake.occurrences)
     flake.issue_last_updated = now
 
-    self._report_flakes_to_findit(flake, new_flakes)
+    self._report_flakes_to_findit(flake, new_flakes, self.is_staging)
 
   @ndb.transactional
   def _create_issue(self, api, flake, new_flakes, now):
@@ -356,7 +382,7 @@ class ProcessIssue(webapp2.RequestHandler):
     logging.info('Created a new issue %d for flake %s', flake.issue_id,
                  flake.name)
 
-    self._report_flakes_to_findit(flake, new_flakes)
+    self._report_flakes_to_findit(flake, new_flakes, self.is_staging)
 
     # Find all flakes in the current flakiness period to compute metrics. The
     # flakiness period is a series of flakes with a gap no larger than
@@ -382,7 +408,7 @@ class ProcessIssue(webapp2.RequestHandler):
 
   @ndb.transactional(xg=True)  # pylint: disable=E1120
   def post(self, urlsafe_key):
-    api = issue_tracker_api.IssueTrackerAPI('chromium')
+    api = issue_tracker_api.IssueTrackerAPI('chromium', self.is_staging)
 
     # Check if we should stop processing this issue because we've posted too
     # many updates to issue tracker today already.
@@ -462,7 +488,8 @@ class UpdateIfStaleIssue(webapp2.RequestHandler):
     despite being in the appropriate queue.
     """
     issue_id = int(issue_id)
-    api = issue_tracker_api.IssueTrackerAPI('chromium')
+    is_staging = app_identity.get_application_id().endswith('-staging')
+    api = issue_tracker_api.IssueTrackerAPI('chromium', is_staging)
     flake_issue = ProcessIssue.follow_duplication_chain(api, issue_id)
     now = datetime.datetime.utcnow()
 
@@ -769,7 +796,9 @@ class OverrideIssueId(webapp2.RequestHandler):
       return
 
     if issue_id != 0:
-      api = issue_tracker_api.IssueTrackerAPI('chromium')
+      is_staging = app_identity.get_application_id().endswith('-staging')
+      api = issue_tracker_api.IssueTrackerAPI(
+          'chromium', use_staging=is_staging)
       try:
         api.getIssue(issue_id)
       except apiclient.errors.HttpError as e:

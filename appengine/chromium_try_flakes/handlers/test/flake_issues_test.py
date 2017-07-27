@@ -129,10 +129,10 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.mock_api = MockIssueTrackerAPI()
     self.mock_findit = mock.Mock()
     self.patchers = [
-        mock.patch('issue_tracker.issue_tracker_api.IssueTrackerAPI',
+        mock.patch('monorail_api.issue_tracker_api.IssueTrackerAPI',
                    lambda *args, **kwargs: self.mock_api),
-        mock.patch('issue_tracker.issue.Issue', MockIssue),
-        mock.patch('findit.findit.FindItAPI', self.mock_findit),
+        mock.patch('monorail_api.issue.Issue', MockIssue),
+        mock.patch('findit_api.findit_api.FindItAPI', self.mock_findit),
     ]
     for patcher in self.patchers:
       patcher.start()
@@ -161,13 +161,20 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
                      time_finished=tf).put()
     occ_key1 = FlakyRun(failure_run=br_f0, success_run=br_s2,
                         failure_run_time_started=ts2,
-                        failure_run_time_finished=tf2).put()
+                        failure_run_time_finished=tf2, flakes=[
+                            FlakeOccurrence(name='step2', failure='foo.bar'),
+                            FlakeOccurrence(name='step3', failure='step3'),
+                        ]).put()
     occ_key2 = FlakyRun(failure_run=br_f1, success_run=br_s1,
                         failure_run_time_started=ts,
-                        failure_run_time_finished=tf).put()
+                        failure_run_time_finished=tf, flakes=[
+                            FlakeOccurrence(name='step4', failure='foo.bar'),
+                        ]).put()
     occ_key3 = FlakyRun(failure_run=br_f2, success_run=br_s2,
                         failure_run_time_started=ts,
-                        failure_run_time_finished=tf).put()
+                        failure_run_time_finished=tf, flakes=[
+                            FlakeOccurrence(name='step4', failure='foo.bar'),
+                        ]).put()
     return Flake(name='foo.bar', count_day=10,
                  occurrences=[occ_key1, occ_key2, occ_key3])
 
@@ -859,8 +866,10 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
     self.assertEquals(flake_method.call_count, 1)
     call_args = flake_method.call_args[0]
-    self.assertEquals(call_args[0].name, 'foo.bar')
-    self.assertEquals(len(call_args[1]), 2)
+    self.assertEquals(call_args[0], 'foo.bar')
+    self.assertEquals(call_args[1], False)
+    self.assertEquals(call_args[2], 100000)
+    self.assertEquals(len(call_args[3]), 2)
 
   def test_sends_new_occurrences_to_findit(self):
     flake_method = mock.Mock()
@@ -877,17 +886,22 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
 
     self.assertEquals(flake_method.call_count, 1)
     call_args = flake_method.call_args[0]
-    self.assertEquals(call_args[0].name, 'foo.bar')
-    self.assertEquals(len(call_args[1]), 1)
+    self.assertEquals(call_args[0], 'foo.bar')
+    self.assertEquals(call_args[1], False)
+    self.assertEquals(call_args[2], 100000)
+    self.assertEquals(len(call_args[3]), 1)
 
   def test_does_not_throw_exceptions_on_request_error_to_findit(self):
+    flake = self._create_flake()
     self.mock_findit.return_value.flake.side_effect = httplib.HTTPException()
-    ProcessIssue._report_flakes_to_findit(None, None)
+    ProcessIssue._report_flakes_to_findit(flake, [], use_staging=False)
 
     self.mock_findit.return_value.flake.side_effect = HttpError(
-        mock.Mock(status=503), '') 
-    ProcessIssue._report_flakes_to_findit(None, None)
+        mock.Mock(status=503), '')
+    ProcessIssue._report_flakes_to_findit(flake, [], use_staging=False)
 
+  def test_does_not_throw_exceptions_on_no_flake_data_findit(self):
+    ProcessIssue._report_flakes_to_findit(None, [], use_staging=False)
 
 class CreateFlakyRunTestCase(testing.AppengineTestCase):
   app_module = main.app
@@ -1132,7 +1146,7 @@ class TestOverrideIssueID(testing.AppengineTestCase):
 
     self.mock_api = MockIssueTrackerAPI()
     self.patchers = [
-        mock.patch('issue_tracker.issue_tracker_api.IssueTrackerAPI',
+        mock.patch('monorail_api.issue_tracker_api.IssueTrackerAPI',
                    lambda *args, **kwargs: self.mock_api),
     ]
     for patcher in self.patchers:

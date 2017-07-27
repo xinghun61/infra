@@ -5,12 +5,12 @@
 import datetime
 import unittest
 
-import issue_tracker
+import monorail_api
 
 
 class IssueTestCase(unittest.TestCase):
   def test_creates_comment(self):
-    comment = issue_tracker.Comment({
+    comment = monorail_api.Comment({
       'author': {'name': 'test@example.com'},
       'content': 'TestComment',
       'published': '2016-01-10T21:33:44.123455Z',
@@ -42,7 +42,7 @@ class IssueTestCase(unittest.TestCase):
     self.assertEquals(comment.blocking, ['chromium:789'])
 
   def test_create_comment_without_updates(self):
-    comment = issue_tracker.Comment({
+    comment = monorail_api.Comment({
       'author': {'name': 'test@example.com'},
       'content': 'TestComment',
       'published': '2016-01-10T21:33:44.123455Z',

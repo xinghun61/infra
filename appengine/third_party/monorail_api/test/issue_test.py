@@ -5,12 +5,12 @@
 import datetime
 import unittest
 
-import issue_tracker
+import monorail_api
 
 
 class IssueTestCase(unittest.TestCase):
   def test_creates_issue(self):
-    issue = issue_tracker.Issue({
+    issue = monorail_api.Issue({
       'id': '123',
       'summary': 'TestSummary',
       'description': 'TestDescription',
@@ -53,7 +53,7 @@ class IssueTestCase(unittest.TestCase):
     self.assertFalse(issue.dirty)
 
   def test_handles_dirty_status_and_list_of_changes_correctly(self):
-    issue = issue_tracker.Issue({})
+    issue = monorail_api.Issue({})
     self.assertFalse(issue.dirty)
     self.assertEquals(issue.changed, set([]))
 

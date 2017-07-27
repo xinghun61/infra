@@ -5,7 +5,7 @@
 import datetime
 import unittest
 
-from issue_tracker.utils import parseDateTime
+from monorail_api.utils import parseDateTime
 
 
 class UtilsTestCase(unittest.TestCase):

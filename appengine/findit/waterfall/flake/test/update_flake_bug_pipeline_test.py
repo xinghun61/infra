@@ -1,10 +1,11 @@
 # Copyright 2016 The Chromium Authors. All rights reserved.
+
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
 import mock
 
-from issue_tracker import Issue
+from monorail_api import Issue
 
 from libs import analysis_status
 from model.flake.flake_culprit import FlakeCulprit
@@ -197,6 +198,8 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
       self.assertFalse(pipeline.run(analysis.key.urlsafe()))
     issue_tracker.assert_not_called()
 
+  @mock.patch('google.appengine.api.app_identity.get_application_id',
+              lambda: 'findit-for-me')
   @mock.patch('waterfall.flake.update_flake_bug_pipeline.IssueTrackerAPI')
   def testNoUpdateIfBugDeleted(self, issue_tracker):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
@@ -214,9 +217,33 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = update_flake_bug_pipeline.UpdateFlakeBugPipeline()
     self.assertFalse(pipeline.run(analysis.key.urlsafe()))
     issue_tracker.assert_has_calls(
-        [mock.call('chromium'),
+        [mock.call('chromium', use_staging=False),
          mock.call().getIssue(123)])
 
+  @mock.patch('google.appengine.api.app_identity.get_application_id',
+              lambda: 'findit-for-me-staging')
+  @mock.patch('waterfall.flake.update_flake_bug_pipeline.IssueTrackerAPI')
+  def testUsesStagingIssueTrackerAPI(self, issue_tracker):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.suspected_flake_build_number = 1
+    analysis.confidence_in_suspected_build = 0.7
+    analysis.bug_id = 123
+    analysis.algorithm_parameters = {'update_monorail_bug': True}
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    analysis.put()
+
+    mocked_instance = mock.Mock()
+    mocked_instance.getIssue.return_value = None
+    issue_tracker.return_value = mocked_instance
+    pipeline = update_flake_bug_pipeline.UpdateFlakeBugPipeline()
+    self.assertFalse(pipeline.run(analysis.key.urlsafe()))
+    issue_tracker.assert_has_calls(
+        [mock.call('chromium', use_staging=True),
+         mock.call().getIssue(123)])
+
+  @mock.patch('google.appengine.api.app_identity.get_application_id',
+              lambda: 'findit-for-me')
   @mock.patch('waterfall.flake.update_flake_bug_pipeline.IssueTrackerAPI')
   def testBugUpdated(self, issue_tracker):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
@@ -235,7 +262,7 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = update_flake_bug_pipeline.UpdateFlakeBugPipeline()
     self.assertTrue(pipeline.run(analysis.key.urlsafe()))
     issue_tracker.assert_has_calls([
-        mock.call('chromium'),
+        mock.call('chromium', use_staging=False),
         mock.call().getIssue(123),
         mock.call().update(dummy_issue, mock.ANY, send_email=True)
     ])

@@ -6,8 +6,8 @@
 
 
 import re
-from issue_tracker.change_tracking_list import ChangeTrackingList
-from issue_tracker.utils import parseDateTime
+from monorail_api.change_tracking_list import ChangeTrackingList
+from monorail_api.utils import parseDateTime
 
 
 class Comment(object):

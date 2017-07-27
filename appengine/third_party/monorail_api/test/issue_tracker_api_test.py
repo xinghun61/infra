@@ -6,7 +6,7 @@ import datetime
 import mock
 import unittest
 
-import issue_tracker
+import monorail_api
 
 
 class IssueTrackerAPITestCase(unittest.TestCase):
@@ -30,10 +30,10 @@ class IssueTrackerAPITestCase(unittest.TestCase):
       patcher.stop()
 
   def test_construct_issue_and_then_create_it_on_tracker(self):
-    api = issue_tracker.IssueTrackerAPI('my-project')
+    api = monorail_api.IssueTrackerAPI('my-project')
     insert_method = self.client.issues.return_value.insert
     insert_method.return_value.execute.return_value = {'id': '123'}
-    issue = api.create(issue_tracker.Issue({
+    issue = api.create(monorail_api.Issue({
       'summary': 'TestSummary',
       'description': 'TestDescription',
       'status': 'Assigned',
@@ -57,8 +57,8 @@ class IssueTrackerAPITestCase(unittest.TestCase):
     })
 
   def test_create_issue_clears_dirty_flag_and_does_not_send_email(self):
-    api = issue_tracker.IssueTrackerAPI('my-project')
-    issue = issue_tracker.Issue({'summary': 'TestSummary'})
+    api = monorail_api.IssueTrackerAPI('my-project')
+    issue = monorail_api.Issue({'summary': 'TestSummary'})
     issue.dirty = True
     insert_method = self.client.issues.return_value.insert
     insert_method.return_value.execute.return_value = {'id': '123'}
@@ -70,14 +70,14 @@ class IssueTrackerAPITestCase(unittest.TestCase):
         insert_method.call_args[1]['body'], {'summary': 'TestSummary'})
 
   def test_does_not_update_issue_if_no_changes_or_comment(self):
-    api = issue_tracker.IssueTrackerAPI('my-project')
-    issue = issue_tracker.Issue({'summary': 'TestSummary'})
+    api = monorail_api.IssueTrackerAPI('my-project')
+    issue = monorail_api.Issue({'summary': 'TestSummary'})
     api.update(issue)
     self.assertEquals(self.client.issues.call_count, 0)
 
   def test_updates_issue(self):
-    api = issue_tracker.IssueTrackerAPI('my-project')
-    issue = issue_tracker.Issue({
+    api = monorail_api.IssueTrackerAPI('my-project')
+    issue = monorail_api.Issue({
       'id': '123',
       'summary': 'TestSummary',
       'labels': ['Label-Y']
@@ -113,8 +113,8 @@ class IssueTrackerAPITestCase(unittest.TestCase):
     })
 
   def test_updates_issue_with_comment(self):
-    api = issue_tracker.IssueTrackerAPI('my-project')
-    issue = issue_tracker.Issue({'id': '123'})
+    api = monorail_api.IssueTrackerAPI('my-project')
+    issue = monorail_api.Issue({'id': '123'})
     insert_method = self.client.issues.return_value.comments.return_value.insert
     insert_method.return_value.execute.return_value = {'id': '345'}
     api.update(issue, comment='TestComment', send_email=False)
@@ -127,7 +127,7 @@ class IssueTrackerAPITestCase(unittest.TestCase):
     })
 
   def test_post_comment(self):
-    api = issue_tracker.IssueTrackerAPI('my-project')
+    api = monorail_api.IssueTrackerAPI('my-project')
     issue_id = '123'
     insert_method = self.client.issues.return_value.comments.return_value.insert
     insert_method.return_value.execute.return_value = {'id': '345'}
@@ -141,7 +141,7 @@ class IssueTrackerAPITestCase(unittest.TestCase):
     })
 
   def test_get_comment_count(self):
-    api = issue_tracker.IssueTrackerAPI('my-project')
+    api = monorail_api.IssueTrackerAPI('my-project')
     list_method = self.client.issues.return_value.comments.return_value.list
     list_method.return_value.execute.return_value = {'totalResults': '1'}
 
@@ -154,7 +154,7 @@ class IssueTrackerAPITestCase(unittest.TestCase):
     self.assertEquals(list_method.call_args[1]['maxResults'], 0)
 
   def test_get_comments(self):
-    api = issue_tracker.IssueTrackerAPI('my-project')
+    api = monorail_api.IssueTrackerAPI('my-project')
     list_method = self.client.issues.return_value.comments.return_value.list
     list_method.return_value.execute.side_effect = [
       {
@@ -204,7 +204,7 @@ class IssueTrackerAPITestCase(unittest.TestCase):
     self.assertEquals(call2_kwargs['startIndex'], 1)
 
   def test_get_issue(self):
-    api = issue_tracker.IssueTrackerAPI('my-project')
+    api = monorail_api.IssueTrackerAPI('my-project')
     get_method = self.client.issues.return_value.get
     get_method.return_value.execute.return_value = {'id': '123'}
     issue = api.getIssue('123')
@@ -214,7 +214,7 @@ class IssueTrackerAPITestCase(unittest.TestCase):
     self.assertEquals(get_method.call_args[1]['issueId'], '123')
 
   def test_get_issue_on_another_project(self):
-    api = issue_tracker.IssueTrackerAPI('my-project')
+    api = monorail_api.IssueTrackerAPI('my-project')
     get_method = self.client.issues.return_value.get
     get_method.return_value.execute.return_value = {'id': '123'}
     issue = api.getIssue('123', project_id='webrtc')
@@ -223,17 +223,15 @@ class IssueTrackerAPITestCase(unittest.TestCase):
     self.assertEquals(get_method.call_args[1]['projectId'], 'webrtc')
     self.assertEquals(get_method.call_args[1]['issueId'], '123')
 
-  @mock.patch('google.appengine.api.app_identity.get_application_id',
-              lambda: 'x-staging')
   def test_uses_staging_instance(self):
-    issue_tracker.IssueTrackerAPI('my-project')
+    monorail_api.IssueTrackerAPI('my-project', use_staging=True)
     self.build_client.assert_called_once_with(
         'monorail', 'v1', 'https://monorail-staging.appspot.com/_ah/api/'
         'discovery/v1/apis/{api}/{apiVersion}/rest', http=mock.ANY)
     self.assertEqual(self.build_client.call_args[1]["http"].timeout, 60)
 
   def test_uses_prod_instance_by_default(self):
-    issue_tracker.IssueTrackerAPI('my-project')
+    monorail_api.IssueTrackerAPI('my-project')
     self.build_client.assert_called_once_with(
         'monorail', 'v1', 'https://monorail-prod.appspot.com/_ah/api/'
         'discovery/v1/apis/{api}/{apiVersion}/rest', http=mock.ANY)

@@ -5,7 +5,7 @@
 import datetime
 import unittest
 
-from issue_tracker.change_tracking_list import ChangeTrackingList
+from monorail_api.change_tracking_list import ChangeTrackingList
 
 
 class ChangeTrackingListTestCase(unittest.TestCase):
