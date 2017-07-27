@@ -242,6 +242,7 @@ class MastersTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({
         'cr_notification_build_threshold': 2,
         'cr_notification_latency_limit_minutes': 30,
+        'cr_notification_should_notify_flake_culprit': True,
         'revert_compile_culprit': True,
     }, waterfall_config.GetActionSettings())
 

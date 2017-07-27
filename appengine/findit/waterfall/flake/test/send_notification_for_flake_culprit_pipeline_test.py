@@ -158,23 +158,21 @@ class SendNotificationForFlakeCulpritPipelineTest(
 
   @mock.patch.object(
       send_notification_for_flake_culprit_pipeline,
-      '_ShouldSendNotification',
-      return_value=True)
-  @mock.patch.object(
-      send_notification_for_flake_culprit_pipeline,
       '_SendNotificationForCulprit',
       return_value=True)
   @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
-  def testSendNotificationForflakeCulpritPipeline(self, mocked_get_culprit_info,
-                                                  *_):
+  def testSendNotificationForflakeCulpritPipeline(
+      self, mocked_get_culprit_info, _):
     mocked_get_culprit_info.return_value = {
         'review_server_host': 'host',
         'review_change_id': 'change_id'
     }
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = {'minimum_confidence_to_update_cr': 0.5}
     culprit = FlakeCulprit.Create('repo', 'revision', 12345)
     culprit.put()
     analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.confidence_in_culprit = 1.0
     analysis.put()
 
     pipeline_job = SendNotificationForFlakeCulpritPipeline()

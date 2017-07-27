@@ -128,7 +128,7 @@ class SendNotificationForFlakeCulpritPipeline(BasePipeline):
 
     action_settings = waterfall_config.GetActionSettings()
 
-    if not _ShouldSendNotification(analysis_urlsafe_key, action_settings):
+    if not _ShouldSendNotification(analysis, action_settings):
       return False
 
     culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
