@@ -84,7 +84,7 @@ func TestAnalyze(t *testing.T) {
 		}
 
 		buildbotBuilder := BucketBuilder{Bucket: "master.tryserver.chromium.linux", Builder: "linux_chromium_rel_ng"}
-		luciBuilder := BucketBuilder{Bucket: "luci.chromium.try", Builder: "LUCI linux_chromium_rel_ng"}
+		luciBuilder := BucketBuilder{Bucket: "luci.chromium.try", Builder: "linux_chromium_rel_ng"}
 
 		analyze := func() *storage.BuilderMigration {
 			mig, html, err := tryjobs.Analyze(

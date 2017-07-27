@@ -87,7 +87,7 @@ func TestDiscovery(t *testing.T) {
 Migrate builder tryserver.chromium.linux:linux_chromium_asan_rel_ng to LUCI.
 
 Buildbot: https://ci.chromium.org/buildbot/tryserver.chromium.linux/linux_chromium_asan_rel_ng
-LUCI: https://ci.chromium.org/buildbucket/luci.chromium.try/LUCI%20linux_chromium_asan_rel_ng
+LUCI: https://ci.chromium.org/buildbucket/luci.chromium.try/linux_chromium_asan_rel_ng
 
 I will be posting updates on changes of the migration status.
 For the latest status, see
@@ -126,7 +126,7 @@ https://app.example.com/masters/tryserver.chromium.linux/builders/linux_chromium
 			IssueID: storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 55},
 
 			LUCIBuildbucketBucket:  "luci.chromium.try",
-			LUCIBuildbucketBuilder: "LUCI linux_chromium_asan_rel_ng",
+			LUCIBuildbucketBuilder: "linux_chromium_asan_rel_ng",
 		})
 
 		// Verify linux_chromium_rel_ng was notrediscovered.
