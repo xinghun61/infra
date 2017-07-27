@@ -13,8 +13,8 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestGetVersionNumber(t *testing.T) {
-	Convey("TestGetVersionNumber", t, func() {
+func TestGetVersionNumberFromConfigure(t *testing.T) {
+	Convey("TestGetVersionNumberFromConfigure", t, func() {
 		Convey("no configure", func() {
 			b := &messages.Build{
 				Steps: []messages.Step{
@@ -24,7 +24,7 @@ func TestGetVersionNumber(t *testing.T) {
 				},
 			}
 
-			_, err := getVersionNumber(b)
+			_, err := getVersionNumberFromConfigure(b)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -40,7 +40,36 @@ func TestGetVersionNumber(t *testing.T) {
 				},
 			}
 
-			version, err := getVersionNumber(b)
+			version, err := getVersionNumberFromConfigure(b)
+			So(err, ShouldBeNil)
+			So(version, ShouldEqual, "22.0")
+		})
+	})
+}
+
+func TestGetVersionNumberFromProperties(t *testing.T) {
+	Convey("TestGetVersionNumberFromProperties", t, func() {
+		Convey("no configure", func() {
+			b := &messages.Build{
+				Steps: []messages.Step{
+					{
+						Name: "foobar",
+					},
+				},
+			}
+
+			_, err := getVersionNumberFromProperties(b)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("has chrome_version property", func() {
+			b := &messages.Build{
+				Properties: [][]interface{}{
+					[]interface{}{"chrome_version", "22.0.blah", "buildbucket"},
+				},
+			}
+
+			version, err := getVersionNumberFromProperties(b)
 			So(err, ShouldBeNil)
 			So(version, ShouldEqual, "22.0")
 		})

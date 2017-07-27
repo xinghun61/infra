@@ -9,15 +9,19 @@ import (
 
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
+
+	"github.com/luci/luci-go/common/logging"
 )
 
-var versionRegexp = regexp.MustCompile(`Version: ([0-9]+\.[0-9]+)\..*`)
+var versionConfigureRegexp = regexp.MustCompile(`Version: ([0-9]+\.[0-9]+)\..*`)
+var versionPropertiesRegexp = regexp.MustCompile(`([0-9]+\.[0-9]+)\..*`)
 
-func getVersionNumber(b *messages.Build) (string, error) {
+func getVersionNumberFromConfigure(b *messages.Build) (string, error) {
 	version := ""
 	for _, step := range b.Steps {
 		if step.Name == "Configure" {
-			results := versionRegexp.FindStringSubmatch(strings.Join(step.Text, ""))
+			fmt.Printf("checking official Configure step text for version regexp: %q", step.Text)
+			results := versionConfigureRegexp.FindStringSubmatch(strings.Join(step.Text, ""))
 			if len(results) != 2 {
 				return "", fmt.Errorf("invalid Configure step: step text %q", step.Text)
 			}
@@ -31,6 +35,36 @@ func getVersionNumber(b *messages.Build) (string, error) {
 	}
 
 	return version, nil
+}
+
+func getVersionNumberFromProperties(b *messages.Build) (string, error) {
+	if len(b.Properties) == 0 {
+		return "", fmt.Errorf("build message had no properties, couldn't check it for version number")
+	}
+
+	for _, prop := range b.Properties {
+		// TODO: convenience method for retrieving build properties by name.
+		if len(prop) < 2 {
+			return "", fmt.Errorf("prop too short: %v", prop)
+		}
+		propName, ok := prop[0].(string)
+		if !ok {
+			// or just continue?
+			return "", fmt.Errorf("error converting properties[0] to string: %+v", prop)
+		}
+		if propName != "chrome_version" {
+			continue
+		}
+		if version, ok := prop[1].(string); ok {
+			results := versionPropertiesRegexp.FindStringSubmatch(version)
+			if len(results) != 2 {
+				return "", fmt.Errorf("invalid version property: property text %q", version)
+			}
+			return results[1], nil
+		}
+		return "", fmt.Errorf("found chrome_version build property, couldn't convert to string: %v", prop[1])
+	}
+	return "", fmt.Errorf("invalid official build; no 'chrome_version' build property in %+v", b.Properties)
 }
 
 // officialImportantFailures finds important failures for official builds.
@@ -49,9 +83,14 @@ func (a *Analyzer) officialImportantFailures(ctx context.Context, master *messag
 			return nil, err
 		}
 
-		version, err := getVersionNumber(b)
+		version, err := getVersionNumberFromConfigure(b)
 		if err != nil {
-			return nil, err
+			if version, err = getVersionNumberFromProperties(b); err != nil {
+				logging.Errorf(ctx, "couldn't get version number from Configure step or from properties %s/%s/%d: %b", master, builderName, buildNum, err)
+				// Keep going.
+				continue
+			}
+			logging.Debugf(ctx, "got version number from properties: %s", version)
 		}
 
 		if buildPerVersion[version] == 0 || buildPerVersion[version] < buildNum {

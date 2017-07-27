@@ -579,6 +579,9 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 	stepAlertsByKey := map[string][]*messages.Alert{}
 
 	importantFailures, err := a.findImportantFailures(ctx, master, builderName, recentBuildIDs)
+	if err != nil {
+		return nil, []error{err}
+	}
 
 	importantAlerts, err := a.stepFailureAlerts(ctx, tree, importantFailures, []*messages.FinditResult{})
 	if err != nil {
