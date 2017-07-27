@@ -21,7 +21,7 @@ from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.change_log import Contributor
 
 
-class CrashPipelineTest(AppengineTestCase):
+class CrashAnalysisPipelineTest(AppengineTestCase):
   app_module = pipeline_handlers._APP
 
   def testAnalysisAborted(self):
@@ -87,7 +87,8 @@ class CrashPipelineTest(AppengineTestCase):
     mock_find_culprit.return_value = dummy_culprit
     pipeline = crash_pipeline.CrashAnalysisPipeline(CrashClient.FRACAS,
                                                     crash_identifiers)
-    pipeline.run()
+    pipeline.start()
+    self.execute_queued_tasks()
 
     analysis = FracasCrashAnalysis.Get(crash_identifiers)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
@@ -97,6 +98,22 @@ class CrashPipelineTest(AppengineTestCase):
     self.assertTrue(analysis.found_components)
     dummy_suspect, dummy_tags = dummy_culprit.ToDicts()
     self.assertDictEqual(analysis.result, dummy_suspect)
+
+
+class CrashWrapperPipelineTest(AppengineTestCase):
+  app_module = pipeline_handlers._APP
+
+  def testPipelineRun(self):
+    """Tests ``CrashWrapperPipeline`` runs as expected."""
+    client = CrashClient.FRACAS
+    crash_identifiers = {'sig': 'signature'}
+    self.MockPipeline(crash_pipeline.CrashAnalysisPipeline, None,
+                      [client, crash_identifiers])
+    self.MockPipeline(crash_pipeline.PublishResultPipeline, None,
+                      [client, crash_identifiers])
+    pipeline = crash_pipeline.CrashWrapperPipeline(client, crash_identifiers)
+    pipeline.start()
+    self.execute_queued_tasks()
 
 
 class RerunPipelineTest(AppengineTestCase):

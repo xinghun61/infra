@@ -230,8 +230,7 @@ class PublishResultPipeline(CrashBasePipeline):
                  repr(self._crash_identifiers))
 
 
-# TODO(http://crbug.com/659346): we misplaced the coverage test; find it!
-class CrashWrapperPipeline(BasePipeline): # pragma: no cover
+class CrashWrapperPipeline(BasePipeline):
   """Fire off pipelines to (1) do the analysis and (2) publish results.
 
   The reason we have analysis and publishing as separate pipelines is
