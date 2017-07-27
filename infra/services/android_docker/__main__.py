@@ -13,6 +13,7 @@ import subprocess
 import sys
 import time
 
+from infra.libs.service_utils import daemon
 from infra.services.android_docker import containers
 from infra.services.android_docker import usb_device
 
@@ -31,6 +32,7 @@ _DEVICE_SHUTDOWN_FILE = '/b/%(device_id)s.shutdown.stamp'
 # run time.
 _REBOOT_GRACE_PERIOD_MIN = 240
 
+_LOCK_FILE = '/tmp/.android_docker.lock'
 
 def get_host_uptime():
   """Returns host uptime in minutes."""
@@ -256,9 +258,28 @@ def main():
   if not docker_client.ping():
     logging.error('Docker engine unresponsive. Quitting early.')
     return 1
-  android_devices = usb_device.get_android_devices(args.devices)
 
-  args.func(docker_client, android_devices, args)
+  # Devices can drop in and out several times in a second, so wrap all
+  # proceeding container interactions in a mutex (via a flock) to prevent
+  # multiple processes from stepping on each other.
+  logging.debug('Acquiring file lock on %s...', _LOCK_FILE)
+  retries = 10
+  i = 0
+  while True:
+    try:
+      with daemon.flock(_LOCK_FILE):
+        logging.debug('Lock acquired.')
+        # Put all racey logic here.
+        android_devices = usb_device.get_android_devices(args.devices)
+        args.func(docker_client, android_devices, args)
+      break
+    except daemon.LockAlreadyLocked:
+      if i == retries - 1:
+        logging.error('Unable to acquire file lock in time. Exiting')
+        return 1
+      else:
+        i += 1
+        time.sleep(3)
 
   return 0
 
