@@ -114,6 +114,7 @@ _DEFAULT_DOWNLOAD_BUILD_DATA_SETTINGS = {
     'download_interval_seconds': 10,
     'memcache_master_download_expiration_seconds': 3600,
     'use_chrome_build_extract': True,
+    'use_ninja_output_log': True,
 }
 
 _DEFAULT_ACTION_SETTINGS = {

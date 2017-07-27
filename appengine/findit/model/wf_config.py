@@ -99,7 +99,8 @@ class FinditConfig(VersionedConfig):
   # {
   #     'download_interval_seconds': 10,
   #     'memcache_download_expiration_seconds': 3600,
-  #     'use_chrome_build_extract': True
+  #     'use_chrome_build_extract': True,
+  #     'use_ninja_output_log': False
   # }
   download_build_data_settings = ndb.JsonProperty(indexed=False, default={})
 
