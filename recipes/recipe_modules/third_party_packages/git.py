@@ -323,7 +323,7 @@ class GitApi(util.ModuleShim):
     # API docs:
     # https://developer.github.com/v3/repos/releases/#get-the-latest-release
     latest_release = self.m.url.get_json(
-        'https://api.m.github.com/repos/git-for-windows/git/releases/latest',
+        'https://api.github.com/repos/git-for-windows/git/releases/latest',
         step_name='get latest release').output
     if not latest_release:  # pragma: no cover
       raise self.m.step.StepFailure(

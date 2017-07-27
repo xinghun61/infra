@@ -18,7 +18,7 @@
       "-u",
       "RECIPE_MODULE[recipe_engine::url]\\resources\\pycurl.py",
       "--url",
-      "https://api.m.github.com/repos/git-for-windows/git/releases/latest",
+      "https://api.github.com/repos/git-for-windows/git/releases/latest",
       "--status-json",
       "/path/to/tmp/json",
       "--outfile",
