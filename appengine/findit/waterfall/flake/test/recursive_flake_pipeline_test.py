@@ -22,8 +22,6 @@ from waterfall.flake.initialize_flake_try_job_pipeline import (
 from waterfall.flake.recursive_flake_pipeline import _NormalizeDataPoints
 from waterfall.flake.recursive_flake_pipeline import NextBuildNumberPipeline
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
-from waterfall.flake.recursive_flake_pipeline import (
-    DEFAULT_TARGET_TIMEOUT_SECONDS)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     RecursiveFlakeTryJobPipeline)
 from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
@@ -92,10 +90,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     flake_swarming_task.error = error
     flake_swarming_task.put()
 
-  @mock.patch.object(
-      recursive_flake_pipeline, 'CalculateFlakeTaskTimeout', return_value=10)
   @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
-  def testRecursiveFlakePipeline(self, *_):
+  def testRecursiveFlakePipeline(self, _):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -117,7 +113,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'task_id',
         expected_args=[
             master_name, builder_name, run_build_number, step_name, [test_name],
-            100, 60 * 60
+            100, 3 * 60 * 60
         ],
         expected_kwargs={'force': False})
 
@@ -172,7 +168,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     run_build_number = 90
     lower_bound_build_number = 50
     upper_bound_build_number = 90
-    iterations_to_rerun = 30
+    iterations_to_rerun = 150
     step_name = 's'
     test_name = 't'
     queue_name = constants.DEFAULT_QUEUE
@@ -189,7 +185,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'task_id',
         expected_args=[
             master_name, builder_name, run_build_number, step_name, [test_name],
-            iterations_to_rerun, 60 * 60
+            iterations_to_rerun, 3 * 60 * 60
         ],
         expected_kwargs={'force': False})
 
@@ -239,13 +235,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
-  # _GetIterationsToRerun should return something that's evenly divisible
-  # into DEFAULT_TARGET_TIMEOUT_SECONDS so that every iteration
-  # has the name number of test runs.
-  @mock.patch.object(
-      recursive_flake_pipeline, '_GetIterationsToRerun', return_value=120)
   @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
-  def testRecursiveFlakePipelineWithUpperLowerBounds(self, *_):
+  def testRecursiveFlakePipelineWithUpperLowerBounds(self, _):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -268,7 +259,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'task_id',
         expected_args=[
             master_name, builder_name, run_build_number, step_name, [test_name],
-            30, 60 * 60
+            master_build_number, 3 * 60 * 60
         ],
         expected_kwargs={'force': False})
 
@@ -317,13 +308,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
-  # _GetIterationsToRerun should return something that's evenly divisible
-  # into DEFAULT_TARGET_TIMEOUT_SECONDS so that every iteration
-  # has the name number of test runs.
-  @mock.patch.object(
-      recursive_flake_pipeline, '_GetIterationsToRerun', return_value=120)
   @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
-  def testRecursiveFlakePipelineWithForceFlag(self, *_):
+  def testRecursiveFlakePipelineWithForceFlag(self, _):
     master_name = 'm'
     builder_name = 'b'
     master_build_number = 100
@@ -346,7 +332,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'task_id',
         expected_args=[
             master_name, builder_name, run_build_number, step_name, [test_name],
-            30, 60 * 60
+            master_build_number, 3 * 60 * 60
         ],
         expected_kwargs={'force': True})
 
@@ -370,50 +356,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         '',
         expected_args=[analysis.key.urlsafe(), run_build_number],
         expected_kwargs={})
-
-    self.MockPipeline(
-        recursive_flake_pipeline.NextBuildNumberPipeline,
-        '',
-        expected_args=[
-            analysis.key.urlsafe(), run_build_number, lower_bound_build_number,
-            upper_bound_build_number, None
-        ],
-        expected_kwargs={
-            'step_metadata': None,
-            'use_nearby_neighbor': False,
-            'manually_triggered': False,
-            'force': True,
-        })
-
-    pipeline_job = RecursiveFlakePipeline(
-        analysis.key.urlsafe(),
-        run_build_number,
-        lower_bound_build_number,
-        upper_bound_build_number,
-        None,
-        force=True)
-    pipeline_job.start(queue_name=queue_name)
-    self.execute_queued_tasks()
-
-  @mock.patch.object(
-      recursive_flake_pipeline, '_GetIterationsToRerun', return_value=0)
-  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
-  def testRecursiveFlakePipelineWithZeroIterations(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    lower_bound_build_number = None
-    upper_bound_build_number = None
-    run_build_number = 51
-    step_name = 's'
-    test_name = 't'
-    queue_name = constants.DEFAULT_QUEUE
-
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.status = analysis_status.PENDING
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
-    analysis.Save()
 
     self.MockPipeline(
         recursive_flake_pipeline.NextBuildNumberPipeline,
@@ -1027,8 +969,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
-  @mock.patch.object(
-      recursive_flake_pipeline, '_GetIterationsToRerun', return_value=90)
   @mock.patch.object(swarming_util, 'GetETAToStartAnalysis', return_value=None)
   @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=False)
   def testRetriesExceedMax(self, *_):
@@ -1053,7 +993,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         'task_id',
         expected_args=[
             master_name, builder_name, run_build_number, step_name, [test_name],
-            30, 60 * 60
+            100, 3 * 60 * 60
         ],
         expected_kwargs={'force': False})
 
@@ -1218,6 +1158,48 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(
+      recursive_flake_pipeline,
+      '_CanEstimateExecutionTimeFromReferenceSwarmingTask',
+      return_value=False)
+  def testGetHardTimeoutSecondsDefault(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+
+    self.UpdateUnitTestConfigSettings(
+        config_property='check_flake_settings',
+        override_data={'swarming_rerun': {
+            'per_iteration_timeout_seconds': 60
+        }})
+    self.assertEqual(3 * 60 * 60,
+                     recursive_flake_pipeline._GetHardTimeoutSeconds(
+                         master_name, builder_name, build_number, step_name,
+                         100))
+
+  def testGetHardTimeoutSeconds(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    reference_swarming_task = WfSwarmingTask.Create(master_name, builder_name,
+                                                    build_number, step_name)
+    reference_swarming_task.completed_time = datetime(2017, 4, 16, 0, 0, 40, 12)
+    reference_swarming_task.started_time = datetime(2017, 4, 16, 0, 0, 0, 10)
+    reference_swarming_task.tests_statuses = {'1': 1, '2': 1}
+    reference_swarming_task.parameters = {'iterations_to_rerun': 2}
+    reference_swarming_task.put()
+    self.UpdateUnitTestConfigSettings(
+        config_property='check_flake_settings',
+        override_data={'swarming_rerun': {
+            'per_iteration_timeout_seconds': 1
+        }})
+    timeout = recursive_flake_pipeline._GetHardTimeoutSeconds(
+        master_name, builder_name, build_number, step_name, 10)
+    self.assertTrue(isinstance(timeout, int))
+    self.assertEqual(60 * 60, timeout)
+
+  @mock.patch.object(
       recursive_flake_pipeline, '_IsFinished', return_value=False)
   @mock.patch.object(
       lookback_algorithm,
@@ -1250,68 +1232,3 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
                                            None, None, None)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
-
-  def testCalculateFlakeTaskTimeoutWithAnalysisWithNoDataPoints(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
-    analysis.put()
-
-    timeout = recursive_flake_pipeline.CalculateFlakeTaskTimeout(analysis)
-
-    self.assertEqual(timeout, 120)
-
-  def testCalculateNumberOfIterations(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
-    analysis.put()
-
-    iterations = 60
-    timeout_per_test = 60
-    self.assertEqual(
-        recursive_flake_pipeline._CalculateNumberOfIterations(
-            analysis, iterations, timeout_per_test), 60)
-
-  @mock.patch.object(FlakeSwarmingTask, 'Get')
-  def testCalculateFlakeTaskTimeoutWithAnalysisLessDataPoints(
-      self, mocked_swarming_task_call):
-    flake_task = FlakeSwarmingTask.Create('m', 'b', '123', 's', 't')
-    flake_task.started_time = datetime(1, 1, 1, 1, 1, 0)
-    flake_task.completed_time = datetime(1, 1, 1, 1, 1, 20)
-    mocked_swarming_task_call.return_value = flake_task
-
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
-    analysis.data_points = [
-        DataPoint.Create(),
-        DataPoint.Create(),
-        DataPoint.Create()
-    ]
-    analysis.put()
-
-    timeout = recursive_flake_pipeline.CalculateFlakeTaskTimeout(analysis)
-
-    self.assertEqual(timeout, 25)
-
-  @mock.patch.object(FlakeSwarmingTask, 'Get')
-  def testAnalysisWithMoreThanDefaultDataPointsSampleSize(
-      self, mocked_swarming_task_call):
-    flake_task = FlakeSwarmingTask.Create('m', 'b', '123', 's', 't')
-    flake_task.started_time = datetime(1, 1, 1, 1, 1, 0)
-    flake_task.completed_time = datetime(1, 1, 1, 1, 1, 20)
-    mocked_swarming_task_call.return_value = flake_task
-
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
-    analysis.data_points = [
-        DataPoint.Create(),
-        DataPoint.Create(),
-        DataPoint.Create(),
-        DataPoint.Create(),
-        DataPoint.Create(),
-        DataPoint.Create()
-    ]
-    analysis.put()
-
-    timeout = recursive_flake_pipeline.CalculateFlakeTaskTimeout(analysis)
-
-    self.assertEqual(timeout, 25)

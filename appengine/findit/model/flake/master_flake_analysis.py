@@ -123,21 +123,6 @@ class DataPoint(ndb.Model):
 
     return blamed_cls
 
-  def Merge(self, data_point):
-    """Merge a data point into this.
-
-    Recalculates iterations and pass rate.
-
-    Args:
-      data_point (DataPoint): Data point that will be merged into this
-    """
-    old_passed_tests = self.pass_rate * self.iterations
-    merge_passed_tests = data_point.pass_rate * data_point.iterations
-    new_iterations = self.iterations + data_point.iterations
-    new_pass_rate = (old_passed_tests + merge_passed_tests) / new_iterations
-    self.pass_rate = new_pass_rate
-    self.iterations = new_iterations
-
 
 class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
                           TriagedModel):
@@ -323,37 +308,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   def RemoveDataPointWithCommitPosition(self, commit_position):
     self.data_points = filter(lambda x: x.commit_position != commit_position,
                               self.data_points)
-
-  def FindMatchingDataPointWithCommitPosition(self, commit_position):
-    """Find a data point with the same commit position of the given one.
-
-    Args:
-      commit_position (int): DataPoint commit position to searching for
-          in the list.
-
-    Returns:
-      (DataPoint) Matching DataPoint, if any, else None.
-    """
-    matching_points = filter(
-        lambda point: point.commit_position == commit_position,
-        self.data_points)
-    return next(iter(matching_points or []), None)
-
-  def AppendOrMergeDataPoint(self, data_point):
-    """Append or merge a data point into data_points.
-
-    If there's already a data point from the same build number, merge the data.
-    If not, then append the data point to the list.
-
-    Args:
-      data_point (DataPoint): Data point to append or merge.
-    """
-    matching_point = self.FindMatchingDataPointWithCommitPosition(
-        data_point.commit_position)
-    if matching_point:
-      matching_point.Merge(data_point)
-    else:
-      self.data_points.append(data_point)
 
   def Update(self, **kwargs):
     """Updates fields according to what's specified in kwargs.
