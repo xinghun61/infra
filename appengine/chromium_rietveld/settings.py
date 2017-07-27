@@ -133,11 +133,13 @@ PREFERRED_DOMAIN_NAMES = {
 # review systems.
 READ_ONLY_PROJECTS = [
   'build',
+  'chromium',
   'depot_tools',
   'infra',
   'infra_experimental',
   'pdfium',
   'skia',
+  'v8',
 ]
 
 UPLOAD_PY_SOURCE = os.path.join(os.path.dirname(__file__), 'upload.py')
