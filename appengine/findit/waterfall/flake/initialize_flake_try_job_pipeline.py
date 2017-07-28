@@ -44,11 +44,12 @@ def _HasSufficientConfidenceToRunTryJobs(analysis):
 
 
 def _GetFullBlamedCLsAndLowerBound(suspected_build_point, data_points):
-  """Gets Full blame list and lower bound of try jobs.
+  """Gets Full blame list and lower bound to bisect.
 
       For cases like B1(Stable) - B2(Exception) - B3(Flaky), the blame list
       should be revisions in B2 and B3, and lower bound should be
-      B1.commit_position + 1.
+      B1.commit_position. Note the previous build's commit position is included
+      for bisection as the known stable point.
 
   Args:
     suspected_build_point (int): The suspected build number flakiness was
@@ -63,7 +64,7 @@ def _GetFullBlamedCLsAndLowerBound(suspected_build_point, data_points):
   blamed_cls = suspected_build_point.GetDictOfCommitPositionAndRevision()
   _, invalid_points = lookback_algorithm.GetCategorizedDataPoints(data_points)
   if not invalid_points:
-    return blamed_cls, suspected_build_point.previous_build_commit_position + 1
+    return blamed_cls, suspected_build_point.previous_build_commit_position
 
   build_lower_bound = suspected_build_point.build_number
   point_lower_bound = suspected_build_point
@@ -75,7 +76,7 @@ def _GetFullBlamedCLsAndLowerBound(suspected_build_point, data_points):
     blamed_cls.update(data_point.GetDictOfCommitPositionAndRevision())
     point_lower_bound = data_point
 
-  return blamed_cls, point_lower_bound.previous_build_commit_position + 1
+  return blamed_cls, point_lower_bound.previous_build_commit_position
 
 
 class InitializeFlakeTryJobPipeline(BasePipeline):

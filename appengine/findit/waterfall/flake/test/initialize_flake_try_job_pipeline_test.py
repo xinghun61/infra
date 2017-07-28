@@ -58,7 +58,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         initialize_flake_try_job_pipeline._HasSufficientConfidenceToRunTryJobs(
             analysis))
 
-  def testGetFullBlamedCLsAndLowerBoundMultipleInvalidPoints(self):
+  def testGetFullBlamedCLsAndLowerBoundForBisectMultipleInvalidPoints(self):
     data_points = [
         DataPoint.Create(
             pass_rate=0.9,
@@ -93,7 +93,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             998: 'r998',
             999: 'r1000',
             1000: 'r999'
-        }, 998),
+        }, 997),
         initialize_flake_try_job_pipeline._GetFullBlamedCLsAndLowerBound(
             suspected_point, data_points))
 
@@ -119,7 +119,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             998: 'r998',
             999: 'r1000',
             1000: 'r999'
-        }, 998),
+        }, 997),
         initialize_flake_try_job_pipeline._GetFullBlamedCLsAndLowerBound(
             suspected_point, data_points))
 
@@ -149,7 +149,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         ({
             999: 'r1000',
             1000: 'r999'
-        }, 999),
+        }, 998),
         initialize_flake_try_job_pipeline._GetFullBlamedCLsAndLowerBound(
             suspected_point, data_points))
 
@@ -267,7 +267,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             build_number=100,
             commit_position=1000,
             previous_build_commit_position=995,
-            blame_list=['r1000', 'r9999', 'r998', 'r997', 'r996'])
+            blame_list=['r996', 'r997', 'r998', 'r999', 'r1000'])
     ]
     analysis.Save()
 
@@ -275,7 +275,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         RecursiveFlakeTryJobPipeline,
         '',
         expected_args=[
-            analysis.key.urlsafe(), 998, 'r998', 996, 1000, None,
+            analysis.key.urlsafe(), 997, 'r997', 995, 1000, None,
             _DEFAULT_CACHE_NAME, None
         ],
         expected_kwargs={'rerun': False,
