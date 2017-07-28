@@ -104,7 +104,7 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
     """
     issue_id = mr.GetPositiveIntParam('issue_id')
     hostport = framework_helpers.GetHostPort()
-    issue = self.services.issue.GetIssue(mr.cnxn, issue_id)
+    issue = self.services.issue.GetIssue(mr.cnxn, issue_id, use_cache=False)
     project = self.services.project.GetProject(mr.cnxn, issue.project_id)
     config = self.services.config.GetProjectConfig(mr.cnxn, issue.project_id)
     pings = self._CalculateIssuePings(issue, config)
@@ -137,7 +137,7 @@ class IssueDateActionTask(notify_helpers.NotifyTaskBase):
     date_action_user_id = self.services.user.LookupUserID(
         cnxn, author_email_addr, autocreate=True)
     comment = self.services.issue.CreateIssueComment(
-        cnxn, issue.project_id, issue.local_id, date_action_user_id, content)
+        cnxn, issue, date_action_user_id, content)
     return comment
 
   def _MakeEmailTasks(

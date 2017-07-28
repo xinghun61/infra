@@ -656,6 +656,7 @@ class IssueServiceTest(unittest.TestCase):
         status='Live', labels=['Type-Defect'], issue_id=78901,
         opened_timestamp=123456789, modified_timestamp=123456789,
         star_count=12)
+    issue.assume_stale = False
     self.SetUpUpdateIssues()
     self.mox.ReplayAll()
     self.services.issue.UpdateIssues(self.cnxn, [issue])
@@ -667,6 +668,7 @@ class IssueServiceTest(unittest.TestCase):
         status='Live', labels=['Type-Defect'], issue_id=78901,
         opened_timestamp=123456789, modified_timestamp=123456789,
         star_count=12)
+    issue.assume_stale = False
     self.SetUpUpdateIssues()
     self.mox.ReplayAll()
     self.services.issue.UpdateIssue(self.cnxn, issue)
@@ -676,6 +678,7 @@ class IssueServiceTest(unittest.TestCase):
     issue = fake.MakeTestIssue(
         local_id=1, issue_id=78901, owner_id=111L, summary='sum', status='New',
         project_id=789)
+    issue.assume_stale = False
     self.SetUpUpdateIssuesSummary()
     self.mox.ReplayAll()
     self.services.issue._UpdateIssuesSummary(self.cnxn, [issue], commit=False)
@@ -804,7 +807,7 @@ class IssueServiceTest(unittest.TestCase):
         tracker_bizobj.MakeMergedIntoAmendment(
             ('proj', 2), None, default_project_name='proj')]
     self.services.issue.CreateIssueComment(
-        self.cnxn, 789, 1, commenter_id, 'comment text',
+        self.cnxn, issue, commenter_id, 'comment text',
         amendments=amendments, commit=False, is_description=False)
     self.services.issue._UpdateIssuesModified(
         self.cnxn, {issue.issue_id, target_issue.issue_id},
@@ -834,8 +837,8 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.GetIssueByLocalID(
         self.cnxn, issue.project_id, issue.local_id,
         use_cache=False).AndReturn(issue)
-    self.services.issue.CreateIssueComment(self.cnxn, issue.project_id,
-        issue.local_id, issue.reporter_id, 'comment text',
+    self.services.issue.CreateIssueComment(self.cnxn, issue,
+        issue.reporter_id, 'comment text',
         amendments=[], attachments=None, inbound_message=None,
         is_description=False, is_spam=False, kept_attachments=None)
     self.services.issue.UpdateIssues(self.cnxn, [issue],
@@ -885,8 +888,8 @@ class IssueServiceTest(unittest.TestCase):
         self.classifierResult('spam', 1.0))
     self.services.spam.RecordClassifierCommentVerdict(self.cnxn,
         mox.IsA(tracker_pb2.IssueComment), True, 1.0, False)
-    self.services.issue.CreateIssueComment(self.cnxn, issue.project_id,
-        issue.local_id, issue.reporter_id, 'comment text',
+    self.services.issue.CreateIssueComment(self.cnxn, issue,
+        issue.reporter_id, 'comment text',
         amendments=[], attachments=None, inbound_message=None, is_spam=True,
         is_description=False,
         kept_attachments=None).AndReturn(tracker_pb2.IssueComment())
@@ -934,8 +937,8 @@ class IssueServiceTest(unittest.TestCase):
         self.classifierResult('ham', 1.0))
     self.services.spam.RecordClassifierCommentVerdict(self.cnxn,
         mox.IsA(tracker_pb2.IssueComment), False, 1.0, False)
-    self.services.issue.CreateIssueComment(self.cnxn, issue.project_id,
-        issue.local_id, issue.reporter_id, 'comment text',
+    self.services.issue.CreateIssueComment(self.cnxn, issue,
+        issue.reporter_id, 'comment text',
         amendments=[
             tracker_bizobj.MakeBlockedOnAmendment(
                 [(blockedon_issue.project_name, blockedon_issue.local_id)], [],
@@ -945,7 +948,7 @@ class IssueServiceTest(unittest.TestCase):
         kept_attachments=None).AndReturn(tracker_pb2.IssueComment())
     # Add a comment on the blockedon issue.
     self.services.issue.CreateIssueComment(
-            self.cnxn, blockedon_issue.project_id, blockedon_issue.local_id,
+            self.cnxn, blockedon_issue,
             blockedon_issue.reporter_id, content='',
             amendments=[tracker_bizobj.MakeBlockingAmendment(
                 [(issue.project_name, issue.local_id)], [],
@@ -985,6 +988,7 @@ class IssueServiceTest(unittest.TestCase):
         status='Live', labels=['Type-Defect'], issue_id=78901,
         opened_timestamp=123456789, modified_timestamp=123456789,
         star_count=12)
+    issue.assume_stale = False
     self.SetUpMoveIssues_NewProject()
     self.mox.ReplayAll()
     self.services.issue.MoveIssues(
@@ -1328,17 +1332,17 @@ class IssueServiceTest(unittest.TestCase):
         inbound_message=u'sent by написа')
 
   def testCreateIssueComment_Normal(self):
-    _issue_1, _issue_2 = self.SetUpGetIssues()
+    issue_1, _issue_2 = self.SetUpGetIssues()
     self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
     self.SetUpInsertComment(7890101)
     self.mox.ReplayAll()
     comment = self.services.issue.CreateIssueComment(
-        self.cnxn, 789, 1, 111L, 'content', timestamp=self.now)
+        self.cnxn, issue_1, 111L, 'content', timestamp=self.now)
     self.mox.VerifyAll()
     self.assertEqual('content', comment.content)
 
   def testCreateIssueComment_EditDescription(self):
-    _issue_1, _issue_2 = self.SetUpGetIssues()
+    issue_1, _issue_2 = self.SetUpGetIssues()
     self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
     self.services.issue.attachment_tbl.Select(
         self.cnxn, cols=issue_svc.ATTACHMENT_COLS, id=[123])
@@ -1346,18 +1350,18 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     comment = self.services.issue.CreateIssueComment(
-        self.cnxn, 789, 1, 111L, 'content', is_description=True,
+        self.cnxn, issue_1, 111L, 'content', is_description=True,
         kept_attachments=[123], timestamp=self.now)
     self.mox.VerifyAll()
     self.assertEqual('content', comment.content)
 
   def testCreateIssueComment_Spam(self):
-    _issue_1, _issue_2 = self.SetUpGetIssues()
+    issue_1, _issue_2 = self.SetUpGetIssues()
     self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
     self.SetUpInsertComment(7890101, is_spam=True)
     self.mox.ReplayAll()
     comment = self.services.issue.CreateIssueComment(
-        self.cnxn, 789, 1, 111L, 'content', timestamp=self.now, is_spam=True)
+        self.cnxn, issue_1, 111L, 'content', timestamp=self.now, is_spam=True)
     self.mox.VerifyAll()
     self.assertEqual('content', comment.content)
     self.assertTrue(comment.is_spam)

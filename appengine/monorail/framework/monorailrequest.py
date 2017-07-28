@@ -195,7 +195,7 @@ class MonorailApiRequest(object):
         self.params['projects'] = list(set(self.params['projects']))
       if hasattr(request, 'issueId'):
         self.issue = services.issue.GetIssueByLocalID(
-            self.cnxn, self.project_id, request.issueId)
+            self.cnxn, self.project_id, request.issueId, use_cache=False)
         self.granted_perms = tracker_bizobj.GetGrantedPerms(
             self.issue, self.auth.effective_ids, self.config)
     if hasattr(request, 'userId'):

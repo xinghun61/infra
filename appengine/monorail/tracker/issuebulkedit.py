@@ -371,10 +371,9 @@ class IssueBulkEdit(servlet.Servlet):
             else:
               content = 'Moved %s to now be %s.' % (old_text_ref, new_text_ref)
             self.services.issue.CreateIssueComment(
-              mr.cnxn, move_to_project.project_id, issue.local_id,
-              mr.auth.user_id, content, amendments=[
-                  tracker_bizobj.MakeProjectAmendment(
-                      move_to_project.project_name)])
+                mr.cnxn, issue, mr.auth.user_id, content, amendments=[
+                   tracker_bizobj.MakeProjectAmendment(
+                       move_to_project.project_name)])
 
         send_email = 'send_email' in post_data
 

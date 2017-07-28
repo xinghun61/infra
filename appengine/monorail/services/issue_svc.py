@@ -551,16 +551,14 @@ class IssueService(object):
     blocked_add_issues = self.GetIssues(cnxn, blocked_on or [])
     for add_issue in blocked_add_issues:
       self.CreateIssueComment(
-          cnxn, add_issue.project_id, add_issue.local_id, reporter_id,
-          content='',
+          cnxn, add_issue, reporter_id, content='',
           amendments=[tracker_bizobj.MakeBlockingAmendment(
               [(issue.project_name, issue.local_id)], [],
               default_project_name=add_issue.project_name)])
     blocking_add_issues = self.GetIssues(cnxn, blocking or [])
     for add_issue in blocking_add_issues:
       self.CreateIssueComment(
-          cnxn, add_issue.project_id, add_issue.local_id, reporter_id,
-          content='',
+          cnxn, add_issue, reporter_id, content='',
           amendments=[tracker_bizobj.MakeBlockedOnAmendment(
               [(issue.project_name, issue.local_id)], [],
               default_project_name=add_issue.project_name)])
@@ -816,7 +814,8 @@ class IssueService(object):
 
     Args:
       cnxn: connection to SQL database.
-      issues: list of issues to update.
+      issues: list of issues to update, these must have been loaded with
+          use_cache=False so that issue.assume_stale is False.
       update_cols: optional list of just the field names to update.
       just_derived: set to True when only updating derived fields.
       commit: set to False to skip the DB commit and do it in the caller.
@@ -1298,8 +1297,8 @@ class IssueService(object):
     self.UpdateIssue(cnxn, issue, commit=False, invalidate=False)
 
     comment_pb = self.CreateIssueComment(
-        cnxn, project_id, issue.local_id, reporter_id, comment,
-        amendments=amendments, is_description=is_description, commit=False)
+        cnxn, issue, reporter_id, comment, amendments=amendments,
+        is_description=is_description, commit=False)
     self._UpdateIssuesModified(
         cnxn, iids_to_invalidate, modified_timestamp=issue.modified_timestamp,
         invalidate=invalidate)
@@ -1605,7 +1604,7 @@ class IssueService(object):
     if amendments or (comment and comment.strip()) or attachments:
       logging.info('amendments = %r', amendments)
       comment_pb = self.CreateIssueComment(
-          cnxn, project_id, local_id, reporter_id, comment,
+          cnxn, issue, reporter_id, comment,
           amendments=amendments, attachments=attachments,
           inbound_message=inbound_message, is_spam=is_spam,
           is_description=is_description, kept_attachments=kept_attachments)
@@ -1618,8 +1617,7 @@ class IssueService(object):
     # this issue.
     for add_issue in blocked_add_issues:
       self.CreateIssueComment(
-          cnxn, add_issue.project_id, add_issue.local_id, reporter_id,
-          content='',
+          cnxn, add_issue, reporter_id, content='',
           amendments=[tracker_bizobj.MakeBlockingAmendment(
               [(issue.project_name, issue.local_id)], [],
               default_project_name=add_issue.project_name)])
@@ -1627,8 +1625,7 @@ class IssueService(object):
     # blocking this issue.
     for remove_issue in blocked_remove_issues:
       self.CreateIssueComment(
-          cnxn, remove_issue.project_id, remove_issue.local_id, reporter_id,
-          content='',
+          cnxn, remove_issue, reporter_id, content='',
           amendments=[tracker_bizobj.MakeBlockingAmendment(
               [], [(issue.project_name, issue.local_id)],
               default_project_name=remove_issue.project_name)])
@@ -1637,8 +1634,7 @@ class IssueService(object):
     # this issue.
     for add_issue in blocking_add_issues:
       self.CreateIssueComment(
-          cnxn, add_issue.project_id, add_issue.local_id, reporter_id,
-          content='',
+          cnxn, add_issue, reporter_id, content='',
           amendments=[tracker_bizobj.MakeBlockedOnAmendment(
               [(issue.project_name, issue.local_id)], [],
               default_project_name=add_issue.project_name)])
@@ -1646,8 +1642,7 @@ class IssueService(object):
     # blocked on this issue.
     for remove_issue in blocking_remove_issues:
       self.CreateIssueComment(
-          cnxn, remove_issue.project_id, remove_issue.local_id, reporter_id,
-          content='',
+          cnxn, remove_issue, reporter_id, content='',
           amendments=[tracker_bizobj.MakeBlockedOnAmendment(
               [], [(issue.project_name, issue.local_id)],
               default_project_name=remove_issue.project_name)])
@@ -2313,15 +2308,15 @@ class IssueService(object):
     return comment
 
   def CreateIssueComment(
-      self, cnxn, project_id, local_id, user_id, content, inbound_message=None,
+      self, cnxn, issue, user_id, content, inbound_message=None,
       amendments=None, attachments=None, kept_attachments=None, timestamp=None,
       is_spam=False, is_description=False, commit=True):
     """Create and store a new comment on the specified issue.
 
     Args:
       cnxn: connection to SQL database.
-      project_id: int ID of the current Project.
-      local_id: the issue on which to add the comment.
+      issue: the issue on which to add the comment, must be loaded from
+          database with use_cache=False so that assume_stale == False.
       user_id: the user ID of the user who entered the comment.
       content: string body of the comment.
       inbound_message: optional string full text of an email that caused
@@ -2344,8 +2339,6 @@ class IssueService(object):
     again. The content may have some markup done during input
     processing.
     """
-    issue = self.GetIssueByLocalID(cnxn, project_id, local_id)
-
     if is_description:
       kept_attachments = self.GetAttachmentsByID(cnxn, kept_attachments)
     else:

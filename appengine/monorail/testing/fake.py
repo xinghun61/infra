@@ -1347,7 +1347,7 @@ class IssueService(object):
 
     if amendments or (comment and comment.strip()) or attachments:
       comment_pb = self.CreateIssueComment(
-          cnxn, project_id, local_id, reporter_id, comment,
+          cnxn, issue, reporter_id, comment,
           amendments=amendments, inbound_message=inbound_message)
     else:
       comment_pb = None
@@ -1392,7 +1392,7 @@ class IssueService(object):
       return [], None
 
     comment_pb = self.CreateIssueComment(
-        cnxn, project_id, issue.local_id, reporter_id, comment,
+        cnxn, issue, reporter_id, comment,
         amendments=amendments, is_description=is_description)
 
     self.indexer_called = index_now
@@ -1403,16 +1403,14 @@ class IssueService(object):
 
   # pylint: disable=unused-argument
   def CreateIssueComment(
-      self, _cnxn, project_id, local_id, user_id, content,
+      self, _cnxn, issue, user_id, content,
       inbound_message=None, amendments=None, attachments=None,
       kept_attachments=None, timestamp=None, is_spam=False,
       is_description=False, commit=True):
     # Add a comment to an issue
-    issue = self.issues_by_project[project_id][local_id]
-
     comment = tracker_pb2.IssueComment()
     comment.id = len(self.comments_by_cid)
-    comment.project_id = project_id
+    comment.project_id = issue.project_id
     comment.issue_id = issue.issue_id
     comment.content = content
     comment.user_id = user_id
@@ -1427,9 +1425,9 @@ class IssueService(object):
     comment.is_spam = is_spam
     comment.is_description = is_description
 
-    pid = project_id
+    pid = issue.project_id
     self.comments_by_project.setdefault(pid, {})
-    self.comments_by_project[pid].setdefault(local_id, []).append(comment)
+    self.comments_by_project[pid].setdefault(issue.local_id, []).append(comment)
     self.comments_by_iid.setdefault(issue.issue_id, []).append(comment)
     self.comments_by_cid[comment.id] = comment
 

@@ -105,8 +105,10 @@ class FlagSpamFormTest(unittest.TestCase):
       res = self.servlet.ProcessFormData(mr, post_data)
 
     # test owner case, comment exists.
+    issue = self.services.issue.GetIssueByLocalID(
+        'cnxn', self.project.project_id, local_id_1, use_cache=False)
     comment = self.services.issue.CreateIssueComment(
-      self.cnxn, self.project.project_id, local_id_1, 111L, "Test comment")
+      self.cnxn, issue, 111L, "Test comment")
 
     _, mr = testing_helpers.GetRequestObjects(
       project=self.project,

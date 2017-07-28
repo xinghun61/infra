@@ -514,8 +514,7 @@ class MonorailApi(remote.Service):
       else:
         content = 'Moved %s to now be %s.' % (old_text_ref, new_text_ref)
       move_comment = self._services.issue.CreateIssueComment(
-        mar.cnxn, move_to_project.project_id, issue.local_id, mar.auth.user_id,
-        content, amendments=[
+        mar.cnxn, issue, mar.auth.user_id, content, amendments=[
             tracker_bizobj.MakeProjectAmendment(move_to_project.project_name)])
 
     if 'merged_into' in updates_dict:
