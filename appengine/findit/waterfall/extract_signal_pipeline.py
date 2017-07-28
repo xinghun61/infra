@@ -138,21 +138,33 @@ class ExtractSignalPipeline(BasePipeline):
           failure_log = _GetReliableTestFailureLog(gtest_result)
 
         if gtest_result is None or failure_log == 'invalid':
-          if not lock_util.WaitUntilDownloadAllowed(
-              master_name):  # pragma: no cover
-            raise pipeline.Retry('Failed to pull log of step %s of master %s' %
-                                 (step_name, master_name))
-          try:
+          use_ninja_output_log = (waterfall_config
+                                  .GetDownloadBuildDataSettings()
+                                  .get('use_ninja_output_log'))
+          if step_name == 'compile' and use_ninja_output_log:
             failure_log = buildbot.GetStepLog(master_name, builder_name,
                                               build_number, step_name,
-                                              self.HTTP_CLIENT)
-          except ResponseTooLargeError:  # pragma: no cover.
-            logging.exception('Log of step "%s" is too large for urlfetch.',
-                              step_name)
-            # If the stdio log of a step is too large, we don't want to pull it
-            # again in next run, because that might lead to DDoS to the master.
-            # TODO: Use archived stdio logs in Google Storage instead.
-            failure_log = 'Stdio log is too large for urlfetch.'
+                                              self.HTTP_CLIENT,
+                                              'ninja_output')
+          if (step_name != 'compile' or not use_ninja_output_log
+              or not failure_log):
+            try:
+              if not lock_util.WaitUntilDownloadAllowed(
+                  master_name):  # pragma: no cover
+                raise pipeline.Retry(('Failed to pull log of step %s',
+                                      ' of master %s') %
+                                     (step_name, master_name))
+              failure_log = buildbot.GetStepLog(master_name, builder_name,
+                                                build_number, step_name,
+                                                self.HTTP_CLIENT)
+            except ResponseTooLargeError:  # pragma: no cover.
+              logging.exception('Log of step "%s" is too large for urlfetch.',
+                                step_name)
+              # If the stdio log of a step is too large, we don't want to pull
+              # it again in next run, because that might lead to DDoS to the
+              # master.
+              # TODO: Use archived stdio logs in Google Storage instead.
+              failure_log = 'Stdio log is too large for urlfetch.'
 
           if not failure_log:  # pragma: no cover
             raise pipeline.Retry(

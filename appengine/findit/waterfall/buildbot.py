@@ -382,7 +382,7 @@ def GetStepLog(master_name,
     else:
       return None
 
-  if log_type.lower() != 'stdout':
+  if log_type.lower() not in ['stdout', 'ninja_output']:
     try:
       return json.loads(data) if data else None
     except ValueError:

@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import textwrap
 
 from waterfall import extractors
@@ -314,6 +315,150 @@ Note:You can safely ignore the above warning unless this call should not happen.
 
     self._RunTest(failure_log, extractors.CompileStepExtractor,
                   expected_signal_json)
+
+  def testCompileStepExtractorExtractNinjaOutputJson(self):
+    failure_log = json.dumps({
+        'failures':[
+            {
+                'output_nodes': ['obj/a/b/test.c.o'],
+                'rule': 'CXX',
+                'output': textwrap.dedent("""/b/build/goma/gomacc blabla\
+                                          ... -c ../../a/b/c.cc -o obj/a/b/test.c.o
+                                          ../../a/b/c.cc:307:44: error:\
+                                          no member 'kEnableExtensionInfoDialog' ...
+                                          1 error generated."""),
+                'dependencies': ['../../a/b/c.cc', '../../new/c.cc'],
+            },
+            {
+                'output_nodes': ['obj/a/b/test.d.o'],
+                'rule': 'LINK',
+                'output': textwrap.dedent("""/b/build/goma/gomacc blabla\
+                                          ... -c ../../a/b/d.cc -o obj/a/b/test.d.o
+                                          ../../a/b/d.cc:123:44: error:\
+                                          no member 'kEnableExtensionInfoDialog' ...
+                                          blabla...
+                                          1 error generated."""),
+                'dependencies': [],
+            }
+        ]
+    })
+    expected_signal_json = {
+      'files': {
+        'a/b/c.cc': [307],
+        'a/b/d.cc': [123],
+      },
+      'keywords': {},
+      'failed_output_nodes': [
+          'obj/a/b/test.c.o',
+          'obj/a/b/test.d.o',
+      ],
+      'failed_edges': [{
+          'rule': 'CXX',
+          'output_nodes': ['obj/a/b/test.c.o'],
+          'dependencies': ["a/b/c.cc", "new/c.cc"]
+      }, {
+          'rule': 'LINK',
+          'output_nodes': ['obj/a/b/test.d.o'],
+          'dependencies': []
+      }]
+    }
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json)
+
+  def testCompileStepExtractorExtractNinjaOutputJsonEmptyOutputField(self):
+    failure_log = json.dumps({
+        'failures':[
+            {
+                'output_nodes': ['obj/a/b/test.c.o'],
+                'rule': 'CXX',
+                'output': '',
+                'dependencies': ['../../a/b/c.cc', '../../new/c.cc'],
+            },
+            {
+                'output_nodes': ['obj/a/b/test.d.o'],
+                'rule': 'LINK',
+                'output': '',
+                'dependencies': [],
+            }
+        ]
+    })
+    expected_signal_json = {
+      'files': {
+      },
+      'keywords': {},
+      'failed_output_nodes': [
+          'obj/a/b/test.c.o',
+          'obj/a/b/test.d.o',
+      ],
+      'failed_edges': [{
+          'rule': 'CXX',
+          'output_nodes': ['obj/a/b/test.c.o'],
+          'dependencies': ["a/b/c.cc", "new/c.cc"]
+      }, {
+          'rule': 'LINK',
+          'output_nodes': ['obj/a/b/test.d.o'],
+          'dependencies': []
+      }]
+    }
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json)
+
+  def testCompileStepExtractorExtractNinjaOutputJsonTargetsLinux(self):
+    failure_log = json.dumps({
+        'failures': [
+            {
+                'output_nodes': ['obj/a/b/test.c.o'],
+                'rule': 'CXX',
+                'output': textwrap.dedent("""/b/build/goma/gomacc blabla\
+                                          ... -c ../../a/b/c.cc -o obj/a/b/test.c.o
+                                          ../../a/b/c.cc:307:44: error:\
+                                          no member 'kEnableExtensionInfoDialog' ...
+                                          1 error generated."""),
+                'dependencies': ['../../a/b/c.cc', '../../new/c.cc'],
+            },
+            {
+                'output_nodes': ['obj/a/b/test.d.o'],
+                'rule': 'CXX',
+                'output': textwrap.dedent("""/b/build/goma/gomacc blabla\
+                                          ... -c ../../a/b/d.cc -o obj/a/b/test.d.o
+                                          ../../a/b/d.cc:123:44: error:\
+                                          no member 'kEnableExtensionInfoDialog' ...
+                                          blabla...
+                                          1 error generated."""),
+                'dependencies': ['../../a/b/d.cc', '../../new/c.cc',
+                                 '../../new/d.cc'],
+            }
+        ]
+    })
+    expected_signal_json = {
+      'files': {
+        'a/b/c.cc': [307],
+        'a/b/d.cc': [123],
+      },
+      'keywords': {},
+      'failed_targets': [{
+          'source': '../../a/b/c.cc',
+          'target': 'obj/a/b/test.c.o',
+      }, {
+          'source': '../../a/b/d.cc',
+          'target': 'obj/a/b/test.d.o',
+      }],
+      'failed_output_nodes': [
+          'obj/a/b/test.c.o',
+          'obj/a/b/test.d.o',
+      ],
+      'failed_edges': [{
+          'rule': 'CXX',
+          'output_nodes': ['obj/a/b/test.c.o'],
+          'dependencies': ['a/b/c.cc', 'new/c.cc'],
+      }, {
+          'rule': 'CXX',
+          'output_nodes': ['obj/a/b/test.d.o'],
+          'dependencies': ['a/b/d.cc', 'new/c.cc', 'new/d.cc']
+      }]
+    }
+    self._RunTest(failure_log, extractors.CompileStepExtractor,
+                  expected_signal_json, 'builder2', 'master2')
 
   def testCompileStepExtractorExtractFailedCompileTargetsLinux(self):
     failure_log = textwrap.dedent("""

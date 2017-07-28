@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import mock
 import os
 
@@ -19,6 +20,15 @@ ABC_TEST_FAILURE_LOG = """
     ../../content/common/gpu/media/v4l2_video_encode_accelerator.cc:306:12:
     ...
 """
+
+COMPILE_FAILURE_LOG = json.dumps({
+  'failures': [{
+    'output_nodes': ['a/b.o'],
+    'rule': 'CXX',
+    'output': '',
+    'dependencies': ['../../b.h', '../../b.c']
+  }]
+})
 
 FAILURE_SIGNALS = {
     'abc_test': {
@@ -44,6 +54,20 @@ FAILURE_INFO = {
     }
 }
 
+COMPILE_FAILURE_INFO = {
+    'master_name': 'm',
+    'builder_name': 'b',
+    'build_number': 123,
+    'failed': True,
+    'chromium_revision': 'a_git_hash',
+    'failed_steps': {
+        'compile': {
+            'last_pass': 122,
+            'current_failure': 123,
+            'first_failure': 123,
+        }
+    }
+}
 
 class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
@@ -190,6 +214,25 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(step)
     self.assertIsNotNone(step.log_data)
     self.assertEqual(expected_files, signals['abc_test']['files'])
+
+  @mock.patch.object(buildbot, 'GetStepLog', return_value=COMPILE_FAILURE_LOG)
+  def testGetCompileStepSignalFromStepLog(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+
+    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number)
+
+    pipeline = ExtractSignalPipeline()
+    signals = pipeline.run(COMPILE_FAILURE_INFO)
+
+    expected_failed_edges = [{
+        'output_nodes': ['a/b.o'],
+        'rule': 'CXX',
+        'dependencies': ['b.h', 'b.c']
+    }]
+
+    self.assertEqual(expected_failed_edges, signals['compile']['failed_edges'])
 
   @mock.patch.object(buildbot, 'GetStepLog', return_value=ABC_TEST_FAILURE_LOG)
   def testGetSignalFromStepLogFlaky(self, _):

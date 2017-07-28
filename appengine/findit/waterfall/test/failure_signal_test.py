@@ -41,6 +41,24 @@ class FailureSignalTest(unittest.TestCase):
         'source': 'b.cpp'
     }], signal.failed_targets)
 
+  def testAddEdge(self):
+    signal = FailureSignal()
+    signal.AddEdge({'rule': "CXX",'output_nodes': ['b.o'],
+                    'dependencies': ['b.h']})
+    signal.AddEdge({'rule': "CXX",'output_nodes': ['a.o', 'aa.o'],
+                    'dependencies': ['a.h', 'a.c']})
+    signal.AddEdge({'rule': "CXX",'output_nodes': ['a.o', 'aa.o'],
+                    'dependencies': ['a.h', 'a.c']})
+    self.assertEqual([{
+        "rule": 'CXX',
+        "output_nodes": ['b.o'],
+        'dependencies': ['b.h']
+    }, {
+        'rule': 'CXX',
+        'output_nodes': ['a.o', 'aa.o'],
+        'dependencies': ['a.h', 'a.c']
+    }], signal.failed_edges)
+
   def testToFromDict(self):
     data = {
         'files': {
@@ -53,6 +71,11 @@ class FailureSignalTest(unittest.TestCase):
         'failed_output_nodes': [
             'obj/path/to/file.o',
         ],
+        'failed_edges': [{
+            'rule': 'CXX',
+            'output_nodes': ['a.o', 'aa.o'],
+            'dependencies': ['a.h', 'a.c']
+        }]
     }
     signal = FailureSignal.FromDict(data)
     self.assertEqual(data, signal.ToDict())
@@ -69,7 +92,7 @@ class FailureSignalTest(unittest.TestCase):
         'failed_targets': [{
             'target': 'a.o',
             'source': 'b/a.cc'
-        }]
+        }],
     }
     signal = FailureSignal.FromDict(data)
     self.assertEqual(data, signal.ToDict())
@@ -88,6 +111,11 @@ class FailureSignalTest(unittest.TestCase):
             }, {
                 'target': 'b.o',
                 'source': 'b.cc'
+            }],
+            'failed_edges': [{
+                'rule': 'CXX',
+                'output_nodes': ['a.o', 'aa.o'],
+                'dependencies': ['a.h', 'a.c']
             }]
         },
         {
@@ -102,6 +130,11 @@ class FailureSignalTest(unittest.TestCase):
                 'source': 'a.cc'
             }, {
                 'target': 'c.exe'
+            }],
+            'failed_edges': [{
+                'rule': 'LINK',
+                'output_nodes': ['b.o'],
+                'dependencies': []
             }]
         },
     ]
@@ -120,6 +153,15 @@ class FailureSignalTest(unittest.TestCase):
     }, {
         'target': 'c.exe'
     }]
-
+    expected_step_failed_edges = [{
+        'rule': 'CXX',
+        'output_nodes': ['a.o', 'aa.o'],
+        'dependencies': ['a.h', 'a.c']
+    }, {
+        'rule': 'LINK',
+        'output_nodes': ['b.o'],
+        'dependencies': []
+    }]
     self.assertEqual(expected_step_signal_files, step_signal.files)
     self.assertEqual(expected_step_failed_targets, step_signal.failed_targets)
+    self.assertEqual(expected_step_failed_edges, step_signal.failed_edges)

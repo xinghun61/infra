@@ -14,6 +14,11 @@ class FailureSignal(object):
     self.keywords = collections.defaultdict(int)
     self.failed_targets = []  # A list of dict.
     self.failed_output_nodes = []  # A list of string.
+    self.failed_edges = []  # A list of dict.
+
+  def AddEdge(self, edge):
+    if edge not in self.failed_edges:
+      self.failed_edges.append(edge)
 
   def AddFile(self, file_path, line_number=None):
     line_numbers = self.files[file_path]
@@ -47,6 +52,9 @@ class FailureSignal(object):
     self.failed_output_nodes = list(
         set(self.failed_output_nodes + other_signal.get('failed_output_nodes',
                                                         [])))
+    new_failed_edges = other_signal.get('failed_edges', [])
+    for edge in new_failed_edges:
+      self.AddEdge(edge)
 
   def ToDict(self):
     json_dict = {
@@ -57,6 +65,8 @@ class FailureSignal(object):
       json_dict['failed_targets'] = self.failed_targets
     if self.failed_output_nodes:
       json_dict['failed_output_nodes'] = self.failed_output_nodes
+    if self.failed_edges:
+      json_dict['failed_edges'] = self.failed_edges
     return json_dict
 
   @staticmethod
@@ -66,6 +76,7 @@ class FailureSignal(object):
     signal.keywords.update(data.get('keywords', {}))
     signal.failed_targets = data.get('failed_targets', [])
     signal.failed_output_nodes = data.get('failed_output_nodes', [])
+    signal.failed_edges = data.get('failed_edges', [])
     return signal
 
   def PrettyPrint(self):  # pragma: no cover
@@ -88,3 +99,15 @@ class FailureSignal(object):
           print '  Source: %s' % source
     if self.failed_output_nodes:
       print '  Failed output nodes: %s' % ','.join(self.failed_output_nodes)
+    if self.failed_edges:
+      print ' Failed edges:'
+      for edge in self.failed_edges:
+        output_nodes = edge.get('output_nodes')
+        rule = edge.get('rule')
+        dependencies = edge.get('dependencies')
+        if output_nodes:
+          print '  Output nodes: %s' % output_nodes
+        if rule:
+          print '  Rule: %s' % rule
+        if dependencies:
+          print '  Dependencies: %s' % dependencies

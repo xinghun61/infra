@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import logging
 import os
 import re
@@ -230,7 +231,30 @@ class CompileStepExtractor(Extractor):
 
     return failed_output_nodes
 
-  def Extract(self, failure_log, test_name, step_name, bot_name, master_name):
+  def _ExtractNinjaOutputJson(self, ninja_output, bot_name, master_name):
+    signal = FailureSignal()
+    strict_regex = waterfall_config.EnableStrictRegexForCompileLinkFailures(
+        master_name, bot_name)
+    failed_output_nodes = []
+    for failure in ninja_output['failures']:
+      lines = failure['output'].splitlines()
+      del failure['output']
+      failure['dependencies'] = map(extractor_util.NormalizeFilePath,
+                                    failure['dependencies'])
+      signal.AddEdge(failure)
+      if lines:
+        if strict_regex:
+          self.ExtractFailedOutputNodes(lines[0], signal)
+        else:
+          self.GetFailedTarget(lines[0], signal)
+        for line in lines[1:]:
+          self.ExtractFiles(line, signal)
+      failed_output_nodes.extend(failure['output_nodes'])
+
+    signal.failed_output_nodes = sorted(set(failed_output_nodes))
+    return signal
+
+  def _ExtractStdout(self, failure_log, bot_name, master_name):
     signal = FailureSignal()
     failure_started = False
     is_build_command_line = False
@@ -290,6 +314,15 @@ class CompileStepExtractor(Extractor):
           self.ExtractFiles(line, signal)
 
     signal.failed_output_nodes = sorted(set(failed_output_nodes))
+    return signal
+
+  def Extract(self, failure_log, test_name, step_name, bot_name, master_name):
+    try:
+      json_obj = json.loads(failure_log)
+      signal = self._ExtractNinjaOutputJson(
+          json_obj, bot_name, master_name)
+    except ValueError:
+      signal = self._ExtractStdout(failure_log, bot_name, master_name)
     return signal
 
 
