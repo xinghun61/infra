@@ -8,16 +8,29 @@ import (
 	"net/url"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"infra/monitoring/client"
 	"infra/monitoring/client/test"
 	"infra/monitoring/messages"
+
+	"github.com/luci/luci-go/appengine/gaetesting"
+	"github.com/luci/luci-go/common/logging/gologger"
+	"github.com/luci/luci-go/server/auth/authtest"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestTestStepFailureAlerts(t *testing.T) {
+	c := gaetesting.TestingContext()
+	c = authtest.MockAuthConfig(c)
+	c = gologger.StdConfig.Use(c)
+	testResultsFake := test.NewFakeServer()
+	defer testResultsFake.Server.Close()
+	finditFake := test.NewFakeServer()
+	defer finditFake.Server.Close()
+
+	c = client.WithTestResults(c, testResultsFake.Server.URL)
+	c = client.WithFindit(c, finditFake.Server.URL)
+
 	Convey("test TestFailureAnalyzer", t, func() {
 		maxFailedTests = 2
 		Convey("analyze", func() {
@@ -379,15 +392,12 @@ func TestTestStepFailureAlerts(t *testing.T) {
 				},
 			}
 
-			mc := &test.MockReader{}
-			ctx := client.WithReader(context.Background(), mc)
-
 			for _, test := range tests {
 				test := test
 				Convey(test.name, func() {
-					mc.TestResultsValue = test.testResults
-					mc.FinditResults = test.finditResults
-					gotResult, gotErr := testFailureAnalyzer(ctx, test.failures)
+					testResultsFake.JSONResponse = test.testResults
+					finditFake.JSONResponse = &client.FinditAPIResponse{Results: test.finditResults}
+					gotResult, gotErr := testFailureAnalyzer(c, test.failures)
 					So(gotErr, ShouldEqual, test.wantErr)
 					So(gotResult, ShouldResemble, test.wantResult)
 				})

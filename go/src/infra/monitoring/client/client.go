@@ -40,7 +40,7 @@ const (
 
 	crRevKey       = contextKey("infra-client-crrev")
 	buildBotKey    = contextKey("infra-client-buildbot")
-	findItKey      = contextKey("infra-client-findit")
+	finditKey      = contextKey("infra-client-findit")
 	gerritKey      = contextKey("infra-client-gerrit")
 	miloKey        = contextKey("infra-client-milo")
 	monorailKey    = contextKey("infra-client-monorail")
@@ -332,7 +332,8 @@ func (r *reader) CrbugItems(ctx context.Context, label string) ([]messages.Crbug
 	return res.Items, nil
 }
 
-type finditAPIResponse struct {
+// FinditAPIResponse represents a response from the findit api.
+type FinditAPIResponse struct {
 	Results []*messages.FinditResult `json:"results"`
 }
 
@@ -363,7 +364,7 @@ func (r *reader) Findit(ctx context.Context, master *messages.MasterLocation, bu
 	URL := "https://findit-for-me.appspot.com/_ah/api/findit/v1/buildfailure"
 	expvars.Add("Findit", 1)
 	defer expvars.Add("Findit", -1)
-	res := &finditAPIResponse{}
+	res := &FinditAPIResponse{}
 	if code, err := r.hc.postJSON(ctx, URL, b.Bytes(), res); err != nil {
 		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
 		return nil, err
@@ -591,11 +592,6 @@ func getAsSelfOAuthClient(c context.Context) (*http.Client, error) {
 	return &http.Client{Transport: t}, nil
 }
 
-type simpleClient struct {
-	Host   string
-	Client *http.Client
-}
-
 // WithMonorail registers a new Monorail client instance pointed at baseURL.
 func WithMonorail(c context.Context, baseURL string) context.Context {
 	client, err := getAsSelfOAuthClient(c)
@@ -623,9 +619,11 @@ func GetMonorail(c context.Context) monorail.MonorailClient {
 // WithProdClients returns a context for connecting to production services.
 func WithProdClients(ctx context.Context) context.Context {
 	ctx = WithCrRev(ctx, "https://cr-rev.appspot.com")
+	ctx = WithFindit(ctx, "https://findit-for-me.appspot.com")
 	// TODO: see if this will work with http:// prefix.
 	ctx = WithMilo(ctx, "luci-milo.appspot.com")
 	ctx = WithMonorail(ctx, "https://monorail-prod.appspot.com")
+	ctx = WithTestResults(ctx, "https://test-results.appspot.com")
 
 	return ctx
 }

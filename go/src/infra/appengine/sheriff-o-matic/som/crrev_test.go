@@ -1,11 +1,12 @@
 package som
 
 import (
-	"encoding/json"
-	"infra/monitoring/client"
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"infra/monitoring/client"
+	"infra/monitoring/client/test"
 
 	"github.com/luci/luci-go/appengine/gaetesting"
 	"github.com/luci/luci-go/common/logging/gologger"
@@ -16,25 +17,16 @@ import (
 )
 
 func TestRevRangeHandler(t *testing.T) {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		data, err := json.Marshal(map[string]string{"a": "b"})
-		if err != nil {
-			t.Errorf("couldn't marshal json data")
-		}
-		w.Write(data)
-	})
-
-	server := httptest.NewServer(mux)
-	defer server.Close()
+	fakeCrRev := test.NewFakeServer()
+	defer fakeCrRev.Server.Close()
 
 	c := gaetesting.TestingContext()
 	c = gologger.StdConfig.Use(c)
+	c = client.WithCrRev(c, fakeCrRev.Server.URL)
 
 	Convey("get rev range", t, func() {
 		Convey("ok", func() {
 			c = authtest.MockAuthConfig(c)
-			c = client.WithCrRev(c, server.URL)
 			w := httptest.NewRecorder()
 			GetRevRangeHandler(&router.Context{
 				Context: c,
@@ -46,8 +38,6 @@ func TestRevRangeHandler(t *testing.T) {
 			So(w.Code, ShouldEqual, 301)
 		})
 		Convey("bad oauth", func() {
-			c := gaetesting.TestingContext()
-			c = client.WithCrRev(c, server.URL)
 			w := httptest.NewRecorder()
 			GetRevRangeHandler(&router.Context{
 				Context: c,
@@ -55,12 +45,9 @@ func TestRevRangeHandler(t *testing.T) {
 				Request: makeGetRequest(),
 				Params:  makeParams("start", "123", "end", "456"),
 			})
-			So(w.Code, ShouldEqual, http.StatusInternalServerError)
+			So(w.Code, ShouldEqual, http.StatusMovedPermanently)
 		})
 		Convey("bad request", func() {
-			c := gaetesting.TestingContext()
-			c = authtest.MockAuthConfig(c)
-			c = client.WithCrRev(c, server.URL)
 			w := httptest.NewRecorder()
 
 			GetRevRangeHandler(&router.Context{

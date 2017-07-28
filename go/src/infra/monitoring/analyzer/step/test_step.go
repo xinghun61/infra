@@ -166,7 +166,8 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 
 	failedTests := []string{}
 
-	testResults, err := client.TestResults(ctx, f.Master, f.Build.BuilderName, name, f.Build.Number)
+	trc := client.GetTestResults(ctx)
+	testResults, err := trc.TestResults(ctx, f.Master, f.Build.BuilderName, name, f.Build.Number)
 
 	if testResults == nil || len(testResults.Tests) == 0 || err != nil {
 		if err != nil {
@@ -235,8 +236,9 @@ func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failed
 	if name == "" {
 		return nil, nil
 	}
+	findit := client.GetFindit(ctx)
 
-	finditResults, err := client.Findit(ctx, f.Master, f.Build.BuilderName, f.Build.Number, []string{name})
+	finditResults, err := findit.Findit(ctx, f.Master, f.Build.BuilderName, f.Build.Number, []string{name})
 	if err != nil {
 		logging.Warningf(ctx, "ignoring findit error: %s", err)
 	}
