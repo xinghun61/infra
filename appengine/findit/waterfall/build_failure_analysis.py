@@ -270,7 +270,8 @@ class _Justification(object):
                     file_path_in_log,
                     score,
                     num_file_name_occurrences,
-                    changed_line_numbers=None):
+                    changed_line_numbers=None,
+                    check_dependencies=False):
     """Adds a suspected file change.
 
     Args:
@@ -282,6 +283,8 @@ class _Justification(object):
           name (not including directory part) in the commit.
       changed_line_numbers (list): List of lines which are verified in both
           failure log and git blame.
+      check_dependencies: Boolean representing if file_path_in_log is from
+          dependencies found by ninja.
     """
     if num_file_name_occurrences == 1:
       changed_src_file_path = os.path.basename(changed_src_file_path)
@@ -299,8 +302,13 @@ class _Justification(object):
         hint = '%s %s (and it was in log)' % (change_action,
                                               changed_src_file_path)
 
-    self._hints[hint] += score
-    self._score += score
+    if check_dependencies:
+      self._score = 2
+      hint = hint.replace('in log', 'in dependencies found by ninja')
+      self._hints[hint] = self._score
+    else:
+      self._score += score
+      self._hints[hint] += score
 
   def AddDEPSRoll(self, change_action, dep_path, dep_repo_url, dep_new_revision,
                   dep_old_revision, file_path_in_log, score,
@@ -344,7 +352,8 @@ class _Justification(object):
 
 def _CheckFile(touched_file, file_path_in_log, justification,
                file_name_occurrences, line_numbers, repo_info,
-               suspected_revision):
+               suspected_revision,
+               check_dependencies=False):
   """Checks if the given files are related and updates the justification.
 
   Args:
@@ -357,6 +366,8 @@ def _CheckFile(touched_file, file_path_in_log, justification,
         appears in failure log.
     repo_info (dict): The repo_url and revision for the build cycle.
     suspected_revision (str): Git hash revision of the suspected CL.
+    check_dependencies (bool): A boolean indicating if file_path_in_log is
+        from dependencies given by ninja output.
   """
   change_type = touched_file['change_type']
 
@@ -379,7 +390,8 @@ def _CheckFile(touched_file, file_path_in_log, justification,
     if score:
       justification.AddFileChange(
           'modified', changed_src_file_path, file_path_in_log, score,
-          file_name_occurrences.get(file_name), changed_line_numbers)
+          file_name_occurrences.get(file_name), changed_line_numbers,
+          check_dependencies)
 
   if change_type in (ChangeType.ADD, ChangeType.COPY, ChangeType.RENAME):
     changed_src_file_path = touched_file['new_path']
@@ -394,7 +406,8 @@ def _CheckFile(touched_file, file_path_in_log, justification,
     if score:
       justification.AddFileChange('added', changed_src_file_path,
                                   file_path_in_log, score,
-                                  file_name_occurrences.get(file_name))
+                                  file_name_occurrences.get(file_name),
+                                  check_dependencies=check_dependencies)
 
   if change_type in (ChangeType.DELETE, ChangeType.RENAME):
     changed_src_file_path = touched_file['old_path']
@@ -409,7 +422,8 @@ def _CheckFile(touched_file, file_path_in_log, justification,
     if score:
       justification.AddFileChange('deleted', changed_src_file_path,
                                   file_path_in_log, score,
-                                  file_name_occurrences.get(file_name))
+                                  file_name_occurrences.get(file_name),
+                                  check_dependencies=check_dependencies)
 
 
 def _StripChromiumRootDirectory(file_path):
@@ -572,7 +586,8 @@ def _CheckFileInDependencyRolls(file_path_in_log,
                               changed_lines, roll_file_change_type)
 
 
-def _CheckFiles(failure_signal, change_log, deps_info):
+def _CheckFiles(failure_signal, change_log, deps_info,
+                check_dependencies=False):
   """Checks files in the given change log of a CL against the failure signal.
 
   Args:
@@ -580,6 +595,7 @@ def _CheckFiles(failure_signal, change_log, deps_info):
     change_log (dict): The change log of a CL as returned by
         common.change_log.ChangeLog.ToDict().
     deps_info (dict): Output of pipeline ExtractDEPSInfoPipeline.
+    check_dependencies (bool): If it's true check ninja dependencies.
 
   Returns:
     A dict as returned by _Justification.ToDict() if the CL is suspected for the
@@ -603,17 +619,28 @@ def _CheckFiles(failure_signal, change_log, deps_info):
   rolls = deps_info.get('deps_rolls', {}).get(change_log['revision'], [])
   repo_info = deps_info.get('deps', {}).get('src/', {})
 
-  for file_path_in_log, line_numbers in failure_signal.files.iteritems():
-    file_path_in_log = _StripChromiumRootDirectory(file_path_in_log)
+  if not check_dependencies:
+    for file_path_in_log, line_numbers in failure_signal.files.iteritems():
+      file_path_in_log = _StripChromiumRootDirectory(file_path_in_log)
 
-    for touched_file in change_log['touched_files']:
-      _CheckFile(touched_file, file_path_in_log, justification,
-                 file_name_occurrences, line_numbers, repo_info,
-                 change_log['revision'])
+      for touched_file in change_log['touched_files']:
+        _CheckFile(touched_file, file_path_in_log, justification,
+                   file_name_occurrences, line_numbers, repo_info,
+                   change_log['revision'])
 
-    _CheckFileInDependencyRolls(file_path_in_log, rolls, justification,
-                                line_numbers)
+      _CheckFileInDependencyRolls(file_path_in_log, rolls, justification,
+                                  line_numbers)
+  else:
+    for failed_edge in failure_signal.failed_edges:
+      for dependency in failed_edge.get('dependencies'):
+        dependency = _StripChromiumRootDirectory(dependency)
+        for touched_file in change_log['touched_files']:
+          _CheckFile(touched_file, dependency, justification,
+                     file_name_occurrences, None, repo_info,
+                     change_log['revision'], True)
 
+        _CheckFileInDependencyRolls(dependency, rolls,
+                                    justification, [])
   if not justification.score:
     return None
   else:
@@ -826,6 +853,26 @@ def AnalyzeBuildFailure(failure_info, change_logs, deps_info, failure_signals):
           step_analysis_result['suspected_cls'].append(new_suspected_cl_dict)
 
           if not is_test_level:
+            _SaveFailureToMap(cl_failure_map, new_suspected_cl_dict, step_name,
+                              None, max(justification_dict['hints'].values()))
+
+      if (not step_analysis_result['suspected_cls']
+          and step_name == 'compile'
+          and (waterfall_config.GetDownloadBuildDataSettings()
+               .get('use_ninja_output_log'))):
+        for build_number in range(start_build_number, failed_build_number + 1):
+          for revision in builds[str(build_number)]['blame_list']:
+            failure_signal = FailureSignal.FromDict(failure_signals[step_name])
+            justification_dict = _CheckFiles(
+                failure_signal, change_logs[revision], deps_info, True)
+            if not justification_dict:
+              continue
+
+            step_analysis_result['use_ninja_dependencies'] = True
+            new_suspected_cl_dict = CreateCLInfoDict(
+                justification_dict, build_number, change_logs[revision])
+            step_analysis_result['suspected_cls'].append(new_suspected_cl_dict)
+
             _SaveFailureToMap(cl_failure_map, new_suspected_cl_dict, step_name,
                               None, max(justification_dict['hints'].values()))
 

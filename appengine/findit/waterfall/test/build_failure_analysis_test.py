@@ -187,6 +187,70 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(build_failure_analysis._IsRelated('a', 'b'))
     self.assertFalse(build_failure_analysis._IsRelated('a', 'a'))
 
+  def testCheckNinjaDependencies(self):
+    failed_edges =  [{
+        'dependencies': [
+            'src/a/b/f1.cc',
+            'd/e/a2_test.cc',
+            'b/c/f2.cc',
+            'd/e/f3.h',
+            'x/y/f4.py',
+            'f5_impl.cc'
+        ]
+    }]
+
+    failure_signal = FailureSignal()
+    failure_signal.failed_edges = failed_edges
+    change_log_json = {
+        'revision':
+            'rev',
+        'touched_files': [
+            {
+                'change_type': ChangeType.ADD,
+                'old_path': '/dev/null',
+                'new_path': 'a/b/f1.cc'
+            },
+            {
+                'change_type': ChangeType.ADD,
+                'old_path': '/dev/null',
+                'new_path': 'd/e/a2.cc'
+            },
+            {
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'a/b/c/f2.h',
+                'new_path': 'a/b/c/f2.h'
+            },
+            {
+                'change_type': ChangeType.MODIFY,
+                'old_path': 'd/e/f3.h',
+                'new_path': 'd/e/f3.h'
+            },
+            {
+                'change_type': ChangeType.DELETE,
+                'old_path': 'x/y/f4.py',
+                'new_path': '/dev/null'
+            },
+            {
+                'change_type': ChangeType.DELETE,
+                'old_path': 'h/f5.h',
+                'new_path': '/dev/null'
+            },
+            {
+                'change_type': ChangeType.RENAME,
+                'old_path': 't/y/x.cc',
+                'new_path': 's/z/x.cc'
+            },
+        ]
+    }
+    deps_info = {}
+
+    justification = build_failure_analysis._CheckFiles(
+        failure_signal, change_log_json, deps_info, True)
+    self.assertIsNotNone(justification)
+    # The score is 2 because:
+    # CL only touches dependencies
+    self.assertEqual(2, justification['score'])
+
   def testCheckFilesAgainstSuspectedCL(self):
     failure_signal_json = {
         'files': {
@@ -747,6 +811,188 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'url': None,
         'failures': {
             'a': []
+        },
+        'top_score': 2
+    }, {
+        'repo_name': 'chromium',
+        'revision': 'r97_1',
+        'commit_position': None,
+        'url': None,
+        'failures': {
+            'b': []
+        },
+        'top_score': 5
+    }]
+
+    analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
+        failure_info, change_logs, deps_info, failure_signals_json)
+
+    self.assertEqual(expected_analysis_result, analysis_result)
+    self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
+
+  def testAnalyzeBuildFailurebyDependencies(self):
+    failure_info = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 99,
+        'failure_type': failure_type.COMPILE,
+        'failed': True,
+        'chromium_revision': 'r99_2',
+        'failed_steps': {
+            'compile': {
+                'current_failure': 99,
+                'first_failure': 98,
+            },
+            'b': {
+                'current_failure': 99,
+                'first_failure': 98,
+                'last_pass': 96,
+            },
+        },
+        'builds': {
+            '99': {
+                'blame_list': ['r99_1', 'r99_2'],
+            },
+            '98': {
+                'blame_list': ['r98_1'],
+            },
+            '97': {
+                'blame_list': ['r97_1'],
+            },
+            '96': {
+                'blame_list': ['r96_1', 'r96_2'],
+            },
+        }
+    }
+    change_logs = {
+        'r99_1': {
+            'revision':
+                'r99_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f99_1.cc',
+                    'new_path': 'a/b/f99_1.cc'
+                },
+            ],
+        },
+        'r99_2': {
+            'revision':
+                'r99_2',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f99_2.cc',
+                    'new_path': 'a/b/f99_2.cc'
+                },
+            ],
+        },
+        'r98_1': {
+            'revision':
+                'r98_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'y/z/f98.cc',
+                    'new_path': 'y/z/f98.cc'
+                },
+            ],
+        },
+        'r97_1': {
+            'revision':
+                'r97_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.ADD,
+                    'old_path': '/dev/null',
+                    'new_path': 'x/y/f99_1.cc'
+                },
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f99_1.cc',
+                    'new_path': 'a/b/f99_1.cc'
+                },
+            ],
+        },
+        'r96_1': {
+            'revision':
+                'r96_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f96_1.cc',
+                    'new_path': 'a/b/f96_1.cc'
+                },
+            ],
+        },
+    }
+    deps_info = {}
+    failure_signals_json = {
+        'compile': {
+            'files': {},
+            'failed_edges':[{
+                'dependencies': ['src/a/b/f99_2.cc']
+            }]
+        },
+        'b': {
+            'files': {
+                'x/y/f99_1.cc': []
+            },
+        },
+    }
+    expected_analysis_result = {
+        'failures': [{
+            'step_name':
+                'compile',
+            'supported':
+                True,
+            'first_failure':
+                98,
+            'last_pass':
+                None,
+            'suspected_cls': [{
+                'build_number': 99,
+                'repo_name': 'chromium',
+                'revision': 'r99_2',
+                'commit_position': None,
+                'url': None,
+                'score': 2,
+                'hints': {
+                    ('modified f99_2.cc (and it was in'
+                     ' dependencies found by ninja)'): 2,
+                },
+            }],
+            'use_ninja_dependencies': True,
+        }, {
+            'step_name':
+                'b',
+            'supported':
+                True,
+            'first_failure':
+                98,
+            'last_pass':
+                96,
+            'suspected_cls': [{
+                'build_number': 97,
+                'repo_name': 'chromium',
+                'revision': 'r97_1',
+                'commit_position': None,
+                'url': None,
+                'score': 5,
+                'hints': {
+                    'added x/y/f99_1.cc (and it was in log)': 5,
+                },
+            }],
+        }]
+    }
+
+    expected_suspected_cl = [{
+        'repo_name': 'chromium',
+        'revision': 'r99_2',
+        'commit_position': None,
+        'url': None,
+        'failures': {
+            'compile': []
         },
         'top_score': 2
     }, {
