@@ -224,7 +224,7 @@
 	  <tr>
 	    <td><input type="radio" name="comp" value="Crashes" id="opt_13" onclick="selectComp(this.value)" /></td>
 	    <td><label for="opt_13">Crashes</label></td>
-	    <td><label for="">The browser closes abruptly or I see "aw' snap" pages</label></td>
+	    <td><label for="">The browser closes abruptly or I see "Aw, Snap!" pages</label></td>
 	  </tr>
 	  <tr>
 	    <td><input type="radio" name="comp" value="Security" id="opt_14" onclick="selectComp(this.value)" /></td>
