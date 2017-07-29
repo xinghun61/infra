@@ -6,7 +6,7 @@
  <table border="0" cellspacing="0" cellpadding="0" class="cue" style="margin: 2px">
   <tr><td><span>
       Please keep discussions respectful and constructive.
-      See our <a href="https://www.chromium.org/conduct" target="_blank">code of conduct</a>.
+      See our <a href="https://chromium.googlesource.com/chromium/src/+/master/CODE_OF_CONDUCT.md" target="_blank">code of conduct</a>.
       <a href="#" title="Don't show this message again" style="margin-left: 1em" class="dismiss_cue x_icon"></a>
   </span></td></tr>
  </table>
