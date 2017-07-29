@@ -76,8 +76,7 @@ def RecomputeAllDerivedFields(cnxn, services, project, config):
 
 
 def RecomputeAllDerivedFieldsNow(
-    cnxn, services, project, config, lower_bound=None, upper_bound=None,
-    shard_id=None):
+    cnxn, services, project, config, lower_bound=None, upper_bound=None):
   """Re-apply all filter rules to all issues in a project.
 
   Args:
@@ -87,7 +86,6 @@ def RecomputeAllDerivedFieldsNow(
     config: ProjectIssueConfig for that project.
     lower_bound: optional int lowest issue ID to consider, inclusive.
     upper_bound: optional int highest issue ID to consider, exclusive.
-    shard_id: optional int shard_id to read from one replica.
 
   SIDE-EFFECT: updates all issues in the project. Stores and re-indexes
   all those that were changed.
@@ -95,7 +93,7 @@ def RecomputeAllDerivedFieldsNow(
   if lower_bound is not None and upper_bound is not None:
     issues = services.issue.GetIssuesByLocalIDs(
         cnxn, project.project_id, range(lower_bound, upper_bound),
-        shard_id=shard_id, use_cache=False)
+        use_cache=False)
   else:
     issues = services.issue.GetAllIssuesInProject(
         cnxn, project.project_id, use_cache=False)

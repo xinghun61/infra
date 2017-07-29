@@ -217,7 +217,7 @@ NOISY_ISSUE_STARRER_COUNT = 100
 # After a project owner edits the filter rules, we recompute the
 # derived field values in work items that each handle a chunk of
 # of this many items.
-RECOMPUTE_DERIVED_FIELDS_BLOCK_SIZE = 1000
+RECOMPUTE_DERIVED_FIELDS_BLOCK_SIZE = 250
 
 # This is the number of issues listed in the ReindexQueue table that will
 # be processed each minute.

@@ -26,7 +26,7 @@ class RecomputeDerivedFieldsTask(jsonfeed.InternalTask):
         mr.cnxn, mr.specified_project_id)
     filterrules_helpers.RecomputeAllDerivedFieldsNow(
         mr.cnxn, self.services, project, config, lower_bound=mr.lower_bound,
-        upper_bound=mr.upper_bound, shard_id=mr.shard_id)
+        upper_bound=mr.upper_bound)
 
     return {
         'success': True,
