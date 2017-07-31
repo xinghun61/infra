@@ -69,6 +69,10 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
     url = 'https://%s/a/changes/%s/revisions/current/review' % (host, change_id)
     self.SetResponse(url, (200, response_str))
 
+  def _SetSubmitRevertResponse(self, host, change_id, response):
+    url = 'https://%s/a/changes/%s/submit' % (host, change_id)
+    self.SetResponse(url, (200, response))
+
   def GetBackoff(self, *_):  # pragma: no cover
     """Override to avoid sleep."""
     return 0
@@ -646,3 +650,15 @@ class GerritTest(testing.AppengineTestCase):
     time = datetime.datetime(2017, 2, 7, 0, 0, 0)
     self.assertEqual('No-Presubmit: true\nNo-Tree-Checks: true\nNo-Try: true\n',
                      self.gerrit._GetCQFlagsOrExplanation(time))
+
+  def testSubmitRevert(self):
+    change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'
+    response = self.http_client._MakeResponse({'change_id': change_id})
+    self.http_client._SetSubmitRevertResponse(self.server_hostname, change_id,
+                                              response)
+    self.assertTrue(self.gerrit.SubmitRevert(change_id))
+
+  def testGetChangeIdFromReviewUrl(self):
+    change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'
+    url = 'https://server.host.name/q/%s' % change_id
+    self.assertEqual(change_id, self.gerrit.GetChangeIdFromReviewUrl(url))

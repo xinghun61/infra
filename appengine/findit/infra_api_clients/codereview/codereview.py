@@ -33,12 +33,25 @@ class CodeReview(object):  # pragma: no cover.
 
     Args:
       change_id (str or int): The change id of the CL on Gerrit or the issue
-          number of the CL on Rietveld.
+        number of the CL on Rietveld.
 
     Returns:
       The code review url for the change.
     """
     raise NotImplementedError()
+
+  def GetChangeIdFromReviewUrl(self, review_url):
+    """Gets the change id from the code review url.
+
+    Args:
+      review_url (str): The code review url for the change.
+
+    Returns:
+      The change id of the Gerrit Gerrit or the issue number of the Rietveld CL.
+    """
+    if review_url[-1] == '/':
+      review_url = review_url[:-1]
+    return review_url.split('/')[-1]
 
   def PostMessage(self, change_id, message, should_email=True):
     """Posts the given message to the CL codereview of the given change id.
@@ -91,5 +104,16 @@ class CodeReview(object):  # pragma: no cover.
       An object that has a `commits` and a `reverts` properties which are lists
       of objects that map a patchset to a revision, and a patchset to a revert
       CL.
+    """
+    raise NotImplementedError()
+
+  def SubmitRevert(self, change_id):
+    """Submits a revert CL.
+
+    Args:
+      change_id (str or int): The change id on Gerrit.
+
+    Returns:
+      A boolean indicating success.
     """
     raise NotImplementedError()

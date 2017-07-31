@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 import datetime
-import json
+import logging
 import mock
 import os
 import textwrap
@@ -278,3 +278,16 @@ class RietveldTest(testing.AppengineTestCase):
     self.assertIsNotNone(match)
     self.assertEqual('b9f7581b93ae8096afed29d415791803caf2e2e3',
                      match.group('revision'))
+
+  def testGetChangeIdFromReviewUrl(self):
+    change_id = '12345'
+    url = 'https://server.host.name/q/%s' % change_id
+    self.assertEqual(change_id, self.rietveld.GetChangeIdFromReviewUrl(url))
+
+    url += '/'
+    self.assertEqual(change_id, self.rietveld.GetChangeIdFromReviewUrl(url))
+
+  @mock.patch.object(logging, 'error')
+  def testSubmitRevert(self, mock_log):
+    self.rietveld.SubmitRevert('12345')
+    mock_log.assert_has_called('Should not auto submit rietveld reverts.')

@@ -81,9 +81,11 @@ class ClInfoTest(unittest.TestCase):
         self.email,
         self.timestamp + datetime.timedelta(hours=1))
 
-    cl.commits.append(
-        cl_info.Commit(self.patchset_id, self.revision, self.timestamp +
-                       hours(1)))
+    commit_1 = cl_info.Commit(self.patchset_id, self.revision,
+                             self.timestamp + hours(1))
+    cl.commits.append(commit_1)
+    self.assertEqual(commit_1, cl.GetCommitInfoByRevision(self.revision))
+    self.assertIsNone(cl.GetCommitInfoByRevision('randomrevision'))
     self.assertEqual(self.patchset_id,
                      cl.GetPatchsetIdByRevision(self.revision))
 

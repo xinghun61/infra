@@ -234,3 +234,6 @@ class Rietveld(codereview.CodeReview):
   def GetChangeIdForReview(self, review_url):  # pragma: no cover
     u = urlparse.urlparse(review_url)
     return u.path.split('/')[-1]
+
+  def SubmitRevert(self, _):
+    logging.error('Should not auto submit rietveld reverts.')

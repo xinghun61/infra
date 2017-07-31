@@ -132,6 +132,10 @@ class Gerrit(codereview.CodeReview):
     except (TypeError, KeyError):
       return None
 
+  def SubmitRevert(self, change_id):
+    parts = ['changes', change_id, 'submit']
+    return bool(self._Post(parts))
+
   def AddReviewers(self, change_id, reviewers, message=None):
     current_reviewers = self.GetClDetails(change_id).reviewers
     try:

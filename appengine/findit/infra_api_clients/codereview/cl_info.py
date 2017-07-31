@@ -143,9 +143,15 @@ class ClInfo(object):
     }
 
   def GetPatchsetIdByRevision(self, revision):
+    commit = self.GetCommitInfoByRevision(revision)
+    if commit:
+      return commit.patchset_id
+    return None
+
+  def GetCommitInfoByRevision(self, revision):
     for commit in self.commits:
       if commit.revision == revision:
-        return commit.patchset_id
+        return commit
     return None
 
   def GetRevertCLsByRevision(self, revision):

@@ -7,18 +7,28 @@ from infra_api_clients.codereview.rietveld import Rietveld
 from infra_api_clients.codereview.gerrit import Gerrit
 
 HTTP_CLIENT = HttpClientAppengine()
-
+_DEFAULT_RIETVELD_HOST = 'codereview.chromium.org'
+_DEFAULT_GERRIT_HOST = 'chromium-review.googlesource.com'
 
 def GetCodeReviewForReview(review_server_host, code_review_settings=None):
   """Returns an instance of CodeReview implementation or None if unknown."""
   if not review_server_host:
     return None
 
-  settings = code_review_settings or {}
-  if review_server_host in settings.get('rietveld_hosts',
-                                        ['codereview.chromium.org']):
+  if IsCodeReviewRietveld(review_server_host, code_review_settings):
     return Rietveld(review_server_host)
-  elif review_server_host in settings.get('gerrit_hosts',
-                                          ['chromium-review.googlesource.com']):
+  elif IsCodeReviewGerrit(review_server_host, code_review_settings):
     return Gerrit(review_server_host)
   return None
+
+
+def IsCodeReviewRietveld(review_server_host, code_review_settings=None):
+  settings = code_review_settings or {}
+  return review_server_host in settings.get('rietveld_hosts',
+                                            [_DEFAULT_RIETVELD_HOST])
+
+
+def IsCodeReviewGerrit(review_server_host, code_review_settings=None):
+  settings = code_review_settings or {}
+  return review_server_host in settings.get(
+      'gerrit_hosts', [_DEFAULT_GERRIT_HOST])
