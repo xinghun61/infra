@@ -65,6 +65,32 @@ class FindItAPITestCase(auto_stub.TestCase):
       ]
     })
 
+  def test_creates_flake_swarming_task_request_correctly(self):
+    api = findit_api.FindItAPI()
+    api.triggerFlakeSwarmingTask(
+        'test_master', 'test_builder', 1234, 'test_step', 'test', 100)
+    self.client.flakeswarmingtask.assert_called_once_with(body={
+      'master_name': 'test_master',
+      'builder_name': 'test_builder',
+      'build_number': 1234,
+      'step_name': 'test_step',
+      'test_name': 'test',
+      'total_reruns': 100
+    })
+
+  def test_creates_flake_swarming_task_data_request_correctly(self):
+    api = findit_api.FindItAPI()
+    api.checkFlakeSwarmingTask(
+        'test_master', 'test_builder', 1234, 'test_step', 'test', 100)
+    self.client.flakeswarmingtaskdata.assert_called_once_with(body={
+      'master_name': 'test_master',
+      'builder_name': 'test_builder',
+      'build_number': 1234,
+      'step_name': 'test_step',
+      'test_name': 'test',
+      'total_reruns': 100
+    })
+
   def test_uses_staging_instance(self):
     findit_api.FindItAPI(use_staging=True)
     self.assertEquals(self.build_client.call_count, 1)
