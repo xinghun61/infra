@@ -6,6 +6,7 @@ import base64
 
 from google.appengine.ext import ndb
 
+from libs import time_util
 from model.base_build_model import BaseBuildModel
 from model.base_swarming_task import BaseSwarmingTask
 
@@ -45,8 +46,10 @@ class FlakeSwarmingTask(BaseSwarmingTask, BaseBuildModel):
   @staticmethod
   def Create(master_name, builder_name, build_number, step_name,
              test_name):  # pragma: no cover
-    return FlakeSwarmingTask(key=FlakeSwarmingTask._CreateKey(
+    task = FlakeSwarmingTask(key=FlakeSwarmingTask._CreateKey(
         master_name, builder_name, build_number, step_name, test_name))
+    task.requested_time = time_util.GetUTCNow()
+    return task
 
   @ndb.ComputedProperty
   def step_name(self):

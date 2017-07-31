@@ -10,6 +10,7 @@ Current APIs include:
 """
 
 from collections import defaultdict
+from datetime import timedelta
 import json
 import logging
 import pickle
@@ -632,6 +633,8 @@ class FindItApi(remote.Service):
       _FlakeSwarmingTaskResponse: A response with whether the step is supported,
           is in progress, or any data already available about the task.
       BuildStep: A build step with the matching waterfall configuration, if any.
+      FlakeSwarmingTask: The original flake swarming task entity from which the
+          response is based, if any.
     """
     user_email = auth_util.GetUserEmail()
     is_admin = auth_util.IsCurrentUserAdmin()
@@ -647,7 +650,7 @@ class FindItApi(remote.Service):
     step_mapper.FindMatchingWaterfallStep(build_step, test_name)
 
     if not build_step.supported:
-      return _FlakeSwarmingTaskResponse(supported=False), None
+      return _FlakeSwarmingTaskResponse(supported=False), None, None
 
     master_name = build_step.wf_master_name
     builder_name = build_step.wf_builder_name
@@ -669,7 +672,7 @@ class FindItApi(remote.Service):
             fail_count=task.tries - task.successes,
             timeout_seconds=task.timeout_seconds,
             triggering_source=triggering_sources.SOURCES_TO_DESCRIPTIONS.get(
-                task.triggering_source)), build_step
+                task.triggering_source)), build_step, task
       elif error:
         # In case there's an error, do not rerun the swarming task to allow for
         # investigation.
@@ -679,7 +682,7 @@ class FindItApi(remote.Service):
             error=True,
             timeout_seconds=task.timeout_seconds,
             triggering_source=triggering_sources.SOURCES_TO_DESCRIPTIONS.get(
-                task.triggering_source)), build_step
+                task.triggering_source)), build_step, task
       else:
         if task.task_id is not None:  # The task is in progress.
           return _FlakeSwarmingTaskResponse(
@@ -687,11 +690,12 @@ class FindItApi(remote.Service):
               task_id=task.task_id,
               timeout_seconds=task.timeout_seconds,
               triggering_source=triggering_sources.SOURCES_TO_DESCRIPTIONS.get(
-                  task.triggering_source)), build_step
+                  task.triggering_source)), build_step, task
         else:  # The task is still pending.
-          return _FlakeSwarmingTaskResponse(queued=task.queued), build_step
+          return (_FlakeSwarmingTaskResponse(queued=task.queued), build_step,
+                  task)
     else:
-      return _FlakeSwarmingTaskResponse(supported=True), build_step
+      return _FlakeSwarmingTaskResponse(supported=True), build_step, None
 
   @gae_ts_mon.instrument_endpoint()
   @endpoints.method(
@@ -812,7 +816,7 @@ class FindItApi(remote.Service):
       _FlakeSwarmingTaskResponse: A response with whether the step is supported,
           is in progress, or any data already available about the task.
     """
-    response, _ = self._GetFlakeSwarmingTaskResponse(request)
+    response, _, _ = self._GetFlakeSwarmingTaskResponse(request)
     return response
 
   @gae_ts_mon.instrument_endpoint()
@@ -833,11 +837,17 @@ class FindItApi(remote.Service):
       _FlakeSwarmingTaskResponse: A response with whether the step is supported,
           has been queued, its results are available, or an error occurred.
     """
-    response, build_step = self._GetFlakeSwarmingTaskResponse(request)
+    response, build_step, task = self._GetFlakeSwarmingTaskResponse(request)
 
-    if (response.task_id or
-        response.queued or
-        response.supported == False):
+    # Abandon and rerun the task if a previous request has been made through
+    # Findit API but not started within 24 hours.
+    rerun = (task and
+             task.triggering_source == triggering_sources.FINDIT_API and
+             task.queued and
+             task.requested_time < time_util.GetUTCNow() - timedelta(hours=24))
+
+    if (not rerun and
+        (response.task_id or response.queued or response.supported == False)):
       return response
 
     master_name = build_step.wf_master_name
@@ -845,12 +855,20 @@ class FindItApi(remote.Service):
     build_number = build_step.wf_build_number
     step_name = build_step.wf_step_name
 
-    # The task can be triggered, but has not yet been.
-    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
-                                    step_name, request.test_name)
-    task.triggering_source = triggering_sources.FINDIT_API
+    if not task:
+      # The task can be triggered, but has not yet been.
+      task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                      step_name, request.test_name)
+      task.triggering_source = triggering_sources.FINDIT_API
+    else:
+      # Reset the task's request time as though it were new.
+      task.request_time = time_util.GetUTCNow()
+      logging.warning(('Flake swarming task %s/%s/%s/%s/%s was requested more '
+                       'than 24 hours ago. Abandoning and re-requesting.'),
+                      master_name, builder_name, build_number, step_name,
+                      request.test_name)
 
-    # The request for the task is brand new needs to be triggered.
+    # The request needs to be triggered.
     try:
       user_email = auth_util.GetUserEmail()
       _AsyncProcessFlakeSwarmingTaskRequest(

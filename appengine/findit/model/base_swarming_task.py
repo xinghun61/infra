@@ -5,6 +5,7 @@
 from google.appengine.ext import ndb
 
 from libs import analysis_status
+from libs import time_util
 from waterfall.flake import triggering_sources
 
 
@@ -31,12 +32,14 @@ class BaseSwarmingTask(ndb.Model):
   # The revision of the failed build.
   build_revision = ndb.StringProperty(indexed=False)
 
-  # Time when the task is created.
+  # Time when the task is created according to Swarming.
   created_time = ndb.DateTimeProperty(indexed=True)
-  # Time when the task is started.
+  # Time when the task is started according to Swarming.
   started_time = ndb.DateTimeProperty(indexed=False)
-  # Time when the task is completed.
+  # Time when the task is completed according to Swarming.
   completed_time = ndb.DateTimeProperty(indexed=False)
+  # The time this entity was created.
+  requested_time = ndb.DateTimeProperty(indexed=True)
 
   # A URL to call back the pipeline monitoring the progress of this task.
   callback_url = ndb.StringProperty(indexed=False)
@@ -65,6 +68,7 @@ class BaseSwarmingTask(ndb.Model):
     self.created_time = None
     self.started_time = None
     self.completed_time = None
+    self.requested_time = time_util.GetUTCNow()
     self.callback_url = None
     self.callback_target = None
     self.parameters = {}

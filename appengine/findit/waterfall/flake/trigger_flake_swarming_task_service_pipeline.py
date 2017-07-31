@@ -36,13 +36,9 @@ def ScheduleFlakeSwarmingTask(master_name, builder_name, build_number,
   pipeline_job.target = appengine_util.GetTargetNameForModule(
       constants.WATERFALL_BACKEND)
 
-  step_metadata = buildbot.GetStepLog(
-      master_name,
-      builder_name,
-      build_number,
-      step_name,
-      HttpClientAppengine(),
-      'step_metadata')
+  step_metadata = buildbot.GetStepLog(master_name, builder_name, build_number,
+                                      step_name,
+                                      HttpClientAppengine(), 'step_metadata')
 
   if swarming_util.BotsAvailableForTask(step_metadata):
     # Sufficient bots are avialable, trigger the swarming task immediately.
@@ -62,8 +58,6 @@ class TriggerFlakeSwarmingTaskServicePipeline(BasePipeline):
     task = FlakeSwarmingTask.Get(master_name, builder_name, build_number,
                                  step_name, test_name)
     assert task
-    task.queued = False
-    task.put()
 
     with pipeline.InOrder():
       task_id = yield TriggerFlakeSwarmingTaskPipeline(

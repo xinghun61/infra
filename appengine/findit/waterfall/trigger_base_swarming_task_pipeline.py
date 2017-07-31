@@ -12,6 +12,7 @@ from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
 from libs import time_util
+from model.flake.flake_swarming_task import FlakeSwarmingTask
 from waterfall import buildbot
 from waterfall import swarming_util
 from waterfall import waterfall_config
@@ -164,6 +165,11 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
       swarming_task.put()
       return True
     else:
+      if isinstance(swarming_task, FlakeSwarmingTask) and swarming_task.queued:
+        # The task has been created but has not yet been executed for cases it
+        # was triggered through Findit API.
+        return True
+
       if (force or (swarming_task.parameters and iterations_to_rerun and
                     swarming_task.parameters.get('iterations_to_rerun') !=
                     iterations_to_rerun)):
@@ -287,6 +293,10 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
 
     # Update swarming task info.
     swarming_task = self._GetSwarmingTask(*call_args)
+
+    if isinstance(swarming_task, FlakeSwarmingTask):
+      swarming_task.queued = False
+
     swarming_task.task_id = task_id
     swarming_task.timeout_seconds = hard_timeout_seconds
     swarming_task.parameters['tests'] = tests

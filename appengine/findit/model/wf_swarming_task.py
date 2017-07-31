@@ -6,6 +6,7 @@ from collections import defaultdict
 
 from google.appengine.ext import ndb
 
+from libs import time_util
 from model.base_build_model import BaseBuildModel
 from model.base_swarming_task import BaseSwarmingTask
 
@@ -67,6 +68,7 @@ class WfSwarmingTask(BaseBuildModel, BaseSwarmingTask):
         master_name, builder_name, build_number, step_name))
     task.parameters = task.parameters or {}
     task.tests_statuses = task.tests_statuses or {}
+    task.requested_time = time_util.GetUTCNow()
     return task
 
   @staticmethod

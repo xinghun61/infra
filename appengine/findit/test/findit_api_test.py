@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import json
 import mock
 import pickle
@@ -15,6 +16,7 @@ from testing_utils import testing
 from common.waterfall import failure_type
 import findit_api
 from libs import analysis_status
+from libs import time_util
 from model import analysis_approach_type
 from model.base_suspected_cl import RevertCL
 from model.flake.flake_swarming_task import FlakeSwarmingTask
@@ -1304,7 +1306,8 @@ class FinditApiTest(testing.EndpointsTestCase):
         body=flake_request)
 
   @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
-  def testGetExistingFlakeSwarmingTaskInProgress(self, mocked_fn):
+  @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2017, 7, 31))
+  def testGetExistingFlakeSwarmingTaskInProgress(self, _, mocked_fn):
     self.mock_current_user(user_email='test@google.com')
     master_name = 'm'
     builder_name = 'b'
@@ -1346,10 +1349,11 @@ class FinditApiTest(testing.EndpointsTestCase):
         timeout_seconds=timeout_seconds,
         triggering_source='Findit pipeline')
 
-    response, build_step = findit_api.FindItApi()._GetFlakeSwarmingTaskResponse(
-        flake_request)
+    response, build_step, returned_task = (
+        findit_api.FindItApi()._GetFlakeSwarmingTaskResponse(flake_request))
     self.assertEqual(expected_response, response)
     self.assertIsNotNone(build_step)
+    self.assertEqual(task, returned_task)
 
   @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
   def testGetExistingFlakeSwarmingTaskAlreadyCompleted(self, mocked_fn):
@@ -1400,11 +1404,12 @@ class FinditApiTest(testing.EndpointsTestCase):
         timeout_seconds=timeout_seconds,
         triggering_source='Findit pipeline')
 
-    response, build_step = findit_api.FindItApi()._GetFlakeSwarmingTaskResponse(
-        flake_request)
+    response, build_step, returned_task = (
+        findit_api.FindItApi()._GetFlakeSwarmingTaskResponse(flake_request))
 
     self.assertEqual(expected_response, response)
     self.assertIsNotNone(build_step)
+    self.assertEqual(task, returned_task)
 
   @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
   def testGetExistingFlakeSwarmingTaskError(self, mocked_fn):
@@ -1452,11 +1457,12 @@ class FinditApiTest(testing.EndpointsTestCase):
         timeout_seconds=timeout_seconds,
         triggering_source='Findit pipeline')
 
-    response, build_step = findit_api.FindItApi()._GetFlakeSwarmingTaskResponse(
-        flake_request)
+    response, build_step, returned_task = (
+        findit_api.FindItApi()._GetFlakeSwarmingTaskResponse(flake_request))
 
     self.assertEqual(expected_response, response)
     self.assertIsNotNone(build_step)
+    self.assertEqual(task, returned_task)
 
   @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
   def testGetFlakeSwarmingTaskResponseNotSupported(self, mocked_fn):
@@ -1476,10 +1482,11 @@ class FinditApiTest(testing.EndpointsTestCase):
         test_name='t')
     expected_response = findit_api._FlakeSwarmingTaskResponse(supported=False)
 
-    response, build_step = findit_api.FindItApi()._GetFlakeSwarmingTaskResponse(
-        flake_request)
+    response, build_step, task = (
+        findit_api.FindItApi()._GetFlakeSwarmingTaskResponse(flake_request))
     self.assertEqual(expected_response, response)
     self.assertIsNone(build_step)
+    self.assertIsNone(task)
 
   @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
   def testTriggerExistingFlakeSwarmingTaskNotYetStarted(self, mocked_fn):
@@ -1583,10 +1590,56 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(200, response.status_int)
     self.assertTrue(response.json_body.get('queued'))
 
-    task = FlakeSwarmingTask.Get(
-        master_name, builder_name, build_number, step_name, test_name)
+    task = FlakeSwarmingTask.Get(master_name, builder_name, build_number,
+                                 step_name, test_name)
 
     self.assertEqual(triggering_sources.FINDIT_API, task.triggering_source)
+
+  @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
+  @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2017, 7, 31))
+  def testTriggerNewFlakeSwarmingTaskRerunAfter24HoursOld(self, _, mocked_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+
+    def MockedFindMatchingWaterfallStep(build_step, _):
+      build_step.wf_master_name = master_name
+      build_step.wf_builder_name = builder_name
+      build_step.wf_build_number = build_number
+      build_step.wf_step_name = step_name
+      build_step.supported = True
+
+    mocked_fn.side_effect = MockedFindMatchingWaterfallStep
+    self.mock_current_user(user_email='test@google.com')
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.requested_time = datetime(2017, 7, 29)
+    task.queued = True
+    task.triggering_source = triggering_sources.FINDIT_API
+    task.put()
+
+    flake_request = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': step_name,
+        'test_name': test_name,
+        'total_reruns': 100,
+    }
+
+    response = self.call_api('TriggerFlakeSwarmingTask', body=flake_request)
+
+    self.assertEqual(200, response.status_int)
+    self.assertTrue(response.json_body.get('queued'))
+
+    task = FlakeSwarmingTask.Get(master_name, builder_name, build_number,
+                                 step_name, test_name)
+
+    self.assertEqual(triggering_sources.FINDIT_API, task.triggering_source)
+    self.assertTrue(response.json_body.get('queued'))
 
   @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
   def testGetFlakeSwarmingTaskData(self, mocked_fn):
