@@ -60,14 +60,16 @@ def _GetSwarmbucketBuilders():
 
 def _GetBotFromBuildbucketResponse(response):
   #TODO(move this to buildbucket_client.py or where appropriate.
-  master = response['bucket']
-  master = master[len('master.'):] if master.startswith('master.') else master
-  for tag in response['tags']:
-    if ':' in tag:
-      k, v = tag.split(':', 1)
-      if k == 'builder':
-        return '%s/%s' % (master, v)
-  logging.exception('Buildbucket response does not specify a builder tag')
+  if response and 'bucket' in response:
+    master = response['bucket']
+    master = master[len('master.'):] if master.startswith('master.') else master
+    for tag in response['tags']:
+      if ':' in tag:
+        k, v = tag.split(':', 1)
+        if k == 'builder':
+          return '%s/%s' % (master, v)
+  logging.exception(
+      'Buildbucket response is empty or does not specify a bucket/builder')
   return None
 
 
@@ -86,7 +88,7 @@ def _FindRecentSwarmbucketJobs(start, end, builders):
   for try_job_data in try_job_data_list:
     this_builder = _GetBotFromBuildbucketResponse(
         try_job_data.last_buildbucket_response)
-    if this_builder in builders:
+    if this_builder and this_builder in builders:
       relevant_try_job_data.append({
           'try_job_data': try_job_data,
           'builder': this_builder

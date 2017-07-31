@@ -142,6 +142,12 @@ class SwarmbucketPerformanceTest(testing.AppengineTestCase):
             'bucket': 'luci.chromium.mac',
             'tags': ['other:tag']
         }))
+    self.assertIsNone(
+        swarmbucket_performance._GetBotFromBuildbucketResponse({
+            'tags': ['other:tag']
+        }))
+    self.assertIsNone(
+        swarmbucket_performance._GetBotFromBuildbucketResponse(None))
     with self.assertRaises(Exception):
       swarmbucket_performance._GetBotFromBuildbucketResponse({
           'bucket': 'luci.chromium.mac'
