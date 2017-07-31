@@ -19,6 +19,8 @@ from analysis.type_enums import CrashClient
 from app.common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
 from app.common.model.cracas_crash_analysis import CracasCrashAnalysis
 from app.common.model.fracas_crash_analysis import FracasCrashAnalysis
+from app.common.model.uma_sampling_profiler_analysis import (
+    UMASamplingProfilerAnalysis)
 from libs.cache_decorator import GeneratorCached
 from local_libs import local_iterator
 from local_libs.local_cache import LocalCache
@@ -29,7 +31,9 @@ _TODAY = date.today().strftime('%Y-%m-%d')
 _A_YEAR_AGO = (date.today() - timedelta(days=365)).strftime('%Y-%m-%d')
 _CLIENT_ID_TO_CLASS = {CrashClient.FRACAS: FracasCrashAnalysis,
                        CrashClient.CRACAS: CracasCrashAnalysis,
-                       CrashClient.CLUSTERFUZZ: ClusterfuzzAnalysis}
+                       CrashClient.CLUSTERFUZZ: ClusterfuzzAnalysis,
+                       CrashClient.UMA_SAMPLING_PROFILER:
+                       UMASamplingProfilerAnalysis}
 
 
 # TODO(crbug.com/662540): Add unittests.
