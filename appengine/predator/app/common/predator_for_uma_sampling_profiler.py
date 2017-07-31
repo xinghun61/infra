@@ -56,7 +56,7 @@ class PredatorForUMASamplingProfiler(PredatorApp):
                                       top_frame_index_feature,
                                       touch_crashed_file_feature],
                                      include_renamed_paths=True),
-         TouchCrashedDirectoryFeature(),
+         TouchCrashedDirectoryFeature(include_test_files=False),
          TouchCrashedComponentFeature(self._component_classifier),
          NumberOfTouchedFilesFeature()])
 

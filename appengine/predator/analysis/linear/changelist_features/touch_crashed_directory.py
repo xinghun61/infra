@@ -7,6 +7,7 @@ from collections import namedtuple
 import logging
 import math
 import os
+import re
 
 from analysis import crash_util
 from analysis.crash_match import CrashedDirectory
@@ -21,6 +22,14 @@ class TouchCrashedDirectoryFeature(Feature):
   value 0 (aka normal-domain value of 1). When the there is no directory match,
   we return log-domain value -inf (aka normal-domain value of 0).
   """
+  def __init__(self, include_test_files=True):
+    """
+    Args:
+      include_test_files (boolean): If False, it makes the feature ignore test
+        files that the suspect touched (e.g. unittest, browsertest, perftest).
+    """
+    self._include_test_files = include_test_files
+
   @property
   def name(self):
     return 'TouchCrashedDirectory'
@@ -41,6 +50,9 @@ class TouchCrashedDirectoryFeature(Feature):
     Returns:
       Boolean indicating whether it is a match or not.
     """
+    if not self._include_test_files and _IsTestFile(touched_file.new_path):
+      return False
+
     touched_dir = (os.path.dirname(touched_file.new_path)
                    if touched_file.new_path else None)
     return crash_util.IsSameFilePath(crashed_directory.value, touched_dir)
@@ -84,3 +96,9 @@ class TouchCrashedDirectoryFeature(Feature):
           changed_files=None)
 
     return FeatureValueGivenReport
+
+
+def _IsTestFile(filename):
+  regex = re.compile(
+      r'(unittest|perftest|performancetest|browsertest|_test)\.[^/.]+$')
+  return regex.search(filename) is not None

@@ -8,6 +8,8 @@ from analysis.analysis_testcase import AnalysisTestCase
 from analysis.crash_report import CrashReport
 from analysis.linear.changelist_features.touch_crashed_directory import (
     TouchCrashedDirectoryFeature)
+from analysis.linear.changelist_features.touch_crashed_directory import (
+    _IsTestFile)
 from analysis.linear.changelist_features.min_distance import Distance
 from analysis.linear.changelist_features.min_distance import MinDistanceFeature
 from analysis.linear.feature import ChangedFile
@@ -31,18 +33,19 @@ class TouchCrashedDirectoryFeatureTest(AnalysisTestCase):
 
   def setUp(self):
     super(TouchCrashedDirectoryFeatureTest, self).setUp()
-    self._feature = TouchCrashedDirectoryFeature()
-
-  def testFeatureValueIsOneWhenThereIsMatchedDirectory(self):
-    """Test that feature value is 1 when there is matched directory."""
     frame1 = StackFrame(0, 'src/', 'func', 'p/f.cc',
                         'src/p/f.cc', [2, 3], 'h://repo')
     stack = CallStack(0, frame_list=[frame1])
     stack_trace = Stacktrace([stack], stack)
     deps = {'src/': Dependency('src/', 'h://repo', '8')}
     dep_rolls = {'src/': DependencyRoll('src/', 'h://repo', '2', '6')}
-    report = CrashReport('8', 'sig', 'linux', stack_trace,
-                         ('2', '6'), deps, dep_rolls)
+
+    self._report = CrashReport('8', 'sig', 'linux', stack_trace, ('2', '6'),
+                               deps, dep_rolls)
+    self._feature = TouchCrashedDirectoryFeature()
+
+  def testFeatureValueIsOneWhenThereIsMatchedDirectory(self):
+    """Test that feature value is 1 when there is matched directory."""
     changelog = self.GetDummyChangeLog()._replace(
         touched_files=[FileChangeInfo.FromDict({
             'change_type': 'add',
@@ -50,19 +53,47 @@ class TouchCrashedDirectoryFeatureTest(AnalysisTestCase):
             'old_path': None,
         })])
     suspect = Suspect(changelog, 'src/')
-    feature_value = self._feature(report)(suspect)
+    feature_value = self._feature(self._report)(suspect)
     self.assertEqual(1.0, feature_value.value)
 
   def testFeatureValueIsZeroWhenNoMatchedDirectory(self):
     """Test that the feature returns 0 when there no matched directory."""
-    frame = StackFrame(0, 'src/', 'func', 'dir/f.cc',
-                        'src/dir/f.cc', [2, 3], 'h://repo')
-    stack = CallStack(0, frame_list=[frame])
-    stack_trace = Stacktrace([stack], stack)
-    deps = {'src/': Dependency('src/', 'h://repo', '8')}
-    dep_rolls = {'src/': DependencyRoll('src/', 'h://repo', '2', '6')}
-    report = CrashReport('8', 'sig', 'linux', stack_trace,
-                         ('2', '6'), deps, dep_rolls)
     suspect = Suspect(self.GetDummyChangeLog(), 'src/')
-    feature_value = self._feature(report)(suspect)
+    feature_value = self._feature(self._report)(suspect)
     self.assertEqual(0.0, feature_value.value)
+
+  def testIncludeTestFilesFlag(self):
+    """Tests the ``include_test_files`` flag."""
+    # Change in a test file:
+    changelog = self.GetDummyChangeLog()._replace(
+        touched_files=[FileChangeInfo.FromDict({
+            'change_type': 'modify',
+            'new_path': 'p/a_unittest.cc',
+            'old_path': 'p/a_unittest.cc',
+        })])
+    suspect = Suspect(changelog, 'src/')
+
+    feature_with_flag = TouchCrashedDirectoryFeature(include_test_files=True)
+    feature_value = feature_with_flag(self._report)(suspect)
+    self.assertEqual(1.0, feature_value.value)
+
+    feature_without_flag = TouchCrashedDirectoryFeature(
+        include_test_files=False)
+    feature_value = feature_without_flag(self._report)(suspect)
+    self.assertEqual(0.0, feature_value.value)
+
+  def testIsTestFile(self):
+    """Tests the ``_IsTestFile`` function."""
+    self.assertTrue(_IsTestFile('decoder-unittest.cc'))
+    self.assertTrue(_IsTestFile('gn_helpers_unittest.py'))
+    self.assertTrue(_IsTestFile('cpu_unittest.cc'))
+    self.assertTrue(_IsTestFile('browser_browsertest.cc'))
+    self.assertTrue(_IsTestFile('rtree_perftest.cc'))
+    self.assertTrue(_IsTestFile('mach_ports_performancetest.cc'))
+    self.assertTrue(_IsTestFile('address_ui_test.cc'))
+
+    self.assertFalse(_IsTestFile('callback.h'))
+    self.assertFalse(_IsTestFile('location.cc'))
+    self.assertFalse(_IsTestFile('gtest_xml_unittest_result_printer.cc'))
+    self.assertFalse(_IsTestFile('shortest.cc'))
+
