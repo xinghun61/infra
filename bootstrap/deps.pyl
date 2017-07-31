@@ -125,6 +125,11 @@
     'repo': 'external/github.com/google/google-api-python-client',
     'rev': 'd83246e69b22f084d1ae92da5897572a4a4eb03d',
   },
+  'google_apitools': {
+    'build': '0',
+    'gs': 'b7c702257231818814b99caab8c70f343c7f08f9.tar.gz',
+    'version': '0.5.10',
+  },
   'google_auth': {
     'build': '0',
     'gs': 'd2e44427f82b37fca41487cd00793a770be65989.tar.gz',
