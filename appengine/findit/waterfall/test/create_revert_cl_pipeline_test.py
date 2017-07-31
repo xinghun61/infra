@@ -46,7 +46,6 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.mock(suspected_cl_util, 'GetCulpritInfo', MockGetCulpritInfo)
 
-  @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[123])
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
   @mock.patch.object(
@@ -66,11 +65,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     mock_revert.return_value = '54321'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, commit_position)
-    culprit.builds = {
-      'm/b/1': {
-          'status': None
-      }
-    }
+    culprit.builds = {'m/b/1': {'status': None}}
     culprit.put()
     pipeline = CreateRevertCLPipeline(repo_name, revision)
     revert_status = pipeline.run(repo_name, revision)
@@ -86,9 +81,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
         Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
         culprit for failures in the build cycles as shown on:
         https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
-        Sample Build: %s""") % (
-            commit_position, culprit.key.urlsafe(),
-            buildbot.CreateBuildUrl('m', 'b', '1'))
+        Sample Build: %s""") % (commit_position, culprit.key.urlsafe(),
+                                buildbot.CreateBuildUrl('m', 'b', '1'))
     mock_revert.assert_called_with(reason, self.review_change_id, '20001')
 
   @mock.patch.object(
@@ -120,7 +114,6 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(culprit.revert_cl)
     self.assertIsNone(culprit.revert_pipeline_id)
 
-  @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[123])
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
   @mock.patch.object(

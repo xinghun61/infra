@@ -17,6 +17,7 @@ from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 from waterfall.send_notification_to_irc_pipeline import (
     SendNotificationToIrcPipeline)
+from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from waterfall.test import wf_testcase
 
 
@@ -104,6 +105,12 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         CreateRevertCLPipeline,
         create_revert_cl_pipeline.CREATED_BY_SHERIFF,
         expected_args=[repo_name, revision])
+    self.MockPipeline(
+        SubmitRevertCLPipeline,
+        True,
+        expected_args=[
+            repo_name, revision, create_revert_cl_pipeline.CREATED_BY_SHERIFF
+        ])
     self.MockPipeline(
         SendNotificationToIrcPipeline,
         None,

@@ -85,7 +85,7 @@ def _RevertCulprit(repo_name, revision, pipeline_id):
 
   culprit = _UpdateCulprit(repo_name, revision)
   # 0. Gets information about this culprit.
-  culprit_info = (suspected_cl_util.GetCulpritInfo(repo_name, revision))
+  culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
 
   culprit_commit_position = culprit_info['commit_position']
   culprit_change_id = culprit_info['review_change_id']
@@ -158,9 +158,8 @@ def _RevertCulprit(repo_name, revision, pipeline_id):
         Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
         culprit for failures in the build cycles as shown on:
         https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
-        Sample Build: %s""") % (
-        culprit_commit_position or revision, culprit.key.urlsafe(),
-        sample_build_url)
+        Sample Build: %s""") % (culprit_commit_position or revision,
+                                culprit.key.urlsafe(), sample_build_url)
 
     revert_change_id = codereview.CreateRevert(
         revert_reason, culprit_change_id,

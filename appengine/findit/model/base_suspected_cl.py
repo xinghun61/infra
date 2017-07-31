@@ -47,7 +47,7 @@ class BaseSuspectedCL(ndb.Model):
   # Set only if Findit creates the reverting CL.
   revert_cl = ndb.LocalStructuredProperty(RevertCL, compressed=True)
 
-  # A flag to indicate if revet is supposed to be done for this suspected CL.
+  # A flag to indicate if revert is supposed to be done for this suspected CL.
   # It will be updated to True when Findit tries to revert it.
   should_be_reverted = ndb.BooleanProperty(indexed=True, default=False)
 
@@ -66,6 +66,14 @@ class BaseSuspectedCL(ndb.Model):
   # The ID of the pipeline that is reverting the culprit, if any. This value
   # should be None if the culprit is not in the process of being reverted.
   revert_pipeline_id = ndb.StringProperty(indexed=False)
+
+  # Status of the process of submitting revert.
+  # The statuses are described in analysis_status.py
+  revert_submission_status = ndb.IntegerProperty(indexed=False, default=None)
+
+  # The ID of the pipeline that is submitting revert of the culprit, if any.
+  # This value should be None if a revert is not being submitted.
+  submit_revert_pipeline_id = ndb.StringProperty(indexed=False)
 
   # When the code-review of this culprit was notified.
   cr_notification_time = ndb.DateTimeProperty(indexed=True)

@@ -14,6 +14,7 @@ from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 from waterfall.send_notification_to_irc_pipeline import (
     SendNotificationToIrcPipeline)
+from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 
 
 def _LatestBuildFailed(master_name, builder_name, build_number):
@@ -52,8 +53,8 @@ class RevertAndNotifyCulpritPipeline(BasePipeline):
     if not _LatestBuildFailed(master_name, builder_name, build_number):
       # The builder has turned green, don't need to revert or send notification.
       logging.info('No revert or notification needed for culprit(s) for '
-                   '%s/%s/%s since the builder has turned green.' % (
-                       master_name, builder_name, build_number))
+                   '%s/%s/%s since the builder has turned green.', master_name,
+                   builder_name, build_number)
       return
 
     # There is a try job result, checks if we can revert the culprit or send
@@ -67,6 +68,7 @@ class RevertAndNotifyCulpritPipeline(BasePipeline):
       force_notify = [repo_name, revision] in heuristic_cls
 
       revert_status = yield CreateRevertCLPipeline(repo_name, revision)
+      yield SubmitRevertCLPipeline(repo_name, revision, revert_status)
       yield SendNotificationToIrcPipeline(repo_name, revision, revert_status)
       yield SendNotificationForCulpritPipeline(
           master_name, builder_name, build_number, repo_name, revision,
