@@ -209,7 +209,8 @@ class InboundEmailTest(unittest.TestCase):
         'user@example.com', 111L, 'issue title', 'issue body', 'incident')
     self.assertIsNone(ret)
 
-  def testProcessAlert_Basic(self):
+  def testProcessAlert_NewIssue(self):
+    """When an alert for a new incident comes in, create a new issue."""
     self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
     self.services.config.LookupLabelID(
         self.cnxn, self.project.project_id, 'Incident-Id-incident-1'
@@ -223,6 +224,37 @@ class InboundEmailTest(unittest.TestCase):
         'Filed by user@example.com on behalf of user@google.com\n\nissue body'
         ).AndReturn(None)
 
+    self.mox.ReplayAll()
+
+    ret = self.inbound.ProcessAlert(
+        self.cnxn, self.project, self.project_addr, 'user@google.com',
+        'user@example.com', 111L, 'issue title', 'issue body', 'incident-1')
+
+    self.mox.VerifyAll()
+    self.assertIsNone(ret)
+
+  def testProcessAlert_ExistingIssue(self):
+    """When an alert for an ongoing incident comes in, add a comment."""
+    self.issue.labels = ['Incident-Id-incident-1']
+    self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
+    self.services.config.LookupLabelID(
+        self.cnxn, self.project.project_id, 'Incident-Id-incident-1'
+    ).AndReturn(1234)
+
+    self.mox.StubOutWithMock(self.services.issue, 'GetIIDsByLabelIDs')
+    self.services.issue.GetIIDsByLabelIDs(
+        self.cnxn, [1234], self.project.project_id, None
+        ).AndReturn([1])
+
+    self.mox.StubOutWithMock(self.services.issue, 'GetOpenAndClosedIssues')
+    self.services.issue.GetOpenAndClosedIssues(
+        self.cnxn, [1]).AndReturn(([self.issue], []))
+
+    self.mox.StubOutWithMock(self.services.issue, 'CreateIssueComment')
+    self.services.issue.CreateIssueComment(
+        self.cnxn, self.issue, 111L,
+        'Filed by user@example.com on behalf of user@google.com\n\nissue body'
+        ).AndReturn(None)
     self.mox.ReplayAll()
 
     ret = self.inbound.ProcessAlert(

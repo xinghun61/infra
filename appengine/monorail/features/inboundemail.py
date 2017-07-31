@@ -252,7 +252,6 @@ class InboundEmail(webapp2.RequestHandler):
             cnxn, issue_ids)
 
         latest_issue = None
-
         # Find the most recently modified open issue.
         for issue in issues:
           if not latest_issue:
@@ -260,12 +259,11 @@ class InboundEmail(webapp2.RequestHandler):
           elif issue.modified_timestamp > latest_issue.modified_timestamp:
             latest_issue = issue
 
-          if latest_issue:
-            # Add a reply to the existing issue for this incident.
-            self.services.issue.CreateIssueComment(
-                cnxn, project.project_id, latest_issue.local_id, author_id,
-                body)
-            return None
+        if latest_issue:
+          # Add a reply to the existing issue for this incident.
+          self.services.issue.CreateIssueComment(
+              cnxn, latest_issue, author_id, body)
+          return None
 
     self.services.issue.CreateIssue(
         cnxn, self.services, project.project_id, subject, status, owner_id,
