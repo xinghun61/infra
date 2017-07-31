@@ -79,6 +79,12 @@
     'rev': '69365ce2041081fe6b109496bbb9c56f86ccb7b5',
     'implicit': True,  # Required by pyOpenSSL
   },
+  'dataflow': {
+    'version': '0.0.1',
+    'build': '0',
+    'repo': 'infra/infra/packages/dataflow',
+    'rev': '163693e303fe73e10f15e4b60e053aa3d0bfea55',
+  },
   'dill': {
     'build': '0',
     'gs': '98ae6835db2bd5f1b7f1bc420275c1e9709f1a64.zip',
