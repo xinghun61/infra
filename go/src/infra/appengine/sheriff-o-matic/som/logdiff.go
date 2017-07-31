@@ -12,8 +12,10 @@ import (
 	"github.com/aryann/difflib"
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/urlfetch"
+	"github.com/luci/luci-go/common/tsmon/distribution"
 	"github.com/luci/luci-go/common/tsmon/field"
 	"github.com/luci/luci-go/common/tsmon/metric"
+	tsmon_types "github.com/luci/luci-go/common/tsmon/types"
 	"github.com/luci/luci-go/server/auth"
 	"github.com/luci/luci-go/server/router"
 
@@ -27,7 +29,21 @@ const (
 )
 
 var (
-	logdiffSize = metric.NewInt("sheriff_o_matic/analyzer/logdiff_size", "logdiff size over time", nil, field.String("tree"))
+	logdiffSize = metric.NewCumulativeDistribution(
+		"sheriff_o_matic/analyzer/logdiff_size", "logdiff size in bytes",
+		&tsmon_types.MetricMetadata{Units: tsmon_types.Bytes},
+		distribution.DefaultBucketer,
+		field.String("tree"))
+	failingSize = metric.NewCumulativeDistribution(
+		"sheriff_o_matic/analyzer/logdiff_failing_size", "failing log build size in bytes",
+		&tsmon_types.MetricMetadata{Units: tsmon_types.Bytes},
+		distribution.DefaultBucketer,
+		field.String("tree"))
+	passingSize = metric.NewCumulativeDistribution(
+		"sheriff_o_matic/analyzer/logdiff_passing_size", "passing build log size in bytes",
+		&tsmon_types.MetricMetadata{Units: tsmon_types.Bytes},
+		distribution.DefaultBucketer,
+		field.String("tree"))
 )
 
 // LogDiff is the entity that will be stored in datastore.
@@ -163,6 +179,11 @@ func LogdiffWorker(ctx *router.Context) {
 		return
 	}
 	diffs := difflib.Diff(res1.log, res2)
+	joined1 := totalBytes(res1.log)
+	passingSize.Add(c, float64(joined1), "chromium")
+	joined2 := totalBytes(res2)
+	failingSize.Add(c, float64(joined2), "chromium")
+
 	merged := mergeLines(diffs)
 
 	data, err := json.Marshal(merged)
@@ -189,12 +210,20 @@ func LogdiffWorker(ctx *router.Context) {
 	}
 	diff.Diffs = buffer.Bytes()
 	diff.Complete = true
-	logdiffSize.Set(c, int64(len(diff.Diffs)), "chromium")
+	logdiffSize.Add(c, float64(len(diff.Diffs)), "chromium")
 	err = datastore.Put(c, diff)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error storing Logdiff: %v", err))
 		return
 	}
+}
+
+func totalBytes(str []string) int64 {
+	ret := 0
+	for _, s := range str {
+		ret += len([]byte(s))
+	}
+	return int64(ret)
 }
 
 // mergeLines will return a new diff where adjacent records with the same diff type are merged into one
