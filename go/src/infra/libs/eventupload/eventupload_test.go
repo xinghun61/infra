@@ -5,29 +5,20 @@
 package eventupload
 
 import (
-	"context"
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/luci/luci-go/common/tsmon"
 
 	"cloud.google.com/go/bigquery"
 )
 
 type eventUploader interface {
-	Put(ctx context.Context, src interface{}) error
+	Put(src interface{}) error
 }
 
 type mockUploader chan []fakeEvent
 
-func testContext() context.Context {
-	ctx := context.Background()
-	ctx = tsmon.WithState(ctx, tsmon.NewState())
-	return ctx
-}
-
-func (u mockUploader) Put(ctx context.Context, src interface{}) error {
+func (u mockUploader) Put(src interface{}) error {
 	srcs := src.([]interface{})
 	var fes []fakeEvent
 	for _, fe := range srcs {
@@ -53,9 +44,8 @@ func expectPutCalled(t *testing.T, u mockUploader, want []fakeEvent) {
 func TestClose(t *testing.T) {
 	t.Parallel()
 
-	ctx := testContext()
 	u := make(mockUploader, 1)
-	bu, err := NewBatchUploader(ctx, u)
+	bu, err := NewBatchUploader(u)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,9 +76,8 @@ func TestClose(t *testing.T) {
 func TestUpload(t *testing.T) {
 	t.Parallel()
 
-	ctx := testContext()
 	u := make(mockUploader, 1)
-	bu, err := NewBatchUploader(ctx, &u)
+	bu, err := NewBatchUploader(&u)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -134,25 +123,6 @@ func TestPrepareSrc(t *testing.T) {
 	}
 }
 
-func TestCounterMetric(t *testing.T) {
-	t.Parallel()
-
-	ctx := testContext()
-	u := make(mockUploader, 1)
-	bu, err := NewBatchUploader(ctx, &u)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer bu.Close()
-
-	bu.UploadMetricName = "fakeCounter"
-
-	bu.start() // To actually create the metric
-	if got, want := bu.uploads.Info().Name, "fakeCounter"; got != want {
-		t.Errorf("got: %s; want: %s", got, want)
-	}
-}
-
 func TestStage(t *testing.T) {
 	t.Parallel()
 
@@ -171,9 +141,8 @@ func TestStage(t *testing.T) {
 		},
 	}
 	for _, tc := range tcs {
-		ctx := testContext()
 		u := make(mockUploader, 1)
-		bu, err := NewBatchUploader(ctx, &u)
+		bu, err := NewBatchUploader(&u)
 		if err != nil {
 			t.Fatal(err)
 		}
