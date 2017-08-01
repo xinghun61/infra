@@ -269,6 +269,18 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     self.assertEqual([], analysis.GetDataPointsWithinBuildNumberRange(100, 110))
 
+  def testGetDataPointsWithinCommitPositionRange(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(commit_position=1000),
+        DataPoint.Create(commit_position=1005),
+        DataPoint.Create(commit_position=1007),
+        DataPoint.Create(commit_position=1010)
+    ]
+    self.assertEqual(analysis.data_points[-2:],
+                     analysis.GetDataPointsWithinCommitPositionRange(
+                         1007, 2000))
+
   def testRemoveDataPointWithBuildNumber(self):
     data_points = [
         DataPoint.Create(build_number=100, commit_position=1000),
@@ -315,3 +327,38 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis.try_job_status = analysis_status.COMPLETED
     analysis.Update(try_job_status=analysis_status.COMPLETED)
     self.assertEqual(analysis_status.COMPLETED, analysis.try_job_status)
+
+  def testFindMatchingDataPoint(self):
+    old_data_point = DataPoint.Create(
+        commit_position=1,
+        pass_rate=1.0,
+        iterations=10,
+        blame_list=['r1', 'r2'])
+    new_data_point = DataPoint.Create(
+        commit_position=2,
+        pass_rate=0.5,
+        iterations=10,
+        blame_list=['r1', 'r2'])
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [old_data_point]
+    self.assertIsNone(analysis.FindMatchingDataPointWithCommitPosition(None))
+    self.assertIsNone(
+        analysis.FindMatchingDataPointWithCommitPosition(
+            new_data_point.commit_position))
+    self.assertEqual(old_data_point,
+                     analysis.FindMatchingDataPointWithCommitPosition(
+                         old_data_point.commit_position))
+
+  def testFindMatchingDataPointWithBuildNumber(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(build_number=100),
+        DataPoint.Create(build_number=103),
+        DataPoint.Create(build_number=200),
+        DataPoint.Create(commit_position=1000)
+    ]
+    self.assertEqual(
+        100, analysis.FindMatchingDataPointWithBuildNumber(100).build_number)
+    self.assertIsNone(analysis.FindMatchingDataPointWithBuildNumber(105))
+    self.assertIsNone(analysis.FindMatchingDataPointWithBuildNumber(None))

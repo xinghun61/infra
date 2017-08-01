@@ -280,12 +280,11 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       data_points (list): A list of DataPoint objects.
       lower_bound_build_number (int): The earlist build number a data point can
           have not to be filtered out. If None is passed, defaults to 0.
-      upper_bound_commit_position (int): The latest commit position a data point
-          can have not to be filtered out. If none is passed, defaults to
-          infinity.
+      upper_bound_build_number (int): The latest build number a data point can
+          have not to be filtered out. If none is passed, defaults to infinity.
 
     Returns:
-      A list of DataPoins filtered by the input commit positions.
+      A list of DataPoints filtered by the input build numbers.
     """
     if lower_bound_build_number is None and upper_bound_build_number is None:
       return self.data_points
@@ -294,10 +293,26 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     upper_bound = self.GetCommitPositionOfBuild(
         upper_bound_build_number) or float('inf')
 
+    return self.GetDataPointsWithinCommitPositionRange(lower_bound, upper_bound)
+
+  def GetDataPointsWithinCommitPositionRange(self, lower_bound_commit_position,
+                                             upper_bound_commit_position):
+    """Filters data_points by lower and upper bound commit positions.
+
+    Args:
+      lower_bound_commit_position (int): The earlist commit position of a data
+          point to include.
+      upper_bound_commit_position (int): The latest commit position of a data
+          point to include.
+
+    Returns:
+      A list of DataPoins filtered by the input commit positions.
+    """
+
     def position_in_bounds(x):
       return (x.commit_position is not None and
-              x.commit_position >= lower_bound and
-              x.commit_position <= upper_bound)
+              x.commit_position >= lower_bound_commit_position and
+              x.commit_position <= upper_bound_commit_position)
 
     return filter(position_in_bounds, self.data_points)
 
@@ -308,6 +323,38 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   def RemoveDataPointWithCommitPosition(self, commit_position):
     self.data_points = filter(lambda x: x.commit_position != commit_position,
                               self.data_points)
+
+  def FindMatchingDataPointWithCommitPosition(self, commit_position):
+    """Finds the data point with the same commit_position as the given one.
+
+    Args:
+      commit_position (int): DataPoint with the matching commit position to
+          search for in the list.
+
+    Returns:
+      A DataPoint with the matching commit_position if found, else None.
+    """
+    if commit_position is None:
+      return None
+
+    return next((data_point for data_point in self.data_points
+                 if data_point.commit_position == commit_position), None)
+
+  def FindMatchingDataPointWithBuildNumber(self, build_number):
+    """Finds the data point with the same build_number as the given one.
+
+    Args:
+      build_number (int): DataPoint with the matching build number to search for
+          in the list.
+
+    Returns:
+      A DataPoint with the matching build_number if found, else None.
+    """
+    if build_number is None:
+      return None
+
+    return next((data_point for data_point in self.data_points
+                 if data_point.build_number == build_number), None)
 
   def Update(self, **kwargs):
     """Updates fields according to what's specified in kwargs.

@@ -18,6 +18,7 @@ from model.wf_swarming_task import WfSwarmingTask
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
+from waterfall.flake import flake_constants
 from waterfall.flake import lookback_algorithm
 from waterfall.flake.initialize_flake_try_job_pipeline import (
     InitializeFlakeTryJobPipeline)
@@ -602,10 +603,11 @@ def _UserSpecifiedRange(lower_bound_build_number, upper_bound_build_number):
           upper_bound_build_number is not None)
 
 
-def _GetBuildConfidenceScore(suspected_build, data_points):
+def _GetBuildConfidenceScore(analysis, suspected_build, data_points):
   """Gets a confidence score for a suspected build.
 
   Args:
+    analysis (MasterFlakeAnalysis): The analysis itself.
     suspected_build (int): The suspected build number that flakiness started in.
         Can be None if not identified.
     data_points (list): A list of DataPoint() entities to calculate stepinness
@@ -617,6 +619,13 @@ def _GetBuildConfidenceScore(suspected_build, data_points):
   """
   if suspected_build is None:
     return None
+
+  # If this build introduced a new flaky test, confidence should be 100%.
+  previous_point = analysis.FindMatchingDataPointWithBuildNumber(
+      suspected_build - 1)
+  if (previous_point and
+      previous_point.pass_rate == flake_constants.PASS_RATE_TEST_NOT_FOUND):
+    return 1.0
 
   return confidence.SteppinessForBuild(data_points, suspected_build)
 
@@ -715,7 +724,7 @@ class NextBuildNumberPipeline(BasePipeline):
                    master_name, builder_name, triggering_build_number,
                    step_name, test_name)
       build_confidence_score = _GetBuildConfidenceScore(
-          suspected_build, data_points_within_range)
+          analysis, suspected_build, data_points_within_range)
 
       user_specified_range = _UserSpecifiedRange(lower_bound_build_number,
                                                  upper_bound_build_number)

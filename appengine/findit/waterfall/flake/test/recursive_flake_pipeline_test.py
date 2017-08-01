@@ -15,6 +15,7 @@ from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall import swarming_util
+from waterfall.flake import flake_constants
 from waterfall.flake import lookback_algorithm
 from waterfall.flake import recursive_flake_pipeline
 from waterfall.flake.initialize_flake_try_job_pipeline import (
@@ -582,11 +583,24 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
       'SteppinessForBuild',
       return_value=0.6)
   def testGetBuildConfidenceScore(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 124, 's', 't')
+    analysis.data_points = [DataPoint.Create(pass_rate=0.7, build_number=123)]
     self.assertIsNone(
-        recursive_flake_pipeline._GetBuildConfidenceScore(None, []))
+        recursive_flake_pipeline._GetBuildConfidenceScore(analysis, None, []))
     self.assertEqual(0.6,
                      recursive_flake_pipeline._GetBuildConfidenceScore(
-                         123, [DataPoint(), DataPoint()]))
+                         analysis, 123, analysis.data_points))
+
+  def testGetBuildConfidenceScoreIntroducedNewFlakyTest(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 124, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(pass_rate=0.7, build_number=123),
+        DataPoint.Create(pass_rate=flake_constants.PASS_RATE_TEST_NOT_FOUND,
+                         build_number=122)
+    ]
+    self.assertEqual(1.0,
+                     recursive_flake_pipeline._GetBuildConfidenceScore(
+                         analysis, 123, analysis.data_points))
 
   def testGetListOfNearbyBuildNumbers(self):
     self.assertEqual([1],

@@ -21,6 +21,7 @@ from model.flake.flake_try_job_data import FlakeTryJobData
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
+from waterfall.flake import flake_constants
 from waterfall.flake import lookback_algorithm
 from waterfall.flake.lookback_algorithm import NormalizedDataPoint
 from waterfall.flake.process_flake_try_job_result_pipeline import (
@@ -410,6 +411,35 @@ def _GetNormalizedTryJobDataPoints(analysis, lower_bound_commit_position,
   return _NormalizeDataPoints(data_points)
 
 
+def _GetSuspectedCommitConfidenceScore(analysis, suspected_commit_position,
+                                       data_points_within_range):
+  """Gets a confidence score for a suspected commit position.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The analysis itself.
+    suspected_build (int): The suspected build number that flakiness started in.
+        Can be None if not identified.
+    data_points_within_range (list): A list of DataPoint() entities to calculate
+        stepinness and determine a confidence score.
+
+  Returns:
+    Float between 0 and 1 representing confidence in the suspected build number
+        or None if not found.
+  """
+  if suspected_commit_position is None:
+    return None
+
+  # If this build introduced a new flaky test, confidence should be 100%.
+  previous_point = analysis.FindMatchingDataPointWithCommitPosition(
+      suspected_commit_position - 1)
+  if (previous_point and
+      previous_point.pass_rate == flake_constants.PASS_RATE_TEST_NOT_FOUND):
+    return 1.0
+
+  return confidence.SteppinessForCommitPosition(data_points_within_range,
+                                                suspected_commit_position)
+
+
 class NextCommitPositionPipeline(BasePipeline):
   """Returns the next index in the blame list to run a try job on."""
 
@@ -462,8 +492,11 @@ class NextCommitPositionPipeline(BasePipeline):
             upper_bound_run_point_number=upper_bound_commit_position))
 
     if suspected_commit_position is not None:  # Finished.
-      confidence_score = confidence.SteppinessForCommitPosition(
-          flake_analysis.data_points, suspected_commit_position)
+      data_points_within_range = (
+          flake_analysis.GetDataPointsWithinCommitPositionRange(
+              lower_bound_commit_position, upper_bound_commit_position))
+      confidence_score = _GetSuspectedCommitConfidenceScore(
+          flake_analysis, suspected_commit_position, data_points_within_range)
       culprit_revision = suspected_build_data_point.GetRevisionAtCommitPosition(
           suspected_commit_position)
       culprit = UpdateCulprit(flake_analysis.key.urlsafe(), culprit_revision,

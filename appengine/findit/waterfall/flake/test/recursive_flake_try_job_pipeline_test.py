@@ -19,6 +19,8 @@ from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import swarming_util
+from waterfall.flake import confidence
+from waterfall.flake import flake_constants
 from waterfall.flake import recursive_flake_try_job_pipeline
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     _GetNormalizedTryJobDataPoints)
@@ -1046,3 +1048,31 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
                         revision))
     self.assertEqual(analysis.last_attempted_revision, revision)
     self.assertIsNone(analysis.last_attempted_swarming_task_id)
+
+  @mock.patch.object(
+      confidence, 'SteppinessForCommitPosition', return_value=0.6)
+  def testGetSuspectedConmmitConfidenceScore(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 124, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(pass_rate=0.7, commit_position=123)
+    ]
+    self.assertEqual(
+        0.6,
+        recursive_flake_try_job_pipeline._GetSuspectedCommitConfidenceScore(
+            analysis, 123, analysis.data_points))
+    self.assertIsNone(
+        recursive_flake_try_job_pipeline._GetSuspectedCommitConfidenceScore(
+            analysis, None, []))
+
+  def testGetSuspectedCommitConfidenceScoreIntroducedNewFlakyTest(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 124, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(pass_rate=0.7, commit_position=123),
+        DataPoint.Create(
+            pass_rate=flake_constants.PASS_RATE_TEST_NOT_FOUND,
+            commit_position=122)
+    ]
+    self.assertEqual(
+        1.0,
+        recursive_flake_try_job_pipeline._GetSuspectedCommitConfidenceScore(
+            analysis, 123, analysis.data_points))
