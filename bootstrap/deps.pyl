@@ -214,6 +214,11 @@
     'repo': 'external/code.google.com/p/mock',
     'rev': '96c2601faa69f6d0ecb931df837632c7776ed4d4',
   },
+  'nose': {
+    'build': '0',
+    'gs': '97f2a04c9d43b29ddf4794a1a1d1ba803f1074c6.tar.gz',
+    'version': '1.3.7',
+  },
   'numpy': {
     'version': '1.11.0',
     'build': '0',
