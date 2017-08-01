@@ -309,6 +309,11 @@
     'rev': '75117e4a1fad188da8599ff18939d1484cc53335',
     'implicit': True,  # Required by oauth2client
   },
+  'setuptools': {
+    'build': '0',
+    'gs': 'b7c06b41ec8a8cdae01034a45b680ee342be537d.zip',
+    'version': '36.2.6'
+   },
   'simplejson': {
     'version': '3.6.5',
     'build': '0',
