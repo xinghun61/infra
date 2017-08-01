@@ -122,7 +122,7 @@ def GenTests(api):
   yield (
     api.test('luci_go') +
     api.properties.git_scheduled(
-        path_config='kitchen',
+        path_config='generic',
         buildername='luci-go-linux64',
         buildnumber=123,
         mastername='chromium.infra',
@@ -134,7 +134,7 @@ def GenTests(api):
   yield (
     api.test('presubmit_try_job') +
     api.properties.tryserver(
-        path_config='kitchen',
+        path_config='generic',
         mastername='tryserver.infra',
         buildername='Luci-go Presubmit',
         presubmit=True,
@@ -145,7 +145,7 @@ def GenTests(api):
     api.test('override_GOARCH') +
     api.platform('linux', 64) +
     api.properties.tryserver(
-        path_config='kitchen',
+        path_config='generic',
         mastername='tryserver.infra',
         buildername='Luci-go 32-on-64 Tests',
         GOARCH='386',
