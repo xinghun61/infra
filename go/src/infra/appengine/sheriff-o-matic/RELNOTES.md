@@ -1,3 +1,39 @@
+# Release Notes sheriff-o-matic 2017-08-01
+
+- 11 commits, 4 bugs affected since 1a1f932 (2017-07-25T23:32:04Z)
+- 4 Authors:
+  - jojwang@google.com
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+  - renjietang@google.com
+
+## Changes in this release
+
+- [SoM: Upgrade to Polymer 2.](https://chromium-review.googlesource.com/578383) (zhangtiff@google.com)
+- [[som] logdiff tsmon: change to counter to CDF, add log sizes](https://chromium-review.googlesource.com/594969) (seanmccullough@chromium.org)
+- [[som] Add progress indicator to logdiff loading](https://chromium-review.googlesource.com/596409) (seanmccullough@chromium.org)
+- [[som] set retry limit for log diff tasks](https://chromium-review.googlesource.com/595192) (renjietang@google.com)
+- [[som] Add service fakes to remove test flakes](https://chromium-review.googlesource.com/590485) (seanmccullough@chromium.org)
+- [Fix edit dialog box bug.](https://chromium-review.googlesource.com/588001) (jojwang@google.com)
+- [[som] Change some 500 responses to 400s to better reflect semantics](https://chromium-review.googlesource.com/587375) (seanmccullough@chromium.org)
+- [[som] Track client-side navigations as pageviews in GA.](https://chromium-review.googlesource.com/587009) (seanmccullough@chromium.org)
+- [[som] Use the trooper template for linking bugs to infra failures.](https://chromium-review.googlesource.com/585549) (seanmccullough@chromium.org)
+- [[som] remove index](https://chromium-review.googlesource.com/585830) (renjietang@google.com)
+- [[som] official: try to parse version from chrome_version build prop](https://chromium-review.googlesource.com/588115) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- jojwang@google.com:
+  -  [https://crbug.com/749199](https://crbug.com/749199)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/747438](https://crbug.com/747438)
+  -  [https://crbug.com/747568](https://crbug.com/747568)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/646101](https://crbug.com/646101)
+
+
 # Release Notes sheriff-o-matic 2017-07-25
 
 - 16 commits, 5 bugs affected since d3ab915 (2017-07-18T22:11:23Z)
