@@ -35,6 +35,8 @@ PROPERTIES = {
 }
 
 LUCI_GO_PATH_IN_INFRA = 'infra/go/src/github.com/luci/luci-go'
+# NAMED_CACHE shared across various builders that rely on infra's Go env.
+NAMED_CACHE = 'infra_gclient_with_go'
 
 
 def _run_presubmit(api, luci_go_path, bot_update_step):
@@ -73,7 +75,7 @@ def _commit_change(api):
 
 
 def RunSteps(api, presubmit, GOARCH):
-  infra_path = api.path['cache'].join('luci_go_in_infra')
+  infra_path = api.path['cache'].join(NAMED_CACHE)
   luci_go_path = infra_path.join(LUCI_GO_PATH_IN_INFRA)
   api.file.ensure_directory('ensure builder cache dir', infra_path)
 

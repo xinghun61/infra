@@ -9,7 +9,7 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[CACHE]/luci_go_in_infra"
+      "[CACHE]/infra_gclient_with_go"
     ],
     "infra_step": true,
     "name": "ensure builder cache dir"
@@ -36,7 +36,7 @@
       "--revision",
       "infra/go/src/github.com/luci/luci-go@c14d891d44f0afff64e56ed7c9702df1d807b1ee"
     ],
-    "cwd": "[CACHE]/luci_go_in_infra",
+    "cwd": "[CACHE]/infra_gclient_with_go",
     "env_prefixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -79,7 +79,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[CACHE]/luci_go_in_infra",
+    "cwd": "[CACHE]/infra_gclient_with_go",
     "env": {
       "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -89,11 +89,11 @@
     "cmd": [
       "python",
       "-u",
-      "[CACHE]/luci_go_in_infra/infra/go/env.py",
+      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "go",
       "version"
     ],
-    "cwd": "[CACHE]/luci_go_in_infra",
+    "cwd": "[CACHE]/infra_gclient_with_go",
     "infra_step": true,
     "name": "go third parties"
   },
@@ -101,24 +101,24 @@
     "cmd": [
       "python",
       "-u",
-      "[CACHE]/luci_go_in_infra/infra/go/env.py",
+      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "go",
       "build",
       "github.com/luci/luci-go/..."
     ],
-    "cwd": "[CACHE]/luci_go_in_infra",
+    "cwd": "[CACHE]/infra_gclient_with_go",
     "name": "go build"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[CACHE]/luci_go_in_infra/infra/go/env.py",
+      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "go",
       "test",
       "github.com/luci/luci-go/..."
     ],
-    "cwd": "[CACHE]/luci_go_in_infra",
+    "cwd": "[CACHE]/infra_gclient_with_go",
     "name": "go test"
   },
   {
