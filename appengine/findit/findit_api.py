@@ -841,10 +841,12 @@ class FindItApi(remote.Service):
 
     # Abandon and rerun the task if a previous request has been made through
     # Findit API but not started within 24 hours.
-    rerun = (task and
-             task.triggering_source == triggering_sources.FINDIT_API and
-             task.queued and
-             task.requested_time < time_util.GetUTCNow() - timedelta(hours=24))
+    rerun = (
+        task and
+        task.triggering_source == triggering_sources.FINDIT_API and
+        task.queued and
+        (not task.requested_time or
+         task.requested_time < time_util.GetUTCNow() - timedelta(hours=24)))
 
     if (not rerun and
         (response.task_id or response.queued or response.supported == False)):

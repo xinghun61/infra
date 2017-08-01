@@ -1597,7 +1597,7 @@ class FinditApiTest(testing.EndpointsTestCase):
 
   @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
   @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2017, 7, 31))
-  def testTriggerNewFlakeSwarmingTaskRerunAfter24HoursOld(self, _, mocked_fn):
+  def testTriggerFlakeSwarmingTaskRerunAfter24HoursOld(self, _, mocked_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -1617,6 +1617,52 @@ class FinditApiTest(testing.EndpointsTestCase):
     task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
                                     step_name, test_name)
     task.requested_time = datetime(2017, 7, 29)
+    task.queued = True
+    task.triggering_source = triggering_sources.FINDIT_API
+    task.put()
+
+    flake_request = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'step_name': step_name,
+        'test_name': test_name,
+        'total_reruns': 100,
+    }
+
+    response = self.call_api('TriggerFlakeSwarmingTask', body=flake_request)
+
+    self.assertEqual(200, response.status_int)
+    self.assertTrue(response.json_body.get('queued'))
+
+    task = FlakeSwarmingTask.Get(master_name, builder_name, build_number,
+                                 step_name, test_name)
+
+    self.assertEqual(triggering_sources.FINDIT_API, task.triggering_source)
+    self.assertTrue(response.json_body.get('queued'))
+
+  @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
+  @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2017, 7, 31))
+  def testTriggerFlakeSwarmingTaskRerunUnknownRequestTime(self, _, mocked_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+
+    def MockedFindMatchingWaterfallStep(build_step, _):
+      build_step.wf_master_name = master_name
+      build_step.wf_builder_name = builder_name
+      build_step.wf_build_number = build_number
+      build_step.wf_step_name = step_name
+      build_step.supported = True
+
+    mocked_fn.side_effect = MockedFindMatchingWaterfallStep
+    self.mock_current_user(user_email='test@google.com')
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.requested_time = None
     task.queued = True
     task.triggering_source = triggering_sources.FINDIT_API
     task.put()
