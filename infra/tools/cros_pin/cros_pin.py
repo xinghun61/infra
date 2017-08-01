@@ -322,6 +322,7 @@ class UpdateTracker(object):
     args = [
         'git', 'cl', 'upload',
         '--bypass-hooks', # The CQ will take care of them!
+        '--send-mail',
         '--message-file', commit_msg_file,
         '-f',
         ]
