@@ -1354,6 +1354,71 @@ class IssueService(object):
 
     return amendments, comment_pb
 
+  def _MakeIssueComment(
+      self, project_id, user_id, content, inbound_message=None,
+      amendments=None, attachments=None, kept_attachments=None, timestamp=None,
+      is_spam=False, is_description=False):
+    comment = tracker_pb2.IssueComment()
+    comment.project_id = project_id
+    comment.user_id = user_id
+    comment.content = content or ''
+    comment.is_spam = is_spam
+    comment.is_description = is_description
+    if not timestamp:
+      timestamp = int(time.time())
+    comment.timestamp = int(timestamp)
+    if inbound_message:
+      comment.inbound_message = inbound_message
+    if amendments:
+      comment.amendments.extend(amendments)
+    return comment
+
+  def CopyIssues(self, cnxn, dest_project, issues, user_service, copier_id):
+    created_issues = []
+    for target_issue in issues:
+      new_issue = tracker_pb2.Issue()
+      new_issue.project_id = dest_project.project_id
+      new_issue.project_name = dest_project.project_name
+      new_issue.summary = target_issue.summary
+      new_issue.labels.extend(target_issue.labels)
+      new_issue.field_values.extend(target_issue.field_values)
+      new_issue.reporter_id = copier_id
+
+      timestamp = int(time.time())
+      new_issue.opened_timestamp = timestamp
+      new_issue.modified_timestamp = timestamp
+
+      target_comments = self.GetCommentsForIssue(cnxn, target_issue.issue_id)
+      initial_summary_comment = target_comments[0]
+
+      # Note that blocking and merge_into are not copied.
+      new_issue.blocked_on_iids = target_issue.blocked_on_iids
+
+      # Create the same summary comment as the target issue.
+      comment = self._MakeIssueComment(
+          dest_project.project_id, copier_id, initial_summary_comment.content,
+          is_description=True)
+
+      new_issue.local_id = self.AllocateNextLocalID(
+          cnxn, dest_project.project_id)
+      issue_id = self.InsertIssue(cnxn, new_issue)
+      comment.issue_id = issue_id
+      self.InsertComment(cnxn, comment)
+      created_issues.append(new_issue)
+
+    return created_issues
+
+  def MoveIssues(self, cnxn, dest_project, issues, user_service):
+    move_to = dest_project.project_id
+    self.issues_by_project.setdefault(move_to, {})
+    for issue in issues:
+      project_id = issue.project_id
+      self.issues_by_project[project_id].pop(issue.local_id)
+      issue.local_id = self.AllocateNextLocalID(cnxn, move_to)
+      self.issues_by_project[move_to][issue.local_id] = issue
+      issue.project_id = move_to
+    return []
+
   def GetCommentsForIssues(self, _cnxn, issue_ids):
     comments_dict = {}
     for issue_id in issue_ids:
@@ -1510,17 +1575,6 @@ class IssueService(object):
 
   def GetIIDsByParticipant(self, cnxn, user_ids, project_ids, shard_id):
     """This always returns empty results.  Mock it to test other cases."""
-    return []
-
-  def MoveIssues(self, cnxn, dest_project, issues, user_service):
-    move_to = dest_project.project_id
-    self.issues_by_project.setdefault(move_to, {})
-    for issue in issues:
-      project_id = issue.project_id
-      self.issues_by_project[project_id].pop(issue.local_id)
-      issue.local_id = self.AllocateNextLocalID(cnxn, move_to)
-      self.issues_by_project[move_to][issue.local_id] = issue
-      issue.project_id = move_to
     return []
 
   def ApplyIssueRerank(

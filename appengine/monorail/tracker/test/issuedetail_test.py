@@ -24,6 +24,7 @@ from proto import tracker_pb2
 from proto import user_pb2
 from services import service_manager
 from services import issue_svc
+from services import tracker_fulltext
 from testing import fake
 from testing import testing_helpers
 from tracker import issuedetail
@@ -249,6 +250,9 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     self.servlet = issuedetail.IssueDetail(
         'req', 'res', services=self.services)
     self.mox = mox.Mox()
+    self.services.user.TestAddUser('owner@example.com', 111L)
+    self.issue = fake.MakeTestIssue(
+        self.project.project_id, 1, 'sum', 'New', 111L, project_name='proj')
 
   def tearDown(self):
     self.mox.UnsetStubs()
@@ -610,6 +614,80 @@ class IssueDetailFunctionsTest(unittest.TestCase):
     tracker_helpers.GetNewIssueStarrers = orig_get_starrers
 
     # TODO(jrobbins): add more unit tests for other aspects of ProcessForm.
+
+  def testHandleCopyOrMove_Copy_SameProject(self):
+    old_index_issues = tracker_fulltext.IndexIssues
+    tracker_fulltext.IndexIssues = lambda *args, **kw: None
+    _, mr = testing_helpers.GetRequestObjects(
+        user_info={'user_id': 222L},
+        path='/p/proj/issues/detail.do?id=1',
+        project=self.project, method='POST',
+        perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
+    mr.project_name = self.project.project_name
+    mr.project = self.project
+    self.services.issue.TestAddIssue(self.issue)
+
+    self.servlet.HandleCopyOrMove(
+        'cnxn', mr, self.project, self.issue, False, False)
+    tracker_fulltext.IndexIssues = old_index_issues
+
+    copied_issue = self.services.issue.GetIssueByLocalID(
+        'cnxn', self.project.project_id, 2)
+    self.assertEqual(self.issue.project_id, copied_issue.project_id)
+    self.assertEqual(self.issue.summary, copied_issue.summary)
+    self.assertEqual(copied_issue.reporter_id, 222L)
+
+  def testHandleCopyOrMove_Copy_DifferentProject(self):
+    old_index_issues = tracker_fulltext.IndexIssues
+    tracker_fulltext.IndexIssues = lambda *args, **kw: None
+    _, mr = testing_helpers.GetRequestObjects(
+        user_info={'user_id': 222L},
+        path='/p/proj/issues/detail.do?id=1',
+        project=self.project, method='POST',
+        perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
+    mr.project_name = self.project.project_name
+    mr.project = self.project
+    self.services.issue.TestAddIssue(self.issue)
+    dest_project = self.services.project.TestAddProject(
+      'dest', project_id=988, committer_ids=[111L])
+
+    self.servlet.HandleCopyOrMove(
+        'cnxn', mr, dest_project, self.issue, False, False)
+    tracker_fulltext.IndexIssues = old_index_issues
+
+    copied_issue = self.services.issue.GetIssueByLocalID(
+        'cnxn', dest_project.project_id, 1)
+    self.assertEqual(self.project.project_id, self.issue.project_id)
+    self.assertEqual(dest_project.project_id, copied_issue.project_id)
+    self.assertEqual(self.issue.summary, copied_issue.summary)
+    self.assertEqual(copied_issue.reporter_id, 222L)
+
+  def testHandleCopyOrMove_Move_DifferentProject(self):
+    old_index_issues = tracker_fulltext.IndexIssues
+    tracker_fulltext.IndexIssues = lambda *args, **kw: None
+    old_unindex_issues = tracker_fulltext.UnindexIssues
+    tracker_fulltext.UnindexIssues = lambda *args, **kw: None
+    _, mr = testing_helpers.GetRequestObjects(
+        user_info={'user_id': 222L},
+        path='/p/proj/issues/detail.do?id=1',
+        project=self.project, method='POST',
+        perms=permissions.COMMITTER_ACTIVE_PERMISSIONSET)
+    mr.project_name = self.project.project_name
+    mr.project = self.project
+    self.services.issue.TestAddIssue(self.issue)
+    dest_project = self.services.project.TestAddProject(
+      'dest', project_id=988, committer_ids=[111L])
+
+    self.servlet.HandleCopyOrMove(
+        'cnxn', mr, dest_project, self.issue, False, True)
+    tracker_fulltext.IndexIssues = old_index_issues
+    tracker_fulltext.UnindexIssues = old_unindex_issues
+
+    moved_issue = self.services.issue.GetIssueByLocalID(
+        'cnxn', dest_project.project_id, 1)
+    self.assertEqual(dest_project.project_id, moved_issue.project_id)
+    self.assertEqual(self.issue.summary, moved_issue.summary)
+    self.assertEqual(moved_issue.reporter_id, 111L)
 
 
 class SetStarFormTest(unittest.TestCase):

@@ -842,9 +842,8 @@ class IssueDetail(issuepeek.IssuePeek):
       else:
         content = 'Moved %s to now be %s.' % (old_text_ref, new_text_ref)
       comment = self.services.issue.CreateIssueComment(
-        mr.cnxn, dest_project.project_id, issue.local_id, mr.auth.user_id,
-        content, amendments=[
-            tracker_bizobj.MakeProjectAmendment(dest_project.project_name)])
+          mr.cnxn, issue, mr.auth.user_id, content, amendments=[
+              tracker_bizobj.MakeProjectAmendment(dest_project.project_name)])
     else:
       copied_issues = self.services.issue.CopyIssues(
           cnxn, dest_project, [issue], self.services.user, mr.auth.user_id)
@@ -856,8 +855,7 @@ class IssueDetail(issuepeek.IssuePeek):
       # Add comment to the copied issue.
       old_issue_content = 'Copied %s to %s' % (old_text_ref, new_text_ref)
       self.services.issue.CreateIssueComment(
-          mr.cnxn, issue.project_id, issue.local_id, mr.auth.user_id,
-          old_issue_content)
+          mr.cnxn, issue, mr.auth.user_id, old_issue_content)
 
       # Add comment to the newly created issue.
       # Add project amendment only if the project changed.
@@ -867,7 +865,7 @@ class IssueDetail(issuepeek.IssuePeek):
             tracker_bizobj.MakeProjectAmendment(dest_project.project_name))
       new_issue_content = 'Copied %s from %s' % (new_text_ref, old_text_ref)
       comment = self.services.issue.CreateIssueComment(
-          mr.cnxn, dest_project.project_id, copied_issue.local_id,
+          mr.cnxn, copied_issue,
           mr.auth.user_id, new_issue_content, amendments=amendments)
 
     tracker_fulltext.IndexIssues(
