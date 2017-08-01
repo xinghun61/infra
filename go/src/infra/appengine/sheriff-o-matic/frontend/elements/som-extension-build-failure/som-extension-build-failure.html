@@ -1,7 +1,5 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
-
 <link rel="import" href="../../elements/som-rev-range/som-rev-range.html">
 <link rel="import" href="../../elements/som-tree-behavior.html">
 <link rel="import" href="../../elements/som-linkify-behavior.html">
@@ -16,7 +14,7 @@
         margin: .1em;
         padding: .3em 0.5em;
         display: inline-block;
-        background: #E75D54;
+        background: #e75d54;
         font-weight: bold;
         text-decoration: none;
         color: #fff;
@@ -29,10 +27,10 @@
        color: #fff;
      }
      .suspect-cl-results {
-       color: #FF8C00;
+       color: #ff8c00;
      }
      .revert-cl {
-       color: #FF4C00;
+       color: #ff4c00;
      }
      .header {
        color: #000;
@@ -56,10 +54,10 @@
        cursor: pointer;
      }
      #builders,
-     #findit-results,
+     #finditResults,
      #reasons,
-     #regression-ranges {
-       margin: .5em auto;
+     #regressionRanges {
+       margin: .75em auto;
      }
     </style>
     <template is="dom-if" if="[[!_isCrOSFailure(type)]]">
@@ -129,7 +127,7 @@
           </div>
         </template>
       </div>
-      <div id="regression-ranges" class="section">
+      <div id="regressionRanges" class="section">
         <template is="dom-if" if="[[!_haveRegressionRanges(extension.regression_ranges)]]">
           No regression range information available.
         </template>
@@ -144,7 +142,7 @@
           </template>
         </template>
       </div>
-      <div id="findit-results" class="section">
+      <div id="finditResults" class="section">
         <template is="dom-if" if="[[_finditNotSupport(extension)]]">
           <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
           Not supported by Findit.

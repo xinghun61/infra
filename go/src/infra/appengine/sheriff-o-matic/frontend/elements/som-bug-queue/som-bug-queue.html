@@ -2,7 +2,6 @@
 
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
-<link rel="import" href="../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
 
@@ -14,9 +13,7 @@
 
 <dom-module id="som-bug-queue">
   <template>
-    <style include="som-header-styles"></style>
-    <style include="som-utility-styles"></style>
-    <style>
+    <style include="som-header-styles som-utility-styles">
       .error,
       #loadingBugs,
       #noBugs {
@@ -30,7 +27,7 @@
       }
       .bug-label {
         padding-left: 4px;
-        font-size: 0.9em;
+        font-size: 0.8em;
         text-decoration: none;
         color: #008000;
       }
@@ -96,7 +93,7 @@
         <div class="error" hidden$="[[_haveNoErrors(_bugQueueJsonError)]]">
           Error fetching bug queue: [[_bugQueueJsonError.error]]
         </div>
-        <template dom-if="[[_isTrooperQueue]]">
+        <template is="dom-if" if="[[_isTrooperQueue]]">
           <div class="error" hidden$="[[_haveNoErrors(_uncachedBugsJsonError)]]">
             Error fetching uncached bugs. Bugs displayed may be stale or incomplete:
             [[_uncachedBugsJsonError.error]]

@@ -14,32 +14,25 @@
 
 <dom-module id="som-test-expectations">
   <template>
-    <style include="som-header-styles"></style>
-    <style include="som-input-styles"></style>
-    <style is="custom-style">
+    <style include="som-header-styles som-input-styles">
       #main {
         display: flex;
         flex-grow: 1;
         flex-direction: column;
       }
       vaadin-grid {
-        display: flex;
-        flex-grow: 1;
-        flex-direction: column;
+        height: 90vh;
+
         --vaadin-grid-header-cell: {
-          font-size:10pt;
-          padding:2pt;
+          font-size: 10pt;
+          padding: 2pt;
         };
         --vaadin-grid-body-cell: {
-          font-size:10pt;
+          font-size: 10pt;
         };
         --vaadin-grid-body-row-hover-cell: {
           background-color: var(--paper-grey-200);
         };
-      }
-      vaadin-grid::shadow vaadin-grid-table {
-        display: flex;
-        flex-grow: 1;
       }
       .details {
         padding: 10px;

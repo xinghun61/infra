@@ -62,7 +62,7 @@
         regression_ranges: []
       };
       flush(() => {
-        let items = element.getElementsByClassName('builder');
+        let items = Polymer.dom(element.root).querySelectorAll('.builder');
         assert.equal(items.length, 3);
         assert.include(items[0].textContent.trim(), '4 since first detection');
         assert.include(items[1].textContent.trim(), '2 out of the last 5 builds have failed');
@@ -138,7 +138,7 @@
         ],
       };
       flush(() => {
-        let item = element.$$('#findit-results');
+        let item = element.$$('#finditResults');
         assert.isNotNull(item);
         assert.equal(item.getElementsByClassName('suspect-cl-link')[0].href,
           'https://crrev.com/1234');

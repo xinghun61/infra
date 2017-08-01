@@ -13,23 +13,19 @@
 
 <dom-module id="som-alert-category">
   <template>
-    <style include="som-header-styles"></style>
-    <style include="som-input-styles"></style>
-    <style include="som-utility-styles"></style>
-    <style>
+    <style include="som-header-styles som-input-styles som-utility-styles">
       #categoryAlerts {
         display: flex;
         flex-direction: column;
         align-items: stretch;
       }
-      #infra-failure-message {
+      #infraFailureMessage {
         padding: 1em 16px;
         font-size: 1.1em;
         border-bottom: 1px solid #ccc;
       }
       .alert-item {
         box-sizing: border-box;
-        padding: 0.5em 0;
       }
     </style>
     <h2 class="category-title">
@@ -59,7 +55,7 @@
       </div>
     </h2>
     <template is="dom-if" if="[[isInfraFailuresSection]]">
-      <div id="infra-failure-message">
+      <div id="infraFailureMessage">
         There are [[alerts.length]] infra failures currently
          affecting your tree. Troopers should be working on them.
         <span class="link" on-tap="_toggleCategory">
@@ -76,6 +72,7 @@
           items="[[alerts]]"
           as="alert">
         <som-alert-item
+            id="alertItem[[index]]"
             class="alert-item"
             tabindex="0"
             alert="[[alert]]"

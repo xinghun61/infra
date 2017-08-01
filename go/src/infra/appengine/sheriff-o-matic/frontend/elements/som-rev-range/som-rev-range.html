@@ -31,12 +31,12 @@
         padding-right: 0.5em;
       }
     </style>
-    <div class="layout horizontal center">
+    <div>
       <span class="padding-right">
         [[range.repo]]:
       </span>
       <a class="padding-right" target="_blank" href$="[[_regressionRangeLink(range)]]">[[_regressionRange(range)]]</a>
-      <div class="collapse layout horizontal center" on-tap="_toggleCollapse">
+      <div class="collapse" on-tap="_toggleCollapse">
         Click to see [[_collapseMessage]] information.
         <iron-icon icon="[[_iconName]]"></iron-icon>
       </div>

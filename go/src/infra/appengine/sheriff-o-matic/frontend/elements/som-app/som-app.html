@@ -1,13 +1,11 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
-<link rel="import" href="../../bower_components/iron-flex-layout/classes/iron-flex-layout.html">
+<link rel="import" href="../../bower_components/app-layout/app-layout.html">
+
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/iron-location/iron-location.html">
 <link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
-<link rel="import" href="../../bower_components/paper-drawer-panel/paper-drawer-panel.html">
-<link rel="import" href="../../bower_components/paper-header-panel/paper-header-panel.html">
 <link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
-<link rel="import" href="../../bower_components/paper-toolbar/paper-toolbar.html">
 
 <link rel="import" href="../../elements/som-header-styles.html">
 <link rel="import" href="../../elements/som-utility-styles.html">
@@ -27,114 +25,172 @@
 
 <dom-module id="som-app">
   <template>
-    <style include="som-header-styles"></style>
-    <style include="som-utility-styles"></style>
-    <style>
-      iron-pages {
-        @apply(--layout-vertical);
-        min-height: 100%;
-      }
-      paper-toolbar {
-        --paper-toolbar-background: black;
-        z-index: 99;
-      }
-      paper-toolbar a {
-        color: #fff;
-      }
-      paper-header-panel[main] {
-        --paper-header-panel-body: {
-          background: #eee;
-        }
+    <style include="som-header-styles som-utility-styles">
+      iron-icon {
+        flex-shrink: 0;
       }
       #alertView {
         padding-bottom: 5em;
       }
-      #refresh {
+      #refresh, #toggleDrawer {
         display: flex;
         width: 25px;
         height: 25px;
         padding: 0 2px;
         cursor: pointer;
       }
+      #toggleDrawer {
+        display: none;
+        padding-left: 8px;
+      }
+      #lastUpdated, #username {
+        text-align: right;
+        padding-right: 1em;
+      }
+      #lastUpdatedTimeShort {
+        display: none;
+      }
+      #somContainer {
+        box-sizing: border-box;
+        padding-top: 60px;
+        width: 100%;
+        min-height: 100%;
+        display: flex;
+      }
+      #somContent {
+        padding-left: 256px;
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+      }
+      #somDrawerWrapper {
+        width: 256px;
+        height: 100%;
+        overflow: auto;
+        position: fixed;
+        border-right: 1px solid #ccc;
+        background: #fff;
+        z-index: 1;
+      }
+      #somHeader {
+        top: 0;
+        position: fixed;
+        background: #000;
+        color: #fff;
+        font-size: 16px;
+        width: 100%;
+        height: 60px;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        z-index: 10;
+      }
+      #somHeader a {
+        color: #fff;
+      }
+      #somTitle {
+        min-width: 170px;
+        padding: 0 8px;
+        font-weight: bold;
+      }
+      #somTitle img {
+        max-width: 30px;
+        max-height: 30px;
+        vertical-align: middle;
+      }
       .error {
         margin-top: 0;
       }
-      .last-updated {
-        min-width: 200px;
-      }
-      .last-updated, .user-name {
-        text-align: right;
-        padding-right: 1em;
-      }
-      .last-updated, .user-name {
-        text-align: right;
-        padding-right: 1em;
+      .header-section {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding: 0 4px;
       }
       .page-body {
         display: flex;
         flex-direction: column;
         align-items: stretch;
         justify-content: flex-start;
-        background: white;
-        border-left: 1px solid #ddd;
-        min-height: 100%;
+        background: #fff;
         flex-grow: 1;
       }
       .page-body-padded {
         padding: 1em 16px;
       }
-      .som-title {
-        font-weight: bold;
-      }
-      .som-title img {
-        max-width: 30px;
-        max-height: 30px;
-        vertical-align: middle;
-      }
-      .title {
-        font-size: big;
-      }
       @media (max-width: 1024px) {
-        .last-updated, .user-name {
-          padding-right: 0.5em;
-          font-size: 0.9em;
-          line-height: 100%;
+        #somContent {
+          padding-left: 0;
         }
-        .user-name {
-          @apply(--layout-flex);
+        #somDrawerWrapper {
+          display: none;
+        }
+        #somDrawerWrapper.opened {
+          display: flex;
+        }
+        #somDrawerWrapper.opened + #somDrawerOverlay {
+          position: fixed;
+          content: '';
+          width: 100%;
+          height: 100%;
+          background: rgba(0, 0, 0, 0.5);
+        }
+        #toggleDrawer {
+          display: flex;
         }
       }
-      @media (max-width: 540px) {
-        .last-updated, .user-name {
+      @media (max-width: 800px) {
+        .header-section {
           font-size: 0.8em;
           min-width: 10%;
           text-align: left;
         }
-        #fetchingAlerts {
+        #lastUpdatedTimeShort {
+          /* Responsively display a shorter last updated time. */
+          display: inline;
+        }
+        #lastUpdatedTime,
+        #fetchingAlerts,
+        #somTitle,
+        #treeTitle {
           display: none;
         }
-        #tree-title {
-          display: none;
-        }
-      }
-      #testExpectations {
-        display: flex;
-        flex-direction: column;
-        flex-grow: 1;
-        min-height: 100%;
       }
     </style>
     <iron-location id="url" path="{{_path}}" url-space-regex="^(?!(/_ah/|/auth/))"></iron-location>
-    <paper-drawer-panel responsive-width="1024px">
-      <paper-header-panel drawer>
-        <paper-toolbar>
-          <span class="som-title">
-            <template is="dom-if" if="[[_treeLogo]]">
-              <a href="/[[_tree.name]]"><img src="[[_treeLogo]]" alt="[[_tree.name]]" title="[[_tree.name]]" /></a>
-            </template>
-            Sheriff-o-Matic
+    <div id="somHeader">
+      <div class="header-section">
+        <iron-icon id="toggleDrawer" icon="menu" on-tap="_toggleDrawer"></iron-icon>
+        <span id="somTitle">
+          <template is="dom-if" if="[[_treeLogo]]">
+            <a href="/[[_tree.name]]"><img src="[[_treeLogo]]" alt="[[_tree.name]]" title="[[_tree.name]]" /></a>
+          </template>
+          Sheriff-o-Matic
+        </span>
+        <div id="treeTitle">
+          [[_pathIdentifier]]
+        </div>
+      </div>
+      <div class="header-section">
+        <div id="lastUpdated">
+          Last updated: <span hidden$="[[!_lastUpdated]]" id="lastUpdatedTime">
+            <span class="line">[[_lastUpdated.time]]</span>
+            <span class="line">([[_lastUpdated.relativeTime]])</span>
           </span>
-        </paper-toolbar>
+          <span hidden$="[[!_lastUpdated]]" id="lastUpdatedTimeShort" title$="[[_lastUpdated.time]]">
+            [[_lastUpdated.relativeTime]]
+          </span>
+          <span hidden$="[[_lastUpdated]]" id="lastUpdatedUnknown">Unknown</span>
+        </div>
+        <div id="username">
+          [[user]] (<a href$="[[logoutUrl]]">Log Out </a>)
+        </div>
+        <iron-icon id="refresh" on-tap="_refresh" icon="refresh"></iron-icon>
+        <paper-spinner id="fetchingAlerts" active="[[_fetchingAlerts]]"></paper-spinner>
+      </div>
+    </div>
+    <div id="somContainer">
+      <div id="somDrawerWrapper">
         <som-drawer
             id="drawer"
             path="{{_path}}"
@@ -144,52 +200,33 @@
             trees="{{_trees}}"
             collapse-by-default="{{collapseByDefault}}"
             ></som-drawer>
-      </paper-header-panel>
-      <paper-header-panel main id="mainHeaderPanel">
-        <paper-toolbar>
-          <div class="layout horizontal flex">
-            <iron-icon icon="menu" paper-drawer-toggle></iron-icon>
-            <div class="flex title" id="tree-title">[[_pathIdentifier]]</div>
-            <div class="flex last-updated">
-              Last updated: <span hidden$="[[!_lastUpdated]]" id="lastUpdatedTime">
-                <span class="line">[[_lastUpdated.time]]</span>
-                <span class="line">([[_lastUpdated.relativeTime]])</span>
-              </span>
-              <span hidden$="[[_lastUpdated]]" id="lastUpdatedUnknown">Unknown</span>
-            </div>
-            <div class="horizontal user-name">
-              [[user]] (<a href$="[[logoutUrl]]">Log Out </a>)
-            </div>
-            <iron-icon id="refresh" on-tap="_refresh" icon="refresh"></iron-icon>
-          </div>
-          <paper-spinner id="fetchingAlerts" active="[[_fetchingAlerts]]"></paper-spinner>
-        </paper-toolbar>
-        <iron-pages attr-for-selected='id' selected="[[_selectedPage]]">
-          <template is="dom-if" if="[[_showAlertView]]">
-            <som-alert-view id="alertView" class="page-body"
-              alerts-times="{{alertsTimes}}"
-              examined-alert-key="[[_examinedAlertKey]]"
-              logdiff-key = "[[_logdiffAlertKey]]"
-              fetching-alerts="{{_fetchingAlerts}}"
-              trees="[[_trees]]"
-              tree="[[_tree]]"
-              user="[[user]]"
-              link-style="[[linkStyle]]"
-              collapse-by-default="[[collapseByDefault]]"></som-alert-view>
-          </template>
-          <som-help id="helpSOM" class="page-body page-body-padded"></som-help>
-          <template is="dom-if" if="[[_showRotationCalendar]]">
-            <som-rotation-calendar id="rotationCalendar" class="page-body page-body-padded"></som-rotation-calendar>
-          </template>
-          <template is="dom-if" if="[[_showTestExpectations]]">
-            <som-test-expectations class="page-body" id="testExpectations" edited-test-name="{{_editedTestName}}"></som-test-expectations>
-          </template>
-          <template is="dom-if" if="[[_showTreeStatus]]">
-            <som-all-status class="page-body page-body-padded" id="treeStatus" trees="[[_trees]]"></som-all-status>
-          </template>
-        </iron-pages>
-      </paper-header-panel>
-    </paper-drawer-panel>
+      </div>
+      <div id="somDrawerOverlay" on-tap="_toggleDrawer"></div>
+      <iron-pages id="somContent" attr-for-selected='id' selected="[[_selectedPage]]">
+        <template is="dom-if" if="[[_showAlertView]]">
+          <som-alert-view id="alertView" class="page-body"
+            alerts-times="{{alertsTimes}}"
+            examined-alert-key="[[_examinedAlertKey]]"
+            logdiff-key = "[[_logdiffAlertKey]]"
+            fetching-alerts="{{_fetchingAlerts}}"
+            trees="[[_trees]]"
+            tree="[[_tree]]"
+            user="[[user]]"
+            link-style="[[linkStyle]]"
+            collapse-by-default="[[collapseByDefault]]"></som-alert-view>
+        </template>
+        <som-help id="helpSOM" class="page-body page-body-padded"></som-help>
+        <template is="dom-if" if="[[_showRotationCalendar]]">
+          <som-rotation-calendar id="rotationCalendar" class="page-body page-body-padded"></som-rotation-calendar>
+        </template>
+        <template is="dom-if" if="[[_showTestExpectations]]">
+          <som-test-expectations class="page-body" id="testExpectations" edited-test-name="{{_editedTestName}}"></som-test-expectations>
+        </template>
+        <template is="dom-if" if="[[_showTreeStatus]]">
+          <som-all-status class="page-body page-body-padded" id="treeStatus" trees="[[_trees]]"></som-all-status>
+        </template>
+      </iron-pages>
+    </div>
   </template>
   <script src="som-app.js"></script>
 </dom-module>

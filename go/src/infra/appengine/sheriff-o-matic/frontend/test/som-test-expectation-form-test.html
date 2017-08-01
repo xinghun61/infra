@@ -31,13 +31,14 @@
 
     test('renders basic', function(done) {
       element.expectation = val;
-      element.ready();
       flush(() => {
+        let root = Polymer.dom(element.root);
         assert.isDefined(element._editValue);
 	      assert.deepEqual(element._editValue, element.expectation);
-        assert.equal(element.modifierValues.length, element.querySelectorAll('.modifier-checkbox').length);
-        assert.equal(element.expectationValues.length, element.querySelectorAll('.expectation-checkbox').length)
-        assert.equal(val.Bugs.length, element.querySelectorAll('.bug-value').length)
+
+        assert.equal(element.modifierValues.length, root.querySelectorAll('.modifier-checkbox').length);
+        assert.equal(element.expectationValues.length, root.querySelectorAll('.expectation-checkbox').length);
+        assert.equal(val.Bugs.length, root.querySelectorAll('.bug-value').length);
         done();
       });
     });

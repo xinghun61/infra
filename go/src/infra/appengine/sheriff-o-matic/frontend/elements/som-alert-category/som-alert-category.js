@@ -77,16 +77,16 @@
 
     _handleChecked: function(evt) {
       let keys = {};
-      let alerts = this.getElementsByClassName('alert-item');
+      let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
       for (let i = 0; i < alerts.length; i++) {
-        keys[alerts[i].alert.key] = alerts[i].checked;
+        let a = alerts[i];
+        keys[a.alert.key] = a.checked;
       }
-      this._checkedAlertKeys = {};
       this._checkedAlertKeys = keys;
     },
 
     uncheckAll: function(evt) {
-      let alerts = this.getElementsByClassName('alert-item');
+      let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
       for (let i = 0; i < alerts.length; i++) {
         alerts[i].checked = false;
       }
@@ -96,7 +96,7 @@
 
     checkAll: function(evt) {
       let checked = evt.target.checked;
-      let alerts = this.getElementsByClassName('alert-item');
+      let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
       for (let i = 0; i < alerts.length; i++) {
         alerts[i].checked = checked;
       }
@@ -105,14 +105,14 @@
     ////////////////////// Collapsing Alerts ///////////////////////////
 
     _collapseAll: function(evt) {
-      let alerts = this.getElementsByClassName('alert-item');
+      let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
       for (let i = 0; i < alerts.length; i++) {
         alerts[i].openState = 'closed';
       }
     },
 
     _expandAll: function(evt) {
-      let alerts = this.getElementsByClassName('alert-item');
+      let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
       for (let i = 0; i < alerts.length; i++) {
         alerts[i].openState = 'opened';
       }

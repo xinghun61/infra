@@ -3,6 +3,7 @@
 
   Polymer({
     is: 'som-app',
+    behaviors: [TimeBehavior],
     properties: {
       alertsTimes: Object,
       _editedTestName: {
@@ -167,6 +168,7 @@
     },
 
     _computeTree: function(pathIdentifier, trees) {
+      if (!trees) return;
       if (pathIdentifier in trees) {
         return trees[pathIdentifier];
       }
@@ -231,6 +233,15 @@
 
     _computeShowTreeStatus: function(selectedPage) {
       return selectedPage == 'treeStatus';
+    },
+
+    _toggleDrawer: function() {
+      let drawer = this.$.somDrawerWrapper;
+      if (drawer.classList.contains('opened')) {
+        drawer.classList.remove('opened');
+      } else {
+        drawer.classList.add('opened');
+      }
     },
   });
 })();

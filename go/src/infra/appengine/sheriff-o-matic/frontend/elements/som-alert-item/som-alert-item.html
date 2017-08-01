@@ -1,7 +1,6 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
 <link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
-<link rel="import" href="../../bower_components/iron-flex-layout/iron-flex-layout-classes.html">
 <link rel="import" href="../../bower_components/iron-icons/editor-icons.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 
@@ -20,27 +19,38 @@
 
 <dom-module id="som-alert-item">
   <template>
-    <style include="som-input-styles"></style>
-    <style include="iron-flex iron-flex-alignment"></style>
-    <style>
+    <style include="som-input-styles">
       paper-input {
         display: inline-block;
       }
      .alert-controls {
-       text-align: center;
-       min-width: 380px;
-       max-width: 420px;
-       padding-right: 4px;
-       min-height: 100px;
+       display: flex;
+       flex-direction: row;
+       align-items: center;
+       min-width: 280px;
+       max-width: 400px;
+       padding: 1em 4px;
        max-height: 200px;
+       flex-grow: 0;
+       flex-shrink: 0;
      }
      .alert-controls-links {
        padding: 0 8px;
+       display: flex;
+       flex-direction: column;
+       text-align: center;
      }
      .alert-controls-links a,
      .alert-controls-links .link {
        padding: 8px;
        cursor: pointer;
+     }
+     .alert-controls-buttons {
+       display: flex;
+       flex-direction: row;
+       align-items: center;
+       justify-content: flex-start;
+       flex-wrap: wrap;
      }
      .alert-controls-buttons button {
        min-width: 80px;
@@ -52,18 +62,16 @@
      .alert-expanded {
        border-top: 1px dotted #ddd;
        color: #666;
+       display: flex;
+       flex-direction: row;
      }
      .alert-info {
+       padding-top: 0.5em;
        padding-right: 16px;
-       min-width:  400px;
+       flex-grow: 1;
      }
      .alert-link {
        padding-left: 4px;
-     }
-     .alert-times {
-       font-size: smaller;
-       color: #666;
-       min-width: 150px;
      }
      .alert-title {
        display: flex;
@@ -71,17 +79,26 @@
        align-items: center;
        font-weight: bold;
        padding: 0 8px;
+       font-size: 14px;
      }
      .alert-title-bar {
-       align-items: center;
+       padding-top: 0.5em;
        padding-bottom: 0.25em;
        position: relative;
+       display: flex;
+       align-items: center;
+       flex-direction: row;
+       justify-content: space-between;
      }
      .alert-title-bar:hover {
        cursor: pointer;
      }
+     .alert-title-section {
+       display: flex;
+       flex-direction: row;
+     }
      .comments-link-highlighted {
-       color: #FF8C00;
+       color: #ff8c00;
      }
      .no-toggle {
        cursor: default;
@@ -91,15 +108,23 @@
      }
      .sub-alert-list {
        font-size: 0.8em;
+       max-height: 80px;
+       overflow-y: auto;
+       margin: 0.5em 0;
      }
      .sub-alert-list paper-radio-button {
        --paper-radio-button-size: 12px;
        padding: 4px;
      }
-     #expand-tip {
+     #alertTimes {
+       color: #666;
+       min-width: 150px;
+       font-size: smaller;
+     }
+     #expandTip {
        color: #a9a9a9;
-       font-size: 13.333px;
        padding-right: 16px;
+       font-size: smaller;
      }
      #bugsList .bug {
        font-size: 0.8em;
@@ -110,11 +135,6 @@
        margin: 0 2px;
        white-space: nowrap;
        overflow: hidden;
-     }
-     #alertCollapse {
-       max-height: 40px;
-       overflow-y: auto;
-       margin: 0.5em 0;
      }
      #bugsList iron-icon {
        color: #666;
@@ -149,12 +169,6 @@
        padding: 0 4px;
        margin-top: -16px;
      }
-     #collapse {
-       transition: height 3s ease;
-     }
-     #ripple {
-       pointer-events: none;
-     }
      #root {
        transition: opacity .25s;
        border-bottom: 1px solid #ddd;
@@ -163,20 +177,28 @@
      #usefulLinks {
        margin: .25em 0;
      }
-     #sub-alert-menu {
+     #subAlertMenu {
        width: 500px;
+     }
+     @media (max-width: 800px) {
+       .alert-expanded {
+         flex-direction: column;
+       }
+       #expandTip {
+         display: none;
+       }
      }
     </style>
     <div id="root" class$="[[_cssClass]]">
-      <div class="alert-title-bar horizontal layout justified" on-tap="_toggle">
-        <div class="horizontal layout wrap">
+      <div class="alert-title-bar" on-tap="_toggle">
+        <div class="alert-title-section">
           <div class="alert-title">
             <input id="checkbox" type="checkbox"
               hidden$="[[examining]]"
               class="no-toggle"
               checked="{{checked::change}}"
               title="Select alerts to apply annotation changes to multiple alerts at once." />
-            <span id="resolvedTitle" hidden="[[!alert.resolved]]">Resolved:&nbsp;</span>
+            <span id="resolvedTitle" hidden$="[[!alert.resolved]]">Resolved:&nbsp;</span>
             <template is="dom-if" if="[[_hasUngroup]]">
               <iron-a11y-keys target="[[_groupNameInput]]" keys="enter" on-keys-pressed="_updateGroupName"></iron-a11y-keys>
               Group:
@@ -185,14 +207,14 @@
               ([[alert.alerts.length]] alerts)
             </template>
             <template is="dom-if" if="[[!_hasUngroup]]">
-              <span id="snoozeTitle" hidden="[[!annotation.snoozed]]">Snoozed ([[_snoozeTimeLeft]]): </span>
+              <span id="snoozeTitle" hidden$="[[!annotation.snoozed]]">Snoozed ([[_snoozeTimeLeft]]): </span>
               <span id="alertTitle">[[alert.title]]</span>
             </template>
             <div id="handleLink" hidden$="[[!_helpLinkForAlert(alert)]]">
               (<a href$="[[_helpLinkForAlert(alert)]]" target="_blank">Help?</a>)
             </div>
           </div>
-          <div id="bugsList" hidden$="[[!_bugs.length]]" class="alert-links self-center flex">
+          <div id="bugsList" hidden$="[[!_bugs.length]]" class="alert-links">
             <template is="dom-repeat" items="[[_bugs]]" as="bug">
               <div class="bug no-toggle">
                 <a target="_blank" href="https://crbug.com/[[bug.id]]">Bug [[bug.id]]</a>
@@ -203,18 +225,18 @@
             </template>
           </div>
         </div>
-        <div class="horizontal layout end">
-          <span id="expand-tip" class="layout end">
+        <div class="alert-title-section">
+          <span id="expandTip">
             Click to expand
           </span>
-          <div class="alert-times">
+          <div id="alertTimes">
             [[_duration]]
           </div>
         </div>
       </div>
-      <div id="collapse" hidden$="[[_isCollapsed]]" class="alert-expanded layout horizontal wrap">
-        <div class="alert-controls layout horizontal center flex-child">
-          <div class="layout vertical alert-controls-links">
+      <iron-collapse opened="[[!_isCollapsed]]" no-animation class="alert-expanded">
+        <div class="alert-controls">
+          <div class="alert-controls-links">
             <a href$="[[treeName]]/examine/[[alert.key]]"
               hidden$="[[examining]]">Examine</a>
             <a href$="[[treeName]]" hidden$="[[!examining]]">[[treeName]]</a>
@@ -223,46 +245,56 @@
               <iron-icon icon="question-answer"></iron-icon> ([[_numComments]])
             </span>
           </div>
-          <div class="alert-controls-buttons layout horizontal center flex-child wrap">
+          <div class="alert-controls-buttons">
             <button id="linkBug" on-tap="_linkBug" alt="Link a bug"
               title="Link a bug to this alert to mark causes and followup.">
               <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
               Link/File Bug
             </button>
-            <button id="snooze" on-tap="_snooze" hidden$="[[annotation.snoozed]]"
-              title="Snooze this alert to temporarily move it out of view.">
-              <iron-icon class="snooze-icon" icon="alarm-off"></iron-icon>
-              Snooze
-            </button>
-            <button id="unsnooze" on-tap="_snooze" hidden$="[[!annotation.snoozed]]"
-              title="Unsnooze this alert to bring it back into view.">
-              <iron-icon class="unsnooze-icon" icon="alarm"></iron-icon>
-              Unsnooze
-            </button>
+            <template is="dom-if" if="[[!annotation.snoozed]]">
+              <button id="snooze" on-tap="_snooze"
+                title="Snooze this alert to temporarily move it out of view.">
+                <iron-icon class="snooze-icon" icon="alarm-off"></iron-icon>
+                Snooze
+              </button>
+            </template>
+            <template is="dom-if" if="[[annotation.snoozed]]">
+              <button id="unsnooze" on-tap="_snooze"
+                title="Unsnooze this alert to bring it back into view.">
+                <iron-icon class="unsnooze-icon" icon="alarm"></iron-icon>
+                Unsnooze
+              </button>
+            </template>
             <button id="group" on-tap="_group" alt="Group"
               title="Group multiple alerts together to show that they are related.">
               <iron-icon class="group-icon" icon="editor:merge-type"></iron-icon>
               Group
             </button>
-            <button id="ungroup" on-tap="_ungroup" alt="Ungroup" hidden$="[[!_hasUngroup]]"
-              title="Ungroup this group to split it up into separate alerts.">
-              <iron-icon class="ungroup-icon" icon="close"></iron-icon>
-              Ungroup
-            </button>
-            <button id="resolve" on-tap="_resolve" alt="Resolve" hidden$="[[!_hasResolve]]"
-              title="Resolving this alert will remove it from the view.">
-              <iron-icon class="ungroup-icon" icon="check"></iron-icon>
-              Resolve
-            </button>
-            <button id="unresolve" on-tap="_unresolve" alt="Unresolve" hidden$="[[!_hasUnresolve]]"
-              title="Unresolving this alert will return it to the view.">
-              Unresolve
-            </button>
+            <template is="dom-if" if="[[_hasUngroup]]">
+              <button id="ungroup" on-tap="_ungroup" alt="Ungroup"
+                title="Ungroup this group to split it up into separate alerts.">
+                <iron-icon class="ungroup-icon" icon="close"></iron-icon>
+                Ungroup
+              </button>
+            </template>
+            <template is="dom-if" if="[[_hasResolve]]">
+              <button id="resolve" on-tap="_resolve" alt="Resolve"
+                title="Resolving this alert will remove it from the view.">
+                <iron-icon class="ungroup-icon" icon="check"></iron-icon>
+                Resolve
+              </button>
+            </template>
+            <template is="dom-if" if="[[_hasUnresolve]]">
+              <button id="unresolve" on-tap="_unresolve" alt="Unresolve"
+                title="Unresolving this alert will return it to the view.">
+                Unresolve
+              </button>
+            </template>
           </div>
         </div>
-        <div class="alert-info flex">
-          <iron-collapse id="alertCollapse" hidden$="[[!_haveSubAlerts(alert)]]" opened>
-            <paper-radio-group class="sub-alert-list" on-tap="_expandAlertCollapse" attr-for-selected="value" selected="{{selectedAlert}}">
+        <div class="alert-info">
+          <template is="dom-if" if="[[_haveSubAlerts(alert)]]">
+            <paper-radio-group class="sub-alert-list" attr-for-selected="value" selected="{{selectedAlert}}">
               <paper-radio-button value="">
                 Merged alert view
               </paper-radio-button>
@@ -272,7 +304,7 @@
                 </paper-radio-button>
               </template>
             </paper-radio-group>
-          </iron-collapse>
+          </template>
           <div id="usefulLinks" hidden$="[[!_haveLinks(selectedAlert, alert)]]">
             Useful Links:
             <template is="dom-repeat" items="[[_getLinks(selectedAlert, alert)]]" as="link">
@@ -283,7 +315,7 @@
           <som-extension-build-failure tree="[[treeName]]" type="[[alert.type]]" extension="[[_getExtension(selectedAlert, alert)]]" link-style="[[linkStyle]]"></som-extension-build-failure>
           <som-extension-cros-failure type="[[alert.type]]" extension="[[_getExtension(selectedAlert, alert)]]" link-style="[[linkStyle]]"></som-extension-cros-failure>
         </div>
-      </div>
+      </iron-collapse>
     </div>
   </template>
   <script src="som-alert-item.js"></script>

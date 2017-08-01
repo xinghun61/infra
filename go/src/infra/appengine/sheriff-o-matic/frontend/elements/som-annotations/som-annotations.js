@@ -35,12 +35,7 @@
         },
       },
       _bugErrorMessage: String,
-      _fileBugInput: {
-        type: Object,
-        value: function() {
-          return this.$.bug;
-        },
-      },
+      _fileBugInput: Object,
       collapseByDefault: Boolean,
       _commentInFlight: Boolean,
       _commentsErrorMessage: String,
@@ -54,12 +49,7 @@
         type: Boolean,
         computed: '_computeCommentsHidden(_commentsModelAnnotation)',
       },
-      _commentTextInput: {
-        type: Object,
-        value: function() {
-          return this.$.commentText;
-        }
-      },
+      _commentTextInput: Object,
       _defaultSnoozeTime: {
         type: Number,
         computed: '_computeDefaultSnoozeTime(tree.name)',
@@ -84,12 +74,7 @@
       _snoozeErrorMessage: String,
       _snoozeModel: Object,
       _snoozeCallback: Function,
-      _snoozeTimeInput: {
-        type: Object,
-        value: function() {
-          return this.$.snoozeTime;
-        }
-      },
+      _snoozeTimeInput: Object,
       tree: {
         type: Object,
         value: function() {
@@ -102,6 +87,10 @@
     },
 
     ready: function() {
+      this._fileBugInput = this.$.bug;
+      this._commentTextInput = this.$.commentText;
+      this._snoozeTimeInput = this.$.snoozeTime;
+
       this.fetchAnnotations();
     },
 
@@ -481,16 +470,13 @@
       // Data cleanup: If the group is resolved, ensure that all subalerts
       // are resolved too.
       if (groupAlert && groupAlert.resolved) {
-        console.log('resolved group');
         for (let i in groupAlert.alerts) {
           let subAlert = groupAlert.alerts[i];
           if (!subAlert.resolved) {
-            console.log('need to resolve ' + subAlert.key + ' res ' + subAlert.resolved);
             this._groupModel.resolveAlerts([subAlert], true);
           }
         }
       } else if (groupAlert && !groupAlert.resolved) {
-        console.log('unresolved group');
         for (let i in alerts) {
           if (alerts[i].resolved) {
             this._groupErrorMessage =
@@ -504,7 +490,6 @@
       for (let i in alerts) {
         // Grouping with a resolved group will resolve all unresolved issues.
         if (groupAlert && groupAlert.resolved && !alerts[i].resolved) {
-          console.log('auto-resolving ' + alerts[i].key);
           this._groupModel.resolveAlerts([alerts[i]], true);
         }
 
@@ -567,7 +552,7 @@
     _checkAll: function(e) {
       let target = e.target;
       let checkboxSelector = target.getAttribute('data-checkbox-selector');
-      let checkboxes = this.querySelectorAll(checkboxSelector);
+      let checkboxes = Polymer.dom(this.root).querySelectorAll(checkboxSelector);
       for (let i = 0; i < checkboxes.length; i++) {
         // Note: We are using .click() because otherwise the checkbox's change
         // event is not fired.

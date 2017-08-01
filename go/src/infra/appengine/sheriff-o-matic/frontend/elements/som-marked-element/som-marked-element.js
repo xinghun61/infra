@@ -4,12 +4,46 @@
   Polymer({
     is: 'som-marked-element',
     properties: {
-      markdown: String,
+      markdown: {
+        type: String,
+        observer: 'render',
+      },
+      _attached: {
+        type: Boolean,
+        value: false,
+      },
+      _markdownElement: Object,
     },
+
     ready: function() {
-      this.$.element.renderer = (function(r) {
-                                  r.link = this._getLinkRenderer();
-                                }).bind(this);
+      this._markdownElement = this.$.markdownElement;
+    },
+
+    attached: function() {
+      this._attached = true;
+      this.render();
+    },
+
+    render: function() {
+      // Don't render if the element isn't visible yet.
+      if (!this._attached) return;
+
+      if (!this.markdown) {
+        Polymer.dom(this._markdownElement).innerHTML = '';
+        return;
+      }
+      let renderer = new marked.Renderer();
+      renderer.link = this._getLinkRenderer();
+
+      let opts = {
+        renderer: renderer,
+        breaks: true,
+        sanitize: true,
+        pedantic: false,
+        smartypants: false
+      };
+      Polymer.dom(this._markdownElement).innerHTML = marked(this.markdown, opts);
+      this.fire('marked-render-complete', {}, {composed: true});
     },
 
     _hrefIsAllowed: function(href) {

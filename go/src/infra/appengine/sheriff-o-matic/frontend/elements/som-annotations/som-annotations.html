@@ -19,9 +19,7 @@
 
 <dom-module id="som-annotations">
   <template>
-    <style include="som-input-styles"></style>
-    <style include="som-utility-styles"></style>
-    <style>
+    <style include="som-input-styles som-utility-styles">
       #bugDialog, #removeBugDialog, #snoozeDialog {
         width: 300px;
       }
@@ -100,7 +98,7 @@
         margin: 1em 4px;
         background-color: #eee;
       }
-      .subAlert {
+      .sub-alert {
         display: block;
         font-size: 0.8em;
           color: #0c0;
@@ -235,7 +233,7 @@
               <template is="dom-if" if="[[_haveSubAlerts(target)]]">
                 <span>
                   <template is="dom-repeat" items="[[target.alerts]]" as="subAlert">
-                    <span class="subAlert">[[subAlert.title]]</span>
+                    <span class="sub-alert">[[subAlert.title]]</span>
                   </template>
                 </span>
               </template>

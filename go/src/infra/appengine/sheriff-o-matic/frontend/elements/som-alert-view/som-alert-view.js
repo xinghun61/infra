@@ -63,6 +63,10 @@
         },
       },
       _bugs: Array,
+      _categories: {
+        type: Array,
+        computed: '_computeCategories(_alerts, _isTrooperPage)',
+      },
       _checkedAlerts: {
         type: Array,
         value: function() {
@@ -151,7 +155,7 @@
     },
 
     created: function() {
-      this.async(this._refreshAsync, refreshDelayMs);
+      setTimeout(this._refreshAsync.bind(this), refreshDelayMs);
     },
 
     ////////////////////// Refresh ///////////////////////////
@@ -166,7 +170,7 @@
 
     _refreshAsync: function() {
       this.refresh();
-      this.async(this._refreshAsync, refreshDelayMs);
+      setTimeout(this._refreshAsync.bind(this), refreshDelayMs);
     },
 
     ////////////////////// Alerts and path ///////////////////////////
@@ -861,15 +865,18 @@
     },
 
     _handleAnnotation: function(evt) {
-      this.$.annotations.handleAnnotation(evt.target.get('alert'), evt.detail);
+      let target = evt.composedPath()[0];
+      this.$.annotations.handleAnnotation(target.get('alert'), evt.detail);
     },
 
     _handleComment: function(evt) {
-      this.$.annotations.handleComment(evt.target.get('alert'));
+      let target = evt.composedPath()[0];
+      this.$.annotations.handleComment(target.get('alert'));
     },
 
     _handleLinkBug: function(evt) {
-      this.$.annotations.handleLinkBug([evt.target.get('alert')]);
+      let target = evt.composedPath()[0];
+      this.$.annotations.handleLinkBug([target.get('alert')]);
     },
 
     _handleLinkBugBulk: function(evt) {
@@ -878,11 +885,13 @@
     },
 
     _handleRemoveBug: function(evt) {
-      this.$.annotations.handleRemoveBug(evt.target.get('alert'), evt.detail);
+      let target = evt.composedPath()[0];
+      this.$.annotations.handleRemoveBug(target.get('alert'), evt.detail);
     },
 
     _handleSnooze: function(evt) {
-      this.$.annotations.handleSnooze([evt.target.get('alert')]);
+      let target = evt.composedPath()[0];
+      this.$.annotations.handleSnooze([target.get('alert')]);
     },
 
     _handleSnoozeBulk: function(evt) {
@@ -891,7 +900,8 @@
     },
 
     _handleGroup: function(evt) {
-      let alert = evt.target.get('alert');
+      let target = evt.composedPath()[0];
+      let alert = target.get('alert');
       this.$.annotations.handleGroup(
           alert, this._computeGroupTargets(alert, this._alerts),
           (alert, resolved) => {this._resolveAlerts(alert, resolved);});
@@ -917,11 +927,13 @@
     },
 
     _handleUngroup: function(evt) {
-      this.$.annotations.handleUngroup(evt.target.get('alert'));
+      let target = evt.composedPath()[0];
+      this.$.annotations.handleUngroup(target.get('alert'));
     },
 
     _handleResolve: function(evt) {
-      let alert = evt.target.get('alert');
+      let target = evt.composedPath()[0];
+      let alert = target.get('alert');
       if (alert.grouped) {
         this._resolveAlerts(alert.alerts, true);
       } else {
@@ -1000,18 +1012,22 @@
     },
 
     _handleChecked: function(evt) {
-      let categoryElements = this.getElementsByClassName('alert-category');
+      let categories = Polymer.dom(this.root).querySelectorAll(
+        '.alert-category'
+      );
       let checked = [];
-      for (let i = 0; i < categoryElements.length; i++) {
-        checked = checked.concat(categoryElements[i].checkedAlerts);
+      for (let i = 0; i < categories.length; i++) {
+        checked = checked.concat(categories[i].checkedAlerts);
       }
       this._checkedAlerts = checked;
     },
 
     _uncheckAll: function(evt) {
-      let categoryElements = this.getElementsByClassName('alert-category');
-      for (let i = 0; i < categoryElements.length; i++) {
-        categoryElements[i].uncheckAll();
+      let categories = Polymer.dom(this.root).querySelectorAll(
+        '.alert-category'
+      );
+      for (let i = 0; i < categories.length; i++) {
+        categories[i].uncheckAll();
       }
     },
   });

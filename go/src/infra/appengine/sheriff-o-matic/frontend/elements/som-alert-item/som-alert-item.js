@@ -104,13 +104,12 @@
       },
       _startTime:
           {type: String, computed: '_formatTimestamp(alert.start_time)'},
-      _groupNameInput: {
-        type: Object,
-        value: function() {
-          return this.$.groupName;
-        }
-      },
+      _groupNameInput: Object,
       collapseByDefault: Boolean,
+    },
+
+    ready() {
+      this._groupNameInput = this.$.groupName;
     },
 
     _alertChecked(isChecked) {
@@ -289,11 +288,8 @@
       return this._getSelected(selected, alert).links;
     },
 
-    _expandAlertCollapse: function() {
-      this.$.alertCollapse.updateSize(String(this.$.alertCollapse.scrollHeight) + 'px');
-    },
-
     _computeIsCollapsed: function(openState, alert, annotation, collapseByDefault) {
+      if (!alert || !annotation) return;
       // If opened is not defined, fall back to defaults based on annotation
       // and collapseByDefault.
       if (openState == 'opened') {

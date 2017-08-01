@@ -27,10 +27,7 @@
 
 <dom-module id="som-alert-view">
   <template>
-    <style include="som-header-styles"></style>
-    <style include="som-input-styles"></style>
-    <style include="som-utility-styles"></style>
-    <style>
+    <style include="som-header-styles som-input-styles som-utility-styles">
       #alertListPage {
         display: flex;
         flex-direction: column;
@@ -53,6 +50,10 @@
       #fetchAlertsError {
         color: #f00;
         margin: 1em;
+      }
+      #filterInput {
+        margin-top: -32px;
+        width: 60%;
       }
       #notifications {
         border-bottom: 1px solid #ddd;
@@ -86,10 +87,6 @@
       iron-pages {
         padding: 1em 16px;
       }
-      #filterInput {
-        margin-top: -32px;
-        width: 60%;
-      }
     </style>
     <som-annotations id="annotations"
         annotations="{{annotations}}"
@@ -97,15 +94,17 @@
         collapse-by-default="[[collapseByDefault]]"
         local-state="{{localState}}"
         user="[[user]]"></som-annotations>
-    <div id="bulkAlertActions" hidden$="[[!_checkedAlerts.length]]">
-      You have selected [[_checkedAlerts.length]] alerts.
-      (<small class="link" on-tap="_uncheckAll">Unselect all?</small>)
-      <button on-tap="_handleLinkBugBulk">Link Bug to All</button>
-      <button on-tap="_handleSnoozeBulk">Snooze All</button>
-      <button on-tap="_handleGroupBulk" hidden$="[[!_hasGroupAll(_checkedAlerts)]]">
-        Group All</button>
-      <button on-tap="_handleResolveBulk">Resolve All</button>
-    </div>
+    <template is="dom-if" if="[[_checkedAlerts.length]]">
+      <div id="bulkAlertActions">
+        You have selected [[_checkedAlerts.length]] alerts.
+        (<small class="link" on-tap="_uncheckAll">Unselect all?</small>)
+        <button on-tap="_handleLinkBugBulk">Link Bug to All</button>
+        <button on-tap="_handleSnoozeBulk">Snooze All</button>
+        <button on-tap="_handleGroupBulk" hidden$="[[!_hasGroupAll(_checkedAlerts)]]">
+          Group All</button>
+        <button on-tap="_handleResolveBulk">Resolve All</button>
+      </div>
+    </template>
     <iron-pages attr-for-selected="id" selected="[[_currentAlertView]]">
       <div id="alertListPage">
         <div id="notifications" class="page-section">
@@ -143,9 +142,9 @@
             <iron-icon class="filter-icon" icon="search"></iron-icon>
             <paper-input id="filterInput" value="{{_filterPattern}}" placeholder="Filter alerts by regex"></paper-input>
           </div>
-          <template is="dom-repeat" items="[[_computeCategories(_alerts, _isTrooperPage)]]" as="cat">
+          <template is="dom-repeat" items="[[_categories]]" as="cat">
             <som-alert-category
-                id="alertCategory[[cat]]"
+                id="alertCategory[[index]]"
                 class="alert-category"
                 category-title="[[_getCategoryTitle(cat, _isTrooperPage, trees)]]"
                 alerts="[[_alertItemsWithCategory(_alerts, cat, _isTrooperPage)]]"

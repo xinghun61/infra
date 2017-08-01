@@ -12,9 +12,11 @@
 
 <dom-module id="som-examine">
   <template>
-    <style is="custom-style">
+    <style>
       iframe {
         border: 0;
+        width: 100%;
+        flex-grow: 1;
       }
       paper-tabs {
         background-color: #333;
@@ -32,26 +34,27 @@
       .builder-page {
         padding: 1em;
         min-height: 1000px;
-      }
-      .horizontal {
         display: flex;
+        flex-direction: column;
       }
-      #test-menu {
+      #testMenu {
         flex-grow: 1;
+        display: flex;
+        flex-direction: row;
       }
     </style>
-    <div class="horizontal">
-      <paper-dropdown-menu id="test-menu" label="Failing test" hidden$="[[hideTests]]">
-        <paper-listbox class="dropdown-content" attr-for-selected="value" selected="{{selectedTest}}">
+    <template is="dom-if" if="[[!hideTests]]">
+      <paper-dropdown-menu id="testMenu" label="Failing test">
+        <paper-listbox slot="dropdown-content" class="dropdown-content" attr-for-selected="value" selected="{{selectedTest}}">
           <template is="dom-repeat" items="[[_computeFailingTests(selectedBuilder, selectedStep)]]" as="test">
             <paper-item value="[[test]]">[[test]]</paper-item>
           </template>
         </paper-listbox>
       </paper-dropdown-menu>
-    </div>
+    </template>
 
     <!-- iframe for each builder/build/test log etc -->
-    <paper-tabs id="builder-tabs" selected="{{selectedBuilder}}" attr-for-selected="id" scrollable>
+    <paper-tabs id="builderTabs" selected="{{selectedBuilder}}" attr-for-selected="id" scrollable>
       <template is="dom-repeat" items="[[alert.extension.builders]]" as="builder">
         <paper-tab id$="[[_tabId(builder)]]">
           [[_tabTitle(builder)]]
@@ -63,20 +66,17 @@
         </paper-tab>
       </template>
     </paper-tabs>
-    <iron-pages id="builder-pages" selected="{{selectedBuilder}}" attr-for-selected="id" class="flex layout vertical">
+    <iron-pages id="builderPages" selected="{{selectedBuilder}}" attr-for-selected="id">
       <template is="dom-repeat" items="[[alert.extension.builders]]" as="builder">
-        <div id$="[[builder.name]]:[[builder.latest_failure]]" class="builder-page flex layout vertical">
+        <div id$="[[builder.name]]:[[builder.latest_failure]]" class="builder-page">
           <div>Builds: [[builder.first_failure]]-[[builder.latest_failure]]</div>
-          <div class="flex layout vertical">
-            <som-webkit-tests builder="[[builder]]" test-name="[[selectedTest]]" test-type="[[alert.extension.reason.step]]" hidden$="[[hideWebKitTests]]">
+          <template is="dom-if" if="[[!hideWebKitTests]]">
+            <som-webkit-tests builder="[[builder]]" test-name="[[selectedTest]]" test-type="[[alert.extension.reason.step]]">
             </som-webkit-tests>
-            <iframe
-                src$="[[_linkify(linkStyle, builder.url, builder.latest_failure, selectedStep)]]"
-                class="flex"
-            ></iframe>
-          </div>
-          <div>
-          </div>
+          </template>
+          <iframe
+              src$="[[_linkify(linkStyle, builder.url, builder.latest_failure, selectedStep)]]"
+          ></iframe>
         </div>
       </template>
     </iron-pages>

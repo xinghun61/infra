@@ -27,7 +27,10 @@
     test('sets test menu', function(done) {
       element.alert = WEBKIT_TEST_FAILURE;
       flush(function() {
-        let menu = element.$$('#test-menu');
+        assert.equal(element.selectedStep, 'tests');
+        assert.isFalse(element.hideTests);
+
+        let menu = element.$$('#testMenu');
         assert.isDefined(menu);
         assert.isDefined(menu.selectedItem);
         done();
@@ -37,7 +40,7 @@
     test('creates builder tabs', function(done) {
       element.alert = WEBKIT_TEST_FAILURE;
       flush(function() {
-        let tabs = element.$$('#builder-tabs');
+        let tabs = element.$$('#builderTabs');
         assert.isDefined(tabs);
         assert.isDefined(tabs.selectedItem);
         assert.equal(2, tabs.items.length);
@@ -48,7 +51,7 @@
     test('creates builder pages', function(done) {
       element.alert = WEBKIT_TEST_FAILURE;
       flush(function() {
-        let builderPages = element.$$('#builder-pages');
+        let builderPages = element.$$('#builderPages');
         assert.isDefined(builderPages);
         assert.isDefined(builderPages.selectedItem);
         assert.equal(2, builderPages.items.length);
@@ -63,7 +66,7 @@
       element.alert = WEBKIT_TEST_FAILURE;
       flush(function() {
         assert.equal('WebKit Linux:64889', element.selectedBuilder);
-        let tabs = element.$$('#builder-tabs');
+        let tabs = element.$$('#builderTabs');
         let secondTab = tabs.items[1];
 
         // Click on the second tab.
@@ -72,7 +75,7 @@
         assert.equal('WebKit Linux Trusty:12559', tabs.selected);
 
         // The second page should be selected.
-        let builderPages = element.$$('#builder-pages');
+        let builderPages = element.$$('#builderPages');
         assert.equal('WebKit Linux Trusty:12559', builderPages.selected);
 
         // And the data bound element property should be updated.
@@ -90,11 +93,11 @@
         element.selectedBuilder = 'WebKit Linux Trusty:12259';
 
         // The second page should be selected.
-        let builderPages = element.$$('#builder-pages');
+        let builderPages = element.$$('#builderPages');
         assert.equal('WebKit Linux Trusty:12259', builderPages.selected);
 
         // And the second tab should be selected.
-        let tabs = element.$$('#builder-tabs');
+        let tabs = element.$$('#builderTabs');
         assert.equal('WebKit Linux Trusty:12259', tabs.selected);
         done();
       });

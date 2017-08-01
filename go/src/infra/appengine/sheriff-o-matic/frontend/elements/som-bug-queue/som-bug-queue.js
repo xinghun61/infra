@@ -183,6 +183,7 @@
       if (!labels) {
         return [];
       }
+      bugQueueLabel = bugQueueLabel || '';
       return labels.filter((label) => {
         return label.toLowerCase() != bugQueueLabel.toLowerCase() &&
                !label.match(/^Pri-(\d)$/);

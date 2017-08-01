@@ -63,8 +63,8 @@
         assert.equal(
             'test title',
             element.$$('#alertTitle').textContent.trim());
-        assert.isFalse(element.$.linkBug.hidden);
-        assert.isFalse(element.$.snooze.hidden);
+        expect(element.$.linkBug).to.be.visible;
+        expect(element.$.snooze).to.be.visible;
         done();
       });
     });
@@ -73,14 +73,14 @@
       element.annotation = {
         snoozed: false,
       };
-      assert.equal(element.$.snooze.hidden, false);
-      assert.equal(element.$.unsnooze.hidden, true);
+      expect(element.$.snooze).to.be.visible;
+      expect(element.$.unsnooze).to.be.hidden;
 
       element.annotation = {
         snoozed: true,
       };
-      assert.equal(element.$.snooze.hidden, true);
-      assert.equal(element.$.unsnooze.hidden, false);
+      expect(element.$.snooze).to.be.hidden;
+      expect(element.$.unsnooze).to.be.visible;
     });
 
     test('snoozed adds text to header', function(done) {

@@ -19,13 +19,12 @@
       text: {'Content-Type': 'text/html'},
   };
 
-  // FIXME: Use stub elements to mock out som-drawer
-  // https://www.polymer-project.org/1.0/docs/tools/tests#create-stub-elements
   setup(function() {
     element = fixture('basic');
     clock = sinon.useFakeTimers();
     sinon.stub(window, 'fetch');
   });
+
   teardown(function() {
     window.fetch.restore();
   });
