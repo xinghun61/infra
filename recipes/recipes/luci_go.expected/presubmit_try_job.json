@@ -3,6 +3,21 @@
     "cmd": [
       "python",
       "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/luci_go_in_infra"
+    ],
+    "infra_step": true,
+    "name": "ensure builder cache dir"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
       "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
@@ -27,6 +42,7 @@
       "--revision",
       "infra/go/src/github.com/luci/luci-go@HEAD"
     ],
+    "cwd": "[CACHE]/luci_go_in_infra",
     "env_prefixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -74,7 +90,7 @@
       "-m",
       "Committed patch"
     ],
-    "cwd": "[START_DIR]/infra/go/src/github.com/luci/luci-go",
+    "cwd": "[CACHE]/luci_go_in_infra/infra/go/src/github.com/luci/luci-go",
     "infra_step": true,
     "name": "commit git patch"
   },
@@ -85,7 +101,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[START_DIR]/infra",
+    "cwd": "[CACHE]/luci_go_in_infra",
     "env": {
       "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -95,10 +111,11 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra/go/env.py",
+      "[CACHE]/luci_go_in_infra/infra/go/env.py",
       "go",
       "version"
     ],
+    "cwd": "[CACHE]/luci_go_in_infra",
     "infra_step": true,
     "name": "go third parties"
   },
@@ -106,11 +123,11 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra/go/env.py",
+      "[CACHE]/luci_go_in_infra/infra/go/env.py",
       "python",
       "RECIPE_PACKAGE_REPO[depot_tools]/presubmit_support.py",
       "--root",
-      "[START_DIR]/infra/go/src/github.com/luci/luci-go",
+      "[CACHE]/luci_go_in_infra/infra/go/src/github.com/luci/luci-go",
       "--commit",
       "--verbose",
       "--verbose",
@@ -132,6 +149,7 @@
       "--rietveld_email",
       ""
     ],
+    "cwd": "[CACHE]/luci_go_in_infra",
     "env": {
       "PRESUBMIT_BUILDER": "1"
     },
