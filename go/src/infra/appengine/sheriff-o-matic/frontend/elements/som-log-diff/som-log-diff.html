@@ -3,6 +3,8 @@
 <link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
 <link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../bower_components/paper-spinner/paper-spinner.html">
+
 <link rel="import" href="../../elements/som-linkify-behavior.html">
 
 <dom-module id="som-log-diff">
@@ -37,11 +39,11 @@
       }
       .failing {
         background-color: #ffecec;
-        color: cyan;
+        padding: 0.5em;
       }
       .passing {
         background-color: #eaffea;
-        color: cyan;
+        padding: 0.5em;
       }
     </style>
     <iron-ajax
@@ -49,6 +51,7 @@
       auto
       url="[[url]]"
       handle-as="json"
+      loading="{{loading}}"
       last-response="{{_diffLines}}"
     ></iron-ajax>
 
@@ -64,9 +67,11 @@
         <td>[[builder]]</td>
         <td>[[buildNum1]]</td>
         <td>[[buildNum2]]</td>
+        <td>
+          <paper-spinner id="progress" indeterminate active="[[loading]]"></paper-spinner>
+        </td>
       </tr>
     </table>
-
     <template is="dom-repeat" items="[[_diffLines]]">
       <template is="dom-if" if="[[_isCommon(item.Delta)]]">
         <template is="dom-if" if="[[_defaultOpen(item.Payload)]]">

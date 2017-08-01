@@ -16,6 +16,10 @@
         return [];
         },
       },
+      loading: {
+        type: Boolean,
+        value: true,
+      },
       key: {
         type: String,
       },
