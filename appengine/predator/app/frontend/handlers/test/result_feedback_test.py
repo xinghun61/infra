@@ -78,12 +78,12 @@ class ResultFeedbackTest(AppengineTestCase):
 
   def _GenerateDisplayData(self, analysis):
     if analysis.stack_trace:
-      stacktrace_str = analysis.stack_trace
+      raw_stacktrace = analysis.stack_trace
     else:
       stack_strs = []
       for stack in analysis.stacktrace.stacks if analysis.stacktrace else []:
         stack_strs.append('\n'.join([str(frame) for frame in stack.frames]))
-      stacktrace_str = '\n'.join(stack_strs)
+      raw_stacktrace = '\n'.join(stack_strs)
 
     return {
         'client': self.handler.client,
@@ -95,7 +95,7 @@ class ResultFeedbackTest(AppengineTestCase):
         'regression_range': analysis.result.get('regression_range'),
         'culprit_regression_range': analysis.culprit_regression_range,
         'historical_metadata': analysis.historical_metadata,
-        'stack_trace': stacktrace_str,
+        'stack_trace': raw_stacktrace,
         'suspected_cls': analysis.result.get('suspected_cls'),
         'culprit_cls': analysis.culprit_cls,
         'suspected_project': analysis.result.get('suspected_project'),

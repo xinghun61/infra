@@ -134,7 +134,7 @@ class CrashAnalysisTest(AppengineTestCase):
     analysis = CrashAnalysis()
     analysis.Initialize(crash_data)
 
-    self.assertEqual(analysis.stack_trace, crash_data.stacktrace_str)
+    self.assertEqual(analysis.stack_trace, crash_data.raw_stacktrace)
     self.assertEqual(analysis.signature, crash_data.signature)
     self.assertEqual(analysis.platform, crash_data.platform)
     self.assertEqual(analysis.regression_range, crash_data.regression_range)

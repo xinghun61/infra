@@ -54,12 +54,12 @@ class ResultFeedback(BaseHandler):
     if analysis.stack_trace:
       # Old crash analysis stored raw stacktrace string instead of the parsed
       # stacktrace.
-      stacktrace_str = analysis.stack_trace
+      stack_trace = analysis.stack_trace
     else:
       stack_strs = []
       for stack in analysis.stacktrace.stacks if analysis.stacktrace else []:
         stack_strs.append('\n'.join([str(frame) for frame in stack.frames]))
-      stacktrace_str = '\n'.join(stack_strs)
+      stack_trace = '\n'.join(stack_strs)
 
     # Legacy culprit cls is a list of Suspect.ToDict(), new data is just a list
     # of commit urls.
@@ -77,7 +77,7 @@ class ResultFeedback(BaseHandler):
         'regression_range': analysis.result.get(
             'regression_range') if analysis.result else None,
         'culprit_regression_range': analysis.culprit_regression_range,
-        'stack_trace': stacktrace_str,
+        'stack_trace': stack_trace,
         'suspected_cls': analysis.result.get(
             'suspected_cls') if analysis.result else None ,
         'culprit_cls': culprit_cls,

@@ -55,11 +55,13 @@ class CrashData(object):
     self._crashed_version = crash_data['chrome_version']
     self._signature = crash_data['signature']
     self._platform = self.NormalizePlatform(crash_data['platform'])
-    self._stacktrace_str = crash_data['stack_trace'] or ''
+    # The raw_stacktrace can be a string or a list of strings, or any json
+    # format data.
+    self._raw_stacktrace = crash_data['stack_trace'] or ''
 
   @property
-  def stacktrace_str(self):
-    return self._stacktrace_str
+  def raw_stacktrace(self):
+    return self._raw_stacktrace
 
   @property
   def crashed_version(self):

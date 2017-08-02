@@ -22,7 +22,7 @@ class CrashDataTest(AnalysisTestCase):
     raw_crash_data = self.GetDummyChromeCrashData()
     crash_data = CrashData(raw_crash_data)
 
-    self.assertEqual(crash_data.stacktrace_str,
+    self.assertEqual(crash_data.raw_stacktrace,
                      raw_crash_data['stack_trace'] or '')
     self.assertEqual(crash_data.crashed_version,
                      raw_crash_data['chrome_version'])
@@ -40,5 +40,3 @@ class CrashDataTest(AnalysisTestCase):
     crash_data = CrashData(raw_crash_data)
     crash_data.platform = 'linux'
     self.assertEqual(crash_data.platform, 'unix')
-
-

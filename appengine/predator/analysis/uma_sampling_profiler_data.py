@@ -88,7 +88,7 @@ class UMASamplingProfilerData(CrashData):
     self.subtree_stacks = regression_data['subtree_stacks']
 
     self._crashed_version = regression_data['chrome_releases'][1]['version']
-    self._stacktrace_str = ''
+    self._raw_stacktrace = ''
 
     self._dependency_analyzer = DependencyAnalyzer(self._platform,
                                                    self._crashed_version,

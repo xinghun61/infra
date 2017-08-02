@@ -180,7 +180,7 @@ class CrashAnalysis(ndb.Model):
 
     # Set (other) common properties.
     try:
-      self.stack_trace = crash_data.stacktrace_str
+      self.stack_trace = crash_data.raw_stacktrace
     except Exception:  # pragma: no cover
       # The ``stack_trace``s of some data are broken.
       pass
@@ -222,14 +222,14 @@ class CrashAnalysis(ndb.Model):
     # ``Stactrace`` object. We want to get the raw string. However some legacy
     # data didn't store any, in this case, we use ``self.stacktrace.ToString()``
     # instead.
-    stacktrace_str = self.stack_trace or (
+    raw_stacktrace = self.stack_trace or (
         self.stacktrace.ToString() if self.stacktrace else None)
 
     return {
         'chrome_version': self.crashed_version,
         'signature': self.signature,
         'platform': self.platform,
-        'stack_trace': stacktrace_str
+        'stack_trace': raw_stacktrace
     }
 
   def ReInitialize(self, client):

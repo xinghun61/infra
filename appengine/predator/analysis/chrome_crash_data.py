@@ -113,12 +113,12 @@ class ChromeCrashData(CrashData):
   def stacktrace(self):
     """Parses stacktrace and returns parsed ``Stacktrace`` object."""
     stacktrace = ChromeCrashParser().Parse(
-        self._stacktrace_str,
+        self._raw_stacktrace,
         self._dependency_analyzer.regression_version_deps,
         signature=self.signature, top_n_frames=self._top_n_frames)
     if not stacktrace:
       logging.warning('Failed to parse the stacktrace %s',
-                      self._stacktrace_str)
+                      self._raw_stacktrace)
     return stacktrace
 
   @cached_property

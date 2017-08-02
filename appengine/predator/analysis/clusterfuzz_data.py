@@ -133,12 +133,12 @@ class ClusterfuzzData(CrashData):
   def stacktrace(self):
     """Parses stacktrace and returns parsed ``Stacktrace`` object."""
     stacktrace = ClusterfuzzParser().Parse(
-        self._stacktrace_str, self.dependencies, self.job_type,
+        self._raw_stacktrace, self.dependencies, self.job_type,
         self.sanitizer, signature=self.signature,
         top_n_frames=self._top_n_frames, crash_address=self.crashed_address)
     if not stacktrace:
       logging.warning('Failed to parse the stacktrace %s',
-                      self._stacktrace_str)
+                      self._raw_stacktrace)
 
     return stacktrace
 
