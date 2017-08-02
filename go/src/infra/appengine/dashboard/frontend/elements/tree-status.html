@@ -90,7 +90,7 @@
           }
           let state = json.general_state ? json.general_state : 'Unknown';
           let username = json.username ? json.username : 'Unknown';
-          let date = json.date ? json.date : 'Unknown';
+          let date = json.date ? `${json.date.split(".")[0]} GMT` : 'Unknown';
           return `Tree is ${state}. ${date} ${username}`;
         }
 

@@ -14,8 +14,11 @@
         background-color: white;
         box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
         color: rgba(0, 0, 0, 0.87);
-        font: 1.2em "Roboto Regular";
+        font: 1.2em "Roboto";
         padding: 24px;
+      }
+      .date-th {
+        width: 11.43%;
       }
       .footer,
       th {
@@ -34,16 +37,17 @@
       }
       table {
         border-collapse: collapse;
-        font-size: .81em;
+        font-family: 'Roboto', 'Noto', sans-serif;
         padding: 24px;
         width: 100%;
       }
       td {
+        font-size: .81em;
         position: relative;
       }
       th {
         color: rgba(0, 0, 0, 0.54);
-        font: .76em "Roboto Medium";
+        font: .76em "Roboto";
       }
       th:first-child {
         text-align: left;
@@ -67,7 +71,7 @@
           <tr>
             <th>Current Status</th>
             <template is="dom-repeat" items="[[formattedDates]]">
-              <th>[[item]]</th>
+              <th class="date-th">[[item]]</th>
             </template>
           </tr>
           <template is="dom-repeat" items="[[services]]">
