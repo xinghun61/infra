@@ -70,7 +70,7 @@ class IssuePresubmitTest(unittest.TestCase):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     component_ids = []
     proposed_issue = self.servlet.MakeProposedIssue(
-        mr, parsed, config, component_ids)
+        mr, None, parsed, config, component_ids)
     self.assertEqual(['a', 'b'], proposed_issue.labels)
 
   def testMakeProposedIssue_SomeCustomFields(self):
@@ -96,8 +96,27 @@ class IssuePresubmitTest(unittest.TestCase):
       ]
     component_ids = []
     proposed_issue = self.servlet.MakeProposedIssue(
-        mr, parsed, config, component_ids)
+        mr, None, parsed, config, component_ids)
     self.assertEqual(['a', 'b', 'Size-Small'], proposed_issue.labels)
+
+  def testMakeProposedIssue_CountsFromExistingIssue(self):
+    parsed_users = tracker_helpers.ParsedUsers('', 0, [], [], [], [])
+    parsed_fields = tracker_helpers.ParsedFields({}, {}, [])
+    parsed = tracker_helpers.ParsedIssue(
+        'sum', 'comment', False, 'New', parsed_users, ['a', 'b'],
+        [], [], parsed_fields, 'template', [], [],[], [], [])
+    mr = testing_helpers.MakeMonorailRequest(
+        project=self.proj,
+        perms=permissions.USER_PERMISSIONSET)
+    mr.local_id = self.local_id_1
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    component_ids = []
+    existing_issue = tracker_pb2.Issue(
+      attachment_count=123, star_count=456)
+    proposed_issue = self.servlet.MakeProposedIssue(
+        mr, existing_issue, parsed, config, component_ids)
+    self.assertEqual(123, proposed_issue.attachment_count)
+    self.assertEqual(456, proposed_issue.star_count)
 
   def testPairDerivedValuesWithRuleExplanations_Nothing(self):
     proposed_issue = tracker_pb2.Issue()  # No derived values.

@@ -393,7 +393,7 @@ def _ApplyCond(
   if field == 'any_field':
     return _Compare(op, vals, label_set) or _Compare(op, vals, [issue.summary])
   if field == 'attachments':
-    return _Compare(op, vals, [issue.attachment_count])
+    return _Compare(op, term.int_values, [issue.attachment_count])
   if field == 'blocked':
     return _Compare(op, vals, issue.blocked_on_iids)
   if field == 'blockedon':
@@ -427,7 +427,7 @@ def _ApplyCond(
   if field == 'reporter':
     return _CompareUsers(cnxn, services.user, op, vals, [issue.reporter_id])
   if field == 'stars':
-    return _Compare(op, vals, [issue.star_count])
+    return _Compare(op, term.int_values, [issue.star_count])
   if field == 'status':
     return _Compare(op, vals, [status.lower()])
   if field == 'summary':

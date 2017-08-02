@@ -59,6 +59,10 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
     Returns:
       Results dictionary in JSON format.
     """
+    existing_issue = None
+    if mr.local_id:
+      existing_issue = self._GetIssue(mr)
+
     with self.profiler.Phase('parsing request'):
       post_data = mr.request.POST
       parsed = tracker_helpers.ParseIssueRequest(
@@ -78,7 +82,8 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
           parsed.components.paths, config, mr.errors)
 
     with self.profiler.Phase('initializing proposed_issue'):
-      proposed_issue = self.MakeProposedIssue(mr, parsed, config, component_ids)
+      proposed_issue = self.MakeProposedIssue(
+          mr, existing_issue, parsed, config, component_ids)
 
     with self.profiler.Phase('applying rules'):
       traces = filterrules_helpers.ApplyFilterRules(
@@ -107,7 +112,8 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
         'errors': errors_and_why,
         }
 
-  def MakeProposedIssue(self, mr, parsed, config, component_ids):
+  def MakeProposedIssue(
+      self, mr, existing_issue, parsed, config, component_ids):
     """Create an Issue in RAM as input to the filter rules."""
     field_helpers.ShiftEnumFieldsIntoLabels(
       parsed.labels, parsed.labels_remove,
@@ -120,6 +126,9 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
       owner_id=parsed.users.owner_id, labels=parsed.labels,
       component_ids=component_ids, project_name=mr.project_name,
       field_values=field_values)
+    if existing_issue:
+      proposed_issue.attachment_count = existing_issue.attachment_count
+      proposed_issue.star_count = existing_issue.star_count
     return proposed_issue
 
 
