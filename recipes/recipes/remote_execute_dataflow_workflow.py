@@ -32,7 +32,9 @@ def RunSteps(api, workflow, job_name):
   workflow_path = workflow_path.join(*workflow.split('/'))
   setup_path = api.path['checkout'].join('packages', 'dataflow', 'setup.py')
   python_path = api.path['checkout'].join('ENV', 'bin', 'python')
-  env = {'GOOGLE_APPLICATION_CREDENTIALS':
+  # Clear PYTHONPATH since we want to use infra/ENV and not whatever the recipe
+  # sets
+  env = {'PYTHONPATH': '', 'GOOGLE_APPLICATION_CREDENTIALS':
          api.service_account.get_json_path('dataflow-launcher')}
   with api.context(env=env):
     api.step('Remote execute', [python_path, workflow_path, '--job_name',

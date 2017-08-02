@@ -85,7 +85,8 @@
       "--save_main_session"
     ],
     "env": {
-      "GOOGLE_APPLICATION_CREDENTIALS": "/creds/service_accounts/service-account-dataflow-launcher.json"
+      "GOOGLE_APPLICATION_CREDENTIALS": "/creds/service_accounts/service-account-dataflow-launcher.json",
+      "PYTHONPATH": ""
     },
     "name": "Remote execute"
   },
