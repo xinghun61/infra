@@ -96,6 +96,7 @@ def _GetOrganizedAnalysisResultBySuspectedCL(analysis_result):
     supported = step_failure.get('supported', True)
     step_revisions_index = {}
     organized_suspected_cls = organized_results[step_name]
+    is_flaky = step_failure.get('flaky', False)
 
     if not step_failure.get('tests'):
       # Non swarming, just group the whole step together.
@@ -104,7 +105,8 @@ def _GetOrganizedAnalysisResultBySuspectedCL(analysis_result):
           'last_pass': step_failure.get('last_pass'),
           'supported': supported,
           'tests': [],
-          'suspected_cls': step_failure['suspected_cls']
+          'suspected_cls': step_failure['suspected_cls'],
+          'flaky': is_flaky,
       }
       organized_suspected_cls.append(shared_result)
       continue
@@ -135,8 +137,10 @@ def _GetOrganizedAnalysisResultBySuspectedCL(analysis_result):
     tests_group = defaultdict(list)
     for index, test in enumerate(step_failure['tests']):
       # Get all revisions for this test and check if there is
-      # any other test has the same culprit(represented by revision) set.
+      # any other test has the same culprit(represented by revision) set and
+      # are flaky or reliable at the same time.
       test_name = test['test_name']
+      is_flaky = test.get('flaky', False)
       found_group = False
       revisions = set()
       for cl in test['suspected_cls']:
@@ -144,7 +148,7 @@ def _GetOrganizedAnalysisResultBySuspectedCL(analysis_result):
       for group in tests_group.values():
         # Found tests that have the same culprit(represented by revision),
         # add current test to group.
-        if revisions == set(group['revisions']):
+        if revisions == set(group['revisions']) and is_flaky == group['flaky']:
           group['tests'].append(test_name)
           found_group = True
           break
@@ -157,7 +161,8 @@ def _GetOrganizedAnalysisResultBySuspectedCL(analysis_result):
         tests_group[index] = {
             'tests': [test_name],
             'revisions': list(revisions),
-            'suspected_cls': group_suspected_cls
+            'suspected_cls': group_suspected_cls,
+            'flaky': is_flaky,
         }
 
     for index, group in tests_group.iteritems():
@@ -168,7 +173,8 @@ def _GetOrganizedAnalysisResultBySuspectedCL(analysis_result):
           'last_pass': test_result.get('last_pass'),
           'supported': supported,
           'tests': group['tests'],
-          'suspected_cls': group['suspected_cls']
+          'suspected_cls': group['suspected_cls'],
+          'flaky': group['flaky'],
       }
       organized_suspected_cls.append(shared_result)
 
@@ -288,7 +294,8 @@ def _GetAnalysisResultWithTryJobInfo(show_debug_info, organized_results,
         try_job_result['status'] = try_job_result.get('status',
                                                       result_status.UNKNOWN)
         step_updated_results['unclassified_failures'].append(final_result)
-      elif try_job_result['status'] == result_status.FLAKY:
+      elif (try_job_result['status'] == result_status.FLAKY or
+            bool(heuristic_result.get('flaky'))):
         step_updated_results['flaky_failures'].append(final_result)
       else:
         step_updated_results['reliable_failures'].append(final_result)
