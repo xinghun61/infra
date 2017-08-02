@@ -446,7 +446,7 @@ function TKR_setUpSearchStore(
                 'Issues with some owner');
   TKR_addACItem(searchWordsNeg, docDict, '-has:owner',
                 'Issues with no owner');
-  TKR_addACItem(searchWords, docDict, 'has:attachment',
+  TKR_addACItem(searchWords, docDict, 'has:attachments',
                 'Issues with some attachments');
   TKR_addACItem(searchWords, docDict, 'id:1,2,3',
                 'Match only the specified issues');
