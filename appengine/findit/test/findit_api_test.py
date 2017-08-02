@@ -477,6 +477,13 @@ class FinditApiTest(testing.EndpointsTestCase):
     }
     analysis.put()
 
+    culprit = WfSuspectedCL.Create('chromium', 'r3', 3)
+    culprit.revert_submission_status = analysis_status.COMPLETED
+    revert = RevertCL()
+    revert.revert_cl_url = 'revert_cl_url'
+    culprit.revert_cl = revert
+    culprit.put()
+
     expected_results = [{
         'master_url':
             master_url,
@@ -495,7 +502,9 @@ class FinditApiTest(testing.EndpointsTestCase):
                 'repo_name': 'chromium',
                 'revision': 'r3',
                 'commit_position': 3,
-                'analysis_approach': 'TRY_JOB'
+                'analysis_approach': 'TRY_JOB',
+                'revert_cl_url': 'revert_cl_url',
+                'revert_committed': True
             },
         ],
         'analysis_approach':
@@ -943,7 +952,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'revision': 'r4_2',
             'commit_position': 42,
             'confidence': 98,
-            'analysis_approach': 'TRY_JOB'
+            'analysis_approach': 'TRY_JOB',
+            'revert_committed': False
         }],
         'analysis_approach':
             'TRY_JOB',
@@ -976,7 +986,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'repo_name': 'chromium',
             'revision': 'r2_1',
             'confidence': 90,
-            'analysis_approach': 'HEURISTIC'
+            'analysis_approach': 'HEURISTIC',
+            'revert_committed': False
         }],
         'analysis_approach':
             'HEURISTIC',
@@ -1009,7 +1020,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'repo_name': 'chromium',
             'revision': 'r2_1',
             'confidence': 90,
-            'analysis_approach': 'HEURISTIC'
+            'analysis_approach': 'HEURISTIC',
+            'revert_committed': False
         }],
         'analysis_approach':
             'HEURISTIC',
@@ -1044,7 +1056,8 @@ class FinditApiTest(testing.EndpointsTestCase):
             'commit_position': 410,
             'analysis_approach': 'TRY_JOB',
             'confidence': 100,
-            'revert_cl_url': 'revert_cl_url'
+            'revert_cl_url': 'revert_cl_url',
+            'revert_committed': False
         }],
         'analysis_approach':
             'TRY_JOB',

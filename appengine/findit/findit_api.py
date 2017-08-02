@@ -84,6 +84,7 @@ class _SuspectedCL(messages.Message):
   confidence = messages.IntegerField(4, variant=messages.Variant.INT32)
   analysis_approach = messages.EnumField(_AnalysisApproach, 5)
   revert_cl_url = messages.StringField(6)
+  revert_committed = messages.BooleanField(7, default=False)
 
 
 class _TryJobStatus(messages.Enum):
@@ -235,7 +236,8 @@ class FindItApi(remote.Service):
     Currently additional information contains:
         confidence of the result;
         approaches that found this cl: HEURISTIC, TRY_JOB or both;
-        revert_cl_url if the cl has been reverted by Findit.
+        revert_cl_url if the cl has been reverted by Findit;
+        if the revert has been committed.
     """
     additional_info = {}
 
@@ -259,6 +261,9 @@ class FindItApi(remote.Service):
     # Gets the revert_cl_url for the CL if there is one.
     if cl.revert_cl_url:
       additional_info['revert_cl_url'] = cl.revert_cl_url
+
+    additional_info['revert_committed'] = (
+        cl.revert_submission_status == analysis_status.COMPLETED)
 
     return additional_info
 
@@ -301,7 +306,8 @@ class FindItApi(remote.Service):
               commit_position=commit_position,
               confidence=additional_info.get('confidence'),
               analysis_approach=cl_approach,
-              revert_cl_url=additional_info.get('revert_cl_url')))
+              revert_cl_url=additional_info.get('revert_cl_url'),
+              revert_committed=additional_info.get('revert_committed')))
 
     return _BuildFailureAnalysisResult(
         master_url=build.master_url,
@@ -842,8 +848,7 @@ class FindItApi(remote.Service):
     # Abandon and rerun the task if a previous request has been made through
     # Findit API but not started within 24 hours.
     rerun = (
-        task and
-        task.triggering_source == triggering_sources.FINDIT_API and
+        task and task.triggering_source == triggering_sources.FINDIT_API and
         task.queued and
         (not task.requested_time or
          task.requested_time < time_util.GetUTCNow() - timedelta(hours=24)))
