@@ -1,10 +1,14 @@
-(function() {
-  'use strict';
+'use strict';
 
-  Polymer({
-    is: 'som-alert-category',
-    behaviors: [AnnotationManagerBehavior],
-    properties: {
+class SomAlertCategory extends Polymer.mixinBehaviors(
+    [AnnotationManagerBehavior], Polymer.Element) {
+
+  static get is() {
+    return 'som-alert-category';
+  }
+
+  static get properties() {
+    return {
       alerts: {
         type: Array,
         value: function() {
@@ -58,79 +62,76 @@
       },
       linkStyle: String,
       xsrfToken: String,
-    },
+    }
+  }
 
-    ////////////////////// Annotations ///////////////////////////
+  ////////////////////// Annotations ///////////////////////////
 
-    _computeCheckedAlerts: function(alerts, checkedAlertKeys) {
-      let checkedAlerts = [];
-      for (let i = 0; i < alerts.length; i++) {
-        let key = alerts[i].key;
-        if (key in checkedAlertKeys && checkedAlertKeys[key]) {
-          checkedAlerts.push(alerts[i]);
-        }
-      }
-      return checkedAlerts;
-    },
+  _computeCheckedAlerts(alerts, checkedAlertKeys) {
+    return alerts.filter((alert) => {
+      return alert.key in checkedAlertKeys && checkedAlertKeys[alert.key];
+    });
+  }
 
-    ////////////////////// Checking Alerts ///////////////////////////
+  ////////////////////// Checking Alerts ///////////////////////////
 
-    _handleChecked: function(evt) {
-      let keys = {};
-      let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
-      for (let i = 0; i < alerts.length; i++) {
-        let a = alerts[i];
-        keys[a.alert.key] = a.checked;
-      }
-      this._checkedAlertKeys = keys;
-    },
+  _handleChecked(evt) {
+    let keys = {};
+    let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
+    for (let i = 0; i < alerts.length; i++) {
+      let a = alerts[i];
+      keys[a.alert.key] = a.checked;
+    }
+    this._checkedAlertKeys = keys;
+  }
 
-    uncheckAll: function(evt) {
-      let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
-      for (let i = 0; i < alerts.length; i++) {
-        alerts[i].checked = false;
-      }
+  uncheckAll(evt) {
+    let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
+    for (let i = 0; i < alerts.length; i++) {
+      alerts[i].checked = false;
+    }
 
-      this.$.checkAll.checked = false;
-    },
+    this.$.checkAll.checked = false;
+  }
 
-    checkAll: function(evt) {
-      let checked = evt.target.checked;
-      let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
-      for (let i = 0; i < alerts.length; i++) {
-        alerts[i].checked = checked;
-      }
-    },
+  checkAll(evt) {
+    let checked = evt.target.checked;
+    let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
+    for (let i = 0; i < alerts.length; i++) {
+      alerts[i].checked = checked;
+    }
+  }
 
-    ////////////////////// Collapsing Alerts ///////////////////////////
+  ////////////////////// Collapsing Alerts ///////////////////////////
 
-    _collapseAll: function(evt) {
-      let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
-      for (let i = 0; i < alerts.length; i++) {
-        alerts[i].openState = 'closed';
-      }
-    },
+  _collapseAll(evt) {
+    let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
+    for (let i = 0; i < alerts.length; i++) {
+      alerts[i].openState = 'closed';
+    }
+  }
 
-    _expandAll: function(evt) {
-      let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
-      for (let i = 0; i < alerts.length; i++) {
-        alerts[i].openState = 'opened';
-      }
-      this._opened = true;
-    },
+  _expandAll(evt) {
+    let alerts = Polymer.dom(this.root).querySelectorAll('.alert-item');
+    for (let i = 0; i < alerts.length; i++) {
+      alerts[i].openState = 'opened';
+    }
+    this._opened = true;
+  }
 
-    ////////////////////// Collapsing the Category ///////////////////////////
+  ////////////////////// Collapsing the Category ///////////////////////////
 
-    _computeToggleIcon: function(opened) {
-      return opened ? 'unfold-less' : 'unfold-more';
-    },
+  _computeToggleIcon(opened) {
+    return opened ? 'unfold-less' : 'unfold-more';
+  }
 
-    _initializeCollapseState: function(isInfraFailuresSection) {
-      this._opened = !isInfraFailuresSection;
-    },
+  _initializeCollapseState(isInfraFailuresSection) {
+    this._opened = !isInfraFailuresSection;
+  }
 
-    _toggleCategory: function(evt) {
-      this._opened = !this._opened;
-    },
-  });
-})();
+  _toggleCategory(evt) {
+    this._opened = !this._opened;
+  }
+}
+
+customElements.define(SomAlertCategory.is, SomAlertCategory);
