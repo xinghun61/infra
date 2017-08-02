@@ -62,6 +62,19 @@ class TouchCrashedDirectoryFeatureTest(AnalysisTestCase):
     feature_value = self._feature(self._report)(suspect)
     self.assertEqual(0.0, feature_value.value)
 
+  def testFeatureValueIsZeroWhenAFileIsDeleted(self):
+    """Tests that the feature returns 0 when a file is deleted."""
+    changelog = self.GetDummyChangeLog()._replace(
+        # File deleted in the same directory:
+        touched_files=[FileChangeInfo.FromDict({
+            'change_type': 'delete',
+            'new_path': None,
+            'old_path': 'p/a.cc',
+        })])
+    suspect = Suspect(changelog, 'src/')
+    feature_value = self._feature(self._report)(suspect)
+    self.assertEqual(0.0, feature_value.value)
+
   def testIncludeTestFilesFlag(self):
     """Tests the ``include_test_files`` flag."""
     # Change in a test file:

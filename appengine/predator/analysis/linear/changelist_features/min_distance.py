@@ -11,6 +11,7 @@ from analysis.linear.feature import ChangedFile
 from analysis.linear.feature import Feature
 from analysis.linear.feature import FeatureValue
 from analysis.linear.feature import LinearlyScaled
+from libs.gitiles.diff import ChangeType
 
 _MINIMUM_FEATURE_VALUE = 0
 # N.B., this must not be infinity, else we'll start getting NaN values
@@ -134,6 +135,9 @@ class MinDistanceFeature(Feature):
     # function can have a static in-memory cache to cache blame for touched
     # files, however since blame information is big, it's not a good idea to
     # keep it in memory.
+    if touched_file.change_type == ChangeType.DELETE:
+      return None
+
     repository = self._get_repository(crash_dependency.repo_url)
     blame = repository.GetBlame(touched_file.new_path,
                                 crash_dependency.revision)

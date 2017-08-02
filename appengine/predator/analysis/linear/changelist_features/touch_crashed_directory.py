@@ -13,6 +13,7 @@ from analysis import crash_util
 from analysis.crash_match import CrashedDirectory
 from analysis.linear.feature import Feature
 from analysis.linear.feature import FeatureValue
+from libs.gitiles.diff import ChangeType
 
 
 class TouchCrashedDirectoryFeature(Feature):
@@ -50,11 +51,13 @@ class TouchCrashedDirectoryFeature(Feature):
     Returns:
       Boolean indicating whether it is a match or not.
     """
+    if touched_file.change_type == ChangeType.DELETE:
+      return False
+
     if not self._include_test_files and _IsTestFile(touched_file.new_path):
       return False
 
-    touched_dir = (os.path.dirname(touched_file.new_path)
-                   if touched_file.new_path else None)
+    touched_dir = os.path.dirname(touched_file.new_path)
     return crash_util.IsSameFilePath(crashed_directory.value, touched_dir)
 
   def __call__(self, report):

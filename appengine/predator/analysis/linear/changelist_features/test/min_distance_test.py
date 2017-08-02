@@ -242,6 +242,18 @@ class MinDistanceTest(AnalysisTestCase):
            Dependency('src/', 'https://repo', 'rev'))
       self.assertEqual(distance_info, min_distance.Distance(float('inf'), None))
 
+  def testDistanceBetweenTouchedFileAndFrameInfosWithDeletedFile(self):
+    """Tests that this method returns None when the touched_file is deleted."""
+    feature = min_distance.MinDistanceFeature(self._get_repository, _MAXIMUM)
+    touched_file = FileChangeInfo(ChangeType.DELETE, 'file', None)
+
+    distance_info = feature.DistanceBetweenTouchedFileAndFrameInfos(
+        'rev', touched_file,
+        [FrameInfo(_MOCK_FRAME, 0)],
+         Dependency('src/', 'https://repo', 'rev'))
+
+    self.assertIsNone(distance_info)
+
   def testMinDistanceFeatureInfinityDistance(self):
     """Test that we return log(0) when the min_distance is infinity.
 

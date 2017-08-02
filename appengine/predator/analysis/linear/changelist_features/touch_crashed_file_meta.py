@@ -18,6 +18,7 @@ from analysis.linear.feature import ChangedFile
 from analysis.linear.feature import MetaFeature
 from analysis.linear.feature import MetaFeatureValue
 from analysis.linear.feature import LogLinearlyScaled
+from libs.gitiles.diff import ChangeType
 import libs.math.logarithms as lmath
 
 
@@ -56,7 +57,8 @@ class TouchCrashedFileMetaFeature(MetaFeature):
       Boolean indicating whether it is a match or not.
     """
     paths = [touched_file.new_path]
-    if self._include_renamed_paths:
+    if (self._include_renamed_paths and
+        touched_file.change_type == ChangeType.RENAME):
       paths.append(touched_file.old_path)
     return any(crash_util.IsSameFilePath(crashed_file.value, path)
                for path in paths)
