@@ -50,17 +50,18 @@
       </app-header>
       <div class="content">
         <tree-status></tree-status>
+        <!-- TODO(jojwang): Only the second table is showing up because none of our services have SLAs.
+          When there are both tables become visible on the dashboard make it clear to users
+          that one table is for services covered by an SLA and one is not.-->
         <template is="dom-if" if="[[services.length]]">
           <div class="table">
-            <status-table services="[[services]]" title="Services Covered by an SLA"
-              latest-date-ts="{{latestDateTs}}">
+            <status-table services="[[services]]" latest-date-ts="{{latestDateTs}}">
           </status-table>
           </div>
         </template>
         <template is="dom-if" if="[[nonSLAServices.length]]">
           <div class="table">
-            <status-table services="[[nonSLAServices]]" title="Services not Covered by an SLA"
-              latest-date-ts="{{latestDateTs}}">
+            <status-table services="[[nonSLAServices]]" latest-date-ts="{{latestDateTs}}">
             </status-table>
           </div>
         </template>

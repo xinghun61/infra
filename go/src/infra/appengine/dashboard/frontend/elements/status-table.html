@@ -25,11 +25,21 @@
         height: 64px;
         line-height: 64px; // vertically center text
       }
+      .marker {
+        background-color: #e8eaed;
+        width: 2px;
+        height: 26px;
+        top: 12px;
+        position: absolute;
+      }
       table {
         border-collapse: collapse;
         font-size: .81em;
         padding: 24px;
         width: 100%;
+      }
+      td {
+        position: relative;
       }
       th {
         color: rgba(0, 0, 0, 0.54);
@@ -53,7 +63,6 @@
     <link rel="stylesheet" type="text/css" href="/static/icons.css">
     <div class="layout horizontal center-justified">
       <div class="card">
-        <p class="header">[[title]]</p>
         <table>
           <tr>
             <th>Current Status</th>
@@ -71,6 +80,9 @@
                 </template>
               </td>
               <td colspan="7">
+                <template is="dom-repeat" items="[[_markerPositions]]" as="position">
+                  <i class="marker" style="left: [[position]]%"></i>
+                </template>
                 <service-row incidents="[[_computePreviousIncidents(item.incidents)]]"
                   dates="[[dates]]"></service-row>
               </td>
@@ -79,7 +91,7 @@
           <tr class="footer">
             <td colspan="8">
               <table-footer latest-date="{{latestDateTs}}"></table-footer>
-            </td>
+            </dd>
           </tr>
         </table>
       </div>
@@ -87,6 +99,10 @@
   </template>
   <script>
     'use strict';
+
+    const MARKER_POSITIONS = [
+      `0`, `${100/7}`, `${200/7}`, `${300/7}`, `${400/7}`, `${500/7}`, `${600/7}`
+    ];
 
     class StatusTable extends Polymer.Element {
       static get is() { return 'status-table'; }
@@ -97,10 +113,6 @@
 
       static get properties() {
         return {
-          title: {
-            type: String,
-            value: "",
-          },
           services: {
             type: Array,
             value: () => { return []; },
@@ -118,6 +130,10 @@
           dates: {
             type: Array,
             value: [],
+          },
+          _markerPositions: {
+            type: Array,
+            value: () => { return MARKER_POSITIONS; }
           },
         }
       }
