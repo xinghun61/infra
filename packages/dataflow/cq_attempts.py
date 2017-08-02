@@ -86,20 +86,11 @@ class CombineEventsToAttempt(beam.CombineFn):
 
 
 def main():
-  # For historical reasons, attempt_start_usec (CQEvent) is stored as an integer
-  # and attempt_start_msec (CQAttempt) is stored as a float.
-  one_day_ago_usec = int(time.time() * 1000000) - 24 * 60 * 60 * 1000000
-  one_day_ago_msec = float(one_day_ago_usec) / 1000
-  # Delete the attempts we are about to recalculate so there aren't duplicates
-  delete_query = ('DELETE FROM `chrome-infra-events.aggregated.cq_attempts` '
-                  'WHERE attempt_start_msec > %d' % one_day_ago_msec)
-  select_query = ('SELECT timestamp_millis, action, attempt_start_usec '
-                  'FROM `chrome-infra-events.raw_events.cq` '
-                  'WHERE attempt_start_usec > %d' % one_day_ago_usec)
+  q = ('SELECT timestamp_millis, action, attempt_start_usec, cq_name '
+       'FROM `chrome-infra-events.raw_events.cq`')
   p = chops_beam.EventsPipeline()
-  _ = (p | "truncate cq_attempts" >> chops_beam.BQRead(delete_query))
   _ = (p
-   | chops_beam.BQRead(select_query)
+   | chops_beam.BQRead(q)
    | beam.Map(lambda e: (e['attempt_start_usec'], e))
    | beam.GroupByKey()
    | beam.CombinePerKey(CombineEventsToAttempt())
