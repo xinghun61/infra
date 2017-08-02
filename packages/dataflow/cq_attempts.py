@@ -25,6 +25,11 @@ class CombineEventsToAttempt(beam.CombineFn):
     self.max_timestamp_fields = set([
         'last_start_msec',
     ])
+    # Fields that are copied from event to attempt. Values for these fields are
+    # the same for all events for a given attempt.
+    self.consistent_fields = set([
+        'cq_name',
+    ])
 
   @staticmethod
   def choose_min(old, new):
@@ -62,6 +67,12 @@ class CombineEventsToAttempt(beam.CombineFn):
       assert(attempt.attempt_start_msec is None or
              attempt.attempt_start_msec == attempt_start_msec)
       attempt.attempt_start_msec = attempt_start_msec
+
+      for field in self.consistent_fields:
+        attempt_value = attempt.__dict__.get(field)
+        event_value = event.__dict__.get(field)
+        assert(attempt_value is None or attempt_value  == event_value)
+        attempt.__dict__[field] = event_value
 
       affected_fields = self.action_affects_fields.get(event.action, [])
       for field in affected_fields:

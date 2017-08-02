@@ -19,13 +19,14 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     self.combFn = job.CombineEventsToAttempt()
 
   def basic_event(self, action=None, timestamp_millis=None,
-                  attempt_start_usec=None):
+                  attempt_start_usec=None, cq_name=None):
     event = objects.CQEvent()
     event.attempt_start_usec = (attempt_start_usec if attempt_start_usec else
                                 self.attempt_start_usec)
     event.timestamp_millis = (timestamp_millis if timestamp_millis else
                               self.timestamp_msec)
     event.action = action if action else self.combFn.ACTION_PATCH_START
+    event.cq_name = cq_name if cq_name else 'test_cq'
     return event
 
   def test_null_attempt_start_not_included(self):
@@ -79,9 +80,24 @@ class TestCQAttemptAccumulator(unittest.TestCase):
   def test_extract_different_attempt_start(self):
     accumulator = [
         self.basic_event(attempt_start_usec=self.attempt_start_usec),
-        self.basic_event(attempt_start_usec=self.attempt_start_usec+1)
+        self.basic_event(attempt_start_usec=self.attempt_start_usec+1000)
     ]
-    self.assertRaises(Exception, self.combFn.extract_output(accumulator))
+    with self.assertRaises(AssertionError):
+      self.combFn.extract_output(accumulator)
+
+  def test_extract_consistent_field(self):
+    event = self.basic_event()
+    attempt = self.combFn.extract_output([event])
+    self.assertEqual(attempt['cq_name'], event.cq_name)
+
+  def test_extract_different_consistent_field(self):
+    accumulator = [
+        self.basic_event(),
+        self.basic_event(cq_name='different_cq_name')
+    ]
+    with self.assertRaises(AssertionError):
+      self.combFn.extract_output(accumulator)
+
 
 if __name__ == '__main__':
   unittest.main()

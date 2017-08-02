@@ -51,12 +51,15 @@ class CQAttempt(BigQueryObject):
     self.first_start_msec = None
     self.last_start_msec = None
 
+    self.cq_name = None
+
   @staticmethod
   def get_bigquery_attributes():
     return [
         'attempt_start_msec',
         'first_start_msec',
         'last_start_msec',
+        'cq_name',
     ]
 
   def update_first_start(self, new_timestamp):
@@ -81,6 +84,7 @@ class CQEvent(BigQueryObject):
     self.timestamp_millis = None
     self.action = None
     self.attempt_start_usec = None
+    self.cq_name = None
 
   @staticmethod
   def get_bigquery_attributes():
@@ -88,4 +92,5 @@ class CQEvent(BigQueryObject):
         'timestamp_millis',
         'action',
         'attempt_start_usec',
+        'cq_name',
     ]
