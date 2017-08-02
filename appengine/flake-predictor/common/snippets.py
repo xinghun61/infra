@@ -9,9 +9,14 @@ import os
 import re
 import sys
 
-from third_party import cloudstorage
+sys.path.insert(0, os.path.join(
+  os.path.dirname(os.path.dirname(__file__)), 'third_party'))
+
+import cloudstorage
+
 
 BUCKET = 'flake-predictor-data'
+
 
 def get_json_file(file_path):
   """Retrieve the json file in GS.

@@ -12,7 +12,8 @@ from google.appengine.ext import testbed
 
 from common import snippets
 from mock import patch
-from third_party import cloudstorage
+
+import cloudstorage
 
 
 SAMPLE_FILE = {
