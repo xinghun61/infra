@@ -49,6 +49,10 @@ type Entry struct {
 	// ParsedBy is the parser that parsed this line, or nil if it fell through to
 	// the default parser.
 	ParsedBy LogParser
+
+	// Labels is a set of user-defined (key, value) data for additional
+	// information about the log entry.
+	Labels map[string]string
 }
 
 // Client knows how to send entries to Cloud Logging log.
@@ -220,6 +224,7 @@ func (c *loggingClient) PushEntries(ctx context.Context, entries []*Entry) error
 			InsertId:    e.InsertID,
 			Severity:    "DEFAULT",
 			TextPayload: e.TextPayload,
+			Labels:      e.Labels,
 		}
 		if e.JSONPayload != nil {
 			p, err := json.Marshal(e.JSONPayload)

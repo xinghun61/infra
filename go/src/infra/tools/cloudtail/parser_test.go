@@ -5,6 +5,7 @@
 package cloudtail
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -42,6 +43,7 @@ type textTestCase struct {
 	wantTimestamp string
 	wantSeverity  Severity
 	wantPayload   string
+	wantLabels    map[string]string
 }
 
 func testTextLogsParser(t *testing.T, p LogParser, cases []textTestCase) {
@@ -59,6 +61,8 @@ func testTextLogsParser(t *testing.T, p LogParser, cases []textTestCase) {
 			t.Errorf("%d: ParseLogLine('%s').Severity -> %v, want %v", i, test.line, got.Severity, test.wantSeverity)
 		} else if test.wantSuccess && got.TextPayload != test.wantPayload {
 			t.Errorf("%d: ParseLogLine('%s').TextPayload -> %v, want %v", i, test.line, got.TextPayload, test.wantPayload)
+		} else if test.wantSuccess && !reflect.DeepEqual(got.Labels, test.wantLabels) {
+			t.Errorf("%d: ParseLogLine('%s').Labels -> %v, want %v", i, test.line, got.Labels, test.wantLabels)
 		}
 	}
 }
@@ -189,6 +193,11 @@ func TestGlogLogsParser(t *testing.T) {
 			wantTimestamp: "2016-06-12T22:55:35.173471-07:00",
 			wantSeverity:  Info,
 			wantPayload:   "[tid:4608 example.cc:123] Hello World",
+			wantLabels: map[string]string{
+				"threadID": "4608",
+				"module":   "example.cc",
+				"caller":   "example.cc:123",
+			},
 		},
 	})
 }

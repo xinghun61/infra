@@ -337,6 +337,11 @@ func (p *glogLogsParser) ParseLogLine(line string) *Entry {
 			Severity:    glogSeverities[severity],
 			TextPayload: fmt.Sprintf("[tid:%s %s:%d] %s", threadID, module, line, message),
 			ParsedBy:    p,
+			Labels: map[string]string{
+				"threadID": threadID,
+				"module":   module,
+				"caller":   fmt.Sprintf("%s:%d", module, line),
+			},
 		}
 	}
 	return nil
