@@ -1,6 +1,6 @@
 # Luci-config
 
-Stores a registery of projects that use chrome-infra.
+Stores a registry of projects that use chrome-infra.
 Imports config files from repos and provides unified API to read them.
 
 *   Location: [luci-config.appspot.com](http://luci-config.appspot.com)
