@@ -24,6 +24,21 @@
 			"name": "cq_name",
 			"description": "Name of the CQ that sends this event.",
 			"type": "STRING"
+		},
+		{
+			"name": "issue",
+			"description": "Issue ID that is processed by CQ; at most 100 characters.",
+			"type": "STRING"
+		},
+		{
+			"name": "patchset",
+			"description": "Patchset ID that is processed by CQ; at most 100 characters.",
+			"type": "STRING"
+		},
+		{
+			"name": "dry_run",
+			"description": "True if CQ is in dry-run mode.",
+			"type": "BOOLEAN"
 		}
 	]
 }
