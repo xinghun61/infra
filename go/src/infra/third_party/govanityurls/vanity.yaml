@@ -1,0 +1,6 @@
+paths:
+  /luci:
+    repo: https://github.com/luci/luci-go
+
+  /gae:
+    repo: https://github.com/luci/gae
