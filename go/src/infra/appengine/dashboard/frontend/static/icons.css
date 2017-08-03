@@ -9,15 +9,8 @@
 .circle-container {
   margin: .5px;
 }
-.container {
-  padding: .6px 0px;
-}
 .green {
   background-color: green;
-}
-.incident {
-  display: table;
-  position: relative;
 }
 .red {
   background-color: red;

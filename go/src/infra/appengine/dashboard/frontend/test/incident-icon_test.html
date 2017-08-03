@@ -41,6 +41,9 @@
             element.$.jsLeft.classList.value, 'left red', 'left color');
         assert.equal(
             element.$.jsRight.classList.value, 'right red', 'right color');
+        assert.equal(
+      	    element.style.getPropertyValue('--incident-z-index'), '2',
+            'check z-index for red incident');
         done();
       });
     });
@@ -62,7 +65,10 @@
             'check width');
         assert.equal(
             element.style.getPropertyValue('--incident-left'), '0%',
-           'check left');
+            'check left');
+        assert.equal(
+            element.style.getPropertyValue('--incident-z-index'), '1',
+            'check z-index for yellow incident');
         done();
       });
     });

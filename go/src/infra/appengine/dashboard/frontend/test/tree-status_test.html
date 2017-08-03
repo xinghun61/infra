@@ -47,7 +47,7 @@
         assert.equal("test open", element._message);
         assert.equal("open", element._status);
         assert.equal(
-            "Tree is open. day test@gmail.com", element._statusInfo);
+            "Tree is open. day GMT test@gmail.com", element._statusInfo);
         assert.equal(false, element._hasError);
         done();
       });
@@ -70,7 +70,7 @@
       flush(function () {
         assert.equal("test closed", element._message);
         assert.equal("closed", element._status);
-        assert.equal("Tree is closed. day Unknown", element._statusInfo);
+        assert.equal("Tree is closed. day GMT Unknown", element._statusInfo);
         assert.equal(false, element._hasError);
         done();
       });

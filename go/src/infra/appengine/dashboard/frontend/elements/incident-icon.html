@@ -6,17 +6,21 @@
         display: none !important;
       }
       .incident {
+        display: table;
         left: var(--incident-left);
+        min-width: 10px;
+        position: absolute;
+        top: 19px;
         width: var(--incident-width);
+        /* Show red alerts if red + yellow alerts were active simultaneously.*/
+        z-index: var(--incident-z-index);
       }
     </style>
     <link rel="stylesheet" type="text/css" href="/static/icons.css">
-    <div class="container">
-      <i id="jsIncident" class="incident">
-        <i id="jsLeft" class$="left [[_computeColor(incident)]]"></i>
-        <i id="jsRight" class$="right [[_computeColor(incident)]]"></i>
-      </i>
-    </div>
+    <i id="jsIncident" class="incident">
+      <i id="jsLeft" class$="left [[_computeColor(incident)]]"></i>
+      <i id="jsRight" class$="right [[_computeColor(incident)]]"></i>
+    </i>
   </template>
   <script>
     'use strict';
@@ -87,6 +91,8 @@
         this.updateStyles({
           '--incident-left': `${startPosition}%`,
           '--incident-width': `${endPosition - startPosition}%`,
+          '--incident-z-index':
+            `${this._computeColor(incident) == 'red' ? 2 : 1}`,
         });
       }
 
