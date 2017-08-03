@@ -83,7 +83,7 @@ class TryJobPush(BaseHandler):
                             'associated pipeline callback url.')
             # We return 200 because we don't want pubsub to retry the push.
             return {}
-        logging.warning('The build is not known by findit.')
+        logging.warning('The build %s is not known by findit.', build_id)
         # We return 200 because we don't want pubsub to retry the push.
         return {}
       else:
