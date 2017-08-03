@@ -16,6 +16,7 @@ WATERFALL_FAILURE_ANALYSIS_REQUEST_QUEUE = 'waterfall-failure-analysis-request'
 WATERFALL_FLAKE_ANALYSIS_REQUEST_QUEUE = 'waterfall-flake-analysis-request'
 WATERFALL_FLAKE_SWARMING_TASK_REQUEST_QUEUE = (
     'waterfall-flake-swarming-task-request')
+RERUN_TRYJOB_QUEUE = 'rerun-tryjob'
 
 # Waterfall-related.
 WATERFALL_PROCESS_FAILURE_ANALYSIS_REQUESTS_URL = (

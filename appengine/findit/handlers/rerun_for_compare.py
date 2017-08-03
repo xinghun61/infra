@@ -57,7 +57,7 @@ class RerunForCompare(BaseHandler):
           force_buildbot=True)
       pipeline_job.target = appengine_util.GetTargetNameForModule(
           constants.WATERFALL_BACKEND)
-      pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
+      pipeline_job.start(queue_name=constants.RERUN_TRYJOB_QUEUE)
 
     else:
       # sb_run is of type 'compile'.
@@ -76,5 +76,5 @@ class RerunForCompare(BaseHandler):
           force_buildbot=True)
       pipeline_job.target = appengine_util.GetTargetNameForModule(
           constants.WATERFALL_BACKEND)
-      pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
+      pipeline_job.start(queue_name=constants.RERUN_TRYJOB_QUEUE)
     return {'data': {'pipeline_job_id': pipeline_job.pipeline_id}}

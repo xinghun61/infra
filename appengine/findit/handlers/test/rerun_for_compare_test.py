@@ -7,11 +7,11 @@ import mock
 import webapp2
 
 import webtest
-from testing_utils import testing
 
-from handlers.rerun_for_compare import RerunForCompare
+from handlers import rerun_for_compare
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from waterfall.test import wf_testcase
 
 
 def _GenFakeBuildbucketResponse(master, builder):
@@ -31,10 +31,10 @@ def _GenFakeBuildbucketResponse(master, builder):
   return result
 
 
-class RerunForCompareTest(testing.AppengineTestCase):
+class RerunForCompareTest(wf_testcase.WaterfallTestCase):
   app_module = webapp2.WSGIApplication(
       [
-          ('/rerun-for-compare', RerunForCompare),
+          ('/rerun-for-compare', rerun_for_compare.RerunForCompare),
       ], debug=True)
 
   @mock.patch('gae_libs.token.ValidateAuthToken', return_value=(True, False))
@@ -48,7 +48,11 @@ class RerunForCompareTest(testing.AppengineTestCase):
         'm', 'b')
     try_job_data.put()
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    self.test_app.post('/rerun-for-compare', params={'try_job': '12345t'})
+
+    with mock.patch.object(
+        rerun_for_compare.ScheduleTestTryJobPipeline, 'start') as mock_pipe:
+      self.test_app.post('/rerun-for-compare', params={'try_job': '12345t'})
+      self.assertTrue(mock_pipe.called)
 
   @mock.patch('gae_libs.token.ValidateAuthToken', return_value=(True, False))
   def testTriggerCompileRerun(self, _mock_auth):
@@ -61,7 +65,10 @@ class RerunForCompareTest(testing.AppengineTestCase):
         'm', 'b')
     try_job_data.put()
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    self.test_app.post('/rerun-for-compare', params={'try_job': '12345c'})
+    with mock.patch.object(
+        rerun_for_compare.ScheduleCompileTryJobPipeline, 'start') as mock_pipe:
+      self.test_app.post('/rerun-for-compare', params={'try_job': '12345c'})
+      self.assertTrue(mock_pipe.called)
 
   @mock.patch('gae_libs.token.ValidateAuthToken', return_value=(True, False))
   def testTriggerFlakeRerun(self, _mock_auth):
