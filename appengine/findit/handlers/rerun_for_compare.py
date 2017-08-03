@@ -12,11 +12,8 @@ from gae_libs.handlers.base_handler import Permission
 
 from common import constants
 from common.waterfall import failure_type
-from waterfall.schedule_compile_try_job_pipeline import (
-    ScheduleCompileTryJobPipeline)
-from waterfall.schedule_test_try_job_pipeline import (
-    ScheduleTestTryJobPipeline)
 from model.wf_try_job_data import WfTryJobData
+from waterfall.rerun_tryjob_pipeline import RerunTryJobPipeline
 
 
 def _GetProperties(sb_run):
@@ -40,42 +37,16 @@ class RerunForCompare(BaseHandler):
       # TODO(robertocn): Implement re-run for flake try jobs.
       return self.CreateError('Try job not found. (Flake not yet supported)',
                               404)
+    urlsafe_try_job_key = sb_run.try_job_key.urlsafe()
     sb_tryjob = sb_run.try_job_key.get()
-    pipeline_job = None
-    if sb_run.try_job_type == 'test':
-      properties, additional_parameters = _GetProperties(sb_run)
-      pipeline_job = ScheduleTestTryJobPipeline(
-          sb_tryjob.master_name,
-          sb_tryjob.builder_name,
-          sb_tryjob.build_number,
-          properties['good_revision'],
-          properties['bad_revision'],
-          failure_type.TEST,
-          properties.get('suspected_revisions'),
-          None,
-          None,
-          additional_parameters.get('tests'),
-          force_buildbot=True)
-      pipeline_job.target = appengine_util.GetTargetNameForModule(
-          constants.WATERFALL_BACKEND)
-      pipeline_job.start(queue_name=constants.RERUN_TRYJOB_QUEUE)
+    properties, additional_parameters = _GetProperties(sb_run)
 
-    else:
-      # sb_run is of type 'compile'.
-      properties, additional_parameters = _GetProperties(sb_run)
-      pipeline_job = ScheduleCompileTryJobPipeline(
-          sb_tryjob.master_name,
-          sb_tryjob.builder_name,
-          sb_tryjob.build_number,
-          properties['good_revision'],
-          properties['bad_revision'],
-          failure_type.COMPILE,
-          additional_parameters.get('compile_targets'),
-          properties.get('suspected_revisions'),
-          None,
-          None,
-          force_buildbot=True)
-      pipeline_job.target = appengine_util.GetTargetNameForModule(
-          constants.WATERFALL_BACKEND)
-      pipeline_job.start(queue_name=constants.RERUN_TRYJOB_QUEUE)
+    pipeline_job = RerunTryJobPipeline(
+        sb_tryjob.master_name, sb_tryjob.builder_name, sb_tryjob.build_number,
+        failure_type.GetFailureTypeForDescription(sb_run.try_job_type),
+        properties, additional_parameters, urlsafe_try_job_key)
+    pipeline_job.target = appengine_util.GetTargetNameForModule(
+        constants.WATERFALL_BACKEND)
+    pipeline_job.start(queue_name=constants.RERUN_TRYJOB_QUEUE)
+
     return {'data': {'pipeline_job_id': pipeline_job.pipeline_id}}

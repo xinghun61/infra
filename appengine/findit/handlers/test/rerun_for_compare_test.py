@@ -38,7 +38,7 @@ class RerunForCompareTest(wf_testcase.WaterfallTestCase):
       ], debug=True)
 
   @mock.patch('gae_libs.token.ValidateAuthToken', return_value=(True, False))
-  def testTriggerTestRerun(self, _mock_auth):
+  def testTriggerWaterfallRerun(self, _mock_auth):
     tryjob = WfTryJob.Create('m', 'b1', 1)
     tryjob.put()
     try_job_data = WfTryJobData.Create('12345t')
@@ -49,25 +49,9 @@ class RerunForCompareTest(wf_testcase.WaterfallTestCase):
     try_job_data.put()
     self.mock_current_user(user_email='test@chromium.org', is_admin=True)
 
-    with mock.patch.object(
-        rerun_for_compare.ScheduleTestTryJobPipeline, 'start') as mock_pipe:
+    with mock.patch.object(rerun_for_compare.RerunTryJobPipeline,
+                           'start') as mock_pipe:
       self.test_app.post('/rerun-for-compare', params={'try_job': '12345t'})
-      self.assertTrue(mock_pipe.called)
-
-  @mock.patch('gae_libs.token.ValidateAuthToken', return_value=(True, False))
-  def testTriggerCompileRerun(self, _mock_auth):
-    tryjob = WfTryJob.Create('m', 'b2', 1)
-    tryjob.put()
-    try_job_data = WfTryJobData.Create('12345c')
-    try_job_data.try_job_type = 'compile'
-    try_job_data.try_job_key = tryjob.key
-    try_job_data.last_buildbucket_response = _GenFakeBuildbucketResponse(
-        'm', 'b')
-    try_job_data.put()
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    with mock.patch.object(
-        rerun_for_compare.ScheduleCompileTryJobPipeline, 'start') as mock_pipe:
-      self.test_app.post('/rerun-for-compare', params={'try_job': '12345c'})
       self.assertTrue(mock_pipe.called)
 
   @mock.patch('gae_libs.token.ValidateAuthToken', return_value=(True, False))
