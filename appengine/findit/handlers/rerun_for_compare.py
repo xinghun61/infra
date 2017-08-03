@@ -11,6 +11,7 @@ from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 
 from common import constants
+from common.waterfall import failure_type
 from waterfall.schedule_compile_try_job_pipeline import (
     ScheduleCompileTryJobPipeline)
 from waterfall.schedule_test_try_job_pipeline import (
@@ -49,7 +50,7 @@ class RerunForCompare(BaseHandler):
           sb_tryjob.build_number,
           properties['good_revision'],
           properties['bad_revision'],
-          sb_run.try_job_type,
+          failure_type.TEST,
           properties.get('suspected_revisions'),
           None,
           None,
@@ -68,7 +69,7 @@ class RerunForCompare(BaseHandler):
           sb_tryjob.build_number,
           properties['good_revision'],
           properties['bad_revision'],
-          sb_run.try_job_type,
+          failure_type.COMPILE,
           additional_parameters.get('compile_targets'),
           properties.get('suspected_revisions'),
           None,
