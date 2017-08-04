@@ -19,6 +19,8 @@
     'version': '2.0.0',
     'only_on': [
       'linux_x86_64',
+      'linux_i686',
+      'macosx_x86_64',
     ],
   },
   'argcomplete': {
@@ -70,6 +72,8 @@
     'version': '1.7',
     'only_on': [
       'linux_x86_64',
+      'linux_i686',
+      'macosx_x86_64',
     ],
   },
   'cryptography': {
@@ -158,11 +162,12 @@
   'grpcio': {
     'build': '0',
     'gs': 'cffa63ea492cd7a8336df0a48a24fd7455a61fae.tar.gz',
-    'only_on': [
-      'linux_i686',
-      'linux_x86_64',
-    ],
     'version': '1.4.0',
+    'only_on': [
+      'linux_x86_64',
+      'linux_i686',
+      'macosx_x86_64',
+    ],
   },
   'httplib2': {
     'version': '0.9',
