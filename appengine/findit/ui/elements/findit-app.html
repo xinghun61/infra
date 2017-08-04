@@ -48,6 +48,7 @@
             <paper-item><a href="/">Home</a></paper-item>
             <paper-item><a href="/waterfall/list-failures">Failures</a></paper-item>
             <paper-item><a href="/waterfall/list-flakes">Flakes</a></paper-item>
+            <paper-item><a href="/waterfall/change-auto-revert-setting">Auto Revert Setting</a></paper-item>
             <template is="dom-if" if="[[userInfo.is_admin]]">
               <paper-menu-button style="height: 18px">
                 <paper-icon-button icon="menu" slot="dropdown-trigger"></paper-icon-button>
@@ -61,8 +62,6 @@
                   <paper-item><a href="/waterfall/check-trybot-mapping">Trybot Mapping</a></paper-item>
                   <br>
                   <paper-item><a href="/waterfall/auto-revert-metrics">Auto Revert Metrics</a></paper-item>
-                  <br>
-                  <paper-item><a href="/waterfall/change-auto-revert-setting">Change Auto Revert Setting</a></paper-item>
                   <br>
                   <paper-item><a href="/waterfall/swarmbucket-performance">Swarmbucket Performance</a></paper-item>
                 </paper-listbox>

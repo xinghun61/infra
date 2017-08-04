@@ -35,23 +35,26 @@ class ChangeAutoRevertSetting(BaseHandler):
     is_admin = users.IsCurrentUserAdmin()
 
     action_settings = copy.deepcopy(waterfall_config.GetActionSettings())
-    revert_compile_culprit_on = json.loads(
-        self.request.params.get('revert_compile_culprit'))
-    if revert_compile_culprit_on:
-      message = 'Enabling Auto Revert.'
-    else:
-      message = 'Disabling Auto Revert.'
-    action_settings['revert_compile_culprit'] = revert_compile_culprit_on
 
-    updated = wf_config.FinditConfig.Get().Update(
-        user,
-        acl.CanTriggerNewAnalysis(user.email(), is_admin),
-        message=message,
-        action_settings=action_settings)
+    revert_compile_culprit = json.loads(
+        self.request.params.get('revert_compile_culprit').lower())
+    action_settings[revert_compile_culprit] = revert_compile_culprit
+
+    message = self.request.params.get('update_reason').strip()
+    if not message:
+      return BaseHandler.CreateError('Please enter the reason.', 501)
+
+    updated = False
+    if revert_compile_culprit != waterfall_config.GetActionSettings().get(
+        'revert_compile_culprit'):
+      updated = wf_config.FinditConfig.Get().Update(
+          user,
+          acl.CanTriggerNewAnalysis(user.email(), is_admin),
+          message=message,
+          action_settings=action_settings)
 
     if not updated:
-      return BaseHandler.CreateError(
-          'Auto Revert setting is not changed. Please go back and try again.',
-          501)
+      return BaseHandler.CreateError('Auto Revert setting is not changed. '
+                                     'Please refresh the page.', 501)
 
     return self.CreateRedirect('/waterfall/change-auto-revert-setting')

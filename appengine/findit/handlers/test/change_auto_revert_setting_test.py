@@ -36,7 +36,11 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
   def testChangeAutoRevertSettingPost(self, _):
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 
-    params = {'xsrf_token': 'token', 'revert_compile_culprit': 'false'}
+    params = {
+        'xsrf_token': 'token',
+        'revert_compile_culprit': 'false',
+        'update_reason': 'reason'
+    }
 
     response = self.test_app.post(
         '/change-auto-revert-setting?format=json', params=params)
@@ -47,12 +51,34 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
   def testChangeAutoRevertSettingPostFailed(self, _):
     self.mock_current_user(user_email='test@google.com', is_admin=False)
 
-    params = {'xsrf_token': 'token', 'revert_compile_culprit': 'true'}
+    params = {
+        'xsrf_token': 'token',
+        'revert_compile_culprit': 'true',
+        'update_reason': 'reason'
+    }
 
     self.assertRaisesRegexp(
         webtest.app.AppError,
         re.compile('.*501 Not Implemented.*Auto Revert setting is not changed.'
-                   ' Please go back and try again.', re.MULTILINE | re.DOTALL),
+                   ' Please refresh the page.', re.MULTILINE | re.DOTALL),
+        self.test_app.post,
+        '/change-auto-revert-setting',
+        params=params)
+
+  @mock.patch.object(token, 'ValidateAuthToken', return_value=(True, False))
+  def testChangeAutoRevertSettingPostFailedEmptyMessage(self, _):
+    self.mock_current_user(user_email='test@google.com', is_admin=False)
+
+    params = {
+        'xsrf_token': 'token',
+        'revert_compile_culprit': 'false',
+        'update_reason': '\n'
+    }
+
+    self.assertRaisesRegexp(
+        webtest.app.AppError,
+        re.compile('.*501 Not Implemented.*Please enter the reason.',
+                   re.MULTILINE | re.DOTALL),
         self.test_app.post,
         '/change-auto-revert-setting',
         params=params)

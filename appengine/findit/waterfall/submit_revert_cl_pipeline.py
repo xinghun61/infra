@@ -61,6 +61,8 @@ def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
   """Checks if the revert should be auto committed."""
   if (not revert_status == create_revert_cl_pipeline.CREATED_BY_FINDIT or
       not bool(
+          waterfall_config.GetActionSettings().get('revert_compile_culprit')) or
+      not bool(
           waterfall_config.GetActionSettings().get('commit_gerrit_revert'))):
     return False
 
