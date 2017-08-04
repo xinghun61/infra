@@ -17,6 +17,9 @@
         font: 1.2em "Roboto";
         padding: 24px;
       }
+      .circle-container {
+        padding-left: 10px;
+      }
       .date-th {
         width: 11.43%;
       }
@@ -76,12 +79,13 @@
           </tr>
           <template is="dom-repeat" items="[[services]]">
             <tr>
-              <td>[[item.name]]
+              <td>
                 <template is="dom-repeat" items="[[_computeCurrentIncidents(item.incidents)]]">
                   <span class="circle-container">
                     <i class$="circle [[item]]"></i>
                   </span>
                 </template>
+                [[item.name]]
               </td>
               <td colspan="7">
                 <template is="dom-repeat" items="[[_markerPositions]]" as="position">
