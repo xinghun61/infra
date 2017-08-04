@@ -23,19 +23,22 @@
 
 <tbody class="collapse"> [# collapse/expand controls undelete-able comments]
  <tr>
-  <td nowrap="nowrap" class="vt h3 issuemetaheader" style="min-width:9em">
-   [define user_can_star]false[end]
-   [if-any page_perms.SetStar]
-    [if-any read_only][else]
-     [define user_can_star]true[end]
-     <a class="star" id="star"
-      style="color:[if-any starred]cornflowerblue[else]gray[end]"
-      title="[if-any starred]Un-s[else]S[end]tar this issue">
-     [if-any starred]&#9733;[else]&#9734;[end]
-     </a>
-    [end]
-   [end]
-   <a href="detail?id=[issue.local_id]">Issue [issue.local_id]</a>
+  <td nowrap="nowrap" class="vt" style="width:12em; padding:0" rowspan="3" id="issuemeta">
+   <div id="meta-float">
+
+   <div class="h3 issuemetaheader">
+     [define user_can_star]false[end]
+     [if-any page_perms.SetStar]
+      [if-any read_only][else]
+       [define user_can_star]true[end]
+       <a class="star" id="star"
+        style="color:[if-any starred]cornflowerblue[else]gray[end]"
+        title="[if-any starred]Un-s[else]S[end]tar this issue">
+       [if-any starred]&#9733;[else]&#9734;[end]
+       </a>
+      [end]
+     [end]
+     <a href="detail?id=[issue.local_id]">Issue [issue.local_id]</a>
 
    [if-any page_perms.FlagSpam]
      <a class="spamflag" id="flag_spam"
@@ -49,6 +52,34 @@
       <input type="hidden" name="spam" value="[if-any issue.flagged_spam_bool]false[else]true[end]">
     </form>
    [end]
+
+   </div> [# end issuemetaheader]
+
+   <div class="issuemetaheader">
+    Starred by [issue.star_count]
+    [is issue.star_count "1"] user [else] users [end]
+   </div>
+
+
+   [if-any noisy]
+    <br>
+    Comments by non-members will not trigger notification emails to users who starred this issue.
+   [end]
+   <div id="issue_meta_details"> [# @@@]
+   [include "issue-meta-part.ezt" "show make changes below"]
+
+   [is any_visible_deleted "true"]
+    <br><br>
+    <div style="text-align:right; margin-right:.3em; font-size:90%">
+     <a class="ifCollapse toggleCollapse" href="#"
+        style="white-space:nowrap">Show deleted comments</a>
+     <a class="ifExpand toggleCollapse" href="#"
+        style="white-space:nowrap">Hide deleted comments</a>
+    </div>
+   [end]
+   </div>
+  </div> [# end meta-float]
+
   </td>
   <td width="90%" class="vt issueheader" style="border-right: 2px solid white">
     [if-any issue.flagged_spam_bool]
@@ -73,10 +104,6 @@
   </td>
  </tr>
  <tr>
-  <td nowrap="nowrap" class="issuemetaheader">
-    Starred by [issue.star_count]
-   [is issue.star_count "1"] user [else] users [end]
-  </td>
   <td class="issueheader" style="padding-left:6px; border-right: 2px solid white">
       [if-any first_description.creator_role]<span class="role_label">Project Member</span>[end]
       Reported by
@@ -101,26 +128,6 @@
 
 
  <tr>
-  <td id="issuemeta">
-   [if-any noisy]
-    <br>
-    Comments by non-members will not trigger notification emails to users who starred this issue.
-   [end]
-   <div id="meta-float">
-   [include "issue-meta-part.ezt" "show make changes below"]
-
-   [is any_visible_deleted "true"]
-    <br><br>
-    <div style="text-align:right; margin-right:.3em; font-size:90%">
-     <a class="ifCollapse toggleCollapse" href="#"
-        style="white-space:nowrap">Show deleted comments</a>
-     <a class="ifExpand toggleCollapse" href="#"
-        style="white-space:nowrap">Hide deleted comments</a>
-    </div>
-   [end]
-
-   </div>
-  </td>
   <td class="vt issuedescription" width="100%" id="cursorarea" colspan="2">
     [include "issue-comments-part.ezt" "show-delete-comment-link"]
   </td>

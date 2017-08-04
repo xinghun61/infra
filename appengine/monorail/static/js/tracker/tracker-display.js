@@ -360,7 +360,7 @@ function TKR_floatVertically(el, container) {
       (GetWindowHeight(window) > elBounds.h)) {
     if (el.style.position != 'fixed') {
       el.style.position = 'fixed';
-      el.style.top = '2px';
+      el.style.top = '0px';
       if (BR_IsIE()) {
         el.parentNode.style.paddingRight = elBounds.w + 2 + 'px';
 	el.parentNode.style.paddingTop = '';
@@ -369,7 +369,7 @@ function TKR_floatVertically(el, container) {
 	el.parentNode.style.height = elBounds.h + 'px';
       }
     }
-    el.style.left = (6 - GetScrollLeft(window)) + 'px';
+    el.style.left = (4 - GetScrollLeft(window)) + 'px';
   } else if (el.style.position != 'relative') {
     el.style.position = 'relative';
     el.style.left = '0';
