@@ -13,17 +13,36 @@ from dataflow.common import objects
 
 class CombineEventsToAttempt(beam.CombineFn):
   ACTION_PATCH_START = 'PATCH_START'
+  ACTION_PATCH_COMMITTED = 'PATCH_COMMITTED'
+  ACTION_PATCH_COMMITTING = 'ACTION_PATCH_COMMITTING'
+  ACTION_PATCH_STOP = 'PATCH_STOP'
+  ACTION_PATCH_THROTTLED = 'PATCH_THROTTLED'
+  ACTION_PATCH_TREE_CLOSED = 'PATCH_TREE_CLOSED'
 
   def __init__(self):
     super(CombineEventsToAttempt, self).__init__()
     self.action_affects_fields = {
-        self.ACTION_PATCH_START: (['first_start_msec', 'last_start_msec']),
+        self.ACTION_PATCH_START: set(['first_start_msec', 'last_start_msec']),
+        self.ACTION_PATCH_STOP: set(['first_stop_msec', 'last_stop_msec']),
+        self.ACTION_PATCH_COMMITTED: set(['patch_committed_msec', 'committed']),
+        self.ACTION_PATCH_COMMITTING: set(['patch_started_to_commit_msec']),
+        self.ACTION_PATCH_THROTTLED: set(['was_throttled']),
+        self.ACTION_PATCH_TREE_CLOSED: set(['waited_for_tree']),
     }
     self.min_timestamp_fields = set([
         'first_start_msec',
+        'first_stop_msec',
+        'patch_committed_msec',
+        'patch_started_to_commit_msec',
     ])
     self.max_timestamp_fields = set([
         'last_start_msec',
+        'last_stop_msec',
+    ])
+    self.logical_or_fields = set([
+        'committed',
+        'was_throttled',
+        'waited_for_tree',
     ])
     # Fields that are copied from event to attempt. Values for these fields are
     # the same for all events for a given attempt.
@@ -82,6 +101,8 @@ class CombineEventsToAttempt(beam.CombineFn):
         if field in self.max_timestamp_fields:
           attempt.__dict__[field] = max(attempt.__dict__.get(field),
                                         event.timestamp_millis)
+        if field in self.logical_or_fields:
+          attempt.__dict__[field] = True
     return attempt.as_bigquery_row()
 
 

@@ -99,5 +99,10 @@ class TestCQAttemptAccumulator(unittest.TestCase):
       self.combFn.extract_output(accumulator)
 
 
+  def test_extract_logical_or(self):
+    accumulator = [self.basic_event(action=self.combFn.ACTION_PATCH_COMMITTED)]
+    attempt = self.combFn.extract_output(accumulator)
+    self.assertTrue(attempt['committed'])
+
 if __name__ == '__main__':
   unittest.main()

@@ -50,6 +50,16 @@ class CQAttempt(BigQueryObject):
     self.attempt_start_msec = None
     self.first_start_msec = None
     self.last_start_msec = None
+    self.first_stop_msec = None
+    self.last_stop_msec = None
+
+    self.committed = False
+    self.was_throttled = False
+    self.waited_for_tree = False
+
+    self.patch_committed_msec = None
+    self.patch_started_to_commit_msec = None
+
 
     self.cq_name = None
 
@@ -60,19 +70,12 @@ class CQAttempt(BigQueryObject):
         'first_start_msec',
         'last_start_msec',
         'cq_name',
+        'first_stop_msec',
+        'last_stop_msec',
+        'committed',
+        'was_throttled',
+        'waited_for_tree',
     ]
-
-  def update_first_start(self, new_timestamp):
-    if new_timestamp is None:
-      return
-    if self.first_start_msec is None or new_timestamp < self.first_start_msec:
-      self.first_start_msec = new_timestamp
-
-  def update_last_start(self, new_timestamp):
-    if new_timestamp is None:
-      return
-    if self.last_start_msec is None or new_timestamp > self.first_start_msec:
-      self.last_start_msec = new_timestamp
 
 
 class CQEvent(BigQueryObject):
