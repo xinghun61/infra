@@ -856,10 +856,10 @@ def AnalyzeBuildFailure(failure_info, change_logs, deps_info, failure_signals):
             _SaveFailureToMap(cl_failure_map, new_suspected_cl_dict, step_name,
                               None, max(justification_dict['hints'].values()))
 
-      if (not step_analysis_result['suspected_cls']
-          and step_name == 'compile'
+      if (step_name == 'compile'
           and (waterfall_config.GetDownloadBuildDataSettings()
                .get('use_ninja_output_log'))):
+        step_analysis_result['new_compile_suspected_cls'] = []
         for build_number in range(start_build_number, failed_build_number + 1):
           for revision in builds[str(build_number)]['blame_list']:
             failure_signal = FailureSignal.FromDict(failure_signals[step_name])
@@ -868,13 +868,22 @@ def AnalyzeBuildFailure(failure_info, change_logs, deps_info, failure_signals):
             if not justification_dict:
               continue
 
-            step_analysis_result['use_ninja_dependencies'] = True
             new_suspected_cl_dict = CreateCLInfoDict(
                 justification_dict, build_number, change_logs[revision])
-            step_analysis_result['suspected_cls'].append(new_suspected_cl_dict)
 
+            (step_analysis_result['new_compile_suspected_cls']
+             .append(new_suspected_cl_dict))
+
+        if (not step_analysis_result['suspected_cls']
+            and step_analysis_result.get('new_compile_suspected_cls')):
+          step_analysis_result['use_ninja_dependencies'] = True
+          step_analysis_result['suspected_cls'] = step_analysis_result[
+              'new_compile_suspected_cls'
+          ]
+          for new_suspected_cl_dict in step_analysis_result['suspected_cls']:
+            # Top score for new heuristic is always 2.
             _SaveFailureToMap(cl_failure_map, new_suspected_cl_dict, step_name,
-                              None, max(justification_dict['hints'].values()))
+                              None, 2)
 
     # TODO(stgao): sort CLs by score.
     analysis_result['failures'].append(step_analysis_result)

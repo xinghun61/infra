@@ -962,7 +962,213 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                      ' dependencies found by ninja)'): 2,
                 },
             }],
+            'new_compile_suspected_cls': [{
+                'build_number': 99,
+                'repo_name': 'chromium',
+                'revision': 'r99_2',
+                'commit_position': None,
+                'url': None,
+                'score': 2,
+                'hints': {
+                    ('modified f99_2.cc (and it was in'
+                     ' dependencies found by ninja)'): 2,
+                },
+            }],
             'use_ninja_dependencies': True,
+        }, {
+            'step_name':
+                'b',
+            'supported':
+                True,
+            'first_failure':
+                98,
+            'last_pass':
+                96,
+            'suspected_cls': [{
+                'build_number': 97,
+                'repo_name': 'chromium',
+                'revision': 'r97_1',
+                'commit_position': None,
+                'url': None,
+                'score': 5,
+                'hints': {
+                    'added x/y/f99_1.cc (and it was in log)': 5,
+                },
+            }],
+        }]
+    }
+
+    expected_suspected_cl = [{
+        'repo_name': 'chromium',
+        'revision': 'r99_2',
+        'commit_position': None,
+        'url': None,
+        'failures': {
+            'compile': []
+        },
+        'top_score': 2
+    }, {
+        'repo_name': 'chromium',
+        'revision': 'r97_1',
+        'commit_position': None,
+        'url': None,
+        'failures': {
+            'b': []
+        },
+        'top_score': 5
+    }]
+
+    analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
+        failure_info, change_logs, deps_info, failure_signals_json)
+
+    self.assertEqual(expected_analysis_result, analysis_result)
+    self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
+
+  def testAnalyzeBuildFailureRecordNewSuspectedCls(self):
+    failure_info = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 99,
+        'failure_type': failure_type.COMPILE,
+        'failed': True,
+        'chromium_revision': 'r99_2',
+        'failed_steps': {
+            'compile': {
+                'current_failure': 99,
+                'first_failure': 98,
+            },
+            'b': {
+                'current_failure': 99,
+                'first_failure': 98,
+                'last_pass': 96,
+            },
+        },
+        'builds': {
+            '99': {
+                'blame_list': ['r99_1', 'r99_2'],
+            },
+            '98': {
+                'blame_list': ['r98_1'],
+            },
+            '97': {
+                'blame_list': ['r97_1'],
+            },
+            '96': {
+                'blame_list': ['r96_1', 'r96_2'],
+            },
+        }
+    }
+    change_logs = {
+        'r99_1': {
+            'revision':
+                'r99_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f99_1.cc',
+                    'new_path': 'a/b/f99_1.cc'
+                },
+            ],
+        },
+        'r99_2': {
+            'revision':
+                'r99_2',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f99_2.cc',
+                    'new_path': 'a/b/f99_2.cc'
+                },
+            ],
+        },
+        'r98_1': {
+            'revision':
+                'r98_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'y/z/f98.cc',
+                    'new_path': 'y/z/f98.cc'
+                },
+            ],
+        },
+        'r97_1': {
+            'revision':
+                'r97_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.ADD,
+                    'old_path': '/dev/null',
+                    'new_path': 'x/y/f99_1.cc'
+                },
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f99_1.cc',
+                    'new_path': 'a/b/f99_1.cc'
+                },
+            ],
+        },
+        'r96_1': {
+            'revision':
+                'r96_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f96_1.cc',
+                    'new_path': 'a/b/f96_1.cc'
+                },
+            ],
+        },
+    }
+    deps_info = {}
+    failure_signals_json = {
+        'compile': {
+            'files': {
+                'src/a/b/f99_2.cc': [],
+            },
+            'failed_edges':[{
+                'dependencies': ['src/a/b/f99_2.cc']
+            }]
+        },
+        'b': {
+            'files': {
+                'x/y/f99_1.cc': []
+            },
+        },
+    }
+    expected_analysis_result = {
+        'failures': [{
+            'step_name':
+                'compile',
+            'supported':
+                True,
+            'first_failure':
+                98,
+            'last_pass':
+                None,
+            'suspected_cls': [{
+                'build_number': 99,
+                'repo_name': 'chromium',
+                'revision': 'r99_2',
+                'commit_position': None,
+                'url': None,
+                'score': 2,
+                'hints': {
+                    ('modified f99_2.cc (and it was in log)'): 2,
+                },
+            }],
+            'new_compile_suspected_cls': [{
+                'build_number': 99,
+                'repo_name': 'chromium',
+                'revision': 'r99_2',
+                'commit_position': None,
+                'url': None,
+                'score': 2,
+                'hints': {
+                    ('modified f99_2.cc (and it was in'
+                     ' dependencies found by ninja)'): 2,
+                },
+            }],
         }, {
             'step_name':
                 'b',
