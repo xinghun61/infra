@@ -107,12 +107,15 @@ class CombineEventsToAttempt(beam.CombineFn):
 
 
 def main():
+  def key(event):
+    return str(event['attempt_start_usec']) + event['cq_name']
+
   q = ('SELECT timestamp_millis, action, attempt_start_usec, cq_name '
        'FROM `chrome-infra-events.raw_events.cq`')
   p = chops_beam.EventsPipeline()
   _ = (p
    | chops_beam.BQRead(q)
-   | beam.Map(lambda e: (e['attempt_start_usec'], e))
+   | beam.Map(lambda e: (key(e), e))
    | beam.GroupByKey()
    | beam.CombinePerKey(CombineEventsToAttempt())
    | beam.Map(lambda (k, v): v)
