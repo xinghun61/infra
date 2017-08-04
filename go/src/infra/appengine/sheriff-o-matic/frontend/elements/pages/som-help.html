@@ -1,3 +1,5 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
 <dom-module id="som-help">
   <template>
     <style>
@@ -107,12 +109,13 @@
     </article>
   </template>
   <script>
-  (function() {
-    'use strict';
+  'use strict';
+  class SomHelp extends Polymer.Element {
+    static get is() {
+      return 'som-help';
+    }
+  }
 
-    Polymer({
-      is: 'som-help',
-    })
-  })();
+  customElements.define(SomHelp.is, SomHelp);
   </script>
 </dom-module>

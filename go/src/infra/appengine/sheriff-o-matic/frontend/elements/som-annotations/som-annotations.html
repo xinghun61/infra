@@ -116,8 +116,8 @@
       </span>
     </template>
 
-    <iron-a11y-keys target="[[_fileBugInput]]" keys="enter" on-keys-pressed="_saveBug"></iron-a11y-keys>
     <paper-dialog id="bugDialog" with-backdrop>
+      <iron-a11y-keys target="[[_fileBugInput]]" keys="enter" on-keys-pressed="_saveBug"></iron-a11y-keys>
       <h2>Enter bug number</h2>
       <paper-input autofocus id="bug" label="Bug # or URL" auto-validate minlength="3"></paper-input>
       <label class="checkbox autosnoozeCheckbox">
@@ -169,8 +169,8 @@
       </div>
     </paper-dialog>
 
-    <iron-a11y-keys target="[[_snoozeTimeInput]]" keys="enter" on-keys-pressed="_snooze"></iron-a11y-keys>
     <paper-dialog id="snoozeDialog" with-backdrop>
+      <iron-a11y-keys target="[[_snoozeTimeInput]]" keys="enter" on-keys-pressed="_snooze"></iron-a11y-keys>
       <h2>Snooze</h2>
       <paper-input autofocus label="Amount of time (minutes):" id="snoozeTime" value="[[_defaultSnoozeTime]]"
         auto-validate allowed-pattern="[0-9]"></paper-input>
@@ -185,8 +185,8 @@
       </div>
     </paper-dialog>
 
-    <iron-a11y-keys target="[[_commentTextInput]]" keys="enter" on-keys-pressed="_addComment"></iron-a11y-keys>
     <paper-dialog id="commentsDialog" with-backdrop>
+      <iron-a11y-keys target="[[_commentTextInput]]" keys="enter" on-keys-pressed="_addComment"></iron-a11y-keys>
       <h2>Comments</h2>
       <ul id="commentsList" hidden$="[[_commentsHidden]]">
         <template is="dom-repeat" items="[[_commentsModelAnnotation.comments]]" as="comment">
@@ -217,8 +217,8 @@
       </div>
     </paper-dialog>
 
-    <iron-a11y-keys keys="enter" on-keys-pressed="_group"></iron-a11y-keys>
     <paper-dialog id="groupDialog" with-backdrop>
+      <iron-a11y-keys keys="enter" on-keys-pressed="_group"></iron-a11y-keys>
       <h2>Group</h2>
       <div id="groupList">
         <label class="checkbox group-row">
@@ -259,8 +259,9 @@
         </button>
       </div>
     </paper-dialog>
-    <iron-a11y-keys keys="enter" on-keys-pressed="_ungroup"></iron-a11y-keys>
+
     <paper-dialog id="ungroupDialog" with-backdrop>
+      <iron-a11y-keys keys="enter" on-keys-pressed="_ungroup"></iron-a11y-keys>
       <h2>Ungroup</h2>
       <div id="groupList">
         <label class="checkbox ungroup-row">

@@ -1,11 +1,14 @@
-(function() {
-  'use strict';
+'use strict';
 
-  Polymer({
-    is:'som-log-diff',
-    behaviors: [LinkifyBehavior],
+class SomLogDiff extends Polymer.mixinBehaviors([LinkifyBehavior],
+    Polymer.Element) {
 
-    properties: {
+  static get is() {
+    return 'som-log-diff';
+  }
+
+  static get properties() {
+    return {
       tree: {
         value: 'chromium',
         notify: true,
@@ -51,63 +54,65 @@
         type: String,
         computed: '_computeBuildUrl(master, builder, buildNum2)',
       },
-    },
+    };
+  }
 
-    _computeBuildUrl: function(master, builder, buildNum) {
-      return "https://build.chromium.org/p/" + master+ "/builders/"
-          + builder + "/builds/" + buildNum;
-    },
+  _computeBuildUrl(master, builder, buildNum) {
+    return "https://build.chromium.org/p/" + master+ "/builders/"
+        + builder + "/builds/" + buildNum;
+  }
 
-    _computeMaster: function(key) {
-      let params = key.split('/');
-      return params[0];
-    },
+  _computeMaster(key) {
+    let params = key.split('/');
+    return params[0];
+  }
 
-    _computeBuilder: function(key) {
-      let params = key.split('/');
-      return params[1];
-    },
+  _computeBuilder(key) {
+    let params = key.split('/');
+    return params[1];
+  }
 
-    _computeBuildNum1: function(key) {
-      let params = key.split('/');
-      return params[2];
-    },
+  _computeBuildNum1(key) {
+    let params = key.split('/');
+    return params[2];
+  }
 
-    _computeBuildNum2: function(key) {
-      let params = key.split('/');
-      return params[3];
-    },
+  _computeBuildNum2(key) {
+    let params = key.split('/');
+    return params[3];
+  }
 
-    _isDel: function(delta) {
-      return delta === 1;
-    },
+  _isDel(delta) {
+    return delta === 1;
+  }
 
-    _isCommon: function(delta) {
-      return delta === 0;
-    },
+  _isCommon(delta) {
+    return delta === 0;
+  }
 
-    _isAdd: function(delta) {
-      return delta === 2;
-    },
+  _isAdd(delta) {
+    return delta === 2;
+  }
 
-    _computeURL: function(key) {
-      return "/api/v1/logdiff/" + key;
-    },
+  _computeURL(key) {
+    return "/api/v1/logdiff/" + key;
+  }
 
-    _computeDiffLength: function(payload) {
-      return payload.split('\n').length;
-    },
+  _computeDiffLength(payload) {
+    return payload.split('\n').length;
+  }
 
-    _defaultOpen: function(payload) {
-      return this._computeDiffLength(payload) < 10;
-    },
+  _defaultOpen(payload) {
+    return this._computeDiffLength(payload) < 10;
+  }
 
-    _changeStatus: function(evt) {
-      evt.target.nextElementSibling.toggle();
-    },
+  _changeStatus(evt) {
+    evt.target.nextElementSibling.toggle();
+  }
 
-    _computeButtonText: function(payload) {
-      return '● Collapse/Expand (' + this._computeDiffLength(payload) + ' common lines)';
-    },
-  });
-})();
+  _computeButtonText(payload) {
+    return '● Collapse/Expand (' + this._computeDiffLength(payload) + ' common lines)';
+  }
+}
+
+customElements.define(SomLogDiff.is, SomLogDiff);

@@ -89,7 +89,7 @@ class SomAnnotations extends Polymer.mixinBehaviors(
       _ungroupErrorMessage: String,
       _ungroupModel: Object,
       user: String,
-    }
+    };
   }
 
   ready() {

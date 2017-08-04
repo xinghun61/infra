@@ -1,12 +1,14 @@
-(function() {
-  'use strict';
+'use strict';
 
-  Polymer({
-    is: 'som-tree-status',
+class SomTreeStatus extends Polymer.mixinBehaviors(
+    [TreeStatusBehavior], Polymer.Element) {
 
-    behaviors: [TreeStatusBehavior],
+  static get is() {
+    return 'som-tree-status';
+  }
 
-    properties: {
+  static get properties() {
+    return {
       treeName: {
         type: String,
         observer: 'refresh',
@@ -52,58 +54,60 @@
         type: String,
         computed: '_computeUsername(_email)',
       },
-    },
+    };
+  }
 
-    refresh: function() {
-      if (!this._hasStatusApp) {
-        return;
-      }
-      this.$.treeStatusAjax.generateRequest();
-    },
+  refresh() {
+    if (!this._hasStatusApp) {
+      return;
+    }
+    this.$.treeStatusAjax.generateRequest();
+  }
 
-    _computeHasError: function(hasStatusApp, json) {
-      return hasStatusApp && !!json && Object.keys(json).length > 0;
-    },
+  _computeHasError(hasStatusApp, json) {
+    return hasStatusApp && !!json && Object.keys(json).length > 0;
+  }
 
-    _computeHideNotice: function(hasStatusApp, hasError) {
-      return !hasStatusApp || hasError;
-    },
+  _computeHideNotice(hasStatusApp, hasError) {
+    return !hasStatusApp || hasError;
+  }
 
-    // Processing JSON data for display
-    _computeEmail(json) {
-      if (!json || !json.username) {
-        return '';
-      }
-      return json.username;
-    },
+  // Processing JSON data for display
+  _computeEmail(json) {
+    if (!json || !json.username) {
+      return '';
+    }
+    return json.username;
+  }
 
-    _computeStatus(json) {
-      if (!json) {
-        return '';
-      }
-      return json.general_state;
-    },
+  _computeStatus(json) {
+    if (!json) {
+      return '';
+    }
+    return json.general_state;
+  }
 
-    _computeMessage(json) {
-      if (!json || !json.message) {
-        return 'Unknown';
-      }
-      return json.message;
-    },
+  _computeMessage(json) {
+    if (!json || !json.message) {
+      return 'Unknown';
+    }
+    return json.message;
+  }
 
-    _computeTime(json) {
-      if (!json || !json.date) {
-        return 'Unknown';
-      }
-      return json.date + ' GMT';
-    },
+  _computeTime(json) {
+    if (!json || !json.date) {
+      return 'Unknown';
+    }
+    return json.date + ' GMT';
+  }
 
-    _computeUsername(email) {
-      let cutoff = email.indexOf('@');
-      if (cutoff < 0) {
-        return 'Unknown';
-      }
-      return email.substring(0, cutoff);
-    },
-  });
-})();
+  _computeUsername(email) {
+    let cutoff = email.indexOf('@');
+    if (cutoff < 0) {
+      return 'Unknown';
+    }
+    return email.substring(0, cutoff);
+  }
+}
+
+customElements.define(SomTreeStatus.is, SomTreeStatus);

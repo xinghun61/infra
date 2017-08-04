@@ -35,7 +35,7 @@
       flush( () => {
         assert.equal('chromium:\n      \n      398901 - 398946\n      ' +
             '\n        Click to see more information.',
-            element.$$('div').textContent.trim());
+            element.shadowRoot.querySelector('div').textContent.trim());
         assert.equal(false, element.$.loadingMessage.hidden);
         assert.equal(false, element.$.collapse.opened);
         done();
@@ -80,10 +80,10 @@
       flush( () => {
         assert.equal('chromium:\n      \n      398901 - 398946\n      '+
             '\n        Click to see less information.',
-            element.$$('div').textContent.trim());
+            element.shadowRoot.querySelector('div').textContent.trim());
         assert.equal('fa3d958d\n          \n          (dcastagna):\n          '
             + 'gl: Test YV12 buffer drm import.',
-            element.$$('.commit').textContent.trim());
+            element.shadowRoot.querySelector('.commit').textContent.trim());
         assert.equal(true, element.$.collapse.opened);
         done();
       });

@@ -1,24 +1,29 @@
-(function() {
-  'use strict';
+'use strict';
 
-  Polymer({
-    is: 'som-extension-trooper-failure',
-    behaviors: [LinkifyBehavior, AlertTypeBehavior],
-    properties: {
+class SomExtensionTrooperFailure extends Polymer.mixinBehaviors(
+    [LinkifyBehavior, AlertTypeBehavior], Polymer.Element) {
+
+  static get is() {
+    return 'som-extension-trooper-failure';
+  }
+
+  static get properties() {
+    return {
       treeName: String,
       type: {
         type: String,
         value: '',
       },
-    },
+    };
+  }
 
-    _showSheriffMessage: function(type, treeName) {
-      return treeName != 'trooper' && this.isTrooperAlertType(type);
-    },
+  _showSheriffMessage(type, treeName) {
+    return treeName != 'trooper' && this.isTrooperAlertType(type);
+  }
 
-    _showTrooperMessage: function(type, treeName) {
-      return treeName == 'trooper' && this.isTrooperAlertType(type);
-    },
+  _showTrooperMessage(type, treeName) {
+    return treeName == 'trooper' && this.isTrooperAlertType(type);
+  }
+}
 
-  });
-})();
+customElements.define(SomExtensionTrooperFailure.is, SomExtensionTrooperFailure);

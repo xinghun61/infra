@@ -1,10 +1,13 @@
-(function() {
-  'use strict';
+'use strict';
 
-  Polymer({
-    is: 'som-settings',
+class SomSettings extends Polymer.Element {
 
-    properties: {
+  static get is() {
+    return 'som-settings';
+  }
+
+  static get properties() {
+    return {
       collapseByDefault: {
         type: Boolean,
         notify: true,
@@ -17,10 +20,12 @@
         type: String,
         notify: true,
       },
-    },
+    };
+  }
 
-    _initializeUber: function(evt) {
-      evt.target.value = 'uber';
-    },
-  });
-})();
+  _initializeUber(evt) {
+    evt.target.value = 'uber';
+  }
+}
+
+customElements.define(SomSettings.is, SomSettings);

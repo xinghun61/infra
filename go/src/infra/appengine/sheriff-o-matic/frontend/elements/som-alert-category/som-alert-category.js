@@ -62,7 +62,7 @@ class SomAlertCategory extends Polymer.mixinBehaviors(
       },
       linkStyle: String,
       xsrfToken: String,
-    }
+    };
   }
 
   ////////////////////// Annotations ///////////////////////////

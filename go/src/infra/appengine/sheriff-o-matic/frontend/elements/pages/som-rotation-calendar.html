@@ -1,4 +1,6 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
 <link rel="import" href="../../bower_components/iron-icon/iron-icon.html">
+
 <dom-module id="som-rotation-calendar">
   <template>
     <style>
@@ -18,12 +20,13 @@
     ></iframe>
   </template>
   <script>
-  (function() {
-    'use strict';
+  'use strict';
+  class SomRotationCalendar extends Polymer.Element {
+    static get is() {
+      return 'som-rotation-calendar';
+    }
+  }
 
-    Polymer({
-      is: 'som-rotation-calendar',
-    });
-  })();
+  customElements.define(SomRotationCalendar.is, SomRotationCalendar);
   </script>
 </dom-module>

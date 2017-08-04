@@ -1,10 +1,13 @@
-(function() {
-  'use strict';
+'use strict';
 
-  Polymer({
-    is: 'som-master-restarts',
+class SomMasterRestarts extends Polymer.Element {
 
-    properties: {
+  static get is() {
+    return 'som-master-restarts';
+  }
+
+  static get properties() {
+    return {
       treeName: {
         type: String,
         observer: 'refresh',
@@ -30,44 +33,46 @@
         type: String,
         computed: '_computeRestarts(_restartsJson)',
       },
-    },
+    }
+  }
 
-    refresh: function() {
-      this.$.masterRestarts.generateRequest();
-    },
+  refresh() {
+    this.$.masterRestarts.generateRequest();
+  }
 
-    _computeHasError: function(json) {
-      return !!json && Object.keys(json).length > 0;
-    },
+  _computeHasError(json) {
+    return !!json && Object.keys(json).length > 0;
+  }
 
-    _computeHideNotice: function(hasRestarts, hasError) {
-      return !hasRestarts || hasError;
-    },
+  _computeHideNotice(hasRestarts, hasError) {
+    return !hasRestarts || hasError;
+  }
 
-    _computeHasRestarts: function(json) {
-      if (!json) {
-        return false;
-      }
-      return Object.keys(json).length > 0;
-    },
+  _computeHasRestarts(json) {
+    if (!json) {
+      return false;
+    }
+    return Object.keys(json).length > 0;
+  }
 
-    _computeRestarts: function(json) {
-      let restarts = [];
-      if (!json) {
-        return restarts;
-      }
-
-      Object.keys(json).forEach((master) => {
-        let state = json[master];
-        var tt = new Date(state.transition_time_utc).toLocaleString();
-        restarts.push({
-          master: master,
-          desiredState: state.desired_state == 'running' ? 'restart'
-                                                         : state.desired_state,
-          transitionTime: tt
-        })
-      });
+  _computeRestarts(json) {
+    let restarts = [];
+    if (!json) {
       return restarts;
-    },
-  });
-})();
+    }
+
+    Object.keys(json).forEach((master) => {
+      let state = json[master];
+      var tt = new Date(state.transition_time_utc).toLocaleString();
+      restarts.push({
+        master: master,
+        desiredState: state.desired_state == 'running' ? 'restart'
+                                                       : state.desired_state,
+        transitionTime: tt
+      })
+    });
+    return restarts;
+  }
+}
+
+customElements.define(SomMasterRestarts.is, SomMasterRestarts);
