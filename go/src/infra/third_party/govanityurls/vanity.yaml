@@ -1,3 +1,5 @@
+host: go.chromium.org
+
 paths:
   /luci:
     repo: https://github.com/luci/luci-go
