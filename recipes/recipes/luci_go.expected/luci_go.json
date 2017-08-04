@@ -12,7 +12,7 @@
       "[CACHE]/infra_gclient_with_go"
     ],
     "infra_step": true,
-    "name": "ensure builder cache dir"
+    "name": "ensure builder dir"
   },
   {
     "cmd": [
@@ -95,7 +95,7 @@
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
     "infra_step": true,
-    "name": "go third parties"
+    "name": "init infra go env"
   },
   {
     "cmd": [

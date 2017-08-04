@@ -10,6 +10,7 @@ DEPS = [
   'depot_tools/git',
   'depot_tools/presubmit',
   'depot_tools/tryserver',
+  'infra_checkout',
   'recipe_engine/context',
   'recipe_engine/file',
   'recipe_engine/json',
@@ -39,17 +40,17 @@ LUCI_GO_PATH_IN_INFRA = 'infra/go/src/github.com/luci/luci-go'
 NAMED_CACHE = 'infra_gclient_with_go'
 
 
-def _run_presubmit(api, luci_go_path, bot_update_step):
+def _run_presubmit(api, co):
   got_revision_properties = api.bot_update.get_project_revision_properties(
       LUCI_GO_PATH_IN_INFRA)
-  upstream = bot_update_step.json.output['properties'].get(
+  upstream = co.bot_update_step.json.output['properties'].get(
       got_revision_properties[0])
   # The presubmit must be run with proper Go environment.
   # infra/go/env.py takes care of this.
   presubmit_cmd = [
     'python',  # env.py will replace with this its sys.executable.
     api.presubmit.presubmit_support_path,
-    '--root', luci_go_path,
+    '--root', co.patch_root_path,
     '--commit',
     '--verbose', '--verbose',
     '--issue', api.properties['issue'],
@@ -63,59 +64,27 @@ def _run_presubmit(api, luci_go_path, bot_update_step):
     '--rietveld_email', ''
   ]
   with api.context(env={'PRESUBMIT_BUILDER': '1'}):
-    api.python('presubmit', api.path['checkout'].join('go', 'env.py'),
-               presubmit_cmd)
-
-
-def _commit_change(api):
-  api.git('-c', 'user.email=commit-bot@chromium.org',
-          '-c', 'user.name=The Commit Bot',
-          'commit', '-a', '-m', 'Committed patch',
-          name='commit git patch')
+    co.go_env_step(*presubmit_cmd, name='presubmit')
 
 
 def RunSteps(api, presubmit, GOARCH):
-  infra_path = api.path['cache'].join(NAMED_CACHE)
-  luci_go_path = infra_path.join(LUCI_GO_PATH_IN_INFRA)
-  api.file.ensure_directory('ensure builder cache dir', infra_path)
-
-  with api.context(cwd=infra_path):
-    api.gclient.set_config('luci_go')
-    # patch_root must match the luci-go repo, not infra checkout.
-    bot_update_step = api.bot_update.ensure_checkout(
-        patch_root=LUCI_GO_PATH_IN_INFRA)
-
-    if presubmit:
-      with api.context(cwd=luci_go_path):
-        _commit_change(api)
-    api.gclient.runhooks()
+  co = api.infra_checkout.checkout('luci_go', patch_root=LUCI_GO_PATH_IN_INFRA)
+  if presubmit:
+    co.commit_change()
+  co.gclient_runhooks()
 
   env = {}
   if GOARCH is not None:
     env['GOARCH'] = GOARCH
 
-  with api.context(env=env, cwd=infra_path):
-    # This downloads the third parties, so that the next step doesn't have junk
-    # output in it.
-    api.python(
-        'go third parties',
-        api.path['checkout'].join('go', 'env.py'),
-        ['go', 'version'],
-        infra_step=True)
-
+  with api.context(env=env):
+    co.ensure_go_env()
     if presubmit:
       with api.tryserver.set_failure_hash():
-        _run_presubmit(api, luci_go_path, bot_update_step)
+        _run_presubmit(api, co)
     else:
-      api.python(
-          'go build',
-          api.path['checkout'].join('go', 'env.py'),
-          ['go', 'build', 'github.com/luci/luci-go/...'])
-
-      api.python(
-          'go test',
-          api.path['checkout'].join('go', 'env.py'),
-          ['go', 'test', 'github.com/luci/luci-go/...'])
+      co.go_env_step('go', 'build', 'github.com/luci/luci-go/...')
+      co.go_env_step('go', 'test', 'github.com/luci/luci-go/...')
 
 
 def GenTests(api):

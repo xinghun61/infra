@@ -4,6 +4,7 @@
 
 **[Recipe Modules](#Recipe-Modules)**
   * [conda](#recipe_modules-conda) &mdash; Functions to work with Miniconda python environment.
+  * [infra_checkout](#recipe_modules-infra_checkout)
   * [infra_system](#recipe_modules-infra_system)
   * [omahaproxy](#recipe_modules-omahaproxy)
   * [recipe_autoroller](#recipe_modules-recipe_autoroller)
@@ -19,6 +20,7 @@
   * [gerrit_cq_test](#recipes-gerrit_cq_test)
   * [git_hash_metric](#recipes-git_hash_metric)
   * [goma_hello_world](#recipes-goma_hello_world) &mdash; Compiles trivial C++ program using Goma.
+  * [infra_checkout:examples/full](#recipes-infra_checkout_examples_full)
   * [infra_continuous](#recipes-infra_continuous)
   * [infra_continuous_luci](#recipes-infra_continuous_luci) &mdash; Builds and tests infra.
   * [infra_repo_trybot](#recipes-infra_repo_trybot)
@@ -67,6 +69,34 @@ Args:
 Returns:
   Instance of CondaEnv, that also optionally acts as context manager that
   deletes the environment on exit.
+### *recipe_modules* / [infra\_checkout](/recipes/recipe_modules/infra_checkout)
+
+[DEPS](/recipes/recipe_modules/infra_checkout/__init__.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/tryserver][depot_tools/recipe_modules/tryserver], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/python][recipe_engine/recipe_modules/python]
+
+#### **class [InfraCheckoutApi](/recipes/recipe_modules/infra_checkout/api.py#11)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+
+Stateless API for using public infra gclient checkout.
+
+&mdash; **def [checkout](/recipes/recipe_modules/infra_checkout/api.py#14)(self, gclient_config_name, patch_root, path=None, named_cache=DEFAULT_NAMED_CACHE, \*\*kwargs):**
+
+Fetches infra gclient checkout into a given path OR named_cache.
+
+Arguments:
+  * gclient_config_name (string) - name of gclient config.
+  * patch_root (path or string) - path **inside** infra checkout to git repo
+    in which to apply the patch. For example, 'infra/luci' for luci-py repo.
+  * path (path or string) - path to where to create/update infra checkout.
+    If None (default) - path is cache with customizable name (see below).
+  * named_cache - if path is None, this allows to customize the name of the
+    cache. Defaults to DEFAULT_NAMED_CACHE.
+    Note: your cr-buildbucket.cfg should specify named_cache for swarming to
+      prioritize bots which actually have this cache populated by prior
+      runs. Otherwise, using named cache isn't particularly useful, unless
+      your pool of builders is very small.
+  * kwargs - passed as is to bot_update.ensure_checkout.
+
+Returns:
+  a Checkout object with commands for common actions on infra checkout.
 ### *recipe_modules* / [infra\_system](/recipes/recipe_modules/infra_system)
 
 [DEPS](/recipes/recipe_modules/infra_system/__init__.py#9): [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform]
@@ -216,6 +246,11 @@ Intended to be used as a very simple litmus test of Goma health on LUCI staging
 environment. Linux and OSX only.
 
 &mdash; **def [RunSteps](/recipes/recipes/goma_hello_world.py#43)(api):**
+### *recipes* / [infra\_checkout:examples/full](/recipes/recipe_modules/infra_checkout/examples/full.py)
+
+[DEPS](/recipes/recipe_modules/infra_checkout/examples/full.py#5): [infra\_checkout](#recipe_modules-infra_checkout), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+
+&mdash; **def [RunSteps](/recipes/recipe_modules/infra_checkout/examples/full.py#14)(api):**
 ### *recipes* / [infra\_continuous](/recipes/recipes/infra_continuous.py)
 
 [DEPS](/recipes/recipes/infra_continuous.py#7): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/depot\_tools][depot_tools/recipe_modules/depot_tools], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/infra\_paths][depot_tools/recipe_modules/infra_paths], [infra\_system](#recipe_modules-infra_system), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -276,9 +311,9 @@ Returns file size if file exists, else None
 &mdash; **def [RunSteps](/recipes/recipes/luci_gae.py#58)(api):**
 ### *recipes* / [luci\_go](/recipes/recipes/luci_go.py)
 
-[DEPS](/recipes/recipes/luci_go.py#7): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/presubmit][depot_tools/recipe_modules/presubmit], [depot\_tools/tryserver][depot_tools/recipe_modules/tryserver], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/luci_go.py#7): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/presubmit][depot_tools/recipe_modules/presubmit], [depot\_tools/tryserver][depot_tools/recipe_modules/tryserver], [infra\_checkout](#recipe_modules-infra_checkout), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/luci_go.py#77)(api, presubmit, GOARCH):**
+&mdash; **def [RunSteps](/recipes/recipes/luci_go.py#70)(api, presubmit, GOARCH):**
 ### *recipes* / [luci\_go\_web\_packager](/recipes/recipes/luci_go_web_packager.py)
 
 [DEPS](/recipes/recipes/luci_go_web_packager.py#20): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
