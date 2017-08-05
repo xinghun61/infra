@@ -76,7 +76,8 @@ class BanSpammerTask(jsonfeed.InternalTask):
     issues = []
 
     if len(issue_ids) > 0:
-      issues = self.services.issue.GetIssues(mr.cnxn, issue_ids)
+      issues = self.services.issue.GetIssues(
+          mr.cnxn, issue_ids, use_cache=False)
 
       # Mark them as spam/ham in bulk.
       self.services.spam.RecordManualIssueVerdicts(mr.cnxn, self.services.issue,
