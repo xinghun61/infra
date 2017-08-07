@@ -22,15 +22,16 @@
     <br><br>
     <form id="change-auto-revert-setting-form" action="/waterfall/change-auto-revert-setting" method="post">
       <input type="hidden" name="xsrf_token" value="{{xsrf_token}}"/>
-      Please enter update reason (required).
+      Please enter update reason (required).<br>
       <textarea id="update_reason" name="update_reason" rows="4" cols="80" required></textarea>
+      <br><br>
       {% if auto_revert_on %}
         <button type="submit" name="revert_compile_culprit" value="false">Disable Auto Revert</button>
       {% else %}
         <button type="submit" name="revert_compile_culprit" value="true">Enable Auto Revert</button>
       {% endif %}
     </form>
-  </findit-app>>
+  </findit-app>
 
 
 </body>
