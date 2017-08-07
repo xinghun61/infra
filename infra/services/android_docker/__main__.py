@@ -117,6 +117,14 @@ def launch(docker_client, android_devices, args):
         'granted new containers.', draining_devices,
         [_DEVICE_SHUTDOWN_FILE % {'device_id': d.serial}
             for d in draining_devices])
+
+  # Occasionally a container gets stuck in the paused state. Since the logic
+  # here is thread safe, this shouldn't happen, so explicitly unpause them
+  # before continuing.
+  # TODO(bpastene): Find out how/why.
+  for container in docker_client.get_paused_containers():
+    container.unpause()
+
   running_containers = docker_client.get_running_containers()
   # Reboot the host if needed. Will attempt to kill all running containers
   # gracefully before triggering reboot.
@@ -263,7 +271,7 @@ def main():
   # proceeding container interactions in a mutex (via a flock) to prevent
   # multiple processes from stepping on each other.
   logging.debug('Acquiring file lock on %s...', _LOCK_FILE)
-  retries = 10
+  retries = 20
   i = 0
   while True:
     try:

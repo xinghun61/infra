@@ -123,8 +123,13 @@ class FakeContainerList(object):
   def create(self, **kwargs):
     return FakeContainerBackend(kwargs['name'])
 
-  def list(self, **kwargs):  # pylint: disable=unused-argument
-    return self._list
+  def list(self, status=None, **kwargs):  # pylint: disable=unused-argument
+    if not status:
+      return self._list
+    elif status == 'paused':
+      return [c for c in self._list if c.is_paused]
+    elif status == 'running':
+      return [c for c in self._list if not c.is_paused]
 
   def get(self, name):
     for c in self._list:
@@ -240,6 +245,15 @@ class TestDockerClient(unittest.TestCase):
     running_containers = containers.DockerClient().get_running_containers()
     self.assertEqual(
         set(c.name for c in running_containers), set(self.container_names))
+
+  @mock.patch('docker.from_env')
+  def test_get_paused_containers(self, mock_from_env):
+    self.fake_client.containers.get('android_serial1').pause()
+    mock_from_env.return_value = self.fake_client
+
+    paused_containers = containers.DockerClient().get_paused_containers()
+    self.assertEqual(len(paused_containers), 1)
+    self.assertEqual(paused_containers[0].name, 'android_serial1')
 
   @mock.patch('docker.from_env')
   def test_get_container(self, mock_from_env):

@@ -114,11 +114,14 @@ class DockerClient(object):
     except docker.errors.ImageNotFound:
       return False
 
-  def get_running_containers(self):
-    # With all=False, the following query includes only paused and running
-    # containers in the result.
+  def get_paused_containers(self):
     return [
-        Container(c) for c in self._client.containers.list(all=False)
+        Container(c) for c in self._client.containers.list(status='paused')
+    ]
+
+  def get_running_containers(self):
+    return [
+        Container(c) for c in self._client.containers.list(status='running')
     ]
 
   def get_container(self, device):
@@ -232,6 +235,12 @@ class Container(object):
     }
     return cmd
 
+  def pause(self):
+    self._container.pause()
+
+  def unpause(self):
+    self._container.unpause()
+
   def add_device(self, device, sleep_time=1.0):
     # Remove the old dev file from the container and wait one second to
     # help ensure any wait-for-device threads inside notice its absence.
@@ -242,7 +251,7 @@ class Container(object):
 
     # Pause the container while modifications to its cgroup are made. This
     # isn't strictly necessary, but it helps avoid race-conditions.
-    self._container.pause()
+    self.pause()
 
     try:
       # Give the container permission to access the device.
@@ -278,7 +287,7 @@ class Container(object):
       # changes that were just made.
       time.sleep(sleep_time)
     finally:
-      self._container.unpause()
+      self.unpause()
 
     # In-line these mutliple commands to help avoid a race condition in adb
     # that gets in a stuck state when polling for devices half-way through.
