@@ -5,14 +5,14 @@
 package frontend
 
 import (
+	"net/http"
 	"time"
-
-	"golang.org/x/net/context"
 
 	"infra/appengine/test-results/model"
 
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/luci-go/common/logging"
+	"github.com/luci/luci-go/common/sync/parallel"
 	"github.com/luci/luci-go/server/router"
 )
 
@@ -21,52 +21,75 @@ const (
 	timeToStoreFiles = 24 * 365 * time.Hour // 1 year
 )
 
-func deleteEntities(ctx context.Context, keys *[]*datastore.Key) {
-	// Limit number of entities to be deleted to 500 to avoid hitting
-	// datastore.Delete limit on the number of entities that it can operate on.
-	var keysToDelete []*datastore.Key
-	if len(*keys) > 500 {
-		keysToDelete = (*keys)[:500]
-	} else {
-		keysToDelete = *keys
-	}
-
-	logging.Infof(ctx, "Deleting %d entities", len(keysToDelete))
-	if err := datastore.Delete(ctx, keysToDelete); err != nil {
-		logging.WithError(err).Warningf(ctx, "failed to delete some entities")
-	}
-
-	// Remove deleted keys from the passed slice.
-	*keys = (*keys)[len(keysToDelete):]
-}
-
 func deleteOldResultsHandler(rc *router.Context) {
-	ctx := rc.Context
+	c, w := rc.Context, rc.Writer
 
-	storageHorizon := time.Now().Add(-timeToStoreFiles).UTC()
-	q := datastore.NewQuery("TestFile").Lt("date", storageHorizon)
-	keysToDelete := make([]*datastore.Key, 0, 600)
+	// Buffer the channel to 2x batch size to ensure that we are not sending
+	// keys faster than we can schedule deletion tasks.
+	keyCh := make(chan *datastore.Key, 1000)
 	progress := false
-	err := datastore.Run(ctx, q, func(tf *model.TestFile) {
-		keysToDelete = append(keysToDelete, datastore.KeyForObj(ctx, tf))
-		keysToDelete = append(keysToDelete, tf.DataKeys...)
+	var queryErr error
+	go func() {
+		defer close(keyCh)
+		storageHorizon := time.Now().Add(-timeToStoreFiles).UTC()
+		q := datastore.NewQuery("TestFile").Lt("date", storageHorizon)
+		queryErr = datastore.Run(c, q, func(tf *model.TestFile) {
+			for _, dataKey := range tf.DataKeys {
+				keyCh <- dataKey
+			}
+			keyCh <- datastore.KeyForObj(c, tf)
+		})
+	}()
 
-		if len(keysToDelete) >= 500 {
-			deleteEntities(ctx, &keysToDelete)
-			progress = true
+	// We ignore returned error here, since the tasks we run never return errors
+	// and the WorkPool itself does not produce any errors on its own.
+	parallel.WorkPool(50, func(workC chan<- func() error) {
+		keys := make([]*datastore.Key, 0, 500)
+		doDelete := func() {
+			keys2 := keys
+			workC <- func() error {
+				logging.Infof(c, "Deleting %d entities", len(keys2))
+				if err := datastore.Delete(c, keys2); err != nil {
+					// It may happen that a TestFile entity has been deleted, while
+					// DataEntry entities referenced from it are not, which may
+					// result in dangling entities that we can not delete safely.
+					// Since this should not happen frequently, we are okay just
+					// logging a warning here and ignoring them. Also we are now
+					// adding a timestamp to all new DataEntries entities and in
+					// approximately 1 year we'll be able to detect all entities
+					// without a timestamp as dangling and remove them. See
+					// https://crbug.com/741236 for more details.
+					logging.WithError(err).Warningf(c, "failed to delete some entities")
+				} else {
+					progress = true
+				}
+				return nil
+			}
+		}
+
+		for key := range keyCh {
+			keys = append(keys, key)
+			if len(keys) == 500 {
+				doDelete()
+				keys = make([]*datastore.Key, 0, 500)
+			}
+		}
+
+		if len(keys) > 0 {
+			doDelete()
 		}
 	})
 
-	if err == nil {
-		for len(keysToDelete) > 0 {
-			deleteEntities(ctx, &keysToDelete)
-		}
-	} else if !progress {
-		// Normally the error would be datastore timeout from the Run operation and
-		// we should not log it because we'll simply continue deleting entities in
-		// the next cron job run. However, if for some chance nothing got deleted
-		// before we've received the error, it may mean we are not making progress
-		// and thus should start logging warnings.
-		logging.WithError(err).Warningf(ctx, "no progress was made")
+	if queryErr != nil && !progress {
+		// Normally the error would be datastore timeout from the Run operation
+		// and we should not log it because we'll simply continue deleting
+		// entities in the next cron job run. However, if for some chance
+		// nothing got deleted before we've received the error, it may mean we
+		// are not making progress and thus should log an error.
+		logging.WithError(queryErr).Errorf(c, "query failed, no progress was made")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
+
+	w.WriteHeader(http.StatusOK)
 }

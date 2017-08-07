@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"github.com/luci/gae/filter/featureBreaker"
 	"github.com/luci/gae/impl/memory"
 	"github.com/luci/gae/service/datastore"
 	"github.com/luci/gae/service/taskqueue"
@@ -46,11 +47,11 @@ func TestDeleteOldResults(t *testing.T) {
 		ctx, cancelFunc := context.WithTimeout(ctx, 10*time.Minute)
 		defer cancelFunc()
 
-		// Put 900 old files into datastore. The number of TestFile and DataEntry is picked to make
-		// sure that code limiting number of entities deleted at once to 500 is
-		// triggered.
+		// Put 150 old files into datastore. This will put 1050 entities into
+		// datastore, which will ensure that we are testing deleting in batches of
+		// 500 and removal of the items in the last small batch.
 		year := time.Hour * 24 * 400
-		for i := 0; i < 300; i++ {
+		for i := 0; i < 150; i++ {
 			createTestFile(
 				ctx, "full_results.json", clock.Get(ctx).Now().Add(-2*year).UTC(),
 				[]string{"a", "b", "c"})
@@ -94,26 +95,60 @@ func TestDeleteOldResults(t *testing.T) {
 			router.NewMiddlewareChain(withTestingContext),
 			deleteOldResultsHandler)
 		srv := httptest.NewServer(r)
-
-		// Send request.
 		client := &http.Client{}
-		resp, err := client.Get(srv.URL + "/internal/cron/delete_old_results")
-		So(err, ShouldBeNil)
-		defer resp.Body.Close()
 
-		// Verify that old files were deleted.
-		datastore.GetTestable(ctx).CatchupIndexes()
-		q := datastore.NewQuery("TestFile")
-		var remainingFiles []*model.TestFile
-		So(datastore.GetAll(ctx, q, &remainingFiles), ShouldBeNil)
-		So(len(remainingFiles), ShouldEqual, 1)
-		So(remainingFiles[0].Name, ShouldEqual, "results-small.json")
+		Convey("with no datastore errors", func() {
+			// Send request.
+			resp, err := client.Get(srv.URL + "/internal/cron/delete_old_results")
+			So(err, ShouldBeNil)
+			defer resp.Body.Close()
+			So(resp.StatusCode, ShouldEqual, 200)
 
-		// Verify that old data entities were deleted.
-		q = datastore.NewQuery("DataEntry")
-		var remainingDataEntries []*model.DataEntry
-		So(datastore.GetAll(ctx, q, &remainingDataEntries), ShouldBeNil)
-		So(len(remainingDataEntries), ShouldEqual, 1)
-		So(string(remainingDataEntries[0].Data), ShouldEqual, "foo")
+			// Verify that old files were deleted.
+			datastore.GetTestable(ctx).CatchupIndexes()
+			q := datastore.NewQuery("TestFile")
+			var remainingFiles []*model.TestFile
+			So(datastore.GetAll(ctx, q, &remainingFiles), ShouldBeNil)
+			So(len(remainingFiles), ShouldEqual, 1)
+			So(remainingFiles[0].Name, ShouldEqual, "results-small.json")
+
+			// Verify that old data entities were deleted.
+			q = datastore.NewQuery("DataEntry")
+			var remainingDataEntries []*model.DataEntry
+			So(datastore.GetAll(ctx, q, &remainingDataEntries), ShouldBeNil)
+			So(len(remainingDataEntries), ShouldEqual, 1)
+			So(string(remainingDataEntries[0].Data), ShouldEqual, "foo")
+		})
+
+		Convey("with datastore.Run error", func() {
+			// Mock datastore.Run failure.
+			var fb featureBreaker.FeatureBreaker
+			ctx, fb = featureBreaker.FilterRDS(ctx, nil)
+			fb.BreakFeatures(nil, "Run")
+
+			// Send request.
+			resp, err := client.Get(srv.URL + "/internal/cron/delete_old_results")
+			So(err, ShouldBeNil)
+			defer resp.Body.Close()
+
+			// Failure to run query means we made no progress, therefore handler
+			// should fail.
+			So(resp.StatusCode, ShouldEqual, 500)
+		})
+
+		Convey("with datastore.Delete error", func() {
+			// Mock datastore.Delete failure.
+			var fb featureBreaker.FeatureBreaker
+			ctx, fb = featureBreaker.FilterRDS(ctx, nil)
+			fb.BreakFeatures(nil, "DeleteMulti")
+
+			// Send request.
+			resp, err := client.Get(srv.URL + "/internal/cron/delete_old_results")
+			So(err, ShouldBeNil)
+			defer resp.Body.Close()
+
+			// Failure to delete entities should not fail the handler.
+			So(resp.StatusCode, ShouldEqual, 200)
+		})
 	})
 }
