@@ -116,12 +116,14 @@ class DockerClient(object):
 
   def get_paused_containers(self):
     return [
-        Container(c) for c in self._client.containers.list(status='paused')
+        Container(c) for c in self._client.containers.list(
+            filters={'status': 'paused'})
     ]
 
   def get_running_containers(self):
     return [
-        Container(c) for c in self._client.containers.list(status='running')
+        Container(c) for c in self._client.containers.list(
+            filters={'status': 'running'})
     ]
 
   def get_container(self, device):

@@ -123,13 +123,16 @@ class FakeContainerList(object):
   def create(self, **kwargs):
     return FakeContainerBackend(kwargs['name'])
 
-  def list(self, status=None, **kwargs):  # pylint: disable=unused-argument
-    if not status:
-      return self._list
-    elif status == 'paused':
+  def list(self, filters=None, **kwargs):  # pylint: disable=unused-argument
+    if filters is None:
+      filters = {}
+    status = filters.get('status')
+    if status == 'paused':
       return [c for c in self._list if c.is_paused]
     elif status == 'running':
       return [c for c in self._list if not c.is_paused]
+    else:
+      return self._list
 
   def get(self, name):
     for c in self._list:

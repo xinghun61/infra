@@ -123,6 +123,7 @@ def launch(docker_client, android_devices, args):
   # before continuing.
   # TODO(bpastene): Find out how/why.
   for container in docker_client.get_paused_containers():
+    logging.warning('Unpausing container %s.', container.name)
     container.unpause()
 
   running_containers = docker_client.get_running_containers()
