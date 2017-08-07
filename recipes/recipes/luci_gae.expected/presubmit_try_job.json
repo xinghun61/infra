@@ -3,6 +3,21 @@
     "cmd": [
       "python",
       "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[CACHE]/infra_gclient_with_go"
+    ],
+    "infra_step": true,
+    "name": "ensure builder dir"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
       "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
@@ -29,6 +44,7 @@
       "--revision",
       "infra/go/src/github.com/luci/luci-go@origin/master"
     ],
+    "cwd": "[CACHE]/infra_gclient_with_go",
     "env_prefixes": {
       "PATH": [
         "RECIPE_PACKAGE_REPO[depot_tools]"
@@ -77,7 +93,7 @@
       "-m",
       "Committed patch"
     ],
-    "cwd": "[START_DIR]/infra/go/src/github.com/luci/gae",
+    "cwd": "[CACHE]/infra_gclient_with_go/infra/go/src/github.com/luci/gae",
     "infra_step": true,
     "name": "commit git patch"
   },
@@ -88,7 +104,7 @@
       "RECIPE_PACKAGE_REPO[depot_tools]/gclient.py",
       "runhooks"
     ],
-    "cwd": "[START_DIR]/infra",
+    "cwd": "[CACHE]/infra_gclient_with_go",
     "env": {
       "PATH": "<PATH>:RECIPE_PACKAGE_REPO[depot_tools]"
     },
@@ -98,21 +114,23 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra/go/env.py",
+      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "go",
       "version"
     ],
-    "name": "go third parties"
+    "cwd": "[CACHE]/infra_gclient_with_go",
+    "infra_step": true,
+    "name": "init infra go env"
   },
   {
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra/go/env.py",
+      "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "python",
       "RECIPE_PACKAGE_REPO[depot_tools]/presubmit_support.py",
       "--root",
-      "[START_DIR]/infra/go/src/github.com/luci/gae",
+      "[CACHE]/infra_gclient_with_go/infra/go/src/github.com/luci/gae",
       "--commit",
       "--verbose",
       "--verbose",
@@ -120,20 +138,20 @@
       "12853011",
       "--patchset",
       "1",
-      "--skip_canned",
-      "CheckRietveldTryJobExecution",
-      "--skip_canned",
-      "CheckTreeIsOpen",
-      "--skip_canned",
-      "CheckBuildbotPendingBuilds",
       "--rietveld_url",
       "https://codereview.chromium.org",
       "--rietveld_fetch",
       "--upstream",
       "1baeb5a8a8ba8145cc2d047ac027a5a5e30ab846",
       "--rietveld_email",
-      ""
+      "--skip_canned",
+      "CheckRietveldTryJobExecution",
+      "--skip_canned",
+      "CheckTreeIsOpen",
+      "--skip_canned",
+      "CheckBuildbotPendingBuilds"
     ],
+    "cwd": "[CACHE]/infra_gclient_with_go",
     "env": {
       "PRESUBMIT_BUILDER": "1"
     },
