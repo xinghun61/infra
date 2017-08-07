@@ -141,10 +141,11 @@ for module in modules:
   module_flags = flags[:]
   # Remove any test glob, which comes after semicolon (:) and convert to a path.
   module_path = module.split(':')[0].replace('/', os.sep)
-  module_flags.append(
-      '--coveragerc=%s' % os.path.join(INFRA_ROOT, module_path, '.coveragerc'))
-  module_flags.append(
-      '--html-report-subdir=%s' % module_path)
+  if not any(flag.startswith('--coveragerc') for flag in module_flags):
+    module_coveragerc = os.path.join(INFRA_ROOT, module_path, '.coveragerc')
+    module_flags.append('--coveragerc=%s' % module_coveragerc)
+  if not any(flag.startswith('--html-report-subdir') for flag in module_flags):
+    module_flags.append('--html-report-subdir=%s' % module_path)
   cmd = [python_bin, expect_tests_path, command, module] + module_flags
   module_exit_code = subprocess.call(cmd)
   exit_code = module_exit_code or exit_code
