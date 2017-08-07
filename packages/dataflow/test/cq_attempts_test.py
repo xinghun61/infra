@@ -98,11 +98,44 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     with self.assertRaises(AssertionError):
       self.combFn.extract_output(accumulator)
 
-
   def test_extract_logical_or(self):
     accumulator = [self.basic_event(action=self.combFn.ACTION_PATCH_COMMITTED)]
     attempt = self.combFn.extract_output(accumulator)
     self.assertTrue(attempt['committed'])
+
+  def test_filter_incomplete_attempts(self):
+    test_cases = [
+        {
+          'attempt': {
+            'first_start_msec': self.timestamp_msec,
+            'last_stop_msec': self.timestamp_msec,
+          },
+          'filtered_expected': False
+        },
+        {
+          'attempt': {
+            'first_start_msec': None,
+            'last_stop_msec': self.timestamp_msec,
+          },
+          'filtered_expected': True
+        },
+        {
+          'attempt': {
+            'first_start_msec': self.timestamp_msec,
+            'last_stop_msec': None,
+          },
+          'filtered_expected': True
+        }
+    ]
+    for test_case in test_cases:
+      attempt = test_case['attempt']
+      if test_case['filtered_expected']:
+        with self.assertRaises(StopIteration):
+          filtered_attempt = job.filter_incomplete_attempts(attempt).next()
+      else:
+        filtered_attempt = job.filter_incomplete_attempts(attempt).next()
+        self.assertEqual(filtered_attempt, attempt)
+
 
 if __name__ == '__main__':
   unittest.main()

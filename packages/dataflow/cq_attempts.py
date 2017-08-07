@@ -105,6 +105,9 @@ class CombineEventsToAttempt(beam.CombineFn):
           attempt.__dict__[field] = True
     return attempt.as_bigquery_row()
 
+def filter_incomplete_attempts(attempt):
+  if attempt.get('first_start_msec') and attempt.get('last_stop_msec'):
+    yield attempt
 
 def main():
   def key(event):
@@ -119,6 +122,7 @@ def main():
    | beam.GroupByKey()
    | beam.CombinePerKey(CombineEventsToAttempt())
    | beam.Map(lambda (k, v): v)
+   | beam.FlatMap(filter_incomplete_attempts)
    | chops_beam.BQWrite('cq_attempts'))
   p.run()
 
