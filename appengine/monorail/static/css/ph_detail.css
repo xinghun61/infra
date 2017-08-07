@@ -123,6 +123,7 @@ td.issueheader { background: #e5ecf9; }
 }
 
 .closed_colors #issuemeta { background: #eee; }
+.closed_colors #issue_meta_details { background: #eee; }
 
 .issuemetaheader {
     padding: 0 5px;
