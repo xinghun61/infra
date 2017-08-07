@@ -145,7 +145,7 @@ class ExtractSignalPipeline(BasePipeline):
             failure_log = buildbot.GetStepLog(master_name, builder_name,
                                               build_number, step_name,
                                               self.HTTP_CLIENT,
-                                              'ninja_output')
+                                              'json.output[ninja_info]')
           if (step_name != 'compile' or not use_ninja_output_log
               or not failure_log):
             try:
