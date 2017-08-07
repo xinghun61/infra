@@ -3,9 +3,12 @@
 # found in the LICENSE file.
 
 DEPS = [
+    'depot_tools/tryserver',
     'infra_checkout',
     'recipe_engine/context',
+    'recipe_engine/json',
     'recipe_engine/platform',
+    'recipe_engine/properties',
     'recipe_engine/python',
     'recipe_engine/step',
 ]
@@ -29,9 +32,20 @@ def RunSteps(api):
         print '\n'.join(os.listdir('./'))
     ''')
 
+  if 'presubmit' in api.properties.get('buildername', '').lower():
+    with api.tryserver.set_failure_hash():
+      co.run_presubmit_in_go_env()
+
 
 def GenTests(api):
   for plat in ('linux', 'mac', 'win'):
     yield (
         api.test(plat) +
-        api.platform(plat, 64))
+        api.platform(plat, 64) +
+        api.properties(path_config='generic'))
+
+  yield (api.test('presubmit') +
+         api.platform('linux', 64) +
+         api.properties.tryserver(path_config='generic',
+                                  buildername='presubmit') +
+         api.step_data('presubmit', api.json.output([[]])))

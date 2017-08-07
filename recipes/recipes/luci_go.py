@@ -36,35 +36,6 @@ PROPERTIES = {
 }
 
 LUCI_GO_PATH_IN_INFRA = 'infra/go/src/github.com/luci/luci-go'
-# NAMED_CACHE shared across various builders that rely on infra's Go env.
-NAMED_CACHE = 'infra_gclient_with_go'
-
-
-def _run_presubmit(api, co):
-  got_revision_properties = api.bot_update.get_project_revision_properties(
-      LUCI_GO_PATH_IN_INFRA)
-  upstream = co.bot_update_step.json.output['properties'].get(
-      got_revision_properties[0])
-  # The presubmit must be run with proper Go environment.
-  # infra/go/env.py takes care of this.
-  presubmit_cmd = [
-    'python',  # env.py will replace with this its sys.executable.
-    api.presubmit.presubmit_support_path,
-    '--root', co.patch_root_path,
-    '--commit',
-    '--verbose', '--verbose',
-    '--issue', api.properties['issue'],
-    '--patchset', api.properties['patchset'],
-    '--skip_canned', 'CheckRietveldTryJobExecution',
-    '--skip_canned', 'CheckTreeIsOpen',
-    '--skip_canned', 'CheckBuildbotPendingBuilds',
-    '--rietveld_url', api.properties['rietveld'],
-    '--rietveld_fetch',
-    '--upstream', upstream,
-    '--rietveld_email', ''
-  ]
-  with api.context(env={'PRESUBMIT_BUILDER': '1'}):
-    co.go_env_step(*presubmit_cmd, name='presubmit')
 
 
 def RunSteps(api, presubmit, GOARCH):
@@ -81,7 +52,7 @@ def RunSteps(api, presubmit, GOARCH):
     co.ensure_go_env()
     if presubmit:
       with api.tryserver.set_failure_hash():
-        _run_presubmit(api, co)
+        co.run_presubmit_in_go_env()
     else:
       co.go_env_step('go', 'build', 'github.com/luci/luci-go/...')
       co.go_env_step('go', 'test', 'github.com/luci/luci-go/...')

@@ -70,12 +70,10 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
           self.m.gclient.runhooks()
 
       @staticmethod
-      def ensure_go_env():
+      def ensure_go_env(infra_step=True):
         with self.m.context(cwd=path):
-          return self.m.python(
-              'init infra go env',
-              path.join('infra', 'go', 'env.py'), ['go', 'version'],
-              infra_step=True)
+          Checkout.go_env_step('go', 'version', name='init infra go env',
+                               infra_step=infra_step)
 
       @staticmethod
       def go_env_step(*args, **kwargs):
@@ -84,5 +82,31 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
         with self.m.context(cwd=path):
           return self.m.python(name, path.join('infra', 'go', 'env.py'),
                                args, **kwargs)
+
+      @staticmethod
+      def run_presubmit_in_go_env():
+        revs = self.m.bot_update.get_project_revision_properties(patch_root)
+        upstream = bot_update_step.json.output['properties'].get(revs[0])
+        # The presubmit must be run with proper Go environment.
+        presubmit_cmd = [
+          'python',  # env.py will replace with this its sys.executable.
+          self.m.presubmit.presubmit_support_path,
+          '--root', path.join(patch_root),
+          '--commit',
+          '--verbose', '--verbose',
+          # TODO(tandrii): gerrit support.
+          '--issue', self.m.properties['issue'],
+          '--patchset', self.m.properties['patchset'],
+          '--rietveld_url', self.m.properties['rietveld'],
+          '--rietveld_fetch',
+          '--upstream', upstream,
+          '--rietveld_email', ''
+
+          '--skip_canned', 'CheckRietveldTryJobExecution',
+          '--skip_canned', 'CheckTreeIsOpen',
+          '--skip_canned', 'CheckBuildbotPendingBuilds',
+        ]
+        with self.m.context(env={'PRESUBMIT_BUILDER': '1'}):
+          Checkout.go_env_step(*presubmit_cmd, name='presubmit')
 
     return Checkout()
