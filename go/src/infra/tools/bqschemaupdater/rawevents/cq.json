@@ -39,6 +39,44 @@
 			"name": "dry_run",
 			"description": "True if CQ is in dry-run mode.",
 			"type": "BOOLEAN"
+		},
+		{
+			"name": "failure_reason",
+			"description": "Detailed reason on failure to commit.",
+			"type": "RECORD",
+			"schema": [
+				{
+					"name": "verifier",
+					"type": "STRING"
+				},
+				{
+					"name": "fail_type",
+					"type": "STRING"
+				},
+				{
+					"name": "failed_try_jobs",
+					"type": "RECORD",
+					"is_repeated": true,
+					"schema": [
+						{
+							"name": "master",
+							"type": "STRING"
+						},
+						{
+							"name": "builder",
+							"type": "STRING"
+						},
+						{
+							"name": "build_id",
+							"type": "INTEGER"
+						},
+						{
+							"name": "fail_type",
+							"type": "STRING"
+						}
+					]
+				}
+			]
 		}
 	]
 }
