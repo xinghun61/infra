@@ -97,6 +97,7 @@ _MOCK_ACTION_SETTINGS = {
     'commit_gerrit_revert': False,
     'culprit_commit_limit_hours': 24,
     'auto_commit_daily_threshold': 4,
+    'auto_revert_daily_threshold': 10,
 }
 
 _MOCK_CHECK_FLAKE_SETTINGS = {
@@ -964,7 +965,7 @@ class ConfigTest(testing.AppengineTestCase):
             'download_interval_seconds': 10,
             'memcache_master_download_expiration_seconds': 3600,
             'use_chrome_build_extract': False,
-            'use_ninja_output_log': 'blabla' # Should be a bool.
+            'use_ninja_output_log': 'blabla'  # Should be a bool.
         }))
     self.assertTrue(
         config._ValidateDownloadBuildDataSettings({
@@ -1108,6 +1109,7 @@ class ConfigTest(testing.AppengineTestCase):
             'commit_gerrit_revert': 'False',  # Should be boolean.
             'culprit_commit_limit_hours': 24,
             'auto_commit_daily_threshold': 4,
+            'auto_revert_daily_threshold': 10,
         }))
     self.assertFalse(
         config._ValidateActionSettings({
@@ -1118,6 +1120,7 @@ class ConfigTest(testing.AppengineTestCase):
             'commit_gerrit_revert': False,
             'culprit_commit_limit_hours': '24',  # Should be int.
             'auto_commit_daily_threshold': 4,
+            'auto_revert_daily_threshold': 10,
         }))
     self.assertFalse(
         config._ValidateActionSettings({
@@ -1128,6 +1131,18 @@ class ConfigTest(testing.AppengineTestCase):
             'commit_gerrit_revert': False,
             'culprit_commit_limit_hours': 24,
             'auto_commit_daily_threshold': '4',  # Should be int.
+            'auto_revert_daily_threshold': 10,
+        }))
+    self.assertFalse(
+        config._ValidateActionSettings({
+            'cr_notification_build_threshold': 2,
+            'cr_notification_latency_limit_minutes': 1000,
+            'cr_notification_should_notify_flake_culprit': True,
+            'revert_compile_culprit': True,
+            'commit_gerrit_revert': False,
+            'culprit_commit_limit_hours': 24,
+            'auto_commit_daily_threshold': 4,
+            'auto_revert_daily_threshold': '10',  # Should be int.
         }))
     self.assertTrue(
         config._ValidateActionSettings({
@@ -1138,6 +1153,7 @@ class ConfigTest(testing.AppengineTestCase):
             'commit_gerrit_revert': False,
             'culprit_commit_limit_hours': 24,
             'auto_commit_daily_threshold': 4,
+            'auto_revert_daily_threshold': 10,
         }))
 
   def testValidateFlakeAnalyzerTryJobRerunSettings(self):

@@ -125,6 +125,7 @@ _DEFAULT_ACTION_SETTINGS = {
     'commit_gerrit_revert': True,
     'culprit_commit_limit_hours': 24,
     'auto_commit_daily_threshold': 4,
+    'auto_revert_daily_threshold': 10,
 }
 
 _DEFAULT_CHECK_FLAKE_SETTINGS = {

@@ -248,6 +248,7 @@ class MastersTest(wf_testcase.WaterfallTestCase):
         'commit_gerrit_revert': True,
         'culprit_commit_limit_hours': 24,
         'auto_commit_daily_threshold': 4,
+        'auto_revert_daily_threshold': 10,
     }, waterfall_config.GetActionSettings())
 
   def testGetCheckFlakeSettings(self):
