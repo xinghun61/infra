@@ -27,7 +27,7 @@ func deleteOldResultsHandler(rc *router.Context) {
 	// Buffer the channel to 2x batch size to ensure that we are not sending
 	// keys faster than we can schedule deletion tasks.
 	keyCh := make(chan *datastore.Key, 1000)
-	progress := false
+	entitiesDeleted := 0
 	var queryErr error
 	go func() {
 		defer close(keyCh)
@@ -48,7 +48,6 @@ func deleteOldResultsHandler(rc *router.Context) {
 		doDelete := func() {
 			keys2 := keys
 			workC <- func() error {
-				logging.Infof(c, "Deleting %d entities", len(keys2))
 				if err := datastore.Delete(c, keys2); err != nil {
 					// It may happen that a TestFile entity has been deleted, while
 					// DataEntry entities referenced from it are not, which may
@@ -59,9 +58,9 @@ func deleteOldResultsHandler(rc *router.Context) {
 					// approximately 1 year we'll be able to detect all entities
 					// without a timestamp as dangling and remove them. See
 					// https://crbug.com/741236 for more details.
-					logging.WithError(err).Warningf(c, "failed to delete some entities")
+					logging.WithError(err).Warningf(c, "Failed to delete some entities")
 				} else {
-					progress = true
+					entitiesDeleted += len(keys2)
 				}
 				return nil
 			}
@@ -80,16 +79,17 @@ func deleteOldResultsHandler(rc *router.Context) {
 		}
 	})
 
-	if queryErr != nil && !progress {
+	if queryErr != nil && entitiesDeleted == 0 {
 		// Normally the error would be datastore timeout from the Run operation
 		// and we should not log it because we'll simply continue deleting
 		// entities in the next cron job run. However, if for some chance
 		// nothing got deleted before we've received the error, it may mean we
 		// are not making progress and thus should log an error.
-		logging.WithError(queryErr).Errorf(c, "query failed, no progress was made")
+		logging.WithError(queryErr).Errorf(c, "Query failed, no progress was made")
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
+	logging.Infof(c, "Deleted %d entities", entitiesDeleted)
 	w.WriteHeader(http.StatusOK)
 }
