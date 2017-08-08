@@ -107,7 +107,7 @@ class ClusterfuzzData(CrashData):
     self._sanitizer = _SANITIZER_SHORT_NAME_TO_SANITIZER_TYPE.get(
         customized_data['sanitizer'])
     self._job_type = customized_data['job_type']
-    self._testcase = customized_data['testcase']
+    self._testcase = str(customized_data['testcase'])
 
   @property
   def crashed_type(self):

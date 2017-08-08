@@ -195,10 +195,14 @@ class PredatorApp(object):
       return False
 
     model = self.GetAnalysis(crash_data.identifiers)
+    # Check if we already successfully ran the analysis.
     if model and not model.failed:
-      logging.info('The analysis of %s has already been done.',
-                   repr(crash_data.identifiers))
-      return False
+      if not crash_data.redo:
+        logging.info('The analysis of %s has already been done.',
+                     repr(crash_data.identifiers))
+        return False
+
+      logging.info('Force redo crash %s', repr(crash_data.identifiers))
 
     model = model or self.CreateAnalysis(crash_data.identifiers)
     model.Initialize(crash_data)

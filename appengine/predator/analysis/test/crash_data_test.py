@@ -30,6 +30,7 @@ class CrashDataTest(AnalysisTestCase):
                      raw_crash_data['signature'])
     self.assertEqual(crash_data.platform,
                      raw_crash_data['platform'])
+    self.assertFalse(crash_data.redo)
 
     crash_data.platform = 'new platform'
     self.assertEqual(crash_data.platform, 'new platform')

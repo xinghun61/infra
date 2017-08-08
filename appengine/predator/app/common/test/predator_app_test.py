@@ -10,6 +10,7 @@ from google.appengine.api import app_identity
 
 from analysis.type_enums import CrashClient
 from common.appengine_testcase import AppengineTestCase
+from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
 from common.model.cracas_crash_analysis import CracasCrashAnalysis
 from common.model.crash_analysis import CrashAnalysis
 from libs import analysis_status
@@ -49,6 +50,21 @@ class PredatorTest(AppengineTestCase):
         signature='Blacklist marker signature')
     crash_data = self.predator.GetCrashData(raw_crash_data)
     self.assertFalse(self.predator.NeedsNewAnalysis(crash_data))
+
+  def testNeedNewAnalysisRedoIfNoAnalysisYet(self):
+    """Tests that ``NeedsNewAnalysis`` returns True if crash is a redo."""
+    raw_crash_data = self.GetDummyClusterfuzzData(redo=True)
+    crash_data = self.predator.GetCrashData(raw_crash_data)
+    self.assertTrue(self.predator.NeedsNewAnalysis(crash_data))
+
+  def testNeedNewAnalysisRedoAnAnalyzedCrash(self):
+    """Tests that ``NeedsNewAnalysis`` returns True for an analyzed crash."""
+    raw_crash_data = self.GetDummyClusterfuzzData(redo=True)
+    crash_data = self.predator.GetCrashData(raw_crash_data)
+    crash_model = self.predator.CreateAnalysis(crash_data.identifiers)
+    crash_model.status = analysis_status.COMPLETED
+    crash_model.put()
+    self.assertTrue(self.predator.NeedsNewAnalysis(crash_data))
 
   def testDoesNotNeedNewAnalysisIfCrashAnalyzedBefore(self):
     """Tests that ``NeedsNewAnalysis`` returns False if crash analyzed."""

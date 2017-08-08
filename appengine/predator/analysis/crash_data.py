@@ -58,6 +58,7 @@ class CrashData(object):
     # The raw_stacktrace can be a string or a list of strings, or any json
     # format data.
     self._raw_stacktrace = crash_data['stack_trace'] or ''
+    self._redo = crash_data.get('redo', False)
 
   @property
   def raw_stacktrace(self):
@@ -70,6 +71,10 @@ class CrashData(object):
   @property
   def signature(self):
     return self._signature
+
+  @property
+  def redo(self):
+    return self._redo
 
   @property
   def platform(self):

@@ -126,8 +126,4 @@ class AppengineTestCase(AnalysisTestCase, TestCase):  # pragma: no cover
       def CreateAnalysis(self, crash_identifiers):
         return CrashAnalysis.Create(crash_identifiers)
 
-      @property
-      def identifiers(self):
-        return 'crash_identifiers'
-
     return MockPredatorApp()

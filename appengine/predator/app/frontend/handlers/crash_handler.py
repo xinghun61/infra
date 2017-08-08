@@ -101,13 +101,6 @@ def NeedNewAnalysis(json_crash_data):
       CachedGitilesRepository.Factory(HttpClientAppengine()),
       CrashConfig.Get())
   crash_data = predator_client.GetCrashData(json_crash_data)
-  # Detect the regression range, and decide if we actually need to
-  # run a new analysis or not.
-  if json_crash_data.get('redo'):
-    logging.info('Force redo crash %s',
-                 repr(json_crash_data['crash_identifiers']))
-    return True, crash_data
-
   return predator_client.NeedsNewAnalysis(crash_data), crash_data
 
 
