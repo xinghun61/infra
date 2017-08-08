@@ -1,3 +1,22 @@
+# Release Notes sheriff-o-matic 2017-08-08
+
+- 4 commits, 1 bugs affected since e22fada (2017-08-01T22:52:55Z)
+- 2 Authors:
+  - martiniss@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [Remove unneeded line from som-app.html](https://chromium-review.googlesource.com/602519) (martiniss@chromium.org)
+- [SoM: Upgrade som-annotations.html](https://chromium-review.googlesource.com/602616) (zhangtiff@google.com)
+- [SoM: Upgrade som-alert-category to ES6.](https://chromium-review.googlesource.com/598465) (zhangtiff@google.com)
+- [SoM: Update webcomponents import.](https://chromium-review.googlesource.com/596775) (zhangtiff@google.com)
+
+## Bugs updated, by author
+- zhangtiff@google.com:
+  -  [https://crbug.com/646101](https://crbug.com/646101)
+
+
 # Release Notes sheriff-o-matic 2017-08-01
 
 - 11 commits, 4 bugs affected since 1a1f932 (2017-07-25T23:32:04Z)
