@@ -184,6 +184,121 @@ func TestUpdateExpectations(t *testing.T) {
 	})
 }
 
+func TestExpectationStatement(t *testing.T) {
+	Convey("expand modifiers", t, func() {
+		es := &ExpectationStatement{
+			Original:     "[ Mac ] /third_party/test_dir/foo_bar/baz.html [ FAIL ]",
+			TestName:     "/third_party/test_dir/foo_bar/baz.html",
+			Expectations: []string{"FAIL"},
+			Modifiers:    []string{"Mac"},
+		}
+
+		So(es.ExpandModifiers(), ShouldResemble, []string{"Mac", "retina", "mac10.9", "mac10.11", "mac10.12"})
+
+		So(es.ModifierMatch("Mac10.9"), ShouldEqual, true)
+	})
+}
+
+func TestForTest(t *testing.T) {
+	Convey("basic", t, func() {
+		fs := &FileSet{
+			Files: []*File{
+				{
+					Path: "/some/path1",
+					Expectations: []*ExpectationStatement{
+						{
+							Original:     "/third_party/test_name1 [ PASS ]",
+							TestName:     "/third_party/test_name1",
+							Expectations: []string{"PASS"},
+						},
+						{
+							Original:     "/third_party/test_name1b [ FAIL ]",
+							TestName:     "/third_party/test_name1b",
+							Expectations: []string{"FAIL"},
+						},
+					},
+				},
+				{
+					Path: "/some/path2",
+					Expectations: []*ExpectationStatement{
+						{
+							Original:     "/third_party/test_name2 [ PASS ]",
+							TestName:     "/third_party/test_name2",
+							Expectations: []string{"PASS"},
+						},
+					},
+				},
+				{
+					Path: "/some/path3",
+					Expectations: []*ExpectationStatement{
+						{
+							Original:     "/third_party/test_dir/foo_bar [ PASS ]",
+							TestName:     "/third_party/test_dir/foo_bar",
+							Expectations: []string{"PASS"},
+						},
+					},
+				},
+				{
+					Path: "/some/path3",
+					Expectations: []*ExpectationStatement{
+						{
+							Original:     "[ Mac ] /third_party/test_dir/foo_bar/baz.html [ FAIL ]",
+							TestName:     "/third_party/test_dir/foo_bar/baz.html",
+							Expectations: []string{"FAIL"},
+							Modifiers:    []string{"Mac"},
+						},
+					},
+				},
+				{
+					Path: "/some/path3",
+					Expectations: []*ExpectationStatement{
+						{
+							Original:     "[ Mac10.12 ] /third_party/test_dir/zippy.html [ FAIL ]",
+							TestName:     "/third_party/test_dir/zippy.html",
+							Expectations: []string{"FAIL"},
+							Modifiers:    []string{"Mac10.12"},
+						},
+					},
+				},
+			},
+		}
+
+		Convey("no matches", func() {
+			matches := fs.ForTest("foo", "")
+			So(len(matches), ShouldEqual, 0)
+		})
+
+		Convey("one match", func() {
+			matches := fs.ForTest("/third_party/test_name2", "")
+			So(len(matches), ShouldEqual, 1)
+		})
+
+		Convey("multiple matches", func() {
+			matches := fs.ForTest("/third_party/test_dir/foo_bar/zippy.html", "")
+			So(len(matches), ShouldEqual, 1)
+			So(matches[0].Original, ShouldEqual, "/third_party/test_dir/foo_bar [ PASS ]")
+		})
+
+		Convey("modifier expansion", func() {
+			matches := fs.ForTest("/third_party/test_dir/foo_bar/baz.html", "Mac10.11")
+			So(len(matches), ShouldEqual, 2)
+			// Eventually should only return 1 result. For now, most specific first.
+			So(matches[0].Original, ShouldEqual, "[ Mac ] /third_party/test_dir/foo_bar/baz.html [ FAIL ]")
+			So(matches[1].Original, ShouldEqual, "/third_party/test_dir/foo_bar [ PASS ]")
+
+			// The first (and eventually, only) ExpectationStatement should override the rest.
+			So(matches[0].Overrides(matches[1]), ShouldBeTrue)
+		})
+
+		Convey("rule has similar modifier, but doesn't apply", func() {
+			matches := fs.ForTest("/third_party/test_dir/zippy.html", "Mac10.11")
+			So(len(matches), ShouldEqual, 0)
+			matches = fs.ForTest("/third_party/test_dir/zippy.html", "Mac10.12")
+			So(len(matches), ShouldEqual, 1)
+		})
+	})
+}
+
 type giMock struct {
 	info.RawInterface
 	token  string
