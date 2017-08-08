@@ -27,6 +27,7 @@ from google.appengine.ext import ndb
 
 from scripts.run_predator import GetCulprits
 from scripts.run_predator import PREDATOR_RESULTS_DIRECTORY
+from scripts import setup
 
 try:
   os.makedirs(PREDATOR_RESULTS_DIRECTORY)
@@ -68,13 +69,11 @@ def RunPredator():
   argparser.add_argument(
       '--app',
       '-a',
-      default=os.getenv('APP_ID', 'predator-for-me'),
+      default=setup.DEFAULT_APP_ID,
       help=('App id of the App engine app that query needs to access. '
-            'Defualts to predator-for-me-staging. You can also set enviroment '
-            'variable by \'export APP_ID=your-app-id\' to replace '
-            'the default value.\nNOTE, only appspot app ids are supported, '
+            'Defaults to \'%s\'. NOTE, only appspot app ids are supported, '
             'the app_id of googleplex app will have access issues '
-            'due to internal proxy. '))
+            'due to internal proxy. ') % setup.DEFAULT_APP_ID)
 
   argparser.add_argument(
       '--verbose',

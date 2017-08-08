@@ -17,6 +17,7 @@ script_util.SetUpSystemPaths(_ROOT_DIR)
 
 from analysis.type_enums import CrashClient
 from scripts.crash_printer import crash_printer
+from scripts import setup
 
 _DATETIME_FORMAT = '%Y-%m-%d'
 _TODAY = date.today().strftime(_DATETIME_FORMAT)
@@ -53,10 +54,9 @@ if __name__ == '__main__':
   argparser.add_argument(
       '--app',
       '-a',
-      default=os.getenv('APP_ID', 'predator-for-me-staging'),
+      default=setup.DEFAULT_APP_ID,
       help=('App id of the App engine app that query needs to access. '
-            'Defualts to findit-for-me-dev. You can set enviroment variable by'
-            ' \'export APP_ID=your-app-id\' to replace the default value.'))
+            'Defaults to \'%s\'.') % setup.DEFAULT_APP_ID)
 
   argparser.add_argument(
       '--signature',

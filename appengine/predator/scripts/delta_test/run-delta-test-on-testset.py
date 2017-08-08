@@ -24,6 +24,7 @@ from local_libs import remote_api
 
 from scripts.delta_test import delta_util
 from scripts.delta_test.delta_test import EvaluateDeltaOnTestSet
+from scripts import setup
 
 DELTA_RESULTS_DIRECTORY = os.path.join(os.path.dirname(__file__),
                                        'delta_results')
@@ -77,13 +78,11 @@ def RunDeltaTest():
   argparser.add_argument(
       '--app',
       '-a',
-      default=os.getenv('APP_ID', 'predator-for-me'),
+      default=setup.DEFAULT_APP_ID,
       help=('App id of the App engine app that query needs to access. '
-            'Defualts to predator-for-me-staging. You can also set enviroment '
-            'variable by \'export APP_ID=your-app-id\' to replace '
-            'the default value.\nNOTE, only appspot app ids are supported, '
+            'Defaults to \'%s\'. NOTE, only appspot app ids are supported, '
             'the app_id of googleplex app will have access issues '
-            'due to internal proxy. '))
+            'due to internal proxy.') % setup.DEFAULT_APP_ID)
 
   argparser.add_argument(
       '--verbose',

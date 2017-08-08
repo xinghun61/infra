@@ -22,6 +22,7 @@ script_util.SetUpSystemPaths(_ROOT_DIR)
 from analysis.type_enums import CrashClient
 from scripts.delta_test import delta_test
 from scripts.delta_test import delta_util
+from scripts import setup
 
 
 _TODAY = date.today().strftime('%Y-%m-%d')
@@ -31,7 +32,6 @@ _A_YEAR_AGO = (date.today() - timedelta(days=365)).strftime('%Y-%m-%d')
 _MAX_BATCH_SIZE = 1000
 _DEFAULT_BATCH_SIZE = _MAX_BATCH_SIZE
 _DEFAULT_MAX_N = 100
-
 DELTA_RESULTS_DIRECTORY = os.path.join(os.path.dirname(__file__),
                                        'delta_results')
 
@@ -80,13 +80,11 @@ def RunDeltaTest():
   argparser.add_argument(
       '--app',
       '-a',
-      default=os.getenv('APP_ID', 'predator-for-me'),
+      default=setup.DEFAULT_APP_ID,
       help=('App id of the App engine app that query needs to access. '
-            'Defualts to predator-for-me-staging. You can also set enviroment '
-            'variable by \'export APP_ID=your-app-id\' to replace '
-            'the default value.\nNOTE, only appspot app ids are supported, '
+            'Defaults to \'%s\'. NOTE, only appspot app ids are supported, '
             'the app_id of googleplex app will have access issues '
-            'due to internal proxy. '))
+            'due to internal proxy. ') % setup.DEFAULT_APP_ID)
 
   argparser.add_argument(
       '--since',
