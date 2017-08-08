@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import threading
 
 from google.appengine.ext import ndb
 from google.appengine.ext.ndb import msgprop
@@ -40,6 +41,10 @@ class RequestManager(ndb.Model):
   running = ndb.KeyProperty(repeated=True)
   completed = ndb.KeyProperty(repeated=True)
   num_scheduled = ndb.IntegerProperty(default=0)
+  # Disabling in-context cache for consistency because this code will be called
+  # from different threads and each thread has its own context/cache
+  # https://cloud.google.com/appengine/docs/standard/python/ndb/cache#incontext
+  _use_cache = False
 
   @staticmethod
   def load():
