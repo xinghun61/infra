@@ -691,7 +691,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssuesLabels()
     self.mox.ReplayAll()
     self.services.issue._UpdateIssuesLabels(
-      self.cnxn, [issue], 789, commit=False)
+      self.cnxn, [issue], commit=False)
     self.mox.VerifyAll()
 
   def testUpdateIssuesFields_Empty(self):

@@ -795,8 +795,7 @@ class IssueService(object):
       id=issue.issue_id, commit=False)
 
     self._UpdateIssuesSummary(cnxn, [issue], commit=False)
-    self._UpdateIssuesLabels(
-        cnxn, [issue], issue.project_id, commit=False)
+    self._UpdateIssuesLabels(cnxn, [issue], commit=False)
     self._UpdateIssuesFields(cnxn, [issue], commit=False)
     self._UpdateIssuesComponents(cnxn, [issue], commit=False)
     self._UpdateIssuesCc(cnxn, [issue], commit=False)
@@ -823,9 +822,6 @@ class IssueService(object):
     """
     if not issues:
       return
-
-    project_id = issues[0].project_id  # All must be in the same project.
-    assert all(issue.project_id == project_id for issue in issues)
 
     for issue in issues:  # slow, but mysql will not allow REPLACE rows.
       if issue.assume_stale:
@@ -858,8 +854,7 @@ class IssueService(object):
       self.issue_tbl.Update(cnxn, delta, id=issue.issue_id, commit=False)
 
     if not update_cols:
-      self._UpdateIssuesLabels(
-          cnxn, issues, project_id, commit=False)
+      self._UpdateIssuesLabels(cnxn, issues, commit=False)
       self._UpdateIssuesCc(cnxn, issues, commit=False)
       self._UpdateIssuesFields(cnxn, issues, commit=False)
       self._UpdateIssuesComponents(cnxn, issues, commit=False)
@@ -902,7 +897,7 @@ class IssueService(object):
         [(issue.issue_id, issue.summary) for issue in issues],
         replace=True, commit=commit)
 
-  def _UpdateIssuesLabels(self, cnxn, issues, project_id, commit=True):
+  def _UpdateIssuesLabels(self, cnxn, issues, commit=True):
     """Update the Issue2Label table rows for the given issues."""
     label_rows = []
     for issue in issues:
@@ -911,12 +906,14 @@ class IssueService(object):
       # that could be slow. Solution is to add all new labels in a batch first.
       label_rows.extend(
           (issue.issue_id,
-           self._config_service.LookupLabelID(cnxn, project_id, label), False,
+           self._config_service.LookupLabelID(cnxn, issue.project_id, label),
+           False,
            issue_shard)
           for label in issue.labels)
       label_rows.extend(
           (issue.issue_id,
-           self._config_service.LookupLabelID(cnxn, project_id, label), True,
+           self._config_service.LookupLabelID(cnxn, issue.project_id, label),
+           True,
            issue_shard)
           for label in issue.derived_labels)
 
