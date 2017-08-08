@@ -621,7 +621,7 @@ func (at *AggregateTest) Merge(other AggregateTest) error {
 		if leaf1, ok := (*at)[k].(*AggregateTestLeaf); ok {
 			leaf2, ok := v.(*AggregateTestLeaf)
 			if !ok {
-				return errors.New("model: Merge: expected *AggregateTestLeaf")
+				return fmt.Errorf("model: Merge: expected *AggregateTestLeaf, but got: %#v", v)
 			}
 			if err := leaf1.Merge(leaf2); err != nil {
 				return err
@@ -632,11 +632,11 @@ func (at *AggregateTest) Merge(other AggregateTest) error {
 		// Not leaf node: merge subtree recursively.
 		at1, ok := (*at)[k].(AggregateTest)
 		if !ok {
-			return errors.New("model: Merge: expected AggregateTest")
+			return fmt.Errorf("model: Merge (*at)[%s]: expected AggregateTest, but got: %#v", k, (*at)[k])
 		}
 		at2, ok := v.(AggregateTest)
 		if !ok {
-			return errors.New("model: Merge: expected AggregateTest")
+			return fmt.Errorf("model: Merge (v): expected AggregateTest, but got: %#v", v)
 		}
 		if err := at1.Merge(at2); err != nil {
 			return err
