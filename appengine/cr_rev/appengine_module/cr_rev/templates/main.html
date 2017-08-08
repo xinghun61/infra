@@ -5,8 +5,16 @@
         <p>
         <div class="col-md-10">
           <h3> welcome to cr-rev! </h3>
-          <p>usage: crrev.com/&lt;svn revision, git commit position, git sha,
-          rietveld issue&gt;</p>
+          <p>Usage:
+            <ul>
+              <li>crrev.com/&lt;svn revision, git commit position, git sha,
+                  rietveld issue&gt;</li>
+              <li>crrev.com/c/&lt;gerrit CL number&gt; (chromium-review)</li>
+              <li>crrev.com/i/&lt;gerrit CL number&gt; (chrome-internal-review)</li>
+            </ul>
+          </p>
+          <p>You can append subpaths to each short rev too to navigate to
+             subdirs in gitiles.  e.g. crrev.com/&lt;git sha1&gt;/tools/OWNERS</p>
           <hr/>
           <hr/>
           <p>check out the api at the <a href="https://cr-rev.appspot.com/_ah/api/explorer">the api explorer</a></p>

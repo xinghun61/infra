@@ -570,6 +570,8 @@ def fetch_default_number(number):
 
 def calculate_redirect(arg):
   """Given a query, return a redirect URL depending on a fixed set of rules."""
+  # NB: When adding new matchers, please update the usage in main.html.
+
   if NUMBER_REGEX.match(arg):
     numbering = fetch_default_number(arg)
     if numbering:
