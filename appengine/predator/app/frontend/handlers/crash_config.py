@@ -40,10 +40,12 @@ def _IsListOfStrings(obj):
                                        for entry in obj)
 
 
+# TODO(katesonia): Raise exceptions instead of return False if config
+# validation failed.
 def _ValidateChromeCrashConfig(chrome_crash_config):
   # TODO(cweakliam): update the pubsub topic once we migrate predator project id
   # from 'google.com: findit-for-me' to 'predator-for-me'
-  """Checks that a chrome_crash__config dict is properly formatted.
+  """Checks that a chrome_crash_config dict is properly formatted.
 
   Args:
     chrome_crash_config (dict): A dictionary that provides configuration of
@@ -88,6 +90,43 @@ def _ValidateChromeCrashConfig(chrome_crash_config):
       return False
 
   top_n = chrome_crash_config.get('top_n')
+  if not isinstance(top_n, int):
+    return False
+
+  return True
+
+
+def _ValidateClusterfuzzConfig(clusterfuzz_config):
+  """Checks that a clusterfuzz_config dict is properly formatted.
+
+  Args:
+    chrome_crash_config (dict): A dictionary that provides configuration of
+      chrome crash clients - Cracas and Fracas.
+      {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'signature_blacklist_markers': [],
+        'blacklist_crash_type': ['out-of-memory'],
+        'top_n': 7
+      }
+  """
+  if not isinstance(clusterfuzz_config, dict):
+    return False
+
+  analysis_result_pubsub_topic = clusterfuzz_config.get(
+      'analysis_result_pubsub_topic')
+  if not isinstance(analysis_result_pubsub_topic, basestring):
+    return False
+
+  signature_blacklist_markers = clusterfuzz_config.get(
+      'signature_blacklist_markers', [])
+  if not _IsListOfStrings(signature_blacklist_markers):
+    return False
+
+  blacklist_crash_type = clusterfuzz_config.get('blacklist_crash_type')
+  if not _IsListOfStrings(blacklist_crash_type):
+    return False
+
+  top_n = clusterfuzz_config.get('top_n')
   if not isinstance(top_n, int):
     return False
 
@@ -227,6 +266,7 @@ def _ValidateProjectClassifierConfig(project_classifier_config):
 _CONFIG_VALIDATION_FUNCTIONS = {
     'fracas': _ValidateChromeCrashConfig,
     'cracas': _ValidateChromeCrashConfig,
+    'clusterfuzz': _ValidateClusterfuzzConfig,
     'uma_sampling_profiler': _ValidateUMASamplingProfilerConfig,
     'component_classifier': _ValidateComponentClassifierConfig,
     'project_classifier': _ValidateProjectClassifierConfig
@@ -275,6 +315,7 @@ class CrashConfig(BaseHandler):
     data = {
         'fracas': settings.fracas,
         'cracas': settings.cracas,
+        'clusterfuzz': settings.clusterfuzz,
         'uma_sampling_profiler': settings.uma_sampling_profiler,
         'component_classifier': settings.component_classifier,
         'project_classifier': settings.project_classifier,

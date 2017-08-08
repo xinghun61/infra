@@ -8,6 +8,7 @@
     var crash = {};
     crash.fracas = {{ fracas | tojson | safe }};
     crash.cracas = {{ cracas | tojson | safe }};
+    crash.clusterfuzz = {{ clusterfuzz | tojson | safe }};
     crash.uma_sampling_profiler = {{ uma_sampling_profiler | tojson | safe }};
     crash.component_classifier = {{ component_classifier | tojson | safe }};
     crash.project_classifier = {{ project_classifier | tojson | safe }};
@@ -24,6 +25,7 @@
       var newConfig = {
         'fracas': getJsonOfTextarea('fracas'),
         'cracas': getJsonOfTextarea('cracas'),
+        'clusterfuzz': getJsonOfTextarea('clusterfuzz'),
         'uma_sampling_profiler': getJsonOfTextarea('uma-sampling-profiler'),
         'component_classifier': getJsonOfTextarea('component-classifier'),
         'project_classifier': getJsonOfTextarea('project-classifier'),
@@ -41,6 +43,7 @@
       $('#save-button').click(save);
       $('#fracas').val(getStringFromJson(crash.fracas));
       $('#cracas').val(getStringFromJson(crash.cracas));
+      $('#clusterfuzz').val(getStringFromJson(crash.clusterfuzz));
       $('#uma-sampling-profiler').val(getStringFromJson(
             crash.uma_sampling_profiler));
       $('#component-classifier').val(getStringFromJson(crash.component_classifier));
@@ -57,6 +60,10 @@
   <div>
     Settings for Cracas:<br>
     <textarea id="cracas" rows="20" cols="80"></textarea>
+  </div>
+  <div>
+    Settings for Clusterfuzz:<br>
+    <textarea id="clusterfuzz" rows="20" cols="80"></textarea>
   </div>
   <div>
     Settings for UMA Sampling Profiler:<br>

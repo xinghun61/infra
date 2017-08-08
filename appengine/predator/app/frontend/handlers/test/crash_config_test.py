@@ -25,6 +25,14 @@ _MOCK_FRACAS_CONFIG = {
     'top_n': 7
 }
 
+_MOCK_CLUSTERFUZZ_CONFIG = {
+    'analysis_result_pubsub_topic': (
+        'projects/google.com:findit-for-me/topics/result-for-clusterfuzz'),
+    'signature_blacklist_markers': ['Blacklist marker'],
+    'blacklist_crash_type': ['out-of-memory'],
+    'top_n': 7
+}
+
 _MOCK_UMA_SAMPLING_PROFILER_CONFIG = {
     'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
     'signature_blacklist_markers': ['Blacklist marker'],
@@ -60,6 +68,7 @@ _MOCK_PROJECT_CONFIG = {
 _MOCK_CONFIG = {
     'fracas': _MOCK_FRACAS_CONFIG,
     'cracas': _MOCK_FRACAS_CONFIG,
+    'clusterfuzz': _MOCK_CLUSTERFUZZ_CONFIG,
     'uma_sampling_profiler': _MOCK_UMA_SAMPLING_PROFILER_CONFIG,
     'component_classifier': _MOCK_COMPONENT_CONFIG,
     'project_classifier': _MOCK_PROJECT_CONFIG
@@ -143,6 +152,61 @@ class CrashConfigTest(TestCase):
 
     self.assertTrue(crash_config._ValidateChromeCrashConfig(
         _MOCK_FRACAS_CONFIG))
+
+  def testValidateClusterfuzzConfig(self):
+    """Tests ``_ValidateClusterfuzzConfig`` function."""
+    # Return False if config is not a dict
+    self.assertFalse(crash_config._ValidateClusterfuzzConfig(None))
+
+    # Return False if config doesn't have "analysis_result_pubsub_topic".
+    self.assertFalse(crash_config._ValidateClusterfuzzConfig({}))
+
+    # Return False if "analysis_result_pubsub_topic" is not a string.
+    config = {
+        'analysis_result_pubsub_topic': 0
+    }
+    self.assertFalse(crash_config._ValidateClusterfuzzConfig(config))
+
+    # Return False if config doesn't have "signature_blacklist_markers".
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+    }
+    self.assertFalse(crash_config._ValidateClusterfuzzConfig(config))
+
+    # Return False if entries of "signature_blacklist_markers" are not strs.
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'signature_blacklist_markers': [None]
+    }
+    self.assertFalse(crash_config._ValidateClusterfuzzConfig(config))
+
+    # Return False if config doesn't have
+    # "blacklist_crash_type".
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'signature_blacklist_markers': []
+    }
+    self.assertFalse(crash_config._ValidateClusterfuzzConfig(config))
+
+    # Return False if "blacklist_crash_type" is not well
+    # formatted.
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'signature_blacklist_markers': [],
+        'blacklist_crash_type': {}
+    }
+    self.assertFalse(crash_config._ValidateClusterfuzzConfig(config))
+
+    # Return False if config doesn't have "top_n".
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'signature_blacklist_markers': [],
+        'blacklist_crash_type': []
+    }
+    self.assertFalse(crash_config._ValidateClusterfuzzConfig(config))
+
+    self.assertTrue(crash_config._ValidateClusterfuzzConfig(
+        _MOCK_CLUSTERFUZZ_CONFIG))
 
   def testValidateUMASamplingProfilerConfig(self):
     """Tests ``_ValidateUMASamplingProfilerConfig`` function."""
@@ -232,6 +296,7 @@ class CrashConfigTest(TestCase):
     config = {
         'fracas': None,
         'cracas': None,
+        'clusterfuzz': None,
         'uma_sampling_profiler': None,
         'component_classifier': None
     }

@@ -166,7 +166,8 @@ class PredatorApp(object):
                    self.client_id)
       return True
 
-    for blacklist_marker in self.client_config['signature_blacklist_markers']:
+    for blacklist_marker in self.client_config.get(
+        'signature_blacklist_markers', []):
       if blacklist_marker in crash_data.signature:
         logging.info('%s signature is not supported.', blacklist_marker)
         return False

@@ -21,76 +21,85 @@ class CrashConfig(VersionedConfig):
 
   # An example of fracas-specific parameters:
   # {
-  #   "analysis_result_pubsub_topic": "projects/project-name/topics/name",
-  #   "supported_platform_list_by_channel": {
-  #     "canary": ["win", "mac"],
+  #   'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+  #   'supported_platform_list_by_channel': {
+  #     'canary': ['win', 'mac'],
   #   },
-  #   "platform_rename": {
-  #     "linux": "unix"
+  #   'platform_rename': {
+  #     'linux': 'unix'
   #   },
-  #   "signature_blacklist_markers": [],
+  #   'signature_blacklist_markers': [],
   # }
   fracas = ndb.JsonProperty(indexed=False, default={})
 
   # An example of cracas-specific parameters:
   # {
-  #   "analysis_result_pubsub_topic": "projects/project-name/topics/name",
-  #   "supported_platform_list_by_channel": {
-  #     "canary": ["win", "mac"],
+  #   'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+  #   'supported_platform_list_by_channel': {
+  #     'canary': ['win', 'mac'],
   #   },
-  #   "platform_rename": {
-  #     "linux": "unix"
+  #   'platform_rename': {
+  #     'linux': 'unix'
   #   },
-  #   "signature_blacklist_markers": [],
+  #   'signature_blacklist_markers': [],
   # }
   cracas = ndb.JsonProperty(indexed=False, default={})
 
+  # An example of cracas-specific parameters:
+  # {
+  #   'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+  #   'signature_blacklist_markers': [],
+  #   'blacklist_crash_type': ['out-of-memory'],
+  #   'top_n': 7
+  # }
+  clusterfuzz = ndb.JsonProperty(indexed=False, default={})
+
   # An example of uma-sampling-profiler-specific parameters:
   # {
-  #   "analysis_result_pubsub_topic": "projects/project-name/topics/name",
-  #   "signature_blacklist_markers": [],
+  #   'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+  #   'signature_blacklist_markers': [],
   # }
   uma_sampling_profiler = ndb.JsonProperty(indexed=False, default={})
 
   ################## Settings shared by Fracas/Clusterfuzz. ##################
   # An example of project classifier settings:
   # {
-  #   "host_directories": [
-  #     "src/chrome/browser/resources/",
-  #     "src/chrome/test/data/layout_tests/",
-  #     "src/media/",
-  #     "src/sdch/",
-  #     "src/testing/",
-  #     "src/third_party/WebKit/",
-  #     "src/third_party/",
-  #     "src/tools/",
-  #     "src/"
+  #   'host_directories': [
+  #     'src/chrome/browser/resources/',
+  #     'src/chrome/test/data/layout_tests/',
+  #     'src/media/',
+  #     'src/sdch/',
+  #     'src/testing/',
+  #     'src/third_party/WebKit/',
+  #     'src/third_party/',
+  #     'src/tools/',
+  #     'src/'
   #   ],
   #   # Where there is no dep_path found, use function and file_path makers to
   #   # map a Result or StackFrame to a project name.
-  #     "function_marker_to_project_name": {
-  #       "org.chromium": "chromium",
-  #       "com.google.android.apps.chrome": "clank",
-  #       "android.": "android_os",
-  #       "com.android.": "android_os",
+  #     'function_marker_to_project_name': {
+  #       'org.chromium': 'chromium',
+  #       'com.google.android.apps.chrome': 'clank',
+  #       'android.': 'android_os',
+  #       'com.android.': 'android_os',
   #   },
-  #   "file_path_marker_to_project_name": {
-  #     ("https___googleplex-android.googlesource."
-  #      "com_a_platform_manifest.git/"): "android_os",
-  #     "googleplex-android/": "android_os",
+  #   'file_path_marker_to_project_name': {
+  #     ('https___googleplex-android.googlesource.'
+  #      'com_a_platform_manifest.git/'): 'android_os',
+  #     'googleplex-android/': 'android_os',
   #   },
   #
   #   # Number of frames on top to consider when deciding the crashed project.
-  #   "top_n": 4,
+  #   'top_n': 4,
   #
   #   # The chromium project should always have the highest rank priority (0).
   #   # This dict assigns rank priorities to non chromium projects.
-  #   "non_chromium_project_rank_priority" = {
-  #     "clank": -1,
-  #     "android_os": -2,
-  #     "android_os_java": -2,
-  #     "src_internal": -3,
-  #     "others": -4,
+  #   'non_chromium_project_rank_priority' = {
+  #     'clank': -1,
+  #     'android_os': -2,
+  #     'android_os_java': -2,
+  #     'src_internal': -3,
+  #     'others': -4,
   #   }
   # }
   project_classifier = ndb.JsonProperty(indexed=False, default={})
@@ -99,9 +108,9 @@ class CrashConfig(VersionedConfig):
   # {
   #   # Number of frames on top to consider when deciding the crashed
   #   #component.
-  #   "top_n": 4,
-  #   "path_function_component": [
-  #     [r"src/third_party/WebKit/Source/core/layout", , "Blink>Layout"],
+  #   'top_n': 4,
+  #   'path_function_component': [
+  #     [r'src/third_party/WebKit/Source/core/layout', , 'Blink>Layout'],
   #     ...
   #   ]
   # }
@@ -141,8 +150,7 @@ class CrashConfig(VersionedConfig):
     elif client_id == CrashClient.CRACAS:  # pragma: no cover.
       return self.cracas
     elif client_id == CrashClient.CLUSTERFUZZ:  # pragma: no cover.
-      # TODO(katesonia): Add crash config of clusterfuzz.
-      return None
+      return self.clusterfuzz
     elif client_id == CrashClient.UMA_SAMPLING_PROFILER:
       return self.uma_sampling_profiler
     return None
