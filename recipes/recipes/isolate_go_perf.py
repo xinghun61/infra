@@ -80,7 +80,7 @@ def build_isolate(api):
   api.file.rmtree('clean go bin', go_bin)
   api.python('go third parties', go_env, ['go', 'version'])
   api.python('build luci-go', go_env,
-             ['go', 'install', 'github.com/luci/luci-go/client/cmd/...'])
+             ['go', 'install', 'go.chromium.org/luci/client/cmd/...'])
   return api.path.join(go_bin, 'isolate')
 
 

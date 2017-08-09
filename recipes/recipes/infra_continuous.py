@@ -96,7 +96,7 @@ def build_luci(api):
 
   api.python(
       'build luci-go', go_env,
-      ['go', 'install', 'github.com/luci/luci-go/client/cmd/...'])
+      ['go', 'install', 'go.chromium.org/luci/client/cmd/...'])
 
   absfiles = api.file.listdir('listing go bin', go_bin,
                               test_data=['file 1', 'file 2'])

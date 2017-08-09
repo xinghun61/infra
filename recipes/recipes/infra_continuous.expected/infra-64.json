@@ -214,7 +214,7 @@
       "[START_DIR]/infra/go/env.py",
       "go",
       "install",
-      "github.com/luci/luci-go/client/cmd/..."
+      "go.chromium.org/luci/client/cmd/..."
     ],
     "env_prefixes": {
       "PATH": [
