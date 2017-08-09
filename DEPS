@@ -10,7 +10,7 @@ deps = {
     "https://chromium.googlesource.com/chromium/tools/build.git",
 
   "infra/luci":
-   ("https://chromium.googlesource.com/external/github.com/luci/luci-py"
+   ("https://chromium.googlesource.com/infra/luci/luci-py"
      "@8b90cdd97f8f088bcba2fa376ce49d9863b48902"),
 
   # This unpinned dependency is present because it is used by the trybots for
@@ -19,7 +19,7 @@ deps = {
   # piggyback on top of infra in order to take advantage of it's precompiled
   # version of python-coverage.
   "infra/recipes-py":
-   ("https://chromium.googlesource.com/external/github.com/luci/recipes-py"
+   ("https://chromium.googlesource.com/infra/luci/recipes-py"
      "@origin/master"),
 
   "infra/go/src/github.com/luci/luci-go":
