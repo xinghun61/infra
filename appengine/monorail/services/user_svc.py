@@ -473,8 +473,9 @@ class UserService(object):
         cnxn, hotlist_id=hotlist_id, commit=commit)
 
   def TrimUserVisitedHotlists(self, cnxn, commit=True):
+    """For any user who has visited more than 10 hotlists, trim history."""
     user_id_rows = self.hotlistvisithistory_tbl.Select(
-        cnxn, cols=['user_id'], group_by='user_id',
+        cnxn, cols=['user_id'], group_by=['user_id'],
         having=[('COUNT(*) > %s', [10])], limit=1000)
 
     for user_id in [row[0] for row in user_id_rows]:

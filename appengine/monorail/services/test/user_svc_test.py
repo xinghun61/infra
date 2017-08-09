@@ -266,7 +266,7 @@ class UserServiceTest(unittest.TestCase):
 
   def SetUpTrimUserVisitedHotlists(self, user_ids):
     self.user_service.hotlistvisithistory_tbl.Select(
-        self.cnxn, cols=['user_id'], group_by='user_id',
+        self.cnxn, cols=['user_id'], group_by=['user_id'],
         having=[('COUNT(*) > %s', [10])], limit=1000).AndReturn((
             (111L,), (222L,), (333L,)))
     ts = int(time.time())
