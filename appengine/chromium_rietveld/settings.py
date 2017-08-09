@@ -137,7 +137,11 @@ READ_ONLY_PROJECTS = [
   'depot_tools',
   'infra',
   'infra_experimental',
+  'luci-gae',
+  'luci-go',
+  'luci-py',
   'pdfium',
+  'recipe_engine',
   'skia',
   'v8',
 ]
