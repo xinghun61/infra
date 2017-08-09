@@ -270,39 +270,14 @@ type FinditAPIResponse struct {
 }
 
 func (r *reader) Findit(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64, failedSteps []string) ([]*messages.FinditResult, error) {
-	// TODO(martiniss): Remove once perf is supported by findit
-	if strings.Contains(master.Name(), "perf") {
-		return []*messages.FinditResult{}, nil
-	}
+	findit := GetFindit(ctx)
 
-	data := map[string]interface{}{
-		"builds": []map[string]interface{}{
-			{
-				"master_url":   master.String(),
-				"builder_name": builder,
-				"build_number": buildNum,
-				"failed_steps": failedSteps,
-			},
-		},
-	}
-
-	b := bytes.NewBuffer(nil)
-	err := json.NewEncoder(b).Encode(data)
-
+	ret, err := findit.Findit(ctx, master, builder, buildNum, failedSteps)
 	if err != nil {
 		return nil, err
 	}
 
-	URL := "https://findit-for-me.appspot.com/_ah/api/findit/v1/buildfailure"
-	expvars.Add("Findit", 1)
-	defer expvars.Add("Findit", -1)
-	res := &FinditAPIResponse{}
-	if code, err := r.hc.postJSON(ctx, URL, b.Bytes(), res); err != nil {
-		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
-		return nil, err
-	}
-
-	return res.Results, nil
+	return ret, nil
 }
 
 func cacheable(b *messages.Build) bool {
@@ -371,7 +346,6 @@ func (hc *trackingHTTPClient) attemptJSONGet(ctx context.Context, url string, v 
 }
 
 func (hc *trackingHTTPClient) attemptReq(ctx context.Context, r *http.Request, v interface{}) (bool, int, int64, error) {
-	r.Header.Set("User-Agent", "Go-http-client/1.1 alerts_dispatcher")
 	resp, err := hc.c.Do(r)
 	if err != nil {
 		logging.Errorf(ctx, "error: %q, possibly retrying.", err.Error())
@@ -403,7 +377,6 @@ func (hc *trackingHTTPClient) attemptReq(ctx context.Context, r *http.Request, v
 // Returns the status code and the error, if any.
 func (hc *trackingHTTPClient) postJSON(ctx context.Context, url string, data []byte, v interface{}) (status int, err error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
-	req.Header.Set("User-Agent", "Go-http-client/1.1 alerts_dispatcher")
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return 0, err

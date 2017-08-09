@@ -32,7 +32,7 @@ func retry(f func() error, maxAttempts int) error {
 }
 
 func (sc *simpleClient) attemptReq(ctx context.Context, r *http.Request, v interface{}) (int, error) {
-	r.Header.Set("User-Agent", "Go-http-client/1.1 infra/monitoring/client")
+	r.Header.Set("User-Agent", "Go-http-client/1.1 infra/monitoring/simpleclient")
 	client, err := getAsSelfOAuthClient(ctx)
 	if err != nil {
 		return 0, err
@@ -98,7 +98,6 @@ func (sc *simpleClient) getJSON(ctx context.Context, url string, v interface{}) 
 // Returns the status code and the error, if any.
 func (sc *simpleClient) postJSON(ctx context.Context, url string, data []byte, v interface{}) (status int, err error) {
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
-	req.Header.Set("User-Agent", "Go-http-client/1.1 alerts_dispatcher")
 	req.Header.Set("Content-Type", "application/json")
 	if err != nil {
 		return 0, err
