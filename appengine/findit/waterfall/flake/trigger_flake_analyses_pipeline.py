@@ -48,6 +48,8 @@ class TriggerFlakeAnalysesPipeline(BasePipeline):
       # checking, only run 1 test per anaysis to avoid excessive load on the
       # swarming server in case there are too many flaky tests per analysis for
       # now.
+      logging.info('Running flake analysis on 1 test out of %d',
+                   len(flaky_tests))
       test_name = flaky_tests[0]
       request = FlakeAnalysisRequest.Create(test_name, False, None)
       request.AddBuildStep(master_name, builder_name, build_number, step,
