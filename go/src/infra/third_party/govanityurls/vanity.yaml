@@ -3,6 +3,16 @@ host: go.chromium.org
 paths:
   /luci:
     repo: https://chromium.googlesource.com/infra/luci/luci-go
+    vcs: git
+    display: >
+      https://chromium.googlesource.com/infra/luci/luci-go
+      https://chromium.googlesource.com/infra/luci/luci-go/+/master{/dir}
+      https://chromium.googlesource.com/infra/luci/luci-go/+/master{/dir}/{file}#{line}
 
   /gae:
     repo: https://chromium.googlesource.com/infra/luci/gae
+    vcs: git
+    display: >
+      https://chromium.googlesource.com/infra/luci/gae
+      https://chromium.googlesource.com/infra/luci/gae/+/master{/dir}
+      https://chromium.googlesource.com/infra/luci/gae/+/master{/dir}/{file}#{line}
