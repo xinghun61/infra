@@ -46,6 +46,11 @@ def GenTests(api):
 
   yield (api.test('presubmit') +
          api.platform('linux', 64) +
-         api.properties.tryserver(path_config='generic',
-                                  buildername='presubmit') +
+         api.properties(
+           path_config='generic',
+           buildername='presubmit',
+           patch_gerrit_url='https://chromium-review.googlesource.com',
+           patch_issue=607472,
+           patch_set=2,
+         ) +
          api.step_data('presubmit', api.json.output([[]])))

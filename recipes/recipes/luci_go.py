@@ -72,10 +72,13 @@ def GenTests(api):
 
   yield (
     api.test('presubmit_try_job') +
-    api.properties.tryserver(
-        path_config='generic',
-        mastername='tryserver.infra',
+    api.properties(
         buildername='Luci-go Presubmit',
+        mastername='tryserver.infra',
+        patch_gerrit_url='https://chromium-review.googlesource.com',
+        patch_issue=607472,
+        patch_set=2,
+        path_config='generic',
         presubmit=True,
     ) + api.step_data('presubmit', api.json.output([[]]))
   )

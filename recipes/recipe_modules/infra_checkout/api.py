@@ -94,13 +94,11 @@ class InfraCheckoutApi(recipe_api.RecipeApi):
           '--root', path.join(patch_root),
           '--commit',
           '--verbose', '--verbose',
-          # TODO(tandrii): gerrit support.
-          '--issue', self.m.properties['issue'],
-          '--patchset', self.m.properties['patchset'],
-          '--rietveld_url', self.m.properties['rietveld'],
-          '--rietveld_fetch',
+          '--issue', self.m.properties['patch_issue'],
+          '--patchset', self.m.properties['patch_set'],
+          '--gerrit_url', self.m.properties['patch_gerrit_url'],
+          '--gerrit_fetch',
           '--upstream', upstream,
-          '--rietveld_email', ''
 
           '--skip_canned', 'CheckRietveldTryJobExecution',
           '--skip_canned', 'CheckTreeIsOpen',
