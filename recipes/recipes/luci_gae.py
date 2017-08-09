@@ -44,8 +44,7 @@ def GenTests(api):
         path_config='kitchen',
         buildername='luci-gae-linux64',
         mastername='chromium.infra',
-        repository=('https://chromium.googlesource.com/external/github.com/'
-                    'luci/gae'),
+        repository='https://chromium.googlesource.com/infra/luci/gae',
     )
   )
   yield (

@@ -66,8 +66,7 @@ def GenTests(api):
         buildername='luci-go-linux64',
         buildnumber=123,
         mastername='chromium.infra',
-        repository=('https://chromium.googlesource.com/external/github.com/'
-                    'luci/luci-go'),
+        repository='https://chromium.googlesource.com/infra/luci/luci-go',
     )
   )
 
