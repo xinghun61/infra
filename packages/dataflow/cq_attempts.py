@@ -112,7 +112,9 @@ class CombineEventsToAttempt(beam.CombineFn):
 class ComputeAttempts(beam.PTransform):
   @staticmethod
   def key(event):
-    return str(event['attempt_start_usec']) + event['cq_name']
+    return ':'.join([str(event.get('attempt_start_usec', '')),
+                     event.get('cq_name', ''), event.get('issue', ''),
+                     event.get('patchset', '')])
 
   @staticmethod
   def filter_incomplete_attempts(attempt):

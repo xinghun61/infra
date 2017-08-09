@@ -28,12 +28,16 @@ class TestCQAttemptAccumulator(unittest.TestCase):
             'action': self.combFn.ACTION_PATCH_START,
             'attempt_start_usec': 0,
             'cq_name': 'test_cq',
+            'issue': '1',
+            'patchset': '1',
         },
         {
             'timestamp_millis': 2,
             'action': self.combFn.ACTION_PATCH_STOP,
             'attempt_start_usec': 0,
             'cq_name': 'test_cq',
+            'issue': '1',
+            'patchset': '1',
         },
     ]
     complete_attempt_expected = [{
@@ -53,6 +57,8 @@ class TestCQAttemptAccumulator(unittest.TestCase):
             'action': self.combFn.ACTION_PATCH_START,
             'attempt_start_usec': 1,
             'cq_name': 'test_cq',
+            'issue': '2',
+            'patchset': '1',
         },
     ]
     incomplete_attempt_expected = []
