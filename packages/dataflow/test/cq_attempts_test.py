@@ -4,8 +4,11 @@
 
 import unittest
 
+import apache_beam as beam
 from dataflow import cq_attempts as job
 
+from apache_beam.testing import test_pipeline
+from apache_beam.testing import util
 from dataflow.common import objects
 
 
@@ -17,6 +20,51 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     self.earlier_timestamp = self.timestamp_msec - 1
     self.later_timestamp = self.timestamp_msec + 1
     self.combFn = job.CombineEventsToAttempt()
+
+  def test_compute_attempts(self):
+    complete_attempt_events = [
+        {
+            'timestamp_millis': 1,
+            'action': self.combFn.ACTION_PATCH_START,
+            'attempt_start_usec': 0,
+            'cq_name': 'test_cq',
+        },
+        {
+            'timestamp_millis': 2,
+            'action': self.combFn.ACTION_PATCH_STOP,
+            'attempt_start_usec': 0,
+            'cq_name': 'test_cq',
+        },
+    ]
+    complete_attempt_expected = [{
+        'was_throttled': False,
+        'waited_for_tree': False,
+        'committed': False,
+        'last_stop_msec': 2,
+        'cq_name': 'test_cq',
+        'last_start_msec': 1,
+        'first_stop_msec': 2,
+        'first_start_msec': 1,
+        'attempt_start_msec': 0.0,
+    }]
+    incomplete_attempt_events = [
+        {
+            'timestamp_millis': 2,
+            'action': self.combFn.ACTION_PATCH_START,
+            'attempt_start_usec': 1,
+            'cq_name': 'test_cq',
+        },
+    ]
+    incomplete_attempt_expected = []
+    events = complete_attempt_events + incomplete_attempt_events
+    attempts = complete_attempt_expected + incomplete_attempt_expected
+
+    p = test_pipeline.TestPipeline()
+    pcoll = (p
+             | beam.Create(events)
+             | job.ComputeAttempts())
+    util.assert_that(pcoll, util.equal_to(attempts))
+    p.run()
 
   def basic_event(self, action=None, timestamp_millis=None,
                   attempt_start_usec=None, cq_name=None):
@@ -129,11 +177,12 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     ]
     for test_case in test_cases:
       attempt = test_case['attempt']
+      filter_attempts = job.ComputeAttempts.filter_incomplete_attempts
       if test_case['filtered_expected']:
         with self.assertRaises(StopIteration):
-          filtered_attempt = job.filter_incomplete_attempts(attempt).next()
+          filtered_attempt = filter_attempts(attempt).next()
       else:
-        filtered_attempt = job.filter_incomplete_attempts(attempt).next()
+        filtered_attempt = filter_attempts(attempt).next()
         self.assertEqual(filtered_attempt, attempt)
 
 

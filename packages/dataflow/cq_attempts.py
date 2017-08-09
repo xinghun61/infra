@@ -105,25 +105,34 @@ class CombineEventsToAttempt(beam.CombineFn):
           attempt.__dict__[field] = True
     return attempt.as_bigquery_row()
 
-def filter_incomplete_attempts(attempt):
-  if attempt.get('first_start_msec') and attempt.get('last_stop_msec'):
-    yield attempt
 
-def main():
+class ComputeAttempts(beam.PTransform):
+  @staticmethod
   def key(event):
     return str(event['attempt_start_usec']) + event['cq_name']
 
+  @staticmethod
+  def filter_incomplete_attempts(attempt):
+    if attempt.get('first_start_msec') and attempt.get('last_stop_msec'):
+      yield attempt
+
+  def expand(self, pcoll):
+    return (pcoll
+            | beam.Map(lambda e: (self.key(e), e))
+            | beam.GroupByKey()
+            | beam.CombinePerKey(CombineEventsToAttempt())
+            | beam.Map(lambda (k, v): v)
+            | beam.FlatMap(self.filter_incomplete_attempts))
+
+
+def main():
   q = ('SELECT timestamp_millis, action, attempt_start_usec, cq_name '
        'FROM `chrome-infra-events.raw_events.cq`')
   p = chops_beam.EventsPipeline()
   _ = (p
-   | chops_beam.BQRead(q)
-   | beam.Map(lambda e: (key(e), e))
-   | beam.GroupByKey()
-   | beam.CombinePerKey(CombineEventsToAttempt())
-   | beam.Map(lambda (k, v): v)
-   | beam.FlatMap(filter_incomplete_attempts)
-   | chops_beam.BQWrite('cq_attempts'))
+       | chops_beam.BQRead(q)
+       | ComputeAttempts()
+       | chops_beam.BQWrite('cq_attempts'))
   p.run()
 
 
