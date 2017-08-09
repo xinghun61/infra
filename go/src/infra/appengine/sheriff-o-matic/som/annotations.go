@@ -19,13 +19,13 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/gae/service/memcache"
-	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/data/stringset"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/auth/xsrf"
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/gae/service/memcache"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/data/stringset"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth/xsrf"
+	"go.chromium.org/luci/server/router"
 )
 
 const (

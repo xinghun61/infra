@@ -16,9 +16,9 @@ import (
 	"github.com/mattes/migrate"
 	"golang.org/x/net/context"
 
-	"github.com/luci/luci-go/common/cli"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/logging/gologger"
+	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/logging/gologger"
 )
 
 // Options are CLI flags and arguments used by all subcommand.

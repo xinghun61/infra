@@ -14,7 +14,7 @@ import (
 
 	"infra/tools/git/state"
 
-	"github.com/luci/luci-go/common/system/environ"
+	"go.chromium.org/luci/common/system/environ"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

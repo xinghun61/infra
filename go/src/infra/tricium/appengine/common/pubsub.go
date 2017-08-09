@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/luci/gae/service/info"
+	"go.chromium.org/gae/service/info"
 
 	"golang.org/x/net/context"
 
@@ -18,8 +18,8 @@ import (
 	"google.golang.org/api/pubsub/v1"
 	"google.golang.org/appengine"
 
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/auth"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
 )
 
 const (
@@ -57,7 +57,7 @@ type pubsubServer struct {
 
 // Setup implements the PubSub interface.
 func (pubsubServer) Setup(c context.Context) error {
-	// TODO(emso): Leverage https://godoc.org/github.com/luci/luci-go/common/gcloud/pubsub ?
+	// TODO(emso): Leverage https://godoc.org/go.chromium.org/luci/common/gcloud/pubsub ?
 	topic := topic(c)
 	sub, pushURL := subscription(c)
 	logging.Infof(c, "pubsub setup, topic: %s, subscription: %s, pushURL: %s", topic, sub, pushURL)

@@ -40,7 +40,7 @@ supported_platforms:
   - ...
 # Optional list of go packages to 'go install' before zipping this package.
 go_packages:
-  - github.com/luci/luci-go/cipd/client/cmd/cipd
+  - go.chromium.org/luci/cipd/client/cmd/cipd
   - ...
 # Path to the root of the package source files on the system we're building
 # the package from. Can be absolute or relative to the path of the *.yaml

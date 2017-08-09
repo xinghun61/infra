@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/data/stringset"
-	"github.com/luci/luci-go/server/auth"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/data/stringset"
+	"go.chromium.org/luci/server/auth"
 	"golang.org/x/net/context"
 )
 

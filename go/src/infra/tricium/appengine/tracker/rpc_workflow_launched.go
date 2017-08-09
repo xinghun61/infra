@@ -8,9 +8,9 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	ds "github.com/luci/gae/service/datastore"
-	tq "github.com/luci/gae/service/taskqueue"
-	"github.com/luci/luci-go/common/logging"
+	ds "go.chromium.org/gae/service/datastore"
+	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/logging"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc"

@@ -10,13 +10,13 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/luci/gae/service/info"
-	"github.com/luci/luci-go/appengine/gaemiddleware"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/grpc/discovery"
-	"github.com/luci/luci-go/grpc/prpc"
-	"github.com/luci/luci-go/server/router"
-	"github.com/luci/luci-go/server/templates"
+	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/grpc/discovery"
+	"go.chromium.org/luci/grpc/prpc"
+	"go.chromium.org/luci/server/router"
+	"go.chromium.org/luci/server/templates"
 
 	dashpb "infra/appengine/dashboard/api/dashboard"
 )

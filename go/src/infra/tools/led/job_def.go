@@ -7,7 +7,7 @@ package main
 import (
 	"infra/tools/kitchen/cookflags"
 
-	swarming "github.com/luci/luci-go/common/api/swarming/swarming/v1"
+	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 )
 
 // JobDefinition defines a 'led' job. It's like a normal Swarming

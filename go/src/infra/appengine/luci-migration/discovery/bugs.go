@@ -18,8 +18,8 @@ import (
 	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 
-	"github.com/luci/gae/service/info"
-	"github.com/luci/luci-go/common/errors"
+	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/common/errors"
 )
 
 const monorailProject = "chromium"

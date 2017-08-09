@@ -21,9 +21,9 @@ import (
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
 
-	"github.com/luci/luci-go/common/data/stringset"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/sync/parallel"
+	"go.chromium.org/luci/common/data/stringset"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/sync/parallel"
 )
 
 const (

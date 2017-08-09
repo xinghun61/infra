@@ -9,10 +9,10 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/tsmon/metric"
-	"github.com/luci/luci-go/server/auth/xsrf"
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/tsmon/metric"
+	"go.chromium.org/luci/server/auth/xsrf"
+	"go.chromium.org/luci/server/router"
 )
 
 var (

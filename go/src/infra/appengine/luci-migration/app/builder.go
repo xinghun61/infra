@@ -13,17 +13,17 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/auth"
-	"github.com/luci/luci-go/server/router"
-	"github.com/luci/luci-go/server/templates"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/router"
+	"go.chromium.org/luci/server/templates"
 
 	"infra/appengine/luci-migration/storage"
 	"time"
 
-	"github.com/luci/luci-go/common/clock"
+	"go.chromium.org/luci/common/clock"
 )
 
 const (

@@ -15,9 +15,9 @@ import (
 
 	"infra/tools/kitchen/third_party/recipe_engine"
 
-	"github.com/luci/luci-go/common/errors"
-	log "github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/system/environ"
+	"go.chromium.org/luci/common/errors"
+	log "go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/system/environ"
 )
 
 // localRecipeRun can run a local recipe.

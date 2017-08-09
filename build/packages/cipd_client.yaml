@@ -8,7 +8,7 @@ builders:
   - infra-continuous-win-64
 supports_cross_compilation: true
 go_packages:
-  - github.com/luci/luci-go/cipd/client/cmd/cipd
+  - go.chromium.org/luci/cipd/client/cmd/cipd
 root: ../../go/bin
 data:
   - file: cipd${exe_suffix}

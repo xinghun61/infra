@@ -9,7 +9,7 @@ import (
 	"infra/tools/kitchen/cookflags"
 	"strings"
 
-	"github.com/luci/luci-go/common/errors"
+	"go.chromium.org/luci/common/errors"
 )
 
 // EditJobDefinition is a temporary type returned by JobDefinition.Edit. It

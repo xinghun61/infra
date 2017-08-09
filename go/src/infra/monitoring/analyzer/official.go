@@ -10,7 +10,7 @@ import (
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
 
-	"github.com/luci/luci-go/common/logging"
+	"go.chromium.org/luci/common/logging"
 )
 
 var versionConfigureRegexp = regexp.MustCompile(`Version: ([0-9]+\.[0-9]+)\..*`)

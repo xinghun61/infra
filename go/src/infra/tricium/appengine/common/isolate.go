@@ -16,12 +16,12 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/golang/protobuf/jsonpb"
-	isolateservice "github.com/luci/luci-go/common/api/isolate/isolateservice/v1"
-	"github.com/luci/luci-go/common/isolated"
-	"github.com/luci/luci-go/common/isolatedclient"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/sync/parallel"
-	"github.com/luci/luci-go/server/auth"
+	isolateservice "go.chromium.org/luci/common/api/isolate/isolateservice/v1"
+	"go.chromium.org/luci/common/isolated"
+	"go.chromium.org/luci/common/isolatedclient"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/sync/parallel"
+	"go.chromium.org/luci/server/auth"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"

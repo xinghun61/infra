@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/luci/luci-go/common/logging"
+	"go.chromium.org/luci/common/logging"
 )
 
 // FileInfo contains metadata about a file

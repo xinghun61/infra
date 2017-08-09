@@ -11,7 +11,7 @@ import (
 
 	"infra/experimental/appengine/buildbucket-viewer/api/settings"
 
-	"github.com/luci/luci-go/common/errors"
+	"go.chromium.org/luci/common/errors"
 
 	"github.com/golang/protobuf/proto"
 )

@@ -7,8 +7,8 @@ package launcher
 import (
 	"testing"
 
-	ds "github.com/luci/gae/service/datastore"
-	tq "github.com/luci/gae/service/taskqueue"
+	ds "go.chromium.org/gae/service/datastore"
+	tq "go.chromium.org/gae/service/taskqueue"
 
 	. "github.com/smartystreets/goconvey/convey"
 

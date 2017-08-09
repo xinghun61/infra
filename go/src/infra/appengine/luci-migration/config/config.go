@@ -3,8 +3,8 @@ package config
 import (
 	"golang.org/x/net/context"
 
-	"github.com/luci/luci-go/luci_config/server/cfgclient"
-	"github.com/luci/luci-go/luci_config/server/cfgclient/textproto"
+	"go.chromium.org/luci/luci_config/server/cfgclient"
+	"go.chromium.org/luci/luci_config/server/cfgclient/textproto"
 )
 
 // Get returns currently imported config.

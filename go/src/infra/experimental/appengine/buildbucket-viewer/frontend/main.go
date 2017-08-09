@@ -11,12 +11,12 @@ import (
 	"fmt"
 	"net/http"
 
-	authServer "github.com/luci/luci-go/appengine/gaeauth/server"
-	"github.com/luci/luci-go/appengine/gaemiddleware"
-	"github.com/luci/luci-go/common/errors"
-	log "github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/auth"
-	"github.com/luci/luci-go/server/router"
+	authServer "go.chromium.org/luci/appengine/gaeauth/server"
+	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/common/errors"
+	log "go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/router"
 
 	"github.com/julienschmidt/httprouter"
 	"golang.org/x/net/context"
@@ -120,8 +120,8 @@ func (w *errorResponseWriter) handleErr(c context.Context, err error) {
 
 	// Log error lines to logger.
 	rendered := errors.RenderStack(err,
-		"github.com/luci/luci-go/server/router",
-		"github.com/luci/luci-go/appengine/gaemiddleware",
+		"go.chromium.org/luci/server/router",
+		"go.chromium.org/luci/appengine/gaemiddleware",
 		"net/http",
 	)
 	for _, line := range rendered {

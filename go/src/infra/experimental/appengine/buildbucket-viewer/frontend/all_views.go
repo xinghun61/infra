@@ -10,10 +10,10 @@ import (
 	"sort"
 
 	"github.com/julienschmidt/httprouter"
-	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/luci_config/common/cfgtypes"
-	"github.com/luci/luci-go/luci_config/server/cfgclient"
-	"github.com/luci/luci-go/server/templates"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/luci_config/common/cfgtypes"
+	"go.chromium.org/luci/luci_config/server/cfgclient"
+	"go.chromium.org/luci/server/templates"
 
 	"infra/experimental/appengine/buildbucket-viewer/api/settings"
 

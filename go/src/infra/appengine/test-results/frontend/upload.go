@@ -18,11 +18,11 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/gae/service/taskqueue"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/auth"
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/router"
 
 	"infra/appengine/test-results/masters"
 	"infra/appengine/test-results/model"

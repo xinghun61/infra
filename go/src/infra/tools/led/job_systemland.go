@@ -9,9 +9,9 @@ import (
 	"infra/tools/kitchen/cookflags"
 	"strings"
 
-	swarming "github.com/luci/luci-go/common/api/swarming/swarming/v1"
-	"github.com/luci/luci-go/common/errors"
-	logdog_types "github.com/luci/luci-go/logdog/common/types"
+	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/errors"
+	logdog_types "go.chromium.org/luci/logdog/common/types"
 )
 
 func (s *Systemland) genSwarmingTask(ctx context.Context, uid string) (st *swarming.SwarmingRpcsNewTaskRequest, args *cookflags.CookFlags, err error) {

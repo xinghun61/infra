@@ -8,12 +8,12 @@ import (
 	"encoding/json"
 	"testing"
 
-	ds "github.com/luci/gae/service/datastore"
+	ds "go.chromium.org/gae/service/datastore"
 
-	"github.com/luci/luci-go/server/auth"
-	"github.com/luci/luci-go/server/auth/authtest"
-	"github.com/luci/luci-go/server/auth/identity"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/auth/authtest"
+	"go.chromium.org/luci/server/auth/identity"
 
 	"infra/tricium/api/v1"
 	trit "infra/tricium/appengine/common/testing"

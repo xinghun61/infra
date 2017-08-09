@@ -8,9 +8,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/vpython/api/vpython"
-	"github.com/luci/luci-go/vpython/cipd"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/vpython/api/vpython"
+	"go.chromium.org/luci/vpython/cipd"
 )
 
 // pep425MacPlatform is a parsed PEP425 Mac platform string.

@@ -18,9 +18,9 @@ import (
 	"golang.org/x/net/context/ctxhttp"
 	"google.golang.org/grpc"
 
-	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/retry/transient"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/retry/transient"
 )
 
 // epClient implements MonorailClient by sending requests to Monorail's
@@ -39,7 +39,7 @@ type epClient struct {
 // Example of url: "https://monorail-staging.appspot.com/_ah/api/monorail/v1"
 //
 // Methods do not implement retries.
-// Use "github.com/luci/luci-go/common/errors".IsTransient to check
+// Use "go.chromium.org/luci/common/errors".IsTransient to check
 // if an error is transient.
 //
 // Client methods return an error on any grpc.CallOption.

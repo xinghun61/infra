@@ -13,9 +13,9 @@ import (
 	"infra/tools/backuptogs/filetree"
 
 	"cloud.google.com/go/storage"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/tsmon"
-	"github.com/luci/luci-go/common/tsmon/target"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/tsmon"
+	"go.chromium.org/luci/common/tsmon/target"
 	"google.golang.org/api/option"
 )
 

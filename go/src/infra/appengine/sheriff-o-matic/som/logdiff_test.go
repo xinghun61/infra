@@ -11,17 +11,18 @@ import (
 	testhelper "infra/monitoring/client/test"
 	"infra/monitoring/messages"
 
-	"github.com/luci/gae/impl/dummy"
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/gae/service/info"
-	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/gae/impl/dummy"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/server/router"
 
 	"bytes"
 	"compress/zlib"
-	. "github.com/smartystreets/goconvey/convey"
 	"net/url"
 	"time"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestLogDiffJSONHandler(t *testing.T) {

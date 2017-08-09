@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/luci-go/common/data/stringset"
+	"go.chromium.org/luci/common/data/stringset"
 
 	"infra/monitoring/messages"
 )

@@ -7,7 +7,7 @@ builders:
   - infra-continuous-win-32
   - infra-continuous-win-64
 go_packages:
-  - github.com/luci/luci-go/client/cmd/swarming
+  - go.chromium.org/luci/client/cmd/swarming
 root: ../../go/bin
 data:
   - file: swarming${exe_suffix}

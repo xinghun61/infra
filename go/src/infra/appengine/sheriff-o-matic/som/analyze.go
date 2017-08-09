@@ -14,15 +14,15 @@ import (
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
 
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/gae/service/info"
-	tq "github.com/luci/gae/service/taskqueue"
-	"github.com/luci/gae/service/urlfetch"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/tsmon/field"
-	"github.com/luci/luci-go/common/tsmon/metric"
-	"github.com/luci/luci-go/server/auth"
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/gae/service/info"
+	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/gae/service/urlfetch"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/tsmon/field"
+	"go.chromium.org/luci/common/tsmon/metric"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/router"
 )
 
 const (

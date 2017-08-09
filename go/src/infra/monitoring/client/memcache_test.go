@@ -9,8 +9,8 @@ import (
 	clientTest "infra/monitoring/client/test"
 	"infra/monitoring/messages"
 
-	"github.com/luci/gae/impl/memory"
-	"github.com/luci/gae/service/memcache"
+	"go.chromium.org/gae/impl/memory"
+	"go.chromium.org/gae/service/memcache"
 
 	"golang.org/x/net/context"
 

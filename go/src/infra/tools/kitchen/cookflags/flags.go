@@ -8,8 +8,8 @@ import (
 	"flag"
 	"strconv"
 
-	"github.com/luci/luci-go/common/flag/stringlistflag"
-	"github.com/luci/luci-go/common/flag/stringmapflag"
+	"go.chromium.org/luci/common/flag/stringlistflag"
+	"go.chromium.org/luci/common/flag/stringmapflag"
 )
 
 const (

@@ -12,11 +12,11 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/luci-go/client/archiver"
-	swarming "github.com/luci/luci-go/common/api/swarming/swarming/v1"
-	"github.com/luci/luci-go/common/data/rand/cryptorand"
-	"github.com/luci/luci-go/common/errors"
-	logdog_types "github.com/luci/luci-go/logdog/common/types"
+	"go.chromium.org/luci/client/archiver"
+	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/data/rand/cryptorand"
+	"go.chromium.org/luci/common/errors"
+	logdog_types "go.chromium.org/luci/logdog/common/types"
 
 	"infra/tools/kitchen/cookflags"
 )

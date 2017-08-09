@@ -8,7 +8,7 @@ import (
 	"encoding/json"
 	"net/url"
 
-	"github.com/luci/luci-go/common/system/environ"
+	"go.chromium.org/luci/common/system/environ"
 
 	"infra/tools/kitchen/cookflags"
 )

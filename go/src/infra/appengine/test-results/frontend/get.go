@@ -15,10 +15,10 @@ import (
 	"regexp"
 	"time"
 
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/router"
-	"github.com/luci/luci-go/server/templates"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/router"
+	"go.chromium.org/luci/server/templates"
 	"golang.org/x/net/context"
 )
 

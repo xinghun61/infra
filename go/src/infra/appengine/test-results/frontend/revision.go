@@ -10,8 +10,8 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/luci/gae/service/urlfetch"
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/gae/service/urlfetch"
+	"go.chromium.org/luci/server/router"
 )
 
 // TODO(estaab): Comment copied from python implementation:

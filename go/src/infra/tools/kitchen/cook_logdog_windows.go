@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/luci-go/logdog/client/butler/streamserver"
+	"go.chromium.org/luci/logdog/client/butler/streamserver"
 )
 
 // getLogDogStreamServerForPlatform returns a StreamServer instance usable on

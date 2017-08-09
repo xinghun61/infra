@@ -9,8 +9,8 @@ import (
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/router"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

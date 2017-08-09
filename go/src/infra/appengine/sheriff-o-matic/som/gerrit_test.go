@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/luci/luci-go/appengine/gaetesting"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/logging/gologger"
-	"github.com/luci/luci-go/server/auth"
-	"github.com/luci/luci-go/server/auth/authtest"
+	"go.chromium.org/luci/appengine/gaetesting"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/logging/gologger"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/auth/authtest"
 
 	gerrit "github.com/andygrunwald/go-gerrit"
 	. "github.com/smartystreets/goconvey/convey"

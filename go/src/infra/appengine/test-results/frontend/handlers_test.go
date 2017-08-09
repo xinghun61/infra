@@ -10,10 +10,10 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/gae/impl/memory"
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/luci-go/server/router"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/gae/impl/memory"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/server/router"
 )
 
 func TestDeleteKeysHandler(t *testing.T) {

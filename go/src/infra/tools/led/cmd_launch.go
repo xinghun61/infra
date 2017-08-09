@@ -13,12 +13,12 @@ import (
 
 	"github.com/maruel/subcommands"
 
-	"github.com/luci/luci-go/client/authcli"
-	"github.com/luci/luci-go/common/auth"
-	"github.com/luci/luci-go/common/cli"
-	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/common/gcloud/googleoauth"
-	"github.com/luci/luci-go/common/logging"
+	"go.chromium.org/luci/client/authcli"
+	"go.chromium.org/luci/common/auth"
+	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/gcloud/googleoauth"
+	"go.chromium.org/luci/common/logging"
 )
 
 func launchCmd(authOpts auth.Options) *subcommands.Command {

@@ -19,8 +19,8 @@ DEPS_PATH = os.path.join(INFRA_PATH, 'DEPS')
 
 # List of "deps" paths to automatically roll.
 _DEFAULT_ROLL = (
-  'infra/go/src/github.com/luci/luci-go',
-  'infra/go/src/github.com/luci/gae',
+  'infra/go/src/go.chromium.org/luci',
+  'infra/go/src/go.chromium.org/gae',
 )
 
 

@@ -24,8 +24,8 @@ import (
 	"infra/monitoring/messages"
 	"infra/monorail"
 
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/auth"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
 )
 
 type contextKey string

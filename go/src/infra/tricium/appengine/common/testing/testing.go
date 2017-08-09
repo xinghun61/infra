@@ -8,11 +8,11 @@ package testing
 import (
 	"time"
 
-	"github.com/luci/gae/impl/memory"
-	ds "github.com/luci/gae/service/datastore"
-	tq "github.com/luci/gae/service/taskqueue"
-	"github.com/luci/luci-go/common/clock/testclock"
-	"github.com/luci/luci-go/common/logging/memlogger"
+	"go.chromium.org/gae/impl/memory"
+	ds "go.chromium.org/gae/service/datastore"
+	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/clock/testclock"
+	"go.chromium.org/luci/common/logging/memlogger"
 
 	"golang.org/x/net/context"
 

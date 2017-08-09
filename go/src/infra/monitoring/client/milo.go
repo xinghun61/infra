@@ -15,10 +15,10 @@ import (
 
 	"infra/monitoring/messages"
 
-	"github.com/luci/gae/service/urlfetch"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/grpc/prpc"
-	milo "github.com/luci/luci-go/milo/api/proto"
+	"go.chromium.org/gae/service/urlfetch"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/grpc/prpc"
+	milo "go.chromium.org/luci/milo/api/proto"
 )
 
 const (

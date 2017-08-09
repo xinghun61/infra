@@ -7,8 +7,8 @@ package main
 import (
 	"golang.org/x/net/context"
 
-	"github.com/luci/luci-go/vpython/api/vpython"
-	"github.com/luci/luci-go/vpython/application"
+	"go.chromium.org/luci/vpython/api/vpython"
+	"go.chromium.org/luci/vpython/application"
 )
 
 var verificationScenarios = []*vpython.PEP425Tag{

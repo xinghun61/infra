@@ -9,8 +9,8 @@ import (
 	"path/filepath"
 
 	"cloud.google.com/go/compute/metadata"
-	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/hardcoded/chromeinfra"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/hardcoded/chromeinfra"
 )
 
 // ErrNotFound is returned if the requested credential is not found.

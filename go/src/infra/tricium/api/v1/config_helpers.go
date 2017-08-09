@@ -10,7 +10,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/luci-go/server/auth"
+	"go.chromium.org/luci/server/auth"
 )
 
 // ProjectIsKnown checks if the provided project is known to the Tricium service.

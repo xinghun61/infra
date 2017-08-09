@@ -7,7 +7,7 @@ package cookflags
 import (
 	"fmt"
 
-	"github.com/luci/luci-go/common/flag/flagenum"
+	"go.chromium.org/luci/common/flag/flagenum"
 )
 
 // CookMode indicates the value of the -mode flag for kitchen.

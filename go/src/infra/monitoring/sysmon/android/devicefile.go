@@ -10,7 +10,7 @@ import (
 	"io/ioutil"
 	"time"
 
-	"github.com/luci/luci-go/common/clock"
+	"go.chromium.org/luci/common/clock"
 	"golang.org/x/net/context"
 )
 

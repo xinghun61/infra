@@ -7,8 +7,8 @@ package main
 import (
 	"testing"
 
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/logging/memlogger"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/logging/memlogger"
 
 	"golang.org/x/net/context"
 	"google.golang.org/grpc/grpclog"

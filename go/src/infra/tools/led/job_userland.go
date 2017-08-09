@@ -8,10 +8,10 @@ import (
 	"context"
 	"infra/tools/kitchen/cookflags"
 
-	"github.com/luci/luci-go/client/archiver"
-	swarming "github.com/luci/luci-go/common/api/swarming/swarming/v1"
-	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/common/isolated"
+	"go.chromium.org/luci/client/archiver"
+	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/isolated"
 )
 
 const recipeCheckoutDir = "recipe-checkout-dir"

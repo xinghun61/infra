@@ -10,8 +10,8 @@ import (
 	"os"
 	"sync"
 
-	"github.com/luci/luci-go/common/system/terminal"
 	dmp "github.com/sergi/go-diff/diffmatchpatch"
+	"go.chromium.org/luci/common/system/terminal"
 )
 
 // Diff returns a diff string indiciating edits with ANSI color encodings

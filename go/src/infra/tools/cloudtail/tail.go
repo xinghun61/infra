@@ -14,8 +14,8 @@ import (
 	"golang.org/x/net/context"
 	"gopkg.in/fsnotify.v1"
 
-	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/logging"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/logging"
 
 	"infra/tools/cloudtail/internal"
 )

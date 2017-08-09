@@ -15,7 +15,7 @@ import (
 
 	"github.com/andygrunwald/go-gerrit"
 
-	"github.com/luci/luci-go/common/errors"
+	"go.chromium.org/luci/common/errors"
 )
 
 type gerritCL struct {

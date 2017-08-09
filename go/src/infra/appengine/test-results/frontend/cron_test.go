@@ -13,12 +13,12 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/gae/filter/featureBreaker"
-	"github.com/luci/gae/impl/memory"
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/gae/service/taskqueue"
-	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/gae/filter/featureBreaker"
+	"go.chromium.org/gae/impl/memory"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/server/router"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

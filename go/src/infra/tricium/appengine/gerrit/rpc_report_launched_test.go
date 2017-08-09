@@ -7,8 +7,8 @@ package gerrit
 import (
 	"testing"
 
-	ds "github.com/luci/gae/service/datastore"
 	. "github.com/smartystreets/goconvey/convey"
+	ds "go.chromium.org/gae/service/datastore"
 
 	"infra/tricium/api/admin/v1"
 	trit "infra/tricium/appengine/common/testing"

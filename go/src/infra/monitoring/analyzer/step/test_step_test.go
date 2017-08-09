@@ -12,9 +12,9 @@ import (
 	"infra/monitoring/client/test"
 	"infra/monitoring/messages"
 
-	"github.com/luci/luci-go/appengine/gaetesting"
-	"github.com/luci/luci-go/common/logging/gologger"
-	"github.com/luci/luci-go/server/auth/authtest"
+	"go.chromium.org/luci/appengine/gaetesting"
+	"go.chromium.org/luci/common/logging/gologger"
+	"go.chromium.org/luci/server/auth/authtest"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

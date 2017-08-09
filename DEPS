@@ -22,13 +22,13 @@ deps = {
    ("https://chromium.googlesource.com/infra/luci/recipes-py"
      "@origin/master"),
 
-  "infra/go/src/github.com/luci/luci-go":
-    ("https://chromium.googlesource.com/external/github.com/luci/luci-go"
-     "@84692af28c1726ba97d84dde6ec5bfb691add08e"),
+  "infra/go/src/go.chromium.org/luci":
+    ("https://chromium.googlesource.com/infra/luci/luci-go"
+     "@cf858fa2907cc35fc33c3d796c4b8254ab183e19"),
 
-  "infra/go/src/github.com/luci/gae":
-    ("https://chromium.googlesource.com/external/github.com/luci/gae"
-     "@b485cceb10656fa5e30a8d8840f7ab4e67a899b4"),
+  "infra/go/src/go.chromium.org/gae":
+    ("https://chromium.googlesource.com/infra/luci/gae"
+     "@f1e67360b97ab2709222f97e3dd7edf18416f542"),
 
   # Appengine third_party DEPS
   "infra/appengine/third_party/bootstrap":

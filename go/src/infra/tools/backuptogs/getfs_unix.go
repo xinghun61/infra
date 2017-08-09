@@ -8,7 +8,7 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/luci/luci-go/common/logging"
+	"go.chromium.org/luci/common/logging"
 )
 
 func getFs(ctx context.Context, filename string) (uint64, error) {

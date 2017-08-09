@@ -8,8 +8,8 @@ package gerrit
 import (
 	"net/http"
 
-	"github.com/luci/luci-go/grpc/discovery"
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/luci/grpc/discovery"
+	"go.chromium.org/luci/server/router"
 
 	admin "infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"

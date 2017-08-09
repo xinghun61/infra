@@ -8,7 +8,7 @@ builders:
   - infra-continuous-win-64
 supports_cross_compilation: true
 go_packages:
-  - github.com/luci/luci-go/client/cmd/authutil
+  - go.chromium.org/luci/client/cmd/authutil
 root: ../../go/bin
 data:
   - file: authutil${exe_suffix}

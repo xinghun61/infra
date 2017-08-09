@@ -5,9 +5,9 @@
 package frontend
 
 import (
-	"github.com/luci/gae/service/info"
-	"github.com/luci/luci-go/server/router"
-	"github.com/luci/luci-go/server/templates"
+	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/server/router"
+	"go.chromium.org/luci/server/templates"
 )
 
 // polymerHandler is the HTTP handler for requests to pages that are part of the

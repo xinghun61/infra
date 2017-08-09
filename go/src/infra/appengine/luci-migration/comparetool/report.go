@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	log "github.com/luci/luci-go/common/logging"
+	log "go.chromium.org/luci/common/logging"
 
 	"golang.org/x/net/context"
 )

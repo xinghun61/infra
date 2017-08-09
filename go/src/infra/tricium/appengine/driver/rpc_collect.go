@@ -10,8 +10,8 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/golang/protobuf/proto"
-	tq "github.com/luci/gae/service/taskqueue"
-	"github.com/luci/luci-go/common/logging"
+	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/logging"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

@@ -14,10 +14,10 @@ import (
 
 	"github.com/maruel/subcommands"
 
-	"github.com/luci/luci-go/common/cli"
-	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/common/flag/stringmapflag"
-	"github.com/luci/luci-go/common/logging"
+	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/flag/stringmapflag"
+	"go.chromium.org/luci/common/logging"
 )
 
 func editCmd() *subcommands.Command {

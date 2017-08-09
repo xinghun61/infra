@@ -12,8 +12,8 @@ import (
 
 	"infra/experimental/appengine/buildbucket-viewer/api/settings"
 
-	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/common/proto/google"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/proto/google"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/julienschmidt/httprouter"

@@ -12,10 +12,10 @@ import (
 
 	"golang.org/x/net/context"
 
-	swarming "github.com/luci/luci-go/common/api/swarming/swarming/v1"
-	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/common/isolatedclient"
-	"github.com/luci/luci-go/common/logging"
+	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/isolatedclient"
+	"go.chromium.org/luci/common/logging"
 )
 
 func logCmd(ctx context.Context, arg0 string, args ...string) *exec.Cmd {

@@ -8,9 +8,9 @@ package frontend
 import (
 	"net/http"
 
-	"github.com/luci/luci-go/appengine/gaemiddleware"
-	"github.com/luci/luci-go/grpc/discovery"
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/grpc/discovery"
+	"go.chromium.org/luci/server/router"
 
 	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"

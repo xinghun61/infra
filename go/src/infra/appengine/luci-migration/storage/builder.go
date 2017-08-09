@@ -10,8 +10,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/luci-go/common/errors"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/errors"
 
 	"infra/appengine/luci-migration/config"
 )

@@ -12,11 +12,11 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/system/environ"
-	"github.com/luci/luci-go/common/system/exitcode"
-	"github.com/luci/luci-go/common/system/filesystem"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/system/environ"
+	"go.chromium.org/luci/common/system/exitcode"
+	"go.chromium.org/luci/common/system/filesystem"
 )
 
 // SystemProbe can Locate a Target executable by probing the local system PATH.

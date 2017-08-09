@@ -10,10 +10,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/luci/luci-go/common/api/swarming/swarming/v1"
-	"github.com/luci/luci-go/common/isolatedclient"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/auth"
+	"go.chromium.org/luci/common/api/swarming/swarming/v1"
+	"go.chromium.org/luci/common/isolatedclient"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
 
 	"golang.org/x/net/context"
 

@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/luci/luci-go/common/proto/google"
-	miloProto "github.com/luci/luci-go/common/proto/milo"
+	"go.chromium.org/luci/common/proto/google"
+	miloProto "go.chromium.org/luci/common/proto/milo"
 )
 
 type lineage map[*miloProto.Step]*miloProto.Step

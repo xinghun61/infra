@@ -18,12 +18,12 @@ import (
 	"github.com/maruel/subcommands"
 	"golang.org/x/net/context"
 
-	"github.com/luci/luci-go/common/cli"
-	"github.com/luci/luci-go/common/errors"
-	log "github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/system/environ"
-	"github.com/luci/luci-go/common/system/exitcode"
-	"github.com/luci/luci-go/common/system/filesystem"
+	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/errors"
+	log "go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/system/environ"
+	"go.chromium.org/luci/common/system/exitcode"
+	"go.chromium.org/luci/common/system/filesystem"
 
 	"infra/tools/kitchen/build"
 	"infra/tools/kitchen/cookflags"

@@ -8,7 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/luci/gae/service/datastore"
+	"go.chromium.org/gae/service/datastore"
 )
 
 // BuilderMigration describes a status of a builder migration at the high level.

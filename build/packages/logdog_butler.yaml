@@ -8,7 +8,7 @@ builders:
   - infra-continuous-win-64
 supports_cross_compilation: true
 go_packages:
-  - github.com/luci/luci-go/logdog/client/cmd/logdog_butler
+  - go.chromium.org/luci/logdog/client/cmd/logdog_butler
 root: ../../go/bin
 data:
   - file: logdog_butler${exe_suffix}

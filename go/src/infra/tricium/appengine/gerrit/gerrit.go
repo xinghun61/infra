@@ -14,8 +14,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/auth"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
 
 	gr "golang.org/x/build/gerrit"
 	"golang.org/x/net/context"

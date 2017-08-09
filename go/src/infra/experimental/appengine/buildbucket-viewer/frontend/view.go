@@ -17,16 +17,16 @@ import (
 
 	"infra/experimental/appengine/buildbucket-viewer/api/settings"
 
-	bbapi "github.com/luci/luci-go/common/api/buildbucket/buildbucket/v1"
-	"github.com/luci/luci-go/common/errors"
-	log "github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/proto/google"
-	"github.com/luci/luci-go/common/sync/parallel"
-	"github.com/luci/luci-go/common/sync/promise"
-	"github.com/luci/luci-go/server/auth"
-	"github.com/luci/luci-go/server/templates"
+	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
+	"go.chromium.org/luci/common/errors"
+	log "go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/proto/google"
+	"go.chromium.org/luci/common/sync/parallel"
+	"go.chromium.org/luci/common/sync/promise"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/templates"
 
-	"github.com/luci/gae/service/memcache"
+	"go.chromium.org/gae/service/memcache"
 
 	"golang.org/x/net/context"
 )

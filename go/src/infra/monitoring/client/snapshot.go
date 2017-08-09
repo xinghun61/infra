@@ -14,7 +14,7 @@ import (
 
 	"infra/monitoring/messages"
 
-	"github.com/luci/luci-go/common/logging"
+	"go.chromium.org/luci/common/logging"
 )
 
 // NewSnapshot returns a client which will record responses to baseDir for later replay.

@@ -9,12 +9,12 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/gae/impl/memory"
-	"github.com/luci/luci-go/common/logging/memlogger"
-	"github.com/luci/luci-go/server/auth"
-	"github.com/luci/luci-go/server/auth/authtest"
-	"github.com/luci/luci-go/server/auth/identity"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/gae/impl/memory"
+	"go.chromium.org/luci/common/logging/memlogger"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/auth/authtest"
+	"go.chromium.org/luci/server/auth/identity"
 )
 
 func TestProjectIsKnown(t *testing.T) {

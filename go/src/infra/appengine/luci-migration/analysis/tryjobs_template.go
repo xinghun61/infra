@@ -4,7 +4,7 @@ import (
 	"html/template"
 	"time"
 
-	"github.com/luci/luci-go/common/api/buildbucket/buildbucket/v1"
+	"go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 
 	"infra/appengine/luci-migration/bbutil"
 	"infra/appengine/luci-migration/common"

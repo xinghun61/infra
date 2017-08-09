@@ -10,7 +10,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	local "github.com/luci/luci-go/cipd/client/cipd/local"
+	local "go.chromium.org/luci/cipd/client/cipd/local"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

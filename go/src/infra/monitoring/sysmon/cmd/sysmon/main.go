@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/logging/gologger"
-	"github.com/luci/luci-go/common/tsmon"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/logging/gologger"
+	"go.chromium.org/luci/common/tsmon"
 	"golang.org/x/net/context"
 
 	"infra/monitoring/sysmon/android"

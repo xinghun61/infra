@@ -13,17 +13,17 @@ import (
 	testhelper "infra/monitoring/client/test"
 	"infra/monitoring/messages"
 
-	"github.com/luci/gae/impl/dummy"
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/gae/service/info"
-	tq "github.com/luci/gae/service/taskqueue"
-	"github.com/luci/gae/service/urlfetch"
-	"github.com/luci/luci-go/appengine/gaetesting"
-	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/gae/impl/dummy"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/gae/service/info"
+	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/gae/service/urlfetch"
+	"go.chromium.org/luci/appengine/gaetesting"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/server/router"
 
-	"github.com/luci/luci-go/common/logging/gologger"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/luci/common/logging/gologger"
 )
 
 func newTestContext() context.Context {

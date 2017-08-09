@@ -15,8 +15,8 @@ import (
 	dockerTypes "github.com/docker/docker/api/types"
 	dockerContainerTypes "github.com/docker/docker/api/types/container"
 
-	"github.com/luci/luci-go/common/clock/testclock"
-	"github.com/luci/luci-go/common/tsmon"
+	"go.chromium.org/luci/common/clock/testclock"
+	"go.chromium.org/luci/common/tsmon"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

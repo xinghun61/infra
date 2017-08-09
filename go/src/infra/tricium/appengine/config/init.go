@@ -8,7 +8,7 @@ package config
 import (
 	"net/http"
 
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/luci/server/router"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"

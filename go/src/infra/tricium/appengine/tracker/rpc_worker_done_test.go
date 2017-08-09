@@ -9,7 +9,7 @@ import (
 	"errors"
 	"testing"
 
-	ds "github.com/luci/gae/service/datastore"
+	ds "go.chromium.org/gae/service/datastore"
 
 	. "github.com/smartystreets/goconvey/convey"
 

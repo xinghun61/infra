@@ -5,12 +5,12 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/gae/impl/memory"
-	"github.com/luci/luci-go/common/clock/testclock"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/logging/gologger"
-	"github.com/luci/luci-go/server/secrets/testsecrets"
-	"github.com/luci/luci-go/server/templates"
+	"go.chromium.org/gae/impl/memory"
+	"go.chromium.org/luci/common/clock/testclock"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/logging/gologger"
+	"go.chromium.org/luci/server/secrets/testsecrets"
+	"go.chromium.org/luci/server/templates"
 )
 
 func testContext() context.Context {

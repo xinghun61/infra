@@ -17,7 +17,7 @@ It has these top-level messages:
 */
 package dashboard
 
-import prpc "github.com/luci/luci-go/grpc/prpc"
+import prpc "go.chromium.org/luci/grpc/prpc"
 
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"

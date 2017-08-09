@@ -2,7 +2,7 @@
 
 package dashboard
 
-import discovery "github.com/luci/luci-go/grpc/discovery"
+import discovery "go.chromium.org/luci/grpc/discovery"
 
 import "github.com/golang/protobuf/protoc-gen-go/descriptor"
 

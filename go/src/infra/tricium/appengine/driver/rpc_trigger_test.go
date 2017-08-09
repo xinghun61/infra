@@ -9,8 +9,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	tq "github.com/luci/gae/service/taskqueue"
 	. "github.com/smartystreets/goconvey/convey"
+	tq "go.chromium.org/gae/service/taskqueue"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/api/v1"

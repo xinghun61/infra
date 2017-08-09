@@ -13,10 +13,10 @@ import (
 	"golang.org/x/net/context"
 
 	"github.com/golang/protobuf/proto"
-	ds "github.com/luci/gae/service/datastore"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/router"
-	"github.com/luci/luci-go/server/templates"
+	ds "go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/router"
+	"go.chromium.org/luci/server/templates"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

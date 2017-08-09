@@ -15,12 +15,12 @@ import (
 
 	"infra/tools/git/state"
 
-	"github.com/luci/luci-go/cipd/version"
-	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/logging/gologger"
-	"github.com/luci/luci-go/common/retry"
-	"github.com/luci/luci-go/common/system/environ"
+	"go.chromium.org/luci/cipd/version"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/logging/gologger"
+	"go.chromium.org/luci/common/retry"
+	"go.chromium.org/luci/common/system/environ"
 )
 
 // versionString is the version string for this wrapper.

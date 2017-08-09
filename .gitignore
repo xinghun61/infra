@@ -13,7 +13,7 @@ appengine/milo/html/parts/graph/viz.js
 /node/runtimes
 # build_cache is used by infra.services.builder_alerts
 build_cache
-go/src/github.com
+go/src/go.chromium.org
 recipes-py
 *.recipe_deps
 !/cipd/README.md

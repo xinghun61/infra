@@ -5,7 +5,7 @@ package migration
 import (
 	"strings"
 
-	"github.com/luci/luci-go/common/errors"
+	"go.chromium.org/luci/common/errors"
 )
 
 // TransformProperties modifies props to simplify Chromium migration to LUCI.

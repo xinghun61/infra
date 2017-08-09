@@ -7,8 +7,8 @@ package main
 import (
 	"os"
 
-	"github.com/luci/luci-go/common/data/rand/mathrand"
-	"github.com/luci/luci-go/logdog/client/cli"
+	"go.chromium.org/luci/common/data/rand/mathrand"
+	"go.chromium.org/luci/logdog/client/cli"
 
 	"infra/libs/infraenv"
 

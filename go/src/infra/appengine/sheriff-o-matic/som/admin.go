@@ -10,8 +10,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/luci-go/server/settings"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/server/settings"
 )
 
 // SettingsUIPage is the SoM admin settings page.

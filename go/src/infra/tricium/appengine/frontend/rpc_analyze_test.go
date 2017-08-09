@@ -7,12 +7,12 @@ package frontend
 import (
 	"testing"
 
-	tq "github.com/luci/gae/service/taskqueue"
+	tq "go.chromium.org/gae/service/taskqueue"
 
-	"github.com/luci/luci-go/server/auth"
-	"github.com/luci/luci-go/server/auth/authtest"
-	"github.com/luci/luci-go/server/auth/identity"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/auth/authtest"
+	"go.chromium.org/luci/server/auth/identity"
 
 	"golang.org/x/net/context"
 

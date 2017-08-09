@@ -13,24 +13,24 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/luci/luci-go/client/authcli"
-	"github.com/luci/luci-go/common/api/buildbucket/buildbucket/v1"
-	"github.com/luci/luci-go/common/auth"
-	"github.com/luci/luci-go/common/cli"
-	"github.com/luci/luci-go/common/data/rand/mathrand"
-	"github.com/luci/luci-go/common/errors"
-	log "github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/logging/gologger"
-	miloProto "github.com/luci/luci-go/common/proto/milo"
-	"github.com/luci/luci-go/common/sync/parallel"
-	"github.com/luci/luci-go/grpc/prpc"
-	milo "github.com/luci/luci-go/milo/api/proto"
+	"go.chromium.org/luci/client/authcli"
+	"go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
+	"go.chromium.org/luci/common/auth"
+	"go.chromium.org/luci/common/cli"
+	"go.chromium.org/luci/common/data/rand/mathrand"
+	"go.chromium.org/luci/common/errors"
+	log "go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/logging/gologger"
+	miloProto "go.chromium.org/luci/common/proto/milo"
+	"go.chromium.org/luci/common/sync/parallel"
+	"go.chromium.org/luci/grpc/prpc"
+	milo "go.chromium.org/luci/milo/api/proto"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/maruel/subcommands"
 	"golang.org/x/net/context"
 
-	"github.com/luci/luci-go/hardcoded/chromeinfra"
+	"go.chromium.org/luci/hardcoded/chromeinfra"
 )
 
 ////////////////////////////////////////////////////////////////////////////////

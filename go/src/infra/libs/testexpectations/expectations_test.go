@@ -9,10 +9,10 @@ import (
 
 	testhelper "infra/monitoring/client/test"
 
-	"github.com/luci/gae/impl/dummy"
-	"github.com/luci/gae/service/info"
-	"github.com/luci/gae/service/urlfetch"
-	"github.com/luci/luci-go/appengine/gaetesting"
+	"go.chromium.org/gae/impl/dummy"
+	"go.chromium.org/gae/service/info"
+	"go.chromium.org/gae/service/urlfetch"
+	"go.chromium.org/luci/appengine/gaetesting"
 
 	. "github.com/smartystreets/goconvey/convey"
 )

@@ -4,7 +4,7 @@ package luci.build;
 option go_package = "build";
 
 import "infra/tools/kitchen/third_party/recipe_engine/result.proto";
-import "github.com/luci/luci-go/common/proto/milo/annotations.proto";
+import "go.chromium.org/luci/common/proto/milo/annotations.proto";
 
 
 // Result of a build run from the perspective of a build bootstrapper.

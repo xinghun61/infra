@@ -7,8 +7,8 @@ package cookflags
 import (
 	"flag"
 
-	"github.com/luci/luci-go/logdog/client/butlerlib/streamproto"
-	"github.com/luci/luci-go/logdog/common/types"
+	"go.chromium.org/luci/logdog/client/butlerlib/streamproto"
+	"go.chromium.org/luci/logdog/common/types"
 )
 
 // LogDogFlags are the subset of flags which control logdog behavior.

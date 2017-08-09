@@ -13,9 +13,9 @@ import (
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
-	tq "github.com/luci/gae/service/taskqueue"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/router"
+	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/router"
 
 	"golang.org/x/net/context"
 

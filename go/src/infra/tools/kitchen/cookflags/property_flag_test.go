@@ -8,8 +8,8 @@ import (
 	"flag"
 	"testing"
 
-	. "github.com/luci/luci-go/common/testing/assertions"
 	. "github.com/smartystreets/goconvey/convey"
+	. "go.chromium.org/luci/common/testing/assertions"
 )
 
 func TestPropertyFlag(t *testing.T) {

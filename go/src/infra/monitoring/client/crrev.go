@@ -7,7 +7,7 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/gae/service/memcache"
+	"go.chromium.org/gae/service/memcache"
 )
 
 type crRev simpleClient

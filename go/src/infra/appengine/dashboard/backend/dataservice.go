@@ -11,8 +11,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/luci-go/common/logging"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/logging"
 )
 
 // Severity represents the alert type.

@@ -4,8 +4,8 @@ import (
 	"expvar"
 	"time"
 
-	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/logging"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/logging"
 	"golang.org/x/net/context"
 )
 

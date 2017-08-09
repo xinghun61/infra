@@ -8,7 +8,7 @@ builders:
   - infra-continuous-win-64
 supports_cross_compilation: true
 go_packages:
-  - github.com/luci/luci-go/logdog/client/cmd/logdog_annotee
+  - go.chromium.org/luci/logdog/client/cmd/logdog_annotee
 root: ../../go/bin
 data:
   - file: logdog_annotee${exe_suffix}

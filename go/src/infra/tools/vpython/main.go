@@ -12,15 +12,15 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/luci-go/hardcoded/chromeinfra"
-	"github.com/luci/luci-go/vpython/api/vpython"
-	"github.com/luci/luci-go/vpython/application"
-	"github.com/luci/luci-go/vpython/cipd"
+	"go.chromium.org/luci/hardcoded/chromeinfra"
+	"go.chromium.org/luci/vpython/api/vpython"
+	"go.chromium.org/luci/vpython/application"
+	"go.chromium.org/luci/vpython/cipd"
 
-	cipdClient "github.com/luci/luci-go/cipd/client/cipd"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/logging/gologger"
 	"github.com/mitchellh/go-homedir"
+	cipdClient "go.chromium.org/luci/cipd/client/cipd"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/logging/gologger"
 )
 
 var cipdPackageLoader = cipd.PackageLoader{

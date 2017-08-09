@@ -12,13 +12,13 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/luci/luci-go/client/archiver"
-	"github.com/luci/luci-go/common/auth"
-	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/common/isolated"
-	"github.com/luci/luci-go/common/isolatedclient"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/retry"
+	"go.chromium.org/luci/client/archiver"
+	"go.chromium.org/luci/common/auth"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/isolated"
+	"go.chromium.org/luci/common/isolatedclient"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/retry"
 )
 
 func combineIsolates(ctx context.Context, arc *archiver.Archiver, isoHashes ...isolated.HexDigest) (isolated.HexDigest, error) {

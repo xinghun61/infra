@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"testing"
 
-	"github.com/luci/luci-go/common/tsmon"
+	"go.chromium.org/luci/common/tsmon"
 	"golang.org/x/net/context"
 
 	. "github.com/smartystreets/goconvey/convey"

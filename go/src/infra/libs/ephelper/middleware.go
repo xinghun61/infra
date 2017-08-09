@@ -6,9 +6,9 @@ package ephelper
 
 import (
 	"github.com/luci/go-endpoints/endpoints"
-	gaeauth "github.com/luci/luci-go/appengine/gaeauth/server"
-	"github.com/luci/luci-go/appengine/gaemiddleware"
-	"github.com/luci/luci-go/server/auth"
+	gaeauth "go.chromium.org/luci/appengine/gaeauth/server"
+	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/server/auth"
 	"golang.org/x/net/context"
 )
 

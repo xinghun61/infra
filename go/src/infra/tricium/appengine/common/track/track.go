@@ -53,7 +53,7 @@ import (
 	"strings"
 	"time"
 
-	ds "github.com/luci/gae/service/datastore"
+	ds "go.chromium.org/gae/service/datastore"
 
 	"infra/tricium/api/v1"
 )

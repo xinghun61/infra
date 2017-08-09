@@ -14,12 +14,12 @@ import (
 	dockerTypes "github.com/docker/docker/api/types"
 	"github.com/docker/docker/client"
 
-	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/tsmon"
-	"github.com/luci/luci-go/common/tsmon/field"
-	"github.com/luci/luci-go/common/tsmon/metric"
-	tsmonTypes "github.com/luci/luci-go/common/tsmon/types"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/tsmon"
+	"go.chromium.org/luci/common/tsmon/field"
+	"go.chromium.org/luci/common/tsmon/metric"
+	tsmonTypes "go.chromium.org/luci/common/tsmon/types"
 
 	"golang.org/x/net/context"
 )

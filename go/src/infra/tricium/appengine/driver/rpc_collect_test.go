@@ -7,8 +7,8 @@ package driver
 import (
 	"testing"
 
-	tq "github.com/luci/gae/service/taskqueue"
 	. "github.com/smartystreets/goconvey/convey"
+	tq "go.chromium.org/gae/service/taskqueue"
 
 	"infra/tricium/api/admin/v1"
 	"infra/tricium/appengine/common"

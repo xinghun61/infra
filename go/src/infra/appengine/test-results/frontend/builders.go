@@ -15,12 +15,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/gae/service/memcache"
-	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/errors"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/gae/service/memcache"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/router"
 	"golang.org/x/net/context"
 
 	"infra/appengine/test-results/model"

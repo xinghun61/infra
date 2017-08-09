@@ -7,7 +7,7 @@ package main
 import (
 	"strings"
 
-	"github.com/luci/luci-go/common/errors"
+	"go.chromium.org/luci/common/errors"
 )
 
 // FlagSplitterDef is the definition for a compiled FlagSplitter.

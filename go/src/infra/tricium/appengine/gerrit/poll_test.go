@@ -10,11 +10,11 @@ import (
 	"testing"
 	"time"
 
-	ds "github.com/luci/gae/service/datastore"
-	tq "github.com/luci/gae/service/taskqueue"
-	"github.com/luci/luci-go/common/clock"
-	"github.com/luci/luci-go/common/clock/testclock"
 	. "github.com/smartystreets/goconvey/convey"
+	ds "go.chromium.org/gae/service/datastore"
+	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/clock/testclock"
 
 	gr "golang.org/x/build/gerrit"
 	"golang.org/x/net/context"

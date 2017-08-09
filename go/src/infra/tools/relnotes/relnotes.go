@@ -29,7 +29,7 @@ import (
 
 	appengine "google.golang.org/api/appengine/v1"
 
-	"github.com/luci/luci-go/common/data/stringset"
+	"go.chromium.org/luci/common/data/stringset"
 )
 
 const monorailURL = "https://bugs.chromium.org/p/%s/issues/detail?id=%s"

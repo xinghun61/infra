@@ -793,7 +793,7 @@ def build_cipd_client(go_workspace, out_dir):
   # Build cipd client binary for the host platform.
   run_go_build(
       go_workspace,
-      package='github.com/luci/luci-go/cipd/client/cmd/cipd',
+      package='go.chromium.org/luci/cipd/client/cmd/cipd',
       output=cipd_exe,
       rebuild=True,
       goos='',

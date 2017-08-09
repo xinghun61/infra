@@ -12,10 +12,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/luci/gae/impl/memory"
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/luci-go/common/clock/testclock"
-	"github.com/luci/luci-go/server/router"
+	"go.chromium.org/gae/impl/memory"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/clock/testclock"
+	"go.chromium.org/luci/server/router"
 	"golang.org/x/net/context"
 
 	"time"

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"infra/monitoring/messages"
 
-	"github.com/luci/gae/service/memcache"
-	"github.com/luci/luci-go/common/logging"
+	"go.chromium.org/gae/service/memcache"
+	"go.chromium.org/luci/common/logging"
 
 	"golang.org/x/net/context"
 )

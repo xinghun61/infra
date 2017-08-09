@@ -16,11 +16,11 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
-	"github.com/luci/luci-go/common/flag/stringlistflag"
-	"github.com/luci/luci-go/common/flag/stringmapflag"
-	log "github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/logging/gologger"
-	"github.com/luci/luci-go/common/system/environ"
+	"go.chromium.org/luci/common/flag/stringlistflag"
+	"go.chromium.org/luci/common/flag/stringmapflag"
+	log "go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/logging/gologger"
+	"go.chromium.org/luci/common/system/environ"
 
 	"infra/tools/kitchen/build"
 	"infra/tools/kitchen/third_party/recipe_engine"

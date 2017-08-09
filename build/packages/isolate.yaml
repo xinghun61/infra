@@ -7,7 +7,7 @@ builders:
   - infra-continuous-win-32
   - infra-continuous-win-64
 go_packages:
-  - github.com/luci/luci-go/client/cmd/isolate
+  - go.chromium.org/luci/client/cmd/isolate
 root: ../../go/bin
 data:
   - file: isolate${exe_suffix}

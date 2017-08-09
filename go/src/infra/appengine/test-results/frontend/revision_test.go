@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/luci/luci-go/server/router"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/luci/server/router"
 )
 
 func TestCommitPositionToHash(t *testing.T) {

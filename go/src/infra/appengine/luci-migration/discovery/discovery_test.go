@@ -16,16 +16,16 @@ import (
 	"infra/monorail"
 	"infra/monorail/monorailtest"
 
-	"github.com/luci/gae/impl/memory"
-	"github.com/luci/gae/service/datastore"
-	"github.com/luci/luci-go/common/testing/prpctest"
-	"github.com/luci/luci-go/milo/api/proto"
+	"go.chromium.org/gae/impl/memory"
+	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/testing/prpctest"
+	"go.chromium.org/luci/milo/api/proto"
 
 	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 
-	"github.com/luci/luci-go/common/logging/gologger"
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/luci/common/logging/gologger"
 )
 
 func TestDiscovery(t *testing.T) {

@@ -10,11 +10,11 @@ import (
 	"os"
 	"path/filepath"
 
-	local "github.com/luci/luci-go/cipd/client/cipd/local"
-	"github.com/luci/luci-go/common/logging"
-	"github.com/luci/luci-go/common/tsmon"
-	"github.com/luci/luci-go/common/tsmon/field"
-	"github.com/luci/luci-go/common/tsmon/metric"
+	local "go.chromium.org/luci/cipd/client/cipd/local"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/tsmon"
+	"go.chromium.org/luci/common/tsmon/field"
+	"go.chromium.org/luci/common/tsmon/metric"
 	"golang.org/x/net/context"
 )
 
