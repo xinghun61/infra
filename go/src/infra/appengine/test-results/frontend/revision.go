@@ -19,7 +19,7 @@ import (
 //   See http://crbug.com/407198.
 
 // crRevURL is the base URL of the Chromium Revision's API.
-const crRevURL = "https://cr-rev.appspot.com/_ah/api/crrev/v1/redirect"
+var crRevURL = "https://cr-rev.appspot.com/_ah/api/crrev/v1/redirect"
 
 type crRevClient struct {
 	HTTPClient *http.Client
@@ -80,9 +80,8 @@ func revisionHandler(c *router.Context) {
 		}
 	}
 
-	http.Redirect(c.Writer, c.Request, fmt.Sprintf(
-		"https://chromium.googlesource.com/chromium/src/+log/%s^..%s?pretty=fuller",
-		results[0].hash,
-		results[1].hash,
-	), http.StatusMovedPermanently)
+	redirectURL := fmt.Sprintf(
+		"https://chromium.googlesource.com/chromium/src/+log/%s^..%s?pretty=fuller&n=%s",
+		results[0].hash, results[1].hash, c.Request.FormValue("n"))
+	http.Redirect(c.Writer, c.Request, redirectURL, http.StatusMovedPermanently)
 }
