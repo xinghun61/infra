@@ -77,6 +77,12 @@
 					]
 				}
 			]
+		},
+		{
+			"name": "contributing_buildbucket_ids",
+			"description": "List of build buildbucket IDs that contributed to an attempt.",
+			"type": "INTEGER",
+			"is_repeated": true
 		}
 	]
 }
