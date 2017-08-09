@@ -141,9 +141,9 @@ class ExtractSignalPipeline(BasePipeline):
           failure_log = _GetReliableTestFailureLog(gtest_result)
 
         if gtest_result is None or failure_log == 'invalid':
-          use_ninja_output_log = (waterfall_config
-                                  .GetDownloadBuildDataSettings()
-                                  .get('use_ninja_output_log'))
+          use_ninja_output_log = (
+              waterfall_config.GetDownloadBuildDataSettings()
+              .get('use_ninja_output_log'))
           if step_name == 'compile' and use_ninja_output_log:
             failure_log = buildbot.GetStepLog(master_name, builder_name,
                                               build_number, step_name,
@@ -154,11 +154,12 @@ class ExtractSignalPipeline(BasePipeline):
               or not failure_log):
             from_ninja_output = False
             try:
+              # TODO(yichunli): Add coverage for these blocks.
               if not lock_util.WaitUntilDownloadAllowed(
                   master_name):  # pragma: no cover
-                raise pipeline.Retry(('Failed to pull log of step %s',
-                                      ' of master %s') %
-                                     (step_name, master_name))
+                raise pipeline.Retry(
+                    'Failed to pull log of step %s of master %s' %
+                    (step_name, master_name))
               failure_log = buildbot.GetStepLog(master_name, builder_name,
                                                 build_number, step_name,
                                                 self.HTTP_CLIENT)
