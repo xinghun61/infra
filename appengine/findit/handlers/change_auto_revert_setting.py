@@ -1,7 +1,7 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-"""Handles requests to disable auto revert."""
+"""Handles requests to disable/enable auto-revert."""
 
 import copy
 import json
@@ -49,12 +49,13 @@ class ChangeAutoRevertSetting(BaseHandler):
         'revert_compile_culprit'):
       updated = wf_config.FinditConfig.Get().Update(
           user,
-          acl.CanTriggerNewAnalysis(user.email(), is_admin),
+          acl.IsPrivilegedUser(user.email(), is_admin),
           message=message,
           action_settings=action_settings)
 
     if not updated:
-      return BaseHandler.CreateError('Auto Revert setting is not changed. '
-                                     'Please refresh the page.', 501)
+      return BaseHandler.CreateError(
+          'Failed to update auto-revert setting. '
+          'Please refresh the page and try again.', 501)
 
     return self.CreateRedirect('/waterfall/change-auto-revert-setting')

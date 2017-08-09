@@ -38,6 +38,15 @@ def GetDefaultVersionHostname():  # pragma: no cover.
   return app_identity.get_default_version_hostname()
 
 
+def IsStaging():
+  """Returns True if it is a staging app.
+
+  An app is in staging if its app id ends with -staging or -dev.
+  """
+  app_id = app_identity.get_application_id()
+  return any(app_id.endswith(suffix) for suffix in ['-staging', '-dev'])
+
+
 def GetTargetNameForModule(module_name, version=None):  # pragma: no cover.
   """Returns the target name for the given module and version.
 

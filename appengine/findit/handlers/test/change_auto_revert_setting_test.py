@@ -59,8 +59,9 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
 
     self.assertRaisesRegexp(
         webtest.app.AppError,
-        re.compile('.*501 Not Implemented.*Auto Revert setting is not changed.'
-                   ' Please refresh the page.', re.MULTILINE | re.DOTALL),
+        re.compile(
+            '.*501 Not Implemented.*Failed to update auto-revert setting. '
+            'Please refresh the page and try again.', re.MULTILINE | re.DOTALL),
         self.test_app.post,
         '/change-auto-revert-setting',
         params=params)
