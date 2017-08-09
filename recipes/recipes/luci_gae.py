@@ -17,7 +17,7 @@ DEPS = [
   'recipe_engine/step',
 ]
 
-LUCI_GAE_PATH_IN_INFRA = 'infra/go/src/github.com/luci/gae'
+LUCI_GAE_PATH_IN_INFRA = 'infra/go/src/go.chromium.org/gae'
 
 
 def RunSteps(api):
@@ -33,8 +33,8 @@ def RunSteps(api):
     with api.tryserver.set_failure_hash():
       co.run_presubmit_in_go_env()
   else:
-    co.go_env_step('go', 'build', 'github.com/luci/luci-gae/...')
-    co.go_env_step('go', 'test', 'github.com/luci/luci-gae/...')
+    co.go_env_step('go', 'build', 'go.chromium.org/gae/...')
+    co.go_env_step('go', 'test', 'go.chromium.org/gae/...')
 
 
 def GenTests(api):

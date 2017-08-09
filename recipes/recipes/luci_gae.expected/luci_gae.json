@@ -22,9 +22,9 @@
       "--spec-path",
       "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
       "--patch_root",
-      "infra/go/src/github.com/luci/gae",
+      "infra/go/src/go.chromium.org/gae",
       "--revision_mapping_file",
-      "{\"got_revision\": \"infra/go/src/github.com/luci/gae\"}",
+      "{\"got_revision\": \"infra/go/src/go.chromium.org/gae\"}",
       "--git-cache-dir",
       "[GIT_CACHE]",
       "--cleanup-dir",
@@ -34,9 +34,9 @@
       "--revision",
       "infra@origin/master",
       "--revision",
-      "infra/go/src/github.com/luci/gae@c14d891d44f0afff64e56ed7c9702df1d807b1ee",
+      "infra/go/src/go.chromium.org/gae@c14d891d44f0afff64e56ed7c9702df1d807b1ee",
       "--revision",
-      "infra/go/src/github.com/luci/luci-go@origin/master"
+      "infra/go/src/go.chromium.org/luci@origin/master"
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
     "env_prefixes": {
@@ -52,27 +52,27 @@
       "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"infra\": \"origin/master\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/github.com/luci/gae\": \"c14d891d44f0afff64e56ed7c9702df1d807b1ee\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/github.com/luci/luci-go\": \"origin/master\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/go.chromium.org/gae\": \"c14d891d44f0afff64e56ed7c9702df1d807b1ee\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/go.chromium.org/luci\": \"origin/master\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/github.com/luci/gae\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/infra/go/src/github.com/luci/gae.git\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"1baeb5a8a8ba8145cc2d047ac027a5a5e30ab846\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/go.chromium.org/gae\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/infra/go/src/go.chromium.org/gae.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"0af4f7a7096d34672a3d020e29d0335f47b1b242\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra/go/src/github.com/luci/gae\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra/go/src/go.chromium.org/gae\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"properties\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"got_revision\": \"1baeb5a8a8ba8145cc2d047ac027a5a5e30ab846\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"got_revision_cp\": \"refs/heads/master@{#34600}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision\": \"0af4f7a7096d34672a3d020e29d0335f47b1b242\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision_cp\": \"refs/heads/master@{#226343}\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"root\": \"infra\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"step_text\": \"Some step text\"@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@",
-      "@@@SET_BUILD_PROPERTY@got_revision@\"1baeb5a8a8ba8145cc2d047ac027a5a5e30ab846\"@@@",
-      "@@@SET_BUILD_PROPERTY@got_revision_cp@\"refs/heads/master@{#34600}\"@@@"
+      "@@@SET_BUILD_PROPERTY@got_revision@\"0af4f7a7096d34672a3d020e29d0335f47b1b242\"@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision_cp@\"refs/heads/master@{#226343}\"@@@"
     ]
   },
   {
@@ -107,7 +107,7 @@
       "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "go",
       "build",
-      "github.com/luci/luci-gae/..."
+      "go.chromium.org/gae/..."
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
     "name": "go build"
@@ -119,7 +119,7 @@
       "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "go",
       "test",
-      "github.com/luci/luci-gae/..."
+      "go.chromium.org/gae/..."
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
     "name": "go test"

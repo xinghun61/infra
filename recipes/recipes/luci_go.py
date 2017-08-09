@@ -35,7 +35,7 @@ PROPERTIES = {
     help="set GOARCH environment variable for go build+test"),
 }
 
-LUCI_GO_PATH_IN_INFRA = 'infra/go/src/github.com/luci/luci-go'
+LUCI_GO_PATH_IN_INFRA = 'infra/go/src/go.chromium.org/luci'
 
 
 def RunSteps(api, presubmit, GOARCH):
@@ -54,8 +54,8 @@ def RunSteps(api, presubmit, GOARCH):
       with api.tryserver.set_failure_hash():
         co.run_presubmit_in_go_env()
     else:
-      co.go_env_step('go', 'build', 'github.com/luci/luci-go/...')
-      co.go_env_step('go', 'test', 'github.com/luci/luci-go/...')
+      co.go_env_step('go', 'build', 'go.chromium.org/luci/...')
+      co.go_env_step('go', 'test', 'go.chromium.org/luci/...')
 
 
 def GenTests(api):

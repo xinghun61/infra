@@ -22,9 +22,9 @@
       "--spec-path",
       "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
       "--patch_root",
-      "infra/go/src/github.com/luci/luci-go",
+      "infra/go/src/go.chromium.org/luci",
       "--revision_mapping_file",
-      "{\"got_revision\": \"infra/go/src/github.com/luci/luci-go\"}",
+      "{\"got_revision\": \"infra/go/src/go.chromium.org/luci\"}",
       "--git-cache-dir",
       "[GIT_CACHE]",
       "--cleanup-dir",
@@ -34,7 +34,7 @@
       "--revision",
       "infra@origin/master",
       "--revision",
-      "infra/go/src/github.com/luci/luci-go@c14d891d44f0afff64e56ed7c9702df1d807b1ee"
+      "infra/go/src/go.chromium.org/luci@c14d891d44f0afff64e56ed7c9702df1d807b1ee"
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
     "env_prefixes": {
@@ -50,26 +50,26 @@
       "@@@STEP_LOG_LINE@json.output@  \"did_run\": true, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"fixed_revisions\": {@@@",
       "@@@STEP_LOG_LINE@json.output@    \"infra\": \"origin/master\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/github.com/luci/luci-go\": \"c14d891d44f0afff64e56ed7c9702df1d807b1ee\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/go.chromium.org/luci\": \"c14d891d44f0afff64e56ed7c9702df1d807b1ee\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"manifest\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/github.com/luci/luci-go\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/infra/go/src/github.com/luci/luci-go.git\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"0fe06637d251d5832f57351f23a63d1cf9458a9d\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"infra/go/src/go.chromium.org/luci\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"repository\": \"https://fake.org/infra/go/src/go.chromium.org/luci.git\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"revision\": \"20f528b465552566c6377b61e06c3f83a998811f\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"patch_failure\": false, @@@",
-      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra/go/src/github.com/luci/luci-go\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"patch_root\": \"infra/go/src/go.chromium.org/luci\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"properties\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"got_revision\": \"0fe06637d251d5832f57351f23a63d1cf9458a9d\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"got_revision_cp\": \"refs/heads/master@{#264471}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision\": \"20f528b465552566c6377b61e06c3f83a998811f\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"got_revision_cp\": \"refs/heads/master@{#37652}\"@@@",
       "@@@STEP_LOG_LINE@json.output@  }, @@@",
       "@@@STEP_LOG_LINE@json.output@  \"root\": \"infra\", @@@",
       "@@@STEP_LOG_LINE@json.output@  \"step_text\": \"Some step text\"@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@",
-      "@@@SET_BUILD_PROPERTY@got_revision@\"0fe06637d251d5832f57351f23a63d1cf9458a9d\"@@@",
-      "@@@SET_BUILD_PROPERTY@got_revision_cp@\"refs/heads/master@{#264471}\"@@@"
+      "@@@SET_BUILD_PROPERTY@got_revision@\"20f528b465552566c6377b61e06c3f83a998811f\"@@@",
+      "@@@SET_BUILD_PROPERTY@got_revision_cp@\"refs/heads/master@{#37652}\"@@@"
     ]
   },
   {
@@ -104,7 +104,7 @@
       "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "go",
       "build",
-      "github.com/luci/luci-go/..."
+      "go.chromium.org/luci/..."
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
     "name": "go build"
@@ -116,7 +116,7 @@
       "[CACHE]/infra_gclient_with_go/infra/go/env.py",
       "go",
       "test",
-      "github.com/luci/luci-go/..."
+      "go.chromium.org/luci/..."
     ],
     "cwd": "[CACHE]/infra_gclient_with_go",
     "name": "go test"

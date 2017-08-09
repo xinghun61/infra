@@ -5,7 +5,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
-      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'recipes-py', 'url': 'https://chromium.googlesource.com/external/github.com/luci/recipes-py'}]",
+      "cache_dir = '[GIT_CACHE]'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'recipes-py', 'url': 'https://chromium.googlesource.com/infra/luci/recipes-py'}]",
       "--patch_root",
       "recipes-py",
       "--revision_mapping_file",
@@ -68,7 +68,7 @@
       "-tag",
       "buildbot_build://-1",
       "-tag",
-      "git_repository:https://chromium.googlesource.com/external/github.com/luci/recipes-py",
+      "git_repository:https://chromium.googlesource.com/infra/luci/recipes-py",
       "-tag",
       "git_revision:edcfe0cf57183aad8ad72a82355d966b34ff412c"
     ],
