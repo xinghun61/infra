@@ -22,12 +22,12 @@ ABC_TEST_FAILURE_LOG = """
 """
 
 COMPILE_FAILURE_LOG = json.dumps({
-  'failures': [{
-    'output_nodes': ['a/b.o'],
-    'rule': 'CXX',
-    'output': '',
-    'dependencies': ['../../b.h', '../../b.c']
-  }]
+    'failures': [{
+        'output_nodes': ['a/b.o'],
+        'rule': 'CXX',
+        'output': '',
+        'dependencies': ['../../b.h', '../../b.c']
+    }]
 })
 
 FAILURE_SIGNALS = {
@@ -69,6 +69,7 @@ COMPILE_FAILURE_INFO = {
     }
 }
 
+
 class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
@@ -91,6 +92,14 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     expected_result = '\n'.join(lines[-5:])
     result = extract_signal_pipeline._ExtractStorablePortionOfLog(log_data)
     self.assertEqual(expected_result, result)
+
+  def testExtractStorablePortionOfNinjaInfoLogWithBigLogData(self):
+    self.mock(ExtractSignalPipeline, 'LOG_DATA_BYTE_LIMIT', 500)
+    lines = [str(9 - i) * 99 for i in range(9)]
+    log_data = '\n'.join(lines)
+    result = extract_signal_pipeline._ExtractStorablePortionOfLog(log_data,
+                                                                  True)
+    self.assertEqual('', result)
 
   @mock.patch.object(
       buildbot, 'GetStepLog', return_value='If used, test should fail!')

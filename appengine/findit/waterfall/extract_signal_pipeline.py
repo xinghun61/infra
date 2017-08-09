@@ -22,12 +22,14 @@ from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
 
 
-def _ExtractStorablePortionOfLog(log_data):
+def _ExtractStorablePortionOfLog(log_data, from_ninja_output=False):
   # For the log of a failed step in a build, the error messages usually show
   # up at the end of the whole log. So if the log is too big to fit into a
   # datastore entity, it's safe to just save the ending portion of the log.
   if len(log_data) <= ExtractSignalPipeline.LOG_DATA_BYTE_LIMIT:
     return log_data
+  if from_ninja_output:
+    return ''
 
   lines = log_data.split('\n')
   size = 0
@@ -134,6 +136,7 @@ class ExtractSignalPipeline(BasePipeline):
         # TODO: Use swarming test result instead of archived gtest results
         gtest_result = buildbot.GetGtestResultLog(master_name, builder_name,
                                                   build_number, step_name)
+        from_ninja_output = False
         if gtest_result:
           failure_log = _GetReliableTestFailureLog(gtest_result)
 
@@ -146,8 +149,10 @@ class ExtractSignalPipeline(BasePipeline):
                                               build_number, step_name,
                                               self.HTTP_CLIENT,
                                               'json.output[ninja_info]')
+            from_ninja_output = True
           if (step_name != 'compile' or not use_ninja_output_log
               or not failure_log):
+            from_ninja_output = False
             try:
               if not lock_util.WaitUntilDownloadAllowed(
                   master_name):  # pragma: no cover
@@ -176,7 +181,8 @@ class ExtractSignalPipeline(BasePipeline):
           step = WfStep.Create(master_name, builder_name, build_number,
                                step_name)
 
-        step.log_data = _ExtractStorablePortionOfLog(failure_log)
+        step.log_data = _ExtractStorablePortionOfLog(failure_log,
+                                                     from_ninja_output)
 
         try:
           step.put()

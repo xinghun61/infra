@@ -382,6 +382,14 @@ def GetStepLog(master_name,
     else:
       return None
 
+  if log_type.lower() == 'json.output[ninja_info]':
+    # Check if data is malformatted.
+    try:
+      json.loads(data)
+    except ValueError:
+      logging.error('json.output[ninja_info] is malformatted')
+      return None
+
   if log_type.lower() not in ['stdout', 'json.output[ninja_info]']:
     try:
       return json.loads(data) if data else None

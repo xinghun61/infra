@@ -461,6 +461,17 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
 
   @mock.patch.object(
+      logdog_util,
+      'GetStepLogLegacy',
+      return_value=':')
+  def testMalformattedNinjaInfo(self, _):
+    step_metadata = buildbot.GetStepLog(self.master_name, self.builder_name,
+                                        self.build_number, self.step_name,
+                                        self.http_client,
+                                        'json.output[ninja_info]')
+    self.assertIsNone(step_metadata)
+
+  @mock.patch.object(
       logdog_util, '_GetAnnotationsProtoForPath', return_value=None)
   def testGetStepMetadataStepNone(self, _):
     step_metadata = buildbot.GetStepLog(self.master_name, self.builder_name,
