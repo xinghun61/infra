@@ -48,6 +48,9 @@ class CombineEventsToAttempt(beam.CombineFn):
     # the same for all events for a given attempt.
     self.consistent_fields = set([
         'cq_name',
+        'issue',
+        'patchset',
+        'dry_run',
     ])
 
   @staticmethod
@@ -90,7 +93,7 @@ class CombineEventsToAttempt(beam.CombineFn):
       for field in self.consistent_fields:
         attempt_value = attempt.__dict__.get(field)
         event_value = event.__dict__.get(field)
-        assert(attempt_value is None or attempt_value  == event_value)
+        assert(not attempt_value or attempt_value  == event_value)
         attempt.__dict__[field] = event_value
 
       affected_fields = self.action_affects_fields.get(event.action, [])
@@ -126,7 +129,8 @@ class ComputeAttempts(beam.PTransform):
 
 
 def main():
-  q = ('SELECT timestamp_millis, action, attempt_start_usec, cq_name '
+  q = ('SELECT timestamp_millis, action, attempt_start_usec, cq_name, issue,'
+       '  patchset, dry_run '
        'FROM `chrome-infra-events.raw_events.cq`')
   p = chops_beam.EventsPipeline()
   _ = (p

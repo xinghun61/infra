@@ -75,6 +75,9 @@ class TestCQAttemptAccumulator(unittest.TestCase):
                               self.timestamp_msec)
     event.action = action if action else self.combFn.ACTION_PATCH_START
     event.cq_name = cq_name if cq_name else 'test_cq'
+    event.issue = '123'
+    event.patchset = '456'
+    event.dry_run = True
     return event
 
   def test_null_attempt_start_not_included(self):
@@ -136,7 +139,8 @@ class TestCQAttemptAccumulator(unittest.TestCase):
   def test_extract_consistent_field(self):
     event = self.basic_event()
     attempt = self.combFn.extract_output([event])
-    self.assertEqual(attempt['cq_name'], event.cq_name)
+    for field in self.combFn.consistent_fields:
+      self.assertEqual(attempt[field], event.__dict__[field])
 
   def test_extract_different_consistent_field(self):
     accumulator = [

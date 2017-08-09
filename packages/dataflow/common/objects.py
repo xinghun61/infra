@@ -60,8 +60,10 @@ class CQAttempt(BigQueryObject):
     self.patch_committed_msec = None
     self.patch_started_to_commit_msec = None
 
-
     self.cq_name = None
+    self.issue = None
+    self.patchset = None
+    self.dry_run = False
 
   @staticmethod
   def get_bigquery_attributes():
@@ -75,6 +77,9 @@ class CQAttempt(BigQueryObject):
         'committed',
         'was_throttled',
         'waited_for_tree',
+        'issue',
+        'patchset',
+        'dry_run',
     ]
 
 
@@ -88,6 +93,9 @@ class CQEvent(BigQueryObject):
     self.action = None
     self.attempt_start_usec = None
     self.cq_name = None
+    self.issue = None
+    self.patchset = None
+    self.dry_run = False
 
   @staticmethod
   def get_bigquery_attributes():
@@ -96,4 +104,7 @@ class CQEvent(BigQueryObject):
         'action',
         'attempt_start_usec',
         'cq_name',
+        'issue',
+        'patchset',
+        'dry_run',
     ]
