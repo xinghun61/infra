@@ -52,6 +52,17 @@ tr:nth-child(even) {
 td:last-child {
     width: 500px;
 }
+#notice {
+  width: 70%;
+  padding: 0.75em;
+  margin: auto;
+  text-align: center;
+  border: 1px dotted;
+  background: #eee;
+  margin-bottom: 1em;
+  font-family: sans-serif;
+  font-size: 13px;
+}
 </style>
 <script src="js/base.js"></script>
 <script src="js/string.js"></script>
@@ -65,6 +76,13 @@ td:last-child {
 <script src="js/ui.js"></script>
 <script src="js/overview.js"></script>
 <body>
-    <div id="navbar"></div>
-    <div id="content"></div>
+  <div id="notice">
+    Notice: We are planning to deprecate the
+    <a href="/dashboards/treemap.html">Times</a> and
+    <a href="/dashboards/overview.html">Overview</a> sections by 2017-08-23. If
+    you are using those sections, please
+    <a href="mailo:infra-dev@chromium.org">let us know</a>.
+  </div>
+  <div id="navbar"></div>
+  <div id="content"></div>
 </body>
