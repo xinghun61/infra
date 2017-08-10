@@ -20,7 +20,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"infra/appengine/test-results/model"
 	"infra/monitoring/messages"
 	"infra/monorail"
 
@@ -95,8 +94,6 @@ type readerType interface {
 
 	LatestBuilds(ctx context.Context, master *messages.MasterLocation, build string) ([]*messages.Build, error)
 
-	TestResults(ctx context.Context, masterName *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error)
-
 	BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error)
 
 	StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error)
@@ -122,11 +119,6 @@ func Build(ctx context.Context, master *messages.MasterLocation, builder string,
 // from build.chromium.org.
 func LatestBuilds(ctx context.Context, master *messages.MasterLocation, build string) ([]*messages.Build, error) {
 	return GetReader(ctx).LatestBuilds(ctx, master, build)
-}
-
-// TestResults fetches the results of a step failure's test run.
-func TestResults(ctx context.Context, masterName *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
-	return GetReader(ctx).TestResults(ctx, masterName, builderName, stepName, buildNumber)
 }
 
 // BuildExtract fetches build information for master from CBE.
@@ -167,14 +159,7 @@ type reader struct {
 	bCache map[string]*messages.Build
 	// bLock protects bCache
 	bLock sync.Mutex
-
-	trCache trCache
 }
-
-// A cache of the test results /builders endpoint. This endpoints returns JSON
-// representing what tests it knows about.
-// format is master -> test -> list of builders
-type trCache map[string]map[string][]string
 
 type writer struct {
 	hc         *trackingHTTPClient
@@ -212,25 +197,7 @@ func newReader(ctx context.Context, httpClient *http.Client) (*reader, error) {
 		hc: &trackingHTTPClient{
 			c: httpClient,
 		},
-		bCache:  map[string]*messages.Build{},
-		trCache: map[string]map[string][]string{},
-	}
-
-	URL := "https://test-results.appspot.com/data/builders"
-	tmpCache := &model.BuilderData{}
-	code, err := r.hc.getJSON(ctx, URL, tmpCache)
-	if err != nil {
-		return nil, err
-	}
-	if code > 400 {
-		return nil, fmt.Errorf("test result cache request failed with code %v", code)
-	}
-
-	for _, master := range tmpCache.Masters {
-		r.trCache[master.Name] = map[string][]string{}
-		for testName, test := range master.Tests {
-			r.trCache[master.Name][testName] = test.Builders
-		}
+		bCache: map[string]*messages.Build{},
 	}
 
 	return r, nil
@@ -264,41 +231,6 @@ func contains(arr []string, s string) bool {
 	}
 
 	return false
-}
-
-func (r *reader) TestResults(ctx context.Context, master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
-	masterValues := r.trCache[master.Name()]
-	if len(masterValues) == 0 {
-		return nil, nil
-	}
-
-	testValues := masterValues[stepName]
-	if len(testValues) == 0 {
-		return nil, nil
-	}
-
-	if !contains(testValues, builderName) {
-		return nil, nil
-	}
-
-	v := url.Values{}
-	v.Add("name", "full_results.json")
-	v.Add("master", master.Name())
-	v.Add("builder", builderName)
-	v.Add("buildnumber", fmt.Sprintf("%d", buildNumber))
-	v.Add("testtype", stepName)
-
-	URL := fmt.Sprintf("https://test-results.appspot.com/testfile?%s", v.Encode())
-	tr := &messages.TestResults{}
-
-	expvars.Add("TestResults", 1)
-	defer expvars.Add("TestResults", -1)
-	if code, err := r.hc.getJSON(ctx, URL, tr); err != nil {
-		logging.Errorf(ctx, "Error (%d) fetching %s: %v", code, URL, err)
-		return nil, err
-	}
-
-	return tr, nil
 }
 
 func (r *reader) BuildExtract(ctx context.Context, masterURL *messages.MasterLocation) (*messages.BuildExtract, error) {

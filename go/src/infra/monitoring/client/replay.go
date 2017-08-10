@@ -43,13 +43,6 @@ func (c *replay) LatestBuilds(ctx context.Context, master *messages.MasterLocati
 	return bs, err
 }
 
-// TestResults fetches the results of a step failure's test run.
-func (c *replay) TestResults(ctx context.Context, master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
-	r := &messages.TestResults{}
-	err := read(ctx, filepath.Join(c.baseDir, "testresults", master.Name(), builderName, stepName, fmt.Sprintf("%d", buildNumber)), r)
-	return r, err
-}
-
 // BuildExtracts fetches build information for masters from CBE in parallel.
 // Returns a map of url to error for any requests that had errors.
 func (c *replay) BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {

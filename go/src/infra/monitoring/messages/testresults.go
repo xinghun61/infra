@@ -8,8 +8,8 @@ package messages
 
 // TestResults represents the uploaded results of a set of tests for a build.
 type TestResults struct {
-	BuildNumber       string `json:"build_number"`
-	SecondsSinceEpoch int64  `json:"seconds_since_epoch"`
+	BuildNumber       string  `json:"build_number"`
+	SecondsSinceEpoch float64 `json:"seconds_since_epoch"`
 	// Tests is an arbitrarily nested tree of test names
 	Tests map[string]interface{} `json:"tests"`
 }

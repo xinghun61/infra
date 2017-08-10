@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"testing"
 
+	"infra/appengine/test-results/model"
 	"infra/monitoring/client"
 	"infra/monitoring/client/test"
 	"infra/monitoring/messages"
@@ -28,7 +29,6 @@ func TestTestStepFailureAlerts(t *testing.T) {
 	finditFake := test.NewFakeServer()
 	defer finditFake.Server.Close()
 
-	c = client.WithTestResults(c, testResultsFake.Server.URL)
 	c = client.WithFindit(c, finditFake.Server.URL)
 
 	Convey("test TestFailureAnalyzer", t, func() {
@@ -395,9 +395,30 @@ func TestTestStepFailureAlerts(t *testing.T) {
 			for _, test := range tests {
 				test := test
 				Convey(test.name, func() {
+					newC := client.WithTestResults(c, testResultsFake.Server.URL)
 					testResultsFake.JSONResponse = test.testResults
+
+					// knownResults determines what tests the test results server knows about. Set
+					// this up so that we don't quit early.
+					knownResults := model.BuilderData{}
+					if test.testResults != nil {
+						for _, failure := range test.failures {
+							knownResults.Masters = append(knownResults.Masters, model.Master{
+								Name: failure.Master.Name(),
+								Tests: map[string]*model.Test{
+									GetTestSuite(failure): {
+										Builders: []string{failure.Build.BuilderName},
+									},
+								},
+							})
+						}
+					}
+
+					testResultsFake.PerURLResponse = map[string]interface{}{
+						"/data/builders": knownResults,
+					}
 					finditFake.JSONResponse = &client.FinditAPIResponse{Results: test.finditResults}
-					gotResult, gotErr := testFailureAnalyzer(c, test.failures)
+					gotResult, gotErr := testFailureAnalyzer(newC, test.failures)
 					So(gotErr, ShouldEqual, test.wantErr)
 					So(gotResult, ShouldResemble, test.wantResult)
 				})
