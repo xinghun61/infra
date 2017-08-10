@@ -474,6 +474,13 @@ class RecursiveFlakePipeline(BasePipeline):
     if previous_build_number is None:
       previous_build_number = preferred_run_build_number
 
+    # Don't trust incoming variables to be ints because they're coming
+    # from FlakeAnalysisRequest which intakes from http. Cast and assert
+    # on current/previous build numbers to fail fast.
+    preferred_run_build_number = int(preferred_run_build_number)
+    previous_build_number = int(previous_build_number)
+    step_size = previous_build_number - preferred_run_build_number
+
     analysis = self.analysis_urlsafe_key.get()
     assert analysis
     analysis.Update(
@@ -484,7 +491,6 @@ class RecursiveFlakePipeline(BasePipeline):
     hard_timeout_seconds = _GetHardTimeoutSeconds(
         self.master_name, self.builder_name, self.triggering_build_number,
         self.step_name, iterations)
-    step_size = previous_build_number - preferred_run_build_number,
     actual_run_build_number = _GetBestBuildNumberToRun(
         self.master_name, self.builder_name, preferred_run_build_number,
         self.step_name, self.test_name, lower_bound_build_number,

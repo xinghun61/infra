@@ -606,6 +606,80 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
+  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
+  @mock.patch.object(
+      recursive_flake_pipeline, '_IsFinished', side_effect=[False, True])
+  def testRecursiveFlakePipelineWithStringBuildNumber(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = '100'
+    step_name = 's'
+    test_name = 't'
+    queue_name = constants.DEFAULT_QUEUE
+    task_id = 'task_id'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.status = analysis_status.PENDING
+    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.put()
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.status = analysis_status.COMPLETED
+    task.put()
+
+    self.MockPipeline(
+        recursive_flake_pipeline.TriggerFlakeSwarmingTaskPipeline,
+        'task_id',
+        expected_args=[
+            master_name, builder_name,
+            int(build_number), step_name, [test_name], 100, 3 * 60 * 60
+        ],
+        expected_kwargs={'force': False})
+
+    self.MockPipeline(
+        SaveLastAttemptedSwarmingTaskIdPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), task_id,
+                       int(build_number)],
+        expected_kwargs={})
+
+    self.MockPipeline(
+        recursive_flake_pipeline.ProcessFlakeSwarmingTaskResultPipeline,
+        'test_result_future',
+        expected_args=[
+            master_name, builder_name,
+            int(build_number), step_name, task_id,
+            int(build_number), test_name, analysis.version_number
+        ],
+        expected_kwargs={})
+
+    self.MockPipeline(
+        UpdateFlakeAnalysisDataPointsPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(),
+                       int(build_number)],
+        expected_kwargs={})
+
+    self.MockPipeline(
+        NextBuildNumberPipeline,
+        '100',
+        expected_args=[
+            analysis.key.urlsafe(),
+            int(build_number), None, None, None
+        ])
+
+    pipeline_job = RecursiveFlakePipeline(
+        analysis.key.urlsafe(),
+        build_number,
+        None,
+        None,
+        None,
+        use_nearby_neighbor=False)
+    pipeline_job.start(queue_name=queue_name)
+    self.execute_queued_tasks()
+
   #######################################
   #      Function unit tests.           #
   #######################################
