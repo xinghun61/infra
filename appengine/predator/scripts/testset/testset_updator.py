@@ -8,15 +8,16 @@ import pickle
 import sys
 import zlib
 
-_FINDIT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir,
-                           os.path.pardir, os.path.pardir)
-sys.path.insert(1, _FINDIT_DIR)
-import script_util
-script_util.SetUpSystemPaths()
+_ROOT_DIR = os.path.join(os.path.dirname(
+    os.path.realpath(__file__)), os.path.pardir, os.path.pardir)
+_FIRST_PARTY_DIR = os.path.join(_ROOT_DIR, 'first_party')
+sys.path.insert(1, _FIRST_PARTY_DIR)
+from local_libs import script_util
+script_util.SetUpSystemPaths(_ROOT_DIR)
 
-from crash.type_enums import CrashClient
-from crash_queries import crash_iterator
-from model import triage_status
+from analysis.type_enums import CrashClient
+from scripts import crash_iterator
+from app.common.model import triage_status
 
 _FEEDBACK_URL_TEMPLATE = (
     'https://%s.appspot.com/crash/%s-result-feedback?key=%s')
