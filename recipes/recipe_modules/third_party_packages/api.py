@@ -69,7 +69,15 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
                                       cipd_install_mode)
 
     if test_fn:
-      test_fn(package_file)
+      # Rename our built package just in case the package itself references
+      # build paths. This will invalidate those references.
+      self.m.file.move(
+          'rename package for tests',
+          package_dir,
+          workdir.join('package.built'))
+
+      with self.m.context(cwd=workdir):
+        test_fn(package_file)
 
     self.register_package(package_file, package_name, version)
 

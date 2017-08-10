@@ -591,8 +591,23 @@
     "cmd": [
       "python",
       "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "move",
+      "[START_DIR]/git/package",
+      "[START_DIR]/git/package.built"
+    ],
+    "infra_step": true,
+    "name": "rename package for tests"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "RECIPE_MODULE[infra::third_party_packages]/resources/git/git_test.py"
     ],
+    "cwd": "[START_DIR]/git",
     "env": {
       "GIT_TEST_CIPD_PACKAGE": "[START_DIR]/git/package.cipd"
     },

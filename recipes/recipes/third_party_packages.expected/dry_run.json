@@ -771,8 +771,26 @@
     "cmd": [
       "python",
       "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "move",
+      "[START_DIR]/python/package",
+      "[START_DIR]/python/package.built"
+    ],
+    "infra_step": true,
+    "name": "python.rename package for tests",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "RECIPE_MODULE[infra::third_party_packages]/resources/python/python_test.py"
     ],
+    "cwd": "[START_DIR]/python",
     "env": {
       "PYTHON_TEST_CIPD_PACKAGE": "[START_DIR]/python/package.cipd"
     },
@@ -1410,8 +1428,26 @@
     "cmd": [
       "python",
       "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "move",
+      "[START_DIR]/git/package",
+      "[START_DIR]/git/package.built"
+    ],
+    "infra_step": true,
+    "name": "git.rename package for tests",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "RECIPE_MODULE[infra::third_party_packages]/resources/git/git_test.py"
     ],
+    "cwd": "[START_DIR]/git",
     "env": {
       "GIT_TEST_CIPD_PACKAGE": "[START_DIR]/git/package.cipd"
     },

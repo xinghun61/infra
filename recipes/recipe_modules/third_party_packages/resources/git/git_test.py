@@ -20,7 +20,7 @@ class TestGit(unittest.TestCase):
     cls._exe_suffix = '.exe' if os.name == 'nt' else ''
 
   def setUp(self):
-    self.tdir = tempfile.mkdtemp(suffix='test_git')
+    self.tdir = tempfile.mkdtemp(dir=os.getcwd(), suffix='test_git')
 
     self.pkg_dir = os.path.join(self.tdir, 'install')
     subprocess.check_call([
@@ -28,7 +28,9 @@ class TestGit(unittest.TestCase):
     self.bin_dir = os.path.join(self.pkg_dir, 'bin')
 
   def tearDown(self):
-    shutil.rmtree(self.tdir)
+    # If we fail to delete, that's fine since we're within the workdir, which
+    # gets purged with each build.
+    shutil.rmtree(self.tdir, ignore_errors=True)
 
   def test_version_from_relpath(self):
     rv = subprocess.call(['git', 'version'], cwd=self.bin_dir)
