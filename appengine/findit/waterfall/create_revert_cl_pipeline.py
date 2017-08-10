@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import timedelta
 import logging
 import textwrap
 
@@ -28,9 +29,17 @@ CULPRIT_OWNED_BY_FINDIT = 'Culprit is a revert created by Findit.'
 AUTO_REVERT_OFF = 'Author of the culprit revision has turned off auto-revert.'
 REVERTED_BY_SHERIFF = 'Culprit has been reverted by a sheriff or the CL owner.'
 
+_DEFAULT_AUTO_REVERT_DAILY_THRESHOLD = 10
+
 
 @ndb.transactional
-def _ShouldRevert(repo_name, revision, pipeline_id):
+def _CanRevert(repo_name, revision, pipeline_id):
+  """Checks if this pipeline can revert.
+
+  This pipeline can revert if:
+    No revert of this culprit is complete or skipped;
+    No other pipeline is doing the revert on the same culprit.
+  """
   culprit = WfSuspectedCL.Get(repo_name, revision)
   assert culprit
   if ((culprit.revert_cl and culprit.revert_status == status.COMPLETED) or
@@ -68,20 +77,54 @@ def _UpdateCulprit(repo_name,
 
   if revert_cl:
     culprit.cr_notification_status = status.COMPLETED
+    culprit.revert_created_time = time_util.GetUTCNow()
     culprit.cr_notification_time = time_util.GetUTCNow()
   culprit.put()
   return culprit
+
+
+def _GetDailyNumberOfRevertedCulprits(limit):
+  earliest_time = time_util.GetUTCNow() - timedelta(days=1)
+  # TODO (chanli): improve the check for a rare case when two pipelines revert
+  # at the same time.
+  return WfSuspectedCL.query(
+      WfSuspectedCL.revert_created_time >= earliest_time).count(limit)
+
+
+def _ShouldRevert(repo_name, revision, pipeline_id):
+  """Checks if the culprit should be reverted.
+
+  The culprit should be reverted if:
+    1. Auto revert is turned on;
+    2. This pipeline can do the revert;
+    3. The number of reverts in past 24 hours is less than the daily limit.
+  """
+  action_settings = waterfall_config.GetActionSettings()
+  # Auto revert has been turned off.
+  if not bool(action_settings.get('revert_compile_culprit')):
+    return False
+
+  if not _CanRevert(repo_name, revision, pipeline_id):
+    # Either revert is done, skipped or handled by another pipeline.
+    return False
+
+  auto_revert_daily_threshold = action_settings.get(
+      'auto_revert_daily_threshold', _DEFAULT_AUTO_REVERT_DAILY_THRESHOLD)
+  # Auto revert has exceeded daily limit.
+  if _GetDailyNumberOfRevertedCulprits(
+      auto_revert_daily_threshold) >= auto_revert_daily_threshold:
+    logging.info('Auto reverts on %s has met daily limit.',
+                 time_util.FormatDatetime(time_util.GetUTCNow()))
+    return False
+
+  return True
 
 
 def _IsOwnerFindit(owner_email):
   return owner_email == constants.DEFAULT_SERVICE_ACCOUNT
 
 
-def _RevertCulprit(repo_name, revision, pipeline_id):
-
-  if not _ShouldRevert(repo_name, revision, pipeline_id):
-    # Either revert is done or skipped, use skipped as general case.
-    return SKIPPED
+def _RevertCulprit(repo_name, revision):
 
   culprit = _UpdateCulprit(repo_name, revision)
   # 0. Gets information about this culprit.
@@ -225,7 +268,6 @@ class CreateRevertCLPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, repo_name, revision):
-    if waterfall_config.GetActionSettings().get('revert_compile_culprit',
-                                                False):
-      return _RevertCulprit(repo_name, revision, self.pipeline_id)
-    return None
+    if _ShouldRevert(repo_name, revision, self.pipeline_id):
+      return _RevertCulprit(repo_name, revision)
+    return SKIPPED

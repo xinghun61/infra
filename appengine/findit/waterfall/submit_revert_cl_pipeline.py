@@ -16,19 +16,24 @@ from waterfall import create_revert_cl_pipeline
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
+_DEFAULT_AUTO_COMMIT_DAILY_THRESHOLD = 4
+_DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS = 24
+
 
 @ndb.transactional
-def _ShouldCommitRevertInCurrentPipeline(repo_name, revision, pipeline_id):
-  """Checks if current pipeline should do the auto commit."""
+def _CanCommitRevert(repo_name, revision, pipeline_id):
+  """Checks if current pipeline should do the auto commit.
+
+  This pipeline should commit a revert of the culprit if:
+    1. There is a revert for the culprit;
+    2. The revert have copleted;
+    3. The revert should be auto commited;
+    4. No other pipeline is committing the revert;
+    5. No other pipeline is supposed to handle the auto commit.
+  """
   culprit = WfSuspectedCL.Get(repo_name, revision)
   assert culprit
 
-  # This pipeline should commit a revert of the culprit if:
-  # 1. There is a revert for the culprit;
-  # 2. The revert have copleted;
-  # 3. The revert should be auto commited;
-  # 4. No other pipeline is committing the revert;
-  # 5. No other pipeline is supposed to handle the auto commit.
   if (not culprit.revert_cl or
       culprit.revert_submission_status == status.COMPLETED or
       culprit.revert_status != status.COMPLETED or
@@ -54,23 +59,54 @@ def _UpdateCulprit(repo_name, revision, revert_submission_status=None):
 
   if culprit.revert_submission_status != status.RUNNING:
     culprit.submit_revert_pipeline_id = None
+
+  if culprit.revert_submission_status == status.COMPLETED:
+    culprit.revert_committed_time = time_util.GetUTCNow()
+
+  culprit.put()
   return culprit
 
 
+def _GetDailyNumberOfCommits(limit):
+  earliest_time = time_util.GetUTCNow() - timedelta(days=1)
+  # TODO (chanli): improve the check for a rare case when two pipelines commit
+  # at the same time.
+  return WfSuspectedCL.query(
+      WfSuspectedCL.revert_committed_time >= earliest_time).count(limit)
+
+
 def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
-  """Checks if the revert should be auto committed."""
+  """Checks if the revert should be auto committed.
+
+
+  The revert should be committed if:
+    1. Auto revert and Auto commit is turned on;
+    2. The revert is created by Findit;
+    3. This pipeline can commit the revert;
+    4. The number of commits of reverts in past 24 hours is less than the
+      daily limit;
+    5. The revert is done in Gerrit;
+    6. The culprit is committed within threshold.
+  """
+  action_settings = waterfall_config.GetActionSettings()
   if (not revert_status == create_revert_cl_pipeline.CREATED_BY_FINDIT or
-      not bool(
-          waterfall_config.GetActionSettings().get('revert_compile_culprit')) or
-      not bool(
-          waterfall_config.GetActionSettings().get('commit_gerrit_revert'))):
+      not bool(action_settings.get('commit_gerrit_revert')) or
+      not bool(action_settings.get('revert_compile_culprit'))):
     return False
 
-  if not _ShouldCommitRevertInCurrentPipeline(repo_name, revision, pipeline_id):
+  if not _CanCommitRevert(repo_name, revision, pipeline_id):
     return False
 
-  culprit_commit_limit_hours = waterfall_config.GetActionSettings().get(
-      'culprit_commit_limit_hours', 24)
+  auto_commit_daily_threshold = action_settings.get(
+      'auto_commit_daily_threshold', _DEFAULT_AUTO_COMMIT_DAILY_THRESHOLD)
+  if _GetDailyNumberOfCommits(
+      auto_commit_daily_threshold) >= auto_commit_daily_threshold:
+    logging.info('Auto commits on %s has met daily limit.',
+                 time_util.FormatDatetime(time_util.GetUTCNow()))
+    return False
+
+  culprit_commit_limit_hours = action_settings.get(
+      'culprit_commit_limit_hours', _DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS)
 
   # Gets Culprit information.
   culprit = WfSuspectedCL.Get(repo_name, revision)

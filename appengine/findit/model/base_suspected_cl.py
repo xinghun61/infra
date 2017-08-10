@@ -67,6 +67,9 @@ class BaseSuspectedCL(ndb.Model):
   # should be None if the culprit is not in the process of being reverted.
   revert_pipeline_id = ndb.StringProperty(indexed=False)
 
+  # Time when the revert is craeted.
+  revert_created_time = ndb.DateTimeProperty(indexed=True)
+
   # Status of the process of submitting revert.
   # The statuses are described in analysis_status.py
   revert_submission_status = ndb.IntegerProperty(indexed=False, default=None)
@@ -74,6 +77,9 @@ class BaseSuspectedCL(ndb.Model):
   # The ID of the pipeline that is submitting revert of the culprit, if any.
   # This value should be None if a revert is not being submitted.
   submit_revert_pipeline_id = ndb.StringProperty(indexed=False)
+
+  # Time when the revert is committed.
+  revert_committed_time = ndb.DateTimeProperty(indexed=True)
 
   # When the code-review of this culprit was notified.
   cr_notification_time = ndb.DateTimeProperty(indexed=True)

@@ -189,6 +189,25 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(committed)
 
+  @mock.patch.object(
+      submit_revert_cl_pipeline,
+      '_GetDailyNumberOfCommits',
+      return_value=4)
+  def testCommitExceedsLimit(self, _):
+    repo_name = 'chromium'
+    revision = 'rev1'
+
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    culprit.revert_cl = RevertCL()
+    culprit.revert_status = status.COMPLETED
+    culprit.put()
+
+    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    pipeline = SubmitRevertCLPipeline(repo_name, revision, revert_status)
+    committed = pipeline.run(repo_name, revision, revert_status)
+
+    self.assertFalse(committed)
+
   def testRevertHasCommitted(self):
     repo_name = 'chromium'
     revision = 'rev1'

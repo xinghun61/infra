@@ -14,6 +14,7 @@ from infra_api_clients.codereview.cl_info import Commit
 from infra_api_clients.codereview.cl_info import Revert
 from infra_api_clients.codereview.rietveld import Rietveld
 from libs import analysis_status as status
+from libs import time_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import buildbot
@@ -46,6 +47,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.mock(suspected_cl_util, 'GetCulpritInfo', MockGetCulpritInfo)
 
+  @mock.patch.object(time_util, 'GetUTCNow',
+                     return_value=datetime(2017, 2, 1, 16, 0, 0))
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
   @mock.patch.object(
@@ -67,6 +70,11 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, commit_position)
     culprit.builds = {'m/b/1': {'status': None}}
     culprit.put()
+
+    culprit1 = WfSuspectedCL.Create(repo_name, 'rev11', 111)
+    culprit1.revert_created_time = datetime(2017, 2, 1, 3, 0, 0)
+    culprit1.put()
+
     pipeline = CreateRevertCLPipeline(repo_name, revision)
     revert_status = pipeline.run(repo_name, revision)
 
@@ -239,7 +247,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = CreateRevertCLPipeline(repo_name, revision)
     revert_status = pipeline.run(repo_name, revision)
 
-    self.assertIsNone(revert_status)
+    self.assertEqual(create_revert_cl_pipeline.SKIPPED, revert_status)
 
   def testRevertHasCompleted(self):
     repo_name = 'chromium'
@@ -251,9 +259,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline = CreateRevertCLPipeline(repo_name, revision)
-    revert_status = pipeline.run(repo_name, revision)
-
-    self.assertEquals(revert_status, create_revert_cl_pipeline.SKIPPED)
+    self.assertEqual(create_revert_cl_pipeline.SKIPPED,
+                     pipeline.run(repo_name, revision))
 
   def testLogUnexpectedAborting(self):
     repo_name = 'chromium'
@@ -300,9 +307,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = CreateRevertCLPipeline(repo_name, revision)
     pipeline.start_test()
-    revert_status = pipeline.run(repo_name, revision)
-
-    self.assertEquals(revert_status, create_revert_cl_pipeline.SKIPPED)
+    self.assertEqual(create_revert_cl_pipeline.SKIPPED,
+                     pipeline.run(repo_name, revision))
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.RUNNING)
@@ -316,3 +322,19 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
     self.assertFalse(
         create_revert_cl_pipeline._ShouldRevert(repo_name, revision, None))
+
+  @mock.patch.object(
+      create_revert_cl_pipeline,
+      '_GetDailyNumberOfRevertedCulprits',
+      return_value=10)
+  def testAutoRevertExceedsLimit(self, _):
+    repo_name = 'chromium'
+    revision = 'rev1'
+
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    culprit.put()
+
+    pipeline = CreateRevertCLPipeline(repo_name, revision)
+    pipeline.start_test()
+    self.assertEqual(create_revert_cl_pipeline.SKIPPED,
+                     pipeline.run(repo_name, revision))
