@@ -325,6 +325,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'last_attempted_try_job': {},
         'pipeline_status_path':
             'pipelinestatus',
+        'show_debug_options':
+            False,
     }
 
     self.assertEquals(200, response.status_int)
@@ -500,6 +502,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'last_attempted_try_job': {},
         'pipeline_status_path':
             'pipelinestatus',
+        'show_debug_options':
+            False,
     }
 
     self.assertEqual(200, response.status_int)

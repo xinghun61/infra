@@ -427,6 +427,8 @@ class CheckFlake(BaseHandler):
             analysis.iterations_to_rerun,
         'show_admin_options':
             self._ShowCustomRunOptions(analysis),
+        'show_debug_options':
+            self._ShowDebugInfo(),
         'pipeline_status_path':
             analysis.pipeline_status_path
     }

@@ -410,14 +410,16 @@
         <div id="build-container">Build: <a id="build-link" target="_blank"></a></div>
       </div>
     </div>
+
+  {% if show_debug_options %}
+    <!-- Diagnositic information -->
+    <p>
+      status: <a href="{{ pipeline_status_path }}" target="_blank">pipeline status</a>
+    </p>
+  {% endif %}
+
   {% if show_admin_options %}
     <div style="border: 1px solid black">
-      <!-- Diagnositic information -->
-      <h4>Pipeline information</h4>
-      <p>
-        <a href="{{ pipeline_status_path }}" target="_blank">pipeline status</a>
-      </p>
-
       <!-- Rerun options -->
       <h4>Rerun options</h4>
       <form action="/waterfall/flake/analyze_regression_range"
