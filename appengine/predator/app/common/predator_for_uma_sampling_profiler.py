@@ -10,8 +10,6 @@ from analysis.linear.changelist_features.top_frame_index import (
     TopFrameIndexFeature)
 from analysis.linear.changelist_features.touch_crashed_component import (
     TouchCrashedComponentFeature)
-from analysis.linear.changelist_features.touch_crashed_directory import (
-    TouchCrashedDirectoryFeature)
 from analysis.linear.changelist_features.touch_crashed_file import (
     TouchCrashedFileFeature)
 from analysis.linear.changelist_features.touch_crashed_file_meta import (
@@ -36,6 +34,15 @@ class PredatorForUMASamplingProfiler(PredatorApp):
     return CrashClient.UMA_SAMPLING_PROFILER
 
   def __init__(self, get_repository, config):
+    """Set the paramaters of the model - i.e. the weights and features.
+
+    For some explanation of why the paramaters were set this way see these docs:
+      https://docs.google.com/a/google.com/document/d/1TdDEDlUJX81-5yvB9IfdJFq5-kJBb_DwAgDH9cGfNao/edit?usp=sharing
+      https://docs.google.com/a/google.com/document/d/1FHaghBX_FANjtiUP7D1pihZGxzEYdXA3Y7t0rSA4bWU/edit?usp=sharing
+    As well as the following CLs:
+      https://chromium-review.googlesource.com/c/599071
+      https://chromium-review.googlesource.com/c/585784
+    """
     super(PredatorForUMASamplingProfiler, self).__init__(get_repository, config)
     meta_weight = MetaWeight({
         'TouchCrashedFileMeta': MetaWeight({
@@ -43,7 +50,6 @@ class PredatorForUMASamplingProfiler(PredatorApp):
             'TopFrameIndex': Weight(1.),
             'TouchCrashedFile': Weight(1.),
         }),
-        'TouchCrashedDirectory': Weight(1.),
         'TouchCrashedComponent': Weight(0.),
         'NumberOfTouchedFiles': Weight(0.5)
     })
@@ -56,7 +62,6 @@ class PredatorForUMASamplingProfiler(PredatorApp):
                                       top_frame_index_feature,
                                       touch_crashed_file_feature],
                                      include_renamed_paths=True),
-         TouchCrashedDirectoryFeature(include_test_files=False),
          TouchCrashedComponentFeature(self._component_classifier),
          NumberOfTouchedFilesFeature()])
 
