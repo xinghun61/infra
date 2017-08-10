@@ -12,8 +12,9 @@ from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import build_util
 from waterfall import buildbot
 from waterfall.build_info import BuildInfo
+from waterfall.flake import recursive_flake_pipeline
 from waterfall.flake import regression_range_analysis_pipeline
-from waterfall.flake.recursive_flake_pipeline import NextBuildNumberPipeline
+from waterfall.flake.next_build_number_pipeline import NextBuildNumberPipeline
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 from waterfall.flake.regression_range_analysis_pipeline import (
     _CommitPositionRange)
@@ -351,7 +352,7 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
                 'dimensions': {
                     'os': 'OS'
                 }
-            }, False, False, 0, 0, False
+            }, False, False, None, 0, False
         ],
         expected_kwargs={})
 
@@ -483,20 +484,14 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
                 'dimensions': {
                     'os': 'OS'
                 }
-            }, False, False, 0, 0, False
+            }, False, False, None, 0, False
         ],
         expected_kwargs={})
+
     self.MockPipeline(
         NextBuildNumberPipeline,
-        '',
-        expected_args=[
-            analysis.key.urlsafe(), 145, 140, 145, 200, {
-                'dimensions': {
-                    'os': 'OS'
-                }
-            }, False, False, 0, 0
-        ],
-        expected_kwargs={})
+        100,
+        expected_args=[analysis.key.urlsafe(), 145, 140, 145, 200])
 
     pipeline_job = RegressionRangeAnalysisPipeline(
         analysis.key.urlsafe(), input_lower_bound, input_upper_bound,

@@ -807,20 +807,6 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(analysis_status.COMPLETED, try_job.status)
 
-  def testGetIterationsToRerun(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
-    analysis.algorithm_parameters = {
-        'try_job_rerun': {
-            'iterations_to_rerun': 1
-        }
-    }
-    self.assertEqual(1,
-                     recursive_flake_try_job_pipeline._GetIterationsToRerun(
-                         None, analysis))
-    self.assertEqual(2,
-                     recursive_flake_try_job_pipeline._GetIterationsToRerun(
-                         2, analysis))
-
   def testCanStartTryJob(self):
     master_name = 'm'
     builder_name = 'b'

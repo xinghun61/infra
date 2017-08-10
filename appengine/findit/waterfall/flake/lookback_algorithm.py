@@ -3,14 +3,6 @@
 # found in the LICENSE file.
 
 
-class NormalizedDataPoint(object):
-
-  def __init__(self, run_point_number, pass_rate, has_valid_artifact=True):
-    self.run_point_number = run_point_number
-    self.pass_rate = pass_rate
-    self.has_valid_artifact = has_valid_artifact
-
-
 def IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
   return pass_rate < lower_flake_threshold or pass_rate > upper_flake_threshold
 

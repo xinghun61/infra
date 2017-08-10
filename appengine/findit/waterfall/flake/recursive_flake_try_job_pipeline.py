@@ -21,9 +21,10 @@ from model.flake.flake_try_job_data import FlakeTryJobData
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
+from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants
 from waterfall.flake import lookback_algorithm
-from waterfall.flake.lookback_algorithm import NormalizedDataPoint
+from waterfall.flake.flake_analysis_util import NormalizedDataPoint
 from waterfall.flake.process_flake_try_job_result_pipeline import (
     ProcessFlakeTryJobResultPipeline)
 from waterfall.flake.schedule_flake_try_job_pipeline import (
@@ -95,12 +96,6 @@ def _GetTryJob(master_name, builder_name, step_name, test_name, revision):
                                  test_name, revision)
     try_job.put()
   return try_job
-
-
-def _GetIterationsToRerun(user_specified_iterations, analysis):
-  return (user_specified_iterations or
-          analysis.algorithm_parameters.get('try_job_rerun', {}).get(
-              'iterations_to_rerun', _DEFAULT_ITERATIONS_TO_RERUN))
 
 
 def _NeedANewTryJob(analysis, try_job, required_iterations, rerun):
@@ -298,7 +293,8 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
         analysis.last_attempted_revision = revision
         analysis.put()
 
-        iterations = _GetIterationsToRerun(user_specified_iterations, analysis)
+        iterations = flake_analysis_util.GetIterationsToRerun(
+            user_specified_iterations, analysis, 'try_job_rerun')
 
         with pipeline.InOrder():
           try_job_id = yield ScheduleFlakeTryJobPipeline(

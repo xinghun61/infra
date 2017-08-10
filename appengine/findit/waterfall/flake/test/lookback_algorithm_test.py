@@ -8,7 +8,7 @@ import mock
 from gae_libs.testcase import TestCase
 
 from waterfall.flake import lookback_algorithm
-from waterfall.flake.lookback_algorithm import NormalizedDataPoint
+from waterfall.flake.flake_analysis_util import NormalizedDataPoint
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
 
