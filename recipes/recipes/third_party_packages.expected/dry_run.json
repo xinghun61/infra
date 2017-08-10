@@ -933,7 +933,7 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "git.git -c",
+    "name": "git.git apply patches",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]

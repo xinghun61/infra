@@ -52,7 +52,8 @@ class GitApi(util.ModuleShim):
       self.m.git(*[
           '-c', 'user.name=third_party_packages',
           '-c', 'user.email=third_party_packages@example.com',
-          'am'] + patches)
+          'am'] + patches,
+          name='git apply patches')
 
       curl = support.ensure_curl()
       zlib = support.ensure_zlib()

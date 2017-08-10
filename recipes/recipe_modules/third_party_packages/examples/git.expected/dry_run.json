@@ -146,7 +146,7 @@
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "git -c"
+    "name": "git apply patches"
   },
   {
     "cmd": [
