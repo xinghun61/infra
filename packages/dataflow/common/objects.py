@@ -47,23 +47,36 @@ class CQAttempt(BigQueryObject):
      It is created by aggregating all CQEvents for a given attempt.
   """
   def __init__(self):
+    # Consistent between events for a given attempt
     self.attempt_start_msec = None
-    self.first_start_msec = None
-    self.last_start_msec = None
-    self.first_stop_msec = None
-    self.last_stop_msec = None
-
-    self.committed = False
-    self.was_throttled = False
-    self.waited_for_tree = False
-
-    self.patch_committed_msec = None
-    self.patch_started_to_commit_msec = None
-
     self.cq_name = None
     self.issue = None
     self.patchset = None
     self.dry_run = False
+
+    # Patch event timestamps
+    self.first_start_msec = None
+    self.last_start_msec = None
+    self.first_stop_msec = None
+    self.last_stop_msec = None
+    self.patch_committed_msec = None
+    self.patch_started_to_commit_msec = None
+
+    # Patch event bools
+    self.committed = False
+    self.was_throttled = False
+    self.waited_for_tree = False
+
+    # Verifier event timestamps
+    self.first_verifier_trigger_msec = None
+    self.patch_verifier_pass_msec = None
+    self.cq_launch_latency_sec = None
+    self.verifier_pass_latency_sec = None
+    self.tree_check_and_throttle_latency_sec = None
+
+    # Verifier event bools
+    self.no_tryjobs_launched = False
+    self.custom_trybots = False
 
   @staticmethod
   def get_bigquery_attributes():
@@ -80,6 +93,11 @@ class CQAttempt(BigQueryObject):
         'issue',
         'patchset',
         'dry_run',
+        'cq_launch_latency_sec',
+        'verifier_pass_latency_sec',
+        'tree_check_and_throttle_latency_sec',
+        'no_tryjobs_launched',
+        'custom_trybots',
     ]
 
 

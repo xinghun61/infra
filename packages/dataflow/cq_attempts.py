@@ -18,6 +18,10 @@ class CombineEventsToAttempt(beam.CombineFn):
   ACTION_PATCH_STOP = 'PATCH_STOP'
   ACTION_PATCH_THROTTLED = 'PATCH_THROTTLED'
   ACTION_PATCH_TREE_CLOSED = 'PATCH_TREE_CLOSED'
+  ACTION_VERIFIER_TRIGGER = 'VERIFIER_TRIGGER'
+  ACTION_VERIFIER_PASS = 'VERIFIER_PASS'
+  ACTION_VERIFIER_NOTRY = 'VERIFIER_NOTRY'
+  ACTION_VERIFIER_CUSTOM_TRYBOTS = 'VERIFIER_CUSTOM_TRYBOTS'
 
   def __init__(self):
     super(CombineEventsToAttempt, self).__init__()
@@ -28,12 +32,18 @@ class CombineEventsToAttempt(beam.CombineFn):
         self.ACTION_PATCH_COMMITTING: set(['patch_started_to_commit_msec']),
         self.ACTION_PATCH_THROTTLED: set(['was_throttled']),
         self.ACTION_PATCH_TREE_CLOSED: set(['waited_for_tree']),
+        self.ACTION_VERIFIER_TRIGGER: set(['first_verifier_trigger_msec']),
+        self.ACTION_VERIFIER_PASS: set(['patch_verifier_pass_msec']),
+        self.ACTION_VERIFIER_NOTRY: set(['no_tryjobs_launched']),
+        self.ACTION_VERIFIER_CUSTOM_TRYBOTS: set(['custom_trybots']),
     }
     self.min_timestamp_fields = set([
         'first_start_msec',
         'first_stop_msec',
         'patch_committed_msec',
         'patch_started_to_commit_msec',
+        'first_verifier_trigger_msec',
+        'patch_verifier_pass_msec',
     ])
     self.max_timestamp_fields = set([
         'last_start_msec',
@@ -106,6 +116,17 @@ class CombineEventsToAttempt(beam.CombineFn):
                                         event.timestamp_millis)
         if field in self.logical_or_fields:
           attempt.__dict__[field] = True
+
+    if attempt.first_verifier_trigger_msec:
+      attempt.cq_launch_latency_sec = (attempt.first_verifier_trigger_msec -
+                                       attempt.attempt_start_msec) / 1000.0
+    if attempt.patch_verifier_pass_msec:
+      attempt.verifier_pass_latency_sec = (attempt.patch_verifier_pass_msec -
+                                           attempt.attempt_start_msec) / 1000.0
+      if attempt.patch_started_to_commit_msec:
+        attempt.tree_check_and_throttle_latency_sec = (
+            attempt.patch_started_to_commit_msec -
+            attempt.patch_verifier_pass_msec) / 1000.0
     return attempt.as_bigquery_row()
 
 

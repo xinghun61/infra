@@ -21,36 +21,53 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     self.later_timestamp = self.timestamp_msec + 1
     self.combFn = job.CombineEventsToAttempt()
 
-  def test_compute_attempts(self):
-    complete_attempt_events = [
-        {
-            'timestamp_millis': 1,
-            'action': self.combFn.ACTION_PATCH_START,
-            'attempt_start_usec': 0,
-            'cq_name': 'test_cq',
-            'issue': '1',
-            'patchset': '1',
-        },
-        {
-            'timestamp_millis': 2,
-            'action': self.combFn.ACTION_PATCH_STOP,
-            'attempt_start_usec': 0,
-            'cq_name': 'test_cq',
-            'issue': '1',
-            'patchset': '1',
-        },
+  def complete_attempt_values(self):
+    attempt_start = 0
+    cq_name = 'test_cq'
+    issue = '1'
+    patchset = '1'
+
+    event_basic = {
+      'attempt_start_usec': attempt_start,
+      'cq_name': cq_name,
+      'issue': issue,
+      'patchset': patchset,
+    }
+
+    actions = [
+      (self.combFn.ACTION_PATCH_START, 1000),
+      (self.combFn.ACTION_VERIFIER_TRIGGER, 3000),
+      (self.combFn.ACTION_VERIFIER_PASS, 4000),
+      (self.combFn.ACTION_PATCH_COMMITTING, 5000),
+      (self.combFn.ACTION_PATCH_COMMITTED, 6000),
+      (self.combFn.ACTION_PATCH_STOP, 9000),
     ]
-    complete_attempt_expected = [{
-        'was_throttled': False,
-        'waited_for_tree': False,
-        'committed': False,
-        'last_stop_msec': 2,
-        'cq_name': 'test_cq',
-        'last_start_msec': 1,
-        'first_stop_msec': 2,
-        'first_start_msec': 1,
-        'attempt_start_msec': 0.0,
-    }]
+
+    events = []
+    for action in actions:
+      event = event_basic.copy()
+      event.update({'action': action[0], 'timestamp_millis': action[1]})
+      events.append(event)
+
+    attempt = objects.CQAttempt()
+    attempt.cq_name = cq_name
+    attempt.attempt_start_msec = attempt_start
+    attempt.issue = issue
+    attempt.patchset = patchset
+    attempt.first_start_msec = 1000
+    attempt.last_start_msec = 1000
+    attempt.last_stop_msec = 9000
+    attempt.first_stop_msec = 9000
+    attempt.cq_launch_latency_sec = 3.0
+    attempt.verifier_pass_latency_sec = 4.0
+    attempt.tree_check_and_throttle_latency_sec = 1.0
+    attempt.committed = True
+
+    return (events, attempt.as_bigquery_row())
+
+  def test_compute_attempts(self):
+    complete_attempt_events, complete_attempt = self.complete_attempt_values()
+
     incomplete_attempt_events = [
         {
             'timestamp_millis': 2,
@@ -62,14 +79,15 @@ class TestCQAttemptAccumulator(unittest.TestCase):
         },
     ]
     incomplete_attempt_expected = []
+
     events = complete_attempt_events + incomplete_attempt_events
-    attempts = complete_attempt_expected + incomplete_attempt_expected
+    expected_attempts = [complete_attempt] + incomplete_attempt_expected
 
     p = test_pipeline.TestPipeline()
     pcoll = (p
              | beam.Create(events)
              | job.ComputeAttempts())
-    util.assert_that(pcoll, util.equal_to(attempts))
+    util.assert_that(pcoll, util.equal_to(expected_attempts))
     p.run()
 
   def basic_event(self, action=None, timestamp_millis=None,
