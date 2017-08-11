@@ -46,7 +46,7 @@ func launchedHandler(ctx *router.Context) {
 		return
 	}
 	logging.Debugf(c, "[gerrit] Report launched request for run ID: %d", rr.RunId)
-	if _, err := server.ReportLaunched(c, rr); err != nil {
+	if _, err := reporter.ReportLaunched(c, rr); err != nil {
 		logging.WithError(err).Errorf(c, "[gerrit] Failed to call Gerrit.ReportLaunched")
 		switch grpc.Code(err) {
 		case codes.InvalidArgument:
@@ -74,7 +74,7 @@ func completedHandler(ctx *router.Context) {
 		return
 	}
 	logging.Debugf(c, "[gerrit] Report progress request for run ID: %d", rr.RunId)
-	if _, err := server.ReportCompleted(c, rr); err != nil {
+	if _, err := reporter.ReportCompleted(c, rr); err != nil {
 		logging.WithError(err).Errorf(c, "[gerrit] Failed to call Gerrit.ReportCompleted")
 		switch grpc.Code(err) {
 		case codes.InvalidArgument:
@@ -103,7 +103,7 @@ func resultsHandler(ctx *router.Context) {
 		return
 	}
 	logging.Debugf(c, "[gerrit] Report results request for run ID: %d, analyzer: %s", rr.RunId, rr.Analyzer)
-	if _, err := server.ReportResults(c, rr); err != nil {
+	if _, err := reporter.ReportResults(c, rr); err != nil {
 		logging.WithError(err).Errorf(c, "[gerrit] Failed to call Gerrit.ReportResults")
 		switch grpc.Code(err) {
 		case codes.InvalidArgument:

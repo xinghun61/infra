@@ -41,20 +41,28 @@ const repo = "https://chromium-review.googlesource.com/playground/gerrit-tricium
 // via the Tricium UI.
 func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) (*tricium.AnalyzeResponse, error) {
 	if req.Project == "" {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing project")
+		msg := "missing 'project' field in Analyze request"
+		logging.Errorf(c, msg)
+		return nil, grpc.Errorf(codes.InvalidArgument, msg)
 	}
 	if len(req.Paths) == 0 {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing paths to analyze")
+		msg := "missing 'paths' field in Analyze request"
+		logging.Errorf(c, msg)
+		return nil, grpc.Errorf(codes.InvalidArgument, msg)
 	}
 	if req.Consumer == tricium.Consumer_GERRIT {
 		if req.GerritChange == "" {
-			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit change")
+			msg := "missing 'gerrit_change' field in Analyze request"
+			logging.Errorf(c, msg)
+			return nil, grpc.Errorf(codes.InvalidArgument, msg)
 		}
 		if req.GerritRevision == "" {
-			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit revision")
+			msg := "missing 'gerrit_revision' field in Analyze request"
+			logging.Errorf(c, msg)
+			return nil, grpc.Errorf(codes.InvalidArgument, msg)
 		}
 	}
-	runID, code, err := analyze(c, req, config.LuciConfigServer)
+	runID, code, err := analyzeWithAuth(c, req, config.LuciConfigServer)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "analyze failed: %v", err)
 		return nil, grpc.Errorf(code, "failed to execute analyze request")
@@ -63,7 +71,11 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 	return &tricium.AnalyzeResponse{runID}, nil
 }
 
-func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderAPI) (string, codes.Code, error) {
+// analyzeWithAuth wraps 'analyze' in an auth check.
+//
+// This wrapper is used by the Analyze RPC call and the unwrapped method is used
+// by requests coming in via the internal analyze queue.
+func analyzeWithAuth(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderAPI) (string, codes.Code, error) {
 	pc, err := cp.GetProjectConfig(c, req.Project)
 	if err != nil {
 		return "", codes.Internal, fmt.Errorf("failed to get project config, project: %q: %v", req.Project, err)
@@ -75,10 +87,18 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	if !ok {
 		return "", codes.PermissionDenied, fmt.Errorf("no request access for project %q", req.Project)
 	}
+	runID, err := analyze(c, req, cp)
+	if err != nil {
+		return runID, codes.Internal, err
+	}
+	return runID, codes.OK, nil
+}
+
+func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderAPI) (string, error) {
 	// TODO(emso): Verify that there is no current run for this request (map hashed requests to run IDs).
 	sc, err := cp.GetServiceConfig(c)
 	if err != nil {
-		return "", codes.Internal, fmt.Errorf("failed to get service config: %v", err)
+		return "", fmt.Errorf("failed to get service config: %v", err)
 	}
 	request := &track.AnalyzeRequest{
 		Received: clock.Now(c).UTC(),
@@ -89,7 +109,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 	}
 	pd := tricium.LookupProjectDetails(sc, req.Project)
 	if pd == nil {
-		return "", codes.Internal, fmt.Errorf("failed to lookup project details, project: %s", req.Project)
+		return "", fmt.Errorf("failed to lookup project details, project: %s", req.Project)
 	}
 	if pd.RepoDetails.Kind == tricium.RepoDetails_GIT {
 		rd := pd.RepoDetails.GitDetails
@@ -98,16 +118,16 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 			request.GitRef = rd.Ref
 		}
 	} else {
-		return "", codes.Internal, fmt.Errorf("unsupported repository kind in project details: %s", pd.RepoDetails.Kind)
+		return "", fmt.Errorf("unsupported repository kind in project details: %s", pd.RepoDetails.Kind)
 	}
 	if req.Consumer == tricium.Consumer_GERRIT {
-		request.GerritChange = req.GerritChange
-		request.GerritRevision = req.GerritRevision
 		gd := pd.GetGerritDetails()
 		if gd == nil {
-			return "", codes.Internal, fmt.Errorf("missing Gerrit details for project, project: %s", req.Project)
+			return "", fmt.Errorf("missing Gerrit details for project, project: %s", req.Project)
 		}
-		request.GitRepo = fmt.Sprintf("%s/%s", gd.Host, gd.Project)
+		request.GerritHost = gd.Host
+		request.GerritChange = req.GerritChange
+		request.GerritRevision = req.GerritRevision
 	}
 	requestRes := &track.AnalyzeRequestResult{
 		ID:    1,
@@ -152,7 +172,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		return common.RunInParallel(ops)
 	}, &ds.TransactionOptions{XG: true})
 	if err != nil {
-		return "", codes.Internal, fmt.Errorf("failed to track and launch request: %v", err)
+		return "", fmt.Errorf("failed to track and launch request: %v", err)
 	}
-	return strconv.FormatInt(request.ID, 10), codes.OK, nil
+	return strconv.FormatInt(request.ID, 10), nil
 }

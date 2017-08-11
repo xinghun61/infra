@@ -27,7 +27,7 @@ func init() {
 
 	// Configure pRPC server.
 	s := common.NewRPCServer()
-	admin.RegisterReporterServer(s, server)
+	admin.RegisterReporterServer(s, reporter)
 	discovery.Enable(s)
 	s.InstallHandlers(r, common.MiddlewareForRPC())
 

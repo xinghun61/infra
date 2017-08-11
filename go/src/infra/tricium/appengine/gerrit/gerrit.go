@@ -25,7 +25,7 @@ import (
 )
 
 const (
-	gerritScope = "https://www.googleapis.com/auth/gerritcodereview"
+	scope = "https://www.googleapis.com/auth/gerritcodereview"
 )
 
 // API specifies the Gerrit REST API tuned to the needs of Tricium.
@@ -85,6 +85,8 @@ func (gerritServer) QueryChanges(c context.Context, host, project string, lastTi
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
+	c, cancel := context.WithTimeout(c, 60*time.Second)
+	defer cancel()
 	transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(scope))
 	if err != nil {
 		return changes, false, err
@@ -128,20 +130,30 @@ func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revis
 		if _, ok := robos[comment.Path]; !ok {
 			robos[comment.Path] = []*robotCommentInput{}
 		}
-		robos[comment.Path] = append(robos[comment.Path], &robotCommentInput{
+		// TODO(emso): Values used for testing, update to use values in comment after making sure they are added.
+		path := "README.md"
+		robos[path] = append(robos[comment.Path], &robotCommentInput{
 			Message:    comment.Message,
 			RobotID:    comment.Category,
 			RobotRunID: strconv.FormatInt(runID, 10),
-			URL:        comment.Url,
-			Path:       comment.Path,
-			Line:       int(comment.StartLine),
-			Range: &commentRange{
-				StartLine:      int(comment.StartLine),
-				EndLine:        int(comment.EndLine),
-				StartCharacter: int(comment.StartChar),
-				EndCharacter:   int(comment.EndChar),
-			},
+			Path:       path,
 		})
+		/*
+		   		robos[comment.Path] = append(robos[comment.Path], &robotCommentInput{
+		   			Message:    comment.Message,
+		   			RobotID:    comment.Category,
+		   			RobotRunID: strconv.FormatInt(runID, 10),
+		   			URL:        comment.Url,
+		   			Path:       comment.Path,
+		   			Line:       int(comment.StartLine),
+		   			Range: &commentRange{
+		   				StartLine:      int(comment.StartLine),
+		   				EndLine:        int(comment.EndLine),
+		   				StartCharacter: int(comment.StartChar),
+		   				EndCharacter:   int(comment.EndChar),
+		   			},
+		   i		})
+		*/
 	}
 	return g.setReview(ctx, host, change, revision, &reviewInput{RobotComments: robos})
 }
@@ -167,7 +179,8 @@ func (gerritServer) setReview(c context.Context, host, change, revision string, 
 	if err != nil {
 		return fmt.Errorf("failed to marshal ReviewInput: %v", err)
 	}
-	url := fmt.Sprintf("%s/changes/%s/revision/%s/review", host, change, revision)
+	logging.Debugf(c, "[gerrit] JSON body: %s", data)
+	url := fmt.Sprintf("%s/a/changes/%s/revisions/%s/review", host, change, revision)
 	logging.Infof(c, "Using Gerrit Set Review URL: %s", url)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
@@ -175,19 +188,21 @@ func (gerritServer) setReview(c context.Context, host, change, revision string, 
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json")
-	t, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(gerritScope))
+	// TODO(emso): Extract timeout to a common config for all Gerrit connections.
+	c, cancel := context.WithTimeout(c, 60*time.Second)
+	defer cancel()
+	transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes(scope))
 	if err != nil {
-		return fmt.Errorf("failed to create oauth client: %v", err)
-
+		return err
 	}
-	client := &http.Client{Transport: t}
+	client := &http.Client{Transport: transport}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("failed to connect to Gerrit: %v", err)
+		return fmt.Errorf("failed to connect to Gerrit, code: %d, %v", resp.StatusCode, err)
 	}
 	return nil
 }

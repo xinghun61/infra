@@ -56,8 +56,8 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 			IsolateServerURL:  wf.IsolateServer,
 			SwarmingServerURL: wf.SwarmingServer,
 		}
-		if err := ds.Get(c, run); err != nil {
-			return fmt.Errorf("failed to get WorkflowRun entity (run ID: %d): %v", run.ID, err)
+		if err := ds.Put(c, run); err != nil {
+			return fmt.Errorf("failed to store WorkflowRun entity (run ID: %d): %v", run.ID, err)
 		}
 		runKey := ds.KeyForObj(c, run)
 		ops := []func() error{
@@ -136,7 +136,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 		if err != nil {
 			return fmt.Errorf("failed to encode report launched request: %v", err)
 		}
-		t := tq.NewPOSTTask("/gerrit-reporter/internal/launched", nil)
+		t := tq.NewPOSTTask("/gerrit/internal/report-launched", nil)
 		t.Payload = b
 		return tq.Add(c, common.GerritReporterQueue, t)
 	default:
@@ -168,6 +168,7 @@ func extractAnalyzerWorkerStructure(c context.Context, wf *admin.Workflow) map[s
 			aw.Next = append(aw.Next, n)
 		}
 		a.Workers = append(a.Workers, aw)
+		a.Analyzer.Workers = append(a.Analyzer.Workers, w.Name)
 		logging.Debugf(c, "Found analyzer/worker: %v", a)
 	}
 	return m

@@ -97,9 +97,13 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		return fmt.Errorf("failed to get WorkerRunResult entities: %v", err)
 	}
 	analyzerState := tricium.State_SUCCESS
+	analyzerNumComments := 0
 	for _, wr := range workerResults {
 		if wr.Name == req.Worker {
 			wr.State = workerState // Setting state to what we will store in the below transaction.
+			analyzerNumComments += len(results.Comments)
+		} else {
+			analyzerNumComments += wr.NumComments
 		}
 		// When all workers are done, aggregate the result.
 		// All worker SUCCESSS -> analyzer SUCCESS
@@ -116,6 +120,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	}
 	// If analyzer is done then we should merge results if needed.
 	if tricium.IsDone(analyzerState) {
+		logging.Infof(c, "Analyzer %s completed with %d comments", analyzerName, analyzerNumComments)
 		// TODO(emso): merge results.
 		// Review comments in this invocation and stored comments from sibling workers.
 		// Comments are included by default. For conflicting comments, select which comments
@@ -193,6 +198,8 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			}
 			if ar.State != analyzerState {
 				ar.State = analyzerState
+				ar.NumComments = analyzerNumComments
+				logging.Debugf(c, "[tracker] Updating state of analyzer %s, num comments: %d", ar.Name, ar.NumComments)
 				if err := ds.Put(c, ar); err != nil {
 					return fmt.Errorf("failed to update AnalyzerRunResult: %v", err)
 				}
@@ -234,7 +241,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			if err != nil {
 				return fmt.Errorf("failed to encode ReportResults request: %v", err)
 			}
-			t := tq.NewPOSTTask("/gerrit-reporter/internal/results", nil)
+			t := tq.NewPOSTTask("/gerrit/internal/report-results", nil)
 			t.Payload = b
 			if err = tq.Add(c, common.GerritReporterQueue, t); err != nil {
 				return fmt.Errorf("failed to enqueue reporter results request: %v", err)
@@ -245,7 +252,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			if err != nil {
 				return fmt.Errorf("failed to encode ReportCompleted request: %v", err)
 			}
-			t := tq.NewPOSTTask("/gerrit-reporter/internal/completed", nil)
+			t := tq.NewPOSTTask("/gerrit/internal/report-completed", nil)
 			t.Payload = b
 			if err = tq.Add(c, common.GerritReporterQueue, t); err != nil {
 				return fmt.Errorf("failed to enqueue reporter complete request: %v", err)

@@ -22,7 +22,7 @@ import (
 // GerritReporter represents the internal Tricium pRPC Gerrit reporter server.
 type gerritReporter struct{}
 
-var server = &gerritReporter{}
+var reporter = &gerritReporter{}
 
 // ReportLaunched processes one report launched request.
 func (r *gerritReporter) ReportLaunched(c context.Context, req *admin.ReportLaunchedRequest) (*admin.ReportLaunchedResponse, error) {
@@ -43,6 +43,6 @@ func reportLaunched(c context.Context, req *admin.ReportLaunchedRequest, gerrit 
 	if err := ds.Get(c, request); err != nil {
 		return fmt.Errorf("failed to get AnalyzeRequest entity (ID: %s): %v", req.RunId, err)
 	}
-	msg := fmt.Sprintf("Tricium is analyzing the last uploaded patch set (run ID: %s)", req.RunId)
-	return gerrit.PostReviewMessage(c, request.GitRepo, request.GerritChange, request.GerritRevision, msg)
+	msg := fmt.Sprintf("Tricium is analyzing the last uploaded patch set (run ID: %d)", req.RunId)
+	return gerrit.PostReviewMessage(c, request.GerritHost, request.GerritChange, request.GerritRevision, msg)
 }

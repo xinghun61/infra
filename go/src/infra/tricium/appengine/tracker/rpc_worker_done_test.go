@@ -53,6 +53,9 @@ func TestWorkerDoneRequest(t *testing.T) {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
 
+		analyzerName, err := track.ExtractAnalyzerName(fileIsolator)
+		So(err, ShouldBeNil)
+
 		// Add pending run entry.
 		request := &track.AnalyzeRequest{}
 		So(ds.Put(ctx, request), ShouldBeNil)
@@ -67,7 +70,7 @@ func TestWorkerDoneRequest(t *testing.T) {
 		}), ShouldBeNil)
 
 		// Mark workflow as launched.
-		err := workflowLaunched(ctx, &admin.WorkflowLaunchedRequest{
+		err = workflowLaunched(ctx, &admin.WorkflowLaunchedRequest{
 			RunId: request.ID,
 		}, mockWorkflowProvider{})
 		So(err, ShouldBeNil)
@@ -87,18 +90,22 @@ func TestWorkerDoneRequest(t *testing.T) {
 		}, &mockIsolator{})
 		So(err, ShouldBeNil)
 
+		analyzerKey := ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
+
 		Convey("Marks worker as done", func() {
-			analyzerName, err := track.ExtractAnalyzerName(fileIsolator)
-			So(err, ShouldBeNil)
-			analyzerKey := ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
 			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, analyzerKey)
 			wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
 			So(ds.Get(ctx, wr), ShouldBeNil)
 			So(wr.State, ShouldEqual, tricium.State_SUCCESS)
+		})
+
+		Convey("Marks analyzer as done and adds number of comments", func() {
 			ar := &track.AnalyzerRunResult{ID: 1, Parent: analyzerKey}
 			So(ds.Get(ctx, ar), ShouldBeNil)
 			So(ar.State, ShouldEqual, tricium.State_SUCCESS)
+			So(ar.NumComments, ShouldEqual, 1)
 		})
+
 		// TODO(emso): multi-platform analyzer is half done, analyzer stays launched
 	})
 }

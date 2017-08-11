@@ -59,5 +59,5 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 	if err := common.RunInParallel(ops); err != nil {
 		return err
 	}
-	return gerrit.PostRobotComments(c, request.GitRepo, request.GerritChange, request.GerritRevision, req.RunId, comments)
+	return gerrit.PostRobotComments(c, request.GerritHost, request.GerritChange, request.GerritRevision, req.RunId, comments)
 }

@@ -77,6 +77,7 @@ type AnalyzeRequest struct {
 	// Consumer of progress updates and results.
 	Consumer tricium.Consumer
 	// Gerrit details for when the Gerrit reporter is selected.
+	GerritHost     string `gae:",noindex"`
 	GerritChange   string `gae:",noindex"`
 	GerritRevision string `gae:",noindex"`
 }

@@ -60,7 +60,7 @@ func checkAcls(c context.Context, pc *ProjectConfig, role Acl_Role) (bool, error
 	}
 	ok, err := auth.IsMember(c, groups...)
 	if err != nil {
-		return false, fmt.Errorf("failed to check member in group(s): %v", err)
+		return false, fmt.Errorf("failed to check member in group(s) (%v): %v", groups, err)
 	}
 	return ok, nil
 }

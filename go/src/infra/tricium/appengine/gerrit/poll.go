@@ -26,10 +26,6 @@ import (
 	"infra/tricium/appengine/common/config"
 )
 
-const (
-	scope = "https://www.googleapis.com/auth/gerritcodereview"
-)
-
 // The timestamp format used by Gerrit (using the reference date). All timestamps are in UTC.
 const timeStampLayout = "2006-01-02 15:04:05.000000000"
 
@@ -177,10 +173,16 @@ func pollProject(c context.Context, triciumProject, instance, gerritProject stri
 		ops := []func() error{
 			// Update exisiting changes and add new ones.
 			func() error {
+				if len(uchanges) == 0 {
+					return nil
+				}
 				return ds.Put(c, uchanges)
 			},
 			// Delete removed changes.
 			func() error {
+				if len(dchanges) == 0 {
+					return nil
+				}
 				if err := ds.Delete(c, dchanges); err != nil {
 					if me, ok := err.(appengine.MultiError); ok {
 						for _, merr := range me {
@@ -291,6 +293,10 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 
 // enqueueAnalyzeRequests enqueues Analyze requests for the provided Gerrit changes.
 func enqueueAnalyzeRequests(ctx context.Context, project string, changes []gr.ChangeInfo) error {
+	logging.Debugf(ctx, "Enqueue Analyze requests for %d changes", len(changes))
+	if len(changes) == 0 {
+		return nil
+	}
 	var tasks []*tq.Task
 	for _, c := range changes {
 		var paths []string
@@ -315,11 +321,10 @@ func enqueueAnalyzeRequests(ctx context.Context, project string, changes []gr.Ch
 		if err != nil {
 			return fmt.Errorf("failed to marshal Analyze request: %v", err)
 		}
-		t := tq.NewPOSTTask("internal/analyze", nil)
+		t := tq.NewPOSTTask("/internal/analyze", nil)
 		t.Payload = b
 		logging.Debugf(ctx, "Converted change details (%v) to Tricium request (%v)", c, req)
 		tasks = append(tasks, t)
-
 	}
 	if err := tq.Add(ctx, common.AnalyzeQueue, tasks...); err != nil {
 		return fmt.Errorf("failed to enqueue Analyze request: %v", err)

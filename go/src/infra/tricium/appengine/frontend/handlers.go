@@ -135,6 +135,7 @@ func parseRequestForm(r *http.Request) (*pipeline.ServiceRequest, error) {
 func analyzeHandler(ctx *router.Context) {
 	c, r, w := ctx.Context, ctx.Request, ctx.Writer
 	defer r.Body.Close()
+	logging.Debugf(c, "[frontend] Received Analyze request")
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "[frontend] Analyze queue handler failed to read request body")
@@ -148,7 +149,7 @@ func analyzeHandler(ctx *router.Context) {
 		return
 	}
 	logging.Infof(c, "[frontend] Analyze request (Project: %s, Git ref: %s)", ar.Project, ar.GitRef)
-	if _, err := server.Analyze(c, ar); err != nil {
+	if _, err := analyze(c, ar, config.LuciConfigServer); err != nil {
 		logging.WithError(err).Errorf(c, "[frontend] Failed to call Tricium.Analyze")
 		switch grpc.Code(err) {
 		case codes.InvalidArgument:

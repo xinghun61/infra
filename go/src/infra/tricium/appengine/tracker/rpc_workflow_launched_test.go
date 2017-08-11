@@ -20,9 +20,9 @@ import (
 )
 
 const (
-	clangIsolatorUbuntu  = "ClangIsolator_Ubuntu14.04-x86-64"
-	clangIsolatorWindows = "ClangIsolator_Windows-7-SP1-x86-64"
-	fileIsolator         = "GitFileIsolator_Ubuntu14.04-x86-64"
+	clangIsolatorUbuntu  = "ClangIsolator_Ubuntu"
+	clangIsolatorWindows = "ClangIsolator_Windows"
+	fileIsolator         = "GitFileIsolator_Ubuntu"
 )
 
 // mockWorkflowProvider mocks common.WorkflowProvider.
