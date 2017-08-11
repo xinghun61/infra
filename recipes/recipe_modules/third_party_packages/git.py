@@ -313,6 +313,14 @@ class GitApi(util.ModuleShim):
         package_dir.join('etc', 'profile.d', 'vpython.sh'))
 
     package_file = self.build_package(package_name, workdir, package_dir, None)
+
+    # Rename our built package just in case the package itself references
+    # build paths. This will invalidate those references.
+    self.m.file.move(
+        'rename package for tests',
+        package_dir,
+        workdir.join('package.built'))
+
     self._test_package(package_file)
     self.register_package(package_file, package_name, version)
 

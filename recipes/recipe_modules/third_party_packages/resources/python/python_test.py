@@ -17,20 +17,22 @@ class TestPython(unittest.TestCase):
   @classmethod
   def setUpClass(cls):
     cls._cipd_package = os.environ['PYTHON_TEST_CIPD_PACKAGE']
-    cls._exe_suffix = '.exe' if os.name == 'nt' else ''
+    cls._is_windows = os.name == 'nt'
+    cls._exe_suffix = '.exe' if cls._is_windows else ''
 
-  def setUp(self):
-    self.tdir = tempfile.mkdtemp(dir=os.getcwd(), suffix='test_python')
+    cls.tdir = tempfile.mkdtemp(dir=os.getcwd(), suffix='test_python')
 
-    self.pkg_dir = os.path.join(self.tdir, 'install')
+    cls.pkg_dir = os.path.join(cls.tdir, 'install')
     subprocess.check_call([
-      'cipd', 'pkg-deploy', self._cipd_package, '-root', self.pkg_dir])
-    self.python = os.path.join(self.pkg_dir, 'bin', 'python' + self._exe_suffix)
+      'cipd', 'pkg-deploy', cls._cipd_package, '-root', cls.pkg_dir],
+      shell=cls._is_windows)
+    cls.python = os.path.join(cls.pkg_dir, 'bin', 'python' + cls._exe_suffix)
 
-  def tearDown(self):
+  @classmethod
+  def tearDownClass(cls):
     # If we fail to delete, that's fine since we're within the workdir, which
     # gets purged with each build.
-    shutil.rmtree(self.tdir, ignore_errors=True)
+    shutil.rmtree(cls.tdir, ignore_errors=True)
 
   def test_package_import(self):
     for pkg in (

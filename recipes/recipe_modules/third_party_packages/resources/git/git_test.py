@@ -17,41 +17,52 @@ class TestGit(unittest.TestCase):
   @classmethod
   def setUpClass(cls):
     cls._cipd_package = os.environ['GIT_TEST_CIPD_PACKAGE']
-    cls._exe_suffix = '.exe' if os.name == 'nt' else ''
+    cls._is_windows = os.name == 'nt'
+    cls._exe_suffix = '.exe' if cls._is_windows else ''
 
-  def setUp(self):
-    self.tdir = tempfile.mkdtemp(dir=os.getcwd(), suffix='test_git')
+    cls.tdir = tempfile.mkdtemp(dir=os.getcwd(), suffix='test_git')
 
-    self.pkg_dir = os.path.join(self.tdir, 'install')
+    cls.pkg_dir = os.path.join(cls.tdir, 'install')
     subprocess.check_call([
-      'cipd', 'pkg-deploy', self._cipd_package, '-root', self.pkg_dir])
-    self.bin_dir = os.path.join(self.pkg_dir, 'bin')
+        'cipd', 'pkg-deploy', cls._cipd_package, '-root', cls.pkg_dir],
+        shell=cls._is_windows)
+    cls.bin_dir = os.path.join(cls.pkg_dir, 'bin')
 
-  def tearDown(self):
+  @classmethod
+  def tearDownClass(cls):
     # If we fail to delete, that's fine since we're within the workdir, which
     # gets purged with each build.
-    shutil.rmtree(self.tdir, ignore_errors=True)
+    shutil.rmtree(cls.tdir, ignore_errors=True)
+
+  def setUp(self):
+    self.workdir = tempfile.mkdtemp(dir=self.tdir) 
 
   def test_version_from_relpath(self):
-    rv = subprocess.call(['git', 'version'], cwd=self.bin_dir)
+    rv = subprocess.call(['git', 'version'],
+        cwd=self.bin_dir, shell=self._is_windows)
     self.assertEqual(rv, 0)
 
   def test_clone_from_relpath(self):
     git = os.path.join('install', 'bin', 'git' + self._exe_suffix)
-    rv = subprocess.call([git, 'clone', self.HTTPS_REPO_URL], cwd=self.tdir)
+    dst = os.path.join(self.workdir, 'repo')
+    rv = subprocess.call([git, 'clone', self.HTTPS_REPO_URL, dst],
+        cwd=self.tdir, shell=self._is_windows)
     self.assertEqual(rv, 0)
 
   def test_clone_from_abspath(self):
     git = os.path.join(self.bin_dir, 'git' + self._exe_suffix)
-    rv = subprocess.call([git, 'clone', self.HTTPS_REPO_URL], cwd=self.tdir)
+    dst = os.path.join(self.workdir, 'repo')
+    rv = subprocess.call([git, 'clone', self.HTTPS_REPO_URL, dst],
+        cwd=self.tdir, shell=self._is_windows)
     self.assertEqual(rv, 0)
 
   def test_clone_from_indirect_path(self):
     env = os.environ.copy()
+    dst = os.path.join(self.workdir, 'repo')
     env['PATH'] = '%s%s%s' % (self.bin_dir, os.pathsep, env.get('PATH', ''))
 
-    rv = subprocess.call(['git', 'clone', self.HTTPS_REPO_URL],
-                         cwd=self.tdir, env=env)
+    rv = subprocess.call(['git', 'clone', self.HTTPS_REPO_URL, dst],
+                         cwd=self.tdir, env=env, shell=self._is_windows)
     self.assertEqual(rv, 0)
 
 
