@@ -8,18 +8,17 @@ import mock
 from common import constants
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
-from libs import time_util
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 
-from waterfall.flake import confidence
 from waterfall import swarming_util
 from waterfall.flake import flake_constants
-from waterfall.flake import lookback_algorithm
 from waterfall.flake import recursive_flake_pipeline
 
+from waterfall.flake.finish_build_analysis_pipeline import (
+    FinishBuildAnalysisPipeline)
 from waterfall.flake.initialize_flake_try_job_pipeline import (
     InitializeFlakeTryJobPipeline)
 from waterfall.flake.next_build_number_pipeline import NextBuildNumberPipeline
@@ -497,8 +496,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     lower_bound = 1
     upper_bound = 10
-    user_range = recursive_flake_pipeline._UserSpecifiedRange(
-        lower_bound, upper_bound)
     iterations = 100
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
@@ -513,16 +510,11 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     self.MockPipeline(
-        UpdateFlakeBugPipeline,
+        FinishBuildAnalysisPipeline,
         '',
-        expected_args=[analysis.key.urlsafe()],
-        expected_kwargs={})
-
-    self.MockPipeline(
-        InitializeFlakeTryJobPipeline,
-        '',
-        expected_args=[analysis.key.urlsafe(), iterations, user_range],
-        expected_kwargs={})
+        expected_args=[
+            analysis.key.urlsafe(), lower_bound, upper_bound, iterations
+        ])
 
     pipeline = RecursiveFlakePipeline(analysis.key.urlsafe(), build_number,
                                       lower_bound, upper_bound, iterations)
@@ -538,8 +530,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     lower_bound = 1
     upper_bound = 10
-    user_range = recursive_flake_pipeline._UserSpecifiedRange(
-        lower_bound, upper_bound)
     iterations = 100
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
@@ -554,16 +544,11 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     self.MockPipeline(
-        UpdateFlakeBugPipeline,
+        FinishBuildAnalysisPipeline,
         '',
-        expected_args=[analysis.key.urlsafe()],
-        expected_kwargs={})
-
-    self.MockPipeline(
-        InitializeFlakeTryJobPipeline,
-        '',
-        expected_args=[analysis.key.urlsafe(), iterations, user_range],
-        expected_kwargs={})
+        expected_args=[
+            analysis.key.urlsafe(), lower_bound, upper_bound, iterations
+        ])
 
     pipeline = RecursiveFlakePipeline(analysis.key.urlsafe(), None, lower_bound,
                                       upper_bound, iterations)
@@ -724,73 +709,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   #######################################
   #      Function unit tests.           #
   #######################################
-
-  def testFinishAnalysis(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-
-    lower_bound = 1
-    upper_bound = 10
-    user_range = recursive_flake_pipeline._UserSpecifiedRange(
-        lower_bound, upper_bound)
-    iterations = 100
-
-    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, step_name, test_name)
-    analysis.status = analysis_status.COMPLETED
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
-    analysis.put()
-
-    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
-                                    step_name, test_name)
-    task.status = analysis_status.COMPLETED
-    task.put()
-
-    self.MockPipeline(
-        UpdateFlakeBugPipeline,
-        '',
-        expected_args=[analysis.key.urlsafe()],
-        expected_kwargs={})
-
-    self.MockPipeline(
-        InitializeFlakeTryJobPipeline,
-        '',
-        expected_args=[analysis.key.urlsafe(), iterations, user_range],
-        expected_kwargs={})
-
-    # Convert generator to list to make sure it finished
-    _ = list(
-        recursive_flake_pipeline._FinishAnalysis(analysis, lower_bound,
-                                                 upper_bound, 100))
-    self.assertEqual(analysis_status.COMPLETED, analysis.status)
-
-  @mock.patch.object(
-      recursive_flake_pipeline.confidence,
-      'SteppinessForBuild',
-      return_value=0.6)
-  def testGetBuildConfidenceScore(self, _):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 124, 's', 't')
-    analysis.data_points = [DataPoint.Create(pass_rate=0.7, build_number=123)]
-    self.assertIsNone(
-        recursive_flake_pipeline._GetBuildConfidenceScore(analysis, None, []))
-    self.assertEqual(0.6,
-                     recursive_flake_pipeline._GetBuildConfidenceScore(
-                         analysis, 123, analysis.data_points))
-
-  def testGetBuildConfidenceScoreIntroducedNewFlakyTest(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 124, 's', 't')
-    analysis.data_points = [
-        DataPoint.Create(pass_rate=0.7, build_number=123),
-        DataPoint.Create(
-            pass_rate=flake_constants.PASS_RATE_TEST_NOT_FOUND,
-            build_number=122)
-    ]
-    self.assertEqual(1.0,
-                     recursive_flake_pipeline._GetBuildConfidenceScore(
-                         analysis, 123, analysis.data_points))
 
   def testGetBestBuildNumberToRunWithNearbyNeighborRunning(self):
     master_name = 'm'
@@ -1061,29 +979,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(15,
                      recursive_flake_pipeline._GetEarliestBuildNumber(
                          None, 25, algorithm_settings))
-
-  def testUserSpecifiedRange(self):
-    self.assertTrue(recursive_flake_pipeline._UserSpecifiedRange(123, 125))
-    self.assertFalse(recursive_flake_pipeline._UserSpecifiedRange(None, 123))
-    self.assertFalse(recursive_flake_pipeline._UserSpecifiedRange(123, None))
-    self.assertFalse(recursive_flake_pipeline._UserSpecifiedRange(None, None))
-
-  def testUpdateAnalysisResults(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.last_attempted_swarming_task_id = '12345'
-    recursive_flake_pipeline._UpdateAnalysisResults(
-        analysis, 100, analysis_status.COMPLETED, None)
-    self.assertEqual(analysis.suspected_flake_build_number, 100)
-    self.assertIsNone(analysis.last_attempted_swarming_task_id)
-
-  @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2017, 6, 27))
-  def testUpdateAnalysisResultsWithError(self, _):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.last_attempted_swarming_task_id = '12345'
-    recursive_flake_pipeline._UpdateAnalysisResults(
-        analysis, None, analysis_status.ERROR, {'error': 'error'})
-    self.assertEqual(analysis_status.ERROR, analysis.status)
-    self.assertEqual(datetime(2017, 6, 27), analysis.end_time)
 
   def testIsFinished(self):
     self.assertTrue(recursive_flake_pipeline._IsFinished(1, 2, 3, 0))
