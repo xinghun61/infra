@@ -61,4 +61,4 @@ class FlakeCulprit(BaseHandler):
             key,
     }
 
-    return {'template': 'waterfall/flake/flake-culprit.html', 'data': data}
+    return {'template': 'flake/flake-culprit.html', 'data': data}
