@@ -485,3 +485,246 @@ indexes:
   - name: signature
   - name: requested_time
     direction: desc
+
+# For uma sampling profiler dashboard.
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: has_regression_range
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: regression_range_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: has_regression_range
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: regression_range_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: has_regression_range
+  - name: regression_range_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: has_regression_range
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: regression_range_triage_status
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: has_regression_range
+  - name: regression_range_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: has_regression_range
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: regression_range_triage_status
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: has_regression_range
+  - name: regression_range_triage_status
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: has_regression_range
+  - name: regression_range_triage_status
+  - name: suspected_cls_triage_status
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: suspected_components_triage_status
+  - name: requested_time
+    direction: desc
+
+# With search by signature feature.
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: has_regression_range
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: suspected_cls_triage_status
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: regression_range_triage_status
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: has_regression_range
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: regression_range_triage_status
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: suspected_cls_triage_status
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: has_regression_range
+  - name: regression_range_triage_status
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: has_regression_range
+  - name: suspected_cls_triage_status
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: regression_range_triage_status
+  - name: suspected_cls_triage_status
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: has_regression_range
+  - name: regression_range_triage_status
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: has_regression_range
+  - name: suspected_cls_triage_status
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: regression_range_triage_status
+  - name: suspected_cls_triage_status
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: has_regression_range
+  - name: regression_range_triage_status
+  - name: suspected_cls_triage_status
+  - name: signature
+  - name: requested_time
+    direction: desc
+
+- kind: UMASamplingProfilerAnalysis
+  properties:
+  - name: found_suspects
+  - name: has_regression_range
+  - name: regression_range_triage_status
+  - name: suspected_cls_triage_status
+  - name: signature
+  - name: requested_time
+    direction: desc
