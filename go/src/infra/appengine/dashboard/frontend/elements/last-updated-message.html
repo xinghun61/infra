@@ -1,0 +1,60 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+
+<dom-module id="last-updated-message">
+  <template>
+    <style>
+      div {
+        font-size: .81em;
+      }
+      #lastUpdatedTimeShort {
+        display: none;
+      }
+      @media (max-width: 800px) {
+        #lastUpdatedTimeShort {
+          /* Responsively display a shorter last udpated time. */
+          display: inline;
+        }
+        #lastUpdatedTime {
+          display: none;
+        }
+      }
+    </style>
+    <div id="lastUpdated">
+      Last updated:
+      <span id="lastUpdatedTime">
+        <span class="line">[[lastUpdated.time]]</span>
+        <span class="line">
+          ([[lastUpdated.relativeTime]] minute[[isPlural(lastUpdated.relativeTime)]] ago)
+        </span>
+      </span>
+      <span id="lastUpdatedTimeShort">
+        [[lastUpdated.relativeTime]] minutes ago
+      </span>
+    </div>
+  </template>
+  <script>
+    'use strict';
+
+    class LastUpdatedMessage extends Polymer.Element {
+      static get is() { return 'last-updated-message'; }
+
+      ready() {
+        super.ready();
+      }
+
+      static get properties() {
+        return {
+          lastUpdated: {
+            type: Object,
+            value: null,
+          }
+        }
+      }
+
+      isPlural(amount) {
+        return amount !== 1 ? 's' : '';
+      }
+    }
+    customElements.define(LastUpdatedMessage.is, LastUpdatedMessage);
+  </script>
+</dom-module>

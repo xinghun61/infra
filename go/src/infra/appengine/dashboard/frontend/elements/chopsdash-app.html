@@ -3,8 +3,12 @@
 <link rel="import" href="/bower_components/app-layout/app-toolbar/app-toolbar.html">
 <link rel="import" href="/bower_components/app-layout/app-scroll-effects/effects/waterfall.html">
 <link rel="import" href="/bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="/elements/last-updated-message.html">
 <link rel="import" href="/elements/tree-status.html">
 <link rel="import" href="/elements/status-table.html">
+
+<script src="/bower_components/moment/min/moment.min.js"></script>
+<script src="/bower_components/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
 
 <dom-module id="chopsdash-app">
   <template>
@@ -46,6 +50,7 @@
       <app-header reveals effects="waterfall">
         <app-toolbar>
           <div main-title>Chrome Operations Status Dashboard</div>
+          <last-updated-message last-updated="[[lastUpdated]]"></last-updated-message>
         </app-toolbar>
       </app-header>
       <div class="content">
@@ -81,7 +86,8 @@
     // Any timestamps received from or sent to the backend are in seconds.
     // Any timestamps created/used in the frontend will be
     // (converted to, if necessary) in  milliseconds.
-    const RELOAD_TIME = 5 * 60 * 1000;
+    const RELOAD_TIME_MIN = 5;
+    const UPDATE_MESSAGE_TIME = 60 * 1000;
 
     class ChOpsDashApp extends Polymer.Element {
       static get is() { return 'chopsdash-app'; }
@@ -109,6 +115,10 @@
           nonSLAServices: {
             type: Array,
             computed: '_updateNonSLAServices(ajaxResponse)'
+          },
+          lastUpdated: {
+            type: Object,
+            value: {time: moment(Date.now()).format('M/DD/YYYY, h:mm a'), relativeTime: 0}
           }
         }
       }
@@ -120,7 +130,19 @@
       }
 
       _refreshCountdown() {
-        Polymer.Async.timeOut.run(() => { this._refreshData(); }, RELOAD_TIME);
+        this._countdown(0);
+      }
+
+      _countdown(lastRefresh) {
+        if (lastRefresh == RELOAD_TIME_MIN) {
+          this.set('lastUpdated.relativeTime', 0);
+          this.set('lastUpdated.time', moment(Date.now()).format('M/DD/YYYY, h:mm a'));
+          this._refreshData();
+        } else {
+          Polymer.Async.timeOut.run(() => {
+            this.set('lastUpdated.relativeTime', lastRefresh + 1);
+            this._countdown(lastRefresh + 1); }, UPDATE_MESSAGE_TIME);
+        }
       }
 
       _updateServices(jsonData) {
