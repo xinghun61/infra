@@ -28,3 +28,22 @@ def PublishMessagesToTopic(messages_data, topic):  # pragma: no cover.
     messages.append({'data': base64.b64encode(message_data)})
   return CreatePubSubClient().projects().topics().publish(
       topic=topic, body={'messages': messages}).execute()
+
+
+def PullMessagesFromSubscription(subscription_name, max_messages=10):
+  """Pulls a list of messages from a Pub/Sub subscription."""
+  subscription = CreatePubSubClient().projects().subscriptions()
+  results = subscription.pull(
+      subscription=subscription_name,
+      body={'returnImmediately': True, 'maxMessages': max_messages}).execute()
+
+  if not results:
+    return []
+
+  ack_ids = [result['ackId'] for result in results['receivedMessages']]
+  messages = [result['message'] for result in results['receivedMessages']]
+  # Acknowledge received messages. If you do not acknowledge, Pub/Sub will
+  # redeliver the message.
+  subscription.acknowledge(
+      subscription=subscription_name, body={'ackIds': ack_ids}).execute()
+  return messages
