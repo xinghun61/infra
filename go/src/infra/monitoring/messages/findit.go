@@ -31,4 +31,5 @@ type SuspectCL struct {
 	Confidence       int    `json:"confidence"`
 	AnalysisApproach string `json:"analysis_approach"`
 	RevertCLURL      string `json:"revert_cl_url"`
+	RevertCommitted  bool   `json:"revert_committed"`
 }

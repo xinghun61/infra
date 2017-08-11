@@ -93,11 +93,11 @@
             <ul>
               <template is="dom-repeat" items="[[extension.reason.tests]]" as="test" sort="_sortTests">
                 <li id="test_results">
-                  <a target="_blank" href$=[[_linkForTest(extension.reason,test.test_name)]]>
+                  <a target="_blank" href$="[[_linkForTest(extension.reason,test.test_name)]]">
                     [[test.test_name]]
                   </a>
                   (
-                  <a target="_blank" href$=[[_linkToCSForTest(test.test_name)]]>
+                  <a target="_blank" href$="[[_linkToCSForTest(test.test_name)]]">
                     Code Search
                   </a>
                   )
@@ -105,7 +105,7 @@
                     <template is="dom-repeat" items="[[test.suspected_cls]]" as="testCL">
                       <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
                       <span class="suspect-cl-results">
-                        Findit (<a target="_blank" href="https://goto.google.com/findit-manual">?</a>)
+                        Findit (<a target="_blank" href$="https://goto.google.com/findit-manual">?</a>)
                         [[_finditApproach(testCL)]]
                         <a href$="https://chromium.googlesource.com/chromium/src/+/[[testCL.revision]]" target="_blank">
                             [[_textForCL(testCL.revision)]]
@@ -117,7 +117,7 @@
                     <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
                     <span class="suspect-cl-results">
                       Findit
-                      (<a target="_blank" href="https://goto.google.com/findit-manual">?</a>)
+                      (<a target="_blank" href$="https://goto.google.com/findit-manual">?</a>)
                       results: Flaky
                     </span>
                   </template>
@@ -152,7 +152,7 @@
           <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
           Findit is Analyzing...
           <template is="dom-if" if="[[_finditHasUrl(extension)]]">
-            <a target="_blank" href$=[[extension.findit_url]]>
+            <a target="_blank" href$="[[extension.findit_url]]">
               Details
             </a>
           </template>
@@ -167,30 +167,44 @@
           <template is="dom-repeat" items="[[_suspectedCls]]" as="cl">
             <template is="dom-if" if="[[_haveRevertCL(cl)]]">
               <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
-              <strong class="revert-cl">
-                Findit
-                (<a target="_blank" href="https://goto.google.com/findit-manual">?</a>)
-                has created a
-                <a target="_blank" href$=[[cl.revert_cl_url]]>revert CL</a>
-                 for culprit
-              </strong>
-                <a target="_blank" href$=[[_linkForCL(cl.revision)]] class="suspect-cl-link">
-                  [[_textForCL(cl.commit_position, cl.revision)]]</a><strong class="revert-cl">. PLEASE REVIEW.
-              </strong>
+              <template is="dom-if" if="[[_revertIsCommitted(cl)]]">
+                <strong class="revert-cl">
+                  Findit
+                  (<a target="_blank" href$="https://goto.google.com/findit-manual">?</a>)
+                  has COMMITTED a
+                  <a target="_blank" href$="[[cl.revert_cl_url]]">revert CL</a>
+                   for culprit
+                </strong>
+                <a target="_blank" href$="[[_linkForCL(cl.revision)]]" class="suspect-cl-link">
+                  [[_textForCL(cl.commit_position, cl.revision)]]</a>
+                <strong class="revert-cl">.</strong>
+              </template>
+              <template is="dom-if" if="[[!_revertIsCommitted(cl)]]">
+                <strong class="revert-cl">
+                  Findit
+                  (<a target="_blank" href$="https://goto.google.com/findit-manual">?</a>)
+                  has CREATED a
+                  <a target="_blank" href$="[[cl.revert_cl_url]]">revert CL</a>
+                   for culprit
+                </strong>
+                <a target="_blank" href$="[[_linkForCL(cl.revision)]]" class="suspect-cl-link">
+                  [[_textForCL(cl.commit_position, cl.revision)]]</a>
+                <strong class="revert-cl">. PLEASE REVIEW. </strong>
+              </template>
             </template>
             <template is="dom-if" if="[[!_haveRevertCL(cl)]]">
               <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">
               <strong class="suspect-cl-results">
                 Findit
-                (<a target="_blank" href="https://goto.google.com/findit-manual">?</a>)
+                (<a target="_blank" href$="https://goto.google.com/findit-manual">?</a>)
                 [[_finditApproach(cl)]]
-                <a target="_blank" href$=[[_linkForCL(cl.revision)]] class="suspect-cl-link">
+                <a target="_blank" href$="[[_linkForCL(cl.revision)]]" class="suspect-cl-link">
                   [[_textForCL(cl.commit_position, cl.revision)]]
                 </a>
                 with [[_finditConfidence(cl)]]% confidence.
               </strong>
             </template>
-            <a target="_blank" href$=[[extension.findit_url]]>
+            <a target="_blank" href$="[[extension.findit_url]]">
               More details...
             </a>
             <br>

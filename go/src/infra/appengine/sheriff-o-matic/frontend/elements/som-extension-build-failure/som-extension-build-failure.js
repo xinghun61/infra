@@ -146,6 +146,10 @@ class SomExtensionBuildFailure extends Polymer.mixinBehaviors(
     return cl && cl.revert_cl_url;
   }
 
+  _revertIsCommitted(cl) {
+    return this._haveRevertCL(cl) && cl.revert_committed;
+  }
+
   _haveRegressionRanges(regression_ranges) {
     return regression_ranges && regression_ranges.length > 0;
   }
