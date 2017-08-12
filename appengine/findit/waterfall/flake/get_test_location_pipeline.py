@@ -25,9 +25,9 @@ class GetTestLocationPipeline(BasePipeline):
     task_output = swarming_util.GetIsolatedOutputForTask(
         task_id, HttpClientAppengine())
 
-    tests_locations = task_output.get('tests_locations')
+    test_locations = task_output.get('test_locations')
 
-    if tests_locations is None:
+    if test_locations is None:
       logging.warning(
           ('Failed to get test locations from isolated output for task %s for '
            '%s/%s/%s/%s on suspected build %s'), task_id, analysis.master_name,
@@ -35,11 +35,11 @@ class GetTestLocationPipeline(BasePipeline):
           suspected_build_point.build_number)
       return None
 
-    test_location = tests_locations.get(analysis.test_name)
+    test_location = test_locations.get(analysis.test_name)
 
     if test_location is None:
-      logging.warning(
-          'Failed to get test location for test %s', analysis.test_name)
+      logging.warning('Failed to get test location for test %s',
+                      analysis.test_name)
       return None
 
     return test_location

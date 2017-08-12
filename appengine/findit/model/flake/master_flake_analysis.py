@@ -448,6 +448,9 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   # The urlsafe key to a FlakeCulprit associated with the try job results.
   culprit_urlsafe_key = ndb.StringProperty(indexed=False)
 
+  # A list of url-safe keys to FlakeCulprits identified by heuristic analysis.
+  suspect_urlsafe_keys = ndb.StringProperty(repeated=True)
+
   # The status of try jobs, if any. None if analysis is still performing
   # swarming reruns, SKIPPED if try jobs will not be triggered, RUNNING when
   # the first try job is triggered, COMPLETED when the last one finishes, and

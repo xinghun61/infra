@@ -14,7 +14,7 @@ from waterfall.test import wf_testcase
 class GetTestLocationPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask', return_value={})
-  def testGetTestLocationPipelineNoTestsLocations(self, _):
+  def testGetTestLocationPipelineNoTestLocations(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
         DataPoint.Create(build_number=123, pass_rate=0.5, task_id='task_id')
@@ -29,7 +29,7 @@ class GetTestLocationPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       swarming_util,
       'GetIsolatedOutputForTask',
-      return_value={'tests_locations': {}})
+      return_value={'test_locations': {}})
   def testGetTestLocationPipelineNoTestLocation(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
@@ -50,7 +50,7 @@ class GetTestLocationPipelineTest(wf_testcase.WaterfallTestCase):
         'file': '/path/to/test_file.cc',
     }
     mocked_get_isolated_output.return_value = {
-        'tests_locations': {
+        'test_locations': {
             test_name: expected_test_location,
         }
     }

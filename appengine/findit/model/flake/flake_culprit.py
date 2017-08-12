@@ -14,7 +14,7 @@ class FlakeCulprit(BaseSuspectedCL):
   url = ndb.StringProperty(indexed=False)
 
   # A list of urlsafe-keys to MasterFlakeAnalysis entities for which this is the
-  # corresponding culprit to.
+  # corresponding culprit to as confirmed by try jobs.
   flake_analysis_urlsafe_keys = ndb.StringProperty(indexed=False, repeated=True)
 
   # Arguments number differs from overridden method - pylint: disable=W0221
