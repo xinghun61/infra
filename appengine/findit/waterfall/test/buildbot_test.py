@@ -460,15 +460,11 @@ class BuildBotTest(unittest.TestCase):
                                         self.http_client, 'step_metadata')
     self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
 
-  @mock.patch.object(
-      logdog_util,
-      'GetStepLogLegacy',
-      return_value=':')
+  @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value=':')
   def testMalformattedNinjaInfo(self, _):
-    step_metadata = buildbot.GetStepLog(self.master_name, self.builder_name,
-                                        self.build_number, self.step_name,
-                                        self.http_client,
-                                        'json.output[ninja_info]')
+    step_metadata = buildbot.GetStepLog(
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        self.http_client, 'json.output[ninja_info]')
     self.assertIsNone(step_metadata)
 
   @mock.patch.object(
@@ -488,73 +484,11 @@ class BuildBotTest(unittest.TestCase):
                                         self.http_client, 'step_metadata')
     self.assertIsNone(step_metadata)
 
-  def testCreateStdioLogUrl(self):
-    master_name = 'a'
-    builder_name = urllib.quote('Win7 Tests (1)')
-    build_number = 123
-    step_name = urllib.quote('[trigger] abc_tests')
-    expected_stdio_log_url = ('https://build.chromium.org/p/a/builders/'
-                              'Win7%20Tests%20%281%29/builds/123/steps/'
-                              '%5Btrigger%5D%20abc_tests/logs/stdio/text')
-
-    self.assertEqual(expected_stdio_log_url,
-                     buildbot._CreateStdioLogUrl(master_name, builder_name,
-                                                 build_number, step_name))
-
-  def testGetStepStdioSuccess(self):
-    master_name = 'a'
-    builder_name = 'b c'
-    build_number = 1
-    step_name = 'd f'
-    expected_url = ('https://build.chromium.org/p/a/builders/b%20c/builds/1/'
-                    'steps/d%20f/logs/stdio/text')
-    http_client = DummyHttpClient(200, 'abc')
-    data = buildbot._GetStepStdioFromBuildBot(
-        master_name, builder_name, build_number, step_name, http_client)
-    self.assertEqual(http_client.response_content, data)
-    self.assertEqual(1, len(http_client.requests))
-    self.assertEqual(expected_url, http_client.requests[0])
-
-  def testGetStepStdioFailure(self):
-    master_name = 'a'
-    builder_name = 'b c'
-    build_number = 1
-    step_name = 'd f'
-    expected_url = ('https://build.chromium.org/p/a/builders/b%20c/builds/1/'
-                    'steps/d%20f/logs/stdio/text')
-    http_client = DummyHttpClient(404, 'Not Found')
-    data = buildbot._GetStepStdioFromBuildBot(
-        master_name, builder_name, build_number, step_name, http_client)
-    self.assertIsNone(data)
-    self.assertEqual(1, len(http_client.requests))
-    self.assertEqual(expected_url, http_client.requests[0])
-
   @mock.patch.object(
       logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
   @mock.patch.object(logdog_util, '_GetStreamForStep', return_value='stream')
   @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value='log1/nlog2')
   def testGetStepLogStdio(self, *_):
-    self.assertEqual('log1/nlog2',
-                     buildbot.GetStepLog(self.master_name, self.builder_name,
-                                         self.build_number, self.step_name,
-                                         self.http_client))
-
-  @mock.patch.object(
-      logdog_util, '_GetAnnotationsProtoForPath', return_value=None)
-  @mock.patch.object(
-      buildbot, '_GetStepStdioFromBuildBot', return_value='log1/nlog2')
-  def testGetStepLogStdioIfNoProto(self, *_):
-    self.assertEqual('log1/nlog2',
-                     buildbot.GetStepLog(self.master_name, self.builder_name,
-                                         self.build_number, self.step_name,
-                                         self.http_client))
-
-  @mock.patch.object(
-      logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
-  @mock.patch.object(logdog_util, '_GetStreamForStep', return_value=None)
-  @mock.patch.object(
-      buildbot, '_GetStepStdioFromBuildBot', return_value='log1/nlog2')
-  def testGetStepLogStdioIfNoStream(self, *_):
     self.assertEqual('log1/nlog2',
                      buildbot.GetStepLog(self.master_name, self.builder_name,
                                          self.build_number, self.step_name,

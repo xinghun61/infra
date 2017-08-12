@@ -349,22 +349,6 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   return build_info
 
 
-def _CreateStdioLogUrl(master_name, builder_name, build_number, step_name):
-  return ('https://build.chromium.org/p/%s/builders/%s/builds/%s/'
-          'steps/%s/logs/stdio/text') % (master_name, builder_name,
-                                         build_number, step_name)
-
-
-def _GetStepStdioFromBuildBot(master_name, builder_name, build_number,
-                              step_name, http_client):
-  """Returns the raw string of stdio of the specified step."""
-  status_code, data = http_client.Get(
-      _CreateStdioLogUrl(master_name,
-                         urllib.quote(builder_name), build_number,
-                         urllib.quote(step_name)))
-  return data if status_code == 200 else None
-
-
 def GetStepLog(master_name,
                builder_name,
                build_number,
@@ -376,11 +360,7 @@ def GetStepLog(master_name,
   data = logdog_util.GetStepLogLegacy(master_name, builder_name, build_number,
                                       full_step_name, log_type, http_client)
   if not data:
-    if log_type.lower() == 'stdout':
-      return _GetStepStdioFromBuildBot(master_name, builder_name, build_number,
-                                       full_step_name, http_client)
-    else:
-      return None
+    return None
 
   if log_type.lower() == 'json.output[ninja_info]':
     # Check if data is malformatted.

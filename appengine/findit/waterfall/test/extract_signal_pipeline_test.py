@@ -6,6 +6,8 @@ import json
 import mock
 import os
 
+from google.appengine.api.urlfetch import ResponseTooLargeError
+
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from model.wf_analysis import WfAnalysis
@@ -97,8 +99,8 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     self.mock(ExtractSignalPipeline, 'LOG_DATA_BYTE_LIMIT', 500)
     lines = [str(9 - i) * 99 for i in range(9)]
     log_data = '\n'.join(lines)
-    result = extract_signal_pipeline._ExtractStorablePortionOfLog(log_data,
-                                                                  True)
+    result = extract_signal_pipeline._ExtractStorablePortionOfLog(
+        log_data, True)
     self.assertEqual('', result)
 
   @mock.patch.object(
@@ -499,3 +501,16 @@ class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info)
     self.assertEqual(FAILURE_SIGNALS, signals)
+
+  @mock.patch.object(buildbot, 'GetStepLog')
+  def testResponseTooLarge(self, mock_fun):
+    mock_fun.side_effect = ResponseTooLargeError('test')
+
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 'abc_test'
+    log = extract_signal_pipeline._GetStdoutLog(master_name, builder_name,
+                                                build_number, step_name, None)
+
+    self.assertEqual(log, 'Stdio log is too large for urlfetch.')
