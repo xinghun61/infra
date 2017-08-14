@@ -1,0 +1,5 @@
+[run]
+include = ./packages/dataflow/*
+
+[expect_tests]
+expected_coverage_min = 70
