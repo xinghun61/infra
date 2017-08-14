@@ -1,4 +1,6 @@
-<link rel="import" href="/../bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+
 <dom-module id="incident-icon">
   <template>
     <style>
@@ -20,6 +22,7 @@
     <i id="jsIncident" class="incident">
       <i id="jsLeft" class$="left [[_computeColor(incident)]]"></i>
       <i id="jsRight" class$="right [[_computeColor(incident)]]"></i>
+      <paper-tooltip>Details coming soon!</paper-tooltip>
     </i>
   </template>
   <script>

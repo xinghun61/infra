@@ -1,4 +1,5 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
 <link rel="import" href="/elements/service-row.html">
 <link rel="import" href="/elements/table-footer.html">
 
@@ -83,6 +84,9 @@
                 <template is="dom-repeat" items="[[_computeCurrentIncidents(item.incidents)]]">
                   <span class="circle-container">
                     <i class$="circle [[item]]"></i>
+                    <template is="dom-if" if="{{_showToolTip(item)}}">
+                      <paper-tooltip>Details coming soon!</paper-tooltip>
+                    </template>
                   </span>
                 </template>
                 [[item.name]]
@@ -188,6 +192,10 @@
           }
         });
         return prevInc;
+      }
+
+      _showToolTip(color) {
+        return color != 'green';
       }
     }
     customElements.define(StatusTable.is, StatusTable);

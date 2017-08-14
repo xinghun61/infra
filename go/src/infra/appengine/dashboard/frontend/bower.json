@@ -18,6 +18,7 @@
     "moment-timezone": "^0.5.10",
     "paper-datatable-api": "RoXuS/paper-datatable-api#2.0.1",
     "paper-icon-button": "PolymerElements/paper-icon-button#2.0.0",
+    "paper-tooltip": "PolymerElements/paper-tooltip",
     "polymer": "Polymer/polymer#^2.0.0",
     "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.1"
   },
