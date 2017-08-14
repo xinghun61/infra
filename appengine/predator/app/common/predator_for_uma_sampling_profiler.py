@@ -50,7 +50,6 @@ class PredatorForUMASamplingProfiler(PredatorApp):
             'TopFrameIndex': Weight(1.),
             'TouchCrashedFile': Weight(1.),
         }),
-        'TouchCrashedComponent': Weight(0.),
         'NumberOfTouchedFiles': Weight(0.5)
     })
 

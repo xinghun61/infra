@@ -61,7 +61,6 @@ class PredatorForChromeCrash(PredatorApp):  # pylint: disable=W0223
             'FilePathIdf': Weight(1.)
         }),
         'TouchCrashedDirectory': Weight(1.),
-        'TouchCrashedComponent': Weight(0.),
         'NumberOfTouchedFiles': Weight(0.5)
     })
 
