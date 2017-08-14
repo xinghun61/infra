@@ -15,7 +15,7 @@ PACKAGE_PREFIX = 'infra/git/'
 
 # This version suffix serves to distinguish different revisions of git built
 # with this recipe.
-PACKAGE_VERSION_SUFFIX = '.chromium10'
+PACKAGE_VERSION_SUFFIX = '.chromium11'
 
 
 # A regex for a name of the release asset to package, available at
@@ -55,9 +55,10 @@ class GitApi(util.ModuleShim):
           'am'] + patches,
           name='git apply patches')
 
-      curl = support.ensure_curl()
       zlib = support.ensure_zlib()
-      libs = (curl, zlib)
+      curl = support.ensure_curl()
+      pcre2 = support.ensure_pcre2()
+      libs = (zlib, curl, pcre2)
 
       # Note on OS X:
       # `make configure` requires autoconf in $PATH, which is not available on
@@ -155,9 +156,14 @@ class GitApi(util.ModuleShim):
         # the Foundation and Security frameworks.
         ldflags += ['-framework', 'Foundation', '-framework', 'Security']
 
+        # Include "libpcre2" path in LDFLAGS so the autoconf script will detect
+        # it.
+        ldflags += pcre2.ldflags
+
         # We have to force our static libraries into linking to prevent it from
         # linking dynamic or, worse, not seeing them at all.
-        ldflags += zlib.full_static + curl.full_static
+        for l in libs:
+          ldflags += l.full_static
 
       configure_env['CPPFLAGS'] = ' '.join(cppflags)
       configure_env['CFLAGS'] = ' '.join(cflags)
@@ -187,6 +193,7 @@ class GitApi(util.ModuleShim):
           self.m.step('configure', [
             './configure',
             '--prefix', target_dir,
+            '--with-libpcre2',
             ])
 
         self.m.step('make install', ['make', 'install'])

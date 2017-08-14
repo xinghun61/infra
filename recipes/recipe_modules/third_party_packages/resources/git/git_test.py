@@ -65,6 +65,27 @@ class TestGit(unittest.TestCase):
                          cwd=self.tdir, env=env, shell=self._is_windows)
     self.assertEqual(rv, 0)
 
+  def _setup_test_repo(self, git, path):
+    def g(*cmd):
+      subprocess.check_call([git, '-C', path] + list(cmd))
+    g('init')
+    g('config', 'user.name', 'test')
+    g('config', 'user.email', 'test@example.com')
+
+    with open(os.path.join(path, 'README'), 'w') as fd:
+      fd.write('TEST DATA')
+    g('add', '.')
+    g('commit', '-m', 'Test data')
+
+  def test_libpcre(self):
+    git = os.path.join(self.bin_dir, 'git' + self._exe_suffix)
+    self._setup_test_repo(git, self.workdir)
+
+    rv = subprocess.call(
+        [git, '--no-pager', 'log', '--perl-regexp', '--author', '^.*$'],
+        cwd=self.workdir, shell=self._is_windows)
+    self.assertEqual(rv, 0)
+
 
 if __name__ == '__main__':
   unittest.main()

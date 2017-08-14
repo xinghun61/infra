@@ -52,13 +52,13 @@
       "search",
       "infra/git/mac-amd64",
       "-tag",
-      "version:2.12.2.2.chromium10",
+      "version:2.12.2.2.chromium11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "cipd search infra/git/mac-amd64 version:2.12.2.2.chromium10",
+    "name": "cipd search infra/git/mac-amd64 version:2.12.2.2.chromium11",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",

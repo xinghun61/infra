@@ -73,6 +73,7 @@ class SupportPrefix(util.ModuleShim):
     'infra/third_party/source/autoconf': 'version:2.69',
     'infra/third_party/source/openssl': 'version:1.1.0e',
     'infra/third_party/source/mac_openssl_headers': 'version:0.9.8zh',
+    'infra/third_party/source/pcre2': 'version:10.23',
     'infra/third_party/source/readline': 'version:7.0',
     'infra/third_party/source/termcap': 'version:1.3.1',
     'infra/third_party/source/zlib': 'version:1.2.11',
@@ -245,6 +246,16 @@ class SupportPrefix(util.ModuleShim):
       return self._generic_build('curl', 'version:7.54.0',
                                  configure_args=configure_args, deps=deps,
                                  shared_deps=shared_deps)
+
+  def ensure_pcre2(self):
+    return self._generic_build(
+        'pcre2',
+        'version:10.23',
+        libs=['pcre2-8'],
+        configure_args=[
+          '--enable-static',
+          '--disable-shared',
+        ])
 
   def ensure_zlib(self):
     return self._generic_build('zlib', 'version:1.2.11', libs=['z'],

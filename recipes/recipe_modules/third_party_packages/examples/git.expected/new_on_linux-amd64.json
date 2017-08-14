@@ -52,13 +52,13 @@
       "search",
       "infra/git/linux-amd64",
       "-tag",
-      "version:2.12.2.2.chromium10",
+      "version:2.12.2.2.chromium11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "cipd search infra/git/linux-amd64 version:2.12.2.2.chromium10",
+    "name": "cipd search infra/git/linux-amd64 version:2.12.2.2.chromium11",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
@@ -152,7 +152,7 @@
       "-root",
       "[START_DIR]/git/_support/sources",
       "-ensure-file",
-      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/termcap version:1.3.1\ninfra/third_party/source/zlib version:1.2.11",
+      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/pcre2 version:10.23\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/termcap version:1.3.1\ninfra/third_party/source/zlib version:1.2.11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -182,6 +182,10 @@
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.1.0e--\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/openssl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:10.23---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/pcre2\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.0-----\", @@@",
@@ -420,6 +424,68 @@
   {
     "cmd": [],
     "cwd": "[START_DIR]/git/checkout",
+    "name": "pcre2-10.23"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/git/_support/pcre2-10.23"
+    ],
+    "cwd": "[START_DIR]/git/checkout",
+    "infra_step": true,
+    "name": "pcre2-10.23.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/git/_support/sources/pcre2-10.23.tar.gz",
+      "[START_DIR]/git/_support/pcre2-10.23"
+    ],
+    "cwd": "[START_DIR]/git/_support/pcre2-10.23",
+    "name": "pcre2-10.23.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/git/_support/pcre2-10.23/prefix",
+      "--enable-static",
+      "--disable-shared"
+    ],
+    "cwd": "[START_DIR]/git/_support/pcre2-10.23/pcre2-10.23",
+    "name": "pcre2-10.23.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install"
+    ],
+    "cwd": "[START_DIR]/git/_support/pcre2-10.23/pcre2-10.23",
+    "name": "pcre2-10.23.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/git/checkout",
     "name": "autoconf-2.69"
   },
   {
@@ -485,7 +551,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "RUNTIME_PREFIX = YesPlease\ngitexecdir = libexec/git-core\ntemplate_dir = share/git-core/templates\nsysconfdir = etc\nPERL_LIB_PATH = share/perl\nNO_INSTALL_HARDLINKS = YesPlease\nNO_GECOS_IN_PWENT = YesPlease\nEXTLIBS = -lcurl -ldl -lpthread -lssl -lcrypto -lz",
+      "RUNTIME_PREFIX = YesPlease\ngitexecdir = libexec/git-core\ntemplate_dir = share/git-core/templates\nsysconfdir = etc\nPERL_LIB_PATH = share/perl\nNO_INSTALL_HARDLINKS = YesPlease\nNO_GECOS_IN_PWENT = YesPlease\nEXTLIBS = -lz -lcurl -ldl -lpthread -lssl -lcrypto -lpcre2-8",
       "[START_DIR]/git/checkout/config.mak"
     ],
     "cwd": "[START_DIR]/git/checkout",
@@ -500,7 +566,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "v2.12.2.2.chromium10",
+      "v2.12.2.2.chromium11",
       "[START_DIR]/git/checkout/version"
     ],
     "cwd": "[START_DIR]/git/checkout",
@@ -527,14 +593,15 @@
     "cmd": [
       "./configure",
       "--prefix",
-      "[START_DIR]/git/package"
+      "[START_DIR]/git/package",
+      "--with-libpcre2"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
       "CFLAGS": "-flto",
-      "CPPFLAGS": "-I[START_DIR]/git/_support/curl-7.54.0/prefix/include -I[START_DIR]/git/_support/openssl-1.1.0e/prefix/include -I[START_DIR]/git/_support/zlib-1.2.11/prefix/include",
-      "LDFLAGS": "-flto -L[START_DIR]/git/_support/curl-7.54.0/prefix/lib -L[START_DIR]/git/_support/openssl-1.1.0e/prefix/lib -L[START_DIR]/git/_support/zlib-1.2.11/prefix/lib",
-      "LIBS": "-lcurl -ldl -lpthread -lssl -lcrypto -lz",
+      "CPPFLAGS": "-I[START_DIR]/git/_support/zlib-1.2.11/prefix/include -I[START_DIR]/git/_support/curl-7.54.0/prefix/include -I[START_DIR]/git/_support/openssl-1.1.0e/prefix/include -I[START_DIR]/git/_support/pcre2-10.23/prefix/include",
+      "LDFLAGS": "-flto -L[START_DIR]/git/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/git/_support/curl-7.54.0/prefix/lib -L[START_DIR]/git/_support/openssl-1.1.0e/prefix/lib -L[START_DIR]/git/_support/pcre2-10.23/prefix/lib",
+      "LIBS": "-lz -lcurl -ldl -lpthread -lssl -lcrypto -lpcre2-8",
       "PERL_MM_OPT": "INSTALLSITELIB=$(PREFIX)/share/perl"
     },
     "env_prefixes": {
@@ -622,7 +689,7 @@
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
       "-tag",
-      "version:2.12.2.2.chromium10"
+      "version:2.12.2.2.chromium11"
     ],
     "name": "register infra/git/linux-amd64",
     "~followup_annotations": [
