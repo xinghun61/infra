@@ -12,7 +12,7 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"golang.org/x/net/context"
-	pb "infra/tools/bqschemaupdater/tabledef"
+	pb "infra/libs/bqschema/tabledef"
 )
 
 func TestBQSchema(t *testing.T) {

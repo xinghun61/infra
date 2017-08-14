@@ -18,7 +18,7 @@ import (
 	"cloud.google.com/go/bigquery"
 	"github.com/golang/protobuf/jsonpb"
 	"golang.org/x/net/context"
-	pb "infra/tools/bqschemaupdater/tabledef"
+	pb "infra/libs/bqschema/tabledef"
 )
 
 func bqSchema(fields []*pb.FieldSchema) bigquery.Schema {
