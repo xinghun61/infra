@@ -5,7 +5,6 @@
 package analysis
 
 import (
-	"fmt"
 	"time"
 
 	"infra/appengine/luci-migration/bbutil"
@@ -91,12 +90,6 @@ func compare(groups []*group, minCorrectnessGroups int) *diff {
 	comp.Speed = luciSpeed / buildbotSpeed
 
 	switch {
-	case comp.Correctness >= 1.0 && comp.Speed >= 1.0:
-		comp.Status = storage.StatusLUCIWAI
-		comp.StatusReason = "Correct and fast enough"
-	case comp.Correctness < 1.0 && comp.Speed < 1.0:
-		comp.Status = storage.StatusLUCINotWAI
-		comp.StatusReason = "Incorrect and too slow"
 	case comp.Correctness < 1.0:
 		comp.Status = storage.StatusLUCINotWAI
 		comp.StatusReason = "Incorrect"
@@ -104,7 +97,8 @@ func compare(groups []*group, minCorrectnessGroups int) *diff {
 		comp.Status = storage.StatusLUCINotWAI
 		comp.StatusReason = "Too slow"
 	default:
-		panic(fmt.Sprintf("impossible. correctness %f, speed %f", comp.Correctness, comp.Speed))
+		comp.Status = storage.StatusLUCIWAI
+		comp.StatusReason = "Correct and fast enough"
 	}
 	return comp
 }

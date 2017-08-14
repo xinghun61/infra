@@ -72,6 +72,9 @@ var tmplDetails = template.Must(template.New("").Funcs(template.FuncMap{
   </li>
   <li>
     <strong>Speed</strong>:
+  {{if lt .Correctness 0.9 }}
+    cannot be estimated because correctness is low
+  {{else}}
     analyzed {{.AvgTimeDeltaGroups}} build groups:
     on average LUCI is
     {{if gt .AvgTimeDelta 0 -}}
@@ -80,6 +83,7 @@ var tmplDetails = template.Must(template.New("").Funcs(template.FuncMap{
     <span style="color:green">{{abs .AvgTimeDelta | durationString}} faster</span>
     {{- end}}
     than Buildbot, according to build run durations.
+  {{end}}
   </li>
   <li>Considered builds at most {{.MinBuildAge | durationString}} old</li>
 </ul>
