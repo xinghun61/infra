@@ -233,8 +233,8 @@ def main():
            'container registry.')
   args = parser.parse_args()
 
-  log_prefix = '%s-%s' % (
-      args.name, ','.join(args.devices) if args.devices else 'all')
+  log_prefix = '%d %s-%s' % (
+      os.getpid(), args.name, ','.join(args.devices) if args.devices else 'all')
   logger = logging.getLogger()
   logger.setLevel(logging.DEBUG if args.verbose else logging.WARNING)
   log_fmt = logging.Formatter(
@@ -278,15 +278,19 @@ def main():
     try:
       with daemon.flock(_LOCK_FILE):
         logging.debug('Lock acquired.')
-        # Put all racey logic here.
-        android_devices = usb_device.get_android_devices(args.devices)
-        args.func(docker_client, android_devices, args)
+        try:
+          # Put all racey logic here.
+          android_devices = usb_device.get_android_devices(args.devices)
+          args.func(docker_client, android_devices, args)
+        finally:
+          logging.debug('Releasing lock.')
       break
     except daemon.LockAlreadyLocked:
       if i == retries - 1:
         logging.error('Unable to acquire file lock in time. Exiting')
         return 1
       else:
+        logging.debug('Lock busy; sleeping for 3 seconds.')
         i += 1
         time.sleep(3)
 
