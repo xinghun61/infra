@@ -93,7 +93,7 @@ func compare(groups []*group, minCorrectnessGroups int) *diff {
 	case comp.Correctness < 1.0:
 		comp.Status = storage.StatusLUCINotWAI
 		comp.StatusReason = "Incorrect"
-	case comp.Speed < 1.0:
+	case comp.Speed < 0.9:
 		comp.Status = storage.StatusLUCINotWAI
 		comp.StatusReason = "Too slow"
 	default:

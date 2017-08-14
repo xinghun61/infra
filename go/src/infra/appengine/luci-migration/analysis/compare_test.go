@@ -129,17 +129,17 @@ func TestCompare(t *testing.T) {
 				&group{
 					Key:      "set1",
 					Buildbot: side(100*time.Minute, success),
-					LUCI:     side(110*time.Minute, success),
+					LUCI:     side(150*time.Minute, success),
 				},
 				&group{
 					Key:      "set2",
 					Buildbot: side(100*time.Minute, success),
-					LUCI:     side(110*time.Minute, success),
+					LUCI:     side(150*time.Minute, success),
 				},
 			)
 			So(comp.Status, ShouldEqual, storage.StatusLUCINotWAI)
-			So(comp.AvgTimeDelta, ShouldAlmostEqual, 10*time.Minute)
-			So(comp.Speed, ShouldAlmostEqual, (1.0/110.0)/(1.0/100.0))
+			So(comp.AvgTimeDelta, ShouldAlmostEqual, 50*time.Minute)
+			So(comp.Speed, ShouldAlmostEqual, (1.0/150.0)/(1.0/100.0))
 		})
 	})
 }
