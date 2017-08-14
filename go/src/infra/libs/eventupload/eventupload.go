@@ -12,6 +12,7 @@ import (
 	"os"
 	"reflect"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"cloud.google.com/go/bigquery"
@@ -23,8 +24,7 @@ import (
 var id idGenerator
 
 type idGenerator struct {
-	mu      sync.Mutex
-	counter int
+	counter int64
 	prefix  string
 }
 
@@ -192,11 +192,8 @@ func prepareSrc(s bigquery.Schema, src interface{}) []*bigquery.StructSaver {
 }
 
 func (id *idGenerator) generateInsertID() string {
-	id.mu.Lock()
-	defer id.mu.Unlock()
-	insertID := fmt.Sprintf("%s:%d", id.prefix, id.counter)
-	id.counter++
-	return insertID
+	counter := atomic.AddInt64(&id.counter, 1)
+	return fmt.Sprintf("%s:%d", id.prefix, counter)
 }
 
 // BatchUploader contains the necessary data for asynchronously sending batches
