@@ -1,4 +1,4 @@
-# Recipes (go/recipe-docs)
+# Recipes ([go/recipe-docs](http://go/recipe-docs))
 
 Recipes are a domain-specific language (embedded in python) for specifying
 sequences of subprocess calls in a cross-platform and testable way.
