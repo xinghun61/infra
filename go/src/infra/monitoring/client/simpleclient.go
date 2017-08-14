@@ -18,9 +18,13 @@ type simpleClient struct {
 	Client *http.Client
 }
 
-func retry(f func() error, maxAttempts int) error {
+func retry(f func() (bool, error), maxAttempts int) error {
 	for attempt := 0; attempt < maxAttempts; attempt++ {
-		err := f()
+		again, err := f()
+		if again == false {
+			return err
+		}
+
 		if err == nil {
 			return nil
 		}
@@ -77,18 +81,18 @@ func (sc *simpleClient) attemptJSONGet(ctx context.Context, url string, v interf
 //
 // Returns the status code and the error, if any.
 func (sc *simpleClient) getJSON(ctx context.Context, url string, v interface{}) (status int, err error) {
-	err = retry(func() error {
+	err = retry(func() (bool, error) {
 		status, err := sc.attemptJSONGet(ctx, url, v)
+		if status >= 400 && status < 500 {
+			return false, fmt.Errorf("HTTP status %d, not retrying: %s", status, url)
+		}
+
 		if err != nil {
 			logging.Errorf(ctx, "Error attempting fetch: %v", err)
-			return err
+			return true, err
 		}
 
-		if status >= 400 && status < 500 {
-			return fmt.Errorf("HTTP status %d, not retrying: %s", status, url)
-		}
-
-		return nil
+		return false, nil
 	}, maxRetries)
 	return status, err
 }
@@ -102,17 +106,17 @@ func (sc *simpleClient) postJSON(ctx context.Context, url string, data []byte, v
 	if err != nil {
 		return 0, err
 	}
-	err = retry(func() error {
+	err = retry(func() (bool, error) {
 		status, err = sc.attemptReq(ctx, req, v)
-		if err != nil {
-			logging.Errorf(ctx, "Error attempting POST: %v", err)
-			return err
-		}
 		if status >= 400 && status < 500 {
-			return fmt.Errorf("HTTP status %d, not retrying: %s", status, url)
+			return false, fmt.Errorf("HTTP status %d, not retrying: %s", status, url)
 		}
 
-		return nil
+		if err != nil {
+			logging.Errorf(ctx, "Error attempting POST: %v", err)
+			return true, err
+		}
+		return false, nil
 	}, maxRetries)
 
 	return status, err
