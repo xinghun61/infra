@@ -1,14 +1,17 @@
-# Recipes
+# Recipes (go/recipe-docs)
 
 Recipes are a domain-specific language (embedded in python) for specifying
 sequences of subprocess calls in a cross-platform and testable way.
 
 * [User guide](https://chromium.googlesource.com/external/github.com/luci/recipes-py/+/master/doc/user_guide.md)
-* Recipe docs:
+  * **NOTE:** This user guide is badly in need of updating as of August 2017. If
+    you spot something wrong, please submit a CL to fix it.
+* Recipe and recipe module documentation:
+  * [recipe_engine](https://chromium.googlesource.com/infra/luci/recipes-py.git/+/master/README.recipes.md)
   * [depot_tools](https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/master/recipes/README.recipes.md)
   * [build](https://chromium.googlesource.com/chromium/tools/build.git/+/master/scripts/slave/README.recipes.md)
+  * [build internal](https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave.git/+/master/README.recipes.md) (internal link)
   * [infra](https://chromium.googlesource.com/infra/infra.git/+/master/recipes/README.recipes.md)
-  * [internal](https://chrome-internal.googlesource.com/chrome/tools/build_limited/scripts/slave.git/+/master/README.recipes.md)
 
 ## Recipe Roller
 
@@ -18,60 +21,57 @@ The recipe roller is a service that ensures that the pinned dependencies between
 recipe repositories are kept up to date.  At the time of writing, the
 dependencies between repositories are as in the following diagram:
 
-              recipes-py
-                /    \  \
-               v      \  \
-        depot_tools    )  \
-                \     /   |
-                 v   v    |
-                 build    |
-                   |      |
-                   v      v
-     build_internal_scripts_slave
 
-The recipe roller rolls changes downward through this graph every 30 minutes.
+     +----recipe_engine------------+
+     |     |    |                  |
+     |  +--+    |                  |
+     |  |       |                  |
+     |  |       v                  |
+     |  |  depot_tools----------+  |
+     |  |  |    |               |  |
+     |  |  |    |               |  |
+     |  |  |    v               v  v
+     +------->build------->build_internal
+        |  |      |
+        |  +---+  |
+        |      v  v
+        +---->infra
+
+
+The recipe roller rolls changes downward through this graph every 10 minutes.
+
+Additionally, the roller tries to keep the skia and fuchsia infra repos up to
+date as well.
 
 ### For recipe authors:
 
-* If your change produced no expectation changes downstream, everything should
-  just work.
-* If your change produced some expectation changes downstream, you will get a
-  review from recipe-roller@chromium.org with those changes.  If they look good,
-  **you should CQ them**; if they don't, **you should revert the patch that
-  caused them**.  Leaving a change un-rolled blocks other changes from being
-  rolled, and will cause a build-up of changes that is hard to manage.
+ * **"Trivial" Rolls:** If your change produced no expectation changes
+   downstream, the roller will automatically CR+1 and CQ+2 the roll. The CQ may
+   (depending on how its configuration), apply additional tests to the roll, but
+   for the most part these rolls will go through without issue.
 
-### For infra folks who need to understand more:
+ * **"Non-trivial" Rolls:** If your change produced some expectation changes
+   downstream, you will get a review from recipe-roller@chromium.org with those
+   changes. if they look good, cr+1 and cq+2 them. if the if they don't look
+   good, **revert the upstream patch** that's being rolled in. Leaving a change
+   un-rolled blocks other changes from being rolled, and causes a build-up of
+   changes that is hard to manage.
 
-The recipe roller rolls changes downward through the graph using the following
-process (taking build/ as the example of the repository we are rolling):
+ * **"Error" Rolls:** Sometimes upstream changes cause errors when the roller
+   operates that prevents the creation of a downstream patch. These always
+   require manual resolution, usually in the form of a revert of the upstream
+   patch, or a CL to the downstream repo. Examples of these sorts of rolls would
+   be changing a function signature that's in use by downstream repos, or
+   removing some piece of configuration from the upstream repo which is in use
+   by the downstream repo. A good way to resolve these is to move the upstream
+   code to the downstream repo. The best way to prevent these sorts of errors is
+   to move the code downstream **first**, and then remove it from the upstream
+   repo.
 
-1. Find all revisions of recipes-py and depot\_tools which are newer than the
-   pinned versions.
-2. Ensure dependencies are consistent: Exclude any revisions where
-   depot\_tools's pinned recipes-py does not match the recipes-py we are
-   considering.
-3. Run simulation\_test on each of these revisions, each of which can be clean
-   (no expectation changes), dirty (expectations changes), or fail (something
-   else happened that can't be automatically fixed).
-4. Roll to the latest clean revision we found, if there is one (this is called a
-   'trivial' roll).
-5. If there is a dirty revision after that, train expectations and upload a CL
-   with the authors of the corresponding upstream CLs as reviewers.
-6. If a simulation\_test train fails, recipe\_roller fails with a message
-   indicating who and which CLs caused the failure.  When in doubt and a roll
-   needs to happen, revert the offending upstream CL.
 
-The roller has a lot of steps, so they are organized using collapsable nested
-steps.  Each repository has a top-level step, containing the rolls and tests
-for each revision.  After that, there is usually a `land` (for a clean roll)
-and/or an `upload` (for a dirty roll) step, which will have a CL link within its
-child steps.
+#### Roller implementation
 
-If we seem to be rolling a lot of CLs into a repository (say 10 or more),
-something is usually wrong.  This can be that a dirty CL was sent and hasn't
-been committed -- the author may need a ping -- or that something else is going
-wrong when trying to land the change.
-
-martiniss@chromium.org is the owner of the roller and can help find problems.
-iannucci@chromium.org also has some familiarity.
+For more information about the autoroller implementation, please refer to the:
+  * [Roll algorithm implementation.](https://chromium.googlesource.com/infra/luci/recipes-py/+/master/recipe_engine/autoroll_impl/candidate_algorithm.py)
+  * [Autoroller recipe module.](/recipes/README.recipes.md#recipe_modules-recipe_autoroller)
+  * [Autoroller recipe.](/recipes/README.recipes.md#recipes-recipe_autoroller)
