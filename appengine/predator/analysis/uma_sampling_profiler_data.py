@@ -86,14 +86,13 @@ class UMASamplingProfilerData(CrashData):
     # Depth of the root of the subtree in the stacks, with the root at depth 0:
     self.subtree_root_depth = regression_data['subtree_root_depth']
     self.subtree_stacks = regression_data['subtree_stacks']
-
     self._crashed_version = regression_data['chrome_releases'][1]['version']
     self._raw_stacktrace = ''
-
     self._dependency_analyzer = DependencyAnalyzer(self._platform,
                                                    self._crashed_version,
                                                    self.regression_range,
                                                    dep_fetcher)
+    self._redo = regression_data.get('redo', False)
 
   @cached_property
   def stacktrace(self):

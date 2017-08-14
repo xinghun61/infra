@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
 import mock
 
 from analysis import stacktrace
@@ -114,6 +113,7 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
         'subtree_id': 'AEF6F487C2EE7935',
     })
     self.assertEquals(uma_data.signature, 'wWinMain')
+    self.assertFalse(uma_data.redo)
 
   @mock.patch('libs.deps.chrome_dependency_fetcher.ChromeDependencyFetcher'
               '.GetDependency')
@@ -203,3 +203,11 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
 
     self.assertEqual(uma_data.dependency_rolls, dep_roll)
     mock_get_dependency_rolls.assert_called_with(uma_data.stacktrace.stacks)
+
+  def testRedo(self):
+    """Tests setting the ``redo`` property to True."""
+    raw_data = TEST_DATA.copy()
+    raw_data['redo'] = 'true'
+    uma_data = UMASamplingProfilerData(
+        raw_data, ChromeDependencyFetcher(self.GetMockRepoFactory()))
+    self.assertTrue(uma_data.redo)
