@@ -150,6 +150,28 @@ command against that directory.
 `run` can be used to cross-compile software (e.g., `git`) for other Infra
 platforms.
 
+## Problems with Known Fixes
+
+### Got permission denied while trying to connect to the Docker daemon socket...
+
+Fix: Add your local user to the docker POSIX group:
+
+```
+sudo usermod -a -G docker $USER
+```
+
+You need to restart your shell for this to take effect.
+
+### Error response from daemon: squash is only supported with experimental mode
+
+Fix: Run docker in experimental mode (yes, this is a hack):
+
+```
+vim /etc/default/docker
+# Edit file such that DOCKER_OPTS includes "--experimental=true"
+sudo service docker restart
+```
+
 ## Examples
 
 ### Upload all sources to CIPD

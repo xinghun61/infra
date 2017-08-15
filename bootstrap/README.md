@@ -6,6 +6,13 @@ The [infra.git](/) repo uses python [wheel files][wheel files],
 [virtualenv][virtualenv] and [pip][pip] to manage dependencies. The process for
 bootstrapping these is contained entirely within [bootstrap/ directory](.).
 
+See [dockerbuild](/infra/tools/dockerbuild/README.md) for a tool that tries to
+make a lot of this easier. If you use dockerbuild to build a wheel for
+bootstrap, you will need to upload it manually to the
+[wheelhouse](https://pantheon.corp.google.com/storage/browser/chrome-python-wheelhouse/wheels).
+(TODO: We should enable Dockerbuild to upload to wheelhouse too.) Check the
+`.dockerbuild/wheels` directory for the local wheel.
+
 ## TL;DR - Workflows
 
 ### Setting up the env with already-built-deps
@@ -238,3 +245,24 @@ to be e.g. `2.1.3.0`.
 [wheel files]: https://www.python.org/dev/peps/pep-0427/
 [virtualenv]: https://github.com/pypa/virtualenv
 [pip]: https://github.com/pypa/pip
+
+## Platform Problems
+
+### NoWheelExecption
+
+A builder is failing with NoWheelException, but you feel strongly that the
+entry in [deps.pyl](deps.pyl) matches what is in the
+[wheelhouse](https://pantheon.corp.google.com/storage/browser/chrome-python-wheelhouse/wheels).
+
+One thing that might be happening is that pip doesn't think that wheel, based on
+its filename, is supported for that platform. You might log on to that bot and
+start a python interpreter:
+
+```
+>>> import pip
+>>> pip.pep425tags.supported_tags
+```
+
+will list all of the [supported tags](https://www.python.org/dev/peps/pep-0425/)
+for that platform. What to do next depends on your particular situation, but
+hopefully this information is helpful for giving you ideas.

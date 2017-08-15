@@ -43,7 +43,7 @@ COPY ${resources_relpath}/install-util.sh .
 COPY ${resources_relpath}/install-00-packages.sh .
 RUN \
   chmod +x ./install-00-packages.sh \
-&& ./install-00-packages.sh
+&& sync && ./install-00-packages.sh
 
 # Build system Perl, needed by "cryptography" package.
 WORKDIR $${SETUP_ROOT}/perl
@@ -69,7 +69,7 @@ COPY \
   ./
 RUN \
   chmod +x ./install-02-cross-lib.sh \
-&& ARCHIVE_PATH=$$(basename ${libffi_relpath}) \
+&& sync && ARCHIVE_PATH=$$(basename ${libffi_relpath}) \
   ./install-02-cross-lib.sh \
 && ARCHIVE_PATH=$$(basename ${zlib_relpath}) \
   NO_HOST=1 \
@@ -89,7 +89,7 @@ COPY \
   ./
 RUN \
   chmod +x ./install-03-python.sh \
-&& ARCHIVE_PATH=$$(basename ${python27_relpath}) \
+&& sync && ARCHIVE_PATH=$$(basename ${python27_relpath}) \
   CROSS_UNICODE=${python27_unicode} \
   CROSS_CONFIG_SITE=config.site.xcc_python \
   ./install-03-python.sh \
@@ -125,7 +125,7 @@ COPY \
   ./
 RUN \
   chmod +x ./install-04-cross-cffi.sh \
-&& ARCHIVE_PATH=$$(basename ${cffi_relpath}) \
+&& sync && ARCHIVE_PATH=$$(basename ${cffi_relpath}) \
   ./install-04-cross-cffi.sh \
 && rm -rf $${SETUP_ROOT}/x-cffi
 
