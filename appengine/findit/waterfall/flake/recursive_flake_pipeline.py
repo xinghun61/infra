@@ -31,22 +31,6 @@ from waterfall.flake.finish_build_analysis_pipeline import (
     FinishBuildAnalysisPipeline)
 
 
-def _GetEarliestBuildNumber(lower_bound_build_number, triggering_build_number,
-                            algorithm_settings):
-  if lower_bound_build_number is not None:
-    return lower_bound_build_number
-
-  max_build_numbers_to_look_back = algorithm_settings.get(
-      'max_build_numbers_to_look_back',
-      flake_constants.DEFAULT_MAX_BUILD_NUMBERS)
-
-  return max(0, triggering_build_number - max_build_numbers_to_look_back)
-
-
-def _GetLatestBuildNumber(upper_bound_build_number, triggering_build_number):
-  return upper_bound_build_number or triggering_build_number
-
-
 def _IsSwarmingTaskSufficientForCacheHit(flake_swarming_task,
                                          number_of_iterations):
   """Determines whether or not a swarming task is sufficient for a cache hit.
@@ -208,27 +192,6 @@ def _GetHardTimeoutSeconds(master_name, builder_name, reference_build_number,
       flake_constants.MAX_TIMEOUT_SECONDS)
 
 
-def _IsFinished(next_build_number, earliest_build_number, latest_build_number,
-                iterations_to_rerun):
-  """Determines whether or not to stop checking more build numbers.
-
-    An analysis at the build number level is complete if the next suggested
-    build number has already been run, is beyond the lower bound, or determined
-    to be stable as indicated by iterations_to_rerun returned by
-    lookback_algorithm.
-
-  Args:
-    next_build_number (int): The proposed next build number to run.
-    earliest_build_number (int): The lower bound build number to compare.
-    latest_build_number (int): The upper bound build number to compare.
-    iterations_to_rerun (int): The number of iterations the lookback algorithm
-        proposes to run, or None indicating it should bail out.
-  """
-  return ((next_build_number < earliest_build_number or
-           next_build_number >= latest_build_number) and
-          not iterations_to_rerun)
-
-
 class RecursiveFlakePipeline(BasePipeline):
 
   def __init__(self,
@@ -375,13 +338,13 @@ class RecursiveFlakePipeline(BasePipeline):
     Returns:
       A dict of lists for reliable/flaky tests.
     """
-    # We've exauhsted our search. Complete the build analysis.
+    # If the preferred_run_build_number is None, that means that the build-level
+    # flake analysis is complete, we should clean up and start the next pipeline
     if preferred_run_build_number is None:
       yield FinishBuildAnalysisPipeline(
           analysis_urlsafe_key, lower_bound_build_number,
           upper_bound_build_number, user_specified_iterations)
       return
-
     if previous_build_number is None:
       previous_build_number = preferred_run_build_number
 
@@ -408,21 +371,6 @@ class RecursiveFlakePipeline(BasePipeline):
         upper_bound_build_number, step_size,
         iterations) if use_nearby_neighbor else preferred_run_build_number
 
-    earliest_build_number = _GetEarliestBuildNumber(
-        lower_bound_build_number, analysis.build_number,
-        analysis.algorithm_parameters.get('swarming_rerun'))
-    latest_build_number = _GetLatestBuildNumber(upper_bound_build_number,
-                                                analysis.build_number)
-
-    # We've exceeded the bounds for the build analysis.
-    if _IsFinished(actual_run_build_number, earliest_build_number,
-                   latest_build_number, iterations):
-      yield FinishBuildAnalysisPipeline(
-          analysis.key.urlsafe(), lower_bound_build_number,
-          upper_bound_build_number, user_specified_iterations)
-      return
-
-    # Not finished, continue analysis.
     # If retries has not exceeded max count and there are available bots,
     # we can start the analysis.
     can_start_analysis = (swarming_util.BotsAvailableForTask(step_metadata) if

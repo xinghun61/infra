@@ -51,6 +51,39 @@ class NextBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(
+      next_build_number_pipeline, '_IsFinished', return_value=True)
+  def testNextBuildNumberPipelineReturnsNoneWhenFinished(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    master_build_number = 100
+    build_number = 59
+    lower_bound_build_number = 60
+    step_name = 's'
+    test_name = 't'
+    pass_rate = 1.0
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.status = analysis_status.RUNNING
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.algorithm_parameters['swarming_rerun'][
+        'max_iterations_to_rerun'] = 100
+    analysis.data_points = [DataPoint.Create(build_number, pass_rate)]
+    analysis.put()
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.status = analysis_status.COMPLETED
+    task.put()
+
+    pipeline = NextBuildNumberPipeline()
+    pipeline.start_test()
+    next_build_number = pipeline.run(analysis.key.urlsafe(), build_number,
+                                     lower_bound_build_number, None, None)
+    self.assertEqual(None, next_build_number)
+
+  @mock.patch.object(
       lookback_algorithm, 'GetNextRunPointNumber', return_value=(1, 1, 1))
   def testNextBuildNumberPipelineWithLowerBound(self, _):
     master_name = 'm'
@@ -223,3 +256,23 @@ class NextBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
         task, analysis)
     self.assertEqual(expected_error_json, analysis.error)
     self.assertEqual(analysis_status.ERROR, analysis.status)
+
+  def testGetEarliestBuildNumber(self):
+    algorithm_settings = {'max_build_numbers_to_look_back': 10}
+
+    self.assertEqual(5,
+                     next_build_number_pipeline._GetEarliestBuildNumber(
+                         5, 6, algorithm_settings))
+    self.assertEqual(0,
+                     next_build_number_pipeline._GetEarliestBuildNumber(
+                         None, 5, algorithm_settings))
+    self.assertEqual(15,
+                     next_build_number_pipeline._GetEarliestBuildNumber(
+                         None, 25, algorithm_settings))
+
+  def testIsFinished(self):
+    self.assertTrue(next_build_number_pipeline._IsFinished(1, 2, 3, 0))
+    self.assertFalse(next_build_number_pipeline._IsFinished(1, 2, 3, 10))
+    self.assertTrue(next_build_number_pipeline._IsFinished(4, 2, 3, 0))
+    self.assertFalse(next_build_number_pipeline._IsFinished(4, 2, 3, 10))
+    self.assertTrue(next_build_number_pipeline._IsFinished(1, 2, 3, 0))
