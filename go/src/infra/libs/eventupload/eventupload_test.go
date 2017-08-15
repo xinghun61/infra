@@ -12,10 +12,6 @@ import (
 	"cloud.google.com/go/bigquery"
 )
 
-type eventUploader interface {
-	Put(src interface{}) error
-}
-
 type mockUploader chan []fakeEvent
 
 func (u mockUploader) Put(src interface{}) error {

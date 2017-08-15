@@ -28,6 +28,12 @@ type idGenerator struct {
 	prefix  string
 }
 
+// eventUploader is an interface for types which implement a Put method. It
+// exists for the purpose of mocking Uploader in tests.
+type eventUploader interface {
+	Put(src interface{}) error
+}
+
 // Uploader contains the necessary data for streaming data to BigQuery.
 type Uploader struct {
 	ctx       context.Context
@@ -239,6 +245,8 @@ func (bu *BatchUploader) start() {
 // NewBatchUploader constructs a new BatchUploader, which may optionally be
 // further configured by setting its exported fields before the first call to
 // Stage. Its Close method should be called when it is no longer needed.
+//
+// Uploader implements eventUploader.
 func NewBatchUploader(u eventUploader) (*BatchUploader, error) {
 	bu := &BatchUploader{
 		u:     u,
