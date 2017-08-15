@@ -34,6 +34,14 @@ go build
 # Looks good? Create CL for review...
 ./bqshemaupdater rawevents/<table-id>.json  # Actually create the table
 ```
+
+## Go struct export
+
+The [bqexport](../../go/src/infra/cmd/bqexport) tool is a Go generator utility
+that can generate `bqschemaupdater`-compatible table definitions from BigQuery
+Go structs. See [bqexport documentation](../../go/src/infra/cmd/bqexport) for
+more information.
+
 # Sending events
 
 Once you have a table, you can send events to it!

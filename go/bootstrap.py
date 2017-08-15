@@ -133,6 +133,7 @@ LAYOUT = Layout(
         'go.chromium.org/luci/tools/cmd/...',
         'go.chromium.org/luci/grpc/cmd/...',
         'go.chromium.org/luci/deploytool/cmd/luci_deploy',
+        'infra/cmd/...',
         'infra/tools/cloudsqlhelper',
     ],
     go_paths=None,

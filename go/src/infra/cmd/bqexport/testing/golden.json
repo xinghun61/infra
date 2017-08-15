@@ -1,0 +1,30 @@
+{
+  "datasetId": "dataset-id",
+  "tableId": "table-id",
+  "name": "Friendly Name",
+  "description": "Table Def Description",
+  "fields": [
+    {
+      "name": "A"
+    },
+    {
+      "name": "B",
+      "type": "INTEGER"
+    },
+    {
+      "name": "C",
+      "type": "FLOAT"
+    },
+    {
+      "name": "Desc",
+      "description": "This is a description string",
+      "isRequired": true
+    },
+    {
+      "name": "Req",
+      "isRequired": true
+    }
+  ],
+  "partitionTable": true,
+  "partitionExpirationSeconds": "1337"
+}
