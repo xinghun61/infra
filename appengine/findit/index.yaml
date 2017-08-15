@@ -153,3 +153,17 @@ indexes:
     direction: asc
   - name: closed_time
     direction: asc
+
+# For built-in pipeline ui
+- kind: _AE_Pipeline_Record
+  properties:
+    - name: is_root_pipeline
+    - name: start_time
+      direction: desc
+
+- kind: _AE_Pipeline_Record
+  properties:
+    - name: class_path
+    - name: is_root_pipeline
+    - name: start_time
+      direction: desc
