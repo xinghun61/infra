@@ -1,3 +1,38 @@
+# Release Notes sheriff-o-matic 2017-08-15
+
+- 6 commits, 5 bugs affected since  (2017-08-08)
+- 5 Authors:
+  - vadimsh@chromium.org
+  - chanli@chromium.org
+  - zhangtiff@google.com
+  - martiniss@chromium.org
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[SoM-Findit] Add new message format for Findit auto_committed reverts.](https://chromium-review.googlesource.com/607391) (chanli@chromium.org)
+- [SoM: Upgrade all elements to ES6 syntax.](https://chromium-review.googlesource.com/602620) (zhangtiff@google.com)
+- [Rename github.com/luci/{luci-go,gae} to go.chromium.org/{luci,gae}](https://chromium-review.googlesource.com/607355) (vadimsh@chromium.org)
+- [SOM: Remove old test results client](https://chromium-review.googlesource.com/602888) (martiniss@chromium.org)
+- [[som] Fix retry logic so 4xx responses don't get retried.](https://chromium-review.googlesource.com/614316) (seanmccullough@chromium.org)
+- [[som] Remove old findit calls from client.go, delegate to findit.go](https://chromium-review.googlesource.com/609466) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- chanli@chromium.org:
+  -  [https://crbug.com/727954](https://crbug.com/727954)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/752141](https://crbug.com/752141)
+  -  [https://crbug.com/755132](https://crbug.com/755132)
+
+- vadimsh@chromium.org:
+  -  [https://crbug.com/726507](https://crbug.com/726507)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/646101](https://crbug.com/646101)
+
+
 # Release Notes sheriff-o-matic 2017-08-08
 
 - 4 commits, 1 bugs affected since e22fada (2017-08-01T22:52:55Z)
