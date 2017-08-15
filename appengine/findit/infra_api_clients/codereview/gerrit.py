@@ -55,7 +55,7 @@ class Gerrit(codereview.CodeReview):
                                   re.IGNORECASE)
     for line in reversed(description.splitlines()):
       if bug_line_pattern.match(line):
-        return line.strip()
+        return line.strip() + '\n'
     return ''
 
   def _GetCQTryBotLine(self, description):
@@ -63,7 +63,7 @@ class Gerrit(codereview.CodeReview):
         '^\s*(CQ_INCLUDE_TRYBOTS=.*|Cq-Include-Trybots:.*)$', re.IGNORECASE)
     for line in reversed(description.splitlines()):
       if cq_trybot_line_pattern.match(line):
-        return line.strip()
+        return line.strip() + '\n'
     return ''
 
   def _GetRevisedCLDescription(self, description):
@@ -74,7 +74,8 @@ class Gerrit(codereview.CodeReview):
     delta = time_util.GetUTCNow() - commit_timestamp
     if delta.days > 1:
       return (
-          '# Not skipping CQ checks because original CL landed > 1 day ago.\n')
+          '# Not skipping CQ checks because original CL landed > 1 day ago.\n\n'
+      )
     return 'No-Presubmit: true\nNo-Tree-Checks: true\nNo-Try: true\n'
 
   def _GenerateRevertCLDescription(self, change_id, revert_reason):
@@ -90,11 +91,11 @@ class Gerrit(codereview.CodeReview):
     revert_cl_description += 'This reverts commit %s.\n\n' % (
         original_cl_commit_revision)
     revert_cl_description += 'Reason for revert:\n%s\n\n' % revert_reason
-    revert_cl_description += 'Original change\'s description:\n%s\n' % (
+    revert_cl_description += 'Original change\'s description:\n%s\n\n' % (
         self._GetRevisedCLDescription(original_cl_description))
     revert_cl_description += self._GetCQFlagsOrExplanation(
         original_cl_commit_timestamp)
-    revert_cl_description += self._GetBugLine(original_cl_description) + '\n'
+    revert_cl_description += self._GetBugLine(original_cl_description)
     revert_cl_description += self._GetCQTryBotLine(original_cl_description)
     return revert_cl_description
 
