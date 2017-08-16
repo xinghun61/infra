@@ -20,6 +20,8 @@ runOnLoad(function() {
     var url = _makeIssueLink(issueRefs[[]issueIndex]);
     _go(url, newWindow);
   }
+  // Added to enable calling from TKR_openArtifactAtCursor
+  window._goIssue = _goIssue;
 
   window.issueRefs = [[]
    [for table_data]

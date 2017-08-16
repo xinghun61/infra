@@ -175,11 +175,7 @@ function TKR_setupKibblesComponentKeys(listUrl, entryUrl, currentPageType) {
  */
 function TKR_openArtifactAtCursor(linkCellIndex, newWindow) {
   if (TKR_selected >= 0 && TKR_selected < TKR_cursorStops.length) {
-    var cell = TKR_cursorStops[TKR_selected].children[linkCellIndex];
-    var anchor = cell.children[0];
-    if (anchor) {
-      TKR_go(anchor.getAttribute('href'), newWindow);
-    }
+    window._goIssue(TKR_selected, newWindow);
   }
 }
 
