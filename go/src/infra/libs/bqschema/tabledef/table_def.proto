@@ -3,15 +3,20 @@ syntax = "proto3";
 package tabledef;
 
 message TableDef {
+  // dataset_id should be `raw_events` and `aggregated` to differentiate
+  // between events sent directly from code and events aggregated by Dataflow.
   string dataset_id = 1;
+  // Name of the table.
   string table_id = 2;
+  // Human-readable name of the table. (optional)
   string name = 3;
+  // Human-readable description of the table. (optional)
   string description = 4;
   repeated FieldSchema fields = 5;
   // Whether to partition the table by day.
   bool partition_table = 6;
   // The lifetime for each partition. If zero, partitions do not expire.
-  // Ignored if partition_table is false.
+  // Ignored if partition_table is false. (optional)
   int64 partition_expiration_seconds = 7;
 }
 
@@ -29,7 +34,9 @@ enum Type {
 }
 
 message FieldSchema {
+  // Name of the field/column.
   string name = 1;
+  // Human-readable description of the field. (optional)
   string description = 2;
   bool is_repeated = 3;
   bool is_required = 4;

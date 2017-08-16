@@ -3,11 +3,15 @@ services. Event data can be any piece of information we want to collect for
 analysis or tracking. It is distinct from timeseries data, for which we use
 [tsmon](https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/ts_mon.md).
 
-# Creating a new raw events table
+# Creating a new BigQuery table
 
-Table definitions are stored in infra.git
-`go/src/infra/tools/bqschemaupdater/rawevents` and added/updated with the
+Table definitions are stored in infra.git in a subdirectory of
+`go/src/infra/tools/bqschemaupdater` and added/updated with the
 [bqschemaupdater](../go/src/infra/tools/bqschemaupdater/README.md) tool.
+
+bqschemaupdater takes a JSON version of the
+[TableDef
+proto](../../go/src/infra/libs/bqschema/tabledef/table_def.proto)
 
 You need to be authenticated in the chrome-infra-events project to be able to
 create a new table. To check your authentication status, ensure that you have
@@ -22,17 +26,17 @@ If you don't see: `Project: [chrome-infra-events]`, reach out to an
 [editor](https://pantheon.corp.google.com/iam-admin/iam/project?project=chrome-infra-events&organizationId=433637338589)
 to request access.
 
-To create a new raw events table:
+To create a new BigQuery table:
 
 ```
 cd go/src/infra/tools/bqschemaupdater  # In infra.git
-touch rawevents/<table-id>.json
+touch <dataset-subdirectory>/<table-id>.json
 # Reference tabledef/table_def.proto for message format
-# DatasetID is "raw_events"
 go build
-./bqschemaupdater --dryrun rawevents/<table-id>.json
-# Looks good? Create CL for review...
-./bqshemaupdater rawevents/<table-id>.json  # Actually create the table
+./bqschemaupdater --dryrun <dataset-subdirectory>/<table-id>.json
+# Looks good? Create CL for review... Review... Commit...
+# Actually create the table
+./bqshemaupdater <dataset-subdirectory>/<table-id>.json
 ```
 
 ## Go struct export
