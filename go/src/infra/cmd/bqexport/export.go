@@ -5,7 +5,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"go/build"
 	"io/ioutil"
@@ -54,8 +53,6 @@ type Exporter struct {
 // Export writes the BigQuery schema JSON to the specified output file.
 func (e *Exporter) Export(c context.Context, out string) error {
 	srcDir := ""
-
-	flag.Parse()
 
 	name := e.Name
 	if name == "" {

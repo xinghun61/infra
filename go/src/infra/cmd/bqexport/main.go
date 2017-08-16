@@ -50,6 +50,7 @@ var (
 )
 
 func main() {
+	flag.Parse()
 	exp := Exporter{
 		Package:  *pkg,
 		Name:     *name,
