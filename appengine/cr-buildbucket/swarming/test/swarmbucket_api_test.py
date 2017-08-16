@@ -27,6 +27,10 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         'components.utils.utcnow', autospec=True,
         return_value=datetime.datetime(2015, 11, 30))
 
+    self.patch(
+        'google.appengine.api.app_identity.get_default_version_hostname',
+        return_value='cr-buildbucket.appspot.com')
+
     auth_testing.reset_local_state()
     auth.bootstrap_group('all', [auth.Anonymous])
 
@@ -162,7 +166,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         'build_address:luci.chromium.try/linux_chromium_rel_ng/0',
         'buildbucket_bucket:luci.chromium.try',
         'buildbucket_build_id:1',
-        'buildbucket_hostname:None',
+        'buildbucket_hostname:cr-buildbucket.appspot.com',
         'buildbucket_template_revision:rev',
         'builder:linux_chromium_rel_ng',
         'recipe_name:presubmit',
@@ -180,6 +184,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
           '-recipe', 'presubmit',
           '-properties', json.dumps({
             'buildbucket': {
+              'hostname': 'cr-buildbucket.appspot.com',
               'build': {
                 'bucket': 'luci.chromium.try',
                 'created_by': 'anonymous:anonymous',

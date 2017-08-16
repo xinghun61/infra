@@ -322,6 +322,7 @@ class SwarmingTest(BaseTest):
             'a': 'b',
             'blamelist': ['bob@example.com'],
             'buildbucket': {
+              'hostname': 'cr-buildbucket.appspot.com',
               'build': {
                 'bucket': 'bucket',
                 'created_by': 'user:john@example.com',
@@ -512,6 +513,7 @@ class SwarmingTest(BaseTest):
           '-recipe', 'recipe',
           '-properties', json.dumps({
             'buildbucket': {
+              'hostname': 'cr-buildbucket.appspot.com',
               'build': {
                 'bucket': 'bucket',
                 'created_by': 'user:john@example.com',

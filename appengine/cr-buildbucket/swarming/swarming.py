@@ -252,6 +252,7 @@ def _buildbucket_property(build):
   https://chromium.googlesource.com/chromium/tools/build/+/82373bb503dca5f91cd0988d49df38394fdf8b0b/scripts/master/buildbucket/integration.py#329
   """
   return {
+    'hostname': app_identity.get_default_version_hostname(),
     'build': {
       'bucket': build.bucket,
       'created_by': build.created_by.to_bytes(),
