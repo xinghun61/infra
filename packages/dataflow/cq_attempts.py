@@ -22,6 +22,13 @@ class CombineEventsToAttempt(beam.CombineFn):
   ACTION_VERIFIER_PASS = 'VERIFIER_PASS'
   ACTION_VERIFIER_NOTRY = 'VERIFIER_NOTRY'
   ACTION_VERIFIER_CUSTOM_TRYBOTS = 'VERIFIER_CUSTOM_TRYBOTS'
+  ACTION_PATCH_FAILED = 'PATCH_FAILED'
+  # Try job fail types
+  FAIL_TYPE_PATCH = 'FAIL_TYPE_PATCH'
+  FAIL_TYPE_INFRA = 'FAIL_TYPE_INFRA'
+  FAIL_TYPE_COMPILE = 'FAIL_TYPE_COMPILE'
+  FAIL_TYPE_TEST = 'FAIL_TYPE_TEST'
+  FAIL_TYPE_INVALID = 'FAIL_TYPE_INVALID'
 
   def __init__(self):
     super(CombineEventsToAttempt, self).__init__()
@@ -36,6 +43,8 @@ class CombineEventsToAttempt(beam.CombineFn):
         self.ACTION_VERIFIER_PASS: set(['patch_verifier_pass_msec']),
         self.ACTION_VERIFIER_NOTRY: set(['no_tryjobs_launched']),
         self.ACTION_VERIFIER_CUSTOM_TRYBOTS: set(['custom_trybots']),
+        self.ACTION_PATCH_FAILED: set(['patch_failed_msec', 'failed',
+                                       'failure_reason']),
     }
     self.min_timestamp_fields = set([
         'first_start_msec',
@@ -44,6 +53,7 @@ class CombineEventsToAttempt(beam.CombineFn):
         'patch_started_to_commit_msec',
         'first_verifier_trigger_msec',
         'patch_verifier_pass_msec',
+        'patch_failed_msec'
     ])
     self.max_timestamp_fields = set([
         'last_start_msec',
@@ -53,6 +63,7 @@ class CombineEventsToAttempt(beam.CombineFn):
         'committed',
         'was_throttled',
         'waited_for_tree',
+        'failed',
     ])
     # Fields that are copied from event to attempt. Values for these fields are
     # the same for all events for a given attempt.
@@ -94,6 +105,7 @@ class CombineEventsToAttempt(beam.CombineFn):
 
   def extract_output(self, accumulator):
     attempt = objects.CQAttempt()
+
     for event in accumulator:
       attempt_start_msec = float(event.attempt_start_usec) / 1000
       if (attempt.attempt_start_msec and
@@ -103,6 +115,13 @@ class CombineEventsToAttempt(beam.CombineFn):
         return
 
       attempt.attempt_start_msec = attempt_start_msec
+
+      # Here we search for the last-reported value of some field.
+      if (event.failure_reason and (attempt.max_failure_msec is None
+           or event.timestamp_millis > attempt.max_failure_msec)):
+        attempt.failure_reason = event.failure_reason
+        attempt.max_failure_msec = event.timestamp_millis
+        attempt.fail_type = attempt.failure_reason['fail_type']
 
       for field in self.consistent_fields:
         attempt_value = attempt.__dict__.get(field)
@@ -133,6 +152,23 @@ class CombineEventsToAttempt(beam.CombineFn):
         attempt.tree_check_and_throttle_latency_sec = (
             attempt.patch_started_to_commit_msec -
             attempt.patch_verifier_pass_msec) / 1000.0
+
+    # TODO: Deprecate. Now that we have contributing buildbucket ids, we can
+    # join with completed_builds to get this information.
+    if attempt.failure_reason:
+      for job in attempt.failure_reason.get('failed_try_jobs', []):
+        fail_type = job['fail_type']
+        attempt.total_failures += 1
+        if fail_type == self.FAIL_TYPE_INFRA:
+          attempt.infra_failures += 1
+        if fail_type == self.FAIL_TYPE_COMPILE:
+          attempt.compile_failures += 1
+        if fail_type == self.FAIL_TYPE_TEST:
+          attempt.test_failures += 1
+        if fail_type == self.FAIL_TYPE_INVALID:
+          attempt.invalid_test_results_failures += 1
+        if fail_type == self.FAIL_TYPE_PATCH:
+          attempt.patch_failures += 1
     return attempt.as_bigquery_row()
 
 
@@ -160,7 +196,7 @@ class ComputeAttempts(beam.PTransform):
 
 def main():
   q = ('SELECT timestamp_millis, action, attempt_start_usec, cq_name, issue,'
-       '  patchset, dry_run '
+       '  patchset, dry_run, failure_reason'
        'FROM `chrome-infra-events.raw_events.cq`')
   p = chops_beam.EventsPipeline()
   _ = (p

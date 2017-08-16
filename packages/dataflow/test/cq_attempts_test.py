@@ -21,8 +21,8 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     self.later_timestamp = self.timestamp_msec + 1
     self.combFn = job.CombineEventsToAttempt()
 
-  def complete_attempt_values(self):
-    attempt_start = 0
+  @staticmethod
+  def construct_attempt_values(attempt_start, actions, failure_reasons=None):
     cq_name = 'test_cq'
     issue = '1'
     patchset = '1'
@@ -34,6 +34,72 @@ class TestCQAttemptAccumulator(unittest.TestCase):
       'patchset': patchset,
     }
 
+    events = []
+    for i, action in enumerate(actions):
+      event = event_basic.copy()
+      event.update({
+        'action': action[0],
+        'timestamp_millis': action[1],
+        'failure_reason': failure_reasons[i] if failure_reasons else None,
+      })
+      events.append(event)
+
+    attempt = objects.CQAttempt()
+    attempt.cq_name = cq_name
+    attempt.attempt_start_msec = float(attempt_start) / 1000
+    attempt.issue = issue
+    attempt.patchset = patchset
+
+    return (events, attempt)
+
+
+  def failed_attempt_values(self, attempt_start):
+    actions = [
+      (self.combFn.ACTION_PATCH_START, 1000),
+      (self.combFn.ACTION_PATCH_FAILED, 5000),
+      (self.combFn.ACTION_PATCH_FAILED, 6000),
+      (self.combFn.ACTION_PATCH_STOP, 9000),
+    ]
+
+    failure_reasons = [
+      None,
+      {
+        'fail_type': 'FAIL_TYPE_1',
+        'failed_try_jobs': [
+          {'fail_type': self.combFn.FAIL_TYPE_TEST},
+          {'fail_type': self.combFn.FAIL_TYPE_TEST},
+          {'fail_type': self.combFn.FAIL_TYPE_TEST},
+          {'fail_type': self.combFn.FAIL_TYPE_PATCH},
+        ]
+      },
+      {
+        'fail_type': 'FAIL_TYPE_2',
+        'failed_try_jobs': [
+          {'fail_type': self.combFn.FAIL_TYPE_COMPILE},
+          {'fail_type': self.combFn.FAIL_TYPE_INVALID},
+        ]
+      },
+      None,
+    ]
+
+    events, attempt = self.construct_attempt_values(attempt_start, actions,
+                                                    failure_reasons)
+
+    attempt.first_start_msec = 1000
+    attempt.last_start_msec = 1000
+    attempt.last_stop_msec = 9000
+    attempt.first_stop_msec = 9000
+    attempt.fail_type = 'FAIL_TYPE_2'
+    attempt.failed = True
+    attempt.patch_failed_msec = 5000
+    attempt.invalid_test_results_failures = 1
+    attempt.compile_failures = 1
+    attempt.total_failures = 2
+
+    return (events, attempt.as_bigquery_row())
+
+
+  def complete_attempt_values(self, attempt_start):
     actions = [
       (self.combFn.ACTION_PATCH_START, 1000),
       (self.combFn.ACTION_VERIFIER_TRIGGER, 3000),
@@ -43,17 +109,8 @@ class TestCQAttemptAccumulator(unittest.TestCase):
       (self.combFn.ACTION_PATCH_STOP, 9000),
     ]
 
-    events = []
-    for action in actions:
-      event = event_basic.copy()
-      event.update({'action': action[0], 'timestamp_millis': action[1]})
-      events.append(event)
+    events, attempt = self.construct_attempt_values(attempt_start, actions)
 
-    attempt = objects.CQAttempt()
-    attempt.cq_name = cq_name
-    attempt.attempt_start_msec = attempt_start
-    attempt.issue = issue
-    attempt.patchset = patchset
     attempt.first_start_msec = 1000
     attempt.last_start_msec = 1000
     attempt.last_stop_msec = 9000
@@ -66,7 +123,8 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     return (events, attempt.as_bigquery_row())
 
   def test_compute_attempts(self):
-    complete_attempt_events, complete_attempt = self.complete_attempt_values()
+    complete_attempt_events, complete_attempt = self.complete_attempt_values(0)
+    failed_attempt_events, failed_attempt = self.failed_attempt_values(1)
 
     incomplete_attempt_events = [
         {
@@ -78,10 +136,10 @@ class TestCQAttemptAccumulator(unittest.TestCase):
             'patchset': '1',
         },
     ]
-    incomplete_attempt_expected = []
 
-    events = complete_attempt_events + incomplete_attempt_events
-    expected_attempts = [complete_attempt] + incomplete_attempt_expected
+    events = (complete_attempt_events + failed_attempt_events +
+              incomplete_attempt_events)
+    expected_attempts = [complete_attempt, failed_attempt]
 
     p = test_pipeline.TestPipeline()
     pcoll = (p
