@@ -33,13 +33,14 @@
   'avro': {
     'build': '0',
     'gs': 'e1f36a7f8c542cb18df0c1b0970e25a0943a6ffe.tar.gz',
-    'version': '1.8.1'
+    'version': '1.8.1',
+    'implicit': True,  # Required by apache_beam
   },
   'backports.ssl_match_hostname': {
     'build': '0',
     'gs': '0567c136707a5f53b95aa793b79cc8d5c61d8e22.tar.gz',
     'version': '3.5.0.1',
-    'implicit': True, # Required by docker
+    'implicit': True,  # Required by docker
   },
   'beautifulsoup4': {
     'version': '4.3.2',
@@ -75,6 +76,7 @@
       'linux_i686',
       'macosx_x86_64',
     ],
+    'implicit': True,  # Required by apache_beam
   },
   'cryptography': {
     'version': '1.4',
@@ -92,7 +94,8 @@
   'dill': {
     'build': '0',
     'gs': '98ae6835db2bd5f1b7f1bc420275c1e9709f1a64.zip',
-    'version': '0.2.6'
+    'version': '0.2.6',
+    'implicit': True,  # Required by apache_beam
   },
   'docker': {
     'version': '2.0.1',
@@ -103,7 +106,7 @@
     'build': '0',
     'gs': '02e65f3b4a75bd65cd4c312835961d3551967454.tar.gz',
     'version': '0.2.1',
-    'implicit': True, # Required by docker
+    'implicit': True,  # Required by docker
   },
   'enum34': {
     'version': '1.0.4',
@@ -121,7 +124,8 @@
   'futures': {
     'build': '0',
     'gs': 'e6815bea6a2881218df730347732f67ec5e89108.tar.gz',
-    'version': '3.1.1'
+    'version': '3.1.1',
+    'implicit': True,  # Required by grpcio
   },
   'google_api_python_client': {
     'version': '1.4.2',
@@ -168,6 +172,7 @@
       'linux_i686',
       'macosx_x86_64',
     ],
+    'implicit': True,  # Required by apache_beam
   },
   'httplib2': {
     'version': '0.9',
@@ -284,7 +289,7 @@
     'build': '0',
     'repo': 'external/github.com/eliben/pycparser',
     'rev': 'c67c9208d858788f9b24b0631171a6910b2c19cf',
-    'implicit': True, # Required by cffi
+    'implicit': True,  # Required by cffi
   },
   'pytz': {
     'version': '2014.4',
@@ -377,7 +382,7 @@
     'build': '0',
     'gs': 'a9cde93bb0ff02127babd16473fb7d61f2e077a7.tar.gz',
     'version': '0.40.0',
-    'implicit': True, # Required by docker
+    'implicit': True,  # Required by docker
   },
   'WebTest': {
     'version': '2.0.16.dev0',
