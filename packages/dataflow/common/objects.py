@@ -91,6 +91,9 @@ class CQAttempt(BigQueryObject):
     self.patch_failures = 0
     self.total_failures = 0
 
+    self.max_bbucket_ids_msec = None
+    self.contributing_bbucket_ids = None
+
   @staticmethod
   def get_bigquery_attributes():
     return [
@@ -119,6 +122,7 @@ class CQAttempt(BigQueryObject):
         'patch_failures',
         'total_failures',
         'fail_type',
+        'contributing_bbucket_ids',
     ]
 
 
@@ -136,6 +140,7 @@ class CQEvent(BigQueryObject):
     self.patchset = None
     self.failure_reason = None
     self.dry_run = False
+    self.contributing_buildbucket_ids = None
 
   @staticmethod
   def get_bigquery_attributes():
@@ -148,4 +153,5 @@ class CQEvent(BigQueryObject):
         'patchset',
         'dry_run',
         'failure_reason',
+        'contributing_buildbucket_ids',
     ]

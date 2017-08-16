@@ -111,6 +111,9 @@ class TestCQAttemptAccumulator(unittest.TestCase):
 
     events, attempt = self.construct_attempt_values(attempt_start, actions)
 
+    events[-2]['contributing_buildbucket_ids'] = [1]
+    events[-1]['contributing_buildbucket_ids'] = [2, 3]
+
     attempt.first_start_msec = 1000
     attempt.last_start_msec = 1000
     attempt.last_stop_msec = 9000
@@ -119,6 +122,7 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     attempt.verifier_pass_latency_sec = 4.0
     attempt.tree_check_and_throttle_latency_sec = 1.0
     attempt.committed = True
+    attempt.contributing_bbucket_ids = [2, 3]
 
     return (events, attempt.as_bigquery_row())
 

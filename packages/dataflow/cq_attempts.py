@@ -122,6 +122,11 @@ class CombineEventsToAttempt(beam.CombineFn):
         attempt.failure_reason = event.failure_reason
         attempt.max_failure_msec = event.timestamp_millis
         attempt.fail_type = attempt.failure_reason['fail_type']
+      if (event.contributing_buildbucket_ids and
+          (attempt.max_bbucket_ids_msec is None or
+           event.timestamp_millis > attempt.max_bbucket_ids_msec)):
+        attempt.contributing_bbucket_ids = event.contributing_buildbucket_ids
+        attempt.max_bbucket_ids_msec = event.timestamp_millis
 
       for field in self.consistent_fields:
         attempt_value = attempt.__dict__.get(field)
@@ -196,7 +201,7 @@ class ComputeAttempts(beam.PTransform):
 
 def main():
   q = ('SELECT timestamp_millis, action, attempt_start_usec, cq_name, issue,'
-       '  patchset, dry_run, failure_reason'
+       '  patchset, dry_run, failure_reason, contributing_buildbucket_ids'
        'FROM `chrome-infra-events.raw_events.cq`')
   p = chops_beam.EventsPipeline()
   _ = (p
