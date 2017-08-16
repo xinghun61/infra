@@ -355,10 +355,15 @@ class RecursiveFlakePipeline(BasePipeline):
     previous_build_number = int(previous_build_number)
     step_size = previous_build_number - preferred_run_build_number
 
-    analysis = self.analysis_urlsafe_key.get()
+    analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
+    algorithm_settings = analysis.algorithm_parameters.get('swarming_rerun')
     analysis.Update(
         start_time=time_util.GetUTCNow(), status=analysis_status.RUNNING)
+    logging.info('%s/%s/%s/%s/%s Running with analysis algorithm settings %s',
+                 analysis.master_name, analysis.builder_name,
+                 analysis.build_number, analysis.step_name, analysis.test_name,
+                 algorithm_settings)
 
     iterations = flake_analysis_util.GetIterationsToRerun(
         user_specified_iterations, analysis)

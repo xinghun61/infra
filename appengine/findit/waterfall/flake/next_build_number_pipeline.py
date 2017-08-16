@@ -126,8 +126,9 @@ class NextBuildNumberPipeline(BasePipeline):
       logging.warning('Swarming task %s ended in error.', flake_swarming_task)
       raise pipeline.Abort()
 
-    analysis.Update(
-        algorithm_parameters=waterfall_config.GetCheckFlakeSettings())
+    if not analysis.algorithm_parameters:
+      analysis.Update(
+          algorithm_parameters=waterfall_config.GetCheckFlakeSettings())
     algorithm_settings = analysis.algorithm_parameters.get('swarming_rerun')
 
     # Figure out what build_number to trigger a swarming rerun on next, if any.
@@ -168,13 +169,15 @@ class NextBuildNumberPipeline(BasePipeline):
     if updated_iterations_to_rerun and user_specified_iterations is None:
       # The lookback algorithm determined the build needs to be rerun with more
       # iterations.
-      logging.info('%s/%s/%s/%s/%s Updating iterations to rerun because'
-                   'the results were inconclusive', master_name, builder_name,
-                   triggering_build_number, step_name, test_name)
       flake_analysis_util.UpdateIterationsToRerun(analysis,
                                                   updated_iterations_to_rerun)
       analysis.RemoveDataPointWithBuildNumber(next_build_number)
       analysis.put()
+      logging.info('%s/%s/%s/%s/%s Updating iterations to rerun because'
+                   'the results were inconclusive, new algorithm settings %s',
+                   master_name, builder_name, triggering_build_number,
+                   step_name, test_name,
+                   analysis.algorithm_parameters.get('swarming_rerun'))
 
     logging.info('%s/%s/%s/%s/%s Returning the next build number to recursive'
                  'flake pipeline: %s', master_name, builder_name,
