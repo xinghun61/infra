@@ -27,11 +27,10 @@ class CrashAnalysis(ndb.Model):
   # The parsed ``Stacktrace`` object.
   stacktrace = ndb.PickleProperty(indexed=False)
 
-  # TODO(katesonia): We keep this property because there are many legacy data
-  # which only have ``stack_trace`` string, not the parsed ``stacktrace``.
-  # Remove this property after we convert those legacy data.
-  # The stacktrace string.
-  stack_trace = ndb.StringProperty(indexed=False)
+  # The raw stacktrace string sent by client. The stacktrace string can be very
+  # big, in order to store such big string, use TextProperty instead of
+  # StringProperty.
+  stack_trace = ndb.TextProperty()
 
   # The signature of the crash.
   signature = ndb.StringProperty(indexed=True)
