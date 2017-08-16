@@ -9,6 +9,8 @@ from analysis.clusterfuzz_data import ClusterfuzzData
 from analysis.type_enums import CrashClient
 from common.appengine_testcase import AppengineTestCase
 from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
+from libs.deps.dependency import Dependency
+from libs.deps.dependency import DependencyRoll
 
 
 class ClusterfuzzAnalysisTest(AppengineTestCase):
@@ -82,6 +84,80 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
         'regression_range': None,
         'dependencies': None,
         'dependency_rolls': None,
+        'crashed_type': None,
+        'crashed_address': None,
+        'sanitizer': None,
+        'job_type': job_type,
+        'testcase': testcase
+    }
+
+    self.assertDictEqual(analysis.ToJson(),
+                         {'customized_data': expected_json,
+                          'platform': None,
+                          'stack_trace': None,
+                          'chrome_version': None,
+                          'signature': None})
+
+  def testToJsonForNonEmptyDependencies(self):
+    """Tests ``ToJson`` for non-empty self.dependencies."""
+    testcase = '1234'
+    job_type = 'asan'
+    analysis = ClusterfuzzAnalysis.Create(testcase)
+    analysis.testcase = testcase
+    analysis.job_type = job_type
+    analysis.dependencies = {
+        'src': Dependency('src', 'https://repo', 'rev'),
+        'src/v8': Dependency('src/v8', 'https://repo/v8', 'rev2')
+    }
+
+    dependencies_json = [{'dep_path': 'src',
+                          'repo_url': 'https://repo',
+                          'revision': 'rev'},
+                         {'dep_path': 'src/v8',
+                          'repo_url': 'https://repo/v8',
+                          'revision': 'rev2'}]
+    expected_json = {
+        'regression_range': None,
+        'dependencies': dependencies_json,
+        'dependency_rolls': None,
+        'crashed_type': None,
+        'crashed_address': None,
+        'sanitizer': None,
+        'job_type': job_type,
+        'testcase': testcase,
+    }
+
+    self.assertDictEqual(
+        analysis.ToJson(),
+        {
+            'customized_data': expected_json,
+            'platform': None,
+            'stack_trace': None,
+            'chrome_version': None,
+            'signature': None
+        })
+
+  def testToJsonForNonEmptyDependencyRolls(self):
+    """Tests ``ToJson`` for non-empty self.dependency_rolls."""
+    testcase = '1234'
+    job_type = 'asan'
+    analysis = ClusterfuzzAnalysis.Create(testcase)
+    analysis.testcase = testcase
+    analysis.job_type = job_type
+    analysis.dependency_rolls = {
+        'src/': DependencyRoll('src/', 'https://repo', 'rev1', 'rev2'),
+        'src/v8': DependencyRoll('src/v8', 'https://repo/v8', 'rev3', 'rev4')
+    }
+
+    dependency_rolls_json = [
+        {'dep_path': dep.path, 'repo_url': dep.repo_url,
+         'old_revision': dep.old_revision, 'new_revision': dep.new_revision}
+        for dep in analysis.dependency_rolls.itervalues()
+    ]
+    expected_json = {
+        'regression_range': None,
+        'dependencies': None,
+        'dependency_rolls': dependency_rolls_json,
         'crashed_type': None,
         'crashed_address': None,
         'sanitizer': None,
