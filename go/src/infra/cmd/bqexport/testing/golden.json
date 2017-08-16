@@ -23,6 +23,20 @@
     {
       "name": "Req",
       "isRequired": true
+    },
+    {
+      "name": "Rec",
+      "isRepeated": true,
+      "type": "RECORD",
+      "schema": [
+        {
+          "name": "optional_field"
+        },
+        {
+          "name": "required_field",
+          "isRequired": true
+        }
+      ]
     }
   ],
   "partitionTable": true,

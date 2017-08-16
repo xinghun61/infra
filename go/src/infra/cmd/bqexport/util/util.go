@@ -53,9 +53,6 @@ func (exp *Exporter) Main() {
 func (exp *Exporter) applyTags(typ interface{}, bqSchema bigquery.Schema) error {
 	rtyp := reflect.TypeOf(typ)
 	for i, field := range bqSchema {
-		// By default, all fields are not required.
-		field.Required = false
-
 		if err := applyTagsToField(rtyp, field); err != nil {
 			return errors.Annotate(err, "failed to apply tags to field #%d / %q", i, field.Name).Err()
 		}
@@ -85,6 +82,9 @@ func applyTagsToField(st reflect.Type, field *bigquery.FieldSchema) error {
 	if st.Kind() != reflect.Struct {
 		return errors.Reason("record type is not a struct").Err()
 	}
+
+	// By default, all fields are not required.
+	field.Required = false
 
 	sf := getFieldForBigQueryName(st, field.Name)
 	if sf == nil {

@@ -26,4 +26,12 @@ type TestSchema struct {
 
 	Desc string `bqexport:"req,d=This is a description string"`
 	Req  string `bqexport:"req"`
+
+	Rec []TestRecord
+}
+
+// TestRecord is a record within TestSchema.
+type TestRecord struct {
+	Optional string `bigquery:"optional_field"`
+	Required string `bigquery:"required_field" bqexport:"req"`
 }
