@@ -9,6 +9,10 @@ handlers:
   script: main.app
   login: admin
   secure: always
+- url: /handlers/.*
+  script: main.app
+  login: admin
+  secure: always
 - url: /.*
   script: main.app
 
