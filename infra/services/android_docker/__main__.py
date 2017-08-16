@@ -178,7 +178,14 @@ def launch(docker_client, android_devices, args):
 
     # Create a container for each device that doesn't already have one.
     if not draining_host:
-      live_devices = [d for d in android_devices if d not in draining_devices]
+      live_devices = []
+      for d in android_devices:
+        if d.physical_port is None:
+          logging.warning(
+              'Unable to assign physical port num to %s. No container will be '
+              'created.', d.serial)
+        elif d not in draining_devices:
+          live_devices.append(d)
       needs_cgroup_update = docker_client.create_missing_containers(
           running_containers, live_devices, image_url, args.swarming_server)
 
