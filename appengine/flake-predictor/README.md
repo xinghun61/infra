@@ -10,10 +10,7 @@ can serve predictions.
 
 # How to run flake-predictor tests
 
-flake-predictor uses apache_beam, which is not on the mac/windows build bots
-yet. For this reason, flake-predictor tests are not run by CQ. To run the
-tests locally, use this command:
+flake-predictor tests can be run using test.py, which is the default way to run
+tests. To run the tests locally, use this command:
 
-`./test.py test appengine/flake-predictor
-    --coveragerc=appengine/flake-predictor/.coveragerc-hidden`
-
+`./test.py test appengine/flake-predictor`
