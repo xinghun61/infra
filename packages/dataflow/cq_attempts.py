@@ -201,7 +201,7 @@ class ComputeAttempts(beam.PTransform):
 
 def main():
   q = ('SELECT timestamp_millis, action, attempt_start_usec, cq_name, issue,'
-       '  patchset, dry_run, failure_reason, contributing_buildbucket_ids'
+       '  patchset, dry_run, failure_reason, contributing_buildbucket_ids '
        'FROM `chrome-infra-events.raw_events.cq`')
   p = chops_beam.EventsPipeline()
   _ = (p
