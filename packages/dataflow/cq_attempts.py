@@ -96,14 +96,20 @@ class CombineEventsToAttempt(beam.CombineFn):
     attempt = objects.CQAttempt()
     for event in accumulator:
       attempt_start_msec = float(event.attempt_start_usec) / 1000
-      assert(attempt.attempt_start_msec is None or
-             attempt.attempt_start_msec == attempt_start_msec)
+      if (attempt.attempt_start_msec and
+          attempt.attempt_start_msec != attempt_start_msec):
+        logging.error(('tried to combine events with different '
+                       'attempt_start_msec'))
+        return
+
       attempt.attempt_start_msec = attempt_start_msec
 
       for field in self.consistent_fields:
         attempt_value = attempt.__dict__.get(field)
         event_value = event.__dict__.get(field)
-        assert(not attempt_value or attempt_value  == event_value)
+        if attempt_value and attempt_value  != event_value:
+          logging.error('tried to combine events with inconsistent %s', field)
+          return
         attempt.__dict__[field] = event_value
 
       affected_fields = self.action_affects_fields.get(event.action, [])
@@ -139,7 +145,8 @@ class ComputeAttempts(beam.PTransform):
 
   @staticmethod
   def filter_incomplete_attempts(attempt):
-    if attempt.get('first_start_msec') and attempt.get('last_stop_msec'):
+    if (attempt is not None and attempt.get('first_start_msec')
+        and attempt.get('last_stop_msec')):
       yield attempt
 
   def expand(self, pcoll):

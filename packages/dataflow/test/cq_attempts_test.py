@@ -157,8 +157,7 @@ class TestCQAttemptAccumulator(unittest.TestCase):
         self.basic_event(attempt_start_usec=self.attempt_start_usec),
         self.basic_event(attempt_start_usec=self.attempt_start_usec+1000)
     ]
-    with self.assertRaises(AssertionError):
-      self.combFn.extract_output(accumulator)
+    self.assertIsNone(self.combFn.extract_output(accumulator))
 
   def test_extract_consistent_field(self):
     event = self.basic_event()
@@ -171,8 +170,7 @@ class TestCQAttemptAccumulator(unittest.TestCase):
         self.basic_event(),
         self.basic_event(cq_name='different_cq_name')
     ]
-    with self.assertRaises(AssertionError):
-      self.combFn.extract_output(accumulator)
+    self.assertIsNone(self.combFn.extract_output(accumulator))
 
   def test_extract_logical_or(self):
     accumulator = [self.basic_event(action=self.combFn.ACTION_PATCH_COMMITTED)]
