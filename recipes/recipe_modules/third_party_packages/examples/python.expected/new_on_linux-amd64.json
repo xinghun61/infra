@@ -758,6 +758,8 @@
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json",
+      "-ref",
+      "latest",
       "-tag",
       "version:2.1.2.chromium8"
     ],

@@ -260,6 +260,8 @@
       "/path/to/tmp/json",
       "-service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json",
+      "-ref",
+      "latest",
       "-tag",
       "version:2.12.2.2.chromium11"
     ],

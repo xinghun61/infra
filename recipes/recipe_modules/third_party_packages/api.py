@@ -116,4 +116,5 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
 
   def register_package(self, package_file, name, version):
     if not self.dry_run:
-      self.m.cipd.register(name, package_file, tags={'version': version})
+      self.m.cipd.register(name, package_file, tags={'version': version},
+                           refs=['latest'])
