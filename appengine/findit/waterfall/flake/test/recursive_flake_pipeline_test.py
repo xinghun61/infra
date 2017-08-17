@@ -100,6 +100,11 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         None,
         expected_args=[analysis.key.urlsafe(), build_number, None, None, None])
 
+    self.MockPipeline(
+        FinishBuildAnalysisPipeline,
+        None,
+        expected_args=[analysis.key.urlsafe(), None, None, None, False])
+
     pipeline_job = RecursiveFlakePipeline(
         analysis.key.urlsafe(),
         build_number,
@@ -173,6 +178,14 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
             upper_bound_build_number, iterations_to_rerun
         ])
 
+    self.MockPipeline(
+        FinishBuildAnalysisPipeline,
+        None,
+        expected_args=[
+            analysis.key.urlsafe(), lower_bound_build_number,
+            upper_bound_build_number, iterations_to_rerun, False
+        ])
+
     pipeline_job = RecursiveFlakePipeline(
         analysis.key.urlsafe(),
         run_build_number,
@@ -244,11 +257,19 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
             upper_bound_build_number, None
         ])
 
+    self.MockPipeline(
+        FinishBuildAnalysisPipeline,
+        None,
+        expected_args=[
+            analysis.key.urlsafe(), lower_bound_build_number,
+            upper_bound_build_number, None, False
+        ])
+
     pipeline_job = RecursiveFlakePipeline(
         analysis.key.urlsafe(),
         run_build_number,
-        50,
-        90,
+        lower_bound_build_number,
+        upper_bound_build_number,
         None,
         use_nearby_neighbor=False)
     pipeline_job.start(queue_name=queue_name)
@@ -316,6 +337,14 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
             upper_bound_build_number, None
         ])
 
+    self.MockPipeline(
+        FinishBuildAnalysisPipeline,
+        None,
+        expected_args=[
+            analysis.key.urlsafe(), lower_bound_build_number,
+            upper_bound_build_number, None, True
+        ])
+
     pipeline_job = RecursiveFlakePipeline(
         analysis.key.urlsafe(),
         run_build_number,
@@ -381,6 +410,11 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         NextBuildNumberPipeline,
         None,
         expected_args=[analysis.key.urlsafe(), build_number, None, None, None])
+
+    self.MockPipeline(
+        FinishBuildAnalysisPipeline,
+        None,
+        expected_args=[analysis.key.urlsafe(), None, None, None, False])
 
     pipeline_job = RecursiveFlakePipeline(
         analysis.key.urlsafe(),
@@ -465,7 +499,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         FinishBuildAnalysisPipeline,
         '',
         expected_args=[
-            analysis.key.urlsafe(), lower_bound, upper_bound, iterations
+            analysis.key.urlsafe(), lower_bound, upper_bound, iterations, False
         ])
 
     pipeline = RecursiveFlakePipeline(analysis.key.urlsafe(), None, lower_bound,
@@ -499,7 +533,7 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         FinishBuildAnalysisPipeline,
         '',
         expected_args=[
-            analysis.key.urlsafe(), lower_bound, upper_bound, iterations
+            analysis.key.urlsafe(), lower_bound, upper_bound, iterations, False
         ])
 
     pipeline = RecursiveFlakePipeline(analysis.key.urlsafe(), None, lower_bound,
@@ -567,6 +601,11 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         NextBuildNumberPipeline,
         None,
         expected_args=[analysis.key.urlsafe(), build_number, None, None, None])
+
+    self.MockPipeline(
+        FinishBuildAnalysisPipeline,
+        None,
+        expected_args=[analysis.key.urlsafe(), None, None, None, False])
 
     pipeline_job = RecursiveFlakePipeline(
         analysis.key.urlsafe(),
@@ -643,6 +682,11 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(),
             int(build_number), None, None, None
         ])
+
+    self.MockPipeline(
+        FinishBuildAnalysisPipeline,
+        None,
+        expected_args=[analysis.key.urlsafe(), None, None, None, False])
 
     pipeline_job = RecursiveFlakePipeline(
         analysis.key.urlsafe(),

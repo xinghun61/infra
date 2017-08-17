@@ -116,7 +116,7 @@ class FinishBuildAnalysisPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, analysis_urlsafe_key, lower_bound_build_number,
-          upper_bound_build_number, user_specified_iterations):
+          upper_bound_build_number, user_specified_iterations, force):
     """Finish the build-level analysis.
 
       Calculate the confidence, update the information and start
@@ -134,6 +134,8 @@ class FinishBuildAnalysisPipeline(BasePipeline):
         user_specified_iterations (int): The number of iterations to rerun the
             test as specified by the user. If None, Findit will fallback to what
             is in the analysis' algorithm parameters.
+        force (bool): Force this build to run from scratch,
+          a rerun by an admin will trigger this.
     """
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
@@ -163,5 +165,5 @@ class FinishBuildAnalysisPipeline(BasePipeline):
     with pipeline.InOrder():
       yield InitializeFlakeTryJobPipeline(analysis.key.urlsafe(),
                                           user_specified_iterations,
-                                          user_specified_range)
+                                          user_specified_range, force)
       yield UpdateFlakeBugPipeline(analysis.key.urlsafe())

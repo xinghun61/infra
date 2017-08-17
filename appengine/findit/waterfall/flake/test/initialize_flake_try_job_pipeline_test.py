@@ -161,7 +161,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         RecursiveFlakeTryJobPipeline, '', expected_args=[], expected_kwargs={})
 
     pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
-                                                 False)
+                                                 False, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -178,7 +178,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         RecursiveFlakeTryJobPipeline, '', expected_args=[], expected_kwargs={})
 
     pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
-                                                 False)
+                                                 False, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -204,7 +204,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         RecursiveFlakeTryJobPipeline, '', expected_args=[], expected_kwargs={})
 
     pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
-                                                 False)
+                                                 False, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -245,7 +245,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={})
 
     pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
-                                                 False)
+                                                 False, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -287,7 +287,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={})
 
     pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
-                                                 False)
+                                                 False, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     self.assertEqual(analysis_status.RUNNING, analysis.try_job_status)

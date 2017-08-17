@@ -313,7 +313,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
               urlsafe_flake_analysis_key,
               try_job.key.urlsafe(), lower_bound_commit_position,
               upper_bound_commit_position, user_specified_iterations,
-              cache_name, dimensions)
+              cache_name, dimensions, rerun)
       else:
         retries += 1
 
@@ -359,7 +359,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
           urlsafe_flake_analysis_key,
           try_job.key.urlsafe(), lower_bound_commit_position,
           upper_bound_commit_position, user_specified_iterations, cache_name,
-          dimensions)
+          dimensions, rerun)
 
   def _StartOffPSTPeakHours(self, *args, **kwargs):
     """Starts the pipeline off PST peak hours if not triggered manually."""
@@ -442,7 +442,7 @@ class NextCommitPositionPipeline(BasePipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, urlsafe_flake_analysis_key, urlsafe_try_job_key,
           lower_bound_commit_position, upper_bound_commit_position,
-          user_specified_iterations, cache_name, dimensions):
+          user_specified_iterations, cache_name, dimensions, rerun):
     """Determines the next commit position to run a try job on.
 
     Args:
@@ -454,6 +454,8 @@ class NextCommitPositionPipeline(BasePipeline):
           consider when deciding the next run point number.
       upper_bound_commit_position (int): The upper bound commit position to
           consider when deciding the next run point number.
+      rerun (bool): Whether or not a full rerun of this analysis is being
+          requested.
     """
     flake_analysis = ndb.Key(urlsafe=urlsafe_flake_analysis_key).get()
     try_job = ndb.Key(urlsafe=urlsafe_try_job_key).get()
@@ -510,9 +512,15 @@ class NextCommitPositionPipeline(BasePipeline):
         next_commit_position)
 
     pipeline_job = RecursiveFlakeTryJobPipeline(
-        urlsafe_flake_analysis_key, next_commit_position, next_revision,
-        lower_bound_commit_position, upper_bound_commit_position,
-        user_specified_iterations, cache_name, dimensions)
+        urlsafe_flake_analysis_key,
+        next_commit_position,
+        next_revision,
+        lower_bound_commit_position,
+        upper_bound_commit_position,
+        user_specified_iterations,
+        cache_name,
+        dimensions,
+        rerun=rerun)
     # Disable attribute 'target' defined outside __init__ pylint warning,
     # because pipeline generates its own __init__ based on run function.
     pipeline_job.target = (  # pylint: disable=W0201

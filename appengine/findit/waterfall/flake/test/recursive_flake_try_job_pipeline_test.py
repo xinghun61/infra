@@ -110,13 +110,19 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(),
             try_job.key.urlsafe(), lower_bound_commit_position,
             upper_bound_commit_position, user_specified_iterations,
-            _DEFAULT_CACHE_NAME, None
+            _DEFAULT_CACHE_NAME, None, False
         ])
 
     pipeline_job = RecursiveFlakeTryJobPipeline(
-        analysis.key.urlsafe(), start_commit_position, revision,
-        lower_bound_commit_position, upper_bound_commit_position, None,
-        _DEFAULT_CACHE_NAME, None)
+        analysis.key.urlsafe(),
+        start_commit_position,
+        revision,
+        lower_bound_commit_position,
+        upper_bound_commit_position,
+        None,
+        _DEFAULT_CACHE_NAME,
+        None,
+        rerun=False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -196,13 +202,19 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(),
             try_job.key.urlsafe(), lower_bound_commit_position,
             upper_bound_commit_position, user_specified_iterations,
-            _DEFAULT_CACHE_NAME, None
+            _DEFAULT_CACHE_NAME, None, False
         ])
 
     pipeline_job = RecursiveFlakeTryJobPipeline(
-        analysis.key.urlsafe(), start_commit_position, revision,
-        lower_bound_commit_position, upper_bound_commit_position,
-        user_specified_iterations, _DEFAULT_CACHE_NAME, None)
+        analysis.key.urlsafe(),
+        start_commit_position,
+        revision,
+        lower_bound_commit_position,
+        upper_bound_commit_position,
+        user_specified_iterations,
+        _DEFAULT_CACHE_NAME,
+        None,
+        rerun=False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -228,9 +240,15 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     pipeline_job = RecursiveFlakeTryJobPipeline(
-        analysis.key.urlsafe(), commit_position, revision,
-        lower_bound_commit_position, commit_position, None, _DEFAULT_CACHE_NAME,
-        None)
+        analysis.key.urlsafe(),
+        commit_position,
+        revision,
+        lower_bound_commit_position,
+        commit_position,
+        None,
+        _DEFAULT_CACHE_NAME,
+        None,
+        rerun=False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     self.assertIsNone(analysis.try_job_status)
@@ -283,9 +301,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={'retries': 0,
                          'rerun': False})
 
-    pipeline_job = NextCommitPositionPipeline(analysis.key.urlsafe(),
-                                              try_job.key.urlsafe(), 90, 100,
-                                              None, _DEFAULT_CACHE_NAME, None)
+    pipeline_job = NextCommitPositionPipeline(
+        analysis.key.urlsafe(),
+        try_job.key.urlsafe(), 90, 100, None, _DEFAULT_CACHE_NAME, None, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -352,9 +370,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         expected_args=[analysis.key.urlsafe()],
         expected_kwargs={})
 
-    pipeline_job = NextCommitPositionPipeline(analysis.key.urlsafe(),
-                                              try_job.key.urlsafe(), 90, 100,
-                                              None, _DEFAULT_CACHE_NAME, None)
+    pipeline_job = NextCommitPositionPipeline(
+        analysis.key.urlsafe(),
+        try_job.key.urlsafe(), 90, 100, None, _DEFAULT_CACHE_NAME, None, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -415,9 +433,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         expected_args=[analysis.key.urlsafe()],
         expected_kwargs={})
 
-    pipeline_job = NextCommitPositionPipeline(analysis.key.urlsafe(),
-                                              try_job.key.urlsafe(), 98, 100,
-                                              None, _DEFAULT_CACHE_NAME, None)
+    pipeline_job = NextCommitPositionPipeline(
+        analysis.key.urlsafe(),
+        try_job.key.urlsafe(), 98, 100, None, _DEFAULT_CACHE_NAME, None, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -465,7 +483,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job = NextCommitPositionPipeline(
         analysis.key.urlsafe(),
         try_job.key.urlsafe(), lower_bound_commit_position,
-        upper_bound_commit_position, None, _DEFAULT_CACHE_NAME, None)
+        upper_bound_commit_position, None, _DEFAULT_CACHE_NAME, None, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -760,9 +778,16 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_data.try_job_key = try_job.key
     try_job_data.put()
 
-    rftp = RecursiveFlakeTryJobPipeline(analysis.key.urlsafe(), commit_position,
-                                        revision, lower_bound_commit_position,
-                                        100, None, _DEFAULT_CACHE_NAME, None)
+    rftp = RecursiveFlakeTryJobPipeline(
+        analysis.key.urlsafe(),
+        commit_position,
+        revision,
+        lower_bound_commit_position,
+        100,
+        None,
+        _DEFAULT_CACHE_NAME,
+        None,
+        rerun=False)
     rftp._LogUnexpectedAbort()
 
     expected_error = {
@@ -922,13 +947,19 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(),
             try_job.key.urlsafe(), lower_bound_commit_position,
             upper_bound_commit_position, user_specified_iterations,
-            _DEFAULT_CACHE_NAME, None
+            _DEFAULT_CACHE_NAME, None, False
         ])
 
     pipeline_job = RecursiveFlakeTryJobPipeline(
-        analysis.key.urlsafe(), start_commit_position, revision,
-        lower_bound_commit_position, upper_bound_commit_position, None,
-        _DEFAULT_CACHE_NAME, None)
+        analysis.key.urlsafe(),
+        start_commit_position,
+        revision,
+        lower_bound_commit_position,
+        upper_bound_commit_position,
+        None,
+        _DEFAULT_CACHE_NAME,
+        None,
+        rerun=False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -1012,7 +1043,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(),
             try_job.key.urlsafe(), lower_bound_commit_position,
             upper_bound_commit_position, user_specified_iterations,
-            _DEFAULT_CACHE_NAME, None
+            _DEFAULT_CACHE_NAME, None, False
         ])
 
     pipeline_job = RecursiveFlakeTryJobPipeline(

@@ -343,7 +343,7 @@ class RecursiveFlakePipeline(BasePipeline):
     if preferred_run_build_number is None:
       yield FinishBuildAnalysisPipeline(
           analysis_urlsafe_key, lower_bound_build_number,
-          upper_bound_build_number, user_specified_iterations)
+          upper_bound_build_number, user_specified_iterations, force)
       return
     if previous_build_number is None:
       previous_build_number = preferred_run_build_number
