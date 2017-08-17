@@ -82,7 +82,7 @@ func GetAnalyzeHandler(ctx *router.Context) {
 	a.Gatekeeper = gkRules
 
 	if client.GetReader(c) == nil {
-		transport, err := auth.GetRPCTransport(c, auth.AsSelf)
+		transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes("https://www.googleapis.com/auth/gerritcodereview", "https://www.googleapis.com/auth/userinfo.email"))
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error getting transport: %v", err))
 			return

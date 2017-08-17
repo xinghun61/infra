@@ -185,17 +185,31 @@ func TestUpdateExpectations(t *testing.T) {
 }
 
 func TestExpectationStatement(t *testing.T) {
-	Convey("expand modifiers", t, func() {
-		es := &ExpectationStatement{
-			Original:     "[ Mac ] /third_party/test_dir/foo_bar/baz.html [ FAIL ]",
-			TestName:     "/third_party/test_dir/foo_bar/baz.html",
-			Expectations: []string{"FAIL"},
-			Modifiers:    []string{"Mac"},
-		}
+	Convey("modifiers", t, func() {
+		Convey("expanded match", func() {
+			es := &ExpectationStatement{
+				Original:     "[ Mac ] /third_party/test_dir/foo_bar/baz.html [ FAIL ]",
+				TestName:     "/third_party/test_dir/foo_bar/baz.html",
+				Expectations: []string{"FAIL"},
+				Modifiers:    []string{"Mac"},
+			}
 
-		So(es.ExpandModifiers(), ShouldResemble, []string{"Mac", "retina", "mac10.9", "mac10.11", "mac10.12"})
+			So(es.ExpandModifiers(), ShouldResemble, []string{"Mac", "retina", "mac10.9", "mac10.11", "mac10.12"})
+			So(es.ModifierMatch("Mac10.9"), ShouldEqual, true)
+		})
 
-		So(es.ModifierMatch("Mac10.9"), ShouldEqual, true)
+		Convey("applies", func() {
+			Convey("narrow specifiers", func() {
+				es := &ExpectationStatement{
+					Original:     "[ Mac ] /third_party/test_dir/foo_bar/baz.html [ FAIL ]",
+					TestName:     "/third_party/test_dir/foo_bar/baz.html",
+					Expectations: []string{"FAIL"},
+					Modifiers:    []string{"Mac"},
+				}
+
+				So(es.Applies("/third_party/test_dir/foo_bar/baz.html", "Mac"), ShouldEqual, true)
+			})
+		})
 	})
 }
 
@@ -264,23 +278,24 @@ func TestForTest(t *testing.T) {
 		}
 
 		Convey("no matches", func() {
-			matches := fs.ForTest("foo", "")
+			matches := fs.ForTest("foo", &BuilderConfig{})
 			So(len(matches), ShouldEqual, 0)
 		})
 
 		Convey("one match", func() {
-			matches := fs.ForTest("/third_party/test_name2", "")
+			matches := fs.ForTest("/third_party/test_name2", &BuilderConfig{})
 			So(len(matches), ShouldEqual, 1)
 		})
 
 		Convey("multiple matches", func() {
-			matches := fs.ForTest("/third_party/test_dir/foo_bar/zippy.html", "")
+			matches := fs.ForTest("/third_party/test_dir/foo_bar/zippy.html", &BuilderConfig{})
 			So(len(matches), ShouldEqual, 1)
 			So(matches[0].Original, ShouldEqual, "/third_party/test_dir/foo_bar [ PASS ]")
 		})
 
 		Convey("modifier expansion", func() {
-			matches := fs.ForTest("/third_party/test_dir/foo_bar/baz.html", "Mac10.11")
+			matches := fs.ForTest("/third_party/test_dir/foo_bar/baz.html", &BuilderConfig{Specifiers: []string{"Mac10.11"}})
+			Printf("matches: %v", matches)
 			So(len(matches), ShouldEqual, 2)
 			// Eventually should only return 1 result. For now, most specific first.
 			So(matches[0].Original, ShouldEqual, "[ Mac ] /third_party/test_dir/foo_bar/baz.html [ FAIL ]")
@@ -291,9 +306,9 @@ func TestForTest(t *testing.T) {
 		})
 
 		Convey("rule has similar modifier, but doesn't apply", func() {
-			matches := fs.ForTest("/third_party/test_dir/zippy.html", "Mac10.11")
+			matches := fs.ForTest("/third_party/test_dir/zippy.html", &BuilderConfig{Specifiers: []string{"Mac10.11", "Release"}})
 			So(len(matches), ShouldEqual, 0)
-			matches = fs.ForTest("/third_party/test_dir/zippy.html", "Mac10.12")
+			matches = fs.ForTest("/third_party/test_dir/zippy.html", &BuilderConfig{Specifiers: []string{"Mac10.12"}})
 			So(len(matches), ShouldEqual, 1)
 		})
 	})

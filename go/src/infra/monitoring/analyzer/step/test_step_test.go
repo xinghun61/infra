@@ -7,12 +7,18 @@ package step
 import (
 	"net/url"
 	"testing"
+	"time"
+
+	"golang.org/x/net/context"
 
 	"infra/appengine/test-results/model"
+	te "infra/libs/testexpectations"
 	"infra/monitoring/client"
-	"infra/monitoring/client/test"
+	testhelper "infra/monitoring/client/test"
 	"infra/monitoring/messages"
 
+	"go.chromium.org/gae/service/info"
+	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/appengine/gaetesting"
 	"go.chromium.org/luci/common/logging/gologger"
 	"go.chromium.org/luci/server/auth/authtest"
@@ -20,17 +26,24 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+type giMock struct {
+	info.RawInterface
+	token  string
+	expiry time.Time
+	err    error
+}
+
+func (gi giMock) AccessToken(scopes ...string) (token string, expiry time.Time, err error) {
+	return gi.token, gi.expiry, gi.err
+}
+
+func setUpGitiles(c context.Context) context.Context {
+	return urlfetch.Set(c, &testhelper.MockGitilesTransport{
+		Responses: map[string]string{},
+	})
+}
+
 func TestTestStepFailureAlerts(t *testing.T) {
-	c := gaetesting.TestingContext()
-	c = authtest.MockAuthConfig(c)
-	c = gologger.StdConfig.Use(c)
-	testResultsFake := test.NewFakeServer()
-	defer testResultsFake.Server.Close()
-	finditFake := test.NewFakeServer()
-	defer finditFake.Server.Close()
-
-	c = client.WithFindit(c, finditFake.Server.URL)
-
 	Convey("test TestFailureAnalyzer", t, func() {
 		maxFailedTests = 2
 		Convey("analyze", func() {
@@ -393,9 +406,21 @@ func TestTestStepFailureAlerts(t *testing.T) {
 			}
 
 			for _, test := range tests {
+
 				test := test
 				Convey(test.name, func() {
-					newC := client.WithTestResults(c, testResultsFake.Server.URL)
+					c := gaetesting.TestingContext()
+					c = authtest.MockAuthConfig(c)
+					c = gologger.StdConfig.Use(c)
+					testResultsFake := testhelper.NewFakeServer()
+					defer testResultsFake.Server.Close()
+					finditFake := testhelper.NewFakeServer()
+					defer finditFake.Server.Close()
+					te.LayoutTestExpectations = map[string]string{}
+
+					c = setUpGitiles(c)
+					c = client.WithFindit(c, finditFake.Server.URL)
+
 					testResultsFake.JSONResponse = test.testResults
 
 					// knownResults determines what tests the test results server knows about. Set
@@ -417,8 +442,10 @@ func TestTestStepFailureAlerts(t *testing.T) {
 					testResultsFake.PerURLResponse = map[string]interface{}{
 						"/data/builders": knownResults,
 					}
+
+					c = client.WithTestResults(c, testResultsFake.Server.URL)
 					finditFake.JSONResponse = &client.FinditAPIResponse{Results: test.finditResults}
-					gotResult, gotErr := testFailureAnalyzer(newC, test.failures)
+					gotResult, gotErr := testFailureAnalyzer(c, test.failures)
 					So(gotErr, ShouldEqual, test.wantErr)
 					So(gotResult, ShouldResemble, test.wantResult)
 				})

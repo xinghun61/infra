@@ -13,6 +13,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	te "infra/libs/testexpectations"
 	"infra/monitoring/client"
 	"infra/monitoring/messages"
 )
@@ -57,9 +58,10 @@ func (t *testFailure) Title(bses []*messages.BuildStep) string {
 // testWithResult stores the information provided by Findit for a specific test,
 // for example if the test is flaky or is there a culprit for the test failure.
 type testWithResult struct {
-	TestName     string               `json:"test_name"`
-	IsFlaky      bool                 `json:"is_flaky"`
-	SuspectedCLs []messages.SuspectCL `json:"suspected_cls"`
+	TestName     string                     `json:"test_name"`
+	IsFlaky      bool                       `json:"is_flaky"`
+	SuspectedCLs []messages.SuspectCL       `json:"suspected_cls"`
+	Expectations []*te.ExpectationStatement `json:"expectations"`
 }
 
 // testFailureAnalyzer analyzes steps to see if there is any data in the tests
@@ -72,8 +74,28 @@ func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep) ([]messa
 		if err != nil {
 			return nil, []error{err}
 		}
-
-		results[i] = rslt
+		if rslt == nil {
+			continue
+		}
+		failure, ok := rslt.(*testFailure)
+		if !ok {
+			logging.Errorf(ctx, "couldn't cast to *testFailure: %+v", rslt)
+			continue
+		}
+		for t, r := range failure.Tests {
+			config, ok := te.BuilderConfigs[f.Build.BuilderName]
+			if !ok {
+				logging.Warningf(ctx, "no config (out of %d) for %s", len(te.BuilderConfigs), f.Build.BuilderName)
+				continue
+			}
+			exps, err := getExpectationsForTest(ctx, r.TestName, config)
+			if err != nil {
+				logging.Errorf(ctx, "couldn't get test expectations for %+v: %v", r.TestName, err)
+				continue
+			}
+			failure.Tests[t].Expectations = exps
+		}
+		results[i] = failure
 	}
 
 	return results, nil
@@ -285,6 +307,15 @@ func unexpected(expected, actual []string) []string {
 	}
 
 	return ret
+}
+
+func getExpectationsForTest(ctx context.Context, testName string, config *te.BuilderConfig) ([]*te.ExpectationStatement, error) {
+	fs, err := te.LoadAll(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	return fs.ForTest(testName, config), nil
 }
 
 // testResults json is an arbitrarily deep tree, whose nodes are the actual
