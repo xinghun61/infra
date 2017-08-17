@@ -206,7 +206,6 @@ def _ValidateDownloadBuildDataSettings(settings):
   return (isinstance(settings, dict) and isinstance(
       settings.get('download_interval_seconds'), int) and isinstance(
           settings.get('memcache_master_download_expiration_seconds'), int) and
-          isinstance(settings.get('use_chrome_build_extract'), bool) and
           isinstance(settings.get('use_ninja_output_log'), bool))
 
 

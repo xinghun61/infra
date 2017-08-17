@@ -50,13 +50,6 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     build.last_crawled_time = self._TimeBeforeNowBySeconds(360)
     self.assertFalse(build_util._BuildDataNeedUpdating(build))
 
-  def _MockUrlfetchWithBuildDataFromArchive(self, master_name, builder_name,
-                                            build_number, build_data):
-    build_data += ' from archive'
-    archived_build_url = buildbot.CreateArchivedBuildUrl(
-        master_name, builder_name, build_number)
-    self.mocked_urlfetch.register_handler(archived_build_url, build_data)
-
   def testGetBuildDataNotDownloadAgain(self):
     master_name = 'm'
     builder_name = 'b'
@@ -74,30 +67,11 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_build_data, build.data)
 
-  def testGetBuildDataFromArchive(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-
-    build = WfBuild.Create(master_name, builder_name, build_number)
-    build.put()
-    self._MockUrlfetchWithBuildDataFromArchive(
-        master_name,
-        builder_name,
-        build_number,
-        build_data='Test get build data')
-
-    build_util.DownloadBuildData(master_name, builder_name, build_number)
-
-    expected_build_data = 'Test get build data from archive'
-
-    self.assertEqual(expected_build_data, build.data)
-
   @mock.patch.object(
       buildbot,
-      'GetBuildDataFromBuildMaster',
+      'GetBuildDataFromMilo',
       return_value='Test get build data from build master')
-  def testGetBuildDataFromBuildMaster(self, _):
+  def testGetBuildDataFromMilo(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -109,29 +83,10 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_build_data, build.data)
 
-  def testDownloadBuildDataSourceFromCBE(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-    build = WfBuild.Create(master_name, builder_name, build_number)
-    build.put()
-
-    self.UpdateUnitTestConfigSettings('download_build_data_settings',
-                                      {'use_chrome_build_extract': True})
-    self._MockUrlfetchWithBuildDataFromArchive(
-        master_name,
-        builder_name,
-        build_number,
-        build_data='Test get build data')
-
-    build_util.DownloadBuildData(master_name, builder_name, build_number)
-
-    self.assertEqual(build.data_source, build_util.CHROME_BUILD_EXTRACT)
-
   @mock.patch.object(
       buildbot,
-      'GetBuildDataFromBuildMaster',
-      return_value='Test get build data from build master')
+      'GetBuildDataFromMilo',
+      return_value='Test get build data from milo')
   def testDownloadBuildDataSourceFromBM(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -139,17 +94,14 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     build = WfBuild.Create(master_name, builder_name, build_number)
     build.put()
 
-    self.UpdateUnitTestConfigSettings('download_build_data_settings',
-                                      {'use_chrome_build_extract': False})
-
     build_util.DownloadBuildData(master_name, builder_name, build_number)
 
-    self.assertEqual(build.data_source, build_util.BUILDBOT_MASTER)
+    self.assertEqual(build.data, 'Test get build data from milo')
 
   @mock.patch.object(
       buildbot,
-      'GetBuildDataFromBuildMaster',
-      return_value='Test get build data from build master')
+      'GetBuildDataFromMilo',
+      return_value='Test get build data from milo updated')
   def testDownloadBuildDataSourceFromBMUpateBuildData(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -159,13 +111,9 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     build.last_crawled_time = self._TimeBeforeNowBySeconds(360)
     build.put()
 
-    self.UpdateUnitTestConfigSettings('download_build_data_settings',
-                                      {'use_chrome_build_extract': False})
-
     build_util.DownloadBuildData(master_name, builder_name, build_number)
 
-    self.assertEqual(build.data_source, build_util.BUILDBOT_MASTER)
-    self.assertEqual(build.data, 'Test get build data from build master')
+    self.assertEqual(build.data, 'Test get build data from milo updated')
 
   def testGetBuildEndTime(self):
     cases = {

@@ -26,7 +26,7 @@ def _LatestBuildFailed(master_name, builder_name, build_number):
     if checked_build_number <= build_number:
       return True
 
-    checked_build_data = buildbot.GetBuildDataFromBuildMaster(
+    checked_build_data = buildbot.GetBuildDataFromMilo(
         master_name, builder_name, checked_build_number, http_client)
 
     if not checked_build_data:

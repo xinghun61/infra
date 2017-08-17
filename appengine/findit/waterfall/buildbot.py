@@ -176,13 +176,6 @@ def ParseStepUrl(url):
   return master_name, builder_name, int(build_number), step_name
 
 
-def CreateArchivedBuildUrl(master_name, builder_name, build_number):
-  """Creates the url for the given build from archived build info."""
-  builder_name = urllib.quote(builder_name)
-  return ('https://chrome-build-extract.appspot.com/p/%s/builders/%s/builds/%s'
-          '?json=1' % (master_name, builder_name, build_number))
-
-
 def CreateBuildUrl(master_name, builder_name, build_number):
   """Creates the url for the given build."""
   builder_name = urllib.quote(builder_name)
@@ -198,7 +191,7 @@ def CreateGtestResultPath(master_name, builder_name, build_number, step_name):
                                                                    step_name)
 
 
-def GetBuildDataFromBuildMaster(master_name, builder_name, build_number,
+def GetBuildDataFromMilo(master_name, builder_name, build_number,
                                 http_client):
   """Returns the json-format data of the build."""
   data = {
@@ -210,17 +203,6 @@ def GetBuildDataFromBuildMaster(master_name, builder_name, build_number,
                                             http_client)
   return _ProcessMiloData(response_json, master_name, builder_name,
                           str(build_number))
-
-
-def GetBuildDataFromArchive(master_name, builder_name, build_number,
-                            http_client):
-  """Returns the json-format data of the build from build archive."""
-  status_code, data = http_client.Get(
-      CreateArchivedBuildUrl(master_name, builder_name, build_number))
-  if status_code != 200:
-    return None
-  else:
-    return data
 
 
 def GetGtestResultLog(master_name, builder_name, build_number,

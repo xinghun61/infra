@@ -24,14 +24,14 @@ from waterfall.test import wf_testcase
 class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster', return_value=None)
+  @mock.patch.object(buildbot, 'GetBuildDataFromMilo', return_value=None)
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[124])
   def testIsLatestBuildFailedGetBuildDataFailed(self, *_):
     self.assertFalse(
         revert_and_notify_culprit_pipeline._LatestBuildFailed('m', 'b', 123))
 
   @mock.patch.object(
-      buildbot, 'GetBuildDataFromBuildMaster', return_value='{"data": "data"}')
+      buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
   @mock.patch.object(
       buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
   @mock.patch.object(buildbot, 'GetBuildResult')
@@ -41,7 +41,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         revert_and_notify_culprit_pipeline._LatestBuildFailed('m', 'b', 123))
 
   @mock.patch.object(
-      buildbot, 'GetBuildDataFromBuildMaster', return_value='{"data": "data"}')
+      buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
   @mock.patch.object(
       buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
   @mock.patch.object(buildbot, 'GetBuildResult')
@@ -52,7 +52,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(buildbot, 'GetBuildResult', return_value=buildbot.FAILURE)
   @mock.patch.object(
-      buildbot, 'GetBuildDataFromBuildMaster', return_value='{"data": "data"}')
+      buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[124])
   def testSendNotificationForTestCulprit(self, *_):
     master_name = 'm'
@@ -84,7 +84,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(buildbot, 'GetBuildResult', return_value=buildbot.FAILURE)
   @mock.patch.object(
-      buildbot, 'GetBuildDataFromBuildMaster', return_value='{"data": "data"}')
+      buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[124])
   def testSendNotificationToConfirmRevert(self, *_):
     master_name = 'm'
@@ -133,7 +133,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(buildbot, 'GetBuildResult', return_value=buildbot.SUCCESS)
   @mock.patch.object(
-      buildbot, 'GetBuildDataFromBuildMaster', return_value='{"data": "data"}')
+      buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
   @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[125])
   @mock.patch.object(revert_and_notify_culprit_pipeline,
                      'SendNotificationForCulpritPipeline')

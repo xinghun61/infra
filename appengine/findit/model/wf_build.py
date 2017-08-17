@@ -34,4 +34,3 @@ class WfBuild(BaseBuildModel):
   start_time = ndb.DateTimeProperty(indexed=False)
   completed = ndb.BooleanProperty(default=False, indexed=False)
   result = ndb.IntegerProperty(indexed=False)
-  data_source = ndb.StringProperty(indexed=False)

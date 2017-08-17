@@ -85,7 +85,6 @@ _MOCK_SWARMING_SETTINGS = {
 _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS = {
     'download_interval_seconds': 10,
     'memcache_master_download_expiration_seconds': 3600,
-    'use_chrome_build_extract': True,
     'use_ninja_output_log': True
 }
 
@@ -942,7 +941,6 @@ class ConfigTest(testing.AppengineTestCase):
         config._ValidateDownloadBuildDataSettings({
             'download_interval_seconds': {},  # Should be an int.
             'memcache_master_download_expiration_seconds': 10,
-            'use_chrome_build_extract': True,
             'use_ninja_output_log': False
         }))
     self.assertFalse(
@@ -950,28 +948,18 @@ class ConfigTest(testing.AppengineTestCase):
             'download_interval_seconds': 10,
             'memcache_master_download_expiration_seconds': [
             ],  # Should be an int.
-            'use_chrome_build_extract': True,
             'use_ninja_output_log': False
         }))
     self.assertFalse(
         config._ValidateDownloadBuildDataSettings({
             'download_interval_seconds': 10,
             'memcache_master_download_expiration_seconds': 3600,
-            'use_chrome_build_extract': 'blabla',  # Should be a bool.
-            'use_ninja_output_log': False
-        }))
-    self.assertFalse(
-        config._ValidateDownloadBuildDataSettings({
-            'download_interval_seconds': 10,
-            'memcache_master_download_expiration_seconds': 3600,
-            'use_chrome_build_extract': False,
             'use_ninja_output_log': 'blabla'  # Should be a bool.
         }))
     self.assertTrue(
         config._ValidateDownloadBuildDataSettings({
             'download_interval_seconds': 10,
             'memcache_master_download_expiration_seconds': 3600,
-            'use_chrome_build_extract': False,
             'use_ninja_output_log': False
         }))
 

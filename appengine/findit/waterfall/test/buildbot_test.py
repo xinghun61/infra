@@ -20,28 +20,6 @@ from waterfall import buildbot
 from waterfall.test import wf_testcase
 
 
-class DummyHttpClient(RetryHttpClient):
-
-  def __init__(self, status_code, response_content):
-    self.status_code = status_code
-    self.response_content = response_content
-    self.requests = []
-
-  def GetBackoff(self, *_):  # pragma: no cover
-    """Override to avoid sleep."""
-    return 0
-
-  def _Get(self, url, *_):
-    self.requests.append(url)
-    return self.status_code, self.response_content
-
-  def _Post(self, *_):  # pragma: no cover
-    pass
-
-  def _Put(self, *_):  # pragma: no cover
-    pass
-
-
 class BuildBotTest(unittest.TestCase):
 
   def setUp(self):
@@ -161,17 +139,6 @@ class BuildBotTest(unittest.TestCase):
       result = buildbot.ParseStepUrl(url)
       self.assertEqual(expected_result, result)
 
-  def testCreateArchivedBuildUrl(self):
-    master_name = 'a'
-    builder_name = 'Win7 Tests (1)'
-    build_number = 123
-    expected_url = ('https://chrome-build-extract.appspot.com/p/a/builders/'
-                    'Win7%20Tests%20%281%29/builds/123?json=1')
-
-    self.assertEqual(expected_url,
-                     buildbot.CreateArchivedBuildUrl(master_name, builder_name,
-                                                     build_number))
-
   def testCreateBuildUrl(self):
     master_name = 'a'
     builder_name = 'Win7 Tests (1)'
@@ -194,34 +161,8 @@ class BuildBotTest(unittest.TestCase):
                      buildbot.CreateGtestResultPath(master_name, builder_name,
                                                     build_number, step_name))
 
-  def testGetBuildDataFromArchiveSuccess(self):
-    master_name = 'a'
-    builder_name = 'b c'
-    build_number = 1
-    expected_url = ('https://chrome-build-extract.appspot.com/p/a/builders/'
-                    'b%20c/builds/1?json=1')
-    http_client = mock.create_autospec(RetryHttpClient)
-    http_client.Get.return_value = (200, 'abc')
-    data = buildbot.GetBuildDataFromArchive(master_name, builder_name,
-                                            build_number, http_client)
-    self.assertEqual('abc', data)
-    http_client.assert_has_calls([mock.call.Get(expected_url)])
-
-  def testGetBuildDataFromArchiveFailure(self):
-    master_name = 'a'
-    builder_name = 'b c'
-    build_number = 1
-    expected_url = ('https://chrome-build-extract.appspot.com/p/a/builders/'
-                    'b%20c/builds/1?json=1')
-    http_client = DummyHttpClient(404, 'Not Found')
-    data = buildbot.GetBuildDataFromArchive(master_name, builder_name,
-                                            build_number, http_client)
-    self.assertIsNone(data)
-    self.assertEqual(1, len(http_client.requests))
-    self.assertEqual(expected_url, http_client.requests[0])
-
   @mock.patch.object(rpc_util, 'DownloadJsonData')
-  def testGetBuildDataFromBuildMasterSuccess(self, mock_fn):
+  def testGetBuildDataFromMiloSuccess(self, mock_fn):
     master_name = 'a'
     builder_name = 'b c'
     build_number = 1
@@ -230,7 +171,7 @@ class BuildBotTest(unittest.TestCase):
     mock_fn.return_value = json.dumps(response)
 
     self.assertEqual('response',
-                     buildbot.GetBuildDataFromBuildMaster(
+                     buildbot.GetBuildDataFromMilo(
                          master_name, builder_name, build_number,
                          self.http_client))
 

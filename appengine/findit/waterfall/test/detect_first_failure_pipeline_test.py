@@ -18,7 +18,6 @@ from model.wf_build import WfBuild
 from model.wf_step import WfStep
 from waterfall import buildbot
 from waterfall import detect_first_failure_pipeline
-from waterfall import lock_util
 from waterfall.build_info import BuildInfo
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall.test import wf_testcase
@@ -32,11 +31,6 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     with self.mock_urlfetch() as urlfetch:
       self.mocked_urlfetch = urlfetch
-
-    def _WaitUntilDownloadAllowed(*_):
-      return True
-
-    self.mock(lock_util, 'WaitUntilDownloadAllowed', _WaitUntilDownloadAllowed)
 
   def _TimeBeforeNowBySeconds(self, seconds):
     return datetime.datetime.utcnow() - datetime.timedelta(0, seconds, 0)
@@ -54,7 +48,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     with open(file_name, 'r') as f:
       return f.read()
 
-  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testLookBackUntilGreenBuild(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -98,7 +92,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
 
-  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testFirstFailureLastPassUpdating(self, mock_fn):
     """last pass always should just be updated once."""
     master_name = 'm'
@@ -138,7 +132,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
 
-  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testStopLookingBackIfAllFailedStepsPassedInLastBuild(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -166,7 +160,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
 
-  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testAnalyzeSuccessfulBuild(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -183,7 +177,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(failure_info['failed'])
 
-  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testAnalyzeInfraExceptionBuild(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -200,7 +194,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(failure_info['failure_type'], failure_type.INFRA)
 
-  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testStopLookingBackIfFindTheFirstBuild(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -586,7 +580,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(builds, expected_builds)
 
-  @mock.patch.object(buildbot, 'GetBuildDataFromBuildMaster')
+  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testTestLevelFailedInfo(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'

@@ -220,7 +220,6 @@ class MastersTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({
         'download_interval_seconds': 10,
         'memcache_master_download_expiration_seconds': 3600,
-        'use_chrome_build_extract': True,
         'use_ninja_output_log': True
     }, waterfall_config.GetDownloadBuildDataSettings())
 
