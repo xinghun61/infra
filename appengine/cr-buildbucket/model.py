@@ -242,17 +242,26 @@ class TagIndex(ndb.Model):
       TagIndexEntry, repeated=True, indexed=False)
 
 
-def new_build_id():
-  """Returns a valid ndb.Key for a new Build.
+def create_build_id(dtime, include_random=True):
+  """Returns a valid build id, as an integer and based on a datetime.
 
   See model.Build's docstring, "Build key" section.
   """
   # Build ID bits: "0N{43}R{16}V{4}"
   # where N is now bits, R is random bits and V is version bits.
-  utcnow = utils.utcnow()
-  assert utcnow >= BEGINING_OF_THE_WORLD
-  delta = utcnow - BEGINING_OF_THE_WORLD
+  assert dtime
+  assert dtime >= BEGINING_OF_THE_WORLD
+  delta = dtime - BEGINING_OF_THE_WORLD
   now = int(round(delta.total_seconds() * 1000.))
   inverted_now = ~now & ((1 << 43) - 1)
-  suffix = random.getrandbits(16)
+  suffix = 0 if not include_random else random.getrandbits(16)
   return int((inverted_now << 20) | (suffix << 4))
+
+
+def new_build_id():
+  """Returns a valid id for a new Build.
+
+  See model.Build's docstring, "Build key" section.
+  """
+  return create_build_id(utils.utcnow())
+

@@ -288,6 +288,8 @@ class BuildBucketApi(remote.Service):
       retry_of=messages.IntegerField(10),
       canary=messages.BooleanField(11),
       # search by canary_preference is not supported
+      creation_ts_low=messages.IntegerField(12),
+      creation_ts_high=messages.IntegerField(13),
   )
 
   class SearchResponseMessage(messages.Message):
@@ -302,6 +304,16 @@ class BuildBucketApi(remote.Service):
   def search(self, request):
     """Searches for builds."""
     assert isinstance(request.tag, list)
+    build_id_low = None
+    build_id_high = None
+    if request.creation_ts_high is not None:
+      build_id_low = model.create_build_id(
+          utils.timestamp_to_datetime(request.creation_ts_high),
+          include_random=False)
+    if request.creation_ts_low is not None:
+      build_id_high = model.create_build_id(
+          utils.timestamp_to_datetime(request.creation_ts_low),
+          include_random=False)
     builds, next_cursor = service.search(
         buckets=request.bucket,
         tags=request.tag,
@@ -314,6 +326,8 @@ class BuildBucketApi(remote.Service):
         start_cursor=request.start_cursor,
         retry_of=request.retry_of,
         canary=request.canary,
+        build_id_low=build_id_low,
+        build_id_high=build_id_high,
     )
     return self.SearchResponseMessage(
         builds=map(api_common.build_to_message, builds),

@@ -553,7 +553,7 @@ def search(
     buckets=None, tags=None,
     status=None, result=None, failure_reason=None, cancelation_reason=None,
     created_by=None, max_builds=None, start_cursor=None,
-    retry_of=None, canary=None):
+    retry_of=None, canary=None, build_id_low=None, build_id_high=None):
   """Searches for builds.
 
   Args:
@@ -572,6 +572,10 @@ def search(
     retry_of (int): value of retry_of attribute.
     canary (bool): if not None, value of "canary" field.
       Search by canary_preference is not supported.
+    build_id_low (int): if not None, used to upper bound the age of a
+      build (by its creation time) in the search results.
+    build_id_high (int): if not None, used to lower bound the age of a
+      build (by its creation time) in the search results.
 
   Returns:
     A tuple:
@@ -579,6 +583,10 @@ def search(
       next_cursor (string): cursor for the next page.
         None if there are no more builds.
   """
+  if (build_id_low is not None
+      and build_id_high is not None
+      and build_id_low >= build_id_high):
+    return [], None
   if buckets is not None and not isinstance(buckets, list):
     raise errors.InvalidInputError('Buckets must be a list or None')
   validate_tags(tags, 'search')
@@ -596,7 +604,8 @@ def search(
 
   search_args = (
     buckets, tags, status, result, failure_reason, cancelation_reason,
-    created_by, max_builds, start_cursor, retry_of, canary)
+    created_by, max_builds, start_cursor, retry_of, canary,
+    build_id_low, build_id_high)
 
   is_tag_index_cursor = (
     start_cursor and TAG_INDEX_SEARCH_CURSOR_RE.match(start_cursor))
@@ -635,7 +644,8 @@ def search(
 
 def _query_search(
     buckets, tags, status, result, failure_reason, cancelation_reason,
-    created_by, max_builds, start_cursor, retry_of, canary):
+    created_by, max_builds, start_cursor, retry_of, canary,
+    build_id_low, build_id_high):
   """Searches for builds using NDB query. For args doc, see search().
 
   Assumes:
@@ -664,6 +674,10 @@ def _query_search(
   # buckets is None if the current identity has access to ALL buckets.
   if buckets and not check_buckets_locally:
     q = q.filter(model.Build.bucket.IN(buckets))
+  if build_id_high is not None:
+    q = q.filter(model.Build.key < ndb.Key(model.Build, build_id_high))
+  if build_id_low is not None:
+    q = q.filter(model.Build.key >= ndb.Key(model.Build, build_id_low))
   q = q.order(model.Build.key)
 
   local_predicate = None
@@ -684,7 +698,8 @@ def _query_search(
 
 def _tag_index_search(
     buckets, tags, status, result, failure_reason, cancelation_reason,
-    created_by, max_builds, start_cursor, retry_of, canary):
+    created_by, max_builds, start_cursor, retry_of, canary,
+    build_id_low, build_id_high):
   """Searches for builds using TagIndex entities. For args doc, see search().
 
   Assumes:
@@ -738,10 +753,17 @@ def _tag_index_search(
 
   # Skip entries with build ids that are less or equal to the id in the cursor.
   if start_cursor:
-    # The cursor is an minimum build id, exclusive. Such cursor is resilient
+    # The cursor is a minimum build id, exclusive. Such cursor is resilient
     # to duplicates and additions of index entries to beginning or end.
     assert TAG_INDEX_SEARCH_CURSOR_RE.match(start_cursor)
     min_id_exclusive = int(start_cursor[len('id>'):])
+    if build_id_high is not None and min_id_exclusive >= build_id_high:
+      # If the min id is greater than the requested max, we should give up.
+      return [], None
+    if build_id_low is not None and build_id_low > min_id_exclusive:
+      # If the minimum build id requested is greater than the cursor, we need
+      # to skip more entries. Subtract 1 because build_id_low is inclusive.
+      min_id_exclusive = build_id_low - 1
     # TODO(nodir): optimization: use binary search.
     while entry_index >= 0:
       if idx.entries[entry_index].build_id > min_id_exclusive:
@@ -770,7 +792,7 @@ def _tag_index_search(
   skipped_entries = 0
   inconsistent_entries = 0
   eof = False
-  while len(result) < max_builds and entry_index >= 0:
+  while len(result) < max_builds:
     fetch_count = max_builds - len(result)
     entries_to_fetch = [] # ordered by build id by ascending.
     while entry_index >= 0:
@@ -781,6 +803,15 @@ def _tag_index_search(
       if prev and prev.build_id == e.build_id:
         # Tolerate duplicates.
         continue
+      if build_id_low is not None and e.build_id < build_id_low:
+        # Skip build ids smaller than the ones requested.
+        continue
+      if build_id_high is not None and e.build_id >= build_id_high:
+        # Since the index is ordered by ascending build ids, if we exceed
+        # build_id_high, we should stop and not return a cursor.
+        entry_index = -1
+        eof = True
+        break
       # If we filter by bucket, check it here without fetching the build.
       # This is not a security check.
       if buckets and e.bucket not in buckets:
