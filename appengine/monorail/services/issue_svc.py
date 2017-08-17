@@ -1102,8 +1102,8 @@ class IssueService(object):
     labels_remove = [l for l in labels_remove if l]
 
     logging.info(
-        'Bulk edit to project_id %s issue.local_id %s',
-        project_id, issue.local_id)
+        'Bulk edit to project_id %s issue.local_id %s, comment %r',
+        project_id, issue.local_id, comment)
     if iids_to_invalidate is None:
       iids_to_invalidate = set([issue.issue_id])
       invalidate = True
@@ -1262,6 +1262,7 @@ class IssueService(object):
     # If this was a no-op with no comment, bail out and don't save,
     # invalidate, or re-index anything.
     if not amendments and (not comment or not comment.strip()):
+      logging.info('No amendments and no comment, so this is a no-op.')
       return [], None
 
     # Note: no need to check for collisions when the user is doing a delta.

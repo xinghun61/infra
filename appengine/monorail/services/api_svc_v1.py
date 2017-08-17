@@ -91,6 +91,9 @@ def monorail_api_method(
           raise permissions.PermissionException(
               'This request is not allowed in read-only mode')
         requester = endpoints.get_current_user()
+        logging.info('requester is %r', requester)
+        logging.info('args is %r', args)
+        logging.info('kwargs is %r', kwargs)
         auth_client_ids, auth_emails = (
             client_config_svc.GetClientConfigSvc().GetClientIDEmails())
         if settings.dev_mode:
