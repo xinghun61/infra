@@ -18,7 +18,7 @@ import (
 
 const (
 	// timeToStoreFiles is the time after which files are deleted.
-	timeToStoreFiles = 24 * 365 * time.Hour // 1 year
+	timeToStoreFiles = 24 * 7 * 24 * time.Hour // 24 weeks ~= 6 months
 )
 
 func deleteOldResultsHandler(rc *router.Context) {

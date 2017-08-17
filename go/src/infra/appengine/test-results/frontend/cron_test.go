@@ -76,7 +76,7 @@ func TestDeleteOldResults(t *testing.T) {
 		// Create one entity that is recent and should not be deleted.
 		createTestFile(
 			ctx, "results-small.json",
-			clock.Get(ctx).Now().Add(-time.Hour*200*24).UTC(), []string{"foo"})
+			clock.Get(ctx).Now().Add(-24*time.Hour).UTC(), []string{"foo"})
 
 		// Disable datastore inconsistency to avoid tests flakiness.
 		withTestingContext := func(c *router.Context, next router.Handler) {
