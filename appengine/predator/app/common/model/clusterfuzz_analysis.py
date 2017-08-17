@@ -16,28 +16,28 @@ _CLUSTERFUZZ_TESTCASE_URL_TEMPLATE = (
 class ClusterfuzzAnalysis(CrashAnalysis):
   """Represents an analysis of a Clusterfuzz crash."""
   # Customized properties for Fracas crash.
-  crashed_type = ndb.StringProperty()
-  crashed_address = ndb.StringProperty()
+  crash_type = ndb.StringProperty()
+  crash_address = ndb.StringProperty()
   sanitizer = ndb.StringProperty()
   job_type = ndb.StringProperty()
-  testcase = ndb.StringProperty()
+  testcase_id = ndb.StringProperty()
 
   def Reset(self):
     super(ClusterfuzzAnalysis, self).Reset()
-    self.crashed_type = None
-    self.crashed_address = None
+    self.crash_type = None
+    self.crash_address = None
     self.sanitizer = None
     self.job_type = None
-    self.testcase = None
+    self.testcase_id = None
 
   def Initialize(self, crash_data):
     """(Re)Initializes a CrashAnalysis ndb.Model from ``ClusterfuzzData``."""
     super(ClusterfuzzAnalysis, self).Initialize(crash_data)
-    self.crashed_type = crash_data.crashed_type
-    self.crashed_address = crash_data.crashed_address
+    self.crash_type = crash_data.crash_type
+    self.crash_address = crash_data.crash_address
     self.sanitizer = crash_data.sanitizer
     self.job_type = crash_data.job_type
-    self.testcase = crash_data.testcase
+    self.testcase_id = crash_data.testcase_id
 
   @property
   def client_id(self):  # pragma: no cover
@@ -45,25 +45,27 @@ class ClusterfuzzAnalysis(CrashAnalysis):
 
   @property
   def crash_url(self):  # pragma: no cover
-    return (_CLUSTERFUZZ_TESTCASE_URL_TEMPLATE % self.testcase
-            if self.testcase else '')
+    return (_CLUSTERFUZZ_TESTCASE_URL_TEMPLATE % self.testcase_id
+            if self.testcase_id else '')
 
   @property
   def customized_data(self):
     return {
         'regression_range': self.regression_range,
+        'crash_type': self.crash_type,
+        'crash_address': self.crash_address,
         'dependencies': self.dependencies,
         'dependency_rolls': self.dependency_rolls,
-        'crashed_type': self.crashed_type,
-        'crashed_address': self.crashed_address,
         'sanitizer': self.sanitizer,
         'job_type': self.job_type,
-        'testcase': self.testcase
+        'testcase_id': self.testcase_id,
     }
 
   def ToJson(self):
     """Converts the ClusterfuzzAnalysis to json that predator can analyze."""
     crash_json = super(ClusterfuzzAnalysis, self).ToJson()
+    crash_json['crash_revision'] = self.crashed_version
+
     customized_data = copy.deepcopy(self.customized_data)
     if self.dependencies:
       customized_data['dependencies'] = [

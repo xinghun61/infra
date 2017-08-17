@@ -143,7 +143,6 @@ class CrashAnalysisTest(AppengineTestCase):
 
   def testToCrashReport(self):
     """Tests converting ``CrashAnalysis`` to ``CrashReport``."""
-    chrome_version = '50.2500.0.0'
     signature = 'signature/here'
     channel = 'canary'
     platform = 'mac'
@@ -151,7 +150,7 @@ class CrashAnalysisTest(AppengineTestCase):
     raw_crash_data = self.GetDummyChromeCrashData(
         client_id=CrashClient.FRACAS,
         channel=channel, platform=platform,
-        signature=signature, version=chrome_version,
+        signature=signature, version=None,
         regression_range=regression_range,
         process_type='renderer')
     predator = self.GetMockPredatorApp(client_id=CrashClient.FRACAS)
@@ -159,7 +158,7 @@ class CrashAnalysisTest(AppengineTestCase):
     analysis = CrashAnalysis()
     analysis.Initialize(crash_data)
 
-    expected_crash_report = CrashReport(chrome_version, signature, platform,
+    expected_crash_report = CrashReport(None, signature, platform,
                                         None, regression_range, {}, {})
     self.assertTupleEqual(analysis.ToCrashReport(), expected_crash_report)
 
@@ -187,8 +186,7 @@ class CrashAnalysisTest(AppengineTestCase):
     analysis.stack_trace = 'stack trace'
 
     self.assertDictEqual(analysis.ToJson(),
-                         {'chrome_version': analysis.crashed_version,
-                          'signature': analysis.signature,
+                         {'signature': analysis.signature,
                           'platform': analysis.platform,
                           'stack_trace': analysis.stack_trace})
 
@@ -197,8 +195,7 @@ class CrashAnalysisTest(AppengineTestCase):
     callstack = CallStack(0, [frame])
     analysis.stacktrace = Stacktrace([callstack], callstack)
     self.assertDictEqual(analysis.ToJson(),
-                         {'chrome_version': analysis.crashed_version,
-                          'signature': analysis.signature,
+                         {'signature': analysis.signature,
                           'platform': analysis.platform,
                           'stack_trace': analysis.stacktrace.ToString()})
 

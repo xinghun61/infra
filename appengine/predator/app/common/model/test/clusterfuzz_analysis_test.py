@@ -19,13 +19,13 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
   def testClusterfuzzAnalysisReset(self):
     """Tests ``Reset`` reset all properties."""
     analysis = ClusterfuzzAnalysis()
-    analysis.crashed_type = 'check'
+    analysis.crash_type = 'check'
     analysis.crash_address = '0x0000'
     analysis.sanitizer = 'ASAN'
     analysis.job_type = 'android_asan_win'
     analysis.Reset()
-    self.assertIsNone(analysis.crashed_type)
-    self.assertIsNone(analysis.crashed_address)
+    self.assertIsNone(analysis.crash_type)
+    self.assertIsNone(analysis.crash_address)
     self.assertIsNone(analysis.sanitizer)
     self.assertIsNone(analysis.job_type)
 
@@ -60,50 +60,50 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
     crash_data = predator.GetCrashData(raw_crash_data)
     analysis = ClusterfuzzAnalysis()
     analysis.Initialize(crash_data)
-    self.assertEqual(analysis.crashed_type, crash_data.crashed_type)
-    self.assertEqual(analysis.crashed_address, crash_data.crashed_address)
+    self.assertEqual(analysis.crash_type, crash_data.crash_type)
+    self.assertEqual(analysis.crash_address, crash_data.crash_address)
     self.assertEqual(analysis.job_type, crash_data.job_type)
     self.assertEqual(analysis.sanitizer, crash_data.sanitizer)
 
   def testProperties(self):
-    testcase = '1232435'
+    testcase_id = '1232435'
 
-    analysis = ClusterfuzzAnalysis.Create(testcase)
-    analysis.identifiers = testcase
+    analysis = ClusterfuzzAnalysis.Create(testcase_id)
+    analysis.identifiers = testcase_id
 
-    self.assertEqual(analysis.identifiers, testcase)
+    self.assertEqual(analysis.identifiers, testcase_id)
 
   def testToJson(self):
-    testcase = '1234'
+    testcase_id = '1234'
     job_type = 'asan'
-    analysis = ClusterfuzzAnalysis.Create(testcase)
-    analysis.testcase = testcase
+    analysis = ClusterfuzzAnalysis.Create(testcase_id)
+    analysis.testcase_id = testcase_id
     analysis.job_type = job_type
 
     expected_json = {
         'regression_range': None,
         'dependencies': None,
         'dependency_rolls': None,
-        'crashed_type': None,
-        'crashed_address': None,
+        'crash_type': None,
+        'crash_address': None,
         'sanitizer': None,
         'job_type': job_type,
-        'testcase': testcase
+        'testcase_id': testcase_id,
     }
 
     self.assertDictEqual(analysis.ToJson(),
                          {'customized_data': expected_json,
                           'platform': None,
                           'stack_trace': None,
-                          'chrome_version': None,
+                          'crash_revision': None,
                           'signature': None})
 
   def testToJsonForNonEmptyDependencies(self):
     """Tests ``ToJson`` for non-empty self.dependencies."""
-    testcase = '1234'
+    testcase_id = '1234'
     job_type = 'asan'
-    analysis = ClusterfuzzAnalysis.Create(testcase)
-    analysis.testcase = testcase
+    analysis = ClusterfuzzAnalysis.Create(testcase_id)
+    analysis.testcase_id = testcase_id
     analysis.job_type = job_type
     analysis.dependencies = {
         'src': Dependency('src', 'https://repo', 'rev'),
@@ -120,11 +120,11 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
         'regression_range': None,
         'dependencies': dependencies_json,
         'dependency_rolls': None,
-        'crashed_type': None,
-        'crashed_address': None,
+        'crash_type': None,
+        'crash_address': None,
         'sanitizer': None,
         'job_type': job_type,
-        'testcase': testcase,
+        'testcase_id': testcase_id,
     }
 
     self.assertDictEqual(
@@ -133,16 +133,16 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
             'customized_data': expected_json,
             'platform': None,
             'stack_trace': None,
-            'chrome_version': None,
+            'crash_revision': None,
             'signature': None
         })
 
   def testToJsonForNonEmptyDependencyRolls(self):
     """Tests ``ToJson`` for non-empty self.dependency_rolls."""
-    testcase = '1234'
+    testcase_id = '1234'
     job_type = 'asan'
-    analysis = ClusterfuzzAnalysis.Create(testcase)
-    analysis.testcase = testcase
+    analysis = ClusterfuzzAnalysis.Create(testcase_id)
+    analysis.testcase_id = testcase_id
     analysis.job_type = job_type
     analysis.dependency_rolls = {
         'src/': DependencyRoll('src/', 'https://repo', 'rev1', 'rev2'),
@@ -158,16 +158,16 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
         'regression_range': None,
         'dependencies': None,
         'dependency_rolls': dependency_rolls_json,
-        'crashed_type': None,
-        'crashed_address': None,
+        'crash_type': None,
+        'crash_address': None,
         'sanitizer': None,
         'job_type': job_type,
-        'testcase': testcase
+        'testcase_id': testcase_id
     }
 
     self.assertDictEqual(analysis.ToJson(),
                          {'customized_data': expected_json,
                           'platform': None,
                           'stack_trace': None,
-                          'chrome_version': None,
+                          'crash_revision': None,
                           'signature': None})

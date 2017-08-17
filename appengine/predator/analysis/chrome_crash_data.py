@@ -91,6 +91,7 @@ class ChromeCrashData(CrashData):
       top_n_frames (int): number of the frames in stacktrace we should parse.
     """
     super(ChromeCrashData, self).__init__(crash_data)
+    self._crashed_version = crash_data['chrome_version']
     self._channel = crash_data['customized_data']['channel']
     self._historical_metadata = crash_data['customized_data'][
         'historical_metadata']

@@ -24,8 +24,7 @@ class CrashDataTest(AnalysisTestCase):
 
     self.assertEqual(crash_data.raw_stacktrace,
                      raw_crash_data['stack_trace'] or '')
-    self.assertEqual(crash_data.crashed_version,
-                     raw_crash_data['chrome_version'])
+    self.assertIsNone(crash_data.crashed_version)
     self.assertEqual(crash_data.signature,
                      raw_crash_data['signature'])
     self.assertEqual(crash_data.platform,

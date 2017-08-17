@@ -70,13 +70,13 @@ class AnalysisTestCase(BaseTestCase):  #pragma: no cover.
   def GetDummyClusterfuzzData(
       self, client_id='mock_client', version='1', signature='signature',
       platform='win', stack_trace=None, regression_range=None,
-      testcase='213412343', crashed_type='check', crashed_address='0x0023',
+      testcase_id='213412343', crash_type='check', crash_address='0x0023',
       job_type='android_asan', sanitizer='ASAN', dependencies=None,
-      dependency_rolls=None, redo=False):
-    crash_identifiers = {'testcase': testcase}
+      dependency_rolls=None, redo=False, security_flag=False):
+    crash_identifiers = {'testcase_id': testcase_id}
     customized_data = {
-        'crashed_type': crashed_type,
-        'crashed_address': crashed_address,
+        'crash_type': crash_type,
+        'crash_address': crash_address,
         'job_type': job_type,
         'sanitizer': sanitizer,
         'regression_range': regression_range,
@@ -87,11 +87,12 @@ class AnalysisTestCase(BaseTestCase):  #pragma: no cover.
                                                   'repo_url': 'https://repo',
                                                   'old_revision': 'rev1',
                                                   'new_revision': 'rev5'}],
-        'testcase': testcase
+        'testcase_id': testcase_id,
+        'security_flag': security_flag,
     }
 
     crash_data = {
-        'chrome_version': version,
+        'crash_revision': version,
         'signature': signature,
         'platform': platform,
         'stack_trace': stack_trace,

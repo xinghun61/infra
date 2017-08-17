@@ -31,5 +31,7 @@ class ChromeCrashAnalysis(CrashAnalysis):  # pylint: disable=W0223
 
   def ToJson(self):
     crash_json = super(ChromeCrashAnalysis, self).ToJson()
+    crash_json['chrome_version'] = self.crashed_version
+
     crash_json['customized_data'] = self.customized_data
     return crash_json

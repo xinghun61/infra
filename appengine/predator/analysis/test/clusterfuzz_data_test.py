@@ -24,18 +24,20 @@ class CusterfuzzDataTest(AnalysisTestCase):
     """Tests ``ClusterfuzzData`` specific properties."""
     raw_crash_data = self.GetDummyClusterfuzzData(sanitizer='ASAN')
     crash_data = ClusterfuzzData(raw_crash_data)
-    self.assertEqual(crash_data.crashed_address,
-                     raw_crash_data['customized_data']['crashed_address'])
-    self.assertEqual(crash_data.crashed_type,
-                     raw_crash_data['customized_data']['crashed_type'])
+    self.assertEqual(crash_data.crash_address,
+                     raw_crash_data['customized_data']['crash_address'])
+    self.assertEqual(crash_data.crash_type,
+                     raw_crash_data['customized_data']['crash_type'])
     self.assertEqual(crash_data.sanitizer,
                      SanitizerType.ADDRESS_SANITIZER)
     self.assertEqual(crash_data.job_type,
                      raw_crash_data['customized_data']['job_type'])
     self.assertEqual(crash_data.regression_range,
                      raw_crash_data['customized_data']['regression_range'])
-    self.assertEqual(crash_data.testcase,
-                     raw_crash_data['customized_data']['testcase'])
+    self.assertEqual(crash_data.testcase_id,
+                     raw_crash_data['customized_data']['testcase_id'])
+    self.assertEqual(crash_data.security_flag,
+                     raw_crash_data['customized_data']['security_flag'])
 
   @mock.patch('analysis.clusterfuzz_parser.ClusterfuzzParser.Parse')
   def testParseStacktraceFailed(self, mock_parse):
@@ -93,4 +95,4 @@ class CusterfuzzDataTest(AnalysisTestCase):
         self.GetDummyClusterfuzzData(),
         ChromeDependencyFetcher(self.GetMockRepoFactory()))
 
-    self.assertEqual(crash_data.identifiers, crash_data.testcase)
+    self.assertEqual(crash_data.identifiers, crash_data.testcase_id)

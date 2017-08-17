@@ -225,7 +225,6 @@ class CrashAnalysis(ndb.Model):
         self.stacktrace.ToString() if self.stacktrace else None)
 
     return {
-        'chrome_version': self.crashed_version,
         'signature': self.signature,
         'platform': self.platform,
         'stack_trace': raw_stacktrace

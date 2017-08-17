@@ -52,7 +52,7 @@ class CrashData(object):
           }
       }
     """
-    self._crashed_version = crash_data['chrome_version']
+    self._crashed_version = None
     self._signature = crash_data['signature']
     self._platform = self.NormalizePlatform(crash_data['platform'])
     # The raw_stacktrace can be a string or a list of strings, or any json
