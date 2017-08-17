@@ -23,11 +23,13 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
     analysis.crash_address = '0x0000'
     analysis.sanitizer = 'ASAN'
     analysis.job_type = 'android_asan_win'
+    analysis.security_flag = True
     analysis.Reset()
     self.assertIsNone(analysis.crash_type)
     self.assertIsNone(analysis.crash_address)
     self.assertIsNone(analysis.sanitizer)
     self.assertIsNone(analysis.job_type)
+    self.assertFalse(analysis.security_flag)
 
   def testInitializeWithCrashData(self):
     """Tests ``Initialize`` initialize all properties from crash data."""
@@ -64,6 +66,7 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
     self.assertEqual(analysis.crash_address, crash_data.crash_address)
     self.assertEqual(analysis.job_type, crash_data.job_type)
     self.assertEqual(analysis.sanitizer, crash_data.sanitizer)
+    self.assertEqual(analysis.security_flag, crash_data.security_flag)
 
   def testProperties(self):
     testcase_id = '1232435'
@@ -79,6 +82,7 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
     analysis = ClusterfuzzAnalysis.Create(testcase_id)
     analysis.testcase_id = testcase_id
     analysis.job_type = job_type
+    analysis.security_flag = True
 
     expected_json = {
         'regression_range': None,
@@ -89,6 +93,7 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
         'sanitizer': None,
         'job_type': job_type,
         'testcase_id': testcase_id,
+        'security_flag': True,
     }
 
     self.assertDictEqual(analysis.ToJson(),
@@ -124,6 +129,7 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
         'crash_address': None,
         'sanitizer': None,
         'job_type': job_type,
+        'security_flag': False,
         'testcase_id': testcase_id,
     }
 
@@ -161,6 +167,7 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
         'crash_type': None,
         'crash_address': None,
         'sanitizer': None,
+        'security_flag': False,
         'job_type': job_type,
         'testcase_id': testcase_id
     }

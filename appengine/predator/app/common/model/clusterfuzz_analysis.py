@@ -21,6 +21,7 @@ class ClusterfuzzAnalysis(CrashAnalysis):
   sanitizer = ndb.StringProperty()
   job_type = ndb.StringProperty()
   testcase_id = ndb.StringProperty()
+  security_flag = ndb.BooleanProperty(default=False)
 
   def Reset(self):
     super(ClusterfuzzAnalysis, self).Reset()
@@ -29,6 +30,7 @@ class ClusterfuzzAnalysis(CrashAnalysis):
     self.sanitizer = None
     self.job_type = None
     self.testcase_id = None
+    self.security_flag = False
 
   def Initialize(self, crash_data):
     """(Re)Initializes a CrashAnalysis ndb.Model from ``ClusterfuzzData``."""
@@ -38,6 +40,7 @@ class ClusterfuzzAnalysis(CrashAnalysis):
     self.sanitizer = crash_data.sanitizer
     self.job_type = crash_data.job_type
     self.testcase_id = crash_data.testcase_id
+    self.security_flag = crash_data.security_flag
 
   @property
   def client_id(self):  # pragma: no cover
@@ -59,6 +62,7 @@ class ClusterfuzzAnalysis(CrashAnalysis):
         'sanitizer': self.sanitizer,
         'job_type': self.job_type,
         'testcase_id': self.testcase_id,
+        'security_flag': self.security_flag,
     }
 
   def ToJson(self):
