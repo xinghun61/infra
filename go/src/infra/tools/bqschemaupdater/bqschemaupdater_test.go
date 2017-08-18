@@ -75,8 +75,8 @@ func TestBQField(t *testing.T) {
 
 func TestTableDef(t *testing.T) {
 	want := &pb.TableDef{
-		DatasetId: "test_dataset",
-		TableId:   "test_table",
+		Dataset: pb.TableDef_AGGREGATED,
+		TableId: "test_table",
 		Fields: []*pb.FieldSchema{
 			{
 				Name:        "field1",
@@ -110,7 +110,7 @@ func TestTableDef(t *testing.T) {
 func TestUpdateFromTableDef(t *testing.T) {
 	ctx := context.Background()
 	ts := localTableStore{}
-	datasetID := "test_dataset"
+	datasetID := pb.TableDef_AGGREGATED.ID()
 	tableID := "test_table"
 
 	field := &pb.FieldSchema{
@@ -129,9 +129,9 @@ func TestUpdateFromTableDef(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		td := &pb.TableDef{
-			DatasetId: datasetID,
-			TableId:   tableID,
-			Fields:    tc,
+			Dataset: pb.TableDef_AGGREGATED,
+			TableId: tableID,
+			Fields:  tc,
 		}
 		err := updateFromTableDef(ctx, ts, td)
 		if err != nil {

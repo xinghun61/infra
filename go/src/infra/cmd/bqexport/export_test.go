@@ -16,7 +16,10 @@ import (
 
 var genFlag = flag.Bool("test.generate", false, "Instead of testing, regenerate the golden file.")
 
-var goldenPath = filepath.Join("testing", "golden.json")
+const (
+	testOutDir  = "test_data"
+	testOutName = "golden.json"
+)
 
 func TestBQExport(t *testing.T) {
 	t.Parallel()
@@ -27,7 +30,8 @@ func TestBQExport(t *testing.T) {
 		Name:    "TestSchema",
 	}
 	if *genFlag {
-		if err := exp.Export(c, goldenPath); err != nil {
+		exp.OutDir = testOutDir
+		if err := exp.Export(c, testOutName); err != nil {
 			t.Fatalf("failed to regenerate golden path: %s", err)
 		}
 		return
@@ -35,12 +39,13 @@ func TestBQExport(t *testing.T) {
 
 	var gen []byte
 	err := withTempDir(func(tdir string) error {
-		outPath := filepath.Join(tdir, "output.json")
-		if err := exp.Export(c, outPath); err != nil {
+		exp.OutDir = tdir
+		if err := exp.Export(c, ""); err != nil {
 			return err
 		}
 
 		// Compare against the golden file.
+		outPath := filepath.Join(tdir, "raw_events", "testing_test_schema_table.json")
 		var err error
 		gen, err = ioutil.ReadFile(outPath)
 		return err
@@ -49,6 +54,7 @@ func TestBQExport(t *testing.T) {
 		t.Fatalf("failed to generate schema file: %s", err)
 	}
 
+	goldenPath := filepath.Join(testOutDir, "raw_events", testOutName)
 	golden, err := ioutil.ReadFile(goldenPath)
 	if err != nil {
 		t.Fatalf("failed to read golden file: %s", err)

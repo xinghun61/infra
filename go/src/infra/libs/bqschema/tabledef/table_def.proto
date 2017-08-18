@@ -1,11 +1,21 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
 syntax = "proto3";
 
 package tabledef;
 
 message TableDef {
-  // dataset_id should be `raw_events` and `aggregated` to differentiate
-  // between events sent directly from code and events aggregated by Dataflow.
-  string dataset_id = 1;
+  // DataSet is the set of BigQuery event monitoring data sets supported by
+  // Chrome Infrastructure.
+  enum DataSet {
+    // Events sent directly from code.
+    RAW_EVENTS = 0;
+    // Events aggregated by Cloud Dataflow.
+    AGGREGATED = 1;
+  }
+  DataSet dataset = 1;
   // Name of the table.
   string table_id = 2;
   // Human-readable name of the table. (optional)

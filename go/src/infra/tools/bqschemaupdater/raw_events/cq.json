@@ -1,5 +1,5 @@
 {
-	"dataset_id": "raw_events",
+	"dataset": "RAW_EVENTS",
 	"table_id": "cq",
 	"name": "CQ Events",
 	"description": "Events from commit queue. This was closely modeled after the JSON data that is sent to chromium-cq-status.appspot.com. All tags and certain fields, however, were excluded: owner, message, state, timestamp. Fields that have been renamed have noted this in their description.",

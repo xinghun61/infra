@@ -10,7 +10,7 @@ import (
 
 // TestSchemaTable is the TableDef associated with TestSchema.
 var TestSchemaTable = tabledef.TableDef{
-	DatasetId:                  "dataset-id",
+	Dataset:                    tabledef.TableDef_RAW_EVENTS,
 	Description:                "Table Def Description",
 	TableId:                    "table-id",
 	Name:                       "Friendly Name",

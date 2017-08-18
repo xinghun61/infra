@@ -53,7 +53,7 @@ func tableDef(r io.Reader) *pb.TableDef {
 }
 
 func updateFromTableDef(ctx context.Context, ts tableStore, td *pb.TableDef) error {
-	_, err := ts.getTableMetadata(ctx, td.DatasetId, td.TableId)
+	_, err := ts.getTableMetadata(ctx, td.Dataset.ID(), td.TableId)
 	if errNotFound(err) {
 		var options []bigquery.CreateTableOption
 		if td.PartitionTable {
@@ -65,7 +65,7 @@ func updateFromTableDef(ctx context.Context, ts tableStore, td *pb.TableDef) err
 			tp := bigquery.TimePartitioning{Expiration: d}
 			options = append(options, tp)
 		}
-		err = ts.createTable(ctx, td.DatasetId, td.TableId, options...)
+		err = ts.createTable(ctx, td.Dataset.ID(), td.TableId, options...)
 		if err != nil {
 			return err
 		}
@@ -75,7 +75,7 @@ func updateFromTableDef(ctx context.Context, ts tableStore, td *pb.TableDef) err
 		Description: td.Description,
 		Schema:      bqSchema(td.Fields),
 	}
-	err = ts.updateTable(ctx, td.DatasetId, td.TableId, md)
+	err = ts.updateTable(ctx, td.Dataset.ID(), td.TableId, md)
 	return err
 }
 

@@ -43,10 +43,11 @@ import (
 
 var (
 	pkg      = flag.String("package", "", "Name of the package to import from. If empty, use current working directory.")
-	name     = flag.String("name", "", "Name of the struct within 'package' to export.")
+	name     = flag.String("name", "", "(Required) Name of the struct within 'package' to export.")
 	tableDef = flag.String("table-def-name", "", "Name of the table definition within 'package'. If empty, use <name>Table.")
-	out      = flag.String("out", "",
-		"Path to the output JSON File. If not supplied, the JSON will be generated in the current working directory.")
+	outDir   = flag.String("out-dir", "",
+		"(Required) Path to the root output directory. The JSON file will be written to a subdirectory based on its dataset.")
+	outName = flag.String("out-name", "", "Output JSON filename. If empty, one will be derived from -name.")
 )
 
 func main() {
@@ -55,12 +56,13 @@ func main() {
 		Package:  *pkg,
 		Name:     *name,
 		TableDef: *tableDef,
+		OutDir:   *outDir,
 	}
 
 	c := context.Background()
 	c = gologger.StdConfig.Use(c)
 
-	if err := exp.Export(c, *out); err != nil {
+	if err := exp.Export(c, *outName); err != nil {
 		errors.Log(c, err)
 		os.Exit(1)
 	}

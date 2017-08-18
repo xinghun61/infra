@@ -48,15 +48,18 @@ type Exporter struct {
 	Package  string
 	Name     string
 	TableDef string
+	OutDir   string
 }
 
 // Export writes the BigQuery schema JSON to the specified output file.
-func (e *Exporter) Export(c context.Context, out string) error {
+func (e *Exporter) Export(c context.Context, fileName string) error {
 	srcDir := ""
 
-	name := e.Name
-	if name == "" {
+	switch {
+	case e.Name == "":
 		return errors.New("you must supply a name (-name)")
+	case e.OutDir == "":
+		return errors.New("an output directory is required (-outdir)")
 	}
 
 	pkg := e.Package
@@ -70,31 +73,25 @@ func (e *Exporter) Export(c context.Context, out string) error {
 
 	tableDef := e.TableDef
 	if tableDef == "" {
-		tableDef = name + "Table"
+		tableDef = e.Name + "Table"
 	}
 
-	if out == "" {
-		out = fmt.Sprintf("bq_%s.json", strings.Map(func(r rune) rune {
-			if unicode.IsLetter(r) && r <= unicode.MaxASCII {
-				return unicode.ToLower(r)
-			}
-			return -1
-		}, tableDef))
-	} else {
-		out = filepath.FromSlash(out)
-	}
-
-	p, err := build.Import(pkg, srcDir, build.FindOnly)
+	p, err := build.Import(pkg, srcDir, 0)
 	if err != nil {
 		return errors.Annotate(err, "could not import package at %q", pkg).Err()
 	}
 
+	// Automatically generate the JSON filename, if one isn't provided.
+	if fileName == "" {
+		fileName = fmt.Sprintf("%s_%s.json", p.Name, camelCaseToUnderscore(tableDef))
+	}
+
 	return withTempDir(func(tdir string) error {
-		return generateAndRunExtractor(c, tdir, out, p.ImportPath, name, tableDef)
+		return generateAndRunExtractor(c, tdir, e.OutDir, fileName, p.ImportPath, e.Name, tableDef)
 	})
 }
 
-func generateAndRunExtractor(c context.Context, tdir, out, importPath, name, tableDef string) error {
+func generateAndRunExtractor(c context.Context, tdir, outDir, fileName, importPath, name, tableDef string) error {
 	// Emit our "main.go".
 	mainPath := filepath.Join(tdir, "main.go")
 	fd, err := os.Create(mainPath)
@@ -114,23 +111,33 @@ func generateAndRunExtractor(c context.Context, tdir, out, importPath, name, tab
 		return errors.Annotate(err, "could not Close main.go").Err()
 	}
 
-	// Open our output file.
-	outFd, err := os.Create(out)
-	if err != nil {
-		return errors.Annotate(err, "could not create output file: %s", out).Err()
-	}
-
 	// Run it.
-	cmd := exec.CommandContext(c, "go", "run", mainPath)
-	cmd.Stdout = outFd
+	cmd := exec.CommandContext(c, "go", "run", mainPath, "-dir", outDir, "-name", fileName)
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		outFd.Close()
 		return errors.Annotate(err, "could not run command").Err()
 	}
-
-	if err := outFd.Close(); err != nil {
-		return errors.Annotate(err, "could not close output file").Err()
-	}
 	return nil
+}
+
+// camelCaseToUnderscore converts a camel-case string to a lowercase string
+// with underscore delimiters.
+func camelCaseToUnderscore(v string) string {
+	var parts []string
+	var segment []rune
+	addSegment := func() {
+		if len(segment) > 0 {
+			parts = append(parts, string(segment))
+			segment = segment[:0]
+		}
+	}
+
+	for _, r := range v {
+		if unicode.IsUpper(r) {
+			addSegment()
+		}
+		segment = append(segment, unicode.ToLower(r))
+	}
+	addSegment()
+	return strings.Join(parts, "_")
 }

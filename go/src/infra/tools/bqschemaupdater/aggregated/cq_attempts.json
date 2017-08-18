@@ -1,5 +1,5 @@
 {
-	"dataset_id": "aggregated",
+	"dataset": "AGGREGATED",
 	"table_id": "cq_attempts",
 	"name": "CQ Attempts",
 	"fields": [

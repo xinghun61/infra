@@ -6,8 +6,10 @@
 package util
 
 import (
+	"flag"
 	"log"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 
@@ -17,6 +19,11 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"github.com/golang/protobuf/jsonpb"
+)
+
+var (
+	outDir  = flag.String("dir", "", "(Required) Path to the root output directory.")
+	outName = flag.String("name", "", "(Required) Name of the output JSON file.")
 )
 
 // Exporter is capable of exporting a "bqschemaupdater" table protobuf using a
@@ -33,6 +40,14 @@ type Exporter struct {
 // On failure, content may be written to STDERR and the program will exit with
 // a non-zero return code.
 func (exp *Exporter) Main() {
+	flag.Parse()
+	switch {
+	case *outDir == "":
+		log.Fatal("no output directory provided (-dir)")
+	case *outName == "":
+		log.Fatal("no output filename provided (-name)")
+	}
+
 	bqSchema, err := bigquery.InferSchema(exp.Schema)
 	if err != nil {
 		log.Fatalf("could not generate schema from %T: %s", exp.Schema, err)
@@ -42,11 +57,28 @@ func (exp *Exporter) Main() {
 	}
 	exp.TableDef.Fields = SchemaToProto(bqSchema)
 
+	// Create our output directory by appending the dataset ID to the output
+	// directory base.
+	outPath := filepath.Join(*outDir, exp.TableDef.Dataset.ID(), *outName)
+	if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil {
+		log.Fatalf("failed to create output directory %s: %s", filepath.Dir(outPath), err)
+	}
+
+	fd, err := os.Create(outPath)
+	if err != nil {
+		log.Fatalf("failed to create output file %s: %s", outPath, err)
+	}
+
 	marshaler := jsonpb.Marshaler{
 		Indent: "  ",
 	}
-	if err := marshaler.Marshal(os.Stdout, exp.TableDef); err != nil {
+	if err := marshaler.Marshal(fd, exp.TableDef); err != nil {
+		fd.Close()
 		log.Fatalf("could not marshal proto to JSON: %s", err)
+	}
+
+	if err := fd.Close(); err != nil {
+		log.Fatalf("failed to close output file: %s", err)
 	}
 }
 
