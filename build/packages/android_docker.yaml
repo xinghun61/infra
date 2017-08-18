@@ -1,0 +1,46 @@
+package: infra/android_docker/${platform}
+description: Virtual environment + android docker python code with dependencies.
+root: ../../
+builders:
+  - infra-continuous-precise-64
+
+uses_python_env: true
+
+data:
+  # Virtual environment with all third party packages.
+  - dir: ENV
+    exclude:
+      # Exclude unneeded and unrelocatable files.
+      - .*\.pyc
+      - .*/pip-.*-build/.*
+      - bin/activate
+      - bin/activate.csh
+      - bin/activate.fish
+      - lib/.*/site-packages/.*\.dist-info/RECORD
+      - pip-selfcheck.json
+
+  # Main infra code. Relevent docker codes is located in
+  # infra/services/android_docker, but throw everything under infra/ in to keep
+  # run.py happy about python imports.
+  - dir: "infra"
+    exclude:
+      - .*\.pyc
+      - path_hacks
+      # TODO(vadimsh): Depends on depot_tools.
+      - services/git_cache_updater
+      - tools/bucket
+      - tools/dumpthis
+      - tools/docgen
+      # Depends on presence of .git directory. See crbug.com/515744.
+      - tools/antibody
+      # Depnds on infra/node/node.py and also a npm module.
+      - tools/testjs
+
+  # Launcher with dependencies, knows how to boot venv.
+  - file: run.py
+  - file: test.py
+  - file: bootstrap/run_helper.py
+  - file: bootstrap/remove_orphaned_pycs.py
+
+  # Where to put info about installed package version.
+  - version_file: CIPD_VERSION.json
