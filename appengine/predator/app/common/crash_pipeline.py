@@ -168,7 +168,7 @@ class CrashAnalysisPipeline(CrashBasePipeline):
           'found_suspects': False,
           'found_project': False,
           'found_components': False,
-          'has_regression_range': False,
+          'has_regression_range': bool(analysis.regression_range),
           'solution': None,
       }
 

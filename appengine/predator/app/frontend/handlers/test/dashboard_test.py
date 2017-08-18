@@ -111,18 +111,21 @@ class DashBoardTest(testing.AppengineTestCase):
                           'suspected_components': ['Blink>API', 'Blink>DOM'],
                           'suspected_project': 'chromium',
                           'regression_range': ['53.0.2749.0', '53.0.2750.0']}
+    analyses[2].regression_range = ['53.0.2749.0', '53.0.2750.0']
     analyses[2].found_suspects = False
     analyses[3].result = {'found': True,
                           'suspected_cls': [suspected_cl],
                           'suspected_components': ['Blink>API'],
                           'suspected_project': 'chromium',
                           'regression_range': ['53.0.2749.0', '53.0.2750.0']}
+    analyses[3].regression_range = ['53.0.2749.0', '53.0.2750.0']
     analyses[3].found_suspects = True
     analyses[4].result = {'found': False,
                           'suspected_cls': [],
                           'suspected_components': ['Blink>API', 'Blink>DOM'],
                           'suspected_project': 'chromium',
                           'regression_range': ['53.0.2749.0', '53.0.2750.0']}
+    analyses[4].regression_range = ['53.0.2749.0', '53.0.2750.0']
     analyses[4].found_suspects = False
 
     analyses[0].culprit_cls = ['https://chromium.googlesource.com/'
@@ -153,8 +156,7 @@ class DashBoardTest(testing.AppengineTestCase):
         'version': crash.crashed_version,
         'channel': crash.channel,
         'platform': crash.platform,
-        'regression_range': ('' if not crash.has_regression_range else
-                             crash.result['regression_range']),
+        'regression_range': crash.regression_range or '',
         'suspected_cls':crash.result['suspected_cls'],
         'suspected_project': crash.result['suspected_project'],
         'suspected_components': crash.result['suspected_components'],
@@ -184,7 +186,7 @@ class DashBoardTest(testing.AppengineTestCase):
             self.default_end_date.strftime(dashboard_util.DATE_FORMAT)))
     self.assertEqual(200, response_json.status_int)
 
-    self.assertEqual(expected_result, response_json.json_body)
+    self.assertDictEqual(expected_result, response_json.json_body)
 
   def testFilterWithFoundSuspects(self):
     expected_result = {
@@ -206,7 +208,7 @@ class DashBoardTest(testing.AppengineTestCase):
             self.default_end_date.strftime(dashboard_util.DATE_FORMAT)))
     self.assertEqual(200, response_json.status_int)
 
-    self.assertEqual(expected_result, response_json.json_body)
+    self.assertDictEqual(expected_result, response_json.json_body)
 
   def testFilterWithHasRegression(self):
     expected_result = {

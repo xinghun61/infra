@@ -43,6 +43,7 @@ class ResultFeedbackTest(AppengineTestCase):
     analysis.platform = 'android'
     analysis.channel = 'canary'
     analysis.status = analysis_status.COMPLETED
+    analysis.regression_range = ['53.0.2749.0', '53.0.2750.0']
     analysis.historical_metadata = [
         {'chrome_version': '53.0.2748.0', 'cpm': 0},
         {'chrome_version': '53.0.2749.0', 'cpm': 0},

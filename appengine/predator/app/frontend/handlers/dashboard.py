@@ -68,8 +68,7 @@ class DashBoard(BaseHandler):
           'version': crash.crashed_version,
           'channel': crash.channel,
           'platform': crash.platform,
-          'regression_range': ('' if not crash.has_regression_range else
-                               crash.result['regression_range']),
+          'regression_range': crash.regression_range or '',
           'suspected_cls': (crash.result.get('suspected_cls', [])
                             if crash.result else []),
           'suspected_project': (crash.result.get('suspected_project', '')

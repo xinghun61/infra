@@ -74,8 +74,7 @@ class ResultFeedback(BaseHandler):
         'signature': analysis.signature,
         'version': analysis.crashed_version,
         'platform': analysis.platform,
-        'regression_range': analysis.result.get(
-            'regression_range') if analysis.result else None,
+        'regression_range': analysis.regression_range,
         'culprit_regression_range': analysis.culprit_regression_range,
         'stack_trace': stack_trace,
         'suspected_cls': analysis.result.get(
