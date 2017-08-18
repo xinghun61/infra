@@ -2,9 +2,19 @@
 
 aka SoM
 
-## Requirements
+## Prerequisites
 
-You'll need some extras that aren't in the default infra checkout.
+Download and install the [AppEngine SDK for Go](https://cloud.google.com/appengine/docs/flexible/go/download).
+
+You will need a chrome infra checkout as
+[described here](https://chromium.googlesource.com/infra/infra/). That will
+create a local checkout of the entire infra repo, but that will include this
+application and many of its dependencies.
+
+Warning: If you are starting from scratch, there may be a lot more setup involved
+than you expected. Please bear with us.
+
+You'll also need some extras that aren't in the default infra checkout.
 
 ```sh
 # sudo where appropriate for your setup.
@@ -22,7 +32,7 @@ eval `../../../../env.py`
 ``` 
 in that shell window.
 
-## Getting up and running
+## Getting up and running locally
 
 After initial checkout, make sure you have all of the bower dependencies
 installed. Also run this whenever bower.json is updated:
@@ -31,6 +41,11 @@ installed. Also run this whenever bower.json is updated:
 cd frontend
 make deps
 ```
+
+(Note that you should always be able to `rm -rf fronted/bower_components`
+and re-run `bower install` at any time. Occasionally there are changes that,
+when applied over an existing `frontend/bower_components`, will b0rk your
+checkout.)
 
 To run locally from an infra.git checkout:
 ```sh
@@ -52,6 +67,13 @@ To view test coverage report after running tests:
 ```sh
 google-chrome ./coverage/lcov-report/index.html
 ```
+## Access to AppEngine instances
+
+If you would like to test your changes on our staging server (this is often
+necessary in order to test and debug integrations, and some issues will
+only reliably reproduce in the actual GAE runtime rather than local devserver),
+please contact cit-sheriffing@google.com to request access. We're happy to
+grant staging access to contributors!
 
 ## Deploying a new release
 
@@ -104,25 +126,31 @@ Navigate to [localhost:8080/admin/settings](http://localhost:8080/admin/settings
 and fill out the tree(s) you wish to test with locally. For consistency, you
 may just want to copy the [settings from prod](http://sheriff-o-matic.appspot.com/admin/settings).
 
+If you don't have access to prod or staging, you can manually enter this for
+"Trees in SOM" to get started with a reasonable default:
+
+```
+android:Android,chromeos:Chrome OS,chromium:Chromium,chromium.perf:Chromium Perf,gardener:ChromeOS Gardener,ios:iOS,trooper:Trooper
+```
+
 After you have at least one tree configured, you'll want to populate your
 local SoM using either local cron tasks or alerts-dispatcher.
 
-### Populating alerts from local cron tasks
-You can use local cron anaylzers and skip all of this by navigating to
-[http://localhost:8000/cron](http://localhost:8000/cron) and clicking the 'Run now'
-button next to any `/_cron/analyze/...` URL.
+### Populating alerts from local cron tasks (any tree besides Chrome OS):
+You can use local cron anaylzers and skip all of this by navigating to e.g.
+[http://localhost:8081/_cron/analyze/chromium](http://localhost:8081/_cron/analyze/chromium).
+You can replace `chromium` in `_cron/analyze/chromium` with the name of whichever tree you
+wish to analyze. Note that the cron analyzers run on a different port than the
+UI (8081 vs 8080). This is because the cron tasks run in a separate GAE service
+(aka "module" in some docs). These requests may also take quite a while to
+complete, depending on the current state of your builders.
 
+### CrOS: Populating alerts from a local alerts-dispatcher run
 
-### Populating alerts from a local alerts-dispatcher run
-
-From `infra/go` in your checkout, run the following to generate alerts for the chromium tree:
-
-```sh
-go build infra/monitoring/dispatcher
-./dispatcher --gatekeeper=../../build/scripts/slave/gatekeeper.json --gatekeeper-trees=../../build/scripts/slave/gatekeeper_trees.json --trees=chromium --base-url http://localhost:8080/api/v1/alerts
-```
-
-See [alerts-dispatcher's README](https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/monitoring/dispatcher/) for more information about using this tool.
+ChromeOS has a separate som_alerts_dispatcher process for scanning builds and
+generating alerts, which is a special case unlike the rest of the trees on SoM.
+This code lives [here](https://cs.chromium.org/chromium/src/third_party/chromite/scripts/som_alerts_dispatcher.py).
+Please consult the source or recent comitters for instructions on how to use or modify it.
 
 ### Populating alerts from a JSON file
 
@@ -143,9 +171,13 @@ An example of the alerts JSON format used by Sheriff-o-Matic can be found at
 test/alerts-data.js
 
 For more detailed information on the alert JSON format, see
-[alert-dispatcher's Alert struct](https://cs.chromium.org/chromium/infra/go/src/infra/monitoring/messages/alerts.go)
+[infra/monitoring/messages.Alert](https://cs.chromium.org/chromium/infra/go/src/infra/monitoring/messages/alerts.go)
 
 ## Setting up credentials for local testing
+
+You will need access to either staging or prod
+sheriff-o-matic before you can do this, so contact cit-sheriffing@google.com
+to request access if don't already have it.
 
 Currently, Sheriff-o-Matic accesses two APIs that require service account credentials:
 
