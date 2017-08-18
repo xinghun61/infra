@@ -352,8 +352,17 @@ def get_build_event(event_type,
 
   if fail_type:
     try:
-      event.build_event.fail_type = BuildEvent.FailType.Value(fail_type)
-    except ValueError:
+      event.build_event.fail_type = BuildEvent.FailType.Value({
+        'INFRA_FAILURE': 'FAIL_TYPE_INFRA',
+        'COMPILE_FAILURE': 'FAIL_TYPE_COMPILE',
+        'TEST_FAILURE': 'FAIL_TYPE_TEST',
+        'INVALID_TEST_RESULTS': 'FAIL_TYPE_INVALID',
+        'PATCH_FAILURE': 'FAIL_TYPE_PATCH',
+      }.get(fail_type, 'FAIL_TYPE_UNKNOWN'))
+    except ValueError:  # pragma: no cover
+      # This is not likely to happen because we hard-code correct values in the
+      # dict above, but we still keep this exception handler here to make sure
+      # that we don't bring down the master.
       event.build_event.fail_type = BuildEvent.FAIL_TYPE_UNKNOWN
 
   if head_revision_git_hash:

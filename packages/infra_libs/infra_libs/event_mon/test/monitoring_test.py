@@ -350,7 +350,7 @@ class GetBuildEventTest(unittest.TestCase):
   def test_get_build_event_with_fail_type(self):
     log_event = monitoring.get_build_event(
         'BUILD', 'bot.host.name', 'build_name',
-        fail_type='FAIL_TYPE_COMPILE').log_event()
+        fail_type='COMPILE_FAILURE').log_event()
     self.assertIsInstance(log_event, LogRequestLite.LogEventLite)
 
     # Check that source_extension deserializes to the right thing.
