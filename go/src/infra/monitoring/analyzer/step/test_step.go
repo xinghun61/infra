@@ -32,6 +32,8 @@ type testFailure struct {
 	//FIXME: Rename to TestSuite (needs to be synchronized with SOM)
 	StepName string           `json:"step"`
 	Tests    []testWithResult `json:"tests"`
+	// For test-results in SoM
+	AlertTestResults []messages.AlertTestResults `json:"alert_test_results"`
 }
 
 func (t *testFailure) Signature() string {
