@@ -51,6 +51,9 @@ NONTRIVIAL_ROLL_FOOTER = 'Recipe-Nontrivial-Roll'
 MANUAL_CHANGE_FOOTER = 'Recipe-Manual-Change'
 
 
+BYPASS_FOOTER = 'Recipe-Tryjob-Bypass-Reason'
+
+
 def _get_recipe_dep(api, recipes_cfg_path, project):
   """Extracts url and revision of |project| from given recipes.cfg."""
   current_cfg = api.json.read(
@@ -207,6 +210,7 @@ def RunSteps(
 
   nontrivial_roll_footer = cl_footers.get(NONTRIVIAL_ROLL_FOOTER, [])
   manual_change_footer = cl_footers.get(MANUAL_CHANGE_FOOTER, [])
+  bypass_footer = cl_footers.get(BYPASS_FOOTER, [])
 
   if downstream_project in manual_change_footer:
     api.python.succeeding_step(
@@ -228,6 +232,15 @@ def RunSteps(
          '--actual', api.json.input(patched_downstream_train.json.output)])
   except api.step.StepFailure as ex:
     train_diff = ex.result
+
+  # In theory we could return early when bypass footer is present. Executing
+  # test steps anyway helps provide more data points for this recipe's logic.
+  if bypass_footer:
+    api.python.succeeding_step(
+        'result',
+        ('Recognized %s footer: %s.' %
+             (BYPASS_FOOTER, '; '.join(bypass_footer))))
+    return
 
   if train_diff.retcode == 0:
     if (downstream_project not in manual_change_footer and
@@ -368,4 +381,19 @@ def GenTests(api):
     api.override_step_data(
         'parse description', api.json.output(
             {'Recipe-Manual-Change': ['build']}))
+  )
+
+  yield (
+    api.test('bypass') +
+    api.properties.tryserver(
+        upstream_project='recipe_engine', downstream_project='depot_tools') +
+    api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
+    api.step_data('test (with patch)', retcode=1) +
+    api.step_data('diff (test)', retcode=1) +
+    api.override_step_data(
+        'git_cl description', stdout=api.raw_io.output(
+            'Recipe-Tryjob-Bypass-Reason: Autoroller')) +
+    api.override_step_data(
+        'parse description', api.json.output(
+            {'Recipe-Tryjob-Bypass-Reason': ['Autoroller']}))
   )
