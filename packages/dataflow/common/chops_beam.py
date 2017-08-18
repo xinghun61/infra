@@ -31,7 +31,7 @@ class BQRead(beam.io.iobase.Read):
     super(BQRead, self).__init__(source)
 
 
-class BQWrite(beam.io.iobase.Write):
+class BQWrite(beam.io.Write):
   """Write transform created from a BigQuerySink with convenient defaults.
 
      beam.io.BigQuerySink will automatically add unique insert ids to rows,
