@@ -339,6 +339,69 @@ class ApiTests(object):
     self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
     self.assertEqual(res['next_cursor'], 'the cursor')
 
+  @mock.patch('service.search', autospec=True)
+  def test_bad_low_bounded_search(self, search):
+    self.test_build.put()
+    search.return_value = ([self.test_build], 'the cursor')
+
+    bad_date = model.BEGINING_OF_THE_WORLD - datetime.timedelta(days=1)
+    search_low_ts = utils.datetime_to_timestamp(bad_date)
+    req = {
+      'bucket': ['chromium'],
+      'cancelation_reason': 'CANCELED_EXPLICITLY',
+      'created_by': 'user:x@chromium.org',
+      'result': 'CANCELED',
+      'status': 'COMPLETED',
+      'tag': ['important'],
+      'retry_of': '42',
+      'canary': True,
+      'creation_ts_low': search_low_ts,
+    }
+
+    res = self.call_api('search', req).json_body
+
+    search.assert_called_once_with(
+      buckets=req['bucket'],
+      tags=req['tag'],
+      status=model.BuildStatus.COMPLETED,
+      result=model.BuildResult.CANCELED,
+      failure_reason=None,
+      cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY,
+      created_by='user:x@chromium.org',
+      max_builds=None,
+      start_cursor=None,
+      retry_of=42,
+      canary=True,
+      build_id_low=None,
+      build_id_high=None,
+    )
+    self.assertEqual(len(res['builds']), 1)
+    self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
+    self.assertEqual(res['next_cursor'], 'the cursor')
+
+  @mock.patch('service.search', autospec=True)
+  def test_bad_high_bounded_search(self, search):
+    self.test_build.put()
+    search.return_value = ([self.test_build], 'the cursor')
+
+    bad_date = model.BEGINING_OF_THE_WORLD - datetime.timedelta(days=1)
+    search_high_ts = utils.datetime_to_timestamp(bad_date)
+    req = {
+      'bucket': ['chromium'],
+      'cancelation_reason': 'CANCELED_EXPLICITLY',
+      'created_by': 'user:x@chromium.org',
+      'result': 'CANCELED',
+      'status': 'COMPLETED',
+      'tag': ['important'],
+      'retry_of': '42',
+      'canary': True,
+      'creation_ts_high': search_high_ts,
+    }
+
+    res = self.call_api('search', req).json_body
+
+    self.assertEqual(len(res), 0)
+
   ####### PEEK #################################################################
 
   @mock.patch('service.peek', autospec=True)

@@ -306,14 +306,18 @@ class BuildBucketApi(remote.Service):
     assert isinstance(request.tag, list)
     build_id_low = None
     build_id_high = None
+
     if request.creation_ts_high is not None:
-      build_id_low = model.create_build_id(
-          utils.timestamp_to_datetime(request.creation_ts_high),
-          include_random=False)
+      dtime = utils.timestamp_to_datetime(request.creation_ts_high)
+      if dtime < model.BEGINING_OF_THE_WORLD:
+        return self.SearchResponseMessage(builds=[], next_cursor=None)
+      build_id_low = model.create_build_id(dtime, include_random=False)
+
     if request.creation_ts_low is not None:
-      build_id_high = model.create_build_id(
-          utils.timestamp_to_datetime(request.creation_ts_low),
-          include_random=False)
+      dtime = utils.timestamp_to_datetime(request.creation_ts_low)
+      if dtime >= model.BEGINING_OF_THE_WORLD:
+        build_id_high = model.create_build_id(dtime, include_random=False)
+
     builds, next_cursor = service.search(
         buckets=request.bucket,
         tags=request.tag,
