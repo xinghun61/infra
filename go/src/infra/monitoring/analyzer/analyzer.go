@@ -52,6 +52,7 @@ var (
 		"console.developers.google.com", // Cloud storage links
 		"chromium-swarm.appspot.com",    // Swarming results
 		"isolateserver.appspot.com",     // Isolate server
+		"storage.cloud.google.com",      // Android tests
 	}
 )
 
