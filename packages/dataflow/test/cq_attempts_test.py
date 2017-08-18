@@ -56,12 +56,14 @@ class TestCQAttemptAccumulator(unittest.TestCase):
   def failed_attempt_values(self, attempt_start):
     actions = [
       (self.combFn.ACTION_PATCH_START, 1000),
+      (self.combFn.ACTION_VERIFIER_CUSTOM_TRYBOTS, 2000),
       (self.combFn.ACTION_PATCH_FAILED, 5000),
       (self.combFn.ACTION_PATCH_FAILED, 6000),
       (self.combFn.ACTION_PATCH_STOP, 9000),
     ]
 
     failure_reasons = [
+      None,
       None,
       {
         'fail_type': 'FAIL_TYPE_1',
@@ -95,6 +97,7 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     attempt.invalid_test_results_failures = 1
     attempt.compile_failures = 1
     attempt.total_failures = 2
+    attempt.custom_trybots = True
 
     return (events, attempt.as_bigquery_row())
 

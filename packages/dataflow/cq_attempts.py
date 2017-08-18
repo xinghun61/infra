@@ -64,6 +64,7 @@ class CombineEventsToAttempt(beam.CombineFn):
         'was_throttled',
         'waited_for_tree',
         'failed',
+        'custom_trybots',
     ])
     # Fields that are copied from event to attempt. Values for these fields are
     # the same for all events for a given attempt.
