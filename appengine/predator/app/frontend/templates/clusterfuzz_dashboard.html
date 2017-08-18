@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<head>
+  <title>{{client}} dashboard</title>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="/common.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <script>
+    function createUrl(base_url, parameters) {
+      var params = [];
+      for (var key in parameters) {
+        if (parameters[key] != undefined) {
+          params.push(key + '=' + parameters[key])
+        }
+      }
+
+      if (params.length == 0) {
+        return base_url;
+      } else {
+        return base_url + '?' + params.join('&');
+      }
+    };
+
+    function getFiltersUrl(client) {
+      var parameters = {}
+      parameters['start_date'] = $('#start_date').val() == 'mm/dd/yyyy' ? undefined : $('#start_date').val();
+      parameters['end_date'] = $('#end_date').val() == 'mm/dd/yyyy' ? undefined : $('#end_date').val();
+      parameters['found_suspects'] = $('#found_suspects').val() == 'default' ? undefined : $('#found_suspects').val();
+      parameters['has_regression_range'] = $('#has_regression_range').val() == 'default' ? undefined : $('#has_regression_range').val();
+      parameters['suspected_cls_triage_status'] = $('#suspected_cls_triage_status').val() == 'default' ? undefined : $('#suspected_cls_triage_status').val();
+      parameters['regression_range_triage_status'] = $('#regression_range_triage_status').val() == 'default' ? undefined : $('#regression_range_triage_status').val();
+      parameters['testcase_id'] = $('#testcase_id').val() == ''? undefined : $('#testcase_id').val();
+      return createUrl('dashboard', parameters);
+    };
+
+    $(document).ready(function() {
+      $('#submit').click(function(e) {
+        e.preventDefault();
+        var new_url = getFiltersUrl('{{client}}');
+        $('#dashboard-table').load(new_url + ' #dashboard-table');
+        //Replaces the url of this page with new url without refreshing page.
+        history.pushState({}, null, new_url);
+      });
+      if ('{{found_suspects}}' != '-1') {
+        $('#found_suspects').val('{{found_suspects}}');
+      }
+      if ('{{has_regression_range}}' != '-1') {
+        $('#has_regression_range').val('{{has_regression_range}}');
+      }
+      if ('{{suspected_cls_triage_status}}' != '-1') {
+        $('#suspected_cls_triage_status').val('{{suspected_cls_triage_status}}');
+      }
+      if ('{{regression_range_triage_status}}' != '-1') {
+        $('#regression_range_triage_status').val('{{regression_range_triage_status}}');
+      }
+      $('#testcase_id').val('{{testcase_id}}');
+    });
+  </script>
+</head>
+<body>
+  <form>
+    Start Date
+    <input type="date" id="start_date" value={{start_date}}></input>
+    End Date
+    <input type="date" id="end_date" value={{end_date}}></input>
+
+    Found suspects
+    <select id="found_suspects">
+      <option value="default"></option>
+      <option value="yes">True</option>
+      <option value="no">False</option>
+    </select>
+
+    Has regression range
+    <select id="has_regression_range">
+      <option value="default"></option>
+      <option value="yes">True</option>
+      <option value="no">False</option>
+    </select>
+
+    Suspects triaged?
+    <select id="suspected_cls_triage_status">
+      <option value="default"></option>
+      <option value="0">Untriaged</option>
+      <option value="1">Triaged-Incorrect</option>
+      <option value="2">Triaged-Correct</option>
+      <option value="3">Triaged-Unsure</option>
+    </select>
+
+    Regression range triaged?
+    <select id="regression_range_triage_status">
+      <option value="default"></option>
+      <option value="0">Untriaged</option>
+      <option value="1">Triaged-Incorrect</option>
+      <option value="2">Triaged-Correct</option>
+      <option value="3">Triaged-Unsure</option>
+    </select>
+
+    <br/><br/>Testcase id 
+    <input id="testcase_id" size=35></input>
+
+    <input type="submit" id="submit" value="Filter"></input>
+  </form>
+
+  <br>
+  <div id="dashboard-table">
+    <table>
+      <tr>
+        <th>Testcase</th>
+        <th>Crash state</th>
+        <th>Regression range</th>
+        <th>Platform</th>
+        <th>Job type</th>
+        <th>Suspected cls</th>
+        <th>Suspected project</th>
+        <th>Suspected components</th>
+      </tr>
+      <tbody>
+        {% for crash in crashes %}
+          <tr>
+            <td>
+              <a href="https://clusterfuzz.com/v2/testcase-detail/{{ crash.testcase }}">{{ crash.testcase_id }}</a>
+            </td>
+            <td>
+              <a href="./result-feedback?key={{crash.key}}" target="_blank">{{crash.signature}}</a>
+            </td>
+            {% if crash.regression_range %}
+              <td><a href="https://chromium.googlesource.com/chromium/src/+log/{{crash.regression_range[0]}}..{{crash.regression_range[1]}}?pretty=fuller">{{crash.regression_range[0]}} : {{crash.regression_range[1]}}</td>
+            {% else %}
+              <td></td>
+            {% endif %}
+            <td>{{ crash.platform }}</td>
+            <td>{{ crash.job_type }}</td>
+            <td>
+            {% if crash.suspected_cls %}
+              {% for suspected_cl in crash.suspected_cls %}
+              <li>
+                <a href="{{suspected_cl.url}}">{{suspected_cl.revision}}</a>
+              </li>
+              {% endfor %}
+            {% endif %}
+            </td>
+            <td>{{ crash.suspected_project }}</td>
+            <td>
+            {% if crash.suspected_components %}
+              {% for component in crash.suspected_components %}
+              <li>{{component}}</li>
+              {% endfor %}
+            {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</body>
