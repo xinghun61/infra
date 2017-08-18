@@ -202,7 +202,7 @@
             <template is="dom-if" if="[[_hasUngroup]]">
               <iron-a11y-keys target="[[_groupNameInput]]" keys="enter" on-keys-pressed="_updateGroupName"></iron-a11y-keys>
               Group:
-              <paper-input id="groupName" value="[[alert.title]]" class="no-toggle">
+              <paper-input id="groupName" value="[[alert.title]]" class="no-toggle" on-focused-changed="_updateGroupName">
               </paper-input>
               ([[alert.alerts.length]] alerts)
             </template>

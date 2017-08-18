@@ -257,7 +257,13 @@ class SomAlertItem extends Polymer.mixinBehaviors(
   }
 
   _updateGroupName(evt) {
-    let value = evt.detail.keyboardEvent.target.value;
+    let oldTitle = this.alert.title;
+    // Value comes from a different source depending on whether this event was
+    // triggered by a focus change or a key input.
+    let value = evt.target.value || evt.detail.keyboardEvent.target.value;
+
+    if (value == oldTitle) return;
+
     this.fire('annotation-change', {
       type: 'add',
       change: {'group_id': value},
