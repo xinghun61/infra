@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from collections import OrderedDict
-
 
 class CallStackFormatType(object):
   JAVA = 1
@@ -15,7 +13,7 @@ class CrashClient(object):
   FRACAS = 'fracas'
   CRACAS = 'cracas'
   CLUSTERFUZZ = 'clusterfuzz'
-  UMA_SAMPLING_PROFILER = 'uma sampling profiler'
+  UMA_SAMPLING_PROFILER = 'uma-sampling-profiler'
 
 
 class LanguageType(object):

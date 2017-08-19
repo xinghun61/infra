@@ -20,7 +20,7 @@ from scripts import crash_iterator
 from app.common.model import triage_status
 
 _FEEDBACK_URL_TEMPLATE = (
-    'https://%s.appspot.com/crash/%s-result-feedback?key=%s')
+    'https://%s.appspot.com/%s/result-feedback?key=%s')
 
 _CULPRIT_TO_TRIAGE_PROPERTY = {
     'culprit_cls': 'suspected_cls_triage_status',
