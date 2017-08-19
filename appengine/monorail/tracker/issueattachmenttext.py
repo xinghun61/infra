@@ -9,7 +9,6 @@ Unlike most attachments, this is not a download, it is a full HTML page
 with safely escaped user content.
 """
 
-import httplib
 import logging
 
 import webapp2
@@ -69,8 +68,7 @@ class AttachmentText(servlet.Servlet):
     # This servlet only displays safe textual attachments. The user should
     # not have been given a link to this servlet for any other kind.
     if not tracker_views.IsViewableText(attachment.mimetype, filesize):
-      self.response.status = httplib.BAD_REQUEST
-      raise servlet.AlreadySentResponseException('not a text file')
+      self.abort(400, 'not a text file')
 
     u_text, is_binary, too_large = filecontent.DecodeFileContents(content)
     lines = prettify.PrepareSourceLinesForHighlighting(u_text.encode('utf8'))

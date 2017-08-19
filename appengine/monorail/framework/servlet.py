@@ -207,11 +207,6 @@ class Servlet(webapp2.RequestHandler):
       logging.info('Bad XSRF token: %r', e.message)
       self.response.status = httplib.BAD_REQUEST
 
-    except AlreadySentResponseException:
-      # If servlet already sent response, then do nothing more.  E.g.,
-      # when serving attachment content, we do not use templates.
-      pass
-
     except permissions.BannedUserException as e:
       logging.warning('The user has been banned')
       url = framework_helpers.FormatAbsoluteURL(
@@ -969,13 +964,3 @@ def _SafeCreateLogoutURL(mr):
       return users.create_logout_url('/p/%s' % mr.project_name)
     else:
       return users.create_logout_url('/')
-
-
-class Error(Exception):
-  """Base class for errors from this module."""
-  pass
-
-
-class AlreadySentResponseException(Error):
-  """The servlet already responded, no need to render a page template."""
-  pass

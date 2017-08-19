@@ -31,7 +31,7 @@ class JsonFeedTest(unittest.TestCase):
     feed.mr = testing_helpers.MakeMonorailRequest(
         path='/foo/bar/wee?sna=foo', method='POST',
         params={'a': '123', 'z': 'zebra'})
-    self.assertRaises(servlet.AlreadySentResponseException, feed.get)
+    feed.get()
 
     self.assertEqual(True, feed.handle_request_called)
     self.assertEqual(1, len(feed.json_data))
@@ -43,7 +43,7 @@ class JsonFeedTest(unittest.TestCase):
         path='/foo/bar/wee?sna=foo', method='POST',
         params={'a': '123', 'z': 'zebra'})
 
-    self.assertRaises(servlet.AlreadySentResponseException, feed.post)
+    feed.post()
 
     self.assertEqual(True, feed.handle_request_called)
     self.assertEqual(1, len(feed.json_data))
@@ -66,22 +66,22 @@ class JsonFeedTest(unittest.TestCase):
         user_info={'user_id': 555})
     # Note that feed.mr has no token set.
     feed.CHECK_SECURITY_TOKEN = False
-    self.assertRaises(servlet.AlreadySentResponseException, feed.get)
-    self.assertRaises(servlet.AlreadySentResponseException, feed.post)
+    feed.get()
+    feed.post()
 
   def testSecurityTokenChecked_AnonUserDoesNotNeedToken(self):
     feed = TestableJsonFeed()
     feed.mr = testing_helpers.MakeMonorailRequest()
     # Note that feed.mr has no token set, but also no auth.user_id.
-    self.assertRaises(servlet.AlreadySentResponseException, feed.get)
-    self.assertRaises(servlet.AlreadySentResponseException, feed.post)
+    feed.get()
+    feed.post()
 
   def testSameAppOnly_ExternallyAccessible(self):
     feed = TestableJsonFeed()
     feed.mr = testing_helpers.MakeMonorailRequest()
     # Note that request has no X-Appengine-Inbound-Appid set.
-    self.assertRaises(servlet.AlreadySentResponseException, feed.get)
-    self.assertRaises(servlet.AlreadySentResponseException, feed.post)
+    feed.get()
+    feed.post()
 
   def testSameAppOnly_InternalOnlyCalledFromSameApp(self):
     feed = TestableJsonFeed()
@@ -89,8 +89,8 @@ class JsonFeedTest(unittest.TestCase):
     feed.mr = testing_helpers.MakeMonorailRequest()
     app_id = app_identity.get_application_id()
     feed.mr.request.headers['X-Appengine-Inbound-Appid'] = app_id
-    self.assertRaises(servlet.AlreadySentResponseException, feed.get)
-    self.assertRaises(servlet.AlreadySentResponseException, feed.post)
+    feed.get()
+    feed.post()
 
   def testSameAppOnly_InternalOnlyCalledExternally(self):
     feed = TestableJsonFeed()

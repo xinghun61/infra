@@ -76,7 +76,6 @@ class JsonFeed(servlet.Servlet):
       json_data = self.HandleRequest(mr)
 
       self._RenderJsonResponse(json_data)
-      raise servlet.AlreadySentResponseException()
 
     except query2ast.InvalidQueryError as e:
       logging.warning('Trapped InvalidQueryError: %s', e)
