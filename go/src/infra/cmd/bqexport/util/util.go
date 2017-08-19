@@ -70,7 +70,8 @@ func (exp *Exporter) Main() {
 	}
 
 	marshaler := jsonpb.Marshaler{
-		Indent: "  ",
+		Indent:       "  ",
+		EmitDefaults: true,
 	}
 	if err := marshaler.Marshal(fd, exp.TableDef); err != nil {
 		fd.Close()

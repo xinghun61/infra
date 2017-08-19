@@ -1,39 +1,78 @@
 {
+  "dataset": "RAW_EVENTS",
   "tableId": "table-id",
   "name": "Friendly Name",
   "description": "Table Def Description",
   "fields": [
     {
-      "name": "A"
+      "name": "A",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
     },
     {
       "name": "B",
-      "type": "INTEGER"
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "INTEGER",
+      "schema": [
+      ]
     },
     {
       "name": "C",
-      "type": "FLOAT"
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "FLOAT",
+      "schema": [
+      ]
     },
     {
       "name": "Desc",
       "description": "This is a description string",
-      "isRequired": true
+      "isRepeated": false,
+      "isRequired": true,
+      "type": "STRING",
+      "schema": [
+      ]
     },
     {
       "name": "Req",
-      "isRequired": true
+      "description": "",
+      "isRepeated": false,
+      "isRequired": true,
+      "type": "STRING",
+      "schema": [
+      ]
     },
     {
       "name": "Rec",
+      "description": "",
       "isRepeated": true,
+      "isRequired": false,
       "type": "RECORD",
       "schema": [
         {
-          "name": "optional_field"
+          "name": "optional_field",
+          "description": "",
+          "isRepeated": false,
+          "isRequired": false,
+          "type": "STRING",
+          "schema": [
+          ]
         },
         {
           "name": "required_field",
-          "isRequired": true
+          "description": "",
+          "isRepeated": false,
+          "isRequired": true,
+          "type": "STRING",
+          "schema": [
+          ]
         }
       ]
     }

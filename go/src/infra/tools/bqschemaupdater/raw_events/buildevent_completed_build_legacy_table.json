@@ -1,0 +1,280 @@
+{
+  "dataset": "RAW_EVENTS",
+  "tableId": "completed_builds_legacy",
+  "name": "Legacy completed builds",
+  "description": "Record of legacy completed build records.",
+  "fields": [
+    {
+      "name": "master",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "builder",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "build_number",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "INTEGER",
+      "schema": [
+      ]
+    },
+    {
+      "name": "build_sched_msec",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "INTEGER",
+      "schema": [
+      ]
+    },
+    {
+      "name": "build_started_msec",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "INTEGER",
+      "schema": [
+      ]
+    },
+    {
+      "name": "build_finished_msec",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "INTEGER",
+      "schema": [
+      ]
+    },
+    {
+      "name": "host_name",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "result",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "queue_duration_s",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "FLOAT",
+      "schema": [
+      ]
+    },
+    {
+      "name": "execution_duration_s",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "FLOAT",
+      "schema": [
+      ]
+    },
+    {
+      "name": "total_duration_s",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "FLOAT",
+      "schema": [
+      ]
+    },
+    {
+      "name": "patch_url",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "category",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "bbucket_id",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "bbucket_user_agent",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "head_revision_git_hash",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "build_id",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "bbucket_bucket",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "build_scheduled",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "TIMESTAMP",
+      "schema": [
+      ]
+    },
+    {
+      "name": "build_started",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "TIMESTAMP",
+      "schema": [
+      ]
+    },
+    {
+      "name": "build_finished",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "TIMESTAMP",
+      "schema": [
+      ]
+    },
+    {
+      "name": "swarming",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "RECORD",
+      "schema": [
+        {
+          "name": "host",
+          "description": "",
+          "isRepeated": false,
+          "isRequired": false,
+          "type": "STRING",
+          "schema": [
+          ]
+        },
+        {
+          "name": "run_id",
+          "description": "",
+          "isRepeated": false,
+          "isRequired": false,
+          "type": "STRING",
+          "schema": [
+          ]
+        }
+      ]
+    },
+    {
+      "name": "kitchen",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "RECORD",
+      "schema": [
+        {
+          "name": "version",
+          "description": "",
+          "isRepeated": false,
+          "isRequired": false,
+          "type": "STRING",
+          "schema": [
+          ]
+        }
+      ]
+    },
+    {
+      "name": "recipes",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "RECORD",
+      "schema": [
+        {
+          "name": "repository",
+          "description": "",
+          "isRepeated": false,
+          "isRequired": false,
+          "type": "STRING",
+          "schema": [
+          ]
+        },
+        {
+          "name": "revision",
+          "description": "",
+          "isRepeated": false,
+          "isRequired": false,
+          "type": "STRING",
+          "schema": [
+          ]
+        },
+        {
+          "name": "name",
+          "description": "",
+          "isRepeated": false,
+          "isRequired": false,
+          "type": "STRING",
+          "schema": [
+          ]
+        }
+      ]
+    }
+  ],
+  "partitionTable": true,
+  "partitionExpirationSeconds": "0"
+}

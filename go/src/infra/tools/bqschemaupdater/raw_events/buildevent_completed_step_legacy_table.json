@@ -1,0 +1,154 @@
+{
+  "dataset": "RAW_EVENTS",
+  "tableId": "completed_step_legacy",
+  "name": "Legacy build events",
+  "description": "Legacy record of build steps.",
+  "fields": [
+    {
+      "name": "master",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "builder",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "build_number",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "INTEGER",
+      "schema": [
+      ]
+    },
+    {
+      "name": "build_sched_msec",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "INTEGER",
+      "schema": [
+      ]
+    },
+    {
+      "name": "step_name",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "step_text",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "step_number",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "INTEGER",
+      "schema": [
+      ]
+    },
+    {
+      "name": "host_name",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "result",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "step_started_msec",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "INTEGER",
+      "schema": [
+      ]
+    },
+    {
+      "name": "step_duration_s",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "FLOAT",
+      "schema": [
+      ]
+    },
+    {
+      "name": "patch_url",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "project",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "bbucket_id",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "bbucket_user_agent",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    },
+    {
+      "name": "build_id",
+      "description": "",
+      "isRepeated": false,
+      "isRequired": false,
+      "type": "STRING",
+      "schema": [
+      ]
+    }
+  ],
+  "partitionTable": true,
+  "partitionExpirationSeconds": "0"
+}
