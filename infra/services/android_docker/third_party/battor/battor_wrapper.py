@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import atexit
 import datetime
 import os
 import logging
@@ -15,6 +14,7 @@ import time
 
 from battor import battor_error
 import py_utils
+from py_utils import atexit_with_log
 from py_utils import cloud_storage
 import dependency_manager
 from devil.utils import battor_device_mapping
@@ -27,7 +27,20 @@ from serial.tools import list_ports
 DEFAULT_SHELL_CLOSE_TIMEOUT_S = 60
 
 
-def IsBattOrConnected(test_platform, android_device=None,
+def IsBattOrConnected(*args, **kwargs):
+  """Returns True if BattOr is detected.
+
+  See _IsBattOrConnected below for arguments.
+  """
+  is_connected = _IsBattOrConnected(*args, **kwargs)
+  if is_connected:
+    logging.info('BattOr power monitor is connected.')
+  else:
+    logging.info('BattOr power monitor is not connected.')
+  return is_connected
+
+
+def _IsBattOrConnected(test_platform, android_device=None,
                       android_device_map=None, android_device_file=None):
   """Returns True if BattOr is detected."""
   if test_platform == 'android':
@@ -38,11 +51,8 @@ def IsBattOrConnected(test_platform, android_device=None,
     if not android_device_map:
       device_tree = find_usb_devices.GetBusNumberToDeviceTreeMap()
       if device_tree:
-        logging.warning('Device tree:')
         for _, node in sorted(device_tree.iteritems()):
           node.Display()
-      else:
-        logging.warning('Empty device tree.')
       if len(battor_device_mapping.GetBattOrList(device_tree)) == 1:
         return True
       if android_device_file:
@@ -51,7 +61,6 @@ def IsBattOrConnected(test_platform, android_device=None,
       else:
         try:
           android_device_map = battor_device_mapping.GenerateSerialMap()
-          logging.warning('Android device map: %s', android_device_map)
         except battor_error.BattOrError:
           logging.exception('Error generating serial map')
           return False
@@ -143,7 +152,7 @@ class BattOrWrapper(object):
     self._target_platform = target_platform
     self._git_hash = None
 
-    atexit.register(self.KillBattOrShell)
+    atexit_with_log.Register(self.KillBattOrShell)
 
   def _FlashBattOr(self):
     assert self._battor_shell, (
@@ -164,6 +173,7 @@ class BattOrWrapper(object):
     except ValueError:
       logging.exception('Git hash returned from BattOr was not as expected: %s'
                         % self._git_hash)
+      self.StopShell()
 
     finally:
       if not self._battor_shell:
@@ -208,10 +218,11 @@ class BattOrWrapper(object):
     assert not self._tracing, 'Attempting to stop a BattOr shell while tracing.'
     timeout = timeout if timeout else DEFAULT_SHELL_CLOSE_TIMEOUT_S
 
-    self._SendBattOrCommand(self._EXIT_CMD, check_return=False)
     try:
+      self._SendBattOrCommand(self._EXIT_CMD, check_return=False)
       py_utils.WaitFor(lambda: self.GetShellReturnCode() != None, timeout)
-    except py_utils.TimeoutException:
+    except:
+      # If graceful shutdown failed, resort to a simple kill command.
       self.KillBattOrShell()
     finally:
       self._battor_shell = None
@@ -248,6 +259,7 @@ class BattOrWrapper(object):
     # The BattOr shell terminates after returning the results.
     if timeout is None:
       timeout = self._stop_tracing_time - self._start_tracing_time
+    py_utils.WaitFor(lambda: self.GetShellReturnCode() != None, timeout)
 
     # TODO(charliea): Once we understand why BattOrs are crashing, only do
     # this on failure.
@@ -294,7 +306,6 @@ class BattOrWrapper(object):
           return port
 
     if target_platform in ['android', 'linux']:
-      device_tree = find_usb_devices.GetBusNumberToDeviceTreeMap(fast=True)
       if battor_path:
         if not isinstance(battor_path, basestring):
           raise battor_error.BattOrError(
@@ -314,6 +325,7 @@ class BattOrWrapper(object):
             serial_map=battor_map)
 
       # Not Android and no explicitly passed BattOr.
+      device_tree = find_usb_devices.GetBusNumberToDeviceTreeMap(fast=True)
       battors = battor_device_mapping.GetBattOrList(device_tree)
       if len(battors) != 1:
         raise battor_error.BattOrError(
