@@ -89,7 +89,7 @@
     'version': '0.0.1',
     'build': '0',
     'repo': 'infra/infra/packages/dataflow',
-    'rev': '163693e303fe73e10f15e4b60e053aa3d0bfea55',
+    'rev': '01a06ec62dbd97e6c243c2d0cc1fe7aeaebf10d9',
   },
   'dill': {
     'build': '0',
