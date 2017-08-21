@@ -15,6 +15,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"infra/libs/bqschema/tabledef"
+
 	"cloud.google.com/go/bigquery"
 	"go.chromium.org/luci/common/tsmon/field"
 	"go.chromium.org/luci/common/tsmon/metric"
@@ -36,9 +38,11 @@ type eventUploader interface {
 
 // Uploader contains the necessary data for streaming data to BigQuery.
 type Uploader struct {
-	ctx       context.Context
-	datasetID string
-	tableID   string
+	ctx context.Context
+	// Uploader is bound to a specific table. DatasetID and Table ID are
+	// provided for reference.
+	DatasetID string
+	TableID   string
 	u         *bigquery.Uploader
 	s         bigquery.Schema
 	timeout   time.Duration
@@ -81,14 +85,14 @@ func init() {
 
 // NewUploader constructs a new Uploader struct.
 //
-// datasetID, tableID are identifiers passed to the BigQuery client to gain
-// access to a particular table.
-func NewUploader(ctx context.Context, c *bigquery.Client, datasetID, tableID string, cfg UploaderConfig) (*Uploader, error) {
+// DatasetID and TableID are provided to the BigQuery client to gain access to
+// a particular table.
+func NewUploader(ctx context.Context, c *bigquery.Client, td *tabledef.TableDef, cfg UploaderConfig) (*Uploader, error) {
 	if id.prefix == "" {
 		return nil, errors.New("error initializing prefix for insertID")
 	}
 
-	t := c.Dataset(datasetID).Table(tableID)
+	t := c.Dataset(td.GetDataset().ID()).Table(td.TableId)
 	md, err := t.Metadata(ctx)
 	if err != nil {
 		return nil, err
@@ -112,8 +116,8 @@ func NewUploader(ctx context.Context, c *bigquery.Client, datasetID, tableID str
 
 	return &Uploader{
 		ctx,
-		datasetID,
-		tableID,
+		td.GetDataset().ID(),
+		td.TableId,
 		u,
 		md.Schema,
 		timeout,
