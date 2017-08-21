@@ -18,6 +18,7 @@ from analysis.stacktrace import CallStackBuffer
 from analysis.stacktrace import StackFrame
 from analysis.stacktrace import StacktraceBuffer
 from analysis.type_enums import CallStackFormatType
+from analysis.type_enums import CrashType
 from analysis.type_enums import LanguageType
 from analysis.type_enums import SanitizerType
 
@@ -40,16 +41,24 @@ SANITIZER_TO_CALLSTACK_DETECTOR_CLASS = {
     SanitizerType.ADDRESS_SANITIZER: callstack_detectors.AsanDetector
 }
 
+CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS = {
+    CrashType.DIRECT_LEAK: callstack_detectors.DirectLeakDetector,
+    CrashType.INDIRECT_LEAK: callstack_detectors.IndirectLeakDetector,
+}
 
-def GetCallStackDetector(job_type, sanitizer):
+
+def GetCallStackDetector(job_type, sanitizer, crash_type):
   """Returns a ``CallStackDetector`` for particular sanitizer and job type."""
   if ANDROID_JOB_TYPE_MARKER in job_type:
     return callstack_detectors.AndroidJobDetector()
 
-  try:
+  if crash_type in CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS:
+    return CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS[crash_type]()
+
+  if sanitizer in SANITIZER_TO_CALLSTACK_DETECTOR_CLASS:
     return SANITIZER_TO_CALLSTACK_DETECTOR_CLASS[sanitizer]()
-  except KeyError:
-    return None
+
+  return None
 
 
 class ClusterfuzzParser(object):
@@ -78,7 +87,8 @@ class ClusterfuzzParser(object):
     return stack_buffer
 
   def Parse(self, stacktrace_string, deps, job_type,
-            sanitizer, signature=None, top_n_frames=None, crash_address=None):
+            sanitizer, crash_type, signature=None, top_n_frames=None,
+            crash_address=None):
     """Parse clusterfuzz stacktrace string into Stacktrace instance."""
     filters = [FilterJavaJreSdkFrames(),
                KeepV8FramesIfV8GeneratedJITCrash(),
@@ -87,7 +97,7 @@ class ClusterfuzzParser(object):
                FilterV8FramesIfV8NotInTopFrames(),
                KeepTopNFrames(top_n_frames or DEFAULT_TOP_N_FRAMES)]
     stacktrace_buffer = StacktraceBuffer(signature=signature, filters=filters)
-    stack_detector = GetCallStackDetector(job_type, sanitizer)
+    stack_detector = GetCallStackDetector(job_type, sanitizer, crash_type)
     if stack_detector is None:
       logging.error('Cannot find CallStackDetector for crash %s (job type: %s)',
                     signature or '', job_type)

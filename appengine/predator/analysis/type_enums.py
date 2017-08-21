@@ -30,3 +30,13 @@ class SanitizerType(object):
   SYZYASAN = 'SYZYASAN'
   UBSAN = 'UBSAN'
   UNSUPPORTED = 'UNSUPPORTED'
+
+
+class CrashType(object):
+  DIRECT_LEAK = 'Direct-leak'
+  INDIRECT_LEAK = 'Indirect-leak'
+  CHECK_FAILURE = 'CHECK failure'
+  INTEGER_OVERFLOW = 'Integer-overflow'
+  STACK_OVERFLOW = 'Stack-overflow'
+  FLOATING_POINT_EXCEPTION = 'Floating-point-exception'
+  NULL_DEREFERENCE = 'Null-dereference'

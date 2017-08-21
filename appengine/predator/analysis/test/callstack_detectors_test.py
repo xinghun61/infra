@@ -41,7 +41,7 @@ class CallStackDetectorTest(AnalysisTestCase):
         stack_detector('Crash stack:'),
         StartOfCallStack(0, CallStackFormatType.SYZYASAN, LanguageType.CPP, {}))
     self.assertTupleEqual(
-        stack_detector('A stack:'),
+        stack_detector('Allocation stack:'),
         StartOfCallStack(1, CallStackFormatType.SYZYASAN, LanguageType.CPP, {}))
     self.assertIsNone(stack_detector('dummy'))
 
@@ -91,8 +91,7 @@ class CallStackDetectorTest(AnalysisTestCase):
         StartOfCallStack(1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     self.assertTupleEqual(
         stack_detector('==123== ERROR:MemorySanitizer'),
-        StartOfCallStack(2, CallStackFormatType.DEFAULT, LanguageType.CPP,
-                         {'pid': 123}))
+        StartOfCallStack(2, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     self.assertIsNone(stack_detector('dummy'))
 
   def testAsanDetector(self):
@@ -100,8 +99,7 @@ class CallStackDetectorTest(AnalysisTestCase):
     stack_detector = callstack_detectors.AsanDetector()
     self.assertTupleEqual(
         stack_detector('==123== ERROR:AddressSanitizer'),
-        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.CPP,
-                         {'pid': 123}))
+        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     # After the ``is_first_stack_flag`` is set to False, the priority will be
     # 1.
     self.assertTupleEqual(
@@ -116,6 +114,24 @@ class CallStackDetectorTest(AnalysisTestCase):
     self.assertTupleEqual(
         stack_detector('Thread T9 created by'),
         StartOfCallStack(1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+    self.assertIsNone(stack_detector('dummy'))
+
+  def testDirectLeakDetector(self):
+    """Tests that ``DirectLeakDectector`` detects ``Direct-Leak`` crash."""
+    stack_detector = callstack_detectors.DirectLeakDetector()
+    self.assertTupleEqual(
+        stack_detector(
+            'Direct leak of 8 byte(s) in 1 object(s) allocated from:'),
+        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+    self.assertIsNone(stack_detector('dummy'))
+
+  def testIndirectLeakDetector(self):
+    """Tests that ``IndirectLeakDectector`` detects ``Indirect-Leak`` crash."""
+    stack_detector = callstack_detectors.IndirectLeakDetector()
+    self.assertTupleEqual(
+        stack_detector('Indirect leak of 80 byte(s) in 1 object(s) allocated '
+                       'from:'),
+        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     self.assertIsNone(stack_detector('dummy'))
 
   def testChromeCrashDetector(self):

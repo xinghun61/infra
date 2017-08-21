@@ -12,6 +12,7 @@ from analysis.stacktrace import StackFrame
 from analysis.stacktrace import CallStack
 from analysis.stacktrace import Stacktrace
 from analysis.type_enums import CallStackFormatType
+from analysis.type_enums import CrashType
 from analysis.type_enums import LanguageType
 from analysis.type_enums import SanitizerType
 from libs.deps.dependency import Dependency
@@ -20,37 +21,50 @@ from libs.deps.dependency import Dependency
 class ClusterfuzzParserTest(AnalysisTestCase):
 
   def testGetCallStackDetector(self):
-    self.assertTrue(isinstance(GetCallStackDetector('android_job', None),
-                               callstack_detectors.AndroidJobDetector))
     self.assertTrue(
-        isinstance(GetCallStackDetector('job', SanitizerType.SYZYASAN),
+        isinstance(GetCallStackDetector('android_job', None, 'abrt'),
+        callstack_detectors.AndroidJobDetector))
+    self.assertTrue(
+        isinstance(GetCallStackDetector('job', 'sanitizer',
+                                        CrashType.DIRECT_LEAK),
+                   callstack_detectors.DirectLeakDetector))
+    self.assertTrue(
+        isinstance(GetCallStackDetector('job', 'sanitizer',
+                                        CrashType.INDIRECT_LEAK),
+                   callstack_detectors.IndirectLeakDetector))
+    self.assertTrue(
+        isinstance(GetCallStackDetector('job', SanitizerType.SYZYASAN, 'abrt'),
                    callstack_detectors.SyzyasanDetector))
     self.assertTrue(
-        isinstance(GetCallStackDetector('job', SanitizerType.THREAD_SANITIZER),
+        isinstance(GetCallStackDetector('job', SanitizerType.THREAD_SANITIZER,
+                                        'abrt'),
                    callstack_detectors.TsanDetector))
     self.assertTrue(
-        isinstance(GetCallStackDetector('job', SanitizerType.UBSAN),
+        isinstance(GetCallStackDetector('job', SanitizerType.UBSAN, 'abrt'),
                    callstack_detectors.UbsanDetector))
     self.assertTrue(
-        isinstance(GetCallStackDetector('job', SanitizerType.MEMORY_SANITIZER),
+        isinstance(GetCallStackDetector('job', SanitizerType.MEMORY_SANITIZER,
+                                        'abrt'),
                    callstack_detectors.MsanDetector))
     self.assertTrue(
-        isinstance(GetCallStackDetector('job', SanitizerType.ADDRESS_SANITIZER),
+        isinstance(GetCallStackDetector('job', SanitizerType.ADDRESS_SANITIZER,
+                                        'abrt'),
                    callstack_detectors.AsanDetector))
-    self.assertIsNone(GetCallStackDetector('job', None))
+    self.assertIsNone(GetCallStackDetector('job', None, 'abrt'))
 
   def testReturnNoneForEmptyString(self):
     parser = ClusterfuzzParser()
     deps = {'src/': Dependency('src/', 'https://repo', '1')}
 
     self.assertIsNone(parser.Parse('', deps, 'asan_job',
-                                   SanitizerType.ADDRESS_SANITIZER))
+                                   SanitizerType.ADDRESS_SANITIZER, 'abrt'))
 
   def testReturnNoneForDummyJobType(self):
     parser = ClusterfuzzParser()
     deps = {'src/': Dependency('src/', 'https://repo', '1')}
 
-    self.assertIsNone(parser.Parse('Crash stack:', deps, 'dummy_job', None))
+    self.assertIsNone(parser.Parse('Crash stack:', deps, 'dummy_job',
+                                   None, 'abrt'))
 
   def testChromeCrashParserParseLineMalformatedCallstack(self):
     parser = ClusterfuzzParser()
@@ -65,7 +79,7 @@ class ClusterfuzzParserTest(AnalysisTestCase):
         """
     )
     self.assertIsNone(parser.Parse(stacktrace_string, deps, 'asan_job',
-                                   SanitizerType.ADDRESS_SANITIZER))
+                                   SanitizerType.ADDRESS_SANITIZER, 'abrt'))
 
   def testClusterfuzzParserParseStacktrace(self):
     parser = ClusterfuzzParser()
@@ -81,7 +95,7 @@ class ClusterfuzzParserTest(AnalysisTestCase):
     )
 
     stacktrace = parser.Parse(stacktrace_string, deps, 'asan_job',
-                              SanitizerType.ADDRESS_SANITIZER)
+                              SanitizerType.ADDRESS_SANITIZER, 'abrt')
     stack = CallStack(0, frame_list=[
         StackFrame(0, 'src/', 'a::aa(p* d)', 'a.h', 'src/a.h', [225]),
         StackFrame(1, 'src/', 'b::bb(p* d)', 'b.h', 'src/b.h', [266, 267]),

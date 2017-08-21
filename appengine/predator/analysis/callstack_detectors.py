@@ -55,11 +55,10 @@ class CallStackDetector(object):
 
 class AndroidJobDetector(CallStackDetector):
   """Detects the start of an android job callstack."""
-  JAVA_LANG_CALLSTACK_START_PATTERN = r'^java\.[A-Za-z0-9$._]+'
-  JAVA_ORG_GHROMIUM_CALLSTACK_START_PATTERN = r'^org\.chromium\.[A-Za-z0-9$._]+'
+  JAVA_LANG_CALLSTACK_START_PATTERN = r'^java\.'
+  JAVA_ORG_GHROMIUM_CALLSTACK_START_PATTERN = r'^org\.chromium\.'
   JAVA_CAUSED_BY_CALLSTACK_START_PATTERN = r'^Caused by:'
-  JAVA_ANDROID_CALLSTACK_START_PATTERN = (
-      r'^(com\.google\.)?android\.[A-Za-z0-9$._]+')
+  JAVA_ANDROID_CALLSTACK_START_PATTERN = r'^(com\.google\.)?android\.'
 
   JAVA_CALLSTACK_START_REGEX = re.compile(
       '|'.join([JAVA_LANG_CALLSTACK_START_PATTERN,
@@ -85,7 +84,8 @@ class AndroidJobDetector(CallStackDetector):
 class SyzyasanDetector(CallStackDetector):
   """Detects the start of a syzyasn callstack."""
   SYZYASAN_CRASH_CALLSTACK_START_REGEX = re.compile(r'^Crash stack:$')
-  SYZYASAN_NON_CRASH_CALLSTACK_START_REGEX = re.compile(r'^(?!Crash).* stack:$')
+  SYZYASAN_NON_CRASH_CALLSTACK_START_REGEX = re.compile(
+      r'^(Allocation|Free) stack:$')
 
   def __call__(self, line, flags=None):
     # In syzyasan build, new stack starts with 'crash stack:',
@@ -104,7 +104,7 @@ class SyzyasanDetector(CallStackDetector):
 class TsanDetector(CallStackDetector):
   """Detects the start of a thread sanitizer callstack."""
   TSAN_CRASH_CALLSTACK_START_PATTERN1 = r'^(Read|Write) of size \d+'
-  TSAN_CRASH_CALLSTACK_START_PATTERN2 = r'^[A-Z]+: ThreadSanitizer'
+  TSAN_CRASH_CALLSTACK_START_PATTERN2 = r'.*(ERROR|WARNING): ?ThreadSanitizer'
   TSAN_ALLOCATION_CALLSTACK_START_PATTERN = (
       r'^Previous (write|read) of size \d+')
   TSAN_LOCATION_CALLSTACK_START_PATTERN = (
@@ -134,7 +134,7 @@ class TsanDetector(CallStackDetector):
 
 class UbsanDetector(CallStackDetector):
   """Detects the start of an undefined-behavior callstack."""
-  UBSAN_CALLSTACK_START_REGEX = re.compile(r'^.*: runtime error: .*$')
+  UBSAN_CALLSTACK_START_REGEX = re.compile(r'.*: runtime error: .*')
 
   def __call__(self, line, flags=None):
     if UbsanDetector.UBSAN_CALLSTACK_START_REGEX.match(line):
@@ -151,7 +151,8 @@ class UbsanDetector(CallStackDetector):
 
 class MsanDetector(CallStackDetector):
   """Detects the start of a memory sanitizer callstack."""
-  MSAN_CALLSTACK_START_REGEX = re.compile(r'^==(\d+)== ?([A-Z]+:|\w+Sanitizer)')
+  MSAN_CALLSTACK_START_REGEX = re.compile(
+      r'.*(ERROR|WARNING): ?MemorySanitizer')
   MSAN_CREATION_CALLSTACK_START_MARKER = 'Uninitialized value was created by'
   MSAN_STORAGE_CALLSTACK_START_MARKER = 'Uninitialized value was stored to'
 
@@ -163,12 +164,9 @@ class MsanDetector(CallStackDetector):
     if MsanDetector.MSAN_STORAGE_CALLSTACK_START_MARKER in line:
       return StartOfCallStack(1, CallStackFormatType.DEFAULT,
                               LanguageType.CPP, {})
-    msan_callstack_start_regex = (
-        MsanDetector.MSAN_CALLSTACK_START_REGEX.match(line))
-    if msan_callstack_start_regex:
+    if MsanDetector.MSAN_CALLSTACK_START_REGEX.match(line):
       return StartOfCallStack(
-          2, CallStackFormatType.DEFAULT, LanguageType.CPP,
-          {'pid': int(msan_callstack_start_regex.group(1).strip())})
+          2, CallStackFormatType.DEFAULT, LanguageType.CPP, {})
 
     return None
 
@@ -176,7 +174,7 @@ class MsanDetector(CallStackDetector):
 class AsanDetector(CallStackDetector):
   """Detects the start of an address sanitizer callstack."""
   ASAN_CRASH_CALLSTACK_START_REGEX1 = re.compile(
-      r'^==(\d+)== ?([A-Z]+:|\w+Sanitizer)')
+      r'.*(ERROR|WARNING): ?AddressSanitizer')
   ASAN_CRASH_CALLSTACK_START_REGEX2 = re.compile(
       r'^(READ|WRITE) of size \d+ at|^backtrace:')
 
@@ -193,13 +191,9 @@ class AsanDetector(CallStackDetector):
                 ASAN_OTHER_CALLSTACK_START_PATTERN]))
 
   def __call__(self, line, flags=None):
-    asan_crash_callstack_start_regex1_match = (
-        AsanDetector.ASAN_CRASH_CALLSTACK_START_REGEX1.match(line))
-    if asan_crash_callstack_start_regex1_match:
+    if AsanDetector.ASAN_CRASH_CALLSTACK_START_REGEX1.match(line):
       return StartOfCallStack(
-          0, CallStackFormatType.DEFAULT, LanguageType.CPP,
-          {'pid': int(
-              asan_crash_callstack_start_regex1_match.group(1).strip())})
+          0, CallStackFormatType.DEFAULT, LanguageType.CPP, {})
 
     # Crash stack gets priority 0.
     if AsanDetector.ASAN_CRASH_CALLSTACK_START_REGEX2.match(line):
@@ -209,6 +203,30 @@ class AsanDetector(CallStackDetector):
     # All other callstack gets priority 1.
     if AsanDetector.ASAN_NON_CRASH_CALLSTACK_START_PATTERN.match(line):
       return StartOfCallStack(1, CallStackFormatType.DEFAULT,
+                              LanguageType.CPP, {})
+
+    return None
+
+
+class DirectLeakDetector(CallStackDetector):
+  """Detects the ``Direct-leak`` type of crash for clusterfuzz callstack."""
+  DIRECT_LEAK_REGEX = re.compile(r'Direct leak of .*')
+
+  def __call__(self, line, flags=None):
+    if DirectLeakDetector.DIRECT_LEAK_REGEX.match(line):
+      return StartOfCallStack(0, CallStackFormatType.DEFAULT,
+                              LanguageType.CPP, {})
+
+    return None
+
+
+class IndirectLeakDetector(CallStackDetector):
+  """Detects the ``Indirect-leak`` type of crash for clusterfuzz callstack."""
+  INDIRECT_LEAK_REGEX = re.compile(r'Indirect leak of .*')
+
+  def __call__(self, line, flags=None):
+    if IndirectLeakDetector.INDIRECT_LEAK_REGEX.match(line):
+      return StartOfCallStack(0, CallStackFormatType.DEFAULT,
                               LanguageType.CPP, {})
 
     return None
