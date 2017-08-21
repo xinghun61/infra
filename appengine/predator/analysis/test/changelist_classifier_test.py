@@ -7,6 +7,7 @@ import logging
 import math
 import mock
 
+from analysis import exceptions
 from analysis.crash_report import CrashReport
 from analysis.changelist_classifier import ChangelistClassifier
 from analysis.linear.changelist_features.min_distance import MinDistanceFeature
@@ -189,6 +190,16 @@ class ChangelistClassifierTest(AppengineTestCase):
     self.assertListEqual([suspect.ToDict() for suspect in suspects],
                          expected_suspects)
     self.assertFalse(mock_rank_suspects.called)
+
+  @mock.patch(
+      'analysis.changelist_classifier.ChangelistClassifier.GenerateSuspects')
+  def testRaiseFailedToParseStacktraceException(self, mock_generate_suspects):
+    """Tests that ``__call__`` raise exception if stacktrace is None."""
+    suspect = Suspect(DUMMY_CHANGELOG1, 'src/')
+    mock_generate_suspects.return_value = [suspect, suspect]
+    report = CrashReport(None, None, None, None, (None, None), None, None)
+    with self.assertRaises(exceptions.FailedToParseStacktrace):
+      self.changelist_classifier(report)
 
   @mock.patch('libs.gitiles.gitiles_repository.GitilesRepository.GetChangeLogs')
   def testGenerateSuspectsFilterReverted(self, mock_get_change_logs):

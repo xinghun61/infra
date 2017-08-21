@@ -119,10 +119,6 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
   if is_java:
     return '', normalized_path, None
 
-  logging.info(
-      'Cannot find match of dep path for file path %s, Default to src/',
-      normalized_path)
-
   # For some crashes, the file path looks like this:
   # third_party/WebKit/Source/a.cc, the src/ in the beginning is trimmed, so
   # default the dep path to 'src/' if no match found.

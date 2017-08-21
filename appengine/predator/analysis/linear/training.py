@@ -11,7 +11,7 @@ import scipy.optimize as spo
 from analysis.linear.model import LogLinearModel
 from analysis.linear.weight import MetaWeight
 from analysis.linear.weight import Weight
-from common.exceptions import PredatorError
+from analysis.exceptions import PredatorError
 from libs.meta_dict_serializer import GetSerializer
 from libs.math.vectors import vsum
 # N.B., ``vsum`` can't take generators; you must pass explicit lists.

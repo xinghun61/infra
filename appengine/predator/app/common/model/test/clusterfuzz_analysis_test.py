@@ -60,6 +60,7 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
         return_value=MockClusterfuzzData(raw_crash_data))
 
     crash_data = predator.GetCrashData(raw_crash_data)
+
     analysis = ClusterfuzzAnalysis()
     analysis.Initialize(crash_data)
     self.assertEqual(analysis.crash_type, crash_data.crash_type)
@@ -151,7 +152,7 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
     analysis.testcase_id = testcase_id
     analysis.job_type = job_type
     analysis.dependency_rolls = {
-        'src/': DependencyRoll('src/', 'https://repo', 'rev1', 'rev2'),
+        'src': DependencyRoll('src', 'https://repo', 'rev1', 'rev2'),
         'src/v8': DependencyRoll('src/v8', 'https://repo/v8', 'rev3', 'rev4')
     }
 

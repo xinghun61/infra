@@ -303,8 +303,11 @@
 
   <div>
     <br><br>
-    {% if analysis_failed or not analysis_completed %}
+    {% if analysis_failed %}
     <span class="error">No result because of some error in analysis!<br></span>
+    <pre>{{ analysis_error_stack}}</pre>
+    {% elif not analysis_completed %}
+    <span class="error">Analysis is not finished...<br></span>
     {% else %}
     <b> Suspected cls: </b>
       {% if suspected_cls %}
@@ -344,16 +347,16 @@
       {% else %}
         Not found <br>
       {% endif %}
-    {% endif %}
-    <div class="triage-area">
-      <div class="triage correct" result_property="suspected_cls">Correct<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_satisfied_black_24dp.png"/></div>
-      <div class="triage incorrect" result_property="suspected_cls">Incorrect<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_dissatisfied_black_24dp.png"/></div>
-      <div class="triage unsure" result_property="suspected_cls">Unsure<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_neutral_black_24dp.png"/></div>
-      <div class="not-display" id="suspected_cls_culprit_input">
-        <br><br>Culprit suspected cls: (e.g.  https://chromium.googlesource.com/chromium/src/+/346a46f9cc4151e989b961d2d0429d16aeb49c14)<br>
-        <textarea id="culprit_cls" size="30" rows="3" cols="100"></textarea>
+      <div class="triage-area">
+        <div class="triage correct" result_property="suspected_cls">Correct<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_satisfied_black_24dp.png"/></div>
+        <div class="triage incorrect" result_property="suspected_cls">Incorrect<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_dissatisfied_black_24dp.png"/></div>
+        <div class="triage unsure" result_property="suspected_cls">Unsure<img src="https://www.gstatic.com/images/icons/material/system/1x/sentiment_neutral_black_24dp.png"/></div>
+        <div class="not-display" id="suspected_cls_culprit_input">
+          <br><br>Culprit suspected cls: (e.g.  https://chromium.googlesource.com/chromium/src/+/346a46f9cc4151e989b961d2d0429d16aeb49c14)<br>
+          <textarea id="culprit_cls" size="30" rows="3" cols="100"></textarea>
+        </div>
       </div>
-    </div>
+    {% endif %}
   </div>
 
   <div>

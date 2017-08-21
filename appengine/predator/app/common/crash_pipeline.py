@@ -8,12 +8,13 @@ import traceback
 
 from google.appengine.ext import ndb
 
+from analysis.exceptions import FailedToParseStacktrace
+from analysis.exceptions import PredatorError
 from analysis.type_enums import CrashClient
 from common import predator_for_chromecrash
 from common import predator_for_clusterfuzz
 from common import predator_for_uma_sampling_profiler
 from common import monitoring
-from common.exceptions import PredatorError
 from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
 from common.model.cracas_crash_analysis import CracasCrashAnalysis
 from common.model.crash_analysis import CrashAnalysis
@@ -34,6 +35,21 @@ CLIENT_ID_TO_CRASH_ANALYSIS = {
     CrashClient.CRACAS: CracasCrashAnalysis,
     CrashClient.CLUSTERFUZZ: ClusterfuzzAnalysis
 }
+
+
+def GetResultWhenAnalysisFailed(analysis, error_name):
+  analysis.error_name = error_name
+  analysis.error_stack = traceback.format_exc()
+  analysis.status = analysis_status.ERROR
+  result = {'found': False}
+  tags = {
+      'found_suspects': False,
+      'found_project': False,
+      'found_components': False,
+      'has_regression_range': bool(analysis.regression_range),
+      'solution': None,
+  }
+  return result, tags
 
 
 # TODO(http://crbug.com/659346): write complete coverage tests for this.
@@ -159,38 +175,34 @@ class CrashAnalysisPipeline(CrashBasePipeline):
     analysis.put()
 
     # Actually do the analysis.
-    culprit = self._predator.FindCulprit(analysis.ToCrashReport())
-    if culprit is not None:
+    try:
+      culprit = self._predator.FindCulprit(analysis.ToCrashReport())
       result, tags = culprit.ToDicts()
-    else:
-      result = {'found': False}
-      tags = {
-          'found_suspects': False,
-          'found_project': False,
-          'found_components': False,
-          'has_regression_range': bool(analysis.regression_range),
-          'solution': None,
-      }
+      analysis.status = analysis_status.COMPLETED
+      analysis.completed_time = time_util.GetUTCNow()
+    except FailedToParseStacktrace as error:
+      result, tags = GetResultWhenAnalysisFailed(analysis, error.name)
+    except Exception:
+      result, tags = GetResultWhenAnalysisFailed(analysis, 'Undefined error')
 
     # Update model's status to say we're done, and save the results.
-    analysis.completed_time = time_util.GetUTCNow()
     analysis.result = result
     for tag_name, tag_value in tags.iteritems():
       # TODO(http://crbug.com/602702): make it possible to add arbitrary tags.
-      # TODO(http://crbug.com/659346): we misplaced the coverage test; find it!
-      if hasattr(analysis, tag_name): # pragma: no cover
+      # TODO(http://crbug.com/659346): we misplaced the coverage test;
+      # find it!
+      if hasattr(analysis, tag_name):  # pragma: no cover
         setattr(analysis, tag_name, tag_value)
 
       if hasattr(monitoring, tag_name):
         metric = getattr(monitoring, tag_name)
         metric.increment({tag_name: tag_value,
                           'client_id': self.client_id})
+    analysis.put()
 
-    analysis.status = analysis_status.COMPLETED
     logging.info('Found %s analysis result for %s: \n%s', self.client_id,
                  repr(self._crash_identifiers),
                  json.dumps(analysis.result, indent=2, sort_keys=True))
-    analysis.put()
 
 
 class PublishResultPipeline(CrashBasePipeline):

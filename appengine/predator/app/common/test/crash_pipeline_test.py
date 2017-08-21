@@ -9,6 +9,7 @@ import mock
 from google.appengine.ext import ndb
 
 from analysis.culprit import Culprit
+from analysis.exceptions import FailedToParseStacktrace
 from analysis.suspect import Suspect
 from analysis.type_enums import CrashClient
 from common import crash_pipeline
@@ -44,14 +45,27 @@ class CrashAnalysisPipelineTest(AppengineTestCase):
     analysis.status = analysis_status.RUNNING
     analysis.put()
 
-    mock_find_culprit.return_value = None
+    mock_find_culprit.side_effect = Exception()
     pipeline = crash_pipeline.CrashAnalysisPipeline(
         CrashClient.FRACAS,
         crash_identifiers)
     pipeline.run()
 
     analysis = FracasCrashAnalysis.Get(crash_identifiers)
-    self.assertEqual(analysis_status.COMPLETED, analysis.status)
+    self.assertEqual(analysis_status.ERROR, analysis.status)
+    self.assertFalse(analysis.result['found'])
+    self.assertFalse(analysis.found_suspects)
+    self.assertFalse(analysis.found_project)
+    self.assertFalse(analysis.found_components)
+
+    mock_find_culprit.side_effect = FailedToParseStacktrace('failed!')
+    pipeline = crash_pipeline.CrashAnalysisPipeline(
+        CrashClient.FRACAS,
+        crash_identifiers)
+    pipeline.run()
+
+    analysis = FracasCrashAnalysis.Get(crash_identifiers)
+    self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertFalse(analysis.result['found'])
     self.assertFalse(analysis.found_suspects)
     self.assertFalse(analysis.found_project)

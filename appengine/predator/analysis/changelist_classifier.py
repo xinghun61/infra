@@ -4,6 +4,7 @@
 
 import logging
 
+from analysis import exceptions
 from analysis.linear.model import UnnormalizedLogLinearModel
 from analysis.suspect import Suspect
 from analysis.suspect_filters import FilterIgnoredRevisions
@@ -61,6 +62,10 @@ class ChangelistClassifier(object):
 
     if len(suspects) == 1:
       return suspects
+
+    if not report.stacktrace:
+      message = 'Failed to parse stacktrace. Cannot get culprit for this crash.'
+      raise exceptions.FailedToParseStacktrace(message)
 
     return self.FindSuspects(report, suspects)
 

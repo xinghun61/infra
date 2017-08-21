@@ -106,10 +106,14 @@
     <table>
       <tr>
         <th>Testcase</th>
+        <th>Crash type</th>
         <th>Crash state</th>
         <th>Regression range</th>
+        <th>Commits</th>
         <th>Platform</th>
+        <th>Sanitizer</th>
         <th>Job type</th>
+        <th>Error</th>
         <th>Suspected cls</th>
         <th>Suspected project</th>
         <th>Suspected components</th>
@@ -118,8 +122,9 @@
         {% for crash in crashes %}
           <tr>
             <td>
-              <a href="https://clusterfuzz.com/v2/testcase-detail/{{ crash.testcase }}">{{ crash.testcase_id }}</a>
+              <a href="https://clusterfuzz.com/v2/testcase-detail/{{ crash.testcase_id }}">{{ crash.testcase_id }}</a>
             </td>
+            <td>{{ crash.crash_type }}</td>
             <td>
               <a href="./result-feedback?key={{crash.key}}" target="_blank">{{crash.signature}}</a>
             </td>
@@ -128,8 +133,11 @@
             {% else %}
               <td></td>
             {% endif %}
+            <td>{{ crash.commits }}</td>
             <td>{{ crash.platform }}</td>
+            <td>{{ crash.sanitizer }}</td>
             <td>{{ crash.job_type }}</td>
+            <td>{{ crash.error_name }}</td>
             <td>
             {% if crash.suspected_cls %}
               {% for suspected_cl in crash.suspected_cls %}

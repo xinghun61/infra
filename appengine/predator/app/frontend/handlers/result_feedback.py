@@ -89,6 +89,7 @@ class ResultFeedback(BaseHandler):
         'request_time': time_util.FormatDatetime(analysis.requested_time),
         'analysis_completed': analysis.completed,
         'analysis_failed': analysis.failed,
+        'analysis_error_stack': analysis.error_stack,
         'triage_history': _GetTriageHistory(analysis),
         'analysis_correct': {
             'regression_range': analysis.regression_range_triage_status,
