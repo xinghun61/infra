@@ -83,22 +83,19 @@ func init() {
 //
 // datasetID, tableID are identifiers passed to the BigQuery client to gain
 // access to a particular table.
-func NewUploader(ctx context.Context, datasetID, tableID string, cfg UploaderConfig) (*Uploader, error) {
+func NewUploader(ctx context.Context, c *bigquery.Client, datasetID, tableID string, cfg UploaderConfig) (*Uploader, error) {
 	if id.prefix == "" {
 		return nil, errors.New("error initializing prefix for insertID")
 	}
-	c, err := bigquery.NewClient(ctx, "chrome-infra-events")
-	if err != nil {
-		return nil, err
-	}
+
 	t := c.Dataset(datasetID).Table(tableID)
 	md, err := t.Metadata(ctx)
 	if err != nil {
 		return nil, err
 	}
-	bqu := t.Uploader()
-	bqu.SkipInvalidRows = cfg.SkipInvalid
-	bqu.IgnoreUnknownValues = cfg.IgnoreUnknown
+	u := t.Uploader()
+	u.SkipInvalidRows = cfg.SkipInvalid
+	u.IgnoreUnknownValues = cfg.IgnoreUnknown
 
 	timeout := cfg.Timeout
 	if timeout == time.Duration(0) {
@@ -117,7 +114,7 @@ func NewUploader(ctx context.Context, datasetID, tableID string, cfg UploaderCon
 		ctx,
 		datasetID,
 		tableID,
-		bqu,
+		u,
 		md.Schema,
 		timeout,
 		uploadCounter,
