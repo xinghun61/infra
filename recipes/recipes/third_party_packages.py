@@ -34,6 +34,8 @@ def RunSteps(api, dry_run):
       api.third_party_packages.git.package()
     with api.step.nest('gcloud'):
       api.third_party_packages.gcloud.package()
+    with api.step.nest('ninja'):
+      api.third_party_packages.ninja.package()
 
 
 def GenTests(api):
@@ -67,7 +69,13 @@ def GenTests(api):
         api.third_party_packages.gcloud.PACKAGE_TEMPLATE % {
           'platform': platform,
         },
-        '1.2.3' + api.third_party_packages.gcloud.PACKAGE_VERSION_SUFFIX)
+        '1.2.3' + api.third_party_packages.gcloud.PACKAGE_VERSION_SUFFIX) +
+      api.step_data('ninja.refs',
+        api.gitiles.make_refs_test_data('refs/tags/v1.7.2')) +
+      cipd_search(
+        'ninja',
+        api.third_party_packages.ninja.PACKAGE_PREFIX + platform,
+        '1.7.2' + api.third_party_packages.ninja.PACKAGE_VERSION_SUFFIX)
     )
 
   yield (

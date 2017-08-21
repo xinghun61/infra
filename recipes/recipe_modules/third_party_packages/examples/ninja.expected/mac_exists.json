@@ -1,0 +1,86 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/ninja"
+    ],
+    "infra_step": true,
+    "name": "rmtree workdir"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/ninja-build/ninja/+refs",
+      "--format",
+      "json"
+    ],
+    "name": "refs",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"HEAD\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/heads/master\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v1.6.0\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v1.6.1\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v1.7.4\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@refs@HEAD@@@",
+      "@@@STEP_LOG_LINE@refs@refs/heads/master@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v1.6.0@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v1.6.1@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v1.7.4@@@",
+      "@@@STEP_LOG_END@refs@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "infra/ninja/mac-amd64",
+      "-tag",
+      "version:1.7.4",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "name": "cipd search infra/ninja/mac-amd64 version:1.7.4",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-instance_id_1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/ninja/mac-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "import sys; sys.exit(0)"
+    ],
+    "name": "Synced",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@Package is up to date.@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]
