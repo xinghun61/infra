@@ -26,8 +26,9 @@ _MOCK_FRACAS_CONFIG = {
 }
 
 _MOCK_CLUSTERFUZZ_CONFIG = {
-    'analysis_result_pubsub_topic': (
-        'projects/google.com:findit-for-me/topics/result-for-clusterfuzz'),
+    'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+    'try_bot_topic': 'projects/project-name/topics/name',
+    'try_bot_supported_platforms': ['linux'],
     'signature_blacklist_markers': ['Blacklist marker'],
     'blacklist_crash_type': ['out-of-memory'],
     'top_n': 7
@@ -167,15 +168,32 @@ class CrashConfigTest(TestCase):
     }
     self.assertFalse(crash_config._ValidateClusterfuzzConfig(config))
 
+    # Return False if config doesn't have "try_bot_topic".
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+    }
+    self.assertFalse(crash_config._ValidateClusterfuzzConfig(config))
+
+    # Return False if config doesn't have "try_bot_supported_platforms".
+    config = {
+        'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'try_bot_topic': 'projects/project-name/topics/name',
+    }
+    self.assertFalse(crash_config._ValidateClusterfuzzConfig(config))
+
     # Return False if config doesn't have "signature_blacklist_markers".
     config = {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'try_bot_topic': 'projects/project-name/topics/name',
+        'try_bot_supported_platforms': ['linux']
     }
     self.assertFalse(crash_config._ValidateClusterfuzzConfig(config))
 
     # Return False if entries of "signature_blacklist_markers" are not strs.
     config = {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'try_bot_topic': 'projects/project-name/topics/name',
+        'try_bot_supported_platforms': ['linux'],
         'signature_blacklist_markers': [None]
     }
     self.assertFalse(crash_config._ValidateClusterfuzzConfig(config))
@@ -184,6 +202,8 @@ class CrashConfigTest(TestCase):
     # "blacklist_crash_type".
     config = {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'try_bot_topic': 'projects/project-name/topics/name',
+        'try_bot_supported_platforms': ['linux'],
         'signature_blacklist_markers': []
     }
     self.assertFalse(crash_config._ValidateClusterfuzzConfig(config))
@@ -192,6 +212,8 @@ class CrashConfigTest(TestCase):
     # formatted.
     config = {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'try_bot_topic': 'projects/project-name/topics/name',
+        'try_bot_supported_platforms': ['linux'],
         'signature_blacklist_markers': [],
         'blacklist_crash_type': {}
     }
@@ -200,6 +222,8 @@ class CrashConfigTest(TestCase):
     # Return False if config doesn't have "top_n".
     config = {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'try_bot_topic': 'projects/project-name/topics/name',
+        'try_bot_supported_platforms': ['linux'],
         'signature_blacklist_markers': [],
         'blacklist_crash_type': []
     }

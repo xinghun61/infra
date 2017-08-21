@@ -104,6 +104,7 @@ def _ValidateClusterfuzzConfig(clusterfuzz_config):
       chrome crash clients - Cracas and Fracas.
       {
         'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+        'try_bot_topic': 'projects/project-name/topics/name',
         'signature_blacklist_markers': [],
         'blacklist_crash_type': ['out-of-memory'],
         'top_n': 7
@@ -115,6 +116,15 @@ def _ValidateClusterfuzzConfig(clusterfuzz_config):
   analysis_result_pubsub_topic = clusterfuzz_config.get(
       'analysis_result_pubsub_topic')
   if not isinstance(analysis_result_pubsub_topic, basestring):
+    return False
+
+  try_bot_topic = clusterfuzz_config.get('try_bot_topic')
+  if not isinstance(try_bot_topic, basestring):
+    return False
+
+  try_bot_supported_platforms = clusterfuzz_config.get(
+      'try_bot_supported_platforms')
+  if not _IsListOfStrings(try_bot_supported_platforms):
     return False
 
   signature_blacklist_markers = clusterfuzz_config.get(
