@@ -22,7 +22,7 @@ def get_all_rotations():
     rotations = content['rotations']
     for calendar in calendars:
       if calendar['date'] == today:
-        sheriffs = [['%s@google.com' % p for p in q]
+        sheriffs = [['%s@google.com' % p.split('@')[0] for p in q]
                     for q in calendar['participants']]
         return dict(zip(rotations, sheriffs))
     raise Exception('Today\'s date (%s) is not listed in the rotations '

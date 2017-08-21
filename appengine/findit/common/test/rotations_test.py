@@ -62,13 +62,14 @@ class RotationsTest(testing.AppengineTestCase):
             },
             {
                 'date': '2017-01-01',
-                'participants': [['ham', 'eggs'], []]
+                'participants': [['ham', 'eggs', 'beef@chromium.org'], []]
             },
         ],
         'rotations': ['dummy1', 'dummy2']
     })
     self.http_client.SetResponse(rotations.ROTATIONS_URL, (200, response))
     self.assertIn('ham@google.com', rotations.current_sheriffs('dummy1'))
+    self.assertIn('beef@google.com', rotations.current_sheriffs('dummy1'))
 
   def testCurrentSheriffsMissingSheriff(self):
     response = json.dumps({
