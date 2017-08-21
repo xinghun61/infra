@@ -5,14 +5,15 @@
 import logging
 
 from analysis import detect_regression_range
-from analysis.chromecrash_parser import ChromeCrashParser
+from analysis.chromecrash_parser import CracasCrashParser
+from analysis.chromecrash_parser import FracasCrashParser
 from analysis.crash_data import CrashData
 from analysis.dependency_analyzer import DependencyAnalyzer
 from decorators import cached_property
 
 
 class ChromeCrashData(CrashData):
-  """Chrome crash report from Cracas/Fracas.
+  """Parsed Chrome crash data from Cracas/Fracas.
 
   Properties:
     identifiers (dict): The key value pairs to uniquely identify a
@@ -113,7 +114,7 @@ class ChromeCrashData(CrashData):
   @cached_property
   def stacktrace(self):
     """Parses stacktrace and returns parsed ``Stacktrace`` object."""
-    stacktrace = ChromeCrashParser().Parse(
+    stacktrace = self.StacktraceParserCls().Parse(
         self._raw_stacktrace,
         self._dependency_analyzer.regression_version_deps,
         signature=self.signature, top_n_frames=self._top_n_frames)
@@ -152,3 +153,24 @@ class ChromeCrashData(CrashData):
             'platform': self.platform,
             'regression_range': self.regression_range,
             'channel': self.channel}
+
+  @classmethod
+  def StacktraceParserCls(cls):
+    """The class of stacktrace parser."""
+    raise NotImplementedError()
+
+
+class FracasCrashData(ChromeCrashData):
+
+  @classmethod
+  def StacktraceParserCls(cls):
+    """The class of stacktrace parser."""
+    return FracasCrashParser
+
+
+class CracasCrashData(ChromeCrashData):
+
+  @classmethod
+  def StacktraceParserCls(cls):
+    """The class of stacktrace parser."""
+    return CracasCrashParser

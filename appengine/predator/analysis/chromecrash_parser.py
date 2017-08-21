@@ -17,7 +17,7 @@ from analysis.type_enums import LanguageType
 DEFAULT_TOP_N_FRAMES = 7
 
 
-class ChromeCrashParser(object):
+class FracasCrashParser(object):
 
   def Parse(self, stacktrace_string, deps, signature=None, top_n_frames=None):
     """Parse fracas stacktrace string into Stacktrace instance."""
@@ -46,3 +46,27 @@ class ChromeCrashParser(object):
     # Add the last stack to stacktrace.
     stacktrace_buffer.AddFilteredStack(stack_buffer)
     return stacktrace_buffer.ToStacktrace()
+
+
+class CracasCrashParser(object):
+
+  def __init__(self):
+    self._sub_parser = FracasCrashParser()
+
+  def Parse(self, stacktrace_list, deps, signature=None, top_n_frames=None):
+    """Parses a list of stacktrace strings.
+
+    Note that Cracas sends stacktrace strings from different reports, if they
+    are different, every single stacktrace has the same format as Fracas
+    stacktrace string. So we can use FracasCrashParser as sub parser to parse
+    each string in the list.
+    """
+    callstacks = []
+    for stacktrace_str in stacktrace_list:
+      sub_stacktrace = self._sub_parser.Parse(stacktrace_str, deps,
+                                              signature=signature,
+                                              top_n_frames=top_n_frames)
+      if sub_stacktrace:
+        callstacks.extend(sub_stacktrace.stacks)
+
+    return Stacktrace(callstacks, callstacks[0]) if callstacks else None

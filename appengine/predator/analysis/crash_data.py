@@ -5,7 +5,6 @@
 import logging
 from collections import namedtuple
 
-from analysis.chromecrash_parser import ChromeCrashParser
 from analysis.stacktrace import Stacktrace
 
 PLATFORM_TO_NORMALIZED_PLATFORM = {'linux': 'unix'}

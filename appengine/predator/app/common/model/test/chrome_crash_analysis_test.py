@@ -40,7 +40,8 @@ class ChromeCrashAnalysisTest(AppengineTestCase):
     historical_metadata = []
     crash_data = self.GetDummyChromeCrashData(
         channel=channel, historical_metadata=historical_metadata)
-    class MockChromeCrashData(ChromeCrashData):
+
+    class MockChromeCrashData(ChromeCrashData):  # pylint: disable=W0223
 
       def __init__(self, crash_data):
         super(MockChromeCrashData, self).__init__(crash_data, None)

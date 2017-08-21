@@ -6,6 +6,8 @@ import mock
 
 from analysis.analysis_testcase import AnalysisTestCase
 from analysis.chrome_crash_data import ChromeCrashData
+from analysis.chrome_crash_data import CracasCrashData
+from analysis.chrome_crash_data import FracasCrashData
 from analysis.stacktrace import CallStack
 from analysis.stacktrace import StackFrame
 from analysis.stacktrace import Stacktrace
@@ -25,34 +27,6 @@ class ChromeCrashDataTest(AnalysisTestCase):
                      raw_crash_data['customized_data']['channel'])
     self.assertEqual(crash_data.historical_metadata,
                      raw_crash_data['customized_data']['historical_metadata'])
-
-  @mock.patch('analysis.chromecrash_parser.ChromeCrashParser.Parse')
-  @mock.patch('libs.deps.chrome_dependency_fetcher.'
-              'ChromeDependencyFetcher.GetDependency')
-  def testParseStacktraceFailed(self, mock_get_dependency,
-                                mock_chromecrash_parser):
-    """Tests that ``stacktrace`` is None when failed to parse stacktrace."""
-    mock_get_dependency.return_value = {}
-    mock_chromecrash_parser.return_value = None
-    crash_data = ChromeCrashData(
-        self.GetDummyChromeCrashData(),
-        ChromeDependencyFetcher(self.GetMockRepoFactory()))
-    self.assertIsNone(crash_data.stacktrace)
-
-  @mock.patch('libs.deps.chrome_dependency_fetcher.'
-              'ChromeDependencyFetcher.GetDependency')
-  def testParseStacktraceSucceeded(self, mock_get_dependency):
-    """Tests parsing ``stacktrace``."""
-    mock_get_dependency.return_value = {}
-    crash_data = ChromeCrashData(
-        self.GetDummyChromeCrashData(),
-        ChromeDependencyFetcher(self.GetMockRepoFactory()))
-    stack = CallStack(0)
-    stacktrace = Stacktrace([stack], stack)
-    with mock.patch(
-        'analysis.chromecrash_parser.ChromeCrashParser.Parse') as mock_parse:
-      mock_parse.return_value = stacktrace
-      self._VerifyTwoStacktracesEqual(crash_data.stacktrace, stacktrace)
 
   def testDetectRegressionRangeFailed(self):
     """Tests that ``regression_range`` is None when detection failed."""
@@ -119,3 +93,67 @@ class ChromeCrashDataTest(AnalysisTestCase):
          'platform': crash_data.platform,
          'channel': crash_data.channel,
          'regression_range': crash_data.regression_range})
+
+
+class FracasCrashDataTest(AnalysisTestCase):
+  """Tests ``FracasCrashData`` class."""
+
+  @mock.patch('analysis.chromecrash_parser.FracasCrashParser.Parse')
+  @mock.patch('libs.deps.chrome_dependency_fetcher.'
+              'ChromeDependencyFetcher.GetDependency')
+  def testParseStacktraceFailed(self, mock_get_dependency,
+                                mock_chromecrash_parser):
+    """Tests that ``stacktrace`` is None when failed to parse stacktrace."""
+    mock_get_dependency.return_value = {}
+    mock_chromecrash_parser.return_value = None
+    crash_data = FracasCrashData(
+        self.GetDummyChromeCrashData(),
+        ChromeDependencyFetcher(self.GetMockRepoFactory()))
+    self.assertIsNone(crash_data.stacktrace)
+
+  @mock.patch('libs.deps.chrome_dependency_fetcher.'
+              'ChromeDependencyFetcher.GetDependency')
+  def testParseStacktraceSucceeded(self, mock_get_dependency):
+    """Tests parsing ``stacktrace``."""
+    mock_get_dependency.return_value = {}
+    crash_data = FracasCrashData(
+        self.GetDummyChromeCrashData(),
+        ChromeDependencyFetcher(self.GetMockRepoFactory()))
+    stack = CallStack(0)
+    stacktrace = Stacktrace([stack], stack)
+    with mock.patch(
+        'analysis.chromecrash_parser.FracasCrashParser.Parse') as mock_parse:
+      mock_parse.return_value = stacktrace
+      self._VerifyTwoStacktracesEqual(crash_data.stacktrace, stacktrace)
+
+
+class CracasCrashDataTest(AnalysisTestCase):
+  """Tests ``CracasCrashData`` class."""
+
+  @mock.patch('analysis.chromecrash_parser.CracasCrashParser.Parse')
+  @mock.patch('libs.deps.chrome_dependency_fetcher.'
+              'ChromeDependencyFetcher.GetDependency')
+  def testParseStacktraceFailed(self, mock_get_dependency,
+                                mock_chromecrash_parser):
+    """Tests that ``stacktrace`` is None when failed to parse stacktrace."""
+    mock_get_dependency.return_value = {}
+    mock_chromecrash_parser.return_value = None
+    crash_data = CracasCrashData(
+        self.GetDummyChromeCrashData(),
+        ChromeDependencyFetcher(self.GetMockRepoFactory()))
+    self.assertIsNone(crash_data.stacktrace)
+
+  @mock.patch('libs.deps.chrome_dependency_fetcher.'
+              'ChromeDependencyFetcher.GetDependency')
+  def testParseStacktraceSucceeded(self, mock_get_dependency):
+    """Tests parsing ``stacktrace``."""
+    mock_get_dependency.return_value = {}
+    crash_data = CracasCrashData(
+        self.GetDummyChromeCrashData(),
+        ChromeDependencyFetcher(self.GetMockRepoFactory()))
+    stack = CallStack(0)
+    stacktrace = Stacktrace([stack], stack)
+    with mock.patch(
+        'analysis.chromecrash_parser.CracasCrashParser.Parse') as mock_parse:
+      mock_parse.return_value = stacktrace
+      self._VerifyTwoStacktracesEqual(crash_data.stacktrace, stacktrace)

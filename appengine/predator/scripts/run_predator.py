@@ -22,8 +22,6 @@ script_util.SetUpSystemPaths(_ROOT_DIR)
 
 from local_libs.local_cache import LocalCache
 
-from analysis.chromecrash_parser import ChromeCrashParser
-from analysis.clusterfuzz_parser import ClusterfuzzParser
 from analysis.type_enums import CrashClient
 from app.common.crash_pipeline import PredatorForClientID
 from app.common.model import crash_analysis

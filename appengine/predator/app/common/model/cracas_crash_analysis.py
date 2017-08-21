@@ -5,6 +5,8 @@
 import logging
 import urllib
 
+from google.appengine.ext import ndb
+
 from analysis.type_enums import CrashClient
 from common.model.chrome_crash_analysis import ChromeCrashAnalysis
 
@@ -15,9 +17,14 @@ _PLATFORM_TO_PRODUCT_NAME = {'win': 'Chrome',
 
 _CRACAS_BASE_URL = 'https://crash.corp.google.com/browse'
 
+# TODO(katesonia): Consider moving JsonProperty to LocalStructuredProperty or
+# StructuredProperty instead because JsonProperty's format is unpredictable.
+
 
 class CracasCrashAnalysis(ChromeCrashAnalysis):
   """Represents an analysis of a Chrome crash on Cracas."""
+
+  stack_trace = ndb.JsonProperty(indexed=False)
 
   @property
   def client_id(self):  # pragma: no cover

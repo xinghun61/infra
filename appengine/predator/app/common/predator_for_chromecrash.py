@@ -8,8 +8,8 @@ from google.appengine.ext import ndb
 
 from analysis import detect_regression_range
 from analysis.changelist_classifier import ChangelistClassifier
-from analysis.chromecrash_parser import ChromeCrashParser
-from analysis.chrome_crash_data import ChromeCrashData
+from analysis.chrome_crash_data import CracasCrashData
+from analysis.chrome_crash_data import FracasCrashData
 from analysis.linear.changelist_features.file_path_idf import FilePathIdfFeature
 from analysis.linear.changelist_features.number_of_touched_files import (
     NumberOfTouchedFilesFeature)
@@ -103,9 +103,14 @@ class PredatorForChromeCrash(PredatorApp):  # pylint: disable=W0223
 
   def GetCrashData(self, raw_crash_data):
     """Returns parsed ``ChromeCrashData`` from raw json crash data."""
-    return ChromeCrashData(raw_crash_data,
-                           ChromeDependencyFetcher(self._get_repository),
-                           top_n_frames=self.client_config['top_n'])
+    return self.CrashDataCls()(raw_crash_data,
+                               ChromeDependencyFetcher(self._get_repository),
+                               top_n_frames=self.client_config['top_n'])
+
+  @classmethod
+  def CrashDataCls(cls):
+    """The class of stacktrace parser."""
+    raise NotImplementedError()
 
 
 class PredatorForCracas(PredatorForChromeCrash):
@@ -146,6 +151,11 @@ class PredatorForCracas(PredatorForChromeCrash):
     return super(PredatorForCracas, self).GetPublishableResult(
         crash_identifiers, analysis)
 
+  @classmethod
+  def CrashDataCls(cls):
+    """The class of crash data."""
+    return CracasCrashData
+
 
 class PredatorForFracas(PredatorForChromeCrash):  # pylint: disable=W0223
   @classmethod
@@ -159,3 +169,8 @@ class PredatorForFracas(PredatorForChromeCrash):  # pylint: disable=W0223
   def GetAnalysis(self, crash_identifiers):
     # TODO: inline FracasCrashAnalysis.Get stuff here.
     return FracasCrashAnalysis.Get(crash_identifiers)
+
+  @classmethod
+  def CrashDataCls(cls):
+    """The class of crash data."""
+    return FracasCrashData

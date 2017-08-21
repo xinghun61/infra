@@ -6,7 +6,6 @@ import logging
 from collections import namedtuple
 
 from analysis import detect_regression_range
-from analysis.chromecrash_parser import ChromeCrashParser
 from analysis.clusterfuzz_parser import ClusterfuzzParser
 from analysis.crash_data import CrashData
 from analysis.stacktrace import Stacktrace

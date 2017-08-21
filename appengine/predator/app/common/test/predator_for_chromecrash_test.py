@@ -6,7 +6,6 @@ import mock
 
 from analysis import chromecrash_parser
 from analysis import detect_regression_range
-from analysis.chromecrash_parser import ChromeCrashParser
 from analysis.component_classifier import ComponentClassifier
 from analysis.crash_report import CrashReport
 from analysis.culprit import Culprit
@@ -193,3 +192,8 @@ class PredatorForCracasTest(AppengineTestCase):
     modified_crash_identifiers, _ = self.predator.GetPublishableResult(
         crash_identifiers, None)
     self.assertEqual(modified_crash_identifiers, crash_identifiers)
+
+  def testCrashDataCls(self):
+    """Tests ``CrashDataCls`` returns the class of the crash data."""
+    crash_data = self.predator.GetCrashData(self.GetDummyChromeCrashData())
+    self.assertTrue(isinstance(crash_data, self.predator.CrashDataCls()))
