@@ -20,7 +20,7 @@ from libs.cache_decorator import Cached
 from local_libs.local_cache import LocalCache  # pylint: disable=W
 
 
-_CRASH_URL_PATTERN = re.compile(r'.*/result-feedback\?key=(.*)')
+_CRASH_URL_PATTERN = re.compile(r'.*result-feedback\?key=(\w*)')
 # TODO(crbug.com/662540): Add unittests.
 
 
@@ -164,11 +164,12 @@ def GetTriageResultsFromCrashes(crashes):  # pragma: no cover.
   return triage_results
 
 
-def ReadCrashesFromTsvTestset(testset_path):  # pragma: no cover.
-  """Reads crashes from tsv testset file.
+def _ReadCrashesFromTestset(testset_path, separator):  # pragma: no cover.
+  """Reads crashes from csv/tsv/etc. testset file.
 
   Args:
-    testset_path (str): file path to read the tsv testset file.
+    testset_path (str): file path to read the testset file.
+    separator (str): the separator used in the file, e.g. tab for .tsv files.
 
   Returns:
     A dict mapping crash_id(urlsafe encoding of a CrashAnalysis model) to
@@ -180,7 +181,7 @@ def ReadCrashesFromTsvTestset(testset_path):  # pragma: no cover.
       if not line:
         continue
 
-      line_parts = line.split('\t')
+      line_parts = line.split(separator)
       match = _CRASH_URL_PATTERN.match(line_parts[0])
       if match:
         crash_id = match.group(1)
@@ -189,6 +190,16 @@ def ReadCrashesFromTsvTestset(testset_path):  # pragma: no cover.
           crashes[crash_id] = crash
 
   return crashes
+
+
+def ReadCrashesFromTsvTestset(testset_path):  # pragma: no cover.
+  """Read crashes from tsv testset file."""
+  return _ReadCrashesFromTestset(testset_path, '\t')
+
+
+def ReadCrashesFromCsvTestset(testset_path):  # pragma: no cover.
+  """Reads crashes from csv testset file."""
+  return _ReadCrashesFromTestset(testset_path, ',')
 
 
 def DeltaKeyGenerator(func, args, kwargs, namespace=None):  # pragma: no cover.
