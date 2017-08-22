@@ -12,15 +12,13 @@ import (
 
 	"golang.org/x/net/context"
 
-	"infra/libs/infraenv"
-
-	"go.chromium.org/luci/common/auth"
 	"go.chromium.org/luci/common/errors"
 	log "go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/milo"
 	"go.chromium.org/luci/common/system/environ"
 	"go.chromium.org/luci/common/system/exitcode"
 	grpcLogging "go.chromium.org/luci/grpc/logging"
+
 	"go.chromium.org/luci/logdog/client/annotee"
 	"go.chromium.org/luci/logdog/client/annotee/annotation"
 	"go.chromium.org/luci/logdog/client/butler"
@@ -136,29 +134,10 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	// Register and instantiate our LogDog Output.
 	var o output.Output
 	if flags.FilePath == "" {
-		// Set up authentication.
-		authOpts := infraenv.DefaultAuthOptions()
-		authOpts.Scopes = out.Scopes()
-		switch {
-		case flags.ServiceAccountJSONPath != "":
-			authOpts.ServiceAccountJSONPath = flags.ServiceAccountJSONPath
-			authOpts.Method = auth.ServiceAccountMethod
-
-		case infraenv.OnGCE():
-			authOpts.Method = auth.GCEMetadataMethod
-			break
-
-		default:
-			// No service account specified, so load the LogDog credentials from the
-			// local bot deployment.
-			credPath, err := infraenv.GetLogDogServiceAccountJSON()
-			if err != nil {
-				return 0, nil, errors.Annotate(err, "failed to get LogDog service account JSON path").Err()
-			}
-			authOpts.ServiceAccountJSONPath = credPath
-			authOpts.Method = auth.ServiceAccountMethod
+		authenticator, err := c.systemAuthenticator(ctx, out.Scopes()...)
+		if err != nil {
+			return 0, nil, errors.Annotate(err, "failed to get system authenticator").Err()
 		}
-		authenticator := auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts)
 
 		ocfg := out.Config{
 			Auth:    authenticator,
@@ -172,7 +151,6 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 			PublishContext: withNonCancel(ctx),
 		}
 
-		var err error
 		if o, err = ocfg.Register(ctx); err != nil {
 			return 0, nil, errors.Annotate(err, "failed to create LogDog Output instance").Err()
 		}

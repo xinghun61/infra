@@ -18,8 +18,7 @@ type LogDogFlags struct {
 	LogDogOnly             bool               `json:"logdog_only"`
 	LogDogSendIOKeepAlives bool               `json:"send_io_keepalives"`
 
-	FilePath               string `json:"file_path"`
-	ServiceAccountJSONPath string `json:"service_account_json_path"`
+	FilePath string `json:"file_path"`
 }
 
 func (p *LogDogFlags) register(fs *flag.FlagSet) {
@@ -43,11 +42,6 @@ func (p *LogDogFlags) register(fs *flag.FlagSet) {
 		"logdog-debug-out-file",
 		"",
 		"If specified, write all generated logs to this path instead of sending them.")
-	fs.StringVar(
-		&p.ServiceAccountJSONPath,
-		"logdog-service-account-json-path",
-		"",
-		"If specified, use the service account JSON file at this path. Otherwise, autodetect.")
 	fs.Var(
 		&p.GlobalTags,
 		"logdog-tag",
@@ -103,6 +97,5 @@ func (p *LogDogFlags) Dump() []string {
 	ret.boolean("logdog-only", p.LogDogOnly)
 	ret.boolean("logdog-send-io-keepalives", p.LogDogSendIOKeepAlives)
 	ret.str("logdog-debug-out-file", p.FilePath)
-	ret.str("logdog-service-account-json-path", p.ServiceAccountJSONPath)
 	return ret
 }

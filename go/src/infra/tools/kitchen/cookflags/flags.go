@@ -42,6 +42,9 @@ type CookFlags struct {
 	RecipeName string `json:"recipe_name"`
 	WorkDir    string `json:"work_dir"`
 
+	SystemAccount     string `json:"system_account"`
+	SystemAccountJSON string `json:"system_account_json"`
+
 	LogDogFlags LogDogFlags `json:"logdog_flags"`
 }
 
@@ -143,6 +146,17 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 		"",
 		"An optional URL to the build, which can be used to link to the build in LogDog.")
 
+	fs.StringVar(
+		&c.SystemAccount,
+		"luci-system-account",
+		"",
+		"If present, use this LUCI context logical account for system-level operations. Will likely be 'system'.")
+	fs.StringVar(
+		&c.SystemAccountJSON,
+		"luci-system-account-json",
+		"",
+		"Explicitly authenticate system operations using this service account JSON file.")
+
 	c.LogDogFlags.register(fs)
 }
 
@@ -168,6 +182,8 @@ func (c *CookFlags) Dump() []string {
 
 	ret.list("prefix-path-env", c.PrefixPathENV)
 	ret.stringMap("set-env-abspath", c.SetEnvAbspath)
+	ret.str("luci-system-account", c.SystemAccount)
+	ret.str("luci-system-account-json", c.SystemAccountJSON)
 
 	return append(ret, c.LogDogFlags.Dump()...)
 }

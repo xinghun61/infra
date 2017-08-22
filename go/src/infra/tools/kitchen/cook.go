@@ -18,13 +18,16 @@ import (
 	"github.com/maruel/subcommands"
 	"golang.org/x/net/context"
 
+	"go.chromium.org/luci/common/auth"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	log "go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/system/environ"
 	"go.chromium.org/luci/common/system/exitcode"
 	"go.chromium.org/luci/common/system/filesystem"
+	"go.chromium.org/luci/lucictx"
 
+	"infra/libs/infraenv"
 	"infra/tools/kitchen/build"
 	"infra/tools/kitchen/cookflags"
 	"infra/tools/kitchen/migration"
@@ -476,6 +479,48 @@ func (c *cookRun) updateEnv(env environ.Env) {
 	for _, v := range []string{"TEMPDIR", "TMPDIR", "TEMP", "TMP", "MAC_CHROMIUM_TMPDIR"} {
 		env.Set(v, c.TempDir)
 	}
+}
+
+// withSystemAccount derives a Context that uses the system logical account.
+//
+// If no system logical account is provided (via "-system-account" command-line
+// flag), withSystemAccount will not change the Context.
+//
+// On error, the original Context will be returned.
+func (c *cookRun) withSystemAccount(ctx context.Context) (context.Context, error) {
+	if v := c.CookFlags.SystemAccount; v != "" {
+		cc, err := lucictx.SwitchLocalAccount(ctx, v)
+		if err != nil {
+			return ctx, errors.Annotate(err, "failed to switch to system logical account %q", v).Err()
+		}
+		return cc, nil
+	}
+	return ctx, nil
+}
+
+func (c *cookRun) systemAuthenticator(ctx context.Context, scopes ...string) (*auth.Authenticator, error) {
+	// If we explicitly supply a system account JSON field, use that.
+	//
+	// This happens when Kitchen is used from BuildBot ("LUCI Emulation Mode").
+	if c.SystemAccountJSON != "" {
+		// If the user explicitly specifies a LogDog service account to use.
+		return auth.NewAuthenticator(ctx, auth.SilentLogin, auth.Options{
+			Method:                 auth.ServiceAccountMethod,
+			Scopes:                 scopes,
+			ServiceAccountJSONPath: c.SystemAccountJSON,
+		}), nil
+	}
+
+	// Use the system LUCI context account.
+	ctx, err := c.withSystemAccount(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// Set up an Authenticator for the specified scopes.
+	authOpts := infraenv.DefaultAuthOptions()
+	authOpts.Scopes = scopes
+	return auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts), nil
 }
 
 func parseProperties(properties map[string]interface{}, propertiesFile string) (result map[string]interface{}, err error) {
