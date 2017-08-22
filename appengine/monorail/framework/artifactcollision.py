@@ -17,7 +17,7 @@ Summary of classes:
 
 import re
 
-from framework import monorailrequest
+from framework import exceptions
 from framework import servlet
 
 
@@ -38,7 +38,7 @@ class ArtifactCollision(servlet.Servlet):
     """
     artifact_name = mr.GetParam('name')
     if not artifact_name:
-      raise monorailrequest.InputException()  # someone forged a link
+      raise exceptions.InputException()  # someone forged a link
 
     artifact_detail_url = '/p/%s/issues/detail?id=%s' % (
         mr.project_name, mr.continue_issue_id)

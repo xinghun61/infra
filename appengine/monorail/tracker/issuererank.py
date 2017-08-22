@@ -12,8 +12,8 @@ Summary of classes:
 import httplib
 import logging
 
+from framework import exceptions
 from framework import jsonfeed
-from framework import monorailrequest
 from framework import permissions
 from tracker import rerank_helpers
 from tracker import tracker_helpers
@@ -40,12 +40,12 @@ class IssueRerank(jsonfeed.JsonFeed):
   def HandleRequest(self, mr):
     if not mr.parent_id:
       logging.info('No parent issue specified.')
-      raise monorailrequest.InputException('No issue specified.')
+      raise exceptions.InputException('No issue specified.')
     all_issues = self._GetIssues(mr)
     parent = all_issues.get(mr.parent_id)
     if not parent:
       logging.info('Parent issue not found: %d', mr.parent_id)
-      raise monorailrequest.InputException('Parent issue not found.')
+      raise exceptions.InputException('Parent issue not found.')
 
     open_related, closed_related = (
         tracker_helpers.GetAllowedOpenAndClosedRelatedIssues(
@@ -113,10 +113,10 @@ class IssueRerank(jsonfeed.JsonFeed):
 
     if not target:
       logging.info('Target issue not found: %d.', mr.target_id)
-      raise monorailrequest.InputException('Target issue not found.')
+      raise exceptions.InputException('Target issue not found.')
     if None in moved:
       logging.info('Invalid moved issue id(s) in %r.', mr.moved_ids)
-      raise monorailrequest.InputException('Moved issue not found.')
+      raise exceptions.InputException('Moved issue not found.')
 
     logging.info(
         'Moving issue(s) %r %s issue %d.',

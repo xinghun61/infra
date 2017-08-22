@@ -10,9 +10,9 @@ When a project moves, we just display a link to the new location.
 
 import logging
 
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_helpers
-from framework import monorailrequest
 from framework import servlet
 from framework import urls
 
@@ -29,7 +29,7 @@ class ProjectMoved(servlet.Servlet):
     # Putting the ProjectMoved page inside a moved project would make
     # the redirect logic much more complicated.
     if not mr.specified_project:
-      raise monorailrequest.InputException('No project specified')
+      raise exceptions.InputException('No project specified')
 
     project = self.services.project.GetProjectByName(
         mr.cnxn, mr.specified_project)

@@ -23,8 +23,8 @@ to search for numbers in the issue tracker:
 
 import logging
 
+from framework import exceptions
 from framework import jsonfeed
-from framework import monorailrequest
 
 
 class SetCuesFeed(jsonfeed.JsonFeed):
@@ -39,7 +39,7 @@ class SetCuesFeed(jsonfeed.JsonFeed):
 
     cue_id = mr.GetParam('cue_id')
     if not cue_id:
-      raise monorailrequest.InputException('no cue_id specified')
+      raise exceptions.InputException('no cue_id specified')
 
     logging.info('Handling user set cue request: %r', cue_id)
     new_dismissed_cues = mr.auth.user_pb.dismissed_cues

@@ -11,6 +11,7 @@ import unittest
 
 import webapp2
 
+from framework import exceptions
 from framework import monorailrequest
 from framework import permissions
 from project import peopledetail
@@ -139,7 +140,7 @@ class PeopleDetailTest(unittest.TestCase):
         path='/p/proj/people/detail',
         project=self.project)
     post_data = fake.PostData()
-    with self.assertRaises(monorailrequest.InputException):
+    with self.assertRaises(exceptions.InputException):
       _result = self.servlet.ParsePersonData(mr, post_data)
 
   def testParsePersonData_NoDetails(self):

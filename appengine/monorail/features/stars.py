@@ -7,8 +7,8 @@
 
 import logging
 
+from framework import exceptions
 from framework import jsonfeed
-from framework import monorailrequest
 
 USER_STARS_SCOPE = 'users'
 PROJECT_STARS_SCOPE = 'projects'
@@ -42,7 +42,7 @@ class SetStarsFeed(jsonfeed.JsonFeed):
           mr.cnxn, hotlist_id, starrer_id, starred)
 
     else:
-      raise monorailrequest.InputException('unexpected star scope: %s' % scope)
+      raise exceptions.InputException('unexpected star scope: %s' % scope)
 
     return {
         'starred': starred,

@@ -10,11 +10,11 @@ import time
 
 from third_party import ezt
 
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_helpers
 from framework import framework_views
 from framework import jsonfeed
-from framework import monorailrequest
 from framework import permissions
 from framework import servlet
 from framework import template_helpers
@@ -218,7 +218,7 @@ class PeopleDetail(servlet.Servlet):
       A tuple with user_id, role, extra_perms, and notes.
     """
     if not mr.specified_user_id:
-      raise monorailrequest.InputException('Field user_id is missing')
+      raise exceptions.InputException('Field user_id is missing')
 
     role = post_data.get('role', '').lower()
     extra_perms = []

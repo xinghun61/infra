@@ -11,9 +11,9 @@ import re
 from google.appengine.api import taskqueue
 
 import settings
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
-from framework import monorailrequest
 from framework import urls
 from framework import validate
 from proto import ast_pb2
@@ -745,6 +745,6 @@ def _ParseOneRule(
 
   else:
     logging.info('unexpected action type, probably tampering:%r', action_type)
-    raise monorailrequest.InputException()
+    raise exceptions.InputException()
 
   return rule

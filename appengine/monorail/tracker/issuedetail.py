@@ -23,12 +23,12 @@ from features import notify
 from features import hotlist_helpers
 from features import hotlist_views
 from framework import actionlimit
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
 from framework import framework_views
 from framework import jsonfeed
-from framework import monorailrequest
 from framework import paginate
 from framework import permissions
 from framework import servlet
@@ -559,7 +559,7 @@ class IssueDetail(issuepeek.IssuePeek):
     if not issue:
       logging.warn('issue not found! project_name: %r   local id: %r',
                    mr.project_name, mr.local_id)
-      raise monorailrequest.InputException('Issue not found in project')
+      raise exceptions.InputException('Issue not found in project')
 
     # Check that the user is logged in; anon users cannot update issues.
     if not mr.auth.user_id:

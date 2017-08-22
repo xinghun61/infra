@@ -38,6 +38,7 @@ from features import hotlist_views
 from framework import actionlimit
 from framework import alerts
 from framework import captcha
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
@@ -195,7 +196,7 @@ class Servlet(webapp2.RequestHandler):
       logging.warning('Trapped NoSuchGroupException %s', e)
       self.abort(404, 'user group not found')
 
-    except monorailrequest.InputException as e:
+    except exceptions.InputException as e:
       logging.info('Rejecting invalid input: %r', e)
       self.response.status = httplib.BAD_REQUEST
 

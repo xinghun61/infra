@@ -13,7 +13,7 @@ from google.appengine.api import memcache
 from google.appengine.api import taskqueue
 from google.appengine.ext import testbed
 
-from framework import monorailrequest
+from framework import exceptions
 from framework import permissions
 from proto import tracker_pb2
 from services import service_manager
@@ -95,7 +95,7 @@ class IssueBulkEditTest(unittest.TestCase):
     """Test GPD when no issues are specified in the mr."""
     mr = testing_helpers.MakeMonorailRequest(
         project=self.project)
-    self.assertRaises(monorailrequest.InputException,
+    self.assertRaises(exceptions.InputException,
                       self.servlet.GatherPageData, mr)
 
   def testGatherPageData_FilteredIssues(self):

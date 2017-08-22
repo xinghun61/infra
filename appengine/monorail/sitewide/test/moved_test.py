@@ -9,7 +9,7 @@ import unittest
 
 import webapp2
 
-from framework import monorailrequest
+from framework import exceptions
 from services import service_manager
 from sitewide import moved
 from testing import fake
@@ -29,7 +29,7 @@ class MovedTest(unittest.TestCase):
     _, mr = testing_helpers.GetRequestObjects(
         path='/hosting/moved')
 
-    with self.assertRaises(monorailrequest.InputException):
+    with self.assertRaises(exceptions.InputException):
       self.servlet.GatherPageData(mr)
 
   def testGatherPageData_NoSuchProject(self):

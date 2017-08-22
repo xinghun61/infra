@@ -11,7 +11,7 @@ users find what they're looking for, rather than telling them
 helpful when we already have a project pb loaded.
 """
 
-from framework import monorailrequest
+from framework import exceptions
 from framework import servlet
 
 
@@ -32,5 +32,5 @@ class ErrorPage(servlet.Servlet):
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page."""
     if not mr.project_name:
-      raise monorailrequest.InputException('No project specified')
+      raise exceptions.InputException('No project specified')
     return {}

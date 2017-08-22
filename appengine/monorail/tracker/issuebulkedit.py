@@ -19,9 +19,9 @@ from third_party import ezt
 from features import filterrules_helpers
 from features import notify
 from framework import actionlimit
+from framework import exceptions
 from framework import framework_constants
 from framework import framework_views
-from framework import monorailrequest
 from framework import permissions
 from framework import servlet
 from framework import template_helpers
@@ -69,7 +69,7 @@ class IssueBulkEdit(servlet.Servlet):
     """
     with self.profiler.Phase('getting issues'):
       if not mr.local_id_list:
-        raise monorailrequest.InputException()
+        raise exceptions.InputException()
       requested_issues = self.services.issue.GetIssuesByLocalIDs(
           mr.cnxn, mr.project_id, sorted(mr.local_id_list))
 

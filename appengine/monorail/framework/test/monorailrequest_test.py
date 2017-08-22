@@ -14,6 +14,7 @@ from google.appengine.api import users
 
 import webapp2
 
+from framework import exceptions
 from framework import monorailrequest
 from framework import permissions
 from framework import profiler
@@ -136,14 +137,14 @@ class MonorailRequestUnitTest(unittest.TestCase):
 
   def testGetIntListParam_BogusValue(self):
     mr = monorailrequest.MonorailRequest()
-    with self.assertRaises(monorailrequest.InputException):
+    with self.assertRaises(exceptions.InputException):
       mr.ParseRequest(
           webapp2.Request.blank('servlet?ids=not_an_int'), self.services,
           self.profiler)
 
   def testGetIntListParam_Malformed(self):
     mr = monorailrequest.MonorailRequest()
-    with self.assertRaises(monorailrequest.InputException):
+    with self.assertRaises(exceptions.InputException):
       mr.ParseRequest(
           webapp2.Request.blank('servlet?ids=31,32,,'), self.services,
           self.profiler)
@@ -216,9 +217,9 @@ class MonorailRequestUnitTest(unittest.TestCase):
         params=dict(over1='over_value1', over2='over_value2'))
 
     # test tampering
-    self.assertRaises(monorailrequest.InputException, mr.GetParam, 'a',
+    self.assertRaises(exceptions.InputException, mr.GetParam, 'a',
                       antitamper_re=re.compile(r'^$'))
-    self.assertRaises(monorailrequest.InputException, mr.GetParam,
+    self.assertRaises(exceptions.InputException, mr.GetParam,
                       'undefined', default_value='default',
                       antitamper_re=re.compile(r'^$'))
 
@@ -295,17 +296,17 @@ class MonorailRequestUnitTest(unittest.TestCase):
 
     # Normal colspec in config but malicious request
     self.assertRaises(
-        monorailrequest.InputException,
+        exceptions.InputException,
         mr_2.ComputeColSpec, config_1)
 
     # Malicious colspec in config but normal request
     self.assertRaises(
-        monorailrequest.InputException,
+        exceptions.InputException,
         mr_1.ComputeColSpec, config_2)
 
     # Malicious colspec in config and malicious request
     self.assertRaises(
-        monorailrequest.InputException,
+        exceptions.InputException,
         mr_2.ComputeColSpec, config_2)
 
 

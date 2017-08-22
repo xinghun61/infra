@@ -25,6 +25,7 @@ import webapp2
 
 import settings
 from features import features_constants
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_views
@@ -248,7 +249,7 @@ class MonorailApiRequest(object):
       elif request.can == api_pb2_v1.CannedQuery.to_verify:
         self.params['can'] = 7
       else: # Endpoints should have caught this.
-        raise InputException(
+        raise exceptions.InputException(
             'Canned query %s is not supported.', request.can)
     if hasattr(request, 'startIndex') and request.startIndex:
       self.params['start'] = request.startIndex
@@ -350,7 +351,8 @@ class MonorailRequest(object):
 
       # Only accept a hostport from the request that looks valid.
       if not _HOSTPORT_RE.match(request.host):
-        raise InputException('request.host looks funny: %r', request.host)
+        raise exceptions.InputException(
+            'request.host looks funny: %r', request.host)
 
       logging.info('Request: %s', self.current_page_url)
 
@@ -640,7 +642,7 @@ class MonorailRequest(object):
       else:
         logging.info('User seems to have tampered with %s field: %s',
                      query_param_name, value)
-      raise InputException()
+      raise exceptions.InputException()
 
     return value
 
@@ -653,7 +655,7 @@ class MonorailRequest(object):
     try:
       return int(value)
     except (TypeError, ValueError):
-      raise InputException('Invalid value for integer param')
+      raise exceptions.InputException('Invalid value for integer param')
 
   def GetPositiveIntParam(self, query_param_name, default_value=None):
     """Returns 0 if the user-provided value is less than 0."""
@@ -678,7 +680,7 @@ class MonorailRequest(object):
     try:
       return [int(p) for p in param_list]
     except (TypeError, ValueError):
-      raise InputException('Invalid value for integer list param')
+      raise exceptions.InputException('Invalid value for integer list param')
 
   def GetBoolParam(self, query_param_name, default_value=None):
     """Get a boolean param from the URL or default."""
@@ -723,7 +725,8 @@ def _ParsePathIdentifiers(path):
           match = framework_bizobj.RE_HOTLIST_NAME.match(
               last_path)
           if not match:
-            raise InputException('Could not parse hotlist id or name')
+            raise exceptions.InputException(
+                'Could not parse hotlist id or name')
           else:
             hotlist_name = last_path.lower()
 
@@ -772,11 +775,3 @@ def ParseColSpec(col_spec):
   return framework_constants.COLSPEC_COL_RE.findall(col_spec)
 
 
-class Error(Exception):
-  """Base class for errors from this module."""
-  pass
-
-
-class InputException(Error):
-  """Error in user input processing."""
-  pass

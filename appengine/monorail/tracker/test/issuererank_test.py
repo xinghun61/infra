@@ -9,7 +9,7 @@ import logging
 import mox
 import unittest
 
-from framework import monorailrequest
+from framework import exceptions
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
@@ -77,7 +77,7 @@ class IssueRerankTest(unittest.TestCase):
   def testHandleRequest_NoIssue(self):
     mr = testing_helpers.MakeMonorailRequest()
     self.assertRaises(
-        monorailrequest.InputException, self.servlet.HandleRequest, mr)
+        exceptions.InputException, self.servlet.HandleRequest, mr)
 
   def SetUpHandleRequest(
       self, blocked_count=2, target_id=None, moved_ids=None, split_above=None):
