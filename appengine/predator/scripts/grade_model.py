@@ -48,14 +48,11 @@ def RunModelOnTestSet(client_id, app_id, testset_path):  # pragma: no cover
     yield crash, culprit
 
 
-def GetCommitKeyFromUrl(commit_url):
-  """Given the URL of a chromium commit, return the commit key."""
-  PREFIXES = (
-    'https://chromium.googlesource.com/chromium/src.git/+/',
-    'https://chromium.googlesource.com/chromium/src/+/',
-  )
-  assert any(commit_url.startswith(prefix) for prefix in PREFIXES)
-  return commit_url.split('/')[-1]
+def CommitUrlEquals(url1, url2):
+  # Some URLs have '.git' in them, some don't
+  url1_standardized = url1.replace('.git', '')
+  url2_standardized = url2.replace('.git', '')
+  return url1_standardized == url2_standardized
 
 
 def IsTruePositive(correct_cl_url, suspects):  # pragma: no cover
@@ -74,7 +71,7 @@ def IsTruePositive(correct_cl_url, suspects):  # pragma: no cover
                       suspects if
                       suspect.confidence == max_confidence]
   return any(
-      GetCommitKeyFromUrl(correct_cl_url) == GetCommitKeyFromUrl(suspect_url)
+      CommitUrlEquals(correct_cl_url, suspect_url)
       for suspect_url in top_suspect_urls)
 
 
