@@ -90,10 +90,23 @@ class ProfilerStackFrameTest(AnalysisTestCase):
 
   def testCrashedLineNumbersForProfilerStackFrame(self):
     """Tests the ``crashed_line_numbers`` property."""
-    frame = ProfilerStackFrame(0, 0, 0, False, function_start_line=10)
-    self.assertEqual(frame.crashed_line_numbers, (10,))
-    frame2 = ProfilerStackFrame(0, 0, 0, False, function_start_line=None)
-    self.assertIsNone(frame2.crashed_line_numbers)
+    frame = ProfilerStackFrame(
+        0, 0, 0, False, function_start_line=5,
+        lines_old=(
+          FunctionLine(line=10, sample_fraction=0.3),
+          FunctionLine(line=15, sample_fraction=0.7)
+        ),
+        lines_new=(
+          FunctionLine(line=12, sample_fraction=0.5),
+          FunctionLine(line=19, sample_fraction=0.5)
+        ))
+    self.assertEqual(frame.crashed_line_numbers, (5, 12, 19))
+
+    frame2 = ProfilerStackFrame(0, 0, 0, False, function_start_line=10)
+    self.assertEqual(frame2.crashed_line_numbers, (10,))
+
+    frame3 = ProfilerStackFrame(0, 0, 0, False)
+    self.assertIsNone(frame3.crashed_line_numbers)
 
   def testBlameUrlForProfilerStackFrame(self):
     """Tests that ``ProfilerStackFrame.BlameUrl`` generates the correct url."""

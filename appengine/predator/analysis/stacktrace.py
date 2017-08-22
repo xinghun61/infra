@@ -113,9 +113,19 @@ class ProfilerStackFrame(namedtuple('ProfilerStackFrame',
 
   @property
   def crashed_line_numbers(self):
-    if self.function_start_line is None:
-      return None
-    return (self.function_start_line,)
+    """Return relevant line numbers for use by the MinDistance feature."""
+    line_numbers = []
+    # The ``function_start_line`` is most relevant in cases where a function's
+    # signature has changed.
+    if self.function_start_line is not None:
+      line_numbers.append(self.function_start_line)
+    # The ``lines_new`` identifies key points in the function where execution is
+    # occurring (mostly calls to other functions), so changes in performance are
+    # usually related to changes on or near these lines.
+    if self.lines_new is not None:
+      line_numbers += [l.line for l in self.lines_new]
+
+    return tuple(sorted(line_numbers)) or None
 
   @staticmethod
   def Parse(frame_dict, index, deps):
