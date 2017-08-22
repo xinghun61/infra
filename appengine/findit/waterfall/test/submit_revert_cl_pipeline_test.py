@@ -13,7 +13,7 @@ from libs import analysis_status as status
 from libs import time_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import create_revert_cl_pipeline
+from waterfall import revert as revert_util
 from waterfall import submit_revert_cl_pipeline
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
@@ -69,7 +69,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_cl = revert
     culprit.revert_status = status.COMPLETED
     culprit.put()
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert_util.CREATED_BY_FINDIT
     pipeline = SubmitRevertCLPipeline(repo_name, revision, revert_status)
     committed = pipeline.run(repo_name, revision, revert_status)
 
@@ -106,7 +106,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
 
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert_util.CREATED_BY_FINDIT
     pipeline = SubmitRevertCLPipeline(repo_name, revision, revert_status)
     committed = pipeline.run(repo_name, revision, revert_status)
 
@@ -141,7 +141,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
 
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert_util.CREATED_BY_FINDIT
     pipeline = SubmitRevertCLPipeline(repo_name, revision, revert_status)
     committed = pipeline.run(repo_name, revision, revert_status)
 
@@ -170,7 +170,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
 
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert_util.CREATED_BY_FINDIT
     pipeline = SubmitRevertCLPipeline(repo_name, revision, revert_status)
     committed = pipeline.run(repo_name, revision, revert_status)
     self.assertFalse(committed)
@@ -183,7 +183,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
 
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert_util.CREATED_BY_FINDIT
     pipeline = SubmitRevertCLPipeline(repo_name, revision, revert_status)
     committed = pipeline.run(repo_name, revision, revert_status)
 
@@ -202,7 +202,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
 
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert_util.CREATED_BY_FINDIT
     pipeline = SubmitRevertCLPipeline(repo_name, revision, revert_status)
     committed = pipeline.run(repo_name, revision, revert_status)
 
@@ -217,7 +217,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_submission_status = status.COMPLETED
     culprit.put()
 
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert_util.CREATED_BY_FINDIT
     pipeline = SubmitRevertCLPipeline(repo_name, revision, revert_status)
     revert_status = pipeline.run(repo_name, revision, revert_status)
 
@@ -229,7 +229,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_submission_status = status.RUNNING
     culprit.put()
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert_util.CREATED_BY_FINDIT
     SubmitRevertCLPipeline(repo_name, revision,
                            revert_status)._LogUnexpectedAborting(True)
     culprit = WfSuspectedCL.Get(repo_name, revision)
@@ -241,7 +241,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert_util.CREATED_BY_FINDIT
     SubmitRevertCLPipeline(repo_name, revision,
                            revert_status)._LogUnexpectedAborting(True)
     culprit = WfSuspectedCL.Get(repo_name, revision)
@@ -254,7 +254,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.submit_revert_pipeline_id = 'pipeline_id'
     culprit.put()
 
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert_util.CREATED_BY_FINDIT
     pipeline = SubmitRevertCLPipeline(repo_name, revision, revert_status)
     pipeline.start_test()
     pipeline._LogUnexpectedAborting(True)

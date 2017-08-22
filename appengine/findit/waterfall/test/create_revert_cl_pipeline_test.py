@@ -18,7 +18,7 @@ from libs import time_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import buildbot
-from waterfall import create_revert_cl_pipeline
+from waterfall import revert
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
@@ -49,6 +49,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(time_util, 'GetUTCNow',
                      return_value=datetime(2017, 2, 1, 16, 0, 0))
+  @mock.patch.object(_CODEREVIEW, 'PostMessage', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
   @mock.patch.object(
@@ -71,15 +72,11 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.builds = {'m/b/1': {'status': None}}
     culprit.put()
 
-    culprit1 = WfSuspectedCL.Create(repo_name, 'rev11', 111)
-    culprit1.revert_created_time = datetime(2017, 2, 1, 3, 0, 0)
-    culprit1.put()
-
     pipeline = CreateRevertCLPipeline(repo_name, revision)
     revert_status = pipeline.run(repo_name, revision)
 
     self.assertEquals(revert_status,
-                      create_revert_cl_pipeline.CREATED_BY_FINDIT)
+                      revert.CREATED_BY_FINDIT)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.COMPLETED)
@@ -89,155 +86,9 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
         Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
         culprit for failures in the build cycles as shown on:
         https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
-        Sample Build: %s""") % (commit_position, culprit.key.urlsafe(),
+        Sample Failed Build: %s""") % (commit_position, culprit.key.urlsafe(),
                                 buildbot.CreateBuildUrl('m', 'b', '1'))
     mock_revert.assert_called_with(reason, self.review_change_id, '20001')
-
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
-  @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testSheriffRevertedIt(self, mock_fn, *_):
-    repo_name = 'chromium'
-    revision = 'rev1'
-
-    cl_info = ClInfo(self.review_server_host, self.review_change_id)
-    cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
-    cl_info.owner_email = 'abc@chromium.org'
-    revert_cl = ClInfo('revert_review_host', '123V3137')
-    cl_info.reverts.append(
-        Revert('20001', revert_cl, 'a@b', datetime(2017, 2, 1, 1, 0, 0)))
-    mock_fn.return_value = cl_info
-
-    WfSuspectedCL.Create(repo_name, revision, 123).put()
-
-    pipeline = CreateRevertCLPipeline(repo_name, revision)
-    revert_status = pipeline.run(repo_name, revision)
-
-    self.assertEquals(revert_status,
-                      create_revert_cl_pipeline.CREATED_BY_SHERIFF)
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEquals(culprit.revert_status, status.SKIPPED)
-    self.assertIsNone(culprit.revert_cl)
-    self.assertIsNone(culprit.revert_pipeline_id)
-
-  @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
-  @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
-  @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testRevertCLNotSaved(self, mock_fn, *_):
-    repo_name = 'chromium'
-    revision = 'rev1'
-
-    cl_info = ClInfo(self.review_server_host, self.review_change_id)
-    cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
-    cl_info.owner_email = 'abc@chromium.org'
-    revert_cl = ClInfo('revert_review_host', '123V3127')
-    revert_cl.url = 'https://codereview.chromium.org/54321'
-    cl_info.reverts.append(
-        Revert('20001', revert_cl, constants.DEFAULT_SERVICE_ACCOUNT,
-               datetime(2017, 2, 1, 1, 0, 0)))
-    mock_fn.return_value = cl_info
-
-    WfSuspectedCL.Create(repo_name, revision, 123).put()
-    pipeline = CreateRevertCLPipeline(repo_name, revision)
-    revert_status = pipeline.run(repo_name, revision)
-
-    self.assertEquals(revert_status,
-                      create_revert_cl_pipeline.CREATED_BY_FINDIT)
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_status, status.COMPLETED)
-    self.assertIsNotNone(culprit.revert_cl)
-
-  @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
-  @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
-  @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testAddedReviewerFailedBefore(self, mock_fn, *_):
-    repo_name = 'chromium'
-    revision = 'rev1'
-
-    cl_info = ClInfo(self.review_server_host, self.review_change_id)
-    cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
-    cl_info.owner_email = 'abc@chromium.org'
-    revert_cl = ClInfo('revert_review_host', '123V3127')
-    revert_cl.url = 'https://codereview.chromium.org/54321'
-    cl_info.reverts.append(
-        Revert('20001', revert_cl, constants.DEFAULT_SERVICE_ACCOUNT,
-               datetime(2017, 2, 1, 1, 0, 0)))
-    mock_fn.return_value = cl_info
-
-    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    culprit.revert_cl = RevertCL()
-    culprit.revert_status = status.RUNNING
-    culprit.put()
-    pipeline = CreateRevertCLPipeline(repo_name, revision)
-    revert_status = pipeline.run(repo_name, revision)
-
-    self.assertEquals(revert_status,
-                      create_revert_cl_pipeline.CREATED_BY_FINDIT)
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_status, status.COMPLETED)
-    self.assertIsNotNone(culprit.revert_cl)
-
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
-  @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testCulpritCreatedByFindit(self, mock_fn, _):
-    repo_name = 'chromium'
-    revision = 'rev1'
-
-    cl_info = ClInfo(self.review_server_host, self.review_change_id)
-    cl_info.owner_email = constants.DEFAULT_SERVICE_ACCOUNT
-    cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
-    mock_fn.return_value = cl_info
-
-    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    culprit.put()
-    pipeline = CreateRevertCLPipeline(repo_name, revision)
-    revert_status = pipeline.run(repo_name, revision)
-
-    self.assertEquals(revert_status, create_revert_cl_pipeline.SKIPPED)
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_status, status.SKIPPED)
-    self.assertIsNone(culprit.revert_cl)
-    self.assertEqual(culprit.skip_revert_reason,
-                     create_revert_cl_pipeline.CULPRIT_OWNED_BY_FINDIT)
-
-  @mock.patch.object(
-      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
-  @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testAutoRevertOff(self, mock_fn, _):
-    repo_name = 'chromium'
-    revision = 'rev1'
-
-    cl_info = ClInfo(self.review_server_host, self.review_change_id)
-    cl_info.auto_revert_off = True
-    cl_info.commits.append(
-        Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
-    mock_fn.return_value = cl_info
-
-    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    culprit.put()
-    pipeline = CreateRevertCLPipeline(repo_name, revision)
-    revert_status = pipeline.run(repo_name, revision)
-
-    self.assertEquals(revert_status, create_revert_cl_pipeline.SKIPPED)
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_status, status.SKIPPED)
-    self.assertIsNone(culprit.revert_cl)
-    self.assertEqual(culprit.skip_revert_reason,
-                     create_revert_cl_pipeline.AUTO_REVERT_OFF)
 
   @mock.patch.object(waterfall_config, 'GetActionSettings', return_value={})
   def testRevertTurnedOff(self, _):
@@ -247,20 +98,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = CreateRevertCLPipeline(repo_name, revision)
     revert_status = pipeline.run(repo_name, revision)
 
-    self.assertEqual(create_revert_cl_pipeline.SKIPPED, revert_status)
-
-  def testRevertHasCompleted(self):
-    repo_name = 'chromium'
-    revision = 'rev1'
-
-    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    culprit.revert_cl = RevertCL()
-    culprit.revert_status = status.COMPLETED
-    culprit.put()
-
-    pipeline = CreateRevertCLPipeline(repo_name, revision)
-    self.assertEqual(create_revert_cl_pipeline.SKIPPED,
-                     pipeline.run(repo_name, revision))
+    self.assertEqual(revert.SKIPPED, revert_status)
 
   def testLogUnexpectedAborting(self):
     repo_name = 'chromium'
@@ -295,46 +133,3 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline._LogUnexpectedAborting(True)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_pipeline_id, 'pipeline_id')
-
-  def testRevertACulpritIsBeingReverted(self):
-    repo_name = 'chromium'
-    revision = 'rev1'
-
-    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    culprit.revert_status = status.RUNNING
-    culprit.revert_pipeline_id = 'pipeline_id'
-    culprit.put()
-
-    pipeline = CreateRevertCLPipeline(repo_name, revision)
-    pipeline.start_test()
-    self.assertEqual(create_revert_cl_pipeline.SKIPPED,
-                     pipeline.run(repo_name, revision))
-
-    culprit = WfSuspectedCL.Get(repo_name, revision)
-    self.assertEqual(culprit.revert_status, status.RUNNING)
-    self.assertIsNone(culprit.revert_cl)
-
-  def testShouldNotRevertIfRevertIsSkipped(self):
-    repo_name = 'chromium'
-    revision = 'rev1'
-    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    culprit.revert_status = status.SKIPPED
-    culprit.put()
-    self.assertFalse(
-        create_revert_cl_pipeline._ShouldRevert(repo_name, revision, None))
-
-  @mock.patch.object(
-      create_revert_cl_pipeline,
-      '_GetDailyNumberOfRevertedCulprits',
-      return_value=10)
-  def testAutoRevertExceedsLimit(self, _):
-    repo_name = 'chromium'
-    revision = 'rev1'
-
-    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
-    culprit.put()
-
-    pipeline = CreateRevertCLPipeline(repo_name, revision)
-    pipeline.start_test()
-    self.assertEqual(create_revert_cl_pipeline.SKIPPED,
-                     pipeline.run(repo_name, revision))

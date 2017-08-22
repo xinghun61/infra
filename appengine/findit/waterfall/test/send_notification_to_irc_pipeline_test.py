@@ -8,7 +8,7 @@ import textwrap
 
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import create_revert_cl_pipeline
+from waterfall import revert
 from waterfall import send_notification_to_irc_pipeline
 from waterfall.send_notification_to_irc_pipeline import (
     SendNotificationToIrcPipeline)
@@ -21,7 +21,7 @@ class SendNotificationToIrcPipelineTest(wf_testcase.WaterfallTestCase):
   def testNoNeedToSendNotification(self, mocked_irc):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = create_revert_cl_pipeline.CREATED_BY_SHERIFF
+    revert_status = revert.CREATED_BY_SHERIFF
     pipeline = SendNotificationToIrcPipeline()
     pipeline.run(repo_name, revision, revert_status)
 
@@ -31,7 +31,7 @@ class SendNotificationToIrcPipelineTest(wf_testcase.WaterfallTestCase):
   def testSendNotificationNoCulprit(self, mocked_irc):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert.CREATED_BY_FINDIT
     pipeline = SendNotificationToIrcPipeline()
     pipeline.run(repo_name, revision, revert_status)
 
@@ -41,7 +41,7 @@ class SendNotificationToIrcPipelineTest(wf_testcase.WaterfallTestCase):
   def testSendNotificationNoRevert(self, mocked_irc):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert.CREATED_BY_FINDIT
     WfSuspectedCL.Create(repo_name, revision, 1).put()
     pipeline = SendNotificationToIrcPipeline()
     pipeline.run(repo_name, revision, revert_status)
@@ -52,7 +52,7 @@ class SendNotificationToIrcPipelineTest(wf_testcase.WaterfallTestCase):
   def testSendNotification(self, mocked_logging):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert.CREATED_BY_FINDIT
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
     culprit.revert_cl = RevertCL()
@@ -86,7 +86,7 @@ class SendNotificationToIrcPipelineTest(wf_testcase.WaterfallTestCase):
   def testSendNotificationException(self, mocked_logging):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = create_revert_cl_pipeline.CREATED_BY_FINDIT
+    revert_status = revert.CREATED_BY_FINDIT
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
     culprit.revert_cl = RevertCL()

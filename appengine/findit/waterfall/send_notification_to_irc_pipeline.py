@@ -8,7 +8,7 @@ import textwrap
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs.irc_client import IRCClient
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import create_revert_cl_pipeline
+from waterfall import revert
 
 
 _IRC_HOST = 'irc.freenode.net'
@@ -30,7 +30,7 @@ class SendNotificationToIrcPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, repo_name, revision, revert_status):
-    if revert_status != create_revert_cl_pipeline.CREATED_BY_FINDIT:
+    if revert_status != revert.CREATED_BY_FINDIT:
       # No need to send notification to irc if Findit doesn't create revert.
       return
 

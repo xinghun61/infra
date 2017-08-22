@@ -8,8 +8,8 @@ from common.constants import DEFAULT_QUEUE
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from waterfall import buildbot
-from waterfall import create_revert_cl_pipeline
 from waterfall import revert_and_notify_culprit_pipeline
+from waterfall import revert
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.revert_and_notify_culprit_pipeline import (
     RevertAndNotifyCulpritPipeline)
@@ -103,26 +103,26 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.MockPipeline(
         CreateRevertCLPipeline,
-        create_revert_cl_pipeline.CREATED_BY_SHERIFF,
+        revert.CREATED_BY_SHERIFF,
         expected_args=[repo_name, revision])
     self.MockPipeline(
         SubmitRevertCLPipeline,
         True,
         expected_args=[
-            repo_name, revision, create_revert_cl_pipeline.CREATED_BY_SHERIFF
+            repo_name, revision, revert.CREATED_BY_SHERIFF
         ])
     self.MockPipeline(
         SendNotificationToIrcPipeline,
         None,
         expected_args=[
-            repo_name, revision, create_revert_cl_pipeline.CREATED_BY_SHERIFF
+            repo_name, revision, revert.CREATED_BY_SHERIFF
         ])
     self.MockPipeline(
         SendNotificationForCulpritPipeline,
         None,
         expected_args=[
             master_name, builder_name, build_number, repo_name, revision, True,
-            create_revert_cl_pipeline.CREATED_BY_SHERIFF
+            revert.CREATED_BY_SHERIFF
         ])
 
     pipeline = RevertAndNotifyCulpritPipeline(master_name, builder_name,

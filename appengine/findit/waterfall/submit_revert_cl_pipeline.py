@@ -12,7 +12,7 @@ from infra_api_clients.codereview import codereview_util
 from libs import analysis_status as status
 from libs import time_util
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import create_revert_cl_pipeline
+from waterfall import revert
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
@@ -89,7 +89,7 @@ def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
     6. The culprit is committed within threshold.
   """
   action_settings = waterfall_config.GetActionSettings()
-  if (not revert_status == create_revert_cl_pipeline.CREATED_BY_FINDIT or
+  if (not revert_status == revert.CREATED_BY_FINDIT or
       not bool(action_settings.get('commit_gerrit_revert')) or
       not bool(action_settings.get('revert_compile_culprit'))):
     return False

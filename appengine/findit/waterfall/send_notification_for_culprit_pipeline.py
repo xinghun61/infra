@@ -12,7 +12,7 @@ from infra_api_clients.codereview import codereview_util
 from libs import analysis_status as status
 from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import create_revert_cl_pipeline
+from waterfall import revert
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
@@ -67,7 +67,7 @@ def _SendNotificationForCulprit(repo_name, revision, commit_position,
     # Occasionally, a commit was not uploaded for code-review.
     action = 'identified'
     should_email = True
-    if revert_status == create_revert_cl_pipeline.CREATED_BY_SHERIFF:
+    if revert_status == revert.CREATED_BY_SHERIFF:
       action = 'confirmed'
       should_email = False
 
@@ -103,11 +103,11 @@ class SendNotificationForCulpritPipeline(BasePipeline):
     # notifications once auto-revert is enabled.
     _build_information = [master_name, builder_name, build_number]
 
-    if revert_status == create_revert_cl_pipeline.CREATED_BY_FINDIT:
+    if revert_status == revert.CREATED_BY_FINDIT:
       # Already notified when revert, bail out.
       return False
 
-    if revert_status == create_revert_cl_pipeline.CREATED_BY_SHERIFF:
+    if revert_status == revert.CREATED_BY_SHERIFF:
       force_notify = True
 
     action_settings = waterfall_config.GetActionSettings()
