@@ -61,7 +61,10 @@ class ChangelistClassifier(object):
       return []
 
     if len(suspects) == 1:
-      return suspects
+      suspect = suspects[0]
+      suspect.confidence = 1.0
+      suspect.reasons = ['The suspect is the only cl in the regression range.']
+      return [suspect]
 
     if not report.stacktrace:
       message = 'Failed to parse stacktrace. Cannot get culprit for this crash.'

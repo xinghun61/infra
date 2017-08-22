@@ -19,15 +19,16 @@ class Predator(object): # pragma: no cover
     suspected_cls = self.cl_classifier(report)
     assert suspected_cls is not None
 
-    suspected_project = (
-        self.project_classifier.ClassifySuspects(suspected_cls) or
-        self.project_classifier.ClassifyCallStack(
-            report.stacktrace.crash_stack))
+    suspected_project = self.project_classifier.ClassifySuspects(suspected_cls)
+    if not suspected_project and not report.stacktrace:
+      suspected_project = self.project_classifier.ClassifyCallStack(
+          report.stacktrace.crash_stack)
 
-    suspected_components = (
-        self.component_classifier.ClassifySuspects(suspected_cls) or
-        self.component_classifier.ClassifyCallStack(
-            report.stacktrace.crash_stack))
+    suspected_components = self.component_classifier.ClassifySuspects(
+        suspected_cls)
+    if not suspected_components and not report.stacktrace:
+      suspected_components = self.component_classifier.ClassifyCallStack(
+          report.stacktrace.crash_stack)
 
     return Culprit(project=suspected_project,
                    components=suspected_components,

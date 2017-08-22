@@ -333,12 +333,14 @@
                 {% endfor %}
               </td>
               <td align="left">
-                {% for changed_file in suspected_cl.changed_files %}
-                  <li>
-                  <a href={{changed_file.blame_url}}>{{changed_file.file}}</a><br>
-                  <pre>{{changed_file.info}}</pre>
-                  </li>
-                {% endfor %}
+                {% if suspected_cl.changed_files %}
+                  {% for changed_file in suspected_cl.changed_files %}
+                    <li>
+                    <a href={{changed_file.blame_url}}>{{changed_file.file}}</a><br>
+                    <pre>{{changed_file.info}}</pre>
+                    </li>
+                  {% endfor %}
+                {% endif %}
               </td>
             </tr>
           {% endfor %}
