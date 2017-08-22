@@ -15,9 +15,11 @@ from local_libs import script_util
 
 script_util.SetUpSystemPaths(_ROOT_DIR)
 
+from analysis.type_enums import CrashClient
 from app.common.model import triage_status
 from scripts.delta_test import delta_test
 from scripts import run_predator
+from scripts import setup
 
 
 def RunModelOnTestSet(client_id, app_id, testset_path):  # pragma: no cover

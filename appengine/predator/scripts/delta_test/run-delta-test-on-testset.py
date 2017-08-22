@@ -5,12 +5,9 @@
 """Runs delta test on two Predator revisions."""
 
 import argparse
-from datetime import date
-from datetime import timedelta
 import hashlib
 import logging
 import os
-import pickle
 import sys
 
 _ROOT_DIR = os.path.realpath(os.path.join(os.path.dirname(__file__),

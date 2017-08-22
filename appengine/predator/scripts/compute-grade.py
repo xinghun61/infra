@@ -18,8 +18,7 @@ script_util.SetUpSystemPaths(_ROOT_DIR)
 from analysis.type_enums import CrashClient
 from local_libs import remote_api
 from scripts import grade_model
-
-_DEFAULT_APP_ID = 'predator-for-me'
+from scripts import setup
 
 
 if __name__ == '__main__':
@@ -35,7 +34,7 @@ if __name__ == '__main__':
   argparser.add_argument(
       '--client',
       '-c',
-      default=CrashClient.UMA_SAMPLING_PROFILER,
+      default=setup.DEFAULT_CLIENT,
       help=('The name of the client to run. '
             'Possible values are: %s, %s, %s, %s.' %
             (CrashClient.CRACAS, CrashClient.FRACAS, CrashClient.CLUSTERFUZZ,
@@ -44,11 +43,11 @@ if __name__ == '__main__':
   argparser.add_argument(
       '--app',
       '-a',
-      default=_DEFAULT_APP_ID,
+      default=setup.DEFAULT_APP_ID,
       help=('App id of the App engine app that query needs to access. '
             'Defaults to %s. \nNOTE, only appspot app ids are supported, '
             'the app_id of googleplex app will have access issues '
-            'due to internal proxy. ') % _DEFAULT_APP_ID)
+            'due to internal proxy. ') % setup.DEFAULT_APP_ID)
 
   args = argparser.parse_args()
   remote_api.EnableRemoteApi(args.app)

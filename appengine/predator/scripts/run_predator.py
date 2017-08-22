@@ -29,14 +29,15 @@ from app.common.model.crash_config import CrashConfig
 from libs.cache_decorator import Cached
 from local_libs import remote_api
 from local_libs.git_checkout.local_git_repository import LocalGitRepository
+from scripts import setup
 
 # TODO(crbug.com/662540): Add unittests.
 
-PREDATOR_RESULTS_DIRECTORY = os.path.join(_SCRIPT_DIR, '.predator_results')
+
 _TOP_N_FRAMES = 7
 
 try:
-  os.makedirs(PREDATOR_RESULTS_DIRECTORY)
+  os.makedirs(setup.PREDATOR_RESULTS_DIRECTORY)
 except Exception:  # pragma: no cover.
   pass
 
@@ -152,8 +153,8 @@ def GetCulpritsOnRevision(crashes, git_hash, client_id, app_id,
         stderr=null_handle,
         shell=True)
 
-  input_path = os.path.join(PREDATOR_RESULTS_DIRECTORY, 'input')
-  output_path = os.path.join(PREDATOR_RESULTS_DIRECTORY, 'output')
+  input_path = os.path.join(setup.PREDATOR_RESULTS_DIRECTORY, 'input')
+  output_path = os.path.join(setup.PREDATOR_RESULTS_DIRECTORY, 'output')
   with open(input_path, 'wb') as f:
     f.write(zlib.compress(pickle.dumps(crashes)))
 

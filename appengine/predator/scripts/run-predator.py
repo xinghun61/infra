@@ -3,13 +3,10 @@
 # found in the LICENSE file.
 
 import argparse
-import json
 import logging
 import os
 import pickle
 import sys
-import threading
-import traceback
 import zlib
 
 _ROOT_DIR = os.path.join(os.path.dirname(__file__), os.path.pardir)
@@ -26,11 +23,10 @@ from local_libs import remote_api
 from google.appengine.ext import ndb
 
 from scripts.run_predator import GetCulprits
-from scripts.run_predator import PREDATOR_RESULTS_DIRECTORY
 from scripts import setup
 
 try:
-  os.makedirs(PREDATOR_RESULTS_DIRECTORY)
+  os.makedirs(setup.PREDATOR_RESULTS_DIRECTORY)
 except Exception:
   pass
 
@@ -61,7 +57,7 @@ def RunPredator():
   argparser.add_argument(
       '--client',
       '-c',
-      default='cracas',
+      default=setup.DEFAULT_CLIENT,
       help=('Type of client data the delta test is running on, '
             'possible values are: fracas, cracas, clusterfuzz. '
             'Right now, only fracas data is available'))

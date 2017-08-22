@@ -5,11 +5,8 @@
 """Runs delta test on two Predator revisions."""
 
 import argparse
-from datetime import date
-from datetime import timedelta
 import logging
 import os
-import pickle
 import sys
 
 _ROOT_DIR = os.path.join(os.path.dirname(
@@ -19,18 +16,10 @@ sys.path.insert(1, _FIRST_PARTY_DIR)
 from local_libs import script_util
 script_util.SetUpSystemPaths(_ROOT_DIR)
 
-from analysis.type_enums import CrashClient
 from scripts.delta_test import delta_test
 from scripts.delta_test import delta_util
 from scripts import setup
 
-
-_TODAY = date.today().strftime('%Y-%m-%d')
-_A_YEAR_AGO = (date.today() - timedelta(days=365)).strftime('%Y-%m-%d')
-
-# App Engine APIs will fail if batch size is more than 1000.
-_MAX_BATCH_SIZE = 1000
-_DEFAULT_BATCH_SIZE = _MAX_BATCH_SIZE
 _DEFAULT_MAX_N = 100
 DELTA_RESULTS_DIRECTORY = os.path.join(os.path.dirname(__file__),
                                        'delta_results')
@@ -72,7 +61,7 @@ def RunDeltaTest():
   argparser.add_argument(
       '--client',
       '-c',
-      default=CrashClient.CRACAS,
+      default=setup.DEFAULT_CLIENT,
       help=('Type of client data the delta test is running on, '
             'possible values are: fracas, cracas, clusterfuzz. '
             'Right now, only fracas data is available'))
@@ -89,7 +78,7 @@ def RunDeltaTest():
   argparser.add_argument(
       '--since',
       '-s',
-      default=_A_YEAR_AGO,
+      default=setup.A_YEAR_AGO,
       help=('Query data since this date (including this date). '
             'The date should be in YYYY-MM-DD format (e.g. 2015-09-31), '
             'defaults to a year ago.'))
@@ -97,7 +86,7 @@ def RunDeltaTest():
   argparser.add_argument(
       '--until',
       '-u',
-      default=_TODAY,
+      default=setup.TODAY,
       help=('Query data until this date (not including this date). '
             'Should be in YYYY-MM-DD format (e.g. 2015-09-31), '
             'defaults to today.'))
@@ -106,7 +95,7 @@ def RunDeltaTest():
       '--batch',
       '-b',
       type=int,
-      default=_DEFAULT_BATCH_SIZE,
+      default=setup.DEFAULT_BATCH_SIZE,
       help=('The size of batch that can be processed at one time.\n'
             'NOTE, the batch size cannot be greater than 1000, or app engine '
             'APIs would fail, defaults to 1000.'))
@@ -137,9 +126,9 @@ def RunDeltaTest():
     logging.error('Only support delta test between 2 revisions.')
     sys.exit(1)
 
-  if args.batch > _MAX_BATCH_SIZE:
+  if args.batch > setup.MAX_BATCH_SIZE:
     logging.error('Batch size cannot be greater than %s, or app engine APIs '
-                  'would fail.', _MAX_BATCH_SIZE)
+                  'would fail.', setup.MAX_BATCH_SIZE)
     sys.exit(1)
 
   args.batch = min(args.max, args.batch)

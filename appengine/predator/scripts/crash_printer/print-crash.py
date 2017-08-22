@@ -3,8 +3,6 @@
 # found in the LICENSE file.
 
 import argparse
-from datetime import date
-from datetime import timedelta
 import os
 import sys
 
@@ -15,13 +13,8 @@ sys.path.insert(1, _FIRST_PARTY_DIR)
 from local_libs import script_util
 script_util.SetUpSystemPaths(_ROOT_DIR)
 
-from analysis.type_enums import CrashClient
 from scripts.crash_printer import crash_printer
 from scripts import setup
-
-_DATETIME_FORMAT = '%Y-%m-%d'
-_TODAY = date.today().strftime(_DATETIME_FORMAT)
-_A_YEAR_AGO = (date.today() - timedelta(days=365)).strftime(_DATETIME_FORMAT)
 
 
 if __name__ == '__main__':
@@ -31,7 +24,7 @@ if __name__ == '__main__':
   argparser.add_argument(
       '--since',
       '-s',
-      default=_A_YEAR_AGO,
+      default=setup.A_YEAR_AGO,
       help=('Query data since this date (including this date). '
             'Should be in YYYY-MM-DD format. E.g. 2015-09-31. '
             'Defaults to a year ago.'))
@@ -39,7 +32,7 @@ if __name__ == '__main__':
   argparser.add_argument(
       '--until',
       '-u',
-      default=_TODAY,
+      default=setup.TODAY,
       help=('Query data until this date (not including this date). '
             'Should be in YYYY-MM-DD format. E.g. 2015-09-31. '
             'Defaults to today.'))
@@ -47,9 +40,9 @@ if __name__ == '__main__':
   argparser.add_argument(
       '--client',
       '-c',
-      default=CrashClient.CRACAS,
+      default=setup.DEFAULT_CLIENT,
       help=('Possible values are: fracas, cracas, clusterfuzz. Right now, only '
-            'fracas is supported.'))
+            'fracas is supported. Defaults to \'%s\'.') % setup.DEFAULT_CLIENT)
 
   argparser.add_argument(
       '--app',
