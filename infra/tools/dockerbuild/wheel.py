@@ -498,6 +498,7 @@ SPECS = {s.spec.tag: s for s in (
 
   BuildWheel('crcmod', '1.7', packaged=()),
   BuildWheel('grpcio', '1.4.0'),
+  BuildWheel('scan-build', '2.0.8'),
 
   Universal('appdirs', '1.4.3'),
   UniversalSource('Appium_Python_Client', '0.24',
