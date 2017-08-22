@@ -14,6 +14,7 @@ from analysis.component_classifier import ComponentClassifier
 from analysis.project import Project
 from analysis.project_classifier import ProjectClassifier
 from gae_libs import appengine_util
+from gae_libs import pubsub_util
 from libs import analysis_status
 from libs import time_util
 
@@ -25,8 +26,6 @@ from libs import time_util
 # buggy way coverage is computed). Need to add a bunch of new unittests
 # to get coverage back up.
 
-# TODO: this class depends on ndb stuff, and should therefore move to
-# cr-culprit-finder/service/predator as part of the big reorganization.
 class PredatorApp(object):
 
   def __init__(self, get_repository, config):
@@ -167,8 +166,7 @@ class PredatorApp(object):
                    self.client_id)
       return True
 
-    for blacklist_marker in self.client_config.get(
-        'signature_blacklist_markers', []):
+    for blacklist_marker in self.client_config['signature_blacklist_markers']:
       if blacklist_marker in crash_data.signature:
         logging.info('%s signature is not supported.', blacklist_marker)
         return False
@@ -211,22 +209,12 @@ class PredatorApp(object):
     model.put()
     return True
 
-  def ProcessResultForPublishing(self, result, analysis):  # pragma: no cover
-    """Add Predator internal feedback_url to result."""
-    result['feedback_url'] = analysis.feedback_url
-    return result
-
-  def GetPublishableResult(self, crash_identifiers, analysis):
-    """Converts a culprit result into a publishable result for client.
-
-    Note, this function must be called by a concrete subclass of CrashAnalysis
-    which implements the ProcessResultForPublishing method.
+  def ResultMessageToClient(self, analysis):
+    """Converts culprit into publishable result to client.
 
     Args:
       crash_identifiers (dict): Dict containing identifiers that can uniquely
         identify CrashAnalysis entity.
-      analysis (CrashAnalysis model): Model containing culprit result and other
-        analysis information.
 
     Returns:
       A dict of the given ``crash_identifiers``, this model's
@@ -236,21 +224,33 @@ class PredatorApp(object):
     if result.get('found') and 'suspected_cls' in result:
       for cl in result['suspected_cls']:
         cl['confidence'] = round(cl['confidence'], 2)
-
-    result = self.ProcessResultForPublishing(result, analysis)
-    logging.info('Publish result:\n%s',
-                 json.dumps(result, indent=4, sort_keys=True))
+    result['feedback_url'] = analysis.feedback_url
 
     return {
-        'crash_identifiers': crash_identifiers,
+        'crash_identifiers': analysis.identifiers,
         'client_id': self.client_id,
-        'result': result,
+        'result': result
     }
 
-  # TODO(wrengr): This is only called by ``CrashAnalysisPipeline.run``;
-  # we should be able to adjust things so that we only need to take in
-  # ``crash_identifiers``, or a CrashReport, rather than taking in the
-  # whole model. And/or, we should just inline this there.
+  def PublishResultToClient(self, analysis):
+    """Publishes result to client."""
+    message = self.ResultMessageToClient(analysis)
+    topic = self.client_config['analysis_result_pubsub_topic']
+    pubsub_util.PublishMessagesToTopic([json.dumps(message)], topic)
+    logging.info('Publish result for %s to %s:\n%s',
+                 repr(analysis.identifiers), self.client_id,
+                 json.dumps(message, indent=4, sort_keys=True))
+
+  def PublishResult(self, crash_identifiers):
+    """Publishes results to related pub/sub topics."""
+    analysis = self.GetAnalysis(crash_identifiers)
+    if not analysis or analysis.failed:
+      logging.info('Can\'t publish result to %s because analysis failed:\n%s',
+                   self.client_id, repr(crash_identifiers))
+      return
+
+    self.PublishResultToClient(analysis)
+
   # TODO(http://crbug.com/659346): coverage tests for this class, not
   # just for PredatorForFracas.
   def FindCulprit(self, crash_report): # pragma: no cover

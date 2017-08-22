@@ -54,8 +54,8 @@ class CrashData(object):
     self._crashed_version = None
     self._signature = crash_data['signature']
     self._platform = self.NormalizePlatform(crash_data['platform'])
-    # The raw_stacktrace can be a string or a list of strings, or any json
-    # format data.
+    # The raw stacktrace can be a string, for fracas, it can also be a list
+    # of strings or other json format for cracas.
     self._raw_stacktrace = crash_data['stack_trace'] or ''
     self._redo = crash_data.get('redo', False)
 

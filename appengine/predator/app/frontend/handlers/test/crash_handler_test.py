@@ -29,6 +29,7 @@ from libs.gitiles import gitiles_repository
 class CrashHandlerTest(AppengineTestCase):
   app_module = webapp2.WSGIApplication([
       ('/_ah/push-handlers/crash/fracas', crash_handler.CrashHandler),
+      ('/_ah/push-handlers/crash/clusterfuzz', crash_handler.CrashHandler),
   ], debug=True)
 
   def testNeedNewAnalysisIfIsARedo(self):
@@ -92,7 +93,9 @@ class CrashHandlerTest(AppengineTestCase):
       self.test_app.post_json('/_ah/push-handlers/crash/fracas',
                               request_json_data)
 
-  def testHandlePostStartNewAnalysis(self):
+  @mock.patch('common.model.crash_analysis.CrashAnalysis.Initialize')
+  def testHandlePostStartNewAnalysis(self, initialize):
+    initialize.return_value = None
     json_crash_data = self.GetDummyClusterfuzzData(redo=True)
 
     mock_predator_app = self.GetMockPredatorApp()
@@ -113,5 +116,5 @@ class CrashHandlerTest(AppengineTestCase):
           CrashWrapperPipeline, None,
           (json_crash_data['client_id'], crash_data.identifiers))
 
-      self.test_app.post_json('/_ah/push-handlers/crash/fracas',
+      self.test_app.post_json('/_ah/push-handlers/crash/clusterfuzz',
                               request_json_data)

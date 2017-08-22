@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import logging
 
 from google.appengine.ext import ndb
@@ -29,6 +30,7 @@ from analysis.predator import Predator
 from analysis.type_enums import CrashClient
 from common.predator_app import PredatorApp
 from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
+from gae_libs import pubsub_util
 
 
 class PredatorForClusterfuzz(PredatorApp):
@@ -80,8 +82,52 @@ class PredatorForClusterfuzz(PredatorApp):
     """Gets ``ClusterfuzzData`` from ``raw_crash_data``."""
     return ClusterfuzzData(raw_crash_data)
 
-  def ProcessResultForPublishing(self, result, key):  # pylint: disable=W0613
-    """Clusterfuzz specific processing of result data for publishing."""
-    # TODO(katesonia) Add feedback page link information to result after
-    # feedback page of Clusterfuzz is added.
-    return result  # pragma: no cover
+  def MessageToTryBot(self, analysis):
+    """Gets messages to push to try bot topic."""
+    regression_ranges = []
+    dep_rolls = (analysis.dependency_rolls.itervalues()
+                 if analysis.dependency_rolls else [])
+    for dep_roll in dep_rolls:
+      repository = self._get_repository(dep_roll.repo_url)
+      regression_range = dep_roll.ToDict()
+      regression_range.update(
+          {'commits': repository.GetCommitsBetweenRevisions(
+              dep_roll.old_revision, dep_roll.new_revision)})
+      regression_ranges.append(regression_range)
+
+    message = {
+        'regression_ranges': regression_ranges,
+        'testcase_id': analysis.testcase
+    }
+    if 'suspected_cls' in analysis.result:
+      message['suspected_cls'] = analysis.result['suspected_cls']
+
+    return message
+
+  def PublishResultToTryBot(self, analysis):
+    """Publishes heuristic results to try bot."""
+    message = self.MessageToTryBot(analysis)
+    topic = self.client_config['try_bot_topic']
+    pubsub_util.PublishMessagesToTopic([json.dumps(message)], topic)
+    logging.info('Publish result for %s to try-bot %s:\n%s',
+                 repr(analysis.identifiers), topic,
+                 json.dumps(message, sort_keys=True, indent=4))
+
+  def PublishResult(self, crash_identifiers):
+    """Publish results to clusterfuzz and try bot."""
+    analysis = self.GetAnalysis(crash_identifiers)
+    if not analysis or analysis.failed:
+      logging.info('Can\'t publish results because analysis failed: %s',
+                   repr(crash_identifiers))
+      return
+
+    self.PublishResultToClient(analysis)
+
+    supported_platforms = self.client_config['try_bot_supported_platforms']
+    if not analysis.platform in supported_platforms:
+      logging.info('Skipping testcase because %s is not a supported platform.'
+                   ' Supported platforms: %s.', analysis.platform,
+                   repr(supported_platforms))
+      return
+
+    self.PublishResultToTryBot(analysis)

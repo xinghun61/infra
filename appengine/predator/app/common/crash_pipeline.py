@@ -222,24 +222,7 @@ class PublishResultPipeline(CrashBasePipeline):
     recieving them here. Thus, we discard all the arguments to this method
     (except for ``self``, naturally).
     """
-    analysis = self._predator.GetAnalysis(self._crash_identifiers)
-    if not analysis or not analysis.result or analysis.failed:
-      logging.info('Can\'t publish result to %s because analysis failed:\n%s',
-                   self.client_id, repr(self._crash_identifiers))
-      return
-
-    result = self._predator.GetPublishableResult(self._crash_identifiers,
-                                                 analysis)
-    messages_data = [json.dumps(result, sort_keys=True)]
-
-    # TODO(http://crbug.com/659354): remove PredatorApp's dependency on
-    # CrashConfig.
-    client_config = self._predator.client_config
-    # TODO(katesonia): Clean string uses in config.
-    topic = client_config['analysis_result_pubsub_topic']
-    pubsub_util.PublishMessagesToTopic(messages_data, topic)
-    logging.info('Published %s analysis result for %s', self.client_id,
-                 repr(self._crash_identifiers))
+    self._predator.PublishResult(self._crash_identifiers)
 
 
 class CrashWrapperPipeline(BasePipeline):

@@ -7,6 +7,7 @@ import mock
 from analysis import chromecrash_parser
 from analysis import detect_regression_range
 from analysis.component_classifier import ComponentClassifier
+from analysis.chrome_crash_data import CracasCrashData
 from analysis.crash_report import CrashReport
 from analysis.culprit import Culprit
 from analysis.project_classifier import ProjectClassifier
@@ -135,6 +136,9 @@ class PredatorForFracasTest(AppengineTestCase):
     crash_identifiers = {'signature': 'sig'}
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.result = {'other': 'data'}
+    analysis.status = analysis_status.COMPLETED
+    analysis.identifiers = crash_identifiers
+    analysis.put()
     expected_processed_suspect = {
         'client_id': self._client.client_id,
         'crash_identifiers': {'signature': 'sig'},
@@ -145,8 +149,7 @@ class PredatorForFracasTest(AppengineTestCase):
         }
     }
 
-    self.assertDictEqual(self._client.GetPublishableResult(crash_identifiers,
-                                                           analysis),
+    self.assertDictEqual(self._client.ResultMessageToClient(analysis),
                          expected_processed_suspect)
 
 
@@ -173,27 +176,46 @@ class PredatorForCracasTest(AppengineTestCase):
     analysis.put()
     self.assertEqual(analysis, self.predator.GetAnalysis(ids))
 
-  @mock.patch('common.predator_app.PredatorApp.GetPublishableResult')
-  def testGetPublishableResultIfRegressionRangIsNone(self, mock_super_method):
-    """Tests ``GetPublishableResult`` method when regression range is None."""
+  @mock.patch('common.predator_app.PredatorApp.ResultMessageToClient')
+  def testResultMessageToClientIfRegressionRangIsNone(self, mock_super_method):
+    """Tests ``ResultMessageToClient`` method when regression range is None."""
     mock_super_method.side_effect = lambda *args: args
     crash_identifiers = {'regression_range': None}
+    analysis = self.predator.CreateAnalysis(crash_identifiers)
+    analysis.regression_range = None
+    analysis.identifiers = crash_identifiers
+    analysis.put()
 
-    modified_crash_identifiers, _ = self.predator.GetPublishableResult(
-        crash_identifiers, None)
-    self.assertEqual(modified_crash_identifiers['regression_range'], [])
+    args = self.predator.ResultMessageToClient(analysis)
+    self.assertEqual(args[0].regression_range, [])
 
-  @mock.patch('common.predator_app.PredatorApp.GetPublishableResult')
-  def testGetPublishableResult(self, mock_super_method):
-    """Tests ``GetPublishableResult`` when regression range is not None."""
+  @mock.patch('common.predator_app.PredatorApp.ResultMessageToClient')
+  def testResultMessageToClientIfRegressionRangIsNotNone(
+      self, mock_super_method):
+    """Tests ``ResultMessageToClient`` method when regression range is None."""
+    mock_super_method.side_effect = lambda *args: args
+    crash_identifiers = {'regression_range': ['rev0', 'rev1']}
+    analysis = self.predator.CreateAnalysis(crash_identifiers)
+    analysis.regression_range = ['rev0', 'rev1']
+    analysis.identifiers = crash_identifiers
+    analysis.put()
+
+    args = self.predator.ResultMessageToClient(analysis)
+    self.assertEqual(args[0].regression_range, ['rev0', 'rev1'])
+
+  @mock.patch('common.predator_app.PredatorApp.ResultMessageToClient')
+  def testResultMessageToClient(self, mock_super_method):
+    """Tests ``ResultMessageToClient`` when regression range is not None."""
     mock_super_method.side_effect = lambda *args: args
     crash_identifiers = {'regression_range': ['2', '3']}
+    analysis = self.predator.CreateAnalysis(crash_identifiers)
+    analysis.identifiers = crash_identifiers
 
-    modified_crash_identifiers, _ = self.predator.GetPublishableResult(
-        crash_identifiers, None)
-    self.assertEqual(modified_crash_identifiers, crash_identifiers)
+    args = self.predator.ResultMessageToClient(analysis)
+    self.assertEqual(args[0].identifiers, crash_identifiers)
 
   def testCrashDataCls(self):
     """Tests ``CrashDataCls`` returns the class of the crash data."""
     crash_data = self.predator.GetCrashData(self.GetDummyChromeCrashData())
     self.assertTrue(isinstance(crash_data, self.predator.CrashDataCls()))
+    self.assertEqual(self.predator.CrashDataCls(), CracasCrashData)

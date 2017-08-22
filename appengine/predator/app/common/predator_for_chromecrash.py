@@ -127,11 +127,8 @@ class PredatorForCracas(PredatorForChromeCrash):
     # TODO: inline CracasCrashAnalysis.Get stuff here.
     return CracasCrashAnalysis.Get(crash_identifiers)
 
-  def GetPublishableResult(self, crash_identifiers, analysis):
+  def ResultMessageToClient(self, analysis):
     """Converts a culprit result into a publishable result for client.
-
-    Note, this function must be called by a concrete subclass of CrashAnalysis
-    which implements the ProcessResultForPublishing method.
 
     Args:
       crash_identifiers (dict): Dict containing identifiers that can uniquely
@@ -145,11 +142,10 @@ class PredatorForCracas(PredatorForChromeCrash):
     """
     # According to b/62866274, Cracas cannot parse ``null`` in the json, so
     # change it to an empty list.
-    if crash_identifiers['regression_range'] is None:
-      crash_identifiers['regression_range'] = []
+    if analysis.regression_range is None:
+      analysis.regression_range = []
 
-    return super(PredatorForCracas, self).GetPublishableResult(
-        crash_identifiers, analysis)
+    return super(PredatorForCracas, self).ResultMessageToClient(analysis)
 
   @classmethod
   def CrashDataCls(cls):

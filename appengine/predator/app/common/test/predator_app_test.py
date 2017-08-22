@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import copy
+import json
 import logging
 import mock
 
@@ -10,8 +11,6 @@ from google.appengine.api import app_identity
 
 from analysis.type_enums import CrashClient
 from common.appengine_testcase import AppengineTestCase
-from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
-from common.model.cracas_crash_analysis import CracasCrashAnalysis
 from common.model.crash_analysis import CrashAnalysis
 from libs import analysis_status
 
@@ -20,7 +19,15 @@ class PredatorTest(AppengineTestCase):
 
   def setUp(self):
     super(PredatorTest, self).setUp()
-    self.predator = self.GetMockPredatorApp(client_id=CrashClient.FRACAS)
+    self.predator = self.GetMockPredatorApp()
+
+  def testClientConfig(self):
+    """Tests ``client_config`` property."""
+    config = {'config': 'dummy'}
+    with mock.patch(
+        'common.model.crash_config.CrashConfig.GetClientConfig') as get_config:
+      get_config.side_effect = lambda client_id: config
+      self.assertDictEqual(self.predator.client_config, config)
 
   def testCheckPolicyNoneClientConfig(self):
     unsupported_client = self.GetMockPredatorApp(client_id='unconfiged')
@@ -46,7 +53,7 @@ class PredatorTest(AppengineTestCase):
   def testDoesNotNeedNewAnalysisIfCheckPolicyFailed(self):
     """Tests that ``NeedsNewAnalysis`` returns False if policy check failed."""
     raw_crash_data = self.GetDummyChromeCrashData(
-        client_id=CrashClient.FRACAS,
+        client_id=self.predator.client_id,
         signature='Blacklist marker signature')
     crash_data = self.predator.GetCrashData(raw_crash_data)
     self.assertFalse(self.predator.NeedsNewAnalysis(crash_data))
@@ -57,8 +64,10 @@ class PredatorTest(AppengineTestCase):
     crash_data = self.predator.GetCrashData(raw_crash_data)
     self.assertTrue(self.predator.NeedsNewAnalysis(crash_data))
 
-  def testNeedNewAnalysisRedoAnAnalyzedCrash(self):
+  @mock.patch('common.model.crash_analysis.CrashAnalysis.Initialize')
+  def testNeedNewAnalysisRedoAnAnalyzedCrash(self, initialize):
     """Tests that ``NeedsNewAnalysis`` returns True for an analyzed crash."""
+    initialize.return_value = None
     raw_crash_data = self.GetDummyClusterfuzzData(redo=True)
     crash_data = self.predator.GetCrashData(raw_crash_data)
     crash_model = self.predator.CreateAnalysis(crash_data.identifiers)
@@ -91,7 +100,21 @@ class PredatorTest(AppengineTestCase):
     mock_initialize.return_value = None
     self.assertTrue(self.predator.NeedsNewAnalysis(crash_data))
 
-  def testGetPublishableResultFoundTrue(self):
+  @mock.patch('common.predator_app.PredatorApp.PublishResultToClient')
+  def testPublishResultDoNothingIfAnalysisFailed(self,
+                                                 mock_publish_to_client):
+    """Tests that ``PublishResult`` does nothing if analysis failed."""
+    crash_identifiers = {'signature': 'sig'}
+    analysis = self.predator.CreateAnalysis(crash_identifiers)
+    analysis.identifiers = crash_identifiers
+    analysis.result = None
+    analysis.status = analysis_status.ERROR
+    analysis.put()
+
+    self.assertIsNone(self.predator.PublishResult(crash_identifiers))
+    mock_publish_to_client.assert_not_called()
+
+  def testResultMessageToClientFoundTrue(self):
     analysis_result = {
         'found': True,
         'suspected_cls': [
@@ -102,38 +125,61 @@ class PredatorTest(AppengineTestCase):
         'other_data': 'data',
     }
 
+    crash_identifiers = {'signature': 'sig'}
+    analysis = self.predator.CreateAnalysis(crash_identifiers)
+    analysis.identifiers = crash_identifiers
+    analysis.result = analysis_result
+    analysis.status = analysis_status.COMPLETED
+    analysis.put()
+
     processed_analysis_result = copy.deepcopy(analysis_result)
     for cl in processed_analysis_result['suspected_cls']:
       cl['confidence'] = round(cl['confidence'], 2)
+    processed_analysis_result['feedback_url'] = analysis.feedback_url
 
-    crash_identifiers = {'signature': 'sig'}
     expected_processed_result = {
         'crash_identifiers': crash_identifiers,
         'client_id': self.predator.client_id,
         'result': processed_analysis_result,
     }
-
-    analysis = CracasCrashAnalysis.Create(crash_identifiers)
-    analysis.result = analysis_result
-
-    self.assertDictEqual(self.predator.GetPublishableResult(crash_identifiers,
-                                                            analysis),
+    self.assertDictEqual(self.predator.ResultMessageToClient(analysis),
                          expected_processed_result)
 
-  def testGetPublishableResultFoundFalse(self):
+  def testResultMessageToClientFoundFalse(self):
     analysis_result = {
         'found': False,
     }
     crash_identifiers = {'signature': 'sig'}
+    analysis = self.predator.CreateAnalysis(crash_identifiers)
+    analysis.identifiers = crash_identifiers
+    analysis.result = analysis_result
+    analysis.status = analysis_status.COMPLETED
+    analysis.put()
+
+    result = copy.deepcopy(analysis_result)
+    result['feedback_url'] = analysis.feedback_url
     expected_processed_result = {
         'crash_identifiers': crash_identifiers,
         'client_id': self.predator.client_id,
-        'result': copy.deepcopy(analysis_result),
+        'result': result,
     }
 
-    analysis = CracasCrashAnalysis.Create(crash_identifiers)
-    analysis.result = analysis_result
-
-    self.assertDictEqual(self.predator.GetPublishableResult(crash_identifiers,
-                                                          analysis),
+    self.assertDictEqual(self.predator.ResultMessageToClient(analysis),
                          expected_processed_result)
+
+  @mock.patch('gae_libs.pubsub_util.PublishMessagesToTopic')
+  @mock.patch('common.predator_app.PredatorApp.ResultMessageToClient')
+  def testPublishResultToClient(self, message_to_client, publish_to_topic):
+    """Tests ``PublishResultToClient`` publish successfully."""
+    message = {'result': 'dummy'}
+    message_to_client.return_value = message
+
+    identifiers = {'signature': 'sig'}
+    analysis = self.predator.CreateAnalysis(identifiers)
+    analysis.identifiers = identifiers
+    analysis.put()
+
+    self.predator.PublishResult(identifiers)
+    publish_to_topic.assert_called_with(
+        [json.dumps(message)],
+        self.predator.client_config['analysis_result_pubsub_topic'])

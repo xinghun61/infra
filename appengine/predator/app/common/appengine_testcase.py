@@ -10,9 +10,11 @@ from google.appengine.api import users
 
 from analysis.analysis_testcase import AnalysisTestCase
 from analysis.crash_data import CrashData
+from analysis.type_enums import CrashClient
 from common.predator_app import PredatorApp
 from common.model.crash_config import CrashConfig
 from common.model.crash_analysis import CrashAnalysis
+from common.model.fracas_crash_analysis import FracasCrashAnalysis
 from gae_libs.testcase import TestCase
 from libs.gitiles.change_log import ChangeLog
 from libs.gitiles.gitiles_repository import GitilesRepository
@@ -39,6 +41,18 @@ DEFAULT_CONFIG_DATA = {
         'platform_rename': {'linux': 'unix'},
         'signature_blacklist_markers': ['Blacklist marker'],
         'top_n': 7
+    },
+    'clusterfuzz': {
+      'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
+      'blacklist_crash_type': [
+        'out-of-memory'
+      ],
+      'signature_blacklist_markers': [],
+      'top_n': 7,
+      'try_bot_supported_platforms': [
+        'linux'
+      ],
+      'try_bot_topic': 'projects/project-name/topics/try-bot-message'
     },
     'component_classifier': {
         'component_info': [
@@ -69,6 +83,13 @@ DEFAULT_CONFIG_DATA = {
 }
 
 
+class MockCrashAnalysis(CrashAnalysis):  # pragma: no cover
+
+  @property
+  def client_id(self):
+    return 'mock_client'
+
+
 class AppengineTestCase(AnalysisTestCase, TestCase):  # pragma: no cover
 
   def setUp(self):
@@ -78,7 +99,7 @@ class AppengineTestCase(AnalysisTestCase, TestCase):  # pragma: no cover
     gae_ts_mon.reset_for_unittest(disable=True)
 
   def GetMockPredatorApp(self, get_repository=None, config=None,
-                         client_id='mock_client'):
+                         client_id=CrashClient.FRACAS):
     get_repository = (get_repository or
                       GitilesRepository.Factory(self.GetMockHttpClient()))
     config = config or CrashConfig.Get()
@@ -121,9 +142,9 @@ class AppengineTestCase(AnalysisTestCase, TestCase):  # pragma: no cover
         return MockCrashData(crash_data)
 
       def GetAnalysis(self, crash_identifiers):
-        return CrashAnalysis.Get(crash_identifiers)
+        return MockCrashAnalysis.Get(crash_identifiers)
 
       def CreateAnalysis(self, crash_identifiers):
-        return CrashAnalysis.Create(crash_identifiers)
+        return MockCrashAnalysis.Create(crash_identifiers)
 
     return MockPredatorApp()
