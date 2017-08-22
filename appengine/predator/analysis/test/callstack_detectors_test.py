@@ -116,6 +116,14 @@ class CallStackDetectorTest(AnalysisTestCase):
         StartOfCallStack(1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     self.assertIsNone(stack_detector('dummy'))
 
+  def testLibFuzzerDectector(self):
+    """Tests that ``LibFuzzerDetector`` detects libFuzzer crash."""
+    stack_detector = callstack_detectors.LibFuzzerDetector()
+    self.assertTupleEqual(
+        stack_detector('==123==ERROR: libFuzzer'),
+        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+    self.assertIsNone(stack_detector('dummy'))
+
   def testDirectLeakDetector(self):
     """Tests that ``DirectLeakDectector`` detects ``Direct-Leak`` crash."""
     stack_detector = callstack_detectors.DirectLeakDetector()

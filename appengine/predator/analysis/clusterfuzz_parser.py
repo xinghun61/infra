@@ -33,13 +33,6 @@ DEFAULT_TOP_N_FRAMES = 7
 CALLSTACK_FLAG_GROUP = 'callstack_flags'
 STACKTRACE_FLAG_GROUP = 'stacktrace_flags'
 
-SANITIZER_TO_CALLSTACK_DETECTOR_CLASS = {
-    SanitizerType.SYZYASAN: callstack_detectors.SyzyasanDetector,
-    SanitizerType.THREAD_SANITIZER: callstack_detectors.TsanDetector,
-    SanitizerType.UBSAN: callstack_detectors.UbsanDetector,
-    SanitizerType.MEMORY_SANITIZER: callstack_detectors.MsanDetector,
-    SanitizerType.ADDRESS_SANITIZER: callstack_detectors.AsanDetector
-}
 
 CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS = {
     CrashType.DIRECT_LEAK: callstack_detectors.DirectLeakDetector,
@@ -47,18 +40,23 @@ CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS = {
 }
 
 
-def GetCallStackDetector(job_type, sanitizer, crash_type):
-  """Returns a ``CallStackDetector`` for particular sanitizer and job type."""
+def GetCallStackDetectors(job_type, crash_type):
+  """Returns a list ``CallStackDetector`` to detect callstacks."""
+  sanitizer_detectors = [
+      callstack_detectors.AsanDetector(),
+      callstack_detectors.MsanDetector(),
+      callstack_detectors.SyzyasanDetector(),
+      callstack_detectors.UbsanDetector(),
+      callstack_detectors.LibFuzzerDetector(),
+      callstack_detectors.TsanDetector()]
+
   if ANDROID_JOB_TYPE_MARKER in job_type:
-    return callstack_detectors.AndroidJobDetector()
+    return [callstack_detectors.AndroidJobDetector()] + sanitizer_detectors
 
   if crash_type in CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS:
-    return CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS[crash_type]()
+    return [CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS[crash_type]()]
 
-  if sanitizer in SANITIZER_TO_CALLSTACK_DETECTOR_CLASS:
-    return SANITIZER_TO_CALLSTACK_DETECTOR_CLASS[sanitizer]()
-
-  return None
+  return sanitizer_detectors
 
 
 class ClusterfuzzParser(object):
@@ -87,7 +85,7 @@ class ClusterfuzzParser(object):
     return stack_buffer
 
   def Parse(self, stacktrace_string, deps, job_type,
-            sanitizer, crash_type, signature=None, top_n_frames=None,
+            crash_type, signature=None, top_n_frames=None,
             crash_address=None):
     """Parse clusterfuzz stacktrace string into Stacktrace instance."""
     filters = [FilterJavaJreSdkFrames(),
@@ -97,20 +95,19 @@ class ClusterfuzzParser(object):
                FilterV8FramesIfV8NotInTopFrames(),
                KeepTopNFrames(top_n_frames or DEFAULT_TOP_N_FRAMES)]
     stacktrace_buffer = StacktraceBuffer(signature=signature, filters=filters)
-    stack_detector = GetCallStackDetector(job_type, sanitizer, crash_type)
-    if stack_detector is None:
-      logging.error('Cannot find CallStackDetector for crash %s (job type: %s)',
-                    signature or '', job_type)
-      return None
+    stack_detectors = GetCallStackDetectors(job_type, crash_type)
 
     # Initial background callstack which is not to be added into Stacktrace.
     stack_buffer = CallStackBuffer()
     # Reset both stacktrace and callstack flags.
     self.flag_manager.ResetAllFlags()
     for line in stacktrace_string.splitlines():
-      # Note, some flags like is_first_stack may be changed inside of stack
-      # detector.
-      start_of_callstack = stack_detector(line, flags=self.flag_manager)
+      for stack_detector in stack_detectors:
+        # Note, some flags like is_first_stack may be changed inside of stack
+        # detector.
+        start_of_callstack = stack_detector(line, flags=self.flag_manager)
+        if start_of_callstack:
+          break
 
       if start_of_callstack:
         stacktrace_buffer.AddFilteredStack(

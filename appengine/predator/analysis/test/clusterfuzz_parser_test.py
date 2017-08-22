@@ -7,7 +7,7 @@ import textwrap
 from analysis import callstack_detectors
 from analysis.analysis_testcase import AnalysisTestCase
 from analysis.clusterfuzz_parser import ClusterfuzzParser
-from analysis.clusterfuzz_parser import GetCallStackDetector
+from analysis.clusterfuzz_parser import GetCallStackDetectors
 from analysis.stacktrace import StackFrame
 from analysis.stacktrace import CallStack
 from analysis.stacktrace import Stacktrace
@@ -20,51 +20,51 @@ from libs.deps.dependency import Dependency
 
 class ClusterfuzzParserTest(AnalysisTestCase):
 
-  def testGetCallStackDetector(self):
+  def testGetCallStackDetectors(self):
     self.assertTrue(
-        isinstance(GetCallStackDetector('android_job', None, 'abrt'),
+        isinstance(GetCallStackDetectors('android_job', 'abrt')[0],
         callstack_detectors.AndroidJobDetector))
     self.assertTrue(
-        isinstance(GetCallStackDetector('job', 'sanitizer',
-                                        CrashType.DIRECT_LEAK),
+        isinstance(GetCallStackDetectors('job', CrashType.DIRECT_LEAK)[0],
                    callstack_detectors.DirectLeakDetector))
     self.assertTrue(
-        isinstance(GetCallStackDetector('job', 'sanitizer',
-                                        CrashType.INDIRECT_LEAK),
+        isinstance(GetCallStackDetectors('job', CrashType.INDIRECT_LEAK)[0],
                    callstack_detectors.IndirectLeakDetector))
     self.assertTrue(
-        isinstance(GetCallStackDetector('job', SanitizerType.SYZYASAN, 'abrt'),
-                   callstack_detectors.SyzyasanDetector))
-    self.assertTrue(
-        isinstance(GetCallStackDetector('job', SanitizerType.THREAD_SANITIZER,
-                                        'abrt'),
-                   callstack_detectors.TsanDetector))
-    self.assertTrue(
-        isinstance(GetCallStackDetector('job', SanitizerType.UBSAN, 'abrt'),
-                   callstack_detectors.UbsanDetector))
-    self.assertTrue(
-        isinstance(GetCallStackDetector('job', SanitizerType.MEMORY_SANITIZER,
-                                        'abrt'),
-                   callstack_detectors.MsanDetector))
-    self.assertTrue(
-        isinstance(GetCallStackDetector('job', SanitizerType.ADDRESS_SANITIZER,
-                                        'abrt'),
+        isinstance(GetCallStackDetectors('job', 'abrt')[0],
                    callstack_detectors.AsanDetector))
-    self.assertIsNone(GetCallStackDetector('job', None, 'abrt'))
+
+    self.assertTrue(
+        isinstance(GetCallStackDetectors('job', 'abrt')[1],
+                   callstack_detectors.MsanDetector))
+
+    self.assertTrue(
+        isinstance(GetCallStackDetectors('job', 'abrt')[2],
+                   callstack_detectors.SyzyasanDetector))
+
+    self.assertTrue(
+        isinstance(GetCallStackDetectors('job', 'abrt')[3],
+                   callstack_detectors.UbsanDetector))
+
+    self.assertTrue(
+        isinstance(GetCallStackDetectors('job', 'abrt')[4],
+                   callstack_detectors.LibFuzzerDetector))
+
+    self.assertTrue(
+        isinstance(GetCallStackDetectors('job', 'abrt')[5],
+                   callstack_detectors.TsanDetector))
 
   def testReturnNoneForEmptyString(self):
     parser = ClusterfuzzParser()
     deps = {'src/': Dependency('src/', 'https://repo', '1')}
 
-    self.assertIsNone(parser.Parse('', deps, 'asan_job',
-                                   SanitizerType.ADDRESS_SANITIZER, 'abrt'))
+    self.assertIsNone(parser.Parse('', deps, 'asan_job', 'abrt'))
 
   def testReturnNoneForDummyJobType(self):
     parser = ClusterfuzzParser()
     deps = {'src/': Dependency('src/', 'https://repo', '1')}
 
-    self.assertIsNone(parser.Parse('Crash stack:', deps, 'dummy_job',
-                                   None, 'abrt'))
+    self.assertIsNone(parser.Parse('Crash stack:', deps, 'dummy_job', 'abrt'))
 
   def testChromeCrashParserParseLineMalformatedCallstack(self):
     parser = ClusterfuzzParser()
@@ -78,8 +78,7 @@ class ClusterfuzzParserTest(AnalysisTestCase):
         #2 dummy
         """
     )
-    self.assertIsNone(parser.Parse(stacktrace_string, deps, 'asan_job',
-                                   SanitizerType.ADDRESS_SANITIZER, 'abrt'))
+    self.assertIsNone(parser.Parse(stacktrace_string, deps, 'asan_job', 'abrt'))
 
   def testClusterfuzzParserParseStacktrace(self):
     parser = ClusterfuzzParser()
@@ -94,8 +93,7 @@ class ClusterfuzzParserTest(AnalysisTestCase):
         """
     )
 
-    stacktrace = parser.Parse(stacktrace_string, deps, 'asan_job',
-                              SanitizerType.ADDRESS_SANITIZER, 'abrt')
+    stacktrace = parser.Parse(stacktrace_string, deps, 'asan_job', 'abrt')
     stack = CallStack(0, frame_list=[
         StackFrame(0, 'src/', 'a::aa(p* d)', 'a.h', 'src/a.h', [225]),
         StackFrame(1, 'src/', 'b::bb(p* d)', 'b.h', 'src/b.h', [266, 267]),

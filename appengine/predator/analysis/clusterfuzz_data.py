@@ -136,7 +136,7 @@ class ClusterfuzzData(CrashData):
     """Parses stacktrace and returns parsed ``Stacktrace`` object."""
     stacktrace = ClusterfuzzParser().Parse(
         self._raw_stacktrace, self.dependencies, self.job_type,
-        self.sanitizer, self.crash_type, signature=self.signature,
+        self.crash_type, signature=self.signature,
         top_n_frames=self._top_n_frames, crash_address=self.crash_address)
     if not stacktrace:
       logging.warning('Failed to parse the stacktrace %s',

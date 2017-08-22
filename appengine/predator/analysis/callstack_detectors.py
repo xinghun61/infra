@@ -208,6 +208,16 @@ class AsanDetector(CallStackDetector):
     return None
 
 
+class LibFuzzerDetector(CallStackDetector):
+  """Detects the start of a libFuzzer stack."""
+  LIBFUZZER_STACK_START_REGEX = re.compile(r'.*(ERROR|WARNING): ?libFuzzer')
+
+  def __call__(self, line, flags=None):
+    if LibFuzzerDetector.LIBFUZZER_STACK_START_REGEX.match(line):
+      return StartOfCallStack(
+          0, CallStackFormatType.DEFAULT, LanguageType.CPP, {})
+
+
 class DirectLeakDetector(CallStackDetector):
   """Detects the ``Direct-leak`` type of crash for clusterfuzz callstack."""
   DIRECT_LEAK_REGEX = re.compile(r'Direct leak of .*')
