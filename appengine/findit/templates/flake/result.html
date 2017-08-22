@@ -383,6 +383,22 @@
         {% endif %}
         <br>
       {% endif %}
+      {% if show_heuristic_results %}
+        <br>
+        Heuristic analysis:
+        {% if suspected_culprits %}
+          <ul>
+            {% for suspect in suspected_culprits %}
+              <li>
+                <a href="{{ suspect.url }}" target="_blank" style="color:red;font-weight:bold">{{ suspect.commit_position or suspect.revision }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          N/A
+        {% endif %}
+        <br>
+      {% endif %}
       {% if (culprit.commit_position or culprit.revision) and culprit.url %}
         <li>Culprit: <a href="{{ culprit.url }}" target="_blank" style="color:red;font-weight:bold">{{ culprit.commit_position or culprit.revision }}</a>
           {% if culprit.confidence %}

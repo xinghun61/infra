@@ -17,6 +17,9 @@ from waterfall.flake import flake_constants
 from waterfall.flake import finish_build_analysis_pipeline
 from waterfall.flake.finish_build_analysis_pipeline import (
     FinishBuildAnalysisPipeline)
+from waterfall.flake.get_test_location_pipeline import GetTestLocationPipeline
+from waterfall.flake.identify_suspected_revisions_pipeline import (
+    IdentifySuspectedRevisionsPipeline)
 from waterfall.flake.initialize_flake_try_job_pipeline import (
     InitializeFlakeTryJobPipeline)
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
@@ -33,6 +36,7 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 100
     step_name = 's'
     test_name = 't'
+    test_location = {'line': 1, 'file': 'file.cc'}
 
     lower_bound = 1
     upper_bound = 10
@@ -50,6 +54,16 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     task.status = analysis_status.COMPLETED
     task.put()
 
+    self.MockPipeline(
+        GetTestLocationPipeline,
+        test_location,
+        expected_args=[analysis.key.urlsafe()],
+        expected_kwargs={})
+    self.MockPipeline(
+        IdentifySuspectedRevisionsPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe(), test_location],
+        expected_kwargs={})
     self.MockPipeline(
         UpdateFlakeBugPipeline,
         '',

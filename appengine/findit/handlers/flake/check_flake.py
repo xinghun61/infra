@@ -68,8 +68,59 @@ def _GetSuspectedFlakeInfo(analysis):
   }
 
 
+def _GetSuspectInfo(suspect_urlsafe_key):
+  """Returns a dict with information about a suspect.
+
+  Args:
+    suspect_urlsaf_key (str): A urlsafe-key to a FlakeCulprit entity.
+
+  Returns:
+    A dict in the format:
+      {
+          'commit_position': int,
+          'git_hash': str,
+          'url': str,
+      }
+  """
+  suspect = ndb.Key(urlsafe=suspect_urlsafe_key).get()
+  assert suspect
+
+  return {
+      'commit_position': suspect.commit_position,
+      'git_hash': suspect.revision,
+      'url': suspect.url,
+  }
+
+
+def _GetSuspectsInfoForAnalysis(analysis):
+  """Returns a list of dicts with information about an analysis' suspected CLs.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The master flake analysis the suspected
+      flake build is associated with.
+
+  Returns:
+    A list of dicts in the format:
+        [
+            {
+                'commit_position': int,
+                'git_hash': str,
+                'url': str,
+            },
+            ...
+        ]
+  """
+  if not analysis or not analysis.suspect_urlsafe_keys:
+    return []
+
+  suspects_info = []
+  for suspect_urlsafe_key in analysis.suspect_urlsafe_keys:
+    suspects_info.append(_GetSuspectInfo(suspect_urlsafe_key))
+  return suspects_info
+
+
 def _GetCulpritInfo(analysis):
-  """Returns a dict with information about the culprit git_hash.
+  """Returns a dict with information about a suspected culprit.
 
   Args:
     analysis (MasterFlakeAnalysis): The master flake analysis the suspected
@@ -86,15 +137,9 @@ def _GetCulpritInfo(analysis):
   if analysis.culprit_urlsafe_key is None:
     return {}
 
-  culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
-  assert culprit
-
-  return {
-      'commit_position': culprit.commit_position,
-      'git_hash': culprit.revision,
-      'url': culprit.url,
-      'confidence': analysis.confidence_in_culprit,
-  }
+  suspect_info = _GetSuspectInfo(analysis.culprit_urlsafe_key)
+  suspect_info['confidence'] = analysis.confidence_in_culprit
+  return suspect_info
 
 
 def _GetCoordinatesData(analysis):
@@ -413,6 +458,8 @@ class CheckFlake(BaseHandler):
             analysis.version_number,
         'suspected_flake':
             suspected_flake,
+        'suspected_culprits':
+            _GetSuspectsInfoForAnalysis(analysis),
         'culprit':
             culprit,
         'request_time':
@@ -428,6 +475,8 @@ class CheckFlake(BaseHandler):
         'show_admin_options':
             self._ShowCustomRunOptions(analysis),
         'show_debug_options':
+            self._ShowDebugInfo(),
+        'show_heuristic_results':
             self._ShowDebugInfo(),
         'pipeline_status_path':
             analysis.pipeline_status_path

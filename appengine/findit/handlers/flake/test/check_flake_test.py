@@ -248,8 +248,14 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     build_number = '123'
     step_name = 's'
     test_name = 't'
+    culprit_git_hash = 'git_hash_1'
+    culprit_url = 'url'
+    culprit_commit_position = 12345
     success_rate = .9
 
+    suspect = FlakeCulprit.Create('repo', culprit_git_hash,
+                                  culprit_commit_position, culprit_url)
+    suspect.put()
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     data_point = DataPoint()
@@ -264,6 +270,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.end_time = datetime.datetime(2016, 10, 01, 13, 10, 00)
     analysis.algorithm_parameters = {'iterations_to_rerun': 100}
     analysis.pipeline_status_path = 'pipelinestatus'
+    analysis.suspect_urlsafe_keys.append(suspect.key.urlsafe())
     analysis.Save()
 
     self.mock_current_user(user_email='test@example.com', is_admin=False)
@@ -307,10 +314,15 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             '00:59:55',
         'suspected_flake': {
             'build_number': 100,
-            'commit_position': 12345,
-            'git_hash': 'git_hash_1',
+            'commit_position': culprit_commit_position,
+            'git_hash': culprit_git_hash,
             'triage_result': 0
         },
+        'suspected_culprits': [{
+            'commit_position': culprit_commit_position,
+            'git_hash': culprit_git_hash,
+            'url': culprit_url,
+        }],
         'version_number':
             1,
         'show_admin_options':
@@ -326,6 +338,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'pipeline_status_path':
             'pipelinestatus',
         'show_debug_options':
+            False,
+        'show_heuristic_results':
             False,
     }
 
@@ -488,6 +502,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'git_hash': 'a_git_hash',
             'triage_result': 0
         },
+        'suspected_culprits': [],
         'version_number':
             1,
         'show_admin_options':
@@ -503,6 +518,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'pipeline_status_path':
             'pipelinestatus',
         'show_debug_options':
+            False,
+        'show_heuristic_results':
             False,
     }
 
@@ -634,8 +651,38 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'lower_bound_git_hash': 'git_hash_1',
         'triage_result': 0
     }
+
     self.assertEqual(expected_result,
                      check_flake._GetSuspectedFlakeInfo(analysis))
+
+  def testGetSuspectInfo(self):
+    suspect = FlakeCulprit.Create('repo', 'r1', 12345, 'url')
+    suspect.put()
+
+    expected_suspect_info = {
+        'commit_position': 12345,
+        'git_hash': 'r1',
+        'url': 'url'
+    }
+
+    self.assertEqual(expected_suspect_info,
+                     check_flake._GetSuspectInfo(suspect.key.urlsafe()))
+
+  def testGetSuspectsForAnalysisInfo(self):
+    suspect = FlakeCulprit.Create('repo', 'r1', 12345, 'url')
+    suspect.put()
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspect_urlsafe_keys.append(suspect.key.urlsafe())
+    analysis.put()
+
+    expected_suspects_info = [{
+        'commit_position': 12345,
+        'git_hash': 'r1',
+        'url': 'url'
+    }]
+
+    self.assertEqual(expected_suspects_info,
+                     check_flake._GetSuspectsInfoForAnalysis(analysis))
 
   def testGetCulpritInfo(self):
     commit_position = 2

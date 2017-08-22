@@ -15,6 +15,9 @@ from waterfall.flake import confidence
 from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants
 from waterfall.flake import lookback_algorithm
+from waterfall.flake.get_test_location_pipeline import GetTestLocationPipeline
+from waterfall.flake.identify_suspected_revisions_pipeline import (
+    IdentifySuspectedRevisionsPipeline)
 from waterfall.flake.initialize_flake_try_job_pipeline import (
     InitializeFlakeTryJobPipeline)
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
@@ -163,7 +166,16 @@ class FinishBuildAnalysisPipeline(BasePipeline):
         build_confidence_score=build_confidence_score)
 
     with pipeline.InOrder():
+      # Perform heuristic analysis to identify suspects to examine first.
+      test_location = yield GetTestLocationPipeline(analysis_urlsafe_key)
+      yield IdentifySuspectedRevisionsPipeline(analysis_urlsafe_key,
+                                               test_location)
+
+      # Identify culprit using try jobs. TODO(crbug.com/735533): Incorporate
+      # results from heuristic analysis into the try job pipeline.
       yield InitializeFlakeTryJobPipeline(analysis.key.urlsafe(),
                                           user_specified_iterations,
                                           user_specified_range, force)
+
+      # Update the bug associated with the analysis with results of findings.
       yield UpdateFlakeBugPipeline(analysis.key.urlsafe())

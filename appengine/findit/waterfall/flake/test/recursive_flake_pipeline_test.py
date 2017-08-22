@@ -9,7 +9,6 @@ from common import constants
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
-from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 
@@ -19,15 +18,12 @@ from waterfall.flake import recursive_flake_pipeline
 
 from waterfall.flake.finish_build_analysis_pipeline import (
     FinishBuildAnalysisPipeline)
-from waterfall.flake.initialize_flake_try_job_pipeline import (
-    InitializeFlakeTryJobPipeline)
 from waterfall.flake.next_build_number_pipeline import NextBuildNumberPipeline
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
     SaveLastAttemptedSwarmingTaskIdPipeline)
 from waterfall.flake.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsPipeline)
-from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
@@ -697,10 +693,6 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         use_nearby_neighbor=False)
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
-
-  #######################################
-  #      Function unit tests.           #
-  #######################################
 
   def testGetBestBuildNumberToRunWithNearbyNeighborRunning(self):
     master_name = 'm'
