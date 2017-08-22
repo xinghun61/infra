@@ -165,10 +165,10 @@ class CalculateConfidenceScoresTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(EXPECTED_CONFIDENCE, confidence_object.compile_heuristic)
 
   @mock.patch.object(calculate_confidence_scores, '_SavesNewCLConfidence')
-  def testHandleGet(self, mock_fn):
-
+  def testGet(self, mock_fn):
     mock_fn.return_value = None
 
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    response = self.test_app.get('/calculate-confidence-scores')
+    response = self.test_app.get('/calculate-confidence-scores',
+                                 headers={'X-AppEngine-Cron': 'true'})
     self.assertEqual(200, response.status_int)
+    mock_fn.assert_called_once_with()

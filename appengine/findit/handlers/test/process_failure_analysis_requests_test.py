@@ -79,17 +79,7 @@ class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
     self.assertEqual(1, len(requests))
     self.assertFalse(requests[0][1]['build_completed'])
 
-  def testNonAdminCanNotSendRequest(self):
-    self.test_app.post(
-        '/process-failure-analysis-requests?format=json',
-        params=json.dumps({
-            'builds': []
-        }),
-        status=401)
-
-  def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(self):
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-
+  def testTaskQueueCanRequestAnalysis(self):
     build_info = BuildInfo('m', 'b', 1)
     build_info.completed = True
     self._MockGetBuildInfo(build_info)
@@ -110,7 +100,9 @@ class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
         '/process-failure-analysis-requests',
         params=json.dumps({
             'builds': builds
-        }))
+        }),
+        headers = {'X-AppEngine-QueueName': 'task_queue'},
+    )
     self.assertEquals(200, response.status_int)
     self.assertEqual(1, len(requests))
     self.assertTrue(requests[0][1]['build_completed'])

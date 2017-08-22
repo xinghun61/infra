@@ -157,7 +157,7 @@ class CalculateConfidenceScores(BaseHandler):
     6. Test Failures with both results
   """
 
-  PERMISSION_LEVEL = Permission.ADMIN
+  PERMISSION_LEVEL = Permission.APP_SELF
 
   def HandleGet(self):
     # Calculates confidence scores for results of the last half year.

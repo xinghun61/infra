@@ -23,8 +23,6 @@ class ObscureEmailsTest(wf_testcase.WaterfallTestCase):
       ], debug=True)
 
   def testObscureTriageRecordsInWfAnalysis(self):
-    self.mock_current_user(user_email='test@google.com', is_admin=True)
-
     mocked_utcnow = datetime(2017, 05, 05, 22, 50, 10)
     self.MockUTCNow(mocked_utcnow)
     valid_record_time = obscure_emails._TimeBeforeNow(
@@ -48,7 +46,11 @@ class ObscureEmailsTest(wf_testcase.WaterfallTestCase):
     recent_analysis.triage_record_last_add = valid_record_time
     recent_analysis.put()
 
-    response = self.test_app.get('/obscure-emails', params={'format': 'json'})
+    response = self.test_app.get(
+        '/obscure-emails',
+        params={'format': 'json'},
+        headers={'X-AppEngine-Cron': 'true'},
+    )
     expected_response = {
         'failure_triage_count': 1,
         'flake_triage_count': 0,
@@ -68,8 +70,6 @@ class ObscureEmailsTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(recent_analysis.triage_email_obscured)
 
   def testObscureMasterFlakeAnalysis(self):
-    self.mock_current_user(user_email='test@google.com', is_admin=True)
-
     mocked_utcnow = datetime(2017, 05, 05, 22, 50, 10)
     self.MockUTCNow(mocked_utcnow)
     valid_record_time = obscure_emails._TimeBeforeNow(days=1)
@@ -99,7 +99,11 @@ class ObscureEmailsTest(wf_testcase.WaterfallTestCase):
     recent_analysis.request_time = valid_request_time
     recent_analysis.Save()
 
-    response = self.test_app.get('/obscure-emails', params={'format': 'json'})
+    response = self.test_app.get(
+        '/obscure-emails',
+        params={'format': 'json'},
+        headers={'X-AppEngine-Cron': 'true'},
+    )
     expected_response = {
         'failure_triage_count': 0,
         'flake_triage_count': 1,
@@ -123,8 +127,6 @@ class ObscureEmailsTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(recent_analysis.triggering_user_email_obscured)
 
   def testObscureFlakeAnalysisRequest(self):
-    self.mock_current_user(user_email='test@google.com', is_admin=True)
-
     mocked_utcnow = datetime(2017, 05, 05, 22, 50, 10)
     self.MockUTCNow(mocked_utcnow)
     valid_request_time = obscure_emails._TimeBeforeNow(days=5)
@@ -143,7 +145,11 @@ class ObscureEmailsTest(wf_testcase.WaterfallTestCase):
     recent_request.user_emails_last_edit = valid_request_time
     recent_request.Save()
 
-    response = self.test_app.get('/obscure-emails', params={'format': 'json'})
+    response = self.test_app.get(
+        '/obscure-emails',
+        params={'format': 'json'},
+        headers={'X-AppEngine-Cron': 'true'},
+    )
     expected_response = {
         'failure_triage_count': 0,
         'flake_triage_count': 0,

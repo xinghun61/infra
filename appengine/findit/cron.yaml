@@ -4,21 +4,21 @@ cron:
   schedule: every 1 minutes
 
 - description: Sunday morning calculate confidence
-  url: /waterfall/calculate-confidence-scores
+  url: /waterfall/cron/calculate-confidence-scores
   schedule: every sunday 09:00
 
 - description: Every day check reverted cls
-  url: /waterfall/check-reverted-cls
+  url: /waterfall/cron/check-reverted-cls
   schedule: every day 00:00
 
 - description: Every day collect tree closures
-  url: /waterfall/collect-tree-closures
+  url: /waterfall/cron/collect-tree-closures
   schedule: every day 00:00
 
 - description: Every day obscure emails
-  url: /waterfall/obscure-emails
+  url: /waterfall/cron/obscure-emails
   schedule: every day 00:00
 
 - description: Refresh bot git caches
-  url: /waterfall/periodic-bot-update
+  url: /waterfall/cron/periodic-bot-update
   schedule: every 4 hours

@@ -49,7 +49,7 @@ class ProcessFailureAnalysisRequests(BaseHandler):
      trigger a try-job run.
   """
 
-  PERMISSION_LEVEL = Permission.ADMIN
+  PERMISSION_LEVEL = Permission.APP_SELF
 
   def HandlePost(self):
     builds = json.loads(self.request.body).get('builds', [])

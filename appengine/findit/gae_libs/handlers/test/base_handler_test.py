@@ -30,9 +30,9 @@ class PermissionTest(testing.AppengineTestCase):
           ('/permission', PermissionLevelHandler),
       ], debug=True)
 
-  def _VerifyUnauthorizedAccess(self, mocked_user_email=None):
+  def _VerifyUnauthorizedAccess(self, mocked_user_email=None, is_admin=False):
     if mocked_user_email:
-      self.mock_current_user(user_email=mocked_user_email)
+      self.mock_current_user(user_email=mocked_user_email, is_admin=is_admin)
     response = self.test_app.get('/permission?format=json', status=401)
     self.assertEqual(('Either not log in yet or no permission. '
                       'Please log in with your @google.com account.'),
@@ -82,6 +82,29 @@ class PermissionTest(testing.AppengineTestCase):
     self._VerifyAuthorizedAccess('test@google.com')
     self._VerifyAuthorizedAccess('test@chromium.org', True)
 
+  def testAccessForAppSelf(self):
+    PermissionLevelHandler.PERMISSION_LEVEL = Permission.APP_SELF
+
+    # No login.
+    self._VerifyUnauthorizedAccess()
+
+    # Non-admin has no access.
+    self._VerifyUnauthorizedAccess('test@gmail.com')
+    self._VerifyUnauthorizedAccess('test@chromium.org')
+    self._VerifyUnauthorizedAccess('test@google.com')
+
+    # Admin still has no access.
+    self._VerifyUnauthorizedAccess('test@chromium.org', True)
+
+    # Task queues and Cron jobs have access.
+    for headers in [{'X-AppEngine-QueueName': 'task_queue'},
+                   {'X-AppEngine-Cron': 'cron_job'}]:
+      self._VerifyAuthorizedAccess(None, False, headers)
+
+  def testUnknownPermissionLevel(self):
+    PermissionLevelHandler.PERMISSION_LEVEL = 80000  # An unknown permission.
+    self._VerifyUnauthorizedAccess('test@google.com')
+
   @mock.patch.object(users, 'is_current_user_admin', return_value=True)
   def testShowDebugInfoForAdmin(self, _):
     self.assertTrue(BaseHandler()._ShowDebugInfo())
@@ -97,19 +120,6 @@ class PermissionTest(testing.AppengineTestCase):
     handler = BaseHandler()
     handler.request = {'debug': '1'}
     self.assertTrue(handler._ShowDebugInfo())
-
-  def testAccessByTaskQueue(self):
-    for permission in (Permission.ANYONE, Permission.CORP_USER,
-                       Permission.ADMIN):
-      PermissionLevelHandler.PERMISSION_LEVEL = permission
-      # Simulation of task queue request by setting the header requires admin
-      # login.
-      self._VerifyAuthorizedAccess('test@chromium.org', True,
-                                   {'X-AppEngine-QueueName': 'task_queue'})
-
-  def testUnknownPermissionLevel(self):
-    PermissionLevelHandler.PERMISSION_LEVEL = 80000  # An unknown permission.
-    self._VerifyUnauthorizedAccess('test@google.com')
 
   @mock.patch('gae_libs.appengine_util.IsInProduction')
   def testUserInfoWhenLogin(self, mocked_IsInProduction):

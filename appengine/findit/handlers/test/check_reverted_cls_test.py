@@ -325,9 +325,11 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
       'GetMostRecentUTCMidnight',
       return_value=datetime(2017, 4, 16, 0, 0, 0))
   def testGetNoStartEndDates(self, _):
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     response = self.test_app.get(
-        '/check-reverted-cls', params={'format': 'json'})
+        '/check-reverted-cls',
+        params={'format': 'json'},
+        headers={'X-AppEngine-Cron': 'true'},
+    )
     self.assertEquals(response.status_int, 200)
 
     expected_response = {
@@ -358,11 +360,13 @@ class CheckRevertedCLsTest(wf_testcase.WaterfallTestCase):
           }],
           'undetermined': []
       })
+
   def testGet(self, *_):
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     response = self.test_app.get(
         '/check-reverted-cls?start_date=2017-04-08&end_date=2017-04-16',
-        params={'format': 'json'})
+        params={'format': 'json'},
+        headers={'X-AppEngine-Cron': 'true'},
+    )
     self.assertEquals(response.status_int, 200)
 
     expected_response = {

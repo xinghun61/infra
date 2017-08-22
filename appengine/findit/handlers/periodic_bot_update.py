@@ -64,7 +64,7 @@ def _LogResults(results):
 
 class PeriodicBotUpdate(BaseHandler):
   """Triggers bot update jobs on idle swarming bots in the Findit pool."""
-  PERMISSION_LEVEL = Permission.ADMIN
+  PERMISSION_LEVEL = Permission.APP_SELF
 
   def HandleGet(self):
     results = _TriggerUpdateJobs()

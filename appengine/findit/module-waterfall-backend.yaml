@@ -19,6 +19,12 @@ handlers:
   script: main.pipeline_backend_application
   secure: always
 
+# For cron jobs and task queues, enforce admin permission.
+- url: /waterfall/(cron|task)/.*
+  script: main.waterfall_backend_web_application
+  secure: always
+  login: admin
+
 # All other handlers.
 - url: /.*
   script: main.waterfall_backend_web_application

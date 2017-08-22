@@ -13,7 +13,7 @@ from waterfall.flake import triggering_sources
 class ProcessFlakeAnalysisRequest(BaseHandler):
   """Processes request of flake analysis and triggers the analysis on demand."""
 
-  PERMISSION_LEVEL = Permission.ADMIN
+  PERMISSION_LEVEL = Permission.APP_SELF
 
   def HandlePost(self):
     flake_analysis_request, user_email, is_admin = pickle.loads(

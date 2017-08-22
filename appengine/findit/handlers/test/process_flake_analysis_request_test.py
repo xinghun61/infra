@@ -23,17 +23,13 @@ class ProcessFlakeAnalysisRequestsTest(testing.AppengineTestCase):
       ],
       debug=True)
 
-  def testNonAdminCanNotSendRequest(self):
-    self.test_app.post(
-        '/process-flake-analysis-request?format=json', params='', status=401)
-
   @mock.patch.object(process_flake_analysis_request.flake_analysis_service,
                      'ScheduleAnalysisForFlake')
-  def testAdminCanRequestAnalysis(self, mocked_func):
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-
+  def testTaskQueueCanRequestAnalysis(self, mocked_func):
     response = self.test_app.post(
         '/process-flake-analysis-request',
-        params=pickle.dumps(('request', 'email', False)))
+        params=pickle.dumps(('request', 'email', False)),
+        headers={'X-AppEngine-QueueName': 'task_queue'},
+    )
     self.assertEquals(200, response.status_int)
     mocked_func.assert_call_with(mock.call('request', 'email', False))

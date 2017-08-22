@@ -182,11 +182,11 @@ class CollectTreeClosuresTest(TestCase):
       collect_tree_closures, '_DetectTreeClosureForTree', return_value=2)
   def testGetWithStartTimeAndEndTime(self, mocked_detect_fun,
                                      mocked_retrive_fun, mocked_check_fun):
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
     response = self.test_app.get(
         '/collect-tree-closures',
         params={'start_time': '2017-04-01',
-                'end_time': '2017-04-05'})
+                'end_time': '2017-04-05'},
+        headers={'X-AppEngine-Cron': 'true'})
     self.assertEquals(200, response.status_int)
     expected_result = {'chromium': 2}
     self.assertEqual(expected_result, response.json_body)
@@ -205,8 +205,8 @@ class CollectTreeClosuresTest(TestCase):
       collect_tree_closures, '_DetectTreeClosureForTree', return_value=2)
   def testGetWithoutStartTime(self, mocked_detect_fun, mocked_retrive_fun,
                               mocked_check_fun):
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    response = self.test_app.get('/collect-tree-closures')
+    response = self.test_app.get('/collect-tree-closures',
+                                 headers={'X-AppEngine-Cron': 'true'})
     self.assertEquals(200, response.status_int)
     expected_result = {'chromium': 2}
     self.assertEqual(expected_result, response.json_body)

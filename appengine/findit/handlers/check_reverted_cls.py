@@ -200,7 +200,7 @@ def _GetRevertCLData(start_date, end_date):
 class CheckRevertedCLs(BaseHandler):
   """Checks the final outcome of suspected CLs Findit identified to revert."""
 
-  PERMISSION_LEVEL = Permission.ADMIN
+  PERMISSION_LEVEL = Permission.APP_SELF
 
   def HandleGet(self):
     start = self.request.get('start_date')

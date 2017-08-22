@@ -11,5 +11,11 @@ dispatch:
   - url: "*/pubsub/*"
     module: waterfall-frontend
 
+  - url: "*/waterfall/cron/*"
+    module: waterfall-backend
+
+  - url: "*/waterfall/task/*"
+    module: waterfall-backend
+
   - url: "*/waterfall/*"
     module: waterfall-frontend

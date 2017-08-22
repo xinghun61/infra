@@ -32,8 +32,10 @@ class PeriodicBotUpdateTest(wf_testcase.WaterfallTestCase):
         'reason': 'Fake reason',
         'message': 'Fake message'
     }), None)]
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    response = self.test_app.get('/periodic-bot-update')
+    response = self.test_app.get(
+        '/periodic-bot-update',
+        headers={'X-AppEngine-Cron': 'true'},
+    )
     self.assertEqual(200, response.status_int)
     self.assertIsInstance(response.json_body, dict)
     self.assertIn('builds', response.json_body)

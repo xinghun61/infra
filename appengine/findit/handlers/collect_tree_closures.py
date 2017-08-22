@@ -191,7 +191,7 @@ def _DetectTreeClosureForTree(tree_name, all_statuses):
 class CollectTreeClosures(BaseHandler):
   """Checks and records tree closures since last checking."""
 
-  PERMISSION_LEVEL = Permission.ADMIN
+  PERMISSION_LEVEL = Permission.APP_SELF
 
   def HandleGet(self):
     start_time = time_util.DatetimeFromString(

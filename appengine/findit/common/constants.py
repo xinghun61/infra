@@ -20,11 +20,11 @@ RERUN_TRYJOB_QUEUE = 'rerun-tryjob'
 
 # Waterfall-related.
 WATERFALL_PROCESS_FAILURE_ANALYSIS_REQUESTS_URL = (
-    '/waterfall/process-failure-analysis-requests')
+    '/waterfall/task/process-failure-analysis-requests')
 WATERFALL_PROCESS_FLAKE_ANALYSIS_REQUEST_URL = (
-    '/waterfall/process-flake-analysis-request')
+    '/waterfall/task/process-flake-analysis-request')
 WATERFALL_PROCESS_FLAKE_SWARMING_TASK_REQUEST_URL = (
-    '/waterfall/process-flake-swarming-task-request')
+    '/waterfall/task/process-flake-swarming-task-request')
 WATERFALL_ALERTS_URL = 'https://sheriff-o-matic.appspot.com/alerts'
 COMPILE_STEP_NAME = 'compile'
 

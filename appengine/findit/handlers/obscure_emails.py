@@ -105,7 +105,7 @@ def _ObscureMasterFlakeAnalysis():
 
 
 class ObscureEmails(BaseHandler):
-  PERMISSION_LEVEL = Permission.ADMIN
+  PERMISSION_LEVEL = Permission.APP_SELF
 
   def HandleGet(self):
     """Obscures emails according to data retention policy."""

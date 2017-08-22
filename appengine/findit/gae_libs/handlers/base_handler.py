@@ -28,9 +28,10 @@ JINJA_ENVIRONMENT.filters['tojson'] = ToJson
 
 
 class Permission(object):
-  ADMIN = 0
-  CORP_USER = 8
-  ANYONE = 16
+  APP_SELF = 0x1
+  ADMIN = 0x10
+  CORP_USER = 0x20
+  ANYONE = 0x40
 
 
 class BaseHandler(webapp2.RequestHandler):
@@ -38,27 +39,34 @@ class BaseHandler(webapp2.RequestHandler):
   # Subclass needs to overwrite it explicitly to give wider access.
   PERMISSION_LEVEL = Permission.ADMIN
 
-  def _HasPermission(self):
-    if (self.request.headers.get('X-AppEngine-QueueName') or
-        self.request.headers.get('X-AppEngine-Cron')):
-      # Requests from task queues or cron jobs could access all HTTP endpoints.
-      return True
-    elif self.PERMISSION_LEVEL == Permission.ANYONE:
-      return True
-    elif self.PERMISSION_LEVEL == Permission.CORP_USER:
-      # Only give access to google accounts or admins.
-      return self.IsCorpUserOrAdmin()
-    elif self.PERMISSION_LEVEL == Permission.ADMIN:
-      return auth_util.IsCurrentUserAdmin()
-    else:
-      logging.error('Unknown permission level: %s' % self.PERMISSION_LEVEL)
-      return False
+  def IsRequestFromAppSelf(self):
+    """Returns True if the request is from the app itself."""
+    # Requests from task queues or cron jobs are from app itself.
+    return (self.request.headers.get('X-AppEngine-QueueName') or
+            self.request.headers.get('X-AppEngine-Cron'))
 
   def IsCorpUserOrAdmin(self):
     """Returns True if the user logged in with corp account or as admin."""
     user_email = auth_util.GetUserEmail()
     return ((user_email and user_email.endswith('@google.com')) or
             auth_util.IsCurrentUserAdmin())
+
+  def _HasPermission(self):
+    if self.PERMISSION_LEVEL == Permission.ANYONE:
+      # For public info, it is readable to the world.
+      return True
+    elif self.PERMISSION_LEVEL == Permission.CORP_USER:
+      # Only give access to google accounts or admins.
+      return self.IsCorpUserOrAdmin()
+    elif self.PERMISSION_LEVEL == Permission.ADMIN:
+      return auth_util.IsCurrentUserAdmin()
+    elif self.PERMISSION_LEVEL == Permission.APP_SELF:
+      # For internal endpoints for task queues and cron jobs, they are
+      # accessible to the app itself only.
+      return self.IsRequestFromAppSelf()
+    else:
+      logging.error('Unknown permission level: %s' % self.PERMISSION_LEVEL)
+      return False
 
   def _ShowDebugInfo(self):
     # Show debug info only if the app is run locally during development, if the
