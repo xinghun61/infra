@@ -1,13 +1,15 @@
-FROM ubuntu:trusty
+FROM ubuntu:xenial
 
 ENV DEBIAN_FRONTEND noninteractive
-ENV CHROMIUM_REV 2100af86f06ded92e913c67723bbff9af08df307
+ENV CHROMIUM_REV e41aeaed051c8cc401e0bce2a6d57dcc330808e6
 
 RUN /usr/bin/apt-get update
 RUN /usr/bin/apt-get -y dist-upgrade
 RUN /usr/bin/apt-get -y install wget
 RUN /usr/bin/apt-get -y install curl
 RUN /usr/bin/apt-get -y install usbutils
+RUN /usr/bin/apt-get -y install lsb-release
+RUN /usr/bin/apt-get -y install sudo
 
 RUN echo 'ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true' \
       | /usr/bin/debconf-set-selections
