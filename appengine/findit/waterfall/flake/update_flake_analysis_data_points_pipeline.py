@@ -9,6 +9,7 @@ from google.appengine.ext import ndb
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipeline_wrapper import pipeline
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from waterfall import build_util
@@ -63,16 +64,28 @@ def _CreateDataPoint(flake_swarming_task):
 
   # Include git information about each build that was run.
   build_info = build_util.GetBuildInfo(master_name, builder_name, build_number)
+
+  if not build_info:
+    raise pipeline.Retry(
+        'Failed to get build info for %s/%s/%s' % (
+            master_name, builder_name, build_number))
+
   data_point.commit_position = build_info.commit_position
   data_point.git_hash = build_info.chromium_revision
 
   if build_number > 0:
-    previous_build = build_util.GetBuildInfo(master_name, builder_name,
-                                             build_number - 1)
-    data_point.previous_build_commit_position = previous_build.commit_position
-    data_point.previous_build_git_hash = previous_build.chromium_revision
+    previous_build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                                  build_number - 1)
+    if not previous_build_info:
+      raise pipeline.Retry(
+          'Failed to get build info for %s/%s/%s' % (
+              master_name, builder_name, build_number - 1))
+
+    data_point.previous_build_commit_position = (
+        previous_build_info.commit_position)
+    data_point.previous_build_git_hash = previous_build_info.chromium_revision
     data_point.blame_list = _GetCommitsBetweenRevisions(
-        previous_build.chromium_revision, build_info.chromium_revision)
+        previous_build_info.chromium_revision, build_info.chromium_revision)
   else:
     data_point.blame_list = build_info.blame_list
 

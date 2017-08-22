@@ -5,6 +5,7 @@ import mock
 
 from common import constants
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.pipeline_wrapper import pipeline
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
@@ -136,6 +137,63 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(data_point.previous_build_git_hash)
     self.assertIsNone(data_point.previous_build_commit_position)
     self.assertEqual(blame_list, data_point.blame_list)
+
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=None)
+  def testCreateDataPointNoBuildInfo(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 0
+    step_name = 's'
+    test_name = 't'
+    task_id = 'task_id'
+    has_valid_artifact = True
+    tries = 100
+    successes = 50
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.task_id = task_id
+    task.has_valid_artifact = has_valid_artifact
+    task.tries = tries
+    task.successes = successes
+
+    with self.assertRaises(pipeline.Retry):
+      update_flake_analysis_data_points_pipeline._CreateDataPoint(task)
+
+  @mock.patch.object(build_util, 'GetBuildInfo')
+  def testCreateDataPointNoPreviousBuildInfo(self, mocked_build_info):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    step_name = 's'
+    test_name = 't'
+    task_id = 'task_id'
+    has_valid_artifact = True
+    tries = 100
+    successes = 50
+    chromium_revision = 'r1000'
+    commit_position = 1000
+    blame_list = [
+        'r1000', 'r999', 'r998', 'r997', 'r996', 'r995', 'r994', 'r993', 'r992',
+        'r991'
+    ]
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.task_id = task_id
+    task.has_valid_artifact = has_valid_artifact
+    task.tries = tries
+    task.successes = successes
+
+    build_info = BuildInfo(master_name, builder_name, build_number)
+    build_info.commit_position = commit_position
+    build_info.chromium_revision = chromium_revision
+    build_info.blame_list = blame_list
+
+    mocked_build_info.side_effect = [build_info, None]
+
+    with self.assertRaises(pipeline.Retry):
+      update_flake_analysis_data_points_pipeline._CreateDataPoint(task)
 
   @mock.patch.object(update_flake_analysis_data_points_pipeline,
                      '_CreateDataPoint')
