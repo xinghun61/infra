@@ -33,19 +33,17 @@ type idGenerator struct {
 // eventUploader is an interface for types which implement a Put method. It
 // exists for the purpose of mocking Uploader in tests.
 type eventUploader interface {
-	Put(src interface{}) error
+	Put(ctx context.Context, src interface{}) error
 }
 
 // Uploader contains the necessary data for streaming data to BigQuery.
 type Uploader struct {
-	ctx context.Context
 	// Uploader is bound to a specific table. DatasetID and Table ID are
 	// provided for reference.
 	DatasetID string
 	TableID   string
 	u         *bigquery.Uploader
 	s         bigquery.Schema
-	timeout   time.Duration
 	// uploads is the Counter metric described by UploadMetricName,
 	// specified in UploaderConfig. It contains a field "status" set to
 	// either "success" or "failure."
@@ -58,12 +56,6 @@ type UploaderConfig struct {
 	SkipInvalid bool
 	// IgnoreUnknown is an option for bigquery.Uploader.
 	IgnoreUnknown bool
-	// Timeout is used by Put to determine how long it should attempt to
-	// upload rows to BigQuery. Put automatically retries on transient
-	// errors, so a timeout is necessary to avoid indefinite retries in the
-	// event the error is not actually transient. If no value (0s) is
-	// specified, NewUploader() will set a default.
-	Timeout time.Duration
 	// UploadsMetricName is a string used to create a tsmon Counter metric
 	// for event upload attempts via Put, e.g.
 	// "/chrome/infra/commit_queue/events/count". Set UploadMetricName
@@ -85,8 +77,8 @@ func init() {
 
 // NewUploader constructs a new Uploader struct.
 //
-// DatasetID and TableID are provided to the BigQuery client to gain access to
-// a particular table.
+// DatasetID and TableID are provided to the BigQuery client (via TableDef) to
+// gain access to a particular table.
 func NewUploader(ctx context.Context, c *bigquery.Client, td *tabledef.TableDef, cfg UploaderConfig) (*Uploader, error) {
 	if id.prefix == "" {
 		return nil, errors.New("error initializing prefix for insertID")
@@ -101,11 +93,6 @@ func NewUploader(ctx context.Context, c *bigquery.Client, td *tabledef.TableDef,
 	u.SkipInvalidRows = cfg.SkipInvalid
 	u.IgnoreUnknownValues = cfg.IgnoreUnknown
 
-	timeout := cfg.Timeout
-	if timeout == time.Duration(0) {
-		timeout = time.Minute
-	}
-
 	var uploadCounter metric.Counter
 	if cfg.UploadMetricName != "" {
 		name := cfg.UploadMetricName
@@ -115,21 +102,19 @@ func NewUploader(ctx context.Context, c *bigquery.Client, td *tabledef.TableDef,
 	}
 
 	return &Uploader{
-		ctx,
 		td.GetDataset().ID(),
 		td.TableId,
 		u,
 		md.Schema,
-		timeout,
 		uploadCounter,
 	}, nil
 }
 
-func (u *Uploader) updateUploads(count int64, status string) {
+func (u *Uploader) updateUploads(ctx context.Context, count int64, status string) {
 	if u.uploads == nil || count == 0 {
 		return
 	}
-	err := u.uploads.Add(u.ctx, count, status)
+	err := u.uploads.Add(ctx, count, status)
 	if err != nil {
 		log.Printf("eventupload: metric.Counter.Add: %v", err)
 	}
@@ -147,13 +132,17 @@ func (u *Uploader) updateUploads(count int64, status string) {
 // The PutMultiError contains a RowInsertionError for each failed row.
 //
 // Put will retry on temporary errors. If the error persists, the call will
-// run indefinitely. Because of this, Put adds a timeout to the Context.
+// run indefinitely. Because of this, if ctx does not have a timeout, Put will
+// add one.
 //
 // See bigquery documentation and source code for detailed information on how
 // struct values are mapped to rows.
-func (u Uploader) Put(src interface{}) error {
-	ctx, cancel := context.WithTimeout(u.ctx, u.timeout)
-	defer cancel()
+func (u Uploader) Put(ctx context.Context, src interface{}) error {
+	if _, ok := ctx.Deadline(); !ok {
+		var c context.CancelFunc
+		ctx, c = context.WithTimeout(ctx, time.Minute)
+		defer c()
+	}
 	var failed int64
 	sss, err := prepareSrc(u.s, src)
 	if err != nil {
@@ -167,13 +156,13 @@ func (u Uploader) Put(src interface{}) error {
 		} else {
 			failed = int64(len(sss))
 		}
-		u.updateUploads(failed, "failure")
+		u.updateUploads(ctx, failed, "failure")
 	}
 	succeeded := int64(len(sss)) - failed
 	if succeeded < 0 {
 		log.Printf("eventupload: Uploader.Put succeeded < 0: %v", succeeded)
 	} else {
-		u.updateUploads(succeeded, "success")
+		u.updateUploads(ctx, succeeded, "success")
 	}
 	return err
 }
@@ -252,7 +241,7 @@ type BatchUploader struct {
 	started bool
 }
 
-func (bu *BatchUploader) start() {
+func (bu *BatchUploader) start(ctx context.Context) {
 	if bu.TickC == nil {
 		bu.tick = time.NewTicker(time.Minute)
 		bu.TickC = bu.tick.C
@@ -263,8 +252,10 @@ func (bu *BatchUploader) start() {
 		defer bu.wg.Done()
 		for {
 			select {
+			case <-ctx.Done():
+				return
 			case <-bu.TickC:
-				bu.upload()
+				bu.upload(ctx)
 			case <-bu.stopc:
 				return
 			}
@@ -289,12 +280,16 @@ func NewBatchUploader(u eventUploader) (*BatchUploader, error) {
 // be a struct matching the schema in Uploader, or a slice containing
 // such structs. Stage returns immediately and batches of rows will be sent to
 // BigQuery at regular intervals according to the configuration of TickC.
-func (bu *BatchUploader) Stage(src interface{}) {
+//
+// Stage will spawn another goroutine that manages uploads, if it hasn't been
+// started already. That routine depends on ctx, so be aware that if ctx is
+// cancelled immediately after calling Stage, those events will not be uploaded.
+func (bu *BatchUploader) Stage(ctx context.Context, src interface{}) {
 	bu.mu.Lock()
 	defer bu.mu.Unlock()
 
 	if !bu.started {
-		bu.start()
+		bu.start(ctx)
 		bu.started = true
 	}
 
@@ -312,7 +307,7 @@ func (bu *BatchUploader) Stage(src interface{}) {
 // upload streams a batch of event rows to BigQuery. Put takes care of retrying,
 // so if it returns an error there is either an issue with the data it is trying
 // to upload, or BigQuery itself is experiencing a failure. So, we don't retry.
-func (bu *BatchUploader) upload() {
+func (bu *BatchUploader) upload(ctx context.Context) {
 	bu.mu.Lock()
 	pending := bu.pending
 	bu.pending = nil
@@ -322,17 +317,17 @@ func (bu *BatchUploader) upload() {
 		return
 	}
 
-	_ = bu.u.Put(pending)
+	_ = bu.u.Put(ctx, pending)
 }
 
 // Close flushes any pending event rows and releases any resources held by the
-// uploader. Close should be called when the logger is no longer needed.
-func (bu *BatchUploader) Close() {
+// uploader. Close should be called when the BatchUploader is no longer needed.
+func (bu *BatchUploader) Close(ctx context.Context) {
 	close(bu.stopc)
 	bu.wg.Wait()
 
 	// Final upload.
-	bu.upload()
+	bu.upload(ctx)
 
 	if bu.tick != nil {
 		bu.tick.Stop()

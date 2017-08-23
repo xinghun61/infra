@@ -10,11 +10,12 @@ import (
 	"time"
 
 	"cloud.google.com/go/bigquery"
+	"golang.org/x/net/context"
 )
 
 type mockUploader chan []fakeEvent
 
-func (u mockUploader) Put(src interface{}) error {
+func (u mockUploader) Put(ctx context.Context, src interface{}) error {
 	srcs := src.([]interface{})
 	var fes []fakeEvent
 	for _, fe := range srcs {
@@ -49,18 +50,18 @@ func TestClose(t *testing.T) {
 	closed := false
 	defer func() {
 		if !closed {
-			bu.Close()
+			bu.Close(context.Background())
 		}
 	}()
 
 	bu.TickC = make(chan time.Time)
 
-	bu.Stage(fakeEvent{})
+	bu.Stage(context.Background(), fakeEvent{})
 	if got, want := len(bu.pending), 1; got != want {
 		t.Errorf("got: %d; want: %d", got, want)
 	}
 
-	bu.Close()
+	bu.Close(context.Background())
 	closed = true
 
 	if got, want := len(bu.pending), 0; got != want {
@@ -77,12 +78,12 @@ func TestUpload(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer bu.Close()
+	defer bu.Close(context.Background())
 
 	tickc := make(chan time.Time)
 	bu.TickC = tickc
 
-	bu.Stage(fakeEvent{})
+	bu.Stage(context.Background(), fakeEvent{})
 	if got, want := len(u), 0; got != want {
 		t.Errorf("got: %d; want: %d", got, want)
 	}
@@ -166,9 +167,9 @@ func TestStage(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer bu.Close()
+		defer bu.Close(context.Background())
 
-		bu.Stage(tc.src)
+		bu.Stage(context.Background(), tc.src)
 		if got, want := len(bu.pending), tc.wantLen; got != want {
 			t.Errorf("got: %d; want: %d", got, want)
 		}
