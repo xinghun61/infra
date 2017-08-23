@@ -35,6 +35,8 @@ class Component(namedtuple('Component',
     """Returns true if this component matches the frame."""
     if self.function and not self.function.match(frame.function):
       return False
+    if frame.dep_path is None or frame.file_path is None:
+      return False
 
     file_path = os.path.join(frame.dep_path, frame.file_path)
     return any(file_path.startswith(directory) for directory in self.dirs)

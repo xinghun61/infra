@@ -5,6 +5,7 @@
 import unittest
 
 from analysis.project import Project
+from analysis.stacktrace import  ProfilerStackFrame
 from analysis.stacktrace import StackFrame
 from libs.gitiles.change_log import FileChangeInfo
 from libs.gitiles.diff import ChangeType
@@ -34,9 +35,34 @@ class ProjectTest(unittest.TestCase):
     self.assertTrue(self.android_project.MatchesStackFrame(android_frame1))
 
     android_frame2 = StackFrame(0, '', 'func', 'comp2.cc',
-                               'googleplex-android/src/comp2.cc', [32])
+                                'googleplex-android/src/comp2.cc', [32])
     self.assertFalse(self.chromium_project.MatchesStackFrame(android_frame2))
     self.assertTrue(self.android_project.MatchesStackFrame(android_frame2))
+
+    android_frame3 = StackFrame(0, 'googleplex-android/src', 'func', 'comp3.cc',
+                                'googleplex-android/src/comp3.cc', [15])
+    self.assertFalse(self.chromium_project.MatchesStackFrame(android_frame3))
+    self.assertTrue(self.android_project.MatchesStackFrame(android_frame3))
+
+  def testMatchesStackFrameWhenFrameHasMissingFields(self):
+    """``MatchesStackFrame`` shouldn't crash when frames have missing fields."""
+    frame_with_no_path = ProfilerStackFrame(
+        0, 0.5, 0.21, False, dep_path=None, function='func', file_path=None,
+        raw_file_path='src/f.cc')
+    self.assertFalse(self.chromium_project.MatchesStackFrame(
+        frame_with_no_path))
+
+    frame_with_no_raw_path = ProfilerStackFrame(
+        0, 0.5, 0.21, False, dep_path='src/', function='func', file_path='f.cc',
+        raw_file_path=None)
+    self.assertTrue(self.chromium_project.MatchesStackFrame(
+        frame_with_no_raw_path))
+
+    frame_with_no_function = ProfilerStackFrame(
+        0, 0.5, 0.21, False, dep_path='src/', function=None, file_path='f.cc',
+        raw_file_path='src/f.cc')
+    self.assertTrue(self.chromium_project.MatchesStackFrame(
+        frame_with_no_function))
 
   def testMatchesTouchedFile(self):
     """Tests that ``MatchesTouchedFile`` matches touched files correctly."""

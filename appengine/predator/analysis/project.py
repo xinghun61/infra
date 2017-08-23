@@ -6,8 +6,6 @@ from collections import namedtuple
 import os
 import re
 
-from libs.gitiles.diff import ChangeType
-
 # Some projects like "chromium", have many sub projects like
 # "chromium-blink", "chromium-skia", "chromium-pdfium"...etc., for those
 # dep projects, the "chromium" ``Project`` can derive the names from their
@@ -61,17 +59,22 @@ class Project(namedtuple('Project',
     # It can only be found in frame.raw_file_path, since the frame.file_path
     # has those kind of information stripped.
     for path_regex in self.path_regexes:
-      if (path_regex.match(os.path.join(frame.dep_path, frame.file_path)) or
-          path_regex.match(frame.raw_file_path)):
+      if (frame.dep_path and frame.file_path and
+          path_regex.match(os.path.join(frame.dep_path, frame.file_path))):
         return True
 
-    for function_regex in self.function_regexes:
-      if function_regex.match(frame.function):
+      if frame.raw_file_path and path_regex.match(frame.raw_file_path):
         return True
 
-    for host_directory in self.host_directories:
-      if frame.dep_path.startswith(host_directory):
-        return True
+    if frame.function:
+      for function_regex in self.function_regexes:
+        if function_regex.match(frame.function):
+          return True
+
+    if frame.dep_path:
+      for host_directory in self.host_directories:
+        if frame.dep_path.startswith(host_directory):
+          return True
 
     return False
 
