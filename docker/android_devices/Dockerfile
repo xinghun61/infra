@@ -10,6 +10,7 @@ RUN /usr/bin/apt-get -y install curl
 RUN /usr/bin/apt-get -y install usbutils
 RUN /usr/bin/apt-get -y install lsb-release
 RUN /usr/bin/apt-get -y install sudo
+RUN /usr/bin/apt-get -y install lsof
 
 RUN echo 'ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true' \
       | /usr/bin/debconf-set-selections
