@@ -5,16 +5,11 @@ This page can be found at: [g.co/bugatrooper](http://g.co/bugatrooper)
 Have an issue with a piece of build infrastructure?
 Our troopers are here to help.
 
-Oncall hours: we have 3 oncall sites each covering during their site's work office hours:
+Oncall hours: we cover working hours in the Pacific timezone:
++ 1800 - 0100 UTC (1000 - 1800 MTV)
 
-+ APAC covers 0100 - 0700 UTC
-+ EMEA covers 0900 - 1700 UTC
-+ MTV  covers 1800 - 0100 UTC (1000 - 1800 MTV)
-
-APAC and EMEA sites primarily respond to P0s for critical infrastructures and
-are pager-driven. If you have created a P0 issue and don't see a response from
-EMEA/APAC trooper in the first 30 minutes, please ping them to make sure they
-are aware of the issue.
+Issues in EMEA are handled on a best-effort basis by volunteers. See
+[here](http://shortn/_TqFYfP9nk6) (internal link) for contact information.
 
 The primary way to contact a trooper is via [crbug.com](http://crbug.com) using
 the templates and priorities established below. If you need to find the current
@@ -111,8 +106,7 @@ If you're having trouble you can file a bug with the trooper using the
 ## Service Hours
 
 Troopers provide full time coverage with the expected response times outlined
-above during the PST work day. Support during EMEA work hours is limited to P0
-only. Other times support is provided best-effort.
+above during the Pacific work day. Other times support is provided best-effort.
 
 ## More Information
 
