@@ -30,24 +30,47 @@ PROD_TEMPLATE_FILENAME = 'swarming_task_template.json'
 CANARY_TEMPLATE_FILENAME = 'swarming_task_template_canary.json'
 
 _PinConfig = collections.namedtuple('_PinConfig', (
-    'package_base', 'platform', 'infra_relpath'))
+  # name (str) - The name of the pin; this is how humans will refer to this pin
+  # on the command line.
+  'name',
 
-_PINS = collections.OrderedDict()
-_PINS['kitchen'] = _PinConfig(
-    package_base='infra/tools/luci/kitchen/',
-    platform=True,
-    infra_relpath='go/src/infra/tools/kitchen',
-)
-_PINS['vpython'] = _PinConfig(
-    package_base='infra/tools/luci/vpython/',
-    platform=True,
-    infra_relpath='go/src/infra/tools/vpython',
-)
-_PINS['git'] = _PinConfig(
-    package_base='infra/tools/git/',
-    platform=True,
-    infra_relpath='go/src/infra/tools/git',
-)
+  # package_base (str) - The base CIPD package name.
+  'package_base',
+
+  # infra_relpath (str|None) -
+  #   If this is a string, this is a relative path to the base of the infra.git
+  #     repo, and will be used to generate a git log for the commit message.
+  #   If this is None, this pin is just treated as a sourceless CIPD package.
+  #     The CIPD version will change, but there won't be any git log.
+  'infra_relpath',
+
+  # platform (bool)    - If True, appends "${platform}" to the package_base.
+  'platform'))
+
+
+def cipd_output(args):
+  """Runs cipd with the given arguments, and returns the -json-output from the
+  command.
+
+  Returns (json_output, error_msg) - If json_output is None, error_msg is the
+  error text from running the command.
+  """
+  with tempdir() as tdir:
+    data_file = os.path.join(tdir, 'data.json')
+
+    # Since this process will return a non-zero exit code if the resolution
+    # was incomplete, we determine correctness by examining the output JSON,
+    # not the exit code.
+    proc = subprocess.Popen(['cipd']+args+['-json-output', data_file],
+                            stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    stdout, _ = proc.communicate()
+
+    try:
+      with open(data_file, 'r') as fd:
+        return json.load(fd), None
+    except IOError:
+      return None, 'CIPD did not produce a JSON:\n%s' % (stdout,)
+
 
 # NOTE: This should be kept in sync with "cipd_all_targets" from:
 # https://chromium.googlesource.com/chromium/tools/build/+/master/scripts/slave/infra_platform.py
@@ -63,6 +86,150 @@ VERIFY_PLATFORMS = set('%s-%s' % parts for parts in (
     ('windows', '386'),
     ('windows', 'amd64'),
 ))
+
+
+class PinConfig(_PinConfig):
+  def cipd_version(self, raw_version):
+    """Converts from a raw version to a full CIPD tag, depending on whether this
+    pin is an infra.git pin or not."""
+    return self.cipd_version_prefix + raw_version
+
+  @property
+  def cipd_version_prefix(self):
+    if self.is_infra_git:
+      return 'git_revision:'
+    return 'version:'
+
+  @property
+  def is_infra_git(self):
+    return self.infra_relpath is not None
+
+  @property
+  def cipd_package(self):
+    """Returns the CIPD package name for this pin."""
+    if self.platform:
+      return self.package_base + '${platform}'
+    return self.package_base
+
+  def raw_version(self, cipd_version):
+    """Converts from a full CIPD tag back to a raw version, depending on whether
+    this is an infra.git pin or not."""
+    assert cipd_version.startswith(self.cipd_version_prefix), cipd_version
+    return cipd_version.split(':', 1)[1]
+
+  def get_latest_version(self):
+    """Returns a raw_version of the latest pin packages.
+
+    Returns None if that couldn't be determined.
+    """
+    if self.is_infra_git:
+      print('looking for built %s packages for recent commits...'
+            % (self.name,))
+      git('-C', INFRA_REPO_ROOT, 'fetch', 'origin')
+      print  # Print empty line after git-fetch output
+
+      # Read up to 100 commits. It is unlikely that we will have a latest set of
+      # CIPD packages further than 100 commits ago.
+      log = git('-C', INFRA_REPO_ROOT, 'log', '-100', '--format=%H')
+      for commit in log.splitlines():
+        if not self.validate_version(commit):
+          return commit
+    else:
+      print('getting latest cipd version for %s...' % (self.name,))
+      description, error_msg = cipd_output([
+        'describe', self.cipd_package, '-version', 'latest',
+      ])
+      if description is None:
+        print error_msg
+        return None
+      tags = description.get('result', {}).get('tags', [])
+      for tag in tags:
+        name, val = tag['tag'].split(':')
+        if name == 'version':
+          return val
+      print('unknown tags: %r', tags)
+
+  def validate_version(self, raw_version):
+    """returns a non-empty string of error text if the cipd version is invalid,
+    otherwise returns none.
+
+    `raw_version` is the input from the --version argument. if the pin is an
+    infra repo pin, then this should look like a git hash (e.g. `deadbeef...`).
+    if the pin is for a non-infra repo tool (like git or python), this will look
+    like a version (e.g. `2.14.1.chromium11`). the function will prepend the
+    correct cipd tag name (i.e. git_revision or version).
+    """
+    resolved, error_msg = cipd_output([
+      'resolve', self.package_base,
+      '-version', self.cipd_version(raw_version),
+    ])
+    if resolved is None:
+      return error_msg
+
+    resolved = resolved.get('result', {}).get('') or []
+    resolved = set(entry['package'] for entry in resolved
+                   if entry.get('pin'))
+    packages = set([self.package_base + plat for plat in VERIFY_PLATFORMS]
+                   if self.platform else [self.package_base])
+    missing = packages.difference(resolved)
+    if missing:
+      return 'unresolved packages: %s' % (', '.join(sorted(missing)),)
+    return ''
+
+  def get_changes(self, ver1, ver2):
+    """Returns a description of changes between two raw versions.
+
+    If there were no changes, returns None.
+    """
+    if not ver1 or not ver2:
+      return INFRA_CHANGES_UNKNOWN
+
+    if not self.is_infra_git:  # No git history for this pin.
+      return ''
+
+    args = [
+      'log',
+      '--date=short',
+      '--no-merges',
+      '--format=%ad %ae %s',
+      '%s..%s' % (ver1, ver2),
+      # Here we assume that binary contents changes when files in these
+      # directories change.
+      # This avoids most of unrelated changes in the change log.
+      'DEPS',
+      'go/deps.lock',
+    ]
+    if self.infra_relpath:  # non-empty
+      args += [self.infra_relpath]
+
+    changes = git('-C', INFRA_REPO_ROOT, *args)
+    if not changes:
+      return None
+    return '$ git %s\n%s' % (' '.join(args), changes)
+
+  def get_version(self, template):
+    """Retrieves raw version of the pin in the task template."""
+    package_name = self.cipd_package
+    for pkg in template['properties']['cipd_input']['packages']:
+      if pkg['package_name'] == package_name:
+        return self.raw_version(pkg['version'])
+    return None
+
+
+_PINS = collections.OrderedDict()
+def _add_pin(name, package_base, infra_relpath=None, platform=True):
+  _PINS[name] = PinConfig(name, package_base, infra_relpath, platform)
+
+_add_pin('kitchen',
+         'infra/tools/luci/kitchen/', 'go/src/infra/tools/kitchen')
+_add_pin('vpython',
+         'infra/tools/luci/vpython/', 'go/src/infra/tools/vpython')
+_add_pin('git',
+         'infra/git/')
+_add_pin('git-wrapper',
+         'infra/tools/git/', 'go/src/infra/tools/git')
+_add_pin('python',
+         'infra/python/cpython/')
 
 INFRA_CHANGES_UNKNOWN = 'infra.git changes are unknown'
 
@@ -85,17 +252,26 @@ def roll_prod(_args):
   prod_template = json.loads(prod_template_contents)
 
   changes = []
-  for pin_name, pin in _PINS.iteritems():
-    canary_ver = get_version(pin, canary_template)
-    prod_ver = get_version(pin, prod_template)
+  sames = []
+  for pin in _PINS.itervalues():
+    canary_ver = pin.get_version(canary_template)
+    prod_ver = pin.get_version(prod_template)
     if canary_ver == prod_ver:
-      changes += ['%s version is the same' % (pin_name,)]
-    else:
+      sames.append(pin.name)
+    elif pin.is_infra_git:
       changes += ['%s version %s -> %s\n\n%s\n' % (
-          pin_name,
+          pin.name,
           prod_ver,
           canary_ver,
-          get_changes(pin, prod_ver, canary_ver))]
+          pin.get_changes(prod_ver, canary_ver))]
+    else:
+      changes += ['%s version %s -> %s' % (
+          pin.name,
+          prod_ver,
+          canary_ver)]
+
+  if sames:
+    changes += ['', 'unchanged: %s' % (', '.join(sames),), '']
 
   # Talk to user.
   print('rolling canary to prod')
@@ -128,47 +304,46 @@ def roll_prod(_args):
 
 def roll_canary(args):
   """Changes pin version in the canary template."""
-  pin_name = args.pin
-  pin = _PINS[pin_name]
+  pin = _PINS[args.pin]
 
   # Read current version.
   with open(CANARY_TEMPLATE_FILENAME) as f:
     contents = f.read()
   template = json.loads(contents)
-  cur_ver = get_version(pin, template)
-  if not cur_ver:
-    print('could not find %s pin in the template!' % (pin_name,))
+  cur_rev = pin.get_version(template)
+  if not cur_rev:
+    print('could not find %s pin in the template!' % (pin.name,))
     return 1
 
   # Read new version.
-  new_rev = args.git_revision
+  new_rev = args.version
   if new_rev:
-    err = validate_git_revision(new_rev, pin)
+    err = pin.validate_version(new_rev)
     if err:
-      print('git revision %s is bad. CIPD output:' % new_rev)
+      print('version %s is bad. CIPD output:' % new_rev)
       print(err)
       return 1
   else:
-    print('looking for built %s packages for recent commits...' % (pin_name,))
-    new_rev = get_latest_package_git_revision(pin)
+    new_rev = pin.get_latest_version()
     if not new_rev:
       print('could not find a good candidate')
       return 1
-    print('latest %s package version is git_revision:%s' % (pin_name, new_rev))
+    print('latest %s package version is %s' % (
+      pin.name, pin.cipd_version(new_rev)))
 
-  new_ver = 'git_revision:' + new_rev
-  if cur_ver == new_ver:
+  if cur_rev == new_rev:
     print 'new version matches the current one'
     return 1
 
   # Read changes.
-  changes = get_changes(pin, cur_ver, new_ver)
+  changes = pin.get_changes(cur_rev, new_rev)
   if not changes:
-    print 'no changes detected between %s and %s' % (cur_ver, new_ver)
+    print 'no changes detected between %s and %s' % (cur_rev, new_rev)
     return 1
 
   # Talk to the user.
-  print('rolling canary %s version %s -> %s' % (pin_name, cur_ver, new_ver))
+  cur_ver, new_ver = pin.cipd_version(cur_rev), pin.cipd_version(new_rev)
+  print('rolling canary %s version %s -> %s' % (pin.name, cur_ver, new_ver))
   print
   print changes
   print
@@ -180,7 +355,7 @@ def roll_canary(args):
       'check builds in https://luci-milo-dev.appspot.com/buildbucket/'
       'luci.infra.continuous/infra-continuous-trusty-64')
 
-  message = 'does %s at TOT look good? [N/y]: ' % (pin_name,)
+  message = 'does %s at TOT look good? [N/y]: ' % (pin.name,)
   if raw_input(message).lower() != 'y':
     print('please fix it first')
     return 1
@@ -190,7 +365,7 @@ def roll_canary(args):
   # Assume package name goes before version.
   pattern = (
     r'(package_name": "%s[^}]+version": ")[^"]+(")' %
-    re.escape(get_package_name(pin)))
+    re.escape(pin.cipd_package))
   match_count = len(re.findall(pattern, contents))
   if match_count != 1:
     print(
@@ -215,77 +390,13 @@ def roll_canary(args):
        '\n'
        '%(pin_name)s change log:\n'
        '%(changes)s') % {
-         'pin_name': pin_name,
-         'new_rev_short': new_rev[:9],
+         'pin_name': pin.name,
+         'new_rev_short': new_rev[:9] if pin.is_infra_git else new_rev,
          'new_rev': new_rev,
          'changes': changes,
       }
   )
   return 0
-
-
-def get_package_name(pin, platform=None):
-  """Returns the CIPD package name for a pin."""
-  name = pin.package_base
-  if pin.platform:
-    name += platform or '${platform}'
-  return name
-
-
-def get_version(pin, template):
-  """Retrieves version of the pin in the task template."""
-  package_name = get_package_name(pin)
-  for pkg in template['properties']['cipd_input']['packages']:
-    if pkg['package_name'] == package_name:
-      return pkg['version']
-  return None
-
-
-def get_latest_package_git_revision(pin):
-  """Returns a value of git_revision tag of the latest pin packages."""
-  git('-C', INFRA_REPO_ROOT, 'fetch', 'origin')
-  print  # Print empty line after git-fetch output
-
-  # Read up to 100 commits. It is unlikely that we will have a latest set of
-  # CIPD packages further than 100 commits ago.
-  log = git('-C', INFRA_REPO_ROOT, 'log', '-100', '--format=%H')
-  for commit in log.splitlines():
-    if not validate_git_revision(commit, pin):
-      return commit
-  return None
-
-
-def get_changes(pin, ver1, ver2):
-  """Returns a description of changes between two versions.
-
-  If there were no changes, returns None.
-  """
-  if not ver1 or not ver2:
-    return INFRA_CHANGES_UNKNOWN
-  prefix = 'git_revision:'
-  if not ver1.startswith(prefix) or not ver2.startswith(prefix):
-    return INFRA_CHANGES_UNKNOWN
-
-  rev1, rev2 = ver1[len(prefix):], ver2[len(prefix):]
-  args = [
-    'log',
-    '--date=short',
-    '--no-merges',
-    '--format=%ad %ae %s',
-    '%s..%s' % (rev1, rev2),
-    # Here we assume that binary contents changes when files in these
-    # directories change.
-    # This avoids most of unrelated changes in the change log.
-    'DEPS',
-    'go/deps.lock',
-  ]
-  if pin.infra_relpath:
-    args += [pin.infra_relpath]
-
-  changes = git('-C', INFRA_REPO_ROOT, *args)
-  if not changes:
-    return None
-  return '$ git %s\n%s' % (' '.join(args), changes)
 
 
 @contextlib.contextmanager
@@ -296,45 +407,6 @@ def tempdir():
     yield path
   finally:
     shutil.rmtree(path)
-
-
-def validate_git_revision(git_revision, pin):
-  """
-  Returns a non-empty string of error text if git_revision is invalid,
-  otherwise returns None.
-  """
-
-  with tempdir() as tdir:
-    resolved_path = os.path.join(tdir, 'resolve.json')
-
-    # Since this process will return a non-zero exit code if the resolution
-    # was incomplete, we determine correctness by examining the output JSON,
-    # not the exit code.
-    cmdline = [
-      'cipd',
-      'resolve', pin.package_base,
-      '-version', 'git_revision:' + git_revision,
-      '-json-output', resolved_path,
-    ]
-    proc = subprocess.Popen(cmdline, stdout=subprocess.PIPE,
-                            stderr=subprocess.STDOUT)
-    stdout, _ = proc.communicate()
-
-    try:
-      with open(resolved_path, 'r') as fd:
-        resolved = json.load(fd)
-    except IOError:
-      return 'CIPD did not produce a JSON:\n%s' % (stdout,)
-
-  resolved = resolved.get('result', {}).get('') or []
-  resolved = set(entry['package'] for entry in resolved
-                 if entry.get('pin'))
-  packages = set([pin.package_base + plat for plat in VERIFY_PLATFORMS]
-                 if pin.platform else [pin.package_base])
-  missing = packages.difference(resolved)
-  if missing:
-    return 'unresolved packages: %s' % (', '.join(sorted(missing)),)
-  return ''
 
 
 def make_commit(commit_message):
@@ -373,8 +445,8 @@ def main(argv):
       choices=_PINS.keys(),
       help='The name of the pin to roll.')
   canary.add_argument(
-      '--git-revision',
-      help='git revision of the pin. Defaults to latest.')
+      '--version',
+      help='git revision or cipd version of the pin. Defaults to latest.')
   canary.set_defaults(func=roll_canary)
 
   args = parser.parse_args(argv)
