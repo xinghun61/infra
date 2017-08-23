@@ -52,7 +52,7 @@ class FetchInitialDataTest(testing.AppengineTestCase):
               | beam.ParDo(trigger_pipeline_handler.FilterTestResults())
     )
     util.assert_that(result, util.equal_to([self.accepted_test_result]))
-    pipeline.run()
+    pipeline.run().wait_until_finish(duration=2000)
 
   def assert_accepted_entity_generated_correctly(self, entity, expected):
     self.assertEqual(entity.master_name, expected['master_name'])
@@ -68,7 +68,7 @@ class FetchInitialDataTest(testing.AppengineTestCase):
          | beam.Create([self.accepted_test_result])
          | beam.CombineGlobally(trigger_pipeline_handler.GenerateNDBEntities())
     )
-    pipeline.run()
+    pipeline.run().wait_until_finish(duration=2000)
     manager = RequestManager.load()
     entity = manager.pending[0].get()
     self.assertEqual(len(manager.pending), 1)
