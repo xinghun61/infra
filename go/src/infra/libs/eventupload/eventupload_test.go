@@ -97,14 +97,38 @@ func TestPrepareSrc(t *testing.T) {
 		src     interface{}
 		wantLen int
 	}
+	notStruct := 0
 	tcs := []testCase{
 		{
 			src:     fakeEvent{},
 			wantLen: 1,
 		},
 		{
+			src:     &fakeEvent{},
+			wantLen: 1,
+		},
+		{
 			src:     []fakeEvent{{}, {}},
 			wantLen: 2,
+		},
+		{
+			src: []*fakeEvent{
+				{},
+				{},
+			},
+			wantLen: 2,
+		},
+		{
+			src:     &notStruct,
+			wantLen: 0,
+		},
+		{
+			src:     []string{"not a struct or pointer"},
+			wantLen: 0,
+		},
+		{
+			src:     []*int{&notStruct},
+			wantLen: 0,
 		},
 	}
 	for _, tc := range tcs {
@@ -112,7 +136,7 @@ func TestPrepareSrc(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		sss := prepareSrc(s, tc.src)
+		sss, _ := prepareSrc(s, tc.src)
 		if got, want := len(sss), tc.wantLen; got != want {
 			t.Errorf("got: %d; want: %d", got, want)
 		}

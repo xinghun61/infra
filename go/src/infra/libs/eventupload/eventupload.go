@@ -6,7 +6,6 @@
 package eventupload
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -18,6 +17,7 @@ import (
 	"infra/libs/bqschema/tabledef"
 
 	"cloud.google.com/go/bigquery"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/tsmon/field"
 	"go.chromium.org/luci/common/tsmon/metric"
 	"golang.org/x/net/context"
@@ -136,9 +136,12 @@ func (u *Uploader) updateUploads(count int64, status string) {
 }
 
 // Put uploads one or more rows to the BigQuery service. src is expected to
-// be a struct matching the schema in Uploader, or a slice containing
-// such structs. Put takes care of adding InsertIDs, used by BigQuery to
-// deduplicate rows.
+// be a struct (or a pointer to a struct) matching the schema in Uploader, or a
+// slice containing such values. Put takes care of adding InsertIDs, used by
+// BigQuery to deduplicate rows.
+//
+// If any rows do now match one of the expected types, Put will not attempt to
+// upload any rows and returns an InvalidTypeError.
 //
 // Put returns a PutMultiError if one or more rows failed to be uploaded.
 // The PutMultiError contains a RowInsertionError for each failed row.
@@ -152,8 +155,11 @@ func (u Uploader) Put(src interface{}) error {
 	ctx, cancel := context.WithTimeout(u.ctx, u.timeout)
 	defer cancel()
 	var failed int64
-	sss := prepareSrc(u.s, src)
-	err := u.u.Put(ctx, sss)
+	sss, err := prepareSrc(u.s, src)
+	if err != nil {
+		return err
+	}
+	err = u.u.Put(ctx, sss)
 	if err != nil {
 		log.Printf("eventupload: Uploader.Put: %v", err)
 		if merr, ok := err.(bigquery.PutMultiError); ok {
@@ -172,16 +178,39 @@ func (u Uploader) Put(src interface{}) error {
 	return err
 }
 
-func prepareSrc(s bigquery.Schema, src interface{}) []*bigquery.StructSaver {
+func prepareSrc(s bigquery.Schema, src interface{}) ([]*bigquery.StructSaver, error) {
+
+	validateSingleValue := func(v reflect.Value) error {
+		switch v.Kind() {
+		case reflect.Struct:
+			return nil
+		case reflect.Ptr:
+			ptrK := v.Elem().Kind()
+			if ptrK == reflect.Struct {
+				return nil
+			}
+			return errors.Reason("pointer types must point to structs, not %s", ptrK).Err()
+		default:
+			return errors.Reason("struct or pointer-to-struct expected, got %v", v.Kind()).Err()
+		}
+	}
+
 	var srcs []interface{}
 
-	switch reflect.ValueOf(src).Kind() {
-	case reflect.Slice:
-		v := reflect.ValueOf(src)
-		for i := 0; i < v.Len(); i++ {
-			srcs = append(srcs, v.Index(i).Interface())
+	srcV := reflect.ValueOf(src)
+	if srcV.Kind() == reflect.Slice {
+		srcs = make([]interface{}, srcV.Len())
+		for i := 0; i < srcV.Len(); i++ {
+			itemV := srcV.Index(i)
+			if err := validateSingleValue(itemV); err != nil {
+				return nil, err
+			}
+			srcs[i] = itemV.Interface()
 		}
-	case reflect.Struct:
+	} else {
+		if err := validateSingleValue(srcV); err != nil {
+			return nil, err
+		}
 		srcs = []interface{}{src}
 	}
 
@@ -195,7 +224,7 @@ func prepareSrc(s bigquery.Schema, src interface{}) []*bigquery.StructSaver {
 
 		prepared = append(prepared, ss)
 	}
-	return prepared
+	return prepared, nil
 }
 
 func (id *idGenerator) generateInsertID() string {
