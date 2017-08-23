@@ -26,7 +26,8 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-// FIXME: Index by test type, then builder so we can get rid of the hacks in overview.js.
+// FIXME: Index by test type, then builder so we can get rid of the hacks in
+// overview.js, which was removed as part of https://crbug.com/753801.
 // FIXME: Have results.js fire off the loader and then the calling code passing in a callback
 // for once everything is loaded and doesn't know about Loader at all. The calling code just
 // calls fetchResults(testType, builder, callback) or whatever.

@@ -48,11 +48,6 @@ history.validateParameter = function(state, key, value, validateFn)
     }
 }
 
-history.isTreeMap = function()
-{
-    return string.endsWith(window.location.pathname, 'treemap.html');
-}
-
 // TODO(jparent): Make private once callers move here.
 history.queryHashAsMap = function()
 {

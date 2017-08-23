@@ -111,15 +111,12 @@ ui.html.select = function(label, queryParameter, options)
 ui.html.navbar = function(opt_extraHtml)
 {
     var html = '<div style="border-bottom:1px dashed">';
-    html = ui.html._dashboardLink('Overview', 'overview.html') +
-        ui.html._dashboardLink('Results', 'flakiness_dashboard.html') +
-        ui.html._dashboardLink('Times', 'treemap.html');
+    html = ui.html._dashboardLink('Results', 'flakiness_dashboard.html')
 
     if (opt_extraHtml)
         html += opt_extraHtml;
 
-    if (!history.isTreeMap())
-        html += ui.html.checkbox('showAllRuns', 'Use all recorded runs', g_history.crossDashboardState.showAllRuns);
+    html += ui.html.checkbox('showAllRuns', 'Use all recorded runs', g_history.crossDashboardState.showAllRuns);
 
     return html + '</div>';
 }

@@ -129,9 +129,7 @@ loader.Loader.prototype = {
         var resultsFilename;
         // FIXME: times_ms.json should store the actual buildnumber and
         // this should be changed to buildnumber=latest, which doesn't work.
-        if (history.isTreeMap())
-            resultsFilename = 'times_ms.json&buildnumber=0';
-        else if (this._history.crossDashboardState.showAllRuns)
+        if (this._history.crossDashboardState.showAllRuns)
             resultsFilename = 'results.json';
         else
             resultsFilename = 'results-small.json';
@@ -147,10 +145,7 @@ loader.Loader.prototype = {
     },
     _handleResultsFileLoaded: function(builder, fileData)
     {
-        if (history.isTreeMap())
-            this._processTimesJSONData(builder, fileData);
-        else
-            this._processResultsJSONData(builder, fileData);
+        this._processResultsJSONData(builder, fileData);
 
         // We need this work-around for webkit.org/b/50589.
         if (!g_resultsByBuilder[builder.key()]) {
@@ -159,12 +154,6 @@ loader.Loader.prototype = {
         }
 
         this._handleResourceLoad();
-    },
-    _processTimesJSONData: function(builder, fileData)
-    {
-        // FIXME: We should probably include the builderName in the JSON
-        // rather than relying on only loading one JSON file per page.
-        g_resultsByBuilder[builder.key()] = JSON.parse(fileData);
     },
     _processResultsJSONData: function(builder, fileData)
     {
