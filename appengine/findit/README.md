@@ -53,3 +53,11 @@ Deploy to findit-for-me.appspot.com (production):
 
 To make the new version the default:
   `make migrate`
+
+# Code Structure
+* [services/](services/) contains service-layer code for the core analysis logic
+  for compile failures, reliable test failures, and flaky tests.
+* [pipelines/](pipelines/) contains code for the pipeline flows that connect the
+  different analysis units from the service layer.
+We are refactoring [waterfall/](waterfall/) into services/ and pipelines/ to
+separate analysis logic from pipeline flow.
