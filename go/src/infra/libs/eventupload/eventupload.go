@@ -6,12 +6,9 @@
 package eventupload
 
 import (
-	"fmt"
 	"log"
-	"os"
 	"reflect"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"infra/libs/bqschema/tabledef"
@@ -23,12 +20,7 @@ import (
 	"golang.org/x/net/context"
 )
 
-var id idGenerator
-
-type idGenerator struct {
-	counter int64
-	prefix  string
-}
+var id InsertIDGenerator
 
 // eventUploader is an interface for types which implement a Put method. It
 // exists for the purpose of mocking Uploader in tests.
@@ -64,26 +56,11 @@ type UploaderConfig struct {
 	UploadMetricName string
 }
 
-func init() {
-	var prefix string
-	h, err := os.Hostname()
-	if err != nil {
-		log.Printf(fmt.Sprintf("eventupload: ERROR: os.Hostname() returns %s", err))
-	} else {
-		prefix = fmt.Sprintf("%s:%d:%d", h, os.Getpid(), time.Now().UnixNano())
-	}
-	id = idGenerator{prefix: prefix}
-}
-
 // NewUploader constructs a new Uploader struct.
 //
 // DatasetID and TableID are provided to the BigQuery client (via TableDef) to
 // gain access to a particular table.
 func NewUploader(ctx context.Context, c *bigquery.Client, td *tabledef.TableDef, cfg UploaderConfig) (*Uploader, error) {
-	if id.prefix == "" {
-		return nil, errors.New("error initializing prefix for insertID")
-	}
-
 	t := c.Dataset(td.GetDataset().ID()).Table(td.TableId)
 	md, err := t.Metadata(ctx)
 	if err != nil {
@@ -207,18 +184,13 @@ func prepareSrc(s bigquery.Schema, src interface{}) ([]*bigquery.StructSaver, er
 	for _, src := range srcs {
 		ss := &bigquery.StructSaver{
 			Schema:   s,
-			InsertID: id.generateInsertID(),
+			InsertID: id.Generate(),
 			Struct:   src,
 		}
 
 		prepared = append(prepared, ss)
 	}
 	return prepared, nil
-}
-
-func (id *idGenerator) generateInsertID() string {
-	counter := atomic.AddInt64(&id.counter, 1)
-	return fmt.Sprintf("%s:%d", id.prefix, counter)
 }
 
 // BatchUploader contains the necessary data for asynchronously sending batches
