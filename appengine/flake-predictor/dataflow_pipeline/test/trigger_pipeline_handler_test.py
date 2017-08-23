@@ -52,7 +52,11 @@ class FetchInitialDataTest(testing.AppengineTestCase):
               | beam.ParDo(trigger_pipeline_handler.FilterTestResults())
     )
     util.assert_that(result, util.equal_to([self.accepted_test_result]))
-    pipeline.run().wait_until_finish(duration=2000)
+    # TODO(kdillon): Once thread leaking problem is fixed, remove this hack
+    # as pipeline.run() will be sufficient here
+    # https://github.com/apache/beam/pull/3751
+    result = pipeline.run()
+    result._executor._executor.executor_service.await_completion()
 
   def assert_accepted_entity_generated_correctly(self, entity, expected):
     self.assertEqual(entity.master_name, expected['master_name'])
@@ -68,7 +72,11 @@ class FetchInitialDataTest(testing.AppengineTestCase):
          | beam.Create([self.accepted_test_result])
          | beam.CombineGlobally(trigger_pipeline_handler.GenerateNDBEntities())
     )
-    pipeline.run().wait_until_finish(duration=2000)
+    # TODO(kdillon): Once thread leaking problem is fixed, remove this hack
+    # as pipeline.run() will be sufficient here
+    # https://github.com/apache/beam/pull/3751
+    result = pipeline.run()
+    result._executor._executor.executor_service.await_completion()
     manager = RequestManager.load()
     entity = manager.pending[0].get()
     self.assertEqual(len(manager.pending), 1)

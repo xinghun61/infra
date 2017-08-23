@@ -151,7 +151,7 @@ class RerunRequestHandlerTest(testing.AppengineTestCase):
           NOT_QUEUED_SWARMING_RESPONSE)
       self.mock_findit.triggerFlakeSwarmingTask.return_value = (
           QUEUED_SWARMING_RESPONSE)
-      self.test_app.get('/handlers/rerun-request-handler')
+      self.test_app.get('/internal/rerun-request-handler')
       manager = RequestManager.load()
       tasks = self.taskqueue_stub.get_filtered_tasks()
       params = tasks[0].extract_params()
@@ -171,7 +171,7 @@ class RerunRequestHandlerTest(testing.AppengineTestCase):
           QUEUED_SWARMING_RESPONSE)
       self.mock_findit.checkFlakeSwarmingTask.return_value = (
           COMPLETED_SWARMING_RESPONSE)
-      self.test_app.get('/handlers/rerun-request-handler',
+      self.test_app.get('/internal/rerun-request-handler',
                         {'time_scheduled': datetime.datetime.utcnow() -
                          datetime.timedelta(hours=24),
                          'num_taskqueue_runs': 2})
@@ -191,7 +191,7 @@ class RerunRequestHandlerTest(testing.AppengineTestCase):
       """Updates running and shedules no new tasks: limit has been reached"""
       self.mock_findit.checkFlakeSwarmingTask.side_effect = [
           COMPLETED_SWARMING_RESPONSE, QUEUED_SWARMING_RESPONSE]
-      self.test_app.get('/handlers/rerun-request-handler',
+      self.test_app.get('/internal/rerun-request-handler',
                         {'time_scheduled': datetime.datetime.utcnow() -
                          datetime.timedelta(hours=24),
                          'num_taskqueue_runs': 3})

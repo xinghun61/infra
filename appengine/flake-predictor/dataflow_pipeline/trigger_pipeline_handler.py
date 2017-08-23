@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-
 import logging
 import os
 import sys
@@ -93,5 +92,4 @@ class TriggerPipelineHandler(webapp2.RequestHandler):
          | beam.ParDo(FilterTestResults())
          | beam.CombineGlobally(GenerateNDBEntities())
     )
-    result = pipeline.run()
-    result.wait_until_finish()
+    pipeline.run().wait_until_finish()

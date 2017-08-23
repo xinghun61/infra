@@ -126,7 +126,7 @@ class RerunRequestHandler(webapp2.RequestHandler):
     # and everything has been completed, or the maximum has been reached
     if (num_taskqueue_runs < MAX_TIMES_SCHEDULED or
         (len(manager.pending) == 0 and len(manager.running) == 0)):
-      taskqueue.add(url='/handlers/rerun-request-handler',
+      taskqueue.add(url='/internal/rerun-request-handler',
                     countdown=86400,  # 24h
                     params={
                         'time_scheduled': datetime.datetime.utcnow(),
