@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.join(
 import cloudstorage
 
 
-BUCKET = 'flake-predictor-data'
+BUCKET = 'flake-predictor-data/log_data'
 
 
 def get_json_file(file_path):
