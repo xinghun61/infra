@@ -22,13 +22,14 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     self.combFn = job.CombineEventsToAttempt()
 
   @staticmethod
-  def construct_attempt_values(attempt_start, actions, failure_reasons=None):
+  def construct_attempt_values(attempt_start_usec, actions,
+                               failure_reasons=None):
     cq_name = 'test_cq'
     issue = '1'
     patchset = '1'
 
     event_basic = {
-      'attempt_start_usec': attempt_start,
+      'attempt_start_usec': attempt_start_usec,
       'cq_name': cq_name,
       'issue': issue,
       'patchset': patchset,
@@ -46,14 +47,14 @@ class TestCQAttemptAccumulator(unittest.TestCase):
 
     attempt = objects.CQAttempt()
     attempt.cq_name = cq_name
-    attempt.attempt_start_msec = float(attempt_start) / 1000
+    attempt.attempt_start_msec = float(attempt_start_usec) / 1000
     attempt.issue = issue
     attempt.patchset = patchset
 
     return (events, attempt)
 
 
-  def failed_attempt_values(self, attempt_start):
+  def failed_attempt_values(self, attempt_start_usec):
     actions = [
       (self.combFn.ACTION_PATCH_START, 1000),
       (self.combFn.ACTION_VERIFIER_CUSTOM_TRYBOTS, 2000),
@@ -84,7 +85,7 @@ class TestCQAttemptAccumulator(unittest.TestCase):
       None,
     ]
 
-    events, attempt = self.construct_attempt_values(attempt_start, actions,
+    events, attempt = self.construct_attempt_values(attempt_start_usec, actions,
                                                     failure_reasons)
 
     attempt.first_start_msec = 1000
@@ -98,11 +99,13 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     attempt.compile_failures = 1
     attempt.total_failures = 2
     attempt.custom_trybots = True
+    attempt.click_to_failure_sec = 4.0
+    attempt.click_to_result_sec = 8.0
 
     return (events, attempt.as_bigquery_row())
 
 
-  def complete_attempt_values(self, attempt_start):
+  def complete_attempt_values(self, attempt_start_usec):
     actions = [
       (self.combFn.ACTION_PATCH_START, 1000),
       (self.combFn.ACTION_VERIFIER_TRIGGER, 3000),
@@ -112,7 +115,7 @@ class TestCQAttemptAccumulator(unittest.TestCase):
       (self.combFn.ACTION_PATCH_STOP, 9000),
     ]
 
-    events, attempt = self.construct_attempt_values(attempt_start, actions)
+    events, attempt = self.construct_attempt_values(attempt_start_usec, actions)
 
     events[-2]['contributing_buildbucket_ids'] = [1]
     events[-1]['contributing_buildbucket_ids'] = [2, 3]
@@ -124,14 +127,19 @@ class TestCQAttemptAccumulator(unittest.TestCase):
     attempt.cq_launch_latency_sec = 3.0
     attempt.verifier_pass_latency_sec = 4.0
     attempt.tree_check_and_throttle_latency_sec = 1.0
+    attempt.vcs_commit_latency_sec = 1.0
+    attempt.click_to_patch_committed_sec = 6.0
+    attempt.click_to_result_sec = 9.0
     attempt.committed = True
     attempt.contributing_bbucket_ids = [2, 3]
 
     return (events, attempt.as_bigquery_row())
 
   def test_compute_attempts(self):
-    complete_attempt_events, complete_attempt = self.complete_attempt_values(0)
-    failed_attempt_events, failed_attempt = self.failed_attempt_values(1)
+    complete_attempt_events, complete_attempt = self.complete_attempt_values(
+        attempt_start_usec=0)
+    failed_attempt_events, failed_attempt = self.failed_attempt_values(
+        attempt_start_usec=1000000) # 1 second
 
     incomplete_attempt_events = [
         {

@@ -81,6 +81,16 @@ class CombineEventsToAttempt(beam.CombineFn):
       return new
     return old
 
+  @staticmethod
+  def compute_difference(minuend, subtrahend):
+    if minuend is None or subtrahend is None:
+      return None
+    return minuend - subtrahend
+
+  @staticmethod
+  def ms_to_sec(ms):
+    return ms / 1000.0 if ms is not None else None
+
   def create_accumulator(self):
     return []
 
@@ -148,16 +158,33 @@ class CombineEventsToAttempt(beam.CombineFn):
         if field in self.logical_or_fields:
           attempt.__dict__[field] = True
 
-    if attempt.first_verifier_trigger_msec:
-      attempt.cq_launch_latency_sec = (attempt.first_verifier_trigger_msec -
-                                       attempt.attempt_start_msec) / 1000.0
-    if attempt.patch_verifier_pass_msec:
-      attempt.verifier_pass_latency_sec = (attempt.patch_verifier_pass_msec -
-                                           attempt.attempt_start_msec) / 1000.0
-      if attempt.patch_started_to_commit_msec:
-        attempt.tree_check_and_throttle_latency_sec = (
-            attempt.patch_started_to_commit_msec -
-            attempt.patch_verifier_pass_msec) / 1000.0
+    attempt.cq_launch_latency_sec = self.ms_to_sec(
+        self.compute_difference(attempt.first_verifier_trigger_msec,
+                                attempt.attempt_start_msec))
+
+    attempt.verifier_pass_latency_sec = self.ms_to_sec(
+        self.compute_difference(attempt.patch_verifier_pass_msec,
+                                attempt.attempt_start_msec))
+
+    attempt.tree_check_and_throttle_latency_sec = self.ms_to_sec(
+        self.compute_difference(attempt.patch_started_to_commit_msec,
+                                attempt.patch_verifier_pass_msec))
+
+    attempt.vcs_commit_latency_sec = self.ms_to_sec(
+        self.compute_difference(attempt.patch_committed_msec,
+                                attempt.patch_started_to_commit_msec))
+
+    attempt.click_to_failure_sec = self.ms_to_sec(
+        self.compute_difference(attempt.patch_failed_msec,
+                                attempt.attempt_start_msec))
+
+    attempt.click_to_patch_committed_sec = self.ms_to_sec(
+        self.compute_difference(attempt.patch_committed_msec,
+                                attempt.attempt_start_msec))
+
+    attempt.click_to_result_sec = self.ms_to_sec(
+        self.compute_difference(attempt.last_stop_msec,
+                                attempt.attempt_start_msec))
 
     # TODO: Deprecate. Now that we have contributing buildbucket ids, we can
     # join with completed_builds to get this information.

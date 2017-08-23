@@ -62,6 +62,10 @@ class CQAttempt(BigQueryObject):
     self.patch_committed_msec = None
     self.patch_started_to_commit_msec = None
     self.patch_failed_msec = None
+    self.vcs_commit_latency_sec = None
+    self.click_to_failure_sec = None
+    self.click_to_patch_committed_sec = None
+    self.click_to_result_sec = None
 
     # Patch event bools
     self.committed = False
@@ -123,6 +127,10 @@ class CQAttempt(BigQueryObject):
         'total_failures',
         'fail_type',
         'contributing_bbucket_ids',
+        'vcs_commit_latency_sec',
+        'click_to_patch_committed_sec',
+        'click_to_failure_sec',
+        'click_to_result_sec',
     ]
 
 
