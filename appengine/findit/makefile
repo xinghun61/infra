@@ -37,7 +37,10 @@ deploy-prod: _deploy
 	@echo "Please force a re-run of a recent build failure on dashboard: "\
 	"https://$(LOCAL_VERSION)-dot-waterfall-frontend-"\
 	"dot-$(APPID).appspot.com/waterfall/list-analyses"
-	@echo "ensure that the analysis is run in the new-version waterfall" \
+	@echo "Please also force a re-run of a recent flake analysis on dashboard: "\
+	"https://$(LOCAL_VERSION)-dot-waterfall-frontend-"\
+	"dot-$(APPID).appspot.com/waterfall/list-flakes"
+	@echo "ensure that the analyses are run in the new-version waterfall" \
 	      "frontend & backend and gives correct results,"
 	@echo "and then set the new version as default for three modules" \
 	      "default, waterfall-frontend and waterfall-backend."
