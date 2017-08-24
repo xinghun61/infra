@@ -104,4 +104,9 @@ class ConvertDataPipelineHandler(webapp2.RequestHandler):
          | beam.CombineGlobally(combine_fns.ConvertToCSV(COLUMN_ORDER))
          | beam.io.WriteToText(BUCKET + file_name)
     )
-    pipeline.run().wait_until_finish()
+    # TODO(kdillon): Once thread leaking problem is fixed, remove this hack
+    # as pipeline.run().wait_until_finish() will be sufficient here
+    # https://github.com/apache/beam/pull/3751
+    result = pipeline.run()
+    result.wait_until_finish()
+    result._executor._executor.executor_service.await_completion()
