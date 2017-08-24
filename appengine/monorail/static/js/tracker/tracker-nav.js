@@ -101,6 +101,7 @@ window.setInterval(TKR_autosizeArtifactSerchField, 700);
 function TKR_formatContextQueryArgs() {
   var args = "";
   var colspec = TKR_getColspecElement().value;
+  if (_ctxHotlistID != "") args += "&hotlist_id=" + _ctxHotlistID;
   if (_ctxCan != 2) args += "&can=" + _ctxCan;
   args += "&q=" + encodeURIComponent(_ctxQuery);
   if (_ctxSortspec != "") args += "&sort=" + _ctxSortspec;
