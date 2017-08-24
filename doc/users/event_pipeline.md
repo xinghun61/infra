@@ -73,6 +73,21 @@ internal.
    of passing the name of the credentials file to the service on start. [See
    CL.](https://chrome-internal-review.googlesource.com/c/405268/)
 
+## From Go
+
+If you need to instrument a GAE app, talk to katthomas@.
+
+[eventuploader](https://godoc.org/chromium.googlesource.com/infra/infra.git/go/src/infra/libs/eventupload)
+takes care of some boilerplate and makes it easy to add monitoring for uploads.
+It also takes care of adding insert IDs, which BigQuery uses to deduplicate
+rows. If you are not using `eventuploader`, check out
+[insertid](https://codesearch.chromium.org/chromium/infra/go/src/infra/libs/eventupload/insertid.go?q=insertid.go&sq=package:chromium&l=1).
+
+With `eventuploader`, you can construct a synchronous `Uploader` or asynchronous
+`BatchUploader` depending on your needs.
+
+TODO: Link to kitchen as an example of how to use eventuploader.
+
 ## From Python
 
 ### Dependencies
