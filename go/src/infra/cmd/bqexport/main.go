@@ -6,24 +6,6 @@
 // table definition protobuf suitable for "bqschemaupdater" to instantiate and
 // process.
 //
-// This generator can be used to enable a BigQuery Go struct to be the canonical
-// definition of a BigQuery table.
-//
-// Example usage:
-//
-//	go:generate bqexportschema -name MySchemaStruct
-//
-// "bqexport" supports an additional struct tag:
-//
-//	type MySchema struct {
-//		OptionalField string `bigquery:"optional" bqexport:"d=optional field"`
-//		RequiredField string `bigquery:"required" bqexport:"req,d=required field"`
-//	}
-//
-// The "req" tag instructs "bqexport" to mark that field required. By default,
-// all fields are optional. Ideally this would be supported directly by the
-// BigQuery package, see:
-//
 // https://github.com/GoogleCloudPlatform/google-cloud-go/issues/726
 //
 // The "d=" tag instructs "bqexport" to read the remainder of the tag as a
@@ -33,7 +15,12 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"go/build"
 	"os"
+	"path/filepath"
+	"strings"
+	"unicode"
 
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging/gologger"
@@ -42,28 +29,77 @@ import (
 )
 
 var (
-	pkg      = flag.String("package", "", "Name of the package to import from. If empty, use current working directory.")
-	name     = flag.String("name", "", "(Required) Name of the struct within 'package' to export.")
-	tableDef = flag.String("table-def-name", "", "Name of the table definition within 'package'. If empty, use <name>Table.")
-	outDir   = flag.String("out-dir", "",
-		"(Required) Path to the root output directory. The JSON file will be written to a subdirectory based on its dataset.")
-	outName = flag.String("out-name", "", "Output JSON filename. If empty, one will be derived from -name.")
+	path = flag.String("path", "", "Path to the TableDef protobuf to import (required).")
+	name = flag.String("name", "", "Name of the output struct and file. If empty, will be derived from TableDef.")
+	dest = flag.String("dest", "", "Path to the destination directory. If empty, current working directory will be used.")
 )
 
-func main() {
+func mainImpl(c context.Context) error {
 	flag.Parse()
-	exp := Exporter{
-		Package:  *pkg,
-		Name:     *name,
-		TableDef: *tableDef,
-		OutDir:   *outDir,
+
+	if *path == "" {
+		return errors.Reason("no TableDef protobuf path was specified (-path)").Err()
 	}
 
+	if *dest == "" {
+		var err error
+		if *dest, err = os.Getwd(); err != nil {
+			return errors.Annotate(err, "failed to get current working directory").Err()
+		}
+	}
+
+	pkg, err := build.Default.ImportDir(*dest, 0)
+	if err != nil {
+		return errors.Annotate(err, "failed to import destination package from: %q", dest).Err()
+	}
+
+	td, err := LoadTableDef(*path)
+	if err != nil {
+		return errors.Annotate(err, "failed to load table def").Err()
+	}
+
+	if *name == "" {
+		*name = td.TableId
+	}
+
+	outName := fmt.Sprintf("%s.gen.go", camelCaseToUnderscore(*name))
+	outPath := filepath.Join(*dest, outName)
+	return Export(c, td, pkg.Name, toCamelCase(*name), outPath)
+}
+
+func main() {
 	c := context.Background()
 	c = gologger.StdConfig.Use(c)
 
-	if err := exp.Export(c, *outName); err != nil {
+	if err := mainImpl(c); err != nil {
 		errors.Log(c, err)
 		os.Exit(1)
 	}
+}
+
+// camelCaseToUnderscore converts a camel-case string to a lowercase string
+// with underscore delimiters.
+func camelCaseToUnderscore(v string) string {
+	var parts []string
+	var segment []rune
+	addSegment := func() {
+		if len(segment) > 0 {
+			parts = append(parts, string(segment))
+			segment = segment[:0]
+		}
+	}
+
+	for _, r := range v {
+		switch {
+		case unicode.IsUpper(r):
+			r = unicode.ToLower(r)
+			addSegment()
+		case unicode.IsLetter(r), unicode.IsNumber(r):
+		default:
+			r = '_'
+		}
+		segment = append(segment, r)
+	}
+	addSegment()
+	return strings.Join(parts, "_")
 }

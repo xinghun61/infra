@@ -7,7 +7,7 @@
 // found in the LICENSE file.
 
 //go:generate go install infra/cmd/bqexport
-//go:generate bqexport -name CompletedBuildLegacy -out-dir ../../../tools/bqschemaupdater
-//go:generate bqexport -name CompletedStepLegacy -out-dir ../../../tools/bqschemaupdater
+//go:generate bqexport -path ../../../tools/bqschemaupdater/raw_events/buildevent_completed_build_legacy.json
+//go:generate bqexport -path ../../../tools/bqschemaupdater/raw_events/buildevent_completed_step_legacy.json
 
 package buildevent

@@ -1,0 +1,90 @@
+{
+  "dataset": "RAW_EVENTS",
+  "tableId": "completed_step_legacy",
+  "name": "Legacy information about completed build steps",
+  "description": "Legacy record of build steps.",
+  "fields": [
+    {
+      "name": "master",
+      "description": "The name of the BuildBot master.",
+      "type": "STRING"
+    },
+    {
+      "name": "builder",
+      "description": "The name of the BuildBot builder.",
+      "type": "STRING"
+    },
+    {
+      "name": "build_number",
+      "description": "The BuildBot build number.",
+      "type": "INTEGER"
+    },
+    {
+      "name": "build_sched_msec",
+      "description": "The build schedule time, in milliseconds from epoch.",
+      "type": "INTEGER"
+    },
+    {
+      "name": "step_name",
+      "description": "The name of this step.",
+      "type": "STRING"
+    },
+    {
+      "name": "step_text",
+      "description": "Step text output.",
+      "type": "STRING"
+    },
+    {
+      "name": "step_number",
+      "description": "The ordinal of this step, relative to other steps in the build.",
+      "type": "INTEGER"
+    },
+    {
+      "name": "host_name",
+      "description": "The builder host name.",
+      "type": "STRING"
+    },
+    {
+      "name": "result",
+      "description": "The step result (enum).",
+      "type": "STRING"
+    },
+    {
+      "name": "step_started_msec",
+      "description": "The step's started time, in milliseconds from epoch.",
+      "type": "INTEGER"
+    },
+    {
+      "name": "step_duration_s",
+      "description": "The step's duration, in seconds.",
+      "type": "FLOAT"
+    },
+    {
+      "name": "patch_url",
+      "description": "The patch URL.",
+      "type": "STRING"
+    },
+    {
+      "name": "project",
+      "description": "The build's project.",
+      "type": "STRING"
+    },
+    {
+      "name": "bbucket_id",
+      "description": "The BuildBucket ID.",
+      "type": "STRING"
+    },
+    {
+      "name": "bbucket_user_agent",
+      "description": "The BuildBucket user agent.",
+      "type": "STRING"
+    },
+    {
+      "name": "build_id",
+      "description": "An identifier unique to this build. Shared with 'build_id' in builds table.",
+      "type": "STRING"
+    }
+  ],
+  "partitionTable": true,
+  "partitionExpirationSeconds": "0"
+}

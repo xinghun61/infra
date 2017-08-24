@@ -32,7 +32,7 @@ def Checker(tool_name, input_api, output_api):
     f.AbsoluteLocalPath()
     for f in input_api.AffectedFiles(include_deletes=False)
     if f.AbsoluteLocalPath().endswith('.go') and
-    not f.AbsoluteLocalPath().endswith('.pb.go')
+    not any(f.AbsoluteLocalPath().endswith(x) for x in ('.pb.go', '.gen.go'))
   ])
   if not affected_files:
     return []
