@@ -9,6 +9,7 @@ package main
 
 import (
 	"flag"
+	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -19,21 +20,20 @@ import (
 	"go.chromium.org/luci/common/auth"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	"google.golang.org/api/option"
 
 	"golang.org/x/net/context"
 )
 
 func loadTableDef(path string) (*pb.TableDef, error) {
-	r, err := os.Open(path)
+	content, err := ioutil.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
-	defer r.Close()
 
 	td := &pb.TableDef{}
-	if err := jsonpb.Unmarshal(r, td); err != nil {
+	if err := proto.UnmarshalText(string(content), td); err != nil {
 		return nil, err
 	}
 	return td, nil

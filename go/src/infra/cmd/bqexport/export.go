@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"sort"
 	"strings"
 	"text/template"
@@ -19,7 +18,6 @@ import (
 
 	"go.chromium.org/luci/common/errors"
 
-	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 
 	"golang.org/x/net/context"
@@ -88,10 +86,6 @@ func LoadTableDef(path string) (*tabledef.TableDef, error) {
 	}
 
 	var tdef tabledef.TableDef
-	if filepath.Ext(path) == ".json" {
-		return &tdef, jsonpb.UnmarshalString(string(content), &tdef)
-	}
-
 	return &tdef, proto.UnmarshalText(string(content), &tdef)
 }
 

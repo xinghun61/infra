@@ -3,6 +3,7 @@
 package buildevent
 
 import pb "infra/libs/bqschema/tabledef"
+import time "time"
 
 // CompletedStepLegacyTable is the TableDef for the
 // "raw_events" dataset's "completed_step_legacy" table.
@@ -60,4 +61,10 @@ type CompletedStepLegacy struct {
 
 	// An identifier unique to this build. Shared with 'build_id' in builds table.
 	BuildId string `bigquery:"build_id"`
+
+	// The time when the step started.
+	StepStarted time.Time `bigquery:"step_started"`
+
+	// The time when the step finished.
+	StepFinished time.Time `bigquery:"step_finished"`
 }
