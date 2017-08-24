@@ -23,9 +23,11 @@ type indexViewModel struct {
 type indexMasterViewModel struct {
 	Name string
 
+	WAIBuilderCount        int
+	WAIBuilderPercent      int
 	MigratedBuilderCount   int
-	TotalBuilderCount      int
 	MigratedBuilderPercent int
+	TotalBuilderCount      int
 }
 
 func handleIndexPage(c *router.Context) error {
@@ -51,8 +53,12 @@ func indexPage(c context.Context) (*indexViewModel, error) {
 		}
 
 		m.TotalBuilderCount++
-		if b.Migration.Status == storage.StatusMigrated {
+		switch b.Migration.Status {
+		case storage.StatusMigrated:
 			m.MigratedBuilderCount++
+			fallthrough
+		case storage.StatusLUCIWAI:
+			m.WAIBuilderCount++
 		}
 	})
 	if err != nil {
@@ -64,6 +70,7 @@ func indexPage(c context.Context) (*indexViewModel, error) {
 	for i, name := range masterNames {
 		m := masters[name]
 		if m.TotalBuilderCount > 0 {
+			m.WAIBuilderPercent = 100 * m.WAIBuilderCount / m.TotalBuilderCount
 			m.MigratedBuilderPercent = 100 * m.MigratedBuilderCount / m.TotalBuilderCount
 		}
 		model.Masters[i] = m

@@ -61,6 +61,13 @@ func TestIndex(t *testing.T) {
 				&storage.Builder{
 					ID: storage.BuilderID{
 						Master:  "tryserver.chromium.mac",
+						Builder: "mac_chromium_asan_rel_ng",
+					},
+					Migration: storage.BuilderMigration{Status: storage.StatusLUCIWAI},
+				},
+				&storage.Builder{
+					ID: storage.BuilderID{
+						Master:  "tryserver.chromium.mac",
 						Builder: "mac_chromium_rel_ng",
 					},
 					Migration: storage.BuilderMigration{Status: storage.StatusMigrated},
@@ -74,15 +81,19 @@ func TestIndex(t *testing.T) {
 				Masters: []*indexMasterViewModel{
 					{
 						Name:                   "tryserver.chromium.linux",
+						WAIBuilderCount:        1,
+						WAIBuilderPercent:      50,
 						MigratedBuilderCount:   1,
-						TotalBuilderCount:      2,
 						MigratedBuilderPercent: 50,
+						TotalBuilderCount:      2,
 					},
 					{
 						Name:                   "tryserver.chromium.mac",
+						WAIBuilderCount:        2,
+						WAIBuilderPercent:      100,
 						MigratedBuilderCount:   1,
-						TotalBuilderCount:      1,
-						MigratedBuilderPercent: 100,
+						MigratedBuilderPercent: 50,
+						TotalBuilderCount:      2,
 					},
 				},
 			})

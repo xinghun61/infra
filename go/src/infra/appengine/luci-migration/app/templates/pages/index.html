@@ -20,6 +20,7 @@ that can be found in the LICENSE file. -->
           <tr>
             <td>Name</td>
             <td>Total builders</td>
+            <td>WAI builders</td>
             <td>Migrated builders</td>
           </tr>
         </thead>
@@ -30,6 +31,7 @@ that can be found in the LICENSE file. -->
               <a href="masters/{{.Name}}/">{{.Name}}</a>
             </td>
             <td>{{.TotalBuilderCount}}</td>
+            <td>{{.WAIBuilderCount}} ({{.WAIBuilderPercent}}%)</td>
             <td>{{.MigratedBuilderCount}} ({{.MigratedBuilderPercent}}%)</td>
           </tr>
     {{end}}
