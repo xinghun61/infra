@@ -102,6 +102,7 @@ func handleAnalyzeBuilder(c *router.Context) error {
 		c.Context,
 		analysis.BucketBuilder{Bucket: "master." + builder.ID.Master, Builder: builder.ID.Builder},
 		analysis.BucketBuilder{Bucket: builder.LUCIBuildbucketBucket, Builder: builder.LUCIBuildbucketBuilder},
+		builder.Migration.Status,
 	)
 	if err != nil {
 		return errors.Annotate(err, "analysis failed").Err()

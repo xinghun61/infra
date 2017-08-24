@@ -37,17 +37,17 @@ const (
 	// pipeline did not run yet.
 	StatusUnknown MigrationStatus = 0
 	// StatusLUCINotWAI means the LUCI builder is incorrect or slow.
-	StatusLUCINotWAI = 1
+	StatusLUCINotWAI MigrationStatus = 1
 	// StatusLUCIWAI means the LUCI builder is correct and fast enough.
-	StatusLUCIWAI = 2
+	StatusLUCIWAI MigrationStatus = 2
 	// StatusInsufficientData means there was not enough data to compare
 	// Buildbot and LUCI.
-	StatusInsufficientData = 3
+	StatusInsufficientData MigrationStatus = 3
 
 	// update String() when adding new values.
 
 	// StatusMigrated means the builder has transitioned to LUCI.
-	StatusMigrated = 100
+	StatusMigrated MigrationStatus = 100
 	// StatusMigrated must be the last one. Do not add new values after this.
 )
 

@@ -58,10 +58,10 @@ type Tryjobs struct {
 }
 
 // Analyze compares buildbot and LUCI tryjobs.
-func (t *Tryjobs) Analyze(c context.Context, buildbotBuilder, luciBuilder BucketBuilder) (
+func (t *Tryjobs) Analyze(c context.Context, buildbotBuilder, luciBuilder BucketBuilder, currentStatus storage.MigrationStatus) (
 	result *storage.BuilderMigration, detailsHTML string, err error) {
 
-	comp, err := t.analyze(c, buildbotBuilder, luciBuilder)
+	comp, err := t.analyze(c, buildbotBuilder, luciBuilder, currentStatus)
 	if err != nil {
 		return nil, "", err
 	}
@@ -73,7 +73,7 @@ func (t *Tryjobs) Analyze(c context.Context, buildbotBuilder, luciBuilder Bucket
 	return &comp.BuilderMigration, detailsBuf.String(), nil
 }
 
-func (t *Tryjobs) analyze(c context.Context, buildbotBuilder, luciBuilder BucketBuilder) (*diff, error) {
+func (t *Tryjobs) analyze(c context.Context, buildbotBuilder, luciBuilder BucketBuilder, currentStatus storage.MigrationStatus) (*diff, error) {
 	logging.Infof(c, "comparing %q to %q", luciBuilder, buildbotBuilder)
 
 	f := fetcher{
@@ -95,7 +95,7 @@ func (t *Tryjobs) analyze(c context.Context, buildbotBuilder, luciBuilder Bucket
 		return nil, err
 	}
 
-	comp := compare(groups, t.MinTrustworthyGroups)
+	comp := compare(groups, t.MinTrustworthyGroups, currentStatus)
 	comp.AnalysisTime = clock.Now(c)
 	comp.MinBuildAge = comp.AnalysisTime.Sub(f.MinCreationDate)
 	return comp, nil

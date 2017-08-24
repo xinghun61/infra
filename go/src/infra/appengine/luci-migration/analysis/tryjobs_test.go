@@ -91,6 +91,7 @@ func TestAnalyze(t *testing.T) {
 				c,
 				buildbotBuilder,
 				luciBuilder,
+				storage.StatusLUCINotWAI,
 			)
 			So(err, ShouldBeNil)
 			So(html, ShouldNotBeEmpty)
