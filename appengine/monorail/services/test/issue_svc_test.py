@@ -662,7 +662,7 @@ class IssueServiceTest(unittest.TestCase):
     self.services.issue.UpdateIssues(self.cnxn, [issue])
     self.mox.VerifyAll()
 
-  def testUpdateIssue(self):
+  def testUpdateIssue_Normal(self):
     issue = fake.MakeTestIssue(
         project_id=789, local_id=1, owner_id=111L, summary='sum',
         status='Live', labels=['Type-Defect'], issue_id=78901,
@@ -672,6 +672,19 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpUpdateIssues()
     self.mox.ReplayAll()
     self.services.issue.UpdateIssue(self.cnxn, issue)
+    self.mox.VerifyAll()
+
+  def testUpdateIssue_Stale(self):
+    issue = fake.MakeTestIssue(
+        project_id=789, local_id=1, owner_id=111L, summary='sum',
+        status='Live', labels=['Type-Defect'], issue_id=78901,
+        opened_timestamp=123456789, modified_timestamp=123456789,
+        star_count=12)
+    # Do not set issue.assume_stale = False
+    # Do not call self.SetUpUpdateIssues() because nothing should be updated.
+    self.mox.ReplayAll()
+    self.assertRaises(
+        AssertionError, self.services.issue.UpdateIssue, self.cnxn, issue)
     self.mox.VerifyAll()
 
   def testUpdateIssuesSummary(self):

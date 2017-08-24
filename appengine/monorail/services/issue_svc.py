@@ -824,10 +824,8 @@ class IssueService(object):
       return
 
     for issue in issues:  # slow, but mysql will not allow REPLACE rows.
-      if issue.assume_stale:
-        # TODO(jrobbins): eventually make this raise an exception.
-        logging.error(
-          'debugging issue2514: Storing issue that might be stale: %r', issue)
+      assert not issue.assume_stale, (
+          'issue2514: Storing issue that might be stale: %r' % issue)
       delta = {
           'project_id': issue.project_id,
           'local_id': issue.local_id,
@@ -1685,11 +1683,8 @@ class IssueService(object):
     iids_to_invalidate = set()
 
     for target_issue in issues:
-      if target_issue.assume_stale:
-        # TODO(jrobbins): eventually make this raise an exception.
-        logging.error(
-          'debugging issue2514: Copying issue that might be stale: %r',
-          target_issue)
+      assert not target_issue.assume_stale, (
+          'issue2514: Copying issue that might be stale: %r' % target_issue)
       new_issue = tracker_pb2.Issue()
       new_issue.project_id = dest_project.project_id
       new_issue.project_name = dest_project.project_name
