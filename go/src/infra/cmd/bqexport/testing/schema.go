@@ -39,7 +39,7 @@ var TestSchemaTable = tabledef.TableDef{
 
 		{
 			Name:        "Desc",
-			Description: "This is a description string.",
+			Description: "This is a description string.\nIt has a newline.",
 			Type:        tabledef.Type_STRING,
 			IsRequired:  true,
 		},

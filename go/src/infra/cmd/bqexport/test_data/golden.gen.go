@@ -31,7 +31,7 @@ type TestSchema struct {
 	// The letter 'C'.
 	C float64 `bigquery:"C"`
 
-	// This is a description string.
+	// This is a description string. It has a newline.
 	Desc string `bigquery:"Desc"`
 
 	Req string `bigquery:"Req"`

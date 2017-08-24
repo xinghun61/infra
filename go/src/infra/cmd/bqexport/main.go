@@ -19,8 +19,6 @@ import (
 	"go/build"
 	"os"
 	"path/filepath"
-	"strings"
-	"unicode"
 
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging/gologger"
@@ -75,31 +73,4 @@ func main() {
 		errors.Log(c, err)
 		os.Exit(1)
 	}
-}
-
-// camelCaseToUnderscore converts a camel-case string to a lowercase string
-// with underscore delimiters.
-func camelCaseToUnderscore(v string) string {
-	var parts []string
-	var segment []rune
-	addSegment := func() {
-		if len(segment) > 0 {
-			parts = append(parts, string(segment))
-			segment = segment[:0]
-		}
-	}
-
-	for _, r := range v {
-		switch {
-		case unicode.IsUpper(r):
-			r = unicode.ToLower(r)
-			addSegment()
-		case unicode.IsLetter(r), unicode.IsNumber(r):
-		default:
-			r = '_'
-		}
-		segment = append(segment, r)
-	}
-	addSegment()
-	return strings.Join(parts, "_")
 }
