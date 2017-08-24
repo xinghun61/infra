@@ -97,7 +97,8 @@ class PredatorForClusterfuzz(PredatorApp):
 
     message = {
         'regression_ranges': regression_ranges,
-        'testcase_id': analysis.testcase
+        'testcase_id': analysis.testcase,
+        'feedback_url': analysis.feedback_url,
     }
     if 'suspected_cls' in analysis.result:
       message['suspected_cls'] = analysis.result['suspected_cls']

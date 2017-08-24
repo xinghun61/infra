@@ -105,16 +105,21 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
 
     commits = ['git_hash1', 'git_hash2']
     get_commits.return_value = commits
+    feedback_url = 'https://feedback'
 
     expected_message = {
         'regression_ranges': [{'path': 'src/', 'repo_url': 'https://repo',
                                'old_revision': 'old_rev',
                                'new_revision': 'new_rev', 'commits': commits}],
         'testcase_id': analysis.testcase,
-        'suspected_cls': analysis_result['suspected_cls']
+        'suspected_cls': analysis_result['suspected_cls'],
+        'feedback_url': feedback_url,
     }
-    self.assertDictEqual(self._client.MessageToTryBot(analysis),
-                         expected_message)
+    with mock.patch('common.model.crash_analysis.CrashAnalysis.feedback_url',
+                    new_callable=mock.PropertyMock) as mock_feedback:
+      mock_feedback.return_value = feedback_url
+      self.assertDictEqual(self._client.MessageToTryBot(analysis),
+                           expected_message)
 
   @mock.patch('libs.gitiles.gitiles_repository.GitilesRepository.'
               'GetCommitsBetweenRevisions')
@@ -136,15 +141,21 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
 
     commits = ['git_hash1', 'git_hash2']
     get_commits.return_value = commits
+    feedback_url = 'https://feedback'
 
     expected_message = {
         'regression_ranges': [{'path': 'src/', 'repo_url': 'https://repo',
                                'old_revision': 'old_rev',
                                'new_revision': 'new_rev', 'commits': commits}],
         'testcase_id': analysis.testcase,
+        'feedback_url': feedback_url,
     }
-    self.assertDictEqual(self._client.MessageToTryBot(analysis),
-                         expected_message)
+
+    with mock.patch('common.model.crash_analysis.CrashAnalysis.feedback_url',
+                    new_callable=mock.PropertyMock) as mock_feedback:
+      mock_feedback.return_value = feedback_url
+      self.assertDictEqual(self._client.MessageToTryBot(analysis),
+                           expected_message)
 
   @mock.patch('gae_libs.pubsub_util.PublishMessagesToTopic')
   @mock.patch('common.predator_for_clusterfuzz.PredatorForClusterfuzz.'
