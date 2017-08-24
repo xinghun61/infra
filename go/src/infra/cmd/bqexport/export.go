@@ -26,16 +26,23 @@ import (
 )
 
 func sanitizeComment(v string) string {
-	return strings.Map(func(r rune) rune {
+	prevSpace := false
+	v = strings.Map(func(r rune) rune {
 		switch {
-		case unicode.IsLetter(r), unicode.IsNumber(r), unicode.IsPunct(r):
-			return r
 		case unicode.IsSpace(r):
+			if prevSpace {
+				return -1
+			}
+			prevSpace = true
 			return ' '
+		case unicode.IsPrint(r):
+			prevSpace = false
+			return r
 		default:
 			return -1
 		}
 	}, v)
+	return strings.TrimSpace(v)
 }
 
 var structTemplate = template.Must(template.New("").
