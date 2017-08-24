@@ -19,6 +19,8 @@ from testing import fake
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 
+LABEL_ROW_SHARDS = config_svc.LABEL_ROW_SHARDS
+
 
 def MakeConfigService(cache_manager, my_mox):
   config_service = config_svc.ConfigService(cache_manager)
@@ -58,27 +60,49 @@ class LabelRowTwoLevelCacheTest(unittest.TestCase):
   def testDeserializeLabelRows_Normal(self):
     label_rows_dict = self.label_row_2lc._DeserializeLabelRows(self.rows)
     expected = {
-        678: [(3, 678, 1, 'C', 'doc', True), (4, 678, None, 'D', 'doc', False)],
-        789: [(1, 789, 1, 'A', 'doc', False), (2, 789, 2, 'B', 'doc', False)],
+        (789, 1): [(1, 789, 1, 'A', 'doc', False)],
+        (789, 2): [(2, 789, 2, 'B', 'doc', False)],
+        (678, 3): [(3, 678, 1, 'C', 'doc', True)],
+        (678, 4): [(4, 678, None, 'D', 'doc', False)],
         }
     self.assertEqual(expected, label_rows_dict)
 
   def SetUpFetchItems(self, keys, rows):
-    self.config_service.labeldef_tbl.Select(
-        self.cnxn, cols=config_svc.LABELDEF_COLS, project_id=keys,
-        order_by=[('rank DESC', []), ('label DESC', [])]).AndReturn(
-            rows)
+    for (project_id, shard_id) in keys:
+      sharded_rows = [row for row in rows
+                      if row[0] % LABEL_ROW_SHARDS == shard_id]
+      self.config_service.labeldef_tbl.Select(
+        self.cnxn, cols=config_svc.LABELDEF_COLS, project_id=project_id,
+        where=[('id %% %s = %s', [LABEL_ROW_SHARDS, shard_id])]).AndReturn(
+        sharded_rows)
 
   def testFetchItems(self):
-    keys = [567, 678, 789]
+    keys = [(567, 0), (678, 0), (789, 0),
+            (567, 1), (678, 1), (789, 1),
+            (567, 2), (678, 2), (789, 2),
+            (567, 3), (678, 3), (789, 3),
+            (567, 4), (678, 4), (789, 4),
+            ]
     self.SetUpFetchItems(keys, self.rows)
     self.mox.ReplayAll()
     label_rows_dict = self.label_row_2lc.FetchItems(self.cnxn, keys)
     self.mox.VerifyAll()
     expected = {
-        567: [],
-        678: [(3, 678, 1, 'C', 'doc', True), (4, 678, None, 'D', 'doc', False)],
-        789: [(1, 789, 1, 'A', 'doc', False), (2, 789, 2, 'B', 'doc', False)],
+        (567, 0): [],
+        (678, 0): [],
+        (789, 0): [],
+        (567, 1): [],
+        (678, 1): [],
+        (789, 1): [(1, 789, 1, 'A', 'doc', False)],
+        (567, 2): [],
+        (678, 2): [],
+        (789, 2): [(2, 789, 2, 'B', 'doc', False)],
+        (567, 3): [],
+        (678, 3): [(3, 678, 1, 'C', 'doc', True)],
+        (789, 3): [],
+        (567, 4): [],
+        (678, 4): [(4, 678, None, 'D', 'doc', False)],
+        (789, 4): [],
         }
     self.assertEqual(expected, label_rows_dict)
 
@@ -281,12 +305,24 @@ class ConfigServiceTest(unittest.TestCase):
 
   ### Label lookups
 
-  def testGetLabelDefRows(self):
-    rows = 'foo'
+  def testGetLabelDefRows_Hit(self):
+    self.config_service.label_row_2lc.CacheItem((789, 0), [])
+    self.config_service.label_row_2lc.CacheItem((789, 1), [])
+    self.config_service.label_row_2lc.CacheItem((789, 2), [])
     self.config_service.label_row_2lc.CacheItem(
-        789, rows)
+        (789, 3), [(3, 678, 1, 'C', 'doc', True)])
+    self.config_service.label_row_2lc.CacheItem(
+        (789, 4), [(4, 678, None, 'D', 'doc', False)])
+    self.config_service.label_row_2lc.CacheItem((789, 5), [])
+    self.config_service.label_row_2lc.CacheItem((789, 6), [])
+    self.config_service.label_row_2lc.CacheItem((789, 7), [])
+    self.config_service.label_row_2lc.CacheItem((789, 8), [])
+    self.config_service.label_row_2lc.CacheItem((789, 9), [])
     actual = self.config_service.GetLabelDefRows(self.cnxn, 789)
-    self.assertEqual(rows, actual)
+    expected = [
+      (3, 678, 1, 'C', 'doc', True),
+      (4, 678, None, 'D', 'doc', False)]
+    self.assertEqual(expected, actual)
 
   def SetUpGetLabelDefRowsAnyProject(self, rows):
     self.config_service.labeldef_tbl.Select(
@@ -318,16 +354,19 @@ class ConfigServiceTest(unittest.TestCase):
     self.config_service._EnsureLabelCacheEntry(self.cnxn, 789)
     self.mox.VerifyAll()
 
-  def SetUpEnsureLabelCacheEntry_Miss(self, keys, rows):
-    self.config_service.labeldef_tbl.Select(
-        self.cnxn, cols=config_svc.LABELDEF_COLS, project_id=keys,
-        order_by=[('rank DESC', []), ('label DESC', [])]).AndReturn(
-            rows)
+  def SetUpEnsureLabelCacheEntry_Miss(self, project_id, rows):
+    for shard_id in range(0, LABEL_ROW_SHARDS):
+      shard_rows = [row for row in rows
+                    if row[0] % LABEL_ROW_SHARDS == shard_id]
+      self.config_service.labeldef_tbl.Select(
+        self.cnxn, cols=config_svc.LABELDEF_COLS, project_id=project_id,
+        where=[('id %% %s = %s', [LABEL_ROW_SHARDS, shard_id])]).AndReturn(
+            shard_rows)
 
   def testEnsureLabelCacheEntry_Miss(self):
     labeldef_rows = [(1, 789, 1, 'Security', 'doc', False),
                      (2, 789, 2, 'UX', 'doc', True)]
-    self.SetUpEnsureLabelCacheEntry_Miss([789], labeldef_rows)
+    self.SetUpEnsureLabelCacheEntry_Miss(789, labeldef_rows)
     self.mox.ReplayAll()
     self.config_service._EnsureLabelCacheEntry(self.cnxn, 789)
     self.mox.VerifyAll()

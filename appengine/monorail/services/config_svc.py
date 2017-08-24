@@ -75,6 +75,10 @@ COMPONENT2LABEL_COLS = ['component_id', 'label_id']
 NOTIFY_ON_ENUM = ['never', 'any_comment']
 DATE_ACTION_ENUM = ['no_action', 'ping_owner_only', 'ping_participants']
 
+# Some projects have tons of label rows, so we retrieve them in shards
+# to avoid huge DB results or exceeding the memcache size limit.
+LABEL_ROW_SHARDS = 10
+
 
 class LabelRowTwoLevelCache(caches.AbstractTwoLevelCache):
   """Class to manage RAM and memcache for label rows.
@@ -82,6 +86,9 @@ class LabelRowTwoLevelCache(caches.AbstractTwoLevelCache):
   Label rows exist for every label used in a project, even those labels
   that were added to issues in an ad hoc way without being defined in the
   config ahead of time.
+
+  The set of all labels in a project can be very large, so we shard them
+  into 10 parts so that each part can be cached in memcache with < 1MB.
   """
 
   def __init__(self, cache_manager, config_service):
@@ -93,23 +100,60 @@ class LabelRowTwoLevelCache(caches.AbstractTwoLevelCache):
     """Convert DB result rows into a dict {project_id: [row, ...]}."""
     result_dict = collections.defaultdict(list)
     for label_id, project_id, rank, label, docstr, deprecated in label_def_rows:
-      result_dict[project_id].append(
+      shard_id = label_id % LABEL_ROW_SHARDS
+      result_dict[(project_id, shard_id)].append(
           (label_id, project_id, rank, label, docstr, deprecated))
 
     return result_dict
 
   def FetchItems(self, cnxn, keys):
     """On RAM and memcache miss, hit the database."""
-    label_def_rows = self.config_service.labeldef_tbl.Select(
-        cnxn, cols=LABELDEF_COLS, project_id=keys,
-        order_by=[('rank DESC', []), ('label DESC', [])])
-    label_rows_dict = self._DeserializeLabelRows(label_def_rows)
-
     # Make sure that every requested project is represented in the result
-    for project_id in keys:
-      label_rows_dict.setdefault(project_id, [])
+    label_rows_dict = {}
+    for key in keys:
+      label_rows_dict.setdefault(key, [])
+
+    for project_id, shard_id in keys:
+      shard_clause = [('id %% %s = %s', [LABEL_ROW_SHARDS, shard_id])]
+
+      label_def_rows = self.config_service.labeldef_tbl.Select(
+          cnxn, cols=LABELDEF_COLS, project_id=project_id,
+          where=shard_clause)
+      label_rows_dict.update(self._DeserializeLabelRows(label_def_rows))
 
     return label_rows_dict
+
+  def InvalidateKeys(self, cnxn, project_ids):
+    """Drop the given keys from both RAM and memcache."""
+    self.cache.InvalidateKeys(cnxn, project_ids)
+    memcache.delete_multi(
+        [self._KeyToStr((project_id, shard_id))
+         for project_id in project_ids
+         for shard_id in range(0, LABEL_ROW_SHARDS)], seconds=5,
+        key_prefix=self.memcache_prefix)
+
+  def InvalidateAllKeys(self, cnxn, project_ids):
+    """Drop the given keys from memcache and invalidate all keys in RAM.
+
+    Useful for avoiding inserting many rows into the Invalidate table when
+    invalidating a large group of keys all at once. Only use when necessary.
+    """
+    self.cache.InvalidateAll(cnxn)
+    memcache.delete_multi(
+        [self._KeyToStr((project_id, shard_id))
+         for project_id in project_ids
+         for shard_id in range(0, LABEL_ROW_SHARDS)], seconds=5,
+        key_prefix=self.memcache_prefix)
+
+  def _KeyToStr(self, key):
+    """Convert our tuple IDs to strings for use as memcache keys."""
+    project_id, shard_id = key
+    return '%d-%d' % (project_id, shard_id)
+
+  def _StrToKey(self, key_str):
+    """Convert memcache keys back to the tuples that we use as IDs."""
+    project_id_str, shard_id_str = key_str.split('-')
+    return int(project_id_str), int(shard_id_str)
 
 
 class StatusRowTwoLevelCache(caches.AbstractTwoLevelCache):
@@ -462,10 +506,16 @@ class ConfigService(object):
 
   def GetLabelDefRows(self, cnxn, project_id, use_cache=True):
     """Get SQL result rows for all labels used in the specified project."""
-    pids_to_label_rows, misses = self.label_row_2lc.GetAll(
-        cnxn, [project_id], use_cache=use_cache)
-    assert not misses
-    return pids_to_label_rows[project_id]
+    result = []
+    for shard_id in range(0, LABEL_ROW_SHARDS):
+      key = (project_id, shard_id)
+      pids_to_label_rows_shard, _misses = self.label_row_2lc.GetAll(
+        cnxn, [key], use_cache=use_cache)
+      result.extend(pids_to_label_rows_shard[key])
+    # Sort in python to reduce DB load and integrate results from shards.
+    # row[2] is rank, row[3] is label name.
+    result.sort(key=lambda row: (row[2], row[3]), reverse=True)
+    return result
 
   def GetLabelDefRowsAnyProject(self, cnxn, where=None):
     """Get all LabelDef rows for the whole site. Used in whole-site search."""
