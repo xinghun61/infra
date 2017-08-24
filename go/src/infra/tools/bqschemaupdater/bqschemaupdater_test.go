@@ -14,64 +14,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-func TestBQSchema(t *testing.T) {
-	f := []*pb.FieldSchema{
-		{
-			Name:        "test_field",
-			Description: "test description",
-			Type:        pb.Type_STRING,
-			IsRepeated:  true,
-		},
-	}
-	got := bqSchema(f)
-	want := bigquery.Schema{
-		&bigquery.FieldSchema{
-			Name:        "test_field",
-			Description: "test description",
-			Type:        bigquery.StringFieldType,
-			Repeated:    true,
-		},
-	}
-	if !(reflect.DeepEqual(got, want)) {
-		t.Errorf("got: %v; want: %v", got, want)
-	}
-}
-
-func TestBQField(t *testing.T) {
-	f := &pb.FieldSchema{
-		Name:        "test_field",
-		Description: "test description",
-		Type:        pb.Type_RECORD,
-		IsRepeated:  true,
-		Schema: []*pb.FieldSchema{
-			{
-				Name:        "nested_field",
-				Description: "i am nested",
-				Type:        pb.Type_STRING,
-				IsRequired:  true,
-			},
-		},
-	}
-	got := bqField(f)
-	want := &bigquery.FieldSchema{
-		Name:        "test_field",
-		Description: "test description",
-		Type:        bigquery.RecordFieldType,
-		Repeated:    true,
-		Schema: []*bigquery.FieldSchema{
-			{
-				Name:        "nested_field",
-				Description: "i am nested",
-				Type:        "STRING",
-				Required:    true,
-			},
-		},
-	}
-	if !(reflect.DeepEqual(got, want)) {
-		t.Errorf("got: %v; want: %v", got, want)
-	}
-}
-
 func TestUpdateFromTableDef(t *testing.T) {
 	ctx := context.Background()
 	ts := localTableStore{}
@@ -106,7 +48,7 @@ func TestUpdateFromTableDef(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		want := &bigquery.TableMetadata{Schema: bqSchema(tc)}
+		want := &bigquery.TableMetadata{Schema: pb.BQSchema(tc)}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("got: %v; want: %v", got, want)
 		}

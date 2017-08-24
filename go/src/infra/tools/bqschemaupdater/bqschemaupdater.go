@@ -25,28 +25,6 @@ import (
 	"golang.org/x/net/context"
 )
 
-func bqSchema(fields []*pb.FieldSchema) bigquery.Schema {
-	var s bigquery.Schema
-	for _, f := range fields {
-		s = append(s, bqField(f))
-	}
-	return s
-}
-
-func bqField(f *pb.FieldSchema) *bigquery.FieldSchema {
-	fs := &bigquery.FieldSchema{
-		Name:        f.Name,
-		Description: f.Description,
-		Type:        bigquery.FieldType(f.Type.String()),
-		Repeated:    f.IsRepeated,
-		Required:    f.IsRequired,
-	}
-	if fs.Type == bigquery.RecordFieldType {
-		fs.Schema = bqSchema(f.Schema)
-	}
-	return fs
-}
-
 func loadTableDef(path string) (*pb.TableDef, error) {
 	r, err := os.Open(path)
 	if err != nil {
@@ -78,7 +56,7 @@ func updateFromTableDef(ctx context.Context, ts tableStore, td *pb.TableDef) err
 	md := bigquery.TableMetadataToUpdate{
 		Name:        td.Name,
 		Description: td.Description,
-		Schema:      bqSchema(td.Fields),
+		Schema:      pb.BQSchema(td.Fields),
 	}
 	err = ts.updateTable(ctx, td.Dataset.ID(), td.TableId, md)
 	return err

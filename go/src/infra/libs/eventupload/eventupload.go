@@ -61,12 +61,7 @@ type UploaderConfig struct {
 // DatasetID and TableID are provided to the BigQuery client (via TableDef) to
 // gain access to a particular table.
 func NewUploader(ctx context.Context, c *bigquery.Client, td *tabledef.TableDef, cfg UploaderConfig) (*Uploader, error) {
-	t := c.Dataset(td.GetDataset().ID()).Table(td.TableId)
-	md, err := t.Metadata(ctx)
-	if err != nil {
-		return nil, err
-	}
-	u := t.Uploader()
+	u := c.Dataset(td.GetDataset().ID()).Table(td.TableId).Uploader()
 	u.SkipInvalidRows = cfg.SkipInvalid
 	u.IgnoreUnknownValues = cfg.IgnoreUnknown
 
@@ -78,11 +73,13 @@ func NewUploader(ctx context.Context, c *bigquery.Client, td *tabledef.TableDef,
 		uploadCounter = metric.NewCounterIn(ctx, name, desc, nil, field)
 	}
 
+	s := tabledef.BQSchema(td.Fields)
+
 	return &Uploader{
 		td.GetDataset().ID(),
 		td.TableId,
 		u,
-		md.Schema,
+		s,
 		uploadCounter,
 	}, nil
 }
