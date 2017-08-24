@@ -5,14 +5,13 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"reflect"
 	"testing"
 
+	pb "infra/libs/bqschema/tabledef"
+
 	"cloud.google.com/go/bigquery"
 	"golang.org/x/net/context"
-	pb "infra/libs/bqschema/tabledef"
 )
 
 func TestBQSchema(t *testing.T) {
@@ -68,40 +67,6 @@ func TestBQField(t *testing.T) {
 			},
 		},
 	}
-	if !(reflect.DeepEqual(got, want)) {
-		t.Errorf("got: %v; want: %v", got, want)
-	}
-}
-
-func TestTableDef(t *testing.T) {
-	want := &pb.TableDef{
-		Dataset: pb.TableDef_AGGREGATED,
-		TableId: "test_table",
-		Fields: []*pb.FieldSchema{
-			{
-				Name:        "field1",
-				Type:        pb.Type_RECORD,
-				Description: "test field",
-				Schema: []*pb.FieldSchema{
-					{
-						Name:        "nested",
-						Type:        pb.Type_STRING,
-						Description: "nested",
-					},
-				},
-			},
-			{
-				Name:        "field2",
-				Type:        pb.Type_INTEGER,
-				Description: "test field 2",
-			},
-		},
-	}
-	buf, err := json.Marshal(want)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := tableDef(bytes.NewReader(buf))
 	if !(reflect.DeepEqual(got, want)) {
 		t.Errorf("got: %v; want: %v", got, want)
 	}

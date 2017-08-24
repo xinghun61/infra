@@ -9,16 +9,20 @@ package main
 
 import (
 	"flag"
-	"io"
 	"log"
 	"os"
-	"strconv"
 	"time"
+
+	pb "infra/libs/bqschema/tabledef"
+	"infra/libs/infraenv"
+
+	"go.chromium.org/luci/common/auth"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/golang/protobuf/jsonpb"
+	"google.golang.org/api/option"
+
 	"golang.org/x/net/context"
-	pb "infra/libs/bqschema/tabledef"
 )
 
 func bqSchema(fields []*pb.FieldSchema) bigquery.Schema {
@@ -43,13 +47,18 @@ func bqField(f *pb.FieldSchema) *bigquery.FieldSchema {
 	return fs
 }
 
-func tableDef(r io.Reader) *pb.TableDef {
-	td := &pb.TableDef{}
-	err := jsonpb.Unmarshal(r, td)
+func loadTableDef(path string) (*pb.TableDef, error) {
+	r, err := os.Open(path)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return td
+	defer r.Close()
+
+	td := &pb.TableDef{}
+	if err := jsonpb.Unmarshal(r, td); err != nil {
+		return nil, err
+	}
+	return td, nil
 }
 
 func updateFromTableDef(ctx context.Context, ts tableStore, td *pb.TableDef) error {
@@ -58,11 +67,7 @@ func updateFromTableDef(ctx context.Context, ts tableStore, td *pb.TableDef) err
 		var options []bigquery.CreateTableOption
 		if td.PartitionTable {
 			i := int(td.PartitionExpirationSeconds)
-			d, err := time.ParseDuration(strconv.Itoa(i) + "s")
-			if err != nil {
-				return err
-			}
-			tp := bigquery.TimePartitioning{Expiration: d}
+			tp := bigquery.TimePartitioning{Expiration: time.Duration(i) * time.Second}
 			options = append(options, tp)
 		}
 		err = ts.createTable(ctx, td.Dataset.ID(), td.TableId, options...)
@@ -80,22 +85,34 @@ func updateFromTableDef(ctx context.Context, ts tableStore, td *pb.TableDef) err
 }
 
 func main() {
+	ctx := context.Background()
+
 	dry := flag.Bool("dry-run", false, "Only performs non-mutating operations; logs what would happen otherwise")
+	project := flag.String("project", infraenv.ChromeInfraEventsProject, "Cloud project that the table belongs to.")
+
 	flag.Parse()
 	file := flag.Arg(0)
 	if file == "" {
 		log.Fatal("Missing arg: file path for schema to add/update")
 	}
-	r, err := os.Open(file)
+	td, err := loadTableDef(file)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to load TableDef from %q: %s", file, err)
 	}
-	td := tableDef(r)
 
-	ctx := context.Background()
-	c, err := bigquery.NewClient(ctx, "chrome-infra-events")
+	// Create an Authenticator and use it for BigQuery operations.
+	authOpts := infraenv.DefaultAuthOptions()
+	authOpts.Scopes = []string{bigquery.Scope}
+	authenticator := auth.NewAuthenticator(ctx, auth.InteractiveLogin, authOpts)
+
+	authTS, err := authenticator.TokenSource()
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Could not get authentication credentials: %s", err)
+	}
+
+	c, err := bigquery.NewClient(ctx, *project, option.WithTokenSource(authTS))
+	if err != nil {
+		log.Fatalf("Could not create BigQuery client: %s", err)
 	}
 	var ts tableStore
 	ts = bqTableStore{c}
@@ -103,8 +120,11 @@ func main() {
 		ts = dryRunTableStore{ts: ts, w: os.Stdout}
 	}
 
+	log.Printf("Updating dataset %q, table %q in project %q...", td.Dataset.ID(), td.TableId, *project)
 	err = updateFromTableDef(ctx, ts, td)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failed to update table: %s", err)
 	}
+
+	log.Println("Finished updating table.")
 }
