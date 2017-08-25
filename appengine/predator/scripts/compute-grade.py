@@ -52,4 +52,4 @@ if __name__ == '__main__':
   args = argparser.parse_args()
   remote_api.EnableRemoteApi(args.app)
   examples = grade_model.RunModelOnTestSet(args.client, args.app, args.testset)
-  grade_model.GradeModel(examples)
+  grade_model.PrintMetrics(examples)
