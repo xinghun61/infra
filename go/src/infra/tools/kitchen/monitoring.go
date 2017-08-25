@@ -9,14 +9,14 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"sync/atomic"
 	"time"
-
-	"infra/tools/kitchen/build"
 
 	"infra/libs/bqschema/buildevent"
 	"infra/libs/bqschema/tabledef"
 	"infra/libs/eventupload"
 	"infra/libs/infraenv"
+	"infra/tools/kitchen/build"
 
 	cipdVersion "go.chromium.org/luci/cipd/version"
 	"go.chromium.org/luci/common/clock"
@@ -43,9 +43,10 @@ type monitoringEventSender interface {
 
 type bigQueryMonitoringEventSender struct {
 	client *bigquery.Client
+	count  int32
 }
 
-func (es bigQueryMonitoringEventSender) Put(ctx context.Context, td *tabledef.TableDef, event interface{}) error {
+func (es *bigQueryMonitoringEventSender) Put(ctx context.Context, td *tabledef.TableDef, event interface{}) error {
 	up := eventupload.NewUploader(ctx, es.client, td, eventupload.UploaderConfig{
 		SkipInvalid:   true,
 		IgnoreUnknown: true,
@@ -64,6 +65,8 @@ func (es bigQueryMonitoringEventSender) Put(ctx context.Context, td *tabledef.Ta
 		}
 		return err
 	}
+
+	atomic.AddInt32(&es.count, 1)
 	return nil
 }
 
@@ -102,8 +105,10 @@ func (m *Monitoring) SendBuildCompletedReport(ctx context.Context) error {
 		return errors.Annotate(err, "could not get BigQuery client instance").Err()
 	}
 
-	es := bigQueryMonitoringEventSender{client}
-	return m.sendReport(ctx, es)
+	es := &bigQueryMonitoringEventSender{client, 0}
+	err = m.sendReport(ctx, es)
+	logging.Infof(ctx, "Uploaded %d monitoring event(s).", es.count)
+	return err
 }
 
 func (m *Monitoring) sendReport(ctx context.Context, es monitoringEventSender) error {
