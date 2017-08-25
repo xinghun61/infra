@@ -11,6 +11,7 @@ RUN /usr/bin/apt-get -y install usbutils
 RUN /usr/bin/apt-get -y install lsb-release
 RUN /usr/bin/apt-get -y install sudo
 RUN /usr/bin/apt-get -y install lsof
+RUN /usr/bin/apt-get -y install udev
 
 RUN echo 'ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true' \
       | /usr/bin/debconf-set-selections
