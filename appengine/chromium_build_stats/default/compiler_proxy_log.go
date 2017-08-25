@@ -53,30 +53,30 @@ var (
 <h2>{{$mode}}: # of tasks: {{$bcm.NumTasks}}</h2>
 <table>
  <tr><th colspan=2>replices
- {{range $bcm.Resps}}
+ {{- range $bcm.Resps}}
  <tr><th>{{.Response}}<td>{{.Num}}
- {{end}}
+ {{- end}}
  <tr><th colspan=2>duration
  <tr><th>average <td>{{$bcm.Average}}
  <tr><th>Max     <td>{{$bcm.Max}}
- {{range $bcm.P}}
+ {{- range $bcm.P}}
   <tr><th>{{.P}} <td>{{.D}}
- {{end}}
+ {{- end}}
  <tr><th>Min     <td>{{$bcm.Min}}
  <tr><th colspan=2>log tasks
- {{range $i, $t := $bcm.Tasks}}
+ {{- range $i, $t := $bcm.Tasks}}
   <tr><td>{{$i}} Task:{{$t.ID}}<td>{{$t.Duration}}
    <td>{{$t.Desc}}
    <td>{{$t.Response}}
- {{end}}
+ {{- end}}
 </table>
 {{end}}
 
 <h2>Duration per num active tasks</h2>
 <table>
-<tr><th># of tasks <th>duration
+<tr><th># of tasks <th>duration <th> cumulative duration
 {{range $i, $d := .DurationDistribution}}
- <tr><td>{{$i}} <td>{{$d}}
+ <tr><td>{{$i}} <td>{{$d.Duration}} <td>{{$d.CumulativeDuration}}
 {{end}}
 </table>
 
@@ -180,18 +180,25 @@ type byCompileMode struct {
 	Min time.Duration
 }
 
+type durationPair struct {
+	Duration           time.Duration
+	CumulativeDuration time.Duration
+}
+
+type compilerProxyData struct {
+	Path             string
+	CompilerProxyLog *compilerproxylog.CompilerProxyLog
+	Tasks            []*compilerproxylog.TaskLog
+	NumTasks         int
+	TasksPerSec      float64
+
+	ByCompileMode map[compilerproxylog.CompileMode]byCompileMode
+
+	DurationDistribution []durationPair
+}
+
 func compilerProxyLogSummary(w http.ResponseWriter, logPath string, cpl *compilerproxylog.CompilerProxyLog) error {
-	data := struct {
-		Path             string
-		CompilerProxyLog *compilerproxylog.CompilerProxyLog
-		Tasks            []*compilerproxylog.TaskLog
-		NumTasks         int
-		TasksPerSec      float64
-
-		ByCompileMode map[compilerproxylog.CompileMode]byCompileMode
-
-		DurationDistribution []time.Duration
-	}{
+	data := compilerProxyData{
 		Path:             logPath,
 		CompilerProxyLog: cpl,
 		Tasks:            cpl.TaskLogs(),
@@ -251,7 +258,12 @@ func compilerProxyLogSummary(w http.ResponseWriter, logPath string, cpl *compile
 		bcm.Min = tasks[len(tasks)-1].Duration()
 		data.ByCompileMode[mode] = bcm
 	}
-	data.DurationDistribution = compilerproxylog.DurationDistribution(cpl.Created, data.Tasks)
+
+	var dsum time.Duration
+	for _, d := range compilerproxylog.DurationDistribution(cpl.Created, data.Tasks) {
+		data.DurationDistribution = append(data.DurationDistribution, durationPair{d, d + dsum})
+		dsum += d
+	}
 
 	var buf bytes.Buffer
 	err := compilerProxyLogIndexTempl.Execute(&buf, data)
