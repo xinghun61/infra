@@ -69,7 +69,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.patch('swarming.cancel_task_async', return_value=future(None))
 
     self.test_build = model.Build(
-        id=model.new_build_id(),
+        id=model.create_build_id(self.now, include_random=True),
         bucket='chromium',
         create_time=self.now,
         tags=[self.INDEXED_TAG],
@@ -1005,7 +1005,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(builds, [self.test_build])
 
   def test_peek_multi(self):
-    self.test_build.key = ndb.Key(model.Build, model.new_build_id())
+    self.test_build.key = ndb.Key(model.Build, 10)
     self.test_build.put()
     # We test that peek returns builds in decreasing order of the build key. The
     # build key is derived from the inverted current time, so later builds get

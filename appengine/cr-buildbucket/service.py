@@ -201,7 +201,7 @@ class BuildRequest(_BuildRequestBase):
         (identity or auth.get_current_identity()).to_bytes(),
         self.client_operation_id))
 
-  def create_build(self, build_id, created_by):
+  def create_build(self, build_id, created_by, now):
     """Converts the request to a build."""
     build = model.Build(
         id=build_id,
@@ -211,7 +211,7 @@ class BuildRequest(_BuildRequestBase):
         parameters=self.parameters,
         status=model.BuildStatus.SCHEDULED,
         created_by=created_by,
-        create_time=utils.utcnow(),
+        create_time=now,
         never_leased=self.lease_expiration_date is None,
         pubsub_callback=self.pubsub_callback,
         retry_of=self.retry_of,
@@ -354,13 +354,14 @@ def add_many_async(build_request_list):
     For each pending request, create a Build entity, but don't put it.
     """
     build_ids = set()
+    now = utils.utcnow()
     for i, r in pending_reqs():
       while True:
-        build_id = model.new_build_id()
+        build_id = model.create_build_id(now)
         if build_id not in build_ids:  # pragma: no branch
           break
       build_ids.add(build_id)
-      new_builds[i] = r.create_build(build_id, identity)
+      new_builds[i] = r.create_build(build_id, identity, now)
 
   @ndb.tasklet
   def create_swarming_tasks_async():

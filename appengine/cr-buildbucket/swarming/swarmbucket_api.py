@@ -133,7 +133,7 @@ class SwarmbucketApi(remote.Service):
             '%s cannot view builds in bucket %s' %
             (identity, build_request.bucket))
 
-      build = build_request.create_build(1, identity)
+      build = build_request.create_build(1, identity, utils.utcnow())
       bucket_cfg, _, task_def = (
           swarming.prepare_task_def_async(build, fake_build=True).get_result())
       task_def_json = json.dumps(task_def)

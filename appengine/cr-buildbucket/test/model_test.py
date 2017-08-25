@@ -24,14 +24,12 @@ class BuildTest(testing.AppengineTestCase):
     with self.assertRaises(AssertionError):
       build.put()
 
-  @mock.patch('components.utils.utcnow', autospec=True)
-  def test_new_build_id_generates_monotonicaly_decreasing_ids(self, utcnow):
+  def test_create_build_id_generates_monotonically_decreasing_ids(self):
     now = datetime.datetime(2015, 2, 24)
-    utcnow.side_effect = lambda: now
     last_id = None
     for i in xrange(1000):
       now += datetime.timedelta(seconds=i)
-      new_id = model.new_build_id()
+      new_id = model.create_build_id(now)
       if last_id is not None:
         self.assertLess(new_id, last_id)
       last_id = new_id

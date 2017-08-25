@@ -256,12 +256,3 @@ def create_build_id(dtime, include_random=True):
   inverted_now = ~now & ((1 << 43) - 1)
   suffix = 0 if not include_random else random.getrandbits(16)
   return int((inverted_now << 20) | (suffix << 4))
-
-
-def new_build_id():
-  """Returns a valid id for a new Build.
-
-  See model.Build's docstring, "Build key" section.
-  """
-  return create_build_id(utils.utcnow())
-
