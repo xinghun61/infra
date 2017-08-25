@@ -131,7 +131,7 @@ def EstimateSwarmingIterationTimeout(analysis):
   assert len(tasks) == len(last_n_points)
 
   total_iterations = sum([point.iterations for point in last_n_points])
-  total_time = sum([(task.completed_time - task.started_time).seconds
+  total_time = sum([(task.completed_time - task.started_time).total_seconds()
                     for task in tasks])
   time_per_iteration = total_time / total_iterations
 
