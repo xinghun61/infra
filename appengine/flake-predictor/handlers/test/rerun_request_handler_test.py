@@ -197,7 +197,7 @@ class RerunRequestHandlerTest(testing.AppengineTestCase):
                          'num_taskqueue_runs': 3})
       manager = RequestManager.load()
       tasks = self.taskqueue_stub.get_filtered_tasks()
-      self.assertEqual(len(tasks), 0)
+      self.assertEqual(len(tasks), 1)
       taskqueue.Queue().purge()
       self.assertEqual(len(manager.pending), 2)
       self.assertEqual(len(manager.running), 1)

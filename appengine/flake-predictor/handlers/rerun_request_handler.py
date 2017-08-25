@@ -123,7 +123,8 @@ class RerunRequestHandler(webapp2.RequestHandler):
         _schedule_test_reruns(manager, api)
 
     # Run again in a day. Do not run again if there is nothing more to schedule
-    # and everything has been completed, or the maximum has been reached
+    # and everything has been completed, or the maximum has been reached,
+    # instead trigger the last part of the pipeline
     if (num_taskqueue_runs < MAX_TIMES_SCHEDULED or
         (len(manager.pending) == 0 and len(manager.running) == 0)):
       taskqueue.add(url='/internal/rerun-request-handler',
@@ -131,4 +132,6 @@ class RerunRequestHandler(webapp2.RequestHandler):
                     params={
                         'time_scheduled': datetime.datetime.utcnow(),
                         'num_taskqueue_runs': num_taskqueue_runs + 1},)
+    else:
+      taskqueue.add(url='/internal/convert-data-pipeline-handler')
     manager.save()

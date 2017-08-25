@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import datetime
 import logging
 import os
 import sys
@@ -13,6 +14,7 @@ sys.path.insert(0, os.path.join(
 from aenum import Enum
 import apache_beam as beam
 from dataflow.common import chops_beam
+from google.appengine.api import taskqueue
 
 from common.request_entity import Request, RequestManager
 
@@ -98,3 +100,6 @@ class TriggerPipelineHandler(webapp2.RequestHandler):
     result = pipeline.run()
     result.wait_until_finish()
     result._executor._executor.executor_service.await_completion()
+
+    taskqueue.add(url='/internal/rerun-request-handler', params={
+        'time_scheduled': datetime.datetime.utcnow(), 'num_taskqueue_runs': 1},)

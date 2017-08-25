@@ -1,6 +1,6 @@
-cron:
-- description: weekly data collection pipeline
-  url: /cron/trigger-pipeline
-  # TODO(kdillon): When the pipeline is completed, change this to every week.
-  # Until the pipeline is completed, it can be triggered by visiting the url.
-  schedule: never
+# TODO(kdillon): When the pipeline is completed, uncommment this file.
+# Until the pipeline is completed, it can be triggered by visiting the url.
+#cron:
+#- description: weekly data collection pipeline
+  #url: /cron/trigger-pipeline
+  #schedule: every saturday 09:00
