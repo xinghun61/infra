@@ -12,7 +12,7 @@ from infra_api_clients.codereview import codereview_util
 from libs import analysis_status as status
 from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import revert
+from services import revert
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 

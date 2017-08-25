@@ -6,19 +6,16 @@ from datetime import datetime
 import mock
 import textwrap
 
-from common import constants
 from common import rotations
 from infra_api_clients.codereview import codereview_util
 from infra_api_clients.codereview.cl_info import ClInfo
 from infra_api_clients.codereview.cl_info import Commit
-from infra_api_clients.codereview.cl_info import Revert
 from infra_api_clients.codereview.rietveld import Rietveld
 from libs import analysis_status as status
 from libs import time_util
-from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
+from services import revert
 from waterfall import buildbot
-from waterfall import revert
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
@@ -47,8 +44,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.mock(suspected_cl_util, 'GetCulpritInfo', MockGetCulpritInfo)
 
-  @mock.patch.object(time_util, 'GetUTCNow',
-                     return_value=datetime(2017, 2, 1, 16, 0, 0))
+  @mock.patch.object(
+      time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 16, 0, 0))
   @mock.patch.object(_CODEREVIEW, 'PostMessage', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
@@ -75,8 +72,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = CreateRevertCLPipeline(repo_name, revision)
     revert_status = pipeline.run(repo_name, revision)
 
-    self.assertEquals(revert_status,
-                      revert.CREATED_BY_FINDIT)
+    self.assertEquals(revert_status, revert.CREATED_BY_FINDIT)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.COMPLETED)
@@ -87,7 +83,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
         culprit for failures in the build cycles as shown on:
         https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
         Sample Failed Build: %s""") % (commit_position, culprit.key.urlsafe(),
-                                buildbot.CreateBuildUrl('m', 'b', '1'))
+                                       buildbot.CreateBuildUrl('m', 'b', '1'))
     mock_revert.assert_called_with(reason, self.review_change_id, '20001')
 
   @mock.patch.object(waterfall_config, 'GetActionSettings', return_value={})

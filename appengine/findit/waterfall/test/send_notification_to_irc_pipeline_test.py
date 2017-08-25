@@ -8,7 +8,7 @@ import textwrap
 
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import revert
+from services import revert
 from waterfall import send_notification_to_irc_pipeline
 from waterfall.send_notification_to_irc_pipeline import (
     SendNotificationToIrcPipeline)
@@ -60,6 +60,7 @@ class SendNotificationToIrcPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     class MockedIRCClient(object):
+
       def __init__(self, *_):
         pass
 
@@ -94,6 +95,7 @@ class SendNotificationToIrcPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     class MockedIRCClient(object):
+
       def __init__(self, *_):
         pass
 

@@ -9,7 +9,7 @@ from infra_api_clients.codereview.rietveld import Rietveld
 from libs import analysis_status as status
 from libs.gitiles.gitiles_repository import GitilesRepository
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import revert
+from services import revert
 from waterfall import send_notification_for_culprit_pipeline
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)

@@ -5,7 +5,7 @@
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status as status
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import revert
+from services import revert
 
 
 class CreateRevertCLPipeline(BasePipeline):

@@ -8,8 +8,7 @@ import textwrap
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs.irc_client import IRCClient
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import revert
-
+from services import revert
 
 _IRC_HOST = 'irc.freenode.net'
 _IRC_CHANNEL = '#chromium'
@@ -46,13 +45,12 @@ class SendNotificationToIrcPipeline(BasePipeline):
                     ' revert CL url not found.' % (repo_name, revision))
       return
 
-    message = _GenerateMessage(
-        revert_cl_url, culprit.commit_position, revision,
-        culprit.key.urlsafe())
+    message = _GenerateMessage(revert_cl_url, culprit.commit_position, revision,
+                               culprit.key.urlsafe())
 
     try:
       with IRCClient(_IRC_HOST, _IRC_CHANNEL, _IRC_NICK, _IRC_DISC) as i:
         i.SendMessage(message)
     # This is just in case any exception happens when sending message.
     except Exception, e:
-        logging.error('Sending message to IRC failed with %s.' % e)
+      logging.error('Sending message to IRC failed with %s.' % e)
