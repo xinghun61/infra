@@ -19,18 +19,6 @@ from waterfall.flake import lookback_algorithm
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 
 
-def _UpdateAnalysisWithSwarmingTaskError(flake_swarming_task, analysis):
-  # Report the last flake swarming task's error that it encountered.
-  logging.error('Error in Swarming task %s', flake_swarming_task)
-
-  error = flake_swarming_task.error or {
-      'error': 'Swarming task failed',
-      'message': 'The last swarming task did not complete as expected'
-  }
-  analysis.Update(
-      status=analysis_status.ERROR, error=error, end_time=time_util.GetUTCNow())
-
-
 def _IsFinished(next_build_number, earliest_build_number, latest_build_number,
                 iterations_to_rerun):
   """Determines whether or not to stop checking more build numbers.
@@ -111,20 +99,6 @@ class NextBuildNumberPipeline(BasePipeline):
     logging.info('%s/%s/%s/%s/%s completed analysis on build number %s',
                  master_name, builder_name, triggering_build_number, step_name,
                  test_name, current_build_number)
-
-    flake_swarming_task = FlakeSwarmingTask.Get(
-        analysis.master_name, analysis.builder_name, current_build_number,
-        analysis.step_name, analysis.test_name)
-
-    # Abort analysis if a swarming task had an error.
-    if flake_swarming_task.status == analysis_status.ERROR:
-      _UpdateAnalysisWithSwarmingTaskError(flake_swarming_task, analysis)
-      update_flake_bug_pipeline = UpdateFlakeBugPipeline(analysis_urlsafe_key)
-      update_flake_bug_pipeline.target = appengine_util.GetTargetNameForModule(
-          constants.WATERFALL_BACKEND)
-      update_flake_bug_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
-      logging.warning('Swarming task %s ended in error.', flake_swarming_task)
-      raise pipeline.Abort()
 
     if not analysis.algorithm_parameters:
       analysis.Update(

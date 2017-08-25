@@ -5,7 +5,6 @@
 import logging
 
 from google.appengine.ext import ndb
-
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
@@ -124,7 +123,7 @@ class UpdateFlakeAnalysisDataPointsPipeline(BasePipeline):
         master_name, builder_name, master_build_number, step_name, test_name)
 
     data_point = _CreateDataPoint(flake_swarming_task)
-    flake_analysis.data_points.append(data_point)
+    flake_analysis.AppendOrMergeDataPoint(data_point)
 
     results = flake_swarming_task.GetFlakeSwarmingTaskData()
     flake_analysis.swarming_rerun_results.append(results)

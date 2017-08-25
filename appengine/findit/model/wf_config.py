@@ -128,6 +128,9 @@ class FinditConfig(VersionedConfig):
   #         'dive_rate_threshold': 0.4,
   #         'max_dive_in_a_row': 4,
   #         'max_iterations_to_rerun': 800,
+  #         'timeout_per_test_seconds': 120,
+  #         'timeout_per_swarming_task_seconds': 3600,
+  #         'data_point_sample_size': 5,
   #     },
   #     'try_job_rerun': {
   #         'lower_flake_threshold': 0.02,

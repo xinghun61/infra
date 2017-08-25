@@ -235,7 +235,10 @@ def _ValidateFlakeAnalyzerSwarmingRerunSettings(settings):
           isinstance(settings.get('max_dive_in_a_row'), int) and
           isinstance(settings.get('dive_rate_threshold'), float) and
           isinstance(settings.get('max_iterations_to_rerun'), int) and
-          isinstance(settings.get('per_iteration_timeout_seconds'), int))
+          isinstance(settings.get('per_iteration_timeout_seconds'), int) and
+          isinstance(settings.get('timeout_per_test_seconds'), int) and
+          isinstance(settings.get('timeout_per_swarming_task_seconds'), int) and
+          isinstance(settings.get('data_point_sample_size'), int))
 
 
 def _ValidateFlakeAnalyzerTryJobRerunSettings(settings):

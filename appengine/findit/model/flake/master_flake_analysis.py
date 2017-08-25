@@ -124,6 +124,19 @@ class DataPoint(ndb.Model):
 
     return blamed_cls
 
+  def Merge(self, data_point):
+    """Merge a data point into this. Recalculates iterations and pass rate.
+
+    Args:
+      data_point (DataPoint): Data point that will be merged into this.
+    """
+    old_passed_tests = self.pass_rate * self.iterations
+    merge_passed_tests = data_point.pass_rate * data_point.iterations
+    new_iterations = self.iterations + data_point.iterations
+    new_pass_rate = (old_passed_tests + merge_passed_tests) / new_iterations
+    self.pass_rate = new_pass_rate
+    self.iterations = new_iterations
+
 
 class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
                           TriagedModel):
@@ -369,6 +382,22 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     return next((data_point for data_point in self.data_points
                  if data_point.build_number == build_number), None)
 
+  def AppendOrMergeDataPoint(self, data_point):
+    """Append or merge a data point into data_points.
+
+    If there's already a data point from the same build number, merge the data.
+    If not, then append the data point to the list.
+
+    Args:
+      data_point (DataPoint): Data point to append or merge.
+    """
+    matching_point = self.FindMatchingDataPointWithCommitPosition(
+        data_point.commit_position)
+    if matching_point:
+      matching_point.Merge(data_point)
+    else:
+      self.data_points.append(data_point)
+
   def Update(self, **kwargs):
     """Updates fields according to what's specified in kwargs.
 
@@ -498,3 +527,8 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
 
   # The revision the last-attempted try job tried to run on.
   last_attempted_revision = ndb.StringProperty(indexed=False)
+
+  # How many times the swarming task has been attempted (and failed) for a
+  # particular build during an analysis. Reset when the build number is changed.
+  swarming_task_attempts_for_build = ndb.IntegerProperty(
+      default=0, indexed=False)

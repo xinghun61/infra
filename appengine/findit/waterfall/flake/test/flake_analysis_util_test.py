@@ -1,8 +1,11 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+from datetime import datetime
+import mock
 
 from model.flake.master_flake_analysis import DataPoint
+from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
 from waterfall.flake import flake_analysis_util
@@ -73,3 +76,94 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(normalized_data_points[0].pass_rate, 1.0)
     self.assertEqual(normalized_data_points[1].pass_rate, 0.9)
     self.assertEqual(normalized_data_points[2].pass_rate, 0.8)
+
+  def testEstimateSwarmingIterationTimeoutWithAnalysisWithNoDataPoints(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.put()
+
+    timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
+
+    self.assertEqual(timeout, 120)
+
+  def testCalculateNumberOfIterationsToRunWithinTimeout(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.put()
+
+    iterations = 60
+    timeout_per_test = 60
+    self.assertEqual(
+        flake_analysis_util.CalculateNumberOfIterationsToRunWithinTimeout(
+            analysis, iterations, timeout_per_test), 60)
+
+  def testEstimateSwarmingIterationTimeoutWithAnalysisLessDataPoints(self):
+    flake_task = FlakeSwarmingTask.Create('m', 'b', 100, 's', 't')
+    flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
+    flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
+    flake_task.put()
+
+    flake_task = FlakeSwarmingTask.Create('m', 'b', 101, 's', 't')
+    flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
+    flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
+    flake_task.put()
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters['swarming_rerun'][
+        'timeout_cushion_multiplier'] = 1
+
+    analysis.data_points = [
+        DataPoint.Create(build_number=100, iterations=10),
+        DataPoint.Create(build_number=101, iterations=20)
+    ]
+    analysis.put()
+
+    timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
+
+    self.assertEqual(240, timeout)
+
+  def testEstimateSwarmingIterationTimeoutWithMoreDataPointsSampleSize(self):
+    flake_task = FlakeSwarmingTask.Create('m', 'b', 100, 's', 't')
+    flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
+    flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
+    flake_task.put()
+
+    flake_task = FlakeSwarmingTask.Create('m', 'b', 101, 's', 't')
+    flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
+    flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
+    flake_task.put()
+
+    flake_task = FlakeSwarmingTask.Create('m', 'b', 102, 's', 't')
+    flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
+    flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
+    flake_task.put()
+
+    flake_task = FlakeSwarmingTask.Create('m', 'b', 103, 's', 't')
+    flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
+    flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
+    flake_task.put()
+
+    flake_task = FlakeSwarmingTask.Create('m', 'b', 104, 's', 't')
+    flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
+    flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
+    flake_task.put()
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.data_points = [
+        DataPoint.Create(build_number=99, iterations=10),
+        DataPoint.Create(build_number=100, iterations=20),
+        DataPoint.Create(build_number=101, iterations=20),
+        DataPoint.Create(build_number=102, iterations=20),
+        DataPoint.Create(build_number=103, iterations=20),
+        DataPoint.Create(build_number=104, iterations=20),
+    ]  # Total should be 100 iterations.
+    analysis.algorithm_parameters['swarming_rerun'][
+        'timeout_cushion_multiplier'] = 1
+    analysis.put()
+
+    timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
+
+    # 100 iterations and 300 minutes means 3 minutes per iteration.
+    self.assertEqual(180, timeout)

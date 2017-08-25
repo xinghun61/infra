@@ -197,66 +197,6 @@ class NextBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
         analysis.algorithm_parameters['swarming_rerun']['iterations_to_rerun'])
     self.assertEqual(analysis_status.RUNNING, analysis.status)
 
-  def testNextBuildNumberPipelineWithFailedSwarmingTask(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-
-    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
-                                          build_number, step_name, test_name)
-    analysis.status = analysis_status.PENDING
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
-    analysis.put()
-
-    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
-                                    step_name, test_name)
-    task.status = analysis_status.ERROR
-    task.put()
-
-    self.MockPipeline(
-        UpdateFlakeBugPipeline,
-        '',
-        expected_args=[analysis.key.urlsafe()],
-        expected_kwargs={})
-
-    pipeline = NextBuildNumberPipeline(analysis.key.urlsafe(), build_number,
-                                       None, None, None)
-    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
-    self.execute_queued_tasks()
-
-    expected_message = 'The last swarming task did not complete as expected'
-    message_key = 'message'
-    self.assertTrue(message_key in analysis.error)
-    self.assertEqual(analysis.error[message_key], expected_message)
-
-  def testUpdateAnalysisWithSwarmingTaskError(self):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    build_number = 100
-    step_name = 's'
-    test_name = 't'
-
-    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
-                                    step_name, test_name)
-    task.status = analysis_status.ERROR
-
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.status = analysis_status.PENDING
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
-
-    expected_error_json = {
-        'error': 'Swarming task failed',
-        'message': 'The last swarming task did not complete as expected'
-    }
-    next_build_number_pipeline._UpdateAnalysisWithSwarmingTaskError(
-        task, analysis)
-    self.assertEqual(expected_error_json, analysis.error)
-    self.assertEqual(analysis_status.ERROR, analysis.status)
-
   def testGetEarliestBuildNumber(self):
     algorithm_settings = {'max_build_numbers_to_look_back': 10}
 

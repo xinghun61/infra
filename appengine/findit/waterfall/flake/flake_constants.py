@@ -6,20 +6,46 @@
 # during off-peak hours.
 BASE_COUNT_DOWN_SECONDS = 2 * 60
 
+# Percent that when sampling we consider that the pass rate has converged.
+# This means that if pass_rate_a - pass_rate_b < this that the test has
+# reached its pass rate.
+CONVERGENCE_PERCENT = .05  # 5 percent.
+
+# Sample size to find out the average test length.
+DEFAULT_DATA_POINT_SAMPLE_SIZE = 5
+
+# Number of iterations executed per swarming task. This is derived
+# through the default length for a swarming task being one our
+# and the default length of a test being two minutes.
+DEFAULT_ITERATIONS_PER_TASK = 35
+
 # Max build numbers to look back during a build-level analysis.
 DEFAULT_MAX_BUILD_NUMBERS = 500
+
+# Maximum number of times to rerun at a certain build number.
+DEFAULT_MAX_ITERATIONS_TO_RERUN = 400
 
 # Default iterations to rerun if our config is empty.
 DEFAULT_SWARMING_TASK_ITERATIONS_TO_RERUN = 100
 
+# Default swarming task length, one hour.
+DEFAULT_TIMEOUT_PER_SWARMING_TASK_SECONDS = 60 * 60
+
+# Default test length, two minutes.
+DEFAULT_TIMEOUT_PER_TEST_SECONDS = 120
+
 # Tries to start the RecursiveFlakePipeline on peak hours at most 5 times.
 MAX_RETRY_TIMES = 5
+
+# The maximum number of swarming task retries we can retry per build.
+MAX_SWARMING_TASK_RETRIES_PER_BUILD = 2
 
 # In order not to hog resources on the swarming server, set the timeout to a
 # non-configurable 3 hours.
 MAX_TIMEOUT_SECONDS = 3 * 60 * 60
 
-ONE_HOUR_IN_SECONDS = 60 * 60
-
 # Value to indicate a test does not exist at a build number or commit position.
 PASS_RATE_TEST_NOT_FOUND = -1
+
+# Cushion multiplier for test setup/teardown.
+SWARMING_TASK_CUSHION_MULTIPLIER = 1.25
