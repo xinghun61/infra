@@ -110,7 +110,7 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
         {'version': '54.0.2835.0', 'channel': 'canary'}
     ]
     analysis.process_type = 'BROWSER_PROCESS'
-    analysis.subtree_id = 'AEF6F487C2EE7935'
+    analysis.subtree_root_id = 'AEF6F487C2EE7935'
 
     url = analysis.crash_url
 

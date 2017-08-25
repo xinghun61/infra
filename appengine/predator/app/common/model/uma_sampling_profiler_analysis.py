@@ -107,7 +107,7 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
         'visualizer': {
           'flame_view_model': {
               'flame_graph_model': {
-                  'zoom_to_node': self.subtree_id
+                  'zoom_to_node': self.subtree_root_id
               }
           }
         }
