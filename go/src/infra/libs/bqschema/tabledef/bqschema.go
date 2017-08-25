@@ -12,6 +12,10 @@ import (
 
 // BQSchema constructs a bigquery.Schema from a []*TableDef.FieldSchema
 func BQSchema(fields []*FieldSchema) bigquery.Schema {
+	if len(fields) == 0 {
+		return nil
+	}
+
 	s := make(bigquery.Schema, len(fields))
 	for i, f := range fields {
 		s[i] = bqField(f)

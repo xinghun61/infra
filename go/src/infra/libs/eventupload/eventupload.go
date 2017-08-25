@@ -73,13 +73,11 @@ func NewUploader(ctx context.Context, c *bigquery.Client, td *tabledef.TableDef,
 		uploadCounter = metric.NewCounterIn(ctx, name, desc, nil, field)
 	}
 
-	s := tabledef.BQSchema(td.Fields)
-
 	return &Uploader{
 		td.GetDataset().ID(),
 		td.TableId,
 		u,
-		s,
+		tabledef.BQSchema(td.Fields),
 		uploadCounter,
 	}
 }
@@ -178,9 +176,19 @@ func prepareSrc(s bigquery.Schema, src interface{}) ([]*bigquery.StructSaver, er
 	}
 
 	var prepared []*bigquery.StructSaver
-	for _, src := range srcs {
+	for i, src := range srcs {
+		// If no schema is supplied explicitly via TableDef, infer it from each
+		// individual element. This inference is cached based on the type.
+		schema := s
+		if len(schema) == 0 {
+			var err error
+			if schema, err = bigquery.InferSchema(src); err != nil {
+				return nil, errors.Annotate(err, "could not infer schema for element #%d (%T)", i, src).Err()
+			}
+		}
+
 		ss := &bigquery.StructSaver{
-			Schema:   s,
+			Schema:   schema,
 			InsertID: id.Generate(),
 			Struct:   src,
 		}
