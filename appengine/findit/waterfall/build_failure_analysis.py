@@ -6,12 +6,20 @@ from collections import defaultdict
 import os
 import re
 
+from google.appengine.ext import ndb
+
 from common.waterfall import failure_type
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from libs import analysis_status
+from libs import time_util
 from libs.gitiles.diff import ChangeType
-from waterfall.failure_signal import FailureSignal
+from model import analysis_approach_type
+from model import result_status
+from model.wf_analysis import WfAnalysis
+from waterfall import suspected_cl_util
 from waterfall import waterfall_config
+from waterfall.failure_signal import FailureSignal
 
 
 def _IsSameFile(changed_src_file_path, file_path_in_log):
@@ -350,8 +358,12 @@ class _Justification(object):
     }
 
 
-def _CheckFile(touched_file, file_path_in_log, justification,
-               file_name_occurrences, line_numbers, repo_info,
+def _CheckFile(touched_file,
+               file_path_in_log,
+               justification,
+               file_name_occurrences,
+               line_numbers,
+               repo_info,
                suspected_revision,
                check_dependencies=False):
   """Checks if the given files are related and updates the justification.
@@ -388,10 +400,10 @@ def _CheckFile(touched_file, file_path_in_log, justification,
       score = 1
 
     if score:
-      justification.AddFileChange(
-          'modified', changed_src_file_path, file_path_in_log, score,
-          file_name_occurrences.get(file_name), changed_line_numbers,
-          check_dependencies)
+      justification.AddFileChange('modified', changed_src_file_path,
+                                  file_path_in_log, score,
+                                  file_name_occurrences.get(file_name),
+                                  changed_line_numbers, check_dependencies)
 
   if change_type in (ChangeType.ADD, ChangeType.COPY, ChangeType.RENAME):
     changed_src_file_path = touched_file['new_path']
@@ -404,10 +416,13 @@ def _CheckFile(touched_file, file_path_in_log, justification,
       score = 1
 
     if score:
-      justification.AddFileChange('added', changed_src_file_path,
-                                  file_path_in_log, score,
-                                  file_name_occurrences.get(file_name),
-                                  check_dependencies=check_dependencies)
+      justification.AddFileChange(
+          'added',
+          changed_src_file_path,
+          file_path_in_log,
+          score,
+          file_name_occurrences.get(file_name),
+          check_dependencies=check_dependencies)
 
   if change_type in (ChangeType.DELETE, ChangeType.RENAME):
     changed_src_file_path = touched_file['old_path']
@@ -420,10 +435,13 @@ def _CheckFile(touched_file, file_path_in_log, justification,
       score = 1
 
     if score:
-      justification.AddFileChange('deleted', changed_src_file_path,
-                                  file_path_in_log, score,
-                                  file_name_occurrences.get(file_name),
-                                  check_dependencies=check_dependencies)
+      justification.AddFileChange(
+          'deleted',
+          changed_src_file_path,
+          file_path_in_log,
+          score,
+          file_name_occurrences.get(file_name),
+          check_dependencies=check_dependencies)
 
 
 def _StripChromiumRootDirectory(file_path):
@@ -639,8 +657,7 @@ def _CheckFiles(failure_signal, change_log, deps_info,
                      file_name_occurrences, None, repo_info,
                      change_log['revision'], True)
 
-        _CheckFileInDependencyRolls(dependency, rolls,
-                                    justification, [])
+        _CheckFileInDependencyRolls(dependency, rolls, justification, [])
   if not justification.score:
     return None
   else:
@@ -856,9 +873,9 @@ def AnalyzeBuildFailure(failure_info, change_logs, deps_info, failure_signals):
             _SaveFailureToMap(cl_failure_map, new_suspected_cl_dict, step_name,
                               None, max(justification_dict['hints'].values()))
 
-      if (step_name == 'compile'
-          and (waterfall_config.GetDownloadBuildDataSettings()
-               .get('use_ninja_output_log'))):
+      if (step_name == 'compile' and
+          (waterfall_config.GetDownloadBuildDataSettings()
+           .get('use_ninja_output_log'))):
         step_analysis_result['new_compile_suspected_cls'] = []
         for build_number in range(start_build_number, failed_build_number + 1):
           for revision in builds[str(build_number)]['blame_list']:
@@ -874,12 +891,11 @@ def AnalyzeBuildFailure(failure_info, change_logs, deps_info, failure_signals):
             (step_analysis_result['new_compile_suspected_cls']
              .append(new_suspected_cl_dict))
 
-        if (not step_analysis_result['suspected_cls']
-            and step_analysis_result.get('new_compile_suspected_cls')):
+        if (not step_analysis_result['suspected_cls'] and
+            step_analysis_result.get('new_compile_suspected_cls')):
           step_analysis_result['use_ninja_dependencies'] = True
           step_analysis_result['suspected_cls'] = step_analysis_result[
-              'new_compile_suspected_cls'
-          ]
+              'new_compile_suspected_cls']
           for new_suspected_cl_dict in step_analysis_result['suspected_cls']:
             # Top score for new heuristic is always 2.
             _SaveFailureToMap(cl_failure_map, new_suspected_cl_dict, step_name,
@@ -891,3 +907,70 @@ def AnalyzeBuildFailure(failure_info, change_logs, deps_info, failure_signals):
   suspected_cls = _ConvertCLFailureMapToList(cl_failure_map)
 
   return analysis_result, suspected_cls
+
+
+def GetResultAnalysisStatus(analysis_result):
+  """Returns the status of the analysis result.
+
+  We can decide the status based on:
+    1. whether we found any suspected CL(s).
+    2. whether we have triaged the failure.
+    3. whether our analysis result is the same as triaged result.
+  """
+  # Now we can only set the status based on if we found any suspected CL(s).
+  # TODO: Add logic to decide the status after comparing with culprit CL(s).
+  if not analysis_result or not analysis_result['failures']:
+    return None
+
+  any_supported = False
+  for failure in analysis_result['failures']:
+    if failure['suspected_cls']:
+      return result_status.FOUND_UNTRIAGED
+
+    if failure['supported']:
+      any_supported = True
+
+  return (result_status.NOT_FOUND_UNTRIAGED
+          if any_supported else result_status.UNSUPPORTED)
+
+
+def _GetSuspectedCLsWithOnlyCLInfo(suspected_cls):
+  """Removes failures and top_score from suspected_cls.
+
+  Makes sure suspected_cls from heuristic or try_job have the same format.
+  """
+  simplified_suspected_cls = []
+  for cl in suspected_cls:
+    simplified_cl = {
+        'repo_name': cl['repo_name'],
+        'revision': cl['revision'],
+        'commit_position': cl['commit_position'],
+        'url': cl['url']
+    }
+    simplified_suspected_cls.append(simplified_cl)
+  return simplified_suspected_cls
+
+
+@ndb.transactional
+def SaveAnalysisAfterHeuristicAnalysisCompletes(master_name, builder_name,
+                                                build_number, build_completed,
+                                                analysis_result, suspected_cls):
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+  analysis.build_completed = build_completed
+  analysis.result = analysis_result
+  analysis.status = analysis_status.COMPLETED
+  analysis.result_status = GetResultAnalysisStatus(analysis_result)
+  analysis.suspected_cls = _GetSuspectedCLsWithOnlyCLInfo(suspected_cls)
+  analysis.end_time = time_util.GetUTCNow()
+  analysis.put()
+
+
+def SaveSuspectedCLs(suspected_cls, master_name, builder_name, build_number,
+                     current_failure_type):
+  """Saves suspected CLs to dataStore."""
+  for suspected_cl in suspected_cls:
+    suspected_cl_util.UpdateSuspectedCL(
+        suspected_cl['repo_name'], suspected_cl['revision'],
+        suspected_cl['commit_position'], analysis_approach_type.HEURISTIC,
+        master_name, builder_name, build_number, current_failure_type,
+        suspected_cl['failures'], suspected_cl['top_score'])

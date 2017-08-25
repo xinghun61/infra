@@ -3,14 +3,19 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import mock
 
 from common.waterfall import failure_type
+from libs import analysis_status
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from libs.gitiles.change_log import Contributor
 from libs.gitiles.change_log import FileChangeInfo
 from libs.gitiles.diff import ChangeType
 from libs.gitiles.gitiles_repository import GitilesRepository
+from model import result_status
+from model.wf_analysis import WfAnalysis
+from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import build_failure_analysis
 from waterfall.failure_signal import FailureSignal
 from waterfall.test import wf_testcase
@@ -188,14 +193,10 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(build_failure_analysis._IsRelated('a', 'a'))
 
   def testCheckNinjaDependencies(self):
-    failed_edges =  [{
+    failed_edges = [{
         'dependencies': [
-            'src/a/b/f1.cc',
-            'd/e/a2_test.cc',
-            'b/c/f2.cc',
-            'd/e/f3.h',
-            'x/y/f4.py',
-            'f5_impl.cc'
+            'src/a/b/f1.cc', 'd/e/a2_test.cc', 'b/c/f2.cc', 'd/e/f3.h',
+            'x/y/f4.py', 'f5_impl.cc'
         ]
     }]
 
@@ -930,7 +931,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     failure_signals_json = {
         'compile': {
             'files': {},
-            'failed_edges':[{
+            'failed_edges': [{
                 'dependencies': ['src/a/b/f99_2.cc']
             }]
         },
@@ -959,7 +960,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                 'score': 2,
                 'hints': {
                     ('modified f99_2.cc (and it was in'
-                     ' dependencies found by ninja)'): 2,
+                     ' dependencies found by ninja)'):
+                         2,
                 },
             }],
             'new_compile_suspected_cls': [{
@@ -971,10 +973,12 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                 'score': 2,
                 'hints': {
                     ('modified f99_2.cc (and it was in'
-                     ' dependencies found by ninja)'): 2,
+                     ' dependencies found by ninja)'):
+                         2,
                 },
             }],
-            'use_ninja_dependencies': True,
+            'use_ninja_dependencies':
+                True,
         }, {
             'step_name':
                 'b',
@@ -1126,7 +1130,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             'files': {
                 'src/a/b/f99_2.cc': [],
             },
-            'failed_edges':[{
+            'failed_edges': [{
                 'dependencies': ['src/a/b/f99_2.cc']
             }]
         },
@@ -1166,7 +1170,8 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                 'score': 2,
                 'hints': {
                     ('modified f99_2.cc (and it was in'
-                     ' dependencies found by ninja)'): 2,
+                     ' dependencies found by ninja)'):
+                         2,
                 },
             }],
         }, {
@@ -1710,3 +1715,162 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         }
     }
     self.assertEqual(expected_justification, justification.ToDict())
+
+  def testGetResultAnalysisStatusFoundUntriaged(self):
+    dummy_result = {
+        'failures': [{
+            'step_name':
+                'a',
+            'first_failure':
+                98,
+            'last_pass':
+                None,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 99,
+                'repo_name': 'chromium',
+                'revision': 'r99_2',
+                'commit_position': None,
+                'url': None,
+                'score': 1,
+                'hints': {
+                    'modified f99_2.cc (and it was in log)': 1,
+                },
+            }],
+        }, {
+            'step_name':
+                'b',
+            'first_failure':
+                98,
+            'last_pass':
+                None,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'build_number': 99,
+                'repo_name': 'chromium',
+                'revision': 'r99_1',
+                'commit_position': None,
+                'url': None,
+                'score': 5,
+                'hints': {
+                    'added x/y/f99_1.cc (and it was in log)': 5,
+                },
+            }],
+        }]
+    }
+
+    self.assertEqual(
+        result_status.FOUND_UNTRIAGED,
+        build_failure_analysis.GetResultAnalysisStatus(dummy_result))
+
+  def testGetResultAnalysisStatusNoResult(self):
+    self.assertIsNone(build_failure_analysis.GetResultAnalysisStatus(None))
+
+  def testGetResultAnalysisStatusUnsupported(self):
+    dummy_result = {
+        'failures': [{
+            'step_name': 'a',
+            'first_failure': 98,
+            'last_pass': None,
+            'supported': False,
+            'suspected_cls': [],
+        }, {
+            'step_name': 'b',
+            'first_failure': 98,
+            'last_pass': None,
+            'supported': False,
+            'suspected_cls': [],
+        }]
+    }
+
+    self.assertEqual(
+        result_status.UNSUPPORTED,
+        build_failure_analysis.GetResultAnalysisStatus(dummy_result))
+
+  def testGetResultAnalysisStatusNotFoundUntriaged(self):
+    dummy_result = {
+        'failures': [{
+            'step_name': 'a',
+            'first_failure': 98,
+            'last_pass': None,
+            'supported': True,
+            'suspected_cls': [],
+        }, {
+            'step_name': 'b',
+            'first_failure': 98,
+            'last_pass': None,
+            'supported': False,
+            'suspected_cls': [],
+        }]
+    }
+
+    self.assertEqual(
+        result_status.NOT_FOUND_UNTRIAGED,
+        build_failure_analysis.GetResultAnalysisStatus(dummy_result))
+
+  def testGetSuspectedCLsWithOnlyCLInfo(self):
+    suspected_cls = [{
+        'repo_name': 'chromium',
+        'revision': 'r98_1',
+        'commit_position': None,
+        'url': None,
+        'failures': {
+            'b': ['Unittest2.Subtest1', 'Unittest3.Subtest2']
+        },
+        'top_score': 4
+    }]
+
+    expected_new_suspected_cls = [{
+        'repo_name': 'chromium',
+        'revision': 'r98_1',
+        'commit_position': None,
+        'url': None
+    }]
+
+    self.assertEqual(
+        expected_new_suspected_cls,
+        build_failure_analysis._GetSuspectedCLsWithOnlyCLInfo(suspected_cls))
+
+  @mock.patch.object(
+      build_failure_analysis,
+      'GetResultAnalysisStatus',
+      return_value=result_status.FOUND_UNTRIAGED)
+  @mock.patch.object(
+      build_failure_analysis, '_GetSuspectedCLsWithOnlyCLInfo', return_value=[])
+  def testSaveAnalysisAfterHeuristicAnalysisCompletes(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 98
+    analysis_result = {'result': {}}
+
+    WfAnalysis.Create(master_name, builder_name, build_number).put()
+
+    build_failure_analysis.SaveAnalysisAfterHeuristicAnalysisCompletes(
+        master_name, builder_name, build_number, True, analysis_result, [])
+
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
+
+  def testSaveSuspectedCLs(self):
+    suspected_cls = [{
+        'repo_name': 'chromium',
+        'revision': 'r98_1',
+        'commit_position': None,
+        'url': None,
+        'failures': {
+            'b': ['Unittest2.Subtest1', 'Unittest3.Subtest2']
+        },
+        'top_score': 4
+    }]
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 98
+    test_type = failure_type.TEST
+
+    build_failure_analysis.SaveSuspectedCLs(
+        suspected_cls, master_name, builder_name, build_number, test_type)
+
+    suspected_cl = WfSuspectedCL.Get('chromium', 'r98_1')
+    self.assertIsNotNone(suspected_cl)
