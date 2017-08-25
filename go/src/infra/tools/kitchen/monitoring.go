@@ -46,8 +46,25 @@ type bigQueryMonitoringEventSender struct {
 }
 
 func (es bigQueryMonitoringEventSender) Put(ctx context.Context, td *tabledef.TableDef, event interface{}) error {
-	up := eventupload.NewUploader(ctx, es.client, td, eventupload.UploaderConfig{})
-	return up.Put(ctx, event)
+	up := eventupload.NewUploader(ctx, es.client, td, eventupload.UploaderConfig{
+		SkipInvalid:   true,
+		IgnoreUnknown: true,
+	})
+	if err := up.Put(ctx, event); err != nil {
+		if pme, ok := err.(bigquery.PutMultiError); ok {
+			for _, e := range pme {
+				// We want to log this as a single line, since we're running this Put
+				// in parallel.
+				lines := make([]string, len(e.Errors))
+				for i, subErr := range e.Errors {
+					lines[i] = fmt.Sprintf("  Error #%d: %s", i, subErr)
+				}
+				logging.Errorf(ctx, "Failed to put row #%d (%q):\n%s", e.RowIndex, e.InsertID, strings.Join(lines, "\n"))
+			}
+		}
+		return err
+	}
+	return nil
 }
 
 // Monitoring provides facilities to measure and report on the monitored aspects
