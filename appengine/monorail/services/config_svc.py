@@ -121,6 +121,9 @@ class LabelRowTwoLevelCache(caches.AbstractTwoLevelCache):
           where=shard_clause)
       label_rows_dict.update(self._DeserializeLabelRows(label_def_rows))
 
+    for rows_in_shard in label_rows_dict.values():
+      rows_in_shard.sort(key=lambda row: (row[2], row[3]), reverse=True)
+
     return label_rows_dict
 
   def InvalidateKeys(self, cnxn, project_ids):
