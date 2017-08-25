@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging
-
 from google.appengine.ext import ndb
 
 from gae_libs.http.http_client_appengine import HttpClientAppengine
@@ -16,11 +14,31 @@ class GetTestLocationPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, analysis_urlsafe_key):
-    """Extracts the location of the flaky test from swarming."""
+    """Extracts the location of the flaky test from swarming as a dict.
+
+    Args:
+      analysis_urlsafe_key (str): The urlsafe key of a MasterFlakeAnalysis.
+
+    Returns:
+      test_location (dict): A dict containing the file and line number of the
+          test location, or None if either no suspected build point is
+          identified or the test location could not be determined. test_location
+          should be in the format:
+          {
+              'file': (str),
+              'line': (int),
+          }
+    """
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
 
     suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
+
+    if suspected_build_point is None:
+      analysis.LogInfo('Cannot get test location due to no suspected flake '
+                       'build being identified')
+      return None
+
     task_id = suspected_build_point.task_id
     task_output = swarming_util.GetIsolatedOutputForTask(
         task_id, HttpClientAppengine())
@@ -28,18 +46,17 @@ class GetTestLocationPipeline(BasePipeline):
     test_locations = task_output.get('test_locations')
 
     if test_locations is None:
-      logging.warning(
-          ('Failed to get test locations from isolated output for task %s for '
-           '%s/%s/%s/%s on suspected build %s'), task_id, analysis.master_name,
-          analysis.builder_name, analysis.step_name, analysis.test_name,
-          suspected_build_point.build_number)
+      analysis.LogWarning(
+          'Failed to get test locations from isolated output for task %s for '
+          'on suspected build %s' % (
+              task_id, suspected_build_point.build_number))
       return None
 
     test_location = test_locations.get(analysis.test_name)
 
     if test_location is None:
-      logging.warning('Failed to get test location for test %s',
-                      analysis.test_name)
+      analysis.LogWarning(
+          'Failed to get test location for test %s' % analysis.test_name)
       return None
 
     return test_location

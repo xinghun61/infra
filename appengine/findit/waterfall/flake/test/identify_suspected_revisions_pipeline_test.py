@@ -62,6 +62,33 @@ class IdentifySuspectedRevisionsPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual([culprit.key.urlsafe()],
                      analysis.suspect_urlsafe_keys)
 
+  def testIdentifySuspectedRevisionsPipelineNoSuspectedBuild(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.Save()
+
+    pipeline_job = IdentifySuspectedRevisionsPipeline()
+    self.assertEqual([],
+                     pipeline_job.run(analysis.key.urlsafe(), {}))
+
+  def testIdentifySuspectedRevisionsPipelineNoTestLocationDict(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 122
+    analysis.data_points = [
+        DataPoint.Create(
+            build_number=122,
+            commit_position=1220,
+            git_hash='r1220',
+            previous_build_commit_position=1219,
+            blame_list=['r1220']),
+    ]
+    analysis.Save()
+
+    pipeline_job = IdentifySuspectedRevisionsPipeline()
+    self.assertEqual([],
+                     pipeline_job.run(analysis.key.urlsafe(), {'line': 2}))
+    self.assertEqual([],
+                     pipeline_job.run(analysis.key.urlsafe(), None))
+
   def testIdentifySuspectedRevisionsPipelineNoTestLocation(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.suspected_flake_build_number = 122
@@ -77,4 +104,4 @@ class IdentifySuspectedRevisionsPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline_job = IdentifySuspectedRevisionsPipeline()
     self.assertEqual([],
-                     pipeline_job.run(analysis.key.urlsafe(), {}))
+                     pipeline_job.run(analysis.key.urlsafe(), None))

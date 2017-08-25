@@ -26,6 +26,14 @@ class GetTestLocationPipelineTest(wf_testcase.WaterfallTestCase):
     test_location = pipeline_job.run(analysis.key.urlsafe())
     self.assertIsNone(test_location)
 
+  def testGetTestLocationPipelineNoSuspectedBuild(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.put()
+
+    pipeline_job = GetTestLocationPipeline()
+    test_location = pipeline_job.run(analysis.key.urlsafe())
+    self.assertIsNone(test_location)
+
   @mock.patch.object(
       swarming_util,
       'GetIsolatedOutputForTask',

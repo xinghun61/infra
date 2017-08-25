@@ -35,11 +35,23 @@ class IdentifySuspectedRevisionsPipeline(BasePipeline):
     """
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
+
     suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
-    assert suspected_build_point
+    if suspected_build_point is None:
+      analysis.LogInfo(
+          'Skipping heuristic analysis due no suspected build being identified')
+      return []
+
+    if not test_location:
+      analysis.LogInfo(
+          'Skipping heuristic analysis due to test location not being found')
+      return []
 
     file_path = test_location.get('file')
     if not file_path:
+      analysis.LogInfo(
+          'Skipping heuristic analysis due to missing file path from test '
+          'location')
       return []
 
     file_path = extractor_util.NormalizeFilePath(file_path)

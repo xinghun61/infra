@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import logging
+import mock
 
 from gae_libs.testcase import TestCase
 
@@ -362,3 +364,21 @@ class MasterFlakeAnalysisTest(TestCase):
         100, analysis.FindMatchingDataPointWithBuildNumber(100).build_number)
     self.assertIsNone(analysis.FindMatchingDataPointWithBuildNumber(105))
     self.assertIsNone(analysis.FindMatchingDataPointWithBuildNumber(None))
+
+  @mock.patch.object(logging, 'info')
+  def testLogInfo(self, mocked_logging_info):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.LogInfo('message')
+    mocked_logging_info.assert_called()
+
+  @mock.patch.object(logging, 'warning')
+  def testLogWarning(self, mocked_logging_warning):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.LogWarning('message')
+    mocked_logging_warning.assert_called()
+
+  @mock.patch.object(logging, 'error')
+  def testLogError(self, mocked_logging_error):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.LogError('message')
+    mocked_logging_error.assert_called()

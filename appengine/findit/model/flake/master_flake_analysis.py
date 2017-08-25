@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import base64
+import logging
 
 from google.appengine.ext import ndb
 
@@ -195,6 +196,18 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
         key=MasterFlakeAnalysis._CreateAnalysisId(
             master_name, builder_name, build_number, step_name, test_name),
         version=version)
+
+  def LogInfo(self, message):
+    logging.info('%s/%s/%s/%s/%s %s', self.master_name, self.builder_name,
+                 self.build_number, self.step_name, self.test_name, message)
+
+  def LogWarning(self, message):
+    logging.warning('%s/%s/%s/%s/%s %s', self.master_name, self.builder_name,
+                    self.build_number, self.step_name, self.test_name, message)
+
+  def LogError(self, message):
+    logging.error('%s/%s/%s/%s/%s %s', self.master_name, self.builder_name,
+                  self.build_number, self.step_name, self.test_name, message)
 
   def UpdateTriageResult(self,
                          triage_result,
