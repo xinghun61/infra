@@ -11,6 +11,11 @@ Oncall hours: we cover working hours in the Pacific timezone:
 Issues in EMEA are handled on a best-effort basis by volunteers. See
 [here](http://shortn/_TqFYfP9nk6) (internal link) for contact information.
 
+If you are contacting a trooper to see if there is an issue with a service,
+visit the [ChOps Status Dashbaord](https://chopsdash.appspot.com) first.
+If the "Current Status" of the service shows red/yellow, that means there is a known
+disruption or outage, and the Trooper is already aware. No need to contact us further!
+
 The primary way to contact a trooper is via [crbug.com](http://crbug.com) using
 the templates and priorities established below. If you need to find the current
 trooper, check [build.chromium.org](https://build.chromium.org), or
