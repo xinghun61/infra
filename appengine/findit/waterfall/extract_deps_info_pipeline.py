@@ -2,99 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging
-
-from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs.deps import chrome_dependency_fetcher
-
-
-def _GetOSPlatformName(master_name, builder_name):  # pragma: no cover
-  """Returns the OS platform name based on the master and builder."""
-  # TODO: make buildbot yield OS platform name as a build property and use it.
-  # The code below is just a workaround.
-  builder_name = builder_name.lower()
-  if master_name == 'chromium.win':
-    return 'win'
-  elif master_name == 'chromium.linux':
-    if 'android' in builder_name:
-      return 'android'
-    else:
-      return 'unix'
-  elif master_name == 'chromium.chromiumos':
-    return 'unix'
-  else:
-    os_map = {
-        'win': 'win',
-        'linux': 'unix',
-        'chromiumos': 'unix',
-        'chromeos': 'unix',
-        'android': 'android',
-        'mac': 'mac',
-        'ios': 'ios',
-    }
-    for os_name in os_map.keys():
-      if os_name in builder_name:
-        return os_map[os_name]
-
-    logging.warn('Failed to detect the OS platform of builder "%s".',
-                 builder_name)
-    return 'all'  # Default to all platform.
-
-
-def _GetDependencies(chromium_revision, os_platform):
-  """Returns the dependencies used by the specified chromium revision."""
-  deps = {}
-  dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
-      CachedGitilesRepository.Factory(HttpClientAppengine()))
-  for path, dependency in dep_fetcher.GetDependency(chromium_revision,
-                                                    os_platform).iteritems():
-    deps[path] = {
-        'repo_url': dependency.repo_url,
-        'revision': dependency.revision,
-    }
-
-  return deps
-
-
-def _DetectDependencyRolls(change_logs, os_platform):
-  """Detect DEPS rolls in the given CL change logs.
-
-  Args:
-    change_logs (dict): Output of pipeline PullChangelogPipeline.run().
-
-  Returns:
-    A dict in the following form:
-    {
-      'git_revision': [
-        {
-          'path': 'src/path/to/dependency/',
-          'repo_url': 'https://url/to/dependency/repo.git',
-          'new_revision': 'git_hash1',
-          'old_revision': 'git_hash2',
-        },
-        ...
-      ],
-      ...
-    }
-  """
-  deps_rolls = {}
-  dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
-      CachedGitilesRepository.Factory(HttpClientAppengine()))
-  for revision, change_log in change_logs.iteritems():
-    # Check DEPS roll only if the chromium DEPS file is changed by the CL.
-    for touched_file in change_log['touched_files']:
-      if touched_file['new_path'] == 'DEPS':
-        # In git, r^ refers to the previous revision of r.
-        old_revision = '%s^' % revision
-        rolls = dep_fetcher.GetDependencyRolls(old_revision, revision,
-                                               os_platform)
-        deps_rolls[revision] = [roll.ToDict() for roll in rolls]
-        break
-
-  return deps_rolls
+from services import deps
 
 
 class ExtractDEPSInfoPipeline(BasePipeline):
@@ -131,19 +43,17 @@ class ExtractDEPSInfoPipeline(BasePipeline):
         }
       }
     """
-    if not failure_info['failed'] or not failure_info['chromium_revision']:
-      # Bail out if no failed step or no chromium revision.
-      return {'deps': {}, 'deps_rolls': {}}
-
-    # Bail out on infra failure
-    if failure_info.get('failure_type') == failure_type.INFRA:
-      return {'deps': {}, 'deps_rolls': {}}
 
     chromium_revision = failure_info['chromium_revision']
-    os_platform = _GetOSPlatformName(failure_info['master_name'],
-                                     failure_info['builder_name'])
+    os_platform = deps.GetOSPlatformName(failure_info['master_name'],
+                                         failure_info['builder_name'])
+
+    dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
+        CachedGitilesRepository.Factory(HttpClientAppengine()))
 
     return {
-        'deps': _GetDependencies(chromium_revision, os_platform),
-        'deps_rolls': _DetectDependencyRolls(change_logs, os_platform)
+        'deps':
+            deps.GetDependencies(chromium_revision, os_platform, dep_fetcher),
+        'deps_rolls':
+            deps.DetectDependencyRolls(change_logs, os_platform, dep_fetcher)
     }
