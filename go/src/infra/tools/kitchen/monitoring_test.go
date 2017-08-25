@@ -109,7 +109,7 @@ func TestMonitoring(t *testing.T) {
 						{"buildnumber", `1337`},
 						{"patch_storage", `"gerrit"`},
 						{"patch_gerrit_url", `"https://example.com/gerrit"`},
-						{"patch_issue", `"12345"`},
+						{"patch_issue", `12345`},
 						{"patch_set", `"42"`},
 					},
 

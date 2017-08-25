@@ -392,8 +392,8 @@ func (p *commonMonitoringParams) patchURL() string {
 	// Generate our patch URL.
 	switch p.stringProperty("patch_storage") {
 	case "gerrit":
-		return fmt.Sprintf("%s/c/%s/%s",
-			p.stringProperty("patch_gerrit_url"), p.stringProperty("patch_issue"), p.stringProperty("patch_set"))
+		return fmt.Sprintf("%s/c/%d/%s",
+			p.stringProperty("patch_gerrit_url"), p.numberProperty("patch_issue"), p.stringProperty("patch_set"))
 	default:
 		return ""
 	}

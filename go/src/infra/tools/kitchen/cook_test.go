@@ -32,6 +32,7 @@ func TestCook(t *testing.T) {
 	t.Parallel()
 	Convey("cook", t, func() {
 		cook := cmdCook.CommandRun().(*cookRun)
+		cook.testRun = true
 
 		Convey("updateEnv", func() {
 			cook.TempDir = "/tmp"

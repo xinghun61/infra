@@ -63,6 +63,10 @@ type cookRun struct {
 
 	mode cookMode
 	rr   recipeRun
+
+	// testRun is set to true during testing to instruct Kitchen not to try and
+	// send monitoring events.
+	testRun bool
 }
 
 // normalizeFlags validates and normalizes flags.
@@ -444,12 +448,14 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	// Send our "build completed" monitoring event. If this fails, we will log
 	// the failure, but it is non-fatal.
 	mon.endExecution(ctx, result)
-	if ctx, err = c.withSystemAccount(ctx); err == nil {
-		if err := mon.SendBuildCompletedReport(ctx); err != nil {
-			log.Errorf(ctx, "Failed to send 'build completed' monitoring report: %s", err)
+	if !c.testRun {
+		if ctx, err = c.withSystemAccount(ctx); err == nil {
+			if err := mon.SendBuildCompletedReport(ctx); err != nil {
+				log.Errorf(ctx, "Failed to send 'build completed' monitoring report: %s", err)
+			}
+		} else {
+			log.Errorf(ctx, "Failed to enter 'system' logical account: %s", err)
 		}
-	} else {
-		log.Errorf(ctx, "Failed to enter 'system' logical account: %s", err)
 	}
 
 	bootstrapSuccess = result.InfraFailure == nil
