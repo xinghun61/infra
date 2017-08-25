@@ -33,13 +33,14 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
+    current_failure_info = {}
 
     self._Setup(master_name, builder_name, build_number)
 
     self.MockPipeline(
         analyze_build_failure_pipeline.DetectFirstFailurePipeline,
         'failure_info',
-        expected_args=[master_name, builder_name, build_number],
+        expected_args=[current_failure_info],
         expected_kwargs={})
     self.MockPipeline(
         analyze_build_failure_pipeline.PullChangelogPipeline,
@@ -79,8 +80,9 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
         ],
         expected_kwargs={})
 
-    root_pipeline = AnalyzeBuildFailurePipeline(master_name, builder_name,
-                                                build_number, False, False)
+    root_pipeline = AnalyzeBuildFailurePipeline(
+        master_name, builder_name, build_number, current_failure_info, False,
+        False)
     root_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -91,8 +93,8 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
 
     self._Setup(master_name, builder_name, build_number)
 
-    root_pipeline = AnalyzeBuildFailurePipeline(master_name, builder_name,
-                                                build_number, False, False)
+    root_pipeline = AnalyzeBuildFailurePipeline(
+        master_name, builder_name, build_number, None, False, False)
     root_pipeline._ResetAnalysis(master_name, builder_name, build_number)
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
@@ -107,8 +109,8 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self._Setup(
         master_name, builder_name, build_number, status=analysis_status.RUNNING)
 
-    root_pipeline = AnalyzeBuildFailurePipeline(master_name, builder_name,
-                                                build_number, False, False)
+    root_pipeline = AnalyzeBuildFailurePipeline(
+        master_name, builder_name, build_number, None, False, False)
     root_pipeline._HandleUnexpectedAborting(True)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
@@ -128,8 +130,8 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
         build_number,
         status=analysis_status.COMPLETED)
 
-    root_pipeline = AnalyzeBuildFailurePipeline(master_name, builder_name,
-                                                build_number, False, False)
+    root_pipeline = AnalyzeBuildFailurePipeline(
+        master_name, builder_name, build_number, None, False, False)
     root_pipeline._HandleUnexpectedAborting(True)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
@@ -158,8 +160,8 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
         status=analysis_status.RUNNING,
         failure_info=failure_info)
 
-    root_pipeline = AnalyzeBuildFailurePipeline(master_name, builder_name,
-                                                build_number, False, False)
+    root_pipeline = AnalyzeBuildFailurePipeline(
+        master_name, builder_name, build_number, None, False, False)
     root_pipeline._HandleUnexpectedAborting(True)
     mocked_pipeline.assert_has_calls(
         [mock.call().start(queue_name=constants.DEFAULT_QUEUE)])

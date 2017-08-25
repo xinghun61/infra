@@ -7,10 +7,12 @@ import mock
 from testing_utils import testing
 
 from common import constants
+from common.waterfall import failure_type
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from waterfall import build_failure_analysis_pipelines
+from waterfall import build_failure
 
 
 class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
@@ -36,7 +38,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
     failed_steps = ['a']
 
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, False, False)
+        master_name, builder_name, build_number, failed_steps, False, False,
+        True, 'rev', failure_type.COMPILE)
 
     self.assertTrue(need_analysis)
 
@@ -50,7 +53,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     failed_steps = ['a', 'b']
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, False, False)
+        master_name, builder_name, build_number, failed_steps, False, False,
+        True, 'rev', failure_type.COMPILE)
 
     self.assertFalse(need_analysis)
 
@@ -64,7 +68,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     failed_steps = ['a']
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, False, True)
+        master_name, builder_name, build_number, failed_steps, False, True,
+        True, 'rev', failure_type.COMPILE)
 
     self.assertFalse(need_analysis)
 
@@ -78,7 +83,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     failed_steps = ['a']
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, False, True)
+        master_name, builder_name, build_number, failed_steps, False, True,
+        True, 'rev', failure_type.COMPILE)
 
     self.assertTrue(need_analysis)
 
@@ -92,7 +98,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     failed_steps = None
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, False, False)
+        master_name, builder_name, build_number, failed_steps, False, False,
+        True, 'rev', failure_type.COMPILE)
 
     self.assertFalse(need_analysis)
 
@@ -106,7 +113,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     failed_steps = ['a', 'b']
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, False, False)
+        master_name, builder_name, build_number, failed_steps, False, False,
+        True, 'rev', failure_type.COMPILE)
 
     self.assertFalse(need_analysis)
 
@@ -120,7 +128,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     failed_steps = ['a', 'b']
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, False, False)
+        master_name, builder_name, build_number, failed_steps, False, False,
+        True, 'rev', failure_type.COMPILE)
 
     self.assertTrue(need_analysis)
 
@@ -139,13 +148,55 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     failed_steps = ['a']
     need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
-        master_name, builder_name, build_number, failed_steps, True, False)
+        master_name, builder_name, build_number, failed_steps, True, False,
+        True, 'rev', failure_type.COMPILE)
 
     self.assertTrue(need_analysis)
 
+  def testNewAnalysisIsNotNeededToBeCreatedWhenBuildHasNoFailure(self):
+    master_name = 'm'
+    builder_name = 'b 1'
+    build_number = 123
+
+    failed_steps = ['a']
+    need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
+        master_name, builder_name, build_number, failed_steps, True, False,
+        False, 'rev', None)
+
+    self.assertFalse(need_analysis)
+
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
+
+  def testNewAnalysisIsNotNeededToBeResetWhenBuildHasNoFailure(self):
+    master_name = 'm'
+    builder_name = 'b 1'
+    build_number = 123
+    not_passed_steps = ['a']
+    self._CreateAndSaveWfAnalysis(master_name, builder_name, build_number,
+                                  not_passed_steps, analysis_status.COMPLETED)
+
+    failed_steps = ['a']
+    need_analysis = build_failure_analysis_pipelines.NeedANewAnalysis(
+        master_name, builder_name, build_number, failed_steps, True, True,
+        False, 'rev', None)
+
+    self.assertFalse(need_analysis)
+
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertEqual(analysis_status.COMPLETED, analysis.status)
+
+  @mock.patch.object(
+      build_failure,
+      'GetBuildFailureInfo',
+      return_value={
+          'failed': True,
+          'chromium_revision': 'rev',
+          'failure_type': failure_type.COMPILE
+      })
   @mock.patch(
       'waterfall.build_failure_analysis_pipelines.AnalyzeBuildFailurePipeline')
-  def testStartPipelineForNewAnalysis(self, mocked_pipeline):
+  def testStartPipelineForNewAnalysis(self, mocked_pipeline, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
@@ -164,9 +215,17 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
     mocked_pipeline.assert_has_calls(
         [mock.call().start(queue_name=constants.DEFAULT_QUEUE)])
 
+  @mock.patch.object(
+      build_failure,
+      'GetBuildFailureInfo',
+      return_value={
+          'failed': True,
+          'chromium_revision': 'rev',
+          'failure_type': failure_type.TEST
+      })
   @mock.patch(
       'waterfall.build_failure_analysis_pipelines.AnalyzeBuildFailurePipeline')
-  def testNotStartPipelineForNewAnalysis(self, mocked_pipeline):
+  def testNotStartPipelineForNewAnalysis(self, mocked_pipeline, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123

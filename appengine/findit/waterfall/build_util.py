@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from common import constants
+from common.waterfall import failure_type
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
 from model.wf_build import WfBuild
@@ -67,3 +69,15 @@ def CreateBuildId(master_name, builder_name, build_number):
 
 def GetBuildInfoFromId(build_id):
   return build_id.split('/')
+
+
+def GetFailureType(build_info):
+  if not build_info.failed_steps:
+    return failure_type.UNKNOWN
+  # TODO(robertocn): Consider also bailing out of tests with infra failures.
+  if constants.COMPILE_STEP_NAME in build_info.failed_steps:
+    if build_info.result == buildbot.EXCEPTION:
+      return failure_type.INFRA
+    return failure_type.COMPILE
+  # TODO(http://crbug.com/602733): differentiate test steps from infra ones.
+  return failure_type.TEST

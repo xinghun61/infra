@@ -28,13 +28,15 @@ from waterfall.trigger_swarming_tasks_pipeline import (
 
 class AnalyzeBuildFailurePipeline(BasePipeline):
 
-  def __init__(self, master_name, builder_name, build_number, build_completed,
-               force):
-    super(AnalyzeBuildFailurePipeline, self).__init__(
-        master_name, builder_name, build_number, build_completed, force)
+  def __init__(self, master_name, builder_name, build_number,
+               current_failure_info, build_completed, force):
+    super(AnalyzeBuildFailurePipeline,
+          self).__init__(master_name, builder_name, build_number,
+                         current_failure_info, build_completed, force)
     self.master_name = master_name
     self.builder_name = builder_name
     self.build_number = build_number
+    self.current_failure_info = current_failure_info
     self.build_completed = build_completed
     self.force = force
 
@@ -103,8 +105,8 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     analysis.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, build_completed,
-          force):
+  def run(self, master_name, builder_name, build_number, current_failure_info,
+          build_completed, force):
     self._ResetAnalysis(master_name, builder_name, build_number)
 
     # The yield statements below return PipelineFutures, which allow subsequent
@@ -112,14 +114,12 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     # https://github.com/GoogleCloudPlatform/appengine-pipelines/wiki/Python
 
     # Heuristic Approach.
-    failure_info = yield DetectFirstFailurePipeline(
-        master_name, builder_name, build_number)
+    failure_info = yield DetectFirstFailurePipeline(current_failure_info)
     change_logs = yield PullChangelogPipeline(failure_info)
     deps_info = yield ExtractDEPSInfoPipeline(failure_info, change_logs)
     signals = yield ExtractSignalPipeline(failure_info)
     heuristic_result = yield IdentifyCulpritPipeline(
-        failure_info, change_logs, deps_info, signals,
-        build_completed)
+        failure_info, change_logs, deps_info, signals, build_completed)
 
     # Try job approach.
     with pipeline.InOrder():
@@ -134,9 +134,9 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
                                                build_completed)
 
       # Checks if first time failures happen and starts a try job if yes.
-      yield StartTryJobOnDemandPipeline(
-          master_name, builder_name, build_number, failure_info,
-          signals, heuristic_result, build_completed, force)
+      yield StartTryJobOnDemandPipeline(master_name, builder_name, build_number,
+                                        failure_info, signals, heuristic_result,
+                                        build_completed, force)
 
       # Trigger flake analysis on flaky tests, if any.
       yield TriggerFlakeAnalysesPipeline(master_name, builder_name,

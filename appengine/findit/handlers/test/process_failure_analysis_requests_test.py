@@ -3,17 +3,12 @@
 # found in the LICENSE file.
 
 import json
-import re
 
-from google.appengine.ext import testbed
 import webapp2
-import webtest
 
 from testing_utils import testing
 
-from model.wf_build import WfBuild
 from handlers import process_failure_analysis_requests
-from waterfall import buildbot
 from waterfall import build_util
 from waterfall import build_failure_analysis_pipelines
 from waterfall.build_info import BuildInfo
@@ -101,8 +96,7 @@ class ProcessFailureAnalysisRequestsTest(testing.AppengineTestCase):
         params=json.dumps({
             'builds': builds
         }),
-        headers = {'X-AppEngine-QueueName': 'task_queue'},
-    )
+        headers={'X-AppEngine-QueueName': 'task_queue'},)
     self.assertEquals(200, response.status_int)
     self.assertEqual(1, len(requests))
     self.assertTrue(requests[0][1]['build_completed'])

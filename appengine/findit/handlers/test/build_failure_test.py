@@ -25,6 +25,7 @@ from model.wf_build import WfBuild
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_try_job import WfTryJob
 from waterfall import buildbot
+from waterfall import build_failure as build_failure_services
 from waterfall import build_util
 from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
@@ -384,10 +385,18 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                 'force': '1',
                 'xsrf_token': 'abc'})
 
+  @mock.patch.object(
+      build_failure_services,
+      'GetBuildFailureInfo',
+      return_value={
+          'failed': True,
+          'chromium_revision': 'rev',
+          'failure_type': failure_type.COMPILE
+      })
   @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(
-      self, mock_fn, mocked_ValidateAuthToken):
+      self, mock_fn, mocked_ValidateAuthToken, _):
     mocked_ValidateAuthToken.side_effect = [(True, False)]
     master_name = 'm'
     builder_name = 'b'

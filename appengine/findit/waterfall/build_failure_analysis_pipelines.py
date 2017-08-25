@@ -7,16 +7,20 @@ import logging
 from google.appengine.ext import ndb
 
 from common import constants
+from common.waterfall import failure_type
 from gae_libs import appengine_util
 from libs import analysis_status
 from libs import time_util
+from model import result_status
 from model.wf_analysis import WfAnalysis
+from waterfall import build_failure
 from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
 
 
 @ndb.transactional
 def NeedANewAnalysis(master_name, builder_name, build_number, failed_steps,
-                     build_completed, force):
+                     build_completed, force, failed, chromium_revision,
+                     build_failure_type):
   """Checks status of analysis for the build and decides if a new one is needed.
 
   A WfAnalysis entity for the given build will be created if none exists.
@@ -28,14 +32,21 @@ def NeedANewAnalysis(master_name, builder_name, build_number, failed_steps,
     True if an analysis is needed, otherwise False.
   """
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+  has_real_failure = (
+      failed and chromium_revision and
+      build_failure_type in [failure_type.COMPILE, failure_type.TEST])
 
   if not analysis:
     # The build failure is not analyzed yet.
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.status = analysis_status.PENDING
     analysis.request_time = time_util.GetUTCNow()
+    if has_real_failure:
+      analysis.status = analysis_status.PENDING
+    else:
+      analysis.status = analysis_status.COMPLETED
+      analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
     analysis.put()
-    return True
+    return has_real_failure
   elif force:
     # A new analysis could be forced if last analysis was completed.
     if not analysis.completed:
@@ -46,8 +57,11 @@ def NeedANewAnalysis(master_name, builder_name, build_number, failed_steps,
 
     analysis.Reset()
     analysis.request_time = time_util.GetUTCNow()
+    if not has_real_failure:
+      analysis.status = analysis_status.COMPLETED
+      analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
     analysis.put()
-    return True
+    return has_real_failure
   elif failed_steps and analysis.completed:
     # If there is any new failed step, a new analysis is needed.
     for step in failed_steps:
@@ -98,10 +112,16 @@ def ScheduleAnalysisIfNeeded(master_name,
   Returns:
     A WfAnalysis instance.
   """
+  failure_info = build_failure.GetBuildFailureInfo(master_name, builder_name,
+                                                   build_number)
+
   if NeedANewAnalysis(master_name, builder_name, build_number, failed_steps,
-                      build_completed, force):
-    pipeline_job = AnalyzeBuildFailurePipeline(
-        master_name, builder_name, build_number, build_completed, force)
+                      build_completed, force, failure_info['failed'],
+                      failure_info['chromium_revision'],
+                      failure_info['failure_type']):
+    pipeline_job = AnalyzeBuildFailurePipeline(master_name, builder_name,
+                                               build_number, failure_info,
+                                               build_completed, force)
     # Explicitly run analysis in the backend module "waterfall-backend".
     # Note: Just setting the target in queue.yaml does NOT work for pipeline
     # when deployed to App Engine, but it does work in dev-server locally.

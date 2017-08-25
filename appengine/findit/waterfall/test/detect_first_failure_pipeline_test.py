@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import datetime
 import json
 import mock
 import os
@@ -10,15 +9,12 @@ import urllib
 import zlib
 
 from common.waterfall import failure_type
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
-from model.wf_build import WfBuild
 from model.wf_step import WfStep
 from waterfall import buildbot
-from waterfall import detect_first_failure_pipeline
-from waterfall.build_info import BuildInfo
+from waterfall import build_failure
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall.test import wf_testcase
 
@@ -32,9 +28,6 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     with self.mock_urlfetch() as urlfetch:
       self.mocked_urlfetch = urlfetch
 
-  def _TimeBeforeNowBySeconds(self, seconds):
-    return datetime.datetime.utcnow() - datetime.timedelta(0, seconds, 0)
-
   def _CreateAndSaveWfAnanlysis(self, master_name, builder_name, build_number,
                                 status):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
@@ -47,50 +40,6 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
         '%s_%s_%d.json' % (master_name, builder_name, build_number))
     with open(file_name, 'r') as f:
       return f.read()
-
-  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
-  def testLookBackUntilGreenBuild(self, mock_fn):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 123
-
-    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
-                                   analysis_status.RUNNING)
-
-    # Setup build data for builds:
-    # 122: mock a build in datastore to ensure it is not fetched again.
-    build = WfBuild.Create(master_name, builder_name, 122)
-    build.data = self._GetBuildData(master_name, builder_name, 122)
-    build.completed = True
-    build.put()
-    # 121: mock a build in datastore to ensure it is updated.
-    build = WfBuild.Create(master_name, builder_name, 121)
-    build.data = 'Blow up if used!'
-    build.last_crawled_time = self._TimeBeforeNowBySeconds(7200)
-    build.completed = False
-    build.put()
-
-    mock_fn.side_effect = [
-        self._GetBuildData(master_name, builder_name, 123),
-        self._GetBuildData(master_name, builder_name, 121)
-    ]
-    pipeline = DetectFirstFailurePipeline()
-    failure_info = pipeline.run(master_name, builder_name, build_number)
-
-    expected_failed_steps = {
-        'net_unittests': {
-            'last_pass': 122,
-            'current_failure': 123,
-            'first_failure': 123
-        },
-        'unit_tests': {
-            'last_pass': 121,
-            'current_failure': 123,
-            'first_failure': 122
-        }
-    }
-
-    self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
 
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testFirstFailureLastPassUpdating(self, mock_fn):
@@ -109,13 +58,39 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     # 97: net_unitests failed, unit_tests failed.
     # 96: net_unitests passed, unit_tests passed.
     side_effects = []
-    for i in range(5):
+    for i in xrange(1, 5):
       side_effects.append(
           self._GetBuildData(master_name, builder_name, 100 - i))
     mock_fn.side_effect = side_effects
 
+    current_build_failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'builds': {
+            100: {
+                'chromium_revision':
+                    '64c72819e898e952103b63eabc12772f9640af07',
+                'blame_list': ['64c72819e898e952103b63eabc12772f9640af07']
+            }
+        },
+        'failed_steps': {
+            'net_unittests': {
+                'current_failure': 100,
+                'first_failure': 100
+            },
+            'unit_tests': {
+                'current_failure': 100,
+                'first_failure': 100
+            }
+        },
+        'failed': True,
+        'chromium_revision': '64c72819e898e952103b63eabc12772f9640af07',
+        'failure_type': failure_type.TEST
+    }
+
     pipeline = DetectFirstFailurePipeline()
-    failure_info = pipeline.run(master_name, builder_name, build_number)
+    failure_info = pipeline.run(current_build_failure_info)
 
     expected_failed_steps = {
         'net_unittests': {
@@ -132,99 +107,65 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
 
-  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
-  def testStopLookingBackIfAllFailedStepsPassedInLastBuild(self, mock_fn):
+  @mock.patch.object(build_failure, 'CheckForFirstKnownFailure')
+  def testRunPipelineForCompileFailure(self, _):
     master_name = 'm'
     builder_name = 'b'
-    build_number = 124
+    build_number = 25409
 
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.RUNNING)
 
-    # Setup build data for builds:
-    mock_fn.side_effect = [
-        self._GetBuildData(master_name, builder_name, 124),
-        self._GetBuildData(master_name, builder_name, 123)
-    ]
-
-    pipeline = DetectFirstFailurePipeline()
-    failure_info = pipeline.run(master_name, builder_name, build_number)
-
-    expected_failed_steps = {
-        'a': {
-            'last_pass': 123,
-            'current_failure': 124,
-            'first_failure': 124
-        }
-    }
-
-    self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
-
-  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
-  def testAnalyzeSuccessfulBuild(self, mock_fn):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 121
-
-    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
-                                   analysis_status.RUNNING)
-
-    # Setup build data for builds:
-    mock_fn.return_value = self._GetBuildData(master_name, builder_name, 121)
-
-    pipeline = DetectFirstFailurePipeline()
-    failure_info = pipeline.run(master_name, builder_name, build_number)
-
-    self.assertFalse(failure_info['failed'])
-
-  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
-  def testAnalyzeInfraExceptionBuild(self, mock_fn):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 120
-
-    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
-                                   analysis_status.RUNNING)
-
-    # Setup build data for builds:
-    mock_fn.return_value = self._GetBuildData(master_name, builder_name, 120)
-
-    pipeline = DetectFirstFailurePipeline()
-    failure_info = pipeline.run(master_name, builder_name, build_number)
-
-    self.assertEqual(failure_info['failure_type'], failure_type.INFRA)
-
-  @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
-  def testStopLookingBackIfFindTheFirstBuild(self, mock_fn):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 2
-
-    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
-                                   analysis_status.RUNNING)
-
-    # Setup build data for builds:
-    mock_fn.side_effect = [
-        self._GetBuildData(master_name, builder_name, 2),
-        self._GetBuildData(master_name, builder_name, 1),
-        self._GetBuildData(master_name, builder_name, 0)
-    ]
-
-    pipeline = DetectFirstFailurePipeline()
-    failure_info = pipeline.run(master_name, builder_name, build_number)
-
-    expected_failed_steps = {
-        'a_tests': {
-            'current_failure': 2,
-            'first_failure': 0
+    current_build_failure_info = {
+        'failed': True,
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 25409,
+        'chromium_revision': None,
+        'builds': {
+            25409: {
+                'blame_list': [],
+                'chromium_revision': None
+            }
         },
-        'unit_tests': {
-            'current_failure': 2,
-            'first_failure': 0
-        }
+        'failed_steps': {
+            'compile': {
+                'current_failure': 25409,
+                'first_failure': 25409
+            }
+        },
+        'failure_type': failure_type.COMPILE,
+        'parent_mastername': None,
+        'parent_buildername': None,
     }
 
-    self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
+    pipeline = DetectFirstFailurePipeline()
+    failure_info = pipeline.run(current_build_failure_info)
+
+    expected_failure_info = {
+        'failed': True,
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 25409,
+        'chromium_revision': None,
+        'builds': {
+            25409: {
+                'blame_list': [],
+                'chromium_revision': None
+            }
+        },
+        'failed_steps': {
+            'compile': {
+                'current_failure': 25409,
+                'first_failure': 25409
+            }
+        },
+        'failure_type': failure_type.COMPILE,
+        'parent_mastername': None,
+        'parent_buildername': None,
+    }
+
+    self.assertEqual(failure_info, expected_failure_info)
 
   def _GetSwarmingData(self, data_type, file_name=None, build_number=None):
     file_name_map = {
@@ -300,291 +241,33 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
         data=(json.dumps(post_data, sort_keys=True, separators=(',', ':'))
               if post_data else None))
 
-  def testAnalyzeSwarmingTestResultsInitiateLastPassForTests(self):
-    json_data = json.loads(
-        self._GetSwarmingData('isolated-plain', 'm_b_223_abc_test.json'))
-
-    step = WfStep.Create('m', 'b', 223, 'abc_test')
-    step.isolated = True
-    step.put()
-
-    failed_step = {'current_failure': 223, 'first_failure': 221, 'tests': {}}
-
-    pipeline = DetectFirstFailurePipeline()
-    pipeline._InitiateTestLevelFirstFailureAndSaveLog(json_data, step,
-                                                      failed_step)
-
-    expected_failed_step = {
-        'current_failure': 223,
-        'first_failure': 221,
-        'tests': {
-            'Unittest2.Subtest1': {
-                'current_failure': 223,
-                'first_failure': 223,
-                'base_test_name': 'Unittest2.Subtest1'
-            },
-            'Unittest3.Subtest2': {
-                'current_failure': 223,
-                'first_failure': 223,
-                'base_test_name': 'Unittest3.Subtest2'
-            }
-        }
-    }
-
-    self.assertEqual(expected_failed_step, failed_step)
-
-  @mock.patch.object(detect_first_failure_pipeline, 'swarming_util')
-  def testCheckFirstKnownFailureForSwarmingTestsFoundFlaky(self, mock_module):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 221
-    step_name = 'abc_test'
-    failed_steps = {
-        'abc_test': {
-            'current_failure':
-                221,
-            'first_failure':
-                221,
-            'list_isolated_data': [{
-                'isolatedserver': 'https://isolateserver.appspot.com',
-                'namespace': 'default-gzip',
-                'digest': 'isolatedhashabctest-223'
-            }]
-        }
-    }
-    builds = {
-        '221': {
-            'blame_list': ['commit1'],
-            'chromium_revision': 'commit1'
-        },
-        '222': {
-            'blame_list': ['commit2'],
-            'chromium_revision': 'commit2'
-        },
-        '223': {
-            'blame_list': ['commit3', 'commit4'],
-            'chromium_revision': 'commit4'
-        }
-    }
-    expected_failed_steps = failed_steps
-    step = WfStep.Create(master_name, builder_name, build_number, step_name)
-    step.isolated = True
-    step.put()
-
-    mock_module.GetIsolatedDataForFailedBuild.return_value = True
-    mock_module.RetrieveShardedTestResultsFromIsolatedServer.return_value = (
-        json.loads(
-            self._GetSwarmingData('isolated-plain',
-                                  'm_b_223_abc_test_flaky.json')))
-
-    pipeline = DetectFirstFailurePipeline()
-    pipeline._CheckFirstKnownFailureForSwarmingTests(
-        master_name, builder_name, build_number, failed_steps, builds)
-
-    self.assertEqual(expected_failed_steps, failed_steps)
-
-  def testUpdateFirstFailureOnTestLevelThenUpdateStepLevel(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 224
-    step_name = 'abc_test'
-    failed_step = {
-        'current_failure': 224,
-        'first_failure': 221,
-        'tests': {
-            'Unittest2.Subtest1': {
-                'current_failure': 224,
-                'first_failure': 223,
-                'last_pass': 223,
-                'base_test_name': 'Unittest2.Subtest1'
-            },
-            'Unittest3.Subtest2': {
-                'current_failure': 224,
-                'first_failure': 223,
-                'base_test_name': 'Unittest3.Subtest2'
-            }
-        }
-    }
-
-    step = WfStep.Create(master_name, builder_name, 223, step_name)
-    step.isolated = True
-    step.log_data = 'log'
-    step.put()
-
-    for n in xrange(222, 220, -1):
-      # Mock retrieving data from swarming server for a single step.
-      self._MockUrlFetchWithSwarmingData(master_name, builder_name, n,
-                                         'abc_test')
-
-      # Mock retrieving hash to output.json from isolated server.
-      isolated_data = {
-          'isolatedserver': 'https://isolateserver.appspot.com',
-          'namespace': {
-              'namespace': 'default-gzip'
-          },
-          'digest': 'isolatedhashabctest-%d' % n
-      }
-      self._MockUrlfetchWithIsolatedData(isolated_data, build_number=n)
-      # Mock retrieving url to output.json from isolated server.
-      file_hash_data = {
-          'isolatedserver': 'https://isolateserver.appspot.com',
-          'namespace': {
-              'namespace': 'default-gzip'
-          },
-          'digest': 'abctestoutputjsonhash-%d' % n
-      }
-      self._MockUrlfetchWithIsolatedData(file_hash_data, build_number=n)
-
-      # Mock downloading output.json from isolated server.
-      self._MockUrlfetchWithIsolatedData(
-          None, ('https://isolateserver.storage.googleapis.com/default-gzip/'
-                 'm_b_%d_abc_test' % n),
-          '%s_%s_%d_%s.json' % (master_name, builder_name, n, 'abc_test'))
-
-    pipeline = DetectFirstFailurePipeline()
-    pipeline._UpdateFirstFailureOnTestLevel(
-        master_name, builder_name, build_number, step_name, failed_step,
-        HttpClientAppengine())
-
-    expected_failed_step = {
-        'current_failure': 224,
-        'first_failure': 221,
-        'tests': {
-            'Unittest2.Subtest1': {
-                'current_failure': 224,
-                'first_failure': 222,
-                'last_pass': 221,
-                'base_test_name': 'Unittest2.Subtest1'
-            },
-            'Unittest3.Subtest2': {
-                'current_failure': 224,
-                'first_failure': 221,
-                'base_test_name': 'Unittest3.Subtest2'
-            }
-        }
-    }
-    self.assertEqual(expected_failed_step, failed_step)
-
-  def testUpdateFirstFailureOnTestLevelFlaky(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 223
-    step_name = 'abc_test'
-    failed_step = {
-        'current_failure': 223,
-        'first_failure': 221,
-        'tests': {
-            'Unittest2.Subtest1': {
-                'current_failure': 223,
-                'first_failure': 223,
-                'last_pass': 223,
-                'base_test_name': 'Unittest2.Subtest1'
-            }
-        }
-    }
-    step = WfStep.Create(master_name, builder_name, 222, step_name)
-    step.isolated = True
-    step.log_data = 'flaky'
-    step.put()
-
-    pipeline = DetectFirstFailurePipeline()
-    pipeline._UpdateFirstFailureOnTestLevel(
-        master_name, builder_name, build_number, step_name, failed_step,
-        HttpClientAppengine())
-
-    expected_failed_step = {
-        'current_failure': 223,
-        'first_failure': 223,
-        'last_pass': 222,
-        'tests': {
-            'Unittest2.Subtest1': {
-                'current_failure': 223,
-                'first_failure': 223,
-                'last_pass': 222,
-                'base_test_name': 'Unittest2.Subtest1'
-            }
-        }
-    }
-    self.assertEqual(expected_failed_step, failed_step)
-
-  def testUpdateFailureInfoBuildsUpdateBuilds(self):
-    failed_steps = {
-        'compile': {
-            'current_failure': 223,
-            'first_failure': 222,
-            'last_pass': 221
-        },
-        'abc_test': {
-            'current_failure':
-                223,
-            'first_failure':
-                222,
-            'last_pass':
-                221,
-            'list_isolated_data': [{
-                'isolatedserver': 'https://isolateserver.appspot.com',
-                'namespace': 'default-gzip',
-                'digest': 'isolatedhashabctest-223'
-            }],
-            'tests': {
-                'Unittest2.Subtest1': {
-                    'current_failure': 223,
-                    'first_failure': 222,
-                    'last_pass': 221,
-                    'base_test_name': 'Unittest2.Subtest1'
-                },
-                'Unittest3.Subtest2': {
-                    'current_failure': 223,
-                    'first_failure': 222,
-                    'last_pass': 221,
-                    'base_test_name': 'Unittest3.Subtest2'
-                }
-            }
-        }
-    }
-
-    builds = {
-        '220': {
-            'blame_list': ['commit0'],
-            'chromium_revision': 'commit0'
-        },
-        '221': {
-            'blame_list': ['commit1'],
-            'chromium_revision': 'commit1'
-        },
-        '222': {
-            'blame_list': ['commit2'],
-            'chromium_revision': 'commit2'
-        },
-        '223': {
-            'blame_list': ['commit3', 'commit4'],
-            'chromium_revision': 'commit4'
-        }
-    }
-
-    pipeline = DetectFirstFailurePipeline()
-    pipeline._UpdateFailureInfoBuilds(failed_steps, builds)
-    expected_builds = {
-        '221': {
-            'blame_list': ['commit1'],
-            'chromium_revision': 'commit1'
-        },
-        '222': {
-            'blame_list': ['commit2'],
-            'chromium_revision': 'commit2'
-        },
-        '223': {
-            'blame_list': ['commit3', 'commit4'],
-            'chromium_revision': 'commit4'
-        }
-    }
-    self.assertEqual(builds, expected_builds)
-
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testTestLevelFailedInfo(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
+    current_build_failure_info = {
+        'failed': True,
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'chromium_revision': None,
+        'builds': {
+            build_number: {
+                'blame_list': ['64c72819e898e952103b63eabc12772f9640af07'],
+                'chromium_revision': '64c72819e898e952103b63eabc12772f9640af07'
+            }
+        },
+        'failed_steps': {
+            'abc_test': {
+                'current_failure': build_number,
+                'first_failure': build_number
+            }
+        },
+        'failure_type': failure_type.TEST,
+        'parent_mastername': None,
+        'parent_buildername': None,
+    }
 
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.RUNNING)
@@ -640,7 +323,7 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
     step_221.put()
 
     pipeline = DetectFirstFailurePipeline()
-    failure_info = pipeline.run(master_name, builder_name, build_number)
+    failure_info = pipeline.run(current_build_failure_info)
 
     expected_failed_steps = {
         'abc_test': {
@@ -694,75 +377,3 @@ class DetectFirstFailureTest(wf_testcase.WaterfallTestCase):
       self.assertEqual(expected_step_log_data[n], step.log_data)
 
     self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
-
-  def testRunPipelineForCompileFailure(self):
-
-    def _MockExtractBuildInfo(*_):
-      build_info = BuildInfo('m', 'b', 25409)
-      build_info.failed_steps = {
-          'compile': {
-              'last_pass': '25408',
-              'current_failure': '25409',
-              'first_failure': '25409'
-          }
-      }
-      return build_info
-
-    self.mock(DetectFirstFailurePipeline, '_ExtractBuildInfo',
-              _MockExtractBuildInfo)
-
-    self._CreateAndSaveWfAnanlysis('m', 'b', 25409, analysis_status.RUNNING)
-    pipeline = DetectFirstFailurePipeline()
-    failure_info = pipeline.run('m', 'b', 25409)
-
-    expected_failure_info = {
-        'failed': True,
-        'master_name': 'm',
-        'builder_name': 'b',
-        'build_number': 25409,
-        'chromium_revision': None,
-        'builds': {
-            25409: {
-                'blame_list': [],
-                'chromium_revision': None
-            }
-        },
-        'failed_steps': {
-            'compile': {
-                'current_failure': 25409,
-                'first_failure': 25409
-            }
-        },
-        'failure_type': failure_type.COMPILE,
-        'parent_mastername': None,
-        'parent_buildername': None,
-    }
-
-    self.assertEqual(failure_info, expected_failure_info)
-
-  def testGetFailureType(self):
-    cases = {
-        failure_type.UNKNOWN: [],
-        failure_type.COMPILE: ['compile', 'slave_steps'],
-        failure_type.TEST: ['browser_tests'],
-    }
-    for expected_type, failed_steps in cases.iteritems():
-      build_info = BuildInfo('m', 'b', 123)
-      build_info.failed_steps = failed_steps
-      self.assertEqual(
-          expected_type,
-          detect_first_failure_pipeline._GetFailureType(build_info))
-
-  def testRemoveAllPrefixes(self):
-    test_smaples = {
-        'test1': 'test1',
-        'PRE_t': 'PRE_t',
-        'TestSuite1.Test1': 'TestSuite1.Test1',
-        'TestSuite1.PRE_Test1': 'TestSuite1.Test1',
-        'TestSuite1.PRE_PRE_Test1': 'TestSuite1.Test1',
-        'PRE_TestSuite1.Test1': 'PRE_TestSuite1.Test1'
-    }
-
-    for test, expected_base_test in test_smaples.iteritems():
-      base_test = detect_first_failure_pipeline._RemoveAllPrefixes(test)
-      self.assertEqual(base_test, expected_base_test)

@@ -6,9 +6,11 @@ import datetime
 import json
 import mock
 
+from common.waterfall import failure_type
 from model.wf_build import WfBuild
 from waterfall import build_util
 from waterfall import buildbot
+from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
 
 
@@ -169,3 +171,25 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertIsNone(
         build_util.GetBuildInfo(master_name, builder_name, build_number))
+
+  def testGetFailureTypeUnknown(self):
+    build_info = BuildInfo('m', 'b', 123)
+    self.assertEqual(failure_type.UNKNOWN,
+                     build_util.GetFailureType(build_info))
+
+  def testGetFailureTypeInfra(self):
+    build_info = BuildInfo('m', 'b', 123)
+    build_info.result = buildbot.EXCEPTION
+    build_info.failed_steps = ['compile']
+    self.assertEqual(failure_type.INFRA, build_util.GetFailureType(build_info))
+
+  def testGetFailureTypeCompile(self):
+    build_info = BuildInfo('m', 'b', 123)
+    build_info.failed_steps = ['compile']
+    self.assertEqual(failure_type.COMPILE,
+                     build_util.GetFailureType(build_info))
+
+  def testGetFailureTypeTest(self):
+    build_info = BuildInfo('m', 'b', 123)
+    build_info.failed_steps = ['abc_tests']
+    self.assertEqual(failure_type.TEST, build_util.GetFailureType(build_info))
