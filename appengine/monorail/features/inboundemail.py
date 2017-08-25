@@ -177,7 +177,7 @@ class InboundEmail(webapp2.RequestHandler):
         trooper_email = self.services.user.LookupParentEmail(cnxn,
             trooper_email)
         self.ProcessAlert(cnxn, project, project_addr, from_addr, author_addr,
-            author_id, subject, body, incident_id)
+            author_id, subject, body, incident_id, owner_email=trooper_email)
         return None
 
     # This email is a response to an email about a comment.
