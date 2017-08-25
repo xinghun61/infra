@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<title>builderResultsTest</title>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/builder-results/builder-results.html">
+<test-fixture id="builder-results-test">
+  <template>
+    <builder-results></builder-results>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('builder-results', function() {
+    var element;
+    setup(function() {
+      element = fixture('builder-results-test');
+      element.builderResults = {
+        builder_name:'some-builder',
+        total_failures: 2,
+        results: [
+          {build_number: 1, actual: [2], expected: [2]},
+          {build_number: 2, actual: [1], expected: [2]},
+          {build_number: 3, actual: [1], expected: [2]},
+        ],
+      };
+    });
+
+    test('test getRenderedObjects', function(done) {
+      flush(function() {
+        let renderedOBjects = element._getRenderedObjects(element.builderResults.results);
+        assert.equal(renderedOBjects[0].colorClass, 'green');
+        assert.equal(renderedOBjects[1].colorClass, 'red');
+        assert.equal(renderedOBjects[2].colorClass, 'red');
+        done();
+      });
+    });
+  });
+
+</script>

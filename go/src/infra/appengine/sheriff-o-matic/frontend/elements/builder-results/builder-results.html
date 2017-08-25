@@ -1,0 +1,72 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<dom-module id="builder-results">
+  <template>
+    <style>
+      .gray {
+        background: #E7E7E7;
+      }
+      .green {
+        background: #6AFF3F;
+      }
+      .red {
+        background: #FF6C6C;
+      }
+      .square {
+        width: 15px;
+        height: 15px;
+      }
+      .square-container {
+        padding: 1px;
+      }
+      .row-item {
+        display: table-cell;
+      }
+      .results-sections {
+        display: table;
+      }
+    </style>
+    <div class="results-section">
+      <p class="row-item">[[builderResults.builder_name]]</p>
+      <template is="dom-repeat" items="{{_getRenderedObjects(builderResults.results)}}">
+        <div class="square-container row-item">
+          <div class$="square [[item.colorClass]]"></div>
+        </div>
+      </template>
+    </div>
+  </template>
+  <script>
+    'use strict';
+
+    class BuilderResults extends Polymer.Element {
+      static get is() { return 'builder-results'; }
+
+      ready() {
+        super.ready();
+      }
+
+      static get properties() {
+        return {
+          builderResults: {
+            type: Object,
+            value: () => {
+              return {builder_name:'', total_failures:0, results:[]};
+            },
+          },
+        }
+      }
+
+      _getRenderedObjects(results) {
+        let renderedObjects = [];
+        results.forEach(result => {
+          let color = result.actual[0] == result.expected[0] ? 'green' : 'red';
+          let object = {colorClass: color};
+          renderedObjects.push(object);
+        });
+        return renderedObjects;
+      }
+    }
+
+    customElements.define(BuilderResults.is, BuilderResults)
+  </script>
+</dom-module>
