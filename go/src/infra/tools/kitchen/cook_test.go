@@ -174,6 +174,12 @@ func TestCook(t *testing.T) {
 				return result
 			}
 
+			cleanResult := func(r *build.BuildRunResult) *build.BuildRunResult {
+				// Set by "ensureAndRunRecipe", but we start testing at "run".
+				r.Recipe = nil
+				return r
+			}
+
 			tests := func() {
 				Convey("recipe success", func() {
 					recipeResult := &recipe_engine.Result{
@@ -183,7 +189,7 @@ func TestCook(t *testing.T) {
 					}
 					result := run(recipeResult, 0)
 					result.Annotations = nil
-					So(result, ShouldResemble, &build.BuildRunResult{
+					So(cleanResult(result), ShouldResemble, &build.BuildRunResult{
 						RecipeExitCode: &build.OptionalInt32{Value: 0},
 						RecipeResult:   recipeResult,
 						AnnotationUrl:  "logdog://logdog.example.com/chromium/prefix/+/annotations",
@@ -204,7 +210,7 @@ func TestCook(t *testing.T) {
 					}
 					result := run(recipeResult, 1)
 					result.Annotations = nil
-					So(result, ShouldResemble, &build.BuildRunResult{
+					So(cleanResult(result), ShouldResemble, &build.BuildRunResult{
 						RecipeExitCode: &build.OptionalInt32{Value: 1},
 						RecipeResult:   recipeResult,
 						AnnotationUrl:  "logdog://logdog.example.com/chromium/prefix/+/annotations",
@@ -229,13 +235,13 @@ func setupRecipeRepo(c context.Context, targetDir string) error {
 	if err := copyDir(targetDir, filepath.Join("testdata", "recipe_repo")); err != nil {
 		return err
 	}
-	if err := runGit(c, targetDir, "init"); err != nil {
+	if _, err := runGit(c, targetDir, "init"); err != nil {
 		return err
 	}
-	if err := runGit(c, targetDir, "add", "-A"); err != nil {
+	if _, err := runGit(c, targetDir, "add", "-A"); err != nil {
 		return err
 	}
-	if err := runGit(c, targetDir, "commit", "-m", "inital"); err != nil {
+	if _, err := runGit(c, targetDir, "commit", "-m", "inital"); err != nil {
 		return err
 	}
 	return nil

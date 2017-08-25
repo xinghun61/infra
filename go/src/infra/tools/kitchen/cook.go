@@ -94,6 +94,9 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		return result
 	}
 
+	result.Recipe = &build.BuildRunResult_Recipe{
+		Name: c.RecipeName,
+	}
 	if c.RepositoryURL == "" {
 		// The ready-to-run recipe is already present on the file system.
 		recipesPath, err := exec.LookPath(filepath.Join(c.CheckoutDir, "recipes"))
@@ -102,11 +105,22 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		}
 		c.rr.cmdPrefix = []string{recipesPath}
 	} else {
-		// Fetch the recipe.
-		if err := checkoutRepository(ctx, c.CheckoutDir, c.RepositoryURL, c.Revision); err != nil {
+		// Fetch the recipe. Record the fetched revision.
+		rev, err := checkoutRepository(ctx, c.CheckoutDir, c.RepositoryURL, c.Revision)
+		if err != nil {
 			return fail(errors.Annotate(err, "could not checkout %q at %q to %q",
 				c.RepositoryURL, c.Revision, c.CheckoutDir).Err())
 		}
+
+		result.Recipe.Repository = c.RepositoryURL
+		result.Recipe.Revision = rev
+
+		// Record the fetched repository. Add ".git" if it doesn't have it
+		// (normalization).
+		if !strings.HasSuffix(result.Recipe.Repository, ".git") {
+			result.Recipe.Repository += ".git"
+		}
+
 		// Read the path to the recipes.py within the fetched repo.
 		recipesPath, err := getRecipesPath(c.CheckoutDir)
 		if err != nil {
@@ -342,6 +356,11 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 
 // run runs the cook subcommmand and returns cook result.
 func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *build.BuildRunResult {
+	mon := Monitoring{
+		cook: c,
+	}
+	mon.beginExecution(ctx)
+
 	fail := func(err error) *build.BuildRunResult {
 		return &build.BuildRunResult{InfraFailure: infraFailure(err)}
 	}
@@ -421,6 +440,18 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 
 	// Run the recipe.
 	result := c.ensureAndRunRecipe(ctx, env)
+
+	// Send our "build completed" monitoring event. If this fails, we will log
+	// the failure, but it is non-fatal.
+	mon.endExecution(ctx, result)
+	if ctx, err = c.withSystemAccount(ctx); err == nil {
+		if err := mon.SendBuildCompletedReport(ctx); err != nil {
+			log.Errorf(ctx, "Failed to send 'build completed' monitoring report: %s", err)
+		}
+	} else {
+		log.Errorf(ctx, "Failed to enter 'system' logical account: %s", err)
+	}
+
 	bootstrapSuccess = result.InfraFailure == nil
 	return result
 }

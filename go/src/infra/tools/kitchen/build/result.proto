@@ -22,6 +22,19 @@ message BuildRunResult {
   // URL where the annotations (above) can be fetched from.
   // In practice, a LogDog URL.
   string annotation_url = 5;
+
+  // Information about the recipe checkout that was used. If the recipes
+  // weren't checked out (e.g., isolated bundle, local), this will be empty.
+  message Recipe {
+    // The name of the recipe that was executed.
+    string name = 1;
+    // Repository is the recipe repository that was checked out.
+    // will not have a revision field.
+    string repository = 2;
+    // The revision of the recipe repository.
+    string revision = 3;
+  }
+  Recipe recipe = 6;
 }
 
 // An int32 that can be distinguished from absence of the value.

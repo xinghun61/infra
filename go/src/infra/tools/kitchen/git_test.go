@@ -5,7 +5,6 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"io/ioutil"
 	"os"
@@ -31,28 +30,31 @@ func TestGit(t *testing.T) {
 
 		srcRepo := filepath.Join(tmp, "src")
 		So(os.Mkdir(srcRepo, 0777), ShouldBeNil)
-		gitOutput(ctx, srcRepo, "init")
+		_, err = runGit(ctx, srcRepo, "init")
+		So(err, ShouldBeNil)
+
 		So(ioutil.WriteFile(filepath.Join(srcRepo, "a"), []byte("a"), 0777), ShouldBeNil)
-		gitOutput(ctx, srcRepo, "add", "-A")
-		gitOutput(ctx, srcRepo, "commit", "-m", "c1")
+
+		_, err = runGit(ctx, srcRepo, "add", "-A")
+		So(err, ShouldBeNil)
+
+		_, err = runGit(ctx, srcRepo, "commit", "-m", "c1")
+		So(err, ShouldBeNil)
+
 		So(ioutil.WriteFile(filepath.Join(srcRepo, "b"), []byte("b"), 0777), ShouldBeNil)
-		gitOutput(ctx, srcRepo, "add", "-A")
-		gitOutput(ctx, srcRepo, "commit", "-m", "c2")
+
+		_, err = runGit(ctx, srcRepo, "add", "-A")
+		So(err, ShouldBeNil)
+
+		_, err = runGit(ctx, srcRepo, "commit", "-m", "c2")
+		So(err, ShouldBeNil)
 
 		destRepo := filepath.Join(tmp, "dest")
-		So(checkoutRepository(ctx, destRepo, srcRepo, "refs/heads/master"), ShouldBeNil)
+		_, err = checkoutRepository(ctx, destRepo, srcRepo, "refs/heads/master")
+		So(err, ShouldBeNil)
 
-		So(
-			strings.Split(strings.TrimSpace(gitOutput(ctx, destRepo, "log", "--format=%s")), "\n"),
-			ShouldResemble,
-			[]string{"c2", "c1"})
+		out, err := runGit(ctx, destRepo, "log", "--format=%s")
+		So(err, ShouldBeNil)
+		So(strings.Split(strings.TrimSpace(string(out)), "\n"), ShouldResemble, []string{"c2", "c1"})
 	})
-}
-
-func gitOutput(c context.Context, workdir string, args ...string) string {
-	cmd := git(c, workdir, args...)
-	buf := &bytes.Buffer{}
-	cmd.Stdout = buf
-	So(cmd.Run(), ShouldBeNil)
-	return buf.String()
 }
