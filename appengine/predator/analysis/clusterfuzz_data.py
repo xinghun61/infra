@@ -92,7 +92,7 @@ class ClusterfuzzData(CrashData):
     super(ClusterfuzzData, self).__init__(crash_data)
     self._crashed_version = crash_data['crash_revision']
     customized_data = crash_data['customized_data']
-    self._regression_range = customized_data['regression_range']
+    self._regression_repository = customized_data['regression_range']
 
     self._raw_dependencies = customized_data['dependencies']
     self._raw_dependency_rolls = customized_data['dependency_rolls']
@@ -131,6 +131,10 @@ class ClusterfuzzData(CrashData):
   def testcase_id(self):
     return self._testcase_id
 
+  @property
+  def regression_repository(self):
+    return self._regression_repository
+
   @cached_property
   def stacktrace(self):
     """Parses stacktrace and returns parsed ``Stacktrace`` object."""
@@ -144,9 +148,15 @@ class ClusterfuzzData(CrashData):
 
     return stacktrace
 
-  @property
+  @cached_property
   def regression_range(self):
-    return self._regression_range
+    if not self._regression_repository:
+      return None
+
+    return (self._regression_repository['old_revision'],
+            self._regression_repository['new_revision'])
+
+
 
   @cached_property
   def dependencies(self):

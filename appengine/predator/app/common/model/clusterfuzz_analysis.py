@@ -8,9 +8,17 @@ from google.appengine.ext import ndb
 
 from analysis.type_enums import CrashClient
 from common.model.crash_analysis import CrashAnalysis
+from decorators import cached_property
+from gae_libs.http.http_client_appengine import HttpClientAppengine
+from libs.gitiles.gitiles_repository import GitilesRepository
 
 _CLUSTERFUZZ_TESTCASE_URL_TEMPLATE = (
     'https://clusterfuzz.com/v2/testcase-detail/%s')
+
+
+def GetCommitsNumberInRegressionRange(repo_url, old_revision, new_revision):
+  repository = GitilesRepository(HttpClientAppengine(), repo_url)
+  return len(repository.GetCommitsBetweenRevisions(old_revision, new_revision))
 
 
 class ClusterfuzzAnalysis(CrashAnalysis):
@@ -22,6 +30,8 @@ class ClusterfuzzAnalysis(CrashAnalysis):
   job_type = ndb.StringProperty()
   testcase_id = ndb.StringProperty()
   security_flag = ndb.BooleanProperty(default=False)
+  regression_repository = ndb.JsonProperty()
+  commits_number_in_regression_range = ndb.IntegerProperty(default=0)
 
   def Reset(self):
     super(ClusterfuzzAnalysis, self).Reset()
@@ -31,6 +41,8 @@ class ClusterfuzzAnalysis(CrashAnalysis):
     self.job_type = None
     self.testcase_id = None
     self.security_flag = False
+    self.regression_repository = None
+    self.commits_number_in_regression_range = 0
 
   def Initialize(self, crash_data):
     """(Re)Initializes a CrashAnalysis ndb.Model from ``ClusterfuzzData``."""
@@ -41,6 +53,13 @@ class ClusterfuzzAnalysis(CrashAnalysis):
     self.job_type = crash_data.job_type
     self.testcase_id = crash_data.testcase_id
     self.security_flag = crash_data.security_flag
+    self.regression_repository = crash_data.regression_repository
+    self.commits_number_in_regression_range = (
+        GetCommitsNumberInRegressionRange(
+            self.regression_repository['repo_url'],
+            self.regression_repository['old_revision'],
+            self.regression_repository['new_revision'])
+        if self.regression_repository else 0)
 
   @property
   def client_id(self):  # pragma: no cover
@@ -54,7 +73,7 @@ class ClusterfuzzAnalysis(CrashAnalysis):
   @property
   def customized_data(self):
     return {
-        'regression_range': self.regression_range,
+        'regression_range': self.regression_repository,
         'crash_type': self.crash_type,
         'crash_address': self.crash_address,
         'dependencies': self.dependencies,

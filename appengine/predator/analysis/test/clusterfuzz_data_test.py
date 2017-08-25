@@ -96,3 +96,16 @@ class CusterfuzzDataTest(AnalysisTestCase):
         ChromeDependencyFetcher(self.GetMockRepoFactory()))
 
     self.assertEqual(crash_data.identifiers, crash_data.testcase_id)
+
+  def testRegressionRangeProperty(self):
+    regression_range = {'dep_path': 'src', 'repo_url': 'https://repo',
+                        'old_revision': 'rev0', 'new_revision': 'rev3'}
+    crash_data = ClusterfuzzData(
+        self.GetDummyClusterfuzzData(regression_range=regression_range),
+        ChromeDependencyFetcher(self.GetMockRepoFactory()))
+
+    self.assertEqual(crash_data.regression_range,
+                     (regression_range['old_revision'],
+                      regression_range['new_revision']))
+
+    self.assertEqual(crash_data.regression_repository, regression_range)

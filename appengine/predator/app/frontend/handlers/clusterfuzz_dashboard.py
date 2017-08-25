@@ -7,16 +7,7 @@ from collections import OrderedDict
 from analysis.type_enums import CrashClient
 from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
 from frontend.handlers.dashboard import DashBoard
-from libs.gitiles.gitiles_repository import GitilesRepository
 from gae_libs.handlers.base_handler import Permission
-from gae_libs.http.http_client_appengine import HttpClientAppengine
-
-
-def GetCommitsInRegressionRange(regression_range, get_repository):
-  repository = get_repository(regression_range['repo_url'])
-  return len(repository.GetCommitsBetweenRevisions(
-      regression_range['old_revision'],
-      regression_range['new_revision']))
 
 
 class ClusterfuzzDashBoard(DashBoard):
@@ -48,7 +39,6 @@ class ClusterfuzzDashBoard(DashBoard):
     if not crash_analyses:
       return []
 
-    get_repository = GitilesRepository.Factory(HttpClientAppengine())
     crashes = []
     for crash in crash_analyses:
       display_data = {
@@ -59,10 +49,8 @@ class ClusterfuzzDashBoard(DashBoard):
           'crash_type': crash.crash_type,
           'platform': crash.platform,
           'sanitizer': crash.sanitizer,
-          'regression_range': [crash.regression_range['old_revision'],
-                               crash.regression_range['new_revision']],
-          'commits': GetCommitsInRegressionRange(crash.regression_range,
-                                                 get_repository),
+          'regression_range': crash.regression_range,
+          'commits': crash.commits_number_in_regression_range,
           'error_name': crash.error_name or '',
           'suspected_cls': (crash.result.get('suspected_cls', [])
                             if crash.result else []),

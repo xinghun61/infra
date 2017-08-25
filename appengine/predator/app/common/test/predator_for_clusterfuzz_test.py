@@ -95,7 +95,7 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
     }
     identifiers = {'testcase': '1234'}
     analysis = self._client.CreateAnalysis(identifiers)
-    analysis.testcase = '1234'
+    analysis.testcase_id = '1234'
     analysis.dependency_rolls = {'src/': DependencyRoll('src/', 'https://repo',
                                                         'old_rev', 'new_rev')}
     analysis.platform = 'linux'
@@ -111,7 +111,7 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
         'regression_ranges': [{'path': 'src/', 'repo_url': 'https://repo',
                                'old_revision': 'old_rev',
                                'new_revision': 'new_rev', 'commits': commits}],
-        'testcase_id': analysis.testcase,
+        'testcase_id': analysis.testcase_id,
         'suspected_cls': analysis_result['suspected_cls'],
         'feedback_url': feedback_url,
     }
@@ -131,7 +131,7 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
     }
     identifiers = {'testcase': '1234'}
     analysis = self._client.CreateAnalysis(identifiers)
-    analysis.testcase = '1234'
+    analysis.testcase_id = '1234'
     analysis.dependency_rolls = {'src/': DependencyRoll('src/', 'https://repo',
                                                         'old_rev', 'new_rev')}
     analysis.platform = 'linux'
@@ -147,7 +147,7 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
         'regression_ranges': [{'path': 'src/', 'repo_url': 'https://repo',
                                'old_revision': 'old_rev',
                                'new_revision': 'new_rev', 'commits': commits}],
-        'testcase_id': analysis.testcase,
+        'testcase_id': analysis.testcase_id,
         'feedback_url': feedback_url,
     }
 
