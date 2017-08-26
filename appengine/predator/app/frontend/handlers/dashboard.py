@@ -13,7 +13,7 @@ from gae_libs.handlers.base_handler import BaseHandler, Permission
 from libs import time_util
 
 
-_PAGE_SIZE = 100
+_PAGE_SIZE = 50
 
 
 class DashBoard(BaseHandler):
@@ -93,9 +93,10 @@ class DashBoard(BaseHandler):
     except (ValueError, TypeError):
       page_size = _PAGE_SIZE
 
-    # TODO(katesonia): Add pagination here.
-    crash_analyses = query.order(
-        -self.crash_analysis_cls.requested_time).fetch(page_size)
+    crash_analyses, top_cusor, bottom_cursor = dashboard_util.GetPagedResults(
+        query, self.crash_analysis_cls.requested_time,
+        cursor=self.request.get('cursor'),
+        direction=self.request.get('direction', 'next'), page_size=page_size)
 
     data = {
         'start_date': time_util.FormatDatetime(start_date),
@@ -108,7 +109,11 @@ class DashBoard(BaseHandler):
             'regression_range_triage_status', '-1'),
         'client': self.client,
         'crashes': self.CrashDataToDisplay(crash_analyses),
-        'signature': self.request.get('signature')
+        'signature': self.request.get('signature'),
+        'top_cursor': top_cusor,
+        'bottom_cursor': bottom_cursor,
+        'cursor': self.request.get('cursor'),
+        'direction': self.request.get('direction'),
     }
 
     return {

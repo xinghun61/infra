@@ -156,8 +156,6 @@ class ClusterfuzzData(CrashData):
     return (self._regression_repository['old_revision'],
             self._regression_repository['new_revision'])
 
-
-
   @cached_property
   def dependencies(self):
     return {

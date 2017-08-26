@@ -285,7 +285,7 @@
     <br>
     <b> Regression range: </b>
     {% if regression_range %}
-      <a href="https://chromium.googlesource.com/chromium/src/+log/{{regression_range[0]}}..{{regression_range[1]}}?pretty=fuller">{{regression_range[0]}} : {{regression_range[1]}}</a>
+      <a href="https://chromium.googlesource.com/chromium/src/+log/{{regression_range['old_revision']}}..{{regression_range['new_revision']}}?pretty=fuller">{{regression_range['old_revision']}} : {{regression_range['new_revision']}}</a>
     {% else %}
       Not found
     {% endif %}

@@ -7,6 +7,7 @@ from datetime import datetime
 from datetime import time
 from datetime import timedelta
 import json
+import mock
 
 import webapp2
 
@@ -53,6 +54,10 @@ class DashBoardTest(testing.AppengineTestCase):
   def _CreateAnalysisResult(self, crash_identifiers):
     analysis = self.handler.crash_analysis_cls.Create(crash_identifiers)
     analysis.status = analysis_status.RUNNING
+    return analysis
+
+  def _GetAnalysisResult(self, crash_identifiers):
+    analysis = self.handler.crash_analysis_cls.Get(crash_identifiers)
     return analysis
 
   def _SetResultsTriageStatus(self, analysis, triage_status_value):
@@ -177,7 +182,11 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': '-1',
         'has_regression_range': '-1',
         'start_date': time_util.FormatDatetime(self.default_start_date),
-        'signature': ''
+        'signature': '',
+        'top_cursor': '',
+        'bottom_cursor': '',
+        'cursor': '',
+        'direction': '',
     }
 
     response_json = self.test_app.get(
@@ -198,7 +207,11 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': 'yes',
         'has_regression_range': '-1',
         'start_date': time_util.FormatDatetime(self.default_start_date),
-        'signature': ''
+        'signature': '',
+        'top_cursor': '',
+        'bottom_cursor': '',
+        'cursor': '',
+        'direction': '',
     }
 
     response_json = self.test_app.get(
@@ -222,7 +235,11 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': '-1',
         'has_regression_range': 'yes',
         'start_date': time_util.FormatDatetime(self.default_start_date),
-        'signature': ''
+        'signature': '',
+        'top_cursor': '',
+        'bottom_cursor': '',
+        'cursor': '',
+        'direction': '',
     }
 
     response_json = self.test_app.get(
@@ -243,7 +260,11 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': '-1',
         'has_regression_range': '-1',
         'start_date': time_util.FormatDatetime(self.default_start_date),
-        'signature': ''
+        'signature': '',
+        'top_cursor': '',
+        'bottom_cursor': '',
+        'cursor': '',
+        'direction': '',
     }
 
     response_json = self.test_app.get(
@@ -265,7 +286,11 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': '-1',
         'has_regression_range': '-1',
         'start_date': time_util.FormatDatetime(self.default_start_date),
-        'signature': ''
+        'signature': '',
+        'top_cursor': '',
+        'bottom_cursor': '',
+        'cursor': '',
+        'direction': '',
     }
 
     response_json = self.test_app.get(
@@ -287,7 +312,11 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': '-1',
         'has_regression_range': '-1',
         'start_date': time_util.FormatDatetime(self.default_start_date),
-        'signature': ''
+        'signature': '',
+        'top_cursor': '',
+        'bottom_cursor': '',
+        'cursor': '',
+        'direction': '',
     }
 
     response_json = self.test_app.get(
@@ -297,7 +326,7 @@ class DashBoardTest(testing.AppengineTestCase):
             self.default_start_date.strftime(dashboard_util.DATE_FORMAT),
             self.default_end_date.strftime(dashboard_util.DATE_FORMAT)))
     self.assertEqual(200, response_json.status_int)
-    self.assertEqual(expected_result, response_json.json_body)
+    self.assertDictEqual(expected_result, response_json.json_body)
 
   def testGetTopCountResults(self):
     expected_result = {
@@ -310,15 +339,26 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': '-1',
         'has_regression_range': '-1',
         'start_date': time_util.FormatDatetime(self.default_start_date),
-        'signature': ''
+        'signature': '',
+        'top_cursor': '',
+        'bottom_cursor': 'bottom_cursor',
+        'cursor': '',
+        'direction': '',
     }
 
-    response_json = self.test_app.get(
-        '/mock-dashboard?n=2&format=json&start_date=%s&end_date=%s' % (
-            self.default_start_date.strftime(dashboard_util.DATE_FORMAT),
-            self.default_end_date.strftime(dashboard_util.DATE_FORMAT)))
-    self.assertEqual(200, response_json.status_int)
-    self.assertEqual(expected_result, response_json.json_body)
+    with mock.patch(
+        'gae_libs.dashboard_util.GetPagedResults') as mock_get_paged_results:
+      mock_get_paged_results.return_value = [
+          self._GetAnalysisResult(self.keys[4]),
+          self._GetAnalysisResult(self.keys[3])], '', 'bottom_cursor'
+
+      response_json = self.test_app.get(
+          '/mock-dashboard?n=2&format=json&start_date=%s&end_date=%s' % (
+              self.default_start_date.strftime(dashboard_util.DATE_FORMAT),
+              self.default_end_date.strftime(dashboard_util.DATE_FORMAT)))
+      self.assertEqual(200, response_json.status_int)
+
+      self.assertEqual(expected_result, response_json.json_body)
 
   def testSearchSignature(self):
     """Tests search by signature in dashboard."""
@@ -331,7 +371,11 @@ class DashBoardTest(testing.AppengineTestCase):
         'found_suspects': '-1',
         'has_regression_range': '-1',
         'start_date': time_util.FormatDatetime(self.default_start_date),
-        'signature': self.crashes[4]['signature']
+        'signature': self.crashes[4]['signature'],
+        'top_cursor': '',
+        'bottom_cursor': '',
+        'cursor': '',
+        'direction': '',
     }
 
     response_json = self.test_app.get(

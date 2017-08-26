@@ -4,6 +4,26 @@
   <meta charset="utf-8">
   <link rel="stylesheet" href="/common.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+  <style type="text/css">
+    .previous, .next {
+      color: #0645AD;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      border-bottom:1px solid #0645AD;
+      cursor: pointer;
+    }
+    .disabled {
+      color: #d3d3d3;
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      border-bottom:1px solid #d3d3d3;
+      cursor: pointer;
+    }
+  </style>
   <script>
     function createUrl(base_url, parameters) {
       var params = [];
@@ -20,7 +40,7 @@
       }
     };
 
-    function getFiltersUrl(client) {
+    function getParameters(client) {
       var parameters = {}
       parameters['start_date'] = $('#start_date').val() == 'mm/dd/yyyy' ? undefined : $('#start_date').val();
       parameters['end_date'] = $('#end_date').val() == 'mm/dd/yyyy' ? undefined : $('#end_date').val();
@@ -29,17 +49,47 @@
       parameters['suspected_cls_triage_status'] = $('#suspected_cls_triage_status').val() == 'default' ? undefined : $('#suspected_cls_triage_status').val();
       parameters['regression_range_triage_status'] = $('#regression_range_triage_status').val() == 'default' ? undefined : $('#regression_range_triage_status').val();
       parameters['signature'] = $('#signature').val() == ''? undefined : $('#signature').val();
-      return createUrl('dashboard', parameters);
-    };
+      if ('{{ cursor }}' != '') {
+        parameters['cursor'] = '{{ cursor }}';
+      }
+      if ('{{ direction }}' != '') {
+        parameters['direction'] = '{{ direction }}';
+      }
 
-    $(document).ready(function() {
-      $('#submit').click(function(e) {
-        e.preventDefault();
-        var new_url = getFiltersUrl('{{client}}');
-        $('#dashboard-table').load(new_url + ' #dashboard-table');
-        //Replaces the url of this page with new url without refreshing page.
-        history.pushState({}, null, new_url);
+      return parameters;
+    }
+
+    function getPageUrl(client, obj) {
+      var parameters = getParameters(client);
+      if (obj.attr('class') == 'previous') {
+        parameters['cursor'] = '{{ top_cursor }}';
+        parameters['direction'] = 'previous';
+      } else if (obj.attr('class') == 'next') {
+        parameters['cursor'] = '{{ bottom_cursor }}';
+        parameters['direction'] = 'next';
+      }
+
+      return createUrl('dashboard', parameters);
+    }
+
+    function getFilterUrl(client) {
+      return createUrl('dashboard', getParameters(client));
+    }
+
+    function loadUrl(url) {
+      window.location.assign(url);
+    }
+
+    $(function() {
+      $(document).on('click', '.previous, .next', function() {
+        loadUrl(getPageUrl('{{client}}', $(this)));
       });
+
+      $(document).on('click', '#submit', function(e) {
+        e.preventDefault();
+        loadUrl(getFilterUrl('{{client}}'));
+      });
+
       if ('{{found_suspects}}' != '-1') {
         $('#found_suspects').val('{{found_suspects}}');
       }
@@ -53,6 +103,22 @@
         $('#regression_range_triage_status').val('{{regression_range_triage_status}}');
       }
       $('#signature').val('{{signature}}');
+
+      if ('{{ bottom_cursor }}' == '') {
+        $('.next').prop('disabled', true);
+        $('.next').addClass('disabled');
+      } else {
+        $('#next-button_bottom').prop('disabled', false);
+        $('#next-button_top').prop('disabled', false);
+      }
+
+      if ('{{ top_cursor }}' == '') {
+        $('.previous').prop('disabled', true);
+        $('.previous').addClass('disabled');
+      } else {
+        $('#previous-button_bottom').prop('disabled', false);
+        $('#previous-button_top').prop('disabled', false);
+      }
     });
   </script>
 </head>
@@ -102,6 +168,10 @@
   </form>
 
   <br>
+  <div>
+    <button class="previous">Previous</button>
+    <button class="next">Next</button>
+  </div>
   <div id="dashboard-table">
     <table>
       <tr>
@@ -151,5 +221,9 @@
         {% endfor %}
       </tbody>
     </table>
+    <div>
+      <button class="previous">Previous</button>
+      <button class="next">Next</button>
+    </div>
   </div>
 </body>
