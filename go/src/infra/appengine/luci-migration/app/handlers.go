@@ -17,7 +17,7 @@ import (
 
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
-	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/data/rand/mathrand"
@@ -162,12 +162,12 @@ func init() {
 	// very random. Seed it with real randomness.
 	mathrand.SeedRandomly()
 
-	base := gaemiddleware.BaseProd()
+	base := standard.Base()
 
 	// Setup HTTP routes.
 	r := router.New()
 
-	gaemiddleware.InstallHandlersWithMiddleware(r, base)
+	standard.InstallHandlers(r)
 	r.GET("/internal/cron/discover-builders", base, errHandler(cronDiscoverBuilders))
 	r.POST("/_ah/push-handlers/buildbucket", base, taskHandler(handleBuildbucketPubSub))
 	r.GET("/internal/cron/analyze-builders", base, errHandler(cronAnalyzeBuilders))

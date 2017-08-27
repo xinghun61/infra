@@ -18,6 +18,7 @@ import (
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
@@ -38,7 +39,7 @@ const (
 func init() {
 	r := router.New()
 
-	baseMW := gaemiddleware.BaseProd()
+	baseMW := standard.Base()
 	frontendMW := baseMW.Extend(timeoutMiddleware(time.Minute))
 	cronMW := baseMW.Extend(timeoutMiddleware(10 * time.Minute))
 	getMW := frontendMW.Extend(templatesMiddleware())
@@ -46,7 +47,7 @@ func init() {
 		auth.Authenticate(&server.OAuth2Method{Scopes: []string{server.EmailScope}}),
 	)
 
-	gaemiddleware.InstallHandlers(r)
+	standard.InstallHandlers(r)
 
 	// Endpoints used by end users.
 	r.GET("/", getMW, polymerHandler)

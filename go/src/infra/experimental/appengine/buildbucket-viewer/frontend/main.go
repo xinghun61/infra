@@ -12,7 +12,7 @@ import (
 	"net/http"
 
 	authServer "go.chromium.org/luci/appengine/gaeauth/server"
-	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/errors"
 	log "go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
@@ -24,9 +24,9 @@ import (
 
 func init() {
 	r := router.New()
-	gaemiddleware.InstallHandlers(r)
+	standard.InstallHandlers(r)
 
-	viewMW := gaemiddleware.BaseProd().Extend(
+	viewMW := standard.Base().Extend(
 		auth.Authenticate(authServer.CookieAuth),
 		withTemplates())
 

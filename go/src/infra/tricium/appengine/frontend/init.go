@@ -8,7 +8,7 @@ package frontend
 import (
 	"net/http"
 
-	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/grpc/discovery"
 	"go.chromium.org/luci/server/router"
 
@@ -22,7 +22,7 @@ func init() {
 	baseInternal := common.MiddlewareForInternal()
 
 	// LUCI frameworks needs a bunch of routes exposed via default module.
-	gaemiddleware.InstallHandlers(r)
+	standard.InstallHandlers(r)
 
 	// This is the URL called from the analyze form, expose to end-users.
 	// TODO(emso): Should this be internal?

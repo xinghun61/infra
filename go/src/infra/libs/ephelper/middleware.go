@@ -7,7 +7,7 @@ package ephelper
 import (
 	"github.com/luci/go-endpoints/endpoints"
 	gaeauth "go.chromium.org/luci/appengine/gaeauth/server"
-	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/server/auth"
 	"golang.org/x/net/context"
 )
@@ -21,13 +21,12 @@ var TestMode = []Middleware{}
 
 // DefaultMiddleware is the default middleware stack for a ServiceBase. It:
 //
-//   - Installs the AppEngine production service base from
-//     gaemiddleware.WithProd.
+//   - Installs the AppEngine production service base from standard.With.
 //   - Installs and authenticates the using the Authenticator methods from the
 //     ServiceBase.
 func DefaultMiddleware(a *auth.Authenticator) Middleware {
 	return func(c context.Context) (context.Context, error) {
-		c = gaemiddleware.WithProd(c, endpoints.HTTPRequest(c))
+		c = standard.With(c, endpoints.HTTPRequest(c))
 
 		a := a
 		if a == nil {

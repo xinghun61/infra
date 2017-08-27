@@ -12,7 +12,7 @@ import (
 	"infra/monitoring/client"
 
 	"go.chromium.org/luci/appengine/gaeauth/server"
-	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 )
@@ -26,7 +26,7 @@ func base() router.MiddlewareChain {
 			server.CookieAuth,
 		},
 	}
-	return gaemiddleware.BaseProd().Extend(a.GetMiddleware()).Extend(prodServiceClients)
+	return standard.Base().Extend(a.GetMiddleware()).Extend(prodServiceClients)
 }
 
 func prodServiceClients(ctx *router.Context, next router.Handler) {
@@ -38,7 +38,7 @@ func prodServiceClients(ctx *router.Context, next router.Handler) {
 func init() {
 	r := router.New()
 	basemw := base()
-	gaemiddleware.InstallHandlers(r)
+	standard.InstallHandlers(r)
 	r.POST("/_ah/queue/changetestexpectations", basemw, som.LayoutTestExpectationChangeWorker)
 	r.GET("/_cron/analyze/:tree", basemw, som.GetAnalyzeHandler)
 	r.POST("/_ah/queue/logdiff", basemw, som.LogdiffWorker)

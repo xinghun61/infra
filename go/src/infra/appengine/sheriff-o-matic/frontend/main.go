@@ -19,7 +19,7 @@ import (
 
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
-	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/identity"
@@ -137,7 +137,7 @@ func base(includeCookie bool) router.MiddlewareChain {
 	if includeCookie {
 		a.Methods = append(a.Methods, server.CookieAuth)
 	}
-	return gaemiddleware.BaseProd().Extend(a.GetMiddleware()).Extend(prodServiceClients)
+	return standard.Base().Extend(a.GetMiddleware()).Extend(prodServiceClients)
 }
 
 func prodServiceClients(ctx *router.Context, next router.Handler) {
@@ -192,7 +192,7 @@ func init() {
 
 	protected := basemw.Extend(requireGoogler)
 
-	gaemiddleware.InstallHandlers(r)
+	standard.InstallHandlers(r)
 	r.GET("/api/v1/alerts/:tree", protected, som.GetAlertsHandler)
 	r.GET("/api/v1/unresolved/:tree", protected, som.GetUnresolvedAlertsHandler)
 	r.GET("/api/v1/resolved/:tree", protected, som.GetResolvedAlertsHandler)
@@ -222,8 +222,8 @@ func init() {
 	r.POST("/_/clientmon", basemw, som.PostClientMonHandler)
 
 	// Ingore reqeuests from builder-alerts rather than 404.
-	r.GET("/alerts", gaemiddleware.BaseProd(), noopHandler)
-	r.POST("/alerts", gaemiddleware.BaseProd(), noopHandler)
+	r.GET("/alerts", standard.Base(), noopHandler)
+	r.POST("/alerts", standard.Base(), noopHandler)
 
 	rootRouter := router.New()
 	rootRouter.GET("/*path", basemw, indexPage)

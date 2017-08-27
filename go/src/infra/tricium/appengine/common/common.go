@@ -13,7 +13,7 @@ import (
 
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
-	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/prpc"
 	"go.chromium.org/luci/server/auth"
@@ -58,7 +58,7 @@ func ReportServerError(c *router.Context, err error) {
 
 // MiddlewareBase returns a middleware chain applied to ALL routes.
 func MiddlewareBase() router.MiddlewareChain {
-	return gaemiddleware.BaseProd()
+	return standard.Base()
 }
 
 // MiddlewareForInternal returns a middleware chain applied to internal routes.

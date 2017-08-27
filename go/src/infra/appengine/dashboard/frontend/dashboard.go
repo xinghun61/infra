@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"go.chromium.org/gae/service/info"
-	"go.chromium.org/luci/appengine/gaemiddleware"
+	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/discovery"
 	"go.chromium.org/luci/grpc/prpc"
@@ -32,14 +32,14 @@ var templateBundle = &templates.Bundle{
 }
 
 func pageBase() router.MiddlewareChain {
-	return gaemiddleware.BaseProd().Extend(
+	return standard.Base().Extend(
 		templates.WithTemplates(templateBundle),
 	)
 }
 
 func init() {
 	r := router.New()
-	gaemiddleware.InstallHandlers(r)
+	standard.InstallHandlers(r)
 	r.GET("/", pageBase(), dashboard)
 	http.DefaultServeMux.Handle("/", r)
 
@@ -49,7 +49,7 @@ func init() {
 	var api prpc.Server
 	dashpb.RegisterChopsServiceStatusServer(&api, &dashboardService{})
 	discovery.Enable(&api)
-	api.InstallHandlers(r, gaemiddleware.BaseProd())
+	api.InstallHandlers(r, standard.Base())
 }
 
 func dashboard(ctx *router.Context) {
