@@ -16,6 +16,7 @@ import (
 	"go.chromium.org/luci/vpython/api/vpython"
 	"go.chromium.org/luci/vpython/application"
 	"go.chromium.org/luci/vpython/cipd"
+	"go.chromium.org/luci/vpython/spec"
 
 	"github.com/mitchellh/go-homedir"
 	cipdClient "go.chromium.org/luci/cipd/client/cipd"
@@ -39,6 +40,14 @@ var cipdPackageLoader = cipd.PackageLoader{
 
 var defaultConfig = application.Config{
 	PackageLoader: &cipdPackageLoader,
+	SpecLoader: spec.Loader{
+		CommonFilesystemBarriers: []string{
+			".gclient",
+		},
+		CommonSpecNames: []string{
+			".vpython",
+		},
+	},
 	VENVPackage: vpython.Spec_Package{
 		Name:    "infra/python/virtualenv",
 		Version: "version:15.1.0",
