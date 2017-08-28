@@ -27,13 +27,6 @@ class TriggerFlakeSwarmingTaskServicePipelineTest(
 
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(acl, 'CanTriggerNewAnalysis', return_value=False)
-  def testScheduleFlakeSwarmingTaskUnauthorized(self, _):
-    with mock.patch.object(logging, 'info') as mocked_logging:
-      trigger_flake_swarming_task_service_pipeline.ScheduleFlakeSwarmingTask(
-          'm', 'b', 123, 's', 't', 100, 'test@google.com', 'queue')
-      mocked_logging.assert_called_once()
-
   @mock.patch.object(acl, 'CanTriggerNewAnalysis', return_value=True)
   @mock.patch.object(buildbot, 'GetStepLog', return_value={})
   @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
@@ -44,7 +37,6 @@ class TriggerFlakeSwarmingTaskServicePipelineTest(
     step_name = 's'
     test_name = 't'
     iterations_to_rerun = 100
-    user_email = 'test@google.com'
 
     task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
                                     step_name, test_name)
@@ -56,7 +48,7 @@ class TriggerFlakeSwarmingTaskServicePipelineTest(
                            'start') as mocked_trigger_task:
       trigger_flake_swarming_task_service_pipeline.ScheduleFlakeSwarmingTask(
           master_name, builder_name, build_number, step_name, test_name,
-          iterations_to_rerun, user_email, queue_name)
+          iterations_to_rerun, queue_name)
       mocked_trigger_task.assert_called_with(queue_name=queue_name)
 
   @mock.patch.object(acl, 'CanTriggerNewAnalysis', return_value=True)
@@ -71,7 +63,6 @@ class TriggerFlakeSwarmingTaskServicePipelineTest(
     step_name = 's'
     test_name = 't'
     iterations_to_rerun = 100
-    user_email = 'test@google.com'
 
     task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
                                     step_name, test_name)
@@ -83,7 +74,7 @@ class TriggerFlakeSwarmingTaskServicePipelineTest(
                            'start') as mocked_trigger_task:
       trigger_flake_swarming_task_service_pipeline.ScheduleFlakeSwarmingTask(
           master_name, builder_name, build_number, step_name, test_name,
-          iterations_to_rerun, user_email, queue_name)
+          iterations_to_rerun, queue_name)
       mocked_trigger_task.assert_called_with(
           queue_name=queue_name, eta=datetime(2017, 7, 5))
 

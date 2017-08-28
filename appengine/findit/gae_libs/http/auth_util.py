@@ -42,25 +42,40 @@ class Authenticator(object):
     return {}
 
 
-def GetUserEmail(scope=_EMAIL_SCOPE):
+def GetUserEmail():
   """Returns the email of the logged-in user or None if not logged-in."""
   user = users.get_current_user()  # Cookie-based authentication.
-  if not user:
-    try:
-      user = oauth.get_current_user(scope)  # Oauth-based authentication.
-    except oauth.OAuthRequestError:
-      pass  # Not logged-in or invalid oauth token.
   return user.email() if user else None
 
 
-def IsCurrentUserAdmin(scope=_EMAIL_SCOPE):
+def IsCurrentUserAdmin():
   """Returns True if the logged-in user is an admin."""
-  is_admin = users.is_current_user_admin()
+  return users.is_current_user_admin()
+
+
+def GetOauthClientId(scope=_EMAIL_SCOPE):
+  """Returns the client id of the oauth user."""
   try:
-    is_admin = is_admin or oauth.is_current_user_admin(scope)
+    return oauth.get_client_id(scope)
   except oauth.OAuthRequestError:
-    pass  # Not logged-in or invalid oauth token.
-  return is_admin
+    return None  # Invalid oauth token.
+
+
+def GetOauthUserEmail(scope=_EMAIL_SCOPE):
+  """Returns the email of the oauth client user."""
+  try:
+    user = oauth.get_current_user(scope)  # Oauth-based authentication.
+  except oauth.OAuthRequestError:
+    user = None  # Invalid oauth token.
+  return user.email() if user else None
+
+
+def IsCurrentOauthUserAdmin(scope=_EMAIL_SCOPE):
+  """Returns True if the oauth client user is an admin."""
+  try:
+    return oauth.is_current_user_admin(scope)
+  except oauth.OAuthRequestError:
+    return False  # Invalid oauth token.
 
 
 def GetLoginUrl(url):

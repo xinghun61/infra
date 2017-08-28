@@ -4,7 +4,6 @@
 
 import logging
 
-from google.appengine.api import users
 from google.appengine.ext import ndb
 
 from gae_libs import token
@@ -237,7 +236,7 @@ class CheckFlake(BaseHandler):
   def _ShowCustomRunOptions(self, analysis):
     # TODO(lijeffrey): Remove checks for admin and debug flag once analyze
     # manual input for a regression range is implemented.
-    return (users.is_current_user_admin() and
+    return (auth_util.IsCurrentUserAdmin() and
             self.request.get('debug') == '1' and
             analysis.status != analysis_status.RUNNING and
             analysis.try_job_status != analysis_status.RUNNING)
@@ -482,7 +481,7 @@ class CheckFlake(BaseHandler):
             analysis.pipeline_status_path
     }
 
-    if (users.is_current_user_admin() and analysis.completed and
+    if (auth_util.IsCurrentUserAdmin() and analysis.completed and
         analysis.triage_history):
       data['triage_history'] = analysis.GetTriageHistory()
 

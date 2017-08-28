@@ -39,65 +39,58 @@ class AuthUtilTest(unittest.TestCase):
     }, authenticator.GetHttpHeadersFor('https://codereview.chromium.org/api'))
 
   @mock.patch.object(
-      auth_util.oauth,
-      'get_current_user',
-      return_value=users.User('email2', 'domain', 'id2'))
-  @mock.patch.object(
       auth_util.users,
       'get_current_user',
       return_value=users.User('email1', 'domain', 'id1'))
-  def testGetUserEmailFromCookie(self, mocked_users, mocked_oauth):
-    self.assertEqual('email1', auth_util.GetUserEmail('scope'))
+  def testGetUserEmailFromCookie(self, mocked_users):
+    self.assertEqual('email1', auth_util.GetUserEmail())
     mocked_users.assert_called_once_with()
-    mocked_oauth.assert_not_called()
+
+  @mock.patch.object(
+      auth_util.users, 'is_current_user_admin', return_value=True)
+  def testAdminFromCookie(self, mocked_users):
+    self.assertTrue(auth_util.IsCurrentUserAdmin())
+    mocked_users.assert_called_once_with()
+
+  @mock.patch.object(auth_util.oauth, 'get_client_id', return_value='id')
+  def testGetClientIdFromOauth(self, mocked_oauth):
+    self.assertEqual('id', auth_util.GetOauthClientId('scope'))
+    mocked_oauth.assert_called_once_with('scope')
+
+  @mock.patch.object(
+      auth_util.oauth, 'get_client_id', side_effect=oauth.OAuthRequestError())
+  def testGetClientIdFromOauthException(self, mocked_oauth):
+    self.assertIsNone(auth_util.GetOauthClientId('scope'))
+    mocked_oauth.assert_called_once_with('scope')
 
   @mock.patch.object(
       auth_util.oauth,
       'get_current_user',
       return_value=users.User('email2', 'domain', 'id2'))
-  @mock.patch.object(auth_util.users, 'get_current_user', return_value=None)
-  def testGetUserEmailFromOauth(self, mocked_users, mocked_oauth):
-    self.assertEqual('email2', auth_util.GetUserEmail('scope'))
-    mocked_users.assert_called_once_with()
+  def testGetUserEmailFromOauth(self, mocked_oauth):
+    self.assertEqual('email2', auth_util.GetOauthUserEmail('scope'))
     mocked_oauth.assert_called_once_with('scope')
 
   @mock.patch.object(
       auth_util.oauth,
       'get_current_user',
       side_effect=oauth.OAuthRequestError())
-  @mock.patch.object(auth_util.users, 'get_current_user', return_value=None)
-  def testGetUserEmailFromOauthException(self, mocked_users, mocked_oauth):
-    self.assertIsNone(auth_util.GetUserEmail('scope'))
-    mocked_users.assert_called_once_with()
+  def testGetUserEmailFromOauthException(self, mocked_oauth):
+    self.assertIsNone(auth_util.GetOauthUserEmail('scope'))
     mocked_oauth.assert_called_once_with('scope')
 
   @mock.patch.object(
-      auth_util.oauth, 'is_current_user_admin', return_value=False)
-  @mock.patch.object(
-      auth_util.users, 'is_current_user_admin', return_value=True)
-  def testAdminFromCookie(self, mocked_users, mocked_oauth):
-    self.assertTrue(auth_util.IsCurrentUserAdmin('scope'))
-    mocked_users.assert_called_once_with()
-    mocked_oauth.assert_not_called()
-
-  @mock.patch.object(
       auth_util.oauth, 'is_current_user_admin', return_value=True)
-  @mock.patch.object(
-      auth_util.users, 'is_current_user_admin', return_value=False)
-  def testAdminFromOauth(self, mocked_users, mocked_oauth):
-    self.assertTrue(auth_util.IsCurrentUserAdmin('scope'))
-    mocked_users.assert_called_once_with()
+  def testAdminFromOauth(self, mocked_oauth):
+    self.assertTrue(auth_util.IsCurrentOauthUserAdmin('scope'))
     mocked_oauth.assert_called_once_with('scope')
 
   @mock.patch.object(
       auth_util.oauth,
       'is_current_user_admin',
       side_effect=oauth.OAuthRequestError())
-  @mock.patch.object(
-      auth_util.users, 'is_current_user_admin', return_value=False)
-  def testAdminFromOauthException(self, mocked_users, mocked_oauth):
-    self.assertFalse(auth_util.IsCurrentUserAdmin('scope'))
-    mocked_users.assert_called_once_with()
+  def testAdminFromOauthException(self, mocked_oauth):
+    self.assertFalse(auth_util.IsCurrentOauthUserAdmin('scope'))
     mocked_oauth.assert_called_once_with('scope')
 
   @mock.patch.object(

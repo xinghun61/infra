@@ -32,8 +32,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
       ], debug=True)
 
   @mock.patch.object(
+      check_flake.auth_util, 'GetUserEmail', return_value='email')
+  @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
-  def testPostWithBadUrl(self, _):
+  def testPostWithBadUrl(self, *_):
     response = self.test_app.post(
         '/waterfall/flake',
         params={
@@ -48,8 +50,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
                      response.json_body.get('error_message'))
 
   @mock.patch.object(
+      check_flake.auth_util, 'GetUserEmail', return_value='email')
+  @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
-  def testPostWithoutStepName(self, _):
+  def testPostWithoutStepName(self, *_):
     response = self.test_app.post(
         '/waterfall/flake',
         params={
@@ -62,6 +66,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('Step name must be specified',
                      response.json_body.get('error_message'))
 
+  @mock.patch.object(
+      check_flake.auth_util, 'GetUserEmail', return_value='email')
   @mock.patch.object(
       flake_analysis_service, 'ScheduleAnalysisForFlake', return_value=False)
   @mock.patch.object(
@@ -113,6 +119,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
                      response.json_body.get('error_message'))
 
   @mock.patch.object(
+      check_flake.auth_util, 'GetUserEmail', return_value='test@google.com')
+  @mock.patch.object(
       flake_analysis_service, 'ScheduleAnalysisForFlake', return_value=True)
   @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
@@ -126,8 +134,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.Save()
-
-    self.mock_current_user(user_email='test@google.com', is_admin=False)
 
     response = self.test_app.post(
         '/waterfall/flake',
@@ -149,15 +155,15 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         response.headers.get('Location', '').endswith(expected_url_surfix))
 
   @mock.patch.object(
+      check_flake.auth_util, 'GetUserEmail', return_value='test@chromium.org')
+  @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
-  def testNoneCorpUserCanNotScheduleANewAnalysis(self, _):
+  def testNoneCorpUserCanNotScheduleANewAnalysis(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = '123'
     step_name = 's'
     test_name = 't'
-
-    self.mock_current_user(user_email='test@chromium.org', is_admin=False)
 
     response = self.test_app.post(
         '/waterfall/flake',
@@ -184,10 +190,12 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
                      response.json_body.get('error_message'))
 
   @mock.patch.object(
+      check_flake.auth_util, 'GetUserEmail', return_value='test@google.com')
+  @mock.patch.object(
+      check_flake.auth_util, 'IsCurrentUserAdmin', return_value=True)
+  @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
-  def testMissingKeyPost(self, _):
-    self.mock_current_user(user_email='test@google.com', is_admin=True)
-
+  def testMissingKeyPost(self, *_):
     response = self.test_app.post(
         '/waterfall/flake', params={'format': 'json',
                                     'rerun': '1'}, status=404)
@@ -210,15 +218,17 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
                      response.json_body.get('error_message'))
 
   @mock.patch.object(
+      check_flake.auth_util, 'GetUserEmail', return_value='test@google.com')
+  @mock.patch.object(
+      check_flake.auth_util, 'IsCurrentUserAdmin', return_value=True)
+  @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
-  def testAnalysisNotFoundPost(self, _):
+  def testRerunAnalysisNotFoundPost(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.Save()
 
     # Simulate a deletion.
     analysis.key.delete()
-
-    self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     response = self.test_app.post(
         '/waterfall/flake',
@@ -347,15 +357,15 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_check_flake_result, response.json_body)
 
   @mock.patch.object(
+      check_flake.auth_util, 'GetUserEmail', return_value='test@google.com')
+  @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(False, False))
-  def testRejectRequestWithInvalidXSRFToken(self, _):
+  def testRejectRequestWithInvalidXSRFToken(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
     step_name = 's'
     test_name = 't'
-
-    self.mock_current_user(user_email='test@google.com', is_admin=False)
 
     response = self.test_app.post(
         '/waterfall/flake',
@@ -376,6 +386,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'Invalid XSRF token. Please log in or refresh the page first.',
         response.json_body.get('error_message'))
 
+  @mock.patch.object(
+      check_flake.auth_util, 'GetUserEmail', return_value='test@google.com')
   @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
   @mock.patch.object(
@@ -401,8 +413,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     previous_request.build_steps.append(build_step)
     previous_request.analyses.append(previous_analysis.key)
     previous_request.Save()
-
-    self.mock_current_user(user_email='test@google.com', is_admin=False)
 
     response = self.test_app.post(
         '/waterfall/flake',
@@ -526,6 +536,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(200, response.status_int)
     self.assertEqual(expected_check_flake_result, response.json_body)
 
+  @mock.patch.object(
+      check_flake.auth_util, 'GetUserEmail', return_value='test@google.com')
   @mock.patch.object(
       flake_analysis_service, 'ScheduleAnalysisForFlake', return_value=False)
   @mock.patch.object(
@@ -874,15 +886,15 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('00:43:00', check_flake._GetDurationForAnalysis(analysis))
 
   @mock.patch.object(
+      check_flake.auth_util, 'GetUserEmail', return_value='test@google.com')
+  @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
-  def testRerunFailsWhenUnauthorized(self, _):
+  def testRerunFailsWhenUnauthorized(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.Save()
 
     # Simulate a deletion.
     analysis.key.delete()
-
-    self.mock_current_user(user_email='test@google.com', is_admin=False)
 
     response = self.test_app.post(
         '/waterfall/flake',
@@ -894,13 +906,15 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
                      response.json_body.get('error_message'))
 
   @mock.patch.object(
+      check_flake.auth_util, 'GetUserEmail', return_value='test@google.com')
+  @mock.patch.object(
+      check_flake.auth_util, 'IsCurrentUserAdmin', return_value=True)
+  @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
-  def testRerunFailsWhenAlreadyRunning(self, _):
+  def testRerunFailsWhenAlreadyRunning(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.status = analysis_status.RUNNING
     analysis.Save()
-
-    self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     response = self.test_app.post(
         '/waterfall/flake',
@@ -912,6 +926,10 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'Cannot rerun analysis if one is currently running or pending.',
         response.json_body.get('error_message'))
 
+  @mock.patch.object(
+      check_flake.auth_util, 'GetUserEmail', return_value='test@google.com')
+  @mock.patch.object(
+      check_flake.auth_util, 'IsCurrentUserAdmin', return_value=True)
   @mock.patch.object(
       check_flake.token, 'ValidateAuthToken', return_value=(True, False))
   def testRequestRerunWhenAuthorized(self, *_):
@@ -934,8 +952,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     original_key = analysis.key
-
-    self.mock_current_user(user_email='test@google.com', is_admin=True)
 
     with mock.patch.object(
         CheckFlake,

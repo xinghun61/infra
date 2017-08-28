@@ -24,6 +24,7 @@ import gae_ts_mon
 
 from common import acl
 from common import constants
+from common import exceptions
 from common.waterfall import failure_type
 from gae_libs import appengine_util
 from gae_libs.caches import PickledMemCache
@@ -212,15 +213,31 @@ def _AsyncProcessFlakeReport(flake_analysis_request, user_email, is_admin):
 
 def _AsyncProcessFlakeSwarmingTaskRequest(master_name, builder_name,
                                           build_number, step_name, test_name,
-                                          iterations_to_rerun, user_email):
+                                          iterations_to_rerun):
   target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
   payload = pickle.dumps((master_name, builder_name, build_number, step_name,
-                          test_name, iterations_to_rerun, user_email))
+                          test_name, iterations_to_rerun))
   taskqueue.add(
       url=constants.WATERFALL_PROCESS_FLAKE_SWARMING_TASK_REQUEST_URL,
       payload=payload,
       target=target,
       queue_name=constants.WATERFALL_FLAKE_ANALYSIS_REQUEST_QUEUE)
+
+
+def _ValidateOauthUser():
+  """Validates the oauth user and raises an exception if not authorized.
+  Returns:
+    A tuple (user_email, is_admin).
+    user_email (str): The email address of the oauth user.
+    is_admin (bool): True if the oauth user is an Admin.
+
+  Raises:
+    endpoints.UnauthorizedException if the user has no permission.
+  """
+  try:
+    return acl.ValidateOauthUserForNewAnalysis()
+  except exceptions.UnauthorizedException as e:
+    raise endpoints.UnauthorizedException('Unauthorized: %s' % e.message)
 
 
 # Create a Cloud Endpoints API.
@@ -642,13 +659,6 @@ class FindItApi(remote.Service):
       FlakeSwarmingTask: The original flake swarming task entity from which the
           response is based, if any.
     """
-    user_email = auth_util.GetUserEmail()
-    is_admin = auth_util.IsCurrentUserAdmin()
-
-    if not acl.CanTriggerNewAnalysis(user_email, is_admin):
-      raise endpoints.UnauthorizedException(
-          'No permission to trigger swarming tasks! User is %s' % user_email)
-
     test_name = request.test_name
     build_step = BuildStep.Create(request.master_name, request.builder_name,
                                   request.build_number, request.step_name,
@@ -721,12 +731,7 @@ class FindItApi(remote.Service):
       _BuildFailureAnalysisResultCollection
       A list of analysis results for the given build failures.
     """
-    user_email = auth_util.GetUserEmail()
-    is_admin = auth_util.IsCurrentUserAdmin()
-
-    if not acl.CanTriggerNewAnalysis(user_email, is_admin):
-      raise endpoints.UnauthorizedException(
-          'No permission to run a new analysis! User is %s' % user_email)
+    _ValidateOauthUser()
 
     results = []
     supported_builds = []
@@ -775,12 +780,7 @@ class FindItApi(remote.Service):
   @endpoints.method(_Flake, _FlakeAnalysis, path='flake', name='flake')
   def AnalyzeFlake(self, request):
     """Analyze a flake on Commit Queue. Currently only supports flaky tests."""
-    user_email = auth_util.GetUserEmail()
-    is_admin = auth_util.IsCurrentUserAdmin()
-
-    if not acl.CanTriggerNewAnalysis(user_email, is_admin):
-      raise endpoints.UnauthorizedException(
-          'No permission to run a new analysis! User is %s' % user_email)
+    user_email, is_admin = _ValidateOauthUser()
 
     def CreateFlakeAnalysisRequest(flake):
       analysis_request = FlakeAnalysisRequest.Create(flake.name, flake.is_step,
@@ -822,6 +822,7 @@ class FindItApi(remote.Service):
       _FlakeSwarmingTaskResponse: A response with whether the step is supported,
           is in progress, or any data already available about the task.
     """
+    _ValidateOauthUser()
     response, _, _ = self._GetFlakeSwarmingTaskResponse(request)
     return response
 
@@ -843,6 +844,8 @@ class FindItApi(remote.Service):
       _FlakeSwarmingTaskResponse: A response with whether the step is supported,
           has been queued, its results are available, or an error occurred.
     """
+    _ValidateOauthUser()
+
     response, build_step, task = self._GetFlakeSwarmingTaskResponse(request)
 
     # Abandon and rerun the task if a previous request has been made through
@@ -877,10 +880,9 @@ class FindItApi(remote.Service):
 
     # The request needs to be triggered.
     try:
-      user_email = auth_util.GetUserEmail()
       _AsyncProcessFlakeSwarmingTaskRequest(
           master_name, builder_name, build_number, step_name, request.test_name,
-          request.total_reruns, user_email)
+          request.total_reruns)
       queued = True
       task.queued = True
       task.put()  # Only write to the data store if the request succeeds.

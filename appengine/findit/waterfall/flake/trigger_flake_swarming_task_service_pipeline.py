@@ -4,10 +4,8 @@
 
 import logging
 
-from common import acl
 from common import constants
 from gae_libs import appengine_util
-from gae_libs.http import auth_util
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
@@ -22,12 +20,7 @@ from waterfall.trigger_flake_swarming_task_pipeline import (
 
 def ScheduleFlakeSwarmingTask(master_name, builder_name, build_number,
                               step_name, test_name, iterations_to_rerun,
-                              user_email, queue_name):
-  if not acl.CanTriggerNewAnalysis(user_email, auth_util.IsCurrentUserAdmin()):
-    logging.info('Schedule flake swarming task failed because user %s is not '
-                 'authorized.', user_email)
-    return
-
+                              queue_name):
   pipeline_job = TriggerFlakeSwarmingTaskServicePipeline(
       master_name, builder_name, build_number, step_name, test_name,
       iterations_to_rerun)

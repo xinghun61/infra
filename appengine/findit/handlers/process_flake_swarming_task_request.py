@@ -17,7 +17,7 @@ class ProcessFlakeSwarmingTaskRequest(BaseHandler):
 
   def HandlePost(self):
     (master_name, builder_name, build_number, step_name, test_name,
-     iterations_to_rerun, user_email) = pickle.loads(self.request.body)
+     iterations_to_rerun) = pickle.loads(self.request.body)
 
     trigger_flake_swarming_task_service_pipeline.ScheduleFlakeSwarmingTask(
         master_name,
@@ -26,5 +26,4 @@ class ProcessFlakeSwarmingTaskRequest(BaseHandler):
         step_name,
         test_name,
         iterations_to_rerun,
-        user_email,
         queue_name=constants.WATERFALL_FLAKE_SWARMING_TASK_REQUEST_QUEUE)

@@ -28,10 +28,10 @@ class ProcessFlakeSwarmingTaskRequestTest(testing.AppengineTestCase):
   def testTaskQueueCanRequestAnalysis(self, mocked_func):
     response = self.test_app.post(
         '/process-flake-swarming-task-request',
-        params=pickle.dumps(('m', 'b', 123, 's', 't', 100, 'email')),
+        params=pickle.dumps(('m', 'b', 123, 's', 't', 100)),
         headers={'X-AppEngine-QueueName': 'task_queue'},
     )
     self.assertEquals(200, response.status_int)
     mocked_func.assert_called_once_with(
-        'm', 'b', 123, 's', 't', 100, 'email',
+        'm', 'b', 123, 's', 't', 100,
         queue_name=constants.WATERFALL_FLAKE_SWARMING_TASK_REQUEST_QUEUE)

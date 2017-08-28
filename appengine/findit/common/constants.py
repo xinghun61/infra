@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 """Includes all the constants of module names, queue names, url paths, etc."""
 
+import endpoints
+
 import os
 
 # Names of all modules.
@@ -41,6 +43,11 @@ WHITELISTED_STAGING_APP_ACCOUNTS = [
     'chromium-try-flakes-staging@appspot.gserviceaccount.com',
     'findit-for-me-staging@appspot.gserviceaccount.com',
     'sheriff-o-matic-staging@appspot.gserviceaccount.com',
+]
+
+# Whitelisted client ids for authorized access to Findit prod and staging.
+WHITELISTED_CLIENT_IDS = [
+    endpoints.API_EXPLORER_CLIENT_ID,
 ]
 
 # Directory of html templates.
