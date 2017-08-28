@@ -272,9 +272,7 @@ def GetActionSettings():
   return FinditConfig().Get().action_settings
 
 
-# Added pragma no cover as a workaround to unblock tree for change
-# https://chromium-review.googlesource.com/c/infra/infra/+/614287.
-def GetCheckFlakeSettings():  # pragma: no cover
+def GetCheckFlakeSettings():
   return FinditConfig().Get().check_flake_settings
 
 
