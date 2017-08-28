@@ -4,6 +4,7 @@
 
 import datetime
 import json
+import logging
 import mock
 import textwrap
 
@@ -23,48 +24,11 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
 
   def SetResponse(self, url, result):
     self.responses.setdefault(url, [])
-    self.responses[url].append(result)
+    self.responses[url] = result
 
   def _MakeResponse(self, response):
     """Convert a json-able object into a string as returned by gerrit."""
     return ')]}\'' + json.dumps(response)
-
-  def _AddReviewerResponse(self, host, change_id, reviewer):
-    url = 'https://%s/a/changes/%s/reviewers' % (host, change_id)
-    response = {'reviewers': []}
-    if reviewer:
-      response['reviewers'].append({'email': reviewer})
-    self.SetResponse(url, (200, self._MakeResponse(response)))
-
-  def _SetReviewersResponse(self, host, change_id, reviewers):
-    url = 'https://%s/a/changes/%s/detail' % (host, change_id)
-    response = self._MakeResponse({
-        'status': 'MERGED',
-        'owner': {
-            'email': 'abc@chromium.org'
-        },
-        'current_revision': 'fakerevision',
-        'revisions': {
-            'fakerevision': {
-                '_number': 1,
-                'commit': {
-                    'committer': {
-                        'email': 'dummy@test.com'
-                    },
-                    'message': 'some message'
-                }
-            }
-        },
-        'messages': [],
-        'submitted': '2017-03-24 01:07:39.000000000',
-        'reviewers': {
-            'REVIEWER': [{
-                'email': x
-            } for x in reviewers]
-        },
-        'subject': 'fake subject'
-    })
-    self.SetResponse(url, (200, response))
 
   def _SetPostMessageResponse(self, host, change_id, response_str):
     url = 'https://%s/a/changes/%s/revisions/current/review' % (host, change_id)
@@ -89,20 +53,12 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
   def _GetResponse(self, url):
     """Get the appropriate response.
 
-    If there is multiple responses for the url, pop one and return it.
-    If there is one reponse for the url, return it (without popping)
+    If there is one reponse for the url, return it.
     If there is no response for the url, return 404.
     """
-    # Ignore the '?' and the following querystring.
-    if '?' in url:
-      url = url.split('?')[0]
     if url not in self.responses:
       return (404, 'Not Found')
-    if len(self.responses[url]) > 1:
-      # Treat the list like a pop-front/push-end pipe.
-      return self.responses[url].pop(0)
-    # If there's only one, don't pop it.
-    return self.responses[url][0]
+    return self.responses[url]
 
   def _Put(self, *_):  # pragma: no cover
     pass
@@ -147,64 +103,78 @@ class GerritTest(testing.AppengineTestCase):
 
   def testAddReviewerNew(self):
     change_id = 'Iabc12345'
-    self.http_client._SetReviewersResponse(self.server_hostname, change_id,
-                                           ['old@dummy.org'])
-    self.http_client._AddReviewerResponse(self.server_hostname, change_id,
-                                          'new@dummy.org')
+    response = {
+        'reviewers': {
+            'new@dummy.org': {
+                'input': 'new@dummy.org',
+                'reviewers': [{
+                    'email': 'new@dummy.org'
+                }]
+            }
+        }
+    }
     self.http_client._SetPostMessageResponse(self.server_hostname, change_id,
-                                             '{}')
+                                             json.dumps(response))
     self.assertTrue(
         self.gerrit.AddReviewers(change_id, ['new@dummy.org'], 'message'))
 
-  def testAddReviewerNewAliased(self):
+  def testAddReviewerWrongformat(self):
     change_id = 'Iabc12345'
-    self.http_client._SetReviewersResponse(self.server_hostname, change_id,
-                                           ['old@dummy.org'])
-    self.http_client._AddReviewerResponse(self.server_hostname, change_id,
-                                          'new@dummy.org')
-    self.http_client._SetPostMessageResponse(self.server_hostname, change_id,
-                                             '{}')
     self.assertTrue(
-        self.gerrit.AddReviewers(change_id, ['alias@dummy.org'], 'message'))
+        self.gerrit.AddReviewers(change_id, ['old@dummy.org@d.com'], 'message'))
 
   def testAddReviewerExisting(self):
     change_id = 'Iabc12345'
-    self.http_client._SetReviewersResponse(self.server_hostname, change_id,
-                                           ['old@dummy.org'])
+    response = {
+        'reviewers': {
+            'old@dummy.org': {
+                'input': 'new@dummy.org',
+                'reviewers': []
+            }
+        }
+    }
     self.http_client._SetPostMessageResponse(self.server_hostname, change_id,
-                                             '{}')
+                                             json.dumps(response))
     self.assertTrue(
         self.gerrit.AddReviewers(change_id, ['old@dummy.org'], 'message'))
 
-  def testAddReviewerExistingAliased(self):
+  @mock.patch.object(logging, 'error')
+  def testAddReviewerMany(self, mock_logging):
     change_id = 'Iabc12345'
-    self.http_client._SetReviewersResponse(self.server_hostname, change_id,
-                                           ['old@dummy.org'])
-    self.http_client._AddReviewerResponse(self.server_hostname, change_id, None)
+    response = {
+        'reviewers': {
+            'new@dummy.org': {
+                'input': 'new@dummy.org',
+                'reviewers': [{
+                    'email': 'new@dummy.org'
+                }]
+            },
+            'newtoo@dummy.org': {
+                'input': 'newtoo@dummy.org',
+                'reviewers': [{
+                    'email': 'newtoo@dummy.org'
+                }]
+            },
+            'old@dummy.org': {
+                'input': 'old@dummy.org',
+                'reviewers': [{
+                    'email': 'old@dummy.org'
+                }]
+            },
+        }
+    }
     self.http_client._SetPostMessageResponse(self.server_hostname, change_id,
-                                             '{}')
-    self.assertTrue(
-        self.gerrit.AddReviewers(change_id, ['alias@dummy.org'], 'message'))
-
-  def testAddReviewerMany(self):
-    change_id = 'Iabc12345'
-    self.http_client._SetReviewersResponse(self.server_hostname, change_id,
-                                           ['old@dummy.org'])
-    self.http_client._AddReviewerResponse(self.server_hostname, change_id,
-                                          'new@dummy.org')
-    self.http_client._AddReviewerResponse(self.server_hostname, change_id,
-                                          'newtoo@dummy.org')
-    self.http_client._SetPostMessageResponse(self.server_hostname, change_id,
-                                             '{}')
+                                             json.dumps(response))
     self.assertTrue(
         self.gerrit.AddReviewers(change_id, [
-            'new@dummy.org', 'newtoo@dummy.org', 'old@dummy.org'
+            'new@dummy.org', 'newtoo@dummy.org', 'old@dummy.org',
+            'new@dummy.org@d.com'
         ], 'message'))
+    mock_logging.assert_has_called_with('Reviewer\'s email is in wrong format: '
+                                        'new@dummy.org@d.com')
 
   def testAddReviewerFailure(self):
     change_id = 'Iabc12345'
-    self.http_client._SetReviewersResponse(self.server_hostname, change_id,
-                                           ['old@dummy.org'])
     self.assertFalse(self.gerrit.AddReviewers(change_id, ['new@dummy.org']))
 
   def testGetClInfoCQCommit(self):
@@ -791,3 +761,10 @@ class GerritTest(testing.AppengineTestCase):
     change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'
     url = 'https://server.host.name/q/%s' % change_id
     self.assertEqual(change_id, self.gerrit.GetChangeIdFromReviewUrl(url))
+
+  def testGet(self):
+    path_parts = ['changes', '12345', 'detail']
+
+    with mock.patch.object(
+        self.gerrit, '_HandleResponse', return_value='return_value'):
+      self.assertEqual(self.gerrit._Get(path_parts), 'return_value')

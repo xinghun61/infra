@@ -119,12 +119,18 @@ class Gerrit(codereview.CodeReview):
   def GetCodeReviewUrl(self, change_id):
     return 'https://%s/q/%s' % (self._server_hostname, change_id)
 
-  def PostMessage(self, change_id, message, should_email=True):
+  def _SetReview(self, change_id, message, should_email=True, reviewers=None):
     parts = ['changes', change_id, 'revisions', 'current', 'review']
     body = {'message': message}
+    if reviewers:
+      body['reviewers'] = reviewers
     if not should_email:
       body['notify'] = 'NONE'
     result = self._Post(parts, body=body)
+    return result
+
+  def PostMessage(self, change_id, message, should_email=True):
+    result = self._SetReview(change_id, message, should_email)
     return result is not None  # A successful post will return an empty dict.
 
   def CreateRevert(self, reason, change_id, patchset_id=None):
@@ -142,35 +148,49 @@ class Gerrit(codereview.CodeReview):
     return bool(self._Post(parts))
 
   def AddReviewers(self, change_id, reviewers, message=None):
-    current_reviewers = self.GetClDetails(change_id).reviewers
-    try:
-      for reviewer in reviewers:
-        # reviewer must be an email string.
-        assert len(reviewer.split('@')) == 2
-        if reviewer in current_reviewers:
-          # Only add reviewers not currently assinged to the change.
-          continue
-        parts = ['changes', change_id, 'reviewers']
-        response = self._Post(parts, body={'reviewer': reviewer})
-        reviewers = response['reviewers']
-        if reviewers == []:
-          # This might be okay if a user has more than one email.
-          logging.warning('Reviewer %s already assigned to cl %s under a '
-                          'different email' % (reviewer, change_id))
-          continue
-        new_reviewer = reviewers[0]['email']
-        if new_reviewer != reviewer:
-          # This might be okay if a user has more than one email.
-          logging.warning('Requested to add %s as reviewer to cl %s but '
-                          '%s was added instead.' % (reviewer, change_id,
-                                                     new_reviewer))
-    except (TypeError, KeyError, IndexError):
-      return False
-    finally:
-      # Post the message even if failed to add reviewers.
-      success = not message or self.PostMessage(change_id, message)
+    new_reviewers = []
 
-    return success
+    for reviewer in reviewers:
+      # reviewer must be an email string.
+      if len(reviewer.split('@')) != 2:
+        logging.error('Reviewer\'s email is in wrong format: %s', reviewer)
+        continue
+      new_reviewers.append({'reviewer': reviewer})
+
+    if not new_reviewers:
+      # No new reviewers need to be added.
+      return True
+
+    response = self._SetReview(change_id, message, reviewers=new_reviewers)
+    # The corresponding result of adding each reviewer will be returned in
+    # a map of inputs to AddReviewerResults as below:
+    # {
+    #   'reviewers': {
+    #     'jane.roe@example.com': {
+    #       'input': 'jane.roe@example.com',
+    #       'reviewers': [
+    #         {
+    #           '_account_id': 1000097,
+    #           'name': 'Jane Roe',
+    #           'email': 'jane.roe@example.com',
+    #                    'approvals': {
+    #                                   'Verified': ' 0',
+    #                                   'Code-Review': ' 0'
+    #                                 },
+    #         },
+    #       ]
+    #     },
+    #     'john.doe@example.com': {
+    #       'input': 'john.doe@example.com',
+    #       'reviewers': []  # This reviewer has been added before.
+    #     }
+    #   }
+    # }
+    if not response or not response.get('reviewers'):
+      logging.error('Failed to add reviewers and post message to cl %s.',
+                    change_id)
+      return False
+    return True
 
   def GetClDetails(self, change_id):
     # Create cl info based on the url.
