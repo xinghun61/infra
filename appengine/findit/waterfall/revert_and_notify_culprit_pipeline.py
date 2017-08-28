@@ -2,13 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import json
 import logging
 
 from common.waterfall import failure_type
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from waterfall import buildbot
+from waterfall import build_util
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
@@ -17,30 +17,22 @@ from waterfall.send_notification_to_irc_pipeline import (
 from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 
 
-def _LatestBuildFailed(master_name, builder_name, build_number):
+def _AnyBuildSucceeded(master_name, builder_name, build_number):
   http_client = HttpClientAppengine()
   latest_build_numbers = buildbot.GetRecentCompletedBuilds(
       master_name, builder_name, http_client)
 
-  for checked_build_number in latest_build_numbers:
-    if checked_build_number <= build_number:
+  for newer_build_number in xrange(build_number + 1,
+                                   latest_build_numbers[0] + 1):
+    # Checks all builds after current build.
+    newer_build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                               newer_build_number)
+    if newer_build_info and newer_build_info.result in [
+        buildbot.SUCCESS, buildbot.WARNINGS
+    ]:
       return True
 
-    checked_build_data = buildbot.GetBuildDataFromMilo(
-        master_name, builder_name, checked_build_number, http_client)
-
-    if not checked_build_data:
-      logging.error("Failed to get build data for %s/%s/%d" %
-                    (master_name, builder_name, checked_build_number))
-      return False
-
-    checked_build_result = buildbot.GetBuildResult(
-        json.loads(checked_build_data))
-
-    if checked_build_result in [buildbot.SUCCESS, buildbot.WARNINGS]:
-      return False
-
-  return True
+  return False
 
 
 class RevertAndNotifyCulpritPipeline(BasePipeline):
@@ -50,7 +42,7 @@ class RevertAndNotifyCulpritPipeline(BasePipeline):
           heuristic_cls, try_job_type):
     assert culprits
 
-    if not _LatestBuildFailed(master_name, builder_name, build_number):
+    if _AnyBuildSucceeded(master_name, builder_name, build_number):
       # The builder has turned green, don't need to revert or send notification.
       logging.info('No revert or notification needed for culprit(s) for '
                    '%s/%s/%s since the builder has turned green.', master_name,

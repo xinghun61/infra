@@ -24,31 +24,25 @@ from waterfall.test import wf_testcase
 class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(buildbot, 'GetBuildDataFromMilo', return_value=None)
-  @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[124])
-  def testIsLatestBuildFailedGetBuildDataFailed(self, *_):
-    self.assertFalse(
-        revert_and_notify_culprit_pipeline._LatestBuildFailed('m', 'b', 123))
-
   @mock.patch.object(
       buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
   @mock.patch.object(
       buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
   @mock.patch.object(buildbot, 'GetBuildResult')
-  def testIsLatestBuildFailedPassedThenFailed(self, mock_fn, *_):
-    mock_fn.side_effect = [buildbot.FAILURE, buildbot.SUCCESS]
-    self.assertFalse(
-        revert_and_notify_culprit_pipeline._LatestBuildFailed('m', 'b', 123))
-
-  @mock.patch.object(
-      buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
-  @mock.patch.object(
-      buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
-  @mock.patch.object(buildbot, 'GetBuildResult')
-  def testIsLatestBuildFailed(self, mock_fn, *_):
-    mock_fn.side_effect = [buildbot.FAILURE, buildbot.FAILURE]
+  def testAnyBuildSucceededPassedThenFailed(self, mock_fn, *_):
+    mock_fn.side_effect = [buildbot.SUCCESS, buildbot.FAILURE]
     self.assertTrue(
-        revert_and_notify_culprit_pipeline._LatestBuildFailed('m', 'b', 123))
+        revert_and_notify_culprit_pipeline._AnyBuildSucceeded('m', 'b', 123))
+
+  @mock.patch.object(
+      buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
+  @mock.patch.object(
+      buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
+  @mock.patch.object(buildbot, 'GetBuildResult')
+  def testAnyBuildSucceeded(self, mock_fn, *_):
+    mock_fn.side_effect = [buildbot.FAILURE, buildbot.FAILURE]
+    self.assertFalse(
+        revert_and_notify_culprit_pipeline._AnyBuildSucceeded('m', 'b', 123))
 
   @mock.patch.object(buildbot, 'GetBuildResult', return_value=buildbot.FAILURE)
   @mock.patch.object(
