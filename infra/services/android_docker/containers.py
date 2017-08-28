@@ -148,39 +148,29 @@ class DockerClient(object):
       logging.debug('Found stopped container %s. Removing it.', container.name)
       container.remove()
 
-  def create_missing_containers(self, running_containers, android_devices,
-                                image_name, swarming_url):
-    """Ensures each connected device has a running container.
-
-    Will create and launch a container for any device that needs one. Any device
-    that is granted a new container will need to be whitelisted under the
-    container's cgroup. This list of such devices is returned.
-    """
-    needs_cgroup_update = []
-    for device in android_devices:
-      container_name = get_container_name(device)
-      container_hostname = get_container_hostname(device)
-      if not any(container_name == c.name for c in running_containers):
-        volumes = _DOCKER_VOLUMES.copy()
-        volumes['/b/%s' % container_name] = '/b/'
-        new_container = self._client.containers.create(
-            image=image_name,
-            hostname=container_hostname,
-            volumes=volumes,
-            environment={
-                _SWARMING_URL_ENV_VAR: swarming_url + '/bot_code',
-                # When using libusb, adb lists devices it doesn't have access
-                # to. Avoid the ambiguity by disabling libusb mode.
-                'ADB_LIBUSB': '0',
-            },
-            name=container_name,
-            detach=True,  # Don't block until it exits.
-        )
-        new_container.start()
-        needs_cgroup_update.append(device)
-        logging.debug('Launched new container (%s) for device %s.',
-                      new_container.name, device)
-    return needs_cgroup_update
+  def create_container(self, device, image_name, swarming_url):
+    """Creates a container for an android device."""
+    container_name = get_container_name(device)
+    container_hostname = get_container_hostname(device)
+    volumes = _DOCKER_VOLUMES.copy()
+    volumes['/b/%s' % container_name] = '/b/'
+    new_container = self._client.containers.create(
+        image=image_name,
+        hostname=container_hostname,
+        volumes=volumes,
+        environment={
+            _SWARMING_URL_ENV_VAR: swarming_url + '/bot_code',
+            # When using libusb, adb lists devices it doesn't have access
+            # to. Avoid the ambiguity by disabling libusb mode.
+            'ADB_LIBUSB': '0',
+        },
+        name=container_name,
+        detach=True,  # Don't block until it exits.
+    )
+    new_container.start()
+    logging.debug('Launched new container (%s) for device %s.',
+                  new_container.name, device)
+    return new_container
 
 
 class Container(object):

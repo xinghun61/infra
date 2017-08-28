@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import argparse
+import contextlib
 from datetime import datetime
 import fcntl
 import logging
@@ -12,6 +13,7 @@ import socket
 import subprocess
 import sys
 import time
+import threading
 
 from infra.libs.service_utils import daemon
 from infra.services.android_docker import containers
@@ -32,7 +34,9 @@ _DEVICE_SHUTDOWN_FILE = '/b/%(device_id)s.shutdown.stamp'
 # run time.
 _REBOOT_GRACE_PERIOD_MIN = 240
 
-_LOCK_FILE = '/tmp/.android_docker.lock'
+_DEVICE_LOCK_FILE = '/var/lock/android_docker.%(device_id)s.lock'
+_USB_BUS_LOCK_FILE = '/var/lock/android_docker.usb_bus.lock'
+
 
 def get_host_uptime():
   """Returns host uptime in minutes."""
@@ -86,19 +90,40 @@ def kill_adb():
         logging.exception('Unable to kill adb process %s', pid)
 
 
-def add_device(docker_client, android_devices, args):
+class FlockTimeoutError(Exception):
+  pass
+
+
+@contextlib.contextmanager
+def flock(lock_file, retries=20, sleep_duration=3):
+  logging.debug('Acquiring file lock on %s...', lock_file)
+  i = 0
+  while True:
+    try:
+      with daemon.flock(lock_file):
+        logging.debug('Lock acquired on %s.', lock_file)
+        try:
+          yield
+        finally:
+          logging.debug('Releasing lock on %s.', lock_file)
+      break
+    except daemon.LockAlreadyLocked:
+      if i == retries - 1:
+        raise FlockTimeoutError()
+      else:
+        logging.debug('Lock on %s busy; sleeping for %d seconds.',
+                      lock_file, sleep_duration)
+        i += 1
+        time.sleep(sleep_duration)
+
+
+def add_device(docker_client, device, args):
   # pylint: disable=unused-argument
-  user_id = os.geteuid()
-  if user_id != 0:
-    logging.warning(
-        'Current user (id: %d) is non-root. Subsequent cgroup '
-        'modifications may fail.', user_id)
-  for device in android_devices:
-    container = docker_client.get_container(device)
-    if container is not None and container.state == 'running':
-      container.add_device(device)
-    else:
-      logging.error('Unable to add device %s: no running container.', device)
+  container = docker_client.get_container(device)
+  if container is not None and container.state == 'running':
+    container.add_device(device)
+  else:
+    logging.error('Unable to add device %s: no running container.', device)
 
 
 def launch(docker_client, android_devices, args):
@@ -117,14 +142,6 @@ def launch(docker_client, android_devices, args):
         'granted new containers.', draining_devices,
         [_DEVICE_SHUTDOWN_FILE % {'device_id': d.serial}
             for d in draining_devices])
-
-  # Occasionally a container gets stuck in the paused state. Since the logic
-  # here is thread safe, this shouldn't happen, so explicitly unpause them
-  # before continuing.
-  # TODO(bpastene): Find out how/why.
-  for container in docker_client.get_paused_containers():
-    logging.warning('Unpausing container %s.', container.name)
-    container.unpause()
 
   running_containers = docker_client.get_running_containers()
   # Reboot the host if needed. Will attempt to kill all running containers
@@ -164,7 +181,9 @@ def launch(docker_client, android_devices, args):
     docker_client.delete_stopped_containers()
 
     # Send SIGTERM to bots in containers that have been running for too long,
-    # or all of them regardless of uptime if draining.
+    # or all of them regardless of uptime if draining. This stays outside the
+    # per-device flock below due to the fact that a container's device might
+    # go missing, so we need to examine *all* containers here.
     if draining_host:
       for c in running_containers:
         c.kill_swarming_bot()
@@ -178,21 +197,39 @@ def launch(docker_client, android_devices, args):
 
     # Create a container for each device that doesn't already have one.
     if not draining_host:
-      live_devices = []
+      def _create_container(d):
+        try:
+          with flock(_DEVICE_LOCK_FILE % {'device_id': d.serial}):
+            c = docker_client.get_container(d)
+            if c is None:
+              docker_client.create_container(d, image_url, args.swarming_server)
+              add_device(docker_client, d, args)
+            elif c.state == 'paused':
+              # Occasionally a container gets stuck in the paused state. Since
+              # the logic here is thread safe, this shouldn't happen, so
+              # explicitly unpause them before continuing.
+              # TODO(bpastene): Find out how/why.
+              logging.warning('Unpausing container %s.', c.name)
+              c.unpause()
+            else:
+              logging.debug('Nothing to do for container %s.', c.name)
+        except FlockTimeoutError:
+          logging.error('Timed out while waiting for lock on device %s.', d)
+
+      threads = []
       for d in android_devices:
         if d.physical_port is None:
           logging.warning(
               'Unable to assign physical port num to %s. No container will be '
               'created.', d.serial)
         elif d not in draining_devices:
-          live_devices.append(d)
-      needs_cgroup_update = docker_client.create_missing_containers(
-          running_containers, live_devices, image_url, args.swarming_server)
-
-      # For each device that was granted a new container, add it to the
-      # container's cgroup.
-      if len(needs_cgroup_update) > 0:
-        add_device(docker_client, needs_cgroup_update, args)
+          # Split this into threads so a blocking container doesn't block the
+          # others (and also for speed!)
+          t = threading.Thread(target=_create_container, args=(d,))
+          threads.append(t)
+          t.start()
+      for t in threads:
+        t.join()
 
 
 def main():
@@ -275,31 +312,41 @@ def main():
     logging.error('Docker engine unresponsive. Quitting early.')
     return 1
 
+  user_id = os.geteuid()
+  if user_id != 0:
+    logging.warning(
+        'Current user (id: %d) is non-root. Subsequent cgroup '
+        'modifications may fail.', user_id)
+
   # Devices can drop in and out several times in a second, so wrap all
   # proceeding container interactions in a mutex (via a flock) to prevent
   # multiple processes from stepping on each other.
-  logging.debug('Acquiring file lock on %s...', _LOCK_FILE)
-  retries = 20
-  i = 0
-  while True:
-    try:
-      with daemon.flock(_LOCK_FILE):
-        logging.debug('Lock acquired.')
-        try:
-          # Put all racey logic here.
-          android_devices = usb_device.get_android_devices(args.devices)
-          args.func(docker_client, android_devices, args)
-        finally:
-          logging.debug('Releasing lock.')
-      break
-    except daemon.LockAlreadyLocked:
-      if i == retries - 1:
-        logging.error('Unable to acquire file lock in time. Exiting')
-        return 1
-      else:
-        logging.debug('Lock busy; sleeping for 3 seconds.')
-        i += 1
-        time.sleep(3)
+  # Lock on usb bus interaction seperately.
+  try:
+    with flock(_USB_BUS_LOCK_FILE):
+      android_devices = usb_device.get_android_devices(args.devices)
+  except FlockTimeoutError:
+    logging.error('Unable to acquire usb bus lock in time.')
+    return 1
+
+  # Lock on each device individually so multiple devices can be worked on
+  # simultaneously.
+  if args.devices:
+    def _process_device(d):
+      try:
+        with flock(_DEVICE_LOCK_FILE % {'device_id': d.serial}):
+          args.func(docker_client, d, args)
+      except FlockTimeoutError:
+        logging.error('Unable to acquire device lock on %s in time.', d)
+    threads = []
+    for d in android_devices:
+      t = threading.Thread(target=_process_device, args=(d,))
+      threads.append(t)
+      t.start()
+    for t in threads:
+      t.join()
+  else:
+    args.func(docker_client, android_devices, args)
 
   return 0
 

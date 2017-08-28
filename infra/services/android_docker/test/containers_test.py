@@ -294,24 +294,18 @@ class TestDockerClient(unittest.TestCase):
         all(c.was_deleted for c in self.fake_client.containers.list()))
 
   @mock.patch('docker.from_env')
-  def test_create_missing_containers(self, mock_from_env):
+  def test_create_container(self, mock_from_env):
     running_containers = [
         FakeContainer('android_serial1'),
         FakeContainer('android_serial2'),
     ]
-    devices = [
-        FakeDevice('serial1', 1),
-        FakeDevice('serial2', 2),
-        FakeDevice('serial3', 3),
-    ]
+    device = FakeDevice('serial3', 3)
     self.fake_client.containers = FakeContainerList(running_containers)
     mock_from_env.return_value = self.fake_client
 
-    needs_cgroup_update = containers.DockerClient().create_missing_containers(
-        running_containers, devices, 'image', 'swarm-url.com')
-    # Ensure serial3 needs to be rebooted. This indicates that a new container
-    # was created for it.
-    self.assertEquals([d.serial for d in needs_cgroup_update], ['serial3'])
+    container = containers.DockerClient().create_container(
+        device, 'image', 'swarm-url.com')
+    self.assertEquals(container.name, containers.get_container_name(device))
 
 
 class TestContainer(unittest.TestCase):
