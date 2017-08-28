@@ -5,6 +5,7 @@
 import datetime
 import json
 import mock
+import textwrap
 
 from testing_utils import testing
 
@@ -544,18 +545,47 @@ class GerritTest(testing.AppengineTestCase):
     change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'
     reason = 'Reason'
 
-    expected_description = (
-        'Revert "cl title"\n\n'
-        'This reverts commit edda1046ce724695004242e943f59f5e1b2d00ff.\n\n'
-        'Reason for revert:\nReason\n\n'
-        'Original change\'s description:\n'
-        '> cl title\n> \n> some description\n> \n> NOAUTOREVERT= True\n> \n'
-        '> Change-Id: someid\n> Reviewed-on: cl_url\n> Commit-Queue: owner\n'
-        '> Reviewed-by: reviewers\n> \n> BUGS : 12345, 67890\n'
-        '> Cq-Include-Trybots: m1.b1:m2.b2\n\n'
-        'No-Presubmit: true\nNo-Tree-Checks: true\nNo-Try: true\n'
-        'BUGS : 12345, 67890\n'
-        'Cq-Include-Trybots: m1.b1:m2.b2\n')
+    original_cl_description = textwrap.dedent("""
+    cl title
+
+    some description
+
+    NOAUTOREVERT= True
+    BUGS : 12345, 67890
+    Cq-Include-Trybots: m1.b1:m2.b2
+    Change-Id: someid
+    Reviewed-on: cl_url
+    Commit-Queue: owner
+    Reviewed-by: reviewers
+    """).strip()
+
+    expected_description = textwrap.dedent("""
+    Revert "cl title"
+
+    This reverts commit edda1046ce724695004242e943f59f5e1b2d00ff.
+
+    Reason for revert:
+    Reason
+
+    Original change's description:
+    > cl title
+    > 
+    > some description
+    > 
+    > NOAUTOREVERT= True
+    > BUGS : 12345, 67890
+    > Cq-Include-Trybots: m1.b1:m2.b2
+    > Change-Id: someid
+    > Reviewed-on: cl_url
+    > Commit-Queue: owner
+    > Reviewed-by: reviewers
+
+    No-Presubmit: true
+    No-Tree-Checks: true
+    No-Try: true
+    BUGS : 12345, 67890
+    Cq-Include-Trybots: m1.b1:m2.b2
+    """).strip()
 
     with mock.patch.object(
         self.gerrit,
@@ -600,12 +630,7 @@ class GerritTest(testing.AppengineTestCase):
                         'committer': {
                             'email': 'commit-bot@chromium.org',
                         },
-                        'message': 'cl title\n\nsome description\n\n'
-                                   'NOAUTOREVERT= True\n\nChange-Id: '
-                                   'someid\nReviewed-on: cl_url\nCommit-Queue: '
-                                   'owner\nReviewed-by: reviewers\n\n'
-                                   'BUGS : 12345, 67890\n'
-                                   'Cq-Include-Trybots: m1.b1:m2.b2'
+                        'message': original_cl_description
                     },
                 }
             },
@@ -625,18 +650,46 @@ class GerritTest(testing.AppengineTestCase):
     change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'
     reason = 'Reason'
 
-    expected_description = (
-        'Revert "cl title"\n\n'
-        'This reverts commit edda1046ce724695004242e943f59f5e1b2d00ff.\n\n'
-        'Reason for revert:\nReason\n\n'
-        'Original change\'s description:\n'
-        '> cl title\n> \n> some description\n> \n> NOAUTOREVERT= True\n> \n'
-        '> Change-Id: someid\n> Reviewed-on: cl_url\n> Commit-Queue: owner\n'
-        '> Reviewed-by: reviewers\n> \n> BUGS : 12345, 67890\n'
-        '> Cq-Include-Trybots: m1.b1:m2.b2\n\n'
-        '# Not skipping CQ checks because original CL landed > 1 day ago.\n\n'
-        'BUGS : 12345, 67890\n'
-        'Cq-Include-Trybots: m1.b1:m2.b2\n')
+    original_cl_description = textwrap.dedent("""
+    cl title
+
+    some description
+
+    NOAUTOREVERT= True
+    BUGS : 12345, 67890
+    Cq-Include-Trybots: m1.b1:m2.b2
+    Change-Id: someid
+    Reviewed-on: cl_url
+    Commit-Queue: owner
+    Reviewed-by: reviewers
+    """).strip()
+
+    expected_description = textwrap.dedent("""
+    Revert "cl title"
+
+    This reverts commit edda1046ce724695004242e943f59f5e1b2d00ff.
+
+    Reason for revert:
+    Reason
+
+    Original change's description:
+    > cl title
+    > 
+    > some description
+    > 
+    > NOAUTOREVERT= True
+    > BUGS : 12345, 67890
+    > Cq-Include-Trybots: m1.b1:m2.b2
+    > Change-Id: someid
+    > Reviewed-on: cl_url
+    > Commit-Queue: owner
+    > Reviewed-by: reviewers
+
+    # Not skipping CQ checks because original CL landed > 1 day ago.
+
+    BUGS : 12345, 67890
+    Cq-Include-Trybots: m1.b1:m2.b2
+    """).strip()
 
     with mock.patch.object(
         self.gerrit,
@@ -681,12 +734,7 @@ class GerritTest(testing.AppengineTestCase):
                         'committer': {
                             'email': 'commit-bot@chromium.org',
                         },
-                        'message': 'cl title\n\nsome description\n\n'
-                                   'NOAUTOREVERT= True\n\nChange-Id: '
-                                   'someid\nReviewed-on: cl_url\nCommit-Queue: '
-                                   'owner\nReviewed-by: reviewers\n\n'
-                                   'BUGS : 12345, 67890\n'
-                                   'Cq-Include-Trybots: m1.b1:m2.b2'
+                        'message': original_cl_description
                     },
                 }
             },

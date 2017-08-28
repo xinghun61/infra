@@ -97,6 +97,10 @@ class Gerrit(codereview.CodeReview):
         original_cl_commit_timestamp)
     revert_cl_description += self._GetBugLine(original_cl_description)
     revert_cl_description += self._GetCQTryBotLine(original_cl_description)
+    # Strips the break lines at the end of description to make sure no empty
+    # lines between footers in this generated description and added footers by
+    # git cl.
+    revert_cl_description = revert_cl_description.rstrip()
     return revert_cl_description
 
   def _Get(self, path_parts, params=None, headers=None):
