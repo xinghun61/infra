@@ -971,7 +971,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     step_name = 's'
     test_name = 't'
-    root_pipeline_id = 1
+    root_pipeline_id = '1fdsalkj9o93290'
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -1051,7 +1051,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     step_name = 's'
     test_name = 't'
-    root_pipeline_id = 1
+    root_pipeline_id = '1fdsalkj9o93290'
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -1110,7 +1110,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     step_name = 's'
     test_name = 't'
-    root_pipeline_id = 1
+    root_pipeline_id = '1fdsalkj9o93290'
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
