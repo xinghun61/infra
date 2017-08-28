@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import copy
 import mock
 from common import constants
 
@@ -56,7 +57,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.status = analysis_status.PENDING
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.data_points = [
         DataPoint.Create(
             build_number=build_number, pass_rate=1.0, iterations=0)
@@ -105,7 +107,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.status = analysis_status.PENDING
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.put()
 
     flake_swarming_task = FlakeSwarmingTask.Create(
@@ -150,7 +153,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.status = analysis_status.PENDING
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.swarming_task_attempts_for_build = (
         flake_constants.MAX_SWARMING_TASK_RETRIES_PER_BUILD - 1)
     analysis.put()
@@ -190,7 +194,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.data_points = [
         DataPoint.Create(build_number, 1, 'task_id', iterations=401)
     ]
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.put()
 
     flake_swarming_task = FlakeSwarmingTask.Create(
@@ -214,7 +219,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
                                           build_number, step_name, test_name)
     analysis.status = analysis_status.PENDING
     analysis.swarming_task_attempts_for_build = 10
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.put()
 
     task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
@@ -243,7 +249,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, master_build_number, step_name, test_name)
     analysis.status = analysis_status.PENDING
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.put()
 
     expected_error_json = {
@@ -285,7 +292,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.status = analysis_status.PENDING
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.put()
 
     self.assertEqual(

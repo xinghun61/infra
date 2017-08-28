@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 from datetime import datetime
+import copy
 import mock
 
 from model.flake.master_flake_analysis import DataPoint
@@ -9,6 +10,7 @@ from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
 from waterfall.flake import flake_analysis_util
+from waterfall.flake import flake_constants
 from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
@@ -23,7 +25,8 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.Save()
 
     flake_analysis_util.UpdateIterationsToRerun(analysis, None)
@@ -38,7 +41,8 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.Save()
 
     iterations_to_rerun = 100
@@ -79,7 +83,8 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
 
   def testEstimateSwarmingIterationTimeoutWithAnalysisWithNoDataPoints(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.put()
 
     timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
@@ -88,7 +93,8 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
 
   def testCalculateNumberOfIterationsToRunWithinTimeout(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.put()
 
     iterations = 60
@@ -109,9 +115,8 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
     flake_task.put()
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
-    analysis.algorithm_parameters['swarming_rerun'][
-        'timeout_cushion_multiplier'] = 1
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
 
     analysis.data_points = [
         DataPoint.Create(build_number=100, iterations=10),
@@ -119,7 +124,12 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.put()
 
-    timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
+    try:
+      previous_cushion = flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER
+      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = 1
+      timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
+    finally:
+      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = previous_cushion
 
     self.assertEqual(240, timeout)
 
@@ -150,7 +160,8 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
     flake_task.put()
 
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.data_points = [
         DataPoint.Create(build_number=99, iterations=10),
         DataPoint.Create(build_number=100, iterations=20),
@@ -159,11 +170,14 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
         DataPoint.Create(build_number=103, iterations=20),
         DataPoint.Create(build_number=104, iterations=20),
     ]  # Total should be 100 iterations.
-    analysis.algorithm_parameters['swarming_rerun'][
-        'timeout_cushion_multiplier'] = 1
     analysis.put()
 
-    timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
+    try:
+      previous_cushion = flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER
+      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = 1
+      timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
+    finally:
+      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = previous_cushion
 
     # 100 iterations and 300 minutes means 3 minutes per iteration.
     self.assertEqual(180, timeout)

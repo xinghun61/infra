@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 import mock
 
 from google.appengine.ext import ndb
@@ -56,7 +57,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.status = analysis_status.COMPLETED
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.Save()
 
     iterations_to_rerun = analysis.algorithm_parameters.get(
@@ -148,7 +150,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.status = analysis_status.COMPLETED
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.Save()
 
     try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
@@ -288,7 +291,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         DataPoint.Create(pass_rate=0.9, commit_position=90)
     ]
     analysis.suspected_flake_build_number = 12345
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.Save()
 
     self.MockPipeline(
@@ -351,7 +355,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         DataPoint.Create(pass_rate=1.0, commit_position=94, try_job_url='u3')
     ]
     analysis.suspected_flake_build_number = 12345
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.Save()
 
     self.MockPipeline(
@@ -420,7 +425,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         DataPoint.Create(pass_rate=-1, commit_position=98)
     ]
     analysis.suspected_flake_build_number = 12345
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.Save()
 
     self.MockPipeline(
@@ -893,7 +899,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.status = analysis_status.COMPLETED
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.Save()
 
     iterations_to_rerun = analysis.algorithm_parameters.get(
@@ -989,7 +996,8 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.status = analysis_status.COMPLETED
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.Save()
 
     iterations_to_rerun = analysis.algorithm_parameters.get(

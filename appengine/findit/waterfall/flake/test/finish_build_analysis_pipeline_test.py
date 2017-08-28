@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import copy
 import mock
 
 from common import constants
@@ -46,7 +47,8 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.status = analysis_status.COMPLETED
-    analysis.algorithm_parameters = DEFAULT_CONFIG_DATA['check_flake_settings']
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.put()
 
     task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,

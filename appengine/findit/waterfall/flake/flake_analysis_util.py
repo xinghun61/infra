@@ -135,9 +135,5 @@ def EstimateSwarmingIterationTimeout(analysis):
                     for task in tasks])
   time_per_iteration = total_time / total_iterations
 
-  cushion_multiplier = analysis.algorithm_parameters.get(
-      'swarming_rerun',
-      {}).get('timeout_cushion_multiplier',
-              flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER)
-
-  return int(cushion_multiplier * time_per_iteration)
+  return int(
+      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER * time_per_iteration)
