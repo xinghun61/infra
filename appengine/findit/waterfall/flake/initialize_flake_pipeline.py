@@ -178,6 +178,7 @@ def ScheduleAnalysisIfNeeded(
         constants.WATERFALL_BACKEND)
     pipeline_job.start(queue_name=queue_name)
     analysis.pipeline_status_path = pipeline_job.pipeline_status_path()
+    analysis.root_pipeline_id = pipeline_job.root_pipeline_id
     analysis.put()
     logging.info('A flake analysis was scheduled for build %s, %s, %s, %s: %s',
                  normalized_test.master_name, normalized_test.builder_name,

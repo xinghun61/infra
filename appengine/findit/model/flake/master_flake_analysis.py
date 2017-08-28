@@ -528,6 +528,9 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   # The revision the last-attempted try job tried to run on.
   last_attempted_revision = ndb.StringProperty(indexed=False)
 
+  # Store the root pipeline id to look up the pipeline from the analysis.
+  root_pipeline_id = ndb.IntegerProperty(indexed=False)
+
   # How many times the swarming task has been attempted (and failed) for a
   # particular build during an analysis. Reset when the build number is changed.
   swarming_task_attempts_for_build = ndb.IntegerProperty(

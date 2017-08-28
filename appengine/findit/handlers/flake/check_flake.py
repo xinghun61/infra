@@ -20,6 +20,7 @@ from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import buildbot
 from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
+from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK_EXCEPTION
 
@@ -311,41 +312,89 @@ class CheckFlake(BaseHandler):
                 analysis.try_job_status == analysis_status.RUNNING or
                 analysis.try_job_status == analysis_status.PENDING)
 
+  def _HandleRerunAnalysis(self):
+    """Rerun an analysis as a response to a user request."""
+    # If the key has been specified, we can derive the above information
+    # from the analysis itself.
+    if not auth_util.IsCurrentUserAdmin():
+      return self.CreateError('Only admin is allowed to rerun.', 403)
+
+    key = self.request.get('key')
+    if not key:
+      return self.CreateError('No key was provided.', 404)
+
+    analysis = ndb.Key(urlsafe=key).get()
+    if not analysis:
+      return self.CreateError('Analysis of flake is not found.', 404)
+
+    if not self._CanRerunAnalysis(analysis):
+      return self.CreateError(
+          'Cannot rerun analysis if one is currently running or pending.', 400)
+
+    master_name = analysis.master_name
+    builder_name = analysis.builder_name
+    build_number = analysis.build_number
+    step_name = analysis.step_name
+    test_name = analysis.test_name
+    bug_id = analysis.bug_id
+
+    logging.info('Rerun button pushed, analysis will be reset and triggered.\n'
+                 'Analysis key: %s', key)
+
+    analysis, _ = self._CreateAndScheduleFlakeAnalysis(
+        master_name, builder_name, build_number, step_name, test_name, bug_id,
+        True)
+    return self.CreateRedirect(
+        '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
+
+  def _HandleCancelAnalysis(self):
+    """Cancel analysis as a response to a user request."""
+    if not auth_util.IsCurrentUserAdmin():
+      return self.CreateError('Only admin is allowed to cancel.', 403)
+
+    key = self.request.get('key')
+    if not key:
+      return self.CreateError('No key was provided.', 404)
+
+    analysis = ndb.Key(urlsafe=key).get()
+    if not analysis:
+      return self.CreateError('Analysis of flake is not found.', 404)
+
+    if analysis.status != analysis_status.RUNNING:
+      return self.CreateError('Can\'t cancel an analysis that\'s complete', 400)
+
+    if not analysis.root_pipeline_id:
+      return self.CreateError('No root pipeline found for analysis.', 404)
+    root_pipeline = RecursiveFlakePipeline.from_id(analysis.root_pipeline_id)
+
+    if not root_pipeline:
+      return self.CreateError('Root pipeline couldn\'t be found.', 404)
+
+    # If we can find the pipeline, cancel it.
+    root_pipeline.abort('Pipeline was cancelled manually.')
+    error = {
+        'error': 'The pipeline was aborted manually.',
+        'message': 'The pipeline was aborted manually.'
+    }
+    analysis.Update(
+        status=analysis_status.ERROR,
+        error=error,
+        end_time=time_util.GetUTCNow())
+
+    return self.CreateRedirect(
+        '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
+
   @token.VerifyXSRFToken()
   def HandlePost(self):
     # Information needed to execute this endpoint, will be populated
     # by the branches below.
     rerun = self.request.get('rerun', '0').strip() == '1'
-    if rerun:
-      # If the key has been specified, we can derive the above information
-      # from the analysis itself.
-      if not auth_util.IsCurrentUserAdmin():
-        return self.CreateError('Only admin is allowed to rerun.', 403)
-
-      key = self.request.get('key')
-      if not key:
-        return self.CreateError('No key was provided.', 404)
-
-      analysis = ndb.Key(urlsafe=key).get()
-      if not analysis:
-        return self.CreateError('Analysis of flake is not found.', 404)
-
-      if not self._CanRerunAnalysis(analysis):
-        return self.CreateError(
-            'Cannot rerun analysis if one is currently running or pending.',
-            400)
-
-      master_name = analysis.original_master_name
-      builder_name = analysis.original_builder_name
-      build_number = analysis.original_build_number
-      step_name = analysis.original_step_name
-      test_name = analysis.original_test_name
-      bug_id = analysis.bug_id
-
-      logging.info(
-          'Rerun button pushed, analysis will be reset and triggered.\n' +
-          'Analysis key: %s', key)
-    else:
+    cancel = self.request.get('cancel', '0').strip() == '1'
+    if rerun:  # Rerun an analysis.
+      return self._HandleRerunAnalysis()
+    elif cancel:  # Force an analysis to be cancelled.
+      return self._HandleCancelAnalysis()
+    else:  # Regular POST requests to start an analysis.
       # If the key hasn't been specified, then we get the information from
       # other URL parameters.
       build_url = self.request.get('url', '').strip()
@@ -362,60 +411,60 @@ class CheckFlake(BaseHandler):
       if error:
         return error
 
-    build_number = int(build_number)
-    bug_id = int(bug_id) if bug_id else None
+      build_number = int(build_number)
+      bug_id = int(bug_id) if bug_id else None
 
-    (analysis, scheduled) = self._CreateAndScheduleFlakeAnalysis(
-        master_name, builder_name, build_number, step_name, test_name, bug_id,
-        rerun)
-
-    if not analysis:
-      if scheduled is None:
-        # User does not have permission to trigger, nor was any previous
-        # analysis triggered to view.
-        return {
-            'template': 'error.html',
-            'data': {
-                'error_message': (
-                    'No permission to schedule an analysis for flaky test. '
-                    'Please log in with your @google.com account first.'),
-            },
-            'return_code': 403,
-        }
-
-      # Check if a previous request has already covered this analysis so use
-      # the results from that analysis.
-      request = FlakeAnalysisRequest.GetVersion(key=test_name)
-
-      if not (request and request.analyses):
-        return {
-            'template': 'error.html',
-            'data': {
-                'error_message': (
-                    'Flake analysis is not supported for "%s/%s". Either '
-                    'the test type is not supported or the test is not '
-                    'swarmed yet.' % (step_name, test_name)),
-            },
-            'return_code': 400,
-        }
-
-      analysis = request.FindMatchingAnalysisForConfiguration(
-          master_name, builder_name)
+      analysis, scheduled = self._CreateAndScheduleFlakeAnalysis(
+          master_name, builder_name, build_number, step_name, test_name, bug_id,
+          False)
 
       if not analysis:
-        logging.error('Flake analysis was deleted unexpectedly!')
-        return {
-            'template': 'error.html',
-            'data': {
-                'error_message': 'Flake analysis was deleted unexpectedly!',
-            },
-            'return_code': 404,
-        }
+        if scheduled is None:
+          # User does not have permission to trigger, nor was any previous
+          # analysis triggered to view.
+          return {
+              'template': 'error.html',
+              'data': {
+                  'error_message': (
+                      'No permission to schedule an analysis for flaky test. '
+                      'Please log in with your @google.com account first.'),
+              },
+              'return_code': 403,
+          }
 
-    logging.info('Analysis: %s has a scheduled status of: %r', analysis.key,
-                 scheduled)
-    return self.CreateRedirect(
-        '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
+        # Check if a previous request has already covered this analysis so use
+        # the results from that analysis.
+        request = FlakeAnalysisRequest.GetVersion(key=test_name)
+
+        if not (request and request.analyses):
+          return {
+              'template': 'error.html',
+              'data': {
+                  'error_message': (
+                      'Flake analysis is not supported for "%s/%s". Either '
+                      'the test type is not supported or the test is not '
+                      'swarmed yet.' % (step_name, test_name)),
+              },
+              'return_code': 400,
+          }
+
+        analysis = request.FindMatchingAnalysisForConfiguration(
+            master_name, builder_name)
+
+        if not analysis:
+          logging.error('Flake analysis was deleted unexpectedly!')
+          return {
+              'template': 'error.html',
+              'data': {
+                  'error_message': 'Flake analysis was deleted unexpectedly!',
+              },
+              'return_code': 404,
+          }
+
+      logging.info('Analysis: %s has a scheduled status of: %r', analysis.key,
+                   scheduled)
+      return self.CreateRedirect(
+          '/waterfall/flake?redirect=1&key=%s' % analysis.key.urlsafe())
 
   def HandleGet(self):
     key = self.request.get('key')

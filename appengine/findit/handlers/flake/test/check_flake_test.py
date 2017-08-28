@@ -4,7 +4,6 @@
 
 import datetime
 import mock
-
 import webapp2
 
 from google.appengine.api import users
@@ -22,6 +21,7 @@ from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import buildbot
 from waterfall.flake import flake_analysis_service
+from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
 from waterfall.test import wf_testcase
 
 
@@ -893,8 +893,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.Save()
 
-    # Simulate a deletion.
-    analysis.key.delete()
+    self.mock_current_user(user_email='test@google.com', is_admin=False)
 
     response = self.test_app.post(
         '/waterfall/flake',
@@ -941,11 +940,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
-    analysis.original_master_name = master_name
-    analysis.original_builder_name = builder_name
-    analysis.original_build_number = build_number
-    analysis.original_step_name = step_name
-    analysis.original_test_name = test_name
     analysis.bug_id = 1
     analysis.status = analysis_status.COMPLETED
     analysis.try_job_status = analysis_status.COMPLETED
@@ -967,3 +961,171 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
       scheduler.assert_called_with(master_name, builder_name, build_number,
                                    step_name, test_name, 1, True)
       self.assertEqual(original_key, analysis.key)
+
+  @mock.patch.object(
+      check_flake.token, 'ValidateAuthToken', return_value=(True, False))
+  @mock.patch.object(RecursiveFlakePipeline, 'from_id', mock.MagicMock())
+  def testRequestCancelWhenAuthorized(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    root_pipeline_id = 1
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.bug_id = 1
+    analysis.root_pipeline_id = root_pipeline_id
+    analysis.status = analysis_status.RUNNING
+    analysis.Save()
+
+    original_key = analysis.key
+
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
+    self.test_app.post(
+        '/waterfall/flake',
+        params={'key': analysis.key.urlsafe(),
+                'cancel': '1',
+                'format': 'json'})
+    self.assertEqual(original_key, analysis.key)
+    self.assertEqual(analysis_status.ERROR, analysis.status)
+
+  @mock.patch.object(
+      check_flake.token, 'ValidateAuthToken', return_value=(True, False))
+  def testRequestCancelWhenUnauthorized(self, *_):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.Save()
+
+    self.mock_current_user(user_email='test@google.com', is_admin=False)
+
+    response = self.test_app.post(
+        '/waterfall/flake',
+        params={'format': 'json',
+                'cancel': '1',
+                'key': analysis.key.urlsafe()},
+        status=403)
+    self.assertEqual('Only admin is allowed to cancel.',
+                     response.json_body.get('error_message'))
+
+  @mock.patch.object(
+      check_flake.token, 'ValidateAuthToken', return_value=(True, False))
+  def testRequestCancelWhenNoKeyWasProvided(self, *_):
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
+    response = self.test_app.post(
+        '/waterfall/flake',
+        params={'format': 'json',
+                'cancel': '1'},
+        status=404)
+    self.assertEqual('No key was provided.',
+                     response.json_body.get('error_message'))
+
+  @mock.patch.object(
+      check_flake.token, 'ValidateAuthToken', return_value=(True, False))
+  def testRequestCancelWhenNoAnalysisIsFound(self, *_):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.Save()
+
+    # Simulate a deletion.
+    analysis.key.delete()
+
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
+    response = self.test_app.post(
+        '/waterfall/flake',
+        params={'format': 'json',
+                'cancel': '1',
+                'key': analysis.key.urlsafe()},
+        status=404)
+    self.assertEqual('Analysis of flake is not found.',
+                     response.json_body.get('error_message'))
+
+  @mock.patch.object(
+      check_flake.token, 'ValidateAuthToken', return_value=(True, False))
+  @mock.patch.object(RecursiveFlakePipeline, 'from_id', mock.MagicMock())
+  def testRequestCancelWhenAnalysisCompleted(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    root_pipeline_id = 1
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.bug_id = 1
+    analysis.root_pipeline_id = root_pipeline_id
+    analysis.status = analysis_status.COMPLETED
+    analysis.Save()
+
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
+    response = self.test_app.post(
+        '/waterfall/flake',
+        params={'key': analysis.key.urlsafe(),
+                'cancel': '1',
+                'format': 'json'},
+        status=400)
+    self.assertEqual('Can\'t cancel an analysis that\'s complete',
+                     response.json_body.get('error_message'))
+
+  @mock.patch.object(
+      check_flake.token, 'ValidateAuthToken', return_value=(True, False))
+  @mock.patch.object(RecursiveFlakePipeline, 'from_id', mock.MagicMock())
+  def testRequestCancelWhenNoRootId(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    root_pipeline_id = None
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.bug_id = 1
+    analysis.root_pipeline_id = root_pipeline_id
+    analysis.status = analysis_status.RUNNING
+    analysis.Save()
+
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
+    response = self.test_app.post(
+        '/waterfall/flake',
+        params={'key': analysis.key.urlsafe(),
+                'cancel': '1',
+                'format': 'json'},
+        status=404)
+
+    self.assertEqual('No root pipeline found for analysis.',
+                     response.json_body.get('error_message'))
+
+  @mock.patch.object(
+      check_flake.token, 'ValidateAuthToken', return_value=(True, False))
+  @mock.patch.object(RecursiveFlakePipeline, 'from_id', return_value=None)
+  def testRequestCancelWhenRootPipelineCannotBeFound(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    root_pipeline_id = 1
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.bug_id = 1
+    analysis.root_pipeline_id = root_pipeline_id
+    analysis.status = analysis_status.RUNNING
+    analysis.Save()
+
+    self.mock_current_user(user_email='test@google.com', is_admin=True)
+
+    response = self.test_app.post(
+        '/waterfall/flake',
+        params={'key': analysis.key.urlsafe(),
+                'cancel': '1',
+                'format': 'json'},
+        status=404)
+    self.assertEqual('Root pipeline couldn\'t be found.',
+                     response.json_body.get('error_message'))
