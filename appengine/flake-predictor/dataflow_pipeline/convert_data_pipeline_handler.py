@@ -14,6 +14,7 @@ sys.path.insert(0, os.path.join(
 import apache_beam as beam
 from dataflow.common import chops_beam
 from dataflow.common import combine_fns
+from google.appengine.api import taskqueue
 
 from common import snippets
 from common.request_entity import Request, RequestManager
@@ -110,3 +111,4 @@ class ConvertDataPipelineHandler(webapp2.RequestHandler):
     result = pipeline.run()
     result.wait_until_finish()
     result._executor._executor.executor_service.await_completion()
+    taskqueue.add(url='/internal/cleanup-gcs-handler')
