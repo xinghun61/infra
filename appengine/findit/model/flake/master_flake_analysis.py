@@ -130,9 +130,22 @@ class DataPoint(ndb.Model):
     Args:
       data_point (DataPoint): Data point that will be merged into this.
     """
+    # Defensive - If the arguments given are malformed request log and do
+    # nothing. Make sure the properties we need to inspect exist. There's
+    # the possibility that the swarming task(s) fails and the iterations will
+    # be None or 0, which is a valid corner case. In this case do nothing
+    # and return.
+    if (data_point is None or not self.iterations or
+        not data_point.iterations or self.pass_rate == None or
+        data_point.pass_rate == None):
+      logging.warning(
+          'Recieved malformed request to merge data point %s with %s', self,
+          data_point)
+      return
+
+    new_iterations = self.iterations + data_point.iterations
     old_passed_tests = self.pass_rate * self.iterations
     merge_passed_tests = data_point.pass_rate * data_point.iterations
-    new_iterations = self.iterations + data_point.iterations
     new_pass_rate = (old_passed_tests + merge_passed_tests) / new_iterations
     self.pass_rate = new_pass_rate
     self.iterations = new_iterations

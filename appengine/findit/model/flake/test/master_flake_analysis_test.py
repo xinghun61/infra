@@ -376,6 +376,22 @@ class MasterFlakeAnalysisTest(TestCase):
         commit_position=1, pass_rate=0.75, iterations=20)
     self.assertEqual(data_point_1, expected)
 
+  def testDataPointMergeWithZeroIterations(self):
+    data_point_1 = DataPoint.Create(commit_position=1, iterations=0)
+    data_point_2 = DataPoint.Create(commit_position=1, iterations=0)
+    data_point_1.Merge(data_point_2)
+
+    expected = DataPoint.Create(commit_position=1, iterations=0)
+    self.assertEqual(data_point_1, expected)
+
+  def testDataPointMergeWithNone(self):
+    data_point_1 = DataPoint.Create(commit_position=1)
+    data_point_2 = None
+    data_point_1.Merge(data_point_2)
+
+    expected = DataPoint.Create(commit_position=1)
+    self.assertEqual(data_point_1, expected)
+
   def testAppendOrMergeWithHit(self):
     data_points = [
         DataPoint.Create(
