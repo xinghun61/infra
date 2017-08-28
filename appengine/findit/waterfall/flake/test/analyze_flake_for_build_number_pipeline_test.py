@@ -74,7 +74,7 @@ class AnalyzeFlakeForBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
             master_name, builder_name, build_number, step_name, [test_name],
             iterations, timeout
         ],
-        expected_kwargs={'rerun': False})
+        expected_kwargs={'force': False})
 
     self.MockPipeline(
         SaveLastAttemptedSwarmingTaskIdPipeline,
