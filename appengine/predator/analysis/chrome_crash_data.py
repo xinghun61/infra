@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import logging
 
 from analysis import detect_regression_range
@@ -174,3 +175,7 @@ class CracasCrashData(ChromeCrashData):
   def StacktraceParserCls(cls):
     """The class of stacktrace parser."""
     return CracasCrashParser
+
+  @property
+  def raw_stacktrace(self):
+    return json.dumps(self._raw_stacktrace)

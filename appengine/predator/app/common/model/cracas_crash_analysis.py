@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import logging
 import urllib
 
@@ -24,8 +25,6 @@ _CRACAS_BASE_URL = 'https://crash.corp.google.com/browse'
 class CracasCrashAnalysis(ChromeCrashAnalysis):
   """Represents an analysis of a Chrome crash on Cracas."""
 
-  stack_trace = ndb.JsonProperty(indexed=False)
-
   @property
   def client_id(self):  # pragma: no cover
     return CrashClient.CRACAS
@@ -39,3 +38,10 @@ class CracasCrashAnalysis(ChromeCrashAnalysis):
                  product_name, self.signature, self.platform)
     return _CRACAS_BASE_URL + '?' + urllib.urlencode(
         {'q': query}).replace('+', '%20')
+
+  def ToJson(self):
+    """Converts the crash analysis to a json message for rerun."""
+    json_output = super(CracasCrashAnalysis, self).ToJson()
+    json_output['stack_trace'] = json.loads(json_output['stack_trace'])
+
+    return json_output

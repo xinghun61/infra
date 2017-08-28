@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import mock
 
 from analysis.analysis_testcase import AnalysisTestCase
@@ -157,3 +158,14 @@ class CracasCrashDataTest(AnalysisTestCase):
         'analysis.chromecrash_parser.CracasCrashParser.Parse') as mock_parse:
       mock_parse.return_value = stacktrace
       self._VerifyTwoStacktracesEqual(crash_data.stacktrace, stacktrace)
+
+  def testRawStactraceProperty(self):
+    """Tests ``raw_stacktrace`` property turns a list to a string."""
+    stacktrace_list = ['stacktrace1', 'stacktrace2']
+    crash_data = CracasCrashData(
+        self.GetDummyChromeCrashData(),
+        ChromeDependencyFetcher(self.GetMockRepoFactory()))
+    crash_data._raw_stacktrace = stacktrace_list
+
+    self.assertEqual(crash_data.raw_stacktrace,
+                     json.dumps(stacktrace_list))
