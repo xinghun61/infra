@@ -214,6 +214,7 @@ message Builder {
 message Swarming {
   // Hostname of the swarming instance, e.g. "chromium-swarm.appspot.com".
   optional string hostname = 1;
+  // DEPRECATED, IGNORED.
   // Used to generate a URL for Build, may contain parameters
   // {swarming_hostname}, {task_id}, {bucket} and {builder}. Defaults to:
   // https://{swarming_hostname}/user/task/{task_id}

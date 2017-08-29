@@ -12,11 +12,12 @@ from components import config as config_component
 from testing_utils import testing
 
 from proto import project_config_pb2
+from proto import service_config_pb2
 from test import config_test
 from swarming import swarmingcfg
 
 
-class SwarmingCfgTest(testing.AppengineTestCase):
+class ProjectCfgTest(testing.AppengineTestCase):
   def cfg_test(self, swarming_text, mixins_text, expected_errors):
     ctx = config_component.validation.Context()
 
@@ -27,7 +28,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
     protobuf.text_format.Merge(mixins_text, buildbucket_cfg)
 
     mixins = {m.name: m for m in buildbucket_cfg.builder_mixins}
-    swarmingcfg.validate_cfg(swarming_cfg, mixins, True, ctx)
+    swarmingcfg.validate_project_cfg(swarming_cfg, mixins, True, ctx)
     self.assertEqual(
         map(config_test.errmsg, expected_errors),
         ctx.result().messages)
@@ -35,7 +36,6 @@ class SwarmingCfgTest(testing.AppengineTestCase):
   def test_valid(self):
     self.cfg_test(
         '''
-          hostname: "chromium-swarm.appspot.com"
           builder_defaults {
             swarming_tags: "master:master.a"
             dimensions: "cores:8"
@@ -63,7 +63,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
         [])
 
   def test_empty(self):
-    self.cfg_test('', '', ['hostname unspecified'])
+    self.cfg_test('', '', ['builders are not defined'])
 
   def test_bad(self):
     self.cfg_test(
@@ -81,8 +81,15 @@ class SwarmingCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
-          hostname: "chromium-swarm.appspot.com"
           builder_defaults {name: "x"}
+          builders {
+            name: "release"
+            dimensions: "pool:a"
+            recipe {
+              repository: "https://x.com"
+              name: "foo"
+            }
+          }
         ''',
         '',
         [
@@ -91,6 +98,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
+          hostname: "https://example.com"
           task_template_canary_percentage { value: 102 }
           builder_defaults {
             swarming_tags: "wrong"
@@ -126,7 +134,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
         ''',
         '',
         [
-          'hostname unspecified',
+          'hostname: must not contain "://"',
           'task_template_canary_percentage.value must must be in [0, 100]',
           'builder_defaults: tag #1: does not have ":": wrong',
           'builder_defaults: dimension #1: does not have ":"',
@@ -188,7 +196,6 @@ class SwarmingCfgTest(testing.AppengineTestCase):
         ''',
         '',
         [
-          'hostname unspecified',
           'task_template_canary_percentage.value must must be in [0, 100]',
           'builder_defaults: tag #1: does not have ":": wrong',
           'builder_defaults: dimension #1: does not have ":"',
@@ -213,7 +220,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
-          hostname: "https://example.com"
+          hostname: "example.com"
           builders {
             name: "rel"
             caches { path: "a" name: "a" }
@@ -380,7 +387,7 @@ class SwarmingCfgTest(testing.AppengineTestCase):
       swarmingcfg.validate_builder_mixins(cfg.builder_mixins, ctx)
       self.assertEqual([], ctx.result().messages)
       mixins = {m.name: m for m in cfg.builder_mixins}
-      swarmingcfg.validate_cfg(
+      swarmingcfg.validate_project_cfg(
           cfg.buckets[0].swarming, mixins, True, ctx)
       self.assertEqual(
           map(config_test.errmsg, expected_errors),
@@ -678,3 +685,33 @@ class SwarmingCfgTest(testing.AppengineTestCase):
             name: "foo"
           }
         ''')
+
+
+class ServiceCfgTest(testing.AppengineTestCase):
+  def cfg_test(self, swarming_text, expected_errors):
+    ctx = config_component.validation.Context()
+
+    settings = service_config_pb2.SwarmingSettings()
+    protobuf.text_format.Merge(swarming_text, settings)
+
+    swarmingcfg.validate_service_cfg(settings, ctx)
+    self.assertEqual(
+        map(config_test.errmsg, expected_errors),
+        ctx.result().messages)
+
+  def test_valid(self):
+    self.cfg_test('default_hostname: "chromium-swarm.appspot.com"', [])
+
+  def test_empty(self):
+    self.cfg_test('', ['default_hostname: unspecified'])
+
+  def test_schema_in_hostname(self):
+    self.cfg_test(
+        '''
+          default_hostname: "https://swarming.example.com"
+          milo_hostname: "https://milo.example.com"
+        ''',
+        [
+          'default_hostname: must not contain "://"',
+          'milo_hostname: must not contain "://"',
+        ])

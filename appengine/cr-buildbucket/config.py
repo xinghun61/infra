@@ -25,6 +25,7 @@ from components import gitiles
 from components.config import validation
 
 from proto import project_config_pb2
+from proto import service_config_pb2
 import errors
 
 CURRENT_BUCKET_SCHEMA_VERSION = 2
@@ -40,6 +41,17 @@ def cfg_path():
     # during decoration.
     appid = 'testbed-test'
   return '%s.cfg' % appid
+
+
+@utils.cache
+def self_config_set():
+  """Returns buildbucket's service config set."""
+  try:
+    return config.self_config_set()
+  except AttributeError:  # pragma: no cover | does not get run on some bots
+    # Raised in testbed environment because cfg_path is called
+    # during decoration.
+    return 'services/testbed-test'
 
 
 def validate_identity(identity, ctx):
@@ -127,10 +139,20 @@ def validate_buildbucket_cfg(cfg, ctx):
 
       if bucket.HasField('swarming'):  # pragma: no cover
         with ctx.prefix('swarming: '):
-          swarmingcfg.validate_cfg(
+          swarmingcfg.validate_project_cfg(
               bucket.swarming, mixin_by_name, mixins_are_valid, ctx)
   if not is_sorted:
     ctx.warning('Buckets are not sorted by name')
+
+
+@validation.rule(
+    self_config_set(), 'settings.cfg', service_config_pb2.SettingsCfg)
+def validate_settings_cfg(cfg, ctx):  # pragma: no cover
+  from swarming import swarmingcfg
+
+  if cfg.HasField('swarming'):
+    with ctx.prefix('swarming: '):
+      swarmingcfg.validate_service_cfg(cfg.swarming, ctx)
 
 
 class Bucket(ndb.Model):

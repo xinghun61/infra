@@ -18,6 +18,13 @@ DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
 CACHE_NAME_RE = re.compile(ur'^[a-z0-9_]{1,4096}$')
 
 
+def validate_hostname(hostname, ctx):
+  if not hostname:
+    ctx.error('unspecified')
+  if '://' in hostname:
+    ctx.error('must not contain "://"')
+
+
 def read_properties(recipe):
   """Parses build properties from the recipe message.
 
@@ -297,7 +304,7 @@ def validate_builder_mixins(mixins, ctx):
     ctx.error('circular mixin chain: %s', ' -> '.join(circle))
 
 
-def validate_cfg(swarming, mixins, mixins_are_valid, ctx):
+def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
   """Validates a project_config_pb2.Swarming message.
 
   Args:
@@ -310,8 +317,10 @@ def validate_cfg(swarming, mixins, mixins_are_valid, ctx):
     return validation.Context(
         on_message=lambda msg: ctx.msg(msg.severity, '%s', msg.text))
 
-  if not swarming.hostname:
-    ctx.error('hostname unspecified')
+  if swarming.hostname:
+    with ctx.prefix('hostname: '):
+      validate_hostname(swarming.hostname, ctx)
+
   if swarming.task_template_canary_percentage.value > 100:
     ctx.error('task_template_canary_percentage.value must must be in [0, 100]')
 
@@ -325,18 +334,21 @@ def validate_cfg(swarming, mixins, mixins_are_valid, ctx):
       if subctx.result().has_errors:
         should_try_merge = False
 
-  for i, b in enumerate(swarming.builders):
-    with ctx.prefix('builder %s: ' % (b.name or '#%s' % (i + 1))):
-      # Validate b before merging, otherwise merging will fail.
-      subctx = make_subctx()
-      validate_builder_cfg(b, mixins, False, subctx)
-      if subctx.result().has_errors or not should_try_merge:
-        # Do no try to merge invalid configs.
-        continue
+  if not swarming.builders:
+    ctx.error('builders are not defined')
+  else:
+    for i, b in enumerate(swarming.builders):
+      with ctx.prefix('builder %s: ' % (b.name or '#%s' % (i + 1))):
+        # Validate b before merging, otherwise merging will fail.
+        subctx = make_subctx()
+        validate_builder_cfg(b, mixins, False, subctx)
+        if subctx.result().has_errors or not should_try_merge:
+          # Do no try to merge invalid configs.
+          continue
 
-      merged = copy.deepcopy(b)
-      flatten_builder(merged, swarming.builder_defaults, mixins)
-      validate_builder_cfg(merged, mixins, True, ctx)
+        merged = copy.deepcopy(b)
+        flatten_builder(merged, swarming.builder_defaults, mixins)
+        validate_builder_cfg(merged, mixins, True, ctx)
 
 
 def has_pool_dimension(dimensions):
@@ -371,3 +383,11 @@ def flatten_builder(builder, defaults, mixins):
     flatten_builder(mixins[m], None, mixins)
     merge_builder(builder, mixins[m])
   merge_builder(builder, orig_without_mixins)
+
+
+def validate_service_cfg(swarming, ctx):
+  with ctx.prefix('default_hostname: '):
+    validate_hostname(swarming.default_hostname, ctx)
+  if swarming.milo_hostname:
+    with ctx.prefix('milo_hostname: '):
+      validate_hostname(swarming.milo_hostname, ctx)

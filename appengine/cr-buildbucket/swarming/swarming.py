@@ -46,6 +46,7 @@ from google.appengine.ext import ndb
 import webapp2
 
 from proto import project_config_pb2
+from proto import service_config_pb2
 from . import swarmingcfg as swarmingcfg_module
 from . import isolate
 import config
@@ -60,7 +61,6 @@ BUILDER_PARAMETER = 'builder_name'
 PARAM_PROPERTIES = 'properties'
 PARAM_SWARMING = 'swarming'
 PARAM_CHANGES = 'changes'
-DEFAULT_URL_FORMAT = 'https://{swarming_hostname}/task?id={task_id}'
 BUILD_RUN_RESULT_FILENAME = 'build-run-result.json'
 
 # The default percentage of builds that use canary swarming task template.
@@ -92,6 +92,16 @@ class CanaryTemplateNotFound(TemplateNotFound):
 
 class BuildResultFileReadError(Error):
   """Raised when build result file could not be read"""
+
+
+@ndb.tasklet
+def get_settings_async():  # pragma: no cover
+  _, global_settings = yield component_config.get_self_config_async(
+      'settings.cfg',
+      service_config_pb2.SettingsCfg,
+      store_last_good=True)
+  global_settings = global_settings or service_config_pb2.SettingsCfg()
+  raise ndb.Return(global_settings.swarming)
 
 
 @ndb.tasklet
@@ -269,12 +279,15 @@ def _buildbucket_property(build):
 
 @ndb.tasklet
 def _create_task_def_async(
-    project_id, swarming_cfg, builder_cfg, build, build_number, fake_build):
+    project_id, swarming_cfg, builder_cfg, build, build_number, settings,
+    fake_build):
   """Creates a swarming task definition for the |build|.
 
   Supports build properties that are supported by Buildbot-Buildbucket
   integration. See
   https://chromium.googlesource.com/chromium/tools/build/+/eff4ceb/scripts/master/buildbucket/README.md#Build-parameters
+
+  Sets build.swarming_hostname and build.canary attributes.
 
   Raises:
     errors.InvalidInputError if build.parameters are invalid.
@@ -306,6 +319,9 @@ def _create_task_def_async(
   if not task_template:
     raise TemplateNotFound('task template is not configured')
 
+  build.swarming_hostname = swarming_cfg.hostname or settings.default_hostname
+  if not build.swarming_hostname:  # pragma: no cover
+    raise Error('default swarming hostname is not configured')
   task_template_params = {
     'bucket': build.bucket,
     'builder_hash': (
@@ -316,7 +332,7 @@ def _create_task_def_async(
     'cache_dir': CACHE_DIR,
     'hostname': app_identity.get_default_version_hostname(),
     'project': project_id,
-    'swarming_hostname': swarming_cfg.hostname,
+    'swarming_hostname': build.swarming_hostname,
   }
 
   is_recipe = builder_cfg.HasField('recipe')
@@ -370,10 +386,6 @@ def _create_task_def_async(
     # Swarming accepts priority as a string
     task['priority'] = str(builder_cfg.priority)
 
-  build_tags = dict(t.split(':', 1) for t in build.tags)
-  build_tags['builder'] = builder_cfg.name
-  build.tags = sorted('%s:%s' % (k, v) for k, v in build_tags.iteritems())
-
   swarming_tags = task.setdefault('tags', [])
   _extend_unique(swarming_tags, [
     'buildbucket_hostname:%s' % app_identity.get_default_version_hostname(),
@@ -411,7 +423,7 @@ def _create_task_def_async(
     task['pubsub_userdata'] = json.dumps({
       'build_id': build.key.id(),
       'created_ts': utils.datetime_to_timestamp(utils.utcnow()),
-      'swarming_hostname': swarming_cfg.hostname,
+      'swarming_hostname': build.swarming_hostname,
     }, sort_keys=True)
   raise ndb.Return(task)
 
@@ -454,14 +466,17 @@ def _add_named_caches(builder_cfg, task_properties):
 
 
 @ndb.tasklet
-def prepare_task_def_async(build, fake_build=False):
+def prepare_task_def_async(build, settings, fake_build=False):
   """Prepares a swarming task definition.
 
   Validates the new build.
   If configured, generates a build number and updates the build.
   Creates a swarming task definition.
 
-  Returns a tuple (bucket_cfg, builder_cfg, task_def).
+  Sets build.swarming_hostname and build.canary attributes.
+  May add "build_address" tag.
+
+  Returns a task_def dict.
   """
   if build.lease_key:
     raise errors.InvalidInputError(
@@ -498,8 +513,8 @@ def prepare_task_def_async(build, fake_build=False):
 
   task_def = yield _create_task_def_async(
       project_id, bucket_cfg.swarming, builder_cfg, build, build_number,
-      fake_build)
-  raise ndb.Return(bucket_cfg, builder_cfg, task_def)
+      settings, fake_build)
+  raise ndb.Return(task_def)
 
 
 @ndb.tasklet
@@ -511,12 +526,13 @@ def create_task_async(build):
   Raises:
     errors.InvalidInputError if build attribute values are inavlid.
   """
-  bucket_cfg, builder_cfg, task_def = yield prepare_task_def_async(
-      build)
+  settings = yield get_settings_async()
+  task_def = yield prepare_task_def_async(build, settings)
 
+  assert build.swarming_hostname
   res = yield _call_api_async(
       auth.get_current_identity(),
-      bucket_cfg.swarming.hostname,
+      build.swarming_hostname,
       'tasks/new',
       method='POST',
       payload=task_def,
@@ -532,11 +548,10 @@ def create_task_async(build):
   task_id = res['task_id']
   logging.info('Created a swarming task %s: %r', task_id, res)
 
-  build.swarming_hostname = bucket_cfg.swarming.hostname
   build.swarming_task_id = task_id
 
   build.tags.extend([
-    'swarming_hostname:%s' % bucket_cfg.swarming.hostname,
+    'swarming_hostname:%s' % build.swarming_hostname,
     'swarming_task_id:%s' % task_id,
   ])
   task_req = res.get('request', {})
@@ -560,12 +575,14 @@ def create_task_async(build):
   build.leasee = _self_identity()
   build.never_leased = False
 
-  url_format = bucket_cfg.swarming.url_format or DEFAULT_URL_FORMAT
-  build.url = url_format.format(
-      swarming_hostname=bucket_cfg.swarming.hostname,
-      task_id=task_id,
-      bucket=build.bucket,
-      builder=builder_cfg.name)
+  if settings.milo_hostname:
+    build.url = (
+        'https://%s/swarming/task/%s' %
+        (settings.milo_hostname, build.swarming_task_id))
+  else:
+    build.url = (
+        'https://%s/task?id=%s' %
+        (build.swarming_hostname, build.swarming_task_id))
 
 
 def cancel_task_async(hostname, task_id):

@@ -6,7 +6,6 @@ import json
 import hashlib
 import urllib
 
-from google.appengine.api import app_identity
 from google.appengine.api import memcache
 from google.appengine.ext import ndb
 from protorpc import messages
@@ -134,8 +133,10 @@ class SwarmbucketApi(remote.Service):
             (identity, build_request.bucket))
 
       build = build_request.create_build(1, identity, utils.utcnow())
-      bucket_cfg, _, task_def = (
-          swarming.prepare_task_def_async(build, fake_build=True).get_result())
+      task_def = swarming.prepare_task_def_async(
+          build,
+          swarming.get_settings_async().get_result(),
+          fake_build=True).get_result()
       task_def_json = json.dumps(task_def)
 
       res = GetTaskDefinitionResponseMessage(task_definition=task_def_json)
@@ -143,7 +144,7 @@ class SwarmbucketApi(remote.Service):
         res.api_explorer_link = shorten_url(
             ('https://%s/_ah/api/explorer'
              '#p/swarming/v1/swarming.tasks.new?resource=%s') %
-            (bucket_cfg.swarming.hostname, urllib.quote(task_def_json)))
+            (build.swarming_hostname, urllib.quote(task_def_json)))
       return res
     except errors.InvalidInputError as ex:
       raise endpoints.BadRequestException(

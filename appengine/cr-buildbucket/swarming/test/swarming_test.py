@@ -24,6 +24,7 @@ import webapp2
 from swarming import isolate
 from swarming import swarming
 from proto import project_config_pb2
+from proto import service_config_pb2
 from test.test_util import future, ununicide
 import errors
 import model
@@ -60,11 +61,18 @@ class SwarmingTest(BaseTest):
         'components.net.json_request_async', autospec=True,
         side_effect=json_request_async)
 
+    self.settings = service_config_pb2.SwarmingSettings(
+        default_hostname='swarming.example.com',
+        milo_hostname='milo.example.com',
+    )
+    self.patch(
+        'swarming.swarming.get_settings_async', autospec=True,
+        return_value=future(self.settings))
+
     bucket_cfg_text = '''
       name: "bucket"
       swarming {
         hostname: "chromium-swarm.appspot.com"
-        url_format: "https://example.com/{swarming_hostname}/{task_id}"
         builders {
           name: "linux_chromium_rel_ng"
           swarming_tags: "buildertag:yes"
@@ -204,10 +212,12 @@ class SwarmingTest(BaseTest):
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
         },
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.AUTO,
     )
 
-    _, _, task_def = swarming.prepare_task_def_async(build).get_result()
+    task_def = swarming.prepare_task_def_async(
+        build, self.settings).get_result()
 
     self.assertEqual(task_def['properties']['caches'], [
       {'path': 'cache/a', 'name': 'a'},
@@ -228,16 +238,19 @@ class SwarmingTest(BaseTest):
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
         },
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.AUTO,
     )
 
-    _, _, task_def = swarming.prepare_task_def_async(build).get_result()
+    task_def = swarming.prepare_task_def_async(
+        build, self.settings).get_result()
 
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], '120')
 
     builder_cfg.execution_timeout_secs = 60
-    _, _, task_def = swarming.prepare_task_def_async(build).get_result()
+    task_def = swarming.prepare_task_def_async(
+        build, self.settings).get_result()
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], '60')
 
@@ -257,6 +270,7 @@ class SwarmingTest(BaseTest):
             'repo_url': 'https://chromium.googlesource.com/chromium/src',
           }]
         },
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.PROD,
     )
 
@@ -394,7 +408,7 @@ class SwarmingTest(BaseTest):
       'swarming_task_id:deadbeef',
     })
     self.assertEqual(
-        build.url, 'https://example.com/chromium-swarm.appspot.com/deadbeef')
+        build.url, 'https://milo.example.com/swarming/task/deadbeef')
 
   def test_create_task_async_for_non_swarming_bucket(self):
     self.bucket_cfg.ClearField('swarming')
@@ -402,6 +416,7 @@ class SwarmingTest(BaseTest):
         id=1,
         bucket='bucket',
         parameters={'builder_name': 'linux_chromium_rel_ng'},
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.AUTO,
     )
 
@@ -416,6 +431,7 @@ class SwarmingTest(BaseTest):
         id=1,
         bucket='bucket',
         parameters={'builder_name': 'linux_chromium_rel_ng'},
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.AUTO,
     )
 
@@ -451,6 +467,7 @@ class SwarmingTest(BaseTest):
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
         },
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.CANARY,
     )
 
@@ -583,7 +600,7 @@ class SwarmingTest(BaseTest):
       'swarming_task_id:deadbeef',
     })
     self.assertEqual(
-        build.url, 'https://example.com/chromium-swarm.appspot.com/deadbeef')
+        build.url, 'https://milo.example.com/swarming/task/deadbeef')
 
   def test_create_task_async_no_canary_template_explicit(self):
     build = model.Build(
@@ -594,6 +611,7 @@ class SwarmingTest(BaseTest):
         parameters={
           'builder_name': 'linux_chromium_rel_ng',
         },
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.CANARY,
     )
 
@@ -638,6 +656,7 @@ class SwarmingTest(BaseTest):
         create_time=utils.utcnow(),
         created_by=auth.Identity('user', 'john@example.com'),
         parameters={'builder_name': 'linux_chromium_rel_ng'},
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.AUTO,
     )
     swarming.create_task_async(build).get_result()
@@ -661,6 +680,7 @@ class SwarmingTest(BaseTest):
             },
           }
         },
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.AUTO,
     )
 
@@ -707,6 +727,7 @@ class SwarmingTest(BaseTest):
             'override_builder_cfg': [],
           }
         },
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
@@ -723,6 +744,7 @@ class SwarmingTest(BaseTest):
             },
           }
         },
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
@@ -739,6 +761,7 @@ class SwarmingTest(BaseTest):
             },
           }
         },
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
@@ -755,6 +778,7 @@ class SwarmingTest(BaseTest):
             },
           }
         },
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
@@ -772,6 +796,7 @@ class SwarmingTest(BaseTest):
             },
           }
         },
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
@@ -789,6 +814,7 @@ class SwarmingTest(BaseTest):
             },
           }
         },
+        tags=['builder:linux_chromium_rel_ng'],
         canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
@@ -799,11 +825,62 @@ class SwarmingTest(BaseTest):
         id=1,
         bucket='bucket',
         parameters={'builder_name': 'linux_chromium_rel_ng'},
+        tags=['builder:linux_chromium_rel_ng'],
         lease_key=12345,
         canary_preference=model.CanaryPreference.AUTO,
     )
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
+
+  def test_create_task_async_without_milo_hostname(self):
+    self.settings.milo_hostname = ''
+    build = model.Build(
+        id=1,
+        bucket='bucket',
+        create_time=utils.utcnow(),
+        created_by=auth.Identity('user', 'john@example.com'),
+        parameters={
+          'builder_name': 'linux_chromium_rel_ng',
+          'swarming': {
+            'override_builder_cfg': {
+              # Override cores dimension.
+              'dimensions': ['cores:16'],
+              'recipe': {'revision': 'badcoffee'},
+            },
+          }
+        },
+        tags=['builder:linux_chromium_rel_ng'],
+        canary_preference=model.CanaryPreference.AUTO,
+    )
+
+    self.json_response = {
+      'task_id': 'deadbeef',
+      'request': {
+        'properties': {
+          'dimensions': [
+            {'key': 'cores', 'value': '16'},
+            {'key': 'os', 'value': 'Ubuntu'},
+            {'key': 'pool', 'value': 'Chrome'},
+          ],
+        },
+        'tags': [
+          'build_address:bucket/linux_chromium_rel_ng/1',
+          'builder:linux_chromium_rel_ng',
+          'buildertag:yes',
+          'commontag:yes',
+          'master:master.bucket',
+          'priority:108',
+          'recipe_name:recipe',
+          'recipe_repository:https://example.com/repo',
+          'recipe_revision:badcoffee',
+        ]
+      }
+    }
+
+    swarming.create_task_async(build).get_result()
+    self.assertEqual(
+        build.url,
+        'https://chromium-swarm.appspot.com/task?id=deadbeef')
 
   def test_cancel_task(self):
     self.json_response = {}
@@ -1088,17 +1165,18 @@ class SubNotifyTest(BaseTest):
   @mock.patch('swarming.swarming._load_task_result_async', autospec=True)
   def test_post(self, load_task_result_async):
     build = model.Build(
-      id=1,
-      bucket='chromium',
-      create_time=utils.utcnow(),
-      parameters={
-        'builder_name': 'release'
-      },
-      status=model.BuildStatus.SCHEDULED,
-      swarming_hostname='chromium-swarm.appspot.com',
-      swarming_task_id='deadbeef',
-      canary_preference=model.CanaryPreference.AUTO,
-      canary=False,
+        id=1,
+        bucket='chromium',
+        create_time=utils.utcnow(),
+        parameters={
+          'builder_name': 'release'
+        },
+        tags=['builder:linux_chromium_rel_ng'],
+        status=model.BuildStatus.SCHEDULED,
+        swarming_hostname='chromium-swarm.appspot.com',
+        swarming_task_id='deadbeef',
+        canary_preference=model.CanaryPreference.AUTO,
+        canary=False,
     )
     build.put()
 
@@ -1132,6 +1210,7 @@ class SubNotifyTest(BaseTest):
         parameters={
           'builder_name': 'release'
         },
+        tags=['builder:linux_chromium_rel_ng'],
         status=model.BuildStatus.SCHEDULED,
         swarming_hostname='chromium-swarm.appspot.com',
         swarming_task_id='deadbeef',
@@ -1162,6 +1241,7 @@ class SubNotifyTest(BaseTest):
         parameters={
           'builder_name': 'release'
         },
+        tags=['builder:release'],
         status=model.BuildStatus.SCHEDULED,
         swarming_hostname='chromium-swarm.appspot.com',
         swarming_task_id='deadbeef',
@@ -1260,6 +1340,7 @@ class CronUpdateTest(BaseTest):
         parameters={
             'builder_name': 'release',
         },
+        tags=['builder:release'],
         swarming_hostname='chromium-swarm.appsot.com',
         swarming_task_id='deadeef',
         status=model.BuildStatus.STARTED,
