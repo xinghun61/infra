@@ -14,5 +14,7 @@
 
 * [The builders.pyl file format for masters](services/buildbot/builders.pyl.md)
 * [Recipes](recipes.md)
+* [Python Bundles](python.md)
+* [Python VirtualEnv using vpython](vpython.md)
 * [Event Pipeline](event_pipeline.md)
 * [Builders](builders.md)
