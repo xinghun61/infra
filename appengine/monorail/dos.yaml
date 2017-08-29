@@ -121,3 +121,5 @@ blacklist:
     description: trying lots of expliots, e.g., ../../../etc/passwd
   - subnet: 79.142.73.140
     description: hitting the same 404 URL several times a minute
+  - subnet: 171.4.232.116
+    description: someone trying to fuzz our server 2017-08-29
