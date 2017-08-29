@@ -22,6 +22,18 @@ to make a modification to the source code:
    `git cl land` if you're a Chromium committer.
 
 
+## Standard Practices
+
+### Protobuf format
+
+Use Textproto for anything that's checked-in/human-editable (i.e. configuration)
+because it is more readable and easier to edit. More specifically, it allows the
+addition of comments, JSON does not.
+
+Use JSON exclusively for passing to/from small scripts (especially python ones,
+so it doesn't have to depend on the protobuf package), and for communicating to
+Javascript clients.
+
 ## See also
 
 * [Deployment of code](deployment.md)
