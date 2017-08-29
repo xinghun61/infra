@@ -159,9 +159,9 @@ Args:
 
 #### **class [ThirdPartyPackagesApi](/recipes/recipe_modules/third_party_packages/api.py#14)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [build\_package](/recipes/recipe_modules/third_party_packages/api.py#117)(self, name, workdir, root, install_mode):**
+&mdash; **def [build\_package](/recipes/recipe_modules/third_party_packages/api.py#118)(self, name, workdir, root, install_mode):**
 
-&mdash; **def [does\_package\_exist](/recipes/recipe_modules/third_party_packages/api.py#113)(self, name, version):**
+&mdash; **def [does\_package\_exist](/recipes/recipe_modules/third_party_packages/api.py#114)(self, name, version):**
 
 &emsp; **@dry_run.setter**<br>&mdash; **def [dry\_run](/recipes/recipe_modules/third_party_packages/api.py#24)(self, v):**
 
@@ -171,7 +171,7 @@ Ensures that the specified CIPD package exists.
 
 &emsp; **@property**<br>&mdash; **def [gcloud](/recipes/recipe_modules/third_party_packages/api.py#42)(self):**
 
-&mdash; **def [get\_latest\_release\_tag](/recipes/recipe_modules/third_party_packages/api.py#90)(self, repo_url, prefix='v'):**
+&mdash; **def [get\_latest\_release\_tag](/recipes/recipe_modules/third_party_packages/api.py#91)(self, repo_url, prefix='v'):**
 
 &emsp; **@property**<br>&mdash; **def [git](/recipes/recipe_modules/third_party_packages/api.py#38)(self):**
 
@@ -179,7 +179,7 @@ Ensures that the specified CIPD package exists.
 
 &emsp; **@property**<br>&mdash; **def [python](/recipes/recipe_modules/third_party_packages/api.py#34)(self):**
 
-&mdash; **def [register\_package](/recipes/recipe_modules/third_party_packages/api.py#122)(self, package_file, name, version):**
+&mdash; **def [register\_package](/recipes/recipe_modules/third_party_packages/api.py#123)(self, package_file, name, version):**
 
 &mdash; **def [support\_prefix](/recipes/recipe_modules/third_party_packages/api.py#50)(self, base):**
 ### *recipe_modules* / [wct](/recipes/recipe_modules/wct)

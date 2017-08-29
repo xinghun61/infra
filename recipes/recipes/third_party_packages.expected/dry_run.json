@@ -140,6 +140,24 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/package"
+    ],
+    "infra_step": true,
+    "name": "python.package_dir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
       "cipd",
       "ensure",
       "-root",
@@ -938,6 +956,24 @@
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
     "name": "git.git clean",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/git/package"
+    ],
+    "infra_step": true,
+    "name": "git.package_dir",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -1815,6 +1851,24 @@
     "cwd": "[START_DIR]/ninja/checkout",
     "infra_step": true,
     "name": "ninja.git clean",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/ninja/package"
+    ],
+    "infra_step": true,
+    "name": "ninja.package_dir",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]

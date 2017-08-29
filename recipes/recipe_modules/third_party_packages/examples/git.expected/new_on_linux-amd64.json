@@ -132,6 +132,21 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/git/package"
+    ],
+    "infra_step": true,
+    "name": "package_dir"
+  },
+  {
+    "cmd": [
       "git",
       "-c",
       "user.name=third_party_packages",

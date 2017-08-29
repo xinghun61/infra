@@ -66,6 +66,7 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
     self.m.git.checkout(
         repo_url, ref='refs/tags/' + tag, dir_path=checkout_dir,
         submodules=False)
+    self.m.file.ensure_directory('package_dir', package_dir)
 
     with self.m.context(cwd=checkout_dir):
       install_fn(package_dir, tag)
