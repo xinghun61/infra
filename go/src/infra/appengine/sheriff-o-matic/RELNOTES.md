@@ -1,16 +1,21 @@
-# Release Notes sheriff-o-matic 2017-08-22
+# Release Notes sheriff-o-matic 2017-08-29
 
-- 5 commits, 3 bugs affected since 379e086 (2017-08-17T20:33:17Z)
-- 3 Authors:
+- 9 commits, 3 bugs affected since 7fa4298 (2017-08-14T20:42:11Z)
+- 4 Authors:
+  - seanmccullough@chromium.org
+  - dnj@chromium.org
   - jojwang@google.com
   - zhangtiff@google.com
-  - seanmccullough@chromium.org
 
 ## Changes in this release
 
+- [Roll luci-go and luci/gae.](https://chromium-review.googlesource.com/636852) (dnj@chromium.org)
+- [Add builder-result polymer element](https://chromium-review.googlesource.com/633905) (jojwang@google.com)
+- [Update RELNOTES.md](https://chromium-review.googlesource.com/626656) (jojwang@google.com)
 - [SoM: Make group name changes save on focus changes.](https://chromium-review.googlesource.com/621594) (zhangtiff@google.com)
 - [[som] Update README.md to be more friendly to new contributors](https://chromium-review.googlesource.com/621417) (seanmccullough@chromium.org)
 - [[som] Attempt to add test expectation information to test failure alerts](https://chromium-review.googlesource.com/617609) (seanmccullough@chromium.org)
+- [[som] Update release notes](https://chromium-review.googlesource.com/616066) (seanmccullough@chromium.org)
 - [Add new structs for test-results in SoM](https://chromium-review.googlesource.com/619693) (jojwang@google.com)
 - [[som] add cloud storage to whitelisted link hosts](https://chromium-review.googlesource.com/620068) (seanmccullough@chromium.org)
 
