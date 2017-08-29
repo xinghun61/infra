@@ -69,7 +69,7 @@ class CrashMatch(namedtuple('CrashMatch',
           frame_info.frame.file_path].append(frame_info.frame.index)
 
     frame_file_path_to_index = {
-        file_path: ', '.join(['frame#%d' % indice for indice in index])
+        file_path: ', '.join(['frame#%d' % indice for indice in set(index)])
         for file_path, index in frame_file_path_to_index.iteritems()
     }
     return 'Changed files %s, with the same %s(%s) as %s' % (
