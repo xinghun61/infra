@@ -84,24 +84,24 @@ class TouchCrashedComponentFeatureTest(AnalysisTestCase):
                         'src/comp1/f.cc', [2, 3], 'h://repo')
     stack = CallStack(0, frame_list=[frame1])
     stack_trace = Stacktrace([stack], stack)
-    deps = {'src/': Dependency('src/', 'h://repo', '8')}
-    dep_rolls = {'src/': DependencyRoll('src/', 'h://repo', '2', '6')}
+    deps = {'src': Dependency('src', 'h://repo', '8')}
+    dep_rolls = {'src': DependencyRoll('src', 'h://repo', '2', '6')}
     report = CrashReport('8', 'sig', 'linux', stack_trace,
                          ('2', '6'), deps, dep_rolls)
-    suspect = Suspect(_DUMMY_CHANGELOG, 'src/')
+    suspect = Suspect(_DUMMY_CHANGELOG, 'src')
     feature_value = self.feature(report)(suspect)
     self.assertEqual(1.0, feature_value.value)
 
   def testFeatureValueIsZeroWhenNoMatchedComponent(self):
     """Test that the feature returns 0 when there no matched component."""
-    frame = StackFrame(0, 'src/', 'func', 'dir/f.cc',
+    frame = StackFrame(0, 'src', 'func', 'dir/f.cc',
                         'src/dir/f.cc', [2, 3], 'h://repo')
     stack = CallStack(0, frame_list=[frame])
     stack_trace = Stacktrace([stack], stack)
-    deps = {'src/': Dependency('src/', 'h://repo', '8')}
-    dep_rolls = {'src/': DependencyRoll('src/', 'h://repo', '2', '6')}
+    deps = {'src': Dependency('src', 'h://repo', '8')}
+    dep_rolls = {'src': DependencyRoll('src', 'h://repo', '2', '6')}
     report = CrashReport('8', 'sig', 'linux', stack_trace,
                          ('2', '6'), deps, dep_rolls)
-    suspect = Suspect(_DUMMY_CHANGELOG, 'src/')
+    suspect = Suspect(_DUMMY_CHANGELOG, 'src')
     feature_value = self.feature(report)(suspect)
     self.assertEqual(0.0, feature_value.value)

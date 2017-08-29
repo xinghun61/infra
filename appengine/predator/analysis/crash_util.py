@@ -88,12 +88,14 @@ def IndexFramesWithCrashedGroup(stacktrace, crashed_group_factory,
 
   for stack in stacktrace.stacks:
     for frame in stack.frames:
-      if frame.dep_path not in dependencies:
+      dep_path = (frame.dep_path[:-1] if frame.dep_path.endswith('/') else
+                  frame.dep_path)
+      if dep_path not in dependencies:
         continue
 
       crashed_group = crashed_group_factory(frame)
       if crashed_group:
-        frame_infos[frame.dep_path][crashed_group].append(
+        frame_infos[dep_path][crashed_group].append(
             FrameInfo(frame, stack.priority))
 
   return frame_infos

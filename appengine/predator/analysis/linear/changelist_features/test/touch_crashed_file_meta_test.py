@@ -51,14 +51,14 @@ class TouchCrashedFileMetaFeatureTest(AnalysisTestCase):
                        Stacktrace([crash_stack], crash_stack),
                        ('rev0', 'rev9'), deps, dep_rolls)
 
-  def _GetMockSuspect(self, dep_path='src/'):
+  def _GetMockSuspect(self, dep_path='src'):
     """Returns a ``Suspect`` with the desired min_distance."""
     return Suspect(self.GetDummyChangeLog(), dep_path)
 
   def testAreLogZerosWhenNoMatchedFile(self):
     """Test that feature values are log(0)s when there is no matched file."""
     report = self._GetDummyReport(
-        deps={'src': Dependency('src/dep', 'https://repo', '6')})
+        deps={'src/dep': Dependency('src/dep', 'https://repo', '6')})
     feature_values = self._feature(report)(self._GetMockSuspect()).values()
 
     for feature_value in feature_values:
@@ -67,8 +67,8 @@ class TouchCrashedFileMetaFeatureTest(AnalysisTestCase):
   def testMinDistanceFeatureIsLogOne(self):
     """Test that the feature returns log(1) when the min_distance is 0."""
     report = self._GetDummyReport(
-        deps={'src/': Dependency('src/', 'https://repo', '6')},
-        dep_rolls={'src/': DependencyRoll('src/', 'https://repo', '0', '4')})
+        deps={'src': Dependency('src', 'https://repo', '6')},
+        dep_rolls={'src': DependencyRoll('src', 'https://repo', '0', '4')})
 
     frame = StackFrame(0, 'src/', 'func', 'a.cc', 'a.cc', [2], 'https://repo')
     with mock.patch('analysis.linear.changelist_features.'
@@ -88,7 +88,7 @@ class TouchCrashedFileMetaFeatureTest(AnalysisTestCase):
         [TouchCrashedFileFeature()],
         include_renamed_paths=False)
 
-    deps={'src/': Dependency('src/', 'https://repo', '6')}
+    deps={'src': Dependency('src', 'https://repo', '6')}
     # Stack frame in old version of file before it was renamed:
     stackframe = CallStack(0, [StackFrame(0, 'src/', 'func', 'old_name.cc',
                                           'old_name.cc', [4], 'https://repo')])
