@@ -242,17 +242,40 @@ class TagIndex(ndb.Model):
       TagIndexEntry, repeated=True, indexed=False)
 
 
-def create_build_id(dtime, include_random=True):
+_TIME_RESOLUTION = datetime.timedelta(milliseconds=1)
+_BUILD_ID_SUFFIX_LEN = 20
+
+
+def _id_time_segment(dtime):
+  assert dtime
+  assert dtime >= BEGINING_OF_THE_WORLD
+  delta = dtime - BEGINING_OF_THE_WORLD
+  now = int(delta.total_seconds() * 1000.)
+  return (~now & ((1 << 43) - 1)) << 20
+
+
+def create_build_id(dtime):
   """Returns a valid build id, as an integer and based on a datetime.
 
   See model.Build's docstring, "Build key" section.
   """
   # Build ID bits: "0N{43}R{16}V{4}"
   # where N is now bits, R is random bits and V is version bits.
-  assert dtime
-  assert dtime >= BEGINING_OF_THE_WORLD
-  delta = dtime - BEGINING_OF_THE_WORLD
-  now = int(round(delta.total_seconds() * 1000.))
-  inverted_now = ~now & ((1 << 43) - 1)
-  suffix = 0 if not include_random else random.getrandbits(16)
-  return int((inverted_now << 20) | (suffix << 4))
+  return int(_id_time_segment(dtime) | (random.getrandbits(16) << 4))
+
+
+def build_id_range(create_time_low, create_time_high):
+  """Converts a creation time range to build id range.
+
+  Low/high bounds are inclusive/exclusive respectively, for both time and id
+  ranges.
+  """
+  id_low = None
+  id_high = None
+  if create_time_low is not None:  # pragma: no branch
+    # convert inclusive to exclusive
+    id_high = _id_time_segment(create_time_low - _TIME_RESOLUTION)
+  if create_time_high is not None:  # pragma: no branch
+    # convert exclusive to inclusive
+    id_low = _id_time_segment(create_time_high - _TIME_RESOLUTION)
+  return id_low, id_high

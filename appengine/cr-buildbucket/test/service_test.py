@@ -69,7 +69,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.patch('swarming.cancel_task_async', return_value=future(None))
 
     self.test_build = model.Build(
-        id=model.create_build_id(self.now, include_random=True),
+        id=model.create_build_id(self.now),
         bucket='chromium',
         create_time=self.now,
         tags=[self.INDEXED_TAG],
@@ -105,7 +105,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     tags = tags or []
     builds = []
     for _ in xrange(count):
-      b = model.Build(bucket=self.test_build.bucket, tags=tags)
+      b = model.Build(
+          id=model.create_build_id(self.now),
+          bucket=self.test_build.bucket,
+          tags=tags,
+          create_time=self.now)
+      self.now += datetime.timedelta(seconds=1)
       self.put_build(b)
       builds.append(b)
     return builds
@@ -678,63 +683,118 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(builds, [build2])
 
   def test_search_by_creation_time_range(self):
-    older_id = model.create_build_id(model.BEGINING_OF_THE_WORLD)
-    newer_id = model.create_build_id(datetime.datetime(2012, 12, 5))
+    too_old = model.BEGINING_OF_THE_WORLD - datetime.timedelta(milliseconds=1)
+    old_time = model.BEGINING_OF_THE_WORLD + datetime.timedelta(milliseconds=1)
+    new_time = datetime.datetime(2012, 12, 5)
 
+    create_time = datetime.datetime(2011, 2, 4)
     old_build = model.Build(
-        id=model.create_build_id(datetime.datetime(2011, 2, 4)),
+        id=model.create_build_id(create_time),
         bucket=self.test_build.bucket,
         tags=[self.INDEXED_TAG],
         created_by=auth.Identity.from_bytes('user:x@chromium.org'),
+        create_time=create_time,
     )
     self.put_build(old_build)
     self.put_build(self.test_build)
 
     # Test lower bound
+
     builds, _ = service.search(
-        build_id_high=older_id,
+        create_time_low=too_old,
         buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [self.test_build, old_build])
+
     builds, _ = service.search(
-        build_id_high=older_id,
+        create_time_low=old_time,
+        buckets=[self.test_build.bucket],
+    )
+    self.assertEqual(builds, [self.test_build, old_build])
+
+    builds, _ = service.search(
+        create_time_low=old_time,
         buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [self.test_build, old_build])
+
+    builds, _ = service.search(
+        create_time_low=new_time,
+        buckets=[self.test_build.bucket],
+    )
+    self.assertEqual(builds, [self.test_build])
+
+    builds, _ = service.search(
+        create_time_low=new_time,
+        buckets=[self.test_build.bucket],
+        tags=[self.INDEXED_TAG],
+    )
+    self.assertEqual(builds, [self.test_build])
 
     # Test upper bound
+
     builds, _ = service.search(
-        build_id_high=newer_id,
+        create_time_high=too_old,
         buckets=[self.test_build.bucket],
     )
-    self.assertEqual(builds, [self.test_build])
+    self.assertEqual(builds, [])
+
     builds, _ = service.search(
-        build_id_high=newer_id,
+        create_time_high=old_time,
+        buckets=[self.test_build.bucket],
+    )
+    self.assertEqual(builds, [])
+
+    builds, _ = service.search(
+        create_time_high=old_time,
         buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
-    self.assertEqual(builds, [self.test_build])
+    builds, _ = service.search(
+        create_time_high=new_time,
+        buckets=[self.test_build.bucket],
+        tags=[self.INDEXED_TAG],
+    )
+    self.assertEqual(builds, [old_build])
+
+    builds, _ = service.search(
+        create_time_high=(
+            self.test_build.create_time + datetime.timedelta(milliseconds=1)),
+        buckets=[self.test_build.bucket],
+        tags=[self.INDEXED_TAG],
+    )
+    self.assertEqual(builds, [self.test_build, old_build])
 
     # Test both sides bounded
+
     builds, _ = service.search(
-        build_id_high=older_id,
-        build_id_low=newer_id,
+        create_time_low=new_time,
+        create_time_high=old_time,
+        buckets=[self.test_build.bucket],
+    )
+    self.assertEqual(builds, [])
+
+    builds, _ = service.search(
+        create_time_low=old_time,
+        create_time_high=new_time,
         buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [old_build])
+
     builds, _ = service.search(
-        build_id_high=older_id,
-        build_id_low=newer_id,
+        create_time_low=old_time,
+        create_time_high=new_time,
         buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [old_build])
 
     # Test reversed bounds
+
     builds, _ = service.search(
-        build_id_high=newer_id,
-        build_id_low=older_id,
+        create_time_low=new_time,
+        create_time_high=old_time,
         buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
@@ -969,6 +1029,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_search_with_tag_index_cursor(self):
     builds = self.put_many_builds(10)
+    builds.reverse()
     res, cursor = service.search(
         tags=[self.INDEXED_TAG],
         start_cursor='id>%d' % builds[-1].key.id())
@@ -976,10 +1037,11 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertIsNone(cursor)
 
     builds = self.put_many_builds(10, tags=[self.INDEXED_TAG])
+    builds.reverse()
     res, cursor = service.search(
         tags=[self.INDEXED_TAG],
         buckets=[self.test_build.bucket],
-        build_id_high=builds[5].key.id(),
+        create_time_low=builds[5].create_time,
         start_cursor='id>%d' % builds[7].key.id())
     self.assertEqual(res, [])
     self.assertIsNone(cursor)
@@ -987,10 +1049,10 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     res, cursor = service.search(
         tags=[self.INDEXED_TAG],
         buckets=[self.test_build.bucket],
-        build_id_low=builds[7].key.id(),
+        create_time_high=builds[7].create_time,
         start_cursor='id>%d' % builds[5].key.id())
-    # build_id_low is inclusive
-    self.assertEqual(res, builds[7:])
+    # create_time_high is exclusive
+    self.assertEqual(res, builds[8:])
     self.assertIsNone(cursor)
 
   def test_search_with_tag_index_cursor_but_no_inded_tag(self):

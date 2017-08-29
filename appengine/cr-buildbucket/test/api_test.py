@@ -285,8 +285,8 @@ class ApiTests(object):
       start_cursor=None,
       retry_of=42,
       canary=True,
-      build_id_low=None,
-      build_id_high=None,
+      create_time_low=None,
+      create_time_high=None,
     )
     self.assertEqual(len(res['builds']), 1)
     self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
@@ -297,13 +297,8 @@ class ApiTests(object):
     self.test_build.put()
     search.return_value = ([self.test_build], 'the cursor')
 
-    search_low_ts = utils.datetime_to_timestamp(model.BEGINING_OF_THE_WORLD)
-    search_high_id = model.create_build_id(
-        model.BEGINING_OF_THE_WORLD,
-        include_random=False)
-    later_date = datetime.datetime(2120, 5, 4)
-    search_high_ts = utils.datetime_to_timestamp(later_date)
-    search_low_id = model.create_build_id(later_date, include_random=False)
+    time_low  = model.BEGINING_OF_THE_WORLD
+    time_high = datetime.datetime(2120, 5, 4)
 
     req = {
       'bucket': ['chromium'],
@@ -314,8 +309,8 @@ class ApiTests(object):
       'tag': ['important'],
       'retry_of': '42',
       'canary': True,
-      'creation_ts_low': search_low_ts,
-      'creation_ts_high': search_high_ts,
+      'creation_ts_low': utils.datetime_to_timestamp(time_low),
+      'creation_ts_high': utils.datetime_to_timestamp(time_high),
     }
 
     res = self.call_api('search', req).json_body
@@ -332,75 +327,12 @@ class ApiTests(object):
       start_cursor=None,
       retry_of=42,
       canary=True,
-      build_id_low=search_low_id,
-      build_id_high=search_high_id,
+      create_time_low=time_low,
+      create_time_high=time_high,
     )
     self.assertEqual(len(res['builds']), 1)
     self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
     self.assertEqual(res['next_cursor'], 'the cursor')
-
-  @mock.patch('service.search', autospec=True)
-  def test_bad_low_bounded_search(self, search):
-    self.test_build.put()
-    search.return_value = ([self.test_build], 'the cursor')
-
-    bad_date = model.BEGINING_OF_THE_WORLD - datetime.timedelta(days=1)
-    search_low_ts = utils.datetime_to_timestamp(bad_date)
-    req = {
-      'bucket': ['chromium'],
-      'cancelation_reason': 'CANCELED_EXPLICITLY',
-      'created_by': 'user:x@chromium.org',
-      'result': 'CANCELED',
-      'status': 'COMPLETED',
-      'tag': ['important'],
-      'retry_of': '42',
-      'canary': True,
-      'creation_ts_low': search_low_ts,
-    }
-
-    res = self.call_api('search', req).json_body
-
-    search.assert_called_once_with(
-      buckets=req['bucket'],
-      tags=req['tag'],
-      status=model.BuildStatus.COMPLETED,
-      result=model.BuildResult.CANCELED,
-      failure_reason=None,
-      cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY,
-      created_by='user:x@chromium.org',
-      max_builds=None,
-      start_cursor=None,
-      retry_of=42,
-      canary=True,
-      build_id_low=None,
-      build_id_high=None,
-    )
-    self.assertEqual(len(res['builds']), 1)
-    self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
-    self.assertEqual(res['next_cursor'], 'the cursor')
-
-  @mock.patch('service.search', autospec=True)
-  def test_bad_high_bounded_search(self, search):
-    self.test_build.put()
-    search.return_value = ([self.test_build], 'the cursor')
-
-    bad_date = model.BEGINING_OF_THE_WORLD - datetime.timedelta(days=1)
-    search_high_ts = utils.datetime_to_timestamp(bad_date)
-    req = {
-      'bucket': ['chromium'],
-      'cancelation_reason': 'CANCELED_EXPLICITLY',
-      'created_by': 'user:x@chromium.org',
-      'result': 'CANCELED',
-      'status': 'COMPLETED',
-      'tag': ['important'],
-      'retry_of': '42',
-      'canary': True,
-      'creation_ts_high': search_high_ts,
-    }
-
-    res = self.call_api('search', req).json_body
-
-    self.assertEqual(len(res), 0)
 
   ####### PEEK #################################################################
 

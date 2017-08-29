@@ -554,7 +554,7 @@ def search(
     buckets=None, tags=None,
     status=None, result=None, failure_reason=None, cancelation_reason=None,
     created_by=None, max_builds=None, start_cursor=None,
-    retry_of=None, canary=None, build_id_low=None, build_id_high=None):
+    retry_of=None, canary=None, create_time_low=None, create_time_high=None):
   """Searches for builds.
 
   Args:
@@ -573,10 +573,10 @@ def search(
     retry_of (int): value of retry_of attribute.
     canary (bool): if not None, value of "canary" field.
       Search by canary_preference is not supported.
-    build_id_low (int): if not None, used to upper bound the age of a
-      build (by its creation time) in the search results.
-    build_id_high (int): if not None, used to lower bound the age of a
-      build (by its creation time) in the search results.
+    create_time_low (datetime.datetime): if not None, minimum value of
+      create_time attribute. Inclusive.
+    create_time_high (datetime.datetime): if not None, maximum value of
+      create_time attribute. Exclusive.
 
   Returns:
     A tuple:
@@ -584,13 +584,19 @@ def search(
       next_cursor (string): cursor for the next page.
         None if there are no more builds.
   """
-  if (build_id_low is not None
-      and build_id_high is not None
-      and build_id_low >= build_id_high):
-    return [], None
   if buckets is not None and not isinstance(buckets, list):
     raise errors.InvalidInputError('Buckets must be a list or None')
   validate_tags(tags, 'search')
+
+  if (create_time_low is not None and
+      create_time_low < model.BEGINING_OF_THE_WORLD):
+    create_time_low = None
+  if create_time_high is not None:
+    if create_time_high <= model.BEGINING_OF_THE_WORLD:
+      return [], None
+    if create_time_low is not None and create_time_low >= create_time_high:
+      return [], None
+
   tags = tags or []
   max_builds = fix_max_builds(max_builds)
   created_by = parse_identity(created_by)
@@ -606,7 +612,7 @@ def search(
   search_args = (
     buckets, tags, status, result, failure_reason, cancelation_reason,
     created_by, max_builds, start_cursor, retry_of, canary,
-    build_id_low, build_id_high)
+    create_time_low, create_time_high)
 
   is_tag_index_cursor = (
     start_cursor and TAG_INDEX_SEARCH_CURSOR_RE.match(start_cursor))
@@ -643,10 +649,19 @@ def search(
   return results
 
 
+def _between(value, low, high):  # pragma: no cover
+  # low is inclusive, high is exclusive
+  if low is not None and value < low:
+    return False
+  if high is not None and value >= high:
+    return False
+  return True
+
+
 def _query_search(
     buckets, tags, status, result, failure_reason, cancelation_reason,
     created_by, max_builds, start_cursor, retry_of, canary,
-    build_id_low, build_id_high):
+    create_time_low, create_time_high):
   """Searches for builds using NDB query. For args doc, see search().
 
   Assumes:
@@ -672,26 +687,27 @@ def _query_search(
   q = filter_if(model.Build.created_by, created_by)
   q = filter_if(model.Build.retry_of, retry_of)
   q = filter_if(model.Build.canary, canary)
+
   # buckets is None if the current identity has access to ALL buckets.
   if buckets and not check_buckets_locally:
     q = q.filter(model.Build.bucket.IN(buckets))
-  if build_id_high is not None:
-    q = q.filter(model.Build.key < ndb.Key(model.Build, build_id_high))
-  if build_id_low is not None:
-    q = q.filter(model.Build.key >= ndb.Key(model.Build, build_id_low))
+
+  id_low, id_high = model.build_id_range(create_time_low, create_time_high)
+  if id_low is not None:
+    q = q.filter(model.Build.key >= ndb.Key(model.Build, id_low))
+  if id_high is not None:
+    q = q.filter(model.Build.key < ndb.Key(model.Build, id_high))
+
   q = q.order(model.Build.key)
 
-  local_predicate = None
-
-  def local_status_and_bucket_check(build):
+  def local_predicate(build):
     if status is not None and build.status != status:  # pragma: no coverage
       return False
     if buckets and build.bucket not in buckets:
       return False
+    if not _between(build.create_time, create_time_low, create_time_high):
+      return False  # pragma: no cover
     return True
-
-  if status is not None or (buckets and check_buckets_locally):
-    local_predicate = local_status_and_bucket_check
 
   return _fetch_page(
       q, max_builds, start_cursor, predicate=local_predicate)
@@ -700,7 +716,7 @@ def _query_search(
 def _tag_index_search(
     buckets, tags, status, result, failure_reason, cancelation_reason,
     created_by, max_builds, start_cursor, retry_of, canary,
-    build_id_low, build_id_high):
+    create_time_low, create_time_high):
   """Searches for builds using TagIndex entities. For args doc, see search().
 
   Assumes:
@@ -752,19 +768,21 @@ def _tag_index_search(
   # end. Start from the end.
   entry_index = len(idx.entries) - 1
 
+  id_low, id_high = model.build_id_range(create_time_low, create_time_high)
+
   # Skip entries with build ids that are less or equal to the id in the cursor.
   if start_cursor:
     # The cursor is a minimum build id, exclusive. Such cursor is resilient
     # to duplicates and additions of index entries to beginning or end.
     assert TAG_INDEX_SEARCH_CURSOR_RE.match(start_cursor)
     min_id_exclusive = int(start_cursor[len('id>'):])
-    if build_id_high is not None and min_id_exclusive >= build_id_high:
+    if id_low is not None and id_low > min_id_exclusive:
+      # If the minimum build id requested is greater than the cursor, we need
+      # to skip more entries. Subtract 1 because id_low is inclusive.
+      min_id_exclusive = id_low - 1
+    if id_high is not None and min_id_exclusive >= id_high:
       # If the min id is greater than the requested max, we should give up.
       return [], None
-    if build_id_low is not None and build_id_low > min_id_exclusive:
-      # If the minimum build id requested is greater than the cursor, we need
-      # to skip more entries. Subtract 1 because build_id_low is inclusive.
-      min_id_exclusive = build_id_low - 1
     # TODO(nodir): optimization: use binary search.
     while entry_index >= 0:
       if idx.entries[entry_index].build_id > min_id_exclusive:
@@ -804,10 +822,10 @@ def _tag_index_search(
       if prev and prev.build_id == e.build_id:
         # Tolerate duplicates.
         continue
-      if build_id_low is not None and e.build_id < build_id_low:
+      if id_low is not None and e.build_id < id_low:
         # Skip build ids smaller than the ones requested.
         continue
-      if build_id_high is not None and e.build_id >= build_id_high:
+      if id_high is not None and e.build_id >= id_high:
         # Since the index is ordered by ascending build ids, if we exceed
         # build_id_high, we should stop and not return a cursor.
         entry_index = -1
@@ -838,6 +856,8 @@ def _tag_index_search(
       if any(getattr(b, a) != v for a, v in scalar_filters):
         skipped_entries += 1
         continue
+      if not _between(b.create_time, create_time_low, create_time_high):
+        continue  # pragma: no cover
       if any(t not in b.tags for t in tags):
         skipped_entries += 1
         continue

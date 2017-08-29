@@ -33,3 +33,24 @@ class BuildTest(testing.AppengineTestCase):
       if last_id is not None:
         self.assertLess(new_id, last_id)
       last_id = new_id
+
+  def test_build_id_range(self):
+    time_low = datetime.datetime(2015, 1, 1)
+    time_high = time_low + datetime.timedelta(seconds=10)
+    id_low, id_high = model.build_id_range(time_low, time_high)
+    unit = model._TIME_RESOLUTION
+
+    ones = (1 << model._BUILD_ID_SUFFIX_LEN) - 1
+    for suffix in (0, ones):
+
+      def in_range(t):
+        build_id = model._id_time_segment(t) | suffix
+        return id_low <= build_id < id_high
+
+      self.assertFalse(in_range(time_low - unit))
+      self.assertTrue(in_range(time_low))
+      self.assertTrue(in_range(time_low + unit))
+
+      self.assertTrue(in_range(time_high - unit))
+      self.assertFalse(in_range(time_high))
+      self.assertFalse(in_range(time_high + unit))
