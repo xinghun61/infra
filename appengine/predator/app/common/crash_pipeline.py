@@ -182,8 +182,9 @@ class CrashAnalysisPipeline(CrashBasePipeline):
       analysis.completed_time = time_util.GetUTCNow()
     except FailedToParseStacktrace as error:
       result, tags = GetResultWhenAnalysisFailed(analysis, error.name)
-    except Exception:
-      result, tags = GetResultWhenAnalysisFailed(analysis, 'Undefined error')
+    except Exception as error:
+      result, tags = GetResultWhenAnalysisFailed(analysis,
+                                                 error.__class__.__name__)
 
     # Update model's status to say we're done, and save the results.
     analysis.result = result
