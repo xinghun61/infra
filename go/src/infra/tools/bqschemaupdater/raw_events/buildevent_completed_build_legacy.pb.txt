@@ -163,4 +163,31 @@ fields: <
     description: "The recipe name that was invoked."
     type: STRING
   >
+  schema: <
+    name: "deps"
+    description: "List of recipe packages the recipe depends on."
+    # Derived from Package message in
+    # https://chromium.googlesource.com/infra/luci/recipes-py/+/master/recipe_engine/package.proto
+    is_repeated: true
+    type: RECORD
+    schema: <
+      name: "project_id"
+      type: STRING
+    >
+    schema: <
+      name: "url"
+      description: "The URL of where to fetch the package data. Must always be a git repo URL."
+      type: STRING
+    >
+    schema: <
+      name: "branch"
+      description: "The ref to git-fetch when syncing this dependency."
+      type: STRING
+    >
+    schema: <
+      name: "revision"
+      description: "The git commit that we depend on."
+      type: STRING
+    >
+  >
 >

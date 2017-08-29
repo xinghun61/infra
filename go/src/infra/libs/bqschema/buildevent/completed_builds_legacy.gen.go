@@ -27,6 +27,20 @@ type CompletedBuildsLegacy_Kitchen struct {
 	Version string `bigquery:"version"`
 }
 
+// CompletedBuildsLegacy_Deps is a record for the "deps" field.
+type CompletedBuildsLegacy_Deps struct {
+	ProjectId string `bigquery:"project_id"`
+
+	// The URL of where to fetch the package data. Must always be a git repo URL.
+	Url string `bigquery:"url"`
+
+	// The ref to git-fetch when syncing this dependency.
+	Branch string `bigquery:"branch"`
+
+	// The git commit that we depend on.
+	Revision string `bigquery:"revision"`
+}
+
 // CompletedBuildsLegacy_Recipes is a record for the "recipes" field.
 type CompletedBuildsLegacy_Recipes struct {
 	// The recipe repository, if checked out.
@@ -37,6 +51,9 @@ type CompletedBuildsLegacy_Recipes struct {
 
 	// The recipe name that was invoked.
 	Name string `bigquery:"name"`
+
+	// List of recipe packages the recipe depends on. See also
+	Deps []*CompletedBuildsLegacy_Deps `bigquery:"deps"`
 }
 
 // CompletedBuildsLegacy is the schema for "CompletedBuildsLegacyTable".
