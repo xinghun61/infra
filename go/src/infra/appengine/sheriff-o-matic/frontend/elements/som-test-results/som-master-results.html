@@ -1,0 +1,85 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../elements/som-test-results/som-builder-results.html">
+<dom-module id="som-master-results">
+  <template>
+    <style>
+      p {
+        font: 1.2em;
+        font-family: 'Roboto', 'Noto', sans-serif;
+        color: rgba(0, 0, 0, 0.67);
+      }
+      .results-sections {
+        display: table;
+      }
+      .row-item {
+        display: table-cell;
+      }
+    </style>
+    <div class="results-section">
+      <p class="row-item">[[masterResults.master_name]]</p>
+      <span class="row-item">
+        <iron-icon icon="[[_computeExpandIcon(isCollapsed)]]" on-tap="[[_toggleExpand]]"></iron-icon>
+      </span>
+      <div class="row-item">
+        <som-builder-results builder-results="[[_getFirstResults(masterResults)]]"></som-builder-results>
+        <iron-collapse id="collapse">
+          <template is="dom-repeat" items="[[_getAdditionalResults(masterResults)]]">
+            <som-builder-results builder-results="[[item]]"></som-builder-results>
+          </template>
+        </iron-collapse>
+      </div>
+    </div>
+  </template>
+  <script>
+    'use strict';
+
+    class SomMasterResults extends Polymer.Element {
+      static get is() { return 'som-master-results'; }
+
+      ready() {
+        super.ready();
+      }
+
+      static get properties() {
+        return {
+          masterResults: {
+            type: Object,
+            value: () => {
+              return {
+                master_name: '',
+                builder_results: [
+                  {builder_name: '', total_failures: 0, results: []}
+                ],
+              };
+            },
+          },
+          isCollapsed: {
+            type: Boolean,
+            value: true,
+          },
+        }
+      }
+
+      _toggleExpand() {
+        this.isCollapsed = !this.isCollapsed;
+        this.$.collapse.toggle();
+      }
+
+      _getFirstResults(masterResults) {
+        return masterResults.builder_results[0];
+      }
+
+      _getAdditionalResults(masterResults) {
+        return masterResults.builder_results.slice(1);
+      }
+
+      _computeExpandIcon(isCollapsed) {
+        return isCollapsed ? 'expand-more' : 'expand-less';
+      }
+
+    }
+    customElements.define(SomMasterResults.is, SomMasterResults);
+  </script>
+</dom-module>

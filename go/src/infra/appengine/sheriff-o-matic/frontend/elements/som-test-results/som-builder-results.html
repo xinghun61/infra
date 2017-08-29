@@ -1,6 +1,6 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 
-<dom-module id="builder-results">
+<dom-module id="som-builder-results">
   <template>
     <style>
       .gray {
@@ -8,6 +8,11 @@
       }
       .green {
         background: #6AFF3F;
+      }
+      p {
+        font: 1.1em;
+        font-family: 'Roboto', 'Noto', sans-serif;
+        color: rgba(0, 0, 0, 0.87);
       }
       .red {
         background: #FF6C6C;
@@ -38,8 +43,8 @@
   <script>
     'use strict';
 
-    class BuilderResults extends Polymer.Element {
-      static get is() { return 'builder-results'; }
+    class SomBuilderResults extends Polymer.Element {
+      static get is() { return 'som-builder-results'; }
 
       ready() {
         super.ready();
@@ -67,6 +72,6 @@
       }
     }
 
-    customElements.define(BuilderResults.is, BuilderResults)
+    customElements.define(SomBuilderResults.is, SomBuilderResults);
   </script>
 </dom-module>

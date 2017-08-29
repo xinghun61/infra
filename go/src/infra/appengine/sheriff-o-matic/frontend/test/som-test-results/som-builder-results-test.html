@@ -3,20 +3,20 @@
 <meta charset="utf-8">
 <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
 <script src="/bower_components/web-component-tester/browser.js"></script>
-<link rel="import" href="/elements/builder-results/builder-results.html">
-<test-fixture id="builder-results-test">
+<link rel="import" href="/elements/som-test-results/som-builder-results.html">
+<test-fixture id="som-builder-results-test">
   <template>
-    <builder-results></builder-results>
+    <som-builder-results></som-builder-results>
   </template>
 </test-fixture>
 
 <script>
   'use strict';
 
-  suite('builder-results', function() {
+  suite('som-builder-results', function() {
     var element;
     setup(function() {
-      element = fixture('builder-results-test');
+      element = fixture('som-builder-results-test');
       element.builderResults = {
         builder_name:'some-builder',
         total_failures: 2,
