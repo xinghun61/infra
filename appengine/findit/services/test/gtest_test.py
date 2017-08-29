@@ -3,11 +3,21 @@
 # found in the LICENSE file.
 
 import base64
+import os
+
 from services import gtest
 from waterfall.test import wf_testcase
 
 
 class GtestTest(wf_testcase.WaterfallTestCase):
+
+  def _GetGtestResultLog(self, master_name, builder_name, build_number,
+                         step_name):
+    file_name = os.path.join(
+        os.path.dirname(__file__), 'data', '%s_%s_%d_%s.json' %
+        (master_name, builder_name, build_number, step_name))
+    with open(file_name, 'r') as f:
+      return f.read()
 
   def testRemoveAllPrefixesNoPrefix(self):
     test = 'abc_test'
@@ -29,3 +39,52 @@ class GtestTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         base64.b64encode('string1.string2.'),
         gtest.ConcatenateTestLog(string1, string2))
+
+  def testGetTestLevelFailures(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 'abc_test'
+
+    expected_failure_log = ('ERROR:x_test.cc:1234\na/b/u2s1.cc:567: Failure\n'
+                            'ERROR:[2]: 2594735000 bogo-microseconds\n'
+                            'ERROR:x_test.cc:1234\na/b/u2s1.cc:567: Failure\n'
+                            'ERROR:x_test.cc:1234\na/b/u2s1.cc:567: Failure\n'
+                            'a/b/u3s2.cc:110: Failure\n'
+                            'a/b/u3s2.cc:110: Failure\n'
+                            'a/b/u3s2.cc:110: Failure\n'
+                            'a/b/u3s2.cc:110: Failure\n')
+
+    step_log = self._GetGtestResultLog(master_name, builder_name, build_number,
+                                       step_name)
+
+    failed_test_log = gtest.GetConsistentTestFailureLog(step_log)
+    self.assertEqual(expected_failure_log, failed_test_log)
+
+  def testGetTestLevelFailuresFlaky(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+    step_name = 'abc_test'
+
+    expected_failure_log = 'flaky'
+
+    step_log = self._GetGtestResultLog(master_name, builder_name, build_number,
+                                       step_name)
+
+    failed_test_log = gtest.GetConsistentTestFailureLog(step_log)
+    self.assertEqual(expected_failure_log, failed_test_log)
+
+  def testGetTestLevelFailuresInvalid(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 125
+    step_name = 'abc_test'
+
+    expected_failure_log = 'invalid'
+
+    step_log = self._GetGtestResultLog(master_name, builder_name, build_number,
+                                       step_name)
+
+    failed_test_log = gtest.GetConsistentTestFailureLog(step_log)
+    self.assertEqual(expected_failure_log, failed_test_log)

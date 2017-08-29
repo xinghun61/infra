@@ -9,6 +9,8 @@ It provides functions to:
 """
 
 import base64
+import cStringIO
+import json
 
 _PRE_TEST_PREFIX = 'PRE_'
 
@@ -58,3 +60,46 @@ def ConcatenateTestLog(string1, string2):
     return string2
   else:
     return base64.b64encode(str1 + str2)
+
+
+def GetConsistentTestFailureLog(gtest_result):
+  """Analyze the archived gtest json results and extract reliable failures.
+
+  Args:
+    gtest_result (str): A JSON file for failed step log.
+
+  Returns:
+    A string contains the names of reliable test failures and related
+    log content.
+    If gtest_results in gtest json result is 'invalid', we will return
+    'invalid' as the result.
+    If we find out that all the test failures in this step are flaky, we will
+    return 'flaky' as result.
+  """
+  step_failure_data = json.loads(gtest_result)
+
+  if step_failure_data['gtest_results'] == 'invalid':  # pragma: no cover
+    return 'invalid'
+
+  sio = cStringIO.StringIO()
+  for iteration in step_failure_data['gtest_results']['per_iteration_data']:
+    for test_name in iteration.keys():
+      is_reliable_failure = True
+
+      for test_run in iteration[test_name]:
+        # We will ignore the test if some of the attempts were success.
+        if test_run['status'] == 'SUCCESS':
+          is_reliable_failure = False
+          break
+
+      if is_reliable_failure:  # all attempts failed
+        for test_run in iteration[test_name]:
+          sio.write(base64.b64decode(test_run['output_snippet_base64']))
+
+  failed_test_log = sio.getvalue()
+  sio.close()
+
+  if not failed_test_log:
+    return 'flaky'
+
+  return failed_test_log
