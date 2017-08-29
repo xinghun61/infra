@@ -577,8 +577,9 @@ def create_task_async(build):
 
   if settings.milo_hostname:
     build.url = (
-        'https://%s/swarming/task/%s' %
-        (settings.milo_hostname, build.swarming_task_id))
+        'https://%s/swarming/task/%s?server=%s' %
+        (settings.milo_hostname, build.swarming_task_id,
+         build.swarming_hostname))
   else:
     build.url = (
         'https://%s/task?id=%s' %

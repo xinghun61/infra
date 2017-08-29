@@ -408,7 +408,9 @@ class SwarmingTest(BaseTest):
       'swarming_task_id:deadbeef',
     })
     self.assertEqual(
-        build.url, 'https://milo.example.com/swarming/task/deadbeef')
+        build.url,
+        ('https://milo.example.com/swarming/task/deadbeef?'
+         'server=chromium-swarm.appspot.com'))
 
   def test_create_task_async_for_non_swarming_bucket(self):
     self.bucket_cfg.ClearField('swarming')
@@ -600,7 +602,9 @@ class SwarmingTest(BaseTest):
       'swarming_task_id:deadbeef',
     })
     self.assertEqual(
-        build.url, 'https://milo.example.com/swarming/task/deadbeef')
+        build.url,
+        ('https://milo.example.com/swarming/task/deadbeef?'
+         'server=chromium-swarm.appspot.com'))
 
   def test_create_task_async_no_canary_template_explicit(self):
     build = model.Build(
