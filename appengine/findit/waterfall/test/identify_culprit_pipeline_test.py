@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
 from testing_utils import testing
 
 from common.waterfall import failure_type
@@ -15,7 +16,15 @@ from waterfall import identify_culprit_pipeline
 class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
   app_module = pipeline_handlers._APP
 
-  def testIdentifyCulpritPipeline(self):
+  @mock.patch.object(build_failure_analysis, 'PullChangeLogs', return_value={})
+  @mock.patch.object(build_failure_analysis, 'ExtractDepsInfo', return_value={})
+  @mock.patch.object(
+      build_failure_analysis,
+      'AnalyzeBuildFailure',
+      return_value=({
+          'failures': []
+      }, []))
+  def testIdentifyCulpritPipeline(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -31,20 +40,10 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
         'build_number': build_number,
         'failure_type': failure_type.TEST
     }
-    change_logs = {}
-    deps_info = {}
     signals = {}
 
-    dummy_result = {'failures': []}
-
-    def MockAnalyzeBuildFailure(*_):
-      return dummy_result, []
-
-    self.mock(build_failure_analysis, 'AnalyzeBuildFailure',
-              MockAnalyzeBuildFailure)
-
     pipeline = identify_culprit_pipeline.IdentifyCulpritPipeline(
-        failure_info, change_logs, deps_info, signals, True)
+        failure_info, signals, True)
     pipeline.start()
     self.execute_queued_tasks()
 
@@ -53,7 +52,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertTrue(analysis.build_completed)
     self.assertIsNotNone(analysis)
-    self.assertEqual(dummy_result, analysis.result)
+    self.assertEqual({'failures': []}, analysis.result)
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
     self.assertIsNone(analysis.result_status)
     self.assertEqual(expected_suspected_cls, analysis.suspected_cls)

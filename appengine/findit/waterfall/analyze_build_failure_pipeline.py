@@ -12,14 +12,12 @@ from libs import analysis_status
 from libs import time_util
 from model.wf_analysis import WfAnalysis
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
-from waterfall.extract_deps_info_pipeline import ExtractDEPSInfoPipeline
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
 from waterfall.flake.trigger_flake_analyses_pipeline import (
     TriggerFlakeAnalysesPipeline)
 from waterfall.identify_culprit_pipeline import IdentifyCulpritPipeline
 from waterfall.process_swarming_tasks_result_pipeline import (
     ProcessSwarmingTasksResultPipeline)
-from waterfall.pull_changelog_pipeline import PullChangelogPipeline
 from waterfall.start_try_job_on_demand_pipeline import (
     StartTryJobOnDemandPipeline)
 from waterfall.trigger_swarming_tasks_pipeline import (
@@ -115,11 +113,9 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
 
     # Heuristic Approach.
     failure_info = yield DetectFirstFailurePipeline(current_failure_info)
-    change_logs = yield PullChangelogPipeline(failure_info)
-    deps_info = yield ExtractDEPSInfoPipeline(failure_info, change_logs)
     signals = yield ExtractSignalPipeline(failure_info)
-    heuristic_result = yield IdentifyCulpritPipeline(
-        failure_info, change_logs, deps_info, signals, build_completed)
+    heuristic_result = yield IdentifyCulpritPipeline(failure_info, signals,
+                                                     build_completed)
 
     # Try job approach.
     with pipeline.InOrder():

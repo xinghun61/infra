@@ -10,12 +10,11 @@ class IdentifyCulpritPipeline(BasePipeline):
   """A pipeline to identify culprit CLs for a build failure."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, failure_info, change_logs, deps_info, signals, build_completed):
+  def run(self, failure_info, signals, build_completed):
     """Identifies culprit CL.
 
     Args:
       failure_info (dict): Output of pipeline DetectFirstFailurePipeline.
-      change_logs (dict): Output of pipeline PullChangelogPipeline.
       signals (dict): Output of pipeline ExtractSignalPipeline.
 
     Returns:
@@ -24,6 +23,10 @@ class IdentifyCulpritPipeline(BasePipeline):
     master_name = failure_info['master_name']
     builder_name = failure_info['builder_name']
     build_number = failure_info['build_number']
+
+    change_logs = build_failure_analysis.PullChangeLogs(failure_info)
+    deps_info = build_failure_analysis.ExtractDepsInfo(failure_info,
+                                                       change_logs)
 
     analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
         failure_info, change_logs, deps_info, signals)

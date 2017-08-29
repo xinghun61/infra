@@ -7,6 +7,8 @@ import mock
 
 from common.waterfall import failure_type
 from libs import analysis_status
+from libs.deps import chrome_dependency_fetcher
+from libs.deps.dependency import Dependency
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from libs.gitiles.change_log import Contributor
@@ -1874,3 +1876,195 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     suspected_cl = WfSuspectedCL.Get('chromium', 'r98_1')
     self.assertIsNotNone(suspected_cl)
+
+  def testExtractDEPSInfo(self):
+
+    def MockGetDependency(_, revision, os_platform):
+      self.assertEqual('unix', os_platform)
+      if revision == 'rev2':
+        return {
+            'src/': Dependency('src/', 'https://url_src', 'rev2', 'DEPS'),
+            'src/dep1': Dependency('src/dep1', 'https://url_dep1', '9', 'DEPS'),
+        }
+      else:
+        self.assertEqual('rev2^', revision)
+        return {
+            'src/': Dependency('src/', 'https://url_src', 'rev2^', 'DEPS'),
+            'src/dep1': Dependency('src/dep1', 'https://url_dep1', '7', 'DEPS'),
+        }
+
+    failure_info = {
+        'master_name': 'chromium.linux',
+        'builder_name': 'Linux Tests',
+        'build_number': 123,
+        'chromium_revision': 'rev2',
+        'failed': True,
+    }
+    change_logs = {
+        'rev2': {
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'DEPS',
+                    'new_path': 'DEPS'
+                },
+            ]
+        },
+        'rev1': {
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/file.cc',
+                    'new_path': 'a/file.cc'
+                },
+            ]
+        },
+    }
+    expected_deps_info = {
+        'deps': {
+            'src/': {
+                'repo_url': 'https://url_src',
+                'revision': 'rev2',
+            },
+            'src/dep1': {
+                'repo_url': 'https://url_dep1',
+                'revision': '9',
+            },
+        },
+        'deps_rolls': {
+            'rev2': [
+                {
+                    'path': 'src/dep1',
+                    'repo_url': 'https://url_dep1',
+                    'old_revision': '7',
+                    'new_revision': '9',
+                },
+            ]
+        }
+    }
+
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+              'GetDependency', MockGetDependency)
+    deps_info = build_failure_analysis.ExtractDepsInfo(failure_info,
+                                                       change_logs)
+    self.assertEqual(expected_deps_info, deps_info)
+
+  def testPullChangelogs(self):
+
+    rev1_commit_log = """)]}'
+    {
+      "commit": "rev1",
+      "tree": "tree_rev",
+      "parents": [
+        "rev0"
+      ],
+      "author": {
+        "name": "someone@chromium.org",
+        "email": "someone@chromium.org",
+        "time": "Wed Jun 11 19:35:32 2014"
+      },
+      "committer": {
+        "name": "someone@chromium.org",
+        "email": "someone@chromium.org",
+        "time": "Wed Jun 11 19:35:32 2014"
+      },
+      "message": "Cr-Commit-Position: refs/heads/master@{#175976}",
+      "tree_diff": [
+        {
+          "type": "add",
+          "old_id": "id1",
+          "old_mode": 33188,
+          "old_path": "/dev/null",
+          "new_id": "id2",
+          "new_mode": 33188,
+          "new_path": "added_file.js"
+        }
+      ]
+    }
+    """
+    rev1_commit_log_url = ('https://chromium.googlesource.com/chromium/src.git'
+                           '/+/rev1')
+    rev1_commit_json_url = '%s?format=json' % rev1_commit_log_url
+
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(rev1_commit_json_url, rev1_commit_log)
+
+    failure_info = {
+        'failed': True,
+        'chromium_revision': 'rev1',
+        'builds': {
+            '999': {
+                'blame_list': ['rev1']
+            }
+        }
+    }
+
+    expected_change_logs = {
+        'rev1': {
+            'author': {
+                'name':
+                    'someone@chromium.org',
+                'email':
+                    'someone@chromium.org',
+                'time':
+                    datetime.strptime('Wed Jun 11 19:35:32 2014',
+                                      '%a %b %d %H:%M:%S %Y'),
+            },
+            'committer': {
+                'name':
+                    'someone@chromium.org',
+                'email':
+                    'someone@chromium.org',
+                'time':
+                    datetime.strptime('Wed Jun 11 19:35:32 2014',
+                                      '%a %b %d %H:%M:%S %Y'),
+            },
+            'message':
+                'Cr-Commit-Position: refs/heads/master@{#175976}',
+            'commit_position':
+                175976,
+            'touched_files': [{
+                'new_path': 'added_file.js',
+                'change_type': 'add',
+                'old_path': '/dev/null'
+            }],
+            'commit_url':
+                rev1_commit_log_url,
+            'code_review_url':
+                None,
+            'revision':
+                'rev1',
+            'reverted_revision':
+                None,
+            'review_server_host':
+                None,
+            'review_change_id':
+                None,
+        }
+    }
+
+    change_logs = build_failure_analysis.PullChangeLogs(failure_info)
+    self.assertEqual(expected_change_logs, change_logs)
+
+  def testPullChangelogsFailed(self):
+
+    rev1_commit_log = """)]}'\n{}"""
+    rev1_commit_log_url = ('https://chromium.googlesource.com/chromium/src.git'
+                           '/+/rev1')
+    rev1_commit_json_url = '%s?format=json' % rev1_commit_log_url
+
+    with self.mock_urlfetch() as urlfetch:
+      urlfetch.register_handler(rev1_commit_json_url, rev1_commit_log)
+
+    failure_info = {
+        'failed': True,
+        'chromium_revision': 'rev1',
+        'builds': {
+            '999': {
+                'blame_list': ['rev1']
+            }
+        }
+    }
+
+    with self.assertRaises(Exception):
+      build_failure_analysis.PullChangeLogs(failure_info)

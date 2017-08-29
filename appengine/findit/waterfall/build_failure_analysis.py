@@ -13,10 +13,12 @@ from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
+from libs.deps import chrome_dependency_fetcher
 from libs.gitiles.diff import ChangeType
 from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
+from services import deps
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
@@ -907,6 +909,80 @@ def AnalyzeBuildFailure(failure_info, change_logs, deps_info, failure_signals):
   suspected_cls = _ConvertCLFailureMapToList(cl_failure_map)
 
   return analysis_result, suspected_cls
+
+
+def PullChangeLogs(failure_info):
+  """Pulls change logs for CLs.
+
+  Args:
+    failure_info (dict): Output of pipeline DetectFirstFailurePipeline.run().
+
+  Returns:
+    A dict with the following form:
+    {
+      'git_hash_revision1': common.change_log.ChangeLog.ToDict(),
+      ...
+    }
+  """
+  git_repo = CachedGitilesRepository(
+      HttpClientAppengine(),
+      'https://chromium.googlesource.com/chromium/src.git')
+
+  change_logs = {}
+  for build in failure_info.get('builds', {}).values():
+    for revision in build['blame_list']:
+      change_log = git_repo.GetChangeLog(revision)
+      if not change_log:
+        raise Exception('Failed to get change log for %s' % revision)
+
+      change_logs[revision] = change_log.ToDict()
+
+  return change_logs
+
+
+def ExtractDepsInfo(failure_info, change_logs):
+  """
+  Args:
+    failure_info (dict): Information about all build failures.
+    change_logs (dict): Result of PullChangeLogs().
+
+  Returns:
+    A dict with the following form:
+    {
+      'deps': {
+        'path/to/dependency/': {
+          'revision': 'git_hash',
+          'repo_url': 'https://url/to/dependency/repo.git',
+        },
+        ...
+      },
+      'deps_rolls': {
+        'git_revision': [
+          {
+            'path': 'src/path/to/dependency/',
+            'repo_url': 'https://url/to/dependency/repo.git',
+            'new_revision': 'git_hash1',
+            'old_revision': 'git_hash2',
+          },
+          ...
+        ],
+        ...
+      }
+    }
+  """
+  chromium_revision = failure_info['chromium_revision']
+  os_platform = deps.GetOSPlatformName(failure_info['master_name'],
+                                       failure_info['builder_name'])
+
+  dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
+      CachedGitilesRepository.Factory(HttpClientAppengine()))
+
+  return {
+      'deps':
+          deps.GetDependencies(chromium_revision, os_platform, dep_fetcher),
+      'deps_rolls':
+          deps.DetectDependencyRolls(change_logs, os_platform, dep_fetcher)
+  }
 
 
 def GetResultAnalysisStatus(analysis_result):

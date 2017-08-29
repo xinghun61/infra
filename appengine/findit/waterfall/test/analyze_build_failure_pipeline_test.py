@@ -43,16 +43,6 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
         expected_args=[current_failure_info],
         expected_kwargs={})
     self.MockPipeline(
-        analyze_build_failure_pipeline.PullChangelogPipeline,
-        'change_logs',
-        expected_args=['failure_info'],
-        expected_kwargs={})
-    self.MockPipeline(
-        analyze_build_failure_pipeline.ExtractDEPSInfoPipeline,
-        'deps_info',
-        expected_args=['failure_info', 'change_logs'],
-        expected_kwargs={})
-    self.MockPipeline(
         analyze_build_failure_pipeline.ExtractSignalPipeline,
         'signals',
         expected_args=['failure_info'],
@@ -60,9 +50,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(
         analyze_build_failure_pipeline.IdentifyCulpritPipeline,
         'heuristic_result',
-        expected_args=[
-            'failure_info', 'change_logs', 'deps_info', 'signals', False
-        ],
+        expected_args=['failure_info', 'signals', False],
         expected_kwargs={})
     self.MockPipeline(
         analyze_build_failure_pipeline.TriggerSwarmingTasksPipeline,
