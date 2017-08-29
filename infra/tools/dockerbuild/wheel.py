@@ -352,7 +352,8 @@ def BuildWheel(name, version, **kwargs):
   return Builder(spec, build_fn, **kwargs)
 
 
-def BuildCryptographyWheel(name, crypt_src, openssl_src, packaged=None):
+def BuildCryptographyWheel(name, crypt_src, openssl_src, packaged=None,
+                           arch_map=None):
   spec = Spec(name=name, version=crypt_src.version, universal=None)
 
   def build_fn(system, wheel):
@@ -360,7 +361,7 @@ def BuildCryptographyWheel(name, crypt_src, openssl_src, packaged=None):
       return _build_package(system, wheel)
     return _build_cryptography(system, wheel, crypt_src, openssl_src)
 
-  return Builder(spec, build_fn)
+  return Builder(spec, build_fn, arch_map=arch_map)
 
 
 def Packaged(name, version, only_plat, **kwargs):
@@ -483,13 +484,18 @@ SPECS = {s.spec.tag: s for s in (
   ),
 
   BuildCryptographyWheel('cryptography',
-      source.pypi_sdist('cryptography', '1.8.1'),
+      source.pypi_sdist('cryptography', '2.0.3'),
       source.remote_archive(
           name='openssl',
-          version='1.1.0e',
-          url='https://www.openssl.org/source/openssl-1.1.0e.tar.gz',
+          version='1.1.0f',
+          url='https://www.openssl.org/source/openssl-1.1.0f.tar.gz',
       ),
+      arch_map={
+        'mac-x64': 'macosx_10_6_intel',
+      },
       packaged=[
+        'manylinux-x86',
+        'manylinux-x64',
         'mac-x64',
         'windows-x86',
         'windows-x64',
@@ -521,7 +527,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('pyasn1', '0.2.3'),
   Universal('pyasn1_modules', '0.0.8'),
   UniversalSource('pycparser', '2.17'),
-  Universal('pyopenssl', '17.0.0'),
+  Universal('pyopenssl', '17.2.0'),
   Universal('pyparsing', '2.2.0'),
   Universal('requests', '2.13.0'),
   Universal('rsa', '3.4.2'),
