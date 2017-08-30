@@ -3,6 +3,8 @@
 # found in the LICENSE file.
 
 import functools
+import logging
+import time
 
 
 class cached_property(object):
@@ -69,3 +71,27 @@ def instance_decorator(dec):
       return dec(self, f, *args, **kwargs)
     return inner_layer
   return layer
+
+
+class exponential_retry(object):
+  """Decorator which retries the function if an exception is encountered."""
+
+  def __init__(self, tries=5, delay=1.0):
+    self.tries = max(1, tries)
+    self.delay = max(0, delay)
+
+  def __call__(self, f):
+    @functools.wraps(f)
+    def wrapper(*args, **kwargs):  # pragma: no cover
+      retry_delay = self.delay
+      for i in xrange(self.tries):
+        try:
+          return f(*args, **kwargs)
+        except Exception:
+          if (i+1) >= self.tries:
+            raise
+          logging.exception('Exception encountered, retrying in %.1f second(s)',
+                            retry_delay)
+          time.sleep(retry_delay)
+          retry_delay *= 2
+    return wrapper

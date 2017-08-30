@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
 import unittest
 
 from infra.libs import decorators
@@ -58,3 +59,22 @@ class TestCachedProperty(unittest.TestCase):
     del f.happy
     self.assertEqual(f.happy, 'days')
     self.assertEqual(sum(self.calls), 3)
+
+
+class ExponentialRetryTest(unittest.TestCase):
+
+  @mock.patch('time.sleep')
+  def testExponentialRetry(self, mock_sleep):
+    flaky = mock.Mock()
+
+    @decorators.exponential_retry(tries=5, delay=1.0)
+    def test_function():
+      flaky()
+
+    flaky.side_effect = [Exception()]*4 + [None]
+    self.assertIsNone(test_function())
+    mock_sleep.assert_has_calls([mock.call(i) for i in [1.0, 2.0, 4.0, 8.0]])
+
+    flaky.side_effect = [Exception()] * 5
+    with self.assertRaises(Exception):
+      test_function()
