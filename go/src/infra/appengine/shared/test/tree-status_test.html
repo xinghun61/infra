@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<title>treeStatusTest</title>
+<meta charset="utf-8">
+<link rel="import" href="/elements/tree-status.html">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+
+<test-fixture id="tree-status-test">
+  <template>
+    <tree-status></tree-status>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('tree-status', function() {
+    var element;
+    setup(function() {
+      element = fixture('tree-status-test');
+      element.statusUrl = 'https://infra-status.appspot.com/';
+    });
+
+    test('tree is closed', function(done) {
+      element.statusJson = {
+        'username': 'nobody@chromium.org',
+        'general_state': 'closed',
+        'date': '2017-08-28 18:29:00.267230',
+        'message': 'whoopsie',
+      }
+      assert.isFalse(element._hasError);
+      assert.equal(element._message, 'whoopsie');
+      assert.equal(element._status, 'closed');
+      assert.equal(element._time, '2017-08-28 18:29:00 GMT');
+      assert.equal(element._email, 'nobody@chromium.org');
+      assert.equal(element._username, 'nobody');
+      done();
+    });
+
+    test('tree is open', function(done) {
+      element.statusJson = {
+        'username': 'nobody@chromium.org',
+        'general_state': 'open',
+        'date': '2017-08-28 18:29:00.267230',
+        'message': 'chill',
+      }
+      assert.isFalse(element._hasError);
+      assert.equal(element._message, 'chill');
+      assert.equal(element._status, 'open');
+      assert.equal(element._time, '2017-08-28 18:29:00 GMT');
+      assert.equal(element._email, 'nobody@chromium.org');
+      assert.equal(element._username, 'nobody');
+      done();
+    });
+
+    test('tree error', function(done) {
+      element.statusErrorJson = {error: 'Failure!'};
+      assert.isTrue(element._hasError);
+      assert.equal(element._message, 'Unknown');
+      assert.equal(element._status, '');
+      assert.equal(element._time, 'Unknown GMT');
+      assert.equal(element._email, '');
+      assert.equal(element._username, 'Unknown');
+      done();
+    });
+
+  });
+</script>

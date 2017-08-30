@@ -1,0 +1,26 @@
+{
+  "name": "chops-ui",
+  "version": "0.0.1",
+  "moduleType": [
+    "es6"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^2.0.0",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.1"
+  },
+  "devDependencies": {
+    "iron-test-helpers": "PolymerElements/iron-test-helpers",
+    "web-component-tester": "web-component-tester#6.0.0"
+  },
+  "resolutions": {
+    "polymer": "^2.0.0"
+  }
+}

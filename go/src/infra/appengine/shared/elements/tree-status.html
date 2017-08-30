@@ -1,0 +1,116 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+
+<dom-module id="tree-status">
+  <template>
+    <style>
+      .closed {
+        background-color: #E98080;
+      }
+      .maintenance {
+        background-color: #ff80ff;
+      }
+      .open {
+        background-color: #8FDF5F;
+      }
+      .throttled {
+        background-color: #fffc6c;
+      }
+      .tree-banner {
+        box-sizing: border-box;
+        color: #222;
+        margin: 0.5em auto;
+        padding: 0.5em 8px;
+        width: 100%;
+      }
+    </style>
+    <div class="error" hidden$="[[!_hasError]]">
+      Error fetching tree status from <a href$="[[statusUrl]]" target="_blank">[[statusUrl]]</a>
+    </div>
+    <div class$="treeStatus [[_status]]" hidden$="[[_hasError]]">
+      Tree status: [[_message]] by
+      <a href$="mailto:[[_email]]">[[_username]]</a>
+      on [[_time]]
+      (<a href$="[[statusUrl]]" target="_blank">More</a>)
+    </div>
+  </template>
+  <script>
+    'use strict';
+
+    class TreeStatus extends Polymer.Element {
+      static get is() { return 'tree-status'; }
+
+      static get properties() {
+        return {
+          statusUrl: {
+            type: String,
+            value: '',
+          },
+          statusErrorJson: {
+            type: Object,
+            value: () => { return {}; },
+          },
+          statusJson: {
+            type: Object,
+            value: () => {
+              return {message: 'Unknown', date: 'Unknown', general_state: '', username: ''};
+            },
+          },
+          _hasError: {
+            type: Boolean,
+            computed: '_computeHasError(statusErrorJson)',
+            value: false,
+          },
+
+          // Processed JSON data
+          _email: {
+            type: String,
+            computed: '_computeEmail(statusJson)',
+          },
+          _message: {
+            type: String,
+            computed: '_computeMessage(statusJson)',
+          },
+          _status: {
+            type: String,
+            computed: '_computeStatus(statusJson)',
+          },
+          _time: {
+            type: String,
+            computed: '_computeTime(statusJson)',
+          },
+          _username: {
+            type: String,
+            computed: '_computeUsername(_email)',
+          },
+        };
+      }
+
+      _computeHasError(errorJson) {
+        return !!errorJson && Object.keys(errorJson).length > 0;
+      }
+
+      _computeEmail(json) {
+        return json ? json.username : '';
+      }
+
+      _computeStatus(json) {
+        return json ? json.general_state : ''
+      }
+
+      _computeMessage(json) {
+        return json ? json.message : 'Unknown';
+      }
+
+      _computeTime(json) {
+        return json ? `${json.date.split(".")[0]} GMT`: 'Unknown';
+      }
+
+      _computeUsername(email) {
+        let cutoff = email.indexOf('@');
+        return (cutoff < 0) ? 'Unknown' : email.substring(0, cutoff);
+      }
+
+    }
+    customElements.define(TreeStatus.is, TreeStatus);
+  </script>
+</dom-module>
