@@ -49,12 +49,6 @@
       parameters['suspected_cls_triage_status'] = $('#suspected_cls_triage_status').val() == 'default' ? undefined : $('#suspected_cls_triage_status').val();
       parameters['regression_range_triage_status'] = $('#regression_range_triage_status').val() == 'default' ? undefined : $('#regression_range_triage_status').val();
       parameters['signature'] = $('#signature').val() == ''? undefined : $('#signature').val();
-      if ('{{ cursor }}' != '') {
-        parameters['cursor'] = '{{ cursor }}';
-      }
-      if ('{{ direction }}' != '') {
-        parameters['direction'] = '{{ direction }}';
-      }
 
       return parameters;
     }

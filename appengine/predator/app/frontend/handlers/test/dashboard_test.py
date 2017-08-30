@@ -185,8 +185,6 @@ class DashBoardTest(testing.AppengineTestCase):
         'signature': '',
         'top_cursor': '',
         'bottom_cursor': '',
-        'cursor': '',
-        'direction': '',
     }
 
     response_json = self.test_app.get(
@@ -210,8 +208,6 @@ class DashBoardTest(testing.AppengineTestCase):
         'signature': '',
         'top_cursor': '',
         'bottom_cursor': '',
-        'cursor': '',
-        'direction': '',
     }
 
     response_json = self.test_app.get(
@@ -238,8 +234,6 @@ class DashBoardTest(testing.AppengineTestCase):
         'signature': '',
         'top_cursor': '',
         'bottom_cursor': '',
-        'cursor': '',
-        'direction': '',
     }
 
     response_json = self.test_app.get(
@@ -263,8 +257,6 @@ class DashBoardTest(testing.AppengineTestCase):
         'signature': '',
         'top_cursor': '',
         'bottom_cursor': '',
-        'cursor': '',
-        'direction': '',
     }
 
     response_json = self.test_app.get(
@@ -289,8 +281,6 @@ class DashBoardTest(testing.AppengineTestCase):
         'signature': '',
         'top_cursor': '',
         'bottom_cursor': '',
-        'cursor': '',
-        'direction': '',
     }
 
     response_json = self.test_app.get(
@@ -315,8 +305,6 @@ class DashBoardTest(testing.AppengineTestCase):
         'signature': '',
         'top_cursor': '',
         'bottom_cursor': '',
-        'cursor': '',
-        'direction': '',
     }
 
     response_json = self.test_app.get(
@@ -342,8 +330,6 @@ class DashBoardTest(testing.AppengineTestCase):
         'signature': '',
         'top_cursor': '',
         'bottom_cursor': 'bottom_cursor',
-        'cursor': '',
-        'direction': '',
     }
 
     with mock.patch(
@@ -374,8 +360,6 @@ class DashBoardTest(testing.AppengineTestCase):
         'signature': self.crashes[4]['signature'],
         'top_cursor': '',
         'bottom_cursor': '',
-        'cursor': '',
-        'direction': '',
     }
 
     response_json = self.test_app.get(

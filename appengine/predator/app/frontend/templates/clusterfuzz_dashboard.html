@@ -48,14 +48,7 @@
       parameters['has_regression_range'] = $('#has_regression_range').val() == 'default' ? undefined : $('#has_regression_range').val();
       parameters['suspected_cls_triage_status'] = $('#suspected_cls_triage_status').val() == 'default' ? undefined : $('#suspected_cls_triage_status').val();
       parameters['regression_range_triage_status'] = $('#regression_range_triage_status').val() == 'default' ? undefined : $('#regression_range_triage_status').val();
-      parameters['signature'] = $('#signature').val() == ''? undefined : $('#signature').val();
-      if ('{{ cursor }}' != '') {
-        parameters['cursor'] = '{{ cursor }}';
-      }
-      if ('{{ direction }}' != '') {
-        parameters['direction'] = '{{ direction }}';
-      }
-
+      parameters['testcase_id'] = $('#testcase_id').val() == ''? undefined : $('#testcase_id').val();
       return parameters;
     }
 

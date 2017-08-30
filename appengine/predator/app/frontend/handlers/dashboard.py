@@ -112,8 +112,6 @@ class DashBoard(BaseHandler):
         'signature': self.request.get('signature'),
         'top_cursor': top_cusor,
         'bottom_cursor': bottom_cursor,
-        'cursor': self.request.get('cursor'),
-        'direction': self.request.get('direction'),
     }
 
     return {

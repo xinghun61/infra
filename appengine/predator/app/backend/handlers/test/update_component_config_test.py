@@ -54,6 +54,7 @@ _MOCK_CURRENT_CONFIG = {
         {'dirs': ['src/dirA'], 'component': 'compoA',
          'team': 'team1@chromium.org'},
     ],
+
     'owner_mapping_url': 'url',
     'top_n': 4,
 }
