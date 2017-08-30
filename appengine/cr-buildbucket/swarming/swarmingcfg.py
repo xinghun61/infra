@@ -2,13 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+# pylint: disable=line-too-long
+
 import copy
 import json
 import re
 
 from components.config import validation
-
-from proto import project_config_pb2
 
 
 DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
@@ -16,6 +16,8 @@ DIMENSION_KEY_RGX = re.compile(r'^[a-zA-Z\_\-]+$')
 # https://github.com/luci/luci-py/blob/75de6021b50a73e140eacfb80760f8c25aa183ff/appengine/swarming/server/task_request.py#L101
 # Keep it synchronized.
 CACHE_NAME_RE = re.compile(ur'^[a-z0-9_]{1,4096}$')
+# See https://chromium.googlesource.com/infra/luci/luci-py/+/master/appengine/swarming/server/service_accounts.py
+SERVICE_ACCOUNT_RE = re.compile(r'^[0-9a-zA-Z_\-\.\+\%]+@[0-9a-zA-Z_\-\.]+$')
 
 
 def validate_hostname(hostname, ctx):
@@ -23,6 +25,13 @@ def validate_hostname(hostname, ctx):
     ctx.error('unspecified')
   if '://' in hostname:
     ctx.error('must not contain "://"')
+
+
+def validate_service_account(service_account, ctx):
+  if service_account != 'bot' and not SERVICE_ACCOUNT_RE.match(service_account):
+    ctx.error(
+        'value "%s" does not match %s',
+        service_account, SERVICE_ACCOUNT_RE.pattern)
 
 
 def read_properties(recipe):
@@ -229,6 +238,10 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
 
   if builder.priority > 200:
     ctx.error('priority must be in [0, 200] range; got %d', builder.priority)
+
+  if builder.service_account:
+    with ctx.prefix('service_account: '):
+      validate_service_account(builder.service_account, ctx)
 
   for m in builder.mixins:
     if not m:

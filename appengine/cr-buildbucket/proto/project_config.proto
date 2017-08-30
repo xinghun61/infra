@@ -67,7 +67,7 @@ message Builder {
     optional string name = 2;
     // Revision of recipe to fetch. Defaults to the latest.
     optional string revision = 5;
-    // colon-separated build properties to set.
+    // Colon-separated build properties to set.
     // A property can be overriden by "properties" build parameter.
     //
     // Use this field for string properties and use properties_j for other
@@ -208,6 +208,10 @@ message Builder {
   // build, unique within the builder.
   // If enabled, limits the build creation rate in this builder to 5 per second.
   optional bool build_numbers = 11;
+  // Email of a service account to run the build as or literal 'bot' string to
+  // use Swarming bot's account (if available). Passed directly to Swarming.
+  // Subject to Swarming's ACLs.
+  optional string service_account = 12;
 }
 
 // Configuration of buildbucket-swarming integration for one bucket.

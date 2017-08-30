@@ -41,12 +41,14 @@ class ProjectCfgTest(testing.AppengineTestCase):
             dimensions: "cores:8"
             dimensions: "pool:default"
             dimensions: "cpu:x86-64"
+            service_account: "bot"
           }
           builders {
             name: "release"
             swarming_tags: "a:b'"
             dimensions: "os:Linux"
             dimensions: "cpu:"
+            service_account: "robot@example.com"
             caches {
               name: "git_chromium"
               path: "git_cache"
@@ -231,6 +233,20 @@ class ProjectCfgTest(testing.AppengineTestCase):
         [
           'builder rel: cache #2: duplicate name',
           'builder rel: cache #2: duplicate path',
+        ])
+
+    self.cfg_test(
+        '''
+          hostname: "example.com"
+          builders {
+            name: "b"
+            service_account: "not an email"
+          }
+        ''',
+        '',
+        [
+          'builder b: service_account: value "not an email" does not match '
+          '^[0-9a-zA-Z_\\-\\.\\+\\%]+@[0-9a-zA-Z_\\-\\.]+$',
         ])
 
   def test_default_recipe(self):

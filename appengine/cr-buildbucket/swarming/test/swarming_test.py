@@ -82,6 +82,7 @@ class SwarmingTest(BaseTest):
           dimensions: "pool:Chrome"
           priority: 108
           build_numbers: true
+          service_account: "robot@example.com"
           recipe {
             repository: "https://example.com/repo"
             name: "recipe"
@@ -385,6 +386,7 @@ class SwarmingTest(BaseTest):
         'swarming_hostname': 'chromium-swarm.appspot.com',
         'build_id': 1L,
       }, sort_keys=True),
+      'service_account': 'robot@example.com',
       'numerical_value_for_coverage_in_format_obj': 42,
     }
     self.assertEqual(ununicide(actual_task_def), expected_task_def)
@@ -580,6 +582,7 @@ class SwarmingTest(BaseTest):
         'swarming_hostname': 'chromium-swarm.appspot.com',
         'build_id': 1L,
       }, sort_keys=True),
+      'service_account': 'robot@example.com',
       'numerical_value_for_coverage_in_format_obj': 42,
     }
     self.assertEqual(ununicide(actual_task_def), expected_task_def)

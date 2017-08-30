@@ -386,6 +386,10 @@ def _create_task_def_async(
     # Swarming accepts priority as a string
     task['priority'] = str(builder_cfg.priority)
 
+  if builder_cfg.service_account:  # pragma: no branch
+    # Don't pass it if not defined, for backward compatibility.
+    task['service_account'] = builder_cfg.service_account
+
   swarming_tags = task.setdefault('tags', [])
   _extend_unique(swarming_tags, [
     'buildbucket_hostname:%s' % app_identity.get_default_version_hostname(),
