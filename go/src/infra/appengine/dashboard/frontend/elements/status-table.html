@@ -174,14 +174,17 @@
       }
 
       _computeCurrentIncidents(incidents) {
-        let currInc = [];
+        let currInc = 'green';
         incidents.forEach(incident => {
-          if(incident['open']) {
-            currInc.push(incident['severity'].toLowerCase());
+          if (currInc == 'green' && incident['open']) {
+            currInc = incident['severity'].toLowerCase();
           }
+          else if (currInc == 'yellow' && incident['severity'] == 'RED') {
+            currInc = 'red';
+          }
+
         });
-        if (!currInc.length) { currInc.push('green'); }
-        return currInc;
+        return [currInc];
       }
 
       _computePreviousIncidents(incidents) {
