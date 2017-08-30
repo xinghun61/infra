@@ -67,6 +67,7 @@ DEFAULT_CONFIG_DATA = {
                 'team': 'comp2-team'
             }
         ],
+        'owner_mapping_url': 'https://owner_mapping_url',
         'top_n': 4
     },
     'project_classifier': {

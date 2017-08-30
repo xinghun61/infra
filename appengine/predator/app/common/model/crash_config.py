@@ -14,11 +14,6 @@ from gae_libs.model.versioned_config import VersionedConfig
 
 class CrashConfig(VersionedConfig):
   """Global configuration of settings for processing Chrome crashes."""
-
-  def __init__(self, *args, **kargs):
-    super(CrashConfig, self).__init__(*args, **kargs)
-    self.cached_component_classifier = None
-
   # An example of fracas-specific parameters:
   # {
   #   'analysis_result_pubsub_topic': 'projects/project-name/topics/name',
@@ -116,32 +111,6 @@ class CrashConfig(VersionedConfig):
   # }
   component_classifier = ndb.JsonProperty(indexed=False, default={},
                                           compressed=True)
-
-  def ClearCache(self):
-    self.cached_component_classifier = None
-
-  # TODO: remove this property. It is only used by
-  # model/crash/test/crash_config_test.py, and is no longer necessary for
-  # crash/predator_for_chromecrash.py, which compiles and caches things
-  # on its own.
-  @property
-  def compiled_component_classifier(self):
-    """Returns the component classifier with all re patterns compiled."""
-    if self.cached_component_classifier is None and self.component_classifier:
-      compiled_path_function_component = []
-      for path, function, component in self.component_classifier[
-          'path_function_component']:
-        compiled_path_function_component.append(
-            [re.compile(path),
-             re.compile(function) if function else None,
-             component])
-
-      self.cached_component_classifier = {
-          'top_n': self.component_classifier['top_n'],
-          'path_function_component': compiled_path_function_component
-      }
-
-    return self.cached_component_classifier
 
   def GetClientConfig(self, client_id):
     """Gets client specific config using client_id."""

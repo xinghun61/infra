@@ -59,7 +59,7 @@ def UpdateInvertedIndexForCrash(crash_report, keyword_extractor,
 
 
 class UpdateInvertedIndex(BaseHandler):
-  PERMISSION_LEVEL = Permission.ADMIN
+  PERMISSION_LEVEL = Permission.APP_SELF
 
   def HandleGet(self):
     """Updates all inverted index for all crashes in last day."""

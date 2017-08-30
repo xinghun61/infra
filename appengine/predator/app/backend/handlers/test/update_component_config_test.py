@@ -23,72 +23,51 @@ from libs.http.retry_http_client import RetryHttpClient
 
 _MOCK_OWNERS_MAPPINGS = json.dumps({
   'component-to-team': {
-      "compoA": "team1@chromium.org",
-      "compoB": "team2@chromium.org",
-      "compoD": "team4@chromium.org"
+      'compoA': 'team1@chromium.org',
+      'compoB': 'team2@chromium.org',
+      'compoD': 'team4@chromium.org'
     },
   'dir-to-component': {
-      "dirA": "compoA",
-      "dirB": "compoB",
-      "dirC": "compoB",
-      "dirE": "compoE",
+      'dirA': 'compoA',
+      'dirB': 'compoB',
+      'dirC': 'compoB',
+      'dirE': 'compoE',
     }
 })
 
-_MOCK_PREDATOR_MAPPINGS = json.dumps({
-  'path_function_component': [
-    [
-      "file1",
-      "fn_a",
-      "compoA"
-    ],
-    [
-      "dirD",
-      "",
-      "compoD\ncompoA"
-    ],
-    [
-      "file2",
-      "",
-      "compoF"
-    ]
-  ],
-  'top_n': 4
-})
 
 _MOCK_CONFIG = {
     'component_info': [
-        {'dirs': ['file2'],
-         'component': 'compoF'},
-        {'dirs': ['dirD'],
-         'component': 'compoD',
-         'team': 'team4@chromium.org'},
-        {'dirs': ['src/dirE'],
-         'component': 'compoE'},
-        {'dirs': ['src/dirC', 'src/dirB'],
-         'component': 'compoB',
+        {'dirs': ['src/dirA'], 'component': 'compoA',
+         'team': 'team1@chromium.org'},
+        {'dirs': ['src/dirC', 'src/dirB'], 'component': 'compoB',
          'team': 'team2@chromium.org'},
-        {'dirs': ['src/dirA', 'file1', 'dirD'],
-         'function': 'fn_a',
-         'component': 'compoA',
-         'team': 'team1@chromium.org'}
+        {'dirs': ['src/dirE'], 'component': 'compoE'},
     ],
-    'top_n': 4
+    'owner_mapping_url': 'url',
+    'top_n': 4,
 }
 
 
-class DummyHttpClient(HttpClientAppengine):
-  def __init__(self):
-    super(DummyHttpClient, self).__init__()
-    self.requests = []
-    self.request_count = 0
+_MOCK_CURRENT_CONFIG = {
+    'component_info': [
+        {'dirs': ['src/dirA'], 'component': 'compoA',
+         'team': 'team1@chromium.org'},
+    ],
+    'owner_mapping_url': 'url',
+    'top_n': 4,
+}
 
-  def Get(self, url, params=None, timeout_seconds=60,  # pylint: disable=W
-          max_retries=5, retry_backoff=1.5, headers=None):  # pylint: disable=W
-    if url == 'mock_owners_mapping.json':
-      return 200, _MOCK_OWNERS_MAPPINGS
-    elif url == 'mock_predator_mapping.json':
-      return 200, _MOCK_PREDATOR_MAPPINGS
+
+class DummyHttpClient(HttpClientAppengine):  # pragma: no cover.
+  def __init__(self, config=None, response=None):
+    super(DummyHttpClient, self).__init__()
+    self.mock_owners_mappings = config or CrashConfig.Get().component_classifier
+    self.response = response or _MOCK_OWNERS_MAPPINGS
+
+  def Get(self, *_):  # pylint: disable=W
+    if 'owner_mapping_url' in self.mock_owners_mappings:
+      return 200, self.response
     else:
       return 500, {}
 
@@ -105,25 +84,104 @@ class UpdateComponentConfigTest(TestCase):
 
   def testGetComponentClassifierConfig(self):
     component_classifier_config = GetComponentClassifierConfig(
-        'mock_owners_mapping.json', 'mock_predator_mapping.json',
-        DummyHttpClient())
+        _MOCK_CURRENT_CONFIG, DummyHttpClient({'owner_mapping_url': 'url'}))
     self.assertDictEqual(_MOCK_CONFIG, component_classifier_config)
 
   def testGetComponentClassifierConfigNoOWNERS(self):
     component_classifier_config = GetComponentClassifierConfig(
-        'mock_no_owner', 'mock_predator', DummyHttpClient())
-    self.assertIsNone(component_classifier_config)
-
-  def testGetComponentClassifierConfigNoPredator(self):
-    component_classifier_config = GetComponentClassifierConfig(
-        'mock_owners_mapping.json', 'mock_predator', DummyHttpClient())
+        _MOCK_CURRENT_CONFIG, DummyHttpClient(config={'top_n': 3}))
     self.assertIsNone(component_classifier_config)
 
   @mock.patch(
       'backend.handlers.update_component_config.GetComponentClassifierConfig')
   def testHandleGet(self, mocked_get_component_classifier_config):
     mocked_get_component_classifier_config.return_value = _MOCK_CONFIG
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    response = self.test_app.get('/process/update-component-config')
+    response = self.test_app.get('/process/update-component-config',
+                                 headers={'X-AppEngine-Cron': 'true'})
     self.assertEqual(response.status_int, 200)
     self.assertDictEqual(_MOCK_CONFIG, CrashConfig.Get().component_classifier)
+
+  def testSortingComponentsByPathLevels(self):
+    """Tests that components are sorted by directory path with the most '/'."""
+    owners_mappings = json.dumps({
+      'component-to-team': {
+          'C>D>E': 'team1@chromium.org',
+          'C>F': 'team2@chromium.org',
+        },
+      'dir-to-component': {
+          'a/b': 'C>D>E',
+          'a/b/c': 'C>F',
+        }
+    })
+    current_config = {
+        'owner_mapping_url': 'url',
+        'top_n': 3
+    }
+
+    expected_components = {
+        'component_info': [
+            {
+                'dirs': ['src/a/b/c'],
+                'component': 'C>F',
+                'team': 'team2@chromium.org'
+            },
+            {
+                'dirs': ['src/a/b'],
+                'component': 'C>D>E',
+                'team': 'team1@chromium.org'
+            },
+        ],
+        'owner_mapping_url': 'url',
+        'top_n': 3,
+    }
+    components = GetComponentClassifierConfig(
+        current_config,
+        http_client=DummyHttpClient(config=current_config,
+                                    response=owners_mappings))
+    self.assertDictEqual(components, expected_components)
+
+  def testSortingComponentsByPathLevelsForPlatformComponents(self):
+    """Tests that components are sorted by directory path with the most '/'."""
+    owners_mappings = json.dumps({
+      'component-to-team': {
+          'A(Android)': 'team1@chromium.org',
+          'A>B(Android)': 'team2@chromium.org',
+          'A>B>C(Android)': 'team3@chromium.org',
+        },
+      'dir-to-component': {
+          'a': 'A(Android)',
+          'a/b': 'A>B(Android)',
+          'a/b/c': 'A>B>C(Android)',
+        }
+    })
+    current_config = {
+        'owner_mapping_url': 'url',
+        'top_n': 3
+    }
+
+    expected_components = {
+        'component_info': [
+            {
+                'dirs': ['src/a/b/c'],
+                'component': 'A>B>C(Android)',
+                'team': 'team3@chromium.org',
+            },
+            {
+                'dirs': ['src/a/b'],
+                'component': 'A>B(Android)',
+                'team': 'team2@chromium.org',
+            },
+            {
+                'dirs': ['src/a'],
+                'component': 'A(Android)',
+                'team': 'team1@chromium.org',
+            },
+        ],
+        'owner_mapping_url': 'url',
+        'top_n': 3,
+    }
+    components = GetComponentClassifierConfig(
+        current_config,
+        http_client=DummyHttpClient(config=current_config,
+                                    response=owners_mappings))
+    self.assertDictEqual(components, expected_components)

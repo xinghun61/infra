@@ -60,8 +60,8 @@ class UpdateInvertedIndexTest(TestCase):
     crash_analysis2.requested_time = datetime.utcnow() - timedelta(hours=1)
     crash_analysis2.put()
 
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    response = self.test_app.get('/process/update-inverted-index')
+    response = self.test_app.get('/process/update-inverted-index',
+                                 headers={'X-AppEngine-Cron': 'true'})
     self.assertEqual(response.status_int, 200)
     self.assertEqual(ChromeCrashInvertedIndex.GetRoot().n_of_doc, 2)
     self.assertEqual(ChromeCrashInvertedIndex.query().fetch(), [])
@@ -85,8 +85,8 @@ class UpdateInvertedIndexTest(TestCase):
     crash_analysis.stacktrace = Stacktrace([callstack], callstack)
     crash_analysis.put()
 
-    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
-    response = self.test_app.get('/process/update-inverted-index')
+    response = self.test_app.get('/process/update-inverted-index',
+                                 headers={'X-AppEngine-Cron': 'true'})
     self.assertEqual(response.status_int, 200)
     self.assertEqual(ChromeCrashInvertedIndex.GetRoot().n_of_doc, 1)
     self.assertEqual(

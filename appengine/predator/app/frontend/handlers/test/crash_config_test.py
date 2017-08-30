@@ -51,6 +51,7 @@ _MOCK_COMPONENT_CONFIG = {
             'component': 'Comp2>Dummy'
         },
     ],
+    'owner_mapping_url': 'http://owner_mapping_url',
     'top_n': 4
 }
 
@@ -273,9 +274,16 @@ class CrashConfigTest(TestCase):
     config = {'component_info': [None]}
     self.assertFalse(crash_config._ValidateComponentClassifierConfig(config))
 
+    # Return False if config "owner_mapping_url" is not string.
+    config = {'component_info':
+              _MOCK_COMPONENT_CONFIG['component_info'],
+              'owner_mapping_url': None}
+    self.assertFalse(crash_config._ValidateComponentClassifierConfig(config))
+
     # Return False if config "top_n" is not int.
     config = {'component_info':
               _MOCK_COMPONENT_CONFIG['component_info'],
+              'owner_mapping_url': 'http://owner_mapping_url',
               'top_n': []}
     self.assertFalse(crash_config._ValidateComponentClassifierConfig(config))
 

@@ -200,6 +200,7 @@ def _ValidateComponentClassifierConfig(component_classifier_config):
                 ]
               },
            ],
+          'owner_mapping_url': 'mapping_url',
           'top_n': 4
       }
 
@@ -217,6 +218,10 @@ def _ValidateComponentClassifierConfig(component_classifier_config):
 
   if not all(isinstance(component, dict)
              for component in component_info):
+    return False
+
+  owner_mapping_url = component_classifier_config.get('owner_mapping_url')
+  if not isinstance(owner_mapping_url, basestring):
     return False
 
   top_n = component_classifier_config.get('top_n')
@@ -344,7 +349,6 @@ class CrashConfig(BaseHandler):
     _SortConfig(new_config_dict)
 
     crash_config = CrashConfigModel.Get()
-    crash_config.ClearCache()
     crash_config.Update(
         users.get_current_user(), users.IsCurrentUserAdmin(), **new_config_dict)
     return self.HandleGet()
