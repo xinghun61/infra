@@ -36,6 +36,8 @@ def RunSteps(api, dry_run):
       api.third_party_packages.gcloud.package()
     with api.step.nest('ninja'):
       api.third_party_packages.ninja.package()
+    with api.step.nest('cmake'):
+      api.third_party_packages.cmake.package()
 
 
 def GenTests(api):
@@ -75,7 +77,13 @@ def GenTests(api):
       cipd_search(
         'ninja',
         api.third_party_packages.ninja.PACKAGE_PREFIX + platform,
-        '1.7.2' + api.third_party_packages.ninja.PACKAGE_VERSION_SUFFIX)
+        '1.7.2' + api.third_party_packages.ninja.PACKAGE_VERSION_SUFFIX) +
+      api.step_data('cmake.refs',
+        api.gitiles.make_refs_test_data('refs/tags/v3.9.1')) +
+      cipd_search(
+        'cmake',
+        api.third_party_packages.cmake.PACKAGE_PREFIX + platform,
+        '3.9.1' + api.third_party_packages.cmake.PACKAGE_VERSION_SUFFIX)
     )
 
   yield (

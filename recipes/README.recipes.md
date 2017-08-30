@@ -41,6 +41,7 @@
   * [sheriff-o-matic-wct](#recipes-sheriff-o-matic-wct)
   * [sync_submodules](#recipes-sync_submodules)
   * [third_party_packages](#recipes-third_party_packages) &mdash; This recipe builds and packages third party software, such as Git.
+  * [third_party_packages:examples/cmake](#recipes-third_party_packages_examples_cmake) &mdash; Recipe for 'cmake' building.
   * [third_party_packages:examples/gcloud](#recipes-third_party_packages_examples_gcloud) &mdash; Recipe for Google Cloud SDK building.
   * [third_party_packages:examples/git](#recipes-third_party_packages_examples_git) &mdash; Recipe for 'git' building.
   * [third_party_packages:examples/ninja](#recipes-third_party_packages_examples_ninja) &mdash; Recipe for 'ninja' building.
@@ -157,31 +158,33 @@ Args:
 
 [DEPS](/recipes/recipe_modules/third_party_packages/__init__.py#5): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/url][recipe_engine/recipe_modules/url]
 
-#### **class [ThirdPartyPackagesApi](/recipes/recipe_modules/third_party_packages/api.py#14)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
+#### **class [ThirdPartyPackagesApi](/recipes/recipe_modules/third_party_packages/api.py#15)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [build\_package](/recipes/recipe_modules/third_party_packages/api.py#118)(self, name, workdir, root, install_mode):**
+&mdash; **def [build\_package](/recipes/recipe_modules/third_party_packages/api.py#123)(self, name, workdir, root, install_mode):**
 
-&mdash; **def [does\_package\_exist](/recipes/recipe_modules/third_party_packages/api.py#114)(self, name, version):**
+&emsp; **@property**<br>&mdash; **def [cmake](/recipes/recipe_modules/third_party_packages/api.py#51)(self):**
 
-&emsp; **@dry_run.setter**<br>&mdash; **def [dry\_run](/recipes/recipe_modules/third_party_packages/api.py#24)(self, v):**
+&mdash; **def [does\_package\_exist](/recipes/recipe_modules/third_party_packages/api.py#119)(self, name, version):**
 
-&mdash; **def [ensure\_package](/recipes/recipe_modules/third_party_packages/api.py#53)(self, workdir, repo_url, package_name_prefix, install_fn, tag, version, cipd_install_mode, test_fn=None):**
+&emsp; **@dry_run.setter**<br>&mdash; **def [dry\_run](/recipes/recipe_modules/third_party_packages/api.py#25)(self, v):**
+
+&mdash; **def [ensure\_package](/recipes/recipe_modules/third_party_packages/api.py#58)(self, workdir, repo_url, package_name_prefix, install_fn, tag, version, cipd_install_mode, test_fn=None):**
 
 Ensures that the specified CIPD package exists.
 
-&emsp; **@property**<br>&mdash; **def [gcloud](/recipes/recipe_modules/third_party_packages/api.py#42)(self):**
+&emsp; **@property**<br>&mdash; **def [gcloud](/recipes/recipe_modules/third_party_packages/api.py#43)(self):**
 
-&mdash; **def [get\_latest\_release\_tag](/recipes/recipe_modules/third_party_packages/api.py#91)(self, repo_url, prefix='v'):**
+&mdash; **def [get\_latest\_release\_tag](/recipes/recipe_modules/third_party_packages/api.py#96)(self, repo_url, prefix='v'):**
 
-&emsp; **@property**<br>&mdash; **def [git](/recipes/recipe_modules/third_party_packages/api.py#38)(self):**
+&emsp; **@property**<br>&mdash; **def [git](/recipes/recipe_modules/third_party_packages/api.py#39)(self):**
 
-&emsp; **@property**<br>&mdash; **def [ninja](/recipes/recipe_modules/third_party_packages/api.py#46)(self):**
+&emsp; **@property**<br>&mdash; **def [ninja](/recipes/recipe_modules/third_party_packages/api.py#47)(self):**
 
-&emsp; **@property**<br>&mdash; **def [python](/recipes/recipe_modules/third_party_packages/api.py#34)(self):**
+&emsp; **@property**<br>&mdash; **def [python](/recipes/recipe_modules/third_party_packages/api.py#35)(self):**
 
-&mdash; **def [register\_package](/recipes/recipe_modules/third_party_packages/api.py#123)(self, package_file, name, version):**
+&mdash; **def [register\_package](/recipes/recipe_modules/third_party_packages/api.py#128)(self, package_file, name, version):**
 
-&mdash; **def [support\_prefix](/recipes/recipe_modules/third_party_packages/api.py#50)(self, base):**
+&mdash; **def [support\_prefix](/recipes/recipe_modules/third_party_packages/api.py#55)(self, base):**
 ### *recipe_modules* / [wct](/recipes/recipe_modules/wct)
 
 [DEPS](/recipes/recipe_modules/wct/__init__.py#1): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -406,6 +409,16 @@ A continuous builder which runs recipe tests.
 This recipe builds and packages third party software, such as Git.
 
 &mdash; **def [RunSteps](/recipes/recipes/third_party_packages.py#24)(api, dry_run):**
+### *recipes* / [third\_party\_packages:examples/cmake](/recipes/recipe_modules/third_party_packages/examples/cmake.py)
+
+[DEPS](/recipes/recipe_modules/third_party_packages/examples/cmake.py#14): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [third\_party\_packages](#recipe_modules-third_party_packages), [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/url][recipe_engine/recipe_modules/url]
+
+Recipe for 'cmake' building.
+
+During testing, it may be useful to focus on building CMake. This can be done by
+running this recipe module directly.
+
+&mdash; **def [RunSteps](/recipes/recipe_modules/third_party_packages/examples/cmake.py#43)(api, dry_run):**
 ### *recipes* / [third\_party\_packages:examples/gcloud](/recipes/recipe_modules/third_party_packages/examples/gcloud.py)
 
 [DEPS](/recipes/recipe_modules/third_party_packages/examples/gcloud.py#14): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [third\_party\_packages](#recipe_modules-third_party_packages), [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/url][recipe_engine/recipe_modules/url]

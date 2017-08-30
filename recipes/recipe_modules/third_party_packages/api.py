@@ -6,6 +6,7 @@ from . import gcloud as tpp_gcloud
 from . import git as tpp_git
 from . import python as tpp_python
 from . import ninja as tpp_ninja
+from . import cmake as tpp_cmake
 from .support_prefix import SupportPrefix
 
 from recipe_engine import recipe_api
@@ -46,6 +47,10 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
   @property
   def ninja(self):
     return self._get_singleton(tpp_ninja.NinjaApi)
+
+  @property
+  def cmake(self):
+    return self._get_singleton(tpp_cmake.CMakeApi)
 
   def support_prefix(self, base):
     return SupportPrefix(self, base)
