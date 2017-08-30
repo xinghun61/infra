@@ -4,20 +4,22 @@
 
 import os
 
+from analysis.type_enums import CrashClient
+
 
 CRASH_BACKEND = {
-    'fracas': 'backend-fracas',
-    'cracas': 'backend-cracas',
-    'clusterfuzz': 'backend-clusterfuzz',
-    'uma sampling profiler': 'backend-uma-sampling-profiler',
+    CrashClient.FRACAS: 'backend-fracas',
+    CrashClient.CRACAS: 'backend-cracas',
+    CrashClient.CLUSTERFUZZ: 'backend-clusterfuzz',
+    CrashClient.UMA_SAMPLING_PROFILER: 'backend-uma-sampling-profiler',
 }
 
 
 CRASH_ANALYSIS_QUEUE = {
-    'fracas': 'fracas-analysis-queue',
-    'cracas': 'cracas-analysis-queue',
-    'clusterfuzz': 'clusterfuzz-analysis-queue',
-    'uma sampling profiler': 'uma-sampling-profiler-analysis-queue',
+    CrashClient.FRACAS: 'fracas-analysis-queue',
+    CrashClient.CRACAS: 'cracas-analysis-queue',
+    CrashClient.CLUSTERFUZZ: 'clusterfuzz-analysis-queue',
+    CrashClient.UMA_SAMPLING_PROFILER: 'uma-sampling-profiler-analysis-queue',
 }
 
 
