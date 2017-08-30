@@ -76,6 +76,38 @@ def _CalculateRunParametersForSwarmingTask(analysis, target_iterations):
   return (iterations_for_task, time_for_task_seconds)
 
 
+def _GetTargetIterations(iterations_completed, max_iterations_to_rerun):
+  """Returns the number of iterations that should be run for a swarming task.
+
+    Args:
+        iterations_completed (int): the number of iterations completed at the
+            current build.
+        max_iterations_to_rerun (int): the maximum number of iterations to run
+            for any given build.
+    Returns:
+      (int) The number of iterations that should be run for a swarming task.
+  """
+  # TODO(757920): Factor DEFAULT_ITERATIONS_PER_TASK out to config.
+  if iterations_completed and max_iterations_to_rerun:
+    return min(max_iterations_to_rerun - iterations_completed,
+               flake_constants.DEFAULT_ITERATIONS_PER_TASK)
+  return flake_constants.DEFAULT_ITERATIONS_PER_TASK
+
+
+def _TestDoesNotExist(pass_rate_a, pass_rate_b):
+  """Check if the test exists, used before checking for convergence.
+
+  Args:
+    pass_rate_a (float): pass rate at one point in time.
+    pass_rate_b (float): pass rate at a different point in time.
+
+  Returns:
+    True if the pass rates indicate that the tests exist, False otherwise.
+  """
+  return (pass_rate_a == flake_constants.PASS_RATE_TEST_NOT_FOUND or
+          pass_rate_b == flake_constants.PASS_RATE_TEST_NOT_FOUND)
+
+
 class DetermineTruePassRatePipeline(BasePipeline):
   """Determines the true pass rate at a build_number."""
 
@@ -131,9 +163,11 @@ class DetermineTruePassRatePipeline(BasePipeline):
           constants.WATERFALL_BACKEND)
       update_flake_bug_pipeline.start(queue_name=self.queue_name or
                                       constants.DEFAULT_QUEUE)
-      logging.warning('Swarming task %s ended in error after %d attempts.',
-                      flake_swarming_task,
-                      analysis.swarming_task_attempts_for_build)
+      logging.info(
+          '%s/%s/%s/%s/%s Swarming task %s ended in error after %d attempts.',
+          analysis.master_name, analysis.builder_name, analysis.build_number,
+          analysis.step_name, analysis.test_name, flake_swarming_task,
+          analysis.swarming_task_attempts_for_build)
       raise pipeline.Abort()
 
     # Before we run the swarming task, get the pass rate.
@@ -142,10 +176,9 @@ class DetermineTruePassRatePipeline(BasePipeline):
     pass_rate_before = (data_point_for_build_number.pass_rate
                         if data_point_for_build_number else None)
 
-    # Get the number of iterations and the timeout for the main swarming task.
-    # TODO(757920): Factor DEFAULT_ITERATIONS_PER_TASK out to config.
-    target_iterations = min(max_iterations_to_rerun - iterations_completed,
-                            flake_constants.DEFAULT_ITERATIONS_PER_TASK)
+    # How many iterations, and the timeout for the task.
+    target_iterations = _GetTargetIterations(iterations_completed,
+                                             max_iterations_to_rerun)
     (iterations_for_task,
      time_for_task_seconds) = _CalculateRunParametersForSwarmingTask(
          analysis, target_iterations)
@@ -193,7 +226,13 @@ class DetermineTruePassRatePipeline(BasePipeline):
                      analysis.step_name, analysis.test_name,
                      iterations_for_task, build_number)
 
-      if _HasPassRateConverged(pass_rate_before, pass_rate_after):
+      if _TestDoesNotExist(pass_rate_before, pass_rate_after):
+        logging.info('%s/%s/%s/%s/%s No test found at build number %d',
+                     analysis.master_name, analysis.builder_name,
+                     analysis.build_number, analysis.step_name,
+                     analysis.test_name, build_number)
+        return
+      elif _HasPassRateConverged(pass_rate_before, pass_rate_after):
         logging.info('%s/%s/%s/%s/%s pass rate has converged for build number'
                      ' %d.', analysis.master_name, analysis.builder_name,
                      analysis.build_number, analysis.step_name,
