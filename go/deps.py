@@ -67,17 +67,6 @@ VENDORED_TOOLS = [
 ]
 
 
-# Stuff NOT to include in the CIPD bundle, as a list of regexps for linux-style
-# paths rooted at .vendor/src/.
-#
-# Use 'deps.py bundle --to-file=bundle.zip' to build and examine a bundle
-# without actually uploading it.
-GARBAGE = [
-  # Unneeded Java stuff, long paths, breaks on Windows.
-  r'golang\.org/x/mobile/misc/androidstudio/.*'
-]
-
-
 # infra/
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -461,6 +450,45 @@ def temp_file(body=None, root=None):
     os.remove(tmp)
 
 
+def purify_directory(path):
+  """Removes all non-important files from a directory.
+
+  Also drops +x bit on remaining regular files.
+
+  Works recursively. For each file calls 'is_source_or_license(full_path)'
+  to detect whether it is important or not, and deletes the file if not.
+
+  Returns a number of remaining direct children of 'path'.
+  """
+  # Note: recursively removing empty directories is not trivial with os.walk.
+  # Doing the recursion directly is simpler.
+  remaning = 0
+  for name in os.listdir(path):
+    full_path = os.path.join(path, name)
+    mode = os.lstat(full_path).st_mode
+    if stat.S_ISDIR(mode):
+      if not purify_directory(full_path):
+        # The child directory is empty now, can be removed.
+        os.rmdir(full_path)
+        continue
+    elif not is_source_or_license(full_path):
+      os.remove(full_path)
+      continue
+    elif mode & stat.S_IXUSR:
+      # Some *.go files inexplicably have +x bit. Drop it.
+      os.chmod(full_path, 0644)
+    remaning += 1
+  return remaning
+
+
+def is_source_or_license(path):
+  """Returns True if 'path' point to a file we want to keep."""
+  name = os.path.basename(path)
+  return (
+      name.startswith('LICENSE') or
+      name.endswith(('.c', '.go', '.s')) and not name.endswith('_test.go'))
+
+
 def cipd(workspace, args, silent=False):
   """Calls 'cipd' tool (from PATH), returns the process exit code."""
   cmd = ['cipd.bat' if sys.platform == 'win32' else 'cipd']
@@ -583,6 +611,9 @@ def install(workspace, force=False, update_out=None, skip_bundle=False):
             time.sleep(delay)
           else:
             raise e
+    # Remove all garbage, we need only non-test source code to use dependencies.
+    print 'Removing non-source code files...'
+    purify_directory(os.path.join(workspace.vendor_root, 'src'))
 
   # Prebuild all packages specified in deps.lock into *.a archives. It should
   # speed up compilation of code that depends on them. Note that doing simple
@@ -708,7 +739,6 @@ def bundle(workspace, out_file=None):
     'data': [
       {
         'dir': 'src',
-        'exclude': GARBAGE,
       },
       {
         'file': BUNDLED_LOCK,
