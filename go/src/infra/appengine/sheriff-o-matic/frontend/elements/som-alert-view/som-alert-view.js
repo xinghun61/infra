@@ -170,6 +170,10 @@ class SomAlertView extends Polymer.mixinBehaviors(
 
   refresh() {
     this.$.annotations.fetch();
+
+    // Refresh annotations but nothing else on the examine page.
+    if (this._currentAlertView == 'examineAlert') return;
+
     this.$.bugQueue.refresh();
     this.$.masterRestarts.refresh();
     this.$.treeStatus.refresh();
@@ -243,7 +247,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
 
   _computeCurrentAlertView(examinedAlert,logdiffKey) {
     if(logdiffKey) {
-      return "logdiffAlert";
+      return 'logdiffAlert';
     }
     if (examinedAlert && examinedAlert.key) {
       return 'examineAlert';
