@@ -486,7 +486,8 @@ def is_source_or_license(path):
   name = os.path.basename(path)
   return (
       name.startswith('LICENSE') or
-      name.endswith(('.c', '.go', '.s')) and not name.endswith('_test.go'))
+      name.endswith(('.c', '.h', '.go', '.s')) and
+      not name.endswith('_test.go'))
 
 
 def cipd(workspace, args, silent=False):

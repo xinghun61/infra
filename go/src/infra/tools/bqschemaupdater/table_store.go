@@ -39,6 +39,6 @@ func (ts bqTableStore) createTable(ctx context.Context, datasetID, tableID strin
 
 func (ts bqTableStore) updateTable(ctx context.Context, datasetID, tableID string, toUpdate bigquery.TableMetadataToUpdate) error {
 	t := ts.c.Dataset(datasetID).Table(tableID)
-	_, err := t.Update(ctx, toUpdate)
+	_, err := t.Update(ctx, toUpdate, "")
 	return err
 }
