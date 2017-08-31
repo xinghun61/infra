@@ -390,6 +390,14 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     self.testbed.init_user_stub()
     self.testbed.init_memcache_stub()
 
+    self.project_id = 789
+    self.default_config = tracker_bizobj.MakeDefaultProjectIssueConfig(
+        self.project_id)
+    self.services = service_manager.Services(
+        project=fake.ProjectService())
+    self.project = self.services.project.TestAddProject(
+        'proj', project_id=self.project_id)
+
   def tearDown(self):
     self.testbed.deactivate()
     self.mox.UnsetStubs()
@@ -404,6 +412,40 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     callback = frontendsearchpipeline._MakeBackendCallback(func, 10, 20)
     callback()
     self.assertEqual([(10, 20)], called_with)
+
+  def testParseUserQuery_CheckQuery(self):
+    warnings = []
+    msg = frontendsearchpipeline._CheckQuery(
+        'cnxn', self.services, 'ok query', self.default_config,
+        [self.project_id], warnings=warnings)
+    self.assertIsNone(msg)
+    self.assertEqual([], warnings)
+
+    warnings = []
+    msg = frontendsearchpipeline._CheckQuery(
+        'cnxn', self.services, 'modified:0-0-0', self.default_config,
+        [self.project_id], warnings=warnings)
+    self.assertEqual(
+        'Could not parse date: 0-0-0',
+        msg)
+
+    warnings = []
+    msg = frontendsearchpipeline._CheckQuery(
+        'cnxn', self.services, 'foo (bar)', self.default_config,
+        [self.project_id], warnings=warnings)
+    self.assertIsNone(msg)
+    self.assertEqual(
+        ['Parentheses are ignored in user queries.'],
+        warnings)
+
+    warnings = []
+    msg = frontendsearchpipeline._CheckQuery(
+        'cnxn', self.services, 'blocking:3.14', self.default_config,
+        [self.project_id], warnings=warnings)
+    self.assertEqual(
+        'Could not parse issue reference: 3.14',
+        msg)
+    self.assertEqual([], warnings)
 
   def testStartBackendSearch(self):
     # TODO(jrobbins): write this test.
@@ -713,7 +755,7 @@ class FrontendSearchPipelineMethodsTest(unittest.TestCase):
     self.assertEqual([], rpc_tuples)
     self.assertEqual({2: []}, filtered_iids)
     self.assertEqual({2: False}, search_limit_reached)
-    self.assertEqual(set(), error_responses)
+    self.assertEqual({2}, error_responses)
 
 
   def testHandleBackendSearchResponse_Normal(self):

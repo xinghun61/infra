@@ -673,24 +673,3 @@ class QueryParsingUnitTest(unittest.TestCase):
         ['Parentheses are ignored in saved queries.'],
         warnings)
 
-  def testParseUserQuery_CheckSyntax(self):
-    warnings = []
-    msg = query2ast.CheckSyntax(
-        'ok query', self.default_config, warnings=warnings)
-    self.assertIsNone(msg)
-    self.assertEqual([], warnings)
-
-    warnings = []
-    msg = query2ast.CheckSyntax(
-        'modified:0-0-0', self.default_config, warnings=warnings)
-    self.assertEqual(
-        'Could not parse date: 0-0-0',
-        msg)
-
-    warnings = []
-    msg = query2ast.CheckSyntax(
-        'foo (bar)', self.default_config, warnings=warnings)
-    self.assertIsNone(msg)
-    self.assertEqual(
-        ['Parentheses are ignored in user queries.'],
-        warnings)

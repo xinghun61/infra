@@ -35,6 +35,7 @@ from framework import paginate
 from framework import permissions
 from framework import sorting
 from framework import urls
+from search import ast2ast
 from search import query2ast
 from search import searchpipeline
 from services import fulltext_helpers
@@ -108,8 +109,9 @@ class FrontendSearchPipeline(object):
     self.visible_results = None  # allowed_results on current pagination page.
     self.error_responses = set()
 
-    error_msg = query2ast.CheckSyntax(
-        self.mr.query, self.harmonized_config, warnings=self.mr.warnings)
+    error_msg = _CheckQuery(
+        self.mr.cnxn, self.services, self.mr.query, self.harmonized_config,
+        self.query_project_ids, warnings=self.mr.warnings)
     if error_msg:
       self.mr.errors.query = error_msg
 
@@ -462,6 +464,23 @@ class FrontendSearchPipeline(object):
         'len(visible_results): %r' % (
             self.visible_results and len(self.visible_results))]
     return '%s(%s)' % (self.__class__.__name__, '\n'.join(parts))
+
+
+def _CheckQuery(
+    cnxn, services, query, harmonized_config, project_ids, warnings=None):
+  """Parse the given query and report the first error or None."""
+  try:
+    query_ast = query2ast.ParseUserQuery(
+        query, '', query2ast.BUILTIN_ISSUE_FIELDS, harmonized_config,
+        warnings=warnings)
+    query_ast = ast2ast.PreprocessAST(
+        cnxn, query_ast, project_ids, services, harmonized_config)
+  except query2ast.InvalidQueryError as e:
+    return e.message
+  except ast2ast.MalformedQuery as e:
+    return e.message
+
+  return None
 
 
 def _MakeBackendCallback(func, *args):
@@ -827,6 +846,7 @@ def _HandleBackendSearchResponse(
       # 400s than 500s, and shouldn't be retried.
       logging.error('Backend shard %r returned error "%r"' % (
           shard_key, json_data.get('error')))
+      error_responses.add(shard_key)
 
   except Exception as e:
     if duration_sec > FAIL_FAST_LIMIT_SEC:  # Don't log fail-fast exceptions.

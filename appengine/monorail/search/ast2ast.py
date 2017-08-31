@@ -178,7 +178,11 @@ def _GetIssueIDsFromLocalIdsCond(cnxn, cond, project_ids, services):
   # Populate refs with (project_name, local_id) pairs.
   refs = []
   for val in cond.str_values:
-    project_name, local_id = tracker_bizobj.ParseIssueRef(val)
+    try:
+      project_name, local_id = tracker_bizobj.ParseIssueRef(val)
+    except ValueError as e:
+      logging.exception(e)
+      raise MalformedQuery('Could not parse issue reference: %s' % val)
     if not project_name:
       if not default_project_name:
         # TODO(rmistry): Support the below.

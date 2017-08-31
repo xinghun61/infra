@@ -439,17 +439,6 @@ def _CalculatePastDate(days_ago, now=None):
   return ts
 
 
-def CheckSyntax(query, harmonized_config, warnings=None):
-  """Parse the given query and report the first error or None."""
-  try:
-    ParseUserQuery(
-        query, '', BUILTIN_ISSUE_FIELDS, harmonized_config, warnings=warnings)
-  except InvalidQueryError as e:
-    return e.message
-
-  return None
-
-
 class Error(Exception):
   """Base exception class for this package."""
   pass
