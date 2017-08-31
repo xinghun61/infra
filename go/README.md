@@ -38,7 +38,8 @@ Structurally `infra/go` represents two workspaces (two directories in
 `$GOPATH`):
 
    * `infra/go` itself is a GOPATH with Chrome Infra go code and a bunch of
-     Chrome Infra owned projects (e.g. [luci-go](https://github.com/luci/luci-go)),
+     Chrome Infra owned projects
+     (e.g. [luci-go](https://chromium.googlesource.com/infra/luci/luci-go)),
      that are DEPSed in into `infra/go/src/`. Such structure allows us to run CI
      for these projects in a hermetic environment on Chrome Infra waterfalls.
    * `infra/go/.vendor` is a GOPATH with locked versions of all third party code
@@ -51,8 +52,8 @@ Note that `infra/go` is not "go get"-able, since it's not a go package. It's
 GOPATH workspace.
 
 The majority of active development is happening in
-[luci-go](https://github.com/luci/luci-go) project that **is** a proper Go
-package and can be fetched with `go get`.
+[luci-go](https://chromium.googlesource.com/infra/luci/luci-go) project that
+**is** a proper Go package and can be fetched with `go get`.
 
 luci-go doesn't pin any dependencies, assuming the end users (whoever links to
 it) will do it themselves. `infra/go` workspace is one such end user. This
@@ -87,7 +88,7 @@ For example:
 ```shell
 cd infra/go
 eval `./env.py`
-go install github.com/luci/luci-go/tools/cmd/...
+go install go.chromium.org/luci/tools/cmd/...
 ./bin/cproto --help  # infra/go/bin is where executables are installed
 cproto --help        # infra/go/bin is also in $PATH
 ```
@@ -139,7 +140,7 @@ cd infra/go
 eval `./env.py`
 ./deps.py update                    # bump revisions
 ./deps.py install                   # install new versions into .vendor/*
-go test github.com/luci/luci-go/... # make sure everything works
+go test go.chromium.org/luci/...    # make sure everything works
 git add deps.lock                   # commit new versions into the repo
 git commit ...
 ```
