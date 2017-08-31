@@ -6,3 +6,6 @@ package infraenv
 
 // ProdLogDogHost is the production LogDog host value.
 const ProdLogDogHost = "luci-logdog.appspot.com"
+
+// ProdMiloHost is the production Milo host value.
+const ProdMiloHost = "luci-milo.appspot.com"
