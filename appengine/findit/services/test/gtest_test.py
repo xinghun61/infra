@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import base64
+import json
 import os
 
 from services import gtest
@@ -58,7 +59,7 @@ class GtestTest(wf_testcase.WaterfallTestCase):
     step_log = self._GetGtestResultLog(master_name, builder_name, build_number,
                                        step_name)
 
-    failed_test_log = gtest.GetConsistentTestFailureLog(step_log)
+    failed_test_log = gtest.GetConsistentTestFailureLog(json.loads(step_log))
     self.assertEqual(expected_failure_log, failed_test_log)
 
   def testGetTestLevelFailuresFlaky(self):
@@ -72,19 +73,5 @@ class GtestTest(wf_testcase.WaterfallTestCase):
     step_log = self._GetGtestResultLog(master_name, builder_name, build_number,
                                        step_name)
 
-    failed_test_log = gtest.GetConsistentTestFailureLog(step_log)
-    self.assertEqual(expected_failure_log, failed_test_log)
-
-  def testGetTestLevelFailuresInvalid(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 125
-    step_name = 'abc_test'
-
-    expected_failure_log = 'invalid'
-
-    step_log = self._GetGtestResultLog(master_name, builder_name, build_number,
-                                       step_name)
-
-    failed_test_log = gtest.GetConsistentTestFailureLog(step_log)
+    failed_test_log = gtest.GetConsistentTestFailureLog(json.loads(step_log))
     self.assertEqual(expected_failure_log, failed_test_log)

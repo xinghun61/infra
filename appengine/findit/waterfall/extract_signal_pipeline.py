@@ -2,9 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from common.waterfall import failure_type
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
-from services import extract_signal
+from services.compile_failure import extract_compile_signal
+from services.test_failure import extract_test_signal
 
 
 class ExtractSignalPipeline(BasePipeline):
@@ -26,4 +28,9 @@ class ExtractSignalPipeline(BasePipeline):
         ...
       }
     """
-    return extract_signal.ExtractSignals(failure_info, self.HTTP_CLIENT)
+    if failure_info['failure_type'] == failure_type.TEST:
+      return extract_test_signal.ExtractSignalsForTestFailure(
+          failure_info, self.HTTP_CLIENT)
+
+    return extract_compile_signal.ExtractSignalsForCompileFailure(
+        failure_info, self.HTTP_CLIENT)

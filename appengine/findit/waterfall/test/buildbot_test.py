@@ -149,18 +149,6 @@ class BuildBotTest(unittest.TestCase):
                      buildbot.CreateBuildUrl(master_name, builder_name,
                                              build_number))
 
-  def testCreateGtestResultPath(self):
-    master_name = 'a'
-    builder_name = 'Win7 Tests (1)'
-    build_number = 123
-    step_name = '[trigger] abc_tests'
-    expected_stdio_log_url = ('/chrome-gtest-results/buildbot/a/Win7 Tests '
-                              '(1)/123/[trigger] abc_tests.json.gz')
-
-    self.assertEqual(expected_stdio_log_url,
-                     buildbot.CreateGtestResultPath(master_name, builder_name,
-                                                    build_number, step_name))
-
   @mock.patch.object(rpc_util, 'DownloadJsonData')
   def testGetBuildDataFromMiloSuccess(self, mock_fn):
     master_name = 'a'
@@ -171,9 +159,9 @@ class BuildBotTest(unittest.TestCase):
     mock_fn.return_value = json.dumps(response)
 
     self.assertEqual('response',
-                     buildbot.GetBuildDataFromMilo(
-                         master_name, builder_name, build_number,
-                         self.http_client))
+                     buildbot.GetBuildDataFromMilo(master_name, builder_name,
+                                                   build_number,
+                                                   self.http_client))
 
   def testGetBuildProperty(self):
     properties = [

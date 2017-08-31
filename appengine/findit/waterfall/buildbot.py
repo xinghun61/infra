@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import base64
-import contextlib
 from datetime import datetime
 import gzip
 import io
@@ -11,8 +10,6 @@ import logging
 import json
 import re
 import urllib
-
-import cloudstorage as gcs
 
 from common import rpc_util
 from infra_api_clients import logdog_util
@@ -184,15 +181,7 @@ def CreateBuildUrl(master_name, builder_name, build_number):
                                                               build_number)
 
 
-def CreateGtestResultPath(master_name, builder_name, build_number, step_name):
-  return ('/chrome-gtest-results/buildbot/%s/%s/%s/%s.json.gz') % (master_name,
-                                                                   builder_name,
-                                                                   build_number,
-                                                                   step_name)
-
-
-def GetBuildDataFromMilo(master_name, builder_name, build_number,
-                                http_client):
+def GetBuildDataFromMilo(master_name, builder_name, build_number, http_client):
   """Returns the json-format data of the build."""
   data = {
       'master': master_name,
@@ -203,19 +192,6 @@ def GetBuildDataFromMilo(master_name, builder_name, build_number,
                                             http_client)
   return _ProcessMiloData(response_json, master_name, builder_name,
                           str(build_number))
-
-
-def GetGtestResultLog(master_name, builder_name, build_number,
-                      step_name):  # pragma: no cover
-  """Returns the content of the gtest json results for the gtest-based step."""
-  try:
-    archived_log_path = CreateGtestResultPath(master_name, builder_name,
-                                              build_number, step_name)
-    with contextlib.closing(gcs.open(archived_log_path)) as gtest_result_file:
-      with gzip.GzipFile(fileobj=gtest_result_file) as unzipped_gtest_file:
-        return unzipped_gtest_file.read()
-  except gcs.NotFoundError:
-    return None
 
 
 def GetStepResult(step_data_json):

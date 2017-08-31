@@ -2,104 +2,57 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
+
+from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
-from model.wf_analysis import WfAnalysis
-from model.wf_step import WfStep
+from services.compile_failure import extract_compile_signal
+from services.test_failure import extract_test_signal
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
 from waterfall.test import wf_testcase
-
-FAILURE_INFO = {
-    'master_name': 'm',
-    'builder_name': 'b',
-    'build_number': 123,
-    'failed': True,
-    'chromium_revision': 'a_git_hash',
-    'failed_steps': {
-        'abc_test': {
-            'last_pass': 122,
-            'current_failure': 123,
-            'first_failure': 123,
-        }
-    }
-}
 
 
 class ExtractSignalPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  def _CreateAndSaveWfAnanlysis(self, master_name, builder_name, build_number):
-    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
-    analysis.put()
-
-  def testExtractSignalsForTests(self):
+  @mock.patch.object(extract_test_signal, 'ExtractSignalsForTestFailure')
+  def testExtractSignalsForTests(self, mock_signal):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
+    expected_signals = 'test signals'
 
     failure_info = {
         'master_name': master_name,
         'builder_name': builder_name,
         'build_number': build_number,
-        'failed': True,
-        'chromium_revision': 'a_git_hash',
-        'failed_steps': {
-            'abc_test': {
-                'last_pass': 221,
-                'current_failure': 223,
-                'first_failure': 222,
-                'tests': {
-                    'Unittest2.Subtest1': {
-                        'current_failure': 223,
-                        'first_failure': 222,
-                        'last_pass': 221
-                    },
-                    'Unittest3.Subtest2': {
-                        'current_failure': 223,
-                        'first_failure': 222,
-                        'last_pass': 221
-                    }
-                }
-            }
-        }
+        'failure_type': failure_type.TEST,
     }
 
-    step = WfStep.Create(master_name, builder_name, build_number, 'abc_test')
-    step.isolated = True
-    step.log_data = (
-        '{"Unittest2.Subtest1": "RVJST1I6eF90ZXN0LmNjOjEyMzQKYS9iL3UyczEuY2M6N'
-        'TY3OiBGYWlsdXJlCkVSUk9SOlsyXTogMjU5NDczNTAwMCBib2dvLW1pY3Jvc2Vjb25kcw'
-        'pFUlJPUjp4X3Rlc3QuY2M6MTIzNAphL2IvdTNzMi5jYzoxMjM6IEZhaWx1cmUK"'
-        ', "Unittest3.Subtest2": "YS9iL3UzczIuY2M6MTEwOiBGYWlsdXJlCmEvYi91M3My'
-        'LmNjOjEyMzogRmFpbHVyZQo="}')
-    step.put()
-
-    expected_signals = {
-        'abc_test': {
-            'files': {
-                'a/b/u2s1.cc': [567],
-                'a/b/u3s2.cc': [123, 110]
-            },
-            'keywords': {},
-            'tests': {
-                'Unittest2.Subtest1': {
-                    'files': {
-                        'a/b/u2s1.cc': [567],
-                        'a/b/u3s2.cc': [123]
-                    },
-                    'keywords': {}
-                },
-                'Unittest3.Subtest2': {
-                    'files': {
-                        'a/b/u3s2.cc': [110, 123]
-                    },
-                    'keywords': {}
-                }
-            }
-        }
-    }
-
-    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number)
+    mock_signal.return_value = expected_signals
 
     pipeline = ExtractSignalPipeline()
     signals = pipeline.run(failure_info)
     self.assertEqual(expected_signals, signals)
+    mock_signal.assert_called_with(failure_info, pipeline.HTTP_CLIENT)
+
+  @mock.patch.object(extract_compile_signal, 'ExtractSignalsForCompileFailure')
+  def testExtractSignalsForCompile(self, mock_signal):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    expected_signals = 'compile signals'
+
+    failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failure_type': failure_type.COMPILE,
+    }
+
+    mock_signal.return_value = expected_signals
+
+    pipeline = ExtractSignalPipeline()
+    signals = pipeline.run(failure_info)
+    self.assertEqual(expected_signals, signals)
+    mock_signal.assert_called_with(failure_info, pipeline.HTTP_CLIENT)

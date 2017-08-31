@@ -13,6 +13,8 @@ import cStringIO
 import json
 
 _PRE_TEST_PREFIX = 'PRE_'
+INVALID_FAILURE_LOG = 'invalid'
+FLAKY_FAILURE_LOG = 'flaky'
 
 
 def RemoveAllPrefixes(test):
@@ -76,13 +78,9 @@ def GetConsistentTestFailureLog(gtest_result):
     If we find out that all the test failures in this step are flaky, we will
     return 'flaky' as result.
   """
-  step_failure_data = json.loads(gtest_result)
-
-  if step_failure_data['gtest_results'] == 'invalid':  # pragma: no cover
-    return 'invalid'
 
   sio = cStringIO.StringIO()
-  for iteration in step_failure_data['gtest_results']['per_iteration_data']:
+  for iteration in gtest_result['per_iteration_data']:
     for test_name in iteration.keys():
       is_reliable_failure = True
 
@@ -100,6 +98,6 @@ def GetConsistentTestFailureLog(gtest_result):
   sio.close()
 
   if not failed_test_log:
-    return 'flaky'
+    return FLAKY_FAILURE_LOG
 
   return failed_test_log
