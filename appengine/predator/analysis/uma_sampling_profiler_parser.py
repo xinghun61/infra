@@ -41,8 +41,16 @@ class UMASamplingProfilerParser(object):
     Returns:
       ``Stacktrace`` object or ``None`` if the stacktrace is empty.
     """
-    filters = [callstack_filters.RemoveTopNFrames(subtree_root_depth)]
+    # TODO(wittman): Change the filtering logic to use the ``responsible`` field
+    # after old data has been re-generated
+    if _IncludeFrameAboveRoot(stacks, subtree_root_depth):
+      filter_depth = subtree_root_depth - 1
+    else:
+      filter_depth = subtree_root_depth
+
+    filters = [callstack_filters.RemoveTopNFrames(filter_depth)]
     stacktrace_buffer = StacktraceBuffer(filters=filters)
+
     for stack in stacks:
       # TODO(cweakliam) determine how best to calculate priority for a callstack
       # (or if I even need to)
@@ -56,3 +64,18 @@ class UMASamplingProfilerParser(object):
         stacktrace_buffer.AddFilteredStack(callstack_buffer)
 
     return stacktrace_buffer.ToStacktrace()
+
+
+def _IncludeFrameAboveRoot(stacks, subtree_root_depth):
+  """Should the frame above the root of the subtree be included?
+
+  Include the frame if the performance change is a total shift of execution
+  at the root (due for example to the root function being added, deleted, or
+  renamed). Uses a simple heuristic rule to determine if this is the case.
+  """
+  if subtree_root_depth == 0:
+    return False
+
+  root = stacks[0]['frames'][subtree_root_depth]
+  log_change_factor = root['log_change_factor']
+  return log_change_factor in (float('inf'), float('-inf'))

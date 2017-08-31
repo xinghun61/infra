@@ -105,3 +105,45 @@ class UMASamplingProfilerParserTest(AnalysisTestCase):
         ]),
     )
     self.assertEqual(stacktrace.stacks, filtered_stacks)
+
+  def testFilteringIncludesExtraFrameInShiftCase(self):
+    """Tests that one extra frame is included in a 'shift' case.
+
+    In a 'shift' case (i.e. where execution time at the root has shifted
+    entirely from one function to another), the subtree and one extra frame
+    above it should be included.
+    """
+    parser = UMASamplingProfilerParser()
+    frame1 = {
+      'difference': 0, 'log_change_factor': 0, 'responsible': False
+    }
+    frame2 = {
+      'difference': 0.1, 'log_change_factor': float('inf'), 'responsible': True
+    }
+    frame3 = {
+      'difference': 0.1, 'log_change_factor': float('-inf'), 'responsible': True
+    }
+    subtree_root_depth = 2
+    subtree_stacks = [
+      # In this case the root is the first ``frame2`` or ``frame3`` instance.
+      {'frames': [frame1, frame1, frame2, frame2]},
+      {'frames': [frame1, frame1, frame3, frame3, frame3]},
+    ]
+    deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
+
+    stacktrace = parser.Parse(subtree_stacks, subtree_root_depth, deps)
+
+    filtered_stacks = (
+      CallStack(0, [
+        ProfilerStackFrame(1, 0.0, 0.0, False), # extra node
+        ProfilerStackFrame(2, 0.1, float('inf'), True),
+        ProfilerStackFrame(3, 0.1, float('inf'), True),
+      ]),
+      CallStack(0, [
+        ProfilerStackFrame(1, 0.0, 0.0, False), # extra node
+        ProfilerStackFrame(2, 0.1, float('-inf'), True),
+        ProfilerStackFrame(3, 0.1, float('-inf'), True),
+        ProfilerStackFrame(4, 0.1, float('-inf'), True),
+      ]),
+    )
+    self.assertEqual(stacktrace.stacks, filtered_stacks)
