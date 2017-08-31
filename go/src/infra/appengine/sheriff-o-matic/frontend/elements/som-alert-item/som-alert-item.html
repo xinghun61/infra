@@ -167,7 +167,11 @@
      #groupName {
        min-width: 320px;
        padding: 0 4px;
-       margin-top: -16px;
+
+       /* This undoes the default padding for a paper-input. */
+       --paper-input-container: {
+         margin: -8px 0;
+       };
      }
      #root {
        transition: opacity .25s;
@@ -202,7 +206,16 @@
             <template is="dom-if" if="[[_hasUngroup]]">
               <iron-a11y-keys target="[[_groupNameInput]]" keys="enter" on-keys-pressed="_updateGroupName"></iron-a11y-keys>
               Group:
-              <paper-input id="groupName" value="[[alert.title]]" class="no-toggle" on-focused-changed="_updateGroupName">
+              <!--
+                The size property controls how large the <input> tag is. It appears to
+                pretty much ignore width settings, annoyingly. 100 seems to be a good
+                number which allows users to see fairly large group names, but it
+                might need to be tuned later. Units are characters, roughly.
+
+                no-label-float removes some top padding that's there in case a label gets added.
+                We aren't using one though, so just remove it.
+              -->
+              <paper-input id="groupName" no-label-float value="[[alert.title]]" class="no-toggle" on-focused-changed="_updateGroupName" size=100>
               </paper-input>
               ([[alert.alerts.length]] alerts)
             </template>
