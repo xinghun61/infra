@@ -417,7 +417,7 @@ func (p *commonMonitoringParams) swarmingRunID() string { return p.environ["SWAR
 func (p *commonMonitoringParams) buildID() string {
 	switch {
 	case p.bbInfo.Hostname != "" && p.bbInfo.Build.ID != "":
-		return fmt.Sprintf("builbucket/%s/%s", p.bbInfo.Hostname, p.bbInfo.Build.ID)
+		return fmt.Sprintf("buildbucket/%s/%s", p.bbInfo.Hostname, p.bbInfo.Build.ID)
 	case p.swarmingHost() != "" && p.swarmingRunID() != "":
 		return fmt.Sprintf("swarming/%s/%s", p.swarmingHost(), p.swarmingRunID())
 	default:
