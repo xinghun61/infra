@@ -133,6 +133,50 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(240, timeout)
 
+  def testEstimateSwarmingIterationTimeoutCullNoneIterations(self):
+    flake_task = FlakeSwarmingTask.Create('m', 'b', 101, 's', 't')
+    flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
+    flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
+    flake_task.put()
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+
+    analysis.data_points = [
+        DataPoint.Create(build_number=100, iterations=None),
+        DataPoint.Create(build_number=101, iterations=20)
+    ]
+    analysis.put()
+
+    try:
+      previous_cushion = flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER
+      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = 1
+      timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
+    finally:
+      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = previous_cushion
+
+    self.assertEqual(180, timeout)
+
+  def testEstimateSwarmingIterationTimeoutWithNoneForDataPointIterations(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+
+    analysis.data_points = [
+        DataPoint.Create(build_number=100, iterations=None),
+    ]
+    analysis.put()
+
+    try:
+      previous_cushion = flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER
+      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = 1
+      timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
+    finally:
+      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = previous_cushion
+
+    self.assertEqual(120, timeout)
+
   def testEstimateSwarmingIterationTimeoutWithMoreDataPointsSampleSize(self):
     flake_task = FlakeSwarmingTask.Create('m', 'b', 100, 's', 't')
     flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)

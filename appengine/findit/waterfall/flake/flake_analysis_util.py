@@ -112,14 +112,21 @@ def EstimateSwarmingIterationTimeout(analysis):
   Uses the amount of time previous data points at this build number took to
   estimate a timeout for an iteration.
   """
-  if not analysis.data_points:
+  sample_size = analysis.algorithm_parameters.get('swarming_rerun', {}).get(
+      'data_point_sample_size', flake_constants.DEFAULT_DATA_POINT_SAMPLE_SIZE)
+
+  # Trim off the points that have None for iterations.
+  # TODO(https://crbug.com/761025): Investigate and fix models missing
+  # fields by the time they're saved.
+  points = [
+      point for point in analysis.data_points if point.iterations is not None
+  ]
+  last_n_points = points[-sample_size:]
+
+  if not last_n_points:
     return analysis.algorithm_parameters.get('swarming_rerun', {}).get(
         'timeout_per_test_seconds',
         flake_constants.DEFAULT_TIMEOUT_PER_TEST_SECONDS)
-
-  sample_size = analysis.algorithm_parameters.get('swarming_rerun', {}).get(
-      'data_point_sample_size', flake_constants.DEFAULT_DATA_POINT_SAMPLE_SIZE)
-  last_n_points = analysis.data_points[-sample_size:]
 
   tasks = [
       FlakeSwarmingTask.Get(analysis.master_name, analysis.builder_name,
