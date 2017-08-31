@@ -63,7 +63,7 @@ libraries:
 - name: pycrypto
   version: "2.6"
 - name: django
-  version: 1.4
+  version: 1.9
 
 includes:
   - gae_ts_mon
