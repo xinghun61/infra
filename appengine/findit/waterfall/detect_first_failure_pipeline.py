@@ -5,7 +5,8 @@
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import BasePipeline
 from model.wf_analysis import WfAnalysis
-from waterfall import build_failure
+from services import ci_failure
+from services.test_failure import ci_test_failure
 
 
 class DetectFirstFailurePipeline(BasePipeline):
@@ -83,13 +84,13 @@ class DetectFirstFailurePipeline(BasePipeline):
 
     builds = failure_info['builds']
     # Checks first failed builds for each failed step.
-    build_failure.CheckForFirstKnownFailure(
-        master_name, builder_name, build_number, failure_info['failed_steps'],
-        builds)
+    ci_failure.CheckForFirstKnownFailure(master_name, builder_name,
+                                         build_number,
+                                         failure_info['failed_steps'], builds)
 
     if failure_info['failure_type'] == failure_type.TEST:
       # Checks first failed builds for each failed test.
-      build_failure.CheckFirstKnownFailureForSwarmingTests(
+      ci_test_failure.CheckFirstKnownFailureForSwarmingTests(
           master_name, builder_name, build_number, failure_info['failed_steps'],
           builds)
 

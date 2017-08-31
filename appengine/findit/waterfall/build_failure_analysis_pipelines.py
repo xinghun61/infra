@@ -13,7 +13,7 @@ from libs import analysis_status
 from libs import time_util
 from model import result_status
 from model.wf_analysis import WfAnalysis
-from waterfall import build_failure
+from services import ci_failure
 from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
 
 
@@ -112,8 +112,8 @@ def ScheduleAnalysisIfNeeded(master_name,
   Returns:
     A WfAnalysis instance.
   """
-  failure_info = build_failure.GetBuildFailureInfo(master_name, builder_name,
-                                                   build_number)
+  failure_info = ci_failure.GetBuildFailureInfo(master_name, builder_name,
+                                                build_number)
 
   if NeedANewAnalysis(master_name, builder_name, build_number, failed_steps,
                       build_completed, force, failure_info['failed'],

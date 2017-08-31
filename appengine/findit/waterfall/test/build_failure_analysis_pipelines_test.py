@@ -11,8 +11,8 @@ from common.waterfall import failure_type
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from gae_libs.pipeline_wrapper import pipeline_handlers
+from services import ci_failure
 from waterfall import build_failure_analysis_pipelines
-from waterfall import build_failure
 
 
 class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
@@ -187,7 +187,7 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
     self.assertEqual(analysis_status.COMPLETED, analysis.status)
 
   @mock.patch.object(
-      build_failure,
+      ci_failure,
       'GetBuildFailureInfo',
       return_value={
           'failed': True,
@@ -216,7 +216,7 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
         [mock.call().start(queue_name=constants.DEFAULT_QUEUE)])
 
   @mock.patch.object(
-      build_failure,
+      ci_failure,
       'GetBuildFailureInfo',
       return_value={
           'failed': True,

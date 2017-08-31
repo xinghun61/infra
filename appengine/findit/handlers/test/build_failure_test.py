@@ -24,8 +24,8 @@ from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_try_job import WfTryJob
+from services import ci_failure
 from waterfall import buildbot
-from waterfall import build_failure as build_failure_services
 from waterfall import build_util
 from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
@@ -386,7 +386,7 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
                 'xsrf_token': 'abc'})
 
   @mock.patch.object(
-      build_failure_services,
+      ci_failure,
       'GetBuildFailureInfo',
       return_value={
           'failed': True,
