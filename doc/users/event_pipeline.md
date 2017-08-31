@@ -97,12 +97,19 @@ You will need the
 library in your environment. infra.git/ENV has this dependency already, so you
 only need to add it if you are working outside that environment.
 
+### BigQueryHelper
+
+Check out the (../../infra/libs/bigquery/helper.py)[BigQueryHelper] class. It
+makes it easy to add insert IDs, which BigQuery uses to deduplicate rows in the
+streaming insert buffer. It is recommended that you use it. You'll still have to
+provide an authenticated instance of google.cloud.bigquery.client.Client.
+
 ### Example
 
 See
 [this change](https://chrome-internal-review.googlesource.com/c/407748/)
 for a simple example. (TODO: replace with a non-internal example that uses
-insertIDs.) The [API
+BigQueryHelper.) The [API
 docs](https://googlecloudplatform.github.io/google-cloud-python/stable/bigquery-usage.html)
 can also be helpful.
 
