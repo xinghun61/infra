@@ -142,6 +142,9 @@
             <iron-icon class="filter-icon" icon="search"></iron-icon>
             <paper-input id="filterInput" value="{{_filterPattern}}" placeholder="Filter alerts by regex"></paper-input>
           </div>
+          <template is="dom-if" if="[[_filterPattern]]">
+            Showing [[_alerts.length]] out of [[_allAlerts.length]] alerts that match filter pattern.
+          </template>
           <template is="dom-repeat" items="[[_categories]]" as="cat">
             <som-alert-category
                 id="alertCategory[[index]]"

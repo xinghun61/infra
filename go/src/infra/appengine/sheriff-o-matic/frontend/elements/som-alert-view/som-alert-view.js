@@ -106,7 +106,8 @@ class SomAlertView extends Polymer.mixinBehaviors(
       _hideJulie: {
         type: Boolean,
         computed:
-            '_computeHideJulie(_alerts, _fetchedAlerts, fetchingAlerts, _fetchAlertsError, tree)',
+            `_computeHideJulie(_allAlerts, _fetchedAlerts, fetchingAlerts,
+              _fetchAlertsError, tree)`,
         value: true,
       },
       _isTrooperPage: {
