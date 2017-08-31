@@ -428,7 +428,7 @@ class BouncedEmail(BounceNotificationHandler):
       user = services.user.GetUser(cnxn, user_id)
       user.email_bounce_timestamp = int(time.time())
       services.user.UpdateUser(cnxn, user_id, user)
-    except user_svc.NoSuchIssueException:
+    except user_svc.NoSuchUserException:
       logging.info('User %r not found, ignoring', email_addr)
       logging.info('Received bounce post ... [%s]', self.request)
       logging.info('Bounce original: %s', bounce_message.original)

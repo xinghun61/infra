@@ -6,8 +6,11 @@
 """Unittests for monorail.feature.inboundemail."""
 
 import unittest
+import webapp2
 
 import mox
+
+from google.appengine.ext.webapp.mail_handlers import BounceNotificationHandler
 
 from features import commitlogcommands
 from features import inboundemail
@@ -353,3 +356,63 @@ class InboundEmailTest(unittest.TestCase):
         'from_addr', 111L, [1, 2, 3], perms, 'awesome!')
     self.mox.VerifyAll()
     self.assertIsNone(ret)
+
+
+class BouncedEmailTest(unittest.TestCase):
+
+  def setUp(self):
+    self.cnxn = 'fake cnxn'
+    self.services = service_manager.Services(
+        user=fake.UserService())
+    self.user = self.services.user.TestAddUser('user@example.com', 111L)
+
+    app = webapp2.WSGIApplication(config={'services': self.services})
+    app.set_globals(app=app)
+
+    self.servlet = inboundemail.BouncedEmail()
+    self.mox = mox.Mox()
+
+  def tearDown(self):
+    self.mox.UnsetStubs()
+    self.mox.ResetAll()
+
+  def testPost_Normal(self):
+    """Normally, our post() just calls BounceNotificationHandler post()."""
+    self.mox.StubOutWithMock(BounceNotificationHandler, 'post')
+    BounceNotificationHandler.post()
+    self.mox.ReplayAll()
+
+    self.servlet.post()
+    self.mox.VerifyAll()
+
+  def testPost_Exception(self):
+    """Our post() method works around an escaping bug."""
+    self.servlet.request = webapp2.Request.blank(
+        '/', POST={'raw-message': 'this is an email message'})
+
+    self.mox.StubOutWithMock(BounceNotificationHandler, 'post')
+    BounceNotificationHandler.post().AndRaise(AttributeError())
+    BounceNotificationHandler.post()
+    self.mox.ReplayAll()
+
+    self.servlet.post()
+    self.mox.VerifyAll()
+
+  def testReceive_Normal(self):
+    """Find the user that bounced and set email_bounce_timestamp."""
+    self.assertEquals(0, self.user.email_bounce_timestamp)
+
+    bounce_message = testing_helpers.Blank(original={'to': 'user@example.com'})
+    self.servlet.receive(bounce_message)
+
+    self.assertNotEquals(0, self.user.email_bounce_timestamp)
+
+  def testReceive_NoSuchUser(self):
+    """When not found, log it and ignore without creating a user record."""
+    self.servlet.request = webapp2.Request.blank(
+        '/', POST={'raw-message': 'this is an email message'})
+    bounce_message = testing_helpers.Blank(
+        original={'to': 'nope@example.com'},
+        notification='notification')
+    self.servlet.receive(bounce_message)
+    self.assertEquals(1, len(self.services.user.users_by_id))
