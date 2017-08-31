@@ -1,4 +1,4 @@
-# Testing
+# Workflow Testing
 
 To test that your pipeline will run remotely:
 
