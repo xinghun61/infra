@@ -13,6 +13,11 @@ handlers:
   secure: always
   login: admin
 
+- url: /admin/.*
+  script: _go_app
+  secure: always
+  login: admin
+
 - url: /view.*
   script: _go_app
   secure: always
