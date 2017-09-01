@@ -542,7 +542,8 @@ func (c *cookRun) systemAuthenticator(ctx context.Context, scopes ...string) (*a
 	if c.SystemAccountJSON != "" {
 		// If the user explicitly specifies a LogDog service account to use.
 		return auth.NewAuthenticator(ctx, auth.SilentLogin, auth.Options{
-			Method:                 auth.ServiceAccountMethod,
+			// leave auth method to be auto-selected, so that it is GCE
+			// if ServiceAccountJSONPath is ":gce".
 			Scopes:                 scopes,
 			ServiceAccountJSONPath: c.SystemAccountJSON,
 		}), nil
