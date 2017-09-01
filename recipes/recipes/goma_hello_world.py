@@ -57,7 +57,7 @@ def RunSteps(api):
     api.file.write_text('write %s' % name, root_dir.join(name), data)
 
   api.goma.ensure_goma(canary=True)
-  api.goma.start(use_cloudtail=True)
+  api.goma.start()
 
   gcc = api.goma.goma_dir.join('g++')
   out = root_dir.join('compiled_binary')
