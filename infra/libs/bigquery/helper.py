@@ -19,26 +19,25 @@ class BigQueryHelper(object):
     self._lock = threading.RLock()
     self._id_counter = 0
 
-  def generate_insert_id(self, prefix=None):
-    """Used by BigQuery for deduplicating upload attempts."""
+  def _generate_insert_id(self, prefix=None):
+    """Used by BigQuery for deduplicating upload attempts.
+
+      prefix: used to ensure uniqueness between different processes
+    """
     with self._lock:
-      insert_id = '%s:%s:%s:%d' % (prefix if prefix else '',
-                                   os.urandom(4).encode('hex'), self._now(),
-                                   self._id_counter)
+      insert_id = '%s:%s:%d' % (prefix or os.urandom(4).encode('hex'),
+                                self._now(), self._id_counter)
       self._id_counter += 1
     return insert_id
 
-  def send_rows(self, dataset_id, table_id, rows, row_ids=None):
+  def send_rows(self, dataset_id, table_id, rows, prefix=None):
     """
       rows: list of tuples, one tuple per row. Each tuple should contain data of
         the correct type for each schema field on the current table and in the
         same order as the schema fields.
-      row_ids: list of strings, one per row. used by bigquery to deduplicate
-        upload attempts.
     """
     with self._lock:
-      if row_ids is None or len(rows) != len(row_ids):
-        row_ids = [self.generate_insert_id() for _ in rows]
+      row_ids = [self._generate_insert_id(prefix) for _ in rows]
       table = self._bq_client.dataset(dataset_id).table(table_id)
       table.reload(self._bq_client)
       insert_errors = table.insert_data(rows, row_ids)

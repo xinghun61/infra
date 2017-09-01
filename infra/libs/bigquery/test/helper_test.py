@@ -25,21 +25,20 @@ class TestBigQueryHelper(unittest.TestCase):
   @patch('os.urandom', new=lambda _: '123')
   def test_generate_insert_id(self):
     s = '123'.encode('hex')
-    self.assertEqual(self.bq_helper.generate_insert_id(), ':%s:0:0' % s)
-    self.assertEqual(self.bq_helper.generate_insert_id('prefix'),
-                     'prefix:%s:0:1' % s)
+    self.assertEqual(self.bq_helper._generate_insert_id(), '%s:0:0' % s)
+    self.assertEqual(self.bq_helper._generate_insert_id('prefix'), 'prefix:0:1')
 
   def test_send_rows(self):
     rows = ['a', 'b', 'c']
-    row_ids = [1, 2, 3]
-    self.bq_helper.send_rows(self.dataset_id, self.table_id, rows, row_ids)
-    self.mock_insert_data.assert_any_call(rows, row_ids)
+    self.bq_helper.send_rows(self.dataset_id, self.table_id, rows, '1')
+    self.mock_insert_data.assert_any_call(rows,
+                                          ['1:0:%s' % i for i in range(3)])
 
   @patch('os.urandom', new=lambda _: '123')
   def test_send_rows_without_ids(self):
     s = '123'.encode('hex')
     rows = ['a', 'b', 'c']
-    expected_row_ids = [':%s:0:%d' % (s, i) for i in range(3)]
+    expected_row_ids = ['%s:0:%d' % (s, i) for i in range(3)]
     self.bq_helper.send_rows(self.dataset_id, self.table_id, rows)
     self.mock_insert_data.assert_any_call(rows, expected_row_ids)
 
