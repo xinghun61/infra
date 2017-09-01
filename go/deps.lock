@@ -1,8 +1,8 @@
 hash: fd96052f55f13cb7d308d13fa23954d929c4145edd74cce5d4438673eab8b805
-updated: 2017-08-30T12:00:15.346124304-07:00
+updated: 2017-08-31T16:39:12.758716816-07:00
 imports:
 - name: cloud.google.com/go
-  version: f0500eb3fbc9c327a4d4a05b40afbd77d0aee85a
+  version: 2b74e2e25316cfd9e46b74e444cdeceb78786dc5
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -10,7 +10,7 @@ imports:
   - pubsub
   - storage
 - name: github.com/andygrunwald/go-gerrit
-  version: fc6082426e4cf958b3c9c56f95e8cd4a17c23cd9
+  version: 179c3f32f86b9f3d604f403117153f5f399d1a83
   repo: https://chromium.googlesource.com/external/github.com/andygrunwald/go-gerrit.git
 - name: github.com/aryann/difflib
   version: e206f873d14a916d3d26c40ab667bca123f365a3
@@ -52,7 +52,7 @@ imports:
   subpackages:
   - golint
 - name: github.com/golang/protobuf
-  version: ab9f9a6dab164b7d1246e0e688b0ab7b94d8553e
+  version: 83cd65fc365ace80eb6b6ecfc45203e43edfbc70
   repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
   subpackages:
   - jsonpb
@@ -230,10 +230,10 @@ imports:
   subpackages:
   - windows
 - name: golang.org/x/text
-  version: 18c65dde6afd36dbc39197ca72008895b8dfbfb6
+  version: e113a52b01bdd1744681b6ce70c2e3d26b58d389
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: 2d19ab38faf14664c76088411c21bf4fafea960b
+  version: e00c182679a043c63cd52172ee2d9d3d8ad22e26
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -246,7 +246,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 731876f62a065986f71ad71bb35692c3c7b42bcc
+  version: 4c6d21ebe7d908cb32717e14783f80ffee6cdcb0
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -279,7 +279,7 @@ imports:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: 47d8591b1269253c642633a67ffeb276aab0b601
+  version: 8233e124e4634a8313f2c9a1ea7d4db33546b11b
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes

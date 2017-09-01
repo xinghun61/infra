@@ -67,6 +67,14 @@ VENDORED_TOOLS = [
 ]
 
 
+# By default we drop all non-source code files from the vendored packages to
+# make the bundle with dependencies smaller and simpler. Some packages don't
+# like that.
+PACKAGES_TO_VENDOR_COMPLETELY = [
+  'github.com/smartystreets/goconvey',  # needs *.css etc for Web UI
+]
+
+
 # infra/
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -450,41 +458,50 @@ def temp_file(body=None, root=None):
     os.remove(tmp)
 
 
-def purify_directory(path):
+def purify_directory(root, path):
   """Removes all non-important files from a directory.
 
   Also drops +x bit on remaining regular files.
 
-  Works recursively. For each file calls 'is_source_or_license(full_path)'
+  Works recursively. For each file calls 'is_source_or_license(rel_path)'
   to detect whether it is important or not, and deletes the file if not.
 
-  Returns a number of remaining direct children of 'path'.
+  Returns True if 'path' still has direct children.
   """
   # Note: recursively removing empty directories is not trivial with os.walk.
   # Doing the recursion directly is simpler.
-  remaning = 0
-  for name in os.listdir(path):
-    full_path = os.path.join(path, name)
+  has_files = False
+  for name in os.listdir(os.path.join(root, path)):
+    rel_path = os.path.join(path, name)
+    full_path = os.path.join(root, rel_path)
     mode = os.lstat(full_path).st_mode
     if stat.S_ISDIR(mode):
-      if not purify_directory(full_path):
+      if not purify_directory(root, rel_path):
         # The child directory is empty now, can be removed.
         os.rmdir(full_path)
         continue
-    elif not is_source_or_license(full_path):
+    elif not is_source_or_license(rel_path):
       os.remove(full_path)
       continue
     elif mode & stat.S_IXUSR:
       # Some *.go files inexplicably have +x bit. Drop it.
       os.chmod(full_path, 0644)
-    remaning += 1
-  return remaning
+    has_files = True
+  return has_files
 
 
 def is_source_or_license(path):
-  """Returns True if 'path' point to a file we want to keep."""
+  """Returns True if 'path' point to a file we want to keep.
+
+  The path is given relative to GOPATH/src.
+  """
+  pkg = os.path.dirname(path).replace('\\', '/')
   name = os.path.basename(path)
   return (
+      any(
+          pkg == p or pkg.startswith(p+'/')
+          for p in PACKAGES_TO_VENDOR_COMPLETELY
+      ) or
       name.startswith('LICENSE') or
       name.endswith(('.c', '.h', '.go', '.s')) and
       not name.endswith('_test.go'))
@@ -614,7 +631,7 @@ def install(workspace, force=False, update_out=None, skip_bundle=False):
             raise e
     # Remove all garbage, we need only non-test source code to use dependencies.
     print 'Removing non-source code files...'
-    purify_directory(os.path.join(workspace.vendor_root, 'src'))
+    purify_directory(os.path.join(workspace.vendor_root, 'src'), '')
 
   # Prebuild all packages specified in deps.lock into *.a archives. It should
   # speed up compilation of code that depends on them. Note that doing simple
