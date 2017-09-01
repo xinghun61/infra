@@ -123,9 +123,17 @@ func saveNewRelevantCommit(ctx context.Context, state *RepoState, commit gitiles
 // getGitilesClient creates a new gitiles client bound to a new http client
 // that is bound to an authenticated transport.
 func getGitilesClient(ctx context.Context) (*gitiles.Client, error) {
+	httpClient, err := getAuthenticatedHTTPClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return &gitiles.Client{Client: httpClient}, nil
+}
+
+func getAuthenticatedHTTPClient(ctx context.Context) (*http.Client, error) {
 	t, err := auth.GetRPCTransport(ctx, auth.AsSelf, auth.WithScopes(gitilesScope))
 	if err != nil {
 		return nil, err
 	}
-	return &gitiles.Client{Client: &http.Client{Transport: t}}, nil
+	return &http.Client{Transport: t}, nil
 }

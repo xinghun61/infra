@@ -14,30 +14,28 @@ import (
 	"go.chromium.org/luci/server/templates"
 )
 
-// Lets the templates lib know where to load templates from.
-func getTemplatesMW() router.Middleware {
-	return templates.WithTemplates(&templates.Bundle{
-		Loader: templates.FileSystemLoader("templates"),
-	})
-}
-
 func init() {
 	r := router.New()
 
 	// This does not require auth. Needed for index page.
 	basemw := standard.Base()
 
-	// This ensures that the route is only accessible to cron jobs.
-	cronmw := standard.Base().Extend(gaemiddleware.RequireCron)
+	templatesmw := basemw.Extend(templates.WithTemplates(&templates.Bundle{
+		Loader: templates.FileSystemLoader("templates"),
+	}))
 
 	standard.InstallHandlers(r)
 
-	r.GET("/", basemw.Extend(getTemplatesMW()), index)
-	r.GET("/_cron/commitscanner", cronmw, CommitScanner)
+	r.GET("/", templatesmw, index)
+
+	r.GET("/_cron/commitscanner", basemw.Extend(gaemiddleware.RequireCron), CommitScanner)
+
+	r.GET("/admin/smoketest", basemw, SmokeTest)
 
 	http.DefaultServeMux.Handle("/", r)
 }
 
+// Handler for the index page.
 func index(rc *router.Context) {
 	templates.MustRender(rc.Context, rc.Writer, "pages/index.html", templates.Args{})
 }
