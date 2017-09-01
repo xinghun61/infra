@@ -17,3 +17,9 @@ class ComponentTest(unittest.TestCase):
     frame = stacktrace.ProfilerStackFrame(0, 5, 0.21, False, dep_path=None,
                                           file_path=None, raw_file_path=None)
     self.assertFalse(component_object.MatchesStackFrame(frame))
+
+  def testMatchesStackFrameWhenFrameHasNoFunctionName(self):
+    """``MatchesStackFrame`` shouldn't crash when frame has no function name."""
+    component_object = component.Component('name', ['dirs/'], function='main')
+    frame = stacktrace.ProfilerStackFrame(0, 5, 0.21, False, function=None)
+    self.assertFalse(component_object.MatchesStackFrame(frame))

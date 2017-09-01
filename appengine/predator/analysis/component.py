@@ -33,8 +33,10 @@ class Component(namedtuple('Component',
 
   def MatchesStackFrame(self, frame):
     """Returns true if this component matches the frame."""
-    if self.function and not self.function.match(frame.function):
-      return False
+    if self.function is not None and frame.function is not None:
+      if not self.function.match(frame.function):
+        return False
+
     if frame.dep_path is None or frame.file_path is None:
       return False
 
