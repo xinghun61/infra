@@ -6,7 +6,6 @@
 package eventupload
 
 import (
-	"log"
 	"reflect"
 	"sync"
 	"time"
@@ -15,6 +14,7 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/tsmon/field"
 	"go.chromium.org/luci/common/tsmon/metric"
 	"golang.org/x/net/context"
@@ -88,7 +88,7 @@ func (u *Uploader) updateUploads(ctx context.Context, count int64, status string
 	}
 	err := u.uploads.Add(ctx, count, status)
 	if err != nil {
-		log.Printf("eventupload: metric.Counter.Add: %v", err)
+		logging.WithError(err).Errorf(ctx, "eventupload: metric.Counter.Add failed")
 	}
 }
 
@@ -122,7 +122,7 @@ func (u Uploader) Put(ctx context.Context, src interface{}) error {
 	}
 	err = u.u.Put(ctx, sss)
 	if err != nil {
-		log.Printf("eventupload: Uploader.Put: %v", err)
+		logging.WithError(err).Errorf(ctx, "eventupload: Uploader.Put failed")
 		if merr, ok := err.(bigquery.PutMultiError); ok {
 			failed = int64(len(merr))
 		} else {
@@ -132,7 +132,7 @@ func (u Uploader) Put(ctx context.Context, src interface{}) error {
 	}
 	succeeded := int64(len(sss)) - failed
 	if succeeded < 0 {
-		log.Printf("eventupload: Uploader.Put succeeded < 0: %v", succeeded)
+		logging.Errorf(ctx, "eventupload: Uploader.Put succeeded < 0: %v", succeeded)
 	} else {
 		u.updateUploads(ctx, succeeded, "success")
 	}
@@ -187,9 +187,13 @@ func prepareSrc(s bigquery.Schema, src interface{}) ([]*bigquery.StructSaver, er
 			}
 		}
 
+		insertID, err := id.Generate()
+		if err != nil {
+			return nil, err
+		}
 		ss := &bigquery.StructSaver{
 			Schema:   schema,
-			InsertID: id.Generate(),
+			InsertID: insertID,
 			Struct:   src,
 		}
 

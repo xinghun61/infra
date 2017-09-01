@@ -18,7 +18,11 @@ func TestGenerate(t *testing.T) {
 
 	for i := 1; i < 10; i++ {
 		want := fmt.Sprintf("%s:%d", prefix, i)
-		if got := id.Generate(); got != want {
+		got, err := id.Generate()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if got != want {
 			t.Errorf("got: %s; want: %s", got, want)
 		}
 	}
