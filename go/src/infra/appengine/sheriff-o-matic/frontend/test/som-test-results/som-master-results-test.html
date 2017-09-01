@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <title>masterResultsTest</title>
 <meta charset="utf-8">
+<script src="/test/som-test-results/test-data.js"></script>
 <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
 <script src="/bower_components/web-component-tester/browser.js"></script>
 <link rel="import" href="/elements/som-test-results/som-master-results.html">
@@ -12,36 +13,6 @@
 
 <script>
   'use strict';
-
-  let builderOne = {
-    builder_name:'builder-1',
-    total_failures: 2,
-    results: [
-      {build_number: 1, actual: [2], expected: [2]},
-      {build_number: 2, actual: [1], expected: [2]},
-      {build_number: 3, actual: [1], expected: [2]},
-    ],
-  };
-
-  let builderTwo = {
-    builder_name:'builder-2',
-    total_failures: 3,
-    results: [
-      {build_number: 1, actual: [1], expected: [2]},
-      {build_number: 2, actual: [1], expected: [2]},
-      {build_number: 3, actual: [1], expected: [2]},
-    ],
-  };
-
-  let builderThree = {
-    builder_name:'builder-3',
-    total_failures: 1,
-    results: [
-      {build_number: 1, actual: [2], expected: [2]},
-      {build_number: 2, actual: [2], expected: [2]},
-      {build_number: 3, actual: [1], expected: [2]},
-    ],
-  };
 
   suite('som-master-results', function() {
     var element;
@@ -56,24 +27,24 @@
     test('test expansion', function(done) {
 
       flush(function() {
-        assert.isTrue(element.isCollapsed)
+        assert.isTrue(element.masterIsCollapsed)
         assert.equal(builderOne, element._getFirstResults(element.masterResults));
         assert.deepEqual(
             [builderTwo, builderThree],
             element._getAdditionalResults(element.masterResults));
         assert.equal(
-            'expand-more', element._computeExpandIcon(element.isCollapsed));
+            'expand-more', element._computeExpandIcon(element.masterIsCollapsed));
 
         element._toggleExpand();
-        assert.isFalse(element.isCollapsed)
+        assert.isFalse(element.masterIsCollapsed)
         assert.equal(
             'expand-less',
-            element._computeExpandIcon(element.isCollapsed));
+            element._computeExpandIcon(element.masterIsCollapsed));
 
         element._toggleExpand();
-        assert.isTrue(element.isCollapsed)
+        assert.isTrue(element.masterIsCollapsed)
         assert.equal(
-            'expand-more', element._computeExpandIcon(element.isCollapsed));
+            'expand-more', element._computeExpandIcon(element.masterIsCollapsed));
 
         done();
       });

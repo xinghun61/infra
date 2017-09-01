@@ -20,7 +20,7 @@
     <div class="results-section">
       <p class="row-item">[[masterResults.master_name]]</p>
       <span class="row-item">
-        <iron-icon icon="[[_computeExpandIcon(isCollapsed)]]" on-tap="[[_toggleExpand]]"></iron-icon>
+        <iron-icon icon="[[_computeExpandIcon(masterIsCollapsed)]]" on-tap="[[_toggleExpand]]"></iron-icon>
       </span>
       <div class="row-item">
         <som-builder-results builder-results="[[_getFirstResults(masterResults)]]"></som-builder-results>
@@ -55,15 +55,16 @@
               };
             },
           },
-          isCollapsed: {
+          masterIsCollapsed: {
             type: Boolean,
             value: true,
+            notify: true,
           },
         }
       }
 
       _toggleExpand() {
-        this.isCollapsed = !this.isCollapsed;
+        this.masterIsCollapsed = !this.masterIsCollapsed;
         this.$.collapse.toggle();
       }
 
@@ -75,8 +76,8 @@
         return masterResults.builder_results.slice(1);
       }
 
-      _computeExpandIcon(isCollapsed) {
-        return isCollapsed ? 'expand-more' : 'expand-less';
+      _computeExpandIcon(masterIsCollapsed) {
+        return masterIsCollapsed ? 'expand-more' : 'expand-less';
       }
 
     }

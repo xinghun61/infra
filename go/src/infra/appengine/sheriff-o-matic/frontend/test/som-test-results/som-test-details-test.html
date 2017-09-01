@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<title>somTestDetailsTest</title>
+<meta charset="utf-8">
+<script src="/test/som-test-results/test-data.js"></script>
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/som-test-results/som-test-details.html">
+
+<test-fixture id="som-test-details-test">
+  <template>
+    <som-test-details></som-test-details>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('som-test-details', function() {
+    let element;
+    setup(function() {
+      element = fixture('som-test-details-test');
+      element.testDetails = {
+        test_name: 'test-test-name',
+        master_results: [masterOne, masterTwo, masterThree],
+      };
+    });
+
+    test('test details', function(done) {
+
+      flush(function() {
+
+        assert.isTrue(element.isCollapsed);
+        assert.equal(element.testDetails.test_name, 'test-test-name');
+        assert.deepEqual(element.testDetails.master_results, [masterOne, masterTwo, masterThree]);
+        assert.equal(
+            'expand-more', element._computeExpandIcon(element.isCollapsed));
+
+        // Expand
+        element._toggleExpand();
+        assert.isFalse(element.isCollapsed)
+        assert.equal(
+            'expand-less',
+            element._computeExpandIcon(element.isCollapsed));
+
+        // Expand a master
+        element.shadowRoot.querySelector('som-master-results')._toggleExpand();
+
+        // Collapse
+        element._toggleExpand();
+        assert.isTrue(element.isCollapsed)
+        assert.equal(
+            'expand-more', element._computeExpandIcon(element.isCollapsed));
+
+        done();
+      });
+    });
+
+  });
+
+</script>

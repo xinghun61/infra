@@ -1,0 +1,70 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="../../elements/som-test-results/som-master-results.html">
+<dom-module id="som-test-details">
+  <template>
+    <style>
+      p {
+        font-family: 'Roboto', 'Noto', sans-serif;
+      }
+      .results-sections {
+        display: table;
+      }
+      .row-item {
+        display: table-cell;
+      }
+    </style>
+    <span class="row-item">
+      <iron-icon icon="[[_computeExpandIcon(isCollapsed)]]" on-tap="[[_toggleExpand]]"></iron-icon>
+    </span>
+    <p class="row-item">[[testDetails.test_name]]</p>
+    <iron-collapse id="collapse">
+      <template is="dom-repeat" items="[[testDetails.master_results]]">
+        <som-master-results master-results="[[item]]"></som-master-results>
+      </template>
+    </iron-collapse>
+  </template>
+  <script>
+    'use strict';
+
+    class SomTestDetails extends Polymer.Element {
+      static get is() { return 'som-test-details'; }
+
+      ready() {
+        super.ready();
+        this.$.collapse.addEventListener(
+            'master-is-collapsed-changed', this._masterToggled());
+      }
+
+      static get properties() {
+        return {
+          testDetails: {
+            type: Object,
+            value: () => { return {test_name: 'testName', master_results: []}; },
+          },
+          isCollapsed: {
+            type: Boolean,
+            value: true,
+          },
+        }
+      }
+
+      _toggleExpand() {
+        this.isCollapsed = !this.isCollapsed;
+        this.$.collapse.toggle();
+      }
+
+      _computeExpandIcon(isCollapsed) {
+        return isCollapsed ? 'expand-more' : 'expand-less';
+      }
+
+      // When a master is toggled, the outer iron-collapse needs to be resized
+      _masterToggled() {
+        this.$.collapse.updateSize(`auto`, true);
+      }
+
+    }
+    customElements.define(SomTestDetails.is, SomTestDetails);
+  </script>
+</dom-module>
