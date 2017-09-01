@@ -77,7 +77,6 @@ _SAMPLE_FAILURE_LOG = {
 _SWARMING_TASK_RESULTS = {
     'task_id1': {
         'state': 'COMPLETED',
-        'exit_code': '1',
         'tags': ['priority:25', 'ref_name:abc_tests'],
         'outputs_ref': {
             'isolatedserver': _ISOLATED_SERVER,
@@ -94,11 +93,22 @@ _SWARMING_TASK_RESULTS = {
     },
     'task_id3': {
         'state': 'COMPLETED',
-        'exit_code': '2',  # Swarming task failed.
     },
-    'task_id4': {
+    'task_id5': {
         'state': 'COMPLETED',
-        'exit_code': '1',
+        'outputs_ref': {
+            'isolatedserver': _ISOLATED_SERVER,
+            'namespace': 'default-gzip',
+            'isolated': 'shard5_isolated'
+        },
+    },
+    'task_id6': {
+        'state': 'BOT_DIED',
+        'outputs_ref': {
+            'isolatedserver': _ISOLATED_SERVER,
+            'namespace': 'default-gzip',
+            'isolated': 'shard5_isolated'
+        },
     },
 }
 
@@ -210,7 +220,7 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
                                  self.build_number, self.step_name,
                                  self.test_name)
     self.assertEqual(analysis_status.ERROR, task.status)
-    self.assertEqual({}, task.tests_statuses)
+    self.assertIsNone(task.tests_statuses)
 
   def testMonitorSwarmingTaskNotRunning(self):
     task = WfSwarmingTask.Create(self.master_name, self.builder_name,
@@ -286,27 +296,6 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       swarming_util,
       'GetSwarmingTaskFailureLog',
-      return_value=(_SAMPLE_FAILURE_LOG, {
-          'code': 1,
-          'message': 'error'
-      }))
-  def testMonitorSwarmingTaskGetSwarmingTaskFailureLogErrorRecovered(self, _):
-    task = WfSwarmingTask.Create(self.master_name, self.builder_name,
-                                 self.build_number, self.step_name)
-    task.task_id = 'task_id1'
-    task.put()
-
-    pipeline = ProcessSwarmingTaskResultPipeline()
-    pipeline.start_test()
-    pipeline.run(self.master_name, self.builder_name, self.build_number,
-                 self.step_name)
-
-    self.assertEqual(analysis_status.COMPLETED, task.status)
-    self.assertEqual(task.error, {'code': 1, 'message': 'error'})
-
-  @mock.patch.object(
-      swarming_util,
-      'GetSwarmingTaskFailureLog',
       return_value=(None, {
           'code': 1,
           'message': 'error'
@@ -337,17 +326,12 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
                  self.step_name)
 
     self.assertEqual(analysis_status.ERROR, task.status)
-    self.assertEqual(task.error, {
-        'code':
-            swarming_util.TASK_FAILED,
-        'message':
-            swarming_util.EXIT_CODE_DESCRIPTIONS[swarming_util.TASK_FAILED]
-    })
+    self.assertIsNotNone(task.error)
 
   def testMonitorSwarmingTaskWhereNoTaskOutputs(self):
     task = WfSwarmingTask.Create(self.master_name, self.builder_name,
                                  self.build_number, self.step_name)
-    task.task_id = 'task_id4'
+    task.task_id = 'task_id3'
     task.put()
 
     pipeline = ProcessSwarmingTaskResultPipeline()
@@ -360,6 +344,45 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
         'code': swarming_util.NO_TASK_OUTPUTS,
         'message': 'outputs_ref is None'
     })
+
+  @mock.patch.object(
+      swarming_util,
+      'GetSwarmingTaskFailureLog',
+      return_value=({
+          'per_iteration_data': []
+      }, None))
+  def testMonitorSwarmingTaskWhereNoPerIterationData(self, _):
+    task = WfSwarmingTask.Create(self.master_name, self.builder_name,
+                                 self.build_number, self.step_name)
+    task.task_id = 'task_id5'
+    task.put()
+
+    pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.start_test()
+    pipeline.run(self.master_name, self.builder_name, self.build_number,
+                 self.step_name)
+
+    self.assertEqual(analysis_status.ERROR, task.status)
+    self.assertEqual(task.error, {
+        'code': swarming_util.NO_PER_ITERATION_DATA,
+        'message': 'per_iteration_data is empty or missing'
+    })
+
+  def testMonitorSwarmingTaskNotCompletedWithExitCode(self):
+    task = WfSwarmingTask.Create(self.master_name, self.builder_name,
+                                 self.build_number, self.step_name)
+    task.task_id = 'task_id6'
+    task.put()
+
+    pipeline = ProcessSwarmingTaskResultPipeline()
+    pipeline.start_test()
+    pipeline.run(self.master_name, self.builder_name, self.build_number,
+                 self.step_name)
+
+    self.assertEqual(analysis_status.ERROR, task.status)
+    self.assertEqual(task.error,
+                     {'code': swarming_util.BOT_DIED,
+                      'message': 'BOT_DIED'})
 
   @mock.patch.object(
       swarming_util,
@@ -550,8 +573,10 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('abc_tests', task.canonical_step_name)
 
   @mock.patch.object(logging, 'warning')
-  @mock.patch.object(ProcessBaseSwarmingTaskResultPipeline, 'get_callback_task',
-                     side_effect=taskqueue.TombstonedTaskError)
+  @mock.patch.object(
+      ProcessBaseSwarmingTaskResultPipeline,
+      'get_callback_task',
+      side_effect=taskqueue.TombstonedTaskError)
   def testDelayCallbackException(self, _, mocked_logging):
     pipeline = ProcessSwarmingTaskResultPipeline()
     pipeline.start_test()

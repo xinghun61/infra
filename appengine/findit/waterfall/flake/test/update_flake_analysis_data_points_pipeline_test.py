@@ -12,9 +12,8 @@ from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import build_util
 from waterfall.build_info import BuildInfo
+from waterfall.flake import flake_constants
 from waterfall.flake import update_flake_analysis_data_points_pipeline
-from waterfall.flake.update_flake_analysis_data_points_pipeline import (
-    _TEST_DOES_NOT_EXIST)
 from waterfall.flake.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsPipeline)
 from waterfall.test import wf_testcase
@@ -37,7 +36,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     task = FlakeSwarmingTask.Create('m', 'b', 123, 's', 't')
     task.tries = 0
     self.assertEqual(
-        _TEST_DOES_NOT_EXIST,
+        flake_constants.PASS_RATE_TEST_NOT_FOUND,
         update_flake_analysis_data_points_pipeline._GetPassRate(task))
 
   def testGetPassRate(self):

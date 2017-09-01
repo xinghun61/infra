@@ -94,8 +94,8 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
       task.add(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
     except taskqueue.TombstonedTaskError:
       assert name
-      logging.warning(
-          'A task named %s has already been added to the taskqueue', name)
+      logging.warning('A task named %s has already been added to the taskqueue',
+                      name)
 
   def finalized(self, *args, **kwargs):
     try:
@@ -210,21 +210,20 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         return
 
     task_state = data['state']
-    exit_code = (data.get('exit_code')
-                 if task_state == swarming_util.STATE_COMPLETED else None)
+
     step_name_no_platform = (step_name_no_platform or swarming_util.GetTagValue(
         data.get('tags', {}), 'ref_name'))
 
     if task_state not in swarming_util.STATES_RUNNING:
       task_completed = True
 
-      if (task_state == swarming_util.STATE_COMPLETED and
-          int(exit_code) != swarming_util.TASK_FAILED):
+      if task_state == swarming_util.STATE_COMPLETED:
         outputs_ref = data.get('outputs_ref')
 
         # If swarming task aborted because of errors in request arguments,
         # it's possible that there is no outputs_ref.
         if not outputs_ref:
+          logging.error('outputs_ref for task %s is None', task_id)
           task.status = analysis_status.ERROR
           task.error = {
               'code': swarming_util.NO_TASK_OUTPUTS,
@@ -237,38 +236,41 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         output_json, error = swarming_util.GetSwarmingTaskFailureLog(
             outputs_ref, self.HTTP_CLIENT)
 
-        task.status = analysis_status.COMPLETED
+        if error or not output_json:
+          task.status = analysis_status.ERROR
+          task.error = error or {
+              'code': swarming_util.NO_OUTPUT_JSON,
+              'message': 'output_json is None',
+          }
+          task.put()
+          check_task_completion()
+          return
 
-        if error:
-          task.error = error
-
-          if not output_json:
-            # Retry was ultimately unsuccessful.
-            task.status = analysis_status.ERROR
+        if not output_json.get('per_iteration_data'):
+          task.status = analysis_status.ERROR
+          task.error = {
+              'code': swarming_util.NO_PER_ITERATION_DATA,
+              'message': 'per_iteration_data is empty or missing'
+          }
+          task.put()
+          check_task_completion()
+          return
 
         tests_statuses = self._CheckTestsRunStatuses(output_json, *call_args)
+        task.status = analysis_status.COMPLETED
         task.tests_statuses = tests_statuses
         task.canonical_step_name = step_name_no_platform
         task.put()
       else:
-        if exit_code is not None:
-          # Swarming task completed, but the task failed.
-          code = int(exit_code)
-          message = swarming_util.EXIT_CODE_DESCRIPTIONS[code]
-        else:
-          # The swarming task did not complete.
-          code = swarming_util.STATES_NOT_RUNNING_TO_ERROR_CODES[task_state]
-          message = task_state
+        # The swarming task did not complete.
+        code = swarming_util.STATES_NOT_RUNNING_TO_ERROR_CODES[task_state]
+        message = task_state
 
         task.status = analysis_status.ERROR
         task.error = {'code': code, 'message': message}
         task.put()
 
-        logging_str = 'Swarming task stopped with status: %s' % task_state
-        if exit_code:  # pragma: no cover
-          logging_str += ' and exit_code: %s - %s' % (
-              exit_code, swarming_util.EXIT_CODE_DESCRIPTIONS[code])
-        logging.error(logging_str)
+        logging.error('Swarming task stopped with status: %s' % task_state)
 
       tags = data.get('tags', {})
       priority_str = swarming_util.GetTagValue(tags, 'priority')
@@ -281,6 +283,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         task_started = True
         task.status = analysis_status.RUNNING
         task.put()
+
     check_task_completion()
 
   # Arguments number differs from overridden method - pylint: disable=W0221

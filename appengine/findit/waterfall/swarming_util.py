@@ -60,20 +60,14 @@ EXCEEDED_MAX_RETRIES_ERROR = 210
 # Outputs_ref is None.
 NO_TASK_OUTPUTS = 300
 
+# Per iteration data is None or empty.
+NO_PER_ITERATION_DATA = 310
+
+# Unable to retrieve output json.
+NO_OUTPUT_JSON = 320
+
 # Other/miscellaneous error codes.
 UNKNOWN = 1000
-
-# Swarming task exit codes.
-ALL_TESTS_PASSED = 0
-SOME_TESTS_FAILED = 1
-TASK_FAILED = 2
-
-# Swarming task exit code descriptions.
-EXIT_CODE_DESCRIPTIONS = {
-    ALL_TESTS_PASSED: 'All tests passed',
-    SOME_TESTS_FAILED: 'Some tests failed',
-    TASK_FAILED: 'Swarming task failed',
-}
 
 # Swarming URL templates.
 BOT_LIST_URL = 'https://%s/_ah/api/swarming/v1/bots/list%s'
@@ -562,6 +556,7 @@ def RetrieveShardedTestResultsFromIsolatedServer(list_isolated_data,
 def GetIsolatedOutputForTask(task_id, http_client):
   """Get isolated output for a swarming task based on it's id."""
   json_data, error = GetSwarmingTaskResultById(task_id, http_client)
+
   if error or not json_data:
     return None
 
@@ -658,8 +653,8 @@ def GetStepLog(try_job_id, full_step_name, http_client, log_type='stdout'):
     try:
       return json.loads(data) if data else None
     except ValueError:
-      logging.error('Failed to json load data for %s. Data is: %s.' % (
-          log_type, data))
+      logging.error('Failed to json load data for %s. Data is: %s.' % (log_type,
+                                                                       data))
 
   return data
 

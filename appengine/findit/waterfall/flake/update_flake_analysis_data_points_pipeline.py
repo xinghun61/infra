@@ -12,9 +12,9 @@ from gae_libs.pipeline_wrapper import pipeline
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from waterfall import build_util
+from waterfall.flake import flake_constants
 
 _CHROMIUM_REPO_URL = 'https://chromium.googlesource.com/chromium/src.git'
-_TEST_DOES_NOT_EXIST = -1
 
 
 def _GetCommitsBetweenRevisions(start_revision, end_revision):
@@ -37,7 +37,7 @@ def _GetCommitsBetweenRevisions(start_revision, end_revision):
 def _GetPassRate(flake_swarming_task):
   if flake_swarming_task.tries > 0:
     return float(flake_swarming_task.successes) / flake_swarming_task.tries
-  return _TEST_DOES_NOT_EXIST
+  return flake_constants.PASS_RATE_TEST_NOT_FOUND
 
 
 def _CreateDataPoint(flake_swarming_task):
@@ -65,9 +65,8 @@ def _CreateDataPoint(flake_swarming_task):
   build_info = build_util.GetBuildInfo(master_name, builder_name, build_number)
 
   if not build_info:
-    raise pipeline.Retry(
-        'Failed to get build info for %s/%s/%s' % (
-            master_name, builder_name, build_number))
+    raise pipeline.Retry('Failed to get build info for %s/%s/%s' %
+                         (master_name, builder_name, build_number))
 
   data_point.commit_position = build_info.commit_position
   data_point.git_hash = build_info.chromium_revision
@@ -76,9 +75,8 @@ def _CreateDataPoint(flake_swarming_task):
     previous_build_info = build_util.GetBuildInfo(master_name, builder_name,
                                                   build_number - 1)
     if not previous_build_info:
-      raise pipeline.Retry(
-          'Failed to get build info for %s/%s/%s' % (
-              master_name, builder_name, build_number - 1))
+      raise pipeline.Retry('Failed to get build info for %s/%s/%s' %
+                           (master_name, builder_name, build_number - 1))
 
     data_point.previous_build_commit_position = (
         previous_build_info.commit_position)
