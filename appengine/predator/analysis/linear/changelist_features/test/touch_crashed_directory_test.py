@@ -37,8 +37,8 @@ class TouchCrashedDirectoryFeatureTest(AnalysisTestCase):
                         'src/p/f.cc', [2, 3], 'h://repo')
     stack = CallStack(0, frame_list=[frame1])
     stack_trace = Stacktrace([stack], stack)
-    deps = {'src': Dependency('src', 'h://repo', '8')}
-    dep_rolls = {'src': DependencyRoll('src', 'h://repo', '2', '6')}
+    deps = {'src/': Dependency('src/', 'h://repo', '8')}
+    dep_rolls = {'src/': DependencyRoll('src/', 'h://repo', '2', '6')}
 
     self._report = CrashReport('8', 'sig', 'linux', stack_trace, ('2', '6'),
                                deps, dep_rolls)
@@ -52,13 +52,13 @@ class TouchCrashedDirectoryFeatureTest(AnalysisTestCase):
             'new_path': 'p/a.cc',
             'old_path': None,
         })])
-    suspect = Suspect(changelog, 'src')
+    suspect = Suspect(changelog, 'src/')
     feature_value = self._feature(self._report)(suspect)
     self.assertEqual(1.0, feature_value.value)
 
   def testFeatureValueIsZeroWhenNoMatchedDirectory(self):
     """Test that the feature returns 0 when there no matched directory."""
-    suspect = Suspect(self.GetDummyChangeLog(), 'src')
+    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
     feature_value = self._feature(self._report)(suspect)
     self.assertEqual(0.0, feature_value.value)
 
@@ -71,7 +71,7 @@ class TouchCrashedDirectoryFeatureTest(AnalysisTestCase):
             'new_path': None,
             'old_path': 'p/a.cc',
         })])
-    suspect = Suspect(changelog, 'src')
+    suspect = Suspect(changelog, 'src/')
     feature_value = self._feature(self._report)(suspect)
     self.assertEqual(0.0, feature_value.value)
 
@@ -84,7 +84,7 @@ class TouchCrashedDirectoryFeatureTest(AnalysisTestCase):
             'new_path': 'p/a_unittest.cc',
             'old_path': 'p/a_unittest.cc',
         })])
-    suspect = Suspect(changelog, 'src')
+    suspect = Suspect(changelog, 'src/')
 
     feature_with_flag = TouchCrashedDirectoryFeature(include_test_files=True)
     feature_value = feature_with_flag(self._report)(suspect)
