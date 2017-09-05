@@ -63,12 +63,27 @@ def _temp_sys_builtins(*v):
     sys.builtin_module_names = orig
 
 
+@contextlib.contextmanager
+def _temp_sys_executable(v):
+  orig = sys.executable
+  try:
+    sys.executable = v
+    yield
+  finally:
+    sys.executable = orig
+
+
 def _get_extensions(root, build_dir):
   lib_dir = os.path.join(root, 'Lib')
 
+  # Create a path to the "build Python" executable. This is the path that the
+  # "setup.py" would expect to be invoked with. It doesn't really matter if this
+  # file actually exists (e.g., on Mac it would be "python.exe").
+  build_python = os.path.join(root, 'python')
+
   # Enter a "setup.py" expected library pathing, and tell distutil we want to
   # build extensions.
-  with _temp_sys_builtins():
+  with _temp_sys_builtins(), _temp_sys_executable(build_python):
     with \
         _temp_sys_argv(['python', 'build_ext']), \
         _insert_sys_path(root, lib_dir, build_dir):
