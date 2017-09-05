@@ -38,9 +38,11 @@ Migrate builder {{.Builder.ID}} to LUCI.
 Buildbot: https://ci.chromium.org/buildbot/{{.Builder.ID.Master|pathEscape}}/{{.Builder.ID.Builder|pathEscape}}
 LUCI: https://ci.chromium.org/buildbucket/{{.Builder.LUCIBuildbucketBucket|pathEscape}}/{{.Builder.LUCIBuildbucketBuilder|pathEscape}}
 
-I will be posting updates on changes of the migration status.
+Migration app will be posting updates on changes of the migration status.
 For the latest status, see
 https://{{.Hostname}}/masters/{{.Builder.ID.Master|pathEscape}}/builders/{{.Builder.ID.Builder|pathEscape}}
+
+Migration app will close this bug when the builder is entirely migrated from Buildbot to LUCI.
 `)))
 
 // createBuilderBug creates a Monorail issue to migrate the builder to LUCI.
