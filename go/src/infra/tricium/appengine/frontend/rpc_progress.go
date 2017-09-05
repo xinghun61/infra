@@ -22,13 +22,41 @@ import (
 
 // Progress implements Tricium.Progress.
 func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest) (*tricium.ProgressResponse, error) {
-	if req.RunId == "" {
+	if req.RunId == "" && (req.Consumer == tricium.Consumer_NONE) {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
 	}
 	runID, err := strconv.ParseInt(req.RunId, 10, 64)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "failed to parse run ID: %s", req.RunId)
 		return nil, grpc.Errorf(codes.InvalidArgument, "invalid run ID")
+	}
+	if req.Consumer == tricium.Consumer_GERRIT {
+		gd := req.GetGerritDetails()
+		if gd == nil {
+			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit details")
+		}
+		if gd.Project == "" {
+			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit project")
+		}
+		if gd.Change == "" {
+			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit change ID")
+		}
+		if gd.Revision == "" {
+			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit revision")
+		}
+		// If Gerrit consumer and no run ID, lookup the run ID with the provided Gerrit change details.
+		if req.RunId == "" {
+			// TODO(emso): mapping between Gerrit project and Tricium project. They may be different.
+			// Possibly add the Tricium project name for a gerrit project in the Tricium plugin config.
+			g := &GerritChangeToRunID{
+				ID: gerritMappingID(gd.Project, gd.Change),
+			}
+			if err := ds.Get(c, g); err != nil {
+				logging.WithError(err).Errorf(c, "failed to get GerritChangeToRunID entity: %v", err)
+				return nil, grpc.Errorf(codes.Internal, "failed to find run ID for Gerrit change")
+			}
+			runID = g.RunID
+		}
 	}
 	runState, analyzerProgress, err := progress(c, runID)
 	if err != nil {
@@ -37,6 +65,7 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 	}
 	logging.Infof(c, "[frontend] Analyzer progress: %v", analyzerProgress)
 	return &tricium.ProgressResponse{
+		RunId:            strconv.FormatInt(runID, 10),
 		State:            runState,
 		AnalyzerProgress: analyzerProgress,
 	}, nil

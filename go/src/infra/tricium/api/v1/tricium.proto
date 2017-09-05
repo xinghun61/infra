@@ -52,11 +52,8 @@ message AnalyzeRequest {
   // API regardless of whether a consumer has been included in the request.
   Consumer consumer = 4;
 
-  // Gerrit details for a Gerrit consumer; change and revision.
-  //
-  // These fields are required if Gerrit is selected as consumer.
-  string gerrit_change = 5;
-  string gerrit_revision = 6;
+  // Gerrit details for a Gerrit consumer.
+  GerritConsumerDetails gerrit_details = 5;
 }
 
 message AnalyzeResponse {
@@ -69,8 +66,8 @@ message AnalyzeResponse {
 message ProgressRequest {
   // Run ID returned by an analyze request.
   //
-  // This field must be provided. If nothing else is provided, then
-  // all known progress for the run is returned.
+  // This field must be provided, unless a consumer is provided below.
+  // If nothing else is provided, then all known progress for the run is returned.
   string run_id = 1;
 
   // An optional analyzer name.
@@ -88,11 +85,25 @@ message ProgressRequest {
   //
   // NB! Currently not supported.
   Platform platform = 3;
+
+  // Consumer of the progress information.
+  //
+  // This field is optional. If included, consumer-specific fields will be considered
+  // when looking up progress information and the run ID can be excluded.
+  //
+  // Note that if a run ID is listed and a consumer. Then the run ID will be used.
+  Consumer consumer = 4;
+
+  // Gerrit details for the Gerrit consumer.
+  GerritConsumerDetails gerrit_details = 5;
 }
 
 message ProgressResponse {
+  // ID of the run progress is reported for.
+  string run_id = 1;
+
   // Overall state for the run provided in the progress request.
-  State state = 1;
+  State state = 2;
 
   // Analyzer progress matching the requested progress report.
   //
@@ -100,7 +111,7 @@ message ProgressResponse {
   // for any selection of these, a subset is returned.
   //
   // NB! Selection of a subset is currently not supported.
-  repeated AnalyzerProgress analyzer_progress = 2;
+  repeated AnalyzerProgress analyzer_progress = 3;
 }
 
 message AnalyzerProgress {
@@ -200,5 +211,40 @@ enum Consumer {
   //
   // Gerrit details need to be configured for a project before the Gerrit consumer
   // option is enabled.
+  //
+  // Gerrit consumer details must be provided with this option.
   GERRIT = 1;
+}
+
+// Gerrit consumer details to be provided if a Gerrit consumer is specified.
+message GerritConsumerDetails {
+  // Gerrit project name.
+  //
+  // This value is assume to not include '##'.
+  //
+  // This field is required.
+  string project = 1;
+ 
+  // Gerrit change ID.
+  //
+  // This value should be a fully qualified ID on the form "<project>~<branch>~<Change-Id>",
+  // where <Change-Id> is a SHA and not a lecacy change ID number.
+  // Note that refs/heads can be ommitted from the branch.
+  //
+  // Example: "myProject~master~I8473b95934b5732ac55d26311a706c9c2bde9940" 
+  //
+  // This field is required.
+  string change = 2;
+
+  // Gerrit change revision.
+  //
+  // This value should be the fetch URL for a revision of a change. Note that
+  // the last number of a change revision ref maps to the corresponding patch set
+  // number. 
+  //
+  // Example: "refs/changes/97/97/1"
+  // 
+  // This field is required.
+  string revision = 6;
+
 }

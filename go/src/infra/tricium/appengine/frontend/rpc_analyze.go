@@ -51,13 +51,24 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 		return nil, grpc.Errorf(codes.InvalidArgument, msg)
 	}
 	if req.Consumer == tricium.Consumer_GERRIT {
-		if req.GerritChange == "" {
-			msg := "missing 'gerrit_change' field in Analyze request"
+		gd := req.GetGerritDetails()
+		if gd == nil {
+			msg := "missing 'gerrit_details' field"
 			logging.Errorf(c, msg)
 			return nil, grpc.Errorf(codes.InvalidArgument, msg)
 		}
-		if req.GerritRevision == "" {
-			msg := "missing 'gerrit_revision' field in Analyze request"
+		if gd.Project == "" {
+			msg := "missing 'project' field in GerritConsumerDetails message"
+			logging.Errorf(c, msg)
+			return nil, grpc.Errorf(codes.InvalidArgument, msg)
+		}
+		if gd.Change == "" {
+			msg := "missing 'change' field in GerritConsumerDetails message"
+			logging.Errorf(c, msg)
+			return nil, grpc.Errorf(codes.InvalidArgument, msg)
+		}
+		if gd.Revision == "" {
+			msg := "missing 'revision' field in GerritConsumerDetails message"
 			logging.Errorf(c, msg)
 			return nil, grpc.Errorf(codes.InvalidArgument, msg)
 		}
@@ -126,8 +137,8 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 			return "", fmt.Errorf("missing Gerrit details for project, project: %s", req.Project)
 		}
 		request.GerritHost = gd.Host
-		request.GerritChange = req.GerritChange
-		request.GerritRevision = req.GerritRevision
+		request.GerritChange = req.GerritDetails.Change
+		request.GerritRevision = req.GerritDetails.Revision
 	}
 	requestRes := &track.AnalyzeRequestResult{
 		ID:    1,
@@ -153,7 +164,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 			func() error {
 				requestRes.Parent = ds.KeyForObj(c, request)
 				if err := ds.Put(c, requestRes); err != nil {
-					return fmt.Errorf("failed to store AnalyzeRequestResult entry: %v", err)
+					return fmt.Errorf("failed to store AnalyzeRequestResult entity: %v", err)
 				}
 				return nil
 			},
@@ -167,6 +178,21 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 				}
 				t.Payload = b
 				return tq.Add(c, common.LauncherQueue, t)
+			},
+			// Map Gerrit change ID to run ID.
+			func() error {
+				// Nothing to do if there isn't a Gerrit consumer.
+				if req.Consumer != tricium.Consumer_GERRIT {
+					return nil
+				}
+				g := &GerritChangeToRunID{
+					ID:    gerritMappingID(request.Project, request.GerritChange),
+					RunID: request.ID,
+				}
+				if err := ds.Put(c, g); err != nil {
+					return fmt.Errorf("failed to store GerritChangeIDtoRunID entity: %v", err)
+				}
+				return nil
 			},
 		}
 		return common.RunInParallel(ops)

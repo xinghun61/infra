@@ -310,12 +310,15 @@ func enqueueAnalyzeRequests(ctx context.Context, project string, changes []gr.Ch
 		sort.Strings(paths)
 		// TODO(emso): Mapping between Gerrit project name and that used in Tricium?
 		req := &tricium.AnalyzeRequest{
-			Project:        project,
-			GitRef:         c.Revisions[c.CurrentRevision].Ref,
-			Paths:          paths,
-			Consumer:       tricium.Consumer_GERRIT,
-			GerritChange:   c.ChangeID,
-			GerritRevision: c.CurrentRevision,
+			Project:  project,
+			GitRef:   c.Revisions[c.CurrentRevision].Ref,
+			Paths:    paths,
+			Consumer: tricium.Consumer_GERRIT,
+			GerritDetails: &tricium.GerritConsumerDetails{
+				Project:  project,
+				Change:   c.ChangeID,
+				Revision: c.CurrentRevision,
+			},
 		}
 		b, err := proto.Marshal(req)
 		if err != nil {
