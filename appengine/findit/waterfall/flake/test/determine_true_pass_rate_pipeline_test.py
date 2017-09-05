@@ -36,6 +36,10 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       determine_true_pass_rate_pipeline,
       '_HasPassRateConverged',
+      side_effect=[False, True])
+  @mock.patch.object(
+      determine_true_pass_rate_pipeline,
+      '_MinimumIterationsReached',
       return_value=True)
   @mock.patch.object(
       flake_analysis_util, 'EstimateSwarmingIterationTimeout', return_value=60)
@@ -88,6 +92,10 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
       '_HasPassRateConverged',
       return_value=True)
   @mock.patch.object(
+      determine_true_pass_rate_pipeline,
+      '_MinimumIterationsReached',
+      return_value=True)
+  @mock.patch.object(
       flake_analysis_util, 'EstimateSwarmingIterationTimeout', return_value=60)
   @mock.patch.object(
       flake_analysis_util,
@@ -137,6 +145,10 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
       '_HasPassRateConverged',
       side_effect=[False, True])
   @mock.patch.object(
+      determine_true_pass_rate_pipeline,
+      '_MinimumIterationsReached',
+      return_value=True)
+  @mock.patch.object(
       flake_analysis_util, 'EstimateSwarmingIterationTimeout', return_value=60)
   @mock.patch.object(
       flake_analysis_util,
@@ -182,6 +194,10 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
       determine_true_pass_rate_pipeline,
       '_HasPassRateConverged',
       side_effect=[False, True])
+  @mock.patch.object(
+      determine_true_pass_rate_pipeline,
+      '_MinimumIterationsReached',
+      return_value=True)
   @mock.patch.object(
       flake_analysis_util, 'EstimateSwarmingIterationTimeout', return_value=60)
   @mock.patch.object(
@@ -376,6 +392,24 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(
         determine_true_pass_rate_pipeline._HasPassRateConverged(.151, .2))
 
+  def testMinimumIterationsReached(self):
+    self.assertFalse(
+        determine_true_pass_rate_pipeline._MinimumIterationsReached(None, None))
+    self.assertFalse(
+        determine_true_pass_rate_pipeline._MinimumIterationsReached(1, None))
+    self.assertFalse(
+        determine_true_pass_rate_pipeline._MinimumIterationsReached(None, 1))
+    self.assertFalse(
+        determine_true_pass_rate_pipeline._MinimumIterationsReached(100, 99))
+    self.assertFalse(
+        determine_true_pass_rate_pipeline._MinimumIterationsReached(50, 51))
+    self.assertFalse(
+        determine_true_pass_rate_pipeline._MinimumIterationsReached(-1, 1))
+    self.assertTrue(
+        determine_true_pass_rate_pipeline._MinimumIterationsReached(101, 102))
+    self.assertTrue(
+        determine_true_pass_rate_pipeline._MinimumIterationsReached(500, 600))
+
   def testCalculateRunParametersForSwarmingTask(self):
     master_name = 'm'
     builder_name = 'b'
@@ -434,3 +468,35 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
         determine_true_pass_rate_pipeline._TestDoesNotExist(None, -1))
     self.assertTrue(
         determine_true_pass_rate_pipeline._TestDoesNotExist(-1, None))
+
+  def testCheckSwarmingTaskForError(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.status = analysis_status.PENDING
+    analysis.swarming_task_attempts_for_build = 0
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.put()
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.status = analysis_status.ERROR
+    task.put()
+
+    determine_true_pass_rate_pipeline._CheckSwarmingTaskForError(analysis, task)
+
+    task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
+                                    step_name, test_name)
+    task.status = analysis_status.COMPLETED
+    task.put()
+
+    determine_true_pass_rate_pipeline._CheckSwarmingTaskForError(analysis, task)
+    determine_true_pass_rate_pipeline._CheckSwarmingTaskForError(analysis, task)
+    determine_true_pass_rate_pipeline._CheckSwarmingTaskForError(analysis, None)
+    self.assertEqual(1, analysis.swarming_task_attempts_for_build)
