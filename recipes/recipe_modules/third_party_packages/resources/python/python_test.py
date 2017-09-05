@@ -39,7 +39,7 @@ class TestPython(unittest.TestCase):
         'ctypes', 'ssl', 'cStringIO', 'binascii', 'hashlib', 'sqlite3'):
       script = 'import %s; print %s' % (pkg, pkg)
       rv = subprocess.call([self.python, '-c', script])
-      self.assertEqual(rv, 0)
+      self.assertEqual(rv, 0, 'Could not import %r.' % (pkg,))
 
   def test_use_https(self):
     script = 'import urllib; print urllib.urlretrieve("%s")' % (

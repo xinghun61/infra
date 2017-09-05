@@ -52,13 +52,13 @@
       "search",
       "infra/python/cpython/linux-386",
       "-tag",
-      "version:2.1.2.chromium8",
+      "version:2.1.2.chromium9",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "cipd search infra/python/cpython/linux-386 version:2.1.2.chromium8",
+    "name": "cipd search infra/python/cpython/linux-386 version:2.1.2.chromium9",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
@@ -147,12 +147,26 @@
   },
   {
     "cmd": [
+      "git",
+      "-c",
+      "user.name=third_party_packages",
+      "-c",
+      "user.email=third_party_packages@example.com",
+      "am",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/patches/0001-infra-Update-Python-to-build-static-modules.patch"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "git apply patches"
+  },
+  {
+    "cmd": [
       "cipd",
       "ensure",
       "-root",
       "[START_DIR]/python/_support/sources",
       "-ensure-file",
-      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/pcre2 version:10.23\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/termcap version:1.3.1\ninfra/third_party/source/zlib version:1.2.11",
+      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/bzip2 version:1.0.6\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/gnu_sed version:4.2.2\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/ncurses version:6.0\ninfra/third_party/source/nsl version:1.0.4\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/pcre2 version:10.23\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/zlib version:1.2.11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -172,12 +186,28 @@
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/autoconf\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.0.6---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/bzip2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.54.0--\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/curl\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:4.2.2---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/gnu_sed\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:0.9.8zh-\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/mac_openssl_headers\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:6.0-----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/ncurses\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.0.4---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/nsl\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.1.0e--\", @@@",
@@ -196,16 +226,62 @@
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/sqlite-autoconf\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.3.1---\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/termcap\"@@@",
-      "@@@STEP_LOG_LINE@json.output@    }, @@@",
-      "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.2.11--\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/zlib\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }@@@",
       "@@@STEP_LOG_LINE@json.output@  ]@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "bzip2-1.0.6"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/bzip2-1.0.6"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "bzip2-1.0.6.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/bzip2-1.0.6.tar.gz",
+      "[START_DIR]/python/_support/bzip2-1.0.6"
+    ],
+    "cwd": "[START_DIR]/python/_support/bzip2-1.0.6",
+    "name": "bzip2-1.0.6.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install",
+      "PREFIX=[START_DIR]/python/_support/bzip2-1.0.6/prefix"
+    ],
+    "cwd": "[START_DIR]/python/_support/bzip2-1.0.6/bzip2-1.0.6",
+    "name": "bzip2-1.0.6.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
@@ -271,7 +347,7 @@
   {
     "cmd": [],
     "cwd": "[START_DIR]/python/checkout",
-    "name": "termcap-1.3.1"
+    "name": "ncurses-6.0"
   },
   {
     "cmd": [
@@ -283,11 +359,11 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/python/_support/termcap-1.3.1"
+      "[START_DIR]/python/_support/ncurses-6.0"
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "termcap-1.3.1.makedirs workdir",
+    "name": "ncurses-6.0.makedirs workdir",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -297,11 +373,11 @@
       "python",
       "-u",
       "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
-      "[START_DIR]/python/_support/sources/termcap-1.3.1.tar.gz",
-      "[START_DIR]/python/_support/termcap-1.3.1"
+      "[START_DIR]/python/_support/sources/ncurses-6.0.tar.gz",
+      "[START_DIR]/python/_support/ncurses-6.0"
     ],
-    "cwd": "[START_DIR]/python/_support/termcap-1.3.1",
-    "name": "termcap-1.3.1.extract",
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0",
+    "name": "ncurses-6.0.extract",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -309,10 +385,10 @@
   {
     "cmd": [
       "./configure",
-      "--prefix=[START_DIR]/python/_support/termcap-1.3.1/prefix"
+      "--prefix=[START_DIR]/python/_support/ncurses-6.0/prefix"
     ],
-    "cwd": "[START_DIR]/python/_support/termcap-1.3.1/termcap-1.3.1",
-    "name": "termcap-1.3.1.configure",
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
+    "name": "ncurses-6.0.configure",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -322,8 +398,8 @@
       "make",
       "install"
     ],
-    "cwd": "[START_DIR]/python/_support/termcap-1.3.1/termcap-1.3.1",
-    "name": "termcap-1.3.1.make",
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
+    "name": "ncurses-6.0.make",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -458,6 +534,67 @@
   {
     "cmd": [],
     "cwd": "[START_DIR]/python/checkout",
+    "name": "libnsl-1.0.4"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/libnsl-1.0.4"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "libnsl-1.0.4.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/libnsl-1.0.4.tar.gz",
+      "[START_DIR]/python/_support/libnsl-1.0.4"
+    ],
+    "cwd": "[START_DIR]/python/_support/libnsl-1.0.4",
+    "name": "libnsl-1.0.4.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/python/_support/libnsl-1.0.4/prefix",
+      "--disable-shared"
+    ],
+    "cwd": "[START_DIR]/python/_support/libnsl-1.0.4/libnsl-1.0.4",
+    "name": "libnsl-1.0.4.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install"
+    ],
+    "cwd": "[START_DIR]/python/_support/libnsl-1.0.4/libnsl-1.0.4",
+    "name": "libnsl-1.0.4.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
     "name": "openssl-1.1.0e"
   },
   {
@@ -528,48 +665,191 @@
     ]
   },
   {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "libffi"
+  },
+  {
     "cmd": [
       "python",
       "-u",
       "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
       "--json-output",
       "/path/to/tmp/json",
-      "copy",
-      "*static*\nLIBTERMCAP_PREFIX=[START_DIR]/python/_support/termcap-1.3.1/prefix\nbinascii binascii.c -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include [START_DIR]/python/_support/zlib-1.2.11/prefix/lib/libz.a\nzlib zlibmodule.c -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include [START_DIR]/python/_support/zlib-1.2.11/prefix/lib/libz.a\nreadline readline.c -I[START_DIR]/python/_support/readline-7.0/prefix/include -I[START_DIR]/python/_support/termcap-1.3.1/prefix/include [START_DIR]/python/_support/readline-7.0/prefix/lib/libreadline.a [START_DIR]/python/_support/termcap-1.3.1/prefix/lib/libtermcap.a\n_hashlib _hashopenssl.c -I[START_DIR]/python/_support/openssl-1.1.0e/prefix/include [START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libssl.a [START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libcrypto.a\n_ssl _ssl.c -DUSE_SSL -I[START_DIR]/python/_support/openssl-1.1.0e/prefix/include [START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libssl.a [START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libcrypto.a\n",
-      "[START_DIR]/python/checkout/Modules/Setup.local"
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/tpp_libffi"
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
-    "name": "Configure static modules",
+    "name": "libffi.makedirs libffi",
     "~followup_annotations": [
-      "@@@STEP_LOG_LINE@Setup.local@*static*@@@",
-      "@@@STEP_LOG_LINE@Setup.local@LIBTERMCAP_PREFIX=[START_DIR]/python/_support/termcap-1.3.1/prefix@@@",
-      "@@@STEP_LOG_LINE@Setup.local@binascii binascii.c -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include [START_DIR]/python/_support/zlib-1.2.11/prefix/lib/libz.a@@@",
-      "@@@STEP_LOG_LINE@Setup.local@zlib zlibmodule.c -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include [START_DIR]/python/_support/zlib-1.2.11/prefix/lib/libz.a@@@",
-      "@@@STEP_LOG_LINE@Setup.local@readline readline.c -I[START_DIR]/python/_support/readline-7.0/prefix/include -I[START_DIR]/python/_support/termcap-1.3.1/prefix/include [START_DIR]/python/_support/readline-7.0/prefix/lib/libreadline.a [START_DIR]/python/_support/termcap-1.3.1/prefix/lib/libtermcap.a@@@",
-      "@@@STEP_LOG_LINE@Setup.local@_hashlib _hashopenssl.c -I[START_DIR]/python/_support/openssl-1.1.0e/prefix/include [START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libssl.a [START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libcrypto.a@@@",
-      "@@@STEP_LOG_LINE@Setup.local@_ssl _ssl.c -DUSE_SSL -I[START_DIR]/python/_support/openssl-1.1.0e/prefix/include [START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libssl.a [START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libcrypto.a@@@",
-      "@@@STEP_LOG_END@Setup.local@@@"
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/python/checkout/Modules/_ctypes/libffi/configure"
+    ],
+    "cwd": "[START_DIR]/python/tpp_libffi",
+    "name": "libffi.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "sed-4.2.2"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/sed-4.2.2"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "sed-4.2.2.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/sed-4.2.2.tar.gz",
+      "[START_DIR]/python/_support/sed-4.2.2"
+    ],
+    "cwd": "[START_DIR]/python/_support/sed-4.2.2",
+    "name": "sed-4.2.2.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/python/_support/sed-4.2.2/prefix"
+    ],
+    "cwd": "[START_DIR]/python/_support/sed-4.2.2/sed-4.2.2",
+    "name": "sed-4.2.2.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install"
+    ],
+    "cwd": "[START_DIR]/python/_support/sed-4.2.2/sed-4.2.2",
+    "name": "sed-4.2.2.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
     ]
   },
   {
     "cmd": [
       "./configure",
       "--disable-shared",
+      "--without-system-ffi",
       "--prefix",
       "[START_DIR]/python/package",
       "--enable-ipv6",
-      "--enable-optimizations",
       "--enable-unicode=ucs4",
       "--with-fpectl",
-      "--with-dbmliborder=bdb:gdbm"
+      "--with-dbmliborder=bdb:gdbm",
+      "--enable-optimizations"
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
-      "CPPFLAGS": "-I[START_DIR]/python/_support/readline-7.0/prefix/include -I[START_DIR]/python/_support/termcap-1.3.1/prefix/include -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include -I[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/include",
-      "LDFLAGS": "-L[START_DIR]/python/_support/readline-7.0/prefix/lib -L[START_DIR]/python/_support/termcap-1.3.1/prefix/lib -L[START_DIR]/python/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/lib"
+      "CPPFLAGS": "-I[START_DIR]/python/_support/bzip2-1.0.6/prefix/include -I[START_DIR]/python/_support/readline-7.0/prefix/include -I[START_DIR]/python/_support/ncurses-6.0/prefix/include -I[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/include -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include -I[START_DIR]/python/_support/libnsl-1.0.4/prefix/include -I[START_DIR]/python/_support/openssl-1.1.0e/prefix/include -I[START_DIR]/python/tpp_libffi -I[START_DIR]/python/tpp_libffi/include",
+      "LDFLAGS": "-L[START_DIR]/python/_support/bzip2-1.0.6/prefix/lib -L[START_DIR]/python/_support/readline-7.0/prefix/lib -L[START_DIR]/python/_support/ncurses-6.0/prefix/lib -L[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/lib -L[START_DIR]/python/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/python/_support/libnsl-1.0.4/prefix/lib -L[START_DIR]/python/_support/openssl-1.1.0e/prefix/lib"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+      ]
     },
     "name": "configure"
+  },
+  {
+    "cmd": [
+      "make",
+      "platform"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+      ]
+    },
+    "name": "make platform"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "-s",
+      "-S",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/python_mod_gen.py",
+      "--output",
+      "[START_DIR]/python/checkout/Modules/Setup.local",
+      "--root",
+      "[START_DIR]/python/checkout",
+      "--skip",
+      "_testcapi",
+      "--attach",
+      "[START_DIR]/python/_support/bzip2-1.0.6/prefix/lib/libbz2.a",
+      "--attach",
+      "[START_DIR]/python/_support/readline-7.0/prefix/lib/libreadline.a",
+      "--attach",
+      "[START_DIR]/python/_support/ncurses-6.0/prefix/lib/libpanel.a",
+      "--attach",
+      "[START_DIR]/python/_support/ncurses-6.0/prefix/lib/libncurses.a",
+      "--attach",
+      "[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/lib/libsqlite3.a",
+      "--attach",
+      "[START_DIR]/python/_support/zlib-1.2.11/prefix/lib/libz.a",
+      "--attach",
+      "[START_DIR]/python/_support/libnsl-1.0.4/prefix/lib/libnsl.a",
+      "--attach",
+      "crypt::-lcrypt",
+      "--attach",
+      "[START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libssl.a",
+      "--attach",
+      "[START_DIR]/python/_support/openssl-1.1.0e/prefix/lib/libcrypto.a"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+      ]
+    },
+    "name": "Static modules"
+  },
+  {
+    "cmd": [
+      "make",
+      "clean"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+      ]
+    },
+    "name": "cleanup"
   },
   {
     "cmd": [
@@ -577,6 +857,11 @@
       "install"
     ],
     "cwd": "[START_DIR]/python/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+      ]
+    },
     "name": "make"
   },
   {
@@ -637,6 +922,15 @@
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
+  },
+  {
+    "cmd": [
+      "strip",
+      "--strip-all",
+      "[START_DIR]/python/package/bin/python"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "strip"
   },
   {
     "cmd": [
@@ -714,6 +1008,21 @@
   },
   {
     "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmglob",
+      "[START_DIR]/python/package/lib/python2.7/lib-dynload",
+      "*.so"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "cleanup shared objects from lib-dynload"
+  },
+  {
+    "cmd": [
       "cipd",
       "pkg-build",
       "-in",
@@ -776,7 +1085,7 @@
       "-ref",
       "latest",
       "-tag",
-      "version:2.1.2.chromium8"
+      "version:2.1.2.chromium9"
     ],
     "name": "register infra/python/cpython/linux-386",
     "~followup_annotations": [

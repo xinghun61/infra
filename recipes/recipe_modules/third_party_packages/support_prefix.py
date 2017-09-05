@@ -33,12 +33,24 @@ class Source(collections.namedtuple('_SourceBase', (
     return exp
 
   @property
+  def bin_dir(self):
+    return self.prefix.join('bin')
+
+  @property
+  def include_dirs(self):
+    return [d.include_prefix.join('include') for d in self._expand()]
+
+  @property
   def cppflags(self):
-    return ['-I%s/include' % (s.include_prefix,) for s in self._expand()]
+    return ['-I%s' % (d,) for d in self.include_dirs]
+
+  @property
+  def lib_dirs(self):
+    return [d.include_prefix.join('lib') for d in self._expand()]
 
   @property
   def ldflags(self):
-    return ['-L%s' % (s.prefix.join('lib'),) for s in self._expand()]
+    return ['-L%s' % (d,) for d in self.lib_dirs]
 
   @property
   def static(self):
@@ -71,13 +83,16 @@ class SupportPrefix(util.ModuleShim):
 
   _SOURCES = {
     'infra/third_party/source/autoconf': 'version:2.69',
+    'infra/third_party/source/gnu_sed': 'version:4.2.2',
+    'infra/third_party/source/bzip2': 'version:1.0.6',
     'infra/third_party/source/openssl': 'version:1.1.0e',
     'infra/third_party/source/mac_openssl_headers': 'version:0.9.8zh',
     'infra/third_party/source/pcre2': 'version:10.23',
     'infra/third_party/source/readline': 'version:7.0',
-    'infra/third_party/source/termcap': 'version:1.3.1',
     'infra/third_party/source/zlib': 'version:1.2.11',
     'infra/third_party/source/curl': 'version:7.54.0',
+    'infra/third_party/source/ncurses': 'version:6.0',
+    'infra/third_party/source/nsl': 'version:1.0.4',
     'infra/third_party/source/sqlite-autoconf': 'version:3.19.3',
     'infra/third_party/pip-packages': 'version:9.0.1',
   }
@@ -257,6 +272,15 @@ class SupportPrefix(util.ModuleShim):
           '--disable-shared',
         ])
 
+  def ensure_nsl(self):
+    return self._generic_build('nsl', 'version:1.0.4',
+        archive_name='libnsl-1.0.4.tar.gz',
+        configure_args=['--disable-shared'])
+
+  def ensure_ncurses(self):
+    return self._generic_build('ncurses', 'version:6.0',
+        libs=['panel', 'ncurses'])
+
   def ensure_zlib(self):
     return self._generic_build('zlib', 'version:1.2.11', libs=['z'],
                                configure_args=['--static'])
@@ -273,14 +297,29 @@ class SupportPrefix(util.ModuleShim):
         ],
         archive_name='sqlite-autoconf-3190300.tar.gz')
 
-  def ensure_termcap(self):
-    return self._generic_build('termcap', 'version:1.3.1')
+  def ensure_bzip2(self):
+    def build_fn(prefix):
+      self.m.step('make', [
+        'make',
+        'install',
+        'PREFIX=%s' % (prefix,),
+      ])
+    return Source(
+        prefix=self._ensure_and_build_archive(
+          'bzip2', 'version:1.0.6', build_fn),
+        deps=[],
+        libs=['bz2'],
+        shared_deps=[])
 
   def ensure_readline(self):
     return self._generic_build('readline', 'version:7.0')
 
   def ensure_autoconf(self):
     return self._generic_build('autoconf', 'version:2.69')
+
+  def ensure_gnu_sed(self):
+    return self._generic_build('gnu_sed', 'version:4.2.2',
+        archive_name='sed-4.2.2.tar.gz')
 
   def ensure_pip_installer(self):
     """Returns information about the pip installation.
