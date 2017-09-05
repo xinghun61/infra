@@ -5,12 +5,14 @@
 package eventupload
 
 import (
-	"reflect"
+	"fmt"
 	"testing"
 	"time"
 
 	"cloud.google.com/go/bigquery"
 	"golang.org/x/net/context"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 type mockUploader chan []fakeEvent
@@ -27,141 +29,55 @@ func (u mockUploader) Put(ctx context.Context, src interface{}) error {
 
 type fakeEvent struct{}
 
-func expectPutCalled(t *testing.T, u mockUploader, want []fakeEvent) {
+func shouldHavePut(actual interface{}, expected ...interface{}) string {
+	u := actual.(mockUploader)
+
 	select {
 	case got := <-u:
-		if !reflect.DeepEqual(got, want) {
-			t.Errorf("got: %v; want: %v", got, want)
-		}
+		return ShouldResemble([]interface{}{got}, expected)
 	case <-time.After(50 * time.Millisecond):
-		t.Errorf("timed out waiting for upload")
+		return "timed out waiting for upload"
 	}
 }
 
 func TestClose(t *testing.T) {
 	t.Parallel()
 
-	u := make(mockUploader, 1)
-	bu, err := NewBatchUploader(u)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	closed := false
-	defer func() {
-		if !closed {
-			bu.Close(context.Background())
+	Convey("Test Close", t, func() {
+		u := make(mockUploader, 1)
+		bu, err := NewBatchUploader(u)
+		if err != nil {
+			t.Fatal(err)
 		}
-	}()
 
-	bu.TickC = make(chan time.Time)
+		closed := false
+		defer func() {
+			if !closed {
+				bu.Close(context.Background())
+			}
+		}()
 
-	bu.Stage(context.Background(), fakeEvent{})
-	if got, want := len(bu.pending), 1; got != want {
-		t.Errorf("got: %d; want: %d", got, want)
-	}
+		bu.TickC = make(chan time.Time)
 
-	bu.Close(context.Background())
-	closed = true
+		Convey("Expect Stage to add event to pending queue", func() {
+			bu.Stage(context.Background(), fakeEvent{})
+			So(bu.pending, ShouldHaveLength, 1)
+		})
 
-	if got, want := len(bu.pending), 0; got != want {
-		t.Errorf("got: %d; want: %d", got, want)
-	}
-	expectPutCalled(t, u, []fakeEvent{{}})
+		Convey("Expect Close to flush pending queue", func() {
+			bu.Stage(context.Background(), fakeEvent{})
+			bu.Close(context.Background())
+			closed = true
+			So(bu.pending, ShouldHaveLength, 0)
+			So(u, shouldHavePut, []fakeEvent{{}})
+		})
+	})
 }
 
 func TestUpload(t *testing.T) {
 	t.Parallel()
 
-	u := make(mockUploader, 1)
-	bu, err := NewBatchUploader(&u)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer bu.Close(context.Background())
-
-	tickc := make(chan time.Time)
-	bu.TickC = tickc
-
-	bu.Stage(context.Background(), fakeEvent{})
-	if got, want := len(u), 0; got != want {
-		t.Errorf("got: %d; want: %d", got, want)
-	}
-	tickc <- time.Time{}
-	expectPutCalled(t, u, []fakeEvent{{}})
-}
-
-func TestPrepareSrc(t *testing.T) {
-	t.Parallel()
-
-	type testCase struct {
-		src     interface{}
-		wantLen int
-	}
-	notStruct := 0
-	tcs := []testCase{
-		{
-			src:     fakeEvent{},
-			wantLen: 1,
-		},
-		{
-			src:     &fakeEvent{},
-			wantLen: 1,
-		},
-		{
-			src:     []fakeEvent{{}, {}},
-			wantLen: 2,
-		},
-		{
-			src: []*fakeEvent{
-				{},
-				{},
-			},
-			wantLen: 2,
-		},
-		{
-			src:     &notStruct,
-			wantLen: 0,
-		},
-		{
-			src:     []string{"not a struct or pointer"},
-			wantLen: 0,
-		},
-		{
-			src:     []*int{&notStruct},
-			wantLen: 0,
-		},
-	}
-	for _, tc := range tcs {
-		s, err := bigquery.InferSchema(fakeEvent{})
-		if err != nil {
-			t.Fatal(err)
-		}
-		sss, _ := prepareSrc(s, tc.src)
-		if got, want := len(sss), tc.wantLen; got != want {
-			t.Errorf("got: %d; want: %d", got, want)
-		}
-	}
-}
-
-func TestStage(t *testing.T) {
-	t.Parallel()
-
-	type testCase struct {
-		src     interface{}
-		wantLen int
-	}
-	tcs := []testCase{
-		{
-			src:     fakeEvent{},
-			wantLen: 1,
-		},
-		{
-			src:     []fakeEvent{{}, {}},
-			wantLen: 2,
-		},
-	}
-	for _, tc := range tcs {
+	Convey("Test Upload", t, func() {
 		u := make(mockUploader, 1)
 		bu, err := NewBatchUploader(&u)
 		if err != nil {
@@ -169,14 +85,115 @@ func TestStage(t *testing.T) {
 		}
 		defer bu.Close(context.Background())
 
-		bu.Stage(context.Background(), tc.src)
-		if got, want := len(bu.pending), tc.wantLen; got != want {
-			t.Errorf("got: %d; want: %d", got, want)
-		}
-		got := reflect.ValueOf(bu.pending[0]).Kind()
-		want := reflect.Struct
-		if got != want {
-			t.Errorf("got: %d; want: %d", got, want)
-		}
+		tickc := make(chan time.Time)
+		bu.TickC = tickc
+
+		bu.Stage(context.Background(), fakeEvent{})
+		Convey("Expect Put to wait for tick to call upload", func() {
+			So(u, ShouldHaveLength, 0)
+			tickc <- time.Time{}
+			So(u, shouldHavePut, []fakeEvent{{}})
+		})
+	})
+}
+
+func TestPrepareSrc(t *testing.T) {
+	t.Parallel()
+
+	notStruct := 0
+	tcs := []struct {
+		desc    string
+		src     interface{}
+		wantLen int
+	}{
+		{
+			desc:    "prepareSrc accepts structs",
+			src:     fakeEvent{},
+			wantLen: 1,
+		},
+		{
+			desc:    "prepareSrc accepts pointers to structs",
+			src:     &fakeEvent{},
+			wantLen: 1,
+		},
+		{
+			desc:    "prepareSrc accepts slices of structs",
+			src:     []fakeEvent{{}, {}},
+			wantLen: 2,
+		},
+		{
+			desc: "prepareSrc accepts slices of pointers to structs",
+			src: []*fakeEvent{
+				{},
+				{},
+			},
+			wantLen: 2,
+		},
+		{
+			desc:    "prepareSrc does not accept pointers to non-struct types",
+			src:     &notStruct,
+			wantLen: 0,
+		},
+		{
+			desc:    "prepareSrc does not accept slices of non-struct or non-pointer types",
+			src:     []string{"not a struct or pointer"},
+			wantLen: 0,
+		},
+		{
+			desc:    "prepareSrc does not accept slices of non-struct or non-pointer types (2)",
+			src:     []*int{&notStruct},
+			wantLen: 0,
+		},
 	}
+
+	Convey("Test PrepareSrc", t, func() {
+		s, err := bigquery.InferSchema(fakeEvent{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, tc := range tcs {
+			Convey(tc.desc, func() {
+				sss, _ := prepareSrc(s, tc.src)
+				So(sss, ShouldHaveLength, tc.wantLen)
+			})
+		}
+	})
+}
+
+func TestStage(t *testing.T) {
+	t.Parallel()
+
+	tcs := []struct {
+		desc    string
+		src     interface{}
+		wantLen int
+	}{
+		{
+			desc:    "single event",
+			src:     fakeEvent{},
+			wantLen: 1,
+		},
+		{
+			desc:    "slice of events",
+			src:     []fakeEvent{{}, {}},
+			wantLen: 2,
+		},
+	}
+
+	Convey("Stage can accept single events and slices of events", t, func() {
+		u := make(mockUploader, 1)
+		bu, err := NewBatchUploader(&u)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer bu.Close(context.Background())
+
+		for _, tc := range tcs {
+			Convey(fmt.Sprintf("Test %s", tc.desc), func() {
+				bu.Stage(context.Background(), tc.src)
+				So(bu.pending, ShouldHaveLength, tc.wantLen)
+				So(bu.pending[len(bu.pending)-1], ShouldHaveSameTypeAs, fakeEvent{})
+			})
+		}
+	})
 }

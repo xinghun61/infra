@@ -7,6 +7,8 @@ package eventupload
 import (
 	"fmt"
 	"testing"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestGenerate(t *testing.T) {
@@ -16,14 +18,18 @@ func TestGenerate(t *testing.T) {
 	id := InsertIDGenerator{}
 	id.Prefix = prefix
 
-	for i := 1; i < 10; i++ {
-		want := fmt.Sprintf("%s:%d", prefix, i)
-		got, err := id.Generate()
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got != want {
-			t.Errorf("got: %s; want: %s", got, want)
-		}
-	}
+	Convey("Test InsertIDGenerator increments counter with calls to Generate", t, func() {
+		Convey("Test InsertIDGenerator increments counter with calls to Generate", func() {
+			for i := 1; i < 10; i++ {
+				want := fmt.Sprintf("%s:%d", prefix, i)
+				Convey(fmt.Sprintf("When Generate is called %d time(s), the value of the counter is correct", i), func() {
+					got, err := id.Generate()
+					if err != nil {
+						t.Fatal(err)
+					}
+					So(got, ShouldEqual, want)
+				})
+			}
+		})
+	})
 }
