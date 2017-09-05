@@ -1,14 +1,23 @@
-# Release Notes sheriff-o-matic 2017-08-29
+# Release Notes sheriff-o-matic 2017-09-05
 
-- 9 commits, 3 bugs affected since 7fa4298 (2017-08-14T20:42:11Z)
-- 4 Authors:
-  - seanmccullough@chromium.org
-  - dnj@chromium.org
-  - jojwang@google.com
+- 17 commits, 6 bugs affected since 7fa4298 ()
+- 5 Authors:
+  - martiniss@chromium.org
   - zhangtiff@google.com
+  - dnj@chromium.org
+  - seanmccullough@chromium.org
+  - jojwang@google.com
 
 ## Changes in this release
 
+- [Add test-results.](https://chromium-review.googlesource.com/644847) (jojwang@google.com)
+- [SOM: Improve grouped alert UI](https://chromium-review.googlesource.com/633898) (martiniss@chromium.org)
+- [SoM: Hide Julie Jumping when filtering alerts.](https://chromium-review.googlesource.com/644164) (zhangtiff@google.com)
+- [Add function to query bigquery.](https://chromium-review.googlesource.com/622947) (jojwang@google.com)
+- [SoM: Disable examine page refresh for everything except annotations.](https://chromium-review.googlesource.com/644606) (zhangtiff@google.com)
+- [Add helper functions for test-results in SoM.](https://chromium-review.googlesource.com/624728) (jojwang@google.com)
+- [Update release notes](https://chromium-review.googlesource.com/642123) (jojwang@google.com)
+- [Add master-results element](https://chromium-review.googlesource.com/636510) (jojwang@google.com)
 - [Roll luci-go and luci/gae.](https://chromium-review.googlesource.com/636852) (dnj@chromium.org)
 - [Add builder-result polymer element](https://chromium-review.googlesource.com/633905) (jojwang@google.com)
 - [Update RELNOTES.md](https://chromium-review.googlesource.com/626656) (jojwang@google.com)
@@ -21,11 +30,16 @@
 
 
 ## Bugs updated, by author
+- jojwang@google.com:
+  -  [https://crbug.com/757630](https://crbug.com/757630)
+
 - seanmccullough@chromium.org:
   -  [https://crbug.com/603982](https://crbug.com/603982)
   -  [https://crbug.com/755886](https://crbug.com/755886)
 
 - zhangtiff@google.com:
+  -  [https://crbug.com/751297](https://crbug.com/751297)
+  -  [https://crbug.com/753482](https://crbug.com/753482)
   -  [https://crbug.com/756434](https://crbug.com/756434)
 
 
