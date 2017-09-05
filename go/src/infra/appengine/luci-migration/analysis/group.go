@@ -73,7 +73,7 @@ func (s groupSide) trustworthy() bool {
 		return true
 	}
 
-	// If there are no successful builds and less than 3 trustworthy failures,
+	// If there are no successful builds and fewer than 3 trustworthy failures,
 	// consider this result too vulnerable to flakes.
 	failures := 0
 	for _, b := range s {
