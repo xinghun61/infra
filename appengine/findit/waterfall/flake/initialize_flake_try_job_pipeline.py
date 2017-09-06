@@ -13,6 +13,7 @@ from waterfall import build_util
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
+from waterfall.flake import flake_constants
 from waterfall.flake import lookback_algorithm
 from waterfall.flake import recursive_flake_try_job_pipeline
 from waterfall.flake.recursive_flake_try_job_pipeline import (
@@ -21,6 +22,45 @@ from waterfall.flake.send_notification_for_flake_culprit_pipeline import (
     SendNotificationForFlakeCulpritPipeline)
 
 _DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6
+
+
+def _SuspectedBuildResultOfDive(analysis):
+  """Determines whether a suspected build point was a dive from flaky.
+
+      Because Findit also identifies suspected builds due dives in pass rate
+      from already-flaky data points, revision analysis will likely yield a
+      false result for the culprit that introduced flakiness. For example,
+      if build 1000 is flaky with an 80% pass rate, and 1001 flaky at 30%, build
+      1001 will be identified as a suspected build. Revision-level analysis
+      should not occur in this case. However if 1000 is stable at 100% or 0%,
+      revision-level analysis should still occur. The analysis' suspected flake
+      build number is assumed to be flaky.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The flake analysis entity whose data points
+        will be analyzed.
+
+  Returns:
+    Boolean whether the suspected build was the result of a dive in pass rate.
+  """
+  suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
+  if not suspected_build_point:
+    return False
+
+  previous_build_point = analysis.FindMatchingDataPointWithBuildNumber(
+      suspected_build_point.build_number - 1)
+
+  if not previous_build_point:
+    return False
+
+  lower_flake_threshold = analysis.algorithm_parameters.get(
+      'lower_flake_threshold', flake_constants.DEFAULT_LOWER_FLAKE_THRESHOLD)
+  upper_flake_threshold = analysis.algorithm_parameters.get(
+      'upper_flake_threshold', flake_constants.DEFAULT_UPPER_FLAKE_THRESHOLD)
+
+  return not lookback_algorithm.IsStable(previous_build_point.pass_rate,
+                                         lower_flake_threshold,
+                                         upper_flake_threshold)
 
 
 def _HasSufficientConfidenceToRunTryJobs(analysis):
@@ -106,8 +146,17 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
     triggering_build_number = analysis.build_number
 
     if analysis.confidence_in_suspected_build is None:
-      logging.info(('Skipping try jobs due to no suspected flake build being '
-                    'identified'))
+      analysis.LogInfo(
+          'Skipping try jobs due to no suspected flake build being identified')
+      analysis.Update(
+          end_time=time_util.GetUTCNow(),
+          try_job_status=analysis_status.SKIPPED)
+    elif _SuspectedBuildResultOfDive(analysis) and not user_specified_range:
+      # Suspected flakes as a result of already-flaky data points becoming
+      # much flakier should skip revision-level analysis, unless explicitly
+      # requested by a user.
+      analysis.LogInfo(
+          'Skipping try jobs for dives in pass rate when already flaky')
       analysis.Update(
           end_time=time_util.GetUTCNow(),
           try_job_status=analysis_status.SKIPPED)

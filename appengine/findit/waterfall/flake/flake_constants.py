@@ -19,6 +19,9 @@ DEFAULT_DATA_POINT_SAMPLE_SIZE = 5
 # and the default length of a test being two minutes.
 DEFAULT_ITERATIONS_PER_TASK = 35
 
+# The maximum pass rate of a data point to be considered stable and failing.
+DEFAULT_LOWER_FLAKE_THRESHOLD = 0.02
+
 # Max build numbers to look back during a build-level analysis.
 DEFAULT_MAX_BUILD_NUMBERS = 500
 
@@ -33,6 +36,9 @@ DEFAULT_TIMEOUT_PER_SWARMING_TASK_SECONDS = 60 * 60
 
 # Default test length, two minutes.
 DEFAULT_TIMEOUT_PER_TEST_SECONDS = 120
+
+# The minimum pass rate of a data point to be considered stable and passing.
+DEFAULT_UPPER_FLAKE_THRESHOLD = 0.98
 
 # Tries to start the RecursiveFlakePipeline on peak hours at most 5 times.
 MAX_RETRY_TIMES = 5
