@@ -21,6 +21,7 @@ import settings
 from framework import sql
 from proto import tracker_pb2
 from services import caches
+from services import project_svc
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 
@@ -820,7 +821,8 @@ class ConfigService(object):
     """Get several project issue config objects."""
     config_dict, missed_ids = self.config_2lc.GetAll(
         cnxn, project_ids, use_cache=use_cache)
-    assert not missed_ids
+    if missed_ids:
+      raise project_svc.NoSuchProjectException()
     return config_dict
 
   def GetProjectConfig(self, cnxn, project_id, use_cache=True):

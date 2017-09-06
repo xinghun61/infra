@@ -40,16 +40,24 @@ class Profiler(object):
     self.current_phase = self.top_phase
     self.next_color = 0
 
-  @contextmanager
-  def Phase(self, name='unspecified phase'):
-    """Context manager to automatically begin and end (sub)phases."""
+  def StartPhase(self, name='unspecified phase'):
+    """Begin a (sub)phase by pushing a new phase onto a stack."""
     color = self._COLORS[self.next_color % len(self._COLORS)]
     self.next_color += 1
     self.current_phase = _Phase(name, color, self.current_phase)
+
+  def EndPhase(self):
+    """End a (sub)phase by poping the phase stack."""
+    self.current_phase = self.current_phase.End()
+
+  @contextmanager
+  def Phase(self, name='unspecified phase'):
+    """Context manager to automatically begin and end (sub)phases."""
+    self.StartPhase(name)
     try:
       yield
     finally:
-      self.current_phase = self.current_phase.End()
+      self.EndPhase()
 
   def LogStats(self):
     """Log sufficiently-long phases and subphases, for debugging purposes."""

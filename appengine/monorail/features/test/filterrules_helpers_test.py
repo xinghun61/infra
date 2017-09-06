@@ -234,7 +234,7 @@ class FilterRulesHelpersTest(unittest.TestCase):
     cnxn = 'fake sql connection'
     issue = fake.MakeTestIssue(
         789, 1, ORIG_SUMMARY, 'New', 111L, labels=ORIG_LABELS)
-    config = tracker_pb2.ProjectIssueConfig()
+    config = tracker_pb2.ProjectIssueConfig(project_id=self.project.project_id)
     # Empty label set cannot satisfy rule looking for labels.
     pred = 'label:a label:b'
     rule = filterrules_helpers.MakeRule(
@@ -475,7 +475,8 @@ class FilterRulesHelpersTest(unittest.TestCase):
         ]
     excl_prefixes = ['Priority', 'type', 'milestone']
     config = tracker_pb2.ProjectIssueConfig(
-        exclusive_label_prefixes=excl_prefixes)
+        exclusive_label_prefixes=excl_prefixes,
+        project_id=self.project.project_id)
     predicate_asts = filterrules_helpers.ParsePredicateASTs(rules, config, None)
 
     # No rules fire.
@@ -598,7 +599,8 @@ class FilterRulesHelpersTest(unittest.TestCase):
     rules.append(filterrules_helpers.MakeRule('Watch', add_cc_ids=[111L]))
     rules.append(filterrules_helpers.MakeRule('Monitor', add_cc_ids=[111L]))
     config = tracker_pb2.ProjectIssueConfig(
-        exclusive_label_prefixes=excl_prefixes)
+        exclusive_label_prefixes=excl_prefixes,
+        project_id=self.project.project_id)
     predicate_asts = filterrules_helpers.ParsePredicateASTs(rules, config, None)
     traces = {
         (tracker_pb2.FieldID.CC, 111L):

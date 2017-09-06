@@ -7,6 +7,7 @@
 
 import logging
 
+from businesslogic import work_env
 from features import filterrules_helpers
 from framework import framework_views
 from framework import jsonfeed
@@ -27,8 +28,9 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
     if mr.local_id is None:
       return  # For issue creation, there is no existing issue.
 
-    issue = self._GetIssue(mr)
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    with work_env.WorkEnv(mr, self.services) as we:
+      issue = we.GetIssueByLocalID(mr.project_id, mr.local_id)
+      config = we.GetProjectConfig(mr.project_id)
     granted_perms = tracker_bizobj.GetGrantedPerms(
         issue, mr.auth.effective_ids, config)
     permit_view = permissions.CanViewIssue(
@@ -38,17 +40,6 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
       logging.warning('Issue is %r', issue)
       raise permissions.PermissionException(
           'User is not allowed to view this issue')
-
-  def _GetIssue(self, mr):
-    """Retrive the requested issue."""
-    try:
-      issue = self.services.issue.GetIssueByLocalID(
-          mr.cnxn, mr.project_id, mr.local_id)
-    except issue_svc.NoSuchIssueException:
-      logging.info('issue not found')
-      self.abort(404, 'issue not found')
-
-    return issue
 
   def HandleRequest(self, mr):
     """Provide the UI with warning info as the user edits an issue.
@@ -61,7 +52,8 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
     """
     existing_issue = None
     if mr.local_id:
-      existing_issue = self._GetIssue(mr)
+      with work_env.WorkEnv(mr, self.services) as we:
+        existing_issue = we.GetIssueByLocalID(mr.project_id, mr.local_id)
 
     with self.profiler.Phase('parsing request'):
       post_data = mr.request.POST
@@ -76,8 +68,8 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
           mr.cnxn, self.services.user, involved_user_ids)
       proposed_owner_view = users_by_id[parsed.users.owner_id]
 
-    with self.profiler.Phase('getting config and components'):
-      config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    with work_env.WorkEnv(mr, self.services) as we:
+      config = we.GetProjectConfig(mr.project_id)
       component_ids = tracker_helpers.LookupComponentIDs(
           parsed.components.paths, config, mr.errors)
 

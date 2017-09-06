@@ -155,7 +155,7 @@ class Servlet(webapp2.RequestHandler):
 
     logging.info('\n\n\nRequest handler: %r', self)
 
-    self.mr = monorailrequest.MonorailRequest()
+    self.mr = monorailrequest.MonorailRequest(profiler=self.profiler)
 
     self.ratelimiter.CheckStart(self.request)
     self.response.headers.add('Strict-Transport-Security',
@@ -183,7 +183,7 @@ class Servlet(webapp2.RequestHandler):
 
     try:
       with self.profiler.Phase('parsing request and doing lookups'):
-        self.mr.ParseRequest(self.request, self.services, self.profiler)
+        self.mr.ParseRequest(self.request, self.services)
 
       self.response.headers['X-Frame-Options'] = 'SAMEORIGIN'
       webapp2.RequestHandler.dispatch(self)

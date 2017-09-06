@@ -10,6 +10,7 @@ import time
 from third_party import ezt
 
 import settings
+from businesslogic import work_env
 from features import commands
 from features import notify
 from framework import framework_bizobj
@@ -41,12 +42,13 @@ class IssuePeek(servlet.Servlet):
     """Check that the user has permission to even visit this page."""
     super(IssuePeek, self).AssertBasePermission(mr)
     try:
-      issue = self._GetIssue(mr)
+      with work_env.WorkEnv(mr, self.services) as we:
+        issue = we.GetIssueByLocalID(mr.project_id, mr.local_id)
+        config = we.GetProjectConfig(mr.project_id)
     except issue_svc.NoSuchIssueException:
       return
     if not issue:
       return
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
     granted_perms = tracker_bizobj.GetGrantedPerms(
         issue, mr.auth.effective_ids, config)
     permit_view = permissions.CanViewIssue(
@@ -57,16 +59,6 @@ class IssuePeek(servlet.Servlet):
       logging.warning('Issue is %r', issue)
       raise permissions.PermissionException(
           'User is not allowed to view this issue')
-
-  def _GetIssue(self, mr):
-    """Retrieve the current issue."""
-    if mr.local_id is None:
-      return None  # GatherPageData will detect the same condition.
-
-    # Because we may later modify this issue, load from DB rather than cache.
-    issue = self.services.issue.GetIssueByLocalID(
-        mr.cnxn, mr.project_id, mr.local_id, use_cache=False)
-    return issue
 
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page.
@@ -79,13 +71,12 @@ class IssuePeek(servlet.Servlet):
     """
     if mr.local_id is None:
       self.abort(404, 'no issue specified')
-    with self.profiler.Phase('finishing getting issue'):
-      issue = self._GetIssue(mr)
-      if issue is None:
-        self.abort(404, 'issue not found')
+    with work_env.WorkEnv(mr, self.services) as we:
+      issue = we.GetIssueByLocalID(
+          mr.project_id, mr.local_id, use_cache=False)
 
     # We give no explanation of missing issues on the peek page.
-    if issue is None or issue.deleted:
+    if issue.deleted:
       self.abort(404, 'issue not found')
 
     star_cnxn = sql.MonorailConnection()
@@ -93,12 +84,9 @@ class IssuePeek(servlet.Servlet):
         self.services.issue_star.IsItemStarredBy, star_cnxn,
         issue.issue_id, mr.auth.user_id)
 
-    with self.profiler.Phase('getting project issue config'):
-      config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-
-    with self.profiler.Phase('finishing getting comments'):
-      comments = self.services.issue.GetCommentsForIssue(
-          mr.cnxn, issue.issue_id)
+    with work_env.WorkEnv(mr, self.services) as we:
+      config = we.GetProjectConfig(mr.project_id)
+      comments = we.GetCommentsForIssue(mr.cnxn, issue.issue_id)
 
     descriptions, visible_comments, cmnt_pagination = PaginateComments(
         mr, issue, comments, config)
@@ -286,9 +274,11 @@ class IssuePeek(servlet.Servlet):
     comment = post_data.get('comment', '')
     slot_used = int(post_data.get('slot_used', 1))
     page_generation_time = long(post_data['pagegen'])
-    issue = self._GetIssue(mr)
-    old_owner_id = tracker_bizobj.GetOwnerId(issue)
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    with work_env.WorkEnv(mr, self.services) as we:
+      issue = we.GetIssueByLocalID(
+          mr.project_id, mr.local_id, use_cache=False)
+      old_owner_id = tracker_bizobj.GetOwnerId(issue)
+      config = we.GetProjectConfig(mr.project_id)
 
     summary, status, owner_id, cc_ids, labels = commands.ParseQuickEditCommand(
         mr.cnxn, cmd, issue, config, mr.auth.user_id, self.services)

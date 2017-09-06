@@ -18,6 +18,7 @@ import time
 from third_party import ezt
 
 import settings
+from businesslogic import work_env
 from features import features_bizobj
 from features import notify
 from features import hotlist_helpers
@@ -140,9 +141,10 @@ class IssueDetail(issuepeek.IssuePeek):
 
     if mr.local_id is None:
       return self._GetMissingIssuePageData(mr, issue_not_specified=True)
-    with self.profiler.Phase('finishing getting issue'):
+    with work_env.WorkEnv(mr, self.services) as we:
       try:
-        issue = self._GetIssue(mr)
+        issue = we.GetIssueByLocalID(
+            mr.project_id, mr.local_id, use_cache=False)
       except issue_svc.NoSuchIssueException:
         issue = None
 
@@ -555,11 +557,9 @@ class IssueDetail(issuepeek.IssuePeek):
     Returns:
       String URL to redirect the user to after processing.
     """
-    issue = self._GetIssue(mr)
-    if not issue:
-      logging.warn('issue not found! project_name: %r   local id: %r',
-                   mr.project_name, mr.local_id)
-      raise exceptions.InputException('Issue not found in project')
+    with work_env.WorkEnv(mr, self.services) as we:
+      issue = we.GetIssueByLocalID(
+          mr.project_id, mr.local_id, use_cache=False)
 
     # Check that the user is logged in; anon users cannot update issues.
     if not mr.auth.user_id:

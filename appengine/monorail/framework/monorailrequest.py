@@ -24,6 +24,7 @@ from google.appengine.api import users
 import webapp2
 
 import settings
+from businesslogic import work_env
 from features import features_constants
 from framework import exceptions
 from framework import framework_bizobj
@@ -186,19 +187,18 @@ class MonorailApiRequest(object):
 
     if hasattr(request, 'projectId'):
       self.project_name = request.projectId
-      self.project = services.project.GetProjectByName(
-        self.cnxn, self.project_name)
-      self.params['projects'].append(self.project_name)
-      self.config = services.config.GetProjectConfig(
-          self.cnxn, self.project_id)
-      if hasattr(request, 'additionalProject'):
-        self.params['projects'].extend(request.additionalProject)
-        self.params['projects'] = list(set(self.params['projects']))
-      if hasattr(request, 'issueId'):
-        self.issue = services.issue.GetIssueByLocalID(
-            self.cnxn, self.project_id, request.issueId, use_cache=False)
-        self.granted_perms = tracker_bizobj.GetGrantedPerms(
-            self.issue, self.auth.effective_ids, self.config)
+      with work_env.WorkEnv(self, services) as we:
+        self.project = we.GetProjectByName(self.project_name)
+        self.params['projects'].append(self.project_name)
+        self.config = we.GetProjectConfig(self.project_id)
+        if hasattr(request, 'additionalProject'):
+          self.params['projects'].extend(request.additionalProject)
+          self.params['projects'] = list(set(self.params['projects']))
+        if hasattr(request, 'issueId'):
+          self.issue = we.GetIssueByLocalID(
+              self.project_id, request.issueId, use_cache=False)
+          self.granted_perms = tracker_bizobj.GetGrantedPerms(
+              self.issue, self.auth.effective_ids, self.config)
     if hasattr(request, 'userId'):
       self.viewed_username = request.userId.lower()
       if self.viewed_username == 'me':
@@ -301,9 +301,10 @@ class MonorailRequest(object):
   """
 
   # pylint: disable=attribute-defined-outside-init
-  def __init__(self, params=None):
+  def __init__(self, profiler=None, params=None):
     """Initialize the MonorailRequest object."""
     self.form_overrides = {}
+    self.profiler = profiler
     if params:
       self.form_overrides.update(params)
     self.warnings = []
@@ -335,16 +336,15 @@ class MonorailRequest(object):
       self.cnxn.Close()
       self.cnxn = None
 
-  def ParseRequest(self, request, services, prof, do_user_lookups=True):
+  def ParseRequest(self, request, services, do_user_lookups=True):
     """Parse tons of useful info from the given request object.
 
     Args:
       request: webapp2 Request object w/ path and query params.
       services: connections to backend servers including DB.
-      prof: Profiler instance.
       do_user_lookups: Set to False to disable lookups during testing.
     """
-    with prof.Phase('basic parsing'):
+    with self.profiler.Phase('basic parsing'):
       self.request = request
       self.current_page_url = request.url
       self.current_page_url_encoded = urllib.quote_plus(self.current_page_url)
@@ -356,30 +356,30 @@ class MonorailRequest(object):
 
       logging.info('Request: %s', self.current_page_url)
 
-    with prof.Phase('path parsing'):
+    with self.profiler.Phase('path parsing'):
       (viewed_user_val, self.project_name,
        self.hotlist_id, self.hotlist_name) = _ParsePathIdentifiers(
            self.request.path)
       self.viewed_username = _GetViewedEmail(
           viewed_user_val, self.cnxn, services)
-    with prof.Phase('qs parsing'):
+    with self.profiler.Phase('qs parsing'):
       self._ParseQueryParameters()
-    with prof.Phase('overrides parsing'):
+    with self.profiler.Phase('overrides parsing'):
       self._ParseFormOverrides()
 
     if not self.project:  # It can be already set in unit tests.
-      self._LookupProject(services, prof)
+      self._LookupProject(services)
     if self.project_id and services.config:
       self.config = services.config.GetProjectConfig(self.cnxn, self.project_id)
 
     if do_user_lookups:
       if self.viewed_username:
-        self._LookupViewedUser(services, prof)
-      self._LookupLoggedInUser(services, prof)
+        self._LookupViewedUser(services)
+      self._LookupLoggedInUser(services)
       # TODO(jrobbins): re-implement HandleLurkerViewingSelf()
 
     if not self.hotlist:
-      self._LookupHotlist(services, prof)
+      self._LookupHotlist(services)
 
     if self.query is None:
       self.query = self._CalcDefaultQuery()
@@ -528,10 +528,10 @@ class MonorailRequest(object):
         (k, v) for (k, v) in allowed_overrides.iteritems()
         if v is not None)
 
-  def _LookupViewedUser(self, services, prof):
+  def _LookupViewedUser(self, services):
     """Get information about the viewed user (if any) from the request."""
     try:
-      with prof.Phase('get viewed user, if any'):
+      with self.profiler.Phase('get viewed user, if any'):
         self.viewed_user_auth = AuthData.FromEmail(
             self.cnxn, self.viewed_username, services, autocreate=False)
     except user_svc.NoSuchUserException:
@@ -541,20 +541,22 @@ class MonorailRequest(object):
     if not self.viewed_user_auth.user_id:
       webapp2.abort(404, 'user not found')
 
-  def _LookupProject(self, services, prof):
-    """Get information about the current project (if any) from the request."""
-    with prof.Phase('get current project, if any'):
+  def _LookupProject(self, services):
+    """Get information about the current project (if any) from the request.
+
+    Raises:
+      project_svc.NoSuchProjectException if there is no project with that name.
+    """
+    with work_env.WorkEnv(
+        self, services, phase='get current project, if any') as we:
       if not self.project_name:
         logging.info('no project_name, so no project')
       else:
-        self.project = services.project.GetProjectByName(
-            self.cnxn, self.project_name)
-        if not self.project:
-          webapp2.abort(404, 'invalid project')
+        self.project = we.GetProjectByName(self.project_name)
 
-  def _LookupHotlist(self, services, prof):
+  def _LookupHotlist(self, services):
     """Get information about the current hotlist (if any) from the request."""
-    with prof.Phase('get current hotlist, if any'):
+    with self.profiler.Phase('get current hotlist, if any'):
       if self.hotlist_name:
         hotlist_id_dict = services.features.LookupHotlistIDs(
             self.cnxn, [self.hotlist_name], [self.viewed_user_auth.user_id])
@@ -573,14 +575,14 @@ class MonorailRequest(object):
                                   self.hotlist.owner_ids):
           webapp2.abort(404, 'invalid hotlist')
 
-  def _LookupLoggedInUser(self, services, prof):
+  def _LookupLoggedInUser(self, services):
     """Get information about the signed-in user (if any) from the request."""
-    with prof.Phase('get user info, if any'):
+    with self.profiler.Phase('get user info, if any'):
       self.auth = AuthData.FromRequest(self.cnxn, services)
     self.me_user_id = (self.GetIntParam('me') or
                        self.viewed_user_auth.user_id or self.auth.user_id)
 
-    with prof.Phase('looking up signed in user permissions'):
+    with self.profiler.Phase('looking up signed in user permissions'):
       self.perms = permissions.GetPermissions(
           self.auth.user_pb, self.auth.effective_ids, self.project)
 
@@ -773,5 +775,3 @@ def ParseColSpec(col_spec):
     characters other than the period will be stripped from the text.
   """
   return framework_constants.COLSPEC_COL_RE.findall(col_spec)
-
-

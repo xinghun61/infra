@@ -744,7 +744,9 @@ class ProjectService(object):
   def GetProject(self, cnxn, project_id, use_cache=True):
     """Load the specified project from the database."""
     project_id_dict = self.GetProjects(cnxn, [project_id], use_cache=use_cache)
-    return project_id_dict.get(project_id)
+    if project_id not in project_id_dict:
+      raise project_svc.NoSuchProjectException()
+    return project_id_dict[project_id]
 
   @staticmethod
   def IsValidProjectName(string):
@@ -834,6 +836,7 @@ class ConfigService(object):
     self.component_ids_to_templates = {}
     self.label_to_id = {}
     self.id_to_label = {}
+    self.strict = False  # Set true to raise more exceptions like real class.
 
   def TestAddLabelsDict(self, label_to_id):
     self.label_to_id = label_to_id
@@ -894,6 +897,8 @@ class ConfigService(object):
   def GetProjectConfig(self, _cnxn, project_id, use_cache=True):
     if project_id in self.project_configs:
       return self.project_configs[project_id]
+    elif self.strict:
+      raise project_svc.NoSuchProjectException()
     else:
       return tracker_bizobj.MakeDefaultProjectIssueConfig(project_id)
 

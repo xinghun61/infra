@@ -13,6 +13,7 @@ include in an HTML page.
 import logging
 from third_party import ezt
 
+from businesslogic import work_env
 from framework import filecontent
 from framework import permissions
 from framework import servlet
@@ -77,17 +78,13 @@ class IssueOriginal(servlet.Servlet):
 
   def _GetIssueAndComment(self, mr):
     """Wait on retriving the specified issue and issue comment."""
-    if mr.local_id is None or mr.seq is None:
-      self.abort(404, 'issue or comment not specified')
+    if mr.seq is None:
+      self.abort(404, 'comment not specified')
 
-    try:
+    with work_env.WorkEnv(mr, self.services) as we:
       issue = self.services.issue.GetIssueByLocalID(
           mr.cnxn, mr.project_id, mr.local_id)
-    except issue_svc.NoSuchIssueException:
-      self.abort(404, 'issue not found')
-
-    comments = self.services.issue.GetCommentsForIssue(
-        mr.cnxn, issue.issue_id)
+      comments = we.ListIssueComments(issue)
 
     try:
       comment = comments[mr.seq]

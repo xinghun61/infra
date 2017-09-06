@@ -12,6 +12,7 @@ import webapp2
 from framework import framework_helpers
 from framework import monorailrequest
 from framework import permissions
+from services import issue_svc
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
@@ -158,9 +159,8 @@ class IssueOriginalTest(unittest.TestCase):
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original?id=999&seq=1',
         project=self.proj)
-    with self.assertRaises(webapp2.HTTPException) as cm:
+    with self.assertRaises(issue_svc.NoSuchIssueException) as cm:
       self.servlet.GatherPageData(mr)
-    self.assertEquals(404, cm.exception.code)
 
   def testGetIssueAndComment_Normal(self):
     _request, mr = testing_helpers.GetRequestObjects(
@@ -196,6 +196,5 @@ class IssueOriginalTest(unittest.TestCase):
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/original?seq=1',
         project=self.proj)
-    with self.assertRaises(webapp2.HTTPException) as cm:
+    with self.assertRaises(issue_svc.NoSuchIssueException) as cm:
       self.servlet._GetIssueAndComment(mr)
-    self.assertEquals(404, cm.exception.code)
