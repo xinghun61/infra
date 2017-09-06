@@ -5,11 +5,15 @@
 
 import logging
 
+from common.waterfall import failure_type
+from libs import analysis_status
+from model import result_status
 from model.wf_analysis import WfAnalysis
 from waterfall import build_util
 from waterfall import buildbot
 
 _MAX_BUILDS_TO_CHECK = 20
+_SUPPORTED_FAILURE_TYPE = [failure_type.COMPILE, failure_type.TEST]
 
 
 def _ExtractBuildInfo(master_name, builder_name, build_number):
@@ -141,19 +145,26 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
     build_number (int): Number of the build.
 
   Returns:
-    A dict of failure info.
+    A dict of failure info and a flag for should start analysis.
   """
   build_info = _ExtractBuildInfo(master_name, builder_name, build_number)
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+  assert analysis
 
   if not build_info:
     logging.error('Failed to extract build info for build %s/%s/%d',
                   master_name, builder_name, build_number)
-    return {}
+    analysis.status = analysis_status.ERROR
+    analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
+    analysis.put()
+    return {}, False
 
   build_failure_type = build_util.GetFailureType(build_info)
+  failed = (build_info.result != buildbot.SUCCESS and
+            bool(build_info.failed_steps))
 
   failure_info = {
-      'failed': True,
+      'failed': failed,
       'master_name': master_name,
       'builder_name': builder_name,
       'build_number': build_number,
@@ -165,19 +176,23 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
       'parent_buildername': build_info.parent_buildername,
   }
 
-  if build_info.result == buildbot.SUCCESS or not build_info.failed_steps:
-    failure_info['failed'] = False
-    return failure_info
+  if (not failed or not build_info.chromium_revision or
+      build_failure_type not in _SUPPORTED_FAILURE_TYPE):
+    # No real failure or lack of required information, so no need to start
+    # an analysis.
+    analysis.status = analysis_status.COMPLETED
+    analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
+    analysis.put()
+    return failure_info, False
 
   _SaveBlamelistAndChromiumRevisionIntoDict(build_info, failure_info['builds'])
 
   failure_info['failed_steps'] = _CreateADictOfFailedSteps(build_info)
 
-  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   analysis.not_passed_steps = build_info.not_passed_steps
   analysis.build_failure_type = build_failure_type
   analysis.build_start_time = (analysis.build_start_time or
                                build_info.build_start_time)
   analysis.put()
 
-  return failure_info
+  return failure_info, True

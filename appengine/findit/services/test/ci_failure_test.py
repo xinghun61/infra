@@ -258,8 +258,8 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     mock_fn.return_value = self._GetBuildData(master_name, builder_name,
                                               build_number)
 
-    failure_info = ci_failure.GetBuildFailureInfo(master_name, builder_name,
-                                                  build_number)
+    failure_info, should_proceed = ci_failure.GetBuildFailureInfo(
+        master_name, builder_name, build_number)
 
     expected_failure_info = {
         'failed': True,
@@ -285,16 +285,22 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(expected_failure_info, failure_info)
+    self.assertTrue(should_proceed)
 
   @mock.patch.object(ci_failure, '_ExtractBuildInfo', return_value=None)
   def testGetBuildFailureInfoFailedGetBuildInfo(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223
-    failure_info = ci_failure.GetBuildFailureInfo(master_name, builder_name,
-                                                  build_number)
+
+    self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
+                                   analysis_status.PENDING)
+
+    failure_info, should_proceed = ci_failure.GetBuildFailureInfo(
+        master_name, builder_name, build_number)
 
     self.assertEqual({}, failure_info)
+    self.assertFalse(should_proceed)
 
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testGetBuildFailureInfoBuildSuccess(self, mock_fn):
@@ -308,8 +314,8 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     mock_fn.return_value = self._GetBuildData(master_name, builder_name,
                                               build_number)
 
-    failure_info = ci_failure.GetBuildFailureInfo(master_name, builder_name,
-                                                  build_number)
+    failure_info, should_proceed = ci_failure.GetBuildFailureInfo(
+        master_name, builder_name, build_number)
 
     expected_failure_info = {
         'failed': False,
@@ -325,6 +331,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     }
 
     self.assertEqual(expected_failure_info, failure_info)
+    self.assertFalse(should_proceed)
 
   @mock.patch.object(build_util, 'DownloadBuildData', return_value=None)
   def testExtractBuildInfo(self, _):

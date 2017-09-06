@@ -388,11 +388,11 @@ class BuildFailureTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       ci_failure,
       'GetBuildFailureInfo',
-      return_value={
+      return_value=({
           'failed': True,
           'chromium_revision': 'rev',
           'failure_type': failure_type.COMPILE
-      })
+      }, True))
   @mock.patch('gae_libs.token.ValidateAuthToken')
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testAdminCanRequestAnalysisOfFailureOnUnsupportedMaster(
