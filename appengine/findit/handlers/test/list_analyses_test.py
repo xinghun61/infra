@@ -11,7 +11,7 @@ from handlers import list_analyses
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from model import result_status
-from waterfall import build_failure_analysis
+from services import build_failure_analysis
 
 
 class ListAnalysesTest(testing.AppengineTestCase):

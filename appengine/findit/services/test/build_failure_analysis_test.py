@@ -1,8 +1,10 @@
-# Copyright 2015 The Chromium Authors. All rights reserved.
+# Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import defaultdict
 from datetime import datetime
+import logging
 import mock
 
 from common.waterfall import failure_type
@@ -18,7 +20,8 @@ from libs.gitiles.gitiles_repository import GitilesRepository
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
-from waterfall import build_failure_analysis
+from services import build_failure_analysis
+from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
 from waterfall.test import wf_testcase
 
@@ -247,7 +250,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     deps_info = {}
 
-    justification = build_failure_analysis._CheckFiles(
+    justification = build_failure_analysis.CheckFiles(
         failure_signal, change_log_json, deps_info, True)
     self.assertIsNotNone(justification)
     # The score is 2 because:
@@ -308,7 +311,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     deps_info = {}
 
-    justification = build_failure_analysis._CheckFiles(
+    justification = build_failure_analysis.CheckFiles(
         FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
     self.assertIsNotNone(justification)
     # The score is 15 because:
@@ -340,7 +343,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     deps_info = {}
 
-    justification = build_failure_analysis._CheckFiles(
+    justification = build_failure_analysis.CheckFiles(
         FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
     self.assertIsNone(justification)
 
@@ -617,980 +620,12 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.mock(GitilesRepository, 'GetCommitsBetweenRevisions',
               self._MockGetCommitsBetweenRevisions)
     self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
-    justification = build_failure_analysis._CheckFiles(
+    justification = build_failure_analysis.CheckFiles(
         FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
     self.assertIsNotNone(justification)
     # The score is 1 because:
     # +1 rolled third_party/dep1/ and src/third_party/dep1/f.cc was in log.
     self.assertEqual(1, justification['score'])
-
-  def testAnalyzeSuccessfulBuild(self):
-    failure_info = {
-        'failed': False,
-    }
-    result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
-        failure_info, change_logs=None, deps_info=None, failure_signals=None)
-    self.assertEqual(0, len(result['failures']))
-    self.assertEqual([], suspected_cls)
-
-  def testAnalyzeBuildWithoutValidChromiumRevision(self):
-    failure_info = {
-        'failed': True,
-        'chromium_revision': None,
-    }
-    result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
-        failure_info, change_logs=None, deps_info=None, failure_signals=None)
-    self.assertEqual(0, len(result['failures']))
-    self.assertEqual([], suspected_cls)
-
-  def testAnalyzeBuildWithInfraFailure(self):
-    failure_info = {
-        'failed': True,
-        'failure_type': failure_type.INFRA,
-        'chromium_revision': '00baf00ba',
-    }
-    result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
-        failure_info, change_logs=None, deps_info=None, failure_signals=None)
-    self.assertEqual(0, len(result['failures']))
-    self.assertEqual([], suspected_cls)
-
-  def testAnalyzeBuildFailure(self):
-    failure_info = {
-        'master_name': 'm',
-        'builder_name': 'b',
-        'build_number': 99,
-        'failure_type': failure_type.TEST,
-        'failed': True,
-        'chromium_revision': 'r99_2',
-        'failed_steps': {
-            'a': {
-                'current_failure': 99,
-                'first_failure': 98,
-            },
-            'b': {
-                'current_failure': 99,
-                'first_failure': 98,
-                'last_pass': 96,
-            },
-        },
-        'builds': {
-            '99': {
-                'blame_list': ['r99_1', 'r99_2'],
-            },
-            '98': {
-                'blame_list': ['r98_1'],
-            },
-            '97': {
-                'blame_list': ['r97_1'],
-            },
-            '96': {
-                'blame_list': ['r96_1', 'r96_2'],
-            },
-        }
-    }
-    change_logs = {
-        'r99_1': {
-            'revision':
-                'r99_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_1.cc',
-                    'new_path': 'a/b/f99_1.cc'
-                },
-            ],
-        },
-        'r99_2': {
-            'revision':
-                'r99_2',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_2.cc',
-                    'new_path': 'a/b/f99_2.cc'
-                },
-            ],
-        },
-        'r98_1': {
-            'revision':
-                'r98_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'y/z/f98.cc',
-                    'new_path': 'y/z/f98.cc'
-                },
-            ],
-        },
-        'r97_1': {
-            'revision':
-                'r97_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.ADD,
-                    'old_path': '/dev/null',
-                    'new_path': 'x/y/f99_1.cc'
-                },
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_1.cc',
-                    'new_path': 'a/b/f99_1.cc'
-                },
-            ],
-        },
-        'r96_1': {
-            'revision':
-                'r96_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f96_1.cc',
-                    'new_path': 'a/b/f96_1.cc'
-                },
-            ],
-        },
-    }
-    deps_info = {}
-    failure_signals_json = {
-        'a': {
-            'files': {
-                'src/a/b/f99_2.cc': [],
-            },
-        },
-        'b': {
-            'files': {
-                'x/y/f99_1.cc': [],
-            },
-        },
-    }
-    expected_analysis_result = {
-        'failures': [{
-            'step_name':
-                'a',
-            'supported':
-                True,
-            'first_failure':
-                98,
-            'last_pass':
-                None,
-            'suspected_cls': [{
-                'build_number': 99,
-                'repo_name': 'chromium',
-                'revision': 'r99_2',
-                'commit_position': None,
-                'url': None,
-                'score': 2,
-                'hints': {
-                    'modified f99_2.cc (and it was in log)': 2,
-                },
-            }],
-        }, {
-            'step_name':
-                'b',
-            'supported':
-                True,
-            'first_failure':
-                98,
-            'last_pass':
-                96,
-            'suspected_cls': [{
-                'build_number': 97,
-                'repo_name': 'chromium',
-                'revision': 'r97_1',
-                'commit_position': None,
-                'url': None,
-                'score': 5,
-                'hints': {
-                    'added x/y/f99_1.cc (and it was in log)': 5,
-                },
-            }],
-        }]
-    }
-
-    expected_suspected_cl = [{
-        'repo_name': 'chromium',
-        'revision': 'r99_2',
-        'commit_position': None,
-        'url': None,
-        'failures': {
-            'a': []
-        },
-        'top_score': 2
-    }, {
-        'repo_name': 'chromium',
-        'revision': 'r97_1',
-        'commit_position': None,
-        'url': None,
-        'failures': {
-            'b': []
-        },
-        'top_score': 5
-    }]
-
-    analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
-        failure_info, change_logs, deps_info, failure_signals_json)
-
-    self.assertEqual(expected_analysis_result, analysis_result)
-    self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
-
-  def testAnalyzeBuildFailurebyDependencies(self):
-    failure_info = {
-        'master_name': 'm',
-        'builder_name': 'b',
-        'build_number': 99,
-        'failure_type': failure_type.COMPILE,
-        'failed': True,
-        'chromium_revision': 'r99_2',
-        'failed_steps': {
-            'compile': {
-                'current_failure': 99,
-                'first_failure': 98,
-            },
-            'b': {
-                'current_failure': 99,
-                'first_failure': 98,
-                'last_pass': 96,
-            },
-        },
-        'builds': {
-            '99': {
-                'blame_list': ['r99_1', 'r99_2'],
-            },
-            '98': {
-                'blame_list': ['r98_1'],
-            },
-            '97': {
-                'blame_list': ['r97_1'],
-            },
-            '96': {
-                'blame_list': ['r96_1', 'r96_2'],
-            },
-        }
-    }
-    change_logs = {
-        'r99_1': {
-            'revision':
-                'r99_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_1.cc',
-                    'new_path': 'a/b/f99_1.cc'
-                },
-            ],
-        },
-        'r99_2': {
-            'revision':
-                'r99_2',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_2.cc',
-                    'new_path': 'a/b/f99_2.cc'
-                },
-            ],
-        },
-        'r98_1': {
-            'revision':
-                'r98_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'y/z/f98.cc',
-                    'new_path': 'y/z/f98.cc'
-                },
-            ],
-        },
-        'r97_1': {
-            'revision':
-                'r97_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.ADD,
-                    'old_path': '/dev/null',
-                    'new_path': 'x/y/f99_1.cc'
-                },
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_1.cc',
-                    'new_path': 'a/b/f99_1.cc'
-                },
-            ],
-        },
-        'r96_1': {
-            'revision':
-                'r96_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f96_1.cc',
-                    'new_path': 'a/b/f96_1.cc'
-                },
-            ],
-        },
-    }
-    deps_info = {}
-    failure_signals_json = {
-        'compile': {
-            'files': {},
-            'failed_edges': [{
-                'dependencies': ['src/a/b/f99_2.cc']
-            }]
-        },
-        'b': {
-            'files': {
-                'x/y/f99_1.cc': []
-            },
-        },
-    }
-    expected_analysis_result = {
-        'failures': [{
-            'step_name':
-                'compile',
-            'supported':
-                True,
-            'first_failure':
-                98,
-            'last_pass':
-                None,
-            'suspected_cls': [{
-                'build_number': 99,
-                'repo_name': 'chromium',
-                'revision': 'r99_2',
-                'commit_position': None,
-                'url': None,
-                'score': 2,
-                'hints': {
-                    ('modified f99_2.cc (and it was in'
-                     ' dependencies found by ninja)'):
-                         2,
-                },
-            }],
-            'new_compile_suspected_cls': [{
-                'build_number': 99,
-                'repo_name': 'chromium',
-                'revision': 'r99_2',
-                'commit_position': None,
-                'url': None,
-                'score': 2,
-                'hints': {
-                    ('modified f99_2.cc (and it was in'
-                     ' dependencies found by ninja)'):
-                         2,
-                },
-            }],
-            'use_ninja_dependencies':
-                True,
-        }, {
-            'step_name':
-                'b',
-            'supported':
-                True,
-            'first_failure':
-                98,
-            'last_pass':
-                96,
-            'suspected_cls': [{
-                'build_number': 97,
-                'repo_name': 'chromium',
-                'revision': 'r97_1',
-                'commit_position': None,
-                'url': None,
-                'score': 5,
-                'hints': {
-                    'added x/y/f99_1.cc (and it was in log)': 5,
-                },
-            }],
-        }]
-    }
-
-    expected_suspected_cl = [{
-        'repo_name': 'chromium',
-        'revision': 'r99_2',
-        'commit_position': None,
-        'url': None,
-        'failures': {
-            'compile': []
-        },
-        'top_score': 2
-    }, {
-        'repo_name': 'chromium',
-        'revision': 'r97_1',
-        'commit_position': None,
-        'url': None,
-        'failures': {
-            'b': []
-        },
-        'top_score': 5
-    }]
-
-    analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
-        failure_info, change_logs, deps_info, failure_signals_json)
-
-    self.assertEqual(expected_analysis_result, analysis_result)
-    self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
-
-  def testAnalyzeBuildFailureRecordNewSuspectedCls(self):
-    failure_info = {
-        'master_name': 'm',
-        'builder_name': 'b',
-        'build_number': 99,
-        'failure_type': failure_type.COMPILE,
-        'failed': True,
-        'chromium_revision': 'r99_2',
-        'failed_steps': {
-            'compile': {
-                'current_failure': 99,
-                'first_failure': 98,
-            },
-            'b': {
-                'current_failure': 99,
-                'first_failure': 98,
-                'last_pass': 96,
-            },
-        },
-        'builds': {
-            '99': {
-                'blame_list': ['r99_1', 'r99_2'],
-            },
-            '98': {
-                'blame_list': ['r98_1'],
-            },
-            '97': {
-                'blame_list': ['r97_1'],
-            },
-            '96': {
-                'blame_list': ['r96_1', 'r96_2'],
-            },
-        }
-    }
-    change_logs = {
-        'r99_1': {
-            'revision':
-                'r99_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_1.cc',
-                    'new_path': 'a/b/f99_1.cc'
-                },
-            ],
-        },
-        'r99_2': {
-            'revision':
-                'r99_2',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_2.cc',
-                    'new_path': 'a/b/f99_2.cc'
-                },
-            ],
-        },
-        'r98_1': {
-            'revision':
-                'r98_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'y/z/f98.cc',
-                    'new_path': 'y/z/f98.cc'
-                },
-            ],
-        },
-        'r97_1': {
-            'revision':
-                'r97_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.ADD,
-                    'old_path': '/dev/null',
-                    'new_path': 'x/y/f99_1.cc'
-                },
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_1.cc',
-                    'new_path': 'a/b/f99_1.cc'
-                },
-            ],
-        },
-        'r96_1': {
-            'revision':
-                'r96_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f96_1.cc',
-                    'new_path': 'a/b/f96_1.cc'
-                },
-            ],
-        },
-    }
-    deps_info = {}
-    failure_signals_json = {
-        'compile': {
-            'files': {
-                'src/a/b/f99_2.cc': [],
-            },
-            'failed_edges': [{
-                'dependencies': ['src/a/b/f99_2.cc']
-            }]
-        },
-        'b': {
-            'files': {
-                'x/y/f99_1.cc': []
-            },
-        },
-    }
-    expected_analysis_result = {
-        'failures': [{
-            'step_name':
-                'compile',
-            'supported':
-                True,
-            'first_failure':
-                98,
-            'last_pass':
-                None,
-            'suspected_cls': [{
-                'build_number': 99,
-                'repo_name': 'chromium',
-                'revision': 'r99_2',
-                'commit_position': None,
-                'url': None,
-                'score': 2,
-                'hints': {
-                    ('modified f99_2.cc (and it was in log)'): 2,
-                },
-            }],
-            'new_compile_suspected_cls': [{
-                'build_number': 99,
-                'repo_name': 'chromium',
-                'revision': 'r99_2',
-                'commit_position': None,
-                'url': None,
-                'score': 2,
-                'hints': {
-                    ('modified f99_2.cc (and it was in'
-                     ' dependencies found by ninja)'):
-                         2,
-                },
-            }],
-        }, {
-            'step_name':
-                'b',
-            'supported':
-                True,
-            'first_failure':
-                98,
-            'last_pass':
-                96,
-            'suspected_cls': [{
-                'build_number': 97,
-                'repo_name': 'chromium',
-                'revision': 'r97_1',
-                'commit_position': None,
-                'url': None,
-                'score': 5,
-                'hints': {
-                    'added x/y/f99_1.cc (and it was in log)': 5,
-                },
-            }],
-        }]
-    }
-
-    expected_suspected_cl = [{
-        'repo_name': 'chromium',
-        'revision': 'r99_2',
-        'commit_position': None,
-        'url': None,
-        'failures': {
-            'compile': []
-        },
-        'top_score': 2
-    }, {
-        'repo_name': 'chromium',
-        'revision': 'r97_1',
-        'commit_position': None,
-        'url': None,
-        'failures': {
-            'b': []
-        },
-        'top_score': 5
-    }]
-
-    analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
-        failure_info, change_logs, deps_info, failure_signals_json)
-
-    self.assertEqual(expected_analysis_result, analysis_result)
-    self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
-
-  def testAnalyzeBuildFailureTestLevel(self):
-    failure_info = {
-        'failed': True,
-        'chromium_revision': 'r99_2',
-        'master_name': 'm',
-        'builder_name': 'b',
-        'build_number': 99,
-        'failure_type': failure_type.TEST,
-        'failed_steps': {
-            'a': {
-                'current_failure': 99,
-                'first_failure': 98,
-            },
-            'b': {
-                'current_failure':
-                    99,
-                'first_failure':
-                    98,
-                'last_pass':
-                    96,
-                'list_isolated_data': [{
-                    'isolatedserver': 'https://isolateserver.appspot.com',
-                    'namespace': 'default-gzip',
-                    'digest': 'isolatedhashabctest-223'
-                }],
-                'tests': {
-                    'Unittest1.Subtest1': {
-                        'current_failure': 99,
-                        'first_failure': 98,
-                        'last_pass': 97
-                    },
-                    'Unittest2.Subtest1': {
-                        'current_failure': 99,
-                        'first_failure': 98,
-                        'last_pass': 97
-                    },
-                    'Unittest3.Subtest2': {
-                        'current_failure': 99,
-                        'first_failure': 98,
-                        'last_pass': 96
-                    },
-                    'Unittest3.Subtest3': {
-                        'current_failure': 99,
-                        'first_failure': 98,
-                        'last_pass': 96
-                    }
-                }
-            },
-        },
-        'builds': {
-            '99': {
-                'blame_list': ['r99_1', 'r99_2'],
-            },
-            '98': {
-                'blame_list': ['r98_1'],
-            },
-            '97': {
-                'blame_list': ['r97_1'],
-            },
-            '96': {
-                'blame_list': ['r96_1', 'r96_2'],
-            },
-        }
-    }
-    change_logs = {
-        'r99_1': {
-            'revision':
-                'r99_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_1.cc',
-                    'new_path': 'a/b/f99_1.cc'
-                },
-            ],
-        },
-        'r99_2': {
-            'revision':
-                'r99_2',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_2.cc',
-                    'new_path': 'a/b/f99_2.cc'
-                },
-            ],
-        },
-        'r98_1': {
-            'revision':
-                'r98_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'y/z/f98.cc',
-                    'new_path': 'y/z/f98.cc'
-                },
-            ],
-        },
-        'r97_1': {
-            'revision':
-                'r97_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.ADD,
-                    'old_path': '/dev/null',
-                    'new_path': 'x/y/f99_1.cc'
-                },
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f99_1.cc',
-                    'new_path': 'a/b/f99_1.cc'
-                },
-            ],
-        },
-        'r96_1': {
-            'revision':
-                'r96_1',
-            'touched_files': [
-                {
-                    'change_type': ChangeType.MODIFY,
-                    'old_path': 'a/b/f96_1.cc',
-                    'new_path': 'a/b/f96_1.cc'
-                },
-            ],
-        },
-    }
-    deps_info = {}
-    failure_signals_json = {
-        'a': {
-            'files': {
-                'src/a/b/f99_2.cc': [],
-            },
-        },
-        'b': {
-            'files': {
-                'x/y/f99_1.cc': [],
-                'y/z/f98.cc': [123, 456],
-            },
-            'tests': {
-                'Unittest1.Subtest1': {
-                    'files': {
-                        'x/y/f99_1.cc': [],
-                    },
-                },
-                'Unittest2.Subtest1': {
-                    'files': {
-                        'y/z/f98.cc': [123],
-                    },
-                },
-                'Unittest3.Subtest2': {
-                    'files': {
-                        'y/z/f98.cc': [456],
-                    },
-                }
-            }
-        }
-    }
-
-    def MockGetChangedLines(repo_info, touched_file, line_numbers, _):
-      # Only need line_numbers, ignoring the first two parameters.
-      del repo_info, touched_file
-      if line_numbers:
-        return line_numbers
-
-    self.mock(build_failure_analysis, '_GetChangedLinesForChromiumRepo',
-              MockGetChangedLines)
-
-    expected_analysis_result = {
-        'failures': [{
-            'step_name':
-                'a',
-            'first_failure':
-                98,
-            'last_pass':
-                None,
-            'supported':
-                True,
-            'suspected_cls': [{
-                'build_number': 99,
-                'repo_name': 'chromium',
-                'revision': 'r99_2',
-                'commit_position': None,
-                'url': None,
-                'score': 2,
-                'hints': {
-                    'modified f99_2.cc (and it was in log)': 2,
-                },
-            }],
-        }, {
-            'step_name':
-                'b',
-            'first_failure':
-                98,
-            'last_pass':
-                96,
-            'supported':
-                True,
-            'suspected_cls': [{
-                'build_number': 97,
-                'repo_name': 'chromium',
-                'revision': 'r97_1',
-                'commit_position': None,
-                'url': None,
-                'score': 5,
-                'hints': {
-                    'added x/y/f99_1.cc (and it was in log)': 5,
-                },
-            }, {
-                'build_number': 98,
-                'repo_name': 'chromium',
-                'revision': 'r98_1',
-                'commit_position': None,
-                'url': None,
-                'score': 4,
-                'hints': {
-                    'modified f98.cc[123, 456] (and it was in log)': 4,
-                },
-            }],
-            'tests': [{
-                'test_name':
-                    'Unittest1.Subtest1',
-                'first_failure':
-                    98,
-                'last_pass':
-                    97,
-                'suspected_cls': [{
-                    'build_number': 97,
-                    'repo_name': 'chromium',
-                    'revision': 'r97_1',
-                    'commit_position': None,
-                    'url': None,
-                    'score': 5,
-                    'hints': {
-                        'added x/y/f99_1.cc (and it was in log)': 5,
-                    },
-                }]
-            }, {
-                'test_name':
-                    'Unittest2.Subtest1',
-                'first_failure':
-                    98,
-                'last_pass':
-                    97,
-                'suspected_cls': [{
-                    'build_number': 98,
-                    'repo_name': 'chromium',
-                    'revision': 'r98_1',
-                    'commit_position': None,
-                    'url': None,
-                    'score': 4,
-                    'hints': {
-                        ('modified f98.cc[123] '
-                         '(and it was in log)'): 4,
-                    },
-                }]
-            }, {
-                'test_name':
-                    'Unittest3.Subtest2',
-                'first_failure':
-                    98,
-                'last_pass':
-                    96,
-                'suspected_cls': [{
-                    'build_number': 98,
-                    'repo_name': 'chromium',
-                    'revision': 'r98_1',
-                    'commit_position': None,
-                    'url': None,
-                    'score': 4,
-                    'hints': {
-                        ('modified f98.cc[456] '
-                         '(and it was in log)'): 4,
-                    },
-                }]
-            }, {
-                'test_name': 'Unittest3.Subtest3',
-                'first_failure': 98,
-                'last_pass': 96,
-                'suspected_cls': []
-            }]
-        }]
-    }
-
-    expected_suspected_cl = [{
-        'repo_name': 'chromium',
-        'revision': 'r99_2',
-        'commit_position': None,
-        'url': None,
-        'failures': {
-            'a': []
-        },
-        'top_score': 2
-    }, {
-        'repo_name': 'chromium',
-        'revision': 'r97_1',
-        'commit_position': None,
-        'url': None,
-        'failures': {
-            'b': ['Unittest1.Subtest1']
-        },
-        'top_score': 5
-    }, {
-        'repo_name': 'chromium',
-        'revision': 'r98_1',
-        'commit_position': None,
-        'url': None,
-        'failures': {
-            'b': ['Unittest2.Subtest1', 'Unittest3.Subtest2']
-        },
-        'top_score': 4
-    }]
-
-    analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
-        failure_info, change_logs, deps_info, failure_signals_json)
-
-    self.assertEqual(expected_analysis_result, analysis_result)
-    self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
-
-  def testAnalyzeBuildFailureForUnsupportedStep(self):
-    failure_info = {
-        'master_name': 'master1',
-        'builder_name': 'b',
-        'build_number': 99,
-        'failure_type': failure_type.TEST,
-        'failed': True,
-        'chromium_revision': 'r99_2',
-        'failed_steps': {
-            'unsupported_step1': {
-                'current_failure': 99,
-                'first_failure': 98,
-            },
-        },
-        'builds': {
-            '99': {
-                'blame_list': ['r99_1', 'r99_2'],
-            },
-            '98': {
-                'blame_list': ['r98_1'],
-            },
-        }
-    }
-    change_logs = {}
-    deps_info = {}
-    failure_signals_json = {
-        'not_supported': {
-            'files': {
-                'src/a/b/f99_2.cc': [],
-            },
-        }
-    }
-    expected_analysis_result = {
-        'failures': [
-            {
-                'step_name': 'unsupported_step1',
-                'supported': False,
-                'first_failure': 98,
-                'last_pass': None,
-                'suspected_cls': [],
-            },
-        ]
-    }
-
-    analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
-        failure_info, change_logs, deps_info, failure_signals_json)
-    self.assertEqual(expected_analysis_result, analysis_result)
-    self.assertEqual([], suspected_cls)
 
   def testGetGitBlame(self):
     repo_info = {
@@ -2068,3 +1103,182 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     with self.assertRaises(Exception):
       build_failure_analysis.PullChangeLogs(failure_info)
+
+  def testCreateCLInfo(self):
+    cl_info = build_failure_analysis.CLInfo()
+    self.assertEqual(0, cl_info.top_score)
+
+  def testSaveStepFailureToMap(self):
+    cl_failure_map = defaultdict(build_failure_analysis.CLInfo)
+    new_suspected_cl_dict = {
+        'repo_name': 'chromium',
+        'revision': 'rev',
+        'commit_position': 1,
+        'url': 'url'
+    }
+    step_name = 'step'
+    top_score = 5
+    build_failure_analysis.SaveFailureToMap(
+        cl_failure_map, new_suspected_cl_dict, step_name, None, top_score)
+
+    self.assertEqual(cl_failure_map[('chromium', 'rev', 1)].top_score, 5)
+
+  def testSaveTestFailureToMap(self):
+    cl_failure_map = defaultdict(build_failure_analysis.CLInfo)
+    new_suspected_cl_dict = {
+        'repo_name': 'chromium',
+        'revision': 'rev',
+        'commit_position': 1,
+        'url': 'url'
+    }
+    step_name = 'step'
+    test_name = 'test'
+    top_score = 5
+    build_failure_analysis.SaveFailureToMap(
+        cl_failure_map, new_suspected_cl_dict, step_name, test_name, top_score)
+
+    self.assertEqual(5, cl_failure_map[('chromium', 'rev', 1)].top_score)
+    self.assertEqual([test_name], cl_failure_map[('chromium', 'rev',
+                                                  1)].failures[step_name])
+
+  def testConvertCLFailureMapToList(self):
+    repo_name = 'chromium'
+    revision = 'rev'
+    commit_position = 1
+
+    cl_failure_map = {
+        (repo_name, revision, commit_position): build_failure_analysis.CLInfo()
+    }
+    suspected_cls = build_failure_analysis.ConvertCLFailureMapToList(
+        cl_failure_map)
+    self.assertEqual(repo_name, suspected_cls[0]['repo_name'])
+
+  def testCreateCLInfoDict(self):
+    justification_dict = {'score': 5, 'hints': {'hint': 5}}
+    build_number = 120
+    change_log = {
+        'author': {
+            'name':
+                'someone@chromium.org',
+            'email':
+                'someone@chromium.org',
+            'time':
+                datetime.strptime('Wed Jun 11 19:35:32 2014',
+                                  '%a %b %d %H:%M:%S %Y'),
+        },
+        'committer': {
+            'name':
+                'someone@chromium.org',
+            'email':
+                'someone@chromium.org',
+            'time':
+                datetime.strptime('Wed Jun 11 19:35:32 2014',
+                                  '%a %b %d %H:%M:%S %Y'),
+        },
+        'message':
+            'Cr-Commit-Position: refs/heads/master@{#175976}',
+        'commit_position':
+            175976,
+        'touched_files': [{
+            'new_path': 'added_file.js',
+            'change_type': 'add',
+            'old_path': '/dev/null'
+        }],
+        'commit_url':
+            'https://chromium.googlesource.com/chromium/src.git/+/rev1',
+        'code_review_url':
+            None,
+        'revision':
+            'rev1',
+        'reverted_revision':
+            None,
+        'review_server_host':
+            None,
+        'review_change_id':
+            None,
+    }
+
+    cl_info = build_failure_analysis.CreateCLInfoDict(justification_dict,
+                                                      build_number, change_log)
+
+    expected_cl_info = {
+        'build_number': build_number,
+        'repo_name': 'chromium',
+        'revision': 'rev1',
+        'commit_position': 175976,
+        'url': 'https://chromium.googlesource.com/chromium/src.git/+/rev1',
+        'score': 5,
+        'hints': {
+            'hint': 5
+        }
+    }
+
+    self.assertEqual(expected_cl_info, cl_info)
+
+  def testGetLowerBoundForAnalysisLastPass(self):
+    failure_info = {'last_pass': 120}
+    self.assertEqual(
+        121, build_failure_analysis.GetLowerBoundForAnalysis(failure_info))
+
+  def testGetLowerBoundForAnalysisFirstFailure(self):
+    failure_info = {'first_failure': 120}
+    self.assertEqual(
+        120, build_failure_analysis.GetLowerBoundForAnalysis(failure_info))
+
+  @mock.patch.object(
+      waterfall_config, 'StepIsSupportedForMaster', return_value=True)
+  def testInitializeStepLevelResult(self, _):
+    step_name = 'step'
+    step_failure_info = {'first_failure': 120, 'last_pass': 119}
+    master_name = 'm'
+
+    expected_result = {
+        'step_name': step_name,
+        'first_failure': 120,
+        'last_pass': 119,
+        'suspected_cls': [],
+        'supported': True
+    }
+    self.assertEqual(expected_result,
+                     build_failure_analysis.InitializeStepLevelResult(
+                         step_name, step_failure_info, master_name))
+
+  def testAddFileChangeMultipleOccurance(self):
+    justification = build_failure_analysis._Justification()
+    justification.AddFileChange(
+        change_action='modified',
+        changed_src_file_path='file_path',
+        file_path_in_log='file_path',
+        score=2,
+        num_file_name_occurrences=2)
+    self.assertEqual(justification.score, 2)
+
+  @mock.patch.object(build_failure_analysis, 'CheckFiles')
+  @mock.patch.object(build_failure_analysis, 'CreateCLInfoDict')
+  def testAnalyzeOneCL(self, mock_check_files, mock_info_dict):
+    build_number = 123
+    justification = build_failure_analysis._Justification()
+    justification._score = 1
+    justification._hints = {'hint': 1}
+    mock_check_files.return_value = justification
+    mock_info_dict.return_value = {
+        'build_number': build_number,
+        'repo_name': 'chromium',
+        'revision': 'rev',
+        'commit_position': 123,
+        'url': 'url',
+        'score': 1,
+        'hints': {
+            'hint': 1
+        }
+    }
+    _, max_score = build_failure_analysis.AnalyzeOneCL(build_number, {}, {}, {})
+    self.assertEqual(1, max_score)
+
+  @mock.patch.object(build_failure_analysis, 'CheckFiles', return_value=None)
+  def testAnalyzeOneCLNotSuspected(self, _):
+    build_number = 123
+    result, max_score = build_failure_analysis.AnalyzeOneCL(
+        build_number, {}, {}, {})
+    self.assertIsNone(result)
+    self.assertIsNone(max_score)

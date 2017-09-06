@@ -2,8 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import BasePipeline
-from waterfall import build_failure_analysis
+from services import build_failure_analysis
+from services.compile_failure import compile_failure_analysis
+from services.test_failure import test_failure_analysis
 
 
 class IdentifyCulpritPipeline(BasePipeline):
@@ -28,8 +31,14 @@ class IdentifyCulpritPipeline(BasePipeline):
     deps_info = build_failure_analysis.ExtractDepsInfo(failure_info,
                                                        change_logs)
 
-    analysis_result, suspected_cls = build_failure_analysis.AnalyzeBuildFailure(
-        failure_info, change_logs, deps_info, signals)
+    if failure_info['failure_type'] == failure_type.COMPILE:
+      analysis_result, suspected_cls = (
+          compile_failure_analysis.AnalyzeCompileFailure(
+              failure_info, change_logs, deps_info, signals))
+    else:
+      analysis_result, suspected_cls = (
+          test_failure_analysis.AnalyzeTestFailure(failure_info, change_logs,
+                                                   deps_info, signals))
 
     # Save results and other info to analysis.
     build_failure_analysis.SaveAnalysisAfterHeuristicAnalysisCompletes(
