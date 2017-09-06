@@ -69,11 +69,6 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.put()
 
-    flake_swarming_task = FlakeSwarmingTask.Create(
-        master_name, builder_name, build_number, step_name, test_name)
-    flake_swarming_task.status = analysis_status.COMPLETED
-    flake_swarming_task.put()
-
     self.MockPipeline(
         AnalyzeFlakeForBuildNumberPipeline,
         '',

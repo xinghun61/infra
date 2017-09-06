@@ -246,6 +246,11 @@ class DetermineTruePassRatePipeline(BasePipeline):
     analysis.LogInfo('Running %d iterations with a %d second timeout' %
                      (iterations_for_task, time_for_task_seconds))
 
+    # If the swarming task already exists, reset it so no caching occurs.
+    if flake_swarming_task:
+      flake_swarming_task.Reset()
+      flake_swarming_task.put()
+
     # Run swarming task, aggregate results and recurse
     with pipeline.InOrder():
       yield AnalyzeFlakeForBuildNumberPipeline(
