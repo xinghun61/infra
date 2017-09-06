@@ -14,7 +14,7 @@ PACKAGE_PREFIX = 'infra/python/cpython/'
 
 # This version suffix serves to distinguish different revisions of Python built
 # with this recipe.
-PACKAGE_VERSION_SUFFIX = '.chromium9b'
+PACKAGE_VERSION_SUFFIX = '.chromium10'
 
 class PythonApi(util.ModuleShim):
 

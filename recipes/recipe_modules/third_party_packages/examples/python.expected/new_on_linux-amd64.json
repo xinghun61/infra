@@ -52,13 +52,13 @@
       "search",
       "infra/python/cpython/linux-amd64",
       "-tag",
-      "version:2.1.2.chromium9b",
+      "version:2.1.2.chromium10",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium9b",
+    "name": "cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium10",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
@@ -324,11 +324,30 @@
   },
   {
     "cmd": [
-      "./configure",
-      "--prefix=[START_DIR]/python/_support/ncurses-6.0/prefix"
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/ncurses-6.0/tic_build"
     ],
     "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
-    "name": "ncurses-6.0.configure",
+    "infra_step": true,
+    "name": "ncurses-6.0.makedirs tic build",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0/configure",
+      "--prefix=[START_DIR]/python/_support/ncurses-6.0/tic_prefix"
+    ],
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0/tic_build",
+    "name": "ncurses-6.0.configure tic",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -338,7 +357,55 @@
       "make",
       "install"
     ],
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0/tic_build",
+    "name": "ncurses-6.0.make tic",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/python/_support/ncurses-6.0/tic_prefix/bin/toe"
+    ],
     "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
+    "name": "ncurses-6.0.get profiles",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@",
+      "@@@STEP_TEXT@Embedding 2 profile(s)@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/python/_support/ncurses-6.0/prefix",
+      "--disable-database",
+      "--disable-db-install",
+      "--enable-termcap",
+      "--with-fallbacks=foo,bar"
+    ],
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/ncurses-6.0/tic_prefix/bin"
+      ]
+    },
+    "name": "ncurses-6.0.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install.libs"
+    ],
+    "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/ncurses-6.0/tic_prefix/bin"
+      ]
+    },
     "name": "ncurses-6.0.make",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -1086,7 +1153,7 @@
       "-ref",
       "latest",
       "-tag",
-      "version:2.1.2.chromium9b"
+      "version:2.1.2.chromium10"
     ],
     "name": "register infra/python/cpython/linux-amd64",
     "~followup_annotations": [

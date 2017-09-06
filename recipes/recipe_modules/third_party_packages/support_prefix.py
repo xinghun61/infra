@@ -158,7 +158,8 @@ class SupportPrefix(util.ModuleShim):
 
     def build_archive():
       archive = sources.join(archive_name)
-      prefix = self.m.context.cwd.join('prefix')
+      build_root = self.m.context.cwd
+      prefix = build_root.join('prefix')
 
       self.m.python(
           'extract',
@@ -167,11 +168,11 @@ class SupportPrefix(util.ModuleShim):
             archive,
             self.m.context.cwd,
           ])
-      build = self.m.context.cwd.join(base) # Archive is extracted here.
+      build = build_root.join(base) # Archive is extracted here.
 
       try:
         with self.m.context(cwd=build):
-          build_fn(prefix)
+          build_fn(prefix, build_root)
       finally:
         pass
       return prefix
@@ -180,7 +181,7 @@ class SupportPrefix(util.ModuleShim):
     return self._build_once(key, build_archive)
 
   def _build_openssl(self, tag, shell=False):
-    def build_fn(prefix):
+    def build_fn(prefix, _build_root):
       target = {
         ('mac', 'intel', 64): 'darwin64-x86_64-cc',
         ('linux', 'intel', 32): 'linux-x86',
@@ -220,7 +221,7 @@ class SupportPrefix(util.ModuleShim):
 
   def _generic_build(self, name, tag, archive_name=None, configure_args=None,
                      libs=None, deps=None, shared_deps=None):
-    def build_fn(prefix):
+    def build_fn(prefix, _build_root):
       self.m.step('configure', [
         './configure',
         '--prefix=%s' % (prefix,),
@@ -275,8 +276,93 @@ class SupportPrefix(util.ModuleShim):
         configure_args=['--disable-shared'])
 
   def ensure_ncurses(self):
-    return self._generic_build('ncurses', 'version:6.0',
-        libs=['panel', 'ncurses'])
+    # The "ncurses" package, by default, uses a fixed-path location for terminal
+    # information. This is not portable, so we need to disable it. Instead, we
+    # will compile ncurses with a set of hand-picked custom terminal information
+    # data baked in, as well as the ability to probe terminal via termcap if
+    # needed.
+    #
+    # To do this, we need to bulid in multiple stages:
+    # 1) Generic configure / make so thast the "tic" (terminfo compiler) and
+    #    "toe" (table of entries) commands are built.
+    # 2) Use "toe" tool to dump the set of available profiles and groom it.
+    # 3) Build library with no database support using "tic" from (1), and
+    #    configure it to statically embed all of the profiles from (2).
+    def build_fn(prefix, build_root):
+      src = self.m.context.cwd
+
+      tic_build = build_root.join('tic_build')
+      tic_prefix = build_root.join('tic_prefix')
+      tic_bin = tic_prefix.join('bin')
+
+      self.m.file.ensure_directory('makedirs tic build', tic_build)
+      with self.m.context(cwd=tic_build):
+        self.m.step('configure tic', [
+          src.join('configure'),
+          '--prefix=%s' % (tic_prefix,),
+        ])
+        self.m.step('make tic', ['make', 'install'])
+
+      # Determine the list of all supported profiles. The "toe" command (table
+      # of entries) will dump a list.
+      toe = self.m.step(
+          'get profiles',
+          [tic_bin.join('toe')],
+          stdout=self.m.raw_io.output_text(),
+          step_test_data=lambda: self.m.raw_io.test_api.stream_output(
+            '\n'.join([
+              'foo        The foo profile.',
+              'bar        The bar profile.',
+              '9term      Should be pruned.',
+              'guru+fake  Should be pruned.',
+            ])),
+      )
+      fallbacks = [l.split()[0].strip() for l in toe.stdout.splitlines()]
+
+      # Strip out fallbacks with bugs.
+      #
+      # This currently leaves 1591 profiles behind, which will be statically
+      # compiled into the library.
+      fallbacks = [f for f in fallbacks if (
+        f and not any(f.startswith(x) for x in (
+          # Some profiles do not generate valid C, either because:
+          # - They begin with a number, which is not valid in C.
+          # - They are flattened to a duplicate symbol as another profile. This
+          #   usually happens when there are "+" and "-" variants; we choose
+          #   "-".
+          # - They include quotes in the description name.
+          #
+          # None of these identified terminals are really important, so we will
+          # just avoid processing them.
+          '9term', 'guru+', 'hp+', 'tvi912b+', 'tvi912b-vb', 'tvi920b-vb',
+          'att4415+', 'nsterm+', 'xnuppc+', 'xterm+', 'wyse-vp',
+        ))
+      )]
+      toe.presentation.step_text = 'Embedding %d profile(s)' % (
+          len(fallbacks),)
+
+      # Run the remainder of our build with our generated "tic" on PATH.
+      #
+      # Note that we only run "install.libs". Standard "install" expects the
+      # full database to exist, and this will not be the case since we are
+      # explicitly disabling it.
+      with self.m.context(env_prefixes={'PATH': [tic_bin]}):
+        self.m.step('configure', [
+          './configure',
+          '--prefix=%s' % (prefix,),
+          '--disable-database',
+          '--disable-db-install',
+          '--enable-termcap',
+          '--with-fallbacks=%s' % (','.join(fallbacks),),
+        ])
+        self.m.step('make', ['make', 'install.libs'])
+
+    return Source(
+        prefix=self._ensure_and_build_archive(
+          'ncurses', 'version:6.0', build_fn),
+        deps=[],
+        libs=['panel', 'ncurses'],
+        shared_deps=[])
 
   def ensure_zlib(self):
     return self._generic_build('zlib', 'version:1.2.11', libs=['z'],
@@ -295,7 +381,7 @@ class SupportPrefix(util.ModuleShim):
         archive_name='sqlite-autoconf-3190300.tar.gz')
 
   def ensure_bzip2(self):
-    def build_fn(prefix):
+    def build_fn(prefix, _build_root):
       self.m.step('make', [
         'make',
         'install',
