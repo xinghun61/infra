@@ -14,7 +14,7 @@ PACKAGE_PREFIX = 'infra/python/cpython/'
 
 # This version suffix serves to distinguish different revisions of Python built
 # with this recipe.
-PACKAGE_VERSION_SUFFIX = '.chromium9'
+PACKAGE_VERSION_SUFFIX = '.chromium9b'
 
 class PythonApi(util.ModuleShim):
 
@@ -54,11 +54,10 @@ class PythonApi(util.ModuleShim):
       # more controlled, consistent, and (in case of OpenSSL) secure Python
       # build.
       bzip2 = support.ensure_bzip2()
-      readline = support.ensure_readline()
-      ncurses = support.ensure_ncurses()
+      readline = support.ensure_readline() # Pulls in "ncurses"
       zlib = support.ensure_zlib()
       sqlite = support.ensure_sqlite()
-      libs = [bzip2, readline, ncurses, sqlite, zlib]
+      libs = [bzip2, readline, sqlite, zlib]
 
       # On Linux, we need to explicitly build libnsl; on other platforms, it
       # is part of "libc".

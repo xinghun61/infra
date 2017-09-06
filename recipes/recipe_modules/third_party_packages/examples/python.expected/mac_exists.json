@@ -52,7 +52,7 @@
       "search",
       "infra/python/cpython/mac-amd64",
       "-tag",
-      "version:2.1.2.chromium9",
+      "version:2.1.2.chromium9b",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -61,7 +61,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium9",
+    "name": "cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium9b",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",

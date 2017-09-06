@@ -48,13 +48,13 @@
       "search",
       "infra/python/cpython/linux-amd64",
       "-tag",
-      "version:2.1.2.chromium9",
+      "version:2.1.2.chromium9b",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium9",
+    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium9b",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -307,69 +307,6 @@
   {
     "cmd": [],
     "cwd": "[START_DIR]/python/checkout",
-    "name": "python.readline-7.0",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "ensure-directory",
-      "--mode",
-      "0777",
-      "[START_DIR]/python/_support/readline-7.0"
-    ],
-    "cwd": "[START_DIR]/python/checkout",
-    "infra_step": true,
-    "name": "python.readline-7.0.makedirs workdir",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
-      "[START_DIR]/python/_support/sources/readline-7.0.tar.gz",
-      "[START_DIR]/python/_support/readline-7.0"
-    ],
-    "cwd": "[START_DIR]/python/_support/readline-7.0",
-    "name": "python.readline-7.0.extract",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "./configure",
-      "--prefix=[START_DIR]/python/_support/readline-7.0/prefix"
-    ],
-    "cwd": "[START_DIR]/python/_support/readline-7.0/readline-7.0",
-    "name": "python.readline-7.0.configure",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "make",
-      "install"
-    ],
-    "cwd": "[START_DIR]/python/_support/readline-7.0/readline-7.0",
-    "name": "python.readline-7.0.make",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@2@@@"
-    ]
-  },
-  {
-    "cmd": [],
-    "cwd": "[START_DIR]/python/checkout",
     "name": "python.ncurses-6.0",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -426,6 +363,70 @@
     ],
     "cwd": "[START_DIR]/python/_support/ncurses-6.0/ncurses-6.0",
     "name": "python.ncurses-6.0.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "name": "python.readline-7.0",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/readline-7.0"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "infra_step": true,
+    "name": "python.readline-7.0.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/readline-7.0.tar.gz",
+      "[START_DIR]/python/_support/readline-7.0"
+    ],
+    "cwd": "[START_DIR]/python/_support/readline-7.0",
+    "name": "python.readline-7.0.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/python/_support/readline-7.0/prefix",
+      "--with-curses"
+    ],
+    "cwd": "[START_DIR]/python/_support/readline-7.0/readline-7.0",
+    "name": "python.readline-7.0.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@2@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install"
+    ],
+    "cwd": "[START_DIR]/python/_support/readline-7.0/readline-7.0",
+    "name": "python.readline-7.0.make",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
     ]
@@ -1175,7 +1176,7 @@
       "-ref",
       "latest",
       "-tag",
-      "version:2.1.2.chromium9"
+      "version:2.1.2.chromium9b"
     ],
     "name": "python.register infra/python/cpython/linux-amd64",
     "~followup_annotations": [

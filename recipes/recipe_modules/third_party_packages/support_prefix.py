@@ -53,15 +53,12 @@ class Source(collections.namedtuple('_SourceBase', (
     return ['-L%s' % (d,) for d in self.lib_dirs]
 
   @property
-  def static(self):
-    link = []
-    for s in self._expand():
-      link += ['lib%s.a' % (lib,) for lib in s.libs]
-    return link
-
-  @property
   def full_static(self):
-    return [str(self.prefix.join('lib', s)) for s in self.static]
+    full = []
+    for s in self._expand():
+      full += [str(s.include_prefix.join('lib', 'lib%s.a' % (lib,)))
+               for lib in s.libs]
+    return full
 
   @property
   def shared(self):
@@ -312,7 +309,12 @@ class SupportPrefix(util.ModuleShim):
         shared_deps=[])
 
   def ensure_readline(self):
-    return self._generic_build('readline', 'version:7.0')
+    ncurses = self.ensure_ncurses()
+    return self._generic_build('readline', 'version:7.0',
+        configure_args=[
+          '--with-curses',
+        ],
+        deps=[ncurses])
 
   def ensure_autoconf(self):
     return self._generic_build('autoconf', 'version:2.69')
