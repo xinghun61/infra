@@ -455,6 +455,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
         this._mergeBuilders(group.extension.builders,
                             alert.extension.builders,
                             alert.extension.stages);
+        this._mergeRegressionRanges(group.extension, alert.extension);
       }
       group.alerts.push(alert);
       if (resolved) {
@@ -463,6 +464,95 @@ class SomAlertView extends Polymer.mixinBehaviors(
     } else {
       // Ungrouped alert.
       alertItems.push(alert);
+    }
+  }
+
+  _mergeRegressionRanges(groupExtension, alertExtension) {
+    if (!alertExtension.regression_ranges) {
+      return;
+    }
+
+    if (!groupExtension.regression_ranges) {
+      groupExtension.regression_ranges = alertExtension.regression_ranges;
+      return;
+    }
+
+    let byRepo = {};
+    groupExtension.regression_ranges.forEach((range) => {
+      if (!byRepo[range.repo]) {
+        byRepo[range.repo] = [];
+      }
+
+      byRepo[range.repo].push(range);
+    });
+
+    alertExtension.regression_ranges.forEach((range) => {
+      if (!byRepo[range.repo]) {
+        byRepo[range.repo] = [];
+      }
+
+      byRepo[range.repo].push(range);
+    });
+
+    groupExtension.regression_ranges = [];
+    for (let repo in byRepo) {
+      groupExtension.regression_ranges.push(
+          byRepo[repo].reduce(this._mergeRegressionRange.bind(this)));
+    }
+  }
+
+  _mergeRegressionRange(groupRange, alertRange) {
+    if (alertRange === undefined) {
+      return undefined;
+    }
+
+    // Short for groupRegressionRanges
+    let gRR = groupRange.positions.map(this._parseCommitPosition);
+    // Short for alertRegressionRanges
+    let aRR = alertRange.positions.map(this._parseCommitPosition);
+
+    /* There are 5 possible cases we can encounter
+     * 1
+     *       [  ]
+     *   [ ]
+     * 2
+     *     [  ]
+     *   [  ]
+     * 3
+     *     [ ]
+     *   [    ]
+     * 4
+     *   [ ]
+     *    [ ]
+     * 5
+     *    [  ]
+     *         [  ]
+     * In case 1 and 5, the regression ranges are conflicting; they don't
+     * intersect at all. In this case, we record the error, and show the user
+     * that this group of alerts doesn't have a common regression range.
+     *
+     * In the other cases, it's assumed that the error probably happened because
+     * of a CL in the intersection of the regression ranges. The math below
+     * finds the intersection of the two intervals.
+    */
+    let lower = Math.max(gRR[0], aRR[0]);
+    let upper = Math.min(gRR[gRR.length - 1], aRR[gRR.length - 1]);
+    if (lower > upper) {
+      console.warn("Bad regression ranges", gRR, aRR)
+      return undefined;
+    }
+
+    let copy = Object.assign({}, groupRange);
+    copy.positions = [lower, upper].map((cp) => {
+      return 'refs/heads/master@{#' + cp + '}';
+    });
+    return copy;
+  }
+
+  _parseCommitPosition(pos) {
+    let groups = /refs\/heads\/master@{#([0-9]+)}/.exec(pos);
+    if (groups && groups.length == 2) {
+      return Number(groups[1]);
     }
   }
 

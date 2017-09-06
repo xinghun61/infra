@@ -593,5 +593,128 @@
       });
     });
   });
+
+  suite('merge regression ranges', function() {
+    let group = {};
+    let alert = {};
+    test('trivial', function() {
+      element._mergeRegressionRanges(group, alert);
+      assert.deepEqual(group, {});
+      assert.deepEqual(alert, {});
+
+      alert.regression_ranges = 'foobar';
+      element._mergeRegressionRanges(group, alert);
+      assert.deepEqual(group, alert);
+      assert.deepEqual(alert, alert);
+    });
+
+    test('single repo', function() {
+      group.regression_ranges = [
+        {
+          repo: 'foo',
+          positions: ['refs/heads/master@{#1}', 'refs/heads/master@{#4}'],
+        },
+      ];
+      alert.regression_ranges = [
+        {
+          repo: 'foo',
+          positions: ['refs/heads/master@{#2}', 'refs/heads/master@{#4}'],
+        },
+      ];
+      element._mergeRegressionRanges(group, alert);
+      assert.deepEqual(group.regression_ranges, [{
+          repo: 'foo',
+          positions: ['refs/heads/master@{#2}', 'refs/heads/master@{#4}'],
+        }]
+      );
+      assert.deepEqual(alert, alert);
+    });
+
+    test('multiple repo', function() {
+      // Test that multiple different repos are merged. 'baz' is present in the
+      // group but not the alert; it should still stay in the regression ranges.
+      group.regression_ranges = [
+        {
+          repo: 'foo',
+          positions: ['refs/heads/master@{#1}', 'refs/heads/master@{#4}'],
+        },
+        {
+          repo: 'bar',
+          positions: ['refs/heads/master@{#1}', 'refs/heads/master@{#4}'],
+        },
+        {
+          repo: 'baz',
+          positions: ['refs/heads/master@{#1}', 'refs/heads/master@{#4}'],
+        },
+      ];
+      alert.regression_ranges = [
+        {
+          repo: 'foo',
+          positions: ['refs/heads/master@{#2}', 'refs/heads/master@{#4}'],
+        },
+        {
+          repo: 'bar',
+          positions: ['refs/heads/master@{#2}', 'refs/heads/master@{#4}'],
+        },
+      ];
+      element._mergeRegressionRanges(group, alert);
+      assert.deepEqual(group.regression_ranges, [
+        {
+          repo: 'foo',
+          positions: ['refs/heads/master@{#2}', 'refs/heads/master@{#4}'],
+        },
+        {
+          repo: 'bar',
+          positions: ['refs/heads/master@{#2}', 'refs/heads/master@{#4}'],
+        },
+        {
+          repo: 'baz',
+          positions: ['refs/heads/master@{#1}', 'refs/heads/master@{#4}'],
+        },
+      ]
+      );
+      assert.deepEqual(alert, alert);
+    });
+
+    test('merge two ranges', function() {
+      let toS = (cps) => {
+        return {
+          positions: cps.map((num) => {
+            return 'refs/heads/master@{#' + num + '}'
+          })
+        };
+      };
+      let rev = (val) => {
+        return val.positions.map(element._parseCommitPosition);
+      };
+      // Undefined cases; if we ever return undefined, that means our regression
+      // ranges are in a weird state, as defined in the first two cases below.
+      // That means we are in a weird state where our regression ranges say that
+      // there's no possible CL causing this failure. Right now we're going to
+      // just fail, but we should probably signal this to the user more
+      // explicitly in the future.
+      assert.equal(
+          element._mergeRegressionRange(toS([1, 2]), toS([3, 4])),
+          undefined);
+      assert.equal(
+          element._mergeRegressionRange(toS([3, 4]), toS([1, 2])),
+          undefined);
+      assert.equal(
+          element._mergeRegressionRange(toS([3, 4]), undefined),
+          undefined);
+
+      assert.deepEqual(
+          rev(element._mergeRegressionRange(toS([1, 3]), toS([2, 4]))),
+          [2,3]);
+      assert.deepEqual(
+          rev(element._mergeRegressionRange(toS([1, 4]), toS([2, 3]))),
+          [2,3]);
+      assert.deepEqual(
+          rev(element._mergeRegressionRange(toS([2, 4]), toS([1, 3]))),
+          [2,3]);
+    })
+  });
+
+
 })();
 </script>
