@@ -675,9 +675,10 @@ CREATE TABLE SpamVerdict (
   -- by this verdict, not the value it had prior.
   is_spam BOOLEAN NOT NULL,
 
-  -- owner: a project owner marked it as spam
+  -- manual: a project owner marked it as spam.
   -- threshhold: number of SpamReports from non-members was exceeded.
   -- classifier: the automatic classifier reports it as spam.
+  -- fail_open: the classifier failed, resulting in a ham decision.
   reason ENUM ("manual", "threshold", "classifier", "fail_open") NOT NULL,
 
   overruled BOOL NOT NULL,

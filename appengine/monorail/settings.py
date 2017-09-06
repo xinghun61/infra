@@ -280,7 +280,7 @@ else:
 classifier_model_id = '20170302'
 
 # Number of distinct users who have to flag an issue before it
-# is autmatically removed as spam.
+# is automatically removed as spam.
 # 5 is an arbitrarily chosen value.  Set it to something really high
 # to effectively disable spam flag threshhold checking.
 spam_flag_thresh = 5
