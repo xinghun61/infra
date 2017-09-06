@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/elements/tree-status/som-tree-status-view/som-tree-status-view.html">
+<test-fixture id="basic">
+  <template>
+    <som-tree-status-view></som-tree-status-view>
+  </template>
+</test-fixture>
+<script>
+(function() {
+  'use strict';
+
+  suite('basic tests', function() {
+    var element;
+    var server;
+    var responseHeaders = {
+        json: {'Content-Type': 'application/json'},
+    };
+
+    setup(function() {
+      element = fixture('basic');
+    });
+
+    test('prefills textarea with latest status', function(done) {
+      element._statusList = [
+        { 'message': 'hello world' },
+        { 'message': 'dun look at me' }
+      ];
+      flush(function () {
+        assert.equal('hello world', element.$$('#updateStatus').textContent);
+        done();
+      });
+    });
+
+    test('renders status state', function(done) {
+      element._statusList = [
+        { 'general_state': 'closed' },
+        { 'general_state': 'open' },
+        { 'general_state': 'open' },
+        { 'general_state': 'throttled' },
+        { 'general_state': 'maintenance' },
+      ];
+      flush(function () {
+        let statuses = element.$$('#statusTable').querySelectorAll('.status');
+        assert.equal('closed', statuses[0].textContent);
+        assert.equal('open', statuses[1].textContent);
+        assert.equal('open', statuses[2].textContent);
+        assert.equal('throttled', statuses[3].textContent);
+        assert.equal('maintenance', statuses[4].textContent);
+        done();
+      });
+    });
+  });
+})();
+</script>

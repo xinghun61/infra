@@ -1,0 +1,106 @@
+<link rel="import" href="../../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../../bower_components/iron-ajax/iron-ajax.html">
+<link rel="import" href="../../../elements/som-marked-element/som-marked-element.html">
+<link rel="import" href="../../../elements/som-header-styles.html">
+<link rel="import" href="../som-tree-status-styles.html">
+<link rel="import" href="../som-tree-status-behavior.html">
+
+<script src="../../../bower_components/moment/min/moment.min.js"></script>
+<script src="../../../bower_components/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
+
+<dom-module id="som-tree-status-view">
+  <template>
+    <style include="som-header-styles som-tree-status-styles"></style>
+    <style>
+      #error {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 0.5em 8px;
+        margin: 0.5em auto;
+        border: 1px solid #ccc;
+        color: #222;
+        word-wrap: break-word;
+        background-color: #e98080;
+      }
+      #error a,
+      #statusTable a {
+        color: #222;
+      }
+      #statusTable {
+        width: 100%;
+        word-break: break-all;
+        border-collapse: collapse;
+      }
+      #statusTable table, th, td {
+        text-align: left;
+        border-bottom: 2px solid #fff;
+        padding: 0.5em 8px;
+        min-width: 90px;
+      }
+      .page-section {
+        width: 100%;
+        text-align: center;
+        padding: 0.5em 4px;
+      }
+      .timestamp {
+        font-family: monospace;
+        min-width: 150px;
+        font-size: smaller;
+      }
+      textarea {
+        width: 60%;
+      }
+    </style>
+    <iron-ajax
+      id="treeStatusAjax"
+      url="[[_statusUrl]]/allstatus?format=json&limit=[[statusLimit]]"
+      handle-as="json"
+      last-error="{{_statusError}}"
+      last-response="{{_statusList}}"
+      debounce-duration="300"></iron-ajax>
+    <div id="error" hidden$="[[!_hasError]]">
+      Error fetching tree status history from <a href$="[[_statusUrl]]" target="_blank">[[_statusUrl]]</a>
+    </div>
+    <div class="page-section">
+      <a href$="/[[tree.name]]">
+        Back to [[tree.display_name]] Alert View
+      </a> &bull;
+      <a href$="[[_statusUrl]]" target="_blank">
+        Old Status App
+      </a>
+    </div>
+    <template is="dom-if" if="[[_statusList.length]]">
+      <div class="page-section">
+        <textarea id="updateStatus"
+          placeholder="Change tree status">[[_computeMessage(_latestStatus)]]</textarea>
+      </div>
+      <h2>
+        <span>
+          Last [[statusLimit]]
+          [[tree.display_name]] Tree Statuses
+        </span>
+      </h2>
+      <table id="statusTable">
+        <tr>
+          <th>Status</th>
+          <th>Who</th>
+          <th>When (PDT)</th>
+          <th>Message</th>
+        </tr>
+        <template is="dom-repeat" items="[[_statusList]]" as="status">
+          <tr class$="[[_computeStatus(status)]]">
+            <td class="status">[[_computeStatus(status)]]</td>
+            <td class="user">
+              <a href="mailto:[[_computeEmail(status)]]">[[_computeUsername(status)]]</a>
+            </td>
+            <td class="timestamp">[[_computeTime(status)]]</td>
+            <td class="message">
+              <som-marked-element markdown="[[_computeMessage(status)]]"></som-marked-element>
+            </td>
+          </tr>
+        </template>
+      </table>
+    </template>
+  </template>
+  <script src="som-tree-status-view.js"></script>
+</dom-module>

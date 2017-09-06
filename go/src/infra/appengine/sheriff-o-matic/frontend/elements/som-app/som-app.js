@@ -39,7 +39,7 @@ class SomApp extends Polymer.mixinBehaviors([TimeBehavior], Polymer.Element) {
       },
       _selectedPage: {
         type: String,
-        computed: '_computeSelectedPage(_pathIdentifier, _tree)',
+        computed: '_computeSelectedPage(_pathIdentifier, _pathParts, _tree)',
       },
       _showAlertView: {
         type: Boolean,
@@ -56,10 +56,15 @@ class SomApp extends Polymer.mixinBehaviors([TimeBehavior], Polymer.Element) {
         value: false,
         computed: '_computeShowTestExpectations(_selectedPage)',
       },
-      _showTreeStatus: {
+      _showTreeStatusAll: {
         type: Boolean,
         value: false,
-        computed: '_computeShowTreeStatus(_selectedPage)',
+        computed: '_computeShowTreeStatusAll(_selectedPage)',
+      },
+      _showTreeStatusView: {
+        type: Boolean,
+        value: false,
+        computed: '_computeShowTreeStatusView(_selectedPage)',
       },
       _tree: {
         type: Object,
@@ -93,7 +98,7 @@ class SomApp extends Polymer.mixinBehaviors([TimeBehavior], Polymer.Element) {
             displayText: 'Layout Test Expectations',
           },
           'status': {
-            pageId: 'treeStatus',
+            pageId: 'treeStatusAll',
             displayText: 'Tree Statuses',
           },
         },
@@ -140,7 +145,7 @@ class SomApp extends Polymer.mixinBehaviors([TimeBehavior], Polymer.Element) {
   }
 
   _computeLogDiffKey(pathParts) {
-    if(pathParts.length!=7) {
+    if(pathParts.length != 7) {
       return '';
     }
     if(pathParts[2] == 'logdiff') {
@@ -212,10 +217,13 @@ class SomApp extends Polymer.mixinBehaviors([TimeBehavior], Polymer.Element) {
     return pathParts;
   }
 
-  _computeSelectedPage(pathIdentifier, tree) {
+  _computeSelectedPage(pathIdentifier, pathParts, tree) {
     if (pathIdentifier in this._staticPages) {
       return this._staticPages[pathIdentifier].pageId;
     } else if (tree) {
+      if (pathParts && pathParts.length > 2 && pathParts[2] == 'status') {
+        return 'treeStatusView';
+      }
       // On the page for a tree.
       return 'alertView';
     }
@@ -235,8 +243,12 @@ class SomApp extends Polymer.mixinBehaviors([TimeBehavior], Polymer.Element) {
     return selectedPage == 'testExpectations';
   }
 
-  _computeShowTreeStatus(selectedPage) {
-    return selectedPage == 'treeStatus';
+  _computeShowTreeStatusAll(selectedPage) {
+    return selectedPage == 'treeStatusAll';
+  }
+
+  _computeShowTreeStatusView(selectedPage) {
+    return selectedPage == 'treeStatusView';
   }
 
   _toggleDrawer() {

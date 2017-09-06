@@ -246,7 +246,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
     return [tree.name];
   }
 
-  _computeCurrentAlertView(examinedAlert,logdiffKey) {
+  _computeCurrentAlertView(examinedAlert, logdiffKey) {
     if(logdiffKey) {
       return 'logdiffAlert';
     }

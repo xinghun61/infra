@@ -17,6 +17,7 @@
 <link rel="import" href="../../elements/pages/som-rotation-calendar.html">
 
 <link rel="import" href="../../elements/tree-status/som-all-status/som-all-status.html">
+<link rel="import" href="../../elements/tree-status/som-tree-status-view/som-tree-status-view.html">
 
 <script src="../../bower_components/moment/min/moment.min.js"></script>
 <script src="../../bower_components/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
@@ -170,7 +171,7 @@
         </div>
       </div>
       <div class="header-section">
-        <div id="lastUpdated">
+        <div id="lastUpdated" hidden$="[[!_showAlertView]]">
           Last updated: <span hidden$="[[!_lastUpdated]]" id="lastUpdatedTime">
             <span class="line">[[_lastUpdated.time]]</span>
             <span class="line">([[_lastUpdated.relativeTime]])</span>
@@ -220,8 +221,11 @@
         <template is="dom-if" if="[[_showTestExpectations]]">
           <som-test-expectations class="page-body" id="testExpectations" edited-test-name="{{_editedTestName}}"></som-test-expectations>
         </template>
-        <template is="dom-if" if="[[_showTreeStatus]]">
-          <som-all-status class="page-body page-body-padded" id="treeStatus" trees="[[_trees]]"></som-all-status>
+        <template is="dom-if" if="[[_showTreeStatusAll]]">
+          <som-all-status class="page-body page-body-padded" id="treeStatusAll" trees="[[_trees]]"></som-all-status>
+        </template>
+        <template is="dom-if" if="[[_showTreeStatusView]]">
+          <som-tree-status-view class="page-body page-body-padded" id="treeStatusView" tree="[[_tree]]"></som-tree-status-view>
         </template>
       </iron-pages>
     </div>
