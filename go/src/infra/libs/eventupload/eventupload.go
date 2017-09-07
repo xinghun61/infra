@@ -216,6 +216,7 @@ type BatchUploader struct {
 	mu      sync.Mutex
 	pending []interface{}
 	started bool
+	closed  bool
 }
 
 func (bu *BatchUploader) start(ctx context.Context) {
@@ -262,6 +263,9 @@ func NewBatchUploader(u eventUploader) (*BatchUploader, error) {
 // started already. That routine depends on ctx, so be aware that if ctx is
 // cancelled immediately after calling Stage, those events will not be uploaded.
 func (bu *BatchUploader) Stage(ctx context.Context, src interface{}) {
+	if bu.closed {
+		panic("Stage called on closed BatchUploader")
+	}
 	bu.mu.Lock()
 	defer bu.mu.Unlock()
 
@@ -300,6 +304,10 @@ func (bu *BatchUploader) upload(ctx context.Context) {
 // Close flushes any pending event rows and releases any resources held by the
 // uploader. Close should be called when the BatchUploader is no longer needed.
 func (bu *BatchUploader) Close(ctx context.Context) {
+	if bu.closed {
+		return
+	}
+
 	close(bu.stopc)
 	bu.wg.Wait()
 
@@ -309,4 +317,5 @@ func (bu *BatchUploader) Close(ctx context.Context) {
 	if bu.tick != nil {
 		bu.tick.Stop()
 	}
+	bu.closed = true
 }

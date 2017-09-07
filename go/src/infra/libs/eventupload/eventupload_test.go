@@ -70,6 +70,8 @@ func TestClose(t *testing.T) {
 			closed = true
 			So(bu.pending, ShouldHaveLength, 0)
 			So(u, shouldHavePut, []fakeEvent{{}})
+			So(bu.closed, ShouldBeTrue)
+			So(func() { bu.Stage(context.Background(), fakeEvent{}) }, ShouldPanic)
 		})
 	})
 }
