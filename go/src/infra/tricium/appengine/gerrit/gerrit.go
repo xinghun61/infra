@@ -127,12 +127,13 @@ func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revis
 			logging.Warningf(ctx, "failed to unmarshal comment: %v", err)
 			break
 		}
-		if _, ok := robos[comment.Path]; !ok {
-			robos[comment.Path] = []*robotCommentInput{}
+		// TODO(emso): Replace with Comment.Path once the anlayzer runtime is aware of files.
+		path := "README.md"
+		if _, ok := robos[path]; !ok {
+			robos[path] = []*robotCommentInput{}
 		}
 		// TODO(emso): Values used for testing, update to use values in comment after making sure they are added.
-		path := "README.md"
-		robos[path] = append(robos[comment.Path], &robotCommentInput{
+		robos[path] = append(robos[path], &robotCommentInput{
 			Message:    comment.Message,
 			RobotID:    comment.Category,
 			RobotRunID: strconv.FormatInt(runID, 10),

@@ -43,6 +43,6 @@ func reportLaunched(c context.Context, req *admin.ReportLaunchedRequest, gerrit 
 	if err := ds.Get(c, request); err != nil {
 		return fmt.Errorf("failed to get AnalyzeRequest entity (ID: %s): %v", req.RunId, err)
 	}
-	msg := fmt.Sprintf("Tricium is analyzing the last uploaded patch set (run ID: %d)", req.RunId)
+	msg := fmt.Sprintf("Tricium is analyzing patch set (run ID: %d)", req.RunId)
 	return gerrit.PostReviewMessage(c, request.GerritHost, request.GerritChange, request.GerritRevision, msg)
 }

@@ -51,6 +51,15 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	}
 	analyzerKey := ds.NewKey(c, "AnalyzerRun", analyzerName, 0, runKey)
 	workerKey := ds.NewKey(c, "WorkerRun", req.Worker, 0, analyzerKey)
+	// If this worker is already marked as done, abort.
+	wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
+	if err := ds.Get(c, wr); err != nil {
+		return fmt.Errorf("failed to read state of WorkerRunResult: %v", err)
+	}
+	if tricium.IsDone(wr.State) {
+		logging.Infof(c, "Worker (%s) already tracked as done", wr.Name)
+		return nil
+	}
 	// Collect and process isolated output.
 	run := &track.WorkflowRun{ID: 1, Parent: requestKey}
 	if err := ds.Get(c, run); err != nil {
