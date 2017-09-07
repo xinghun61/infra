@@ -115,7 +115,7 @@ class ChromeCrashData(CrashData):
   @cached_property
   def stacktrace(self):
     """Parses stacktrace and returns parsed ``Stacktrace`` object."""
-    stacktrace = self.StacktraceParserCls().Parse(
+    stacktrace = self.StacktraceParser().Parse(
         self._raw_stacktrace,
         self._dependency_analyzer.regression_version_deps,
         signature=self.signature, top_n_frames=self._top_n_frames)
@@ -156,7 +156,7 @@ class ChromeCrashData(CrashData):
             'channel': self.channel}
 
   @classmethod
-  def StacktraceParserCls(cls):
+  def StacktraceParser(cls):
     """The class of stacktrace parser."""
     raise NotImplementedError()
 
@@ -164,17 +164,17 @@ class ChromeCrashData(CrashData):
 class FracasCrashData(ChromeCrashData):
 
   @classmethod
-  def StacktraceParserCls(cls):
+  def StacktraceParser(cls):
     """The class of stacktrace parser."""
-    return FracasCrashParser
+    return FracasCrashParser()
 
 
 class CracasCrashData(ChromeCrashData):
 
   @classmethod
-  def StacktraceParserCls(cls):
+  def StacktraceParser(cls):
     """The class of stacktrace parser."""
-    return CracasCrashParser
+    return CracasCrashParser()
 
   @property
   def raw_stacktrace(self):
