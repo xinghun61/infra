@@ -44,7 +44,7 @@ type Uploader struct {
 	// uploads is the Counter metric described by UploadsMetricName. It
 	// contains a field "status" set to either "success" or "failure."
 	uploads        metric.Counter
-	initMetricOnce *sync.Once
+	initMetricOnce sync.Once
 }
 
 // NewUploader constructs a new Uploader struct.
@@ -105,7 +105,7 @@ func (u *Uploader) updateUploads(ctx context.Context, count int64, status string
 //
 // See bigquery documentation and source code for detailed information on how
 // struct values are mapped to rows.
-func (u Uploader) Put(ctx context.Context, src interface{}) error {
+func (u *Uploader) Put(ctx context.Context, src interface{}) error {
 	if _, ok := ctx.Deadline(); !ok {
 		var c context.CancelFunc
 		ctx, c = context.WithTimeout(ctx, time.Minute)
