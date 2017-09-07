@@ -167,11 +167,11 @@ class UserService(object):
     self.linkedaccount_tbl = sql.SQLTableManager(LINKEDACCOUNT_TABLE_NAME)
 
     # Like a dictionary {user_id: email}
-    self.email_cache = cache_manager.MakeCache('user', max_size=50000)
+    self.email_cache = caches.RamCache(cache_manager, 'user', max_size=50000)
 
     # Like a dictionary {email: user_id}.
     # This will never invaidate, and it doesn't need to.
-    self.user_id_cache = cache_manager.MakeCache('user', max_size=50000)
+    self.user_id_cache = caches.RamCache(cache_manager, 'user', max_size=50000)
 
     # Like a dictionary {user_id: user_pb}
     self.user_2lc = UserTwoLevelCache(cache_manager, self)

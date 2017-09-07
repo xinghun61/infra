@@ -28,7 +28,6 @@ from framework import framework_constants
 from proto import tracker_pb2
 
 
-INVALIDATE_KIND_VALUES = ['user', 'project', 'issue', 'issue_id', 'hotlist']
 DEFAULT_MAX_SIZE = 10000
 
 
@@ -36,11 +35,11 @@ class RamCache(object):
   """An in-RAM cache with distributed invalidation."""
 
   def __init__(self, cache_manager, kind, max_size=None):
-    assert kind in INVALIDATE_KIND_VALUES
     self.cache_manager = cache_manager
     self.kind = kind
     self.cache = {}
     self.max_size = max_size or DEFAULT_MAX_SIZE
+    cache_manager.RegisterCache(self, kind)
 
   def CacheItem(self, key, item):
     """Store item at key in this cache, discarding a random item if needed."""
@@ -119,6 +118,29 @@ class RamCache(object):
       self.cache_manager.StoreInvalidateAll(cnxn, self.kind)
 
 
+class ShardedRamCache(RamCache):
+  """Specialized version of RamCache that stores values in parts.
+
+  Instead of the cache keys being simple integers, they are pairs, e.g.,
+  (project_id, shard_id).  Invalidation will invalidate all shards for
+  a given main key, e.g, invalidating project_id 16 will drop keys
+  (16, 0), (16, 1), (16, 2), ... (16, 9).
+  """
+
+  def __init__(self, cache_manager, kind, max_size=None, num_shards=10):
+    super(ShardedRamCache, self).__init__(
+        cache_manager, kind, max_size=max_size)
+    self.num_shards = num_shards
+
+  def LocalInvalidate(self, key):
+    """Use the specified value to drop entries from the local cache."""
+    logging.info('About to invalidate shared RAM keys %r',
+                 [(key, shard_id) for shard_id in range(self.num_shards)
+                  if (key, shard_id) in self.cache])
+    for shard_id in range(self.num_shards):
+      self.cache.pop((key, shard_id), None)
+
+
 class ValueCentricRamCache(RamCache):
   """Specialized version of RamCache that stores values in InvalidateTable.
 
@@ -163,13 +185,14 @@ class AbstractTwoLevelCache(object):
   _FETCH_BATCH_SIZE = 10000
 
   def __init__(
-      self, cache_manager, kind, memcache_prefix, pb_class, max_size=None,
-      use_value_centric_cache=False):
-    self.cache = cache_manager.MakeCache(
-        kind, max_size=max_size,
-        use_value_centric_cache=use_value_centric_cache)
+      self, cache_manager, kind, memcache_prefix, pb_class, max_size=None):
+    self.cache = self._MakeCache(cache_manager, kind, max_size=max_size)
     self.memcache_prefix = memcache_prefix
     self.pb_class = pb_class
+
+  def _MakeCache(self, cache_manager, kind, max_size=None):
+    """Make the RAM cache and registier it with the cache_manager."""
+    return RamCache(cache_manager, kind, max_size=max_size)
 
   def CacheItem(self, key, value):
     """Add the given key-value pair to RAM and memcache."""
@@ -306,6 +329,12 @@ class AbstractTwoLevelCache(object):
       return int(serialized_value)
     else:
       return protobuf.decode_message(self.pb_class, serialized_value)
+
+  def LocalInvalidateAll(self):
+    self.cache.LocalInvalidateAll()
+
+  def LocalInvalidate(self, key):
+    self.cache.LocalInvalidate(key)
 
   def InvalidateKeys(self, cnxn, keys):
     """Drop the given keys from both RAM and memcache."""

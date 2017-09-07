@@ -50,7 +50,8 @@ def MakeIssueService(project_service, config_service, cache_manager, my_mox):
 class TestableIssueTwoLevelCache(issue_svc.IssueTwoLevelCache):
 
   def __init__(self, issue_list):
-    self.cache = caches.RamCache(None, 'issue')
+    cache_manager = fake.CacheManager()
+    self.cache = caches.RamCache(cache_manager, 'issue')
     self.memcache_prefix = 'issue:'
     self.pb_class = tracker_pb2.Issue
 

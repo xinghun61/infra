@@ -21,6 +21,13 @@ class RamCacheTest(unittest.TestCase):
     self.cache_manager = fake.CacheManager()
     self.ram_cache = caches.RamCache(self.cache_manager, 'issue', max_size=3)
 
+  def testInit(self):
+    self.assertEqual('issue', self.ram_cache.kind)
+    self.assertEqual(3, self.ram_cache.max_size)
+    self.assertEqual(
+        [self.ram_cache],
+        self.cache_manager.cache_registry['issue'])
+
   def testCacheItem(self):
     self.ram_cache.CacheItem(123, 'foo')
     self.assertEqual('foo', self.ram_cache.cache[123])
@@ -54,6 +61,11 @@ class RamCacheTest(unittest.TestCase):
     self.assertTrue(self.ram_cache.HasItem(123))
     self.assertFalse(self.ram_cache.HasItem(999))
 
+  def testGetItem(self):
+    self.ram_cache.CacheItem(123, 'foo')
+    self.assertEqual('foo', self.ram_cache.GetItem(123))
+    self.assertEqual(None, self.ram_cache.GetItem(456))
+
   def testGetAll(self):
     self.ram_cache.CacheItem(123, 'foo')
     self.ram_cache.CacheItem(124, 'bar')
@@ -69,6 +81,14 @@ class RamCacheTest(unittest.TestCase):
 
     self.ram_cache.LocalInvalidate(999)
     self.assertEqual(2, len(self.ram_cache.cache))
+
+  def testInvalidate(self):
+    self.ram_cache.CacheAll({123: 'a', 124: 'b', 125: 'c'})
+    self.ram_cache.Invalidate(self.cnxn, 124)
+    self.assertEqual(2, len(self.ram_cache.cache))
+    self.assertNotIn(124, self.ram_cache.cache)
+    self.assertEqual(self.cache_manager.last_call,
+                     ('StoreInvalidateRows', self.cnxn, 'issue', [124]))
 
   def testInvalidateKeys(self):
     self.ram_cache.CacheAll({123: 'a', 124: 'b', 125: 'c'})
@@ -89,6 +109,33 @@ class RamCacheTest(unittest.TestCase):
     self.assertEqual(0, len(self.ram_cache.cache))
     self.assertEqual(self.cache_manager.last_call,
                      ('StoreInvalidateAll', self.cnxn, 'issue'))
+
+
+class ShardedRamCacheTest(unittest.TestCase):
+
+  def setUp(self):
+    self.cnxn = 'fake connection'
+    self.cache_manager = fake.CacheManager()
+    self.sharded_ram_cache = caches.ShardedRamCache(
+        self.cache_manager, 'issue', max_size=3, num_shards=3)
+
+  def testLocalInvalidate(self):
+    self.sharded_ram_cache.CacheAll({
+        (123, 0): 'a',
+        (123, 1): 'aa',
+        (123, 2): 'aaa',
+        (124, 0): 'b',
+        (124, 1): 'bb',
+        (124, 2): 'bbb',
+        })
+    self.sharded_ram_cache.LocalInvalidate(124)
+    self.assertEqual(3, len(self.sharded_ram_cache.cache))
+    self.assertNotIn((124, 0), self.sharded_ram_cache.cache)
+    self.assertNotIn((124, 1), self.sharded_ram_cache.cache)
+    self.assertNotIn((124, 2), self.sharded_ram_cache.cache)
+
+    self.sharded_ram_cache.LocalInvalidate(999)
+    self.assertEqual(3, len(self.sharded_ram_cache.cache))
 
 
 class TestableTwoLevelCache(caches.AbstractTwoLevelCache):

@@ -367,15 +367,12 @@ class CacheManager(object):
 
   def __init__(self, invalidate_tbl=None):
     self.last_call = None
+    self.cache_registry = collections.defaultdict(list)
     self.processed_invalidations_up_to = 0
 
-  def MakeCache(self, kind, max_size=None, use_value_centric_cache=False):
-    """Make a new cache and register it for future invalidations."""
-    if use_value_centric_cache:
-      cache = caches.ValueCentricRamCache(self, kind, max_size=max_size)
-    else:
-      cache = caches.RamCache(self, kind, max_size=max_size)
-    return cache
+  def RegisterCache(self, cache, kind):
+    """Register a cache to be notified of future invalidations."""
+    self.cache_registry[kind].append(cache)
 
   def DoDistributedInvalidation(self, cnxn):
     """Drop any cache entries that were invalidated by other jobs."""

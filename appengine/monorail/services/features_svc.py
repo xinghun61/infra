@@ -157,11 +157,12 @@ class FeaturesService(object):
     self.hotlist2issue_tbl = sql.SQLTableManager(HOTLIST2ISSUE_TABLE_NAME)
     self.hotlist2user_tbl = sql.SQLTableManager(HOTLIST2USER_TABLE_NAME)
 
-    self.saved_query_cache = cache_manager.MakeCache('user', max_size=1000)
+    self.saved_query_cache = caches.RamCache(
+        cache_manager, 'user', max_size=1000)
 
     self.hotlist_2lc = HotlistTwoLevelCache(cache_manager, self)
-    self.hotlist_names_owner_to_ids = cache_manager.MakeCache('hotlist')
-    self.hotlist_user_to_ids = cache_manager.MakeCache('hotlist')
+    self.hotlist_names_owner_to_ids = caches.RamCache(cache_manager, 'hotlist')
+    self.hotlist_user_to_ids = caches.RamCache(cache_manager, 'hotlist')
 
   ### QuickEdit command history
 

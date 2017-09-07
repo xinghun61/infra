@@ -101,8 +101,12 @@ class IssueIDTwoLevelCache(caches.AbstractTwoLevelCache):
   def __init__(self, cache_manager, issue_service):
     super(IssueIDTwoLevelCache, self).__init__(
         cache_manager, 'issue_id', 'issue_id:', int,
-        max_size=settings.issue_cache_max_size, use_value_centric_cache=True)
+        max_size=settings.issue_cache_max_size)
     self.issue_service = issue_service
+
+  def _MakeCache(self, cache_manager, kind, max_size=None):
+    """Override normal RamCache creation with ValueCentricRamCache."""
+    return caches.ValueCentricRamCache(cache_manager, kind, max_size=max_size)
 
   def _DeserializeIssueIDs(self, project_local_issue_ids):
     """Convert database rows into a dict {(project_id, local_id): issue_id}."""

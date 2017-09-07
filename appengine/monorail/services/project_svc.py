@@ -152,7 +152,7 @@ class ProjectService(object):
     # project changes because it is keyed by strings instead of ints.  In
     # the case of rare operations like deleting a project (or a future
     # project renaming feature), we just InvalidateAll().
-    self.project_names_to_ids = cache_manager.MakeCache('project')
+    self.project_names_to_ids = caches.RamCache(cache_manager, 'project')
 
   ### Creating projects
 

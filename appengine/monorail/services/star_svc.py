@@ -13,6 +13,7 @@ import logging
 import settings
 from features import filterrules_helpers
 from framework import sql
+from services import caches
 
 
 USERSTAR_TABLE_NAME = 'UserStar'
@@ -44,11 +45,11 @@ class AbstractStarService(object):
     self.user_col = user_col
 
     # Items starred by users, keyed by user who did the starring.
-    self.star_cache = cache_manager.MakeCache('user')
+    self.star_cache = caches.RamCache(cache_manager, 'user')
     # Users that starred an item, keyed by item ID.
-    self.starrer_cache = cache_manager.MakeCache(cache_kind)
+    self.starrer_cache = caches.RamCache(cache_manager, cache_kind)
     # Counts of the users that starred an item, keyed by item ID.
-    self.star_count_cache = cache_manager.MakeCache(cache_kind)
+    self.star_count_cache = caches.RamCache(cache_manager, cache_kind)
 
   def ExpungeStars(self, cnxn, item_id):
     """Wipes an item's stars from the system."""

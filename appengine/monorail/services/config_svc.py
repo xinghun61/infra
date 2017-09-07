@@ -96,6 +96,11 @@ class LabelRowTwoLevelCache(caches.AbstractTwoLevelCache):
         cache_manager, 'project', 'label_rows:', None)
     self.config_service = config_service
 
+  def _MakeCache(self, cache_manager, kind, max_size=None):
+    """Make the RAM cache and registier it with the cache_manager."""
+    return caches.ShardedRamCache(
+      cache_manager, kind, max_size=max_size, num_shards=LABEL_ROW_SHARDS)
+
   def _DeserializeLabelRows(self, label_def_rows):
     """Convert DB result rows into a dict {project_id: [row, ...]}."""
     result_dict = collections.defaultdict(list)
@@ -499,11 +504,11 @@ class ConfigService(object):
 
     self.config_2lc = ConfigTwoLevelCache(cache_manager, self)
     self.label_row_2lc = LabelRowTwoLevelCache(cache_manager, self)
-    self.label_cache = cache_manager.MakeCache('project')
+    self.label_cache = caches.RamCache(cache_manager, 'project')
     self.status_row_2lc = StatusRowTwoLevelCache(cache_manager, self)
-    self.status_cache = cache_manager.MakeCache('project')
+    self.status_cache = caches.RamCache(cache_manager, 'project')
     self.field_row_2lc = FieldRowTwoLevelCache(cache_manager, self)
-    self.field_cache = cache_manager.MakeCache('project')
+    self.field_cache = caches.RamCache(cache_manager, 'project')
 
   ### Label lookups
 

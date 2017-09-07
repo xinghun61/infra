@@ -30,13 +30,16 @@ class CacheManagerServiceTest(unittest.TestCase):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
-  def testMakeCache(self):
-    ram_cache = self.cache_manager.MakeCache('issue')
-    self.assertTrue(isinstance(ram_cache, caches.RamCache))
+  def testRegisterCache(self):
+    ram_cache = 'fake ramcache'
+    self.cache_manager.RegisterCache(ram_cache, 'issue')
     self.assertTrue(ram_cache in self.cache_manager.cache_registry['issue'])
 
-  def testMakeCache_UnknownKind(self):
-    self.assertRaises(AssertionError, self.cache_manager.MakeCache, 'foo')
+  def testRegisterCache_UnknownKind(self):
+    ram_cache = 'fake ramcache'
+    self.assertRaises(
+      AssertionError,
+      self.cache_manager.RegisterCache, ram_cache, 'foo')
 
   def testProcessInvalidateRows_Empty(self):
     rows = []
@@ -44,7 +47,7 @@ class CacheManagerServiceTest(unittest.TestCase):
     self.assertEqual(0, self.cache_manager.processed_invalidations_up_to)
 
   def testProcessInvalidateRows_Some(self):
-    ram_cache = self.cache_manager.MakeCache('issue')
+    ram_cache = caches.RamCache(self.cache_manager, 'issue')
     ram_cache.CacheAll({
         33: 'issue 33',
         34: 'issue 34',
@@ -58,7 +61,7 @@ class CacheManagerServiceTest(unittest.TestCase):
     self.assertFalse(ram_cache.HasItem(34))
 
   def testProcessInvalidateRows_All(self):
-    ram_cache = self.cache_manager.MakeCache('issue')
+    ram_cache = caches.RamCache(self.cache_manager, 'issue')
     ram_cache.CacheAll({
         33: 'issue 33',
         34: 'issue 34',
@@ -87,7 +90,7 @@ class CacheManagerServiceTest(unittest.TestCase):
     self.assertEqual(0, self.cache_manager.processed_invalidations_up_to)
 
   def testDoDistributedInvalidation_Some(self):
-    ram_cache = self.cache_manager.MakeCache('issue')
+    ram_cache = caches.RamCache(self.cache_manager, 'issue')
     ram_cache.CacheAll({
         33: 'issue 33',
         34: 'issue 34',
@@ -104,7 +107,7 @@ class CacheManagerServiceTest(unittest.TestCase):
     self.assertFalse(ram_cache.HasItem(34))
 
   def testDoDistributedInvalidation_Redundant(self):
-    ram_cache = self.cache_manager.MakeCache('issue')
+    ram_cache = caches.RamCache(self.cache_manager, 'issue')
     ram_cache.CacheAll({
         33: 'issue 33',
         34: 'issue 34',

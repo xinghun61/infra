@@ -25,6 +25,7 @@ import logging
 import settings
 from framework import framework_constants
 from proto import tracker_pb2
+from services import caches
 from tracker import tracker_bizobj
 
 
@@ -69,8 +70,8 @@ art_values_cache = None
 
 def InitializeArtValues(services):
   global art_values_cache
-  art_values_cache = services.cache_manager.MakeCache(
-      'issue', max_size=settings.issue_cache_max_size)
+  art_values_cache = caches.RamCache(
+      services.cache_manager, 'issue', max_size=settings.issue_cache_max_size)
 
 
 def InvalidateArtValuesKeys(cnxn, keys):

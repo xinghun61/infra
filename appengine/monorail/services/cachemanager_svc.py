@@ -42,11 +42,11 @@ import logging
 
 from framework import jsonfeed
 from framework import sql
-from services import caches
 
 
 INVALIDATE_TABLE_NAME = 'Invalidate'
 INVALIDATE_COLS = ['timestep', 'kind', 'cache_key']
+INVALIDATE_KIND_VALUES = ['user', 'project', 'issue', 'issue_id', 'hotlist']
 INVALIDATE_ALL_KEYS = 0
 MAX_INVALIDATE_ROWS_TO_CONSIDER = 1000
 
@@ -59,14 +59,10 @@ class CacheManager(object):
     self.processed_invalidations_up_to = 0
     self.invalidate_tbl = sql.SQLTableManager(INVALIDATE_TABLE_NAME)
 
-  def MakeCache(self, kind, max_size=None, use_value_centric_cache=False):
-    """Make a new cache and register it for future invalidations."""
-    if use_value_centric_cache:
-      cache = caches.ValueCentricRamCache(self, kind, max_size=max_size)
-    else:
-      cache = caches.RamCache(self, kind, max_size=max_size)
+  def RegisterCache(self, cache, kind):
+    """Register a cache to be notified of future invalidations."""
+    assert kind in INVALIDATE_KIND_VALUES
     self.cache_registry[kind].append(cache)
-    return cache
 
   def _InvalidateAllCaches(self):
     """Invalidate all cache entries."""
@@ -112,7 +108,7 @@ class CacheManager(object):
 
   def StoreInvalidateRows(self, cnxn, kind, keys):
     """Store rows to let all jobs know to invalidate the given keys."""
-    assert kind in caches.INVALIDATE_KIND_VALUES
+    assert kind in INVALIDATE_KIND_VALUES
     self.invalidate_tbl.InsertRows(
         cnxn, ['kind', 'cache_key'], [(kind, key) for key in keys])
 
