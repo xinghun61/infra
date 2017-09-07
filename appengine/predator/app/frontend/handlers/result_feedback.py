@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import json
 
 from google.appengine.api import users
 from google.appengine.ext import ndb
@@ -54,7 +55,10 @@ class ResultFeedback(BaseHandler):
     if analysis.stack_trace:
       # Old crash analysis stored raw stacktrace string instead of the parsed
       # stacktrace.
-      stack_trace = analysis.stack_trace
+      try:
+        stack_trace = '\n\n'.join(json.loads(analysis.stack_trace))
+      except ValueError:
+        stack_trace = analysis.stack_trace
     else:
       stack_strs = []
       for stack in analysis.stacktrace.stacks if analysis.stacktrace else []:
