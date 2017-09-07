@@ -81,8 +81,7 @@ migrate:
 
 ##### Development ###
 run:
-	$(INFRAPYTHON) $(GAE_PY) devserver -- --storage_path $(TMPDIR)/findit \
-	  dispatch.yaml $(MODULES)
+	$(INFRAPYTHON) $(GAE_PY) devserver
 
 
 ##### Unit tests ###
