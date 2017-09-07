@@ -316,7 +316,7 @@ func enqueueAnalyzeRequests(ctx context.Context, project string, changes []gr.Ch
 			Consumer: tricium.Consumer_GERRIT,
 			GerritDetails: &tricium.GerritConsumerDetails{
 				Project:  project,
-				Change:   c.ChangeID,
+				Change:   c.ID,
 				Revision: c.CurrentRevision,
 			},
 		}

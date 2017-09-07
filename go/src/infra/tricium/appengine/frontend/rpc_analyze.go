@@ -6,6 +6,7 @@ package frontend
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 
 	"github.com/golang/protobuf/proto"
@@ -40,38 +41,8 @@ const repo = "https://chromium-review.googlesource.com/playground/gerrit-tricium
 // in the response can be used to track the progress and results of the request
 // via the Tricium UI.
 func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) (*tricium.AnalyzeResponse, error) {
-	if req.Project == "" {
-		msg := "missing 'project' field in Analyze request"
-		logging.Errorf(c, msg)
-		return nil, grpc.Errorf(codes.InvalidArgument, msg)
-	}
-	if len(req.Paths) == 0 {
-		msg := "missing 'paths' field in Analyze request"
-		logging.Errorf(c, msg)
-		return nil, grpc.Errorf(codes.InvalidArgument, msg)
-	}
-	if req.Consumer == tricium.Consumer_GERRIT {
-		gd := req.GetGerritDetails()
-		if gd == nil {
-			msg := "missing 'gerrit_details' field"
-			logging.Errorf(c, msg)
-			return nil, grpc.Errorf(codes.InvalidArgument, msg)
-		}
-		if gd.Project == "" {
-			msg := "missing 'project' field in GerritConsumerDetails message"
-			logging.Errorf(c, msg)
-			return nil, grpc.Errorf(codes.InvalidArgument, msg)
-		}
-		if gd.Change == "" {
-			msg := "missing 'change' field in GerritConsumerDetails message"
-			logging.Errorf(c, msg)
-			return nil, grpc.Errorf(codes.InvalidArgument, msg)
-		}
-		if gd.Revision == "" {
-			msg := "missing 'revision' field in GerritConsumerDetails message"
-			logging.Errorf(c, msg)
-			return nil, grpc.Errorf(codes.InvalidArgument, msg)
-		}
+	if err := validateAnalyzeRequest(c, req); err != nil {
+		return nil, err
 	}
 	runID, code, err := analyzeWithAuth(c, req, config.LuciConfigServer)
 	if err != nil {
@@ -79,7 +50,49 @@ func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) 
 		return nil, grpc.Errorf(code, "failed to execute analyze request")
 	}
 	logging.Infof(c, "[frontend] Run ID: %s", runID)
-	return &tricium.AnalyzeResponse{runID}, nil
+	return &tricium.AnalyzeResponse{RunId: runID}, nil
+}
+
+func validateAnalyzeRequest(c context.Context, req *tricium.AnalyzeRequest) error {
+	if req.Project == "" {
+		msg := "missing 'project' field in Analyze request"
+		logging.Errorf(c, msg)
+		return grpc.Errorf(codes.InvalidArgument, msg)
+	}
+	if len(req.Paths) == 0 {
+		msg := "missing 'paths' field in Analyze request"
+		logging.Errorf(c, msg)
+		return grpc.Errorf(codes.InvalidArgument, msg)
+	}
+	if req.Consumer == tricium.Consumer_GERRIT {
+		gd := req.GetGerritDetails()
+		if gd == nil {
+			msg := "missing 'gerrit_details' field"
+			logging.Errorf(c, msg)
+			return grpc.Errorf(codes.InvalidArgument, msg)
+		}
+		if gd.Project == "" {
+			msg := "missing 'project' field in GerritConsumerDetails message"
+			logging.Errorf(c, msg)
+			return grpc.Errorf(codes.InvalidArgument, msg)
+		}
+		if gd.Change == "" {
+			msg := "missing 'change' field in GerritConsumerDetails message"
+			logging.Errorf(c, msg)
+			return grpc.Errorf(codes.InvalidArgument, msg)
+		}
+		if match, _ := regexp.MatchString(".+~.+~I[0-9a-fA-F]{40}.*", gd.Change); !match {
+			msg := fmt.Sprintf("'change' value '%s' in GerritConsumerDetails message doesn't match expected format", gd.Change)
+			logging.Errorf(c, msg)
+			return grpc.Errorf(codes.InvalidArgument, msg)
+		}
+		if gd.Revision == "" {
+			msg := "missing 'revision' field in GerritConsumerDetails message"
+			logging.Errorf(c, msg)
+			return grpc.Errorf(codes.InvalidArgument, msg)
+		}
+	}
+	return nil
 }
 
 // analyzeWithAuth wraps 'analyze' in an auth check.
@@ -160,7 +173,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		}
 		// Operations to run in parallel in the below transaction.
 		ops := []func() error{
-			// Add AnalyzeRequestResult entity for requst status tracking.
+			// Add AnalyzeRequestResult entity for request status tracking.
 			func() error {
 				requestRes.Parent = ds.KeyForObj(c, request)
 				if err := ds.Put(c, requestRes); err != nil {

@@ -5,6 +5,7 @@
 package frontend
 
 import (
+	"fmt"
 	"testing"
 
 	tq "go.chromium.org/gae/service/taskqueue"
@@ -22,8 +23,10 @@ import (
 )
 
 const (
-	project   = "playground/gerrit-tricium"
-	okACLUser = "user:ok@example.com"
+	project        = "playground/gerrit-tricium"
+	okACLUser      = "user:ok@example.com"
+	changeIDFooter = "I17e97e23ecf2890bf6b72ffd1d7a3167ed1b0a11"
+	revision       = "refs/changes/97/97/1"
 )
 
 // mockConfigProvider mocks the common.ConfigProvider interface.
@@ -67,7 +70,7 @@ func TestAnalyze(t *testing.T) {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
 
-		gitref := "ref/test"
+		gitRef := "ref/test"
 		paths := []string{
 			"README.md",
 			"README2.md",
@@ -80,7 +83,7 @@ func TestAnalyze(t *testing.T) {
 
 			_, _, err := analyzeWithAuth(ctx, &tricium.AnalyzeRequest{
 				Project: project,
-				GitRef:  gitref,
+				GitRef:  gitRef,
 				Paths:   paths,
 			}, &mockConfigProvider{})
 			So(err, ShouldBeNil)
@@ -95,5 +98,36 @@ func TestAnalyze(t *testing.T) {
 				So(len(r), ShouldEqual, 1)
 			})
 		})
+
+		Convey("Validates valid request", func() {
+			err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
+				Project:  project,
+				GitRef:   gitRef,
+				Paths:    paths,
+				Consumer: tricium.Consumer_GERRIT,
+				GerritDetails: &tricium.GerritConsumerDetails{
+					Project:  project,
+					Change:   fmt.Sprintf("%s~master~%s", project, changeIDFooter),
+					Revision: revision,
+				},
+			})
+			So(err, ShouldBeNil)
+		})
+
+		Convey("Validation checks Gerrit change ID format", func() {
+			err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
+				Project:  project,
+				GitRef:   gitRef,
+				Paths:    paths,
+				Consumer: tricium.Consumer_GERRIT,
+				GerritDetails: &tricium.GerritConsumerDetails{
+					Project:  project,
+					Change:   "bogus change ID",
+					Revision: revision,
+				},
+			})
+			So(err, ShouldNotBeNil)
+		})
+
 	})
 }
