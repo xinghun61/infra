@@ -52,7 +52,7 @@
       "search",
       "infra/python/cpython/mac-amd64",
       "-tag",
-      "version:2.1.2.chromium10",
+      "version:2.1.2.chromium11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -61,7 +61,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium10",
+    "name": "cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium11",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
@@ -934,8 +934,6 @@
     "cmd": [
       "python",
       "-u",
-      "-s",
-      "-S",
       "RECIPE_MODULE[infra::third_party_packages]/resources/python/python_mod_gen.py",
       "--output",
       "[START_DIR]/python/checkout/Modules/Setup.local",

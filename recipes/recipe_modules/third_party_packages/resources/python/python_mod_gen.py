@@ -34,13 +34,16 @@ def get_build_dir(root):
 
 
 @contextlib.contextmanager
-def _insert_sys_path(*v):
-  orig = sys.path[:]
+def _sys_path(*v):
+  orig_path = sys.path[:]
+  orig_meta_path = sys.meta_path
   try:
-    sys.path = list(v) + sys.path
+    sys.path = list(v)
+    sys.meta_path = []
     yield
   finally:
-    sys.path = orig
+    sys.path = orig_path
+    sys.meta_path = orig_meta_path
 
 
 @contextlib.contextmanager
@@ -86,7 +89,7 @@ def _get_extensions(root, build_dir):
   with _temp_sys_builtins(), _temp_sys_executable(build_python):
     with \
         _temp_sys_argv(['python', 'build_ext']), \
-        _insert_sys_path(root, lib_dir, build_dir):
+        _sys_path(root, lib_dir, build_dir):
       import distutils
       import distutils.core
       import distutils.command.build_ext

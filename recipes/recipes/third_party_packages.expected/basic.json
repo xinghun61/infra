@@ -48,13 +48,13 @@
       "search",
       "infra/python/cpython/linux-amd64",
       "-tag",
-      "version:2.1.2.chromium10",
+      "version:2.1.2.chromium11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium10",
+    "name": "python.cipd search infra/python/cpython/linux-amd64 version:2.1.2.chromium11",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@",
       "@@@STEP_LOG_LINE@json.output@{@@@",
@@ -918,8 +918,6 @@
     "cmd": [
       "python",
       "-u",
-      "-s",
-      "-S",
       "RECIPE_MODULE[infra::third_party_packages]/resources/python/python_mod_gen.py",
       "--output",
       "[START_DIR]/python/checkout/Modules/Setup.local",
@@ -1094,23 +1092,6 @@
       "--json-output",
       "/path/to/tmp/json",
       "rmtree",
-      "[START_DIR]/python/package/include"
-    ],
-    "cwd": "[START_DIR]/python/checkout",
-    "infra_step": true,
-    "name": "python.cleanup include",
-    "~followup_annotations": [
-      "@@@STEP_NEST_LEVEL@1@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
-      "--json-output",
-      "/path/to/tmp/json",
-      "rmtree",
       "[START_DIR]/python/package/lib/libpython2.7.a"
     ],
     "cwd": "[START_DIR]/python/checkout",
@@ -1243,7 +1224,7 @@
       "-ref",
       "latest",
       "-tag",
-      "version:2.1.2.chromium10"
+      "version:2.1.2.chromium11"
     ],
     "name": "python.register infra/python/cpython/linux-amd64",
     "~followup_annotations": [

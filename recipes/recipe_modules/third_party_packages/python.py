@@ -14,7 +14,7 @@ PACKAGE_PREFIX = 'infra/python/cpython/'
 
 # This version suffix serves to distinguish different revisions of Python built
 # with this recipe.
-PACKAGE_VERSION_SUFFIX = '.chromium10'
+PACKAGE_VERSION_SUFFIX = '.chromium11'
 
 class PythonApi(util.ModuleShim):
 
@@ -98,7 +98,7 @@ class PythonApi(util.ModuleShim):
       # If True, we will augment "ssl.py" to install default system CA certs.
       probe_default_ssl_ca_certs = False
 
-      strip_flags = []
+      strip_flags = None
       if self.m.platform.is_mac:
         # On Mac, we want to link as much statically as possible. However, Mac
         # OSX comes with an OpenSSL library that has Mac keychain support built
@@ -249,10 +249,8 @@ class PythonApi(util.ModuleShim):
         setup_local_path = self.m.context.cwd.join('Modules', 'Setup.local')
         self.m.python(
             'Static modules',
-            '-s', # Hack to make sure Python interpreter flags are passed.
+            self.resource('python', 'python_mod_gen.py'),
             [
-              '-S',
-              self.resource('python', 'python_mod_gen.py'),
               '--output', setup_local_path,
             ] + _combine(setup_local_flags),
         )
@@ -287,11 +285,11 @@ class PythonApi(util.ModuleShim):
       # of good debugging information. Comment this out to produce a package
       # with the full symbol set.
       target_python = target_dir.join('bin', 'python')
-      self.m.step(
-          'strip',
-          ['strip'] + strip_flags + [target_python],
-      )
-
+      if strip_flags is not None:
+        self.m.step(
+            'strip',
+            ['strip'] + strip_flags + [target_python],
+        )
 
       # Install "pip", "setuptools", and "wheel". The explicit versions are
       # those that are included in the package.
@@ -312,7 +310,6 @@ class PythonApi(util.ModuleShim):
 
       # Cleanup!
       for path_tuple in (
-          ('include',),
           ('lib', 'libpython2.7.a'),
           ('lib', 'python2.7', 'test'),
           ('lib', 'python2.7', 'config'),
