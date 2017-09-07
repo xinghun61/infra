@@ -248,7 +248,8 @@ class DetermineTruePassRatePipeline(BasePipeline):
 
     # If the swarming task already exists, reset it so no caching occurs.
     if flake_swarming_task:
-      flake_swarming_task.Reset()
+      flake_swarming_task.successes = None
+      flake_swarming_task.tries = None
       flake_swarming_task.put()
 
     # Run swarming task, aggregate results and recurse
