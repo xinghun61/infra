@@ -30,63 +30,59 @@ type eventUploader interface {
 
 // Uploader contains the necessary data for streaming data to BigQuery.
 type Uploader struct {
+	*bigquery.Uploader
 	// Uploader is bound to a specific table. DatasetID and Table ID are
 	// provided for reference.
 	DatasetID string
 	TableID   string
-	u         *bigquery.Uploader
 	s         bigquery.Schema
-	// uploads is the Counter metric described by UploadMetricName,
-	// specified in UploaderConfig. It contains a field "status" set to
-	// either "success" or "failure."
-	uploads metric.Counter
-}
-
-// UploaderConfig holds the configuration for an uploader.
-type UploaderConfig struct {
-	// SkipInvalid is an option for bigquery.Uploader.
-	SkipInvalid bool
-	// IgnoreUnknown is an option for bigquery.Uploader.
-	IgnoreUnknown bool
 	// UploadsMetricName is a string used to create a tsmon Counter metric
 	// for event upload attempts via Put, e.g.
-	// "/chrome/infra/commit_queue/events/count". Set UploadMetricName
-	// before the first call to Stage. If left unset, no metric will be
-	// created.
-	UploadMetricName string
+	// "/chrome/infra/commit_queue/events/count". If unset, no metric will
+	// be created.
+	UploadsMetricName string
+	// uploads is the Counter metric described by UploadsMetricName. It
+	// contains a field "status" set to either "success" or "failure."
+	uploads        metric.Counter
+	initMetricOnce *sync.Once
 }
 
 // NewUploader constructs a new Uploader struct.
 //
 // DatasetID and TableID are provided to the BigQuery client (via TableDef) to
 // gain access to a particular table.
-func NewUploader(ctx context.Context, c *bigquery.Client, td *tabledef.TableDef, cfg UploaderConfig) *Uploader {
-	u := c.Dataset(td.GetDataset().ID()).Table(td.TableId).Uploader()
-	u.SkipInvalidRows = cfg.SkipInvalid
-	u.IgnoreUnknownValues = cfg.IgnoreUnknown
-
-	var uploadCounter metric.Counter
-	if cfg.UploadMetricName != "" {
-		name := cfg.UploadMetricName
-		desc := "Upload attempts; status is 'success' or 'failure'"
-		field := field.String("status")
-		uploadCounter = metric.NewCounterIn(ctx, name, desc, nil, field)
-	}
-
+//
+// You may want to change the default configuration of the bigquery.Uploader.
+// Check the documentation for more details.
+//
+// Set UploadsMetricName on the resulting Uploader to use the default counter
+// metric.
+func NewUploader(ctx context.Context, c *bigquery.Client, td *tabledef.TableDef) *Uploader {
 	return &Uploader{
-		td.GetDataset().ID(),
-		td.TableId,
-		u,
-		tabledef.BQSchema(td.Fields),
-		uploadCounter,
+		DatasetID: td.GetDataset().ID(),
+		TableID:   td.TableId,
+		Uploader:  c.Dataset(td.GetDataset().ID()).Table(td.TableId).Uploader(),
+		s:         tabledef.BQSchema(td.Fields),
 	}
 }
 
+func (u *Uploader) getCounter(ctx context.Context) metric.Counter {
+	u.initMetricOnce.Do(func() {
+		if u.UploadsMetricName != "" {
+			desc := "Upload attempts; status is 'success' or 'failure'"
+			field := field.String("status")
+			u.uploads = metric.NewCounterIn(ctx, u.UploadsMetricName, desc, nil, field)
+		}
+	})
+	return u.uploads
+}
+
 func (u *Uploader) updateUploads(ctx context.Context, count int64, status string) {
-	if u.uploads == nil || count == 0 {
+	uploads := u.getCounter(ctx)
+	if uploads == nil || count == 0 {
 		return
 	}
-	err := u.uploads.Add(ctx, count, status)
+	err := uploads.Add(ctx, count, status)
 	if err != nil {
 		logging.WithError(err).Errorf(ctx, "eventupload: metric.Counter.Add failed")
 	}
@@ -120,7 +116,7 @@ func (u Uploader) Put(ctx context.Context, src interface{}) error {
 	if err != nil {
 		return err
 	}
-	err = u.u.Put(ctx, sss)
+	err = u.Uploader.Put(ctx, sss)
 	if err != nil {
 		logging.WithError(err).Errorf(ctx, "eventupload: Uploader.Put failed")
 		if merr, ok := err.(bigquery.PutMultiError); ok {

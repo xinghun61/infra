@@ -47,10 +47,9 @@ type bigQueryMonitoringEventSender struct {
 }
 
 func (es *bigQueryMonitoringEventSender) Put(ctx context.Context, td *tabledef.TableDef, event interface{}) error {
-	up := eventupload.NewUploader(ctx, es.client, td, eventupload.UploaderConfig{
-		SkipInvalid:   true,
-		IgnoreUnknown: true,
-	})
+	up := eventupload.NewUploader(ctx, es.client, td)
+	up.SkipInvalidRows = true
+	up.IgnoreUnknownValues = true
 	if err := up.Put(ctx, event); err != nil {
 		if pme, ok := err.(bigquery.PutMultiError); ok {
 			for _, e := range pme {
