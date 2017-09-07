@@ -42,7 +42,7 @@ var RuleMap = map[string]RepoConfig{
 		StartingCommit: "5677b32274aec4890c7dd991a6a84924e65d4853",
 		Rules: []RuleSet{AccountRules{
 			Account: "findit-for-me@appspot.gserviceaccount.com",
-			Funcs:   []RuleFunc{DummyRule},
+			Funcs:   []RuleFunc{AutoCommitsPerDay},
 		}},
 	},
 }
@@ -64,13 +64,13 @@ type AccountRules struct {
 	Funcs   []RuleFunc
 }
 
-// MatchesCommit determines whether the AccountRules set it's bound to applies
+// MatchesCommit determines whether the AccountRules set it's bound to, applies
 // to the given commit.
 func (ar AccountRules) MatchesCommit(c gitiles.Commit) bool {
 	return c.Committer.Email == ar.Account || c.Author.Email == ar.Account
 }
 
-// MatchesRelevantCommit determines whether the AccountRules set it's bound to
+// MatchesRelevantCommit determines whether the AccountRules set it's bound to,
 // applies to the given commit entity.
 func (ar AccountRules) MatchesRelevantCommit(c *RelevantCommit) bool {
 	return c.CommitterAccount == ar.Account || c.AuthorAccount == ar.Account
@@ -95,19 +95,3 @@ type AuditParams struct {
 //
 // Rules should return a reference to a RuleResult
 type RuleFunc func(context.Context, *AuditParams, *RelevantCommit) *RuleResult
-
-// DummyRule is useless, only meant as a placeholder.
-//
-// Rules are expected to accept a Commit and return a
-// reference to a RuleResult
-func DummyRule(ctx context.Context, ap *AuditParams, rc *RelevantCommit) *RuleResult {
-	result := &RuleResult{}
-	result.RuleName = "dummy_rule_name"
-	if rc.CommitHash != "deadbeef" {
-		result.RuleResultStatus = rulePassed
-	} else {
-		result.RuleResultStatus = ruleFailed
-		result.Message = "DummyProperty or the commit hash was deadbeef"
-	}
-	return result
-}

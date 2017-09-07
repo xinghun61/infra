@@ -11,15 +11,10 @@ import (
 
 	"golang.org/x/net/context"
 
-	"go.chromium.org/gae/service/datastore"
+	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
-)
-
-const (
-	gitilesScope = "https://www.googleapis.com/auth/gerritcodereview"
 )
 
 // CommitScanner is a handler function that gets the list of new commits and
@@ -45,8 +40,8 @@ func CommitScanner(rc *router.Context) {
 		return
 	}
 	repoConfig.State = &RepoState{RepoURL: repoConfig.RepoURL()}
-	switch err := datastore.Get(ctx, repoConfig.State); err {
-	case datastore.ErrNoSuchEntity:
+	switch err := ds.Get(ctx, repoConfig.State); err {
+	case ds.ErrNoSuchEntity:
 		// This is the first time the scanner runs, use the hard-coded
 		// starting commit.
 		rev = repoConfig.StartingCommit
@@ -98,42 +93,31 @@ func CommitScanner(rc *router.Context) {
 	}
 	// If this Put or the one in saveNewRelevantCommit fail, we risk
 	// auditing the same commit twice.
-	if err := datastore.Put(ctx, repoConfig.State); err != nil {
+	if err := ds.Put(ctx, repoConfig.State); err != nil {
 		logging.WithError(err).Errorf(ctx, "Could not save last known/interesting commits")
 	}
 }
 
 func saveNewRelevantCommit(ctx context.Context, state *RepoState, commit gitiles.Commit) (*RelevantCommit, error) {
-	rk := datastore.KeyForObj(ctx, state)
+	rk := ds.KeyForObj(ctx, state)
 
+	commitTime, err := commit.Committer.GetTime()
+	if err != nil {
+		return nil, err
+	}
 	rc := &RelevantCommit{
 		RepoStateKey:           rk,
 		CommitHash:             commit.Commit,
 		PreviousRelevantCommit: state.LastRelevantCommit,
 		Status:                 auditScheduled,
+		CommitTime:             commitTime,
+		CommitterAccount:       commit.Committer.Email,
+		AuthorAccount:          commit.Author.Email,
 	}
 
-	if err := datastore.Put(ctx, rc, state); err != nil {
+	if err := ds.Put(ctx, rc, state); err != nil {
 		return nil, err
 	}
 
 	return rc, nil
-}
-
-// getGitilesClient creates a new gitiles client bound to a new http client
-// that is bound to an authenticated transport.
-func getGitilesClient(ctx context.Context) (*gitiles.Client, error) {
-	httpClient, err := getAuthenticatedHTTPClient(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &gitiles.Client{Client: httpClient}, nil
-}
-
-func getAuthenticatedHTTPClient(ctx context.Context) (*http.Client, error) {
-	t, err := auth.GetRPCTransport(ctx, auth.AsSelf, auth.WithScopes(gitilesScope))
-	if err != nil {
-		return nil, err
-	}
-	return &http.Client{Transport: t}, nil
 }
