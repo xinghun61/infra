@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 import json
 import mock
 
@@ -182,3 +183,63 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
     self._client.PublishResult(identifiers)
     publish_to_client.assert_called_with(analysis)
     publish_to_try_bot.assert_called_with(analysis)
+
+  def testResultMessageToClientFoundTrue(self):
+    """Tests ``ResultMessageToClient`` when there is result."""
+    analysis_result = {
+        'found': True,
+        'suspected_cls': [
+            {'confidence': 0.21434,
+             'reasons': ['reason1', 'reason2'],
+             'other': 'data'}
+        ],
+        'regression_range': ['rev0', 'rev3'],
+        'other_data': 'data',
+    }
+
+    crash_identifiers = {'testcase_id': '123'}
+    analysis = self._client.CreateAnalysis(crash_identifiers)
+    analysis.result = analysis_result
+    analysis.identifiers = crash_identifiers
+    analysis.error_name = 'Failed to parse stacktrace'
+    analysis.status = analysis_status.COMPLETED
+    analysis.put()
+
+    processed_analysis_result = copy.deepcopy(analysis_result)
+    processed_analysis_result['feedback_url'] = analysis.feedback_url
+    del processed_analysis_result['regression_range']
+    processed_analysis_result['error_message'] = 'Failed to parse stacktrace'
+
+    expected_processed_result = {
+        'crash_identifiers': crash_identifiers,
+        'client_id': self._client.client_id,
+        'result': processed_analysis_result,
+    }
+    self.assertDictEqual(self._client.ResultMessageToClient(analysis),
+                         expected_processed_result)
+
+  def testResultMessageToClientFoundFalse(self):
+    """Tests ``ResultMessageToClient`` when there is no result."""
+    analysis_result = {
+        'found': False,
+    }
+    crash_identifiers = {'testcase_id': '123'}
+    analysis = self._client.CreateAnalysis(crash_identifiers)
+    analysis.error_name = 'Failed to parse stacktrace'
+    analysis.result = analysis_result
+    analysis.identifiers = crash_identifiers
+    analysis.status = analysis_status.COMPLETED
+    analysis.put()
+
+    processed_analysis_result = copy.deepcopy(analysis_result)
+    processed_analysis_result['feedback_url'] = analysis.feedback_url
+    processed_analysis_result['error_message'] = 'Failed to parse stacktrace'
+
+    expected_processed_result = {
+        'crash_identifiers': crash_identifiers,
+        'client_id': self._client.client_id,
+        'result': processed_analysis_result,
+    }
+
+    self.assertDictEqual(self._client.ResultMessageToClient(analysis),
+                         expected_processed_result)

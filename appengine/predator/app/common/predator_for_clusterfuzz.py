@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 import json
 import logging
 
@@ -81,6 +82,30 @@ class PredatorForClusterfuzz(PredatorApp):
   def GetCrashData(self, raw_crash_data):
     """Gets ``ClusterfuzzData`` from ``raw_crash_data``."""
     return ClusterfuzzData(raw_crash_data)
+
+  def ResultMessageToClient(self, analysis):
+    """Converts culprit into publishable result to client.
+
+    Args:
+      analysis (ClusterfuzzAnalysis): The ClusterfuzzAnalysis entity which
+          contains the result.
+
+    Returns:
+      A dict of the given ``crash_identifiers``, this model's
+      ``client_id``, and a publishable version of this model's ``result``.
+    """
+    result = copy.deepcopy(analysis.result)
+    result['feedback_url'] = analysis.feedback_url
+    if 'regression_range' in result:
+      del result['regression_range']
+
+    result['error_message'] = analysis.error_name
+
+    return {
+        'crash_identifiers': analysis.identifiers,
+        'client_id': self.client_id,
+        'result': result
+    }
 
   def MessageToTryBot(self, analysis):
     """Gets messages to push to try bot topic."""
