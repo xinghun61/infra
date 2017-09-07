@@ -82,7 +82,7 @@ func CommitScanner(rc *router.Context) {
 	// deadline). Use the context for this.
 	for _, commit := range fl {
 		for _, ruleSet := range repoConfig.Rules {
-			if ruleSet.Matches(commit) {
+			if ruleSet.MatchesCommit(commit) {
 				n, err := saveNewRelevantCommit(ctx, repoConfig.State, commit)
 				if err != nil {
 					http.Error(resp, err.Error(), 500)

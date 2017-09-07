@@ -30,6 +30,8 @@ func init() {
 
 	r.GET("/_cron/commitscanner", basemw.Extend(gaemiddleware.RequireCron), CommitScanner)
 
+	r.GET("/_cron/commitauditor", basemw.Extend(gaemiddleware.RequireCron), CommitAuditor)
+
 	r.GET("/admin/smoketest", basemw, SmokeTest)
 
 	http.DefaultServeMux.Handle("/", r)
