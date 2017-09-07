@@ -8,8 +8,8 @@ package som
 import (
 	"net/http"
 
-	"infra/appengine/sheriff-o-matic/som"
-	"infra/monitoring/client"
+	"infra/appengine/sheriff-o-matic/som/client"
+	"infra/appengine/sheriff-o-matic/som/handler"
 
 	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
@@ -39,9 +39,9 @@ func init() {
 	r := router.New()
 	basemw := base()
 	standard.InstallHandlers(r)
-	r.POST("/_ah/queue/changetestexpectations", basemw, som.LayoutTestExpectationChangeWorker)
-	r.GET("/_cron/analyze/:tree", basemw, som.GetAnalyzeHandler)
-	r.POST("/_ah/queue/logdiff", basemw, som.LogdiffWorker)
+	r.POST("/_ah/queue/changetestexpectations", basemw, handler.LayoutTestExpectationChangeWorker)
+	r.GET("/_cron/analyze/:tree", basemw, handler.GetAnalyzeHandler)
+	r.POST("/_ah/queue/logdiff", basemw, handler.LogdiffWorker)
 
 	http.DefaultServeMux.Handle("/", r)
 }

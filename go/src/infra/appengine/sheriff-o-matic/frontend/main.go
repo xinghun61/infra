@@ -12,8 +12,8 @@ import (
 	"net/http"
 	"strings"
 
-	"infra/appengine/sheriff-o-matic/som"
-	"infra/monitoring/client"
+	"infra/appengine/sheriff-o-matic/som/client"
+	"infra/appengine/sheriff-o-matic/som/handler"
 
 	"golang.org/x/net/context"
 
@@ -105,7 +105,7 @@ func indexPage(ctx *router.Context) {
 		isStaging = false
 	}
 
-	trees, err := som.GetTrees(c)
+	trees, err := handler.GetTrees(c)
 	if err != nil {
 		logging.Errorf(c, "while getting trees: %s", err)
 	}
@@ -185,7 +185,7 @@ func getXSRFToken(ctx *router.Context) {
 //// Routes.
 func init() {
 
-	settings.RegisterUIPage(settingsKey, som.SettingsUIPage{})
+	settings.RegisterUIPage(settingsKey, handler.SettingsUIPage{})
 
 	r := router.New()
 	basemw := base(true)
@@ -193,33 +193,33 @@ func init() {
 	protected := basemw.Extend(requireGoogler)
 
 	standard.InstallHandlers(r)
-	r.GET("/api/v1/alerts/:tree", protected, som.GetAlertsHandler)
-	r.GET("/api/v1/unresolved/:tree", protected, som.GetUnresolvedAlertsHandler)
-	r.GET("/api/v1/resolved/:tree", protected, som.GetResolvedAlertsHandler)
-	r.GET("/api/v1/restarts/:tree", protected, som.GetRestartingMastersHandler)
+	r.GET("/api/v1/alerts/:tree", protected, handler.GetAlertsHandler)
+	r.GET("/api/v1/unresolved/:tree", protected, handler.GetUnresolvedAlertsHandler)
+	r.GET("/api/v1/resolved/:tree", protected, handler.GetResolvedAlertsHandler)
+	r.GET("/api/v1/restarts/:tree", protected, handler.GetRestartingMastersHandler)
 	r.GET("/api/v1/xsrf_token", protected, getXSRFToken)
 
 	// Disallow cookies because this handler should not be accessible by regular
 	// users.
-	r.POST("/api/v1/alerts/:tree", base(false).Extend(requireGoogler), som.PostAlertsHandler)
-	r.POST("/api/v1/alert/:tree/:key", base(false).Extend(requireGoogler), som.PostAlertHandler)
-	r.POST("/api/v1/resolve/:tree", protected, som.ResolveAlertHandler)
-	r.GET("/api/v1/annotations/", protected, som.GetAnnotationsHandler)
-	r.POST("/api/v1/annotations/:annKey/:action", protected, som.PostAnnotationsHandler)
-	r.GET("/api/v1/bugqueue/:label", protected, som.GetBugQueueHandler)
-	r.GET("/api/v1/bugqueue/:label/uncached/", protected, som.GetUncachedBugsHandler)
-	r.GET("/api/v1/revrange/:start/:end", basemw, som.GetRevRangeHandler)
-	r.GET("/api/v1/testexpectations", protected, som.GetLayoutTestsHandler)
-	r.POST("/api/v1/testexpectation", protected, som.PostLayoutTestExpectationChangeHandler)
-	r.GET("/api/v1/testexpectation/:id", protected, som.GetTestExpectationCLStatusHandler)
-	r.GET("/logos/:tree", protected, som.GetTreeLogoHandler)
-	r.GET("/api/v1/logdiff/:master/:builder/:buildNum1/:buildNum2", protected, som.LogDiffJSONHandler)
+	r.POST("/api/v1/alerts/:tree", base(false).Extend(requireGoogler), handler.PostAlertsHandler)
+	r.POST("/api/v1/alert/:tree/:key", base(false).Extend(requireGoogler), handler.PostAlertHandler)
+	r.POST("/api/v1/resolve/:tree", protected, handler.ResolveAlertHandler)
+	r.GET("/api/v1/annotations/", protected, handler.GetAnnotationsHandler)
+	r.POST("/api/v1/annotations/:annKey/:action", protected, handler.PostAnnotationsHandler)
+	r.GET("/api/v1/bugqueue/:label", protected, handler.GetBugQueueHandler)
+	r.GET("/api/v1/bugqueue/:label/uncached/", protected, handler.GetUncachedBugsHandler)
+	r.GET("/api/v1/revrange/:start/:end", basemw, handler.GetRevRangeHandler)
+	r.GET("/api/v1/testexpectations", protected, handler.GetLayoutTestsHandler)
+	r.POST("/api/v1/testexpectation", protected, handler.PostLayoutTestExpectationChangeHandler)
+	r.GET("/api/v1/testexpectation/:id", protected, handler.GetTestExpectationCLStatusHandler)
+	r.GET("/logos/:tree", protected, handler.GetTreeLogoHandler)
+	r.GET("/api/v1/logdiff/:master/:builder/:buildNum1/:buildNum2", protected, handler.LogDiffJSONHandler)
 
 	// Non-public endpoints.
-	r.GET("/_cron/refresh/bugqueue/:label", basemw, som.RefreshBugQueueHandler)
-	r.GET("/_cron/annotations/flush_old/", basemw, som.FlushOldAnnotationsHandler)
-	r.GET("/_cron/annotations/refresh/", basemw, som.RefreshAnnotationsHandler)
-	r.POST("/_/clientmon", basemw, som.PostClientMonHandler)
+	r.GET("/_cron/refresh/bugqueue/:label", basemw, handler.RefreshBugQueueHandler)
+	r.GET("/_cron/annotations/flush_old/", basemw, handler.FlushOldAnnotationsHandler)
+	r.GET("/_cron/annotations/refresh/", basemw, handler.RefreshAnnotationsHandler)
+	r.POST("/_/clientmon", basemw, handler.PostClientMonHandler)
 
 	// Ingore reqeuests from builder-alerts rather than 404.
 	r.GET("/alerts", standard.Base(), noopHandler)
