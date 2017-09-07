@@ -5,8 +5,9 @@
 from analysis.analysis_testcase import AnalysisTestCase
 from analysis.stacktrace import StackFrame
 from analysis.stacktrace import CallStack
-from analysis.component_classifier import Component
+from analysis.component import Component
 from analysis.component_classifier import ComponentClassifier
+from analysis.component_classifier import MergeComponents
 from analysis.suspect import Suspect
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs.gitiles.change_log import ChangeLog
@@ -96,3 +97,20 @@ class ComponentClassifierTest(AnalysisTestCase):
 
     self.assertEqual(self.classifier.ClassifySuspects([suspect1, suspect2]),
                      ['Comp1>Dummy', 'Comp2>Dummy'])
+
+  def testMergeComponents(self):
+    """Tests ``MergeComponents`` merge components with the same hierarchy."""
+    components1 = ['A', 'A>B>C', 'A>B', 'E>F', 'G>H>I', 'G>H']
+    merged_components1 = MergeComponents(components1)
+    expected_components1 = ['A>B>C', 'E>F', 'G>H>I']
+    self.assertListEqual(merged_components1, expected_components1)
+
+    components2 = ['A', 'AB>C', 'AB>E', 'AB>ED']
+    merged_components2 = MergeComponents(components2)
+    expected_components2 = ['A', 'AB>C', 'AB>E', 'AB>ED']
+    self.assertListEqual(merged_components2, expected_components2)
+
+    components3 = ['A', 'A>B', 'A>C']
+    merged_components3 = MergeComponents(components3)
+    expected_components3 = ['A>B', 'A>C']
+    self.assertListEqual(merged_components3, expected_components3)

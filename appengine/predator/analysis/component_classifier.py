@@ -13,6 +13,29 @@ from analysis.occurrence import RankByOccurrence
 from libs.gitiles.diff import ChangeType
 
 
+def MergeComponents(components):
+  """Given a list of components, merges components with the same hierarchy.
+
+  For components with same hierarchy, return the most fine-grained component.
+  For example, if components are ['Blink', 'Blink>Editing'], we should only
+  return ['Blink>Editing'].
+  """
+  if not components or len(components) == 1:
+    return components
+
+  components.sort()
+  merged_components = []
+  index = 1
+  while index < len(components):
+    if not components[index].startswith(components[index - 1] + '>'):
+      merged_components.append(components[index - 1])
+
+    index += 1
+
+  merged_components.append(components[-1])
+  return merged_components
+
+
 class ComponentClassifier(object):
   """Determines the component of a crash.
 
@@ -54,7 +77,7 @@ class ComponentClassifier(object):
     """
     components = map(self.ClassifyStackFrame,
                      stack.frames[:self.top_n_frames])
-    return RankByOccurrence(components, top_n_components)
+    return MergeComponents(RankByOccurrence(components, top_n_components))
 
   def ClassifyTouchedFile(self, dep_path, touched_file):
     """Determine which component is responsible for a touched file."""
@@ -82,8 +105,9 @@ class ComponentClassifier(object):
     for suspect in suspects:
       components.extend(self.ClassifySuspect(suspect))
 
-    return RankByOccurrence(components, top_n_components,
-                            rank_function=lambda x: -len(x))
+    return MergeComponents(RankByOccurrence(
+        components, top_n_components,
+        rank_function=lambda x: -len(x)))
 
   def ClassifySuspect(self, suspect, top_n_components=2):
     """ Classifies components of a suspect.
