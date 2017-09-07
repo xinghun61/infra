@@ -39,6 +39,7 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
     if step.log_data:
       failure_log = step.log_data
     else:
+      json_formatted_log = True
       # 2. Gets gtest results.
       list_isolated_data = failure_info['failed_steps'][step_name].get(
           'list_isolated_data', [])
@@ -47,8 +48,11 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
       if gtest_result:
         failure_log = gtest.GetConsistentTestFailureLog(gtest_result)
 
-      if not gtest_result or failure_log == gtest.INVALID_FAILURE_LOG:
+      if not gtest_result or failure_log in [
+          gtest.INVALID_FAILURE_LOG, gtest.WRONG_FORMAT_LOG
+      ]:
         # 3. Gets stdout log.
+        json_formatted_log = False
         failure_log = extract_signal.GetStdoutLog(
             master_name, builder_name, build_number, step_name, http_client)
 
@@ -59,7 +63,8 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
       # Save step log in datastore and avoid downloading again during retry.
       # TODO(chanli): add a new field "is_json_data" to the WfStep to indicate
       # format of the log.
-      step.log_data = extract_signal.ExtractStorablePortionOfLog(failure_log)
+      step.log_data = extract_signal.ExtractStorablePortionOfLog(
+          failure_log, json_formatted_log)
 
       try:
         step.put()

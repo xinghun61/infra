@@ -68,10 +68,25 @@ class GtestTest(wf_testcase.WaterfallTestCase):
     build_number = 124
     step_name = 'abc_test'
 
-    expected_failure_log = 'flaky'
-
     step_log = self._GetGtestResultLog(master_name, builder_name, build_number,
                                        step_name)
 
     failed_test_log = gtest.GetConsistentTestFailureLog(json.loads(step_log))
-    self.assertEqual(expected_failure_log, failed_test_log)
+    self.assertEqual(gtest.FLAKY_FAILURE_LOG, failed_test_log)
+
+  def testGetConsistentTestFailureLogWrongFormat(self):
+    step_log = {
+        'tests': {
+            'svg': {
+                'text': {
+                    'test1': {
+                        'expected': 'PASS',
+                        'actual': 'PASS'
+                    }
+                }
+            }
+        }
+    }
+
+    failed_test_log = gtest.GetConsistentTestFailureLog(step_log)
+    self.assertEqual(gtest.WRONG_FORMAT_LOG, failed_test_log)

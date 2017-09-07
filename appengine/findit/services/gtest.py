@@ -15,6 +15,7 @@ import json
 _PRE_TEST_PREFIX = 'PRE_'
 INVALID_FAILURE_LOG = 'invalid'
 FLAKY_FAILURE_LOG = 'flaky'
+WRONG_FORMAT_LOG = 'not_in_gtest_result_format'
 
 
 def RemoveAllPrefixes(test):
@@ -78,6 +79,9 @@ def GetConsistentTestFailureLog(gtest_result):
     If we find out that all the test failures in this step are flaky, we will
     return 'flaky' as result.
   """
+
+  if not gtest_result.get('per_iteration_data'):
+    return WRONG_FORMAT_LOG
 
   sio = cStringIO.StringIO()
   for iteration in gtest_result['per_iteration_data']:

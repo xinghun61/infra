@@ -21,13 +21,13 @@ from waterfall import buildbot
 _LOG_DATA_BYTE_LIMIT = 4000 * 1024
 
 
-def ExtractStorablePortionOfLog(log_data, from_ninja_output=False):
+def ExtractStorablePortionOfLog(log_data, json_format=False):
   # For the log of a failed step in a build, the error messages usually show
   # up at the end of the whole log. So if the log is too big to fit into a
   # datastore entity, it's safe to just save the ending portion of the log.
   if len(log_data) <= _LOG_DATA_BYTE_LIMIT:
     return log_data
-  if from_ninja_output:
+  if json_format:
     return ''
 
   lines = log_data.split('\n')
