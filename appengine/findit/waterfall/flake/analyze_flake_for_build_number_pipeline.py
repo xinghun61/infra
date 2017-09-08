@@ -54,8 +54,8 @@ class AnalyzeFlakeForBuildNumberPipeline(BasePipeline):
           analysis.builder_name,
           build_number,
           analysis.step_name, [analysis.test_name],
-          iterations,
-          timeout,
+          iterations_to_rerun=iterations,
+          hard_timeout_seconds=timeout,
           force=rerun)
       yield SaveLastAttemptedSwarmingTaskIdPipeline(analysis_urlsafe_key,
                                                     task_id, build_number)

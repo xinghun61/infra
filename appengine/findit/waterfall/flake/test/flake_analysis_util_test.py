@@ -103,13 +103,27 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
         flake_analysis_util.CalculateNumberOfIterationsToRunWithinTimeout(
             analysis, iterations, timeout_per_test), 60)
 
+  def testCalculateNumberOfIterationsToRunWithinTimeoutWithZero(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.put()
+
+    iterations = 60
+    timeout_per_test = 10000
+    self.assertEqual(
+        flake_analysis_util.CalculateNumberOfIterationsToRunWithinTimeout(
+            analysis, iterations, timeout_per_test), 1)
+
   def testEstimateSwarmingIterationTimeoutWithAnalysisLessDataPoints(self):
     flake_task = FlakeSwarmingTask.Create('m', 'b', 100, 's', 't')
+    flake_task.tries = 10
     flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
     flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
     flake_task.put()
 
     flake_task = FlakeSwarmingTask.Create('m', 'b', 101, 's', 't')
+    flake_task.tries = 20
     flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
     flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
     flake_task.put()
@@ -133,8 +147,34 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(240, timeout)
 
+  def testEstimateSwarmingIterationTimeoutWithDefaultTimeout(self):
+    flake_task = FlakeSwarmingTask.Create('m', 'b', 100, 's', 't')
+    flake_task.tries = 10
+    flake_task.started_time = datetime(1, 1, 1, 1, 0, 0)
+    flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
+    flake_task.put()
+
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+
+    analysis.data_points = [
+        DataPoint.Create(build_number=100, iterations=10),
+    ]
+    analysis.put()
+
+    try:
+      previous_cushion = flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER
+      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = 1
+      timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
+    finally:
+      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = previous_cushion
+
+    self.assertEqual(120, timeout)
+
   def testEstimateSwarmingIterationTimeoutCullNoneIterations(self):
     flake_task = FlakeSwarmingTask.Create('m', 'b', 101, 's', 't')
+    flake_task.tries = 20
     flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
     flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
     flake_task.put()
@@ -179,26 +219,31 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
 
   def testEstimateSwarmingIterationTimeoutWithMoreDataPointsSampleSize(self):
     flake_task = FlakeSwarmingTask.Create('m', 'b', 100, 's', 't')
+    flake_task.tries = 20
     flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
     flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
     flake_task.put()
 
     flake_task = FlakeSwarmingTask.Create('m', 'b', 101, 's', 't')
+    flake_task.tries = 20
     flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
     flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
     flake_task.put()
 
     flake_task = FlakeSwarmingTask.Create('m', 'b', 102, 's', 't')
+    flake_task.tries = 20
     flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
     flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
     flake_task.put()
 
     flake_task = FlakeSwarmingTask.Create('m', 'b', 103, 's', 't')
+    flake_task.tries = 20
     flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
     flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
     flake_task.put()
 
     flake_task = FlakeSwarmingTask.Create('m', 'b', 104, 's', 't')
+    flake_task.tries = 20
     flake_task.started_time = datetime(1, 1, 1, 0, 0, 0)
     flake_task.completed_time = datetime(1, 1, 1, 1, 0, 0)
     flake_task.put()

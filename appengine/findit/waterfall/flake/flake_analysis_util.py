@@ -103,7 +103,9 @@ def CalculateNumberOfIterationsToRunWithinTimeout(analysis, iterations,
   target_iterations = timeout_per_swarming_task / timeout_per_test
 
   iterations_this_task = min(iterations, target_iterations)
-  return iterations_this_task
+
+  # We should never be running 0 tasks.
+  return max(1, iterations_this_task)
 
 
 def EstimateSwarmingIterationTimeout(analysis):
@@ -115,6 +117,11 @@ def EstimateSwarmingIterationTimeout(analysis):
   sample_size = analysis.algorithm_parameters.get('swarming_rerun', {}).get(
       'data_point_sample_size', flake_constants.DEFAULT_DATA_POINT_SAMPLE_SIZE)
 
+  default_timeout_per_test = analysis.algorithm_parameters.get(
+      'swarming_rerun',
+      {}).get('timeout_per_test_seconds',
+              flake_constants.DEFAULT_TIMEOUT_PER_TEST_SECONDS)
+
   # Trim off the points that have None for iterations.
   # TODO(https://crbug.com/761025): Investigate and fix models missing
   # fields by the time they're saved.
@@ -124,9 +131,7 @@ def EstimateSwarmingIterationTimeout(analysis):
   last_n_points = points[-sample_size:]
 
   if not last_n_points:
-    return analysis.algorithm_parameters.get('swarming_rerun', {}).get(
-        'timeout_per_test_seconds',
-        flake_constants.DEFAULT_TIMEOUT_PER_TEST_SECONDS)
+    return default_timeout_per_test
 
   tasks = [
       FlakeSwarmingTask.Get(analysis.master_name, analysis.builder_name,
@@ -137,10 +142,13 @@ def EstimateSwarmingIterationTimeout(analysis):
   assert None not in tasks
   assert len(tasks) == len(last_n_points)
 
-  total_iterations = sum([point.iterations for point in last_n_points])
+  total_iterations = sum([task.tries for task in tasks])
   total_time = sum([(task.completed_time - task.started_time).total_seconds()
                     for task in tasks])
-  time_per_iteration = total_time / total_iterations
+
+  # Set lower threshold for timeout per iteration.
+  time_per_iteration = max(default_timeout_per_test,
+                           total_time / total_iterations)
 
   return int(
       flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER * time_per_iteration)

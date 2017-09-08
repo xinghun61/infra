@@ -210,8 +210,8 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     raise NotImplementedError(
         '_GetIterationsToRerun should be implemented in child class')
 
-  def GetBuildDataFromMilo(self, master_name, builder_name,
-                                   build_number, http_client):
+  def GetBuildDataFromMilo(self, master_name, builder_name, build_number,
+                           http_client):
     """Checks if the build had exception, if so don't run the step."""
     json_data = buildbot.GetBuildDataFromMilo(master_name, builder_name,
                                               build_number, http_client)
@@ -271,8 +271,8 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
         master_name, builder_name, build_number, http_client,
         {'stepname': step_name})
     if len(swarming_task_items) < 1:
-      if self.GetBuildDataFromMilo(master_name, builder_name,
-                                           build_number, http_client):
+      if self.GetBuildDataFromMilo(master_name, builder_name, build_number,
+                                   http_client):
         return NO_TASK_EXCEPTION
       return NO_TASK
 
@@ -285,8 +285,15 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     iterations_to_rerun = iterations_to_rerun or self._GetIterationsToRerun()
 
     new_request = self._CreateNewSwarmingTaskRequest(
-        ref_task_id, ref_request, master_name, builder_name, build_number,
-        step_name, tests, iterations_to_rerun, hard_timeout_seconds)
+        ref_task_id,
+        ref_request,
+        master_name,
+        builder_name,
+        build_number,
+        step_name,
+        tests,
+        iterations_to_rerun,
+        hard_timeout_seconds=hard_timeout_seconds)
 
     # 3. Trigger a new Swarming task to re-run the failed tests.
     task_id, error = swarming_util.TriggerSwarmingTask(new_request, http_client)
