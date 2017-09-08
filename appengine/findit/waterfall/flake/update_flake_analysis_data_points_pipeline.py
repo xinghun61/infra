@@ -9,6 +9,7 @@ from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
+from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from waterfall import build_util
@@ -115,6 +116,11 @@ class UpdateFlakeAnalysisDataPointsPipeline(BasePipeline):
                                                 swarming_task_build_number,
                                                 step_name, test_name)
     assert flake_swarming_task
+
+    if flake_swarming_task.status == analysis_status.ERROR:
+      flake_analysis.LogWarning(
+          'Swarming task failed, will not update data points')
+      return
 
     logging.info(
         'Updating MasterFlakeAnalysis swarming task data %s/%s/%s/%s/%s',

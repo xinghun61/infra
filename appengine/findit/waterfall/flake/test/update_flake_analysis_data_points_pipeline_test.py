@@ -7,6 +7,7 @@ from common import constants
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.pipeline_wrapper import pipeline
 from gae_libs.pipeline_wrapper import pipeline_handlers
+from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -243,3 +244,27 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(len(analysis.data_points), 1)
     self.assertIn(expected_data_point, analysis.data_points)
     self.assertIsNotNone(analysis.swarming_rerun_results)
+
+  def testUpdateFlakeAnalysisDataPointsPipelineWithFailedSwarmingTask(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.put()
+
+    flake_swarming_task = FlakeSwarmingTask.Create(
+        master_name, builder_name, build_number, step_name, test_name)
+    flake_swarming_task.status = analysis_status.ERROR
+    flake_swarming_task.put()
+
+    pipeline_job = UpdateFlakeAnalysisDataPointsPipeline(
+        analysis.key.urlsafe(), build_number)
+
+    pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+    self.assertEqual([], analysis.data_points)
