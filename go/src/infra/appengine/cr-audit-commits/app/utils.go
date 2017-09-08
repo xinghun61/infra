@@ -74,3 +74,16 @@ func failedBuildFromCommitMessage(m string) (string, error) {
 		"commit message does not contain url to failed build prefixed with %q",
 		failedBuildPrefix)
 }
+
+func getFailedBuild(ctx context.Context, miloClient miloClientInterface, rc *RelevantCommit) (string, *buildbot.Build) {
+	buildURL, err := failedBuildFromCommitMessage(rc.CommitMessage)
+	if err != nil {
+		panic(err)
+	}
+
+	failedBuildInfo, err := miloClient.GetBuildInfo(ctx, buildURL)
+	if err != nil {
+		panic(err)
+	}
+	return buildURL, failedBuildInfo
+}

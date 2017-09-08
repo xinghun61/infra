@@ -185,5 +185,43 @@ func TestFinditRules(t *testing.T) {
 			So(rr.Message, ShouldContainSubstring, "not found in changes for build")
 
 		})
+		Convey("Failed build is compile failure Pass", func() {
+			fakeBuild := &buildbot.Build{}
+			fakeUpdateStep := buildbot.Step{}
+			fakeUpdateStep.Name = "update_scripts"
+			fakeUpdateStep.Results = []interface{}{0.0, 0}
+
+			fakeCompileStep := buildbot.Step{}
+			fakeCompileStep.Name = "compile"
+			fakeCompileStep.Results = []interface{}{2.0, 0}
+			fakeBuild.Steps = []buildbot.Step{fakeUpdateStep, fakeCompileStep}
+
+			cfg.miloClient = mockMiloClient{q: map[string]*buildbot.Build{
+				"https://ci/fake/build": fakeBuild,
+			}}
+			rr := FailedBuildIsCompileFailure(ctx, ap, rc)
+			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
+		})
+		Convey("Failed build is compile failure Fail", func() {
+			fakeBuild := &buildbot.Build{}
+			// This Step fails, but the rule shouldn't care.
+			fakeUpdateStep := buildbot.Step{}
+			fakeUpdateStep.Name = "update_scripts"
+			fakeUpdateStep.Results = []interface{}{2.0, 0}
+
+			// This compile step had warnings but did not fail.
+			fakeCompileStep := buildbot.Step{}
+			fakeCompileStep.Name = "compile"
+			fakeCompileStep.Results = []interface{}{1.0, 0}
+			fakeBuild.Steps = []buildbot.Step{fakeUpdateStep, fakeCompileStep}
+
+			cfg.miloClient = mockMiloClient{q: map[string]*buildbot.Build{
+				"https://ci/fake/build": fakeBuild,
+			}}
+			rr := FailedBuildIsCompileFailure(ctx, ap, rc)
+			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
+			So(rr.Message, ShouldContainSubstring, "does not have an expected failure")
+			So(rr.Message, ShouldContainSubstring, "compile")
+		})
 	})
 }

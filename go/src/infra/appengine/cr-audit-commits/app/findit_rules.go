@@ -43,6 +43,11 @@ const (
 	MaxCulpritAge = 24 * time.Hour
 )
 
+// This is the numeric result code for FAILURE. (As buildbot defines it)
+var failedResultCode = 2
+
+var failableStepNames = []string{"compile"}
+
 // countRelevantCommits follows the relevant commits previous pointer until a
 // commit older than the cutoff time is found, and counts those that match the
 // account and action given as parameters.
@@ -167,17 +172,10 @@ func CulpritInBuild(ctx context.Context, ap *AuditParams, rc *RelevantCommit) *R
 	result.RuleName = "CulpritInBuild"
 	result.RuleResultStatus = ruleFailed
 
-	buildURL, err := failedBuildFromCommitMessage(rc.CommitMessage)
-	if err != nil {
-		panic(err)
-	}
-
 	culprit := getCulpritChange(ctx, ap, rc)
 
-	failedBuildInfo, err := ap.RepoCfg.miloClient.GetBuildInfo(ctx, buildURL)
-	if err != nil {
-		panic(err)
-	}
+	buildURL, failedBuildInfo := getFailedBuild(ctx, ap.RepoCfg.miloClient, rc)
+
 	changeFound := false
 	for _, c := range failedBuildInfo.SourceStamp.Changes {
 		if c.Revision == culprit.CurrentRevision {
@@ -223,4 +221,30 @@ func getCulpritChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit) 
 		panic(fmt.Sprintf("Could not get current_revision property for cl %q", culprit.ChangeNumber))
 	}
 	return culprit
+}
+
+// FailedBuildIsCompileFailure is a RuleFunc that verifies that the referred
+// build contains a failed compile step.
+func FailedBuildIsCompileFailure(ctx context.Context, ap *AuditParams, rc *RelevantCommit) *RuleResult {
+	result := &RuleResult{}
+	result.RuleName = "FailedBuildIsCompileFailure"
+	result.RuleResultStatus = ruleFailed
+
+	buildURL, failedBuildInfo := getFailedBuild(ctx, ap.RepoCfg.miloClient, rc)
+
+	for _, s := range failedBuildInfo.Steps {
+		r, _ := s.Result()
+		for _, fs := range failableStepNames {
+			if s.Name == fs {
+				if int(r) == failedResultCode {
+					result.RuleResultStatus = rulePassed
+					return result
+				}
+			}
+		}
+	}
+	result.RuleResultStatus = ruleFailed
+	result.Message = fmt.Sprintf("Referred build %q does not have an expected failure in either of the following steps: %s",
+		buildURL, failableStepNames)
+	return result
 }
