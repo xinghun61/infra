@@ -46,7 +46,8 @@ type builderViewModel struct {
 
 	StatusKnown       bool
 	StatusClassSuffix string // Bootstrap label class suffix
-	RelAnalysisTime   time.Duration
+	StatusAge         time.Duration
+	StatusOutdated    bool
 	Details           template.HTML
 }
 
@@ -120,7 +121,8 @@ func builderPage(c context.Context, id storage.BuilderID) (*builderViewModel, er
 	mig := model.Builder.Migration
 	model.StatusKnown = mig.Status != storage.StatusUnknown && model.Details != ""
 	model.StatusClassSuffix = migrationStatusLabelClassSuffix(mig.Status)
-	model.RelAnalysisTime = clock.Now(c).Sub(model.Builder.Migration.AnalysisTime)
+	model.StatusAge = clock.Now(c).Sub(model.Builder.Migration.AnalysisTime)
+	model.StatusOutdated = model.StatusAge > 24*time.Hour
 	return model, nil
 }
 

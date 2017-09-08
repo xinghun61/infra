@@ -20,6 +20,10 @@ limitations under the License. */}}
     margin-top: 1em;
     margin-bottom: 1em;
   }
+  .status .outdated {
+    color: red;
+    font-size: x-large;
+  }
 </style>
 {{end}}
 
@@ -93,9 +97,12 @@ limitations under the License. */}}
       </div>
     {{else}}
       <h2>Latest comparison</h2>
-      <div>
+      <div class="status">
         Status: <span class="label label-{{.StatusClassSuffix}}">{{.Builder.Migration.Status}}</span>
-        as of {{.RelAnalysisTime | durationString}} ago
+        as of
+        <span class="{{if .StatusOutdated}}outdated{{end}}">
+          {{.StatusAge | durationString}} ago
+        </span>
       </div>
       <div>
         LUCI Correctness:

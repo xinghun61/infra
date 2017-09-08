@@ -113,7 +113,7 @@ func TestBuilder(t *testing.T) {
 				Builder:           builder,
 				StatusKnown:       true,
 				StatusClassSuffix: "danger",
-				RelAnalysisTime:   time.Hour,
+				StatusAge:         time.Hour,
 				Details:           "almost",
 			})
 		})
