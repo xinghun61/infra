@@ -65,6 +65,7 @@ func postComment(c context.Context, client monorail.MonorailClient, builder *sto
 			ProjectId: builder.IssueID.Project,
 			IssueId:   int32(builder.IssueID.ID),
 		},
+		SendEmail: true,
 		Comment: &monorail.InsertCommentRequest_Comment{
 			Content: contentBuf.String(),
 			Updates: &monorail.Update{

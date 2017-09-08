@@ -97,35 +97,49 @@ func TestEndpointsClient(t *testing.T) {
 				},
 			}
 
+			var handler http.HandlerFunc
+			var server *httptest.Server
+			actualURL := ""
+			server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				actualURL = r.URL.String()
+				handler(w, r)
+			}))
+			defer server.Close()
+
+			client := NewEndpointsClient(nil, server.URL)
+
 			Convey("Succeeds", func() {
-
-				var serv *httptest.Server
-				serv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					c.So(r.URL.String(), ShouldEqual, "/projects/chromium/issues/1/comments")
-
+				handler = func(w http.ResponseWriter, r *http.Request) {
 					actualReq := &InsertCommentRequest_Comment{}
 					err := json.NewDecoder(r.Body).Decode(actualReq)
 					c.So(err, ShouldBeNil)
 					c.So(actualReq, ShouldResemble, req.Comment)
 
 					fmt.Fprint(w, "{}")
-				}))
-				defer serv.Close()
+				}
 
-				client := NewEndpointsClient(nil, serv.URL)
 				_, err := client.InsertComment(ctx, req)
 				So(err, ShouldBeNil)
+				c.So(actualURL, ShouldEqual, "/projects/chromium/issues/1/comments?")
+			})
+
+			Convey("SendEmail", func() {
+				req.SendEmail = true
+				handler = func(w http.ResponseWriter, r *http.Request) {
+					fmt.Fprint(w, "{}")
+				}
+
+				_, err := client.InsertComment(ctx, req)
+				So(err, ShouldBeNil)
+				c.So(actualURL, ShouldEqual, "/projects/chromium/issues/1/comments?sendEmail=true")
 			})
 
 			Convey("Transient error", func(c C) {
 				test := func(status int) {
-					var serv *httptest.Server
-					serv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					handler = func(w http.ResponseWriter, r *http.Request) {
 						w.WriteHeader(status)
-					}))
-					defer serv.Close()
+					}
 
-					client := NewEndpointsClient(nil, serv.URL)
 					_, err := client.InsertComment(ctx, req)
 					So(err, ShouldNotBeNil)
 					So(transient.Tag.In(err), ShouldBeTrue)

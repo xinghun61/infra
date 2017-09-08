@@ -119,8 +119,12 @@ func (c *epClient) InsertComment(ctx context.Context, req *InsertCommentRequest,
 	if err := checkOptions(options); err != nil {
 		return nil, err
 	}
-	url := fmt.Sprintf("/projects/%s/issues/%d/comments", req.Issue.ProjectId, req.Issue.IssueId)
-	return &InsertCommentResponse{}, c.call(ctx, "POST", url, req.Comment, nil)
+	params := url.Values{}
+	if req.SendEmail {
+		params.Set("sendEmail", "true")
+	}
+	u := fmt.Sprintf("/projects/%s/issues/%d/comments?%s", req.Issue.ProjectId, req.Issue.IssueId, params.Encode())
+	return &InsertCommentResponse{}, c.call(ctx, "POST", u, req.Comment, nil)
 }
 
 func (c *epClient) IssuesList(ctx context.Context, req *IssuesListRequest, options ...grpc.CallOption) (*IssuesListResponse, error) {

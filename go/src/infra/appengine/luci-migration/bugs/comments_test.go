@@ -70,6 +70,7 @@ func TestPostComment(t *testing.T) {
 					ProjectId: "chromium",
 					IssueId:   54,
 				},
+				SendEmail: true,
 				Comment: &monorail.InsertCommentRequest_Comment{
 					Content: strings.TrimSpace(
 						`Status changed to "LUCI WAI" (correctness 100%, speed 90%)

@@ -100,6 +100,8 @@ message InsertCommentRequest {
     Comment comment = 1;
     // The reference to post the comment to.
     IssueRef issue = 2;
+    // SendEmail specifies whether an email must be sent.
+    bool sendEmail = 3;
 }
 
 message InsertCommentResponse{}
