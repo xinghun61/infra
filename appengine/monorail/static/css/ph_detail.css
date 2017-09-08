@@ -511,3 +511,7 @@ td.rowwidgets { padding: 2px 2px 0 7px; }
 #preview_filterrules_errors ul {
   color: red;
 }
+
+#searchtips p {
+  max-width: 60em;
+}

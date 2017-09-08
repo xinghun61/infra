@@ -5,11 +5,6 @@
 
 <div id="searchtips">
 
-[# TODO(jrobbins): this page should be redone in the standard Google]
-[# on-line help system.  For now, it helps to document our planned search]
-[# features. ]
-
-
 <h3>Basic issue search</h3>
 
 <p>In most cases you can find the issues that you want to work with
@@ -17,7 +12,8 @@ very easily by using the issue list headers or by entering a few
 simple keywords into the main search field.</p>
 
 <p>Whenever you visit the "<a href="list">Issues</a>" tab in your
-project, you are presented with a table of all open issues.  If you
+project, you are presented with a table of all open issues, or the default
+query set up by the project owners.  If you
 see too many results, you can quickly filter your results by clicking
 on the table headers and choosing a specific value from the "Show
 only:" submenu.</p>
@@ -43,7 +39,8 @@ number in quotation marks.</p>
 
 <p>Behind the scenes, the search scope is simply an additional set of
 search terms that is automatically combined with the user's search
-terms to make a complete query.</p>
+terms to make a complete query.  To see what search terms will be
+used for each scope, hover your mouse over the scope item.</p>
 
 
 <h3>Advanced issue search</h3>
@@ -71,7 +68,8 @@ issue.  You can narrow the search to a specific field by using the
 name of the field.  The built-in field operators are summary:,
 description:, comment:, status:, reporter:, owner:, cc:, commentby:,
 and label:.  You can limit your search to just open issues by using
-is:open, or to just closed issues by using isnot:open.</p>
+is:open, or to just closed issues by using a minus sign to negate it:
+-is:open.</p>
 [# TODO(jrobbins): dateopened:]
 
 <p>For example, here's how to search for issues with the word
@@ -83,12 +81,12 @@ is:open, or to just closed issues by using isnot:open.</p>
 </form>
 
 <p>When searching for issues owned by a specific user, you can use his
-or her username.  When referring to yourself, you can also use the
-special term <b>me</b>. For example, this restricts the search to
+or her email address, or part of it.  When referring to yourself, you can also
+ use the special term <b>me</b>. For example, this restricts the search to
 issues that are owned by you.</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="owner:username">
+ <p><input type="text" size="25" name="q" value="owner:user@chromium.org">
  <input type="submit" name="btn" value="Search">
 </form>
 
@@ -177,13 +175,20 @@ because no one is assigned to it.</p>
 
 <h3>Multiple values in search terms</h3>
 
-[# TODO(jrobbins): put back OR documentation when OR is working.]
-
 <p>You can search for two values for one field, or two labels
 with the same prefix by using.</p>
 
 <form action="list" method="GET">
  <p><input type="text" size="25" name="q" value="Priority:High,Medium">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+
+<p>You can combine two separate queries into one using the <b>OR</b> operator.
+We do not support parentheses or complex boolean expressions, just top-level OR.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="Priority:High OR -has:owner">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -228,11 +233,10 @@ have starred, you could use the following:</p>
  [end]</p>
 </form>
 
-<p>And, to see the issues that exactly three users have starred, use the following:</p>
-[# TODO(jrobbins): should search for issues with *at least* N stars.]
+<p>And, to see the issues that more than ten users have starred, use the following:</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="stars:3">
+ <p><input type="text" size="25" name="q" value="stars>10">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -268,7 +272,7 @@ part of issue comments.</p>
 <p>To quickly see all the issues that have attachments, use the following:</p>
 
 <form action="list" method="GET">
- <p><input type="text" size="25" name="q" value="has:attachment">
+ <p><input type="text" size="25" name="q" value="has:attachments">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -283,6 +287,14 @@ part of issue comments.</p>
 
 <form action="list" method="GET">
  <p><input type="text" size="25" name="q" value="attachment:png">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+
+<p>You can also search for issues with a certain number of  attachments.</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="attachments>10">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
@@ -311,6 +323,15 @@ you could do the following:</p>
 
 <form action="list" method="GET">
  <p><input type="text" size="25" name="q" value="modified<today-20">
+ <input type="submit" name="btn" value="Search"></p>
+</form>
+
+<p>You can search for issues that had specific fields modified
+recently by using ownermodified:, statusmodified:, componentmodified:.
+For example:</p>
+
+<form action="list" method="GET">
+ <p><input type="text" size="25" name="q" value="ownermodified>today-20">
  <input type="submit" name="btn" value="Search"></p>
 </form>
 
