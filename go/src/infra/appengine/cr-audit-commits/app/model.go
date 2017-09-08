@@ -47,7 +47,7 @@ type RelevantCommit struct {
 
 	PreviousRelevantCommit string
 	Status                 AuditStatus
-	Result                 []*RuleResult
+	Result                 []RuleResult
 	CommitTime             time.Time
 	CommitterAccount       string
 	AuthorAccount          string

@@ -72,27 +72,33 @@ func CommitAuditor(rc *router.Context) {
 
 	cfgk := ds.KeyForObj(ctx, repoConfig.State)
 
-	gi, err := getGitilesClient(ctx)
-	if err != nil {
-		http.Error(resp, err.Error(), 500)
-		return
+	// Tests would have put a mock client in repoConfig.gitilesClient.
+	if repoConfig.gitilesClient == nil {
+		giC, err := getGitilesClient(ctx)
+		if err != nil {
+			http.Error(resp, err.Error(), 500)
+			return
+		}
+		repoConfig.gitilesClient = giC
 	}
 
-	httpClient, err := getAuthenticatedHTTPClient(ctx)
-	if err != nil {
-		http.Error(resp, err.Error(), 500)
-		return
-	}
-	ge, err := gerrit.NewClient(httpClient, repoConfig.GerritURL)
+	// Tests would have put a mock client in repoConfig.gerritClient.
+	if repoConfig.gerritClient == nil {
+		httpClient, err := getAuthenticatedHTTPClient(ctx)
+		if err != nil {
+			http.Error(resp, err.Error(), 500)
+			return
+		}
 
-	if err != nil {
-		http.Error(resp, err.Error(), 500)
-		return
+		geC, err := gerrit.NewClient(httpClient, repoConfig.GerritURL)
+		if err != nil {
+			http.Error(resp, err.Error(), 500)
+			return
+		}
+		repoConfig.gerritClient = geC
 	}
 	ap := AuditParams{
-		GitilesClient: gi,
-		GerritClient:  ge,
-		RepoCfg:       &repoConfig,
+		RepoCfg: repoConfig,
 	}
 	cq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("State", auditScheduled).Limit(MaxWorkers * CommitsPerWorker)
 
@@ -142,7 +148,7 @@ func CommitAuditor(rc *router.Context) {
 	// are contained in a single entity group)
 	err = ds.RunInTransaction(ctx, func(ctx context.Context) error {
 		commitsToPut := make([]*RelevantCommit, len(auditedCommits))
-		if err = ds.Get(ctx, originalCommits); err != nil {
+		if err := ds.Get(ctx, originalCommits); err != nil {
 			return err
 		}
 		for _, currentCommit := range originalCommits {
@@ -164,7 +170,7 @@ func CommitAuditor(rc *router.Context) {
 				}
 			}
 		}
-		if err = ds.Put(ctx, commitsToPut); err != nil {
+		if err := ds.Put(ctx, commitsToPut); err != nil {
 			return err
 		}
 		return nil
@@ -220,7 +226,7 @@ func runRules(ctx context.Context, rc *RelevantCommit, ap AuditParams, wp *worke
 		if rs.MatchesRelevantCommit(rc) {
 			ap.TriggeringAccount = ars.Account
 			for _, f := range ars.Funcs {
-				rc.Result = append(rc.Result, f(ctx, &ap, rc))
+				rc.Result = append(rc.Result, *f(ctx, &ap, rc))
 			}
 		}
 	}

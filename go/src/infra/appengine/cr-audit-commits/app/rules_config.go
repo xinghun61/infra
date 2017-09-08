@@ -8,7 +8,6 @@ package crauditcommits
 import (
 	"golang.org/x/net/context"
 
-	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/api/gitiles"
 )
 
@@ -25,6 +24,11 @@ type RepoConfig struct {
 	BranchName     string
 	StartingCommit string
 	Rules          []RuleSet
+
+	// Instead of actual clients, use interfaces so that tests
+	// can inject mock clients as needed.
+	gerritClient  gerritClientInterface
+	gitilesClient gitilesClientInterface
 }
 
 // RepoURL composes the url of the repository by appending the branch.
@@ -33,7 +37,7 @@ func (rc *RepoConfig) RepoURL() string {
 }
 
 // RuleMap maps each monitored repository to a list of account/rules structs.
-var RuleMap = map[string]RepoConfig{
+var RuleMap = map[string]*RepoConfig{
 	"chromium-src-master": {
 		BaseRepoURL: "https://chromium.googlesource.com/chromium/src.git",
 		GerritURL:   "https://chromium-review.googlesource.com",
@@ -76,12 +80,10 @@ func (ar AccountRules) MatchesRelevantCommit(c *RelevantCommit) bool {
 	return c.CommitterAccount == ar.Account || c.AuthorAccount == ar.Account
 }
 
-// AuditParams exposes object shared by all rules (and the worker threads they
-// are run on).
+// AuditParams exposes object shared by all rules (and the worker goroutines
+// they are run on).
 type AuditParams struct {
 	TriggeringAccount string
-	GitilesClient     *gitiles.Client
-	GerritClient      *gerrit.Client
 	RepoCfg           *RepoConfig
 }
 

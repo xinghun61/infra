@@ -10,6 +10,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/server/auth"
 )
@@ -18,6 +19,15 @@ import (
 const (
 	gitilesScope = "https://www.googleapis.com/auth/gerritcodereview"
 )
+
+type gerritClientInterface interface {
+	GetChangeDetails(context.Context, string, []string) (*gerrit.Change, error)
+	ChangeQuery(context.Context, gerrit.ChangeQueryRequest) ([]*gerrit.Change, bool, error)
+}
+
+type gitilesClientInterface interface {
+	LogForward(context.Context, string, string, string) ([]gitiles.Commit, error)
+}
 
 // getGitilesClient creates a new gitiles client bound to a new http client
 // that is bound to an authenticated transport.

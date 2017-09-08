@@ -62,12 +62,16 @@ func CommitScanner(rc *router.Context) {
 		http.Error(resp, err.Error(), 500)
 		return
 	}
-	g, err := getGitilesClient(ctx)
-	if err != nil {
-		http.Error(resp, err.Error(), 500)
-		return
+	// Tests would have put a mock client in repoConfig.gitilesClient.
+	if repoConfig.gitilesClient == nil {
+		giC, err := getGitilesClient(ctx)
+		if err != nil {
+			http.Error(resp, err.Error(), 500)
+			return
+		}
+		repoConfig.gitilesClient = giC
 	}
-	fl, err := g.LogForward(ctx, repoConfig.BaseRepoURL, rev, repoConfig.BranchName)
+	fl, err := repoConfig.gitilesClient.LogForward(ctx, repoConfig.BaseRepoURL, rev, repoConfig.BranchName)
 	if err != nil {
 		http.Error(resp, err.Error(), 500)
 		return
