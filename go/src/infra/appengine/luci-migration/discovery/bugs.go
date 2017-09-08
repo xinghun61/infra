@@ -18,13 +18,13 @@ import (
 	"bytes"
 	"fmt"
 	"infra/monorail"
-	"net/url"
 	"strings"
 	"text/template"
 	"unicode"
 
 	"golang.org/x/net/context"
 
+	"infra/appengine/luci-migration/common"
 	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 
@@ -36,11 +36,7 @@ const monorailProject = "chromium"
 
 var builderBugDescriptionTmpl = template.Must(template.New("").
 	Funcs(template.FuncMap{
-		"pathEscape": func(s string) string {
-			// cannot use url.PathEscape because AppEngine is on Go 1.6
-			u := url.URL{Path: s}
-			return u.EscapedPath()
-		},
+		"pathEscape": common.PathEscape,
 	}).
 	Parse(strings.TrimSpace(`
 Migrate builder {{.Builder.ID}} to LUCI.

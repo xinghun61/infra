@@ -33,6 +33,7 @@ import (
 	"go.chromium.org/luci/server/router"
 
 	"infra/appengine/luci-migration/analysis"
+	"infra/appengine/luci-migration/common"
 	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 )
@@ -50,7 +51,7 @@ func cronAnalyzeBuilders(c *router.Context) error {
 	for i, b := range builders {
 		values := url.Values{}
 		values.Set("builder", b.ID.String())
-		tasks[i] = taskqueue.NewPOSTTask("/internal/task/analyze-builder/"+b.ID.String(), values)
+		tasks[i] = taskqueue.NewPOSTTask("/internal/task/analyze-builder/"+common.PathEscape(b.ID.String()), values)
 		tasks[i].Delay = time.Duration(mathrand.Int(c.Context)%30) * time.Minute
 		tasks[i].RetryCount = 2
 	}

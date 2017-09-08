@@ -226,8 +226,16 @@ func checkAccess(c *router.Context, next router.Handler) {
 func errHandler(f func(c *router.Context) error) router.Handler {
 	return func(c *router.Context) {
 		if err := f(c); err != nil {
-			logging.Errorf(c.Context, "Internal server error: %s", err)
 			http.Error(c.Writer, "Internal server error", http.StatusInternalServerError)
+
+			logging.Errorf(c.Context, "Internal server error: %s", err)
+			if err, ok := err.(errors.MultiError); ok {
+				for i, e := range err {
+					if e != nil {
+						logging.Errorf(c.Context, "Error #%d: %s", i, e)
+					}
+				}
+			}
 		}
 	}
 }

@@ -16,6 +16,7 @@ package common
 
 import (
 	"fmt"
+	"net/url"
 	"time"
 )
 
@@ -45,4 +46,11 @@ func DurationString(d time.Duration) string {
 		}
 	}
 	return "0"
+}
+
+// PathEscape escapes the string so it can be safely placed inside a URL path segment.
+// TODO(nodir): remove, when native url.PathEscape is avaiable on AppEngine.
+func PathEscape(s string) string {
+	u := url.URL{Path: s}
+	return u.EscapedPath()
 }
