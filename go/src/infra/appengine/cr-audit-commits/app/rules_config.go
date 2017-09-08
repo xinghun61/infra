@@ -46,7 +46,11 @@ var RuleMap = map[string]*RepoConfig{
 		StartingCommit: "5677b32274aec4890c7dd991a6a84924e65d4853",
 		Rules: []RuleSet{AccountRules{
 			Account: "findit-for-me@appspot.gserviceaccount.com",
-			Funcs:   []RuleFunc{AutoCommitsPerDay},
+			Funcs: []RuleFunc{
+				AutoCommitsPerDay,
+				AutoRevertsPerDay,
+				CulpritAge,
+			},
 		}},
 	},
 }

@@ -192,12 +192,3 @@ func TestCommitScanner(t *testing.T) {
 		srv.Close()
 	})
 }
-
-type mockGitilesClient struct {
-	r []gitiles.Commit
-	e error
-}
-
-func (c mockGitilesClient) LogForward(ctx context.Context, baseURL, rev, branch string) ([]gitiles.Commit, error) {
-	return c.r, c.e
-}

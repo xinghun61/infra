@@ -27,6 +27,7 @@ type gerritClientInterface interface {
 
 type gitilesClientInterface interface {
 	LogForward(context.Context, string, string, string) ([]gitiles.Commit, error)
+	Log(context.Context, string, string, int) ([]gitiles.Commit, error)
 }
 
 // getGitilesClient creates a new gitiles client bound to a new http client
