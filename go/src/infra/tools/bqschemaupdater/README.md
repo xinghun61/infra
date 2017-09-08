@@ -9,6 +9,10 @@ default. We can add support for different projects when needed in the future.
 bqschemaupdater <path to json schema file> [--help] [--dry-run]
 ```
 
+# Standard Practices
+
+Table IDs should be underscored delimited, e.g. `test_results`.
+
 # Supported Uses
 
 The operations supported by this tool include:

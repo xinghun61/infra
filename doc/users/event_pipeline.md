@@ -9,6 +9,8 @@ Table definitions are stored in infra.git in a subdirectory of
 `go/src/infra/tools/bqschemaupdater` and added/updated with the
 [bqschemaupdater](../go/src/infra/tools/bqschemaupdater/README.md) tool.
 
+Table IDs should be underscore delimited, e.g. `test_results`.
+
 bqschemaupdater takes a JSON version of the
 [TableDef
 proto](../../go/src/infra/libs/bqschema/tabledef/table_def.proto)
