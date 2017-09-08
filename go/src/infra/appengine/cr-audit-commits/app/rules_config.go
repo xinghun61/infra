@@ -25,10 +25,14 @@ type RepoConfig struct {
 	StartingCommit string
 	Rules          []RuleSet
 
+	// TODO(crbug.com/763490): These clients should be passed to the rules
+	// etc. Through a struct separate from RepoConfig/AuditParams.
+
 	// Instead of actual clients, use interfaces so that tests
 	// can inject mock clients as needed.
 	gerritClient  gerritClientInterface
 	gitilesClient gitilesClientInterface
+	miloClient    miloClientInterface
 }
 
 // RepoURL composes the url of the repository by appending the branch.

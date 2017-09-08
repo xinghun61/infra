@@ -14,7 +14,10 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
+
+	"infra/appengine/cr-audit-commits/buildstatus"
 )
 
 const (
@@ -96,6 +99,15 @@ func CommitAuditor(rc *router.Context) {
 			return
 		}
 		repoConfig.gerritClient = geC
+	}
+	// Tests would have put a mock client in repoConfig.miloClient
+	if repoConfig.miloClient == nil {
+		mc, err := buildstatus.NewAuditMiloClient(ctx, auth.AsSelf)
+		if err != nil {
+			http.Error(resp, err.Error(), 500)
+			return
+		}
+		repoConfig.miloClient = mc
 	}
 	ap := AuditParams{
 		RepoCfg: repoConfig,

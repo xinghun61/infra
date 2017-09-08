@@ -18,6 +18,8 @@ import (
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/api/gitiles"
+
+	buildbot "infra/monitoring/messages"
 )
 
 func TestFinditRules(t *testing.T) {
@@ -40,7 +42,7 @@ func TestFinditRules(t *testing.T) {
 			CommitTime:       time.Date(2017, time.August, 25, 15, 0, 0, 0, time.UTC),
 			CommitterAccount: "findit@sample.com",
 			AuthorAccount:    "findit@sample.com",
-			CommitMessage:    "Fake revert",
+			CommitMessage:    "Sample Failed Build: https://ci/fake/build",
 		}
 		cfg := &RepoConfig{
 			State:       rs,
@@ -155,6 +157,33 @@ func TestFinditRules(t *testing.T) {
 			rr := AutoCommitsPerDay(ctx, ap, rcs[0])
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, fmt.Sprintf("%d commits were committed", MaxAutoCommitsPerDay+1))
+		})
+
+		Convey("Culprit in build", func() {
+			fakeBuild := &buildbot.Build{}
+			fakeBuild.SourceStamp.Changes = []buildbot.Change{
+				{Revision: "dummy"},
+				{Revision: "badc0de"},
+			}
+			cfg.miloClient = mockMiloClient{q: map[string]*buildbot.Build{
+				"https://ci/fake/build": fakeBuild,
+			}}
+			rr := CulpritInBuild(ctx, ap, rc)
+			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
+
+		})
+		Convey("Culprit not in build", func() {
+			fakeBuild := &buildbot.Build{}
+			fakeBuild.SourceStamp.Changes = []buildbot.Change{
+				{Revision: "dummy"},
+			}
+			cfg.miloClient = mockMiloClient{q: map[string]*buildbot.Build{
+				"https://ci/fake/build": fakeBuild,
+			}}
+			rr := CulpritInBuild(ctx, ap, rc)
+			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
+			So(rr.Message, ShouldContainSubstring, "not found in changes for build")
+
 		})
 	})
 }
