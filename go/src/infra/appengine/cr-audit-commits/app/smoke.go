@@ -16,6 +16,7 @@ import (
 	"go.chromium.org/luci/server/router"
 
 	"infra/appengine/cr-audit-commits/buildstatus"
+	"infra/monorail"
 )
 
 // SmokeTestCheck associates the proper test function with a short description.
@@ -29,6 +30,7 @@ var AuditAppSmokeTests = []SmokeTestCheck{
 	gitilesCheck,
 	gerritCheck,
 	miloCheck,
+	monorailCheck,
 }
 
 // SmokeTest is a handler that iterates over the list of tests, executes them
@@ -107,6 +109,30 @@ var (
 			_, err = m.GetBuildInfo(ctx, buildURL)
 			if err != nil {
 				return err
+			}
+			return nil
+		},
+	}
+	monorailCheck = SmokeTestCheck{
+		Name: "Check monorail connectivity",
+		Check: func(ctx context.Context) error {
+			httpClient, err := getAuthenticatedHTTPClient(ctx)
+			if err != nil {
+				return err
+			}
+			mu := "https://monorail-prod.appspot.com/_ah/api/monorail/v1"
+			mrc := monorail.NewEndpointsClient(httpClient, mu)
+			req := &monorail.IssuesListRequest{
+				ProjectId: "chromium",
+				Can:       monorail.IssuesListRequest_ALL,
+				Q:         "753158",
+			}
+			resp, err := mrc.IssuesList(ctx, req)
+			if err != nil {
+				return err
+			}
+			if len(resp.Items) == 0 {
+				return fmt.Errorf("No issue found with query \"753158\"")
 			}
 			return nil
 		},
