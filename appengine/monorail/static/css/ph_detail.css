@@ -56,6 +56,19 @@ td.issueheader { background: #e5ecf9; }
     background: #888; color: #fff;
 }
 
+#spam_banner {
+    border: 1px solid red;
+    background: #fdd;
+    padding: .5em;
+    color: #000;
+    margin: 2px;
+}
+
+#spam_banner a {
+    background: #fdd;
+    color: #00c;
+}
+
 .issuepage { margin-top: 0; }
 .issuepage td { padding: 2px; }
 .issuecomment { margin-top: 1em;}

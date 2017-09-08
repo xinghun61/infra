@@ -83,9 +83,9 @@
   </td>
   <td width="90%" class="vt issueheader" style="border-right: 2px solid white">
     [if-any issue.flagged_spam_bool]
-     <div style="border:1px solid red; background:#fdd; padding:1em">You have reported this issue as spam. To undo this, click the flag again.</div>
+     <div id="spam_banner">You have reported this issue as spam. To undo this, click the flag again.</div>
     [else][if-any issue.is_spam_bool]
-      <div style="border:1px solid red; background:#fdd; padding:1em">
+      <div id="spam_banner">
         This issue has been classified as spam.
         Please <a
         href="/p/monorail/issues/entry?template=spam+classification&labels=proj-[projectname]&comment=Please check [currentPageURLEncoded]"
