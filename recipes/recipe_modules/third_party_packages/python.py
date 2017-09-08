@@ -218,7 +218,7 @@ class PythonApi(util.ModuleShim):
       gnu_sed = support.ensure_gnu_sed()
 
       with self.m.context(env_prefixes={'PATH': [gnu_sed.bin_dir]}):
-        setup_local_flags = [['--root', self.m.context.cwd]]
+        setup_local_flags = []
         setup_local_flags += [['--skip', v] for v in setup_local_skip]
         setup_local_flags += [['--attach', v] for v in setup_local_attach]
 
@@ -249,8 +249,11 @@ class PythonApi(util.ModuleShim):
         setup_local_path = self.m.context.cwd.join('Modules', 'Setup.local')
         self.m.python(
             'Static modules',
-            self.resource('python', 'python_mod_gen.py'),
+            self.resource('python', 'python_build_bootstrap.py'),
             [
+              '--root', self.m.context.cwd,
+              '--',
+              self.resource('python', 'python_mod_gen.py'),
               '--output', setup_local_path,
             ] + _combine(setup_local_flags),
         )

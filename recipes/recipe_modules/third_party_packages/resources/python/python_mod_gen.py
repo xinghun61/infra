@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
@@ -20,30 +20,10 @@ remove the influence of the local system's site configuration.
 
 import argparse
 import contextlib
+import logging
 import os
 import sys
-
-
-def log(f, *arg):
-  print >>sys.stderr, f % arg
-
-
-def get_build_dir(root):
-  with open(os.path.join(root, 'pybuilddir.txt')) as fd:
-    return fd.read().strip()
-
-
-@contextlib.contextmanager
-def _sys_path(*v):
-  orig_path = sys.path[:]
-  orig_meta_path = sys.meta_path
-  try:
-    sys.path = list(v)
-    sys.meta_path = []
-    yield
-  finally:
-    sys.path = orig_path
-    sys.meta_path = orig_meta_path
+import sysconfig
 
 
 @contextlib.contextmanager
@@ -66,50 +46,33 @@ def _temp_sys_builtins(*v):
     sys.builtin_module_names = orig
 
 
-@contextlib.contextmanager
-def _temp_sys_executable(v):
-  orig = sys.executable
-  try:
-    sys.executable = v
-    yield
-  finally:
-    sys.executable = orig
-
-
-def _get_extensions(root, build_dir):
-  lib_dir = os.path.join(root, 'Lib')
-
-  # Create a path to the "build Python" executable. This is the path that the
-  # "setup.py" would expect to be invoked with. It doesn't really matter if this
-  # file actually exists (e.g., on Mac it would be "python.exe").
-  build_python = os.path.join(root, 'python')
-
+def _get_extensions():
   # Enter a "setup.py" expected library pathing, and tell distutil we want to
   # build extensions.
-  with _temp_sys_builtins(), _temp_sys_executable(build_python):
-    with \
-        _temp_sys_argv(['python', 'build_ext']), \
-        _sys_path(root, lib_dir, build_dir):
-      import distutils
-      import distutils.core
-      import distutils.command.build_ext
+  with \
+      _temp_sys_builtins(), \
+      _temp_sys_argv(['python', 'build_ext']):
 
-      # Tells distutils main() function to stop after parsing the command line,
-      # but before actually trying to build stuff.
-      distutils.core._setup_stop_after = "commandline"
+    import distutils
+    import distutils.core
+    import distutils.command.build_ext
 
-      # Causes the actual 'build stuff' part to be a small explosion.
-      class StopBeforeBuilding(Exception):
-        pass
-      def PreventBuild(*_):
-        raise StopBeforeBuilding('boom')
-      distutils.command.build_ext.build_ext.build_extensions = PreventBuild
-      distutils.command.build_ext.build_ext.build_extension = PreventBuild
+    # Tells distutils main() function to stop after parsing the command line,
+    # but before actually trying to build stuff.
+    distutils.core._setup_stop_after = "commandline"
 
-      # Have cpython's setup function actually invoke distutils to do
-      # everything.
-      import setup
-      setup.main()
+    # Causes the actual 'build stuff' part to be a small explosion.
+    class StopBeforeBuilding(Exception):
+      pass
+    def PreventBuild(*_):
+      raise StopBeforeBuilding('boom')
+    distutils.command.build_ext.build_ext.build_extensions = PreventBuild
+    distutils.command.build_ext.build_ext.build_extension = PreventBuild
+
+    # Have cpython's setup function actually invoke distutils to do
+    # everything.
+    import setup
+    setup.main()
 
     # We stopped before running any commands. We then pull the 'build_ext'
     # command out of the distribution (which core nicely caches for us at
@@ -189,9 +152,6 @@ def _replace_suffix(root, root_macro, l, old_suffix, new_suffix):
 
 
 def main(argv):
-  def _arg_abspath(v):
-    return os.path.abspath(v)
-
   def _arg_mod_augmentation(v):
     parts = v.split('::', 1)
     if len(parts) == 1:
@@ -199,9 +159,7 @@ def main(argv):
     return parts
 
   parser = argparse.ArgumentParser()
-  parser.add_argument('--root', required=True, type=_arg_abspath,
-      help='Path to the root of the Python checkout, containing "setup.py".')
-  parser.add_argument('--output', required=True, type=_arg_abspath,
+  parser.add_argument('--output', required=True,
       help='Path to the output Setup file.')
   parser.add_argument('--skip', default=[], action='append',
       help='Name of a Python module to skip when translating.')
@@ -215,17 +173,14 @@ def main(argv):
 
   # We need to clear the existing "Setup.local", as it can influence module
   # probing.
-  setup_local_path = os.path.join(args.root, 'Modules', 'Setup.local')
-  log('Clearing existing Setup.local: %r', setup_local_path)
+  root = os.path.abspath(os.getcwd())
+  setup_local_path = os.path.join(root, 'Modules', 'Setup.local')
+  logging.info('Clearing existing Setup.local: %r', setup_local_path)
   with open(setup_local_path, 'w+') as fd:
     pass
 
-  build_dir = os.path.join(args.root, get_build_dir(args.root))
-  log('Using build directory: %r', build_dir)
-
-  log('Loading base extension definitions...')
-  os.chdir(args.root)
-  exts = _get_extensions(args.root, build_dir)
+  logging.info('Loading base extension definitions...')
+  exts = _get_extensions()
 
   # Compile our attachments into a dict.
   attachments = {}
@@ -251,7 +206,7 @@ def main(argv):
     w('')
     w('*static*')
     w('')
-    w('%s=%s' % (root_macro_name, args.root))
+    w('%s=%s' % (root_macro_name, root))
 
     # While it's more correct to have every module line list the static
     # libraries that we need to link against, Python will blindly aggregate
@@ -265,10 +220,10 @@ def main(argv):
 
     for ext in exts:
       if ext.name in args.skip:
-        log('Skipping module: %r', ext.name)
+        logging.info('Skipping module: %r', ext.name)
         continue
 
-      log('Emitting module: %r', ext.name)
+      logging.info('Emitting module: %r', ext.name)
 
       # Define statements don't parse properly if they have equals signs in
       # them. Rather than care about this too much, we'll just define a special
@@ -281,7 +236,7 @@ def main(argv):
 
       add_macro('DEFINES', [_define_macro(d) for d in ext.define_macros])
       add_macro('INCLUDES',
-          _flag_dirs(args.root, root_macro, 'I', ext.include_dirs))
+          _flag_dirs(root, root_macro, 'I', ext.include_dirs))
       add_macro('EXTRA_COMPILE', ext.extra_compile_args)
       add_macro('EXTRA_LINK', ext.extra_link_args)
       add_macro('ATTACHMENTS', attachments.get(ext.name))
@@ -294,10 +249,10 @@ def main(argv):
       entry = [
           ext.name,
       ]
-      entry += [_root_abspath(args.root, root_macro, s) for s in ext.sources]
+      entry += [_root_abspath(root, root_macro, s) for s in ext.sources]
       entry += _replace_suffix(
-          args.root, root_macro, ext.extra_objects or (), '.o', '.c')
-      entry += _flag_dirs(args.root, root_macro, 'L', ext.library_dirs)
+          root, root_macro, ext.extra_objects or (), '.o', '.c')
+      entry += _flag_dirs(root, root_macro, 'L', ext.library_dirs)
       for name, ents in macros:
         if not ents:
           continue
@@ -309,4 +264,5 @@ def main(argv):
 
 
 if __name__ == '__main__':
+  logging.basicConfig(level=logging.DEBUG)
   sys.exit(main(sys.argv[1:]))
