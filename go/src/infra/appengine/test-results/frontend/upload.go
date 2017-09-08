@@ -7,7 +7,6 @@ package frontend
 import (
 	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"mime/multipart"
@@ -20,6 +19,7 @@ import (
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
@@ -288,6 +288,40 @@ func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 	return datastore.Put(c, &tf)
 }
 
+func createTestResultEvent(c context.Context, f *model.FullResult, p *UploadParams) (*model.TestResultEvent, error) {
+	var i bool
+	if f.Interrupted != nil {
+		i = *(f.Interrupted)
+	}
+
+	if f.PathDelim == nil {
+		return nil, errors.Reason("FullResult must have PathDelim to flatten Tests").Err()
+	}
+	s := *(f.PathDelim)
+
+	var tests []*model.TestResultEvent_Tests
+	for name, ftl := range f.Tests.Flatten(s) {
+		tests = append(tests, &model.TestResultEvent_Tests{
+			TestName: name,
+			Actual:   ftl.Actual,
+			Expected: ftl.Expected,
+			Bugs:     ftl.Bugs,
+		})
+	}
+
+	return &model.TestResultEvent{
+		MasterName:     p.Master,
+		BuilderName:    p.Builder,
+		BuildNumber:    int64(f.BuildNumber),
+		TestType:       p.TestType,
+		StepName:       p.StepName,
+		Interrupted:    i,
+		Version:        int64(f.Version),
+		UsecSinceEpoch: int64(f.SecondsEpoch) * 1000000,
+		Tests:          tests,
+	}, nil
+}
+
 func createTestResUploadTask(c context.Context, f *model.FullResult, p *UploadParams) {
 	payload, err := json.Marshal(struct {
 		Master      string       `json:"master"`
@@ -385,6 +419,13 @@ func updateFullResults(c context.Context, data io.Reader) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
+		_, err := createTestResultEvent(c, &f, p)
+		if err != nil {
+			logging.WithError(err).Errorf(c, "cound not create TestResultEvent")
+		}
+		// TODO: Send event. Currently, we ignore the result of
+		// createTestResultEvent. That result will be set to BigQuery,
+		// which I will do in a subsequent CL.
 		createTestResUploadTask(c, &f, p)
 	}()
 

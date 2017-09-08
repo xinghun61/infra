@@ -380,3 +380,61 @@ func TestUses409ResponseCodeForBuildNumberConflict(t *testing.T) {
 		So(se.code, ShouldEqual, 409)
 	})
 }
+
+func TestCreateTestResultEvent(t *testing.T) {
+	t.Parallel()
+
+	Convey("Test CreateTestResultEvent", t, func() {
+		pd := ":"
+		i := true
+		c := context.Background()
+		f := &model.FullResult{
+			Interrupted:  &i,
+			PathDelim:    &pd,
+			BuildNumber:  model.Number(1),
+			Version:      2,
+			SecondsEpoch: 3,
+			Tests: model.FullTest{
+				"test_test": &model.FullTestLeaf{
+					Actual:   []string{"PASS"},
+					Expected: []string{"FAIL"},
+					Bugs:     []string{"crbug.com/700"},
+				},
+			},
+		}
+		p := &UploadParams{
+			Master:   "test_master",
+			Builder:  "test_builder",
+			TestType: "test_type",
+			StepName: "test_step",
+		}
+		Convey("Return error if FullResult does not have PathDelim", func() {
+			f.PathDelim = nil
+			_, err := createTestResultEvent(c, f, p)
+			So(err, ShouldNotBeNil)
+		})
+		Convey("Return populated TestResultEvent", func() {
+			tre, err := createTestResultEvent(c, f, p)
+			want := &model.TestResultEvent{
+				MasterName:     "test_master",
+				BuilderName:    "test_builder",
+				BuildNumber:    1,
+				TestType:       "test_type",
+				StepName:       "test_step",
+				Interrupted:    true,
+				Version:        2,
+				UsecSinceEpoch: 3000000,
+				Tests: []*model.TestResultEvent_Tests{
+					{
+						TestName: "test_test",
+						Actual:   []string{"PASS"},
+						Expected: []string{"FAIL"},
+						Bugs:     []string{"crbug.com/700"},
+					},
+				},
+			}
+			So(tre, ShouldResemble, want)
+			So(err, ShouldBeNil)
+		})
+	})
+}
