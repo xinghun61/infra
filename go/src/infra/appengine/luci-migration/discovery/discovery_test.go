@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"strings"
 	"testing"
 
 	"golang.org/x/net/context"
@@ -35,7 +34,6 @@ import (
 	"infra/appengine/luci-migration/storage"
 
 	. "github.com/smartystreets/goconvey/convey"
-	"go.chromium.org/luci/common/logging/gologger"
 )
 
 func TestDiscovery(t *testing.T) {
@@ -44,7 +42,6 @@ func TestDiscovery(t *testing.T) {
 	Convey("Discovery", t, func() {
 		c := context.Background()
 		c = memory.Use(c)
-		c = gologger.StdConfig.Use(c)
 
 		// Make tryserver.chromium.linux:linux_chromium_rel_ng known.
 		chromiumRelNg := &storage.Builder{
@@ -68,10 +65,10 @@ func TestDiscovery(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// Mock Monorail.
-		var actualInsertIssueReq *monorail.InsertIssueRequest
-		monorailServer := &monorailMock{
-			insertIssue: func(in *monorail.InsertIssueRequest) (*monorail.InsertIssueResponse, error) {
-				actualInsertIssueReq = in
+		var monorailReqs []*monorail.InsertIssueRequest
+		monorailServer := &monorailtest.ServerMock{
+			InsertIssueImpl: func(c context.Context, in *monorail.InsertIssueRequest) (*monorail.InsertIssueResponse, error) {
+				monorailReqs = append(monorailReqs, in)
 				return &monorail.InsertIssueResponse{Issue: &monorail.Issue{Id: 55}}, nil
 			},
 		}
@@ -79,7 +76,7 @@ func TestDiscovery(t *testing.T) {
 		// Discover tryserver.chromium.linux builders.
 		d := Builders{
 			Buildbot:         milo.NewBuildbotPRPCClient(buildbotPrpcClient),
-			Monorail:         monorailtest.NewTestClient(monorailServer),
+			Monorail:         monorailtest.NewClient(monorailServer),
 			MonorailHostname: "monorail-prod.appspot.com",
 		}
 		linuxTryserver := &config.Master{
@@ -93,36 +90,8 @@ func TestDiscovery(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// Verify the request to create a bug for asan.
-		expectedBugDescription := strings.TrimSpace(`
-Migrate builder tryserver.chromium.linux:linux_chromium_asan_rel_ng to LUCI.
-
-Buildbot: https://ci.chromium.org/buildbot/tryserver.chromium.linux/linux_chromium_asan_rel_ng
-LUCI: https://ci.chromium.org/buildbucket/luci.chromium.try/linux_chromium_asan_rel_ng
-
-Migration app will be posting updates on changes of the migration status.
-For the latest status, see
-https://app.example.com/masters/tryserver.chromium.linux/builders/linux_chromium_asan_rel_ng
-
-Migration app will close this bug when the builder is entirely migrated from Buildbot to LUCI.
-`)
-		So(actualInsertIssueReq, ShouldResemble, &monorail.InsertIssueRequest{
-			ProjectId: "chromium",
-			SendEmail: true,
-			Issue: &monorail.Issue{
-				Status:      "Available",
-				Summary:     "Migrate \"linux_chromium_asan_rel_ng\" to LUCI",
-				Description: expectedBugDescription,
-				Components:  []string{"Infra>Platform"},
-				Labels: []string{
-					"Via-Luci-Migration",
-					"Type-Task",
-					"Pri-3",
-					"Master-tryserver.chromium.linux",
-					"Restrict-View-Google",
-					"OS-LINUX",
-				},
-			},
-		})
+		So(monorailReqs, ShouldHaveLength, 1)
+		So(monorailReqs[0].Issue.Summary, ShouldEqual, "Migrate \"linux_chromium_asan_rel_ng\" to LUCI")
 
 		// Verify linux_chromium_asan_rel_ng was discovered.
 		chromiumAsanRelNg := &storage.Builder{
@@ -175,19 +144,5 @@ func (*buildbotMock) GetBuildbotBuildJSON(context.Context, *milo.BuildbotBuildRe
 	panic("not implemented")
 }
 func (*buildbotMock) GetBuildbotBuildsJSON(context.Context, *milo.BuildbotBuildsRequest) (*milo.BuildbotBuildsJSON, error) {
-	panic("not implemented")
-}
-
-type monorailMock struct {
-	insertIssue func(*monorail.InsertIssueRequest) (*monorail.InsertIssueResponse, error)
-}
-
-func (m *monorailMock) InsertIssue(c context.Context, in *monorail.InsertIssueRequest) (*monorail.InsertIssueResponse, error) {
-	return m.insertIssue(in)
-}
-func (*monorailMock) InsertComment(context.Context, *monorail.InsertCommentRequest) (*monorail.InsertCommentResponse, error) {
-	panic("not implemented")
-}
-func (*monorailMock) IssuesList(context.Context, *monorail.IssuesListRequest) (*monorail.IssuesListResponse, error) {
 	panic("not implemented")
 }

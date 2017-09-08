@@ -43,8 +43,7 @@ import (
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 
-	"infra/monorail"
-
+	"infra/appengine/luci-migration/bugs"
 	"infra/appengine/luci-migration/common"
 	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/discovery"
@@ -122,10 +121,7 @@ func cronDiscoverBuilders(c *router.Context) error {
 			C:    httpClient,
 			Host: cfg.BuildbotServiceHostname,
 		}),
-		Monorail: monorail.NewEndpointsClient(
-			httpClient,
-			fmt.Sprintf("https://%s/_ah/api/monorail/v1", cfg.MonorailHostname),
-		),
+		Monorail:         bugs.NewClient(httpClient, cfg.MonorailHostname),
 		MonorailHostname: cfg.MonorailHostname,
 	}
 
@@ -182,6 +178,7 @@ func init() {
 	r.POST("/_ah/push-handlers/buildbucket", base, taskHandler(handleBuildbucketPubSub))
 	r.GET("/internal/cron/analyze-builders", base, errHandler(cronAnalyzeBuilders))
 	r.POST("/internal/task/analyze-builder/*ignored", base, taskHandler(handleAnalyzeBuilder))
+	r.POST("/internal/task/notify/*ignored", base, taskHandler(handleNotifyOnBuilderChange))
 
 	m := base.Extend(
 		templates.WithTemplates(prepareTemplates()),

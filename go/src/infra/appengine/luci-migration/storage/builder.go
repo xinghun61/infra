@@ -17,6 +17,7 @@ package storage
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -54,6 +55,14 @@ type Builder struct {
 	Migration BuilderMigration
 
 	ExperimentPercentage int
+
+	MostRecentNotification Notification
+}
+
+type Notification struct {
+	Time            time.Time // zero, if never sent
+	Status          MigrationStatus
+	CurrentTaskName string
 }
 
 // IssueID globally identifies a Monorail issue.

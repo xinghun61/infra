@@ -168,6 +168,8 @@ message IssuesListResponse {
 message Update {
     // If set, the new status of the issue.
     string status = 2;
+    // Adds or removes labels.
+    repeated string labels = 3;
 }
 
 // Identifies a Monorail user.

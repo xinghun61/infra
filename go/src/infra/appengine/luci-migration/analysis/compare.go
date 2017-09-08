@@ -24,7 +24,7 @@ import (
 const (
 	// lowSpeed is the lower speed threshold. If speed drops below this,
 	// the builder is not WAI
-	lowSpeed  = 0.8
+	lowSpeed = 0.8
 	// highSpeed is the target speed. If speed is high or more, the builder is
 	// WAI.
 	highSpeed = 0.9

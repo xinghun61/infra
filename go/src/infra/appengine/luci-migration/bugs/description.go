@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package discovery
+package bugs
 
 import (
 	"bytes"
@@ -32,9 +32,7 @@ import (
 	"go.chromium.org/luci/common/errors"
 )
 
-const monorailProject = "chromium"
-
-var builderBugDescriptionTmpl = template.Must(template.New("").
+var descriptionTmpl = template.Must(template.New("").
 	Funcs(template.FuncMap{
 		"pathEscape": common.PathEscape,
 	}).
@@ -51,14 +49,14 @@ https://{{.Hostname}}/masters/{{.Builder.ID.Master|pathEscape}}/builders/{{.Buil
 Migration app will close this bug when the builder is entirely migrated from Buildbot to LUCI.
 `)))
 
-// createBuilderBug creates a Monorail issue to migrate the builder to LUCI.
-func createBuilderBug(c context.Context, client monorail.MonorailClient, builder *storage.Builder) (issueID int, err error) {
+// CreateBuilderBug creates a Monorail issue to migrate the builder to LUCI.
+func CreateBuilderBug(c context.Context, client monorail.MonorailClient, builder *storage.Builder) (issueID int, err error) {
 	descArgs := map[string]interface{}{
 		"Builder":  builder,
 		"Hostname": info.DefaultVersionHostname(c),
 	}
 	descBuf := &bytes.Buffer{}
-	if err := builderBugDescriptionTmpl.Execute(descBuf, descArgs); err != nil {
+	if err := descriptionTmpl.Execute(descBuf, descArgs); err != nil {
 		return 0, errors.Annotate(err, "could not execute description template").Err()
 	}
 
@@ -73,7 +71,7 @@ func createBuilderBug(c context.Context, client monorail.MonorailClient, builder
 	}
 
 	req := &monorail.InsertIssueRequest{
-		ProjectId: monorailProject,
+		ProjectId: builder.IssueID.Project,
 		SendEmail: true,
 		Issue: &monorail.Issue{
 			Status:      "Available",

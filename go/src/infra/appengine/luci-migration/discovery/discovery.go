@@ -23,9 +23,12 @@ import (
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/milo/api/proto"
 
+	"infra/appengine/luci-migration/bugs"
 	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 )
+
+const monorailProject = "chromium"
 
 // Builders finds and registers new builders.
 type Builders struct {
@@ -117,7 +120,7 @@ func (d *Builders) registerBuilder(c context.Context, master *config.Master, nam
 	builder.IssueID.Hostname = d.MonorailHostname
 	builder.IssueID.Project = monorailProject
 	var err error
-	if builder.IssueID.ID, err = createBuilderBug(c, d.Monorail, builder); err != nil {
+	if builder.IssueID.ID, err = bugs.CreateBuilderBug(c, d.Monorail, builder); err != nil {
 		return errors.Annotate(err, "could not create a monorail bug for builder %q", &builder.ID).Err()
 	}
 

@@ -7,8 +7,8 @@ import (
 	"infra/monorail"
 )
 
-// NewTestClient creates as client based on a server implementation.
-func NewTestClient(serverImpl monorail.MonorailServer) monorail.MonorailClient {
+// NewClient creates as client based on a server implementation.
+func NewClient(serverImpl monorail.MonorailServer) monorail.MonorailClient {
 	return &testClient{serverImpl}
 }
 
