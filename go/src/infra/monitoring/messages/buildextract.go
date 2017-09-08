@@ -123,7 +123,7 @@ type Change struct {
 	Who        string          `json:"who"`
 }
 
-var cpRE = regexp.MustCompile("Cr-Commit-Position: (.*)@{#([0-9]+)}")
+var cpRE = regexp.MustCompile("(?m:^Cr-Commit-Position: (.*)@{#([0-9]+)})")
 
 // CommitPosition parses the comments of a change to find something which
 // looks like a commit position git footer.
