@@ -13,6 +13,7 @@ import (
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
+	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/router"
@@ -151,6 +152,15 @@ type payload struct {
 	Userdata string `json:"userdata"`
 }
 
+// ReceivedPubSubMessage guards against duplicate processing of pubsub messages.
+//
+// LUCI datastore ID (=swarming task ID) field.
+type ReceivedPubSubMessage struct {
+	ID     string `gae:"$id"`
+	RunID  int64
+	Worker string
+}
+
 func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 	logging.Infof(c, "[driver] Received pubsub message, messageId: %q, publishTime: %q", msg.MessageId, msg.PublishTime)
 	tr, taskID, err := decodePubsubMessage(c, msg)
@@ -158,6 +168,24 @@ func handlePubSubMessage(c context.Context, msg *pubsub.PubsubMessage) error {
 		return fmt.Errorf("failed to decode pubsub message: %v", err)
 	}
 	logging.Infof(c, "[driver] Unwrapped pubsub message, task ID: %q, TriggerRequest: %v", taskID, tr)
+	// Check if message was already received.
+	received := &ReceivedPubSubMessage{ID: taskID}
+	err = ds.Get(c, received)
+	if err != nil && err != ds.ErrNoSuchEntity {
+		return fmt.Errorf("failed to get receivedPubSubMessage: %v", err)
+	}
+	// If message not already received, store to prevent duplicate processing.
+	if err == ds.ErrNoSuchEntity {
+		received.RunID = tr.RunId
+		received.Worker = tr.Worker
+		if err := ds.Put(c, received); err != nil {
+			return fmt.Errorf("failed to store receivedPubSubMessage: %v", err)
+		}
+	} else {
+		logging.Infof(c, "[driver] Skipping processing of pubsub message, task ID: %s", taskID)
+		// Message has already been processed, return and ack the pubsub message with no futher action.
+		return nil
+	}
 	// Enqueue collect request
 	b, err := proto.Marshal(&admin.CollectRequest{
 		RunId:             tr.RunId,
