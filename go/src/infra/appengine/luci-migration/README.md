@@ -25,19 +25,17 @@ Migration procedure:
     If access is denied, contact luci-eng@.
     The access is controlled by
     [luci-migration-writers group](https://chrome-infra-auth.appspot.com/auth/groups/luci-migration-writers).
-1.  Wait. The app will post an update to the bug with correctness/performance
-    report when enough LUCI builds completed.
-    With 10%, it may take a day.
-    TODO(nodir): notification is not implemented, so manually check the page
-    next day.
+1.  Wait.
+    Check the page later to see the most recent report.
 1.  Read the analysis report.
     The builder is likely to have <100% correctness.
-    Each "false failure" means Buildbot build(s) suceeded for the patchset,
+    Each "false failure" means Buildbot build(s) succeeded for the patchset,
     but LUCI ones did not.
     Click on Failures and identify causes.
 1.  Fix the causes and wait for another report.
     Ensure that failures with the same causes do not happen again.
 1.  Repeat the process until correctness is 100%, or the only false failures
     are flakes.
+    In case of a status change (not WAI -> WAI, or vice-versa), the app will post a comment on the bug.
 
 [cr-buildbucket.cfg]: https://chromium.googlesource.com/chromium/src/+/infra/config/cr-buildbucket.cfg
