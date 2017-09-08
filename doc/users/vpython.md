@@ -578,7 +578,6 @@ From the `dockerbuild` list, the following packaged wheel bundles are available:
   ```
 
 * cryptography 1.8.1
-* Coverage 4.3.4
   ```protobuf
   wheel: <
     name: "infra/python/wheels/cryptography/${platform}_${py_python}_${py_abi}"
