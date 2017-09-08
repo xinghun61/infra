@@ -70,8 +70,6 @@ func TestFinditRules(t *testing.T) {
 		}
 		cfg.gerritClient = &mockGerritClient{q: q}
 
-		// Create ap{repoconfig{mockclients...}}
-		// Test pass.
 		Convey("Culprit age Pass", func() {
 			// Inject gitiles log response
 			r := []gitiles.Commit{
@@ -222,6 +220,22 @@ func TestFinditRules(t *testing.T) {
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, "does not have an expected failure")
 			So(rr.Message, ShouldContainSubstring, "compile")
+		})
+		Convey("RevertOfCulprit Pass", func() {
+			rc.CommitMessage = "This reverts commit badc0de\n" + rc.CommitMessage
+			rr := RevertOfCulprit(ctx, ap, rc)
+			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
+		})
+		Convey("RevertOfCulprit Fail - no revert", func() {
+			ap.RepoCfg.gerritClient.(*mockGerritClient).q["12ebe127"][0].RevertOf = 0
+			rr := RevertOfCulprit(ctx, ap, rc)
+			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
+			So(rr.Message, ShouldContainSubstring, "does not appear to be a revert")
+		})
+		Convey("RevertOfCulprit Fail - culprit not in revert commit message", func() {
+			rr := RevertOfCulprit(ctx, ap, rc)
+			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
+			So(rr.Message, ShouldContainSubstring, "does not include the revision it reverts")
 		})
 	})
 }

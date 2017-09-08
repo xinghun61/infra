@@ -24,8 +24,8 @@ const (
 type RuleStatus int
 
 const (
-	rulePassed RuleStatus = iota
-	ruleFailed
+	ruleFailed RuleStatus = iota
+	rulePassed
 	ruleSkipped
 )
 
