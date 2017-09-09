@@ -425,11 +425,13 @@ class SomAnnotations extends Polymer.mixinBehaviors(
     return email.substring(0, cutoff);
   }
 
-  _formatTimestamp(time) {
-    if (!time) {
+  _formatTimestamp(timestamp) {
+    if (!timestamp) {
       return '';
     }
-    return moment.tz(new Date(time), 'America/Los_Angeles');
+    let time = moment.tz(new Date(timestamp), 'Atlantic/Reykjavik');
+    let result = time.tz('America/Los_Angeles').format('ddd, DD MMM Y hh:mm z');
+    return result + ` (${time.fromNow()})`;
   }
 
   _removeComment(evt) {

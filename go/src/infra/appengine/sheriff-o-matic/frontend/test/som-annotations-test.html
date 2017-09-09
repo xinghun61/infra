@@ -381,8 +381,8 @@
         assert.equal('foo', text[0].markdown.trim());
         assert.equal('bar', text[1].markdown.trim());
 
-        assert.equal('Thu Oct 13 2016 15:22:55 GMT-0700', time[0].textContent.trim());
-        assert.equal('Mon Oct 17 2016 15:22:55 GMT-0700', time[1].textContent.trim());
+        assert.include(time[0].textContent.trim(), 'Thu, 13 Oct 2016 03:22 PDT');
+        assert.include(time[1].textContent.trim(), 'Mon, 17 Oct 2016 03:22 PDT');
         done();
       });
     });
