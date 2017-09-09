@@ -73,12 +73,59 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
         AnalyzeFlakeForBuildNumberPipeline,
         '',
         expected_args=[
-            analysis.key.urlsafe(), build_number, iterations, timeout
-        ],
-        expected_kwargs={'rerun': rerun})
+            analysis.key.urlsafe(), build_number, iterations, timeout, rerun
+        ])
 
     pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
                                                  build_number)
+    pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+  @mock.patch.object(
+      determine_true_pass_rate_pipeline,
+      '_HasPassRateConverged',
+      side_effect=[False, True])
+  @mock.patch.object(
+      determine_true_pass_rate_pipeline,
+      '_MinimumIterationsReached',
+      return_value=True)
+  @mock.patch.object(
+      flake_analysis_util, 'EstimateSwarmingIterationTimeout', return_value=60)
+  @mock.patch.object(
+      flake_analysis_util,
+      'CalculateNumberOfIterationsToRunWithinTimeout',
+      return_value=60)
+  def testDetermineTruePassRatePipelineWithRerun(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    rerun = True
+    iterations = 60
+    timeout = 3600
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.status = analysis_status.PENDING
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.data_points = [
+        DataPoint.Create(
+            build_number=build_number, pass_rate=1.0, iterations=0)
+    ]
+    analysis.put()
+
+    self.MockPipeline(
+        AnalyzeFlakeForBuildNumberPipeline,
+        '',
+        expected_args=[
+            analysis.key.urlsafe(), build_number, iterations, timeout, rerun
+        ])
+
+    pipeline_job = DetermineTruePassRatePipeline(
+        analysis.key.urlsafe(), build_number, rerun=rerun)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -126,9 +173,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
         AnalyzeFlakeForBuildNumberPipeline,
         '',
         expected_args=[
-            analysis.key.urlsafe(), build_number, iterations, timeout
-        ],
-        expected_kwargs={'rerun': rerun})
+            analysis.key.urlsafe(), build_number, iterations, timeout, rerun
+        ])
 
     pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
                                                  build_number)
@@ -176,9 +222,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
         AnalyzeFlakeForBuildNumberPipeline,
         '',
         expected_args=[
-            analysis.key.urlsafe(), build_number, iterations, timeout
-        ],
-        expected_kwargs={'rerun': rerun})
+            analysis.key.urlsafe(), build_number, iterations, timeout, rerun
+        ])
 
     pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
                                                  build_number)
@@ -228,9 +273,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
         AnalyzeFlakeForBuildNumberPipeline,
         '',
         expected_args=[
-            analysis.key.urlsafe(), build_number, iterations, timeout
-        ],
-        expected_kwargs={'rerun': rerun})
+            analysis.key.urlsafe(), build_number, iterations, timeout, rerun
+        ])
 
     pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
                                                  build_number)

@@ -255,11 +255,8 @@ class DetermineTruePassRatePipeline(BasePipeline):
     # Run swarming task, aggregate results and recurse
     with pipeline.InOrder():
       yield AnalyzeFlakeForBuildNumberPipeline(
-          analysis_urlsafe_key,
-          build_number,
-          iterations_for_task,
-          time_for_task_seconds,
-          rerun=rerun)
+          analysis_urlsafe_key, build_number, iterations_for_task,
+          time_for_task_seconds, rerun)
       yield DetermineTruePassRatePipeline(
           analysis_urlsafe_key,
           build_number,
