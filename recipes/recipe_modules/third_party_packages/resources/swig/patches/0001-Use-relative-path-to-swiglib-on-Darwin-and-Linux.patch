@@ -1,0 +1,52 @@
+From d09bbf05e01bfaeb079a28259517e76f8c977277 Mon Sep 17 00:00:00 2001
+From: Petr Hosek <phosek@google.com>
+Date: Fri, 8 Sep 2017 12:58:52 -0700
+Subject: [PATCH] Use relative path to swiglib on Darwin and Linux
+
+Enable SWIG to resolve its own binary location and use that path
+to construct the location of the swiglib relative to the binary.
+This mechanism was already used on Windows, now it is supported
+on Darwin and Linux as well.
+
+Signed-off-by: Petr Hosek <phosek@google.com>
+---
+ Source/Modules/main.cxx | 22 +++++++++++++++++++++-
+ 1 file changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/Source/Modules/main.cxx b/Source/Modules/main.cxx
+index 12b83b2e4..cacc473d1 100644
+--- a/Source/Modules/main.cxx
++++ b/Source/Modules/main.cxx
+@@ -937,8 +937,28 @@ int SWIG_main(int argc, char *argv[], Language *l) {
+     }
+     if (Len(SWIG_LIB_WIN_UNIX) > 0)
+       SwigLibWinUnix = NewString(SWIG_LIB_WIN_UNIX); // Unix installation path using a drive letter (for msys/mingw)
++#elif defined(__APPLE__)
++    char path[PATH_MAX];
++    uint32_t size = sizeof(path);
++    char *p;
++    if (!_NSGetExecutablePath(path, &size) && (p = strrchr(path, '/'))) {
++      *(p + 1) = '\0';
++      SwigLib = NewStringf("%s../share/swig/%s", path, VERSION);
++    } else {
++      SwigLib = NewStringf("");
++    }
++#elif defined(__linux__)
++    char *path = NULL;
++    char *p;
++    if ((path = realpath("/proc/self/exe", NULL)) && (p = strrchr(path, '/'))) {
++      *(p + 1) = '\0';
++      SwigLib = NewStringf("%s../share/swig/%s", path, VERSION);
++    } else {
++      SwigLib = NewStringf("");
++    }
++    free(path);
+ #else
+-    SwigLib = NewString(SWIG_LIB);
++#error Unsupported platform
+ #endif
+   } else {
+     SwigLib = NewString(c);
+-- 
+2.14.1.581.gf28d330327-goog
+

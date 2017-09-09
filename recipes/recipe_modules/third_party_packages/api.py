@@ -7,6 +7,7 @@ from . import git as tpp_git
 from . import python as tpp_python
 from . import ninja as tpp_ninja
 from . import cmake as tpp_cmake
+from . import swig as tpp_swig
 from .support_prefix import SupportPrefix
 
 from recipe_engine import recipe_api
@@ -51,6 +52,10 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
   @property
   def cmake(self):
     return self._get_singleton(tpp_cmake.CMakeApi)
+
+  @property
+  def swig(self):
+    return self._get_singleton(tpp_swig.SwigApi)
 
   def support_prefix(self, base):
     return SupportPrefix(self, base)

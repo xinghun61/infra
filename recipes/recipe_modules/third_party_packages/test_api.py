@@ -7,6 +7,7 @@ from . import git as tpp_git
 from . import python as tpp_python
 from . import ninja as tpp_ninja
 from . import cmake as tpp_cmake
+from . import swig as tpp_swig
 
 from recipe_engine import recipe_test_api
 
@@ -32,3 +33,7 @@ class ThirdPartyPackagesTestApi(recipe_test_api.RecipeTestApi):
   @property
   def cmake(self):
     return tpp_cmake
+
+  @property
+  def swig(self):
+    return tpp_swig

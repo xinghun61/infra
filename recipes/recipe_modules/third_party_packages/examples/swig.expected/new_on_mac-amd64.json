@@ -1,0 +1,400 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/swig"
+    ],
+    "infra_step": true,
+    "name": "rmtree workdir"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/swig/swig/+refs",
+      "--format",
+      "json"
+    ],
+    "name": "refs",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"HEAD\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/heads/master\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/rel-3.0.1\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/rel-3.0.16\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@refs@HEAD@@@",
+      "@@@STEP_LOG_LINE@refs@refs/heads/master@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/rel-3.0.1@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/rel-3.0.16@@@",
+      "@@@STEP_LOG_END@refs@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "infra/swig/mac-amd64",
+      "-tag",
+      "version:3.0.16",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "name": "cipd search infra/swig/mac-amd64 version:3.0.16",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[START_DIR]/swig/checkout",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/swig/swig"
+    ],
+    "name": "git setup"
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "fetch",
+      "origin",
+      "refs/tags/rel-3.0.16"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "git fetch"
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "infra_step": true,
+    "name": "git checkout"
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "infra_step": true,
+    "name": "read revision",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "infra_step": true,
+    "name": "git clean"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/swig/package"
+    ],
+    "infra_step": true,
+    "name": "package_dir"
+  },
+  {
+    "cmd": [
+      "git",
+      "-c",
+      "user.name=third_party_packages",
+      "-c",
+      "user.email=third_party_packages@example.com",
+      "am",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/swig/patches/0001-Use-relative-path-to-swiglib-on-Darwin-and-Linux.patch"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "infra_step": true,
+    "name": "git apply patches"
+  },
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/swig/_support/sources",
+      "-ensure-file",
+      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/bzip2 version:1.0.6\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/gnu_sed version:4.2.2\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/ncurses version:6.0\ninfra/third_party/source/nsl version:1.0.4\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/pcre2 version:10.23\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/zlib version:1.2.11",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "name": "ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:9.0.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/pip-packages\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:2.69----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/autoconf\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.0.6---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/bzip2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.54.0--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/curl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:4.2.2---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/gnu_sed\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:0.9.8zh-\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/mac_openssl_headers\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:6.0-----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/ncurses\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.0.4---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/nsl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.1.0e--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/openssl\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:10.23---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/pcre2\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:7.0-----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/readline\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:3.19.3--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/sqlite-autoconf\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.2.11--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/zlib\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [],
+    "cwd": "[START_DIR]/swig/checkout",
+    "name": "autoconf-2.69"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/swig/_support/autoconf-2.69"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "infra_step": true,
+    "name": "autoconf-2.69.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/swig/_support/sources/autoconf-2.69.tar.gz",
+      "[START_DIR]/swig/_support/autoconf-2.69"
+    ],
+    "cwd": "[START_DIR]/swig/_support/autoconf-2.69",
+    "name": "autoconf-2.69.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/swig/_support/autoconf-2.69/prefix"
+    ],
+    "cwd": "[START_DIR]/swig/_support/autoconf-2.69/autoconf-2.69",
+    "name": "autoconf-2.69.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install"
+    ],
+    "cwd": "[START_DIR]/swig/_support/autoconf-2.69/autoconf-2.69",
+    "name": "autoconf-2.69.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./autogen.sh"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "autogen"
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix="
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "configure"
+  },
+  {
+    "cmd": [
+      "make"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "make"
+  },
+  {
+    "cmd": [
+      "make",
+      "install"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "env": {
+      "DESTDIR": "[START_DIR]/swig/package"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
+    "name": "make install"
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-build",
+      "-in",
+      "[START_DIR]/swig/package",
+      "-name",
+      "infra/swig/mac-amd64",
+      "-out",
+      "[START_DIR]/swig/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-install-mode",
+      "symlink"
+    ],
+    "name": "build mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/swig/mac-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-register",
+      "[START_DIR]/swig/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json",
+      "-ref",
+      "latest",
+      "-tag",
+      "version:3.0.16"
+    ],
+    "name": "register infra/swig/mac-amd64",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/swig/mac-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]

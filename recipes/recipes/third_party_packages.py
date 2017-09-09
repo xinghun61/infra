@@ -38,6 +38,8 @@ def RunSteps(api, dry_run):
       api.third_party_packages.ninja.package()
     with api.step.nest('cmake'):
       api.third_party_packages.cmake.package()
+    with api.step.nest('swig'):
+      api.third_party_packages.swig.package()
 
 
 def GenTests(api):
@@ -83,7 +85,13 @@ def GenTests(api):
       cipd_search(
         'cmake',
         api.third_party_packages.cmake.PACKAGE_PREFIX + platform,
-        '3.9.1' + api.third_party_packages.cmake.PACKAGE_VERSION_SUFFIX)
+        '3.9.1' + api.third_party_packages.cmake.PACKAGE_VERSION_SUFFIX) +
+      api.step_data('swig.refs',
+        api.gitiles.make_refs_test_data('refs/tags/rel-3.0.12')) +
+      cipd_search(
+        'swig',
+        api.third_party_packages.swig.PACKAGE_PREFIX + platform,
+        '3.0.12' + api.third_party_packages.swig.PACKAGE_VERSION_SUFFIX)
     )
 
   yield (
