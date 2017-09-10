@@ -43,7 +43,7 @@ func (*mockIsolator) FetchIsolatedResults(c context.Context, serverURL, isolated
 	}
 	res, err := json.Marshal(result)
 	if err != nil {
-		return "", errors.New("failed to marshall mock result")
+		return "", errors.New("failed to marshal mock result")
 	}
 	return string(res), nil
 }
@@ -106,6 +106,6 @@ func TestWorkerDoneRequest(t *testing.T) {
 			So(ar.NumComments, ShouldEqual, 1)
 		})
 
-		// TODO(emso): multi-platform analyzer is half done, analyzer stays launched
+		// TODO(emso): Multi-platform analyzer is half done, analyzer stays launched.
 	})
 }

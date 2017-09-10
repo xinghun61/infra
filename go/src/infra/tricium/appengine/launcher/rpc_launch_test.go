@@ -174,7 +174,7 @@ func TestLaunchRequest(t *testing.T) {
 				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.DriverQueue]), ShouldEqual, 2)
 			})
 
-			// Check guard: one more launch request results in no added tasks
+			// Check guard: one more launch request results in no added tasks.
 			err = launch(ctx, &admin.LaunchRequest{
 				RunId:   runID,
 				Project: "test-project",

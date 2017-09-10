@@ -52,7 +52,7 @@ const (
 // ReportServerError reports back a server error (http code 500).
 func ReportServerError(c *router.Context, err error) {
 	logging.WithError(err).Errorf(c.Context, "HTTP 500")
-	http.Error(c.Writer, "An internal server error occured. We are working on it ;)",
+	http.Error(c.Writer, "An internal server error occurred. We are working on it ;)",
 		http.StatusInternalServerError)
 }
 

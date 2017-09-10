@@ -26,7 +26,7 @@ const (
 	swarmingProdServerURL = "https://chromium-swarm.appspot.com"
 )
 
-// SwarmingAPI specifies the Swarming servic API.
+// SwarmingAPI specifies the Swarming service API.
 type SwarmingAPI interface {
 	// Trigger triggers a swarming task.
 	//

@@ -37,7 +37,7 @@ const repo = "https://chromium-review.googlesource.com/playground/gerrit-tricium
 
 // Analyze processes one Analyze request to Tricium.
 //
-// Launched a workflow customized to the project and listed paths. The run ID
+// Launches a workflow customized to the project and listed paths. The run ID
 // in the response can be used to track the progress and results of the request
 // via the Tricium UI.
 func (r *TriciumServer) Analyze(c context.Context, req *tricium.AnalyzeRequest) (*tricium.AnalyzeResponse, error) {

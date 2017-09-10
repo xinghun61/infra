@@ -25,7 +25,7 @@ func TestResults(t *testing.T) {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
 
-		// Add request->run->analyzer->worker->comments
+		// Add request->run->analyzer->worker->comments.
 		request := &track.AnalyzeRequest{}
 		So(ds.Put(ctx, request), ShouldBeNil)
 		requestKey := ds.KeyForObj(ctx, request)

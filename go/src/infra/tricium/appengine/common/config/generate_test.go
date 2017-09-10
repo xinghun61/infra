@@ -134,7 +134,7 @@ func TestGenerate(t *testing.T) {
 				},
 			},
 		}
-		Convey("correct selection generates workflow", func() {
+		Convey("Correct selection generates workflow", func() {
 			wf, err := Generate(sc, pc, []string{})
 			So(err, ShouldBeNil)
 			So(len(wf.Workers), ShouldEqual, 3)
@@ -144,7 +144,7 @@ func TestGenerate(t *testing.T) {
 
 func TestCheckWorkflowSanity(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		Convey("correct workflow is sane", func() {
+		Convey("Correct workflow is sane", func() {
 			w := []*admin.Worker{
 				{
 					Name:  "FileIsolator",
@@ -158,7 +158,7 @@ func TestCheckWorkflowSanity(t *testing.T) {
 			err := checkWorkflowSanity(w)
 			So(err, ShouldBeNil)
 		})
-		Convey("non-accessible workers cause error", func() {
+		Convey("Non-accessible workers cause error", func() {
 			w := []*admin.Worker{
 				{
 					Name:  "FileIsolator",
@@ -176,7 +176,7 @@ func TestCheckWorkflowSanity(t *testing.T) {
 
 func TestFollowWorkerDeps(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		Convey("circular dep causes error", func() {
+		Convey("Circular dependencies causes error", func() {
 			visited := map[string]*admin.Worker{}
 			workers := map[string]*admin.Worker{}
 			w := &admin.Worker{
@@ -188,7 +188,7 @@ func TestFollowWorkerDeps(t *testing.T) {
 			err := checkWorkerDeps(w, workers, visited)
 			So(err, ShouldNotBeNil)
 		})
-		Convey("multiple paths to worker causes error", func() {
+		Convey("Multiple paths to worker causes error", func() {
 			visited := map[string]*admin.Worker{}
 			workers := map[string]*admin.Worker{}
 			w := &admin.Worker{
@@ -213,7 +213,7 @@ func TestFollowWorkerDeps(t *testing.T) {
 			err = checkWorkerDeps(w3, workers, visited)
 			So(err, ShouldNotBeNil)
 		})
-		Convey("ok deps render no error", func() {
+		Convey("OK deps render no error", func() {
 			visited := map[string]*admin.Worker{}
 			workers := map[string]*admin.Worker{}
 			w := &admin.Worker{

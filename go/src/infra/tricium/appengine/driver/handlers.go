@@ -218,7 +218,7 @@ func decodePubsubMessage(c context.Context, msg *pubsub.PubsubMessage) (*admin.T
 	}
 	p := payload{}
 	if err := json.Unmarshal(data, &p); err != nil {
-		return nil, "", fmt.Errorf("failed to unmarshal pubsub JSON playload: %v", err)
+		return nil, "", fmt.Errorf("failed to unmarshal pubsub JSON payload: %v", err)
 	}
 	userdata, err := base64.StdEncoding.DecodeString(p.Userdata)
 	if err != nil {
