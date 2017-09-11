@@ -66,6 +66,7 @@ func CommitScanner(rc *router.Context) {
 	if repoConfig.gitilesClient == nil {
 		giC, err := getGitilesClient(ctx)
 		if err != nil {
+			logging.WithError(err).Errorf(ctx, "Could not get gitiles client")
 			http.Error(resp, err.Error(), 500)
 			return
 		}
@@ -73,6 +74,7 @@ func CommitScanner(rc *router.Context) {
 	}
 	fl, err := repoConfig.gitilesClient.LogForward(ctx, repoConfig.BaseRepoURL, rev, repoConfig.BranchName)
 	if err != nil {
+		logging.WithError(err).Errorf(ctx, "Could not get gitiles log from revision %s", rev)
 		http.Error(resp, err.Error(), 500)
 		return
 	}
@@ -84,6 +86,7 @@ func CommitScanner(rc *router.Context) {
 			if ruleSet.MatchesCommit(commit) {
 				n, err := saveNewRelevantCommit(ctx, repoConfig.State, commit)
 				if err != nil {
+					logging.WithError(err).Errorf(ctx, "Could not save new relevant commit")
 					http.Error(resp, err.Error(), 500)
 					return
 				}
@@ -99,6 +102,8 @@ func CommitScanner(rc *router.Context) {
 	// auditing the same commit twice.
 	if err := ds.Put(ctx, repoConfig.State); err != nil {
 		logging.WithError(err).Errorf(ctx, "Could not save last known/interesting commits")
+		http.Error(resp, err.Error(), 500)
+		return
 	}
 }
 
@@ -107,6 +112,7 @@ func saveNewRelevantCommit(ctx context.Context, state *RepoState, commit gitiles
 
 	commitTime, err := commit.Committer.GetTime()
 	if err != nil {
+		logging.WithError(err).Errorf(ctx, "Could not get commit time from commit")
 		return nil, err
 	}
 	rc := &RelevantCommit{
@@ -117,11 +123,14 @@ func saveNewRelevantCommit(ctx context.Context, state *RepoState, commit gitiles
 		CommitTime:             commitTime,
 		CommitterAccount:       commit.Committer.Email,
 		AuthorAccount:          commit.Author.Email,
+		CommitMessage:          commit.Message,
 	}
 
 	if err := ds.Put(ctx, rc, state); err != nil {
+		logging.WithError(err).Errorf(ctx, "Could not save %s", rc)
 		return nil, err
 	}
+	logging.Infof(ctx, "saved %s", rc)
 
 	return rc, nil
 }

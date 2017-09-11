@@ -22,7 +22,7 @@ import (
 
 const (
 	// TODO(robertocn): Move this to the gitiles library.
-	gitilesScope      = "https://www.googleapis.com/auth/gerritcodereview"
+	gerritScope       = "https://www.googleapis.com/auth/gerritcodereview"
 	emailScope        = "https://www.googleapis.com/auth/userinfo.email"
 	failedBuildPrefix = "Sample Failed Build:"
 )
@@ -54,11 +54,19 @@ func getGitilesClient(ctx context.Context) (*gitiles.Client, error) {
 // TODO(robertocn): move this into a dedicated file for authentication, and
 // accept a list of scopes to make this function usable for communicating for
 // different systems.
-func getAuthenticatedHTTPClient(ctx context.Context) (*http.Client, error) {
-	t, err := auth.GetRPCTransport(ctx, auth.AsSelf, auth.WithScopes(gitilesScope, emailScope))
+func getAuthenticatedHTTPClient(ctx context.Context, scopes ...string) (*http.Client, error) {
+	var t http.RoundTripper
+	var err error
+	if len(scopes) > 0 {
+		t, err = auth.GetRPCTransport(ctx, auth.AsSelf, auth.WithScopes(scopes...))
+	} else {
+		t, err = auth.GetRPCTransport(ctx, auth.AsSelf)
+	}
+
 	if err != nil {
 		return nil, err
 	}
+
 	return &http.Client{Transport: t}, nil
 }
 

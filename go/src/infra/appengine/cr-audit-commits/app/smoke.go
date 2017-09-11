@@ -82,7 +82,7 @@ var (
 		Name: "Check gerrit connectivity",
 		Check: func(ctx context.Context) error {
 
-			httpClient, err := getAuthenticatedHTTPClient(ctx)
+			httpClient, err := getAuthenticatedHTTPClient(ctx, gerritScope)
 			if err != nil {
 				return err
 			}
@@ -116,7 +116,7 @@ var (
 	monorailCheck = SmokeTestCheck{
 		Name: "Check monorail connectivity",
 		Check: func(ctx context.Context) error {
-			httpClient, err := getAuthenticatedHTTPClient(ctx)
+			httpClient, err := getAuthenticatedHTTPClient(ctx, emailScope)
 			if err != nil {
 				return err
 			}

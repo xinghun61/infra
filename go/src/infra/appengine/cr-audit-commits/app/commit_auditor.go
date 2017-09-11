@@ -87,7 +87,7 @@ func CommitAuditor(rc *router.Context) {
 
 	// Tests would have put a mock client in repoConfig.gerritClient.
 	if repoConfig.gerritClient == nil {
-		httpClient, err := getAuthenticatedHTTPClient(ctx)
+		httpClient, err := getAuthenticatedHTTPClient(ctx, gerritScope)
 		if err != nil {
 			http.Error(resp, err.Error(), 500)
 			return
@@ -112,7 +112,7 @@ func CommitAuditor(rc *router.Context) {
 	ap := AuditParams{
 		RepoCfg: repoConfig,
 	}
-	cq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("State", auditScheduled).Limit(MaxWorkers * CommitsPerWorker)
+	cq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditScheduled).Limit(MaxWorkers * CommitsPerWorker)
 
 	wp := &workerParams{rules: repoConfig.Rules}
 
@@ -123,6 +123,11 @@ func CommitAuditor(rc *router.Context) {
 		http.Error(resp, err.Error(), 500)
 		return
 	}
+	if nCommits == 0 {
+		logging.Infof(ctx, "No relevant commits to audit")
+		return
+	}
+	logging.Infof(ctx, "Auditing %d commits", nCommits)
 
 	// Make the number of workers proportional to the number of commits
 	// that need auditing.
@@ -132,9 +137,13 @@ func CommitAuditor(rc *router.Context) {
 		nWorkers = MaxWorkers
 	}
 
+	logging.Infof(ctx, "Starting %d workers", nWorkers)
 	startAuditWorkers(ctx, ap, wp, nWorkers)
 	// Send audit jobs to workers.
-	ds.Run(ctx, cq, func(rc *RelevantCommit) { wp.jobs <- rc })
+	ds.Run(ctx, cq, func(rc *RelevantCommit) {
+		logging.Infof(ctx, "Sending %s to worker pool", rc.CommitHash)
+		wp.jobs <- rc
+	})
 	// Signal that no more jobs will be sent.
 	close(wp.jobs)
 	// Wait for all workers to finish.
@@ -209,9 +218,11 @@ func startAuditWorkers(ctx context.Context, ap AuditParams, wp *workerParams, nW
 // This is the main goroutine for each auditing goroutine.
 func audit(ctx context.Context, n int, ap AuditParams, wp *workerParams) {
 	defer func() { wp.workerFinished <- true }()
-	for job, hasJobs := <-wp.jobs; hasJobs; {
+	for job := range wp.jobs {
+		logging.Infof(ctx, "Worker %d about to run job %s", n, job.CommitHash)
 		runRules(ctx, job, ap, wp)
 	}
+	logging.Infof(ctx, "Worker %d sees no more jobs in the channel", n)
 	wp.finishedCleanly <- true
 }
 

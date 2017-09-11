@@ -1,0 +1,8 @@
+cron:
+- description: "Commit scanner"
+  url: /_cron/commitscanner?repo=chromium-src-master
+  schedule: every 5 minutes
+
+- description: "Commit auditor"
+  url: /_cron/commitauditor?repo=chromium-src-master
+  schedule: every 5 minutes
