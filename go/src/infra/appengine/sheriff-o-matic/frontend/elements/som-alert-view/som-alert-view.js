@@ -538,10 +538,14 @@ class SomAlertView extends Polymer.mixinBehaviors(
      * finds the intersection of the two intervals.
     */
     let lower = Math.max(gRR[0], aRR[0]);
-    let upper = Math.min(gRR[gRR.length - 1], aRR[gRR.length - 1]);
+    let upper = Math.min(gRR[gRR.length - 1], aRR[aRR.length - 1]);
     if (lower > upper) {
       console.warn("Bad regression ranges", gRR, aRR)
-      return undefined;
+      return {
+        error: "Invalid regression range",
+        explanation: `Two regression ranges, ${gRR[0]} - ${aRR[0]} and ${gRR[gRR.length - 1]} - ${aRR[aRR.length-1]}, were merged together, but don't share any common commit positions. This probably means this alert should be split into a few different alerts, each with different root causes.`,
+        bad_range: [lower, upper]
+      };
     }
 
     let copy = Object.assign({}, groupRange);

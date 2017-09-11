@@ -16,6 +16,10 @@ class SomRevRange extends Polymer.Element {
         type: String,
         value: 'more',
       },
+      _errorCollapseMessage: {
+        type: String,
+        value: 'more',
+      },
       _revs: {
         type: Array,
         value: null,
@@ -62,6 +66,12 @@ class SomRevRange extends Polymer.Element {
     this._iconName =
         this.$.collapse.opened ? 'icons:unfold-less' : 'icons:unfold-more';
     this._collapseMessage = this.$.collapse.opened ? 'less' : 'more';
+  }
+
+  _toggleErrorCollapse() {
+    let elem = Polymer.dom(this.root).querySelector('#errorCollapse');
+    elem.toggle();
+    this._errorCollapseMessage = elem.opened ? 'less' : 'more';
   }
 
   _shortHash(hash) {
@@ -142,6 +152,10 @@ class SomRevRange extends Polymer.Element {
       return 'suspect-cl';
     }
     return '';
+  }
+
+  _haveError(range) {
+    return !!range.error;
   }
 }
 

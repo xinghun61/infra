@@ -132,9 +132,6 @@
           No regression range information available.
         </template>
         <template is="dom-if" if="[[_haveRegressionRanges(extension.regression_ranges)]]">
-          <div class="header">
-            Regression ranges:
-          </div>
           <template is="dom-repeat" items="[[extension.regression_ranges]]" as="regressionRange" filter="_showRegressionRange">
             <div>
               <som-rev-range range="[[regressionRange]]"></som-rev-range>

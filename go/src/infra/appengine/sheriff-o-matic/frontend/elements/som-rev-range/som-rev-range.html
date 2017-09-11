@@ -27,19 +27,38 @@
       .header {
         color: #fff;
       }
+      .header {
+        color: #000;
+      }
       .padding-right {
         padding-right: 0.5em;
       }
+      .error {
+        color: #e75d54;
+      }
     </style>
     <div>
-      <span class="padding-right">
-        [[range.repo]]:
-      </span>
-      <a class="padding-right" target="_blank" href$="[[_regressionRangeLink(range)]]">[[_regressionRange(range)]]</a>
-      <div class="collapse" on-tap="_toggleCollapse">
-        Click to see [[_collapseMessage]] information.
-        <iron-icon icon="[[_iconName]]"></iron-icon>
-      </div>
+      <template is="dom-if" if="[[_haveError(range)]]">
+        <div class="error collapse" on-tap="_toggleErrorCollapse">
+          Error: "[[range.error]]". Click to see [[_errorCollapseMessage]].
+        </div>
+        <iron-collapse id="errorCollapse" no-animation>
+          [[range.explanation]]
+        </iron-collapse>
+      </template>
+      <template is="dom-if" if="[[!_haveError(range)]]">
+        <div class="title">
+          Regression ranges:
+        </div>
+        <span class="padding-right">
+          [[range.repo]]:
+        </span>
+        <a class="padding-right" target="_blank" href$="[[_regressionRangeLink(range)]]">[[_regressionRange(range)]]</a>
+        <div class="collapse" on-tap="_toggleCollapse">
+          Click to see [[_collapseMessage]] information.
+          <iron-icon icon="[[_iconName]]"></iron-icon>
+        </div>
+      </template>
     </div>
     <iron-collapse id="collapse" class="rev-list" no-animation>
       <template is="dom-repeat" items="[[_revs]]" as="rev">
