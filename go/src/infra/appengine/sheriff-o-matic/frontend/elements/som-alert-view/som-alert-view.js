@@ -479,6 +479,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
 
     let byRepo = {};
     groupExtension.regression_ranges.forEach((range) => {
+      if (!range) return;
       if (!byRepo[range.repo]) {
         byRepo[range.repo] = [];
       }
@@ -487,6 +488,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
     });
 
     alertExtension.regression_ranges.forEach((range) => {
+      if (!range) return;
       if (!byRepo[range.repo]) {
         byRepo[range.repo] = [];
       }
