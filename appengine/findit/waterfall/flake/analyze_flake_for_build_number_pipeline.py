@@ -26,12 +26,7 @@ from waterfall.trigger_flake_swarming_task_pipeline import (
 class AnalyzeFlakeForBuildNumberPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self,
-          analysis_urlsafe_key,
-          build_number,
-          iterations,
-          timeout,
-          rerun=False):
+  def run(self, analysis_urlsafe_key, build_number, iterations, timeout, rerun):
     """Pipeline to analyze one build number of a flake analysis.
 
     Args:

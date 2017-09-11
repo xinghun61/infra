@@ -77,7 +77,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
         ])
 
     pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
-                                                 build_number)
+                                                 build_number, rerun)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -124,8 +124,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(), build_number, iterations, timeout, rerun
         ])
 
-    pipeline_job = DetermineTruePassRatePipeline(
-        analysis.key.urlsafe(), build_number, rerun=rerun)
+    pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
+                                                 build_number, rerun)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -177,7 +177,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
         ])
 
     pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
-                                                 build_number)
+                                                 build_number, rerun)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -226,7 +226,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
         ])
 
     pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
-                                                 build_number)
+                                                 build_number, rerun)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -277,7 +277,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
         ])
 
     pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
-                                                 build_number)
+                                                 build_number, rerun)
 
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
@@ -325,7 +325,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={'rerun': rerun})
 
     pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
-                                                 build_number)
+                                                 build_number, rerun)
 
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
@@ -336,6 +336,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 100
     step_name = 's'
     test_name = 't'
+    rerun = False
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -353,7 +354,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     flake_swarming_task.put()
 
     pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
-                                                 build_number)
+                                                 build_number, rerun)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -363,6 +364,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 100
     step_name = 's'
     test_name = 't'
+    rerun = False
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -378,7 +380,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     task.put()
 
     pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
-                                                 build_number)
+                                                 build_number, rerun)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     self.assertEqual(analysis_status.ERROR, analysis.status)

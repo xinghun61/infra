@@ -50,6 +50,7 @@ class AnalyzeFlakeForBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
     timeout = 3600
     step_name = 's'
     test_name = 't'
+    rerun = False
 
     task_id = '1234'
 
@@ -76,7 +77,7 @@ class AnalyzeFlakeForBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={
             'iterations_to_rerun': iterations,
             'hard_timeout_seconds': timeout,
-            'force': False
+            'force': rerun
         })
 
     self.MockPipeline(
@@ -101,7 +102,7 @@ class AnalyzeFlakeForBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={})
 
     pipeline_job = AnalyzeFlakeForBuildNumberPipeline(
-        analysis.key.urlsafe(), build_number, iterations, timeout)
+        analysis.key.urlsafe(), build_number, iterations, timeout, rerun)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -115,7 +116,6 @@ class AnalyzeFlakeForBuildNumberPipelineTest(wf_testcase.WaterfallTestCase):
     timeout = 3600
     step_name = 's'
     test_name = 't'
-
     rerun = True
 
     task_id = '1234'

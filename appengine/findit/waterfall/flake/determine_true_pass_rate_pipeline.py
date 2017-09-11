@@ -149,21 +149,21 @@ class DetermineTruePassRatePipeline(BasePipeline):
   def run(self,
           analysis_urlsafe_key,
           build_number,
+          rerun,
           previous_pass_rate=None,
-          previous_iterations_completed=None,
-          rerun=False):
+          previous_iterations_completed=None):
     """Pipeline to find the true pass rate of a test at a given build number.
 
     Args:
       analysis_urlsafe_key (str): A url-safe key corresponding to a
           MasterFlakeAnalysis for which this analysis represents.
       build_number (int): The build number to run.
+      rerun (bool): Force this build to run from scratch,
+          a rerun by an admin will trigger this.
       previous_pass_rate (float): The pass rate from a previous run of this
           pipeline.
       previous_iterations_completed (int): Number of iterations completed up
           to before the last swarming task.
-      rerun (bool): Force this build to run from scratch,
-          a rerun by an admin will trigger this.
     """
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
@@ -258,6 +258,6 @@ class DetermineTruePassRatePipeline(BasePipeline):
       yield DetermineTruePassRatePipeline(
           analysis_urlsafe_key,
           build_number,
+          rerun,
           previous_pass_rate=pass_rate,
-          previous_iterations_completed=iterations_completed,
-          rerun=rerun)
+          previous_iterations_completed=iterations_completed)
