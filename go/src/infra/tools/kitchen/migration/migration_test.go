@@ -52,7 +52,7 @@ func TestMigration(t *testing.T) {
 				"buildername": "linux_chromium_rel_ng",
 			}
 			So(TransformProperties(props), ShouldBeNil)
-			So(props["mastername"], ShouldEqual, "luci.chromium.try")
+			So(props["mastername"], ShouldEqual, "tryserver.chromium.linux")
 			So(props["buildername"], ShouldEqual, "linux_chromium_rel_ng")
 		})
 		Convey("noop if master isn't known", func() {

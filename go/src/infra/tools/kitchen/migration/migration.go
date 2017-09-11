@@ -1,3 +1,7 @@
+// Copyright 2017 The LUCI Authors. All rights reserved.
+// Use of this source code is governed under the Apache License, Version 2.0
+// that can be found in the LICENSE file.
+
 // Package migration contains code specific to migration of Chrome
 // Infrastructure to LUCI Lite.
 package migration
@@ -27,33 +31,29 @@ func TransformProperties(props map[string]interface{}) error {
 }
 
 func transformChromiumTryserverMasterBuilder(master, builder string) (string, string) {
-	const prefix = "LUCI "
-	if !strings.HasPrefix(builder, prefix) {
-		return master, builder
-	}
-
-	oldBuilder := strings.TrimPrefix(builder, prefix)
+	// TODO(nodir): remove a week after no build has "LUCI " builder name prefix. Do not return builder.
+	builder = strings.TrimPrefix(builder, "LUCI ")
 	var oldMaster string
 	switch {
-	case strings.Contains(oldBuilder, "_angle_"):
+	case strings.Contains(builder, "_angle_"):
 		oldMaster = "tryserver.chromium.angle"
 
 	case
-		strings.HasPrefix(oldBuilder, "android_"),
-		strings.HasPrefix(oldBuilder, "linux_android_"),
-		oldBuilder == "cast_shell_android":
+		strings.HasPrefix(builder, "android_"),
+		strings.HasPrefix(builder, "linux_android_"),
+		builder == "cast_shell_android":
 
 		oldMaster = "tryserver.chromium.android"
 
-	case strings.HasPrefix(oldBuilder, "mac_"), strings.HasPrefix(oldBuilder, "ios-"):
+	case strings.HasPrefix(builder, "mac_"), strings.HasPrefix(builder, "ios-"):
 		oldMaster = "tryserver.chromium.mac"
 
-	case strings.HasPrefix(oldBuilder, "win"):
+	case strings.HasPrefix(builder, "win"):
 		// The prefix is not "win_" because some builders start with "win<number>".
 		oldMaster = "tryserver.chromium.win"
 
 	default:
 		oldMaster = "tryserver.chromium.linux"
 	}
-	return oldMaster, oldBuilder
+	return oldMaster, builder
 }
