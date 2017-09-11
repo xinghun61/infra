@@ -32,7 +32,7 @@ def WriteTestsetToCSV(testset_csv_path, test_set, app_id):
   """Writes ``test_set`` to a csv in ``testset_csv_path``."""
 
   with open(testset_csv_path, 'wb') as f:
-    f.write('Crash, Culprit cl, Culprit components\n')
+    f.write('Crash, Signature, Culprit cl, Culprit components\n')
     for crash in test_set.itervalues():
       feedback_url = _FEEDBACK_URL_TEMPLATE % (
           app_id, crash.client_id, crash.key.urlsafe())
@@ -42,8 +42,9 @@ def WriteTestsetToCSV(testset_csv_path, test_set, app_id):
         culprit_components = culprit_components.split('\n')
 
       culprit_components = ', '.join(culprit_components)
-      f.write('"%s", "%s", "%s"\n' %  (
+      f.write('"%s", "%s", "%s", "%s"\n' %  (
           feedback_url,
+          crash.signature,
           '\n'.join(crash.culprit_cls) if crash.culprit_cls else '',
           culprit_components))
 
@@ -136,6 +137,10 @@ def TestsetUpdator(client_id, app_id, culprit_property=None,
         start_date=start_date, end_date=end_date):
       if len(test_set) >= max_n:
         break
+
+      # Skip cases with error.
+      if crash.error_name:
+        continue
 
       crash.culprit_cls = (''.join(crash.culprit_cls).split(',') if
                            crash.culprit_cls else None)
