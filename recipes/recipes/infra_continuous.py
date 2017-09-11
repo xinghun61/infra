@@ -26,7 +26,8 @@ DEPS = [
 CROSS_COMPILING_BUILDERS = {
   'infra-continuous-precise-64': [{'GOOS': 'linux', 'GOARCH': 'arm'},
                                   {'GOOS': 'linux', 'GOARCH': 'arm64'},
-                                  {'GOOS': 'linux', 'GOARCH': 'mips64'}]
+                                  {'GOOS': 'linux', 'GOARCH': 'mips64'},
+                                  {'GOOS': 'linux', 'GOARCH': 's390x'}]
 }
 
 
