@@ -213,32 +213,34 @@ type BatchUploader struct {
 	stopc chan struct{}
 	wg    sync.WaitGroup
 
-	mu      sync.Mutex
-	pending []interface{}
-	started bool
-	closed  bool
+	mu        sync.Mutex
+	pending   []interface{}
+	startOnce sync.Once
+	closed    bool
 }
 
-func (bu *BatchUploader) start(ctx context.Context) {
-	if bu.TickC == nil {
-		bu.tick = time.NewTicker(time.Minute)
-		bu.TickC = bu.tick.C
-	}
-
-	bu.wg.Add(1)
-	go func() {
-		defer bu.wg.Done()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-bu.TickC:
-				bu.upload(ctx)
-			case <-bu.stopc:
-				return
-			}
+func (bu *BatchUploader) ensureStarted(ctx context.Context) {
+	bu.startOnce.Do(func() {
+		if bu.TickC == nil {
+			bu.tick = time.NewTicker(time.Minute)
+			bu.TickC = bu.tick.C
 		}
-	}()
+
+		bu.wg.Add(1)
+		go func() {
+			defer bu.wg.Done()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-bu.TickC:
+					bu.upload(ctx)
+				case <-bu.stopc:
+					return
+				}
+			}
+		}()
+	})
 }
 
 // NewBatchUploader constructs a new BatchUploader, which may optionally be
@@ -266,13 +268,10 @@ func (bu *BatchUploader) Stage(ctx context.Context, src interface{}) {
 	if bu.closed {
 		panic("Stage called on closed BatchUploader")
 	}
+	bu.ensureStarted(ctx)
+
 	bu.mu.Lock()
 	defer bu.mu.Unlock()
-
-	if !bu.started {
-		bu.start(ctx)
-		bu.started = true
-	}
 
 	switch reflect.ValueOf(src).Kind() {
 	case reflect.Slice:
