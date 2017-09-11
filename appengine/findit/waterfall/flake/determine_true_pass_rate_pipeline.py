@@ -246,11 +246,9 @@ class DetermineTruePassRatePipeline(BasePipeline):
     analysis.LogInfo('Running %d iterations with a %d second timeout' %
                      (iterations_for_task, time_for_task_seconds))
 
-    # If the swarming task already exists, reset it so no caching occurs.
+    # If the swarming task already exists, delete it so no caching occurs.
     if flake_swarming_task:
-      flake_swarming_task.successes = None
-      flake_swarming_task.tries = None
-      flake_swarming_task.put()
+      flake_swarming_task.key.delete()
 
     # Run swarming task, aggregate results and recurse
     with pipeline.InOrder():
