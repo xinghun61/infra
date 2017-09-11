@@ -365,16 +365,18 @@ function TKR_setUpSearchStore(
   // Add suggestions with "me" first, because otherwise they may be impossible
   // to reach in a project that has a lot of members with emails starting with
   // "me".
-  TKR_addACItem(searchWords, docDict, 'owner:me', 'Issues owned by me');
-  TKR_addACItem(searchWordsNeg, docDict, '-owner:me', 'Issues not owned by me');
-  TKR_addACItem(searchWords, docDict, 'cc:me', 'Issues that CC me');
-  TKR_addACItem(searchWordsNeg, docDict, '-cc:me', 'Issues that don\'t CC me');
-  TKR_addACItem(searchWords, docDict, 'reporter:me', 'Issues I reported');
-  TKR_addACItem(searchWordsNeg, docDict, '-reporter:me', 'Issues reported by others');
-  TKR_addACItem(searchWords, docDict, 'commentby:me',
-                'Issues that I commented on');
-  TKR_addACItem(searchWordsNeg, docDict, '-commentby:me',
-                'Issues that I didn\'t comment on');
+  if (CS_env['loggedInUserEmail']) {
+    TKR_addACItem(searchWords, docDict, 'owner:me', 'Issues owned by me');
+    TKR_addACItem(searchWordsNeg, docDict, '-owner:me', 'Issues not owned by me');
+    TKR_addACItem(searchWords, docDict, 'cc:me', 'Issues that CC me');
+    TKR_addACItem(searchWordsNeg, docDict, '-cc:me', 'Issues that don\'t CC me');
+    TKR_addACItem(searchWords, docDict, 'reporter:me', 'Issues I reported');
+    TKR_addACItem(searchWordsNeg, docDict, '-reporter:me', 'Issues reported by others');
+    TKR_addACItem(searchWords, docDict, 'commentby:me',
+                  'Issues that I commented on');
+    TKR_addACItem(searchWordsNeg, docDict, '-commentby:me',
+                  'Issues that I didn\'t comment on');
+  }
 
   TKR_addACItemList(searchWords, docDict, '', keyValueLabelDefs, '-', '=');
   TKR_addACItemList(searchWordsNeg, docDict, '-', keyValueLabelDefs, '-', '=');
