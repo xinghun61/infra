@@ -62,17 +62,19 @@ func CommitScanner(rc *router.Context) {
 		http.Error(resp, err.Error(), 500)
 		return
 	}
-	// Tests would have put a mock client in repoConfig.gitilesClient.
-	if repoConfig.gitilesClient == nil {
-		giC, err := getGitilesClient(ctx)
+	var cs *Clients
+	if testClients != nil {
+		cs = testClients
+	} else {
+		cs = &Clients{}
+		err := cs.ConnectAll(ctx, repoConfig)
 		if err != nil {
-			logging.WithError(err).Errorf(ctx, "Could not get gitiles client")
+			logging.WithError(err).Errorf(ctx, "Could not create external clients")
 			http.Error(resp, err.Error(), 500)
 			return
 		}
-		repoConfig.gitilesClient = giC
 	}
-	fl, err := repoConfig.gitilesClient.LogForward(ctx, repoConfig.BaseRepoURL, rev, repoConfig.BranchName)
+	fl, err := cs.gitiles.LogForward(ctx, repoConfig.BaseRepoURL, rev, repoConfig.BranchName)
 	if err != nil {
 		logging.WithError(err).Errorf(ctx, "Could not get gitiles log from revision %s", rev)
 		http.Error(resp, err.Error(), 500)

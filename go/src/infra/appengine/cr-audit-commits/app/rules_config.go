@@ -24,15 +24,6 @@ type RepoConfig struct {
 	BranchName     string
 	StartingCommit string
 	Rules          []RuleSet
-
-	// TODO(crbug.com/763490): These clients should be passed to the rules
-	// etc. Through a struct separate from RepoConfig/AuditParams.
-
-	// Instead of actual clients, use interfaces so that tests
-	// can inject mock clients as needed.
-	gerritClient  gerritClientInterface
-	gitilesClient gitilesClientInterface
-	miloClient    miloClientInterface
 }
 
 // RepoURL composes the url of the repository by appending the branch.
@@ -100,11 +91,12 @@ type AuditParams struct {
 
 // RuleFunc is the function type for audit rules.
 //
-// They are expected to accept a context, an AuditParams and the datastore
+// They are expected to accept a context, an AuditParams, a Clients struct with
+// connections to external services configured and ready, and the datastore
 // entity to be audited.
 //
 // Rules are expected to panic if they cannot determine whether a policy has
 // been broken or not.
 //
 // Rules should return a reference to a RuleResult
-type RuleFunc func(context.Context, *AuditParams, *RelevantCommit) *RuleResult
+type RuleFunc func(context.Context, *AuditParams, *RelevantCommit, *Clients) *RuleResult

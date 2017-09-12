@@ -17,6 +17,7 @@ import (
 	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/server/auth"
 
+	"infra/appengine/cr-audit-commits/buildstatus"
 	buildbot "infra/monitoring/messages"
 )
 
@@ -26,6 +27,9 @@ const (
 	emailScope        = "https://www.googleapis.com/auth/userinfo.email"
 	failedBuildPrefix = "Sample Failed Build:"
 )
+
+// Tests can put mock clients here, prod code will ignore this global.
+var testClients *Clients
 
 type gerritClientInterface interface {
 	GetChangeDetails(context.Context, string, []string) (*gerrit.Change, error)
@@ -44,7 +48,7 @@ type miloClientInterface interface {
 // getGitilesClient creates a new gitiles client bound to a new http client
 // that is bound to an authenticated transport.
 func getGitilesClient(ctx context.Context) (*gitiles.Client, error) {
-	httpClient, err := getAuthenticatedHTTPClient(ctx)
+	httpClient, err := getAuthenticatedHTTPClient(ctx, gerritScope, emailScope)
 	if err != nil {
 		return nil, err
 	}
@@ -94,4 +98,39 @@ func getFailedBuild(ctx context.Context, miloClient miloClientInterface, rc *Rel
 		panic(err)
 	}
 	return buildURL, failedBuildInfo
+}
+
+// Clients exposes clients for external services shared throughout one request.
+type Clients struct {
+
+	// Instead of actual clients, use interfaces so that tests
+	// can inject mock clients as needed.
+	gerrit  gerritClientInterface
+	gitiles gitilesClientInterface
+	milo    miloClientInterface
+}
+
+// ConnectAll creates the clients so the rules can use them.
+func (c *Clients) ConnectAll(ctx context.Context, cfg *RepoConfig) error {
+	var err error
+	c.gitiles, err = getGitilesClient(ctx)
+	if err != nil {
+		return err
+	}
+
+	httpClient, err := getAuthenticatedHTTPClient(ctx, gerritScope, emailScope)
+	if err != nil {
+		return err
+	}
+	c.gerrit, err = gerrit.NewClient(httpClient, cfg.GerritURL)
+	if err != nil {
+		return err
+	}
+
+	c.milo, err = buildstatus.NewAuditMiloClient(ctx, auth.AsSelf)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

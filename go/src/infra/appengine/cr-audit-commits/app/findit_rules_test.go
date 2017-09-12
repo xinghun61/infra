@@ -68,7 +68,8 @@ func TestFinditRules(t *testing.T) {
 			"revertcid": {rvc},
 			"666":       {cc},
 		}
-		cfg.gerritClient = &mockGerritClient{q: q}
+		testClients = &Clients{}
+		testClients.gerrit = &mockGerritClient{q: q}
 
 		Convey("Culprit age Pass", func() {
 			// Inject gitiles log response
@@ -80,9 +81,9 @@ func TestFinditRules(t *testing.T) {
 					},
 				},
 			}
-			cfg.gitilesClient = &mockGitilesClient{r: r}
+			testClients.gitiles = &mockGitilesClient{r: r}
 			// Run rule
-			rr := CulpritAge(ctx, ap, rc)
+			rr := CulpritAge(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 
@@ -97,19 +98,19 @@ func TestFinditRules(t *testing.T) {
 					},
 				},
 			}
-			cfg.gitilesClient = &mockGitilesClient{r: r}
+			testClients.gitiles = &mockGitilesClient{r: r}
 			// Run rule
-			rr := CulpritAge(ctx, ap, rc)
+			rr := CulpritAge(ctx, ap, rc, testClients)
 			// Check result code
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 
 		})
 		Convey("Culprit age Error", func() {
 			// Inject gitiles error
-			cfg.gitilesClient = &mockGitilesClient{e: errors.New("Some error")}
+			testClients.gitiles = &mockGitilesClient{e: errors.New("Some error")}
 			// Run rule
 			rr := func() {
-				CulpritAge(ctx, ap, rc)
+				CulpritAge(ctx, ap, rc, testClients)
 			}
 			// Check result code
 			So(rr, ShouldPanic)
@@ -121,7 +122,7 @@ func TestFinditRules(t *testing.T) {
 			rcs := fakeRelevantCommits(MaxAutoRevertsPerDay, k, "7e57c100", auditCompleted, t, d, "findit@sample.com", "cq@other.com")
 			err := datastore.Put(ctx, rcs)
 			So(err, ShouldBeNil)
-			rr := AutoRevertsPerDay(ctx, ap, rcs[0])
+			rr := AutoRevertsPerDay(ctx, ap, rcs[0], testClients)
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
 		Convey("Auto-reverts per day Failed", func() {
@@ -131,7 +132,7 @@ func TestFinditRules(t *testing.T) {
 			rcs := fakeRelevantCommits(MaxAutoRevertsPerDay+1, k, "7e57c100", auditCompleted, t, d, "findit@sample.com", "cq@other.com")
 			err := datastore.Put(ctx, rcs)
 			So(err, ShouldBeNil)
-			rr := AutoRevertsPerDay(ctx, ap, rcs[0])
+			rr := AutoRevertsPerDay(ctx, ap, rcs[0], testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, fmt.Sprintf("%d commits were created", MaxAutoRevertsPerDay+1))
 		})
@@ -142,7 +143,7 @@ func TestFinditRules(t *testing.T) {
 			rcs := fakeRelevantCommits(MaxAutoCommitsPerDay, k, "7e57c100", auditCompleted, t, d, "findit@sample.com", "findit@sample.com")
 			err := datastore.Put(ctx, rcs)
 			So(err, ShouldBeNil)
-			rr := AutoCommitsPerDay(ctx, ap, rcs[0])
+			rr := AutoCommitsPerDay(ctx, ap, rcs[0], testClients)
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
 		Convey("Auto-commits per day Failed", func() {
@@ -152,7 +153,7 @@ func TestFinditRules(t *testing.T) {
 			rcs := fakeRelevantCommits(MaxAutoCommitsPerDay+1, k, "7e57c100", auditCompleted, t, d, "findit@sample.com", "findit@sample.com")
 			err := datastore.Put(ctx, rcs)
 			So(err, ShouldBeNil)
-			rr := AutoCommitsPerDay(ctx, ap, rcs[0])
+			rr := AutoCommitsPerDay(ctx, ap, rcs[0], testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, fmt.Sprintf("%d commits were committed", MaxAutoCommitsPerDay+1))
 		})
@@ -163,10 +164,10 @@ func TestFinditRules(t *testing.T) {
 				{Revision: "dummy"},
 				{Revision: "badc0de"},
 			}
-			cfg.miloClient = mockMiloClient{q: map[string]*buildbot.Build{
+			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
 				"https://ci/fake/build": fakeBuild,
 			}}
-			rr := CulpritInBuild(ctx, ap, rc)
+			rr := CulpritInBuild(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 
 		})
@@ -175,10 +176,10 @@ func TestFinditRules(t *testing.T) {
 			fakeBuild.SourceStamp.Changes = []buildbot.Change{
 				{Revision: "dummy"},
 			}
-			cfg.miloClient = mockMiloClient{q: map[string]*buildbot.Build{
+			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
 				"https://ci/fake/build": fakeBuild,
 			}}
-			rr := CulpritInBuild(ctx, ap, rc)
+			rr := CulpritInBuild(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, "not found in changes for build")
 
@@ -194,10 +195,10 @@ func TestFinditRules(t *testing.T) {
 			fakeCompileStep.Results = []interface{}{2.0, 0}
 			fakeBuild.Steps = []buildbot.Step{fakeUpdateStep, fakeCompileStep}
 
-			cfg.miloClient = mockMiloClient{q: map[string]*buildbot.Build{
+			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
 				"https://ci/fake/build": fakeBuild,
 			}}
-			rr := FailedBuildIsCompileFailure(ctx, ap, rc)
+			rr := FailedBuildIsCompileFailure(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
 		Convey("Failed build is compile failure Fail", func() {
@@ -213,27 +214,27 @@ func TestFinditRules(t *testing.T) {
 			fakeCompileStep.Results = []interface{}{1.0, 0}
 			fakeBuild.Steps = []buildbot.Step{fakeUpdateStep, fakeCompileStep}
 
-			cfg.miloClient = mockMiloClient{q: map[string]*buildbot.Build{
+			testClients.milo = mockMiloClient{q: map[string]*buildbot.Build{
 				"https://ci/fake/build": fakeBuild,
 			}}
-			rr := FailedBuildIsCompileFailure(ctx, ap, rc)
+			rr := FailedBuildIsCompileFailure(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, "does not have an expected failure")
 			So(rr.Message, ShouldContainSubstring, "compile")
 		})
 		Convey("RevertOfCulprit Pass", func() {
 			rc.CommitMessage = "This reverts commit badc0de\n" + rc.CommitMessage
-			rr := RevertOfCulprit(ctx, ap, rc)
+			rr := RevertOfCulprit(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
 		Convey("RevertOfCulprit Fail - no revert", func() {
-			ap.RepoCfg.gerritClient.(*mockGerritClient).q["12ebe127"][0].RevertOf = 0
-			rr := RevertOfCulprit(ctx, ap, rc)
+			testClients.gerrit.(*mockGerritClient).q["12ebe127"][0].RevertOf = 0
+			rr := RevertOfCulprit(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, "does not appear to be a revert")
 		})
 		Convey("RevertOfCulprit Fail - culprit not in revert commit message", func() {
-			rr := RevertOfCulprit(ctx, ap, rc)
+			rr := RevertOfCulprit(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, "does not include the revision it reverts")
 		})

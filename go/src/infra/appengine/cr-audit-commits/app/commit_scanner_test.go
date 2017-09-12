@@ -20,7 +20,6 @@ import (
 )
 
 func TestCommitScanner(t *testing.T) {
-	t.Parallel()
 
 	Convey("CommitScanner handler test", t, func() {
 		ctx := memory.Use(context.Background())
@@ -37,6 +36,7 @@ func TestCommitScanner(t *testing.T) {
 		r.GET(scannerPath, router.NewMiddlewareChain(withTestingContext), CommitScanner)
 		srv := httptest.NewServer(r)
 		client := &http.Client{}
+		testClients = &Clients{}
 		Convey("Unknown Repo", func() {
 			resp, err := client.Get(srv.URL + scannerPath + "?repo=unknown")
 			So(err, ShouldBeNil)
@@ -51,13 +51,13 @@ func TestCommitScanner(t *testing.T) {
 				StartingCommit: "000000",
 				Rules: []RuleSet{AccountRules{
 					Account: "new@test.com",
-					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit) *RuleResult {
+					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 						return &RuleResult{"Dummy rule", rulePassed, ""}
 					}},
 				}},
 			}
 			Convey("No revisions", func() {
-				RuleMap["new-repo"].gitilesClient = mockGitilesClient{}
+				testClients.gitiles = mockGitilesClient{}
 				resp, err := client.Get(srv.URL + scannerPath + "?repo=new-repo")
 				So(err, ShouldBeNil)
 				So(resp.StatusCode, ShouldEqual, 200)
@@ -67,7 +67,7 @@ func TestCommitScanner(t *testing.T) {
 				So(rs.LastKnownCommit, ShouldEqual, "000000")
 			})
 			Convey("No interesting revisions", func() {
-				RuleMap["new-repo"].gitilesClient = mockGitilesClient{
+				testClients.gitiles = mockGitilesClient{
 					r: []gitiles.Commit{{Commit: "abcdef000123123"}},
 				}
 				resp, err := client.Get(srv.URL + scannerPath + "?repo=new-repo")
@@ -79,7 +79,7 @@ func TestCommitScanner(t *testing.T) {
 				So(rs.LastKnownCommit, ShouldEqual, "abcdef000123123")
 			})
 			Convey("Interesting revisions", func() {
-				RuleMap["new-repo"].gitilesClient = mockGitilesClient{
+				testClients.gitiles = mockGitilesClient{
 					r: []gitiles.Commit{
 						{
 							Commit: "006a006a",
@@ -131,7 +131,7 @@ func TestCommitScanner(t *testing.T) {
 				StartingCommit: "000000",
 				Rules: []RuleSet{AccountRules{
 					Account: "old@test.com",
-					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit) *RuleResult {
+					Funcs: []RuleFunc{func(c context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 						return &RuleResult{"Dummy rule", rulePassed, ""}
 					}},
 				}},
@@ -143,7 +143,7 @@ func TestCommitScanner(t *testing.T) {
 			})
 
 			Convey("No interesting revisions", func() {
-				RuleMap["old-repo"].gitilesClient = mockGitilesClient{
+				testClients.gitiles = mockGitilesClient{
 					r: []gitiles.Commit{{Commit: "abcdef000123123"}},
 				}
 				resp, err := client.Get(srv.URL + scannerPath + "?repo=old-repo")
@@ -156,7 +156,7 @@ func TestCommitScanner(t *testing.T) {
 				So(rs.LastRelevantCommit, ShouldEqual, "999999")
 			})
 			Convey("Interesting revisions", func() {
-				RuleMap["old-repo"].gitilesClient = mockGitilesClient{
+				testClients.gitiles = mockGitilesClient{
 					r: []gitiles.Commit{
 						{
 							Commit: "c001c0de",

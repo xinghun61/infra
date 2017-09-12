@@ -98,7 +98,7 @@ func countAuthoredBy(ctx context.Context, rc *RelevantCommit, cutoff time.Time, 
 // AutoCommitsPerDay is a RuleFunc that verifies that at most
 // MaxAutoCommitsPerDay commits in the 24 hours preceding the triggering commit
 // were committed by the triggering account.
-func AutoCommitsPerDay(ctx context.Context, ap *AuditParams, rc *RelevantCommit) *RuleResult {
+func AutoCommitsPerDay(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
 	result.RuleName = "AutoCommitsPerDay"
 	cutoff := rc.CommitTime.Add(time.Duration(-24) * time.Hour)
@@ -117,7 +117,7 @@ func AutoCommitsPerDay(ctx context.Context, ap *AuditParams, rc *RelevantCommit)
 // AutoRevertsPerDay is a RuleFunc that verifies that at most
 // MaxAutoRevertsPerDay commits in the 24 hours preceding the triggering commit
 // were authored by the triggering account.
-func AutoRevertsPerDay(ctx context.Context, ap *AuditParams, rc *RelevantCommit) *RuleResult {
+func AutoRevertsPerDay(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
 	result.RuleName = "AutoRevertsPerDay"
 	cutoff := rc.CommitTime.Add(time.Duration(-24) * time.Hour)
@@ -135,16 +135,16 @@ func AutoRevertsPerDay(ctx context.Context, ap *AuditParams, rc *RelevantCommit)
 
 // CulpritAge is a RuleFunc that verifies that the culprit being reverted is
 // less than 24 hours older than the revert.
-func CulpritAge(ctx context.Context, ap *AuditParams, rc *RelevantCommit) *RuleResult {
+func CulpritAge(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
 	result.RuleName = "CulpritAge"
 
-	culprit, ok := getCulpritChange(ctx, ap, rc)
+	culprit, ok := getCulpritChange(ctx, ap, rc, cs)
 	if !ok {
 		panic(fmt.Errorf("Commit %q does not appear to be a revert according to gerrit", rc.CommitHash))
 	}
 
-	c, err := ap.RepoCfg.gitilesClient.Log(ctx, ap.RepoCfg.BaseRepoURL, culprit.CurrentRevision, 1)
+	c, err := cs.gitiles.Log(ctx, ap.RepoCfg.BaseRepoURL, culprit.CurrentRevision, 1)
 	if err != nil {
 		panic(err)
 	}
@@ -168,17 +168,17 @@ func CulpritAge(ctx context.Context, ap *AuditParams, rc *RelevantCommit) *RuleR
 
 // CulpritInBuild is a RuleFunc that verifies that the culprit is included in
 // the list of changes of the failed build.
-func CulpritInBuild(ctx context.Context, ap *AuditParams, rc *RelevantCommit) *RuleResult {
+func CulpritInBuild(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
 	result.RuleName = "CulpritInBuild"
 
-	culprit, ok := getCulpritChange(ctx, ap, rc)
+	culprit, ok := getCulpritChange(ctx, ap, rc, cs)
 	if !ok {
 		panic(fmt.Errorf("Commit %q does not appear to be a revert according to gerrit",
 			rc.CommitHash))
 	}
 
-	buildURL, failedBuildInfo := getFailedBuild(ctx, ap.RepoCfg.miloClient, rc)
+	buildURL, failedBuildInfo := getFailedBuild(ctx, cs.milo, rc)
 
 	changeFound := false
 	for _, c := range failedBuildInfo.SourceStamp.Changes {
@@ -202,15 +202,15 @@ func CulpritInBuild(ctx context.Context, ap *AuditParams, rc *RelevantCommit) *R
 
 // getCulpritChange finds (through Gerrit) the CL being reverted by another.
 // returns false as a second return value if the CL given is not a revert.
-func getCulpritChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit) (*gerrit.Change, bool) {
-	cls, _, err := ap.RepoCfg.gerritClient.ChangeQuery(ctx, gerrit.ChangeQueryRequest{Query: rc.CommitHash})
+func getCulpritChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) (*gerrit.Change, bool) {
+	cls, _, err := cs.gerrit.ChangeQuery(ctx, gerrit.ChangeQueryRequest{Query: rc.CommitHash})
 	if err != nil {
 		panic(err)
 	}
 	if len(cls) == 0 {
 		panic(fmt.Sprintf("no CL found for commit %q", rc.CommitHash))
 	}
-	d, err := ap.RepoCfg.gerritClient.GetChangeDetails(ctx, cls[0].ChangeID, []string{})
+	d, err := cs.gerrit.GetChangeDetails(ctx, cls[0].ChangeID, []string{})
 
 	if err != nil {
 		panic(err)
@@ -218,7 +218,7 @@ func getCulpritChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit) 
 	if d.RevertOf == 0 {
 		return nil, false
 	}
-	culprit, err := ap.RepoCfg.gerritClient.GetChangeDetails(ctx, strconv.Itoa(d.RevertOf), []string{"CURRENT_REVISION"})
+	culprit, err := cs.gerrit.GetChangeDetails(ctx, strconv.Itoa(d.RevertOf), []string{"CURRENT_REVISION"})
 	if err != nil {
 		panic(err)
 	}
@@ -230,11 +230,11 @@ func getCulpritChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit) 
 
 // FailedBuildIsCompileFailure is a RuleFunc that verifies that the referred
 // build contains a failed compile step.
-func FailedBuildIsCompileFailure(ctx context.Context, ap *AuditParams, rc *RelevantCommit) *RuleResult {
+func FailedBuildIsCompileFailure(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
 	result.RuleName = "FailedBuildIsCompileFailure"
 
-	buildURL, failedBuildInfo := getFailedBuild(ctx, ap.RepoCfg.miloClient, rc)
+	buildURL, failedBuildInfo := getFailedBuild(ctx, cs.milo, rc)
 
 	for _, s := range failedBuildInfo.Steps {
 		r, _ := s.Result()
@@ -255,12 +255,12 @@ func FailedBuildIsCompileFailure(ctx context.Context, ap *AuditParams, rc *Relev
 
 // RevertOfCulprit is a RuleFunc that verifies that the reverting commit is a
 // revert of the named culprit.
-func RevertOfCulprit(ctx context.Context, ap *AuditParams, rc *RelevantCommit) *RuleResult {
+func RevertOfCulprit(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
 	result.RuleName = "RevertOfCulprit"
 	result.RuleResultStatus = rulePassed
 
-	culprit, ok := getCulpritChange(ctx, ap, rc)
+	culprit, ok := getCulpritChange(ctx, ap, rc, cs)
 	if !ok {
 		result.RuleResultStatus = ruleFailed
 		result.Message = fmt.Sprintf("Commit %q does not appear to be a revert according to gerrit",

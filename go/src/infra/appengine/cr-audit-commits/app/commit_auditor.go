@@ -12,12 +12,8 @@ import (
 	"golang.org/x/net/context"
 
 	ds "go.chromium.org/gae/service/datastore"
-	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
-
-	"infra/appengine/cr-audit-commits/buildstatus"
 )
 
 const (
@@ -47,6 +43,8 @@ type workerParams struct {
 
 	// These read-only globals are meant to be read by the goroutines.
 	rules []RuleSet
+
+	clients *Clients
 }
 
 // CommitAuditor is a handler meant to be periodically run to get all commits
@@ -74,47 +72,25 @@ func CommitAuditor(rc *router.Context) {
 	}
 
 	cfgk := ds.KeyForObj(ctx, repoConfig.State)
-
-	// Tests would have put a mock client in repoConfig.gitilesClient.
-	if repoConfig.gitilesClient == nil {
-		giC, err := getGitilesClient(ctx)
+	var cs *Clients
+	if testClients != nil {
+		cs = testClients
+	} else {
+		cs = &Clients{}
+		err := cs.ConnectAll(ctx, repoConfig)
 		if err != nil {
+			logging.WithError(err).Errorf(ctx, "Could not create external clients")
 			http.Error(resp, err.Error(), 500)
 			return
 		}
-		repoConfig.gitilesClient = giC
 	}
 
-	// Tests would have put a mock client in repoConfig.gerritClient.
-	if repoConfig.gerritClient == nil {
-		httpClient, err := getAuthenticatedHTTPClient(ctx, gerritScope)
-		if err != nil {
-			http.Error(resp, err.Error(), 500)
-			return
-		}
-
-		geC, err := gerrit.NewClient(httpClient, repoConfig.GerritURL)
-		if err != nil {
-			http.Error(resp, err.Error(), 500)
-			return
-		}
-		repoConfig.gerritClient = geC
-	}
-	// Tests would have put a mock client in repoConfig.miloClient
-	if repoConfig.miloClient == nil {
-		mc, err := buildstatus.NewAuditMiloClient(ctx, auth.AsSelf)
-		if err != nil {
-			http.Error(resp, err.Error(), 500)
-			return
-		}
-		repoConfig.miloClient = mc
-	}
 	ap := AuditParams{
 		RepoCfg: repoConfig,
 	}
 	cq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditScheduled).Limit(MaxWorkers * CommitsPerWorker)
 
-	wp := &workerParams{rules: repoConfig.Rules}
+	wp := &workerParams{rules: repoConfig.Rules, clients: cs}
 
 	// Count the number of commits to be analyzed to estimate a reasonable
 	// number of workers for the load.
@@ -249,7 +225,7 @@ func runRules(ctx context.Context, rc *RelevantCommit, ap AuditParams, wp *worke
 		if rs.MatchesRelevantCommit(rc) {
 			ap.TriggeringAccount = ars.Account
 			for _, f := range ars.Funcs {
-				rc.Result = append(rc.Result, *f(ctx, &ap, rc))
+				rc.Result = append(rc.Result, *f(ctx, &ap, rc, wp.clients))
 			}
 		}
 	}
