@@ -7,6 +7,24 @@
   <script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
   <link rel="import" href="/ui/elements/findit-app.html">
   <style type="text/css">
+    /*Analysis running statuses.*/
+    .completed {
+      color: #ffffff;
+      background-color: #8fdf5f;
+      border-color: #4f8530;
+    }
+    .error {
+      color: #ffffff;
+      background-color: #e98080;
+      border-color: #a77272;
+    }
+    .running {
+      color: #666666;
+      background-color: #fffc6c;
+      border-color: #c5c56d;
+    }
+
+    /*Flake trend.*/
     .container {
       box-sizing: border-box;
       width: 600px;
@@ -25,12 +43,6 @@
       -moz-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
       -webkit-box-shadow: 0 3px 10px rgba(0,0,0,0.1);
     }
-    .flake-trend {
-      width: 100%;
-      height: 100%;
-      font-size: 16px;
-      line-height: 1.2em;
-    }
     .data-point-detail {
       position: absolute;
       display: none;
@@ -39,6 +51,14 @@
       background-color: #fee;
       opacity: 0.80;
     }
+    .flake-trend {
+      width: 100%;
+      height: 100%;
+      font-size: 16px;
+      line-height: 1.2em;
+    }
+
+    /*Triage.*/
     .triage-table, .triage-header, .triage-cell {
       border: 1px solid;
       border-collapse: collapse;
@@ -61,6 +81,8 @@
   <script src="/js/flot/jquery.flot.symbol.min.js"></script>
   <script type="text/javascript">
     var findit = {};
+    findit.buildLevelAnalysisStatus = '{{ analysis_status }}';
+    findit.culpritAnalysisStatus = '{{ try_job_status }}';
     findit.analysisKey = '{{ key }}';
     findit.masterName = '{{ master_name }}';
     findit.builderName = '{{ builder_name }}';
@@ -323,6 +345,8 @@
 
     $(function() {
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
+      $('#build_level_analysis_status').attr('class', findit.buildLevelAnalysisStatus || '').toLowerCase())
+      $('#culprit_analysis_status').attr('class', findit.buildLevelAnalysisStatus || '').toLowerCase())
 
       DrawFlakeTrend();
       $('input[name=triage-radio-button]').on('change', function() {
@@ -347,7 +371,7 @@
     <br>
     <div>
       <b>Analysis Result:</b><br>
-      Regression range analysis:  {{ analysis_status }}<br>
+      Regression range analysis: <span id="build_level_analysis_status">{{ analysis_status }}</span><br>
       <br>
       {% if last_attempted_swarming_task.task_id %}
         Last-attempted swarming task: <a href="https://chromium-swarm.appspot.com/task?id={{ last_attempted_swarming_task.task_id }}" target="_blank">{{ last_attempted_swarming_task.task_id }}</a>
@@ -371,7 +395,7 @@
       {% endif %}
       {% if try_job_status %}
         <br>
-        Culprit analysis:  {{ try_job_status }}<br>
+        Culprit analysis: <span id="culprit_analysis_status">{{ try_job_status }}</span><br>
       {% endif %}
       {% if last_attempted_try_job %}
         <br>
