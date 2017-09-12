@@ -31,6 +31,7 @@ from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_views
 from framework import permissions
+from framework.profiler import Profiler
 from framework import sql
 from framework import template_helpers
 from proto import api_pb2_v1
@@ -152,7 +153,8 @@ class MonorailApiRequest(object):
   """A class to hold information parsed from the Endpoints API request."""
 
   # pylint: disable=attribute-defined-outside-init
-  def __init__(self, request, services):
+  def __init__(self, request, services, profiler=None):
+    self.profiler = profiler
     requester = (
         endpoints.get_current_user() or
         oauth.get_current_user(
