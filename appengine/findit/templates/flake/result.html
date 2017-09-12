@@ -345,8 +345,9 @@
 
     $(function() {
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
-      $('#build_level_analysis_status').attr('class', findit.buildLevelAnalysisStatus || '').toLowerCase())
-      $('#culprit_analysis_status').attr('class', findit.buildLevelAnalysisStatus || '').toLowerCase())
+
+      $('#build_level_analysis_status').attr('class', (findit.buildLevelAnalysisStatus || '').toLowerCase());
+      $('#culprit_analysis_status').attr('class', (findit.culpritAnalysisStatus || '').toLowerCase());
 
       DrawFlakeTrend();
       $('input[name=triage-radio-button]').on('change', function() {
