@@ -20,6 +20,7 @@ from tracker import tracker_helpers
 IS_STARRED_RE = re.compile(r'\b(?![-@.:])is:starred\b(?![-@.:])', re.I)
 
 # Users can use "me" in other fields to refer to the logged in user name.
+KEYWORD_ME_RE = re.compile(r'\b[-_a-z0-9]+[=:]me\b(?![-@.:=])', re.I)
 ME_RE = re.compile(r'(?<=[=:])me\b(?![-@.:=])', re.I)
 
 
@@ -64,18 +65,25 @@ def ReplaceKeywordsWithUserID(me_user_id, query):
     query: The query string.
 
   Returns:
-    A string with "me" and "is:starred" removed or replaced by new terms that
-    use the numeric user ID provided.
+    A pair (query, warnings) where query is a string with "me" and "is:starred"
+    removed or replaced by new terms that use the numeric user ID provided,
+    and warnings is a list of warning strings to display to the user.
   """
+  warnings = []
   if me_user_id:
     star_term = 'starredby:%d' % me_user_id
     query = IS_STARRED_RE.sub(star_term, query)
-    query = ME_RE.sub(str(me_user_id), query)
+    if KEYWORD_ME_RE.search(query):
+      query = ME_RE.sub(str(me_user_id), query)
   else:
-    query = IS_STARRED_RE.sub('', query)
-    query = ME_RE.sub('', query)
+    if IS_STARRED_RE.search(query):
+      warnings.append('"is:starred" ignored because you are not signed in.')
+      query = IS_STARRED_RE.sub('', query)
+    if KEYWORD_ME_RE.search(query):
+      warnings.append('"me" keyword ignored because you are not signed in.')
+      query = KEYWORD_ME_RE.sub('', query)
 
-  return query
+  return query, warnings
 
 
 def ParseQuery(mr, config, services):

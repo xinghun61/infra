@@ -521,8 +521,11 @@ def _StartBackendSearch(
   rpc_tuples = []
   subqueries = mr.query.split(' OR ')
   needed_shard_keys = set()
-  for shard_id in range(settings.num_logical_shards):
-    for subquery in subqueries:
+  for subquery in subqueries:
+    subquery, warnings = searchpipeline.ReplaceKeywordsWithUserID(
+        mr.me_user_id, subquery)
+    mr.warnings.extend(warnings)
+    for shard_id in range(settings.num_logical_shards):
       needed_shard_keys.add((shard_id, subquery))
 
   # 1. Get whatever we can from memcache.  Cache hits are only kept if they are
@@ -709,9 +712,9 @@ def _GetCachedSearchResults(
   projects_str = projects_str or 'all'
   canned_query = savedqueries_helpers.SavedQueryIDToCond(
       mr.cnxn, services.features, mr.can)
-  logging.info('canned query is %r', canned_query)
-  canned_query = searchpipeline.ReplaceKeywordsWithUserID(
+  canned_query, warnings = searchpipeline.ReplaceKeywordsWithUserID(
       mr.me_user_id, canned_query)
+  mr.warnings.extend(warnings)
 
   sd = sorting.ComputeSortDirectives(mr, harmonized_config)
   sd_str = ' '.join(sd)

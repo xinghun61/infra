@@ -88,10 +88,12 @@ class BackendSearchPipeline(object):
     self.canned_query = savedqueries_helpers.SavedQueryIDToCond(
         self.mr.cnxn, self.services.features, self.mr.can)
 
-    self.canned_query = searchpipeline.ReplaceKeywordsWithUserID(
+    self.canned_query, warnings = searchpipeline.ReplaceKeywordsWithUserID(
         self.me_user_id, self.canned_query)
-    self.user_query = searchpipeline.ReplaceKeywordsWithUserID(
+    self.mr.warnings.extend(warnings)
+    self.user_query, warnings = searchpipeline.ReplaceKeywordsWithUserID(
         self.me_user_id, self.mr.query)
+    self.mr.warnings.extend(warnings)
     logging.debug('Searching query: %s %s', self.canned_query, self.user_query)
 
     slice_term = ('Issue.shard = %s', [self.mr.shard_id])

@@ -224,7 +224,7 @@ def EvaluateSubscriptions(
         continue
       cond = savedqueries_helpers.SavedQueryToCond(sq)
       logging.info('evaluating query %s: %r', sq.name, cond)
-      cond = searchpipeline.ReplaceKeywordsWithUserID(uid, cond)
+      cond, _warnings = searchpipeline.ReplaceKeywordsWithUserID(uid, cond)
       cond_ast = query2ast.ParseUserQuery(
         cond, '', query2ast.BUILTIN_ISSUE_FIELDS, config)
 

@@ -65,5 +65,43 @@ class SearchPipelineTest(unittest.TestCase):
   def testAccumulateIssueProjectsAndConfigs(self):
     pass  # TODO(jrobbins): write tests
 
-  def testReplaceKeywordsWithUserID(self):
+  def testReplaceKeywordsWithUserID_IsStarred(self):
+    """The term is:starred is replaced with starredby:USERID."""
+    actual, warnings = searchpipeline.ReplaceKeywordsWithUserID(
+        111L, 'is:starred')
+    self.assertEqual('starredby:111', actual)
+    self.assertEqual([], warnings)
+
+    actual, warnings = searchpipeline.ReplaceKeywordsWithUserID(
+        111L, 'Pri=1 is:starred M=61')
+    self.assertEqual('Pri=1 starredby:111 M=61', actual)
+    self.assertEqual([], warnings)
+
+    actual, warnings = searchpipeline.ReplaceKeywordsWithUserID(
+        0, 'Pri=1 is:starred M=61')
+    self.assertEqual('Pri=1  M=61', actual)
+    self.assertEqual(
+        ['"is:starred" ignored because you are not signed in.'],
+        warnings)
+
+  def testReplaceKeywordsWithUserID_Me(self):
+    """Terms like owner:me are replaced with owner:USERID."""
+    actual, warnings = searchpipeline.ReplaceKeywordsWithUserID(
+        111L, 'owner:me')
+    self.assertEqual('owner:111', actual)
+    self.assertEqual([], warnings)
+
+    actual, warnings = searchpipeline.ReplaceKeywordsWithUserID(
+        111L, 'Pri=1 cc:me M=61')
+    self.assertEqual('Pri=1 cc:111 M=61', actual)
+    self.assertEqual([], warnings)
+
+    actual, warnings = searchpipeline.ReplaceKeywordsWithUserID(
+        0, 'Pri=1 reporter:me M=61')
+    self.assertEqual('Pri=1  M=61', actual)
+    self.assertEqual(
+        ['"me" keyword ignored because you are not signed in.'],
+        warnings)
+
+  def testParseQuery(self):
     pass  # TODO(jrobbins): write tests

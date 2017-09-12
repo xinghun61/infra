@@ -117,8 +117,9 @@ def ParsePredicateASTs(rules, config, me_user_id):
   """Parse the given rules in QueryAST PBs."""
   predicates = [rule.predicate for rule in rules]
   if me_user_id:
-    predicates = [searchpipeline.ReplaceKeywordsWithUserID(me_user_id, pred)
-                  for pred in predicates]
+    predicates = [
+      searchpipeline.ReplaceKeywordsWithUserID(me_user_id, pred)[0]
+      for pred in predicates]
   predicate_asts = [
       query2ast.ParseUserQuery(pred, '', query2ast.BUILTIN_ISSUE_FIELDS, config)
       for pred in predicates]
