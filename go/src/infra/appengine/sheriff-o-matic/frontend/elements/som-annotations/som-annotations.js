@@ -430,7 +430,7 @@ class SomAnnotations extends Polymer.mixinBehaviors(
       return '';
     }
     let time = moment.tz(new Date(timestamp), 'Atlantic/Reykjavik');
-    let result = time.tz('America/Los_Angeles').format('ddd, DD MMM Y hh:mm z');
+    let result = time.tz('America/Los_Angeles').format('ddd, DD MMM Y hh:mm A z');
     return result + ` (${time.fromNow()})`;
   }
 
