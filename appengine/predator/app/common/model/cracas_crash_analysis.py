@@ -35,7 +35,7 @@ class CracasCrashAnalysis(ChromeCrashAnalysis):
     query = ('product.name=\'%s\' AND custom_data.ChromeCrashProto.'
              'magic_signature_1.name=\'%s\' AND '
              'custom_data.ChromeCrashProto.channel=\'%s\'') % (
-                 product_name, self.signature, self.platform)
+                 product_name, self.signature, self.channel)
     return _CRACAS_BASE_URL + '?' + urllib.urlencode(
         {'q': query}).replace('+', '%20')
 
