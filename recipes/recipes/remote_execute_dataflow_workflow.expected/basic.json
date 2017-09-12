@@ -71,7 +71,7 @@
       "[START_DIR]/infra/ENV/bin/python",
       "[START_DIR]/infra/packages/dataflow/cq_attempts.py",
       "--job_name",
-      "cq-attempts",
+      "cq-attempts:5e03a58dc0850e5137a8ebbce29610670c756aed",
       "--project",
       "chrome-infra-events",
       "--runner",

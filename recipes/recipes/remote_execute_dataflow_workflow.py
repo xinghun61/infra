@@ -26,8 +26,10 @@ PROPERTIES = {
 
 def RunSteps(api, workflow, job_name):
   api.gclient.set_config('infra')
-  api.bot_update.ensure_checkout()
+  bot_update_step = api.bot_update.ensure_checkout()
   api.gclient.runhooks()
+  rev = bot_update_step.presentation.properties['got_revision']
+  job_name = '%s:%s' % (job_name, rev)
   workflow_path = api.path['checkout']
   workflow_path = workflow_path.join(*workflow.split('/'))
   setup_path = api.path['checkout'].join('packages', 'dataflow', 'setup.py')
