@@ -38,7 +38,6 @@ def _HasPassRateConverged(pass_rate_a, pass_rate_b):
   Returns:
     True if there are sufficient iterations to determine convergence
   """
-  # TODO(wylieb): Figure out if convergence percent should be configurable.
   return (pass_rate_a is not None and pass_rate_b is not None and
           abs(pass_rate_a - pass_rate_b) < flake_constants.CONVERGENCE_PERCENT)
 
@@ -201,10 +200,11 @@ class DetermineTruePassRatePipeline(BasePipeline):
 
     # If there are too many swarming tasks that fail for a certain build_number
     # bail out completely.
-    # TODO(757911): Factor out MAX_SWARMING_TASK_RETRIES_PER_BUILD to config.
-    # TODO(757923): Add analysis-level swarming task retry limit.
+    max_swarming_retries_per_build = (analysis.algorithm_parameters.get(
+        'swarming_task_retries_per_build',
+        flake_constants.MAX_SWARMING_TASK_RETRIES_PER_BUILD))
     if (analysis.swarming_task_attempts_for_build >=
-        flake_constants.MAX_SWARMING_TASK_RETRIES_PER_BUILD):
+        max_swarming_retries_per_build):
       assert flake_swarming_task
       _UpdateAnalysisWithSwarmingTaskError(flake_swarming_task, analysis)
       update_flake_bug_pipeline = UpdateFlakeBugPipeline(analysis_urlsafe_key)

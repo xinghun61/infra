@@ -266,6 +266,7 @@ class MastersTest(wf_testcase.WaterfallTestCase):
             'timeout_per_test_seconds': 120,
             'timeout_per_swarming_task_seconds': 3600,
             'data_point_sample_size': 5,
+            'swarming_task_retries_per_build': 2,
         },
         'try_job_rerun': {
             'lower_flake_threshold': 0.02,
