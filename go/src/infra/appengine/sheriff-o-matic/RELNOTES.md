@@ -1,3 +1,35 @@
+# Release Notes sheriff-o-matic 2017-09-12
+
+- 8 commits, 4 bugs affected since 0c22583 (2017-09-05T22:38:31Z)
+- 3 Authors:
+  - martiniss@chromium.org
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [SoM: Add PM/AM to comments timestamp.](https://chromium-review.googlesource.com/662244) (zhangtiff@google.com)
+- [SoM: Fix range is undefined error.](https://chromium-review.googlesource.com/660690) (zhangtiff@google.com)
+- [SoM: Add relative time to comment timestamps.](https://chromium-review.googlesource.com/658081) (zhangtiff@google.com)
+- [[som] Color infra failures purple](https://chromium-review.googlesource.com/658140) (seanmccullough@chromium.org)
+- [[som] Package refactoring](https://chromium-review.googlesource.com/656521) (seanmccullough@chromium.org)
+- [SOM: Group regression ranges correctly](https://chromium-review.googlesource.com/636176) (martiniss@chromium.org)
+- [SoM: Basic tree status viewing page.](https://chromium-review.googlesource.com/648245) (zhangtiff@google.com)
+- [SOM: Fix commit position parsing](https://chromium-review.googlesource.com/656563) (martiniss@chromium.org)
+
+
+## Bugs updated, by author
+- martiniss@chromium.org:
+  -  [https://crbug.com/723875](https://crbug.com/723875)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/763429](https://crbug.com/763429)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/760297](https://crbug.com/760297)
+  -  [https://crbug.com/763184](https://crbug.com/763184)
+
+
 # Release Notes sheriff-o-matic 2017-09-05
 
 - 17 commits, 6 bugs affected since 7fa4298 ()
