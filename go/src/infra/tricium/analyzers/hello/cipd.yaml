@@ -1,0 +1,4 @@
+package: infra/tricium/analyzer/hello
+install_mode: symlink
+data:
+        - file: hello
