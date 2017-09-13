@@ -294,3 +294,9 @@ import:
   subpackages:
   - database/mysql
   - source/file
+- package: github.com/golang/mock
+  repo: https://chromium.googlesource.com/external/github.com/golang/mock.git
+  version: master
+  subpackages:
+  - gomock
+  - mockgen

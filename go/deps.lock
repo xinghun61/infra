@@ -1,8 +1,8 @@
-hash: fd96052f55f13cb7d308d13fa23954d929c4145edd74cce5d4438673eab8b805
-updated: 2017-08-31T16:39:12.758716816-07:00
+hash: 13ac0cbe9b50e94bf42f17934698f9025d3a7d8c33149f346b9e50a922f3cd9d
+updated: 2017-09-13T15:06:56.776648315-07:00
 imports:
 - name: cloud.google.com/go
-  version: 2b74e2e25316cfd9e46b74e444cdeceb78786dc5
+  version: c58be25102a7ab66b9e32676c23c6beda97a1449
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -10,7 +10,7 @@ imports:
   - pubsub
   - storage
 - name: github.com/andygrunwald/go-gerrit
-  version: 179c3f32f86b9f3d604f403117153f5f399d1a83
+  version: a2e6113fe9db3a29282713e49c45437b11cff45d
   repo: https://chromium.googlesource.com/external/github.com/andygrunwald/go-gerrit.git
 - name: github.com/aryann/difflib
   version: e206f873d14a916d3d26c40ab667bca123f365a3
@@ -26,7 +26,7 @@ imports:
   subpackages:
   - fslock
 - name: github.com/DATA-DOG/go-sqlmock
-  version: c91a7f4b686e7c32bb4391481fa5cae7d25fc3ea
+  version: d76b18b42f285b792bf985118980ce9eacea9d10
   repo: https://chromium.googlesource.com/external/github.com/DATA-DOG/go-sqlmock.git
 - name: github.com/docker/docker
   version: 49bf474f9ed7ce7143a59d1964ff7b7fd9b52178
@@ -51,8 +51,14 @@ imports:
   repo: https://chromium.googlesource.com/external/github.com/golang/lint.git
   subpackages:
   - golint
+- name: github.com/golang/mock
+  version: 18f6dd13ccdd227b8ebc546ca95cd62a02f3970c
+  repo: https://chromium.googlesource.com/external/github.com/golang/mock.git
+  subpackages:
+  - gomock
+  - mockgen
 - name: github.com/golang/protobuf
-  version: 83cd65fc365ace80eb6b6ecfc45203e43edfbc70
+  version: 17ce1425424ab154092bbb43af630bd647f3bb0d
   repo: https://chromium.googlesource.com/external/github.com/golang/protobuf.git
   subpackages:
   - jsonpb
@@ -64,10 +70,10 @@ imports:
   subpackages:
   - query
 - name: github.com/googleapis/gax-go
-  version: 2cadd475a3e966ec9b77a21afc530dbacec6d613
+  version: 8c160ca1523d8eea3932fbaa494c8964b7724aa8
   repo: https://chromium.googlesource.com/external/github.com/googleapis/gax-go.git
 - name: github.com/gopherjs/gopherjs
-  version: f7c56533adfac99e12ccdccfec04a466d2a778da
+  version: b40cd48c38f9a18eb3db20d163bad78de12cf0b7
   repo: https://chromium.googlesource.com/external/github.com/gopherjs/gopherjs.git
   subpackages:
   - js
@@ -182,7 +188,7 @@ imports:
   version: ea383cf3ba6ec950874b8486cd72356d007c768f
   repo: https://chromium.googlesource.com/external/github.com/StackExchange/wmi.git
 - name: github.com/texttheater/golang-levenshtein
-  version: a809b0abc4bdd4591a275c2dcf0982b0581da4e6
+  version: 1a14278c506abae7c17b3cb0b84ae863c7300454
   repo: https://chromium.googlesource.com/external/github.com/texttheater/golang-levenshtein.git
   subpackages:
   - levenshtein
@@ -208,13 +214,13 @@ imports:
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: 66aacef3dd8a676686c7ae3716979581e8b03c47
+  version: b129b8e0fbeb39c8358e51a07ab6c50ad415e72e
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
   - context/ctxhttp
 - name: golang.org/x/oauth2
-  version: 9a379c6b3e95a790ffc43293c2a78dee0d7b6e20
+  version: 13449ad91cb26cb47661c1b080790392170385fd
   repo: https://go.googlesource.com/oauth2.git
   subpackages:
   - google
@@ -225,15 +231,15 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: bb24a47a89eac6c1227fbcb2ae37a8b9ed323366
+  version: 062cd7e4e68206d8bab9b18396626e855c992658
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - windows
 - name: golang.org/x/text
-  version: e113a52b01bdd1744681b6ce70c2e3d26b58d389
+  version: acd49d43e9b95df46670431bf5c7ae59586daad8
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: e00c182679a043c63cd52172ee2d9d3d8ad22e26
+  version: 3b1faeda9afbcba128c2d794b38ffe7982141139
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -246,7 +252,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 4c6d21ebe7d908cb32717e14783f80ffee6cdcb0
+  version: 2fe03ca2dc379c00d654a4459d1a50812cac2848
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -273,13 +279,13 @@ imports:
   - urlfetch
   - user
 - name: google.golang.org/genproto
-  version: ee236bd376b077c7a89f260c026c4735b195e459
+  version: 595979c8a7bf586b2d293fb42246bf91a0b893d9
   repo: https://chromium.googlesource.com/external/github.com/google/go-genproto.git
   subpackages:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: 8233e124e4634a8313f2c9a1ea7d4db33546b11b
+  version: c443156028b9fa563e063e9fa8ba7881d467833b
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
