@@ -86,7 +86,8 @@ rows. If you are not using `eventuploader`, check out
 With `eventuploader`, you can construct a synchronous `Uploader` or asynchronous
 `BatchUploader` depending on your needs.
 
-TODO: Link to kitchen as an example of how to use eventuploader.
+[kitchen](../../go/src/infra/tools/kitchen/monitoring.go) is an example of a
+tool that uses eventuploader.
 
 ## From Python
 
