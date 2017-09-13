@@ -146,3 +146,7 @@ configuring a builder to run the
 with the proper properties. See [this
 change](https://chrome-internal-review.googlesource.com/c/412934/) for an
 example.
+
+The builder name should be `dataflow-workflow-[job name]` where job name is
+the name of the remotely executed job. This naming scheme sets up automated
+alerting for builder failures.
