@@ -41,6 +41,15 @@ From command line, run:
 If a code path branch is not tested and no line number is shown in the command
 line output, you could check the code coverage report shown in the output.
 
+# How to automatically format python code?
+
+YAPF is used to format the code in chromium style, and it is expected to format
+the code before uploading a CL for review. To install YAPF, please refer to
+https://github.com/google/yapf.
+
+From command line, run:
+  `make format`
+
 # How to deploy to appengine?
 
 ## Staging

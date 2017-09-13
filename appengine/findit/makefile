@@ -24,6 +24,7 @@ help:
 	      "by make when running the line above, or better yet, use the" \
 	      "web interface to make the previous release default."
 	@echo
+	@echo "To format code use \`make format\`"
 	@echo "To run tests use \`make test\`"
 	@echo "To run findit locally use \`make run\`, if needed, run " \
 	      "\`make polymer-install\` first."
@@ -82,6 +83,14 @@ migrate:
 ##### Development ###
 run:
 	$(INFRAPYTHON) $(GAE_PY) devserver
+
+YAPF := $(shell command -v yapf 2> /dev/null)
+format:
+ifndef YAPF
+	@echo "Please install yapf first: https://github.com/google/yapf." && false
+endif
+	git cl format --full --python
+
 
 
 ##### Unit tests ###
