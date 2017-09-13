@@ -12,6 +12,8 @@ import (
 	"cloud.google.com/go/bigquery"
 	"golang.org/x/net/context"
 
+	"go.chromium.org/luci/common/tsmon"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -40,6 +42,19 @@ func shouldHavePut(actual interface{}, expected ...interface{}) string {
 	}
 }
 
+func TestMetric(t *testing.T) {
+	t.Parallel()
+	ctx := tsmon.WithState(context.Background(), tsmon.NewState())
+	u := Uploader{}
+	u.UploadsMetricName = "fakeCounter"
+	Convey("Test metric creation", t, func() {
+		Convey("Expect uploads metric was created", func() {
+			_ = u.getCounter(ctx) // To actually create the metric
+			So(u.uploads.Info().Name, ShouldEqual, "fakeCounter")
+		})
+	})
+}
+
 func TestClose(t *testing.T) {
 	t.Parallel()
 
@@ -51,27 +66,28 @@ func TestClose(t *testing.T) {
 		}
 
 		closed := false
+		ctx := context.Background()
 		defer func() {
 			if !closed {
-				bu.Close(context.Background())
+				bu.Close(ctx)
 			}
 		}()
 
 		bu.TickC = make(chan time.Time)
 
 		Convey("Expect Stage to add event to pending queue", func() {
-			bu.Stage(context.Background(), fakeEvent{})
+			bu.Stage(ctx, fakeEvent{})
 			So(bu.pending, ShouldHaveLength, 1)
 		})
 
 		Convey("Expect Close to flush pending queue", func() {
-			bu.Stage(context.Background(), fakeEvent{})
-			bu.Close(context.Background())
+			bu.Stage(ctx, fakeEvent{})
+			bu.Close(ctx)
 			closed = true
 			So(bu.pending, ShouldHaveLength, 0)
 			So(u, shouldHavePut, []fakeEvent{{}})
 			So(bu.closed, ShouldBeTrue)
-			So(func() { bu.Stage(context.Background(), fakeEvent{}) }, ShouldPanic)
+			So(func() { bu.Stage(ctx, fakeEvent{}) }, ShouldPanic)
 		})
 	})
 }
@@ -85,12 +101,13 @@ func TestUpload(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer bu.Close(context.Background())
+		ctx := context.Background()
+		defer bu.Close(ctx)
 
 		tickc := make(chan time.Time)
 		bu.TickC = tickc
 
-		bu.Stage(context.Background(), fakeEvent{})
+		bu.Stage(ctx, fakeEvent{})
 		Convey("Expect Put to wait for tick to call upload", func() {
 			So(u, ShouldHaveLength, 0)
 			tickc <- time.Time{}
@@ -188,11 +205,12 @@ func TestStage(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		defer bu.Close(context.Background())
+		ctx := context.Background()
+		defer bu.Close(ctx)
 
 		for _, tc := range tcs {
 			Convey(fmt.Sprintf("Test %s", tc.desc), func() {
-				bu.Stage(context.Background(), tc.src)
+				bu.Stage(ctx, tc.src)
 				So(bu.pending, ShouldHaveLength, tc.wantLen)
 				So(bu.pending[len(bu.pending)-1], ShouldHaveSameTypeAs, fakeEvent{})
 			})
