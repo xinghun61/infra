@@ -35,6 +35,10 @@ from appengine_module.pipeline_utils.\
 REPO_EXCLUSIONS = {
     'chromium': [
       'chromium/chromium',  # conflicts with chromium/src
+      'chromium/codesearch', # conflicts with chromium/src
+      'chromium/deps/webrtc/webrtc.DEPS', # conflicts with webrtc/webrtc.DEPS
+      'chromium/src/codesearch', # conflicts with chromium/src
+      'chromium/tools/build/codesearch', # conflicts with chromium/tools/build
       'dart/dartium/blink',  # conflicts with chromium/blink
       'dart/dartium/src',  # conflicts with chromium/src
       'experimental/chromium/blink',  # conflicts with chromium/blink
@@ -45,6 +49,8 @@ REPO_EXCLUSIONS = {
       'experimental/src-pruned-refs',  # conflicts with chromium/src
       'external/WebKit_submodule',  # conflicts with chromium/blink (?)
       'external/Webkit',  # conflicts with chromium/blink (? crbug.com/432761)
+      'external/webrtc', # conflicts with webrtc/src
+      'external/webrtc/trunk/webrtc', # conflicts with webrtc/src/webrtc
     ]
 }
 
