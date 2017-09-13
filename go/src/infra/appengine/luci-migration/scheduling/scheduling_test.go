@@ -89,10 +89,9 @@ func TestScheduling(t *testing.T) {
 						Master:  "tryserver.chromium.linux",
 						Builder: "linux_chromium_rel_ng",
 					},
-					SchedulingType:         config.SchedulingType_TRYJOBS,
-					LUCIBuildbucketBucket:  "luci.chromium.try",
-					LUCIBuildbucketBuilder: "linux_chromium_rel_ng",
-					ExperimentPercentage:   percentage,
+					SchedulingType:        config.SchedulingType_TRYJOBS,
+					LUCIBuildbucketBucket: "luci.chromium.try",
+					ExperimentPercentage:  percentage,
 				})
 				So(err, ShouldBeNil)
 			}

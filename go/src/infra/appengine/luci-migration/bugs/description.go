@@ -40,7 +40,7 @@ var descriptionTmpl = template.Must(template.New("").
 Migrate builder {{.Builder.ID}} to LUCI.
 
 Buildbot: https://ci.chromium.org/buildbot/{{.Builder.ID.Master|pathEscape}}/{{.Builder.ID.Builder|pathEscape}}
-LUCI: https://ci.chromium.org/buildbucket/{{.Builder.LUCIBuildbucketBucket|pathEscape}}/{{.Builder.LUCIBuildbucketBuilder|pathEscape}}
+LUCI: https://ci.chromium.org/buildbucket/{{.Builder.LUCIBuildbucketBucket|pathEscape}}/{{.Builder.ID.Builder|pathEscape}}
 
 Migration app will be posting updates on changes of the migration status.
 For the latest status, see

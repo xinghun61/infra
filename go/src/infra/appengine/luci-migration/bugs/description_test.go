@@ -50,8 +50,7 @@ func TestDescription(t *testing.T) {
 				Master:  "tryserver.chromium.linux",
 				Builder: "linux_chromium_rel_ng",
 			},
-			LUCIBuildbucketBucket:  "luci.chromium.try",
-			LUCIBuildbucketBuilder: "linux_chromium_rel_ng",
+			LUCIBuildbucketBucket: "luci.chromium.try",
 			OS: config.OS_LINUX,
 			IssueID: storage.IssueID{
 				Project: "chromium",

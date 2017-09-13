@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -62,18 +63,31 @@ func TestAnalyze(t *testing.T) {
 		}
 		bbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			res := &buildbucket.ApiSearchResponseMessage{}
-			switch r.FormValue("bucket") {
-			case "luci.chromium.try":
-				res.Builds = luciSearchResults
-			case "master.tryserver.chromium.linux":
-				buildSet := ""
-				for _, t := range r.Form["tag"] {
-					if k, v := bbutil.ParseTag(t); k == bbutil.TagBuildSet {
-						buildSet = v
-						break
-					}
+
+			// TODO(nodir): remove a week after no build has "LUCI " builder name prefix.
+			isLUCIPrefixSearch := false
+			for _, t := range r.URL.Query()["tag"] {
+				k, v := bbutil.ParseTag(t)
+				if k == "builder" {
+					isLUCIPrefixSearch = strings.HasPrefix(v, "LUCI ")
+					break
 				}
-				res.Builds = buildbotSearchResults[buildSet]
+			}
+
+			if !isLUCIPrefixSearch {
+				switch r.FormValue("bucket") {
+				case "luci.chromium.try":
+					res.Builds = luciSearchResults
+				case "master.tryserver.chromium.linux":
+					buildSet := ""
+					for _, t := range r.Form["tag"] {
+						if k, v := bbutil.ParseTag(t); k == bbutil.TagBuildSet {
+							buildSet = v
+							break
+						}
+					}
+					res.Builds = buildbotSearchResults[buildSet]
+				}
 			}
 
 			err := json.NewEncoder(w).Encode(res)
@@ -93,14 +107,12 @@ func TestAnalyze(t *testing.T) {
 			},
 		}
 
-		buildbotBuilder := BucketBuilder{Bucket: "master.tryserver.chromium.linux", Builder: "linux_chromium_rel_ng"}
-		luciBuilder := BucketBuilder{Bucket: "luci.chromium.try", Builder: "linux_chromium_rel_ng"}
-
 		analyze := func() *storage.BuilderMigration {
 			mig, html, err := tryjobs.Analyze(
 				c,
-				buildbotBuilder,
-				luciBuilder,
+				"linux_chromium_rel_ng",
+				"master.tryserver.chromium.linux",
+				"luci.chromium.try",
 				storage.StatusLUCINotWAI,
 			)
 			So(err, ShouldBeNil)
@@ -185,10 +197,11 @@ func TestAnalyze(t *testing.T) {
 			mockBuildbotBuilds("set3", time.Hour, failure, success)
 
 			f := &fetcher{
-				Buildbucket: bbService,
-				LUCI:        luciBuilder,
-				Buildbot:    buildbotBuilder,
-				MaxGroups:   DefaultMaxGroups,
+				Buildbucket:    bbService,
+				Builder:        "linux_chromium_rel_ng",
+				BuildbotBucket: "master.tryserver.chromium.linux",
+				LUCIBucket:     "luci.chromium.try",
+				MaxGroups:      DefaultMaxGroups,
 				patchSetAbsent: func(context.Context, *http.Client, *buildset.BuildSet) (bool, error) {
 					return false, nil
 				},

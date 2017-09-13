@@ -102,10 +102,9 @@ func (d *Builders) Discover(c context.Context, master *config.Master) error {
 
 func (d *Builders) registerBuilder(c context.Context, master *config.Master, name string) error {
 	builder := &storage.Builder{
-		ID:                     bid(master.Name, name),
-		SchedulingType:         master.SchedulingType,
-		LUCIBuildbucketBucket:  master.LuciBucket,
-		LUCIBuildbucketBuilder: name,
+		ID:                    bid(master.Name, name),
+		SchedulingType:        master.SchedulingType,
+		LUCIBuildbucketBucket: master.LuciBucket,
 		OS: master.Os,
 	}
 

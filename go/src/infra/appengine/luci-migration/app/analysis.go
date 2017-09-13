@@ -130,8 +130,9 @@ func handleAnalyzeBuilder(c *router.Context) error {
 	}
 	migration, detailsHTML, err := tryjobs.Analyze(
 		c.Context,
-		analysis.BucketBuilder{Bucket: "master." + builder.ID.Master, Builder: builder.ID.Builder},
-		analysis.BucketBuilder{Bucket: builder.LUCIBuildbucketBucket, Builder: builder.LUCIBuildbucketBuilder},
+		builder.ID.Builder,
+		"master."+builder.ID.Master,
+		builder.LUCIBuildbucketBucket,
 		builder.Migration.Status,
 	)
 	if err != nil {
@@ -171,9 +172,9 @@ func handleAnalyzeBuilder(c *router.Context) error {
 				return err
 			}
 			builder.MostRecentNotification = storage.Notification{
-				Time:            now,
-				Status:          builder.Migration.Status,
-				CurrentTaskName: task.Name,
+				Time:     now,
+				Status:   builder.Migration.Status,
+				TaskName: task.Name,
 			}
 		}
 
@@ -218,11 +219,11 @@ func handleNotifyOnBuilderChange(c *router.Context) error {
 		return err
 	case builder == nil:
 		return nil // response is already written.
-	case builder.MostRecentNotification.CurrentTaskName != taskName:
+	case builder.MostRecentNotification.TaskName != taskName:
 		logging.Infof(
 			c.Context,
 			"My task name is %q, but builder's current task name is %q. Exiting gracefully",
-			taskName, builder.MostRecentNotification.CurrentTaskName)
+			taskName, builder.MostRecentNotification.TaskName)
 		return nil
 	}
 

@@ -108,44 +108,24 @@ func handleCompletedBuildbotBuild(c context.Context, build *buildbucket.ApiCommo
 
 	// Prepare new build request.
 
+	newParamsJSON, err := setProps(build.ParametersJson, map[string]interface{}{
+		"revision": revision,
+		// Mark the build as experimental, so it does not confuse users of Rietveld and Gerrit.
+		"category": "cq_experimental",
+	})
+	if err != nil {
+		return err
+	}
 	newBuild := &buildbucket.ApiPutRequestMessage{
 		Bucket:            builder.LUCIBuildbucketBucket,
 		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.Id, 10),
+		ParametersJson:    newParamsJSON,
 		Tags: []string{
 			bbutil.FormatTag(buildbotBuildIDTagKey, strconv.FormatInt(build.Id, 10)),
 			bbutil.FormatTag(attemptTagKey, "0"),
 			bbutil.FormatTag(bbutil.TagBuildSet, buildSet),
 		},
 	}
-
-	var parameters map[string]interface{}
-	if err := json.Unmarshal([]byte(build.ParametersJson), &parameters); err != nil {
-		return err
-	}
-	parameters["builder_name"] = builder.LUCIBuildbucketBuilder
-
-	// Set got_revision
-	var props map[string]interface{} // a pointer to "properties" in parameters
-	if propsRaw, ok := parameters["properties"]; ok {
-		props, ok = propsRaw.(map[string]interface{})
-		if !ok {
-			return errors.New("properties is not a JSON object")
-		}
-	} else {
-		props = map[string]interface{}{}
-		parameters["properties"] = props
-	}
-	props["revision"] = revision
-
-	// Mark the build as experimental, so it does not confuse users of Rietveld and Gerrit.
-	props["category"] = "cq_experimental"
-
-	if marshalled, err := json.Marshal(parameters); err != nil {
-		return err
-	} else {
-		newBuild.ParametersJson = string(marshalled)
-	}
-
 	return withLock(c, build.Id, func() error {
 		logging.Infof(
 			c,
@@ -301,4 +281,32 @@ func gotRevision(build *buildbucket.ApiCommonBuildMessage) (string, error) {
 		return "", errors.Annotate(err, "could not parse buildbot build result details").Err()
 	}
 	return resultDetails.Properties.GotRevision, nil
+}
+
+func setProps(paramsJSON string, values map[string]interface{}) (string, error) {
+	var parameters map[string]interface{}
+	if err := json.Unmarshal([]byte(paramsJSON), &parameters); err != nil {
+		return "", err
+	}
+
+	var props map[string]interface{} // a pointer to "properties" in parameters
+	if propsRaw, ok := parameters["properties"]; ok {
+		props, ok = propsRaw.(map[string]interface{})
+		if !ok {
+			return "", errors.New("properties is not a JSON object")
+		}
+	} else {
+		props = map[string]interface{}{}
+		parameters["properties"] = props
+	}
+
+	for k, v := range values {
+		props[k] = v
+	}
+
+	marshalled, err := json.Marshal(parameters)
+	if err != nil {
+		return "", err
+	}
+	return string(marshalled), nil
 }

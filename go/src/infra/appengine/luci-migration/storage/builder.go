@@ -49,20 +49,22 @@ type Builder struct {
 
 	IssueID IssueID
 
-	LUCIBuildbucketBucket  string
-	LUCIBuildbucketBuilder string
+	LUCIBuildbucketBucket string
 
 	Migration BuilderMigration
 
 	ExperimentPercentage int
 
 	MostRecentNotification Notification
+
+	Expando datastore.PropertyMap `gae:",extra"` // future or deprecated fields
 }
 
+// Notification contains info about a notification sent about a status change.
 type Notification struct {
-	Time            time.Time // zero, if never sent
-	Status          MigrationStatus
-	CurrentTaskName string
+	Time     time.Time // zero, if never sent
+	Status   MigrationStatus
+	TaskName string
 }
 
 // IssueID globally identifies a Monorail issue.

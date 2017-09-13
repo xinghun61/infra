@@ -38,17 +38,6 @@ import (
 // DefaultMaxGroups is the default number of build groups to fetch.
 const DefaultMaxGroups = 100
 
-// BucketBuilder is a combination of a build bucket and a builder name.
-type BucketBuilder struct {
-	Bucket  string
-	Builder string
-}
-
-// String implements fmt.Stringer.
-func (b BucketBuilder) String() string {
-	return b.Bucket + ":" + b.Builder
-}
-
 // Tryjobs compares LUCI and Buildbot tryjobs.
 type Tryjobs struct {
 	HTTP                 *http.Client
@@ -68,10 +57,10 @@ type Tryjobs struct {
 }
 
 // Analyze compares buildbot and LUCI tryjobs.
-func (t *Tryjobs) Analyze(c context.Context, buildbotBuilder, luciBuilder BucketBuilder, currentStatus storage.MigrationStatus) (
+func (t *Tryjobs) Analyze(c context.Context, builder, buildbotBucket, luciBucket string, currentStatus storage.MigrationStatus) (
 	result *storage.BuilderMigration, detailsHTML string, err error) {
 
-	comp, err := t.analyze(c, buildbotBuilder, luciBuilder, currentStatus)
+	comp, err := t.analyze(c, builder, buildbotBucket, luciBucket, currentStatus)
 	if err != nil {
 		return nil, "", err
 	}
@@ -83,14 +72,15 @@ func (t *Tryjobs) Analyze(c context.Context, buildbotBuilder, luciBuilder Bucket
 	return &comp.BuilderMigration, detailsBuf.String(), nil
 }
 
-func (t *Tryjobs) analyze(c context.Context, buildbotBuilder, luciBuilder BucketBuilder, currentStatus storage.MigrationStatus) (*diff, error) {
-	logging.Infof(c, "comparing %q to %q", luciBuilder, buildbotBuilder)
+func (t *Tryjobs) analyze(c context.Context, builder, buildbotBucket, luciBucket string, currentStatus storage.MigrationStatus) (*diff, error) {
+	logging.Infof(c, "analyzing builder %q on %q and %q", builder, buildbotBucket, luciBucket)
 
 	f := fetcher{
 		HTTP:           t.HTTP,
 		Buildbucket:    t.Buildbucket,
-		LUCI:           luciBuilder,
-		Buildbot:       buildbotBuilder,
+		Builder:        builder,
+		BuildbotBucket: buildbotBucket,
+		LUCIBucket:     luciBucket,
 		MaxGroups:      t.MaxGroups,
 		patchSetAbsent: t.patchSetAbsent,
 	}
@@ -112,11 +102,12 @@ func (t *Tryjobs) analyze(c context.Context, buildbotBuilder, luciBuilder Bucket
 }
 
 type fetcher struct {
-	HTTP            *http.Client
-	Buildbucket     *buildbucket.Service
-	MaxGroups       int
-	Buildbot, LUCI  BucketBuilder
-	MinCreationDate time.Time
+	HTTP                       *http.Client
+	Buildbucket                *buildbucket.Service
+	MaxGroups                  int
+	Builder                    string
+	BuildbotBucket, LUCIBucket string
+	MinCreationDate            time.Time
 
 	// mocked in tests
 	patchSetAbsent patchSetAbsenceChecker
@@ -188,9 +179,9 @@ func (f *fetcher) Fetch(c context.Context) ([]*group, error) {
 // Ignores builds for non-existing patchsets.
 func (f *fetcher) fetchLUCIBuilds(c context.Context, builds buildChan) error {
 	req := f.Buildbucket.Search()
-	req.Bucket(f.LUCI.Bucket)
+	req.Bucket(f.LUCIBucket)
 	req.Status(bbutil.StatusCompleted)
-	req.Tag(bbutil.FormatTag("builder", f.LUCI.Builder))
+	req.Tag(bbutil.FormatTag("builder", f.Builder))
 	if cap(builds) > 0 {
 		req.MaxBuilds(int64(cap(builds)))
 	}
@@ -199,6 +190,13 @@ func (f *fetcher) fetchLUCIBuilds(c context.Context, builds buildChan) error {
 	var searchErr error
 	go func() {
 		defer close(foundBuilds)
+		searchErr = bbutil.Search(c, req, f.MinCreationDate, foundBuilds)
+		if searchErr != nil {
+			return
+		}
+
+		// TODO(nodir): remove a week after no build has "LUCI " builder name prefix.
+		req.Tag(bbutil.FormatTag("builder", "LUCI "+f.Builder)) // overrides previous req.Tag() call
 		searchErr = bbutil.Search(c, req, f.MinCreationDate, foundBuilds)
 	}()
 
@@ -277,10 +275,10 @@ func (f *fetcher) joinBuilds(c context.Context, luciBuilds buildChan, stop func(
 					}
 
 					req := f.Buildbucket.Search()
-					req.Bucket(f.Buildbot.Bucket)
+					req.Bucket(f.BuildbotBucket)
 					req.Status(bbutil.StatusCompleted)
 					req.Tag(
-						bbutil.FormatTag("builder", f.Buildbot.Builder),
+						bbutil.FormatTag("builder", f.Builder),
 						bbutil.FormatTag(bbutil.TagBuildSet, buildSet))
 					builds, err := bbutil.SearchAll(c, req, f.MinCreationDate)
 					if err != nil {

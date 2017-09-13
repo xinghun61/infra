@@ -106,8 +106,7 @@ func TestDiscovery(t *testing.T) {
 
 			IssueID: storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 55},
 
-			LUCIBuildbucketBucket:  "luci.chromium.try",
-			LUCIBuildbucketBuilder: "linux_chromium_asan_rel_ng",
+			LUCIBuildbucketBucket: "luci.chromium.try",
 		})
 
 		// Verify linux_chromium_rel_ng was notrediscovered.
