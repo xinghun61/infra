@@ -3116,6 +3116,11 @@
   {
     "cmd": [],
     "cwd": "[START_DIR]/swig/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
     "name": "swig.automake-1.15",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
@@ -3134,6 +3139,11 @@
       "[START_DIR]/swig/_support/automake-1.15"
     ],
     "cwd": "[START_DIR]/swig/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
     "infra_step": true,
     "name": "swig.automake-1.15.makedirs workdir",
     "~followup_annotations": [
@@ -3149,6 +3159,11 @@
       "[START_DIR]/swig/_support/automake-1.15"
     ],
     "cwd": "[START_DIR]/swig/_support/automake-1.15",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
     "name": "swig.automake-1.15.extract",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -3160,6 +3175,11 @@
       "--prefix=[START_DIR]/swig/_support/automake-1.15/prefix"
     ],
     "cwd": "[START_DIR]/swig/_support/automake-1.15/automake-1.15",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
     "name": "swig.automake-1.15.configure",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"
@@ -3171,6 +3191,11 @@
       "install"
     ],
     "cwd": "[START_DIR]/swig/_support/automake-1.15/automake-1.15",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+      ]
+    },
     "name": "swig.automake-1.15.make",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@2@@@"

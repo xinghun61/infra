@@ -407,7 +407,9 @@ class SupportPrefix(util.ModuleShim):
     return self._generic_build('autoconf', 'version:2.69')
 
   def ensure_automake(self):
-    return self._generic_build('automake', 'version:1.15')
+    autoconf = self.ensure_autoconf()
+    with self.m.context(env_prefixes={'PATH': [autoconf.bin_dir]}):
+      return self._generic_build('automake', 'version:1.15')
 
   def ensure_gnu_sed(self):
     return self._generic_build('gnu_sed', 'version:4.2.2',
