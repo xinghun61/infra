@@ -182,7 +182,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
                user_specified_iterations,
                cache_name,
                dimensions,
-               rerun=False,
+               rerun,
                retries=0):
     super(RecursiveFlakeTryJobPipeline, self).__init__(
         urlsafe_flake_analysis_key,
@@ -193,7 +193,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
         user_specified_iterations,
         cache_name,
         dimensions,
-        rerun=rerun,
+        rerun,
         retries=retries)
     self.urlsafe_flake_analysis_key = urlsafe_flake_analysis_key
     self.commit_position = commit_position
@@ -252,7 +252,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
           user_specified_iterations,
           cache_name,
           dimensions,
-          rerun=False,
+          rerun,
           retries=0):
     """Runs a try job at a revision to determine its flakiness.
 
@@ -326,7 +326,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
             user_specified_iterations,
             cache_name,
             dimensions,
-            rerun=rerun,
+            rerun,
             retries=retries)
 
         # Disable attribute 'target' defined outside __init__ pylint warning,
@@ -512,15 +512,9 @@ class NextCommitPositionPipeline(BasePipeline):
         next_commit_position)
 
     pipeline_job = RecursiveFlakeTryJobPipeline(
-        urlsafe_flake_analysis_key,
-        next_commit_position,
-        next_revision,
-        lower_bound_commit_position,
-        upper_bound_commit_position,
-        user_specified_iterations,
-        cache_name,
-        dimensions,
-        rerun=rerun)
+        urlsafe_flake_analysis_key, next_commit_position, next_revision,
+        lower_bound_commit_position, upper_bound_commit_position,
+        user_specified_iterations, cache_name, dimensions, rerun)
     # Disable attribute 'target' defined outside __init__ pylint warning,
     # because pipeline generates its own __init__ based on run function.
     pipeline_job.target = (  # pylint: disable=W0201

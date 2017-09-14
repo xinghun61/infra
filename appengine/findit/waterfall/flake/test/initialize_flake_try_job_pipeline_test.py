@@ -4,8 +4,6 @@
 
 import mock
 
-from google.appengine.ext import ndb
-
 from common import constants
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
@@ -356,10 +354,9 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         '',
         expected_args=[
             analysis.key.urlsafe(), 997, 'r997', 995, 1000, None,
-            _DEFAULT_CACHE_NAME, None
+            _DEFAULT_CACHE_NAME, None, False
         ],
-        expected_kwargs={'rerun': False,
-                         'retries': 0})
+        expected_kwargs={'retries': 0})
     self.MockPipeline(
         SendNotificationForFlakeCulpritPipeline,
         '',
