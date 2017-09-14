@@ -157,3 +157,19 @@ class LocalGitRepository(GitRepository):
     command = 'git show %s:%s' % (ConvertRemoteCommitToLocal(revision), path)
     output = script_util.GetCommandOutput(self._GetFinalCommand(command))
     return output
+
+  def GetCommitsBetweenRevisions(self, start_revision, end_revision):
+    """Gets a list of commit hashes between start_revision and end_revision.
+
+    Args:
+      start_revision: The oldest revision in the range.
+      end_revision: The latest revision in the range.
+      n: The maximum number of revisions to request at a time.
+
+    Returns:
+      A list of commit hashes made since start_revision through and including
+      end_revision in order from most-recent to least-recent. This includes
+      end_revision, but not start_revision.
+    """
+    changelogs = self.GetChangeLogs(start_revision, end_revision)
+    return [changelog.revision for changelog in changelogs or []]

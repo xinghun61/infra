@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import mock
 import os
 import shutil
 import subprocess
@@ -239,3 +240,29 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
 
     self.assertRaisesRegexp(Exception, 'Error running command dummy: error',
                             script_util.GetCommandOutput, 'dummy')
+
+  @mock.patch('local_libs.git_checkout.local_git_repository.LocalGitRepository.'
+              'GetChangeLogs')
+  def testGetCommitsBetweenRevisions(self, mock_get_changelogs):
+    """Tests ``GetCommitsBetweenRevisions`` return number of commits."""
+    changelog1 =  change_log.ChangeLog(
+            change_log.Contributor('author2', 'author2@chromium.org',
+                                   datetime(2016, 6, 2, 10, 53, 3)),
+            change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
+                                   datetime(2016, 6, 2, 10, 54,
+                                            14)), 'rev1', None, 'Message 2',
+            [change_log.FileChangeInfo('add', None, 'b/c.py')],
+            'https://repo/path/+/rev2', None, None)
+    changelog2 =  change_log.ChangeLog(
+            change_log.Contributor('author2', 'author2@chromium.org',
+                                   datetime(2016, 6, 2, 10, 53, 3)),
+            change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
+                                   datetime(2016, 6, 2, 10, 54,
+                                            14)), 'rev2', None, 'Message 2',
+            [change_log.FileChangeInfo('add', None, 'b/c.py')],
+            'https://repo/path/+/rev2', None, None)
+
+    mock_get_changelogs.return_value = [changelog1, changelog2]
+    repo = local_git_repository.LocalGitRepository(None)
+    self.assertListEqual(repo.GetCommitsBetweenRevisions('old_rev', 'new_rev'),
+                         ['rev1', 'rev2'])
