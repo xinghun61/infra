@@ -6,6 +6,7 @@
 package crauditcommits
 
 import (
+	"fmt"
 	"time"
 
 	ds "go.chromium.org/gae/service/datastore"
@@ -20,6 +21,20 @@ const (
 	auditCompletedWithViolation
 )
 
+// ToString returns a human-readable version of this status.
+func (as AuditStatus) ToString() string {
+	switch as {
+	case auditScheduled:
+		return "Audit Scheduled"
+	case auditCompleted:
+		return "Audited OK"
+	case auditCompletedWithViolation:
+		return "Violation Found"
+	default:
+		return fmt.Sprintf("Unknown status: %d", int(as))
+	}
+}
+
 // RuleStatus is the enum for RuleResult.RuleResultStatus.
 type RuleStatus int
 
@@ -28,6 +43,20 @@ const (
 	rulePassed
 	ruleSkipped
 )
+
+// ToString returns a human-readable version of this status.
+func (rs RuleStatus) ToString() string {
+	switch rs {
+	case ruleFailed:
+		return "Rule Failed"
+	case rulePassed:
+		return "Rule Passed"
+	case ruleSkipped:
+		return "Rule Skipped"
+	default:
+		return fmt.Sprintf("Unknown status: %d", int(rs))
+	}
+}
 
 // RepoState contains the state for each repository we audit.
 type RepoState struct {

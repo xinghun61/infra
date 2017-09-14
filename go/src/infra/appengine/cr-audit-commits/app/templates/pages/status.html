@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>cr-audit-commits Status Page</title>
+<h3>Status for {{.RepoName}}</h3>
+<dl>
+{{if .LastRelevant}}
+<dt> Last Interesting Commit </dt>
+<dd><a href="{{.BaseRepoURL}}/+/{{.LastRelevant}}">{{.LastRelevant}}</a></dd>
+{{end}}
+{{if .LastScanned}}
+<dt> Last Scanned Commit </dt>
+<dd><a href="{{.BaseRepoURL}}/+/{{.LastScanned}}">{{.LastScanned}}</a></dd>
+{{end}}
+</dl>
+
+{{if .Commits}}
+<h4>Most recent relevant commits</h4>
+<table>
+  <tr>
+    <th>Commit</th>
+    <th>Commit time</th>
+    <th>Status</th>
+    <th>Rule result</th>
+  </tr>
+  {{$repo := .BaseRepoURL}}
+  {{range .Commits}}
+    <tr>
+      <td><a href="{{$repo}}/+/{{.CommitHash}}">{{.CommitHash}}</a></td>
+      <td>{{.CommitTime}}</td>
+      <td>{{.Status.ToString}}</td>
+      <td>
+        {{range .Result}}
+          {{.RuleName}}: {{.RuleResultStatus.ToString}}
+          {{if .Message}}
+            &mdash; {{.Message}}
+          {{end}}
+          <br>
+        {{end}}
+      </td>
+    </tr>
+  {{end}}
+</table>
+{{end}}
+
