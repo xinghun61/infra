@@ -19,7 +19,6 @@ import (
 	"bytes"
 	"net/http"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"golang.org/x/net/context"
@@ -117,7 +116,7 @@ type fetcher struct {
 type fetchGroup struct {
 	sync.Mutex
 	group
-	accepted bool // true if this group is counted as trustworthy
+	err chan error
 }
 
 // locked calls f under lock.
@@ -145,7 +144,7 @@ func (f *fetcher) Fetch(c context.Context) ([]*group, error) {
 	// - stop fetching LUCI builds when maxGroups groups are collected
 
 	const luciBatchSize = 100
-	// luciBuilds channel controls the lifetime of joinBuilds call (below).
+	// luciBuilds channel controls the lifetime of fetchGroups call (below).
 	luciBuilds := make(buildChan, luciBatchSize)
 	// calling cancelLUCIFetcher will cause luciBuilds to close.
 	luciFetchCtx, cancelLUCIFetcher := context.WithCancel(c)
@@ -159,9 +158,9 @@ func (f *fetcher) Fetch(c context.Context) ([]*group, error) {
 		}
 	}()
 
-	// joinBuilds will return when luciBuilds channel is closed.
+	// fetchGroups will return when luciBuilds channel is closed.
 	// cancelLUCIFetcher causes luciBuilds channel to close.
-	result, err := f.joinBuilds(c, luciBuilds, cancelLUCIFetcher)
+	result, err := f.fetchGroups(c, luciBuilds, cancelLUCIFetcher)
 	// All goroutine defined above must exit by this time.
 	switch {
 	case err != nil:
@@ -233,80 +232,146 @@ func (f *fetcher) fetchLUCIBuilds(c context.Context, builds buildChan) error {
 	return searchErr
 }
 
-// joinBuilds listens to luciBuilds channel and for each buildset fetches
-// Buildbot builds. It returns all build groups it finds as soon as minimum
-// number of trustworthy groups is reached.
-func (f *fetcher) joinBuilds(c context.Context, luciBuilds buildChan, stop func()) ([]*group, error) {
-	var trustworthyGroups int32
-	considerStopping := func(i *fetchGroup) {
-		if !i.accepted && i.trustworthy() {
-			i.accepted = true
-			if atomic.AddInt32(&trustworthyGroups, 1) >= int32(f.MaxGroups) {
-				stop()
-			}
-		}
+// fetchGroups listens to luciBuilds channel and for each new buildset it
+// fetches a build group. Each build group has LUCI and Buildbot builds.
+// fetchGroups stops as soon as the minimum number of trustworthy groups is
+// reached; then it returns all the groups it fetched.
+// The order of groups corresponds to the order of luciBuilds.
+// This function is deterministic.
+//
+// cancel must close luciBuilds.
+func (f *fetcher) fetchGroups(c context.Context, luciBuilds buildChan, cancel context.CancelFunc) ([]*group, error) {
+	// make `cancel` cancel c too
+	origCancel := cancel
+	c, cancelC := context.WithCancel(c)
+	cancel = func() {
+		origCancel()
+		cancelC()
 	}
 
-	var result []*group
-	groups := map[string]*fetchGroup{} // both map and group key is buildset
+	groupC := make(chan *fetchGroup, 1)
+	go func() {
+		// this goroutine is referred to as "master goroutine"
 
-	// this loop stops when luciBuilds is closed, which is caused by calling
-	// stop().
-	err := parallel.WorkPool(10, func(work chan<- func() error) {
-		for b := range luciBuilds {
-			buildSet := bbutil.BuildSet(b)
-			if buildSet == "" {
-				logging.Debugf(c, "skipped build %d: no buildset tag", b.Id)
-				continue
-			}
+		defer close(groupC)
+		// this call returns when luciBuilds is closed, which is caused by calling
+		// cancel().
+		err := parallel.WorkPool(10, func(work chan<- func() error) {
+			seen := map[string]*fetchGroup{} // both map and group key is buildset
+			for b := range luciBuilds {
+				if c.Err() != nil {
+					return
+				}
+				buildSet := bbutil.BuildSet(b)
+				if buildSet == "" {
+					logging.Debugf(c, "skipped build %d: no buildset tag", b.Id)
+					continue
+				}
 
-			g := groups[buildSet]
-			if g == nil {
-				g = &fetchGroup{}
+				if _, alreadyProcessing := seen[buildSet]; alreadyProcessing {
+					continue
+				}
+
+				g := &fetchGroup{}
+				g.err = make(chan error, 1)
 				g.Key = buildSet
 				g.KeyURL = buildset.Parse(buildSet).URL()
-				groups[buildSet] = g
-				result = append(result, &g.group)
+				seen[buildSet] = g
+				groupC <- g
 
-				// start fetching Buildbot builds for the same buildset.
+				// start fetching builds for this group.
 				work <- func() error {
-					if c.Err() != nil {
-						return c.Err() // exit early
+					var err error
+					defer func() { g.err <- err }()
+					if c.Err() == nil {
+						err = f.fetchGroup(c, g) // writes error to g.err
 					}
-
-					req := f.Buildbucket.Search()
-					req.Bucket(f.BuildbotBucket)
-					req.Status(bbutil.StatusCompleted)
-					req.Tag(
-						bbutil.FormatTag("builder", f.Builder),
-						bbutil.FormatTag(bbutil.TagBuildSet, buildSet))
-					builds, err := bbutil.SearchAll(c, req, f.MinCreationDate)
-					if err != nil {
-						// cancel LUCI build fetcher, which will close
-						// luciBuilds channel, which will stop the work
-						// generator.
-						stop()
-						return err
-					}
-
-					g.locked(func() {
-						g.Buildbot = builds
-						g.Buildbot.reverse()
-						considerStopping(g)
-					})
 					return nil
 				}
 			}
-
-			g.locked(func() {
-				// temporarily add in the reverse order
-				g.LUCI = append(g.LUCI, b)
-				considerStopping(g)
-			})
+		})
+		if err != nil {
+			panic(err) // we only return nil in work functions
 		}
-	})
-	for _, g := range result {
-		g.LUCI.reverse()
+	}()
+
+	var result []*group
+	var err error
+	trustworthyGroups := 0
+
+loop:
+	for g := range groupC {
+		select {
+		case <-c.Done():
+			// the master goroutine will stop on its own, since it checks c.Err
+			return result, c.Err()
+
+		case err = <-g.err:
+			if err != nil {
+				break loop
+			}
+			result = append(result, &g.group)
+			if g.trustworthy() {
+				trustworthyGroups++
+				if trustworthyGroups > f.MaxGroups {
+					break loop
+				}
+			}
+		}
+	}
+
+	// cancel and drain/wait for the master goroutine
+	cancel()
+	for range groupC {
 	}
 	return result, err
+}
+
+// fetchGroup fetches buildbot and LUCI builds.
+func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
+	var wg sync.WaitGroup
+	fetchSide := func(bucket string, side *groupSide, err *error) {
+		defer wg.Done()
+		req := f.Buildbucket.Search()
+		req.Bucket(bucket)
+		req.Status(bbutil.StatusCompleted)
+		req.Tag(
+			bbutil.FormatTag("builder", f.Builder),
+			bbutil.FormatTag(bbutil.TagBuildSet, g.Key))
+		var builds []*buildbucket.ApiCommonBuildMessage
+		builds, *err = bbutil.SearchAll(c, req, f.MinCreationDate)
+		if *err != nil {
+			return
+		}
+
+		// TODO(nodir): remove a week after no build has "LUCI " builder name prefix.
+		req.Tag(
+			bbutil.FormatTag("builder", "LUCI "+f.Builder),
+			bbutil.FormatTag(bbutil.TagBuildSet, g.Key)) // overrides previous req.Tag() call
+		var prefixedBuilds []*buildbucket.ApiCommonBuildMessage
+		prefixedBuilds, *err = bbutil.SearchAll(c, req, f.MinCreationDate)
+		if *err != nil {
+			return
+		}
+		// this preserves order because prefixed builds are older than
+		// non-prefixed on a given builder (because we don't go back to
+		// prefixed).
+		builds = append(builds, prefixedBuilds...)
+
+		// Reverse order to make it oldest-to-newest.
+		for i := 0; i < len(builds)/2; i++ {
+			builds[i], builds[len(builds)-1-i] = builds[len(builds)-1-i], builds[i]
+		}
+		*side = groupSide(builds)
+	}
+
+	wg.Add(2)
+	var buildbotErr, luciErr error
+	go fetchSide(f.BuildbotBucket, &g.Buildbot, &buildbotErr)
+	go fetchSide(f.LUCIBucket, &g.LUCI, &luciErr)
+	wg.Wait()
+	if buildbotErr != nil {
+		return buildbotErr
+	}
+	return luciErr
 }

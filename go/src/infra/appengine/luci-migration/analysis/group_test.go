@@ -45,5 +45,13 @@ func TestGroup(t *testing.T) {
 			So(side(time.Hour, failure, failure, failure).trustworthy(), ShouldBeTrue)
 			So(side(time.Hour, failure, failure).trustworthy(), ShouldBeFalse)
 		})
+		Convey("avgRunDuration", func() {
+			s := groupSide{
+				build("dummy", 10*time.Minute, success),
+				build("dummy", 20*time.Minute, success),
+				build("dummy", 30*time.Minute, success),
+			}
+			So(s.avgRunDuration(), ShouldEqual, 20*time.Minute)
+		})
 	})
 }
