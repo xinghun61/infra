@@ -14,6 +14,8 @@ from analysis.suspect_filters import FilterSuspectFromRobotAuthor
 # The ratio of the probabilities of 2 suspects.
 _PROBABILITY_RATIO = 0.5
 
+_ABSOLUTE_CONFIDENCE_SCORE = 50
+
 
 class ChangelistClassifier(object):
   """A ``LogLinearModel``-based implementation of CL classification."""
@@ -62,7 +64,7 @@ class ChangelistClassifier(object):
 
     if len(suspects) == 1:
       suspect = suspects[0]
-      suspect.confidence = 1.0
+      suspect.confidence = _ABSOLUTE_CONFIDENCE_SCORE
       suspect.reasons = ['The suspect is the only cl in the regression range.']
       return [suspect]
 
