@@ -90,8 +90,8 @@ class CanaryTemplateNotFound(TemplateNotFound):
   """Raised when canary template is explicitly requested, but not found."""
 
 
-class BuildResultFileReadError(Error):
-  """Raised when build result file could not be read"""
+class BuildResultFileCorruptedError(Error):
+  """Raised when build result file or its containing isolate is corrupted."""
 
 
 @ndb.tasklet
@@ -620,7 +620,7 @@ def _load_build_run_result_async(task_result):
 
   server_prefix = 'https://'
   if not outputs_ref['isolatedserver'].startswith(server_prefix):
-    raise BuildResultFileReadError(
+    raise BuildResultFileCorruptedError(
         'Bad isolatedserver %r read from task %s' %
         (outputs_ref['isolatedserver'], task_result['id']))
 
@@ -631,8 +631,8 @@ def _load_build_run_result_async(task_result):
     try:
       raw = yield isolate.fetch_async(loc)
       raise ndb.Return(json.loads(raw))
-    except (ValueError, isolate.Error) as ex:
-      raise BuildResultFileReadError(
+    except ValueError as ex:
+      raise BuildResultFileCorruptedError(
           'could not load %s: %s' % (isolated_loc.human_url, ex))
 
   isolated_loc = isolate.Location(
@@ -649,7 +649,8 @@ def _load_build_run_result_async(task_result):
   raise ndb.Return(build_result)
 
 
-def _sync_build_in_memory(build, task_result, build_run_result):
+def _sync_build_in_memory(
+    build, task_result, build_run_result, build_run_result_corrupted):
   """Syncs buildbucket |build| state with swarming task |result|."""
   # Task result docs:
   # https://github.com/luci/luci-py/blob/985821e9f13da2c93cb149d9e1159c68c72d58da/appengine/swarming/server/task_result.py#L239
@@ -668,6 +669,8 @@ def _sync_build_in_memory(build, task_result, build_run_result):
   build.result = None
   build.failure_reason = None
   build.cancelation_reason = None
+  # error message to include in result_details. Used only if build is complete.
+  errmsg = ''
 
   terminal_states = (
     'EXPIRED',
@@ -677,17 +680,18 @@ def _sync_build_in_memory(build, task_result, build_run_result):
     'COMPLETED',
   )
   state = (task_result or {}).get('state')
-  if state is None:
+  if build_run_result_corrupted:
     build.status = model.BuildStatus.COMPLETED
     build.result = model.BuildResult.FAILURE
     build.failure_reason = model.FailureReason.INFRA_FAILURE
-    build.result_details = {
-      'error': {
-        'message': (
-          'Swarming task %s on %s unexpectedly disappeared' %
-          (build.swarming_task_id, build.swarming_task_id)),
-      }
-    }
+    errmsg = 'build_run_result.json returned by the swarming task is corrupted.'
+  elif state is None:
+    build.status = model.BuildStatus.COMPLETED
+    build.result = model.BuildResult.FAILURE
+    build.failure_reason = model.FailureReason.INFRA_FAILURE
+    errmsg = (
+        'Swarming task %s on %s unexpectedly disappeared' %
+        (build.swarming_task_id, build.swarming_hostname))
   elif state == 'PENDING':
     build.status = model.BuildStatus.SCHEDULED
   elif state == 'RUNNING':
@@ -744,6 +748,8 @@ def _sync_build_in_memory(build, task_result, build_run_result):
       },
       'build_run_result': small_build_run_result,
     }
+    if errmsg:
+      build.result_details['error'] = {'message': errmsg}
   return True
 
 
@@ -753,15 +759,22 @@ def _sync_build_async(build_id, task_result, build_run_result):
 
   Tries to load |build_run_result| from isolate if it is None.
   """
-
+  build_run_result_corrupted = False
   if not build_run_result and task_result:
-    build_run_result = yield _load_build_run_result_async(task_result)
+    try:
+      build_run_result = yield _load_build_run_result_async(task_result)
+    except BuildResultFileCorruptedError:
+      logging.exception('build_run_result is corrupted')
+      build_run_result_corrupted = True
 
   @ndb.transactional_tasklet
   def txn_async():
     build = yield model.Build.get_by_id_async(build_id)
-    if (build is None or
-        not _sync_build_in_memory(build, task_result, build_run_result)):
+    if not build:  # pragma: no cover
+      raise ndb.Return(None)
+    made_change = _sync_build_in_memory(
+        build, task_result, build_run_result, build_run_result_corrupted)
+    if not made_change:
       raise ndb.Return(None)
 
     futures = [build.put_async()]

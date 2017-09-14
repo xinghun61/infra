@@ -61,7 +61,7 @@ def fetch_async(loc):
     try:
       content = base64.b64decode(res['content'])
     except TypeError as ex:
-       raise Error('could parse response for %s: %s' % (loc.human_url, ex))
+       raise Error('could not parse response for %s: %s' % (loc.human_url, ex))
   elif 'url' in res:
     try:
       parts = urlparse.urlsplit(res['url'])
