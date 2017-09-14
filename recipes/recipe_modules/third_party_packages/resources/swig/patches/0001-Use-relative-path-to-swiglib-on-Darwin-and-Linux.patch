@@ -1,4 +1,4 @@
-From d09bbf05e01bfaeb079a28259517e76f8c977277 Mon Sep 17 00:00:00 2001
+From 253569a6c8e398d83a61583d8688282bb1b30ead Mon Sep 17 00:00:00 2001
 From: Petr Hosek <phosek@google.com>
 Date: Fri, 8 Sep 2017 12:58:52 -0700
 Subject: [PATCH] Use relative path to swiglib on Darwin and Linux
@@ -10,14 +10,23 @@ on Darwin and Linux as well.
 
 Signed-off-by: Petr Hosek <phosek@google.com>
 ---
- Source/Modules/main.cxx | 22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+ Source/Modules/main.cxx | 24 +++++++++++++++++++++++-
+ 1 file changed, 23 insertions(+), 1 deletion(-)
 
 diff --git a/Source/Modules/main.cxx b/Source/Modules/main.cxx
-index 12b83b2e4..cacc473d1 100644
+index 12b83b2e4..9ee93d5cd 100644
 --- a/Source/Modules/main.cxx
 +++ b/Source/Modules/main.cxx
-@@ -937,8 +937,28 @@ int SWIG_main(int argc, char *argv[], Language *l) {
+@@ -16,6 +16,8 @@
+ #if defined(_WIN32)
+ #define WIN32_LEAN_AND_MEAN
+ #include <windows.h>
++#elif defined(__APPLE__)
++#include <mach-o/dyld.h>
+ #endif
+ 
+ #include "swigmod.h"
+@@ -937,8 +939,28 @@ int SWIG_main(int argc, char *argv[], Language *l) {
      }
      if (Len(SWIG_LIB_WIN_UNIX) > 0)
        SwigLibWinUnix = NewString(SWIG_LIB_WIN_UNIX); // Unix installation path using a drive letter (for msys/mingw)
@@ -48,5 +57,5 @@ index 12b83b2e4..cacc473d1 100644
    } else {
      SwigLib = NewString(c);
 -- 
-2.14.1.581.gf28d330327-goog
+2.14.0.rc1.383.gd1ce394fe2-goog
 
