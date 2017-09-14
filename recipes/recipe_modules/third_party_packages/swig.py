@@ -38,8 +38,9 @@ class SwigApi(util.ModuleShim):
           name='git apply patches')
 
       autoconf = support.ensure_autoconf()
+      automake = support.ensure_automake()
       env_prefixes = {
-          'PATH': [autoconf.bin_dir],
+          'PATH': [autoconf.bin_dir, automake.bin_dir],
       }
 
       with self.m.context(env_prefixes=env_prefixes):

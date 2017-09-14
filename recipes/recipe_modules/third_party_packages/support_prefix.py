@@ -80,6 +80,7 @@ class SupportPrefix(util.ModuleShim):
 
   _SOURCES = {
     'infra/third_party/source/autoconf': 'version:2.69',
+    'infra/third_party/source/automake': 'version:1.15',
     'infra/third_party/source/gnu_sed': 'version:4.2.2',
     'infra/third_party/source/bzip2': 'version:1.0.6',
     'infra/third_party/source/openssl': 'version:1.1.0e',
@@ -404,6 +405,9 @@ class SupportPrefix(util.ModuleShim):
 
   def ensure_autoconf(self):
     return self._generic_build('autoconf', 'version:2.69')
+
+  def ensure_automake(self):
+    return self._generic_build('automake', 'version:1.15')
 
   def ensure_gnu_sed(self):
     return self._generic_build('gnu_sed', 'version:4.2.2',

@@ -160,7 +160,7 @@
       "-root",
       "[START_DIR]/swig/_support/sources",
       "-ensure-file",
-      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/bzip2 version:1.0.6\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/gnu_sed version:4.2.2\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/ncurses version:6.0\ninfra/third_party/source/nsl version:1.0.4\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/pcre2 version:10.23\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/zlib version:1.2.11",
+      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/automake version:1.15\ninfra/third_party/source/bzip2 version:1.0.6\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/gnu_sed version:4.2.2\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/ncurses version:6.0\ninfra/third_party/source/nsl version:1.0.4\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/pcre2 version:10.23\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/zlib version:1.2.11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -178,6 +178,10 @@
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:2.69----\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/autoconf\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }, @@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.15----\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/automake\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
       "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.0.6---\", @@@",
@@ -289,13 +293,74 @@
     ]
   },
   {
+    "cmd": [],
+    "cwd": "[START_DIR]/swig/checkout",
+    "name": "automake-1.15"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/swig/_support/automake-1.15"
+    ],
+    "cwd": "[START_DIR]/swig/checkout",
+    "infra_step": true,
+    "name": "automake-1.15.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/swig/_support/sources/automake-1.15.tar.gz",
+      "[START_DIR]/swig/_support/automake-1.15"
+    ],
+    "cwd": "[START_DIR]/swig/_support/automake-1.15",
+    "name": "automake-1.15.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/swig/_support/automake-1.15/prefix"
+    ],
+    "cwd": "[START_DIR]/swig/_support/automake-1.15/automake-1.15",
+    "name": "automake-1.15.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install"
+    ],
+    "cwd": "[START_DIR]/swig/_support/automake-1.15/automake-1.15",
+    "name": "automake-1.15.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
     "cmd": [
       "./autogen.sh"
     ],
     "cwd": "[START_DIR]/swig/checkout",
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin",
+        "[START_DIR]/swig/_support/automake-1.15/prefix/bin"
       ]
     },
     "name": "autogen"
@@ -308,7 +373,8 @@
     "cwd": "[START_DIR]/swig/checkout",
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin",
+        "[START_DIR]/swig/_support/automake-1.15/prefix/bin"
       ]
     },
     "name": "configure"
@@ -320,7 +386,8 @@
     "cwd": "[START_DIR]/swig/checkout",
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin",
+        "[START_DIR]/swig/_support/automake-1.15/prefix/bin"
       ]
     },
     "name": "make"
@@ -336,7 +403,8 @@
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin"
+        "[START_DIR]/swig/_support/autoconf-2.69/prefix/bin",
+        "[START_DIR]/swig/_support/automake-1.15/prefix/bin"
       ]
     },
     "name": "make install"
