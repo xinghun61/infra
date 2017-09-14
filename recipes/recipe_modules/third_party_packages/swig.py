@@ -39,6 +39,7 @@ class SwigApi(util.ModuleShim):
 
       autoconf = support.ensure_autoconf()
       automake = support.ensure_automake()
+      pcre = support.ensure_pcre()
       env_prefixes = {
           'PATH': [autoconf.bin_dir, automake.bin_dir],
       }
@@ -48,6 +49,7 @@ class SwigApi(util.ModuleShim):
         self.m.step('configure', [
           './configure',
           '--prefix=',
+          '--with-pcre-prefix=%s' % (str(pcre.prefix),)
         ])
         self.m.step('make', ['make'])
         with self.m.context(env={'DESTDIR': target_dir}):
