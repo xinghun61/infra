@@ -28,7 +28,7 @@ deps = {
 
   "infra/go/src/go.chromium.org/gae":
     ("https://chromium.googlesource.com/infra/luci/gae"
-     "@11e75596a1f2eb634f84f1eb2a3e42a880038d6f"),
+     "@3af2b4a0930f31d2d5d55fc426e30005e578b229"),
 
   # Appengine third_party DEPS
   "infra/appengine/third_party/bootstrap":
