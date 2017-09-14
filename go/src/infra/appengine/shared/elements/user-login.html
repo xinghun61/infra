@@ -1,0 +1,43 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+
+<dom-module id="user-login">
+  <template>
+    <style>
+      * {
+        font-family: 'Roboto', 'Noto', sans-serif;
+      }
+      a:link {
+        text-decoration: none;
+      }
+    </style>
+    <template is="dom-if" if="[[!user]]">
+      <p><a href="[[loginUrl]]">LOGIN</a></p>
+    </template>
+    <template is="dom-if" if="[[user]]">
+      <p>[[user]] (<a href="[[logoutUrl]]">LOGOUT</a>)</p>
+    </template>
+  </template>
+  <script>
+    'use strict';
+
+    class UserLogin extends Polymer.Element {
+      static get is() { return 'user-login'; }
+
+      static get properties() {
+        return {
+          loginUrl: {
+            type: String,
+          },
+          logoutUrl: {
+            type: String,
+          },
+          user: {
+            type: String,
+            value: "",
+          },
+        }
+      }
+    }
+    customElements.define(UserLogin.is, UserLogin);
+  </script>
+<dom-module>

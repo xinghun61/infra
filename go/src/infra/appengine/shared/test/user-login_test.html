@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<title>userLoginTest</title>
+<meta charset="utf-8">
+<link rel="import" href="/elements/user-login.html">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+
+<test-fixture id="user-login-test">
+  <template>
+    <user-login></user-login>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('user-login', function() {
+    var element;
+    setup(function() {
+      element = fixture('user-login-test');
+      element.loginUrl = 'https://www.google.com/';
+      element.logoutUrl = 'https://www.google.com/';
+    });
+
+    test('test login', function(done) {
+      element.user = 'testUser@gmail.com';
+      flush(function() {
+        expect(element.shadowRoot.querySelectorAll('template')[0]).to.be.visibile;
+        expect(element.shadowRoot.querySelectorAll('template')[1]).to.be.not.visibile;
+        done();
+      });
+    });
+    test('test logout', function(done) {
+      flush(function() {
+        expect(element.shadowRoot.querySelectorAll('template')[0]).to.be.not.visibile;
+        expect(element.shadowRoot.querySelectorAll('template')[1]).to.be.visibile;
+        done();
+      });
+    });
+  });
+</script>
