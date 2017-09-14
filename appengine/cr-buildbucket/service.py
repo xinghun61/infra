@@ -680,7 +680,17 @@ def _query_search(
   for t in tags:
     q = q.filter(model.Build.tags == t)
   filter_if = lambda p, v: q if v is None else q.filter(p == v)
-  q = filter_if(model.Build.status, status)
+
+  if status == model.BuildStatus.COMPLETED:
+    # Vast majority of builds in the datastore are COMPLETED b/c
+    # that's the ultimate final state of any build.
+    # It is very inefficient to filter by status=COMPLETED using datastore
+    # because datastore merge-joins indexes for other filtering properties with
+    # with huge list of completed builds.
+    # Omit the status in the query filter and filter in application.
+    pass
+  else:
+    q = filter_if(model.Build.status, status)
   q = filter_if(model.Build.result, result)
   q = filter_if(model.Build.failure_reason, failure_reason)
   q = filter_if(model.Build.cancelation_reason, cancelation_reason)
