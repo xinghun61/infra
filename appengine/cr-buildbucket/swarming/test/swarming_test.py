@@ -903,7 +903,7 @@ class SwarmingTest(BaseTest):
       max_attempts=None,
     )
 
-  def test_sync_build_success(self):
+  def test_sync_build(self):
     cases = [
       {
         'task_result': None,
@@ -967,6 +967,21 @@ class SwarmingTest(BaseTest):
       {
         'task_result': {
           'state': 'BOT_DIED',
+        },
+        'status': model.BuildStatus.COMPLETED,
+        'result': model.BuildResult.FAILURE,
+        'failure_reason': model.FailureReason.INFRA_FAILURE,
+      },
+      {
+        # Task has outputs_ref, but state is BOT_DIED.
+        # We should not try loading it.
+        'task_result': {
+          'state': 'BOT_DIED',
+          'outputs_ref': {
+            'isolatedserver': 'https://isolate.appspot.com',
+            'namespace': 'gzip-default',
+            'isolated': 'deadbeef',
+          },
         },
         'status': model.BuildStatus.COMPLETED,
         'result': model.BuildResult.FAILURE,
