@@ -221,4 +221,6 @@ class GradeModelTest(unittest.TestCase):
     self.assertAlmostEqual(grade_model.FbetaScore(self.summary_stats),
                            0.55555555)
 
-
+  def testDetectionRate(self):
+    self.assertAlmostEqual(grade_model.DetectionRate(self.summary_stats),
+                           60.0)

@@ -194,6 +194,24 @@ def FbetaScore(summary_stats, beta=0.5):
     / float((1 + beta**2) * tp + beta**2 * fn + fp))
 
 
+def DetectionRate(summary_stats):
+  """The fraction of all examples that Predator do give some results.
+
+  All positive and true_negative results will be counted.
+  """
+  # A detected example means Predator provide some results for it, or
+  # Predator find nothing if the example is supposed to have no result.
+  all_detected_examples = (summary_stats.true_positives +
+                           summary_stats.false_positives +
+                           summary_stats.true_negatives)
+  all_examples = (summary_stats.true_positives +
+                  summary_stats.true_negatives +
+                  summary_stats.false_positives +
+                  summary_stats.false_negatives)
+
+  return Percent(all_detected_examples, all_examples)
+
+
 def PrintMetrics(input_output_pairs):  # pragma: no cover
   """Print a series of metrics to the user about the given examples."""
   result = GradeModel(input_output_pairs)
@@ -216,6 +234,7 @@ def PrintMetrics(input_output_pairs):  # pragma: no cover
   print '  precision: %.2f%%' % Precision(result)
   print '  recall: %.2f%%' % Recall(result)
   print '  accuracy: %.2f%%' % Accuracy(result)
+  print '  detection rate: %.2f%%' % DetectionRate(result)
 
   print '--------'
   print 'Maximum possible values of the metrics when using a confidence '
@@ -236,6 +255,10 @@ def PrintMetrics(input_output_pairs):  # pragma: no cover
       input_output_pairs, FbetaScore)
   print ('  Max f-beta score is %.2f with a confidence threshold of %f.'
          % (max_f_score, f_score_threshold))
+  detection_rate_threshold, max_detection_rate = MaximizeMetricWithThreshold(
+      input_output_pairs, DetectionRate)
+  print ('  Max detection rate is %.2f%% with a confidence threshold of %f.'
+         % (max_detection_rate, detection_rate_threshold))
 
 
 def MaximizeMetricWithThreshold(input_output_pairs, metric):
