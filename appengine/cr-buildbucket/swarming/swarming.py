@@ -755,12 +755,7 @@ def _sync_build_async(build_id, task_result, build_run_result):
   """
 
   if not build_run_result and task_result:
-    if task_result.get('state') == 'BOT_DIED':
-      # the build_result_run.json may be broken. Do not attempt
-      # to read it. It wouldn't affect build result anyway.
-      pass
-    else:
-      build_run_result = yield _load_build_run_result_async(task_result)
+    build_run_result = yield _load_build_run_result_async(task_result)
 
   @ndb.transactional_tasklet
   def txn_async():
