@@ -26,6 +26,10 @@ import (
 
 	"infra/appengine/test-results/masters"
 	"infra/appengine/test-results/model"
+	"infra/libs/eventupload"
+	"infra/libs/infraenv"
+
+	"cloud.google.com/go/bigquery"
 )
 
 type statusError struct {
@@ -288,6 +292,20 @@ func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 	return datastore.Put(c, &tf)
 }
 
+func sendTestResultEvent(c context.Context, tre *model.TestResultEvent) error {
+	if tre.MasterName == "" || tre.BuilderName == "" || tre.TestType == "" || tre.Version == 0 || tre.UsecSinceEpoch == 0 {
+		return errors.Reason("TestResultEvent is missing required field").Err()
+	}
+	client, err := bigquery.NewClient(c, infraenv.ChromeInfraEventsProject)
+	if err != nil {
+		return err
+	}
+	up := eventupload.NewUploader(c, client, model.TestResultEventTable)
+	up.SkipInvalidRows = true
+	up.IgnoreUnknownValues = true
+	return up.Put(c, tre)
+}
+
 func createTestResultEvent(c context.Context, f *model.FullResult, p *UploadParams) (*model.TestResultEvent, error) {
 	var i bool
 	if f.Interrupted != nil {
@@ -419,14 +437,16 @@ func updateFullResults(c context.Context, data io.Reader) error {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		_, err := createTestResultEvent(c, &f, p)
-		if err != nil {
-			logging.WithError(err).Errorf(c, "cound not create TestResultEvent")
-		}
-		// TODO: Send event. Currently, we ignore the result of
-		// createTestResultEvent. That result will be set to BigQuery,
-		// which I will do in a subsequent CL.
 		createTestResUploadTask(c, &f, p)
+		tre, err := createTestResultEvent(c, &f, p)
+		if err != nil {
+			logging.WithError(err).Errorf(c, "could not create TestResultEvent")
+			return
+		}
+		err = sendTestResultEvent(c, tre)
+		if err != nil {
+			logging.WithError(err).Errorf(c, "could not send TestResultEvent")
+		}
 	}()
 
 	wg.Wait()
