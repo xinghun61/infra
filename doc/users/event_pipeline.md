@@ -41,12 +41,12 @@ go build
 ./bqshemaupdater <dataset-subdirectory>/<table-id>.json
 ```
 
-## Go struct export
+## bqexport
 
 The [bqexport](../../go/src/infra/cmd/bqexport) tool is a Go generator utility
-that can generate `bqschemaupdater`-compatible table definitions from BigQuery
-Go structs. See [bqexport documentation](../../go/src/infra/cmd/bqexport) for
-more information.
+that can generate Go structs from `bqschemaupdater`-compatible table
+definitions. Go structs. See [bqexport documentation](../../go/src/infra/cmd/bqexport)
+for more information.
 
 # Sending events
 
