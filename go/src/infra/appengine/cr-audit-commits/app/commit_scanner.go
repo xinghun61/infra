@@ -14,7 +14,22 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/tsmon/field"
+	"go.chromium.org/luci/common/tsmon/metric"
+	"go.chromium.org/luci/common/tsmon/types"
 	"go.chromium.org/luci/server/router"
+)
+
+var (
+	// ScannedCommits counts commits that have been scanned by this
+	// handler.
+	ScannedCommits = metric.NewCounter(
+		"cr_audit_commits/scanned",
+		"Commits that have been scanned by the audit app",
+		&types.MetricMetadata{Units: "Commit"},
+		field.Bool("relevant"),
+		field.String("repo"),
+	)
 )
 
 // CommitScanner is a handler function that gets the list of new commits and
@@ -84,6 +99,7 @@ func CommitScanner(rc *router.Context) {
 	// reach a deadline of ~5 mins (Since cron job have a 10 minute
 	// deadline). Use the context for this.
 	for _, commit := range fl {
+		relevant := false
 		for _, ruleSet := range repoConfig.Rules {
 			if ruleSet.MatchesCommit(commit) {
 				n, err := saveNewRelevantCommit(ctx, repoConfig.State, commit)
@@ -95,10 +111,12 @@ func CommitScanner(rc *router.Context) {
 				repoConfig.State.LastRelevantCommit = n.CommitHash
 				// If the commit matches one ruleSet that's
 				// enough. Break to move on to the next commit.
+				relevant = true
 				break
 			}
 		}
 		repoConfig.State.LastKnownCommit = commit.Commit
+		ScannedCommits.Add(ctx, 1, relevant, repo)
 	}
 	// If this Put or the one in saveNewRelevantCommit fail, we risk
 	// auditing the same commit twice.

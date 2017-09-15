@@ -13,6 +13,9 @@ import (
 
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/tsmon/field"
+	"go.chromium.org/luci/common/tsmon/metric"
+	"go.chromium.org/luci/common/tsmon/types"
 	"go.chromium.org/luci/server/router"
 )
 
@@ -46,6 +49,18 @@ type workerParams struct {
 
 	clients *Clients
 }
+
+var (
+	// AuditedCommits counts commits that have been scanned by this
+	// handler.
+	AuditedCommits = metric.NewCounter(
+		"cr_audit_commits/audited",
+		"Commits that have been audited by the audit app",
+		&types.MetricMetadata{Units: "Commit"},
+		field.Bool("violation"),
+		field.String("repo"),
+	)
+)
 
 // CommitAuditor is a handler meant to be periodically run to get all commits
 // designated by the CommitScanner handler as needing to be audited.
@@ -144,7 +159,7 @@ func CommitAuditor(rc *router.Context) {
 	// in a single entity group. (All relevant commits for a single repo
 	// are contained in a single entity group)
 	err = ds.RunInTransaction(ctx, func(ctx context.Context) error {
-		commitsToPut := make([]*RelevantCommit, len(auditedCommits))
+		commitsToPut := make([]*RelevantCommit, 0, len(auditedCommits))
 		if err := ds.Get(ctx, originalCommits); err != nil {
 			return err
 		}
@@ -169,6 +184,9 @@ func CommitAuditor(rc *router.Context) {
 		}
 		if err := ds.Put(ctx, commitsToPut); err != nil {
 			return err
+		}
+		for _, c := range commitsToPut {
+			AuditedCommits.Add(ctx, 1, c.Status == auditCompletedWithViolation, repo)
 		}
 		return nil
 	}, nil)

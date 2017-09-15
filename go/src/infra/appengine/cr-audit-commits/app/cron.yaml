@@ -1,4 +1,8 @@
 cron:
+- description: tsmon house keeping
+  url: /internal/cron/ts_mon/housekeeping
+  schedule: every 1 minutes
+
 - description: "Commit scanner"
   url: /_cron/commitscanner?repo=chromium-src-master
   schedule: every 5 minutes
