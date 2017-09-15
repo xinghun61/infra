@@ -51,6 +51,7 @@ type swarmingServer struct {
 // Trigger implements the SwarmingAPI.
 func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL string, worker *admin.Worker, workerIsolate, pubsubUserdata string) (string, error) {
 	pubsubTopic := topic(c)
+	// Prepare task dimentions.
 	dims := []*swarming.SwarmingRpcsStringPair{}
 	for _, d := range worker.Dimensions {
 		// Extracting dimension key and value. Note that ':' may appear in the value but not the key.
@@ -59,6 +60,15 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 			return "", fmt.Errorf("failed to split dimension: %q", d)
 		}
 		dims = append(dims, &swarming.SwarmingRpcsStringPair{Key: dim[0], Value: dim[1]})
+	}
+	// Prepare CIPD input packages.
+	cipd := &swarming.SwarmingRpcsCipdInput{}
+	for _, p := range worker.CipdPackages {
+		cipd.Packages = append(cipd.Packages, &swarming.SwarmingRpcsCipdPackage{
+			PackageName: p.PackageName,
+			Path:        p.Path,
+			Version:     p.Version,
+		})
 	}
 	// Need to increase the timeout to get a response from the Swarming service.
 	c, _ = context.WithTimeout(c, 60*time.Second)
@@ -72,21 +82,28 @@ func (s swarmingServer) Trigger(c context.Context, serverURL, isolateServerURL s
 		logging.WithError(err).Errorf(c, "failed to create swarming client: %v", err)
 		return "", fmt.Errorf("failed to create swarming client: %v", err)
 	}
+	// TODO(emso): Read timeouts from the analyzer config.
+	// Prepare properties.
+	props := &swarming.SwarmingRpcsTaskProperties{
+		Dimensions:           dims,
+		ExecutionTimeoutSecs: 600,
+		IoTimeoutSecs:        600,
+		InputsRef: &swarming.SwarmingRpcsFilesRef{
+			Isolated:       workerIsolate,
+			Isolatedserver: isolateServerURL,
+			Namespace:      isolatedclient.DefaultNamespace,
+		},
+	}
+	// Only include CIPD input if there are packages.
+	if len(cipd.Packages) > 0 {
+		props.CipdInput = cipd
+	}
 	swarmingService.BasePath = fmt.Sprintf("%s%s", serverURL, swarmingBasePath)
 	res, err := swarmingService.Tasks.New(&swarming.SwarmingRpcsNewTaskRequest{
 		Name:           "tricium:" + worker.Name,
 		Priority:       100,
 		ExpirationSecs: 21600,
-		Properties: &swarming.SwarmingRpcsTaskProperties{
-			Dimensions:           dims,
-			ExecutionTimeoutSecs: 600,
-			InputsRef: &swarming.SwarmingRpcsFilesRef{
-				Isolated:       workerIsolate,
-				Isolatedserver: isolateServerURL,
-				Namespace:      isolatedclient.DefaultNamespace,
-			},
-			IoTimeoutSecs: 600,
-		},
+		Properties:     props,
 		PubsubTopic:    pubsubTopic,
 		PubsubUserdata: pubsubUserdata,
 	}).Do()
