@@ -504,7 +504,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
   }
 
   _mergeRegressionRange(groupRange, alertRange) {
-    if (alertRange === undefined) {
+    if (alertRange === undefined || !groupRange || !groupRange.positions) {
       return undefined;
     }
 
