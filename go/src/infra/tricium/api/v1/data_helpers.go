@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 )
 
@@ -42,25 +43,26 @@ func GetPathForDataType(t interface{}) (string, error) {
 }
 
 // WriteDataType writes a Tricium data type to the file path assigned to the type.
-func WriteDataType(t interface{}) error {
-	path, err := GetPathForDataType(t)
-	if err != nil {
-		return fmt.Errorf("failed to get path for type: %v", err)
-	}
+func WriteDataType(prefix string, t interface{}) (string, error) {
 	json, err := json.Marshal(t)
 	if err != nil {
-		return fmt.Errorf("failed to marshal: %v", err)
+		return "", fmt.Errorf("failed to marshal: %v", err)
 	}
+	p, err := GetPathForDataType(t)
+	if err != nil {
+		return p, fmt.Errorf("failed to get path for type: %v", err)
+	}
+	path := path.Join(prefix, p)
 	if err := os.MkdirAll(filepath.Dir(path), os.ModePerm); err != nil {
-		return fmt.Errorf("failed to make directories for path: %v", err)
+		return path, fmt.Errorf("failed to make directories for path: %v", err)
 	}
 	f, err := os.Create(path)
 	if err != nil {
-		return fmt.Errorf("failed to create file: %v", err)
+		return path, fmt.Errorf("failed to create file: %v", err)
 	}
 	defer f.Close()
 	if _, err := f.Write(json); err != nil {
-		return fmt.Errorf("failed to write to file: %v", err)
+		return path, fmt.Errorf("failed to write to file: %v", err)
 	}
-	return nil
+	return path, nil
 }
