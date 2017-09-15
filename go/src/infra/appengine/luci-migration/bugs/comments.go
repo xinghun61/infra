@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"fmt"
 	"infra/monorail"
-	"net/http"
 	"strings"
 	"text/template"
 
@@ -43,7 +42,8 @@ Status changed to "{{.Builder.Migration.Status}}" (correctness {{.Builder.Migrat
 For the latest status, see https://{{.Hostname}}/masters/{{.Builder.ID.Master|pathEscape}}/builders/{{.Builder.ID.Builder|pathEscape}}
 `)))
 
-func postComment(c context.Context, client monorail.MonorailClient, builder *storage.Builder) error {
+// PostComment posts a comment on the builder bug about the current status.
+func PostComment(c context.Context, client ClientFactory, builder *storage.Builder) error {
 	tmplArgs := map[string]interface{}{
 		"Builder":  builder,
 		"Hostname": info.DefaultVersionHostname(c),
@@ -74,14 +74,9 @@ func postComment(c context.Context, client monorail.MonorailClient, builder *sto
 		},
 	}
 
-	_, err := client.InsertComment(c, req)
+	_, err := client(builder.IssueID.Hostname).InsertComment(c, req)
 	if err != nil {
 		return errors.Annotate(err, "InsertComment RPC failed").Err()
 	}
 	return nil
-}
-
-// PostComment posts a comment on the builder bug about the current status.
-func PostComment(c context.Context, httpClient *http.Client, builder *storage.Builder) error {
-	return postComment(c, NewClient(httpClient, builder.IssueID.Hostname), builder)
 }

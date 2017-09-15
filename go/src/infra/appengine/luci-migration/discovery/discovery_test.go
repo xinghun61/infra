@@ -30,6 +30,7 @@ import (
 	"go.chromium.org/luci/common/testing/prpctest"
 	"go.chromium.org/luci/milo/api/proto"
 
+	"infra/appengine/luci-migration/bugs"
 	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 
@@ -76,7 +77,7 @@ func TestDiscovery(t *testing.T) {
 		// Discover tryserver.chromium.linux builders.
 		d := Builders{
 			Buildbot:         milo.NewBuildbotPRPCClient(buildbotPrpcClient),
-			Monorail:         monorailtest.NewClient(monorailServer),
+			Monorail:         bugs.ForwardingFactory(monorailServer),
 			MonorailHostname: "monorail-prod.appspot.com",
 		}
 		linuxTryserver := &config.Master{

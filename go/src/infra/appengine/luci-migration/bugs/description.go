@@ -50,14 +50,16 @@ Migration app will close this bug when the builder is entirely migrated from Bui
 `)))
 
 // CreateBuilderBug creates a Monorail issue to migrate the builder to LUCI.
-func CreateBuilderBug(c context.Context, client monorail.MonorailClient, builder *storage.Builder) (issueID int, err error) {
+// builder.IssueID must specify the target monorail hostname and project.
+// On success, builder.IssueID.ID is set the created issue ID.
+func CreateBuilderBug(c context.Context, client ClientFactory, builder *storage.Builder) error {
 	descArgs := map[string]interface{}{
 		"Builder":  builder,
 		"Hostname": info.DefaultVersionHostname(c),
 	}
 	descBuf := &bytes.Buffer{}
 	if err := descriptionTmpl.Execute(descBuf, descArgs); err != nil {
-		return 0, errors.Annotate(err, "could not execute description template").Err()
+		return errors.Annotate(err, "could not execute description template").Err()
 	}
 
 	// excludes invalid chars from a label, like Monorail server does.
@@ -92,10 +94,11 @@ func CreateBuilderBug(c context.Context, client monorail.MonorailClient, builder
 		req.Issue.Labels = append(req.Issue.Labels, "OS-"+builder.OS.String())
 	}
 
-	res, err := client.InsertIssue(c, req)
+	res, err := client(builder.IssueID.Hostname).InsertIssue(c, req)
 	if err != nil {
-		return 0, errors.Annotate(err, "InsertIssue RPC failed").Err()
+		return errors.Annotate(err, "InsertIssue RPC failed").Err()
 	}
 
-	return int(res.Issue.Id), nil
+	builder.IssueID.ID = int(res.Issue.Id)
+	return nil
 }

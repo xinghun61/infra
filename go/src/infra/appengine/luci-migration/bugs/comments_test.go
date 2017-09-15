@@ -62,7 +62,7 @@ func TestPostComment(t *testing.T) {
 		}
 
 		Convey("WAI", func() {
-			err := postComment(c, monorailtest.NewClient(monorailServer), builder)
+			err := PostComment(c, ForwardingFactory(monorailServer), builder)
 			So(err, ShouldBeNil)
 
 			So(actualMonorailReq, ShouldResemble, &monorail.InsertCommentRequest{
@@ -83,7 +83,7 @@ For the latest status, see https://luci-migration.example.com/masters/tryserver.
 		})
 		Convey("Not WAI", func() {
 			builder.Migration.Status = storage.StatusLUCINotWAI
-			err := postComment(c, monorailtest.NewClient(monorailServer), builder)
+			err := PostComment(c, ForwardingFactory(monorailServer), builder)
 			So(err, ShouldBeNil)
 			So(actualMonorailReq.Comment.Updates.Labels, ShouldResemble, []string{"-MigrationStatus-WAI"})
 		})

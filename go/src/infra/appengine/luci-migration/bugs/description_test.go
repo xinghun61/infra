@@ -57,9 +57,9 @@ func TestDescription(t *testing.T) {
 			},
 		}
 
-		issueID, err := CreateBuilderBug(c, monorailtest.NewClient(monorailServer), builder)
+		err := CreateBuilderBug(c, ForwardingFactory(monorailServer), builder)
 		So(err, ShouldBeNil)
-		So(issueID, ShouldEqual, 55)
+		So(builder.IssueID.ID, ShouldEqual, 55)
 
 		expectedBugDescription := strings.TrimSpace(`
 Migrate builder tryserver.chromium.linux:linux_chromium_rel_ng to LUCI.

@@ -103,7 +103,6 @@ func cronDiscoverBuilders(c *router.Context) error {
 	if err != nil {
 		return errors.Annotate(err, "could not get RPC transport").Err()
 	}
-	httpClient := &http.Client{Transport: transport}
 
 	cfg, err := config.Get(c.Context)
 	switch {
@@ -118,10 +117,10 @@ func cronDiscoverBuilders(c *router.Context) error {
 	discoverer := &discovery.Builders{
 		RegistrationSemaphore: make(parallel.Semaphore, 10),
 		Buildbot: milo.NewBuildbotPRPCClient(&prpc.Client{
-			C:    httpClient,
+			C:    &http.Client{Transport: transport},
 			Host: cfg.BuildbotServiceHostname,
 		}),
-		Monorail:         bugs.NewClient(httpClient, cfg.MonorailHostname),
+		Monorail:         bugs.DefaultFactory(transport),
 		MonorailHostname: cfg.MonorailHostname,
 	}
 

@@ -10,7 +10,6 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"infra/monorail"
 	"sort"
 	"time"
 
@@ -32,7 +31,7 @@ const monorailProject = "chromium"
 
 // Builders finds and registers new builders.
 type Builders struct {
-	Monorail         monorail.MonorailClient
+	Monorail         bugs.ClientFactory
 	MonorailHostname string
 
 	Buildbot milo.BuildbotClient
@@ -118,8 +117,7 @@ func (d *Builders) registerBuilder(c context.Context, master *config.Master, nam
 	}
 	builder.IssueID.Hostname = d.MonorailHostname
 	builder.IssueID.Project = monorailProject
-	var err error
-	if builder.IssueID.ID, err = bugs.CreateBuilderBug(c, d.Monorail, builder); err != nil {
+	if err := bugs.CreateBuilderBug(c, d.Monorail, builder); err != nil {
 		return errors.Annotate(err, "could not create a monorail bug for builder %q", &builder.ID).Err()
 	}
 

@@ -231,8 +231,7 @@ func handleNotifyOnBuilderChange(c *router.Context) error {
 	if err != nil {
 		return errors.Annotate(err, "could not get RPC transport").Err()
 	}
-	httpClient := &http.Client{Transport: transport}
 
 	// If this RPC fails, the push task will be retried.
-	return bugs.PostComment(c.Context, httpClient, builder)
+	return bugs.PostComment(c.Context, bugs.DefaultFactory(transport), builder)
 }

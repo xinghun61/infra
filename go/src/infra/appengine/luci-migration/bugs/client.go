@@ -16,8 +16,10 @@ package bugs
 
 import (
 	"fmt"
-	"infra/monorail"
 	"net/http"
+
+	"infra/monorail"
+	"infra/monorail/monorailtest"
 )
 
 func NewClient(httpClient *http.Client, hostname string) monorail.MonorailClient {
@@ -25,4 +27,24 @@ func NewClient(httpClient *http.Client, hostname string) monorail.MonorailClient
 		httpClient,
 		fmt.Sprintf("https://%s/_ah/api/monorail/v1", hostname),
 	)
+}
+
+// ClientFactory creates a monorail client by a hostname.
+type ClientFactory func(hostname string) monorail.MonorailClient
+
+// DefaultFactory returns a factory that creates an endpoints-based Monorail
+// client.
+func DefaultFactory(transport http.RoundTripper) ClientFactory {
+	return func(hostname string) monorail.MonorailClient {
+		return NewClient(&http.Client{Transport: transport}, hostname)
+	}
+}
+
+// ForwardingFactory returns a factory that creates a client based on the
+// given server implementation. The factory ignores the hostname parameter.
+func ForwardingFactory(server monorail.MonorailServer) ClientFactory {
+	return func(hostname string) monorail.MonorailClient {
+		// ignore hostname
+		return monorailtest.NewClient(server)
+	}
 }
