@@ -540,7 +540,9 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
             auth.effective_ids, sub_perms, project, issue,
             granted_perms=granted_perms)
         if sub_can_view:
-          ids_to_notify_of_issue.setdefault(sub_id, []).append(issue)
+          ids_to_notify_of_issue.setdefault(sub_id, [])
+          if issue not in ids_to_notify_of_issue[sub_id]:
+            ids_to_notify_of_issue[sub_id].append(issue)
 
       if issue in non_private_issues:
         for notify_addr in issue.derived_notify_addrs:

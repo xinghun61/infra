@@ -166,7 +166,7 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
       self.assertEqual([int(p) for p in params['issue_ids'].split(',')],
                        result['params']['issue_ids'])
 
-  def testNotifyIssueChangeTask(self):
+  def testNotifyIssueChangeTask_Normal(self):
     task = notify.NotifyIssueChangeTask(
         request=None, response=None, services=self.services)
     params = {'send_email': 1, 'issue_id': 12345001, 'seq': 0,
@@ -179,7 +179,7 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     result = task.HandleRequest(mr)
     self.VerifyParams(result, params)
 
-  def testNotifyIssueChangeTask_spam(self):
+  def testNotifyIssueChangeTask_Spam(self):
     issue = MakeTestIssue(
         project_id=12345, local_id=1, owner_id=1, reporter_id=1,
         is_spam=True)
@@ -196,7 +196,7 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     result = task.HandleRequest(mr)
     self.assertEquals(0, len(result['notified']))
 
-  def testNotifyBlockingChangeTask(self):
+  def testNotifyBlockingChangeTask_Normal(self):
     issue2 = MakeTestIssue(
         project_id=12345, local_id=2, owner_id=2, reporter_id=1)
     self.services.issue.TestAddIssue(issue2)
@@ -213,7 +213,7 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     result = task.HandleRequest(mr)
     self.VerifyParams(result, params)
 
-  def testNotifyBlockingChangeTask_spam(self):
+  def testNotifyBlockingChangeTask_Spam(self):
     issue2 = MakeTestIssue(
         project_id=12345, local_id=2, owner_id=2, reporter_id=1,
         is_spam=True)
@@ -231,7 +231,8 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
     result = task.HandleRequest(mr)
     self.assertEquals(0, len(result['notified']))
 
-  def testNotifyBulkChangeTask(self):
+  def testNotifyBulkChangeTask_Normal(self):
+    """We generate email tasks for each user involved in the issues."""
     issue2 = MakeTestIssue(
         project_id=12345, local_id=2, owner_id=2, reporter_id=1)
     issue2.cc_ids = [3]
@@ -262,7 +263,69 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
       if 'member' in task_params['to']:
         self.assertNotIn(u'\u2026', task_params['from_addr'])
 
-  def testNotifyBulkChangeTask_spam(self):
+  def testNotifyBulkChangeTask_SubscriberGetsEmail(self):
+    """If a user subscription matches the issue, notify that user."""
+    task = notify.NotifyBulkChangeTask(
+        request=None, response=None, services=self.services)
+    params = {
+        'send_email': 1,
+        'issue_ids': '%d' % (self.issue1.issue_id),
+        'seq': 0,
+        'old_owner_ids': '1', 'commenter_id': 1}
+    mr = testing_helpers.MakeMonorailRequest(
+        user_info={'user_id': 1},
+        params=params,
+        method='POST',
+        services=self.services)
+    self.services.user.TestAddUser('subscriber@example.com', 4)
+    sq = tracker_bizobj.MakeSavedQuery(
+        1, 'all open issues', 2, '', subscription_mode='immediate',
+        executes_in_project_ids=[self.issue1.project_id])
+    self.services.features.UpdateUserSavedQueries('cnxn', 4, [sq])
+    result = task.HandleRequest(mr)
+    self.VerifyParams(result, params)
+
+    tasks = self.taskqueue_stub.get_filtered_tasks(
+        url=urls.OUTBOUND_EMAIL_TASK + '.do')
+    self.assertEqual(2, len(tasks))
+
+  def testNotifyBulkChangeTask_CCAndSubscriberListsIssueOnce(self):
+    """If a user both CCs and subscribes, include issue only once."""
+    task = notify.NotifyBulkChangeTask(
+        request=None, response=None, services=self.services)
+    params = {
+        'send_email': 1,
+        'issue_ids': '%d' % (self.issue1.issue_id),
+        'seq': 0,
+        'old_owner_ids': '1', 'commenter_id': 1}
+    mr = testing_helpers.MakeMonorailRequest(
+        user_info={'user_id': 1},
+        params=params,
+        method='POST',
+        services=self.services)
+    self.services.user.TestAddUser('subscriber@example.com', 4)
+    self.issue1.cc_ids = [4]
+    sq = tracker_bizobj.MakeSavedQuery(
+        1, 'all open issues', 2, '', subscription_mode='immediate',
+        executes_in_project_ids=[self.issue1.project_id])
+    self.services.features.UpdateUserSavedQueries('cnxn', 4, [sq])
+    result = task.HandleRequest(mr)
+    self.VerifyParams(result, params)
+
+    tasks = self.taskqueue_stub.get_filtered_tasks(
+        url=urls.OUTBOUND_EMAIL_TASK + '.do')
+    self.assertEqual(2, len(tasks))
+    found = False
+    for task in tasks:
+      task_params = json.loads(task.payload)
+      if task_params['to'] == 'subscriber@example.com':
+        found = True
+        body = task_params['body']
+        self.assertEqual(1, body.count('issue %d' % self.issue1.local_id))
+    self.assertTrue(found)
+
+  def testNotifyBulkChangeTask_Spam(self):
+    """A spam issue is excluded from notification emails."""
     issue2 = MakeTestIssue(
         project_id=12345, local_id=2, owner_id=2, reporter_id=1,
         is_spam=True)
