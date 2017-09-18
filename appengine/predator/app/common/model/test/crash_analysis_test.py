@@ -218,3 +218,13 @@ class CrashAnalysisTest(AppengineTestCase):
 
     analysis.ReInitialize(predator)
     self.assertEqual(analysis.signature, crash_data.signature)
+
+  def testStackTraceWriteBigStackTraceToStorage(self):
+    """Tests ``stack_trace`` setter writes big stacktrace to cloud storage."""
+    identifiers = {'signature': 'sig'}
+    analysis = CrashAnalysis.Create(identifiers)
+    big_stacktrace = 'a'*2048487
+    analysis.stack_trace = big_stacktrace
+    analysis.put()
+
+    self.assertEqual(CrashAnalysis.Get(identifiers).stack_trace, big_stacktrace)

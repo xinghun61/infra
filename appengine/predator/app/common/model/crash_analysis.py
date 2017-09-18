@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import copy
+import cloudstorage as gcs
 import hashlib
 import json
 
@@ -15,6 +16,10 @@ from libs import analysis_status
 from libs import time_util
 
 _FEEDBACK_URL_TEMPLATE = 'https://%s/%s/result-feedback?key=%s'
+_CLOUD_STORAGE_MARKER = 'Google storage stacktrace:'
+_PROPERTY_MAXIMUM_SIZE = 1048487
+_STORAGE_PATH = '/big_stacktrace'
+_BACKOFF_FACTOR = 1.1
 
 
 class CrashAnalysis(ndb.Model):
@@ -27,10 +32,10 @@ class CrashAnalysis(ndb.Model):
   # The parsed ``Stacktrace`` object.
   stacktrace = ndb.PickleProperty(indexed=False)
 
-  # The raw stacktrace string sent by client. The stacktrace string can be very
-  # big, in order to store such big string, use TextProperty instead of
-  # StringProperty.
-  stack_trace = ndb.TextProperty()
+  # The raw stacktrace string sent by client. Note, if the raw stacktrace is
+  # bigger than 1MB, it cannot be put into datastore, in this case, we will
+  # store it to google storage.
+  stacktrace_str = ndb.StringProperty(indexed=False)
 
   # The signature of the crash.
   signature = ndb.StringProperty(indexed=True)
@@ -153,6 +158,33 @@ class CrashAnalysis(ndb.Model):
 
     return int((self.completed_time - self.started_time).total_seconds())
 
+  @property
+  def stack_trace(self):
+    if (not self.stacktrace_str or
+        not self.stacktrace_str.startswith(_CLOUD_STORAGE_MARKER)):
+      return self.stacktrace_str
+
+    stack_trace_file_path = self.stacktrace_str[len(_CLOUD_STORAGE_MARKER):]
+    with gcs.open(stack_trace_file_path) as f:
+      return f.read()
+
+  @stack_trace.setter
+  def stack_trace(self, raw_stacktrace):
+    if not raw_stacktrace or len(raw_stacktrace) < _PROPERTY_MAXIMUM_SIZE:
+      self.stacktrace_str = raw_stacktrace
+      return
+
+    # The maximum size of a property to be put to datastore is 1MB, write the
+    # big stacktrace to cloud storage instead.
+    file_name = self.key.urlsafe()
+    stack_trace_file_path = '%s/%s' % (_STORAGE_PATH, file_name)
+    self.stacktrace_str = '%s%s' % (_CLOUD_STORAGE_MARKER,
+                                    stack_trace_file_path)
+    with gcs.open(
+        stack_trace_file_path, 'w', content_type='text/plain',
+        retry_params=gcs.RetryParams(backoff_factor=_BACKOFF_FACTOR)) as f:
+      f.write(str(raw_stacktrace))
+
   @classmethod
   def _CreateKey(cls, crash_identifiers):
     return ndb.Key(cls.__name__, hashlib.sha1(
@@ -182,13 +214,7 @@ class CrashAnalysis(ndb.Model):
     # Set the version.
     self.crashed_version = crash_data.crashed_version
 
-    # Set (other) common properties.
-    try:
-      self.stack_trace = crash_data.raw_stacktrace
-    except Exception:  # pragma: no cover
-      # The ``stack_trace``s of some data are broken.
-      pass
-
+    self.stack_trace = crash_data.raw_stacktrace
     self.stacktrace = crash_data.stacktrace
     self.signature = crash_data.signature
     self.platform = crash_data.platform
