@@ -194,7 +194,7 @@ func resultText(cfg *RepoConfig, rc *RelevantCommit, issueExists bool) string {
 func getFailedBuild(ctx context.Context, miloClient miloClientInterface, rc *RelevantCommit) (string, *buildbot.Build) {
 	buildURL, err := failedBuildFromCommitMessage(rc.CommitMessage)
 	if err != nil {
-		panic(err)
+		return "", nil
 	}
 
 	failedBuildInfo, err := miloClient.GetBuildInfo(ctx, buildURL)

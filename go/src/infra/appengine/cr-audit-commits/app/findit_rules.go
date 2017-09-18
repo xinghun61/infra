@@ -181,18 +181,26 @@ func CulpritInBuild(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs
 	buildURL, failedBuildInfo := getFailedBuild(ctx, cs.milo, rc)
 
 	changeFound := false
-	for _, c := range failedBuildInfo.SourceStamp.Changes {
-		if c.Revision == culprit.CurrentRevision {
-			changeFound = true
-			break
+	if failedBuildInfo != nil {
+		for _, c := range failedBuildInfo.SourceStamp.Changes {
+			if c.Revision == culprit.CurrentRevision {
+				changeFound = true
+				break
+			}
 		}
 	}
 	if changeFound {
 		result.RuleResultStatus = rulePassed
 	} else {
 		result.RuleResultStatus = ruleFailed
-		result.Message = fmt.Sprintf("Hash %s not found in changes for build %q",
-			culprit.CurrentRevision, buildURL)
+		if buildURL != "" {
+			result.Message = fmt.Sprintf("Hash %s not found in changes for build %q",
+				culprit.CurrentRevision, buildURL)
+		} else {
+			result.Message = fmt.Sprintf(
+				"The revert does not point to a failed build, expected link prefixed with \"%s\"",
+				failedBuildPrefix)
+		}
 	}
 	return result
 }
@@ -236,20 +244,29 @@ func FailedBuildIsCompileFailure(ctx context.Context, ap *AuditParams, rc *Relev
 
 	buildURL, failedBuildInfo := getFailedBuild(ctx, cs.milo, rc)
 
-	for _, s := range failedBuildInfo.Steps {
-		r, _ := s.Result()
-		for _, fs := range failableStepNames {
-			if s.Name == fs {
-				if int(r) == failedResultCode {
-					result.RuleResultStatus = rulePassed
-					return result
+	if failedBuildInfo != nil {
+
+		for _, s := range failedBuildInfo.Steps {
+			r, _ := s.Result()
+			for _, fs := range failableStepNames {
+				if s.Name == fs {
+					if int(r) == failedResultCode {
+						result.RuleResultStatus = rulePassed
+						return result
+					}
 				}
 			}
 		}
 	}
 	result.RuleResultStatus = ruleFailed
-	result.Message = fmt.Sprintf("Referred build %q does not have an expected failure in either of the following steps: %s",
-		buildURL, failableStepNames)
+	if buildURL != "" {
+		result.Message = fmt.Sprintf("Referred build %q does not have an expected failure in either of the following steps: %s",
+			buildURL, failableStepNames)
+	} else {
+		result.Message = fmt.Sprintf(
+			"The revert does not point to a failed build, expected link prefixed with \"%s\"",
+			failedBuildPrefix)
+	}
 	return result
 }
 
