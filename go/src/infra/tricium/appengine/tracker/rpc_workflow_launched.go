@@ -45,7 +45,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 		return fmt.Errorf("failed to read workflow config: %v", err)
 	}
 	// Prepare analyzer and worker invocation tracking entries to store.
-	aw := extractAnalyzerWorkerStructure(c, wf)
+	aw, analyzers := extractAnalyzerWorkerStructure(c, wf)
 	logging.Debugf(c, "Extracted analyzer/worker entries for tracking: %#v", aw)
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 	if err := ds.RunInTransaction(c, func(c context.Context) (err error) {
@@ -55,6 +55,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 			Parent:            requestKey,
 			IsolateServerURL:  wf.IsolateServer,
 			SwarmingServerURL: wf.SwarmingServer,
+			Analyzers:         analyzers,
 		}
 		if err := ds.Put(c, run); err != nil {
 			return fmt.Errorf("failed to store WorkflowRun entity (run ID: %d): %v", run.ID, err)
@@ -151,8 +152,9 @@ type analyzerToWorkers struct {
 }
 
 // extractAnalyzerWorkerStructure extracts analyzer-*worker structure from workflow config.
-func extractAnalyzerWorkerStructure(c context.Context, wf *admin.Workflow) map[string]*analyzerToWorkers {
+func extractAnalyzerWorkerStructure(c context.Context, wf *admin.Workflow) (map[string]*analyzerToWorkers, []string) {
 	m := map[string]*analyzerToWorkers{}
+	var analyzers []string
 	for _, w := range wf.Workers {
 		analyzer, err := track.ExtractAnalyzerName(w.Name)
 		if err != nil {
@@ -169,7 +171,8 @@ func extractAnalyzerWorkerStructure(c context.Context, wf *admin.Workflow) map[s
 		}
 		a.Workers = append(a.Workers, aw)
 		a.Analyzer.Workers = append(a.Analyzer.Workers, w.Name)
+		analyzers = append(analyzers, analyzer)
 		logging.Debugf(c, "Found analyzer/worker: %v", a)
 	}
-	return m
+	return m, analyzers
 }

@@ -106,6 +106,33 @@ func TestWorkerDoneRequest(t *testing.T) {
 			So(ar.NumComments, ShouldEqual, 1)
 		})
 
+		// Mark remaining workers as done.
+		err = workerDone(ctx, &admin.WorkerDoneRequest{
+			RunId:    request.ID,
+			Worker:   clangIsolatorWindows,
+			ExitCode: 0,
+		}, &mockIsolator{})
+		So(err, ShouldBeNil)
+		err = workerDone(ctx, &admin.WorkerDoneRequest{
+			RunId:    request.ID,
+			Worker:   clangIsolatorUbuntu,
+			ExitCode: 0,
+		}, &mockIsolator{})
+		So(err, ShouldBeNil)
+
+		Convey("Marks workflow as done and adds number of comments", func() {
+			wr := &track.WorkflowRunResult{ID: 1, Parent: runKey}
+			So(ds.Get(ctx, wr), ShouldBeNil)
+			So(wr.State, ShouldEqual, tricium.State_SUCCESS)
+			So(wr.NumComments, ShouldEqual, 3)
+		})
+
+		Convey("Marks request as done and adds number of comments", func() {
+			ar := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
+			So(ds.Get(ctx, ar), ShouldBeNil)
+			So(ar.State, ShouldEqual, tricium.State_SUCCESS)
+		})
+
 		// TODO(emso): Multi-platform analyzer is half done, analyzer stays launched.
 	})
 }

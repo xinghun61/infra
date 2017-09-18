@@ -106,11 +106,10 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		return fmt.Errorf("failed to get WorkerRunResult entities: %v", err)
 	}
 	analyzerState := tricium.State_SUCCESS
-	analyzerNumComments := 0
+	analyzerNumComments := len(results.Comments)
 	for _, wr := range workerResults {
 		if wr.Name == req.Worker {
 			wr.State = workerState // Setting state to what we will store in the below transaction.
-			analyzerNumComments += len(results.Comments)
 		} else {
 			analyzerNumComments += wr.NumComments
 		}
@@ -145,9 +144,12 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		return fmt.Errorf("failed to retrieve AnalyzerRunResult entities: %v", err)
 	}
 	runState := tricium.State_SUCCESS
+	runNumComments := analyzerNumComments
 	for _, ar := range analyzerResults {
 		if ar.Name == analyzerName {
 			ar.State = analyzerState // Setting state to what will be stored in the below transaction.
+		} else {
+			runNumComments += ar.NumComments
 		}
 		// When all analyzers are done, aggregate the result.
 		// All analyzers SUCCESSS -> run SUCCESS
@@ -162,6 +164,8 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			break
 		}
 	}
+	logging.Infof(c, "[driver] Updating state: worker %s: %s, analyzer %s: %s, run %s, %s",
+		req.Worker, workerState, analyzerName, analyzerState, req.RunId, runState)
 	ops := []func() error{
 		// Add comments.
 		func() error {
@@ -219,12 +223,30 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		func() error {
 			rr := &track.WorkflowRunResult{ID: 1, Parent: runKey}
 			if err := ds.Get(c, rr); err != nil {
-				return fmt.Errorf("failed to get WorkflowRunResult entry: %v", err)
+				return fmt.Errorf("failed to get WorkflowRunResult entity: %v", err)
 			}
 			if rr.State != runState {
 				rr.State = runState
+				rr.NumComments = runNumComments
 				if err := ds.Put(c, rr); err != nil {
-					return fmt.Errorf("failed to update WorkflowRunResult entry: %v", err)
+					return fmt.Errorf("failed to update WorkflowRunResult entity: %v", err)
+				}
+			}
+			return nil
+		},
+		// Update request state.
+		func() error {
+			if !tricium.IsDone(runState) {
+				return nil
+			}
+			ar := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
+			if err := ds.Get(c, ar); err != nil {
+				return fmt.Errorf("failed to get AnalyzeRequestResult entity: %v", err)
+			}
+			if ar.State != runState {
+				ar.State = runState
+				if err := ds.Put(c, ar); err != nil {
+					return fmt.Errorf("failed to update AnalyzeRequestResult entity: %v", err)
 				}
 			}
 			return nil

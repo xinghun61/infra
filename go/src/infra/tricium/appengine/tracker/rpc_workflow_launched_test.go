@@ -78,12 +78,20 @@ func TestWorkflowLaunchedRequest(t *testing.T) {
 			}, mockWorkflowProvider{})
 			So(err, ShouldBeNil)
 
+			analyzerName, err := track.ExtractAnalyzerName(fileIsolator)
+
 			Convey("Marks workflow run as launched", func() {
 				// Run entry is marked as launched.
 				So(ds.Get(ctx, runResult), ShouldBeNil)
 				So(runResult.State, ShouldEqual, tricium.State_RUNNING)
-				// Worker and analyzer is marked pending.
-				analyzerName, err := track.ExtractAnalyzerName(fileIsolator)
+			})
+
+			Convey("Adds list of analyzers to WorkflowRun", func() {
+				So(ds.Get(ctx, run), ShouldBeNil)
+				So(len(run.Analyzers), ShouldEqual, 3)
+			})
+
+			Convey("Worker and analyzer is marked pending", func() {
 				So(err, ShouldBeNil)
 				analyzerKey := ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
 				workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, analyzerKey)

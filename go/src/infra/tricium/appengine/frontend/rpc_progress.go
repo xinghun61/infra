@@ -87,6 +87,7 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Analyze
 	for _, analyzerName := range run.Analyzers {
 		analyzers = append(analyzers, &track.AnalyzerRun{ID: analyzerName, Parent: runKey})
 	}
+	logging.Debugf(c, "Reading results for analyzers: %v, run: %v", analyzers, run)
 	if err := ds.Get(c, analyzers); err != nil {
 		return tricium.State_PENDING, nil, fmt.Errorf("failed to get AnalyzerRun entities: %v", err)
 	}
@@ -98,6 +99,7 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Analyze
 			workerResults = append(workerResults, &track.WorkerRunResult{ID: 1, Parent: workerKey})
 		}
 	}
+	logging.Debugf(c, "Reading worker results for %v", workerResults)
 	if err := ds.Get(c, workerResults); err != nil && err != ds.ErrNoSuchEntity {
 		return tricium.State_PENDING, nil, fmt.Errorf("failed to get WorkerRunResult entities: %v", err)
 	}
