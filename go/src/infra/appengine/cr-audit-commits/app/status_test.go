@@ -67,7 +67,6 @@ func TestStatusPage(t *testing.T) {
 					LastRelevantCommit: "",
 					LastKnownCommit:    "000000",
 				}
-				RuleMap["new-repo"].State = rs
 				err := ds.Put(ctx, rs)
 				So(err, ShouldBeNil)
 				resp, err := client.Get(srv.URL + statusPath + "?repo=new-repo")
@@ -80,14 +79,14 @@ func TestStatusPage(t *testing.T) {
 				So(string(b), ShouldContainSubstring, linkText)
 			})
 			Convey("Some interesting revisions", func() {
-				RuleMap["new-repo"].State = &RepoState{
+				rs := &RepoState{
 					RepoURL:            RuleMap["new-repo"].RepoURL(),
 					LastRelevantCommit: "111111",
 					LastKnownCommit:    "121212",
 				}
-				err := ds.Put(ctx, RuleMap["new-repo"].State)
+				err := ds.Put(ctx, rs)
 				So(err, ShouldBeNil)
-				rsk := ds.KeyForObj(ctx, RuleMap["new-repo"].State)
+				rsk := ds.KeyForObj(ctx, rs)
 
 				for i := 0; i < 12; i++ {
 					cTime, _ := time.Parse("2006-01-02T15:04", fmt.Sprintf("2017-09-01T09:%02d", i+1))

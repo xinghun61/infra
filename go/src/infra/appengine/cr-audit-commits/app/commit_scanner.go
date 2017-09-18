@@ -54,18 +54,18 @@ func CommitScanner(rc *router.Context) {
 		http.Error(resp, fmt.Sprintf("No audit rules defined for %s", repo), 400)
 		return
 	}
-	repoConfig.State = &RepoState{RepoURL: repoConfig.RepoURL()}
-	switch err := ds.Get(ctx, repoConfig.State); err {
+	repoState := &RepoState{RepoURL: repoConfig.RepoURL()}
+	switch err := ds.Get(ctx, repoState); err {
 	case ds.ErrNoSuchEntity:
 		// This is the first time the scanner runs, use the hard-coded
 		// starting commit.
 		rev = repoConfig.StartingCommit
-		repoConfig.State = &RepoState{
+		repoState = &RepoState{
 			RepoURL:         repoConfig.RepoURL(),
 			LastKnownCommit: rev,
 		}
 	case nil:
-		rev = repoConfig.State.LastKnownCommit
+		rev = repoState.LastKnownCommit
 		if rev == "" {
 			rev = repoConfig.StartingCommit
 		}
@@ -102,25 +102,25 @@ func CommitScanner(rc *router.Context) {
 		relevant := false
 		for _, ruleSet := range repoConfig.Rules {
 			if ruleSet.MatchesCommit(commit) {
-				n, err := saveNewRelevantCommit(ctx, repoConfig.State, commit)
+				n, err := saveNewRelevantCommit(ctx, repoState, commit)
 				if err != nil {
 					logging.WithError(err).Errorf(ctx, "Could not save new relevant commit")
 					http.Error(resp, err.Error(), 500)
 					return
 				}
-				repoConfig.State.LastRelevantCommit = n.CommitHash
+				repoState.LastRelevantCommit = n.CommitHash
 				// If the commit matches one ruleSet that's
 				// enough. Break to move on to the next commit.
 				relevant = true
 				break
 			}
 		}
-		repoConfig.State.LastKnownCommit = commit.Commit
 		ScannedCommits.Add(ctx, 1, relevant, repo)
+		repoState.LastKnownCommit = commit.Commit
 	}
 	// If this Put or the one in saveNewRelevantCommit fail, we risk
 	// auditing the same commit twice.
-	if err := ds.Put(ctx, repoConfig.State); err != nil {
+	if err := ds.Put(ctx, repoState); err != nil {
 		logging.WithError(err).Errorf(ctx, "Could not save last known/interesting commits")
 		http.Error(resp, err.Error(), 500)
 		return

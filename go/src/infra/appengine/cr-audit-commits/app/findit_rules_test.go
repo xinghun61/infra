@@ -45,7 +45,6 @@ func TestFinditRules(t *testing.T) {
 			CommitMessage:    "Sample Failed Build: https://ci/fake/build",
 		}
 		cfg := &RepoConfig{
-			State:       rs,
 			BaseRepoURL: "https://a.googlesource.com/a.git",
 			GerritURL:   "https://a-review.googlesource.com/",
 			BranchName:  "master",

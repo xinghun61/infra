@@ -32,10 +32,10 @@ func Status(rctx *router.Context) {
 		http.Error(resp, "Getting status failed. See log for details.", 500)
 		return
 	}
-	cfg.State = &RepoState{RepoURL: cfg.RepoURL()}
-	err := ds.Get(ctx, cfg.State)
+	repoState := &RepoState{RepoURL: cfg.RepoURL()}
+	err := ds.Get(ctx, repoState)
 	if err != nil {
-		handleError(ctx, err, repoName, cfg, resp)
+		handleError(ctx, err, repoName, cfg, repoState, resp)
 		return
 	}
 
@@ -50,36 +50,36 @@ func Status(rctx *router.Context) {
 		}
 	}
 	commits := []*RelevantCommit{}
-	if cfg.State.LastRelevantCommit != "" {
+	if repoState.LastRelevantCommit != "" {
 		rc := &RelevantCommit{
-			CommitHash:   cfg.State.LastRelevantCommit,
-			RepoStateKey: ds.KeyForObj(ctx, cfg.State),
+			CommitHash:   repoState.LastRelevantCommit,
+			RepoStateKey: ds.KeyForObj(ctx, repoState),
 		}
 
 		err = ds.Get(ctx, rc)
 		if err != nil {
-			handleError(ctx, err, repoName, cfg, resp)
+			handleError(ctx, err, repoName, cfg, repoState, resp)
 			return
 		}
 
 		commits, err = lastXRelevantCommits(ctx, rc, nCommits)
 		if err != nil {
-			handleError(ctx, err, repoName, cfg, resp)
+			handleError(ctx, err, repoName, cfg, repoState, resp)
 			return
 		}
 	}
 	args := templates.Args{
 		"Commits":      commits,
-		"LastRelevant": cfg.State.LastRelevantCommit,
-		"LastScanned":  cfg.State.LastKnownCommit,
+		"LastRelevant": repoState.LastRelevantCommit,
+		"LastScanned":  repoState.LastKnownCommit,
 		"BaseRepoURL":  cfg.BaseRepoURL,
 		"RepoName":     repoName,
 	}
 	templates.MustRender(ctx, resp, "pages/status.html", args)
 }
 
-func handleError(ctx context.Context, err error, repoName string, cfg *RepoConfig, resp http.ResponseWriter) {
-	logging.WithError(err).Errorf(ctx, "Getting status of repo %s(%s), for revision %s", repoName, cfg.State.RepoURL, cfg.State.LastRelevantCommit)
+func handleError(ctx context.Context, err error, repoName string, cfg *RepoConfig, repoState *RepoState, resp http.ResponseWriter) {
+	logging.WithError(err).Errorf(ctx, "Getting status of repo %s(%s), for revision %s", repoName, cfg.RepoURL(), repoState.LastRelevantCommit)
 	http.Error(resp, "Getting status failed. See log for details.", 500)
 }
 

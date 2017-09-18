@@ -80,13 +80,13 @@ func CommitAuditor(rc *router.Context) {
 		return
 	}
 
-	repoConfig.State = &RepoState{RepoURL: repoConfig.RepoURL()}
-	if err := ds.Get(ctx, repoConfig.State); err != nil {
+	repoState := &RepoState{RepoURL: repoConfig.RepoURL()}
+	if err := ds.Get(ctx, repoState); err != nil {
 		http.Error(resp, fmt.Sprintf("The specified repository %s is not configured", repo), 400)
 		return
 	}
 
-	cfgk := ds.KeyForObj(ctx, repoConfig.State)
+	cfgk := ds.KeyForObj(ctx, repoState)
 	var cs *Clients
 	if testClients != nil {
 		cs = testClients
@@ -101,7 +101,8 @@ func CommitAuditor(rc *router.Context) {
 	}
 
 	ap := AuditParams{
-		RepoCfg: repoConfig,
+		RepoCfg:   repoConfig,
+		RepoState: repoState,
 	}
 	cq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditScheduled).Limit(MaxWorkers * CommitsPerWorker)
 

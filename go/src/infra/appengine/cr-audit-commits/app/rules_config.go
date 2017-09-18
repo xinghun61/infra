@@ -14,10 +14,6 @@ import (
 // RepoConfig represents the hard-coded config for a monitored repo and a
 // pointer to the entity representing its datastore-persisted state.
 type RepoConfig struct {
-	// State is a pointer to a datastore entity, needs to be loaded by the
-	// handler before being passed to the rules.
-	State *RepoState
-
 	// These are expected to be hard-coded.
 	BaseRepoURL    string
 	GerritURL      string
@@ -87,6 +83,7 @@ func (ar AccountRules) MatchesRelevantCommit(c *RelevantCommit) bool {
 type AuditParams struct {
 	TriggeringAccount string
 	RepoCfg           *RepoConfig
+	RepoState         *RepoState
 }
 
 // RuleFunc is the function type for audit rules.
