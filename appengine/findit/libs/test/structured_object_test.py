@@ -74,6 +74,21 @@ class SerilizableObjectTest(unittest.TestCase):
     obj_a = _ObjectA.FromDict({})
     self.assertIsNone(obj_a.v)
 
+  def testNotEqualForDifferentObjectType(self):
+    obj_a = _ObjectA(v=1)
+    self.assertNotEqual(obj_a, 'not a string object')
+
+  def testNotEqualForAttributeValue(self):
+    obj_a1 = _ObjectA(v=1)
+    obj_a2 = _ObjectA(v=3)
+    self.assertNotEqual(obj_a1, obj_a2)
+
+  def testEqualForSameValues(self):
+    data = {'a': {'v': 1}, 'v': {'key': 'value'}}
+    obj_b1 = _ObjectB.FromDict(data)
+    obj_b2 = _ObjectB(v={'key': 'value'}, a=_ObjectA(v=1))
+    self.assertEqual(obj_b1, obj_b2)
+
   def testMultipeInstanceOfTheSameClass(self):
     obj_a1 = _ObjectA()
     obj_a1.v = 3

@@ -21,6 +21,8 @@ class TestCase(BaseTestCase, testing.AppengineTestCase):  # pragma: no cover.
                    expected_kwargs=None):
     """Mocks a pipeline to return a value and asserts the expected parameters.
 
+    Deprecated(crbug.com/766383): remove after pipeline_wrapper.py is gone.
+
     Args:
       pipeline_class (class): The class of the pipeline to be mocked.
       result (object): The result to be returned by the pipeline.
@@ -39,3 +41,35 @@ class TestCase(BaseTestCase, testing.AppengineTestCase):  # pragma: no cover.
       return result
 
     self.mock(pipeline_class, 'run', Mocked_run)
+
+  def MockSynchronousPipeline(self, pipeline_class, expected_input,
+                              mocked_output):
+    """Mocks a synchronous pipeline to return a output and assert the input.
+
+    Args:
+      pipeline_class (class): The class of the pipeline to be mocked.
+      expected_input (object): The single input expected by the pipeline.
+      mocked_output (object): The mocked result to be returned by the pipeline.
+    """
+
+    def Mocked_RunImpl(_, arg):
+      self.assertEqual(expected_input, arg)
+      return mocked_output
+
+    self.mock(pipeline_class, 'RunImpl', Mocked_RunImpl)
+
+  def MockAsynchronousPipeline(self, pipeline_class, expected_input,
+                               mocked_output):
+    """Mocks an asynchronous pipeline to return a output and assert the input.
+
+    Args:
+      pipeline_class (class): The class of the pipeline to be mocked.
+      expected_input (object): The single input expected by the pipeline.
+      mocked_output (object): The mocked result to be returned by the pipeline.
+    """
+
+    def Mocked_RunImpl(pipeline_class_instance, arg):
+      self.assertEqual(expected_input, arg)
+      pipeline_class_instance.Complete(mocked_output)
+
+    self.mock(pipeline_class, 'RunImpl', Mocked_RunImpl)

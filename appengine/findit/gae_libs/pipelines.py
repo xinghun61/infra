@@ -309,4 +309,4 @@ class AsynchronousPipeline(BasePipeline):
   def callback(self, **additional_parameters):
     arg = _ConvertPipelineParametersToInputObject(self.input_type, self.args,
                                                   self.kwargs)
-    self.CallbackImpl(arg, additional_parameters)
+    return self.CallbackImpl(arg, additional_parameters)

@@ -203,6 +203,19 @@ class StructuredObject(object):
     """Returns a string that represents this class instance."""
     return '%s(%r)' % (self.__class__.__name__, self.ToDict())
 
+  def __eq__(self, other):
+    """Returns True if this object is equal to the given one."""
+    if not isinstance(other, self.__class__):
+      return False
+    for name in self._GetDefinedAttributes():
+      if not getattr(self, name) == getattr(other, name):
+        return False
+    return True
+
+  def __ne__(self, other):
+    """Returns True if this object is not equal to the given one."""
+    return not self == other
+
   @classmethod
   def FromDict(cls, data):
     """Deserializes the given data and returns an instance of this class.

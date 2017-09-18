@@ -1,7 +1,7 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-"""Deprecated. Please use gae_libs/pipelines.py instead."""
+"""Deprecated(crbug.com/766383). Please use gae_libs/pipelines.py instead."""
 
 import pipeline as pipeline
 from pipeline import handlers as pipeline_handlers
