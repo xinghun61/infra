@@ -72,41 +72,35 @@ var (
 // results and update the RelevantCommit entries in the datastore inside a
 // transaction.
 func CommitAuditor(rc *router.Context) {
-	ctx, resp, req := rc.Context, rc.Writer, rc.Request
-	repo := req.FormValue("repo")
-	repoConfig, hasConfig := RuleMap[repo]
-	if !hasConfig {
-		http.Error(resp, fmt.Sprintf("No audit rules defined for %s", repo), 400)
+	ctx, resp := rc.Context, rc.Writer
+	cfg, repo, err := loadConfig(rc)
+	if err != nil {
+		http.Error(resp, err.Error(), 500)
 		return
 	}
 
-	repoState := &RepoState{RepoURL: repoConfig.RepoURL()}
+	cs, err := initializeClients(ctx, cfg)
+	if err != nil {
+		http.Error(resp, err.Error(), 500)
+		return
+	}
+
+	repoState := &RepoState{RepoURL: cfg.RepoURL()}
 	if err := ds.Get(ctx, repoState); err != nil {
 		http.Error(resp, fmt.Sprintf("The specified repository %s is not configured", repo), 400)
 		return
 	}
 
 	cfgk := ds.KeyForObj(ctx, repoState)
-	var cs *Clients
-	if testClients != nil {
-		cs = testClients
-	} else {
-		cs = &Clients{}
-		err := cs.ConnectAll(ctx, repoConfig)
-		if err != nil {
-			logging.WithError(err).Errorf(ctx, "Could not create external clients")
-			http.Error(resp, err.Error(), 500)
-			return
-		}
-	}
 
 	ap := AuditParams{
-		RepoCfg:   repoConfig,
+		RepoCfg:   cfg,
 		RepoState: repoState,
 	}
+
 	cq := ds.NewQuery("RelevantCommit").Ancestor(cfgk).Eq("Status", auditScheduled).Limit(MaxWorkers * CommitsPerWorker)
 
-	wp := &workerParams{rules: repoConfig.Rules, clients: cs}
+	wp := &workerParams{rules: cfg.Rules, clients: cs}
 
 	// Count the number of commits to be analyzed to estimate a reasonable
 	// number of workers for the load.
@@ -150,9 +144,9 @@ func CommitAuditor(rc *router.Context) {
 	// Read results into a map.
 	auditedCommits := make(map[string]*RelevantCommit)
 	close(wp.audited)
-	for rc := range wp.audited {
-		auditedCommits[rc.CommitHash] = rc
-		originalCommits = append(originalCommits, &RelevantCommit{CommitHash: rc.CommitHash, RepoStateKey: rc.RepoStateKey})
+	for auditedCommit := range wp.audited {
+		auditedCommits[auditedCommit.CommitHash] = auditedCommit
+		originalCommits = append(originalCommits, &RelevantCommit{CommitHash: auditedCommit.CommitHash, RepoStateKey: auditedCommit.RepoStateKey})
 	}
 
 	// We save all the results produced by the workers in a single
@@ -197,6 +191,8 @@ func CommitAuditor(rc *router.Context) {
 	} else if len(wp.finishedCleanly) != nWorkers {
 		http.Error(resp, "At least one of the audit workers did not finish cleanly", 500)
 	}
+
+	ViolationNotifier(rc)
 }
 
 // Initialize the channels and spawn the goroutines.

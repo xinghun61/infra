@@ -15,11 +15,15 @@ import (
 // pointer to the entity representing its datastore-persisted state.
 type RepoConfig struct {
 	// These are expected to be hard-coded.
-	BaseRepoURL    string
-	GerritURL      string
-	BranchName     string
-	StartingCommit string
-	Rules          []RuleSet
+	BaseRepoURL       string
+	GerritURL         string
+	BranchName        string
+	StartingCommit    string
+	MonorailAPIURL    string
+	MonorailProject   string
+	MonorailComponent string
+	MonorailLabels    []string
+	Rules             []RuleSet
 }
 
 // RepoURL composes the url of the repository by appending the branch.
@@ -34,7 +38,13 @@ var RuleMap = map[string]*RepoConfig{
 		GerritURL:   "https://chromium-review.googlesource.com",
 		BranchName:  "master",
 		// No special meaning, ToT as of the time this line was added.
-		StartingCommit: "5677b32274aec4890c7dd991a6a84924e65d4853",
+		StartingCommit:  "5677b32274aec4890c7dd991a6a84924e65d4853",
+		MonorailAPIURL:  "https://monorail-prod.appspot.com/_ah/api/monorail/v1",
+		MonorailProject: "chromium",
+		// TODO(robertocn): Change component and label to the correct
+		// ones. TBD.
+		MonorailComponent: "Tools>Test>Findit",
+		MonorailLabels:    []string{"CommitLog-Audit-Violation", "Restrict-View-Google"},
 		Rules: []RuleSet{AccountRules{
 			Account: "findit-for-me@appspot.gserviceaccount.com",
 			Funcs: []RuleFunc{

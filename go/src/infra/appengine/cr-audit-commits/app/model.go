@@ -81,6 +81,7 @@ type RelevantCommit struct {
 	CommitterAccount       string
 	AuthorAccount          string
 	CommitMessage          string
+	IssueID                int32
 }
 
 // RuleResult represents the result of applying a single rule to a commit.

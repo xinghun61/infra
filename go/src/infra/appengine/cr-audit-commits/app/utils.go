@@ -9,16 +9,20 @@ import (
 	"bufio"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/api/gitiles"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/router"
 
 	"infra/appengine/cr-audit-commits/buildstatus"
 	buildbot "infra/monitoring/messages"
+	"infra/monorail"
 )
 
 const (
@@ -82,9 +86,109 @@ func failedBuildFromCommitMessage(m string) (string, error) {
 			return strings.TrimSpace(strings.TrimPrefix(line, failedBuildPrefix)), nil
 		}
 	}
-	return "", fmt.Errorf(
-		"commit message does not contain url to failed build prefixed with %q",
-		failedBuildPrefix)
+	return "", fmt.Errorf("commit message does not contain url to failed build prefixed with %q", failedBuildPrefix)
+}
+
+func getIssueBySummaryAndAccount(ctx context.Context, cfg *RepoConfig, s, a string, cs *Clients) (*monorail.Issue, error) {
+	q := fmt.Sprintf("summary:\"%s\" reporter:\"%s\"", s, a)
+	req := &monorail.IssuesListRequest{
+		ProjectId: cfg.MonorailProject,
+		Can:       monorail.IssuesListRequest_ALL,
+		Q:         q,
+	}
+	resp, err := cs.monorail.IssuesList(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	for _, iss := range resp.Items {
+		if iss.Summary == s {
+			return iss, nil
+		}
+	}
+	return nil, nil
+}
+
+func postComment(ctx context.Context, cfg *RepoConfig, i *monorail.Issue, c string, cs *Clients) error {
+	req := &monorail.InsertCommentRequest{
+		Comment: &monorail.InsertCommentRequest_Comment{
+			Content: c,
+		},
+		Issue: &monorail.IssueRef{
+			IssueId:   i.Id,
+			ProjectId: cfg.MonorailProject,
+		},
+	}
+	_, err := cs.monorail.InsertComment(ctx, req)
+	return err
+}
+
+func postIssue(ctx context.Context, cfg *RepoConfig, s, d string, cs *Clients) (int32, error) {
+	iss := &monorail.Issue{
+		Description: d,
+		Components:  []string{cfg.MonorailComponent},
+		Labels:      cfg.MonorailLabels,
+		Status:      monorail.StatusUntriaged,
+		Summary:     s,
+	}
+
+	req := &monorail.InsertIssueRequest{
+		ProjectId: cfg.MonorailProject,
+		Issue:     iss,
+		SendEmail: true,
+	}
+
+	resp, err := cs.monorail.InsertIssue(ctx, req)
+	if err != nil {
+		return 0, err
+	}
+	return resp.Issue.Id, nil
+}
+
+func issueFromID(ctx context.Context, cfg *RepoConfig, ID int32, cs *Clients) (*monorail.Issue, error) {
+	req := &monorail.IssuesListRequest{
+		ProjectId: cfg.MonorailProject,
+		Can:       monorail.IssuesListRequest_ALL,
+		Q:         strconv.Itoa(int(ID)),
+	}
+	resp, err := cs.monorail.IssuesList(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	for _, iss := range resp.Items {
+		if iss.Id == ID {
+			return iss, nil
+		}
+	}
+	return nil, fmt.Errorf("could not find an issue with ID %d", ID)
+}
+
+func resultText(cfg *RepoConfig, rc *RelevantCommit, issueExists bool) string {
+	rows := []string{}
+	for _, rr := range rc.Result {
+		row := ""
+		switch rr.RuleResultStatus {
+		case rulePassed:
+			row = fmt.Sprintf("%s PASSED", rr.RuleName)
+		case ruleFailed:
+			row = fmt.Sprintf("%s FAILED (%s)", rr.RuleName, rr.Message)
+		case ruleSkipped:
+			row = fmt.Sprintf("%s was SKIPPED", rr.RuleName)
+		}
+		rows = append(rows, row)
+	}
+
+	results := fmt.Sprintf("Here's a summary of the rules that were executed: \n%s",
+		strings.Join(rows, "\n"))
+
+	if issueExists {
+		return results
+	}
+
+	description := "An audit of the git repository at %q found at least one violation when auditing" +
+		" commit %s created by %s and committed by %s.\n\n%s"
+
+	return fmt.Sprintf(description, cfg.RepoURL, rc.CommitHash, rc.AuthorAccount, rc.CommitterAccount, results)
+
 }
 
 func getFailedBuild(ctx context.Context, miloClient miloClientInterface, rc *RelevantCommit) (string, *buildbot.Build) {
@@ -108,6 +212,9 @@ type Clients struct {
 	gerrit  gerritClientInterface
 	gitiles gitilesClientInterface
 	milo    miloClientInterface
+
+	// This is already an interface so we use it as exported.
+	monorail monorail.MonorailClient
 }
 
 // ConnectAll creates the clients so the rules can use them.
@@ -132,5 +239,31 @@ func (c *Clients) ConnectAll(ctx context.Context, cfg *RepoConfig) error {
 		return err
 	}
 
+	c.monorail = monorail.NewEndpointsClient(httpClient, cfg.MonorailAPIURL)
 	return nil
+}
+
+func loadConfig(rc *router.Context) (*RepoConfig, string, error) {
+	ctx, req := rc.Context, rc.Request
+	repo := req.FormValue("repo")
+	cfg, hasConfig := RuleMap[repo]
+	if !hasConfig {
+		logging.Errorf(ctx, "No audit rules defined for %s", repo)
+		return nil, "", fmt.Errorf("No audit rules defined for %s", repo)
+	}
+
+	return cfg, repo, nil
+}
+
+func initializeClients(ctx context.Context, cfg *RepoConfig) (*Clients, error) {
+	if testClients != nil {
+		return testClients, nil
+	}
+	cs := &Clients{}
+	err := cs.ConnectAll(ctx, cfg)
+	if err != nil {
+		logging.WithError(err).Errorf(ctx, "Could not create external clients")
+		return nil, fmt.Errorf("Could not create external clients")
+	}
+	return cs, nil
 }

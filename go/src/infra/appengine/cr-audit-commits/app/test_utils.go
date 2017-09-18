@@ -12,11 +12,14 @@ import (
 
 	"golang.org/x/net/context"
 
+	"google.golang.org/grpc"
+
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/api/gerrit"
 	"go.chromium.org/luci/common/api/gitiles"
 
 	buildbot "infra/monitoring/messages"
+	mr "infra/monorail"
 )
 
 type mockGitilesClient struct {
@@ -76,4 +79,23 @@ type mockMiloClient struct {
 
 func (c mockMiloClient) GetBuildInfo(ctx context.Context, URL string) (*buildbot.Build, error) {
 	return c.q[URL], c.e
+}
+
+type mockMonorailClient struct {
+	il *mr.IssuesListResponse
+	ic *mr.InsertCommentResponse
+	ii *mr.InsertIssueResponse
+	e  error
+}
+
+func (c mockMonorailClient) InsertIssue(ctx context.Context, in *mr.InsertIssueRequest, opts ...grpc.CallOption) (*mr.InsertIssueResponse, error) {
+	return c.ii, c.e
+}
+
+func (c mockMonorailClient) InsertComment(ctx context.Context, in *mr.InsertCommentRequest, opts ...grpc.CallOption) (*mr.InsertCommentResponse, error) {
+	return c.ic, c.e
+}
+
+func (c mockMonorailClient) IssuesList(ctx context.Context, in *mr.IssuesListRequest, opts ...grpc.CallOption) (*mr.IssuesListResponse, error) {
+	return c.il, c.e
 }

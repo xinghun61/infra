@@ -49,25 +49,25 @@ func CommitScanner(rc *router.Context) {
 	rev := ""
 	// Supported repositories are those present as keys in RuleMap.
 	// see rules_config.go.
-	repoConfig, hasConfig := RuleMap[repo]
+	cfg, hasConfig := RuleMap[repo]
 	if !hasConfig {
 		http.Error(resp, fmt.Sprintf("No audit rules defined for %s", repo), 400)
 		return
 	}
-	repoState := &RepoState{RepoURL: repoConfig.RepoURL()}
+	repoState := &RepoState{RepoURL: cfg.RepoURL()}
 	switch err := ds.Get(ctx, repoState); err {
 	case ds.ErrNoSuchEntity:
 		// This is the first time the scanner runs, use the hard-coded
 		// starting commit.
-		rev = repoConfig.StartingCommit
+		rev = cfg.StartingCommit
 		repoState = &RepoState{
-			RepoURL:         repoConfig.RepoURL(),
+			RepoURL:         cfg.RepoURL(),
 			LastKnownCommit: rev,
 		}
 	case nil:
 		rev = repoState.LastKnownCommit
 		if rev == "" {
-			rev = repoConfig.StartingCommit
+			rev = cfg.StartingCommit
 		}
 		if rev == "" {
 			http.Error(resp, fmt.Sprintf("The specified repository %s is missing a starting revision", repo), 400)
@@ -77,19 +77,14 @@ func CommitScanner(rc *router.Context) {
 		http.Error(resp, err.Error(), 500)
 		return
 	}
-	var cs *Clients
-	if testClients != nil {
-		cs = testClients
-	} else {
-		cs = &Clients{}
-		err := cs.ConnectAll(ctx, repoConfig)
-		if err != nil {
-			logging.WithError(err).Errorf(ctx, "Could not create external clients")
-			http.Error(resp, err.Error(), 500)
-			return
-		}
+
+	cs, err := initializeClients(ctx, cfg)
+	if err != nil {
+		http.Error(resp, err.Error(), 500)
+		return
 	}
-	fl, err := cs.gitiles.LogForward(ctx, repoConfig.BaseRepoURL, rev, repoConfig.BranchName)
+
+	fl, err := cs.gitiles.LogForward(ctx, cfg.BaseRepoURL, rev, cfg.BranchName)
 	if err != nil {
 		logging.WithError(err).Errorf(ctx, "Could not get gitiles log from revision %s", rev)
 		http.Error(resp, err.Error(), 500)
@@ -100,7 +95,7 @@ func CommitScanner(rc *router.Context) {
 	// deadline). Use the context for this.
 	for _, commit := range fl {
 		relevant := false
-		for _, ruleSet := range repoConfig.Rules {
+		for _, ruleSet := range cfg.Rules {
 			if ruleSet.MatchesCommit(commit) {
 				n, err := saveNewRelevantCommit(ctx, repoState, commit)
 				if err != nil {
@@ -147,7 +142,7 @@ func saveNewRelevantCommit(ctx context.Context, state *RepoState, commit gitiles
 	}
 
 	if err := ds.Put(ctx, rc, state); err != nil {
-		logging.WithError(err).Errorf(ctx, "Could not save %s", rc)
+		logging.WithError(err).Errorf(ctx, "Could not save %s", rc.CommitHash)
 		return nil, err
 	}
 	logging.Infof(ctx, "saved %s", rc)
