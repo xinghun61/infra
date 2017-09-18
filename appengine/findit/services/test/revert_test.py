@@ -41,7 +41,10 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
           'commit_position': self.culprit_commit_position,
           'code_review_url': self.culprit_code_review_url,
           'review_server_host': self.review_server_host,
-          'review_change_id': self.review_change_id
+          'review_change_id': self.review_change_id,
+          'author': {
+              'email': 'author@chromium.org'
+          }
       }
       return culprit_info
 
@@ -480,3 +483,27 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
 
     culprit = revert._UpdateCulprit(repo_name, revision)
     self.assertEqual(culprit.submit_revert_pipeline_id, 'some_id')
+
+  @mock.patch.object(revert, '_CanCommitRevert', return_value=True)
+  @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
+  def testShouldNotCommitRevertForAutoRoll(self, mock_info, _):
+    repo_name = 'chromium'
+    revision = 'rev1'
+    revert_status = revert.CREATED_BY_FINDIT
+    pipeline_id = 'pipeline_id'
+    mock_info.return_value = {
+          'commit_position': self.culprit_commit_position,
+          'code_review_url': self.culprit_code_review_url,
+          'review_server_host': self.review_server_host,
+          'review_change_id': self.review_change_id,
+          'author': {
+              'email': 'v8-autoroll@chromium.org'
+          }
+      }
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    culprit.revert_cl = RevertCL()
+    culprit.revert_status = status.COMPLETED
+    culprit.put()
+
+    self.assertFalse(revert._ShouldCommitRevert(
+        repo_name, revision, revert_status, pipeline_id))

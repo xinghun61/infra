@@ -32,9 +32,16 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     def Mocked_GetChangeLog(*_):
 
+      class MockedAuthor(object):
+        name = 'author'
+
+        def ToDict(self):
+          return {'name': self.name}
+
       class MockedChangeLog(object):
         commit_position = 123
         change_id = '123'
+        author = MockedAuthor()
 
         @property
         def code_review_url(self):

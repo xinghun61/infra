@@ -36,7 +36,10 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
           'commit_position': self.culprit_commit_position,
           'code_review_url': self.culprit_code_review_url,
           'review_server_host': self.review_server_host,
-          'review_change_id': self.review_change_id
+          'review_change_id': self.review_change_id,
+          'author': {
+              'email': 'author@chromium.org'
+          }
       }
       return culprit_info
 

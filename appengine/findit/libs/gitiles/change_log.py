@@ -69,6 +69,16 @@ class Contributor(namedtuple('Contributor', ['name', 'email', 'time'])):
   """A generalization of the "author" and "committer" in Git's terminology."""
   __slots__ = ()
 
+  def ToDict(self):
+    return {
+      'name': self.name,
+      'email': self.email,
+      'time': self.time,
+    }
+
+  @staticmethod
+  def FromDict(info):
+    return Contributor(info['name'], info['email'], info['time'])
 
 class ChangeLog(
     namedtuple('ChangeLog', [
@@ -99,16 +109,8 @@ class ChangeLog(
   def ToDict(self):
     """Returns the change log as a JSON object."""
     json_data = {
-        'author': {
-            'name': self.author.name,
-            'email': self.author.email,
-            'time': self.author.time,
-        },
-        'committer': {
-            'name': self.committer.name,
-            'email': self.committer.email,
-            'time': self.committer.time,
-        },
+        'author': self.author.ToDict(),
+        'committer': self.committer.ToDict(),
         'revision': self.revision,
         'commit_position': self.commit_position,
         'touched_files': [],
@@ -136,10 +138,8 @@ class ChangeLog(
       touched_files.append(touched_file_info)
 
     return ChangeLog(
-        Contributor(info['author']['name'], info['author']['email'],
-                    info['author']['time']),
-        Contributor(info['committer']['name'], info['committer']['email'],
-                    info['committer']['time']), info['revision'],
+        Contributor.FromDict(info['author']),
+        Contributor.FromDict(info['committer']), info['revision'],
         info['commit_position'], info['message'], touched_files,
         info['commit_url'], info['code_review_url'], info['reverted_revision'],
         info.get('review_server_host'), info.get('review_change_id'))

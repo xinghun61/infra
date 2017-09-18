@@ -569,11 +569,18 @@ class SuspectedCLUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
   def testGetCulpritChangeLog(self, mock_fn):
 
+    class MockAuthor(object):
+      name = 'author'
+
+      def ToDict(self):
+        return {'name': self.name}
+
     class MockedChangeLog(object):
       commit_position = 123
       code_review_url = 'code_review_url'
       review_server_host = 'review_server_host'
       review_change_id = 'review_change_id'
+      author = MockAuthor()
 
     mock_fn.return_value = MockedChangeLog()
 

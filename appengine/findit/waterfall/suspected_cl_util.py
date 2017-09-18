@@ -158,7 +158,8 @@ def GetCulpritInfo(repo_name, revision):
       'commit_position': change_log.commit_position,
       'code_review_url': change_log.code_review_url,
       'review_server_host': change_log.review_server_host,
-      'review_change_id': change_log.review_change_id
+      'review_change_id': change_log.review_change_id,
+      'author': change_log.author.ToDict(),
   }
 
 

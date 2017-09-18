@@ -40,6 +40,13 @@ _DEFAULT_AUTO_REVERT_DAILY_THRESHOLD = 10
 _DEFAULT_AUTO_COMMIT_DAILY_THRESHOLD = 4
 _DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS = 24
 
+# List of emails of auto rollers.
+_AUTO_ROLLER_EMAILS = ['skia-deps-roller@chromium.org',
+                       'catapult-deps-roller@chromium.org',
+                       'pdfium-deps-roller@chromium.org',
+                       'v8-autoroll@chromium.org',
+                       'ios-autoroll@chromium.org']
+
 
 @ndb.transactional
 def _UpdateCulprit(repo_name,
@@ -313,6 +320,11 @@ def _GetDailyNumberOfCommits(limit):
       WfSuspectedCL.revert_committed_time >= earliest_time).count(limit)
 
 
+def _CulpritIsDEPSAutoRoll(culprit_info):
+  author_email = culprit_info['author']['email']
+  return author_email in _AUTO_ROLLER_EMAILS
+
+
 def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
   """Checks if the revert should be auto committed.
 
@@ -350,6 +362,12 @@ def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
   assert culprit
 
   culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
+
+  # Checks if the culprit is an DEPS autoroll by checking the author's email.
+  # If it is, bail out of auto commit for now.
+  if _CulpritIsDEPSAutoRoll(culprit_info):
+    return False
+
   culprit_change_id = culprit_info['review_change_id']
   culprit_host = culprit_info['review_server_host']
   # Makes sure codereview is Gerrit, as only Gerrit is supported at the moment.
