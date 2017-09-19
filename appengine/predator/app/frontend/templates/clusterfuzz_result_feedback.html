@@ -61,22 +61,6 @@
     var note = {{note | tojson | safe}}
     var note = note == null ? undefined : note.replace(/['"]+/g, '');
 
-    function rerunAnalysis(e) {
-      host = window.location.host
-      $.get('../process/rerun-analysis?client_id={{client}}&key={{key}}', function(data) {
-        if (data['success']) {
-          alert('Rerun started, refresh after a while to see the new result.');
-        } else {
-          alert('Failed to rerun analysis.');
-        }
-      }).error(function(xhr) {
-        // Replace the whole page with errors from server side.
-        document.body.outerHTML = xhr.responseText;
-      });
-      e.preventDefault();
-    }
-
-
     function createUrl(base_url, parameters) {
       var params = [];
       for(var key in parameters) {
@@ -92,7 +76,6 @@
       }
     }
 
-
     function constructMonorailUrl() {
       var parameters = {};
       parameters.status = 'Unconfirmed';
@@ -100,14 +83,15 @@
       parameters.components = 'Tools>Test>Predator';
       parameters.summary = encodeURIComponent('[Predator] Predator bug or feature');
       parameters.comment = encodeURIComponent(
-          'Signature: {{signature}}\nVersion: {{version}}\n' +
-          'Channel: {{channel}}\nPlatform: {{platform}}\n\n' +
-          'Predator result: ' + window.location.href +
-          '\n\nWhat is the bug or feature?');
+          'Testcase: https://clusterfuzz.com/v2/testcase-detail/{{testcase_id}}\n\n' +
+          'Job type: {{job_type}}\n' +
+          'Crash type: {{crash_type}}\n' +
+          'Platform: {{platform}}\n\n' +
+          'Predator result: ' + window.location.href + '\n\n' +
+          'What is the bug or feature?');
       return createUrl('https://code.google.com/p/chromium/issues/entry',
                        parameters);
     }
-
 
     function getCulpritPropertyNameForResult(result) {
       if (result.match('^suspected'))
@@ -211,6 +195,22 @@
     }
 
 
+    function rerunAnalysis(e) {
+      host = window.location.host
+      $.get('../process/rerun-analysis?client_id={{client}}&key={{key}}', function(data) {
+        if (data['success']) {
+          alert('Rerun started, refresh after a while to see the new result.');
+        } else {
+          alert('Failed to rerun analysis.');
+        }
+      }).error(function(xhr) {
+        // Replace the whole page with errors from server side.
+        document.body.outerHTML = xhr.responseText;
+      });
+      e.preventDefault();
+    }
+
+
     $(document).ready(function() {
       $('#monorail-bug').attr('href', constructMonorailUrl());
       $('.triage').click(triageAnalysisResult);
@@ -248,13 +248,14 @@
       <b>Crash:</b>
     {% endif %}
     (<a href="#" id='monorail-bug'>File a Predator bug</a>)<br>
-    Signature: {{signature}}<br>
-    Version: <a href="https://chromium.googlesource.com/chromium/src.git/+/{{version}}">{{version}}</a><br>
-    {% if channel %}
-      Channel: {{channel}}<br>
-    {% endif %}
+    Testcase id: {{testcase_id}}<br>
+    Crash state: {{signature}}<br>
+    Crashed revision: <a href="https://chromium.googlesource.com/chromium/src.git/+/{{version}}">{{version}}</a><br>
+    Job type: {{job_type}}<br>
+    Crash type: {{crash_type}}<br>
     Platform: {{platform}}<br>
     Request time: {{request_time}}<br>
+    <br>
   </div>
 
   <button type="submit" id="rerun-button">Rerun analysis</button><br><br>
@@ -303,7 +304,7 @@
     <br>
     <b> Regression range: </b>
     {% if regression_range %}
-      <a href="https://chromium.googlesource.com/chromium/src/+log/{{regression_range[0]}}..{{regression_range[1]}}?pretty=fuller">{{regression_range[0]}} : {{regression_range[1]}}</a>
+      <a href="https://chromium.googlesource.com/chromium/src/+log/{{regression_range['old_revision']}}..{{regression_range['new_revision']}}?pretty=fuller">{{regression_range['old_revision']}} : {{regression_range['new_revision']}}</a>
     {% else %}
       Not found
     {% endif %}

@@ -46,6 +46,7 @@ frontend_web_pages_handler_mappings = [
      uma_sampling_profiler_dashboard.UMASamplingProfilerDashboard),
     ('/uma-sampling-profiler/result-feedback',
      uma_sampling_profiler_result_feedback.UMASamplingProfilerResultFeedback),
+    ('/cracas/triage-analysis', triage_analysis.TriageAnalysis),
     ('/fracas/dashboard', fracas_dashboard.FracasDashBoard),
     ('/fracas/result-feedback',
      fracas_result_feedback.FracasResultFeedback),

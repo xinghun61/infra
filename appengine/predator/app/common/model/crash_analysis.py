@@ -280,7 +280,7 @@ class CrashAnalysis(ndb.Model):
 
     # The requested time is the first time the crash was requested by users,
     # we should keep the same requested time when we do rerun.
-    #requested_time = self.requested_time
+    requested_time = self.requested_time
     self.Reset()
     self.Initialize(crash_data)
-    #self.requested_time = requested_time
+    self.requested_time = requested_time
