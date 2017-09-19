@@ -137,6 +137,8 @@ class CrashBasePipeline(BasePipeline):
 
 
 class CrashAnalysisPipeline(CrashBasePipeline):
+  """The pipeline to call Predator to do the analysis of a given crash."""
+
   def finalized(self):
     if self.was_aborted: # pragma: no cover
       self._PutAbortedError()
@@ -261,7 +263,7 @@ class CrashWrapperPipeline(BasePipeline):
 class RerunPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, client_id, crash_keys):
+  def run(self, client_id, crash_keys, publish_to_client=False):
     """Reruns analysis for a batch of crashes.
 
     Args:
@@ -284,4 +286,7 @@ class RerunPipeline(BasePipeline):
 
     for crash in updated:
       logging.info('Initialize analysis for crash %s', crash.identifiers)
-      yield CrashAnalysisPipeline(client_id, crash.identifiers)
+      if publish_to_client:
+        yield CrashWrapperPipeline(client_id, crash.identifiers)
+      else:
+        yield CrashAnalysisPipeline(client_id, crash.identifiers)

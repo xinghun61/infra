@@ -151,13 +151,31 @@ class RerunPipelineTest(AppengineTestCase):
   @mock.patch('common.model.fracas_crash_analysis.'
               'FracasCrashAnalysis.ReInitialize')
   @mock.patch('common.crash_pipeline.PredatorForClientID')
-  def testPipelineRun(self, mock_predator_for_client, mock_reinitialize):
+  def testPipelineRunNotPublish(self, mock_predator_for_client,
+                                mock_reinitialize):
     """Test ``RerunPipeline`` runs as expected."""
     client = CrashClient.FRACAS
     crash_keys = [self.crash_analyses[0].key.urlsafe()]
     self.MockPipeline(crash_pipeline.CrashAnalysisPipeline, None,
                       [client, self.crash_analyses[0].identifiers])
-    pipeline = crash_pipeline.RerunPipeline(client, crash_keys)
+    pipeline = crash_pipeline.RerunPipeline(client, crash_keys,
+                                            publish_to_client=False)
+    pipeline.start()
+    self.execute_queued_tasks()
+    self.assertTrue(mock_predator_for_client.called)
+    self.assertEqual(mock_reinitialize.call_count, 1)
+
+  @mock.patch('common.model.fracas_crash_analysis.'
+              'FracasCrashAnalysis.ReInitialize')
+  @mock.patch('common.crash_pipeline.PredatorForClientID')
+  def testPipelineRunPublish(self, mock_predator_for_client, mock_reinitialize):
+    """Test ``RerunPipeline`` runs as expected."""
+    client = CrashClient.FRACAS
+    crash_keys = [self.crash_analyses[0].key.urlsafe()]
+    self.MockPipeline(crash_pipeline.CrashWrapperPipeline, None,
+                      [client, self.crash_analyses[0].identifiers])
+    pipeline = crash_pipeline.RerunPipeline(client, crash_keys,
+                                            publish_to_client=True)
     pipeline.start()
     self.execute_queued_tasks()
     self.assertTrue(mock_predator_for_client.called)

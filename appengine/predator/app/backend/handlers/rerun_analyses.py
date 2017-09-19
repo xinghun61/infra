@@ -76,9 +76,10 @@ class RerunAnalyses(BaseHandler):
         self.request.get('start_date'), self.request.get('end_date'),
         default_start=last_week, default_end=now)
 
+    publish_to_client = bool(self.request.get('publish'))
     count = 0
     for crash_keys in IterateCrashBatches(client_id, start_date, end_date):
-      pipeline = RerunPipeline(client_id, crash_keys)
+      pipeline = RerunPipeline(client_id, crash_keys, publish_to_client)
       # Attribute defined outside __init__ - pylint: disable=W0201
       pipeline.target = appengine_util.GetTargetNameForModule(RERUN_SERVICE)
       pipeline.start(queue_name=RERUN_QUEUE)

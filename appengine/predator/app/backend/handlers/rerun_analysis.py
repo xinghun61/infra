@@ -23,7 +23,8 @@ class RerunAnalysis(BaseHandler):
     if not key:
       return self.CreateError('Should provide key of the analysis to rerun.')
 
-    pipeline = RerunPipeline(client_id, [key])
+    pipeline = RerunPipeline(
+        client_id, [key], publish_to_client=bool(self.request.get('publish')))
     # Attribute defined outside __init__ - pylint: disable=W0201
     pipeline.target = appengine_util.GetTargetNameForModule(RERUN_SERVICE)
     pipeline.start(queue_name=RERUN_QUEUE)
