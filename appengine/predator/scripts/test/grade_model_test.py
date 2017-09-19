@@ -295,7 +295,6 @@ class GradeModelTest(unittest.TestCase):
         ('https://chromium.googlesource.com/angle/src/+/'
          'ff0a4a3f4f165290c3da7902a67d98434a49e7e3')))
 
-
   def testGradeWithThreshold(self):
     """Tests that ``GradeWithThreshold`` filters suspects correctly."""
     # Setting the confidence threshold at 2.5 will filter out one of the false

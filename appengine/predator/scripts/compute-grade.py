@@ -50,6 +50,19 @@ if __name__ == '__main__':
             'due to internal proxy. ') % setup.DEFAULT_APP_ID)
 
   argparser.add_argument(
+    '--strict',
+    '-s',
+    default=False,
+    action='store_true',
+    help=('Whether to use strict grade model or not, if strict is true, an '
+          'example is considered to be a true positive iff: the correct CL is'
+          ' among the suspects identified by Predator, and Predator assigned '
+          'it a confidence value greater than or equal to that of any other '
+          'suspect. Else if strict is false, an example is considered to be '
+          'true when the suspects is identified by Predator, even it\'s not '
+          'with the highest confidence score.'))
+
+  argparser.add_argument(
       '--suspect-type',
       '-s',
       dest='suspect_type',
@@ -62,4 +75,4 @@ if __name__ == '__main__':
   remote_api.EnableRemoteApi(args.app)
   examples = grade_model.RunModelOnTestSet(args.client, args.app, args.testset,
                                            args.suspect_type)
-  grade_model.PrintMetrics(examples, args.suspect_type)
+  grade_model.PrintMetrics(examples, args.suspect_type, strict=args.strict)
