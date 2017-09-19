@@ -9,7 +9,6 @@ from analysis.clusterfuzz_data import ClusterfuzzData
 from analysis.type_enums import CrashClient
 from common.appengine_testcase import AppengineTestCase
 from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
-from common.model.clusterfuzz_analysis import GetCommitsNumberInRegressionRange
 from libs.deps.dependency import Dependency
 from libs.deps.dependency import DependencyRoll
 
@@ -56,6 +55,10 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
       @property
       def dependency_rolls(self):
         return {}
+
+      @property
+      def commit_count_in_regression_range(self):
+        return 5
 
     predator.GetCrashData = mock.Mock(
         return_value=MockClusterfuzzData(raw_crash_data))
@@ -180,17 +183,3 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
                           'stack_trace': None,
                           'crash_revision': None,
                           'signature': None})
-
-  def testGetCommitsNumberInRegressionRange(self):
-    regression_range = {'repo_url': 'http://repo',
-                        'repo_path': 'src',
-                        'old_revision': 'rev2',
-                        'new_revision': 'rev7'}
-
-    with mock.patch('libs.gitiles.gitiles_repository.GitilesRepository.'
-                    'GetCommitsBetweenRevisions') as mock_get_commits:
-      mock_get_commits.return_value = ['rev1', 'rev2', 'rev3']
-      self.assertEqual(
-          GetCommitsNumberInRegressionRange(
-              regression_range['repo_url'], regression_range['old_revision'],
-              regression_range['new_revision']), 3)

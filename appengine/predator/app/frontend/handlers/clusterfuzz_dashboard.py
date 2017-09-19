@@ -50,7 +50,7 @@ class ClusterfuzzDashBoard(DashBoard):
           'platform': crash.platform,
           'sanitizer': crash.sanitizer,
           'regression_range': crash.regression_range,
-          'commits': crash.commits_number_in_regression_range,
+          'commits': crash.commit_count_in_regression_range,
           'error_name': crash.error_name or '',
           'suspected_cls': (crash.result.get('suspected_cls', [])
                             if crash.result else []),

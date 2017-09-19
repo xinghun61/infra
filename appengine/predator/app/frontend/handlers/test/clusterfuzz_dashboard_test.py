@@ -59,7 +59,7 @@ class ClusterfuzzDashBoardTest(AppengineTestCase):
     analysis.sanitizer = 'asan'
     analysis.regression_range = {'repo_path': 'src', 'repo_url': 'https://repo',
                                  'old_revision': 'rev2', 'new_revision': 'rev8'}
-    analysis.commits_number_in_regression_range = 3
+    analysis.commit_count_in_regression_range = 3
     analysis.error_name = 'Failed to parse stacktrace'
     analysis.result = {
         'suspected_cls': [{'author': 'someone'}],

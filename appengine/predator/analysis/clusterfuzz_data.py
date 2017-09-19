@@ -23,6 +23,13 @@ _SANITIZER_SHORT_NAME_TO_SANITIZER_TYPE = {
 }
 
 
+def GetCommitCountInRegressionRange(get_repository, repo_url,
+                                     old_revision, new_revision):
+  """Gets the number of commits in regression range."""
+  repository = get_repository(repo_url)
+  return len(repository.GetCommitsBetweenRevisions(old_revision, new_revision))
+
+
 class ClusterfuzzData(CrashData):
   """Chrome crash report from Clusterfuzz.
 
@@ -30,7 +37,7 @@ class ClusterfuzzData(CrashData):
   ...
   """
 
-  def __init__(self, crash_data, top_n_frames=None):
+  def __init__(self, crash_data, get_repository, top_n_frames=None):
     """
     Args:
       crash_data (dict): Data sent from clusterfuzz, example:
@@ -87,9 +94,12 @@ class ClusterfuzzData(CrashData):
                         'anonymous namespace)::Transaction::Transaction\n'
                         'disk_cache::Rankings::Insert'),
       }
+      get_repository(Factory of GitRepository): A factory func of GitRepository,
+        given a repo_url, it can create a real git repository.
       top_n_frames (int): number of the frames in stacktrace we should parse.
     """
     super(ClusterfuzzData, self).__init__(crash_data)
+    self._get_repository = get_repository
     self._crashed_version = crash_data['crash_revision']
     customized_data = crash_data['customized_data']
     self._regression_repository = customized_data['regression_range']
@@ -176,3 +186,12 @@ class ClusterfuzzData(CrashData):
   @property
   def identifiers(self):
     return self.testcase_id
+
+  @cached_property
+  def commit_count_in_regression_range(self):
+    return (GetCommitCountInRegressionRange(
+        self._get_repository,
+        self.regression_repository['repo_url'],
+        self.regression_repository['old_revision'],
+        self.regression_repository['new_revision'])
+            if self.regression_repository else 0)

@@ -81,7 +81,8 @@ class PredatorForClusterfuzz(PredatorApp):
 
   def GetCrashData(self, raw_crash_data):
     """Gets ``ClusterfuzzData`` from ``raw_crash_data``."""
-    return ClusterfuzzData(raw_crash_data)
+    return ClusterfuzzData(raw_crash_data, self._get_repository,
+                           top_n_frames=self.client_config['top_n'])
 
   def ResultMessageToClient(self, analysis):
     """Converts culprit into publishable result to client.

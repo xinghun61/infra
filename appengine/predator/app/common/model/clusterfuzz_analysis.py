@@ -16,11 +16,6 @@ _CLUSTERFUZZ_TESTCASE_URL_TEMPLATE = (
     'https://clusterfuzz.com/v2/testcase-detail/%s')
 
 
-def GetCommitsNumberInRegressionRange(repo_url, old_revision, new_revision):
-  repository = GitilesRepository(HttpClientAppengine(), repo_url)
-  return len(repository.GetCommitsBetweenRevisions(old_revision, new_revision))
-
-
 class ClusterfuzzAnalysis(CrashAnalysis):
   """Represents an analysis of a Clusterfuzz crash."""
   # Customized properties for Fracas crash.
@@ -31,7 +26,7 @@ class ClusterfuzzAnalysis(CrashAnalysis):
   testcase_id = ndb.StringProperty()
   security_flag = ndb.BooleanProperty(default=False)
   regression_repository = ndb.JsonProperty()
-  commits_number_in_regression_range = ndb.IntegerProperty(default=0)
+  commit_count_in_regression_range = ndb.IntegerProperty(default=0)
 
   def Reset(self):
     super(ClusterfuzzAnalysis, self).Reset()
@@ -42,7 +37,7 @@ class ClusterfuzzAnalysis(CrashAnalysis):
     self.testcase_id = None
     self.security_flag = False
     self.regression_repository = None
-    self.commits_number_in_regression_range = 0
+    self.commit_count_in_regression_range = 0
 
   def Initialize(self, crash_data):
     """(Re)Initializes a CrashAnalysis ndb.Model from ``ClusterfuzzData``."""
@@ -54,12 +49,8 @@ class ClusterfuzzAnalysis(CrashAnalysis):
     self.testcase_id = crash_data.testcase_id
     self.security_flag = crash_data.security_flag
     self.regression_repository = crash_data.regression_repository
-    self.commits_number_in_regression_range = (
-        GetCommitsNumberInRegressionRange(
-            self.regression_repository['repo_url'],
-            self.regression_repository['old_revision'],
-            self.regression_repository['new_revision'])
-        if self.regression_repository else 0)
+    self.commit_count_in_regression_range = (
+        crash_data.commit_count_in_regression_range)
 
   @property
   def client_id(self):  # pragma: no cover
