@@ -87,6 +87,7 @@ class SuspectTest(unittest.TestCase):
         'changed_files': {'file': 'f', 'blame_url': 'http://b',
                           'info': 'min distance (LOC) 5'},
         'confidence': 1,
+        'description': 'dummy',
     }
 
     self.assertDictEqual(suspect.ToDict(), expected_suspect_json)

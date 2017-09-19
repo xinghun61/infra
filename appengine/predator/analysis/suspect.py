@@ -43,6 +43,8 @@ class Suspect(object):
         'reasons': self.reasons,
         'changed_files': self.changed_files,
         'confidence': self.confidence,
+        'description': (self.changelog.message.splitlines()[0] if
+                        self.changelog.message else ''),
     }
 
   def ToString(self):
