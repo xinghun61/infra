@@ -13,11 +13,22 @@ class ComponentTest(unittest.TestCase):
 
   def testMatchesFilePath(self):
     """Tests ``MatchesFilePath``."""
-    component_object = component.Component('name', ['dirs/', 'a/b/c/'])
+    component_object = component.Component('name', ['dirs', 'a/b/c'])
     success, directory = component_object.MatchesFilePath('dirs/a.cc')
     self.assertTrue(success)
-    self.assertEqual(directory, 'dirs/')
+    self.assertEqual(directory, 'dirs')
 
     success, directory = component_object.MatchesFilePath('dummy')
     self.assertFalse(success)
-    self.assertIsNone(directory, 'dirs/')
+    self.assertIsNone(directory, 'dirs')
+
+  def testMatchesLowerCaseFilePath(self):
+    """Tests ``MatchesFilePath`` matches lower case file paths."""
+    component_object = component.Component('name', ['Dirs', 'A/B/C'])
+    success, directory = component_object.MatchesFilePath('dirs/a.cc')
+    self.assertTrue(success)
+    self.assertEqual(directory, 'Dirs')
+
+    success, directory = component_object.MatchesFilePath('a/b/c/d.h')
+    self.assertTrue(success)
+    self.assertEqual(directory, 'A/B/C')

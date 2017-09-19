@@ -22,19 +22,15 @@ class Component(namedtuple('Component',
   __slots__ = ()
 
   def __new__(cls, component_name, dirs, function=None, team=None):
-    directories = []
-    for directory in dirs:
-      directories.append(directory if directory.endswith('/') else
-                         directory + '/')
-
     return super(cls, Component).__new__(
-        cls, component_name, tuple(directories),
+        cls, component_name, tuple(dirs),
         re.compile(function) if function else None, team)
 
   def MatchesFilePath(self, file_path):
     """Determines whether this file_path belongs to this component or not."""
+    file_path = file_path.lower()
     for directory in self.dirs:
-      if file_path.startswith(directory):
+      if file_path.startswith(directory.lower() + '/'):
         return True, directory
 
     return False, None
