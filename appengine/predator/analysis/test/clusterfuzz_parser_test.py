@@ -56,19 +56,19 @@ class ClusterfuzzParserTest(AnalysisTestCase):
 
   def testReturnNoneForEmptyString(self):
     parser = ClusterfuzzParser()
-    deps = {'src/': Dependency('src/', 'https://repo', '1')}
+    deps = {'src': Dependency('src', 'https://repo', '1')}
 
     self.assertIsNone(parser.Parse('', deps, 'asan_job', 'abrt'))
 
   def testReturnNoneForDummyJobType(self):
     parser = ClusterfuzzParser()
-    deps = {'src/': Dependency('src/', 'https://repo', '1')}
+    deps = {'src': Dependency('src', 'https://repo', '1')}
 
     self.assertIsNone(parser.Parse('Crash stack:', deps, 'dummy_job', 'abrt'))
 
   def testChromeCrashParserParseLineMalformatedCallstack(self):
     parser = ClusterfuzzParser()
-    deps = {'src/': Dependency('src/', 'https://repo', '1')}
+    deps = {'src': Dependency('src', 'https://repo', '1')}
     stacktrace_string = textwrap.dedent(
         """
         Blabla...
@@ -82,7 +82,7 @@ class ClusterfuzzParserTest(AnalysisTestCase):
 
   def testClusterfuzzParserParseStacktrace(self):
     parser = ClusterfuzzParser()
-    deps = {'src/': Dependency('src/', 'https://repo', '1')}
+    deps = {'src': Dependency('src', 'https://repo', '1')}
     stacktrace_string = textwrap.dedent(
         """
         Blabla...
@@ -95,9 +95,9 @@ class ClusterfuzzParserTest(AnalysisTestCase):
 
     stacktrace = parser.Parse(stacktrace_string, deps, 'asan_job', 'abrt')
     stack = CallStack(0, frame_list=[
-        StackFrame(0, 'src/', 'a::aa(p* d)', 'a.h', 'src/a.h', [225]),
-        StackFrame(1, 'src/', 'b::bb(p* d)', 'b.h', 'src/b.h', [266, 267]),
-        StackFrame(2, 'src/', 'c::cc(p* d)', 'c.h', 'src/c.h', [281])])
+        StackFrame(0, 'src', 'a::aa(p* d)', 'a.h', 'src/a.h', [225]),
+        StackFrame(1, 'src', 'b::bb(p* d)', 'b.h', 'src/b.h', [266, 267]),
+        StackFrame(2, 'src', 'c::cc(p* d)', 'c.h', 'src/c.h', [281])])
     expected_stacktrace = Stacktrace([stack], stack)
 
     self._VerifyTwoStacktracesEqual(stacktrace, expected_stacktrace)

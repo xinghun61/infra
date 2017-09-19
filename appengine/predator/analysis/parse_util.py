@@ -111,7 +111,7 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
     # Normalize the path by stripping everything off the dep's relative
     # path.
     if current_dep_path:
-      normalized_path = normalized_path[len(current_dep_path + '/'):]
+      normalized_path = normalized_path.split(current_dep_path + '/', 1)[1]
       return dep_path, normalized_path, deps[dep_path].repo_url
 
   # If path is a java stack path, don't default dep_path to src.

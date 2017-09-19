@@ -57,3 +57,16 @@ class ParseUtilTest(testing.AppengineTestCase):
         parse_util.GetDepPathAndNormalizedFilePath('a.java', deps,
                                                    is_java=True),
         ('', 'a.java', None))
+
+  def testGetDepPathAndNormalizedFilePathSplitLongPathByDepPath(self):
+    """Tests ``GetDepPathAndNormalizedFilePath`` split long path by dep path."""
+    deps = {'src': Dependency('src', 'https://repo', '1'),
+            'src/Upper': Dependency('src/Upper', 'https://repo', '2')}
+
+    self.assertEqual(
+        parse_util.GetDepPathAndNormalizedFilePath('a/b/c/src/d/h.cc', deps),
+        ('src', 'd/h.cc', 'https://repo'))
+
+    self.assertEqual(
+        parse_util.GetDepPathAndNormalizedFilePath('a/src/upper/b/c.h', deps),
+        ('src/Upper', 'b/c.h', 'https://repo'))

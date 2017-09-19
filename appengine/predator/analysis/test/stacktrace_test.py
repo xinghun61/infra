@@ -163,12 +163,12 @@ class CallStackTest(AnalysisTestCase):
     self.assertIsNone(
         StackFrame.Parse(language_type, format_type, 'dummy line', {}))
 
-    deps = {'org/': Dependency('org/', 'https://repo', '1')}
+    deps = {'org': Dependency('org', 'https://repo', '1')}
     frame = StackFrame.Parse(language_type, format_type,
         '  at org.a.b(a.java:609)', deps)
     self._VerifyTwoStackFramesEqual(
         frame,
-        StackFrame(0, 'org/', 'org.a.b', 'a.java', 'org/a.java', [609]))
+        StackFrame(0, 'org', 'org.a.b', 'a.java', 'org/a.java', [609]))
 
   def testParseStackFrameForSyzyasanCallstackFormat(self):
     language_type = None

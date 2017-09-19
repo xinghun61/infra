@@ -16,7 +16,7 @@ class UMASamplingProfilerParserTest(AnalysisTestCase):
   def testReturnNoneForEmptyStacktrace(self):
     parser = UMASamplingProfilerParser()
     stacks = [{"frames": []}]
-    deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
+    deps = {'chrome': Dependency('chrome', 'https://repo', '1')}
     self.assertIsNone(parser.Parse(stacks, 0, deps))
 
   def testParseStacktrace(self):
@@ -47,7 +47,7 @@ class UMASamplingProfilerParserTest(AnalysisTestCase):
             ]
         },
     ]
-    deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
+    deps = {'chrome': Dependency('chrome', 'https://repo', '1')}
     stacktrace = parser.Parse(stacks, 0, deps)
 
     self.assertEqual(len(stacktrace), 2)
@@ -70,7 +70,7 @@ class UMASamplingProfilerParserTest(AnalysisTestCase):
         "responsible": False,
         "filename": "chrome/app/chrome_exe_main_win.java",
     }]}]
-    deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
+    deps = {'chrome': Dependency('chrome', 'https://repo', '1')}
     stacktrace = parser.Parse(stacks, 0, deps)
     self.assertEqual(stacktrace.stacks[0].language_type, LanguageType.JAVA)
 
@@ -89,7 +89,7 @@ class UMASamplingProfilerParserTest(AnalysisTestCase):
         {'frames': [frame1, frame1, frame2, frame2]},
         {'frames': [frame1, frame1, frame2, frame2, frame2]},
     ]
-    deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
+    deps = {'chrome': Dependency('chrome', 'https://repo', '1')}
 
     stacktrace = parser.Parse(subtree_stacks, subtree_root_depth, deps)
 
