@@ -42,6 +42,11 @@ class CracasCrashAnalysis(ChromeCrashAnalysis):
   def ToJson(self):
     """Converts the crash analysis to a json message for rerun."""
     json_output = super(CracasCrashAnalysis, self).ToJson()
-    json_output['stack_trace'] = json.loads(json_output['stack_trace'])
+    try:
+      json_output['stack_trace'] = json.loads(json_output['stack_trace'])
+    except ValueError:  # pragma: no cover.
+      # Support legacy cracas data with a signle stacktrace instead of a list of
+      # stacktraces.
+      json_output['stack_trace'] = [json_output['stack_trace']]
 
     return json_output

@@ -28,5 +28,4 @@ class RerunAnalysis(BaseHandler):
     pipeline.target = appengine_util.GetTargetNameForModule(RERUN_SERVICE)
     pipeline.start(queue_name=RERUN_QUEUE)
 
-    return {'data': {'message': 'Rerun of %s crash %s kicked off' % (client_id,
-                                                                     key)}}
+    return {'data': {'success': True}}

@@ -61,6 +61,22 @@
     var note = {{note | tojson | safe}}
     var note = note == null ? undefined : note.replace(/['"]+/g, '');
 
+    function rerunAnalysis(e) {
+      host = window.location.host
+      $.get('../process/rerun-analysis?client_id={{client}}&key={{key}}', function(data) {
+        if (data['success']) {
+          alert('Rerun started, refresh after a while to see the new result.');
+        } else {
+          alert('Failed to rerun analysis.');
+        }
+      }).error(function(xhr) {
+        // Replace the whole page with errors from server side.
+        document.body.outerHTML = xhr.responseText;
+      });
+      e.preventDefault();
+    }
+
+
     function createUrl(base_url, parameters) {
       var params = [];
       for(var key in parameters) {
@@ -220,6 +236,7 @@
       $('#culprit_components').val(culprit_components);
       $('#note').val(note);
       $('#save-button').click(saveCulprits);
+      $('#rerun-button').click(rerunAnalysis);
     })
   </script>
 </head>
@@ -238,8 +255,9 @@
     {% endif %}
     Platform: {{platform}}<br>
     Request time: {{request_time}}<br>
-    <br>
   </div>
+
+  <button type="submit" id="rerun-button">Rerun analysis</button><br><br>
 
   <div>
     <b> Stacktrace: </b>

@@ -226,6 +226,7 @@ class CrashAnalysis(ndb.Model):
     # Set progress properties.
     self.status = analysis_status.PENDING
     self.requested_time = time_util.GetUTCNow()
+    self.started_time = time_util.GetUTCNow()
 
   def ToCrashReport(self):
     """Converts this model to ``CrashReport`` to give to Predator library."""
@@ -277,5 +278,9 @@ class CrashAnalysis(ndb.Model):
     crash_json = self.ToJson()
     crash_data = client.GetCrashData(crash_json)
 
+    # The requested time is the first time the crash was requested by users,
+    # we should keep the same requested time when we do rerun.
+    #requested_time = self.requested_time
     self.Reset()
     self.Initialize(crash_data)
+    #self.requested_time = requested_time
