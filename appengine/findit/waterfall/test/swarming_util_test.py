@@ -467,11 +467,32 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.http_client._SetResponseForGetRequestSwarmingList(
         master_name, builder_name, build_number, step_name)
 
-    task_ids = swarming_util.GetIsolatedDataForStep(
+    data = swarming_util.GetIsolatedDataForStep(
         master_name, builder_name, build_number, step_name, self.http_client)
-    expected_task_ids = []
 
-    self.assertEqual(expected_task_ids, task_ids)
+    self.assertEqual([], data)
+
+  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  def testGetIsolatedDataForStepNoOutputsRef(self, mock_data):
+    master_name = 'm'
+    builder_name = 'download_failed'
+    build_number = 223
+    step_name = 's1'
+
+    mock_data.return_value = [
+      {
+        'failure': True
+      },
+      {
+        'failure': False
+      }
+    ]
+
+    data = swarming_util.GetIsolatedDataForStep(
+        master_name, builder_name, build_number, step_name, self.http_client)
+    expected_data = []
+
+    self.assertEqual(expected_data, data)
 
   def testDownloadTestResults(self):
     isolated_data = {

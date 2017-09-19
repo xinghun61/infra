@@ -383,6 +383,10 @@ def GetIsolatedDataForStep(master_name,
     return step_isolated_data
 
   for item in data:
+    if not item.get('outputs_ref'):
+      # Task might time out and no outputs_ref was saved.
+      continue
+
     if only_failure:
       if item['failure'] and not item['internal_failure']:
         # Only retrieves test results from tasks which have failures and
