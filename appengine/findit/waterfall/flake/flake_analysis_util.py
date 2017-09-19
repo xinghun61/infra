@@ -20,20 +20,6 @@ class NormalizedDataPoint(object):
     self.has_valid_artifact = has_valid_artifact
 
 
-def UpdateIterationsToRerun(analysis, iterations_to_rerun):
-  """Updates iterations to rerun in the analaysis' algorithm parameters"""
-  if not iterations_to_rerun or not analysis.algorithm_parameters:
-    return
-
-  analysis.algorithm_parameters['swarming_rerun'][
-      'iterations_to_rerun'] = iterations_to_rerun
-
-  analysis.algorithm_parameters['try_job_rerun'][
-      'iterations_to_rerun'] = iterations_to_rerun
-
-  analysis.put()
-
-
 def GetIterationsToRerun(user_specified_iterations,
                          analysis,
                          source='swarming_rerun'):

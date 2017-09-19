@@ -16,7 +16,7 @@ class LookbackAlgorithmTest(TestCase):
 
   def testGetNextFlakySingleFlakyDataPoint(self):
     data_points = [NormalizedDataPoint(100, 0.8)]
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun']))
@@ -25,7 +25,7 @@ class LookbackAlgorithmTest(TestCase):
 
   def testGetNextWithLowerBoundaryNotYetHit(self):
     data_points = [NormalizedDataPoint(2, 0.8), NormalizedDataPoint(1, 0.8)]
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun']), 0)
@@ -35,7 +35,7 @@ class LookbackAlgorithmTest(TestCase):
 
   def testGetNextWithLowerBoundaryAlreadyHit(self):
     data_points = [NormalizedDataPoint(2, 0.8), NormalizedDataPoint(1, 1.0)]
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun']), 1)
@@ -49,7 +49,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(3, 0.8),
         NormalizedDataPoint(0, 1.0)
     ]
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun']), 0)
@@ -62,7 +62,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(3, 0.8),
         NormalizedDataPoint(0, 0.8)
     ]
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['try_job_rerun']), 0)
@@ -78,7 +78,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(94, 0.6),
         NormalizedDataPoint(90, 0.7)
     ]
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun']))
@@ -97,7 +97,7 @@ class LookbackAlgorithmTest(TestCase):
         copy.deepcopy(DEFAULT_CONFIG_DATA['check_flake_settings'][
             'swarming_rerun']))
     algorithm_settings['max_iterations_to_rerun'] = 100
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points, algorithm_settings)
     self.assertIsNone(result)
     self.assertEqual(next_run, 95)
@@ -115,7 +115,7 @@ class LookbackAlgorithmTest(TestCase):
         copy.deepcopy(DEFAULT_CONFIG_DATA['check_flake_settings'][
             'swarming_rerun']))
     algorithm_settings['max_iterations_to_rerun'] = 100
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points, algorithm_settings)
 
     self.assertEqual(result, 95)
@@ -134,7 +134,7 @@ class LookbackAlgorithmTest(TestCase):
         copy.deepcopy(DEFAULT_CONFIG_DATA['check_flake_settings'][
             'swarming_rerun']))
     algorithm_settings['max_iterations_to_rerun'] = 100
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points, algorithm_settings)
 
     self.assertEqual(result, 96)
@@ -142,7 +142,7 @@ class LookbackAlgorithmTest(TestCase):
 
   def testRunPositionIntroducedFlakiness(self):
     data_points = [NormalizedDataPoint(100, 0.8), NormalizedDataPoint(99, -1)]
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun']), 0)
@@ -158,16 +158,29 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(91, 0.8),
         NormalizedDataPoint(90, -1)
     ]
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun']), 0)
     self.assertIsNone(next_run)
     self.assertEqual(91, result)
 
+  def testAlwaysStableFromBeginning(self):
+    data_points = [
+        NormalizedDataPoint(100, 1.0),
+        NormalizedDataPoint(99, 1.0),
+        NormalizedDataPoint(97, 1.0),
+    ]
+    next_run, result = lookback_algorithm._ExponentialSearch(
+        data_points,
+        copy.deepcopy(
+            DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun']), 0)
+    self.assertIsNone(next_run)
+    self.assertIsNone(result)
+
   def testTestDoesNotExist(self):
     data_points = [NormalizedDataPoint(100, -1)]
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun']), 0)
@@ -181,7 +194,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(70, 0.75),
         NormalizedDataPoint(60, -1)
     ]
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun']))
@@ -190,7 +203,7 @@ class LookbackAlgorithmTest(TestCase):
 
   def testNextBuildWhenDiveHappened(self):
     data_points = [NormalizedDataPoint(100, 0.3), NormalizedDataPoint(80, 0.8)]
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun']))
@@ -203,7 +216,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(99, 0.8),
         NormalizedDataPoint(98, 0.3)
     ]
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun']))
@@ -219,7 +232,7 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(96, 0.8),
         NormalizedDataPoint(95, 0.9)
     ]
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun']))
@@ -237,39 +250,12 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(93, 0.8)
     ]
 
-    next_run, result, _ = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun']))
     self.assertIsNone(result)
     self.assertEqual(98, next_run)
-
-  def testRerunWithHigherIterationsWhenFirstBuildStable(self):
-    data_points = [NormalizedDataPoint(100, 1.0)]
-
-    algorithms = copy.deepcopy(
-        copy.deepcopy(DEFAULT_CONFIG_DATA['check_flake_settings'][
-            'swarming_rerun']))
-    algorithms['iterations_to_rerun'] = 100
-    algorithms['max_iterations_to_rerun'] = 800
-    next_run, result, iterations = lookback_algorithm._ExponentialSearch(
-        data_points, algorithms)
-    self.assertIsNone(result)
-    self.assertEqual(200, iterations)
-    self.assertEqual(100, next_run)
-
-  def testBailOutWhenIterationsGreaterThanMax(self):
-    data_points = [NormalizedDataPoint(100, 1.0)]
-
-    algorithms = copy.deepcopy(
-        copy.deepcopy(DEFAULT_CONFIG_DATA['check_flake_settings'][
-            'swarming_rerun']))
-    algorithms['iterations_to_rerun'] = 800
-    next_run, result, iterations = lookback_algorithm._ExponentialSearch(
-        data_points, algorithms)
-    self.assertIsNone(result)
-    self.assertIsNone(next_run)
-    self.assertIsNone(iterations)
 
   def testBuildWithExceptionNormal(self):
     data_points = [
@@ -277,13 +263,12 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(99, -1, False)
     ]
 
-    next_run, result, iterations = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun']))
     self.assertIsNone(result)
     self.assertEqual(98, next_run)
-    self.assertIsNone(iterations)
 
   def testBuildWithExceptionSequential(self):
     data_points = [
@@ -296,11 +281,10 @@ class LookbackAlgorithmTest(TestCase):
         copy.deepcopy(DEFAULT_CONFIG_DATA['check_flake_settings'][
             'swarming_rerun']))
     algorithms['iterations_to_rerun'] = 800
-    next_run, result, iterations = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points, algorithms)
     self.assertIsNone(result)
     self.assertEqual(99, next_run)
-    self.assertIsNone(iterations)
 
   def testBuildWithExceptionAnalysisFindNeighbor(self):
     data_points = [
@@ -309,13 +293,12 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(98, -1, False),
     ]
 
-    next_run, result, iterations = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun']))
     self.assertIsNone(result)
     self.assertEqual(97, next_run)
-    self.assertIsNone(iterations)
 
   def testBuildWithExceptionAnalysisKeepSearchingAfterValidBuildFound(self):
     data_points = [
@@ -325,13 +308,12 @@ class LookbackAlgorithmTest(TestCase):
         NormalizedDataPoint(97, 0.5),
     ]
 
-    next_run, result, iterations = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points,
         copy.deepcopy(
             DEFAULT_CONFIG_DATA['check_flake_settings']['swarming_rerun']))
     self.assertIsNone(result)
     self.assertEqual(95, next_run)
-    self.assertIsNone(iterations)
 
   def testBuildWithExceptionAnalysisKeepSearchingSequential(self):
     data_points = [
@@ -347,11 +329,10 @@ class LookbackAlgorithmTest(TestCase):
         copy.deepcopy(DEFAULT_CONFIG_DATA['check_flake_settings'][
             'swarming_rerun']))
     algorithms['iterations_to_rerun'] = 800
-    next_run, result, iterations = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points, algorithms)
     self.assertIsNone(next_run)
     self.assertEqual(97, result)
-    self.assertIsNone(iterations)
 
   def testBuildWithExceptionAnalysisStop(self):
     data_points = [
@@ -366,11 +347,10 @@ class LookbackAlgorithmTest(TestCase):
         copy.deepcopy(DEFAULT_CONFIG_DATA['check_flake_settings'][
             'swarming_rerun']))
     algorithms['iterations_to_rerun'] = 800
-    next_run, result, iterations = lookback_algorithm._ExponentialSearch(
+    next_run, result = lookback_algorithm._ExponentialSearch(
         data_points, algorithms)
     self.assertIsNone(next_run)
     self.assertEqual(97, result)
-    self.assertIsNone(iterations)
 
   def testBisectPoint(self):
     self.assertEqual(0, lookback_algorithm.BisectPoint(0, 1))
@@ -440,7 +420,7 @@ class LookbackAlgorithmTest(TestCase):
         'upper_flake_threshold': 0.98,
     }
 
-    self.assertEqual((95, None, None),
+    self.assertEqual((95, None),
                      lookback_algorithm.GetNextRunPointNumber(
                          data_points, algorithm_settings, 90, 100))
 

@@ -1,9 +1,9 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
 from datetime import datetime
 import copy
-import mock
 
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.flake_swarming_task import FlakeSwarmingTask
@@ -16,44 +16,6 @@ from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
 
 class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
-
-  def testUpdateIterationsToRerunNoIterationsToUpdate(self):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    step_name = 's'
-    test_name = 't'
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.algorithm_parameters = copy.deepcopy(
-        DEFAULT_CONFIG_DATA['check_flake_settings'])
-    analysis.Save()
-
-    flake_analysis_util.UpdateIterationsToRerun(analysis, None)
-    self.assertEqual(analysis.algorithm_parameters,
-                     DEFAULT_CONFIG_DATA['check_flake_settings'])
-
-  def testUpdateIterationsToRerun(self):
-    master_name = 'm'
-    builder_name = 'b'
-    master_build_number = 100
-    step_name = 's'
-    test_name = 't'
-    analysis = MasterFlakeAnalysis.Create(
-        master_name, builder_name, master_build_number, step_name, test_name)
-    analysis.algorithm_parameters = copy.deepcopy(
-        DEFAULT_CONFIG_DATA['check_flake_settings'])
-    analysis.Save()
-
-    iterations_to_rerun = 100
-
-    flake_analysis_util.UpdateIterationsToRerun(analysis, iterations_to_rerun)
-    self.assertEqual(
-        analysis.algorithm_parameters['swarming_rerun']['iterations_to_rerun'],
-        iterations_to_rerun)
-    self.assertEqual(
-        analysis.algorithm_parameters['try_job_rerun']['iterations_to_rerun'],
-        iterations_to_rerun)
 
   def testGetIterationsToRerun(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')

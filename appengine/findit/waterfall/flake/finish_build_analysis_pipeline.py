@@ -151,7 +151,7 @@ class FinishBuildAnalysisPipeline(BasePipeline):
     data_points = flake_analysis_util.NormalizeDataPointsByBuildNumber(
         data_points_within_range)
 
-    _, suspected_build, _ = lookback_algorithm.GetNextRunPointNumber(
+    _, suspected_build = lookback_algorithm.GetNextRunPointNumber(
         data_points, analysis.algorithm_parameters.get('swarming_rerun'))
     build_confidence_score = _GetBuildConfidenceScore(analysis, suspected_build,
                                                       data_points_within_range)

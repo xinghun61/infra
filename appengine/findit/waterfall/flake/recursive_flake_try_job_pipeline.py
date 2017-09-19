@@ -482,7 +482,7 @@ class NextCommitPositionPipeline(BasePipeline):
     data_points = _GetNormalizedTryJobDataPoints(flake_analysis,
                                                  lower_bound_commit_position,
                                                  upper_bound_commit_position)
-    next_commit_position, suspected_commit_position, _ = (
+    next_commit_position, suspected_commit_position = (
         lookback_algorithm.GetNextRunPointNumber(
             data_points,
             algorithm_settings,

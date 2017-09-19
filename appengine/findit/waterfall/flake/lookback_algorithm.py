@@ -57,8 +57,6 @@ def _SequentialSearch(analyzed_points, lower_boundary_index, all_builds,
         if suspected_culprit is returned.
     suspected_culprit (int): The suspected culprit, if any. Will be None if
         next_run_point is needed.
-    iterations_to_rerun (int): None. Used only for return purposes by the
-        calling function.
   """
 
   lower_boundary = analyzed_points[lower_boundary_index].run_point_number
@@ -66,7 +64,7 @@ def _SequentialSearch(analyzed_points, lower_boundary_index, all_builds,
                                               - 1].run_point_number)
   if run_after_lower_boundary == lower_boundary + 1:
     # Sequential search is done, return culprit.
-    return None, run_after_lower_boundary, None
+    return None, run_after_lower_boundary
 
   next_run_point = lower_boundary + 1
   result = None
@@ -81,7 +79,7 @@ def _SequentialSearch(analyzed_points, lower_boundary_index, all_builds,
     result = next_run_point + 1
     next_run_point = None
 
-  return next_run_point, result, None
+  return next_run_point, result
 
 
 def _ExponentialSearch(data_points,
@@ -98,15 +96,11 @@ def _ExponentialSearch(data_points,
         not to exceed.
 
   Returns:
-    (next_run_point, suspected_point, iterations_to_rerun): The next point to
-        check, suspected point that the flakiness was introduced in and
-        iterations to run following swarming tasks if changed.
-        If next_run_point needs to be checked, returns
-        (next_run_point, None, iterations_to_rerun or None).
-        If a suspected point is found, returns
-        (None, suspected_point, None).
-        If ultimately no findings, returns
-        (None, None, None).
+    (next_run_point, suspected_point): The next point to
+        check, suspected point that the flakiness was introduced in.
+        If next_run_point needs to be checked, returns (next_run_point, None).
+        If a suspected point is found, returns (None, suspected_point).
+        If no findings/not reproducible, returns (None, None).
   """
   # A description of this algorithm can be found at:
   # https://docs.google.com/document/d/1wPYFZ5OT998Yn7O8wGDOhgfcQ98mknoX13AesJaS6ig/edit
@@ -135,28 +129,14 @@ def _ExponentialSearch(data_points,
         return _SequentialSearch(valid_points, i, all_builds, invalid_points)
       else:
         # No flaky region has been identified, no findings.
-        return None, None, None
+        return None, None
 
     elif IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
-
-      # If the swarming rerun for the first build had stable results, either
-      # the test is really stable so we should bail out or
-      # the number of iterations is not high enough so we should increase
-      # the number and rerun.
-      iterations_to_rerun = algorithm_settings.get('iterations_to_rerun')
-      max_iterations_to_rerun = algorithm_settings.get(
-          'max_iterations_to_rerun', 100)
-
-      iterations_to_rerun *= 2
-      if iterations_to_rerun > max_iterations_to_rerun:
-        # Cannot increase iterations_to_rerun, need to make a decision.
-        if flakes_in_a_row:  # Ready for sequential search.
-          return _SequentialSearch(valid_points, i, all_builds, invalid_builds)
-        else:  # First build is stable, bail out.
-          return None, None, None
-
-      # Rerun the same build with a higher number of iterations.
-      return run_point_number, None, iterations_to_rerun
+      if flakes_in_a_row:
+        return _SequentialSearch(valid_points, i, all_builds, invalid_builds)
+      else:
+        # First build is stable/not reproducible.
+        return None, None
 
     else:  # Flaky result.
       flakes_in_a_row += 1
@@ -164,7 +144,7 @@ def _ExponentialSearch(data_points,
       if run_point_number == lower_bound_run_point_number:  # pragma: no branch
         # The earliest commit_position to look back is already flaky. This is
         # the culprit.
-        return None, run_point_number, None
+        return None, run_point_number
 
       if max_dive_in_a_row:
         # Check for dives. A dive is a sudden drop in pass rate.
@@ -211,7 +191,7 @@ def _ExponentialSearch(data_points,
   while next_run_point in invalid_builds:
     next_run_point = _FindNeighbor(next_run_point, all_builds)
 
-  return next_run_point, result, None
+  return next_run_point, result
 
 
 def BisectPoint(lower_bound, upper_bound):
@@ -287,8 +267,7 @@ def GetNextRunPointNumber(data_points,
   """Determines the next point to analyze to be handled by the caller."""
   if _ShouldRunBisect(lower_bound_run_point_number,
                       upper_bound_run_point_number):
-    next_run_point, suspected_point = _Bisect(data_points, algorithm_settings)
-    return next_run_point, suspected_point, None
+    return _Bisect(data_points, algorithm_settings)
 
   return _ExponentialSearch(data_points, algorithm_settings,
                             lower_bound_run_point_number)
