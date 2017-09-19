@@ -460,3 +460,15 @@ class CITestFailureServicesTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(
         ci_test_failure._GetSameStepFromBuild(master_name, builder_name,
                                               build_number, step_name, None))
+
+  def testStepNotHaveFirstTimeFailure(self):
+    build_number = 1
+    tests = {'test1': {'first_failure': 0}}
+    self.assertFalse(
+        ci_test_failure.AnyTestHasFirstTimeFailure(tests, build_number))
+
+  def testAnyTestHasFirstTimeFailure(self):
+    build_number = 1
+    tests = {'test1': {'first_failure': 1}}
+    self.assertTrue(
+        ci_test_failure.AnyTestHasFirstTimeFailure(tests, build_number))

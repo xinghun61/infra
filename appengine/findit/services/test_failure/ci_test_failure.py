@@ -220,3 +220,10 @@ def CheckFirstKnownFailureForSwarmingTests(master_name, builder_name,
                                      step_name, failed_step, http_client)
 
   _UpdateFailureInfoBuilds(failed_steps, builds)
+
+
+def AnyTestHasFirstTimeFailure(tests, build_number):
+  for test_failure in tests.itervalues():
+    if test_failure['first_failure'] == build_number:
+      return True
+  return False

@@ -90,3 +90,11 @@ class GtestTest(wf_testcase.WaterfallTestCase):
 
     failed_test_log = gtest.GetConsistentTestFailureLog(step_log)
     self.assertEqual(gtest.WRONG_FORMAT_LOG, failed_test_log)
+
+  def testRemovePlatformFromStepName(self):
+    self.assertEqual('a_tests',
+                     gtest.RemovePlatformFromStepName('a_tests on Platform'))
+    self.assertEqual(
+        'a_tests',
+        gtest.RemovePlatformFromStepName('a_tests on Other-Platform'))
+    self.assertEqual('a_tests', gtest.RemovePlatformFromStepName('a_tests'))

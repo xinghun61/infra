@@ -5,17 +5,11 @@
 from gae_libs.pipeline_wrapper import BasePipeline
 
 from common.waterfall import failure_type
+from services.test_failure import ci_test_failure
 from waterfall.process_swarming_task_result_pipeline import (
     ProcessSwarmingTaskResultPipeline)
 from waterfall.update_analysis_with_flake_info_pipeline import (
     UpdateAnalysisWithFlakeInfoPipeline)
-
-
-def StepHasFirstTimeFailure(tests, build_number):
-  for test_failure in tests.itervalues():
-    if test_failure['first_failure'] == build_number:
-      return True
-  return False
 
 
 class ProcessSwarmingTasksResultPipeline(BasePipeline):
@@ -31,7 +25,7 @@ class ProcessSwarmingTasksResultPipeline(BasePipeline):
       return
 
     for step_name, step_failure in failure_info['failed_steps'].iteritems():
-      step_has_first_time_failure = StepHasFirstTimeFailure(
+      step_has_first_time_failure = ci_test_failure.AnyTestHasFirstTimeFailure(
           step_failure.get('tests', {}), build_number)
       if not step_has_first_time_failure:
         continue

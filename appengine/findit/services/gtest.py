@@ -6,13 +6,14 @@
 It provides functions to:
   * normalize the test names
   * concatenate gtest logs
+  * Remove platform from step name.
 """
 
 import base64
 import cStringIO
-import json
 
 _PRE_TEST_PREFIX = 'PRE_'
+_STEP_NAME_SEPARATOR = ' on '
 INVALID_FAILURE_LOG = 'invalid'
 FLAKY_FAILURE_LOG = 'flaky'
 WRONG_FORMAT_LOG = 'not_in_gtest_result_format'
@@ -69,7 +70,7 @@ def GetConsistentTestFailureLog(gtest_result):
   """Analyze the archived gtest json results and extract reliable failures.
 
   Args:
-    gtest_result (str): A JSON file for failed step log.
+    gtest_result (dict): A JSON file for failed step log.
 
   Returns:
     A string contains the names of reliable test failures and related
@@ -105,3 +106,15 @@ def GetConsistentTestFailureLog(gtest_result):
     return FLAKY_FAILURE_LOG
 
   return failed_test_log
+
+
+def RemovePlatformFromStepName(step_name):
+  """Returns step name without platform.
+
+  Args:
+    step_name: Raw step name. Example: 'net_unittests on Windows-10'.
+
+  Returns:
+    Step name without platform or the string ' on '. Example: 'net_unittests'.
+  """
+  return step_name.split(_STEP_NAME_SEPARATOR)[0]

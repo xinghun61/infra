@@ -20,13 +20,6 @@ from waterfall.test import wf_testcase
 class ProcessSwarmingTasksResultPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  def testStepHasFirstTimeFailure(self):
-    build_number = 1
-    tests = {'test1': {'first_failure': 0}}
-    self.assertFalse(
-        process_swarming_tasks_result_pipeline.StepHasFirstTimeFailure(
-            tests, build_number))
-
   def testProcessSwarmingTasksResultPipeline(self):
     master_name = 'm'
     builder_name = 'b'
