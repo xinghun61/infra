@@ -8,62 +8,51 @@ import (
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"net/http"
-	"time"
 
 	"golang.org/x/net/context"
 
 	"infra/monitoring/messages"
 
-	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/grpc/prpc"
 	milo "go.chromium.org/luci/milo/api/proto"
 )
 
-const (
-	buildBotSvcName = "milo.Buildbot"
-)
-
-type miloReader struct {
-	*reader
-	host string
+// WithMiloBuildbot adds a milo Buildbot client instance to the context.
+func WithMiloBuildbot(c context.Context, mc milo.BuildbotClient) context.Context {
+	return context.WithValue(c, miloBuildbotKey, mc)
 }
 
-// WithMilo adds a milo reader instance to the context.
-func WithMilo(c context.Context, baseURL string) context.Context {
-	r, err := newReader(c, &http.Client{Transport: urlfetch.Get(c)})
-	if err != nil {
-		panic("error registering milo service dependency")
-	}
-	mr := &miloReader{
-		host:   baseURL,
-		reader: r,
-	}
-	return context.WithValue(c, miloKey, mr)
-}
-
-// GetMilo returns the currently registered Milo client, or panics.
-func GetMilo(c context.Context) *miloReader {
-	v := c.Value(miloKey)
-	ret, ok := v.(*miloReader)
+// GetMiloBuildbot returns the currently registered Milo Buidlbot client, or panics.
+func GetMiloBuildbot(c context.Context) milo.BuildbotClient {
+	v := c.Value(miloBuildbotKey)
+	ret, ok := v.(milo.BuildbotClient)
 	if !ok {
-		panic("error reading milo service dependency")
+		panic("error reading milo buildbot service dependency")
 	}
 	return ret
 }
 
-func (r *miloReader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
-	miloClient := &prpc.Client{
-		Host:    r.host,
-		C:       &http.Client{Transport: urlfetch.Get(ctx)},
-		Options: prpc.DefaultOptions(),
+// WithMiloBuildInfo adds a milo BuildInfo client instance to the context.
+func WithMiloBuildInfo(c context.Context, mc milo.BuildInfoClient) context.Context {
+	return context.WithValue(c, miloBuildInfoKey, mc)
+}
+
+// GetMiloBuildInfo returns the currently registered Milo BuildInfo client, or panics.
+func GetMiloBuildInfo(c context.Context) milo.BuildInfoClient {
+	v := c.Value(miloBuildInfoKey)
+	ret, ok := v.(milo.BuildInfoClient)
+	if !ok {
+		panic("error reading milo buildinfo service dependency")
 	}
+	return ret
+}
+
+func (r *reader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
+	bbClient := GetMiloBuildbot(ctx)
 
 	req := &milo.BuildbotBuildRequest{Master: master.Name(), Builder: builder, BuildNum: buildNum}
-	resp := &milo.BuildbotBuildJSON{}
-
-	if err := miloClient.Call(ctx, buildBotSvcName, "GetBuildbotBuildJSON", req, resp); err != nil {
+	resp, err := bbClient.GetBuildbotBuildJSON(ctx, req)
+	if err != nil {
 		logging.Errorf(ctx, "error getting build %s/%s/%d: %v", master.Name(), builder, buildNum, err)
 		return nil, err
 	}
@@ -90,17 +79,12 @@ func stripUnusedFields(b *messages.Build) {
 	b.SourceStamp.Changes = strippedChanges
 }
 
-func (r *miloReader) LatestBuilds(ctx context.Context, master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
-	miloClient := &prpc.Client{
-		Host:    r.host,
-		C:       &http.Client{Transport: urlfetch.Get(ctx)},
-		Options: prpc.DefaultOptions(),
-	}
+func (r *reader) LatestBuilds(ctx context.Context, master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
+	bbClient := GetMiloBuildbot(ctx)
 
 	req := &milo.BuildbotBuildsRequest{Master: master.Name(), Builder: builder, IncludeCurrent: true}
-	resp := &milo.BuildbotBuildsJSON{}
-
-	if err := miloClient.Call(ctx, buildBotSvcName, "GetBuildbotBuildsJSON", req, resp); err != nil {
+	resp, err := bbClient.GetBuildbotBuildsJSON(ctx, req)
+	if err != nil {
 		logging.Errorf(ctx, "error getting builds for %s/%s: %v", master.Name(), builder, err)
 		return nil, err
 	}
@@ -116,20 +100,12 @@ func (r *miloReader) LatestBuilds(ctx context.Context, master *messages.MasterLo
 	return builds, nil
 }
 
-func (r *miloReader) BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
-	ctx, cancelFunc := context.WithTimeout(ctx, 60*time.Second)
-	defer cancelFunc()
-
-	miloClient := &prpc.Client{
-		Host:    r.host,
-		C:       &http.Client{Transport: urlfetch.Get(ctx)},
-		Options: prpc.DefaultOptions(),
-	}
+func (r *reader) BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
+	bbClient := GetMiloBuildbot(ctx)
 
 	req := &milo.MasterRequest{Name: master.Name()}
-	resp := &milo.CompressedMasterJSON{}
-
-	if err := miloClient.Call(ctx, buildBotSvcName, "GetCompressedMasterJSON", req, resp); err != nil {
+	resp, err := bbClient.GetCompressedMasterJSON(ctx, req)
+	if err != nil {
 		logging.Errorf(ctx, "error getting build extract for %s: %v", master.Name(), err)
 		return nil, err
 	}

@@ -13,6 +13,7 @@ import (
 
 	"infra/appengine/sheriff-o-matic/som/analyzer"
 	"infra/appengine/sheriff-o-matic/som/client"
+	"infra/appengine/sheriff-o-matic/som/client/mock"
 	testhelper "infra/appengine/sheriff-o-matic/som/client/test"
 	"infra/appengine/sheriff-o-matic/som/model"
 	"infra/monitoring/messages"
@@ -24,10 +25,13 @@ import (
 	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/appengine/gaetesting"
 	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/server/auth/authtest"
 	"go.chromium.org/luci/server/router"
 
 	. "github.com/smartystreets/goconvey/convey"
 	"go.chromium.org/luci/common/logging/gologger"
+
+	"github.com/golang/mock/gomock"
 )
 
 func newTestContext() context.Context {
@@ -185,6 +189,15 @@ func TestGetAnalyzeHandler(t *testing.T) {
 		})
 		c = setUpGitiles(c)
 
+		c = gologger.StdConfig.Use(c)
+		c = authtest.MockAuthConfig(c)
+		mockCtrl := gomock.NewController(t)
+		bbMock := mock.NewMockBuildbotClient(mockCtrl)
+		biMock := mock.NewMockBuildInfoClient(mockCtrl)
+
+		c = client.WithMiloBuildbot(c, bbMock)
+		c = client.WithMiloBuildInfo(c, biMock)
+
 		c = client.WithReader(c, testhelper.MockReader{
 			BuildExtracts: map[string]*messages.BuildExtract{
 				"chromium": {},
@@ -258,6 +271,7 @@ func TestStoreAlertsSummary(t *testing.T) {
 func TestEnqueueLogDiffTask(t *testing.T) {
 	Convey("success", t, func() {
 		c := gaetesting.TestingContext()
+		c = gologger.StdConfig.Use(c)
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
 			return mck{giMock{dummy.Info(), "", time.Now(), nil}}
 		})
@@ -272,6 +286,11 @@ func TestEnqueueLogDiffTask(t *testing.T) {
 					},
 					Builders: []messages.AlertedBuilder{
 						{Name: "chromium.test", URL: "https://uberchromegw.corp.google.com/i/chromium.webkit/builders/WebKit%20Win7%20%28dbg%29", FirstFailure: 15038, LatestFailure: 15038},
+					},
+					StepAtFault: &messages.BuildStep{
+						Step: &messages.Step{
+							Name: "test",
+						},
 					},
 				},
 			},
@@ -296,6 +315,11 @@ func TestEnqueueLogDiffTask(t *testing.T) {
 					},
 					Builders: []messages.AlertedBuilder{
 						{Name: "chromium.test", URL: "https://uberchromegw.corp.google.com/i/chromium.webkit/builders/WebKit%20Win7%20%28dbg%29", FirstFailure: 15038, LatestFailure: 15038},
+					},
+					StepAtFault: &messages.BuildStep{
+						Step: &messages.Step{
+							Name: "test",
+						},
 					},
 				},
 			},

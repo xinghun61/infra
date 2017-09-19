@@ -19,7 +19,7 @@ format:
 	cd frontend && make format
 
 test: build
-	cd som && go test --cover
+	cd som && go test ... --cover
 	cd frontend && make test
 
 relnotes:

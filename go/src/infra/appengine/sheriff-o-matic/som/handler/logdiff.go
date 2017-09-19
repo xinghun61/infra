@@ -11,12 +11,10 @@ import (
 
 	"github.com/aryann/difflib"
 	"go.chromium.org/gae/service/datastore"
-	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/common/tsmon/distribution"
 	"go.chromium.org/luci/common/tsmon/field"
 	"go.chromium.org/luci/common/tsmon/metric"
 	tsmon_types "go.chromium.org/luci/common/tsmon/types"
-	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 
 	"bytes"
@@ -144,20 +142,7 @@ func LogdiffWorker(ctx *router.Context) {
 	}
 	buildNum1 := int64(lo1)
 	buildNum2 := int64(lo2)
-	reader := client.GetReader(c)
-	if reader == nil {
-		transport, err := auth.GetRPCTransport(c, auth.AsSelf)
-		if err != nil {
-			errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error getting transport: %v", err))
-			return
-		}
-		c = urlfetch.Set(c, transport)
 
-		miloReader := client.GetMilo(c)
-
-		memcachingReader := client.NewMemcacheReader(miloReader)
-		c = client.WithReader(c, memcachingReader)
-	}
 	logchan := make(chan *logerr)
 	go func() {
 		ret, err := client.StdioForStep(c, Master, builder, "steps", buildNum1)

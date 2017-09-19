@@ -20,13 +20,11 @@ import (
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
 	tq "go.chromium.org/gae/service/taskqueue"
-	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/common/tsmon/field"
 	"go.chromium.org/luci/common/tsmon/metric"
-	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 )
 
@@ -89,21 +87,6 @@ func GetAnalyzeHandler(ctx *router.Context) {
 
 	a := analyzer.New(5, 100)
 	a.Gatekeeper = gkRules
-
-	if client.GetReader(c) == nil {
-		transport, err := auth.GetRPCTransport(c, auth.AsSelf, auth.WithScopes("https://www.googleapis.com/auth/gerritcodereview", "https://www.googleapis.com/auth/userinfo.email"))
-		if err != nil {
-			errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error getting transport: %v", err))
-			return
-		}
-
-		c = urlfetch.Set(c, transport)
-
-		miloReader := client.GetMilo(c)
-
-		memcachingReader := client.NewMemcacheReader(miloReader)
-		c = client.WithReader(c, memcachingReader)
-	}
 
 	alerts := []messages.Alert{}
 	for _, treeCfg := range treeCfgs {

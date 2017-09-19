@@ -8,6 +8,7 @@ import (
 	"golang.org/x/net/context"
 
 	"infra/appengine/sheriff-o-matic/som/client"
+	"infra/appengine/sheriff-o-matic/som/client/mock"
 	testhelper "infra/appengine/sheriff-o-matic/som/client/test"
 	"infra/monitoring/messages"
 
@@ -22,6 +23,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/golang/mock/gomock"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -274,6 +276,11 @@ func TestLogdiffWorker(t *testing.T) {
 			return giMock{dummy.Info(), "", time.Now(), nil}
 		})
 		c = setUpGitiles(c)
+		mockCtrl := gomock.NewController(t)
+		bbMock := mock.NewMockBuildbotClient(mockCtrl)
+		biMock := mock.NewMockBuildInfoClient(mockCtrl)
+		c = client.WithMiloBuildbot(c, bbMock)
+		c = client.WithMiloBuildInfo(c, biMock)
 
 		c = client.WithReader(c, testhelper.MockReader{
 			StdioForStepValue: []string{" ", " "},
@@ -323,6 +330,11 @@ func TestLogdiffWorker(t *testing.T) {
 			return giMock{dummy.Info(), "", time.Now(), nil}
 		})
 		c = setUpGitiles(c)
+		mockCtrl := gomock.NewController(t)
+		bbMock := mock.NewMockBuildbotClient(mockCtrl)
+		biMock := mock.NewMockBuildInfoClient(mockCtrl)
+		c = client.WithMiloBuildbot(c, bbMock)
+		c = client.WithMiloBuildInfo(c, biMock)
 
 		c = client.WithReader(c, testhelper.MockReader{
 			StdioForStepValue: []string{" ", " "},
@@ -365,12 +377,18 @@ func TestLogdiffWorker(t *testing.T) {
 
 		So(w.Code, ShouldEqual, http.StatusInternalServerError)
 	})
+
 	Convey("bad request with bad pass values", t, func() {
 		c := newTestContext()
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
 			return giMock{dummy.Info(), "", time.Now(), nil}
 		})
 		c = setUpGitiles(c)
+		mockCtrl := gomock.NewController(t)
+		bbMock := mock.NewMockBuildbotClient(mockCtrl)
+		biMock := mock.NewMockBuildInfoClient(mockCtrl)
+		c = client.WithMiloBuildbot(c, bbMock)
+		c = client.WithMiloBuildInfo(c, biMock)
 
 		c = client.WithReader(c, testhelper.MockReader{
 			StdioForStepValue: []string{" ", " "},
@@ -397,48 +415,6 @@ func TestLogdiffWorker(t *testing.T) {
 		values := url.Values{}
 		values.Set("lastFail", "15038")
 		values.Set("lastPass", "")
-		values.Set("master", "chromium.test")
-		values.Set("builder", "test")
-		values.Set("ID", "12345")
-		r := makePostRequest(values.Encode())
-		r.PostForm = values
-
-		ctx := &router.Context{
-			Context: c,
-			Writer:  w,
-			Request: r,
-			Params:  nil,
-		}
-		LogdiffWorker(ctx)
-
-		So(w.Code, ShouldEqual, http.StatusInternalServerError)
-	})
-
-	Convey("bad request with no reader", t, func() {
-		c := newTestContext()
-		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
-			return giMock{dummy.Info(), "", time.Now(), nil}
-		})
-		c = setUpGitiles(c)
-
-		q := datastore.NewQuery("LogDiff")
-		results := []*LogDiff{}
-		So(datastore.GetAll(c, q, &results), ShouldBeNil)
-		So(results, ShouldBeEmpty)
-		logdiff := &LogDiff{
-			Master:    "chromium.test",
-			Builder:   "test",
-			BuildNum1: 15038,
-			BuildNum2: 15037,
-			Complete:  false,
-			ID:        12345,
-		}
-		So(datastore.Put(c, logdiff), ShouldBeNil)
-
-		w := httptest.NewRecorder()
-		values := url.Values{}
-		values.Set("lastFail", "15038")
-		values.Set("lastPass", "15037")
 		values.Set("master", "chromium.test")
 		values.Set("builder", "test")
 		values.Set("ID", "12345")

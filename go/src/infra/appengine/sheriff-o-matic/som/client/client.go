@@ -23,7 +23,10 @@ import (
 	"infra/monitoring/messages"
 	"infra/monorail"
 
+	"go.chromium.org/gae/service/urlfetch"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/grpc/prpc"
+	"go.chromium.org/luci/milo/api/proto"
 	"go.chromium.org/luci/server/auth"
 )
 
@@ -37,14 +40,16 @@ const (
 
 	clientReaderKey = contextKey("infra-client-reader")
 
-	crRevKey       = contextKey("infra-client-crrev")
-	buildBotKey    = contextKey("infra-client-buildbot")
-	finditKey      = contextKey("infra-client-findit")
-	gerritKey      = contextKey("infra-client-gerrit")
-	miloKey        = contextKey("infra-client-milo")
-	monorailKey    = contextKey("infra-client-monorail")
-	swarmingKey    = contextKey("infra-client-swarming")
-	testResultsKey = contextKey("infra-client-testrestults")
+	crRevKey         = contextKey("infra-client-crrev")
+	buildBotKey      = contextKey("infra-client-buildbot")
+	finditKey        = contextKey("infra-client-findit")
+	gerritKey        = contextKey("infra-client-gerrit")
+	logdogKey        = contextKey("infra-client-logdog")
+	miloBuildbotKey  = contextKey("infra-client-milo-buildbot")
+	miloBuildInfoKey = contextKey("infra-client-milo-buildinfo")
+	monorailKey      = contextKey("infra-client-monorail")
+	swarmingKey      = contextKey("infra-client-swarming")
+	testResultsKey   = contextKey("infra-client-testrestults")
 )
 
 var (
@@ -214,13 +219,13 @@ func cacheKeyForBuild(master *messages.MasterLocation, builder string, number in
 		fmt.Sprintf("%s/%s/%d.json", url.QueryEscape(master.String()), url.QueryEscape(builder), number))
 }
 
-func (r *reader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
-	panic("Use miloReader for Build data. CBE is no longer used.")
-}
+func (r *reader) StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
+	URL := fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", master, builder, buildNum, step)
 
-func (r *reader) LatestBuilds(ctx context.Context, master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
-
-	panic("Use miloReader for LatestBuilds data. CBE is no longer used.")
+	expvars.Add("StdioForStep", 1)
+	defer expvars.Add("StdioForStep", -1)
+	res, _, err := r.hc.getText(ctx, URL)
+	return strings.Split(res, "\n"), err
 }
 
 func contains(arr []string, s string) bool {
@@ -231,19 +236,6 @@ func contains(arr []string, s string) bool {
 	}
 
 	return false
-}
-
-func (r *reader) BuildExtract(ctx context.Context, masterURL *messages.MasterLocation) (*messages.BuildExtract, error) {
-	panic("Use miloReader for BuildExtract. CBE is no longer used.")
-}
-
-func (r *reader) StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error) {
-	URL := fmt.Sprintf("https://build.chromium.org/p/%s/builders/%s/builds/%d/steps/%s/logs/stdio/text", master, builder, buildNum, step)
-
-	expvars.Add("StdioForStep", 1)
-	defer expvars.Add("StdioForStep", -1)
-	res, _, err := r.hc.getText(ctx, URL)
-	return strings.Split(res, "\n"), err
 }
 
 func (r *reader) CrbugItems(ctx context.Context, label string) ([]messages.CrbugItem, error) {
@@ -525,10 +517,26 @@ func GetMonorail(c context.Context) monorail.MonorailClient {
 func WithProdClients(ctx context.Context) context.Context {
 	ctx = WithCrRev(ctx, "https://cr-rev.appspot.com")
 	ctx = WithFindit(ctx, "https://findit-for-me.appspot.com")
-	// TODO: see if this will work with http:// prefix.
-	ctx = WithMilo(ctx, "luci-milo.appspot.com")
+
+	miloPRPCClient := &prpc.Client{
+		C:       &http.Client{Transport: urlfetch.Get(ctx)},
+		Host:    "luci-milo.appspot.com",
+		Options: prpc.DefaultOptions(),
+	}
+	miloBuildbot := milo.NewBuildbotPRPCClient(miloPRPCClient)
+	miloBuildInfo := milo.NewBuildInfoPRPCClient(miloPRPCClient)
+	ctx = WithMiloBuildbot(ctx, miloBuildbot)
+	ctx = WithMiloBuildInfo(ctx, miloBuildInfo)
+
 	ctx = WithMonorail(ctx, "https://monorail-prod.appspot.com")
 	ctx = WithTestResults(ctx, "https://test-results.appspot.com")
+
+	reader, err := newReader(ctx, &http.Client{Transport: urlfetch.Get(ctx)})
+	if err != nil {
+		panic(fmt.Sprintf("creating newReader: %v", err))
+	}
+	memcachingReader := NewMemcacheReader(reader)
+	ctx = WithReader(ctx, memcachingReader)
 
 	return ctx
 }
