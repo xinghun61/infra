@@ -75,7 +75,15 @@ class AuthUtilTest(unittest.TestCase):
       auth_util.oauth,
       'get_current_user',
       side_effect=oauth.OAuthRequestError())
-  def testGetUserEmailFromOauthException(self, mocked_oauth):
+  def testGetUserEmailFromOauthOAuthRequestError(self, mocked_oauth):
+    self.assertIsNone(auth_util.GetOauthUserEmail('scope'))
+    mocked_oauth.assert_called_once_with('scope')
+
+  @mock.patch.object(
+      auth_util.oauth,
+      'get_current_user',
+      side_effect=oauth.OAuthServiceFailureError())
+  def testGetUserEmailFromOauthOAuthServiceFailureError(self, mocked_oauth):
     self.assertIsNone(auth_util.GetOauthUserEmail('scope'))
     mocked_oauth.assert_called_once_with('scope')
 

@@ -65,8 +65,9 @@ def GetOauthUserEmail(scope=_EMAIL_SCOPE):
   """Returns the email of the oauth client user."""
   try:
     user = oauth.get_current_user(scope)  # Oauth-based authentication.
-  except oauth.OAuthRequestError:
-    user = None  # Invalid oauth token.
+  # TODO (crbug/766768): Retry when meets OAuthServiceFailureError.
+  except (oauth.OAuthRequestError, oauth.OAuthServiceFailureError):
+    user = None  # Invalid oauth token or experienced oauth service failure.
   return user.email() if user else None
 
 
