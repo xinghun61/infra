@@ -59,7 +59,7 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
 
   Returns:
     A tuple - (dep_path, normalized_path, repo_url)
-    dep_path (str): Dependency path of this path.  (e.g 'src/', 'src/v8/'
+    dep_path (str): Dependency path of this path.  (e.g 'src', 'src/v8'
       ...etc), '' is no match found.
     normalized_path (str): Normalized relative file path starting from dep_path.
     repo_url (str): Repository url corresponding to dep_path.
@@ -73,11 +73,11 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
 
   # Iterate through all dep paths in the parsed DEPS in an order.
   for dep_path in sorted(deps.keys(), key=lambda path: -path.count('/')):
-    # trim the 'src/' in the beginning of the dep_path to match, because there
+    # trim the 'src' in the beginning of the dep_path to match, because there
     # are many cases, especially in linux platform, the file paths are like,
     # 'third_party/WebKit/Source/...', or 'v8/...'.
     trimmed_dep_path = dep_path
-    if trimmed_dep_path.startswith('src/') and trimmed_dep_path != 'src/':
+    if trimmed_dep_path.startswith('src/') and trimmed_dep_path != 'src':
       trimmed_dep_path = trimmed_dep_path[len('src/'):]
 
     # We need to consider when the lowercased dep path is in the path,
@@ -99,7 +99,7 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
     # For some special cases, for example, a file like
     # 'https://chromium.googlesource.com/chromium/src/+/master/'
     # 'third_party/tcmalloc/chromium/src/common.cc', this path shouldn't be
-    # matched with 'src' in between, it should be matched to the trimmed 'src/'
+    # matched with 'src' in between, it should be matched to the trimmed 'src'
     # in the beginning.
     if (not normalized_path.startswith(THIRD_PARTY_FILE_PATH_MARKER) and
         (dep_path in normalized_path or dep_path_lower in normalized_path)):
@@ -111,15 +111,14 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
     # Normalize the path by stripping everything off the dep's relative
     # path.
     if current_dep_path:
-      normalized_path = normalized_path.split(current_dep_path, 1)[1]
-
+      normalized_path = normalized_path[len(current_dep_path + '/'):]
       return dep_path, normalized_path, deps[dep_path].repo_url
 
-  # If path is a java stack path, don't default dep_path to src/.
+  # If path is a java stack path, don't default dep_path to src.
   if is_java:
     return '', normalized_path, None
 
   # For some crashes, the file path looks like this:
-  # third_party/WebKit/Source/a.cc, the src/ in the beginning is trimmed, so
-  # default the dep path to 'src/' if no match found.
-  return 'src/', normalized_path, CHROMIUM_REPO_URL
+  # third_party/WebKit/Source/a.cc, the src in the beginning is trimmed, so
+  # default the dep path to 'src' if no match found.
+  return 'src', normalized_path, CHROMIUM_REPO_URL

@@ -7,7 +7,7 @@ import re
 from libs.deps import dependency
 from libs.deps import deps_parser
 
-_CHROMIUM_ROOT_DIR = 'src/'
+_CHROMIUM_ROOT_DIR = 'src'
 _CHROMIUM_REPO_MASTER = 'https://chromium.googlesource.com/chromium/src.git'
 
 _CHROME_VERSION_PATTERN = re.compile(r'^\d+\.\d+\.\d+\.\d+$')

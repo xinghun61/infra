@@ -75,7 +75,7 @@ def DetectDependencyRoll(revision, change_log, os_platform, dep_fetcher):
     {
       'git_revision': [
         {
-          'path': 'src/path/to/dependency/',
+          'path': 'src/path/to/dependency',
           'repo_url': 'https://url/to/dependency/repo.git',
           'new_revision': 'git_hash1',
           'old_revision': 'git_hash2',
@@ -108,7 +108,7 @@ def DetectDependencyRolls(change_logs, os_platform, dep_fetcher):
     {
       'git_revision': [
         {
-          'path': 'src/path/to/dependency/',
+          'path': 'src/path/to/dependency',
           'repo_url': 'https://url/to/dependency/repo.git',
           'new_revision': 'git_hash1',
           'old_revision': 'git_hash2',

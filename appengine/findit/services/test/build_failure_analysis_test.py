@@ -362,13 +362,13 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         file_path_in_log, rolls, justification, line_numbers)
     self.assertEqual(expected_score, justification.score)
     if expected_hints:
-      self.assertEqual(expected_hints, justification._hints)
+      self.assertEqual(expected_hints, dict(justification._hints))
 
   def testCheckFileInDependencyRollWhenUnrelatedDependencyIsRolled(self):
     file_path_in_log = 'third_party/dep/f.cc'
     rolls = [
         {  # An unrelated dependency was rolled to a new revision.
-            'path': 'src/third_party/dep2/',
+            'path': 'src/third_party/dep2',
             'repo_url': 'https://url_dep2',
             'old_revision': '6',
             'new_revision': '8',
@@ -383,7 +383,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     file_path_in_log = 'third_party/dep/f.cc'
     rolls = [
         {  # Dependency was rolled to a new revision.
-            'path': 'src/third_party/dep/',
+            'path': 'src/third_party/dep',
             'repo_url': 'https://url_dep',
             'old_revision': '6',
             'new_revision': '8',
@@ -391,7 +391,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     ]
     expected_score = 1
     expected_hints = {
-        ('rolled dependency third_party/dep/ with changes in '
+        ('rolled dependency third_party/dep with changes in '
          'https://url_dep/+log/6..8?pretty=fuller (and f.cc was in log)'):
              1
     }
@@ -403,7 +403,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     file_path_in_log = 'third_party/dep/f.cc'
     rolls = [
         {  # Dependency was newly-added.
-            'path': 'src/third_party/dep/',
+            'path': 'src/third_party/dep',
             'repo_url': 'https://url_dep',
             'old_revision': None,
             'new_revision': '9',
@@ -418,7 +418,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     file_path_in_log = 'third_party/dep/f.cc'
     rolls = [
         {  # Dependency was deleted.
-            'path': 'src/third_party/dep/',
+            'path': 'src/third_party/dep',
             'repo_url': 'https://url_dep',
             'old_revision': '7',
             'new_revision': None,
@@ -432,7 +432,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   def testCheckFileInDependencyRollWhenFileIsAddedWithinTheRoll(self):
     rolls = [
         {  # One region in blame.
-            'path': 'src/third_party/dep/',
+            'path': 'src/third_party/dep',
             'repo_url': 'https://url_dep',
             'old_revision': '1',
             'new_revision': '2',
@@ -441,7 +441,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     file_path_in_log = 'third_party/dep/f.cc'
     expected_score = 5
     expected_hints = {
-        ('rolled dependency third_party/dep/ with changes in '
+        ('rolled dependency third_party/dep with changes in '
          'https://url_dep/+log/1..2?pretty=fuller '
          '(and f.cc(added) was in log)'):
              5
@@ -454,7 +454,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     file_path_in_log = 'third_party/dep/f.cc'
     rolls = [
         {  # Multiple regions in blame, but they are all after old revision.
-            'path': 'src/third_party/dep/',
+            'path': 'src/third_party/dep',
             'repo_url': 'https://url_dep',
             'old_revision': '1',
             'new_revision': '3',
@@ -467,7 +467,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
   def testCheckFileInDependencyRollWhenFileIsNotTouchedWithinTheRoll(self):
     rolls = [{
-        'path': 'src/third_party/dep/',
+        'path': 'src/third_party/dep',
         'repo_url': 'https://url_dep',
         'old_revision': '3',
         'new_revision': '5',
@@ -480,7 +480,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
   def testCheckFileInDependencyRollWhenLinesAreChangedWithinTheRoll(self):
     rolls = [{
-        'path': 'src/third_party/dep/',
+        'path': 'src/third_party/dep',
         'repo_url': 'https://url_dep',
         'old_revision': '6',
         'new_revision': '8',
@@ -489,7 +489,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     line_numbers = [2, 7, 12]
     expected_score = 4
     expected_hints = {
-        ('rolled dependency third_party/dep/ with changes in '
+        ('rolled dependency third_party/dep with changes in '
          'https://url_dep/+log/6..8?pretty=fuller '
          '(and f.cc[2, 7] was in log)'):
              4
@@ -500,7 +500,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
   def testCheckFileInDependencyRollWhenFileIsNotChanged(self):
     rolls = [{
-        'path': 'src/third_party/dep/',
+        'path': 'src/third_party/dep',
         'repo_url': 'https://url_dep',
         'old_revision': '8',
         'new_revision': '9',
@@ -514,7 +514,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
   def testCheckFileInDependencyRollWhenFileIsDeleted(self):
     rolls = [{
-        'path': 'src/third_party/dep/',
+        'path': 'src/third_party/dep',
         'repo_url': 'https://url_dep',
         'old_revision': '8',
         'new_revision': '10',
@@ -522,7 +522,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     file_path_in_log = 'third_party/dep/f.cc'
     expected_score = 5
     expected_hints = {
-        ('rolled dependency third_party/dep/ with changes in '
+        ('rolled dependency third_party/dep with changes in '
          'https://url_dep/+log/8..10?pretty=fuller '
          '(and f.cc(deleted) was in log)'):
              5
@@ -533,7 +533,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
   def testCheckFileInDependencyRollWhenFileIsModifiedWithoutBlame(self):
     rolls = [{
-        'path': 'src/third_party/dep/',
+        'path': 'src/third_party/dep',
         'repo_url': 'https://url_dep',
         'old_revision': '10',
         'new_revision': '11',
@@ -547,7 +547,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
   def testCheckFileInDependencyRollRolledDowngrade(self):
     rolls = [{
-        'path': 'src/third_party/dep/',
+        'path': 'src/third_party/dep',
         'repo_url': 'https://url_dep',
         'old_revision': '8',
         'new_revision': '6',
@@ -561,7 +561,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
   def testCheckFileInDependencyRollFileNotExist(self):
     rolls = [{
-        'path': 'src/third_party/dep/',
+        'path': 'src/third_party/dep',
         'repo_url': 'https://url_dep',
         'old_revision': '6',
         'new_revision': '8',
@@ -575,7 +575,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
   def testCheckFileInDependencyRollOnV8(self):
     rolls = [{
-        'path': 'src/v8/',
+        'path': 'src/v8',
         'repo_url': 'https://chromium.googlesource.com/v8/v8.git',
         'old_revision': '6',
         'new_revision': '8',
@@ -608,7 +608,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'deps_rolls': {
             'rev': [
                 {
-                    'path': 'src/third_party/dep1/',
+                    'path': 'src/third_party/dep1',
                     'repo_url': 'https://url_dep1',
                     'old_revision': '7',
                     'new_revision': '9',
@@ -918,13 +918,13 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
       self.assertEqual('unix', os_platform)
       if revision == 'rev2':
         return {
-            'src/': Dependency('src/', 'https://url_src', 'rev2', 'DEPS'),
+            'src': Dependency('src', 'https://url_src', 'rev2', 'DEPS'),
             'src/dep1': Dependency('src/dep1', 'https://url_dep1', '9', 'DEPS'),
         }
       else:
         self.assertEqual('rev2^', revision)
         return {
-            'src/': Dependency('src/', 'https://url_src', 'rev2^', 'DEPS'),
+            'src': Dependency('src', 'https://url_src', 'rev2^', 'DEPS'),
             'src/dep1': Dependency('src/dep1', 'https://url_dep1', '7', 'DEPS'),
         }
 
@@ -957,7 +957,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     expected_deps_info = {
         'deps': {
-            'src/': {
+            'src': {
                 'repo_url': 'https://url_src',
                 'revision': 'rev2',
             },

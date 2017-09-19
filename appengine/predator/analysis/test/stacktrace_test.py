@@ -26,7 +26,7 @@ class ProfilerStackFrameTest(AnalysisTestCase):
         'responsible': False,
         # other fields are absent e.g. filename
     }
-    deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
+    deps = {'chrome': Dependency('chrome', 'https://repo', '1')}
     frame, language_type = ProfilerStackFrame.Parse(frame_dict, 0, deps)
 
     self.assertEqual(frame.index, 0)
@@ -63,14 +63,14 @@ class ProfilerStackFrameTest(AnalysisTestCase):
             ]
         ]
     }
-    deps = {'chrome/': Dependency('chrome/', 'https://repo', '1')}
+    deps = {'chrome': Dependency('chrome', 'https://repo', '1')}
     frame, language_type = ProfilerStackFrame.Parse(frame_dict, 1, deps)
 
     self.assertEqual(frame.index, 1)
     self.assertEqual(frame.difference, 0.01)
     self.assertEqual(frame.log_change_factor, -8.1)
     self.assertEqual(frame.responsible, False)
-    self.assertEqual(frame.dep_path, 'chrome/')
+    self.assertEqual(frame.dep_path, 'chrome')
     self.assertEqual(frame.function, 'wWinMain')
     self.assertEqual(frame.file_path, 'app/chrome_exe_main_win.cc')
     self.assertEqual(frame.raw_file_path, 'chrome/app/chrome_exe_main_win.cc')
@@ -110,7 +110,7 @@ class ProfilerStackFrameTest(AnalysisTestCase):
 
   def testBlameUrlForProfilerStackFrame(self):
     """Tests that ``ProfilerStackFrame.BlameUrl`` generates the correct url."""
-    frame = ProfilerStackFrame(0, 0, float('inf'), False, 'src/', 'func',
+    frame = ProfilerStackFrame(0, 0, float('inf'), False, 'src', 'func',
                                'f.cc', 'src/f.cc')
     self.assertEqual(frame.BlameUrl('1'), None)
 
@@ -120,7 +120,7 @@ class ProfilerStackFrameTest(AnalysisTestCase):
   def testFailureWhenProfilerStackFrameIndexIsNone(self):
     """Tests that a TypeError is raised when the ``index`` is ``None``."""
     with self.assertRaises(TypeError):
-      ProfilerStackFrame(None, 0, float('inf'), False, 'src/', 'func',
+      ProfilerStackFrame(None, 0, float('inf'), False, 'src', 'func',
                          'f.cc', 'src/f.cc')
 
 
@@ -128,22 +128,22 @@ class CallStackTest(AnalysisTestCase):
 
   def testCallStackBool(self):
     self.assertFalse(CallStack(0, [], None, None))
-    frame = StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [])
+    frame = StackFrame(0, 'src', 'func', 'f.cc', 'src/f.cc', [])
     self.assertTrue(CallStack(0, [frame], None, None))
 
   def testStackFrameToString(self):
     self.assertEqual(
-        StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', []).ToString(),
+        StackFrame(0, 'src', 'func', 'f.cc', 'src/f.cc', []).ToString(),
         '#0 0xXXX in func src/f.cc')
     self.assertEqual(
-        StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [1]).ToString(),
+        StackFrame(0, 'src', 'func', 'f.cc', 'src/f.cc', [1]).ToString(),
         '#0 0xXXX in func src/f.cc:1')
     self.assertEqual(
-        StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [1, 2]).ToString(),
+        StackFrame(0, 'src', 'func', 'f.cc', 'src/f.cc', [1, 2]).ToString(),
         '#0 0xXXX in func src/f.cc:1:1')
 
   def testBlameUrlForStackFrame(self):
-    frame = StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [])
+    frame = StackFrame(0, 'src', 'func', 'f.cc', 'src/f.cc', [])
     self.assertEqual(frame.BlameUrl('1'), None)
 
     frame = frame._replace(repo_url = 'https://repo_url')
@@ -176,13 +176,13 @@ class CallStackTest(AnalysisTestCase):
     self.assertIsNone(
         StackFrame.Parse(language_type, format_type, 'dummy line', {}))
 
-    deps = {'src/content/': Dependency('src/content/', 'https://repo', '1')}
+    deps = {'src/content': Dependency('src/content', 'https://repo', '1')}
     frame = StackFrame.Parse(language_type, format_type,
         'c::p::n [src/content/e.cc @ 165]', deps)
     self._VerifyTwoStackFramesEqual(
         frame,
         StackFrame(
-            0, 'src/content/', 'c::p::n', 'e.cc', 'src/content/e.cc', [165]))
+            0, 'src/content', 'c::p::n', 'e.cc', 'src/content/e.cc', [165]))
 
   def testParseStackFrameForDefaultCallstackFormat(self):
     language_type = None
@@ -190,20 +190,20 @@ class CallStackTest(AnalysisTestCase):
     self.assertIsNone(
         StackFrame.Parse(language_type, format_type, 'dummy line', {}))
 
-    deps = {'tp/webrtc/': Dependency('tp/webrtc/', 'https://repo', '1')}
+    deps = {'tp/webrtc': Dependency('tp/webrtc', 'https://repo', '1')}
     frame = StackFrame.Parse(language_type, format_type,
         '#0 0x52617a in func0 tp/webrtc/a.c:38:3', deps)
     self._VerifyTwoStackFramesEqual(
         frame,
         StackFrame(
-            0, 'tp/webrtc/', 'func0', 'a.c', 'tp/webrtc/a.c', [38, 39, 40, 41]))
+            0, 'tp/webrtc', 'func0', 'a.c', 'tp/webrtc/a.c', [38, 39, 40, 41]))
 
     frame = StackFrame.Parse(language_type, format_type,
         '#1 0x526 in func::func2::func3 tp/webrtc/a.c:3:2', deps)
     self._VerifyTwoStackFramesEqual(
         frame,
         StackFrame(
-            1, 'tp/webrtc/', 'func::func2::func3', 'a.c', 'tp/webrtc/a.c',
+            1, 'tp/webrtc', 'func::func2::func3', 'a.c', 'tp/webrtc/a.c',
             [3, 4, 5]))
 
   def testParseStackFrameForFracasJavaStack(self):
@@ -279,10 +279,10 @@ class StacktraceTest(AnalysisTestCase):
   def testStacktraceLen(self):
     """Tests ``len`` for ``Stacktrace`` object."""
     frame_list1 = [
-        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32])]
+        StackFrame(0, 'src', 'func', 'file0.cc', 'src/file0.cc', [32])]
 
     frame_list2 = [
-        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
+        StackFrame(0, 'src', 'func2', 'file0.cc', 'src/file0.cc', [32])]
 
     stack1 = CallStack(0, frame_list1, None, None)
     stack2 = CallStack(1, frame_list2, None, None)
@@ -294,9 +294,9 @@ class StacktraceTest(AnalysisTestCase):
     self.assertFalse(bool(Stacktrace([], None)))
 
     frame_list1 = [
-        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32])]
+        StackFrame(0, 'src', 'func', 'file0.cc', 'src/file0.cc', [32])]
     frame_list2 = [
-        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
+        StackFrame(0, 'src', 'func2', 'file0.cc', 'src/file0.cc', [32])]
 
     stack1 = CallStack(0, frame_list1, None, None)
     stack2 = CallStack(1, frame_list2, None, None)
@@ -312,9 +312,9 @@ class StacktraceBufferTest(AnalysisTestCase):
   def testStacktraceBufferWithoutSignature(self):
     """Tests using least priority stack as crash_stack without  signature."""
     frame_list1 = [
-        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32])]
+        StackFrame(0, 'src', 'func', 'file0.cc', 'src/file0.cc', [32])]
     frame_list2 = [
-        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
+        StackFrame(0, 'src', 'func2', 'file0.cc', 'src/file0.cc', [32])]
 
     stack1 = CallStackBuffer(0, frame_list=frame_list1)
     stack2 = CallStackBuffer(1, frame_list=frame_list2)
@@ -325,10 +325,10 @@ class StacktraceBufferTest(AnalysisTestCase):
   def testStacktraceBufferWithSignature(self):
     """Tests using stack with signature as crash_stack with signature."""
     frame_list1 = [
-        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32])]
+        StackFrame(0, 'src', 'func', 'file0.cc', 'src/file0.cc', [32])]
 
     frame_list2 = [
-        StackFrame(0, 'src/', 'signature_func2', 'f.cc', 'src/f.cc', [32])]
+        StackFrame(0, 'src', 'signature_func2', 'f.cc', 'src/f.cc', [32])]
 
     stack1 = CallStackBuffer(0, frame_list=frame_list1)
     stack2 = CallStackBuffer(1, frame_list=frame_list2)
@@ -339,8 +339,8 @@ class StacktraceBufferTest(AnalysisTestCase):
   def testAddFitleredStackWithNoFilters(self):
     """Tests that ``AddFilteredStack`` returns None if there is no filters."""
     frame_list = [
-        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
-        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
+        StackFrame(0, 'src', 'func', 'file0.cc', 'src/file0.cc', [32]),
+        StackFrame(0, 'src', 'func2', 'file0.cc', 'src/file0.cc', [32])]
     stack_buffer = CallStackBuffer(0, frame_list=frame_list)
     stacktrace_buffer = StacktraceBuffer()
     stacktrace_buffer.AddFilteredStack(stack_buffer)
@@ -363,8 +363,8 @@ class StacktraceBufferTest(AnalysisTestCase):
   def testFilterAllFrames(self):
     """Tests that ``AddFilteredStack`` filters all frames and resturns None."""
     frame_list = [
-        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
-        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
+        StackFrame(0, 'src', 'func', 'file0.cc', 'src/file0.cc', [32]),
+        StackFrame(0, 'src', 'func2', 'file0.cc', 'src/file0.cc', [32])]
     stack_buffer = CallStackBuffer(0, frame_list=frame_list)
 
     def _MockFilterAllFrames(stack_buffer):
@@ -378,8 +378,8 @@ class StacktraceBufferTest(AnalysisTestCase):
   def testFilterSomeFrames(self):
     """Tests that ``AddFilteredStack`` filters some frames."""
     frame_list = [
-        StackFrame(0, 'src/', 'func', 'file0.cc', 'src/file0.cc', [32]),
-        StackFrame(0, 'src/', 'func2', 'file0.cc', 'src/file0.cc', [32])]
+        StackFrame(0, 'src', 'func', 'file0.cc', 'src/file0.cc', [32]),
+        StackFrame(0, 'src', 'func2', 'file0.cc', 'src/file0.cc', [32])]
     stack_buffer = CallStackBuffer(0, frame_list=frame_list)
 
     def _MockKeepFirstFrame(stack):

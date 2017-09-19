@@ -43,12 +43,12 @@ class DepsTest(testing.AppengineTestCase):
     chromium_revision = 'rev2'
     os_platform = 'unix'
     mock_dep_fetcher.return_value = {
-        'src/': Dependency('src/', 'https://url_src', 'rev2', 'DEPS'),
+        'src': Dependency('src', 'https://url_src', 'rev2', 'DEPS'),
         'src/dep1': Dependency('src/dep1', 'https://url_dep1', '9', 'DEPS'),
     }
 
     expected_deps = {
-        'src/': {
+        'src': {
             'repo_url': 'https://url_src',
             'revision': 'rev2',
         },
@@ -78,10 +78,10 @@ class DepsTest(testing.AppengineTestCase):
     os_platform = 'unix'
 
     mock_dep_fetcher.side_effect = [{
-        'src/': Dependency('src/', 'https://url_src', 'rev2^', 'DEPS'),
+        'src': Dependency('src', 'https://url_src', 'rev2^', 'DEPS'),
         'src/dep1': Dependency('src/dep1', 'https://url_dep1', '7', 'DEPS'),
     }, {
-        'src/': Dependency('src/', 'https://url_src', 'rev2', 'DEPS'),
+        'src': Dependency('src', 'https://url_src', 'rev2', 'DEPS'),
         'src/dep1': Dependency('src/dep1', 'https://url_dep1', '9', 'DEPS'),
     }]
 

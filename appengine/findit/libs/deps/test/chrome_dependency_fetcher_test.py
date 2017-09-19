@@ -149,19 +149,19 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
         self.deps_downloader.Load, 'http://chrome', '50.0.1234.1', 'DEPS')
 
   def testGetDependency(self):
-    src_path = 'src/'
+    src_path = 'src'
     src_repo_url = 'https://chromium.googlesource.com/chromium/src.git'
     src_revision = '123a'
     os_platform = 'unix'
 
-    child1_dep = Dependency('src/a/', 'https://a.git', '123a', 'DEPS')
-    child2_dep = Dependency('src/b/', 'https://b.git', '123b', 'DEPS')
-    grand_child1 = Dependency('src/a/aa/', 'https://aa.git', '123aa', 'DEPS')
+    child1_dep = Dependency('src/a', 'https://a.git', '123a', 'DEPS')
+    child2_dep = Dependency('src/b', 'https://b.git', '123b', 'DEPS')
+    grand_child1 = Dependency('src/a/aa', 'https://aa.git', '123aa', 'DEPS')
 
     expected_dependency_dict = {
-        'src/a/': child1_dep,
-        'src/b/': child2_dep,
-        'src/a/aa/': grand_child1,
+        'src/a': child1_dep,
+        'src/b': child2_dep,
+        'src/a/aa': grand_child1,
     }
 
     def DummyUpdateDependencyTree(root_dep, target_os_list, _):
@@ -182,18 +182,18 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
     self.assertEqual(expected_dependency_dict, dependency_dict)
 
   def testGetDependencyForChromeVersion(self):
-    src_path = 'src/'
+    src_path = 'src'
     src_repo_url = 'https://chromium.googlesource.com/chromium/src.git'
     os_platform = 'unix'
 
-    child1_dep = Dependency('src/a/', 'https://a.git', '123a', 'DEPS')
-    child2_dep = Dependency('src/b/', 'https://b.git', '123b', 'DEPS')
-    grand_child1 = Dependency('src/a/aa/', 'https://aa.git', '123aa', 'DEPS')
+    child1_dep = Dependency('src/a', 'https://a.git', '123a', 'DEPS')
+    child2_dep = Dependency('src/b', 'https://b.git', '123b', 'DEPS')
+    grand_child1 = Dependency('src/a/aa', 'https://aa.git', '123aa', 'DEPS')
 
     expected_dependency_dict = {
-        'src/a/': child1_dep,
-        'src/b/': child2_dep,
-        'src/a/aa/': grand_child1,
+        'src/a': child1_dep,
+        'src/b': child2_dep,
+        'src/a/aa': grand_child1,
     }
 
     def DummyUpdateDependencyTree(root_dep, target_os_list, _):
@@ -219,8 +219,8 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
       self.assertEqual('unix', os_platform)
       if revision == 'rev2':
         return {
-            'src/':
-                Dependency('src/', 'https://url_src', 'rev2', 'DEPS'),
+            'src':
+                Dependency('src', 'https://url_src', 'rev2', 'DEPS'),
             'src/dep1':
                 Dependency('src/dep1', 'https://url_dep1', '9', 'DEPS'),
             'src/dep2':
@@ -231,8 +231,8 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
       else:
         self.assertEqual('rev1', revision)
         return {
-            'src/':
-                Dependency('src/', 'https://url_src', 'rev1', 'DEPS'),
+            'src':
+                Dependency('src', 'https://url_src', 'rev1', 'DEPS'),
             'src/dep1':
                 Dependency('src/dep1', 'https://url_dep1', '7', 'DEPS'),
             'src/dep2':
@@ -266,8 +266,10 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
 
     deps_rolls = self.chrome_dep_fetcher.GetDependencyRolls(
         'rev1', 'rev2', 'unix')
-    self.assertEqual(expected_deps_rolls,
-                     [roll.ToDict() for roll in deps_rolls])
+    deps_rolls = [roll.ToDict() for roll in deps_rolls]
+    deps_rolls.sort()
+    expected_deps_rolls.sort()
+    self.assertEqual(expected_deps_rolls, deps_rolls)
 
   def testGetDependencyRollsDict(self):
 
@@ -278,7 +280,7 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
       ]
       if not kargs['skip_chromium_roll']:
         dependency_rolls.append(
-            DependencyRoll('src/',
+            DependencyRoll('src',
                            'https://chromium.googlesource.com/chromium/src.git',
                            old_revision, new_revision))
 
@@ -301,8 +303,8 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
             DependencyRoll('src/dep1', 'https://url_dep1', '7', '9'),
         'src/dep2':
             DependencyRoll('src/dep2', 'https://url_dep2', '3', None),
-        'src/':
-            DependencyRoll('src/',
+        'src':
+            DependencyRoll('src',
                            'https://chromium.googlesource.com/chromium/src.git',
                            '4', '5'),
     }

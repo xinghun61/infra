@@ -26,32 +26,32 @@ class ParseUtilTest(testing.AppengineTestCase):
                      [23, 24, 25])
 
   def testGetDepPathAndNormalizedFilePath(self):
-    deps = {'src/': Dependency('src/', 'https://repo', '1'),
-            'src/Upper/': Dependency('src/Upper', 'https://repo', '2')}
+    deps = {'src': Dependency('src', 'https://repo', '1'),
+            'src/Upper': Dependency('src/Upper', 'https://repo', '2')}
 
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('out/r/gen/b.cc', deps),
         ('', 'out/r/gen/b.cc', None))
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('src/a/b.cc', deps),
-        ('src/', 'a/b.cc', 'https://repo'))
+        ('src', 'a/b.cc', 'https://repo'))
 
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('src/Upper/a/b.cc', deps),
-        ('src/Upper/', 'a/b.cc', 'https://repo'))
+        ('src/Upper', 'a/b.cc', 'https://repo'))
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('src/upper/a/b.cc', deps),
-        ('src/Upper/', 'a/b.cc', 'https://repo'))
+        ('src/Upper', 'a/b.cc', 'https://repo'))
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('Upper/a/b.cc', deps),
-        ('src/Upper/', 'a/b.cc', 'https://repo'))
+        ('src/Upper', 'a/b.cc', 'https://repo'))
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('upper/a/b.cc', deps),
-        ('src/Upper/', 'a/b.cc', 'https://repo'))
+        ('src/Upper', 'a/b.cc', 'https://repo'))
 
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('dummy/path/b.cc', deps),
-        ('src/', 'dummy/path/b.cc', parse_util.CHROMIUM_REPO_URL))
+        ('src', 'dummy/path/b.cc', parse_util.CHROMIUM_REPO_URL))
 
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('a.java', deps,

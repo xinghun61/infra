@@ -567,7 +567,7 @@ def _CheckFileInDependencyRolls(file_path_in_log,
     line_numbers (list): List of line_numbers mentioned in the failure log.
   """
   for roll in rolls:
-    if roll['path'] == 'src/v8/':
+    if roll['path'] == 'src/v8':
       # Cannot compare author time for v8 roll, author time for CLs during the
       # roll may be earlier than the author time of old revision.
       # TODO: Figure out the rolling mechanism of v8 to add logic for checking
@@ -576,14 +576,14 @@ def _CheckFileInDependencyRolls(file_path_in_log,
 
     change_action = None
     dep_path = _StripChromiumRootDirectory(roll['path'])
-    if not file_path_in_log.startswith(dep_path):
+    if not file_path_in_log.startswith(dep_path + '/'):
       continue
 
     changed_lines = []
     roll_file_change_type = None
     if roll['old_revision'] and roll['new_revision']:
       roll_file_change_type, changed_lines = _GetChangedLinesForDependencyRepo(
-          roll, file_path_in_log[len(dep_path):], line_numbers)
+          roll, file_path_in_log[len(dep_path + '/'):], line_numbers)
 
       if not roll_file_change_type:
         continue
@@ -608,7 +608,7 @@ def _CheckFileInDependencyRolls(file_path_in_log,
 
     justification.AddDEPSRoll(change_action, dep_path, roll['repo_url'],
                               roll['new_revision'], roll['old_revision'],
-                              file_path_in_log[len(dep_path):], score,
+                              file_path_in_log[len(dep_path + '/'):], score,
                               changed_lines, roll_file_change_type)
 
 
@@ -642,7 +642,7 @@ def CheckFiles(failure_signal, change_log, deps_info, check_dependencies=False):
   justification = _Justification()
 
   rolls = deps_info.get('deps_rolls', {}).get(change_log['revision'], [])
-  repo_info = deps_info.get('deps', {}).get('src/', {})
+  repo_info = deps_info.get('deps', {}).get('src', {})
 
   if not check_dependencies:
     for file_path_in_log, line_numbers in failure_signal.files.iteritems():
@@ -807,7 +807,7 @@ def ExtractDepsInfo(failure_info, change_logs):
     A dict with the following form:
     {
       'deps': {
-        'path/to/dependency/': {
+        'path/to/dependency': {
           'revision': 'git_hash',
           'repo_url': 'https://url/to/dependency/repo.git',
         },
@@ -816,7 +816,7 @@ def ExtractDepsInfo(failure_info, change_logs):
       'deps_rolls': {
         'git_revision': [
           {
-            'path': 'src/path/to/dependency/',
+            'path': 'src/path/to/dependency',
             'repo_url': 'https://url/to/dependency/repo.git',
             'new_revision': 'git_hash1',
             'old_revision': 'git_hash2',

@@ -120,14 +120,14 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
   def testStacktraceParsing(self, mock_get_dependency):
     """Test that ``stacktrace`` successfully parses a stacktrace."""
     mock_get_dependency.return_value = {
-        'chrome/': Dependency('chrome/', 'https://repo', 'rev1')
+        'chrome': Dependency('chrome', 'https://repo', 'rev1')
     }
 
     uma_data = self._GetDummyUMAData()
     actual_stack_trace = uma_data.stacktrace
 
     stack_frame0 = stacktrace.ProfilerStackFrame(
-        0, 0.1, float('inf'), False, 'chrome/', 'wWinMain',
+        0, 0.1, float('inf'), False, 'chrome', 'wWinMain',
         'app/chrome_exe_main_win.cc', 'chrome/app/chrome_exe_main_win.cc',
         'https://repo', 484,
         (stacktrace.FunctionLine(line=490, sample_fraction=0.7),
@@ -135,13 +135,13 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
         (stacktrace.FunctionLine(line=490, sample_fraction=0.9),
          stacktrace.FunctionLine(line=511, sample_fraction=0.1)))
     stack_frame1 = stacktrace.ProfilerStackFrame(
-        1, 0.2, 6.1, False, 'chrome/', 'MainDllLoader::Launch(HINSTANCE__ *)',
+        1, 0.2, 6.1, False, 'chrome', 'MainDllLoader::Launch(HINSTANCE__ *)',
         'app/main_dll_loader_win.cc', 'chrome/app/main_dll_loader_win.cc',
         'https://repo', 117, None)
     frames0 = (stack_frame0, stack_frame1)
 
     stack_frame2 = stacktrace.ProfilerStackFrame(
-        0, 0.3, float('inf'), False, 'chrome/', 'wWinMain',
+        0, 0.3, float('inf'), False, 'chrome', 'wWinMain',
         'app/chrome_exe_main_win.cc', 'chrome/app/chrome_exe_main_win.cc',
         'https://repo', 484, None)
     frames1 = (stack_frame2,)
@@ -177,10 +177,10 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
   def testDependencies(self, mock_get_dependencies, mock_stacktrace):
     """Tests that ``dependencies``` calls GetDependencies."""
     uma_data = self._GetDummyUMAData()
-    dependencies = {'src/': Dependency('src/', 'https://repo', 'rev')}
+    dependencies = {'src': Dependency('src', 'https://repo', 'rev')}
     mock_get_dependencies.return_value = dependencies
     stack = stacktrace.CallStack(0, frame_list=[
-        stacktrace.StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [5])])
+        stacktrace.StackFrame(0, 'src', 'func', 'a.cc', 'src/a.cc', [5])])
     stacktrace_field = stacktrace.Stacktrace([stack], stack)
     mock_stacktrace.return_value = stacktrace_field
 
@@ -194,10 +194,10 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
   def testDependencyRolls(self, mock_get_dependency_rolls, mock_stacktrace):
     """Tests that ``dependency_rolls``` calls GetDependencyRolls."""
     uma_data = self._GetDummyUMAData()
-    dep_roll = {'src/': DependencyRoll('src/', 'https://repo', 'rev0', 'rev3')}
+    dep_roll = {'src': DependencyRoll('src', 'https://repo', 'rev0', 'rev3')}
     mock_get_dependency_rolls.return_value = dep_roll
     stack = stacktrace.CallStack(0, frame_list=[
-        stacktrace.StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [5])])
+        stacktrace.StackFrame(0, 'src', 'func', 'a.cc', 'src/a.cc', [5])])
     stacktrace_field = stacktrace.Stacktrace([stack], stack)
     mock_stacktrace.return_value = stacktrace_field
 
