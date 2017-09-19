@@ -44,6 +44,14 @@ class ComponentClassifierTest(AnalysisTestCase):
     # time we call a method on it.
     self.classifier = ComponentClassifier(components, COMPONENT_CONFIG['top_n'])
 
+  def testClassifyStackFrameEmptyFrame(self):
+    """Tests that ``ClassifyStackFrame`` returns None for empty frame."""
+    frame = StackFrame(0, None, 'func', 'comp1/a.cc', 'src/comp1/a.cc', [2])
+    self.assertIsNone(self.classifier.ClassifyStackFrame(frame))
+
+    frame = StackFrame(0, 'src/', 'func', None, 'src/comp1/a.cc', [2])
+    self.assertIsNone(self.classifier.ClassifyStackFrame(frame))
+
   def testClassifyCallStack(self):
     """Tests ``ClassifyCallStack`` method."""
     callstack = CallStack(
@@ -114,3 +122,14 @@ class ComponentClassifierTest(AnalysisTestCase):
     merged_components3 = MergeComponents(components3)
     expected_components3 = ['A>B', 'A>C']
     self.assertListEqual(merged_components3, expected_components3)
+
+  def testMatchComponents(self):
+    """Tests classifier matches the component with longest directory path."""
+    components = [
+        Component('Blink>JavaScript', ['src/v8', 'src/v8/src/base/blabla...'],
+                  None, None),
+        Component('Blink>JavaScript>GC', ['src/v8/src/heap'], None, None)]
+
+    classifier = ComponentClassifier(components, 3)
+    self.assertEqual(classifier.ClassifyFilePath('src/v8/src/heap/a.cc'),
+                     'Blink>JavaScript>GC')

@@ -55,10 +55,6 @@ def GetComponentClassifierConfig(config, http_client=HttpClientAppengine()):
     component_dict[component]['dirs'].append('src/' + dir_name)
 
   components = component_dict.values()
-  # Sorted by directory path with the most '/' of a component.
-  components.sort(key=lambda comp: (
-      -max([directory.count('/') for directory in comp['dirs']]),
-      comp['component']))
 
   component_classifier_config = {
       'component_info': components,

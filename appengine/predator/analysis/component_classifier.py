@@ -6,6 +6,7 @@ from collections import namedtuple
 from collections import defaultdict
 import functools
 import logging
+import os
 import re
 
 from analysis.component import Component
@@ -54,13 +55,26 @@ class ComponentClassifier(object):
     self.components = components or []
     self.top_n_frames = top_n_frames
 
-  def ClassifyStackFrame(self, frame):
-    """Determine which component is responsible for this frame."""
+  def ClassifyFilePath(self, file_path):
+    """Determines which component is responsible for this file_path."""
+    component_to_dir_level = {}
     for component in self.components:
-      if component.MatchesStackFrame(frame):
-        return component.component_name
+      match, directory = component.MatchesFilePath(file_path)
+      if match:
+        component_to_dir_level[component.component_name] = directory.count('/')
 
-    return None
+    # Returns components with longest directory path.
+    return (max(component_to_dir_level,
+                key=lambda component: component_to_dir_level[component])
+            if component_to_dir_level else None)
+
+  def ClassifyStackFrame(self, frame):
+    """Determines which component is responsible for this frame."""
+    if frame.dep_path is None or frame.file_path is None:
+      return None
+
+    file_path = os.path.join(frame.dep_path, frame.file_path)
+    return self.ClassifyFilePath(file_path)
 
   # TODO(http://crbug.com/657177): return the Component objects
   # themselves, rather than strings naming them.
@@ -81,12 +95,8 @@ class ComponentClassifier(object):
 
   def ClassifyTouchedFile(self, dep_path, touched_file):
     """Determine which component is responsible for a touched file."""
-    for component in self.components:
-      if component.MatchesTouchedFile(dep_path,
-                                      touched_file.changed_path):
-        return component.component_name
-
-    return None
+    file_path = os.path.join(dep_path, touched_file.changed_path)
+    return self.ClassifyFilePath(file_path)
 
   # TODO(http://crbug.com/657177): return the Component objects
   # themselves, rather than strings naming them.

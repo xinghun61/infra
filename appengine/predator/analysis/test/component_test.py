@@ -11,15 +11,13 @@ from analysis import stacktrace
 class ComponentTest(unittest.TestCase):
   """Tests ``Component`` class."""
 
-  def testMatchesStackFrameWhenFrameHasNoPathInformation(self):
-    """``MatchesStackFrame`` shouldn't crash when frame has no path info."""
-    component_object = component.Component('name', ['dirs/'])
-    frame = stacktrace.ProfilerStackFrame(0, 5, 0.21, False, dep_path=None,
-                                          file_path=None, raw_file_path=None)
-    self.assertFalse(component_object.MatchesStackFrame(frame))
+  def testMatchesFilePath(self):
+    """Tests ``MatchesFilePath``."""
+    component_object = component.Component('name', ['dirs/', 'a/b/c/'])
+    success, directory = component_object.MatchesFilePath('dirs/a.cc')
+    self.assertTrue(success)
+    self.assertEqual(directory, 'dirs/')
 
-  def testMatchesStackFrameWhenFrameHasNoFunctionName(self):
-    """``MatchesStackFrame`` shouldn't crash when frame has no function name."""
-    component_object = component.Component('name', ['dirs/'], function='main')
-    frame = stacktrace.ProfilerStackFrame(0, 5, 0.21, False, function=None)
-    self.assertFalse(component_object.MatchesStackFrame(frame))
+    success, directory = component_object.MatchesFilePath('dummy')
+    self.assertFalse(success)
+    self.assertIsNone(directory, 'dirs/')

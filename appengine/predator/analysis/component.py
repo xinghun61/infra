@@ -31,19 +31,10 @@ class Component(namedtuple('Component',
         cls, component_name, tuple(directories),
         re.compile(function) if function else None, team)
 
-  def MatchesStackFrame(self, frame):
-    """Returns true if this component matches the frame."""
-    if self.function is not None and frame.function is not None:
-      if not self.function.match(frame.function):
-        return False
+  def MatchesFilePath(self, file_path):
+    """Determines whether this file_path belongs to this component or not."""
+    for directory in self.dirs:
+      if file_path.startswith(directory):
+        return True, directory
 
-    if frame.dep_path is None or frame.file_path is None:
-      return False
-
-    file_path = os.path.join(frame.dep_path, frame.file_path)
-    return any(file_path.startswith(directory) for directory in self.dirs)
-
-  def MatchesTouchedFile(self, dep_path, file_path):
-    """Returns true if the touched file belongs to this component."""
-    file_path = os.path.join(dep_path, file_path)
-    return any(file_path.startswith(directory) for directory in self.dirs)
+    return False, None
