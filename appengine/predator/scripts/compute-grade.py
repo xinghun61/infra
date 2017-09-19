@@ -49,7 +49,17 @@ if __name__ == '__main__':
             'the app_id of googleplex app will have access issues '
             'due to internal proxy. ') % setup.DEFAULT_APP_ID)
 
+  argparser.add_argument(
+      '--suspect-type',
+      '-s',
+      dest='suspect_type',
+      default='cls',
+      help=('The type of suspect to compute metrics of. '
+            'The types can only be:\n1. cls: suspected cls\n'
+            '2. components: suspected_components.'))
+
   args = argparser.parse_args()
   remote_api.EnableRemoteApi(args.app)
-  examples = grade_model.RunModelOnTestSet(args.client, args.app, args.testset)
-  grade_model.PrintMetrics(examples)
+  examples = grade_model.RunModelOnTestSet(args.client, args.app, args.testset,
+                                           args.suspect_type)
+  grade_model.PrintMetrics(examples, args.suspect_type)

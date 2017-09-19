@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from collections import namedtuple
+import copy
 import itertools
 import os
 import sys
@@ -28,7 +29,153 @@ SummaryStats = namedtuple(
      'untriaged', 'unsure'])
 
 
-def RunModelOnTestSet(client_id, app_id, testset_path):  # pragma: no cover
+class SuspectEntry(object):
+
+  def __init__(self, crash, culprit):
+    self._crash = crash
+    self._culprit = culprit
+
+  @classmethod
+  def PrintMetrics(cls, grade_model_result, *_):  # pragma: no cover.
+    print 'Total examples:', grade_model_result.total_examples
+    print 'True positives:', grade_model_result.true_positives
+    print 'False positives:', grade_model_result.false_positives
+    print 'True negatives:', grade_model_result.true_negatives
+    print 'False negatives', grade_model_result.false_negatives
+
+    if grade_model_result.unsure or grade_model_result.untriaged:
+      print '--------'
+    if grade_model_result.unsure:
+      print "%s unsure examples discarded" % grade_model_result.unsure
+    if grade_model_result.untriaged:
+      print "%s untriaged examples discarded" % grade_model_result.untriaged
+
+    print '--------'
+    print 'Metrics:'
+    print '  precision: %.2f%%' % Precision(grade_model_result)
+    print '  recall: %.2f%%' % Recall(grade_model_result)
+    print '  accuracy: %.2f%%' % Accuracy(grade_model_result)
+    print '  detection rate: %.2f%%' % DetectionRate(grade_model_result)
+
+
+class SuspectCl(SuspectEntry):
+
+  @property
+  def suspects(self):
+    return self._culprit.cls
+
+  @property
+  def correct_results(self):
+    return self._crash.culprit_cls
+
+  @property
+  def triage_status(self):
+    return self._crash.suspected_cls_triage_status
+
+  def IsTruePositive(self, strict=False):
+    """Determines if this Predator result is a true positive.
+
+    Args:
+      correct_cls (list of str): The URL of the correct CL for this example.
+      suspects (list of Suspect): The suspects produced by Predator. Must be
+        non-empty.
+      strict (bool): If strict is true, an example is considered to be a true
+        positive iff: the correct CL is among the suspects identified by
+        Predator, and Predator assigned it a confidence value greater than or
+        equal to that of any other suspect. Else if strict is false, an example
+        is considered to be true when the suspects is identified by Predator,
+        even it's not with the highest confidence score.
+    """
+    # I'm assuming for now that there's only ever going to be one correct CL.
+    assert len(self.correct_results) == 1
+    correct_cl_url = self.correct_results[0]
+
+    max_confidence = max(suspect.confidence for suspect in self.suspects)
+    if strict:
+      suspect_urls = [suspect.changelog.commit_url
+                      for suspect in self.suspects
+                      if suspect.confidence == max_confidence]
+    else:
+      suspect_urls = [suspect.changelog.commit_url for suspect in self.suspects]
+
+    return any(CommitUrlEquals(correct_cl_url, suspect_url)
+               for suspect_url in suspect_urls)
+
+
+  @classmethod
+  def PrintMetrics(cls, grade_model_result,
+                   suspect_entries):  # pragma: no cover.
+    # pylint: disable=arguments-differ
+    super(SuspectCl, cls).PrintMetrics(grade_model_result)
+
+    print '--------'
+    print 'Maximum possible values of the metrics when using a confidence '
+    print 'threshold:'
+    precision_threshold, max_precision = MaximizeMetricWithThreshold(
+        suspect_entries, Precision)
+    print ('  Max precision is %.2f%% with a confidence threshold of %f.'
+           % (max_precision, precision_threshold))
+    recall_threshold, max_recall = MaximizeMetricWithThreshold(
+        suspect_entries, Recall)
+    print ('  Max recall is %.2f%% with a confidence threshold of %f.'
+           % (max_recall, recall_threshold))
+    accuracy_threshold, max_accuracy = MaximizeMetricWithThreshold(
+        suspect_entries, Accuracy)
+    print ('  Max accuracy is %.2f%% with a confidence threshold of %f.'
+           % (max_accuracy, accuracy_threshold))
+    f_score_threshold, max_f_score = MaximizeMetricWithThreshold(
+        suspect_entries, FbetaScore)
+    print ('  Max f-beta score is %.2f with a confidence threshold of %f.'
+           % (max_f_score, f_score_threshold))
+    detection_rate_threshold, max_detection_rate = MaximizeMetricWithThreshold(
+        suspect_entries, DetectionRate)
+    print ('  Max detection rate is %.2f%% with a confidence threshold of %f.'
+           % (max_detection_rate, detection_rate_threshold))
+
+
+class SuspectComponent(SuspectEntry):
+
+  @property
+  def suspects(self):
+    return self._culprit.components
+
+  @property
+  def correct_results(self):
+    return self._crash.culprit_components
+
+  @property
+  def triage_status(self):
+    return self._crash.suspected_components_triage_status
+
+  def IsTruePositive(self, strict=False):
+    """Determines if this Predator result is a true positive.
+
+    Args:
+      strict (bool): If strict is true, suspected components is considered to be
+        a true positive iff: the components identified by Predator are exactly
+        the same as those correct components, including order. Else if strict is
+        false, suspected components are considered to
+        be true when there are correct components are found by Predator.
+    """
+    if strict:
+      return self.suspects == self.correct_results
+
+    return any(result == suspect or result.startswith(suspect + '>')
+               for result in self.correct_results for suspect in self.suspects)
+
+
+def GetSuspectEntryClass(suspect_type):
+  if suspect_type == 'cls':
+    return SuspectCl
+
+  if suspect_type == 'components':
+    return SuspectComponent
+
+  return None
+
+
+def RunModelOnTestSet(client_id, app_id, testset_path,
+                      suspect_type):  # pragma: no cover
   """Get pairs of (CrashAnalysis, list<Suspect>) for a set of test cases.
 
   Args:
@@ -42,18 +189,21 @@ def RunModelOnTestSet(client_id, app_id, testset_path):  # pragma: no cover
       update-testset.py script.
       # TODO(cweakliam): It would be better if we had triaged datasets saved in
       # the Datastore, and downloaded them from there instead.
+    suspect_entry_class (Class of SuspectEntry): Class.
   Returns:
-    List of (crash, cls) pairs:
+    List of SuspectedEntry:
       crash (CrashAnalysis subclass): An entity representing one test case,
         usually triaged and labelled with the correct CL if there is one.
       cls (list of Suspect): The suspects produced by Predator.
   """
+  suspect_entry_class = GetSuspectEntryClass(suspect_type)
   crashes = delta_test.ReadCrashesFromCsvTestset(testset_path)
   culprits = run_predator.GetCulpritsOnRevision(crashes, 'HEAD', client_id,
                                                 app_id)
   return [
-    (crashes[crash_id], culprit.cls)
-    for crash_id, culprit in culprits.iteritems()
+      suspect_entry_class(crashes[crash_id], culprit)
+      for crash_id, culprit in culprits.iteritems()
+      if culprit is not None
   ]
 
 
@@ -64,34 +214,20 @@ def CommitUrlEquals(url1, url2):
   return url1_standardized == url2_standardized
 
 
-def IsTruePositive(correct_cl_url, suspects):
-  """Determine if this Predator result is a true positive.
-
-  Args:
-    correct_cl_url (str): The URL of the correct CL for this example.
-    suspects (list of Suspect): The suspects produced by Predator. Must be
-      non-empty.
-
-  An example is considered to be a true positive iff: the correct CL is among
-  the suspects identified by Predator, and Predator assigned it a confidence
-  value greater than or equal to that of any other suspect.
-  """
-  max_confidence = max(suspect.confidence for suspect in suspects)
-  top_suspect_urls = [suspect.changelog.commit_url
-                      for suspect in suspects
-                      if suspect.confidence == max_confidence]
-  return any(
-      CommitUrlEquals(correct_cl_url, suspect_url)
-      for suspect_url in top_suspect_urls)
-
-
-def GradeModel(input_output_pairs):
+def GradeModel(suspect_entries, strict=False):
   """Grade the model's performance on a set of examples.
 
   Args:
-    input_output_pairs (iterable of (CrashAnalysis, list<Suspect>) pairs): A set
+    suspect_entries (iterable of (CrashAnalysis, list<Suspect>) pairs): A set
      of labelled examples, along with the result produced by Predator for each
      example.
+    strict (bool): If strict is true, an example is considered to be a true
+      positive iff: the correct CL is among the suspects identified by Predator,
+      and Predator assigned it a confidence value greater than or equal to that
+      of any other suspect. Else if strict is false, an example is considered to
+      be true when the suspects is identified by Predator, even it's not with
+      the highest confidence score.
+
   Returns:
     A SummaryStats object, detailing the result of grading the model (e.g.
       number of True Positives, False Positives etc.).
@@ -104,35 +240,29 @@ def GradeModel(input_output_pairs):
   unsure = 0
   total_examples = 0
 
-  for crash, suspects in input_output_pairs:
+  for suspect_entry in suspect_entries:
     total_examples += 1
 
-    if crash.suspected_cls_triage_status == triage_status.UNTRIAGED:
+    if suspect_entry.triage_status == triage_status.UNTRIAGED:
       untriaged += 1
       continue
 
-    if crash.suspected_cls_triage_status == triage_status.TRIAGED_UNSURE:
+    if suspect_entry.triage_status == triage_status.TRIAGED_UNSURE:
       unsure += 1
       continue
 
-    correct_cls = crash.culprit_cls
-
-    if not correct_cls:
-      if suspects:
+    if not suspect_entry.correct_results:
+      if suspect_entry.suspects:
         false_positives += 1
       else:
         true_negatives += 1
       continue
 
-    if not suspects:
+    if not suspect_entry.suspects:
       false_negatives += 1
       continue
 
-    # I'm assuming for now that there's only ever going to be one correct CL.
-    assert len(correct_cls) == 1
-    correct_cl_url = correct_cls[0]
-
-    if IsTruePositive(correct_cl_url, suspects):
+    if suspect_entry.IsTruePositive(strict=strict):
       true_positives += 1
     else:
       false_positives += 1
@@ -212,56 +342,15 @@ def DetectionRate(summary_stats):
   return Percent(all_detected_examples, all_examples)
 
 
-def PrintMetrics(input_output_pairs):  # pragma: no cover
+def PrintMetrics(suspect_entries, suspect_type,
+                 strict=False):  # pragma: no cover
   """Print a series of metrics to the user about the given examples."""
-  result = GradeModel(input_output_pairs)
-
-  print 'Total examples:', result.total_examples
-  print 'True positives:', result.true_positives
-  print 'False positives:', result.false_positives
-  print 'True negatives:', result.true_negatives
-  print 'False negatives', result.false_negatives
-
-  if result.unsure or result.untriaged:
-    print '--------'
-  if result.unsure:
-    print "%s unsure examples discarded" % result.unsure
-  if result.untriaged:
-    print "%s untriaged examples discarded" % result.untriaged
-
-  print '--------'
-  print 'Metrics:'
-  print '  precision: %.2f%%' % Precision(result)
-  print '  recall: %.2f%%' % Recall(result)
-  print '  accuracy: %.2f%%' % Accuracy(result)
-  print '  detection rate: %.2f%%' % DetectionRate(result)
-
-  print '--------'
-  print 'Maximum possible values of the metrics when using a confidence '
-  print 'threshold:'
-  precision_threshold, max_precision = MaximizeMetricWithThreshold(
-      input_output_pairs, Precision)
-  print ('  Max precision is %.2f%% with a confidence threshold of %f.'
-         % (max_precision, precision_threshold))
-  recall_threshold, max_recall = MaximizeMetricWithThreshold(
-      input_output_pairs, Recall)
-  print ('  Max recall is %.2f%% with a confidence threshold of %f.'
-         % (max_recall, recall_threshold))
-  accuracy_threshold, max_accuracy = MaximizeMetricWithThreshold(
-      input_output_pairs, Accuracy)
-  print ('  Max accuracy is %.2f%% with a confidence threshold of %f.'
-         % (max_accuracy, accuracy_threshold))
-  f_score_threshold, max_f_score = MaximizeMetricWithThreshold(
-      input_output_pairs, FbetaScore)
-  print ('  Max f-beta score is %.2f with a confidence threshold of %f.'
-         % (max_f_score, f_score_threshold))
-  detection_rate_threshold, max_detection_rate = MaximizeMetricWithThreshold(
-      input_output_pairs, DetectionRate)
-  print ('  Max detection rate is %.2f%% with a confidence threshold of %f.'
-         % (max_detection_rate, detection_rate_threshold))
+  result = GradeModel(suspect_entries, strict=strict)
+  suspect_entry_class = GetSuspectEntryClass(suspect_type)
+  suspect_entry_class.PrintMetrics(result, suspect_entries)
 
 
-def MaximizeMetricWithThreshold(input_output_pairs, metric):
+def MaximizeMetricWithThreshold(suspect_entries, metric, strict=False):
   """Find the confidence threshold that maximizes this metric on these examples.
 
   We may want to optimize for different metrics depending on the situation. For
@@ -272,7 +361,7 @@ def MaximizeMetricWithThreshold(input_output_pairs, metric):
   accuracy or recall.
 
   Args:
-    input_output_pairs (iterable of (CrashAnalysis, list<Suspect>) pairs): A set
+    suspect_entries (iterable of SuspectEntry): A set
       of labelled examples, along with the result produced by Predator for each
       example.
     metric (function: SummaryStats -> Number): The function to maximize.
@@ -283,21 +372,22 @@ def MaximizeMetricWithThreshold(input_output_pairs, metric):
     value: The value of the metric given this threshold.
   """
   confidences = [suspect.confidence
-                 for _, suspects in input_output_pairs
-                 for suspect in suspects]
+                 for suspect_entry in suspect_entries
+                 for suspect in suspect_entry.suspects]
   thresholds = itertools.chain([0], confidences)
   results = (
-    (threshold, metric(GradeWithThreshold(input_output_pairs, threshold)))
+    (threshold, metric(GradeWithThreshold(suspect_entries, threshold,
+                                          strict=strict)))
     for threshold in thresholds
   )
   return max(results, key=lambda pair: pair[1])
 
 
-def GradeWithThreshold(input_output_pairs, threshold):
+def GradeWithThreshold(suspect_entries, threshold, strict=False):
   """The result of GradeModel when using a confidence threshold.
 
   Args:
-    input_output_pairs (iterable of (CrashAnalysis, list<Suspect>) pairs): A set
+    suspect_entries (iterable of (CrashAnalysis, list<Suspect>) pairs): A set
       of labelled examples, along with the result produced by Predator for each
       example.
     threshold (float): The confidence threshold for considering a suspect. I.e.
@@ -312,7 +402,9 @@ def GradeWithThreshold(input_output_pairs, threshold):
     return filter(
         lambda s: s.confidence > threshold, suspects)
 
-  examples_with_filtered_suspects = (
-    (crash, FilterSuspectsBelowThreshold(suspects))
-    for crash, suspects in input_output_pairs)
-  return GradeModel(examples_with_filtered_suspects)
+  entries = copy.deepcopy(suspect_entries)
+  for entry in entries:
+    entry._culprit = entry._culprit._replace(
+        cls=FilterSuspectsBelowThreshold(entry.suspects))
+
+  return GradeModel(entries, strict=strict)
