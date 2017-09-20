@@ -1,3 +1,25 @@
+# Release Notes sheriff-o-matic 2017-09-20
+
+- 6 commits, 1 bugs affected since fed5bcc (2017-09-13T00:11:13Z)
+- 3 Authors:
+  - martiniss@chromium.org
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [Revert "SOM: Group alerts using annotations"](https://chromium-review.googlesource.com/676135) (martiniss@chromium.org)
+- [SoM: Edit makefile to use _ instead of -](https://chromium-review.googlesource.com/675830) (zhangtiff@google.com)
+- [[som] Register prpc client references instead of host URLs for milo](https://chromium-review.googlesource.com/665984) (seanmccullough@chromium.org)
+- [SOM: Group alerts using annotations](https://chromium-review.googlesource.com/633871) (martiniss@chromium.org)
+- [SOM: Add some error handling for regression range grouping](https://chromium-review.googlesource.com/661879) (martiniss@chromium.org)
+- [SoM: Add null checks to groupRange.](https://chromium-review.googlesource.com/669280) (zhangtiff@google.com)
+
+
+## Bugs updated, by author
+- zhangtiff@google.com:
+  -  [https://crbug.com/765485](https://crbug.com/765485)
+
 # Release Notes sheriff-o-matic 2017-09-12
 
 - 8 commits, 4 bugs affected since 0c22583 (2017-09-05T22:38:31Z)
