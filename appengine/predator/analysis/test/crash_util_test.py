@@ -9,6 +9,7 @@ from analysis.analysis_testcase import AnalysisTestCase
 from analysis.crash_match import CrashMatch
 from analysis.crash_match import FrameInfo
 from analysis.stacktrace import CallStack
+from analysis.stacktrace import ProfilerStackFrame
 from analysis.stacktrace import StackFrame
 from analysis.stacktrace import Stacktrace
 from analysis.suspect import Suspect
@@ -108,6 +109,21 @@ class CrashUtilTest(AnalysisTestCase):
     indexed_frame_infos = crash_util.IndexFramesWithCrashedGroup(
         stack_trace, Factory, deps)
     self.assertEqual(indexed_frame_infos, {})
+
+  def testIndexFramesWithCrashedGroupWhenFrameHasNoDepPath(self):
+    """Tests a bug with ``IndexFramesWithCrashedGroup``.
+
+    This function would crash when passed a frame with a ``None`` dep path.
+    Instead it should ignore this frame.
+    """
+    frame = ProfilerStackFrame(0, 0.1, 0.5, True, dep_path=None)
+    stack = CallStack(0, frame_list=[frame])
+    stack_trace = Stacktrace([stack], stack)
+    deps = {'src': Dependency('src', 'h://repo', 'rev3')}
+
+    indexed_frame_infos = crash_util.IndexFramesWithCrashedGroup(
+        stack_trace, Factory, deps)
+    self.assertDictEqual(indexed_frame_infos, {})
 
   def testMatchSuspectWithFrameInfos(self):
     """Tests ``MatchSuspectWithFrameInfos`` function."""
