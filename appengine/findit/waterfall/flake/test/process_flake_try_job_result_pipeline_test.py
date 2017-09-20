@@ -15,7 +15,11 @@ from waterfall.flake.process_flake_try_job_result_pipeline import (
 
 class ProcessFlakeTryJobResultPipelineTest(TestCase):
 
-  def testProcessFlakeTryJobResultPipeline(self):
+  @mock.patch.object(
+      process_flake_try_job_result_pipeline,
+      '_IsResultValid',
+      return_value=True)
+  def testProcessFlakeTryJobResultPipeline(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -65,7 +69,11 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     self.assertEqual(commit_position, resulting_data_point.commit_position)
     self.assertEqual(url, resulting_data_point.try_job_url)
 
-  def testProcessFlakeTryJobResultPipelineTestDoesNotExist(self):
+  @mock.patch.object(
+      process_flake_try_job_result_pipeline,
+      '_IsResultValid',
+      return_value=True)
+  def testProcessFlakeTryJobResultPipelineTestDoesNotExist(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -107,6 +115,71 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     self.assertEqual(-1, resulting_data_point.pass_rate)
     self.assertEqual(commit_position, resulting_data_point.commit_position)
     self.assertEqual(url, resulting_data_point.try_job_url)
+
+  @mock.patch.object(
+      process_flake_try_job_result_pipeline,
+      '_IsResultValid',
+      return_value=False)
+  def testProcessFlakeTryJobResultPipelineInvalidResult(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    revision = 'r4'
+    commit_position = 4
+    try_job_id = 'try_job_id'
+    url = 'url'
+    try_job_result = {
+        'report': {
+            'result': {
+                revision: {
+                    step_name: {
+                        'status': 'failed',
+                        'failures': [test_name],
+                        'valid': False,
+                        'pass_fail_counts': {}
+                    }
+                }
+            }
+        }
+    }
+    expected_error = {
+        'message': 'Try job results are not valid',
+        'reason': 'Try job results are not vaild',
+    }
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.Save()
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, revision)
+    try_job.flake_results = [{
+        'url': url,
+        'report': try_job_result,
+        'try_job_id': try_job_id
+    }]
+    try_job.try_job_ids = [try_job_id]
+    try_job.put()
+    ProcessFlakeTryJobResultPipeline().run(revision, commit_position,
+                                           try_job_result,
+                                           try_job.key.urlsafe(),
+                                           analysis.key.urlsafe())
+    self.assertEqual(expected_error, try_job.error)
+    self.assertEqual([], analysis.data_points)
+
+  def testIsResultValid(self):
+    self.assertTrue(
+        process_flake_try_job_result_pipeline._IsResultValid({
+            'browser_tests': {
+                'valid': True
+            }
+        }, 'browser_tests'))
+    self.assertFalse(
+        process_flake_try_job_result_pipeline._IsResultValid({
+            'browser_tests': {
+                'valid': False
+            }
+        }, 'browser_tests'))
 
   @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
   def testGetSwarmingTaskIdForTryJob(self, mock_fn):

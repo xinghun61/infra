@@ -41,6 +41,39 @@ def _GetSwarmingTaskIdForTryJob(report, revision, step_name, test_name):
   return None
 
 
+def _IsResultValid(result_at_revision, step_name):
+  """Checks if the try job result is valid.
+
+  Args:
+    result_at_revision (dict): The result of running at a revision. For example,
+      {
+         'browser_tests': {
+              'status': 'failed',
+              'failures': ['TabCaptureApiTest.FullscreenEvents'],
+              'valid': True,
+              'pass_fail_counts': {
+                  'TabCaptureApiTest.FullscreenEvents': {
+                      'pass_count': 28,
+                      'fail_count': 72
+                  }
+              },
+              'step_metadata': {
+                  'task_ids': [],
+                  ...
+              }
+          }
+      }
+    step_name (str): The name of the step, assumed to be in result_at_revision.
+
+  Returns:
+    Whether the results are valid based on the 'valid' field.
+  """
+  # step_name is assumed to be in result_at_revision for valid use of this
+  # function.
+  assert step_name in result_at_revision
+  return result_at_revision[step_name]['valid']
+
+
 class ProcessFlakeTryJobResultPipeline(BasePipeline):
   """A pipeline for processing a flake try job result."""
 
@@ -96,6 +129,15 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
     if isinstance(result, basestring):
       # Result is a string 'infra failed'. Try job failed.
       return
+
+    if not _IsResultValid(result, step_name):
+      try_job.error = {
+          'message': 'Try job results are not valid',
+          'reason': 'Try job results are not vaild',
+      }
+      try_job.put()
+      return
+
     pass_fail_counts = result[step_name].get('pass_fail_counts', {})
 
     if pass_fail_counts:
