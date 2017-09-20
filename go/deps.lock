@@ -21,7 +21,7 @@ imports:
   subpackages:
   - memcache
 - name: github.com/danjacques/gofslock
-  version: 050ea99730c49ae86f0137abada228c5f5a78bd9
+  version: 041460b11d7ed31ae90345a6c9e26a3532a2e7f9
   repo: https://chromium.googlesource.com/external/github.com/danjacques/gofslock.git
   subpackages:
   - fslock
