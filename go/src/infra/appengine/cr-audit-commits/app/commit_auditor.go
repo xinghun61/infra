@@ -53,11 +53,16 @@ type workerParams struct {
 var (
 	// AuditedCommits counts commits that have been scanned by this
 	// handler.
+	//
+	// The valid values for the result field are:
+	//   - passed: the audit found no problems with the commit,
+	//   - violation: the audit found one or more policy violations,
+	//   - failed: the audit failed to complete due to errors.
 	AuditedCommits = metric.NewCounter(
 		"cr_audit_commits/audited",
 		"Commits that have been audited by the audit app",
 		&types.MetricMetadata{Units: "Commit"},
-		field.Bool("violation"),
+		field.String("result"),
 		field.String("repo"),
 	)
 )
@@ -161,19 +166,11 @@ func CommitAuditor(rc *router.Context) {
 		for _, currentCommit := range originalCommits {
 			if auditedCommit, ok := auditedCommits[currentCommit.CommitHash]; ok {
 				// Only save those that are still in the
-				// auditScheduled state.
+				// auditScheduled state in the datastore to
+				// avoid racing a possible parallel run of
+				// this handler.
 				if currentCommit.Status == auditScheduled {
-					currentCommit.Status = auditCompleted
-					for _, r := range auditedCommit.Result {
-						if r.RuleResultStatus == ruleFailed {
-							currentCommit.Status = auditCompletedWithViolation
-							break
-						}
-					}
-					// TODO(robertocn): Increment a metric
-					// based on this result
-					currentCommit.Result = auditedCommit.Result
-					commitsToPut = append(commitsToPut, currentCommit)
+					commitsToPut = append(commitsToPut, auditedCommit)
 				}
 			}
 		}
@@ -181,7 +178,9 @@ func CommitAuditor(rc *router.Context) {
 			return err
 		}
 		for _, c := range commitsToPut {
-			AuditedCommits.Add(ctx, 1, c.Status == auditCompletedWithViolation, repo)
+			if c.Status != auditScheduled {
+				AuditedCommits.Add(ctx, 1, c.Status.ToShortString(), repo)
+			}
 		}
 		return nil
 	}, nil)
@@ -229,9 +228,14 @@ func runRules(ctx context.Context, rc *RelevantCommit, ap AuditParams, wp *worke
 	defer func() {
 		r := recover()
 		if r != nil {
-			//TODO(robertocn): Increment a metric to keep track of
-			//these panics.
+			rc.Retries++
 			logging.Errorf(ctx, "Some rule panicked while auditing %s with message: %s", rc.CommitHash, r)
+			if rc.Retries > MaxRetriesPerCommit {
+				rc.Status = auditFailed
+			}
+			// Send through the channel anyway to persist the retry
+			// counter, and possibly change of status.
+			wp.audited <- rc
 		}
 	}()
 
@@ -240,9 +244,16 @@ func runRules(ctx context.Context, rc *RelevantCommit, ap AuditParams, wp *worke
 		if rs.MatchesRelevantCommit(rc) {
 			ap.TriggeringAccount = ars.Account
 			for _, f := range ars.Funcs {
-				rc.Result = append(rc.Result, *f(ctx, &ap, rc, wp.clients))
+				currentRuleResult := *f(ctx, &ap, rc, wp.clients)
+				rc.Result = append(rc.Result, currentRuleResult)
+				if currentRuleResult.RuleResultStatus == ruleFailed {
+					rc.Status = auditCompletedWithViolation
+				}
 			}
 		}
+	}
+	if rc.Status == auditScheduled { // No rules failed.
+		rc.Status = auditCompleted
 	}
 	wp.audited <- rc
 }

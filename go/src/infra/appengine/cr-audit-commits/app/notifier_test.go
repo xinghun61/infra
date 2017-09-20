@@ -160,6 +160,39 @@ func TestNotifier(t *testing.T) {
 				So(err, ShouldBeNil)
 				So(rc.IssueID, ShouldEqual, 12345)
 			})
+			Convey("Exceeded retries", func() {
+				rsk := ds.KeyForObj(ctx, repoState)
+				testClients.monorail = mockMonorailClient{
+					ii: &monorail.InsertIssueResponse{
+						Issue: &monorail.Issue{
+							Id: 12345,
+						},
+					},
+				}
+				rc := &RelevantCommit{
+					RepoStateKey:     rsk,
+					CommitHash:       "b00b00",
+					Status:           auditFailed,
+					Result:           []RuleResult{},
+					CommitterAccount: "committer@test.com",
+					AuthorAccount:    "author@test.com",
+					CommitMessage:    "This commit panicked and panicked",
+					Retries:          MaxRetriesPerCommit + 1,
+				}
+				err := ds.Put(ctx, rc)
+				So(err, ShouldBeNil)
+
+				resp, err := client.Get(srv.URL + notifierPath + "?repo=old-repo")
+				So(err, ShouldBeNil)
+				So(resp.StatusCode, ShouldEqual, 200)
+				rc = &RelevantCommit{
+					RepoStateKey: rsk,
+					CommitHash:   "b00b00",
+				}
+				err = ds.Get(ctx, rc)
+				So(err, ShouldBeNil)
+				So(rc.IssueID, ShouldEqual, 12345)
+			})
 		})
 	})
 }

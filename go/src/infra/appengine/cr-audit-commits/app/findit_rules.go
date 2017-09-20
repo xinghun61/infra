@@ -42,6 +42,11 @@ const (
 	// MaxCulpritAge indicates the maximum delay allowed between a culprit
 	// and findit reverting it.
 	MaxCulpritAge = 24 * time.Hour
+
+	// MaxRetriesPerCommit indicates how many times the auditor can retry
+	// audting a commit if some rules are panicking. This retry is meant to
+	// handle transient errors on the underlying services.
+	MaxRetriesPerCommit = 6 // Thirty minutes if checking every 5 minutes.
 )
 
 // This is the numeric result code for FAILURE. (As buildbot defines it)

@@ -19,6 +19,7 @@ const (
 	auditScheduled AuditStatus = iota
 	auditCompleted
 	auditCompletedWithViolation
+	auditFailed
 )
 
 // ToString returns a human-readable version of this status.
@@ -30,8 +31,25 @@ func (as AuditStatus) ToString() string {
 		return "Audited OK"
 	case auditCompletedWithViolation:
 		return "Violation Found"
+	case auditFailed:
+		return "Audit Failed"
 	default:
 		return fmt.Sprintf("Unknown status: %d", int(as))
+	}
+}
+
+// ToShortString returns a short string version of this status meant to be used
+// as datapoint labels for metrics.
+func (as AuditStatus) ToShortString() string {
+	switch as {
+	case auditCompleted:
+		return "passed"
+	case auditCompletedWithViolation:
+		return "violation"
+	case auditFailed:
+		return "failed"
+	default:
+		return fmt.Sprintf("unknown:%d", int(as))
 	}
 }
 
@@ -82,6 +100,7 @@ type RelevantCommit struct {
 	AuthorAccount          string
 	CommitMessage          string
 	IssueID                int32
+	Retries                int32
 }
 
 // RuleResult represents the result of applying a single rule to a commit.

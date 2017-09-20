@@ -31,6 +31,11 @@ func (rc *RepoConfig) RepoURL() string {
 	return rc.BaseRepoURL + "/+/" + rc.BranchName
 }
 
+// LinkToCommit composes a url to a specific commit
+func (rc *RepoConfig) LinkToCommit(commit string) string {
+	return rc.BaseRepoURL + "/+/" + commit
+}
+
 // RuleMap maps each monitored repository to a list of account/rules structs.
 var RuleMap = map[string]*RepoConfig{
 	"chromium-src-master": {
