@@ -11,15 +11,20 @@ import (
 	"time"
 
 	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/grpc/discovery"
 	"go.chromium.org/luci/grpc/prpc"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/auth/identity"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 
 	dashpb "infra/appengine/dashboard/api/dashboard"
 )
+
+const authGroup = "chopsdash-access"
 
 var templateBundle = &templates.Bundle{
 	Loader:    templates.FileSystemLoader("templates"),
@@ -32,7 +37,14 @@ var templateBundle = &templates.Bundle{
 }
 
 func pageBase() router.MiddlewareChain {
-	return standard.Base().Extend(
+	a := auth.Authenticator{
+		Methods: []auth.Method{
+			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
+			&server.InboundAppIDAuthMethod{},
+			server.CookieAuth,
+		},
+	}
+	return standard.Base().Extend(a.GetMiddleware()).Extend(
 		templates.WithTemplates(templateBundle),
 	)
 }
@@ -54,7 +66,44 @@ func init() {
 
 func dashboard(ctx *router.Context) {
 	c, w := ctx.Context, ctx.Writer
-	templates.MustRender(c, w, "pages/home.html", templates.Args{})
+
+	loginURL, err := auth.LoginURL(c, "/")
+	if err != nil {
+		http.Error(w, "failed to get login URL", http.StatusInternalServerError)
+		logging.Errorf(c, "failed to get login URL: %v", err)
+		return
+	}
+	logoutURL, err := auth.LogoutURL(c, "/")
+	if err != nil {
+		http.Error(w, "failed to get logout URL", http.StatusInternalServerError)
+		logging.Errorf(c, "failed to get logout URL: %v", err)
+		return
+	}
+
+	var isGoogler bool
+	var isAnonymous bool
+	var user string
+	if userIdentity := auth.CurrentIdentity(c); userIdentity == identity.AnonymousIdentity {
+		isAnonymous = true
+		isGoogler = false
+	} else {
+		user = userIdentity.Email()
+		isAnonymous = false
+		isGoogler, err = auth.IsMember(c, authGroup)
+		if err != nil {
+			http.Error(w, "failed to determine membership status", http.StatusInternalServerError)
+			logging.Errorf(c, "failed to determine membership status: %v", err)
+			return
+		}
+	}
+
+	templates.MustRender(c, w, "pages/home.html", templates.Args{
+		"IsAnoymous": isAnonymous,
+		"User":       user,
+		"IsGoogler":  isGoogler,
+		"LoginURL":   loginURL,
+		"LogoutURL":  logoutURL,
+	})
 }
 
 func oldDashboard(ctx *router.Context) {

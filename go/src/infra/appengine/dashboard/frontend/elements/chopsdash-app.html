@@ -51,6 +51,11 @@
         <app-toolbar>
           <div main-title>Chrome Operations Status Dashboard</div>
           <last-updated-message last-updated="[[lastUpdated]]"></last-updated-message>
+          <!-- <user-login
+                   login-url="[[loginUrl]]"
+                   logout-url="[[logoutUrl]]"
+                   user="[[user]]"></user-login>
+          -->
         </app-toolbar>
       </app-header>
       <div class="content">
@@ -106,6 +111,13 @@
 
       static get properties() {
         return {
+          isGoogler: {
+            type: Boolean,
+          },
+          lastUpdated: {
+            type: Object,
+            value: {time: moment(Date.now()).format('M/DD/YYYY, h:mm a'), relativeTime: 0}
+          },
           // latestDateTs is a timestamp in milliseconds.
           latestDateTs: {
             type: Number,
@@ -113,19 +125,24 @@
             value: new Date().setHours(23, 50, 50, 0),
             observer: '_refreshData',
           },
-          // Services covered by an SLA.
-          services: {
-            type: Array,
-            computed: '_updateServices(ajaxResponse)'
+          loginUrl: {
+            type: String,
+          },
+          logoutUrl: {
+            type: String,
           },
           // Services that are not covered by an SLA.
           nonSLAServices: {
             type: Array,
             computed: '_updateNonSLAServices(ajaxResponse)'
           },
-          lastUpdated: {
-            type: Object,
-            value: {time: moment(Date.now()).format('M/DD/YYYY, h:mm a'), relativeTime: 0}
+          // Services covered by an SLA.
+          services: {
+            type: Array,
+            computed: '_updateServices(ajaxResponse)'
+          },
+          user: {
+            type: String,
           }
         }
       }
