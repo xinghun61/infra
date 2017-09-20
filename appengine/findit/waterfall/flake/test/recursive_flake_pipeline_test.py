@@ -518,3 +518,15 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         use_nearby_neighbor=False)
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
+
+  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
+  def testCanStartAnalysis(self, _):
+    self.assertTrue(recursive_flake_pipeline._CanStartAnalysis(None, 0, False))
+    self.assertTrue(recursive_flake_pipeline._CanStartAnalysis(None, 10, False))
+    self.assertTrue(recursive_flake_pipeline._CanStartAnalysis(None, 0, True))
+
+  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=False)
+  def testCanStartAnalysisNoBotsAvailable(self, _):
+    self.assertFalse(recursive_flake_pipeline._CanStartAnalysis(None, 0, False))
+    self.assertTrue(recursive_flake_pipeline._CanStartAnalysis(None, 10, False))
+    self.assertTrue(recursive_flake_pipeline._CanStartAnalysis(None, 0, True))

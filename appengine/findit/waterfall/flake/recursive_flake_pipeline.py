@@ -33,6 +33,31 @@ from waterfall.flake.finish_build_analysis_pipeline import (
     FinishBuildAnalysisPipeline)
 
 
+def _CanStartAnalysis(step_metadata, retries, force):
+  """Determines if an analysis should be started
+
+  Args:
+    step_metadata (dict): Step metadata for the test, used to find bots.
+    retries (int): Number of times this recursive flake pipeline has been
+        rescheduled
+    force (boolean): A forced rerun triggered through the UI.
+
+  Returns:
+    True if there are bots available or:
+        1. If forced rerun, start the analysis right away without checking
+           bot availability. (case: force)
+        2. If retries is more than the max, start the analysis right away
+           because it was guaranteed to run off the peak hour as scheduled
+           after retries. (case: retries > flake_constants.MAX_RETRY_TIMES)
+        3. If there is available bot before/during the N retires, start the
+           analysis right away.
+           (case: swarming_util.BotsAvailableForTask(step_metadata))
+  """
+  if force or retries > flake_constants.MAX_RETRY_TIMES:
+    return True
+  return swarming_util.BotsAvailableForTask(step_metadata)
+
+
 class RecursiveFlakePipeline(BasePipeline):
 
   def __init__(self,
@@ -205,10 +230,10 @@ class RecursiveFlakePipeline(BasePipeline):
                  analysis.build_number, analysis.step_name, analysis.test_name,
                  algorithm_settings)
 
-    # If retries has not exceeded max count and there are available bots,
-    # we can start the analysis.
-    can_start_analysis = (swarming_util.BotsAvailableForTask(step_metadata) if
-                          retries <= flake_constants.MAX_RETRY_TIMES else True)
+    # Check for bot availability. If force is specified or we've already retried
+    # past the max amount, continue regardless of bot availability.
+    can_start_analysis = _CanStartAnalysis(step_metadata, retries, force)
+
     if can_start_analysis:
       # Bots are available or pipeline starts off peak hours,
       # trigger the task.
