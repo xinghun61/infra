@@ -190,13 +190,6 @@ func (f *fetcher) fetchLUCIBuilds(c context.Context, builds buildChan) error {
 	go func() {
 		defer close(foundBuilds)
 		searchErr = bbutil.Search(c, req, f.MinCreationDate, foundBuilds)
-		if searchErr != nil {
-			return
-		}
-
-		// TODO(nodir): remove a week after no build has "LUCI " builder name prefix.
-		req.Tag(bbutil.FormatTag("builder", "LUCI "+f.Builder)) // overrides previous req.Tag() call
-		searchErr = bbutil.Search(c, req, f.MinCreationDate, foundBuilds)
 	}()
 
 	// check that Rietveld patchsets still exist.
@@ -343,20 +336,6 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 		if *err != nil {
 			return
 		}
-
-		// TODO(nodir): remove a week after no build has "LUCI " builder name prefix.
-		req.Tag(
-			bbutil.FormatTag("builder", "LUCI "+f.Builder),
-			bbutil.FormatTag(bbutil.TagBuildSet, g.Key)) // overrides previous req.Tag() call
-		var prefixedBuilds []*buildbucket.ApiCommonBuildMessage
-		prefixedBuilds, *err = bbutil.SearchAll(c, req, f.MinCreationDate)
-		if *err != nil {
-			return
-		}
-		// this preserves order because prefixed builds are older than
-		// non-prefixed on a given builder (because we don't go back to
-		// prefixed).
-		builds = append(builds, prefixedBuilds...)
 
 		// Reverse order to make it oldest-to-newest.
 		for i := 0; i < len(builds)/2; i++ {

@@ -136,13 +136,6 @@ func handleCompletedBuildbotBuild(c context.Context, build *buildbucket.ApiCommo
 }
 
 func handleFailedLUCIBuild(c context.Context, build *buildbucket.ApiCommonBuildMessage, bbService *buildbucket.Service) error {
-	// TODO(nodir): remove a week after no build has "LUCI " builder name prefix.
-	if strings.HasPrefix(bbutil.Builder(build), "LUCI ") {
-		// Do not retry residue prefixed builds.
-		// Prefixed builders were undefined.
-		return nil
-	}
-
 	buildSet := ""
 	attempt := -1
 	buildbotBuildID := ""

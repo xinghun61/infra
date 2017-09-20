@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
@@ -72,17 +71,6 @@ func TestAnalyze(t *testing.T) {
 				err := json.NewEncoder(w).Encode(res)
 				testCtx.So(err, ShouldBeNil)
 			}()
-
-			// TODO(nodir): remove a week after no build has "LUCI " builder name prefix.
-			for _, t := range r.URL.Query()["tag"] {
-				k, v := bbutil.ParseTag(t)
-				if k == "builder" {
-					if strings.HasPrefix(v, "LUCI ") {
-						return
-					}
-					break
-				}
-			}
 
 			buildSetFmt := buildSetPrefix + "%d"
 			buildSet := ""
