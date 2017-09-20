@@ -26,10 +26,10 @@ If you don't have npm or node installed yet, make sure you do so using
 `gclient runhooks` to pick up infra's CIPD packages for nodejs and
 npm (avoid using other installation methods, as they won't match what
 the builders and other infra devs have installed). *Then* make sure you've
-run 
+run
 ```
 eval `../../../../env.py`
-``` 
+```
 in that shell window.
 
 ## Getting up and running locally
@@ -92,7 +92,7 @@ of commits to include. Then:
 
 - Send the RELNOTES.md update CL for review by OWNERS.
 - Land CL.
-- run `make deploy-prod`
+- run `make deploy_prod`
 - Go to the Versions section of the
 [App Engine Console](https://appengine.google.com/) and update the default
 version of the app services. *Rembember to update both the "default" and "analyzer"
@@ -105,7 +105,7 @@ may cause errors and/or monitoring alerts to fire.
 Sheriff-o-Matic also has a staging server with the AppEngine ID
 sheriff-o-matic-staging. To deploy to staging:
 
-- run `make deploy-staging`
+- run `make deploy_staging`
 - Optional: Go to the Versions section of the
 [App Engine Console](https://appengine.google.com/) and update the default
 version of the app.
