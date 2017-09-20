@@ -42,7 +42,10 @@ func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest
 }
 
 func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common.IsolateAPI) error {
-	logging.Debugf(c, "[tracker] Worker done (run ID: %d, worker: %s)", req.RunId, req.Worker)
+	logging.Debugf(c, "[tracker] Worker done (run ID: %d, worker: %q, isolated output: %q)",
+		req.RunId, req.Worker, req.IsolatedOutputHash)
+
+	// Get keys for entities.
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 	runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
 	analyzerName, err := track.ExtractAnalyzerName(req.Worker)
@@ -51,47 +54,36 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	}
 	analyzerKey := ds.NewKey(c, "AnalyzerRun", analyzerName, 0, runKey)
 	workerKey := ds.NewKey(c, "WorkerRun", req.Worker, 0, analyzerKey)
+
 	// If this worker is already marked as done, abort.
-	wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
-	if err := ds.Get(c, wr); err != nil {
+	workerRes := &track.WorkerRunResult{ID: 1, Parent: workerKey}
+	if err := ds.Get(c, workerRes); err != nil {
 		return fmt.Errorf("failed to read state of WorkerRunResult: %v", err)
 	}
-	if tricium.IsDone(wr.State) {
-		logging.Infof(c, "Worker (%s) already tracked as done", wr.Name)
+	if tricium.IsDone(workerRes.State) {
+		logging.Infof(c, "Worker (%s) already tracked as done", workerRes.Name)
 		return nil
 	}
-	// Collect and process isolated output.
+
+	// Get run entity for this worker.
 	run := &track.WorkflowRun{ID: 1, Parent: requestKey}
 	if err := ds.Get(c, run); err != nil {
 		return fmt.Errorf("failed to get WorkflowRun: %v", err)
 	}
-	resultsStr, err := isolator.FetchIsolatedResults(c, run.IsolateServerURL, req.IsolatedOutputHash)
+
+	// Process isolated output and collect comments.
+	// NB! This only applies to analyzers outputting comments.
+	comments, err := collectComments(c, req.Provides, isolator, run.IsolateServerURL, req.IsolatedOutputHash, workerKey)
 	if err != nil {
-		return fmt.Errorf("failed to fetch isolated worker result: %v", err)
+		return fmt.Errorf("failed to get worker results: %v", err)
 	}
-	logging.Infof(c, "Fetched isolated result: %q", resultsStr)
-	results := tricium.Data_Results{}
-	if err := json.Unmarshal([]byte(resultsStr), &results); err != nil {
-		return fmt.Errorf("failed to unmarshal results data: %v", err)
-	}
-	comments := []*track.Comment{}
-	for _, comment := range results.Comments {
-		json, err := json.Marshal(comment)
-		if err != nil {
-			return fmt.Errorf("failed to marshal comment data: %v", err)
-		}
-		comments = append(comments, &track.Comment{
-			Parent:    workerKey,
-			Comment:   json,
-			Category:  comment.Category,
-			Platforms: results.Platforms,
-		})
-	}
-	// Compute state of this worker that is done.
+
+	// Compute state of this worker.
 	workerState := tricium.State_SUCCESS
 	if req.ExitCode != 0 {
 		workerState = tricium.State_FAILURE
 	}
+
 	// Compute state of parent analyzer.
 	analyzer := &track.AnalyzerRun{ID: analyzerName, Parent: runKey}
 	if err := ds.Get(c, analyzer); err != nil {
@@ -106,7 +98,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		return fmt.Errorf("failed to get WorkerRunResult entities: %v", err)
 	}
 	analyzerState := tricium.State_SUCCESS
-	analyzerNumComments := len(results.Comments)
+	analyzerNumComments := len(comments)
 	for _, wr := range workerResults {
 		if wr.Name == req.Worker {
 			wr.State = workerState // Setting state to what we will store in the below transaction.
@@ -126,6 +118,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			break
 		}
 	}
+
 	// If analyzer is done then we should merge results if needed.
 	if tricium.IsDone(analyzerState) {
 		logging.Infof(c, "Analyzer %s completed with %d comments", analyzerName, analyzerNumComments)
@@ -134,6 +127,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		// Comments are included by default. For conflicting comments, select which comments
 		// to include and set other comments include to false.
 	}
+
 	// Compute run state.
 	var analyzerResults []*track.AnalyzerRunResult
 	for _, analyzerName := range run.Analyzers {
@@ -164,11 +158,19 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			break
 		}
 	}
-	logging.Infof(c, "[driver] Updating state: worker %s: %s, analyzer %s: %s, run %s, %s",
+
+	// Write state changes and results in parallel in a transaction.
+	logging.Infof(c, "Updating state: worker %s: %s, analyzer %s: %s, run %s, %s",
 		req.Worker, workerState, analyzerName, analyzerState, req.RunId, runState)
+
+	// Now that all prerequisite data was loaded, run the mutations in a transaction.
 	ops := []func() error{
 		// Add comments.
 		func() error {
+			// Stop if there are no comments.
+			if len(comments) == 0 {
+				return nil
+			}
 			if err := ds.Put(c, comments); err != nil {
 				return fmt.Errorf("failed to add Comment entries: %v", err)
 			}
@@ -191,14 +193,10 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		},
 		// Update worker state, isolated output, and number of result comments.
 		func() error {
-			wr := &track.WorkerRunResult{
-				ID:             1,
-				Parent:         workerKey,
-				State:          workerState,
-				IsolatedOutput: req.IsolatedOutputHash,
-				NumComments:    len(results.Comments),
-			}
-			if err := ds.Put(c, wr); err != nil {
+			workerRes.State = workerState
+			workerRes.IsolatedOutput = req.IsolatedOutputHash
+			workerRes.NumComments = len(comments)
+			if err := ds.Put(c, workerRes); err != nil {
 				return fmt.Errorf("failed to update WorkerRunResult: %v", err)
 			}
 			return nil
@@ -265,6 +263,10 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	switch request.Consumer {
 	case tricium.Consumer_GERRIT:
 		if tricium.IsDone(analyzerState) {
+			// Only report results if there were comments.
+			if len(comments) == 0 {
+				return nil
+			}
 			b, err := proto.Marshal(&admin.ReportResultsRequest{
 				RunId:    req.RunId,
 				Analyzer: analyzer.ID,
@@ -293,4 +295,36 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		// Do nothing.
 	}
 	return nil
+}
+
+func collectComments(c context.Context, t tricium.Data_Type, isolator common.IsolateAPI,
+	isolateServerURL, isolatedOutputHash string, workerKey *ds.Key) ([]*track.Comment, error) {
+	comments := []*track.Comment{}
+	switch t {
+	case tricium.Data_RESULTS:
+		resultsStr, err := isolator.FetchIsolatedResults(c, isolateServerURL, isolatedOutputHash)
+		if err != nil {
+			return comments, fmt.Errorf("failed to fetch isolated worker result: %v", err)
+		}
+		logging.Infof(c, "Fetched isolated result (%q): %q", isolatedOutputHash, resultsStr)
+		results := tricium.Data_Results{}
+		if err := json.Unmarshal([]byte(resultsStr), &results); err != nil {
+			return comments, fmt.Errorf("failed to unmarshal results data: %v", err)
+		}
+		for _, comment := range results.Comments {
+			j, err := json.Marshal(comment)
+			if err != nil {
+				return comments, fmt.Errorf("failed to marshal comment data: %v", err)
+			}
+			comments = append(comments, &track.Comment{
+				Parent:    workerKey,
+				Comment:   j,
+				Category:  comment.Category,
+				Platforms: results.Platforms,
+			})
+		}
+	default:
+		// No comments.
+	}
+	return comments, nil
 }

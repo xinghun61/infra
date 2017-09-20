@@ -6,6 +6,8 @@ syntax = "proto3";
 
 package admin;
 
+import "infra/tricium/api/v1/data.proto";
+
 // Tracker implements the internal tracker API of the Tricium service.
 service Tracker {
 
@@ -57,6 +59,7 @@ message WorkerDoneRequest {
   string worker = 2;
   string isolated_output_hash = 3;
   int64 exit_code = 4;
+  tricium.Data.Type provides = 5;
 }
 
 message WorkerDoneResponse {

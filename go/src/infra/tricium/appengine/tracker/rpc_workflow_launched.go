@@ -108,10 +108,11 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 						entities = append(entities, []interface{}{
 							worker,
 							&track.WorkerRunResult{
-								ID:     1,
-								Name:   worker.ID,
-								Parent: workerKey,
-								State:  tricium.State_PENDING,
+								ID:       1,
+								Name:     worker.ID,
+								Analyzer: v.Analyzer.ID,
+								Parent:   workerKey,
+								State:    tricium.State_PENDING,
 							},
 						}...)
 					}

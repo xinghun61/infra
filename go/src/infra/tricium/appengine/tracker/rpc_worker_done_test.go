@@ -87,6 +87,7 @@ func TestWorkerDoneRequest(t *testing.T) {
 			RunId:    request.ID,
 			Worker:   fileIsolator,
 			ExitCode: 0,
+			Provides: tricium.Data_FILES,
 		}, &mockIsolator{})
 		So(err, ShouldBeNil)
 
@@ -99,11 +100,10 @@ func TestWorkerDoneRequest(t *testing.T) {
 			So(wr.State, ShouldEqual, tricium.State_SUCCESS)
 		})
 
-		Convey("Marks analyzer as done and adds number of comments", func() {
+		Convey("Marks analyzer as done and adds no comments", func() {
 			ar := &track.AnalyzerRunResult{ID: 1, Parent: analyzerKey}
 			So(ds.Get(ctx, ar), ShouldBeNil)
 			So(ar.State, ShouldEqual, tricium.State_SUCCESS)
-			So(ar.NumComments, ShouldEqual, 1)
 		})
 
 		// Mark remaining workers as done.
@@ -111,23 +111,25 @@ func TestWorkerDoneRequest(t *testing.T) {
 			RunId:    request.ID,
 			Worker:   clangIsolatorWindows,
 			ExitCode: 0,
+			Provides: tricium.Data_RESULTS,
 		}, &mockIsolator{})
 		So(err, ShouldBeNil)
 		err = workerDone(ctx, &admin.WorkerDoneRequest{
 			RunId:    request.ID,
 			Worker:   clangIsolatorUbuntu,
 			ExitCode: 0,
+			Provides: tricium.Data_RESULTS,
 		}, &mockIsolator{})
 		So(err, ShouldBeNil)
 
-		Convey("Marks workflow as done and adds number of comments", func() {
+		Convey("Marks workflow as done and adds comments", func() {
 			wr := &track.WorkflowRunResult{ID: 1, Parent: runKey}
 			So(ds.Get(ctx, wr), ShouldBeNil)
 			So(wr.State, ShouldEqual, tricium.State_SUCCESS)
-			So(wr.NumComments, ShouldEqual, 3)
+			So(wr.NumComments, ShouldEqual, 2)
 		})
 
-		Convey("Marks request as done and adds number of comments", func() {
+		Convey("Marks request as done", func() {
 			ar := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
 			So(ds.Get(ctx, ar), ShouldBeNil)
 			So(ar.State, ShouldEqual, tricium.State_SUCCESS)

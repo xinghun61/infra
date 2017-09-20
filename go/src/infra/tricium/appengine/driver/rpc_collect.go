@@ -44,18 +44,21 @@ func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowCac
 	if err != nil {
 		return fmt.Errorf("failed to read workflow config: %v", err)
 	}
-
 	isolatedOutput, exitCode, err := sw.Collect(c, wf.SwarmingServer, req.TaskId)
 	if err != nil {
 		return fmt.Errorf("failed to collect swarming task result: %v", err)
 	}
-
+	w, err := wf.GetWorker(req.Worker)
+	if err != nil {
+		return fmt.Errorf("failed to get worker output type: %v", err)
+	}
 	// Mark worker as done.
 	b, err := proto.Marshal(&admin.WorkerDoneRequest{
 		RunId:              req.RunId,
 		Worker:             req.Worker,
 		IsolatedOutputHash: isolatedOutput,
 		ExitCode:           exitCode,
+		Provides:           w.Provides,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to encode worker done request: %v", err)

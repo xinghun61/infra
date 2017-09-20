@@ -193,7 +193,7 @@ func (s isolateServer) FetchIsolatedResults(c context.Context, serverURL, isolat
 	}
 	resultsFile, ok := outIso.Files["tricium/data/results.json"]
 	if !ok {
-		return "", fmt.Errorf("missing results file in isolated output, digest: %s", resultsFile.Digest)
+		return "", fmt.Errorf("missing results file in isolated output, isolated output: %s", isolatedOutput)
 	}
 	buf := &buffer{}
 	if err := s.fetch(c, serverURL, string(resultsFile.Digest), buf); err != nil {

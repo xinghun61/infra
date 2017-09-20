@@ -222,7 +222,7 @@ type Comment struct {
 	Parent *ds.Key `gae:"$parent"`
 	// Comment encoded as JSON.
 	//
-	// The comment must be an encoded tricium.Data_Comment proto message
+	// The comment must be an encoded tricium.Data_Comment JSON message
 	// TODO(emso): Consider storing structured comment data.
 	Comment []byte `gae:",noindex"`
 	// Comment category with subcategories.
