@@ -60,7 +60,9 @@ def parse_args(args):  # pragma: no cover
   repo.repos_dir = os.path.abspath(opts.repo_dir)
 
   if not opts.ts_mon_task_job_name:
-    opts.ts_mon_task_job_name = urlparse.urlparse(repo.url).path
+    parsed_repo_url = urlparse.urlparse(repo.url)
+    opts.ts_mon_task_job_name = '%s%s' % (
+        parsed_repo_url.netloc, parsed_repo_url.path)
 
   logs.process_argparse_options(opts)
   ts_mon.process_argparse_options(opts)
