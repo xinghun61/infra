@@ -9,6 +9,7 @@ import (
 	"bufio"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -163,18 +164,15 @@ func issueFromID(ctx context.Context, cfg *RepoConfig, ID int32, cs *Clients) (*
 }
 
 func resultText(cfg *RepoConfig, rc *RelevantCommit, issueExists bool) string {
+	sort.Slice(rc.Result, func(i, j int) bool {
+		if rc.Result[i].RuleResultStatus == rc.Result[j].RuleResultStatus {
+			return rc.Result[i].RuleName < rc.Result[j].RuleName
+		}
+		return rc.Result[i].RuleResultStatus < rc.Result[j].RuleResultStatus
+	})
 	rows := []string{}
 	for _, rr := range rc.Result {
-		row := ""
-		switch rr.RuleResultStatus {
-		case rulePassed:
-			row = fmt.Sprintf("%s PASSED", rr.RuleName)
-		case ruleFailed:
-			row = fmt.Sprintf("%s FAILED (%s)", rr.RuleName, rr.Message)
-		case ruleSkipped:
-			row = fmt.Sprintf("%s was SKIPPED", rr.RuleName)
-		}
-		rows = append(rows, row)
+		rows = append(rows, fmt.Sprintf(" - %s: %s -- %s", rr.RuleName, rr.RuleResultStatus.ToString(), rr.Message))
 	}
 
 	results := fmt.Sprintf("Here's a summary of the rules that were executed: \n%s",
@@ -187,7 +185,7 @@ func resultText(cfg *RepoConfig, rc *RelevantCommit, issueExists bool) string {
 	description := "An audit of the git repository at %q found at least one violation when auditing" +
 		" commit %s created by %s and committed by %s.\n\n%s"
 
-	return fmt.Sprintf(description, cfg.RepoURL, rc.CommitHash, rc.AuthorAccount, rc.CommitterAccount, results)
+	return fmt.Sprintf(description, cfg.RepoURL(), rc.CommitHash, rc.AuthorAccount, rc.CommitterAccount, results)
 
 }
 
