@@ -161,10 +161,13 @@ def build_main(api, mastername, buildername, buildnumber, project_name,
     with api.context(cwd=api.path['checkout']):
       # Run Linux tests everywhere, Windows tests only on public CI.
       if api.platform.is_linux or project_name == 'infra':
-        api.python(
-            'infra python tests',
-            'test.py',
-            ['test'])
+        # TODO(tandrii): maybe get back coverage on 32-bit once
+        # http://crbug/766416 is resolved.
+        args = ['test']
+        if (api.platform.is_linux and api.platform.bits == 32 and
+            project_name == 'infra_internal'):
+          args.append('--no-coverage')
+        api.python('infra python tests', 'test.py', args)
 
       # Run Glyco tests only on public Linux\Mac CI.
       if project_name == 'infra' and not api.platform.is_win:
@@ -258,6 +261,20 @@ def GenTests(api):
   )
   yield (
     api.test('infra_internal') +
+    api.properties.git_scheduled(
+        path_config='kitchen',
+        buildername='infra-internal-continuous',
+        buildnumber=123,
+        mastername='internal.infra',
+        repository=
+            'https://chrome-internal.googlesource.com/infra/infra_internal',
+    ) +
+    api.override_step_data(
+        'cipd - upload packages', api.json.output(cipd_json_output))
+  )
+  yield (
+    api.test('infra_internal-32_bit') +
+    api.platform.bits(32) + api.platform.name('linux') +
     api.properties.git_scheduled(
         path_config='kitchen',
         buildername='infra-internal-continuous',
