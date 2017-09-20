@@ -57,6 +57,9 @@ class DataPoint(ndb.Model):
   # The number of iterations run to determine this data point's pass rate.
   iterations = ndb.IntegerProperty(indexed=False)
 
+  # The total seconds that these iterations took to compute.
+  elapsed_seconds = ndb.IntegerProperty(indexed=False, default=0)
+
   @staticmethod
   def Create(build_number=None,
              pass_rate=None,
@@ -68,7 +71,8 @@ class DataPoint(ndb.Model):
              blame_list=None,
              try_job_url=None,
              has_valid_artifact=True,
-             iterations=None):
+             iterations=None,
+             elapsed_seconds=0):
     data_point = DataPoint()
     data_point.build_number = build_number
     data_point.pass_rate = pass_rate
@@ -81,6 +85,7 @@ class DataPoint(ndb.Model):
     data_point.try_job_url = try_job_url
     data_point.has_valid_artifact = has_valid_artifact
     data_point.iterations = iterations
+    data_point.elapsed_seconds = elapsed_seconds
     return data_point
 
   def GetCommitPosition(self, revision):
@@ -149,6 +154,7 @@ class DataPoint(ndb.Model):
     new_pass_rate = (old_passed_tests + merge_passed_tests) / new_iterations
     self.pass_rate = new_pass_rate
     self.iterations = new_iterations
+    self.elapsed_seconds += data_point.elapsed_seconds
 
 
 class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,

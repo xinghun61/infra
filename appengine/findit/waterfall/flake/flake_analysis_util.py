@@ -65,8 +65,7 @@ def NormalizeDataPointsByBuildNumber(data_points):
       normalized_data_points, key=lambda k: k.run_point_number, reverse=True)
 
 
-def CalculateNumberOfIterationsToRunWithinTimeout(analysis, iterations,
-                                                  timeout_per_test):
+def CalculateNumberOfIterationsToRunWithinTimeout(analysis, timeout_per_test):
   """Calculates the number of iterations that will run in one swarming task.
 
   Uses the total iterations, target timeout, and the timeout per test to
@@ -74,7 +73,6 @@ def CalculateNumberOfIterationsToRunWithinTimeout(analysis, iterations,
 
   Args:
     analysis (MasterFlakeAnalysis): The analysis being run.
-    iterations (int): Total number of iterations left.
     timeout_per_test (int): Time, in seconds, that each test will take.
 
   Returns:
@@ -86,12 +84,10 @@ def CalculateNumberOfIterationsToRunWithinTimeout(analysis, iterations,
       'swarming_rerun',
       {}).get('timeout_per_swarming_task_seconds',
               flake_constants.DEFAULT_TIMEOUT_PER_SWARMING_TASK_SECONDS)
-  target_iterations = timeout_per_swarming_task / timeout_per_test
+  iterations = timeout_per_swarming_task / timeout_per_test
 
-  iterations_this_task = min(iterations, target_iterations)
-
-  # We should never be running 0 tasks.
-  return max(1, iterations_this_task)
+  # We should never be running 0 iterations.
+  return max(1, iterations)
 
 
 def EstimateSwarmingIterationTimeout(analysis):
@@ -100,41 +96,25 @@ def EstimateSwarmingIterationTimeout(analysis):
   Uses the amount of time previous data points at this build number took to
   estimate a timeout for an iteration.
   """
-  sample_size = analysis.algorithm_parameters.get('swarming_rerun', {}).get(
-      'data_point_sample_size', flake_constants.DEFAULT_DATA_POINT_SAMPLE_SIZE)
-
   default_timeout_per_test = analysis.algorithm_parameters.get(
       'swarming_rerun',
       {}).get('timeout_per_test_seconds',
               flake_constants.DEFAULT_TIMEOUT_PER_TEST_SECONDS)
 
-  # Trim off the points that have None for iterations.
-  # TODO(https://crbug.com/761025): Investigate and fix models missing
-  # fields by the time they're saved.
-  points = [
-      point for point in analysis.data_points if point.iterations is not None
-  ]
-  last_n_points = points[-sample_size:]
+  points = [point for point in analysis.data_points if point.pass_rate >= 0]
 
-  if not last_n_points:
+  if not points:
     return default_timeout_per_test
 
-  tasks = [
-      FlakeSwarmingTask.Get(analysis.master_name, analysis.builder_name,
-                            point.build_number, analysis.step_name,
-                            analysis.test_name) for point in last_n_points
-  ]
+  for point in points:
+    assert point.elapsed_seconds > 0
+    assert point.iterations > 0
 
-  assert None not in tasks
-  assert len(tasks) == len(last_n_points)
-
-  total_iterations = sum([task.tries for task in tasks])
-  total_time = sum([(task.completed_time - task.started_time).total_seconds()
-                    for task in tasks])
+  total_seconds = sum([point.elapsed_seconds for point in points])
+  total_iterations = sum([point.iterations for point in points])
 
   # Set lower threshold for timeout per iteration.
-  time_per_iteration = max(default_timeout_per_test,
-                           total_time / total_iterations)
+  time_per_iteration = float(total_seconds) / float(total_iterations)
 
   return int(
       flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER * time_per_iteration)

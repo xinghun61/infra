@@ -1,6 +1,7 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+import datetime
 import mock
 
 from common import constants
@@ -73,6 +74,8 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     task.has_valid_artifact = has_valid_artifact
     task.tries = tries
     task.successes = successes
+    task.started_time = datetime.datetime(1, 1, 1, 0, 0)
+    task.completed_time = datetime.datetime(1, 1, 1, 0, 1)
 
     build_info_122 = BuildInfo(master_name, builder_name, build_number)
     build_info_122.commit_position = commit_position - 10
@@ -94,6 +97,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('r990', data_point.previous_build_git_hash)
     self.assertEqual(990, data_point.previous_build_commit_position)
     self.assertEqual(blame_list, data_point.blame_list)
+    self.assertEqual(60, data_point.elapsed_seconds)
 
   @mock.patch.object(build_util, 'GetBuildInfo')
   def testCreateDataPointNoPreviousBuild(self, mocked_build_info):
@@ -119,6 +123,8 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     task.has_valid_artifact = has_valid_artifact
     task.tries = tries
     task.successes = successes
+    task.started_time = datetime.datetime(1, 1, 1, 0, 0)
+    task.completed_time = datetime.datetime(1, 1, 1, 0, 2)
 
     build_info = BuildInfo(master_name, builder_name, build_number)
     build_info.commit_position = commit_position
@@ -137,6 +143,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(data_point.previous_build_git_hash)
     self.assertIsNone(data_point.previous_build_commit_position)
     self.assertEqual(blame_list, data_point.blame_list)
+    self.assertEqual(120, data_point.elapsed_seconds)
 
   @mock.patch.object(build_util, 'GetBuildInfo', return_value=None)
   def testCreateDataPointNoBuildInfo(self, _):
@@ -156,6 +163,8 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     task.has_valid_artifact = has_valid_artifact
     task.tries = tries
     task.successes = successes
+    task.started_time = datetime.datetime(1, 1, 1, 0, 0)
+    task.completed_time = datetime.datetime(1, 1, 1, 0, 1)
 
     with self.assertRaises(pipeline.Retry):
       update_flake_analysis_data_points_pipeline._CreateDataPoint(task)
@@ -184,6 +193,8 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     task.has_valid_artifact = has_valid_artifact
     task.tries = tries
     task.successes = successes
+    task.started_time = datetime.datetime(1, 1, 1, 0, 0)
+    task.completed_time = datetime.datetime(1, 1, 1, 0, 1)
 
     build_info = BuildInfo(master_name, builder_name, build_number)
     build_info.commit_position = commit_position
