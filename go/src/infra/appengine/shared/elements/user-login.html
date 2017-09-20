@@ -20,17 +20,32 @@
   <script>
     'use strict';
 
+    /**
+     * `user-login` shows the login/logout links and current user, if provided.
+     *
+     * When the user is logged in provide, at least, the user and logoutURL properties.
+     * When there is no user logged in provide, at least the loginURL property.
+     * In either case, bother URLs may be provided but only one will be shown.
+     *
+     *
+     * @customElement
+     * @polymer
+     * @demo /demo/user-login_demo.html
+     */
     class UserLogin extends Polymer.Element {
       static get is() { return 'user-login'; }
 
       static get properties() {
         return {
+          /** The login URL must be provided if no user is given. */
           loginUrl: {
             type: String,
           },
+          /** The logout URL must be provided if a user is given. */
           logoutUrl: {
             type: String,
           },
+          /** The logged in user. If this isn't given the login URL will be shown.*/
           user: {
             type: String,
             value: "",
