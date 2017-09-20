@@ -1,28 +1,23 @@
 package handler
 
 import (
-	"crypto/sha1"
 	"fmt"
 	"net/http"
 	"net/url"
 	"sort"
 	"strconv"
-	"sync"
 	"time"
 
 	"golang.org/x/net/context"
 
 	"infra/appengine/sheriff-o-matic/som/analyzer"
 	"infra/appengine/sheriff-o-matic/som/client"
-	"infra/appengine/sheriff-o-matic/som/model"
 	"infra/monitoring/messages"
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
 	tq "go.chromium.org/gae/service/taskqueue"
-	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
-	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/common/tsmon/field"
 	"go.chromium.org/luci/common/tsmon/metric"
 	"go.chromium.org/luci/server/router"
@@ -30,10 +25,6 @@ import (
 
 const (
 	logdiffQueue = "logdiff"
-
-	// groupingPoolSize controls the number of goroutines used to creating
-	// groupings when post processing the generated alerts. Has not been tuned.
-	groupingPoolSize = 2
 )
 
 var (
@@ -119,17 +110,10 @@ func GetAnalyzeHandler(ctx *router.Context) {
 				anyErr = r.err
 			}
 		}
-
 		if anyErr != nil {
 			// TODO: Deal with partial failures so some errors are tolerated so long
 			// as some analysis succeeded.
 			errStatus(c, w, http.StatusInternalServerError, anyErr.Error())
-			return
-		}
-
-		err := mergeAlertsByReason(c, alerts)
-		if err != nil {
-			errStatus(c, w, http.StatusInternalServerError, err.Error())
 			return
 		}
 	}
@@ -150,90 +134,6 @@ func GetAnalyzeHandler(ctx *router.Context) {
 		}
 	}
 	w.Write([]byte("ok"))
-}
-
-// mergeAlertsByReason merges alerts for step failures occurring across multiple builders into
-// one alert with multiple builders indicated.
-// FIXME: Move the regression range logic into package regrange
-func mergeAlertsByReason(ctx context.Context, alerts []messages.Alert) error {
-	byReason := map[string][]messages.Alert{}
-	for _, alert := range alerts {
-		bf, ok := alert.Extension.(messages.BuildFailure)
-		if !ok {
-			logging.Infof(ctx, "%s failed, but isn't a builder-failure: %s", alert.Key, alert.Type)
-			continue
-		}
-		r := bf.Reason
-		k := r.Kind() + "|" + r.Signature()
-		byReason[k] = append(byReason[k], alert)
-	}
-
-	sortedReasons := []string{}
-	for reason := range byReason {
-		sortedReasons = append(sortedReasons, reason)
-	}
-
-	sort.Strings(sortedReasons)
-
-	wg := sync.WaitGroup{}
-	var allErrs []error
-	for _, reason := range sortedReasons {
-		stepAlerts := byReason[reason]
-		if len(stepAlerts) == 1 {
-			continue
-		}
-
-		sort.Sort(messages.Alerts(stepAlerts))
-		mergedBF := stepAlerts[0].Extension.(messages.BuildFailure)
-
-		stepsAtFault := make([]*messages.BuildStep, len(stepAlerts))
-		for i := range stepAlerts {
-			bf, ok := stepAlerts[i].Extension.(messages.BuildFailure)
-			if !ok {
-				continue
-			}
-
-			stepsAtFault[i] = bf.StepAtFault
-		}
-		groupTitle := mergedBF.Reason.Title(stepsAtFault)
-		err := parallel.WorkPool(groupingPoolSize, func(workC chan<- func() error) {
-			for _, alr := range stepAlerts {
-				wg.Add(1)
-				alr := alr
-				workC <- func() error {
-					defer wg.Done()
-					ann := &model.Annotation{
-						KeyDigest: fmt.Sprintf("%x", sha1.Sum([]byte(alr.Key))),
-						Key:       alr.Key,
-					}
-					err := datastore.Get(ctx, ann)
-					if err != nil && err != datastore.ErrNoSuchEntity {
-						return fmt.Errorf("got err while getting annotation from key %s: %s", alr.Key, err)
-					}
-					if ann.GroupID != "" {
-						logging.Warningf(ctx, "Found groupID %s, wanted to set %s", ann.GroupID, groupTitle)
-					}
-
-					ann.GroupID = groupTitle
-					if err := datastore.Put(ctx, ann); err != nil {
-						return fmt.Errorf("got err while put: %s", err)
-					}
-					return nil
-				}
-			}
-		})
-		if err != nil {
-			allErrs = append(allErrs, err)
-		}
-	}
-
-	wg.Wait()
-
-	if len(allErrs) > 0 {
-		return errors.NewMultiError(allErrs...)
-	}
-
-	return nil
 }
 
 func enqueueLogDiffTask(ctx context.Context, alerts []messages.Alert) error {

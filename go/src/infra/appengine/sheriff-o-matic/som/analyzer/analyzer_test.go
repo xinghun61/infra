@@ -1078,6 +1078,304 @@ func (a sortAlerts) Len() int           { return len(a) }
 func (a sortAlerts) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a sortAlerts) Less(i, j int) bool { return a[i].Key > a[j].Key }
 
+func TestMergeAlertsByReason(t *testing.T) {
+	Convey("test MergeAlertsByReason", t, func() {
+		tests := []struct {
+			name     string
+			in, want []messages.Alert
+		}{
+			{
+				name: "empty",
+				want: []messages.Alert{},
+			},
+			{
+				name: "no merges",
+				in: []messages.Alert{
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{
+									"reason_a",
+								},
+							},
+							RegressionRanges: []*messages.RegressionRange{
+								{
+									Repo: "repo.a",
+								},
+							},
+						},
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder B"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{
+									"reason_b",
+								},
+							},
+							RegressionRanges: []*messages.RegressionRange{
+								{
+									Repo: "repo.b",
+								},
+							},
+						},
+					},
+				},
+				want: []messages.Alert{
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{
+									"reason_a",
+								},
+							},
+							RegressionRanges: []*messages.RegressionRange{
+								{
+									Repo: "repo.a",
+								},
+							},
+						},
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder B"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{
+									"reason_b",
+								},
+							},
+							RegressionRanges: []*messages.RegressionRange{
+								{
+									Repo: "repo.b",
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				name: "multiple builders fail on step_a",
+				in: []messages.Alert{
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []*messages.RegressionRange{
+								{
+									Repo: "repo.a",
+								},
+							},
+						},
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder B"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []*messages.RegressionRange{
+								{
+									Repo: "repo.b",
+								},
+							},
+						},
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder C"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []*messages.RegressionRange{
+								{
+									Repo: "repo.c",
+								},
+							},
+						},
+					},
+				},
+				want: []messages.Alert{
+					{
+						Title: "fakeTitle",
+						Type:  messages.AlertBuildFailure,
+						Body:  "builder A, builder B, builder C",
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+								{Name: "builder B"},
+								{Name: "builder C"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []*messages.RegressionRange{
+								{
+									Repo:      "repo.a",
+									Positions: []string{},
+								},
+								{
+									Repo:      "repo.b",
+									Positions: []string{},
+								},
+								{
+									Repo:      "repo.c",
+									Positions: []string{},
+								},
+							},
+						},
+					},
+				},
+			},
+			{
+				name: "multiple builders fail on step_a with tests",
+				in: []messages.Alert{
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+						},
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder B"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+						},
+					},
+				},
+				want: []messages.Alert{
+					{
+						Title: "fakeTitle",
+						Type:  messages.AlertBuildFailure,
+						Body:  "builder A, builder B",
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+								{Name: "builder B"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []*messages.RegressionRange{},
+						},
+					},
+				},
+			},
+			{
+				name: "multiple builders fail on step_a with tests, with links",
+				in: []messages.Alert{
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+						},
+						Links: []messages.Link{
+							{
+								Title: "link 1",
+								Href:  "https://google.com",
+							},
+						},
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder B"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+						},
+						Links: []messages.Link{
+							{
+								Title: "link 2",
+								Href:  "https://youtube.com",
+							},
+						},
+					},
+				},
+				want: []messages.Alert{
+					{
+						Title: "fakeTitle",
+						Type:  messages.AlertBuildFailure,
+						Body:  "builder A, builder B",
+						Extension: messages.BuildFailure{
+							Builders: []messages.AlertedBuilder{
+								{Name: "builder A"},
+								{Name: "builder B"},
+							},
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{},
+							},
+							RegressionRanges: []*messages.RegressionRange{},
+						},
+						Links: []messages.Link{
+							{
+								Title: "link 1",
+								Href:  "https://google.com",
+							},
+							{
+								Title: "link 2",
+								Href:  "https://youtube.com",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		ctx := context.Background()
+
+		a := newTestAnalyzer(0, 10)
+		for _, test := range tests {
+			test := test
+			Convey(test.name, func() {
+				got := a.mergeAlertsByReason(ctx, test.in)
+				So(got, ShouldResemble, test.want)
+			})
+		}
+	})
+}
+
 func TestStepFailures(t *testing.T) {
 
 	Convey("test StepFailures", t, func() {

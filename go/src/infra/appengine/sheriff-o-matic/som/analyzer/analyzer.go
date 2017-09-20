@@ -217,6 +217,8 @@ func (a *Analyzer) BuilderAlerts(ctx context.Context, tree string, master *messa
 		}
 	}
 
+	ret = a.mergeAlertsByReason(ctx, ret)
+
 	return ret
 }
 
@@ -389,6 +391,158 @@ func (a *Analyzer) builderAlerts(ctx context.Context, tree string, master *messa
 	errs = append(errs, es...)
 
 	return alerts, errs
+}
+
+// mergeAlertsByReason merges alerts for step failures occurring across multiple builders into
+// one alert with multiple builders indicated.
+// FIXME: Move the regression range logic into package regrange
+func (a *Analyzer) mergeAlertsByReason(ctx context.Context, alerts []messages.Alert) []messages.Alert {
+	mergedAlerts := []messages.Alert{}
+	byReason := map[string][]messages.Alert{}
+	for _, alert := range alerts {
+		bf, ok := alert.Extension.(messages.BuildFailure)
+		if !ok {
+			logging.Infof(ctx, "%s failed, but isn't a builder-failure: %s", alert.Key, alert.Type)
+			// Not a builder failure, so don't bother trying to group it by step name.
+			mergedAlerts = append(mergedAlerts, alert)
+			continue
+		}
+		r := bf.Reason
+		k := r.Kind() + "|" + r.Signature()
+		byReason[k] = append(byReason[k], alert)
+	}
+
+	sortedReasons := []string{}
+	for reason := range byReason {
+		sortedReasons = append(sortedReasons, reason)
+	}
+
+	sort.Strings(sortedReasons)
+
+	// Merge build failures by step, then make a single alert listing all of the builders
+	// failing for that step.
+	for _, reason := range sortedReasons {
+		stepAlerts := byReason[reason]
+		if len(stepAlerts) == 1 {
+			mergedAlerts = append(mergedAlerts, stepAlerts[0])
+			continue
+		}
+
+		sort.Sort(messages.Alerts(stepAlerts))
+		merged := stepAlerts[0]
+		for _, stepAlert := range stepAlerts[1:] {
+			merged.Links = append(merged.Links, stepAlert.Links...)
+		}
+
+		mergedBF := merged.Extension.(messages.BuildFailure)
+		if len(mergedBF.Builders) > 1 {
+			logging.Errorf(ctx, "Alert shouldn't have multiple builders before merging by reason: %+v", reason)
+		}
+
+		stepsAtFault := make([]*messages.BuildStep, len(stepAlerts))
+		for i := range stepAlerts {
+			bf, ok := stepAlerts[i].Extension.(messages.BuildFailure)
+			if !ok {
+				continue
+			}
+
+			stepsAtFault[i] = bf.StepAtFault
+		}
+		merged.Title = mergedBF.Reason.Title(stepsAtFault)
+
+		// Clear out the list of builders because we're going to reconstruct it.
+		mergedBF.Builders = []messages.AlertedBuilder{}
+		mergedBF.RegressionRanges = []*messages.RegressionRange{}
+
+		builders := map[string]messages.AlertedBuilder{}
+		regressionRanges := map[string][]*messages.RegressionRange{}
+
+		for _, alert := range stepAlerts { // stepAlerts[1:]? already have [0] in mergedBf
+			bf := alert.Extension.(messages.BuildFailure)
+			if len(bf.Builders) > 1 {
+				logging.Errorf(ctx, "Alert shouldn't have multiple builders before merging by reason: %+v", reason)
+			}
+			if bf.TreeCloser {
+				mergedBF.TreeCloser = true
+			}
+
+			builder := bf.Builders[0]
+			// If any of the builders would call it a tree closer,
+			// mark the merged alert as one.
+			mergedBF.TreeCloser = bf.TreeCloser || mergedBF.TreeCloser
+			if ab, ok := builders[builder.Name]; ok {
+				if ab.FirstFailure < builder.FirstFailure {
+					builder.FirstFailure = ab.FirstFailure
+				}
+				if ab.LatestFailure > builder.LatestFailure {
+					builder.LatestFailure = ab.LatestFailure
+				}
+				if ab.StartTime < builder.StartTime || builder.StartTime == 0 {
+					builder.StartTime = ab.StartTime
+				}
+				builder.Count += ab.Count
+			}
+			builders[builder.Name] = builder
+			regressionRanges[builder.Name] = bf.RegressionRanges
+		}
+
+		builderNames := []string{}
+		for name := range builders {
+			builderNames = append(builderNames, name)
+		}
+		sort.Strings(builderNames)
+
+		for _, name := range builderNames {
+			builder := builders[name]
+			mergedBF.Builders = append(mergedBF.Builders, builder)
+			// Fix this so it de-dupes regression ranges, or at least dedupes the Revisions in
+			// in each repo.
+			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges, regressionRanges[builder.Name]...)
+		}
+
+		// De-dupe regression ranges by repo.
+		posByRepo := map[string][]string{}
+		for _, regRange := range mergedBF.RegressionRanges {
+			posByRepo[regRange.Repo] = append(posByRepo[regRange.Repo], regRange.Positions...)
+		}
+
+		mergedBF.RegressionRanges = []*messages.RegressionRange{}
+		for repo, pos := range posByRepo {
+			mergedBF.RegressionRanges = append(mergedBF.RegressionRanges, &messages.RegressionRange{
+				Repo:      repo,
+				Positions: uniques(pos),
+			})
+		}
+
+		sort.Sort(regrange.ByRepo(mergedBF.RegressionRanges))
+
+		if len(mergedBF.Builders) > 1 {
+			builderNames := []string{}
+			for _, b := range mergedBF.Builders {
+				builderNames = append(builderNames, b.Name)
+				if b.StartTime < merged.StartTime || merged.StartTime == 0 {
+					merged.StartTime = b.StartTime
+				}
+			}
+			merged.Body = strings.Join(builderNames, ", ")
+		}
+
+		shrunkRegressionRanges := []*messages.RegressionRange{}
+
+		// Save space for long commit position lists by just keeping the first and last.
+		for _, r := range mergedBF.RegressionRanges {
+			if len(r.Positions) > 2 {
+				r.Positions = []string{r.Positions[0], r.Positions[len(r.Positions)-1]}
+			}
+			shrunkRegressionRanges = append(shrunkRegressionRanges, r)
+		}
+		mergedBF.RegressionRanges = shrunkRegressionRanges
+
+		merged.Extension = mergedBF
+		mergedAlerts = append(mergedAlerts, merged)
+	}
+
+	return mergedAlerts
 }
 
 // GetRevisionSummaries returns a slice of RevisionSummaries for the list of hashes.
