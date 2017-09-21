@@ -7,6 +7,7 @@ package tricium
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
@@ -65,4 +66,21 @@ func WriteDataType(prefix string, t interface{}) (string, error) {
 		return path, fmt.Errorf("failed to write to file: %v", err)
 	}
 	return path, nil
+}
+
+// ReadDataType reads a Tricium data type to the provided type.
+func ReadDataType(prefix string, t interface{}) error {
+	p, err := GetPathForDataType(t)
+	if err != nil {
+		return fmt.Errorf("failed to get path for type: %v", err)
+	}
+	path := path.Join(prefix, p)
+	msg, err := ioutil.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("failed to read file: %v", err)
+	}
+	if err := json.Unmarshal(msg, &t); err != nil {
+		return fmt.Errorf("failed to unmarshal: %v", err)
+	}
+	return nil
 }

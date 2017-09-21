@@ -61,8 +61,8 @@ message Data {
   message Files {
     int64 platforms = 1;
 
-    // Path to files from the root of the isolated input.
-    repeated string path = 2;
+    // Paths to files from the root of the isolated input.
+    repeated string paths = 2;
   }
 
 

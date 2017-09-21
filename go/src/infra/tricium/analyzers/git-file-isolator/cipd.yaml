@@ -1,0 +1,4 @@
+package: infra/tricium/analyzer/git-file-isolator
+install_mode: symlink
+data:
+- file: isolator

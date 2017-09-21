@@ -1,0 +1,5 @@
+{
+  "repository": "https://chromium.googlesource.com/infra/infra",
+  "ref": "refs/changes/49/668449/1",
+  "paths": ["go/src/infra/tricium/analyzers/git-file-isolator/README.md"]
+}
