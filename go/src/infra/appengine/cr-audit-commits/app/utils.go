@@ -182,10 +182,10 @@ func resultText(cfg *RepoConfig, rc *RelevantCommit, issueExists bool) string {
 		return results
 	}
 
-	description := "An audit of the git repository at %q found at least one violation when auditing" +
-		" commit %s created by %s and committed by %s.\n\n%s"
+	description := "An audit of the git commit at %q found at least one violation. \n" +
+		" The commit was created by %s and committed by %s.\n\n%s"
 
-	return fmt.Sprintf(description, cfg.RepoURL(), rc.CommitHash, rc.AuthorAccount, rc.CommitterAccount, results)
+	return fmt.Sprintf(description, cfg.LinkToCommit(rc.CommitHash), rc.AuthorAccount, rc.CommitterAccount, results)
 
 }
 
