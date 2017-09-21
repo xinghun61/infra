@@ -187,7 +187,7 @@
             </td>
             <td>{{ crash.crash_type }}</td>
             <td>
-              <a href="./result-feedback?key={{crash.key}}" target="_blank">{{crash.signature}}</a>
+              <a href="./result-feedback?key={{crash.key}}" target="_blank"><pre>{{crash.signature}}</pre></a>
             </td>
             {% if crash.regression_range %}
               <td><a href="https://chromium.googlesource.com/chromium/src/+log/{{crash.regression_range[0]}}..{{crash.regression_range[1]}}?pretty=fuller">{{crash.regression_range[0]}} : {{crash.regression_range[1]}}</td>
