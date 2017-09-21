@@ -254,7 +254,9 @@
           $('#range-container').hide();
         }
 
-        if (swarmingTaskId) {
+        /*Temporarily disable showing swarming tasks for try jobs.
+          TODO(crbug/767541): Re-enable showing swarming tasks for try jobs.*/
+        if (swarmingTaskId && !tryJobUrl) {
           $('#swarming-task-link').attr('href', 'https://chromium-swarm.appspot.com/task?id=' + swarmingTaskId);
           $('#swarming-task-link').text(swarmingTaskId);
           $('#swarming-task-container').show();
