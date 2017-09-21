@@ -67,13 +67,19 @@ _MOCK_PROJECT_CONFIG = {
     'top_n': 4
 }
 
+_MOCK_REPO_TO_DEP_PATH = {
+    'https://chromium_repo.git': 'src',
+    'https://chromium.v8.git': 'src/v8',
+}
+
 _MOCK_CONFIG = {
     'fracas': _MOCK_FRACAS_CONFIG,
     'cracas': _MOCK_FRACAS_CONFIG,
     'clusterfuzz': _MOCK_CLUSTERFUZZ_CONFIG,
     'uma_sampling_profiler': _MOCK_UMA_SAMPLING_PROFILER_CONFIG,
     'component_classifier': _MOCK_COMPONENT_CONFIG,
-    'project_classifier': _MOCK_PROJECT_CONFIG
+    'project_classifier': _MOCK_PROJECT_CONFIG,
+    'repo_to_dep_path': _MOCK_REPO_TO_DEP_PATH,
 }
 
 

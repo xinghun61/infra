@@ -334,6 +334,7 @@ class CrashConfig(BaseHandler):
         'uma_sampling_profiler': settings.uma_sampling_profiler,
         'component_classifier': settings.component_classifier,
         'project_classifier': settings.project_classifier,
+        'repo_to_dep_path': settings.repo_to_dep_path,
     }
 
     return {'template': 'crash_config.html', 'data': data}

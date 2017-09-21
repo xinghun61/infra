@@ -112,6 +112,10 @@ class CrashConfig(VersionedConfig):
   component_classifier = ndb.JsonProperty(indexed=False, default={},
                                           compressed=True)
 
+  # A mapping from repo_url to dep_path.
+  repo_to_dep_path = ndb.JsonProperty(indexed=False, default={},
+                                      compressed=True)
+
   def GetClientConfig(self, client_id):
     """Gets client specific config using client_id."""
     if client_id == CrashClient.FRACAS:
