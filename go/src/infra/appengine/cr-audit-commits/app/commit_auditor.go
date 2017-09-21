@@ -8,6 +8,7 @@ package crauditcommits
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -77,7 +78,14 @@ var (
 // results and update the RelevantCommit entries in the datastore inside a
 // transaction.
 func CommitAuditor(rc *router.Context) {
-	ctx, resp := rc.Context, rc.Writer
+	outerCtx, resp := rc.Context, rc.Writer
+
+	// Create a derived context with a 5 minute timeout s.t. we have enough
+	// time to save results for at least some of the audited commits,
+	// considering that cron jobs have a hard timeout of 10 minutes.
+	ctx, cancelInnerCtx := context.WithTimeout(outerCtx, time.Minute*time.Duration(5))
+	defer cancelInnerCtx()
+
 	cfg, repo, err := loadConfig(rc)
 	if err != nil {
 		http.Error(resp, err.Error(), 500)
@@ -154,11 +162,18 @@ func CommitAuditor(rc *router.Context) {
 		originalCommits = append(originalCommits, &RelevantCommit{CommitHash: auditedCommit.CommitHash, RepoStateKey: auditedCommit.RepoStateKey})
 	}
 
+	select {
+	case <-ctx.Done():
+		logging.Warningf(outerCtx, "The audit jobs' context timed out after 5 minutes")
+	default:
+		logging.Infof(ctx, "Audit completed in time")
+	}
+
 	// We save all the results produced by the workers in a single
 	// transaction. We do it this way because there is rate limit of 1 QPS
 	// in a single entity group. (All relevant commits for a single repo
 	// are contained in a single entity group)
-	err = ds.RunInTransaction(ctx, func(ctx context.Context) error {
+	err = ds.RunInTransaction(outerCtx, func(ctx context.Context) error {
 		commitsToPut := make([]*RelevantCommit, 0, len(auditedCommits))
 		if err := ds.Get(ctx, originalCommits); err != nil {
 			return err
@@ -209,8 +224,13 @@ func startAuditWorkers(ctx context.Context, ap AuditParams, wp *workerParams, nW
 func audit(ctx context.Context, n int, ap AuditParams, wp *workerParams) {
 	defer func() { wp.workerFinished <- true }()
 	for job := range wp.jobs {
-		logging.Infof(ctx, "Worker %d about to run job %s", n, job.CommitHash)
-		runRules(ctx, job, ap, wp)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			logging.Infof(ctx, "Worker %d about to run job %s", n, job.CommitHash)
+			runRules(ctx, job, ap, wp)
+		}
 	}
 	logging.Infof(ctx, "Worker %d sees no more jobs in the channel", n)
 	wp.finishedCleanly <- true
@@ -246,10 +266,17 @@ func runRules(ctx context.Context, rc *RelevantCommit, ap AuditParams, wp *worke
 		if rs.MatchesRelevantCommit(rc) {
 			ap.TriggeringAccount = ars.Account
 			for _, f := range ars.Funcs {
-				currentRuleResult := *f(ctx, &ap, rc, wp.clients)
-				rc.Result = append(rc.Result, currentRuleResult)
-				if currentRuleResult.RuleResultStatus == ruleFailed {
-					rc.Status = auditCompletedWithViolation
+				select {
+				case <-ctx.Done():
+					rc.Retries++
+					wp.audited <- rc
+					return
+				default:
+					currentRuleResult := *f(ctx, &ap, rc, wp.clients)
+					rc.Result = append(rc.Result, currentRuleResult)
+					if currentRuleResult.RuleResultStatus == ruleFailed {
+						rc.Status = auditCompletedWithViolation
+					}
 				}
 			}
 		}
