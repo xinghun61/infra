@@ -6,6 +6,7 @@
 <link rel="import" href="/elements/last-updated-message.html">
 <link rel="import" href="/elements/tree-status.html">
 <link rel="import" href="/elements/status-table.html">
+<link rel="import" href="/elements/shared/elements/user-login.html">
 
 <script src="/bower_components/moment/min/moment.min.js"></script>
 <script src="/bower_components/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
@@ -26,6 +27,9 @@
       }
       .content {
         padding: 30px;
+      }
+      last-updated-message {
+        padding-right: 1em;
       }
       .subtext {
         font-size: .80em;
@@ -51,11 +55,10 @@
         <app-toolbar>
           <div main-title>Chrome Operations Status Dashboard</div>
           <last-updated-message last-updated="[[lastUpdated]]"></last-updated-message>
-          <!-- <user-login
+          <user-login
                    login-url="[[loginUrl]]"
                    logout-url="[[logoutUrl]]"
                    user="[[user]]"></user-login>
-          -->
         </app-toolbar>
       </app-header>
       <div class="content">
