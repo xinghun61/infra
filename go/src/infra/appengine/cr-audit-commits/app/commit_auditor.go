@@ -230,6 +230,8 @@ func runRules(ctx context.Context, rc *RelevantCommit, ap AuditParams, wp *worke
 		if r != nil {
 			rc.Retries++
 			logging.Errorf(ctx, "Some rule panicked while auditing %s with message: %s", rc.CommitHash, r)
+			logging.Warningf(ctx, "Discarding incomplete results: %s", rc.Result)
+			rc.Result = []RuleResult{}
 			if rc.Retries > MaxRetriesPerCommit {
 				rc.Status = auditFailed
 			}
