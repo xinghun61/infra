@@ -27,8 +27,8 @@ def _SortConfig(config):
     # project_pattern.
     hosts = project_pattern[3]
     for index, host in enumerate(hosts or []):
-      if not host.endswith('/'):
-        hosts[index] = host + '/'
+      if host.endswith('/'):
+        hosts[index] = host[:-1]
 
     if hosts:
       hosts.sort(key=lambda host: -len(host.split('/')))

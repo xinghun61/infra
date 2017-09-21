@@ -12,7 +12,7 @@ from analysis.type_enums import LanguageType
 class ProjectClassifier(object):
   """Determines the project of a crash - (project_name, project_path).
 
-  For example: ('chromium', 'src/'), ('skia', 'src/skia/'), ...etc.
+  For example: ('chromium', 'src'), ('skia', 'src/skia'), ...etc.
   """
 
   def __init__(self, projects, top_n_frames,

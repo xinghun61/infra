@@ -57,7 +57,7 @@ _MOCK_COMPONENT_CONFIG = {
 
 _MOCK_PROJECT_CONFIG = {
     'project_path_function_hosts': [
-        ['android_os', ['googleplex-android/'], ['android.'], None],
+        ['android_os', ['googleplex-android'], ['android.'], None],
         ['chromium', None, ['org.chromium'], ['src/', 'src/d/dep1', 'src/dep2']]
     ],
     'non_chromium_project_rank_priority': {
@@ -89,8 +89,8 @@ class CrashConfigTest(TestCase):
     crash_config._SortConfig(config)
     expected_config = copy.deepcopy(_MOCK_CONFIG)
     expected_config['project_classifier'][
-        'project_path_function_hosts'][1][3] = ['src/d/dep1/', 'src/dep2/',
-                                                'src/']
+        'project_path_function_hosts'][1][3] = ['src/d/dep1', 'src/dep2',
+                                                'src']
     self.assertDictEqual(expected_config, config)
 
   def testValidateChromeCrashConfig(self):
@@ -356,8 +356,8 @@ class CrashConfigTest(TestCase):
 
     expected_config = copy.deepcopy(_MOCK_CONFIG)
     expected_config['project_classifier'][
-        'project_path_function_hosts'][1][3] = ['src/d/dep1/', 'src/dep2/',
-                                                'src/']
+        'project_path_function_hosts'][1][3] = ['src/d/dep1', 'src/dep2',
+                                                'src']
 
     self.assertDictEqual(expected_config, response.json_body)
 
