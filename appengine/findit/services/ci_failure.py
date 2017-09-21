@@ -6,6 +6,7 @@
 import logging
 
 from common.waterfall import failure_type
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import analysis_status
 from model import result_status
 from model.wf_analysis import WfAnalysis
@@ -196,3 +197,20 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
   analysis.put()
 
   return failure_info, True
+
+
+def AnyNewBuildSucceeded(master_name, builder_name, build_number):
+  latest_build_numbers = buildbot.GetRecentCompletedBuilds(
+      master_name, builder_name, HttpClientAppengine())
+
+  for newer_build_number in xrange(build_number + 1,
+                                   latest_build_numbers[0] + 1):
+    # Checks all builds after current build.
+    newer_build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                               newer_build_number)
+    if newer_build_info and newer_build_info.result in [
+        buildbot.SUCCESS, buildbot.WARNINGS
+    ]:
+      return True
+
+  return False

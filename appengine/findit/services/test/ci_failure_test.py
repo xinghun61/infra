@@ -341,3 +341,21 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
 
     with self.assertRaises(Exception):
       ci_failure._ExtractBuildInfo(master_name, builder_name, build_number)
+
+  @mock.patch.object(
+      buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
+  @mock.patch.object(
+      buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
+  @mock.patch.object(buildbot, 'GetBuildResult')
+  def testAnyNewBuildSucceededPassedThenFailed(self, mock_fn, *_):
+    mock_fn.side_effect = [buildbot.SUCCESS, buildbot.FAILURE]
+    self.assertTrue(ci_failure.AnyNewBuildSucceeded('m', 'b', 123))
+
+  @mock.patch.object(
+      buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
+  @mock.patch.object(
+      buildbot, 'GetRecentCompletedBuilds', return_value=[125, 124])
+  @mock.patch.object(buildbot, 'GetBuildResult')
+  def testAnyNewBuildSucceeded(self, mock_fn, *_):
+    mock_fn.side_effect = [buildbot.FAILURE, buildbot.FAILURE]
+    self.assertFalse(ci_failure.AnyNewBuildSucceeded('m', 'b', 123))
