@@ -11,9 +11,9 @@ import (
 	ds "go.chromium.org/gae/service/datastore"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/luci/common/auth/identity"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
-	"go.chromium.org/luci/server/auth/identity"
 
 	"infra/tricium/api/v1"
 	trit "infra/tricium/appengine/common/testing"

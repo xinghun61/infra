@@ -57,7 +57,7 @@ var defaultConfig = application.Config{
 	MaxScriptPathLen:  127, // Maximum POSIX shebang length.
 }
 
-func mainImpl(c context.Context) int {
+func mainImpl(c context.Context, argv []string) int {
 	// Initialize our CIPD package loader from the environment.
 	//
 	// If we don't have an environment-specific CIPD cache directory, use one
@@ -77,11 +77,11 @@ func mainImpl(c context.Context) int {
 	}
 
 	defaultConfig.WithVerificationConfig = withVerificationConfig
-	return defaultConfig.Main(c)
+	return defaultConfig.Main(c, argv)
 }
 
 func main() {
 	c := context.Background()
 	c = gologger.StdConfig.Use(logging.SetLevel(c, logging.Warning))
-	os.Exit(mainImpl(c))
+	os.Exit(mainImpl(c, os.Args[1:]))
 }
