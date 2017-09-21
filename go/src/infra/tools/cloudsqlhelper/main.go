@@ -227,7 +227,7 @@ func GetApplication() *cli.Application {
 		Commands: []*subcommands.Command{
 			subcommands.CmdHelp,
 
-			&subcommands.Command{
+			{
 				UsageLine: "proxy",
 				ShortDesc: "launches cloud_sql_proxy",
 				LongDesc:  "Launches cloud_sql_proxy and waits for Ctrl+C",
@@ -238,7 +238,7 @@ func GetApplication() *cli.Application {
 				},
 			},
 
-			&subcommands.Command{
+			{
 				UsageLine: "create-db",
 				ShortDesc: "creates empty database",
 				LongDesc:  "Creates empty database if it doesn't exist",
@@ -249,7 +249,7 @@ func GetApplication() *cli.Application {
 				},
 			},
 
-			&subcommands.Command{
+			{
 				UsageLine: "drop-db",
 				ShortDesc: "drops the database",
 				LongDesc:  "Drops the database if it exists",
@@ -260,7 +260,7 @@ func GetApplication() *cli.Application {
 				},
 			},
 
-			&subcommands.Command{
+			{
 				UsageLine: "migrate-up",
 				ShortDesc: "applies all pending migrations to the database",
 				LongDesc: "Looks at the currently active migration version and will " +
@@ -272,7 +272,7 @@ func GetApplication() *cli.Application {
 				},
 			},
 
-			&subcommands.Command{
+			{
 				UsageLine: "migrate-down",
 				ShortDesc: "rolls back the last applied migration",
 				LongDesc:  "Rolls back the last applied migration (only one!)",
@@ -283,7 +283,7 @@ func GetApplication() *cli.Application {
 				},
 			},
 
-			&subcommands.Command{
+			{
 				UsageLine: "migrate-to <version>",
 				ShortDesc: "migrates to the given version (up or down)",
 				LongDesc:  "Migrates to the given version (up or down)",
@@ -294,7 +294,7 @@ func GetApplication() *cli.Application {
 				},
 			},
 
-			&subcommands.Command{
+			{
 				UsageLine: "show-version",
 				ShortDesc: "prints current schema version, as stored in the DB itself",
 				LongDesc:  "Prints current schema version, as stored in the DB itself",
@@ -305,7 +305,7 @@ func GetApplication() *cli.Application {
 				},
 			},
 
-			&subcommands.Command{
+			{
 				UsageLine: "force-version <version>",
 				ShortDesc: "sets the schema version without doing any migrations",
 				LongDesc: "Sets the schema version without doing any migrations, " +
@@ -317,7 +317,7 @@ func GetApplication() *cli.Application {
 				},
 			},
 
-			&subcommands.Command{
+			{
 				UsageLine: "new-migration",
 				ShortDesc: "creates empty migration",
 				LongDesc:  "Creates a pair of files for new migration",

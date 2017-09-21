@@ -13,8 +13,8 @@ import (
 
 	"golang.org/x/net/context"
 
-  te "infra/appengine/sheriff-o-matic/som/testexpectations"
 	"infra/appengine/sheriff-o-matic/som/client"
+	te "infra/appengine/sheriff-o-matic/som/testexpectations"
 	"infra/monitoring/messages"
 )
 

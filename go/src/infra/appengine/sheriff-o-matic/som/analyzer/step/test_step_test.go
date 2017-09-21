@@ -11,10 +11,10 @@ import (
 
 	"golang.org/x/net/context"
 
-	"infra/appengine/test-results/model"
-	te "infra/appengine/sheriff-o-matic/som/testexpectations"
 	"infra/appengine/sheriff-o-matic/som/client"
 	testhelper "infra/appengine/sheriff-o-matic/som/client/test"
+	te "infra/appengine/sheriff-o-matic/som/testexpectations"
+	"infra/appengine/test-results/model"
 	"infra/monitoring/messages"
 
 	"go.chromium.org/gae/service/info"

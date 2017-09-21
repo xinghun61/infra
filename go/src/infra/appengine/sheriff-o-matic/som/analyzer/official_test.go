@@ -65,7 +65,7 @@ func TestGetVersionNumberFromProperties(t *testing.T) {
 		Convey("has chrome_version property", func() {
 			b := &messages.Build{
 				Properties: [][]interface{}{
-					[]interface{}{"chrome_version", "22.0.blah", "buildbucket"},
+					{"chrome_version", "22.0.blah", "buildbucket"},
 				},
 			}
 

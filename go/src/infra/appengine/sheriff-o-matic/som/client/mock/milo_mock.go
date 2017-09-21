@@ -5,11 +5,12 @@
 package mock
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	proto "go.chromium.org/luci/milo/api/proto"
 	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
-	reflect "reflect"
 )
 
 // MockBuildbotClient is a mock of BuildbotClient interface
