@@ -25,6 +25,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
@@ -48,6 +49,7 @@ import (
 	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/discovery"
 	"infra/appengine/luci-migration/scheduling"
+	"infra/appengine/luci-migration/storage"
 )
 
 const accessGroup = "luci-migration-access"
@@ -93,6 +95,61 @@ func prepareTemplates() *templates.Bundle {
 			}, nil
 		},
 	}
+}
+
+func cronUpdateBugDescriptions(c *router.Context) error {
+	// Standard cron job timeout is 10min.
+	c.Context, _ = context.WithDeadline(c.Context, clock.Now(c.Context).Add(10*time.Minute))
+	deadline, _ := c.Context.Deadline()
+
+	transport, err := auth.GetRPCTransport(c.Context, auth.AsSelf)
+	if err != nil {
+		return errors.Annotate(err, "could not get RPC transport").Err()
+	}
+	monorail := bugs.DefaultFactory(transport)
+
+	// Note: in practice, this code needs to run a constant number of times
+	// so don't bother with concurrency of two queries.
+	var toUpdate []*storage.Builder
+	baseQ := datastore.NewQuery(storage.BuilderKind).KeysOnly(true)
+	err = datastore.GetAll(c.Context, baseQ.Eq("IssueDescriptionVersion", nil), &toUpdate)
+	if err != nil {
+		return err
+	}
+	err = datastore.GetAll(c.Context, baseQ.Lt("IssueDescriptionVersion", bugs.DescriptionVersion), &toUpdate)
+	if err != nil {
+		return err
+	}
+
+	logging.Infof(c.Context, "%d bugs to update", len(toUpdate))
+	if len(toUpdate) == 0 {
+		return nil
+	}
+
+	return parallel.WorkPool(10, func(work chan<- func() error) {
+		for _, builder := range toUpdate {
+			builder := builder
+			work <- func() error {
+				return datastore.RunInTransaction(c.Context, func(c context.Context) error {
+					if deadline.Sub(clock.Now(c)) < time.Minute {
+						return fmt.Errorf("not enough time")
+					}
+					err := datastore.Get(c, builder)
+					if err != nil {
+						return errors.Annotate(err, "could not get builder %q", &builder.ID).Err()
+					}
+					if builder.IssueDescriptionVersion >= bugs.DescriptionVersion {
+						return nil
+					}
+					err = bugs.UpdateBuilderBugDescription(c, monorail, builder)
+					if err != nil {
+						return err
+					}
+					return datastore.Put(c, builder)
+				}, nil)
+			}
+		}
+	})
 }
 
 func cronDiscoverBuilders(c *router.Context) error {
@@ -174,6 +231,8 @@ func init() {
 
 	standard.InstallHandlers(r)
 	r.GET("/internal/cron/discover-builders", base, errHandler(cronDiscoverBuilders))
+	// TODO: make it an API instead of cron when we have a strong need for API.
+	r.GET("/internal/cron/update-bugs", base, errHandler(cronUpdateBugDescriptions))
 	r.POST("/_ah/push-handlers/buildbucket", base, taskHandler(handleBuildbucketPubSub))
 	r.GET("/internal/cron/analyze-builders", base, errHandler(cronAnalyzeBuilders))
 	r.POST("/internal/task/analyze-builder/*ignored", base, taskHandler(handleAnalyzeBuilder))

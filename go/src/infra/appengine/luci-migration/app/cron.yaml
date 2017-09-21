@@ -2,6 +2,20 @@ cron:
 - description: discover builders
   url: /internal/cron/discover-builders
   schedule: every 1 hours
+  # Cron may fail if there is a lot of new builders to discover.
+  # Such a task should be retried until there is nothing left to discover.
+  retry_parameters:
+    min_backoff_seconds: 2
+    max_backoff_seconds: 2
+
+- description: Update bug description
+  url: /internal/cron/update-bugs
+  schedule: every sunday 00:00
+  # Cron may fail if there is a lot of bugs to update.
+  # Such a task should be retried until there is nothing left to update.
+  retry_parameters:
+    min_backoff_seconds: 2
+    max_backoff_seconds: 2
 
 - description: Analyze builders
   url: /internal/cron/analyze-builders

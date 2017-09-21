@@ -47,7 +47,8 @@ type Builder struct {
 	SchedulingType config.SchedulingType
 	OS             config.OS
 
-	IssueID IssueID
+	IssueID                 IssueID
+	IssueDescriptionVersion int
 
 	LUCIBuildbucketBucket string
 

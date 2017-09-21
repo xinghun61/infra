@@ -172,6 +172,9 @@ message Update {
     string status = 2;
     // Adds or removes labels.
     repeated string labels = 3;
+    // IsDescription makes the request content the new bug description
+    // instead of a new comment.
+    bool is_description = 13;
 }
 
 // Identifies a Monorail user.

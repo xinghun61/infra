@@ -37,13 +37,19 @@ func TestDescription(t *testing.T) {
 		c := context.Background()
 		c = memory.Use(c)
 
-		var actualMonorailReq *monorail.InsertIssueRequest
-		monorailServer := &monorailtest.ServerMock{
+		var actualIssueReq *monorail.InsertIssueRequest
+		var actualCommentReq *monorail.InsertCommentRequest
+		server := &monorailtest.ServerMock{
 			InsertIssueImpl: func(c context.Context, in *monorail.InsertIssueRequest) (*monorail.InsertIssueResponse, error) {
-				actualMonorailReq = in
+				actualIssueReq = in
 				return &monorail.InsertIssueResponse{Issue: &monorail.Issue{Id: 55}}, nil
 			},
+			InsertCommentImpl: func(c context.Context, in *monorail.InsertCommentRequest) (*monorail.InsertCommentResponse, error) {
+				actualCommentReq = in
+				return &monorail.InsertCommentResponse{}, nil
+			},
 		}
+		client := ForwardingFactory(server)
 
 		builder := &storage.Builder{
 			ID: storage.BuilderID{
@@ -57,10 +63,6 @@ func TestDescription(t *testing.T) {
 			},
 		}
 
-		err := CreateBuilderBug(c, ForwardingFactory(monorailServer), builder)
-		So(err, ShouldBeNil)
-		So(builder.IssueID.ID, ShouldEqual, 55)
-
 		expectedBugDescription := strings.TrimSpace(`
 Migrate builder tryserver.chromium.linux:linux_chromium_rel_ng to LUCI.
 
@@ -73,23 +75,46 @@ https://app.example.com/masters/tryserver.chromium.linux/builders/linux_chromium
 
 Migration app will close this bug when the builder is entirely migrated from Buildbot to LUCI.
 `)
-		So(actualMonorailReq, ShouldResemble, &monorail.InsertIssueRequest{
-			ProjectId: "chromium",
-			SendEmail: true,
-			Issue: &monorail.Issue{
-				Status:      "Available",
-				Summary:     "Migrate \"linux_chromium_rel_ng\" to LUCI",
-				Description: expectedBugDescription,
-				Components:  []string{"Infra>Platform"},
-				Labels: []string{
-					"Via-Luci-Migration",
-					"Type-Task",
-					"Pri-3",
-					"Master-tryserver.chromium.linux",
-					"Restrict-View-Google",
-					"OS-LINUX",
+
+		Convey("CreateBuilderBug", func() {
+			err := CreateBuilderBug(c, client, builder)
+			So(err, ShouldBeNil)
+			So(builder.IssueID.ID, ShouldEqual, 55)
+
+			So(actualIssueReq, ShouldResemble, &monorail.InsertIssueRequest{
+				ProjectId: "chromium",
+				SendEmail: true,
+				Issue: &monorail.Issue{
+					Status:      "Available",
+					Summary:     "Migrate \"linux_chromium_rel_ng\" to LUCI",
+					Description: expectedBugDescription,
+					Components:  []string{"Infra>Platform"},
+					Labels: []string{
+						"Via-Luci-Migration",
+						"Type-Task",
+						"Pri-3",
+						"Master-tryserver.chromium.linux",
+						"Restrict-View-Google",
+						"OS-LINUX",
+					},
 				},
-			},
+			})
+		})
+
+		Convey("UpdateBuilderBugDescription", func() {
+			builder.IssueID.ID = 54
+			err := UpdateBuilderBugDescription(c, client, builder)
+			So(err, ShouldBeNil)
+			So(actualCommentReq, ShouldResemble, &monorail.InsertCommentRequest{
+				Issue: &monorail.IssueRef{
+					ProjectId: "chromium",
+					IssueId:   54,
+				},
+				Comment: &monorail.InsertCommentRequest_Comment{
+					Content: expectedBugDescription,
+					Updates: &monorail.Update{IsDescription: true},
+				},
+			})
 		})
 	})
 }

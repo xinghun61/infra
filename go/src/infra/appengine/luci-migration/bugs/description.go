@@ -49,19 +49,26 @@ https://{{.Hostname}}/masters/{{.Builder.ID.Master|pathEscape}}/builders/{{.Buil
 Migration app will close this bug when the builder is entirely migrated from Buildbot to LUCI.
 `)))
 
-// CreateBuilderBug creates a Monorail issue to migrate the builder to LUCI.
-// builder.IssueID must specify the target monorail hostname and project.
-// On success, builder.IssueID.ID is set the created issue ID.
-func CreateBuilderBug(c context.Context, client ClientFactory, builder *storage.Builder) error {
+// DescriptionVersion is the current version of bug description.
+const DescriptionVersion = 1
+
+func bugDescription(c context.Context, builder *storage.Builder) string {
 	descArgs := map[string]interface{}{
 		"Builder":  builder,
 		"Hostname": info.DefaultVersionHostname(c),
 	}
-	descBuf := &bytes.Buffer{}
-	if err := descriptionTmpl.Execute(descBuf, descArgs); err != nil {
-		return errors.Annotate(err, "could not execute description template").Err()
+	buf := &bytes.Buffer{}
+	if err := descriptionTmpl.Execute(buf, descArgs); err != nil {
+		panic(fmt.Errorf("bug desription didn't render: %s", err))
 	}
+	return buf.String()
+}
 
+// CreateBuilderBug creates a Monorail issue to migrate the builder to LUCI.
+// builder.IssueID must specify the target monorail hostname and project.
+// On success, builder.IssueID.ID is set to the created issue ID and
+// IssueDescriptionVersion is updated.
+func CreateBuilderBug(c context.Context, client ClientFactory, builder *storage.Builder) error {
 	// excludes invalid chars from a label, like Monorail server does.
 	excludeInvalid := func(s string) string {
 		return strings.Map(func(r rune) rune {
@@ -78,7 +85,7 @@ func CreateBuilderBug(c context.Context, client ClientFactory, builder *storage.
 		Issue: &monorail.Issue{
 			Status:      "Available",
 			Summary:     fmt.Sprintf("Migrate %q to LUCI", builder.ID.Builder),
-			Description: descBuf.String(),
+			Description: bugDescription(c, builder),
 			Components:  []string{"Infra>Platform"},
 			Labels: []string{
 				"Via-Luci-Migration",
@@ -100,5 +107,28 @@ func CreateBuilderBug(c context.Context, client ClientFactory, builder *storage.
 	}
 
 	builder.IssueID.ID = int(res.Issue.Id)
+	builder.IssueDescriptionVersion = DescriptionVersion
+	return nil
+}
+
+// UpdateBuilderBugDescription updates description of builder's monorail bug.
+// On success, updates builder.IssueDescriptionVersion.
+func UpdateBuilderBugDescription(c context.Context, client ClientFactory, builder *storage.Builder) error {
+	req := &monorail.InsertCommentRequest{
+		Issue: &monorail.IssueRef{
+			ProjectId: builder.IssueID.Project,
+			IssueId:   int32(builder.IssueID.ID),
+		},
+		Comment: &monorail.InsertCommentRequest_Comment{
+			Content: bugDescription(c, builder),
+			Updates: &monorail.Update{IsDescription: true},
+		},
+	}
+
+	_, err := client(builder.IssueID.Hostname).InsertComment(c, req)
+	if err != nil {
+		return errors.Annotate(err, "InsertComment RPC failed").Err()
+	}
+	builder.IssueDescriptionVersion = DescriptionVersion
 	return nil
 }

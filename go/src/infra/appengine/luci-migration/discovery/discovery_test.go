@@ -105,7 +105,8 @@ func TestDiscovery(t *testing.T) {
 			SchedulingType: config.SchedulingType_TRYJOBS,
 			OS:             config.OS_LINUX,
 
-			IssueID: storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 55},
+			IssueID:                 storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 55},
+			IssueDescriptionVersion: bugs.DescriptionVersion,
 
 			LUCIBuildbucketBucket: "luci.chromium.try",
 		})
