@@ -30,7 +30,6 @@ import (
 	"infra/libs/infraenv"
 	"infra/tools/kitchen/build"
 	"infra/tools/kitchen/cookflags"
-	"infra/tools/kitchen/migration"
 	"infra/tools/kitchen/third_party/recipe_engine"
 )
 
@@ -311,11 +310,6 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 	}
 	if _, ok := props[PropertyBotID]; !ok {
 		return nil, errors.Reason("chosen mode didn't add %s property", PropertyBotID).Err()
-	}
-
-	err = migration.TransformProperties(props)
-	if err != nil {
-		return nil, err
 	}
 
 	return props, nil
