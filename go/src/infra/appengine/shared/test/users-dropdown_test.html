@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<title>usersDropdown</title>
+<meta charset="utf-8">
+<link rel="import" href="/elements/users-dropdown.html">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+
+<test-fixture id="users-dropdown-test">
+  <template>
+    <users-dropdown></users-dropdown>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('users-dropdown', function() {
+    var element;
+    setup(function() {
+      element = fixture('users-dropdown-test');
+      element.suggestions = ['blah', 'blahman', 'blahdimir'];
+    });
+
+    test('toggle', function(done) {
+      flush(function() {
+        assert.isTrue(element.$.dropdown.classList.contains('hidden'));
+        element.open();
+        assert.isFalse(element.$.dropdown.classList.contains('hidden'));
+        element.close();
+        assert.isTrue(element.$.dropdown.classList.contains('hidden'));
+        done();
+      });
+    });
+
+    test('observer', function(done) {
+      flush(function() {
+        element.open();
+        element.push('suggestions', 'blah Sr.');
+        assert.equal(element.suggestions.length, 4);
+        done();
+      });
+    });
+  });
+</script>

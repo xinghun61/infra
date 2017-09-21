@@ -1,0 +1,69 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-item/paper-item.html">
+
+<dom-module id="users-dropdown">
+  <template>
+    <style>
+      .resize {
+        display: block;
+        overflow: auto;
+      }
+      .hidden {
+        display: none !important;
+      }
+    </style>
+    <div id="dropdown" class="resize">
+      <template is="dom-repeat" items="[[suggestions]]">
+        <paper-item>[[item]]</paper-item>
+      </template>
+    </div>
+  </template>
+  <script>
+    'use strict';
+
+    /**
+     * `users-dropdown` is a dropdown element displaying a list of user ids.
+     *
+     * When using this, provide an array of suggestions that should be displayed
+     * This element should, idealy, be used with user-input
+     *
+     * @customElement
+     * @polymer
+     *
+     */
+    class UsersDropdown extends Polymer.Element {
+      static get is() { return 'users-dropdown'; }
+
+      static get properties() {
+        return {
+        /**
+         * The array of users that should be listed.
+         *
+         * @type Array<string>
+         */
+          suggestions: {
+            type: Array,
+            value: () => {return []; },
+          },
+        }
+      }
+
+      ready() {
+        super.ready();
+        this.$.dropdown.classList.add('hidden');
+      }
+
+      /** Closes the dropdown element. */
+      close() {
+        this.$.dropdown.classList.add('hidden');
+      }
+
+      /** Opens the dropdown element. */
+      open() {
+        this.$.dropdown.classList.remove('hidden');
+      }
+
+    }
+    customElements.define(UsersDropdown.is, UsersDropdown);
+  </script>
+</dom-module>

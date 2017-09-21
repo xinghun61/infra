@@ -10,10 +10,8 @@ TBD: The method of importing these elements and their dependencies for use.
 ## Documenting elements
 Please add demos and documentation for elements as described in the [polymer docs](https://www.polymer-project.org/2.0/docs/tools/documentation#document-an-element).
 
-After each documentation change please update analysis.json by running:
+Check that your demo and documentation are working and correct by running:
 polymer analyze > analysis.json
-
-To check that your demo and documentation are working and correct:
 polymer serve
 
 and visit http://localhost:XXXX/components/chops-ui/docs.html
