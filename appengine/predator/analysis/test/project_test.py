@@ -21,11 +21,11 @@ class ProjectTest(unittest.TestCase):
                                    function_regexes=['android.'])
     self.chromium_project = Project('chromium',
                                     function_regexes=['org.chromium'],
-                                    host_directories=['src/'])
+                                    host_directories=['src'])
 
   def testMatchesStackFrame(self):
     """Tests that ``MatchesStackFrame`` matches frames."""
-    chromium_frame = StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [2])
+    chromium_frame = StackFrame(0, 'src', 'func', 'f.cc', 'src/f.cc', [2])
     self.assertTrue(self.chromium_project.MatchesStackFrame(chromium_frame))
     self.assertFalse(self.android_project.MatchesStackFrame(chromium_frame))
 
@@ -53,13 +53,13 @@ class ProjectTest(unittest.TestCase):
         frame_with_no_path))
 
     frame_with_no_raw_path = ProfilerStackFrame(
-        0, 0.5, 0.21, False, dep_path='src/', function='func', file_path='f.cc',
+        0, 0.5, 0.21, False, dep_path='src', function='func', file_path='f.cc',
         raw_file_path=None)
     self.assertTrue(self.chromium_project.MatchesStackFrame(
         frame_with_no_raw_path))
 
     frame_with_no_function = ProfilerStackFrame(
-        0, 0.5, 0.21, False, dep_path='src/', function=None, file_path='f.cc',
+        0, 0.5, 0.21, False, dep_path='src', function=None, file_path='f.cc',
         raw_file_path='src/f.cc')
     self.assertTrue(self.chromium_project.MatchesStackFrame(
         frame_with_no_function))
@@ -70,24 +70,24 @@ class ProjectTest(unittest.TestCase):
     self.assertFalse(self.chromium_project.MatchesTouchedFile(
         'dummy', touched_file.changed_path))
     self.assertTrue(self.chromium_project.MatchesTouchedFile(
-        'src/', touched_file.changed_path))
+        'src', touched_file.changed_path))
 
     deleted_file = FileChangeInfo(ChangeType.DELETE, 'a/b.h', None)
     self.assertTrue(self.chromium_project.MatchesTouchedFile(
-        'src/', deleted_file.changed_path))
+        'src', deleted_file.changed_path))
     self.assertFalse(self.android_project.MatchesTouchedFile(
-        'src/', deleted_file.changed_path))
+        'src', deleted_file.changed_path))
 
     add_file = FileChangeInfo(ChangeType.ADD, None, 'googleplex-android/b.java')
     self.assertTrue(self.android_project.MatchesTouchedFile(
-        'android_path/', add_file.changed_path))
+        'android_path', add_file.changed_path))
 
   def testGetName(self):
     """Tests ``GetName`` method return the project or subproject name."""
     self.assertEquals(self.android_project.GetName(), self.android_project.name)
     self.assertEquals(self.chromium_project.GetName(),
                       self.chromium_project.name)
-    self.assertEquals(self.chromium_project.GetName('src/'), 'chromium')
+    self.assertEquals(self.chromium_project.GetName('src'), 'chromium')
     self.assertEquals(self.chromium_project.GetName('src/dep'), 'chromium-dep')
     self.assertEquals(self.chromium_project.GetName('dummy/dep'),
                       'chromium-dummy_dep')

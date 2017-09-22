@@ -104,11 +104,11 @@ class Project(namedtuple('Project',
 
     # For chromium project, get the name of the sub project from ``dep_path``.
     for host_directory in self.host_directories:
-      if dep_path.startswith(host_directory):
-        path = dep_path[len(host_directory):].strip()
-        if not path:
-          return self.name
+      if dep_path == host_directory:
+        return self.name
 
+      if dep_path.startswith(host_directory + '/'):
+        path = dep_path[len(host_directory + '/'):].strip()
         return '%s-%s' % (self.name, path.split('/')[0].lower())
 
     # Unknown path, return the whole path as project name.

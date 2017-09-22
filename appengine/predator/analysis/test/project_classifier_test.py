@@ -16,7 +16,7 @@ from libs.gitiles.diff import ChangeType
 PROJECT_CONFIG = {
     'project_path_function_hosts': [
         ['android_os', ['googleplex-android/'], ['android.'], None],
-        ['chromium', None, ['org.chromium'], ['src/']]
+        ['chromium', None, ['org.chromium'], ['src']]
     ],
     'non_chromium_project_rank_priority': {
         'android_os': '-1',
@@ -41,7 +41,7 @@ class ProjectClassifierTest(AnalysisTestCase):
   def testClassifyCallStack(self):
     """Tests ``ClassifyCallStack`` method."""
     callstack = CallStack(
-        0, [StackFrame(0, 'src/', 'func', 'f.cc', 'src/f.cc', [2])])
+        0, [StackFrame(0, 'src', 'func', 'f.cc', 'src/f.cc', [2])])
     self.assertEqual(
         self.classifier.ClassifyCallStack(callstack), 'chromium')
 
@@ -69,7 +69,7 @@ class ProjectClassifierTest(AnalysisTestCase):
   def testClassifyJavaCallstack(self):
     """Tests ``ClassifyCallStack`` classify java callstack."""
     callstack = CallStack(
-        0, [StackFrame(0, 'src/', 'org.chromium.ab',
+        0, [StackFrame(0, 'src', 'org.chromium.ab',
                        'f.java', 'unknown/f.java', [32])],
         language_type=LanguageType.JAVA)
     self.assertEqual(
@@ -77,7 +77,7 @@ class ProjectClassifierTest(AnalysisTestCase):
 
   def testClassifySuspect(self):
     """Tests ``ClassifySuspect`` method."""
-    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
+    suspect = Suspect(self.GetDummyChangeLog(), 'src')
     self.assertEqual(self.classifier.ClassifySuspect(suspect), 'chromium')
 
   def testClassifyEmptySuspect(self):
@@ -93,7 +93,7 @@ class ProjectClassifierTest(AnalysisTestCase):
 
   def testClassifySuspects(self):
     """Tests ``ClassifySuspects`` classify a list of ``Suspect``s."""
-    suspect1 = Suspect(self.GetDummyChangeLog(), 'src/')
+    suspect1 = Suspect(self.GetDummyChangeLog(), 'src')
     suspect2 = Suspect(self.GetDummyChangeLog(), 'src/dep')
     suspect3 = Suspect(self.GetDummyChangeLog(), 'src/dep')
 
