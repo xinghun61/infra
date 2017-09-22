@@ -98,6 +98,9 @@ class DashBoard(BaseHandler):
         cursor=self.request.get('cursor'),
         direction=self.request.get('direction', 'next'), page_size=page_size)
 
+    # TODO(katesonia): An optimization is to index analysis.status.
+    crash_analyses = [analysis for analysis in crash_analyses
+                      if analysis.completed]
     data = {
         'start_date': time_util.FormatDatetime(start_date),
         'end_date': time_util.FormatDatetime(end_date),
