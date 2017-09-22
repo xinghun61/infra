@@ -1,7 +1,7 @@
 # vpython in Infra
 
 For general information on `vpython` see its [LUCI code base
-documentation](https://go.chromium.org/luci/tree/master/vpython).
+documentation](https://chromium.googlesource.com/infra/luci/luci-go/+/master/vpython).
 
 The LUCI `vpython` code is a set of libraries that comprise the majority of
 `vpython` functionality. Those libraries are linked together with a
