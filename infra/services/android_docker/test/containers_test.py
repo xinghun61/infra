@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+import collections
 import docker
 import mock
 import unittest
@@ -293,8 +294,16 @@ class TestDockerClient(unittest.TestCase):
     self.assertTrue(
         all(c.was_deleted for c in self.fake_client.containers.list()))
 
+  @mock.patch('os.chown')
+  @mock.patch('os.mkdir')
+  @mock.patch('os.path.exists')
+  @mock.patch('pwd.getpwnam')
   @mock.patch('docker.from_env')
-  def test_create_container(self, mock_from_env):
+  def test_create_container(self, mock_from_env, mock_getpwnam, mock_exists,
+                            mock_mkdir, mock_chown):
+    mock_getpwnam.return_value = collections.namedtuple(
+        'pwnam', 'pw_uid, pw_gid')(1,2)
+    mock_exists.return_value = False
     running_containers = [
         FakeContainer('android_serial1'),
         FakeContainer('android_serial2'),
@@ -306,6 +315,7 @@ class TestDockerClient(unittest.TestCase):
     container = containers.DockerClient().create_container(
         device, 'image', 'swarm-url.com')
     self.assertEquals(container.name, containers.get_container_name(device))
+    mock_chown.assert_called_with(mock_mkdir.call_args[0][0], 1, 2)
 
 
 class TestContainer(unittest.TestCase):

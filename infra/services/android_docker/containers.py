@@ -9,6 +9,7 @@ import docker
 import logging
 import logging.handlers
 import pipes
+import pwd
 import os
 import requests
 import socket
@@ -152,8 +153,18 @@ class DockerClient(object):
     """Creates a container for an android device."""
     container_name = get_container_name(device)
     container_hostname = get_container_hostname(device)
+    container_workdir = '/b/%s' % container_name
+    pw = pwd.getpwnam('chrome-bot')
+    uid, gid = pw.pw_uid, pw.pw_gid
+    if not os.path.exists(container_workdir):
+      os.mkdir(container_workdir)
+      os.chown(container_workdir, uid, gid)
+    else: # pragma: no cover
+      # TODO(bpastene): Remove this once existing workdirs everywhere have been
+      # chown'ed.
+      os.chown(container_workdir, uid, gid)
     volumes = _DOCKER_VOLUMES.copy()
-    volumes['/b/%s' % container_name] = '/b/'
+    volumes[container_workdir] = container_workdir
     new_container = self._client.containers.create(
         image=image_name,
         hostname=container_hostname,
