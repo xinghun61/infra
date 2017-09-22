@@ -20,7 +20,6 @@ type MockReader struct {
 	BCache            map[string]*messages.Build
 	BuildValue        *messages.Build
 	Builds            map[string]*messages.Build
-	LatestBuildsValue map[messages.MasterLocation]map[string][]*messages.Build
 	TestResultsValue  *messages.TestResults
 	StdioForStepValue []string
 	FinditResults     []*messages.FinditResult
@@ -42,11 +41,6 @@ func (m MockReader) Build(ctx context.Context, master *messages.MasterLocation, 
 		return b, nil
 	}
 	return m.Builds[key], m.BuildFetchErrs[key]
-}
-
-// LatestBuilds implements the Reader interface.
-func (m MockReader) LatestBuilds(ctx context.Context, master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
-	return m.LatestBuildsValue[*master][builder], nil
 }
 
 // TestResults implements the Reader interface.

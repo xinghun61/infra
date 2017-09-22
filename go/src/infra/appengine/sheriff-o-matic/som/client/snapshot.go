@@ -42,24 +42,6 @@ func (c *snapshot) Build(ctx context.Context, master *messages.MasterLocation, b
 	return b, err
 }
 
-func (c *snapshot) LatestBuilds(ctx context.Context, master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
-	bs, err := c.wrapped.LatestBuilds(ctx, master, builder)
-	if err != nil {
-		return nil, err
-	}
-
-	err = write(filepath.Join(c.baseDir, "latestbuilds", master.Name(), builder), bs)
-	if err != nil {
-		return nil, err
-	}
-	for _, b := range bs {
-		if err := write(filepath.Join(c.baseDir, "build", master.Name(), builder, fmt.Sprintf("%d", b.Number)), b); err != nil {
-			return nil, err
-		}
-	}
-	return bs, err
-}
-
 // BuildExtracts fetches build information for masters from CBE in parallel.
 // Returns a map of url to error for any requests that had errors.
 func (c *snapshot) BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {

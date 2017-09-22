@@ -79,27 +79,6 @@ func stripUnusedFields(b *messages.Build) {
 	b.SourceStamp.Changes = strippedChanges
 }
 
-func (r *reader) LatestBuilds(ctx context.Context, master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
-	bbClient := GetMiloBuildbot(ctx)
-
-	req := &milo.BuildbotBuildsRequest{Master: master.Name(), Builder: builder, IncludeCurrent: true}
-	resp, err := bbClient.GetBuildbotBuildsJSON(ctx, req)
-	if err != nil {
-		logging.Errorf(ctx, "error getting builds for %s/%s: %v", master.Name(), builder, err)
-		return nil, err
-	}
-
-	builds := []*messages.Build{}
-	for _, data := range resp.Builds {
-		build := &messages.Build{}
-		if err := json.Unmarshal(data.Data, build); err != nil {
-			return nil, err
-		}
-		builds = append(builds, build)
-	}
-	return builds, nil
-}
-
 func (r *reader) BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
 	bbClient := GetMiloBuildbot(ctx)
 

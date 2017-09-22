@@ -97,8 +97,6 @@ func StepURL(master *messages.MasterLocation, builder, step string, buildNum int
 type readerType interface {
 	Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error)
 
-	LatestBuilds(ctx context.Context, master *messages.MasterLocation, build string) ([]*messages.Build, error)
-
 	BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error)
 
 	StdioForStep(ctx context.Context, master *messages.MasterLocation, builder, step string, buildNum int64) ([]string, error)
@@ -118,12 +116,6 @@ type Writer interface {
 // from build.chromium.org.
 func Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
 	return GetReader(ctx).Build(ctx, master, builder, buildNum)
-}
-
-// LatestBuilds fetches a list of recent build summaries for master and builder
-// from build.chromium.org.
-func LatestBuilds(ctx context.Context, master *messages.MasterLocation, build string) ([]*messages.Build, error) {
-	return GetReader(ctx).LatestBuilds(ctx, master, build)
 }
 
 // BuildExtract fetches build information for master from CBE.

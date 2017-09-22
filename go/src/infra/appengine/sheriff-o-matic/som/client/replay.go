@@ -37,12 +37,6 @@ func (c *replay) Build(ctx context.Context, master *messages.MasterLocation, bui
 	return b, err
 }
 
-func (c *replay) LatestBuilds(ctx context.Context, master *messages.MasterLocation, builder string) ([]*messages.Build, error) {
-	bs := []*messages.Build{}
-	err := read(ctx, filepath.Join(c.baseDir, "latestbuilds", master.Name(), builder), bs)
-	return bs, err
-}
-
 // BuildExtracts fetches build information for masters from CBE in parallel.
 // Returns a map of url to error for any requests that had errors.
 func (c *replay) BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {

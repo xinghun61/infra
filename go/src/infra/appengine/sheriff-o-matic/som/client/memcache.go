@@ -66,10 +66,6 @@ func (m *memcacheReader) Build(ctx context.Context, master *messages.MasterLocat
 	return dec, nil
 }
 
-func (m *memcacheReader) LatestBuilds(ctx context.Context, master *messages.MasterLocation, build string) ([]*messages.Build, error) {
-	return m.r.LatestBuilds(ctx, master, build)
-}
-
 func (m *memcacheReader) BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
 	return m.r.BuildExtract(ctx, master)
 }
