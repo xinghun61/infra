@@ -365,15 +365,15 @@ class DepsParserTest(unittest.TestCase):
         'revision': root_dep_revision,
         'deps_file': root_dep_deps_file,
         'children': {
-            'src/a/': {
-                'path': 'src/a/',
+            'src/a': {
+                'path': 'src/a',
                 'repo_url': 'https://a.git',
                 'revision': '1234a',
                 'deps_file': root_dep_deps_file,
                 'children': {}
             },
-            'src/c/': {
-                'path': 'src/c/',
+            'src/c': {
+                'path': 'src/c',
                 'repo_url': 'https://c.git',
                 'revision': '1234c',
                 'deps_file': root_dep_deps_file,
@@ -387,8 +387,8 @@ class DepsParserTest(unittest.TestCase):
         'revision': root_dep_revision,
         'deps_file': root_dep_deps_file,
         'children': {
-            'src/a/': {
-                'path': 'src/a/',
+            'src/a': {
+                'path': 'src/a',
                 'repo_url': 'https://a.git',
                 'revision': '1234a',
                 'deps_file': root_dep_deps_file,
@@ -402,29 +402,29 @@ class DepsParserTest(unittest.TestCase):
         'revision': root_dep_revision,
         'deps_file': root_dep_deps_file,
         'children': {
-            'src/a/': {
-                'path': 'src/a/',
+            'src/a': {
+                'path': 'src/a',
                 'repo_url': 'https://a.git',
                 'revision': '1234a',
                 'deps_file': root_dep_deps_file,
                 'children': {}
             },
-            'src/b/': {
-                'path': 'src/b/',
+            'src/b': {
+                'path': 'src/b',
                 'repo_url': 'https://b.git',
                 'revision': None,
                 'deps_file': root_dep_deps_file,
                 'children': {}
             },
-            'src/c/': {
-                'path': 'src/c/',
+            'src/c': {
+                'path': 'src/c',
                 'repo_url': 'https://c.git',
                 'revision': '1234c',
                 'deps_file': root_dep_deps_file,
                 'children': {}
             },
-            'src/d/': {
-                'path': 'src/d/',
+            'src/d': {
+                'path': 'src/d',
                 'repo_url': 'https://d.git',
                 'revision': '1234d',
                 'deps_file': root_dep_deps_file,

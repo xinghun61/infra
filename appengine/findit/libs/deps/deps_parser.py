@@ -178,8 +178,8 @@ def UpdateDependencyTree(root_dep, target_os_list, deps_loader):
   all_deps = MergeWithOsDeps(deps, deps_os, target_os_list)
 
   def _CreateDependency(path, repo_info):
-    if not path.endswith('/'):
-      path = path + '/'
+    if path.endswith('/'):
+      path = path[:-1]
 
     repo_url = repo_info
     revision = None
