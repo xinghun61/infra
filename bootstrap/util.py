@@ -4,6 +4,7 @@
 
 import ast
 import contextlib
+import hashlib
 import os
 import platform
 import shutil
@@ -24,6 +25,8 @@ LOCAL_STORAGE_PATH = os.path.join(ROOT, 'wheelhouse_cache')
 SOURCE_URL = 'gs://{}/sources/{{}}'.format(BUCKET)
 WHEELS_URL = 'gs://{}/wheels/'.format(BUCKET)
 
+# Chunk size to read files.
+CHUNK_SIZE = 4*1024*1024
 
 class DepsConflictException(Exception):
   def __init__(self, name):
@@ -70,7 +73,26 @@ def tempname(*args, **kwargs):
         pass
 
 
-def read_deps(path):
+def build_manifest(deps):
+  # Derive information about the current Python interpreter.
+  interp_hash = hashlib.sha256()
+  with open(sys.executable, 'rb') as fd:
+    while True:
+      chunk = fd.read(CHUNK_SIZE)
+      interp_hash.update(chunk)
+      if len(chunk) < CHUNK_SIZE:
+        break
+
+  return {
+      'interpreter': {
+        'path': sys.executable,
+        'hash_sha256': interp_hash.hexdigest(),
+      },
+      'deps': deps,
+  }
+
+
+def read_python_literal(path):
   if os.path.exists(path):
     with open(path, 'rb') as f:
       return ast.literal_eval(f.read())
@@ -79,7 +101,7 @@ def read_deps(path):
 def merge_deps(paths):
   deps = {}
   for path in paths:
-    d = read_deps(path)
+    d = read_python_literal(path)
     for key in d:
       if key in deps:
         raise DepsConflictException(key)

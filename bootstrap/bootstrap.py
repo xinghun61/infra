@@ -16,7 +16,8 @@ import tempfile
 import time
 
 from util import STORAGE_URL, OBJECT_URL, LOCAL_STORAGE_PATH, LOCAL_OBJECT_URL
-from util import filter_deps, read_deps, merge_deps, print_deps, platform_tag
+from util import build_manifest, filter_deps, read_python_literal, \
+                 merge_deps, print_deps, platform_tag
 
 LOGGER = logging.getLogger(__name__)
 
@@ -183,7 +184,7 @@ def install(deps):
         pip + ['install', '--no-index', '-f', ipath] + requirements)
 
 
-def activate_env(env, deps, quiet=False, run_within_virtualenv=False):
+def activate_env(env, manifest, quiet=False, run_within_virtualenv=False):
   if hasattr(sys, 'real_prefix'):
     if not run_within_virtualenv:
       LOGGER.error('Already activated environment!')
@@ -193,17 +194,17 @@ def activate_env(env, deps, quiet=False, run_within_virtualenv=False):
 
   if not quiet:
     print 'Activating environment: %r' % env
-  assert isinstance(deps, dict)
+  assert isinstance(manifest, dict)
 
   manifest_path = os.path.join(env, 'manifest.pyl')
-  cur_deps = read_deps(manifest_path)
-  if cur_deps != deps:
+  cur_manifest = read_python_literal(manifest_path)
+  if cur_manifest != manifest:
     if not quiet:
-      print '  Removing old environment: %r' % cur_deps
+      print '  Removing old environment: %r' % cur_manifest
     shutil.rmtree(env, ignore_errors=True)
-    cur_deps = None
+    cur_manifest = None
 
-  if cur_deps is None:
+  if cur_manifest is None:
     check_pydistutils()
 
     if not quiet:
@@ -214,30 +215,6 @@ def activate_env(env, deps, quiet=False, run_within_virtualenv=False):
     virtualenv.create_environment(
         env, search_dirs=virtualenv.file_search_dirs())
 
-    # Hack: On windows orig-prefix.txt contains the hardcoded path
-    # "E:\b\depot_tools\python276_bin", but some systems have depot_tools
-    # installed on C:\ instead, so fiddle site.py to try loading it from there
-    # as well.
-    if sys.platform.startswith('win'):
-      site_py_path = os.path.join(env, 'Lib\\site.py')
-      with open(site_py_path) as fh:
-        site_py = fh.read()
-
-      m = re.search(r'( +)sys\.real_prefix = .*', site_py)
-      replacement = ('%(indent)sif (sys.real_prefix.startswith("E:\\\\") and\n'
-                     '%(indent)s    not os.path.exists(sys.real_prefix)):\n'
-                     '%(indent)s  cand = "C:\\\\setup" + sys.real_prefix[4:]\n'
-                     '%(indent)s  if os.path.exists(cand):\n'
-                     '%(indent)s    sys.real_prefix = cand\n'
-                     '%(indent)s  else:\n'
-                     '%(indent)s    sys.real_prefix = "C" + sys.real_prefix'
-                        '[1:]\n'
-                     % {'indent': m.group(1)})
-
-      site_py = site_py[:m.end(0)] + '\n' + replacement + site_py[m.end(0):]
-      with open(site_py_path, 'w') as fh:
-        fh.write(site_py)
-
   if not quiet:
     print '  Activating environment'
   # Ensure hermeticity during activation.
@@ -246,14 +223,17 @@ def activate_env(env, deps, quiet=False, run_within_virtualenv=False):
   activate_this = os.path.join(env, bin_dir, 'activate_this.py')
   execfile(activate_this, dict(__file__=activate_this))
 
-  if cur_deps is None:
+  if cur_manifest is None:
+    deps = manifest['deps']
     if not quiet:
       print '  Installing deps'
       print_deps(deps, indent=2, with_implicit=False)
     install(deps)
     virtualenv.make_environment_relocatable(env)
+
+    # Write the original deps (including metadata) as manifest.
     with open(manifest_path, 'wb') as f:
-      f.write(repr(deps) + '\n')
+      f.write(repr(manifest) + '\n')
 
   # Create bin\python.bat on Windows to unify path where Python is found.
   if sys.platform.startswith('win'):
@@ -308,7 +288,8 @@ def main(args):
   plat = '%s_%s' % (osname, bitness)
 
   deps, kicked = filter_deps(merge_deps(opts.deps_file), plat)
-  activate_env(opts.env_path, deps, opts.quiet, opts.run_within_virtualenv)
+  manifest = build_manifest(deps)
+  activate_env(opts.env_path, manifest, opts.quiet, opts.run_within_virtualenv)
 
   if not opts.quiet and kicked:
     print '---------------------------'
