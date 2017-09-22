@@ -24,6 +24,10 @@ class Gerrit(codereview.CodeReview):
 
   def _HandleResponse(self, status_code, content):
     if status_code != 200:
+      if status_code == 409:
+        # Submit rule failed. Content should tell which rule failed like:
+        # Change 677630: needs Code-Review
+        logging.error('Committing revert failed: %s', content)
       return None
     # Remove XSSI magic prefix
     if content.startswith(')]}\''):

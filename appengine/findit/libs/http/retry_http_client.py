@@ -5,7 +5,7 @@
 import time
 import urllib
 
-_NO_RETRY_CODE = [200, 302, 401, 403, 404, 501]
+_NO_RETRY_CODE = [200, 302, 401, 403, 404, 409, 501]
 
 
 class RetryHttpClient(object):

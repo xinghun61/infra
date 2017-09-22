@@ -757,6 +757,16 @@ class GerritTest(testing.AppengineTestCase):
                                               response)
     self.assertTrue(self.gerrit.SubmitRevert(change_id))
 
+  @mock.patch.object(logging, 'error')
+  def testSubmitRevertSubmitRuleFailed(self, mock_logging):
+    change_id = '123456'
+    url = 'https://%s/a/changes/%s/submit' % (self.server_hostname, change_id)
+    response = 'Change 123456: needs Is-Pure-Revert'
+    self.http_client.SetResponse(url, (409, response))
+    self.assertFalse(self.gerrit.SubmitRevert(change_id))
+    mock_logging.assert_has_called_with(
+        'Committing revert failed: Change 123456: needs Is-Pure-Revert')
+
   def testGetChangeIdFromReviewUrl(self):
     change_id = 'I40bc1e744806f2c4aadf0ce6609aaa61b4019fa7'
     url = 'https://server.host.name/q/%s' % change_id
