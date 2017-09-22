@@ -69,6 +69,9 @@ imports:
   repo: https://chromium.googlesource.com/external/github.com/google/go-querystring.git
   subpackages:
   - query
+- name: github.com/google/uuid
+  version: 064e2069ce9c359c118179501254f67d7d37ba24
+  repo: https://chromium.googlesource.com/external/github.com/google/uuid.git
 - name: github.com/googleapis/gax-go
   version: 8c160ca1523d8eea3932fbaa494c8964b7724aa8
   repo: https://chromium.googlesource.com/external/github.com/googleapis/gax-go.git

@@ -300,3 +300,6 @@ import:
   subpackages:
   - gomock
   - mockgen
+- package: github.com/google/uuid
+  repo: https://chromium.googlesource.com/external/github.com/google/uuid.git
+  version: master
