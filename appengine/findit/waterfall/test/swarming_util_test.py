@@ -479,14 +479,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     build_number = 223
     step_name = 's1'
 
-    mock_data.return_value = [
-      {
-        'failure': True
-      },
-      {
-        'failure': False
-      }
-    ]
+    mock_data.return_value = [{'failure': True}, {'failure': False}]
 
     data = swarming_util.GetIsolatedDataForStep(
         master_name, builder_name, build_number, step_name, self.http_client)
@@ -797,6 +790,15 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
                      swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
     self.assertTrue(error['retry_timeout'])
 
+  @mock.patch.object(RetryHttpClient, 'Get')
+  def testSendRequestToServerUnexpectedStatusCode(self, mocked_get):
+    unexpected_status_code = 12345
+    mocked_get.return_value = (unexpected_status_code, None)
+    content, error = swarming_util._SendRequestToServer(
+        'http://www.someurl.com', HttpClientAppengine())
+    self.assertIsNone(content)
+    self.assertEqual(unexpected_status_code, error['code'])
+
   @mock.patch.object(
       swarming_util,
       'GetSwarmingTaskResultById',
@@ -949,15 +951,13 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
                                  self.http_client))
 
   @mock.patch.object(buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
-  @mock.patch.object(
-      logdog_util, 'GetStepLogForBuild', return_value='log')
-  @mock.patch.object(
-      logging, 'error')
+  @mock.patch.object(logdog_util, 'GetStepLogForBuild', return_value='log')
+  @mock.patch.object(logging, 'error')
   def testGetStepLogNotJosonLoadable(self, mocked_log, *_):
     self.assertEqual('log',
-                     swarming_util.GetStepLog(
-                         self.buildbucket_id, self.step_name,
-                         self.http_client, 'step_metadata'))
+                     swarming_util.GetStepLog(self.buildbucket_id,
+                                              self.step_name, self.http_client,
+                                              'step_metadata'))
     mocked_log.assert_called_with(
         'Failed to json load data for step_metadata. Data is: log.')
 

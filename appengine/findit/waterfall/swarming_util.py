@@ -55,7 +55,6 @@ STATES_NOT_RUNNING_TO_ERROR_CODES = {
 URLFETCH_DOWNLOAD_ERROR = 100
 URLFETCH_DEADLINE_EXCEEDED_ERROR = 110
 URLFETCH_CONNECTION_CLOSED_ERROR = 120
-EXCEEDED_MAX_RETRIES_ERROR = 210
 
 # Outputs_ref is None.
 NO_TASK_OUTPUTS = 300
@@ -147,6 +146,18 @@ def _SendRequestToServer(url, http_client, post_data=None):
         status_code, content = http_client.Post(url, post_data, headers=headers)
       else:
         status_code, content = http_client.Get(url, headers=headers)
+      if status_code == 200:
+        # Also return the last error encountered to be handled in the calling
+        # code.
+        return content, error
+      else:
+        # The retry upon 50x (501 excluded) is automatically handled in the
+        # underlying http_client, which by default retries 5 times with
+        # exponential backoff.
+        return None, {
+            'code': status_code,
+            'message': 'Unexpected status code from http request'
+        }
     except ConnectionClosedError as e:
       error = {'code': URLFETCH_CONNECTION_CLOSED_ERROR, 'message': e.message}
       _OnConnectionFailed(url, 'ConnectionClosedError')
@@ -162,19 +173,6 @@ def _SendRequestToServer(url, http_client, post_data=None):
           e.message)
       error = {'code': UNKNOWN, 'message': e.message}
       _OnConnectionFailed(url, 'Unknown Exception')
-
-    if error or status_code != 200:
-      # The retry upon 50x (501 excluded) is automatically handled in the
-      # underlying http_client.
-      # By default, it retries 5 times with exponential backoff.
-      error = error or {
-          'code': EXCEEDED_MAX_RETRIES_ERROR,
-          'message': 'Max retries exceeded trying to reach %s' % url
-      }
-      logging.error(error['message'])
-    else:
-      # Even if the call is successful, still return the last error encountered.
-      return content, error
 
     if should_retry and time.time() < deadline:  # pragma: no cover
       # Wait, then retry if applicable.
