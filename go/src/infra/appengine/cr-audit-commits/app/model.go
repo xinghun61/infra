@@ -98,7 +98,7 @@ type RelevantCommit struct {
 	CommitTime             time.Time
 	CommitterAccount       string
 	AuthorAccount          string
-	CommitMessage          string
+	CommitMessage          string `gae:",noindex"`
 	IssueID                int32
 	Retries                int32
 }
