@@ -48,7 +48,7 @@ var RuleMap = map[string]*RepoConfig{
 		MonorailProject: "chromium",
 		// TODO(robertocn): Change component and label to the correct
 		// ones. TBD.
-		MonorailComponent: "Tools>Test>Findit",
+		MonorailComponent: "Tools>Test>Findit>Autorevert",
 		MonorailLabels:    []string{"CommitLog-Audit-Violation", "Restrict-View-Google"},
 		Rules: []RuleSet{AccountRules{
 			Account: "findit-for-me@appspot.gserviceaccount.com",
