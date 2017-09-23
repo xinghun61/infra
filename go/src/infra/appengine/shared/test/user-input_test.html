@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<title>userInput</title>
+<meta charset="utf-8">
+<link rel="import" href="/elements/user-input.html">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<script src="/bower_components/iron-test-helpers/mock-interactions.js"></script>
+
+<test-fixture id="user-input-test">
+  <template>
+    <user-input></user-input>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('user-input', function() {
+    let element;
+    setup(function() {
+      element = fixture('user-input-test');
+      element.suggestions = ['user1', 'user2', 'user3', 'user4'];
+    });
+
+    test('methods', function(done) {
+      flush(function() {
+        // Test _toggleDropdown after focus.
+        MockInteractions.focus(element);
+        element._toggleDropdown();
+        let dropdownDiv = element.$.dropdown.$.dropdown;
+        assert.isFalse(dropdownDiv.classList.contains('hidden'));
+
+        // Test _toggleDropdown after blur.
+        MockInteractions.blur(element);
+        element._toggleDropdown();
+        dropdownDiv = element.$.dropdown.$.dropdown;
+        assert.isTrue(dropdownDiv.classList.contains('hidden'));
+
+        // Test _saveUser
+        element._saveUser({detail: {selectedUser: 'user1'}});
+        assert.deepEqual(element.selectedUsers, ['user1']);
+
+        element._saveUser({detail: {selectedUser: 'user2'}});
+        assert.deepEqual(element.selectedUsers, ['user1', 'user2']);
+
+        done();
+      });
+    });
+
+    test('_toggleDropdown-called', function(done) {
+      let toggleStub = sinon.stub(element, '_toggleDropdown');
+
+      flush(function() {
+        MockInteractions.focus(element);
+        sinon.assert.calledOnce(toggleStub);
+
+        MockInteractions.blur(element);
+        sinon.assert.calledTwice(toggleStub);
+
+        done();
+      });
+    });
+
+    test('_updateSuggestions-called', function(done) {
+      let updateStub = sinon.stub(element, '_updateSuggestions');
+
+      flush(function() {
+        element.$.input.value = 'DIFFERENT';
+        sinon.assert.calledOnce(updateStub);
+
+        done();
+      });
+    });
+
+    test('_saveUser-called', function(done) {
+      let saveStub = sinon.stub(element, '_saveUser');
+
+      flush(function() {
+        element.$.dropdown.dispatchEvent(
+            new CustomEvent('user-selected', {detail: {selectedUser: 'user2'}}));
+        sinon.assert.calledOnce(saveStub);
+
+        done();
+      });
+    });
+  });
+</script>

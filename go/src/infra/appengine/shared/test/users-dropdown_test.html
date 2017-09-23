@@ -40,5 +40,16 @@
         done();
       });
     });
+
+    test('user-selected', function(done) {
+      element.addEventListener('user-selected', (event) => {
+        assert.equal(event.detail.selectedUser, 'blahdimir');
+        done();
+      });
+      flush(function() {
+        let items = element.shadowRoot.querySelectorAll('paper-item');
+        items[2].click();
+      });
+    });
   });
 </script>

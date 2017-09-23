@@ -11,10 +11,13 @@
       .hidden {
         display: none !important;
       }
+      paper-item:hover {
+        background: grey;
+      }
     </style>
     <div id="dropdown" class="resize">
       <template is="dom-repeat" items="[[suggestions]]">
-        <paper-item>[[item]]</paper-item>
+        <paper-item id$="[[index]]" on-click="_userSelected">[[item]]</paper-item>
       </template>
     </div>
   </template>
@@ -53,15 +56,28 @@
         this.$.dropdown.classList.add('hidden');
       }
 
+      /** Opens the dropdown element. */
+      open() {
+        this.$.dropdown.classList.remove('hidden');
+      }
+
       /** Closes the dropdown element. */
       close() {
         this.$.dropdown.classList.add('hidden');
       }
 
-      /** Opens the dropdown element. */
-      open() {
-        this.$.dropdown.classList.remove('hidden');
+      /** Gets the selected user information and fires 'user-selected'. */
+      _userSelected(e) {
+        let user = this.suggestions[e.currentTarget.id];
+        this.dispatchEvent(new CustomEvent('user-selected', {detail: {selectedUser: user}}));
       }
+
+      /**
+       * Fired when a user has been selected.
+       *
+       * @event user-selected
+       * @param {string} selectedUser username of the selected user.
+       */
 
     }
     customElements.define(UsersDropdown.is, UsersDropdown);

@@ -1,0 +1,92 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/elements/users-dropdown.html">
+<link rel="import" href="/bower_components/paper-input/paper-input.html">
+<link rel="import" href="/bower_components/iron-behaviors/iron-control-state.html">
+
+<dom-module id="user-input">
+  <template>
+    <style>
+    </style>
+    <paper-input on-value-changed="_updateSuggestions" id="input">
+      <!--
+      <template is="dom-repeat" items="[[selectedUsers]]">
+        <user-id-link slot="prefix" user-id="[[item]]"></user-id-link>
+      </template>
+      -->
+    </paper-input>
+    <users-dropdown id="dropdown" on-user-selected="_saveUser" suggestions="[[suggestions]]">
+    </users-dropdown>
+  </template>
+  <script>
+    'use strict';
+
+    /**
+     *
+     * `<user-input>` as an input element for choosing users with
+     * dropdown suggestions and autocomplete.
+     *
+     * When using, provide all possible suggestions to the suggestions
+     * property. The final (list) of selected users will be in the
+     * selectedUsers property.
+     *
+     * customElement
+     * @polymer
+     * @demo /demo/user-input_demo.html
+     *
+     */
+    class UserInput extends Polymer.mixinBehaviors(
+        [Polymer.IronControlState], Polymer.Element) {
+      static get is() { return 'user-input'; }
+
+      static get properties() {
+        return {
+          /**
+           * List of suggestions displayed in the dropdown.
+           *
+           * @type Array<string>
+           */
+          suggestions: {
+            type: Array,
+            value: () => { return []; },
+          },
+          /**
+           * List of users selected, so far.
+           *
+           * @type Array<string>
+           */
+          selectedUsers: {
+            type: Array,
+            value: () => { return []; },
+          }
+        }
+      }
+
+      ready() {
+        super.ready();
+        this.addEventListener('focused-changed', e => this._toggleDropdown(e));
+      }
+
+      /** Toggles the visibility of the dropdown element. */
+      _toggleDropdown() {
+        this.focused ? this.$.dropdown.open() : this.$.dropdown.close();
+      }
+
+      /**
+       * Pushes a newly selected user to the selectedUser property
+       *
+       * @param {Event} e event that triggered the function with selectedUser
+       * in the detail{}.
+       */
+      _saveUser(e) {
+        this.push('selectedUsers', e.detail.selectedUser);
+      }
+
+      /** Updates the suggestions property. */
+      _updateSuggestions() {
+        // TODO(jojwang): use this.$.input.value to update this.suggestions
+      }
+
+    }
+    customElements.define(UserInput.is, UserInput);
+  </script>
+</dom-moduel>
