@@ -7,10 +7,13 @@ import logging
 from google.appengine.ext import ndb
 
 from common import constants
+from common.waterfall import failure_type
 from gae_libs import appengine_util
 from libs import analysis_status
 from libs import time_util
 from model.wf_analysis import WfAnalysis
+from pipelines.compile_failure.analyze_compile_failure_pipeline import (
+    AnalyzeCompileFailurePipeline)
 from services import ci_failure
 from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
 
@@ -107,9 +110,15 @@ def ScheduleAnalysisIfNeeded(master_name,
     if not should_proceed:
       return WfAnalysis.Get(master_name, builder_name, build_number)
 
-    pipeline_job = AnalyzeBuildFailurePipeline(master_name, builder_name,
-                                               build_number, failure_info,
-                                               build_completed, force)
+    if failure_info['failure_type'] == failure_type.COMPILE:
+      # Use new compile pipelines.
+      pipeline_job = AnalyzeCompileFailurePipeline(master_name, builder_name,
+                                                   build_number, failure_info,
+                                                   build_completed, force)
+    else:
+      pipeline_job = AnalyzeBuildFailurePipeline(master_name, builder_name,
+                                                 build_number, failure_info,
+                                                 build_completed, force)
     # Explicitly run analysis in the backend module "waterfall-backend".
     # Note: Just setting the target in queue.yaml does NOT work for pipeline
     # when deployed to App Engine, but it does work in dev-server locally.

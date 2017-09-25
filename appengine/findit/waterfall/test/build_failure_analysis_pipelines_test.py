@@ -2,20 +2,21 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import mock
-
-from testing_utils import testing
 
 from common import constants
 from common.waterfall import failure_type
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from gae_libs.pipeline_wrapper import pipeline_handlers
+from pipelines.compile_failure import analyze_compile_failure_pipeline
 from services import ci_failure
 from waterfall import build_failure_analysis_pipelines
+from waterfall.test import wf_testcase
 
 
-class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
+class BuildFailureAnalysisPipelinesTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   def _CreateAndSaveWfAnalysis(self,
@@ -144,20 +145,26 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     self.assertTrue(need_analysis)
 
-  @mock.patch.object(
-      ci_failure,
-      'GetBuildFailureInfo',
-      return_value=({
-          'failed': True,
-          'chromium_revision': 'rev',
-          'failure_type': failure_type.COMPILE
-      }, True))
-  @mock.patch(
-      'waterfall.build_failure_analysis_pipelines.AnalyzeBuildFailurePipeline')
-  def testStartPipelineForNewAnalysis(self, mocked_pipeline, _):
+  @mock.patch.object(ci_failure, 'GetBuildFailureInfo')
+  def testStartCompilePipelineForNewAnalysis(self, mock_info):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
+
+    failure_info = {
+        'failed': True,
+        'chromium_revision': 'rev',
+        'failure_type': failure_type.COMPILE
+    }
+    mock_info.return_value = failure_info, True
+
+    self.MockPipeline(
+        analyze_compile_failure_pipeline.AnalyzeCompileFailurePipeline,
+        'failure_info',
+        expected_args=[
+            master_name, builder_name, build_number, failure_info, False, False
+        ],
+        expected_kwargs={})
 
     build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
         master_name,
@@ -170,12 +177,44 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
-    mocked_pipeline.assert_has_calls(
-        [mock.call().start(queue_name=constants.DEFAULT_QUEUE)])
 
-  @mock.patch(
-      'waterfall.build_failure_analysis_pipelines.AnalyzeBuildFailurePipeline')
-  def testNotStartPipelineForRunningAnalysis(self, mocked_pipeline):
+  @mock.patch.object(ci_failure, 'GetBuildFailureInfo')
+  def testStartTestPipelineForNewAnalysis(self, mock_info):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+
+    failure_info = {
+        'failed': True,
+        'chromium_revision': 'rev',
+        'failure_type': failure_type.TEST
+    }
+    mock_info.return_value = (failure_info, True)
+
+    self.MockPipeline(
+        build_failure_analysis_pipelines.AnalyzeBuildFailurePipeline,
+        'failure_info',
+        expected_args=[
+            master_name, builder_name, build_number, failure_info, False, False
+        ],
+        expected_kwargs={})
+
+    build_failure_analysis_pipelines.ScheduleAnalysisIfNeeded(
+        master_name,
+        builder_name,
+        build_number,
+        failed_steps=['a'],
+        build_completed=False,
+        force=False,
+        queue_name=constants.DEFAULT_QUEUE)
+
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertIsNotNone(analysis)
+
+  @mock.patch.object(
+      build_failure_analysis_pipelines, 'NeedANewAnalysis', return_value=False)
+  @mock.patch.object(logging, 'info')
+  def testNotStartPipelineForRunningAnalysis(self, mocked_logging, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -193,7 +232,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
         force=False,
         queue_name=constants.DEFAULT_QUEUE)
 
-    self.assertFalse(mocked_pipeline.called)
+    mocked_logging.assert_called_once_with(
+        'An analysis is not needed for build %s, %s, %s', 'm', 'b', 123)
 
   @mock.patch.object(
       ci_failure,
@@ -203,8 +243,8 @@ class BuildFailureAnalysisPipelinesTest(testing.AppengineTestCase):
           'chromium_revision': 'rev',
           'failure_type': failure_type.COMPILE
       }, False))
-  @mock.patch(
-      'waterfall.build_failure_analysis_pipelines.AnalyzeBuildFailurePipeline')
+  @mock.patch.object(analyze_compile_failure_pipeline,
+                     'AnalyzeCompileFailurePipeline')
   def testNotStartPipelineForAnalysisWithNoFailure(self, mocked_pipeline, _):
     master_name = 'm'
     builder_name = 'b'
