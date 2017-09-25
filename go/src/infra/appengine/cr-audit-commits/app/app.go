@@ -21,7 +21,8 @@ func init() {
 	basemw := standard.Base()
 
 	templatesmw := basemw.Extend(templates.WithTemplates(&templates.Bundle{
-		Loader: templates.FileSystemLoader("templates"),
+		Loader:  templates.FileSystemLoader("templates"),
+		FuncMap: templateFuncs,
 	}))
 
 	standard.InstallHandlers(r)

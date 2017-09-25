@@ -35,7 +35,8 @@ func TestStatusPage(t *testing.T) {
 		}
 		templatesmw := router.NewMiddlewareChain(withTestingContext).Extend(
 			templates.WithTemplates(&templates.Bundle{
-				Loader: templates.FileSystemLoader("templates"),
+				Loader:  templates.FileSystemLoader("templates"),
+				FuncMap: templateFuncs,
 			}))
 
 		r := router.New()
@@ -46,7 +47,11 @@ func TestStatusPage(t *testing.T) {
 		Convey("Invalid Repo", func() {
 			resp, err := client.Get(srv.URL + statusPath + "?repo=unknown")
 			So(err, ShouldBeNil)
-			So(resp.StatusCode, ShouldEqual, 500)
+			defer resp.Body.Close()
+			b, err := ioutil.ReadAll(resp.Body)
+			So(err, ShouldBeNil)
+			So(string(b), ShouldContainSubstring, "Unknown repository")
+			So(resp.StatusCode, ShouldEqual, 200)
 		})
 		Convey("Valid Repo", func() {
 			RuleMap["new-repo"] = &RepoConfig{

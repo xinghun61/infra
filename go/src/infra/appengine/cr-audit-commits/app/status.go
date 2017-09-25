@@ -6,6 +6,7 @@
 package crauditcommits
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -28,8 +29,11 @@ func Status(rctx *router.Context) {
 
 	cfg, hasConfig := RuleMap[repoName]
 	if !hasConfig {
-		logging.Errorf(ctx, "unknown repo \"%s\"", repoName)
-		http.Error(resp, "Getting status failed. See log for details.", 500)
+		args := templates.Args{
+			"RuleMap": RuleMap,
+			"Error":   fmt.Sprintf("Unknown repository %s", repoName),
+		}
+		templates.MustRender(ctx, resp, "pages/status.html", args)
 		return
 	}
 	repoState := &RepoState{RepoURL: cfg.RepoURL()}
@@ -69,11 +73,14 @@ func Status(rctx *router.Context) {
 		}
 	}
 	args := templates.Args{
-		"Commits":      commits,
-		"LastRelevant": repoState.LastRelevantCommit,
-		"LastScanned":  repoState.LastKnownCommit,
-		"BaseRepoURL":  cfg.BaseRepoURL,
-		"RepoName":     repoName,
+		"Commits":          commits,
+		"LastRelevant":     repoState.LastRelevantCommit,
+		"LastRelevantTime": repoState.LastRelevantCommitTime,
+		"LastScanned":      repoState.LastKnownCommit,
+		"LastScannedTime":  repoState.LastKnownCommitTime,
+		"RepoName":         repoName,
+		"RepoConfig":       cfg,
+		"RuleMap":          RuleMap,
 	}
 	templates.MustRender(ctx, resp, "pages/status.html", args)
 }

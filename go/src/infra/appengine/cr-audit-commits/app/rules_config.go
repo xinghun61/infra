@@ -6,6 +6,9 @@
 package crauditcommits
 
 import (
+	"fmt"
+	"strings"
+
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/api/gitiles"
@@ -34,6 +37,16 @@ func (rc *RepoConfig) RepoURL() string {
 // LinkToCommit composes a url to a specific commit
 func (rc *RepoConfig) LinkToCommit(commit string) string {
 	return rc.BaseRepoURL + "/+/" + commit
+}
+
+// AlertsQuery composes a monorail query for the alerts that this app
+// files for the repo.
+func (rc *RepoConfig) AlertsQuery() string {
+	labels := []string{}
+	for _, l := range rc.MonorailLabels {
+		labels = append(labels, fmt.Sprintf("label:%s", l))
+	}
+	return fmt.Sprintf("component:%s %s", rc.MonorailComponent, strings.Join(labels, " "))
 }
 
 // RuleMap maps each monitored repository to a list of account/rules structs.

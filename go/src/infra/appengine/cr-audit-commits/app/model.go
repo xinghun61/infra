@@ -38,6 +38,21 @@ func (as AuditStatus) ToString() string {
 	}
 }
 
+// ColorCode returns a stirng used to color code the string, as a css class for
+// example.
+func (as AuditStatus) ColorCode() string {
+	switch as {
+	case auditCompleted:
+		return "green-status"
+	case auditCompletedWithViolation:
+		return "red-status"
+	case auditFailed:
+		return "red-status"
+	default:
+		return "normal-status"
+	}
+}
+
 // ToShortString returns a short string version of this status meant to be used
 // as datapoint labels for metrics.
 func (as AuditStatus) ToShortString() string {
@@ -76,14 +91,29 @@ func (rs RuleStatus) ToString() string {
 	}
 }
 
+// ColorCode returns a stirng used to color code the string, as a css class for
+// example.
+func (rs RuleStatus) ColorCode() string {
+	switch rs {
+	case ruleFailed:
+		return "red-status"
+	case rulePassed:
+		return "green-status"
+	default:
+		return "normal-status"
+	}
+}
+
 // RepoState contains the state for each repository we audit.
 type RepoState struct {
 	// RepoURL is expected to point to a branch e.g.
 	// https://chromium.googlesource.com/chromium/src.git/+/master
 	RepoURL string `gae:"$id"`
 
-	LastKnownCommit    string
-	LastRelevantCommit string
+	LastKnownCommit        string
+	LastKnownCommitTime    time.Time
+	LastRelevantCommit     string
+	LastRelevantCommitTime time.Time
 }
 
 // RelevantCommit points to a node in a linked list of commits that have

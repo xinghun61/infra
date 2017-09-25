@@ -104,6 +104,7 @@ func CommitScanner(rc *router.Context) {
 					return
 				}
 				repoState.LastRelevantCommit = n.CommitHash
+				repoState.LastRelevantCommitTime = n.CommitTime
 				// If the commit matches one ruleSet that's
 				// enough. Break to move on to the next commit.
 				relevant = true
@@ -112,6 +113,8 @@ func CommitScanner(rc *router.Context) {
 		}
 		ScannedCommits.Add(ctx, 1, relevant, repo)
 		repoState.LastKnownCommit = commit.Commit
+		// Ignore possible error, this time is used for display purposes only.
+		repoState.LastKnownCommitTime, _ = commit.Committer.GetTime()
 	}
 	// If this Put or the one in saveNewRelevantCommit fail, we risk
 	// auditing the same commit twice.
