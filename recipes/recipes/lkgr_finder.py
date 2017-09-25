@@ -32,6 +32,10 @@ BUILDERS = freeze({
     'repo': 'https://chromium.googlesource.com/v8/v8',
     'ref': 'refs/heads/lkgr',
   },
+  'WebRTC lkgr finder': {
+    'project': 'webrtc',
+    'repo': 'https://webrtc.googlesource.com/src',
+  }
 })
 
 
@@ -97,39 +101,32 @@ def RunSteps(api, buildername):
 
 
 def GenTests(api):
-  def lkgr_test_data():
-    return (
-        api.step_data(
-            'lkgr from ref',
-            api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'),
-        ) +
-        api.url.text(
-            'lkgr from app',
-            'deadbeef2',
+  def lkgr_test_data(buildername, botconfig, suffix='', revision=None, n=3):
+    test_data = (
+        api.test(botconfig['project'] + suffix) +
+        api.properties.generic(
+            buildername=buildername,
+            revision=revision,
         )
     )
+    if botconfig.get('ref'):
+      test_data += (
+          api.step_data(
+              'lkgr from ref',
+              api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'),
+          ) +
+          api.url.text(
+              'lkgr from app',
+              'deadbeef2',
+          ) +
+          api.step_data(
+              'check lkgr override',
+              api.gitiles.make_log_test_data('A', n=n),
+          )
+      )
+    return test_data
 
   for buildername, botconfig in BUILDERS.iteritems():
-    yield (
-        api.test(botconfig['project']) +
-        api.properties.generic(
-            buildername=buildername,
-        ) +
-        lkgr_test_data() +
-        api.step_data(
-            'check lkgr override',
-            api.gitiles.make_log_test_data('A', n=0),
-        )
-    )
-    yield (
-        api.test(botconfig['project'] + '_manual') +
-        api.properties.generic(
-            buildername=buildername,
-            revision='deadbeef',
-        ) +
-        lkgr_test_data() +
-        api.step_data(
-            'check lkgr override',
-            api.gitiles.make_log_test_data('A'),
-        )
-    )
+    yield lkgr_test_data(buildername, botconfig, n=0)
+    yield lkgr_test_data(buildername, botconfig, suffix='_manual',
+                         revision='deadbeef')
