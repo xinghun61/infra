@@ -171,9 +171,11 @@ def main(argv):
   args = parser.parse_args(argv)
   args.skip = set(args.skip)
 
+  # Our root directory is our current working directory.
+  root = os.path.abspath(os.getcwd())
+
   # We need to clear the existing "Setup.local", as it can influence module
   # probing.
-  root = os.path.abspath(os.getcwd())
   setup_local_path = os.path.join(root, 'Modules', 'Setup.local')
   logging.info('Clearing existing Setup.local: %r', setup_local_path)
   with open(setup_local_path, 'w+') as fd:

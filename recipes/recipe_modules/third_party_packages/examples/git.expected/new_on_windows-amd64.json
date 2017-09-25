@@ -32,13 +32,13 @@
       "search",
       "infra/git/windows-amd64",
       "-tag",
-      "version:2.12.2.2.chromium11",
+      "version:2.12.2.2.chromium12",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json"
     ],
-    "name": "cipd search infra/git/windows-amd64 version:2.12.2.2.chromium11",
+    "name": "cipd search infra/git/windows-amd64 version:2.12.2.2.chromium12",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
@@ -263,7 +263,7 @@
       "-ref",
       "latest",
       "-tag",
-      "version:2.12.2.2.chromium11"
+      "version:2.12.2.2.chromium12"
     ],
     "name": "register infra/git/windows-amd64",
     "~followup_annotations": [

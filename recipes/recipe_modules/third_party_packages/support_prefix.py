@@ -83,7 +83,7 @@ class SupportPrefix(util.ModuleShim):
     'infra/third_party/source/automake': 'version:1.15',
     'infra/third_party/source/gnu_sed': 'version:4.2.2',
     'infra/third_party/source/bzip2': 'version:1.0.6',
-    'infra/third_party/source/openssl': 'version:1.1.0e',
+    'infra/third_party/source/openssl': 'version:1.1.0f',
     'infra/third_party/source/mac_openssl_headers': 'version:0.9.8zh',
     'infra/third_party/source/pcre': 'version:8.41',
     'infra/third_party/source/pcre2': 'version:10.23',
@@ -216,7 +216,7 @@ class SupportPrefix(util.ModuleShim):
         shared_deps=[])
 
   def ensure_openssl(self):
-    return self._build_openssl('version:1.1.0e')
+    return self._build_openssl('version:1.1.0f')
 
   def ensure_mac_native_openssl(self):
     return self._build_openssl('version:0.9.8zh', shell=True)
@@ -407,9 +407,6 @@ class SupportPrefix(util.ModuleShim):
   def ensure_readline(self):
     ncurses = self.ensure_ncurses()
     return self._generic_build('readline', 'version:7.0',
-        configure_args=[
-          '--with-curses',
-        ],
         deps=[ncurses])
 
   def ensure_autoconf(self):

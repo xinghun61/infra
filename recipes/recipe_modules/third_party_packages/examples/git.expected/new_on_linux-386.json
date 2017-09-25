@@ -52,13 +52,13 @@
       "search",
       "infra/git/linux-386",
       "-tag",
-      "version:2.12.2.2.chromium11",
+      "version:2.12.2.2.chromium12",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "cipd search infra/git/linux-386 version:2.12.2.2.chromium11",
+    "name": "cipd search infra/git/linux-386 version:2.12.2.2.chromium12",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
@@ -168,7 +168,7 @@
       "-root",
       "[START_DIR]/git/_support/sources",
       "-ensure-file",
-      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/automake version:1.15\ninfra/third_party/source/bzip2 version:1.0.6\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/gnu_sed version:4.2.2\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/ncurses version:6.0\ninfra/third_party/source/nsl version:1.0.4\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/pcre version:8.41\ninfra/third_party/source/pcre2 version:10.23\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/zlib version:1.2.11",
+      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/automake version:1.15\ninfra/third_party/source/bzip2 version:1.0.6\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/gnu_sed version:4.2.2\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/ncurses version:6.0\ninfra/third_party/source/nsl version:1.0.4\ninfra/third_party/source/openssl version:1.1.0f\ninfra/third_party/source/pcre version:8.41\ninfra/third_party/source/pcre2 version:10.23\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/zlib version:1.2.11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -216,7 +216,7 @@
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/nsl\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.1.0e--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.1.0f--\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/openssl\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
@@ -308,7 +308,7 @@
   {
     "cmd": [],
     "cwd": "[START_DIR]/git/checkout",
-    "name": "openssl-1.1.0e"
+    "name": "openssl-1.1.0f"
   },
   {
     "cmd": [
@@ -320,11 +320,11 @@
       "ensure-directory",
       "--mode",
       "0777",
-      "[START_DIR]/git/_support/openssl-1.1.0e"
+      "[START_DIR]/git/_support/openssl-1.1.0f"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "infra_step": true,
-    "name": "openssl-1.1.0e.makedirs workdir",
+    "name": "openssl-1.1.0f.makedirs workdir",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -334,11 +334,11 @@
       "python",
       "-u",
       "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
-      "[START_DIR]/git/_support/sources/openssl-1.1.0e.tar.gz",
-      "[START_DIR]/git/_support/openssl-1.1.0e"
+      "[START_DIR]/git/_support/sources/openssl-1.1.0f.tar.gz",
+      "[START_DIR]/git/_support/openssl-1.1.0f"
     ],
-    "cwd": "[START_DIR]/git/_support/openssl-1.1.0e",
-    "name": "openssl-1.1.0e.extract",
+    "cwd": "[START_DIR]/git/_support/openssl-1.1.0f",
+    "name": "openssl-1.1.0f.extract",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -346,12 +346,12 @@
   {
     "cmd": [
       "./Configure",
-      "--prefix=[START_DIR]/git/_support/openssl-1.1.0e/prefix",
+      "--prefix=[START_DIR]/git/_support/openssl-1.1.0f/prefix",
       "no-shared",
       "linux-x86"
     ],
-    "cwd": "[START_DIR]/git/_support/openssl-1.1.0e/openssl-1.1.0e",
-    "name": "openssl-1.1.0e.configure",
+    "cwd": "[START_DIR]/git/_support/openssl-1.1.0f/openssl-1.1.0f",
+    "name": "openssl-1.1.0f.configure",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -360,8 +360,8 @@
     "cmd": [
       "make"
     ],
-    "cwd": "[START_DIR]/git/_support/openssl-1.1.0e/openssl-1.1.0e",
-    "name": "openssl-1.1.0e.make",
+    "cwd": "[START_DIR]/git/_support/openssl-1.1.0f/openssl-1.1.0f",
+    "name": "openssl-1.1.0f.make",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -371,8 +371,8 @@
       "make",
       "install_sw"
     ],
-    "cwd": "[START_DIR]/git/_support/openssl-1.1.0e/openssl-1.1.0e",
-    "name": "openssl-1.1.0e.install",
+    "cwd": "[START_DIR]/git/_support/openssl-1.1.0f/openssl-1.1.0f",
+    "name": "openssl-1.1.0f.install",
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
@@ -432,7 +432,7 @@
       "--disable-shared",
       "--without-librtmp",
       "--with-zlib=[START_DIR]/git/_support/zlib-1.2.11/prefix",
-      "--with-ssl=[START_DIR]/git/_support/openssl-1.1.0e/prefix"
+      "--with-ssl=[START_DIR]/git/_support/openssl-1.1.0f/prefix"
     ],
     "cwd": "[START_DIR]/git/_support/curl-7.54.0/curl-7.54.0",
     "env": {
@@ -602,7 +602,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "v2.12.2.2.chromium11",
+      "v2.12.2.2.chromium12",
       "[START_DIR]/git/checkout/version"
     ],
     "cwd": "[START_DIR]/git/checkout",
@@ -635,8 +635,8 @@
     "cwd": "[START_DIR]/git/checkout",
     "env": {
       "CFLAGS": "-flto",
-      "CPPFLAGS": "-I[START_DIR]/git/_support/zlib-1.2.11/prefix/include -I[START_DIR]/git/_support/curl-7.54.0/prefix/include -I[START_DIR]/git/_support/openssl-1.1.0e/prefix/include -I[START_DIR]/git/_support/pcre2-10.23/prefix/include",
-      "LDFLAGS": "-flto -L[START_DIR]/git/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/git/_support/curl-7.54.0/prefix/lib -L[START_DIR]/git/_support/openssl-1.1.0e/prefix/lib -L[START_DIR]/git/_support/pcre2-10.23/prefix/lib",
+      "CPPFLAGS": "-I[START_DIR]/git/_support/zlib-1.2.11/prefix/include -I[START_DIR]/git/_support/curl-7.54.0/prefix/include -I[START_DIR]/git/_support/openssl-1.1.0f/prefix/include -I[START_DIR]/git/_support/pcre2-10.23/prefix/include",
+      "LDFLAGS": "-flto -L[START_DIR]/git/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/git/_support/curl-7.54.0/prefix/lib -L[START_DIR]/git/_support/openssl-1.1.0f/prefix/lib -L[START_DIR]/git/_support/pcre2-10.23/prefix/lib",
       "LIBS": "-lz -lcurl -ldl -lpthread -lssl -lcrypto -lpcre2-8",
       "PERL_MM_OPT": "INSTALLSITELIB=$(PREFIX)/share/perl"
     },
@@ -727,7 +727,7 @@
       "-ref",
       "latest",
       "-tag",
-      "version:2.12.2.2.chromium11"
+      "version:2.12.2.2.chromium12"
     ],
     "name": "register infra/git/linux-386",
     "~followup_annotations": [

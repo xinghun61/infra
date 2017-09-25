@@ -52,7 +52,7 @@
       "search",
       "infra/python/cpython/mac-amd64",
       "-tag",
-      "version:2.1.2.chromium11",
+      "version:2.1.2.chromium12",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -61,7 +61,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium11",
+    "name": "cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium12",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
@@ -189,7 +189,7 @@
       "-root",
       "[START_DIR]/python/_support/sources",
       "-ensure-file",
-      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/automake version:1.15\ninfra/third_party/source/bzip2 version:1.0.6\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/gnu_sed version:4.2.2\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/ncurses version:6.0\ninfra/third_party/source/nsl version:1.0.4\ninfra/third_party/source/openssl version:1.1.0e\ninfra/third_party/source/pcre version:8.41\ninfra/third_party/source/pcre2 version:10.23\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/zlib version:1.2.11",
+      "infra/third_party/pip-packages version:9.0.1\ninfra/third_party/source/autoconf version:2.69\ninfra/third_party/source/automake version:1.15\ninfra/third_party/source/bzip2 version:1.0.6\ninfra/third_party/source/curl version:7.54.0\ninfra/third_party/source/gnu_sed version:4.2.2\ninfra/third_party/source/mac_openssl_headers version:0.9.8zh\ninfra/third_party/source/ncurses version:6.0\ninfra/third_party/source/nsl version:1.0.4\ninfra/third_party/source/openssl version:1.1.0f\ninfra/third_party/source/pcre version:8.41\ninfra/third_party/source/pcre2 version:10.23\ninfra/third_party/source/readline version:7.0\ninfra/third_party/source/sqlite-autoconf version:3.19.3\ninfra/third_party/source/zlib version:1.2.11",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -240,7 +240,7 @@
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/nsl\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.1.0e--\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.1.0f--\", @@@",
       "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/third_party/source/openssl\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }, @@@",
       "@@@STEP_LOG_LINE@json.output@    {@@@",
@@ -534,8 +534,7 @@
   {
     "cmd": [
       "./configure",
-      "--prefix=[START_DIR]/python/_support/readline-7.0/prefix",
-      "--with-curses"
+      "--prefix=[START_DIR]/python/_support/readline-7.0/prefix"
     ],
     "cwd": "[START_DIR]/python/_support/readline-7.0/readline-7.0",
     "env": {
@@ -898,11 +897,78 @@
   },
   {
     "cmd": [
-      "./configure",
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/tpp_python_bootstrap"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+      ]
+    },
+    "infra_step": true,
+    "name": "makedirs bootstrap"
+  },
+  {
+    "cmd": [
+      "[START_DIR]/python/checkout/configure",
+      "--prefix",
+      "[START_DIR]/python/tpp_python_bootstrap/.prefix",
       "--disable-shared",
       "--without-system-ffi",
+      "--enable-ipv6",
+      "--enable-unicode=ucs2",
+      "--with-threads",
+      "--enable-toolbox-glue"
+    ],
+    "cwd": "[START_DIR]/python/tpp_python_bootstrap",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6",
+      "ac_cv_func_clock_gettime": "n",
+      "ac_cv_func_getentropy": "n"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+      ]
+    },
+    "name": "configure bootstrap"
+  },
+  {
+    "cmd": [
+      "make",
+      "sharedmods"
+    ],
+    "cwd": "[START_DIR]/python/tpp_python_bootstrap",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6",
+      "ac_cv_func_clock_gettime": "n",
+      "ac_cv_func_getentropy": "n"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+      ]
+    },
+    "name": "make bootstrap"
+  },
+  {
+    "cmd": [
+      "./configure",
       "--prefix",
       "[START_DIR]/python/package",
+      "--disable-shared",
+      "--without-system-ffi",
       "--enable-ipv6",
       "--enable-unicode=ucs2",
       "--with-threads",
@@ -930,7 +996,11 @@
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+      "CPPFLAGS": "-I[START_DIR]/python/_support/bzip2-1.0.6/prefix/include -I[START_DIR]/python/_support/readline-7.0/prefix/include -I[START_DIR]/python/_support/ncurses-6.0/prefix/include -I[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/include -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include -I[START_DIR]/python/_support/openssl-0.9.8zh/prefix/include",
+      "LDFLAGS": "-Wl,-search_paths_first -L[START_DIR]/python/_support/bzip2-1.0.6/prefix/lib -L[START_DIR]/python/_support/readline-7.0/prefix/lib -L[START_DIR]/python/_support/ncurses-6.0/prefix/lib -L[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/lib -L[START_DIR]/python/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/python/systemusr/lib",
+      "MACOSX_DEPLOYMENT_TARGET": "10.6",
+      "ac_cv_func_clock_gettime": "n",
+      "ac_cv_func_getentropy": "n"
     },
     "env_prefixes": {
       "PATH": [
@@ -941,8 +1011,7 @@
   },
   {
     "cmd": [
-      "python",
-      "-u",
+      "[START_DIR]/python/tpp_python_bootstrap/python.exe",
       "RECIPE_MODULE[infra::third_party_packages]/resources/python/python_build_bootstrap.py",
       "--root",
       "[START_DIR]/python/checkout",
@@ -980,23 +1049,7 @@
         "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
       ]
     },
-    "name": "Static modules"
-  },
-  {
-    "cmd": [
-      "make",
-      "clean"
-    ],
-    "cwd": "[START_DIR]/python/checkout",
-    "env": {
-      "MACOSX_DEPLOYMENT_TARGET": "10.6"
-    },
-    "env_prefixes": {
-      "PATH": [
-        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
-      ]
-    },
-    "name": "cleanup"
+    "name": "static modules"
   },
   {
     "cmd": [

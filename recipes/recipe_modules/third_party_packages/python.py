@@ -14,7 +14,7 @@ PACKAGE_PREFIX = 'infra/python/cpython/'
 
 # This version suffix serves to distinguish different revisions of Python built
 # with this recipe.
-PACKAGE_VERSION_SUFFIX = '.chromium11'
+PACKAGE_VERSION_SUFFIX = '.chromium12'
 
 class PythonApi(util.ModuleShim):
 
@@ -82,9 +82,9 @@ class PythonApi(util.ModuleShim):
       configure_flags = [
         '--disable-shared',
         '--without-system-ffi',
-        '--prefix', target_dir,
         '--enable-ipv6',
       ]
+      bootstrap_configure_env = configure_env.copy()
 
       # Edit the modules configuration to statically compile all Python modules.
       _combine = lambda v: list(itertools.chain(*v))
@@ -99,7 +99,13 @@ class PythonApi(util.ModuleShim):
       probe_default_ssl_ca_certs = False
 
       strip_flags = None
+      python_bin_name = 'python'
       if self.m.platform.is_mac:
+        # On Mac, the Python binary name is "python.exe". This is probably
+        # because standard Mac filesystems are case insensitive and there is
+        # already a "Python" directory in the checkout root.
+        python_bin_name = 'python.exe'
+
         # On Mac, we want to link as much statically as possible. However, Mac
         # OSX comes with an OpenSSL library that has Mac keychain support built
         # in. In order to have Python's SSL use the system keychain, we must
@@ -113,6 +119,7 @@ class PythonApi(util.ModuleShim):
         # headers representing that library version. OSX doesn't come with
         # those, so we build and install an equivalent OpenSSL version and
         # include *just its headers* in our SSL module build.
+        support.update_mac_autoconf(bootstrap_configure_env)
         support.update_mac_autoconf(configure_env)
 
         # Specialize configuration.
@@ -218,50 +225,88 @@ class PythonApi(util.ModuleShim):
       gnu_sed = support.ensure_gnu_sed()
 
       with self.m.context(env_prefixes={'PATH': [gnu_sed.bin_dir]}):
+        # Create our 'pybuilddir.txt' and bootstrap interpreter.
+        #
+        # The "platform" target just builds the bootstrap interpreter without
+        # any modules. Unfortunately, our "setup.py" script requires several
+        # modules (especially on OSX), so we build the full set of modules
+        # too. The minimal target that accomplishes this is "sharedmods".
+        #
+        # We don't care at all about our production overrides, so we don't
+        # supply any configuration parameters. We just need a package-compatible
+        # interpreter. Indeed, since our "configure_env" is tailored to the
+        # static build, issues have been observed performing non-static builds
+        # with in including hanging compile commands.
+        #
+        # We build this in a separate, temporary directory so we don't get any
+        # cross-talk with the production Python checkout.
+        checkout_dir = self.m.context.cwd
+        bootstrap_dir = workdir.join('tpp_python_bootstrap')
+        self.m.file.ensure_directory('makedirs bootstrap', bootstrap_dir)
+        with self.m.context(cwd=bootstrap_dir, env=bootstrap_configure_env):
+          self.m.step(
+              'configure bootstrap',
+              [
+                checkout_dir.join('configure'),
+                '--prefix', bootstrap_dir.join('.prefix'),
+              ] + configure_flags)
+
+          self.m.step('make bootstrap', ['make', 'sharedmods'])
+
+        # Configure our production Python build with our static configuration
+        # environment and generate our basic platform.
+        #
+        # We're going to hook our bootstrap interpreter up to this platform
+        # and use it to generate our static module list.
+        with self.m.context(env=configure_env):
+          self.m.step(
+              'configure',
+              [
+                './configure',
+                '--prefix', target_dir,
+              ] + configure_flags)
+
+          # Generate our "pybuilddir.txt" file. This also generates
+          # "_sysconfigdata.py" from our current Python, which we need to
+          # generate our module list, since it includes our "configure_env"'s
+          # CPPFLAGS, LDFLAGS, etc.
+          self.m.step('make platform', ['make', 'platform'])
+
+        # Generate our static module list, "Modules/Setup.local". Python
+        # reads this during build and projects it into its Makefile.
+        #
+        # The "python_mod_gen.py" script extracts a list of modules by
+        # strategically invoking "setup.py", pretending that it's trying to
+        # build the modules, and capturing their output. It generates a
+        # "Setup.local" file.
+        #
+        # We need to run it with a Python interpreter that is compatible with
+        # this checkout. Enter the bootstrap interpreter! However, that is
+        # tailored to the bootstrap interpreter's environment ("bootstrap_dir"),
+        # not the production one ("checkout_dir"). We use the
+        # "python_build_bootstrap.py" script to strip that out and reorient
+        # it to point to our production directory prior to invoking
+        # "python_mod_gen.py".
+        #
+        # This is all a very elaborate (but adaptable) way to not hardcode
+        # "Setup.local" for each set of platforms that we support.
         setup_local_flags = []
         setup_local_flags += [['--skip', v] for v in setup_local_skip]
         setup_local_flags += [['--attach', v] for v in setup_local_attach]
-
-        # cwd is source checkout
-        with self.m.context(env=configure_env):
-          self.m.step('configure', ['./configure'] + configure_flags)
-
-        # Create our 'pybuilddir.txt' and bootstrap interpreter.
-        #
-        # Note that this has been observed causing OSX developer systems to
-        # freeze during "sharedmods" build, related to the "readline" module.
-        # This seems to work on our builder system, though, so leave it in.
-        #
-        # A slightly-better alternative would be to use "make sharedmods" and
-        # use the bootstrap Python interpreter (//python[.exe]) directly;
-        # however, "sharedmods" seems to cause OSX builds to freeze when run
-        # from recipes, something related to our "libreadline.a" include.
-        #
-        # TODO: Dive deeper into this maybe?
-        self.m.step('make platform', ['make', 'platform'])
-
-        # Generate our static module list. We need to use the bootstrap Python
-        # for this, since the generation process uses its runtime state as a
-        # baseline for builtin modules.
-        #
-        # We execute this using the local system's build Python interpreter,
-        # since it was actually configured with the target configuration state.
-        setup_local_path = self.m.context.cwd.join('Modules', 'Setup.local')
-        self.m.python(
-            'Static modules',
-            self.resource('python', 'python_build_bootstrap.py'),
+        setup_local_path = checkout_dir.join('Modules', 'Setup.local')
+        self.m.step(
+            'static modules',
             [
-              '--root', self.m.context.cwd,
+              bootstrap_dir.join(python_bin_name),
+              self.resource('python', 'python_build_bootstrap.py'),
+              '--root', checkout_dir,
               '--',
               self.resource('python', 'python_mod_gen.py'),
               '--output', setup_local_path,
             ] + _combine(setup_local_flags),
         )
 
-        # Clean up our bootstrap and module generation artifacts.
-        self.m.step('cleanup', ['make', 'clean'])
-
-        # Build Python.
+        # Build production Python.
         self.m.step('make', ['make', 'install'])
 
       # Augment the Python installation.
