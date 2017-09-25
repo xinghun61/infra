@@ -1,0 +1,11 @@
+package: infra/machine-provider/agent/gce/${platform}
+description: Machine Provider agent.
+builders:
+  - infra-continuous-trusty-64
+  - infra-continuous-win-64
+go_packages:
+  - go.chromium.org/luci/mp/cmd/mpagent
+root: ../../go/bin
+data:
+  - file: mpagent${exe_suffix}
+  - version_file: .versions/mpagent${exe_suffix}.cipd_version
