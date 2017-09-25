@@ -215,6 +215,10 @@ func CulpritInBuild(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs
 
 // getCulpritChange finds (through Gerrit) the CL being reverted by another.
 // returns false as a second return value if the CL given is not a revert.
+//
+// Note: The RevertOf property of a Change does not guarantee that the cl is a
+// pure revert of another. In the case of Findit, this is guaranteed by the
+// submit rule on Gerrit, hence we are not duplicating that check here.
 func getCulpritChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) (*gerrit.Change, bool) {
 	cls, _, err := cs.gerrit.ChangeQuery(ctx, gerrit.ChangeQueryRequest{Query: rc.CommitHash})
 	if err != nil {
