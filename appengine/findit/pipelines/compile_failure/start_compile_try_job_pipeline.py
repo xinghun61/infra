@@ -5,8 +5,8 @@
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import BasePipeline
 from services.compile_failure import compile_try_job
-from waterfall.identify_try_job_culprit_pipeline import (
-    IdentifyTryJobCulpritPipeline)
+from pipelines.compile_failure import (identify_compile_try_job_culprit_pipeline
+                                       as culprit_pipeline)
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.schedule_compile_try_job_pipeline import (
     ScheduleCompileTryJobPipeline)
@@ -44,6 +44,5 @@ class StartCompileTryJobPipeline(BasePipeline):
     try_job_result = yield MonitorTryJobPipeline(try_job_key.urlsafe(),
                                                  try_job_type, try_job_id)
 
-    yield IdentifyTryJobCulpritPipeline(master_name, builder_name, build_number,
-                                        try_job_type, try_job_id,
-                                        try_job_result)
+    yield culprit_pipeline.IdentifyCompileTryJobCulpritPipeline(
+        master_name, builder_name, build_number, try_job_id, try_job_result)

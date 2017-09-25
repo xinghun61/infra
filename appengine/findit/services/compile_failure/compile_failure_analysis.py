@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 """Provides a function to analyze compile failures."""
 
+import copy
 from collections import defaultdict
 import logging
 
@@ -156,3 +157,29 @@ def AnalyzeCompileFailure(failure_info, change_logs, deps_info,
       cl_failure_map)
 
   return analysis_result, suspected_cls
+
+
+def GetUpdatedSuspectedCLs(analysis, culprits):
+  """Returns a list of combined suspected CLs from heuristic and try job.
+
+  Args:
+    analysis: The WfAnalysis entity corresponding to this try job.
+    culprits: A dict of suspected CLs found by the try job.
+
+  Returns:
+    A combined list of suspected CLs from those already in analysis and those
+    found by this try job.
+  """
+  suspected_cls = analysis.suspected_cls[:] if analysis.suspected_cls else []
+  suspected_cl_revisions = [cl['revision'] for cl in suspected_cls]
+
+  for revision, try_job_suspected_cl in culprits.iteritems():
+    if revision not in suspected_cl_revisions:
+      suspected_cl_copy = copy.deepcopy(try_job_suspected_cl)
+      suspected_cl_revisions.append(revision)
+      failures = {'compile': []}
+      suspected_cl_copy['failures'] = failures
+      suspected_cl_copy['top_score'] = None
+      suspected_cls.append(suspected_cl_copy)
+
+  return suspected_cls

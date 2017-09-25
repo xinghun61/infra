@@ -9,12 +9,22 @@ It provides functions to:
   * Get parameters for starting a new compile try job.
 """
 
+import copy
 import logging
 
+from google.appengine.ext import ndb
+
+from common import constants
 from common.waterfall import failure_type
+from libs import analysis_status
+from model import analysis_approach_type
+from model import result_status
 from model.wf_analysis import WfAnalysis
+from model.wf_try_job import WfTryJob
 from services import try_job
+from services.compile_failure import compile_failure_analysis
 from waterfall import build_util
+from waterfall import suspected_cl_util
 from waterfall import swarming_util
 from waterfall import waterfall_config
 
@@ -188,3 +198,125 @@ def GetParametersToScheduleCompileTryJob(master_name, builder_name,
   parameters['cache_name'] = swarming_util.GetCacheName(master_name,
                                                         builder_name)
   return parameters
+
+
+def GetFailedRevisionFromCompileResult(compile_result):
+  """Determines the failed revision given compile_result.
+
+  Args:
+    compile_result: A dict containing the results from a compile. Please refer
+    to try_job_result_format.md for format check.
+
+  Returns:
+    The failed revision from compile_results, or None if not found.
+  """
+  return (compile_result.get('report', {}).get('culprit')
+          if compile_result else None)
+
+
+def _GetRevisionsInRange(sub_ranges):
+  """Get revisions in regression range by flattening sub_ranges.
+
+  sub_ranges is in a format like [[None, 'r1', 'r2'], ['r3', 'r4', 'r5']].
+  """
+  return [
+      revision for sub_range in sub_ranges for revision in sub_range if revision
+  ]
+
+
+def CompileFailureIsFlaky(result):
+  """Decides if the compile failure is flaky.
+
+  A compile failure should be flaky if compile try job failed at good revision.
+  """
+  if not result:
+    return False
+
+  try_job_result = result.get('report', {}).get('result')
+  sub_ranges = result.get('report', {}).get('metadata', {}).get('sub_ranges')
+
+  if (not try_job_result or  # There is some issue with try job, cannot decide.
+      not sub_ranges or  # Missing range information.
+      # All passed. It could be because of flaky compile, but is not guaranteed.
+      'failed' not in try_job_result.values()):
+    return False
+
+  tested_revisions = try_job_result.keys()
+  # Looks for the good revision which will not be in sub_ranges.
+  good_revision = list(
+      set(tested_revisions) - set(_GetRevisionsInRange(sub_ranges)))
+  return bool(good_revision)
+
+
+@ndb.transactional
+def UpdateTryJobResult(master_name, builder_name, build_number, result,
+                       try_job_id, culprits):
+  try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
+  if culprits:
+    updated = False
+    for result_to_update in try_job_result.compile_results:
+      if try_job_id == result_to_update['try_job_id']:
+        result_to_update.update(result)
+        updated = True
+        break
+
+    if not updated:  # pragma: no cover
+      try_job_result.compile_results.append(result)
+
+  try_job_result.status = analysis_status.COMPLETED
+  try_job_result.put()
+
+
+def _GetUpdatedAnalysisResult(analysis, flaky_compile):
+
+  # Analysis only needs to update if the compile failure is actually flaky.
+  if (not analysis.result or not analysis.result.get('failures') or
+      not flaky_compile):
+    return analysis.result
+
+  analysis_result = copy.deepcopy(analysis.result)
+  for failure in analysis_result['failures']:
+    if failure['step_name'] == constants.COMPILE_STEP_NAME:
+      failure['flaky'] = True
+
+  return analysis_result
+
+
+@ndb.transactional
+def UpdateWfAnalysisWithTryJobResult(master_name, builder_name, build_number,
+                                     result, culprits, flaky_compile):
+  if not culprits and not flaky_compile:
+    return
+
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+  assert analysis
+  # Update analysis result and suspected CLs with results of this try job if
+  # culprits were found or failures are flaky.
+  updated_result = _GetUpdatedAnalysisResult(analysis, flaky_compile)
+  updated_result_status = try_job.GetResultAnalysisStatus(
+      analysis, result) if not flaky_compile else result_status.FLAKY
+  updated_suspected_cls = compile_failure_analysis.GetUpdatedSuspectedCLs(
+      analysis, culprits)
+  if (analysis.result_status != updated_result_status or
+      analysis.suspected_cls != updated_suspected_cls or
+      analysis.result != updated_result):
+    analysis.result_status = updated_result_status
+    analysis.suspected_cls = updated_suspected_cls
+    analysis.result = updated_result
+    analysis.put()
+
+
+def UpdateSuspectedCLs(master_name, builder_name, build_number, culprits):
+  if not culprits:
+    return
+
+  # Creates or updates each suspected_cl.
+  for culprit in culprits.values():
+    revision = culprit['revision']
+    failures = {'compile': []}
+
+    suspected_cl_util.UpdateSuspectedCL(culprit['repo_name'], revision,
+                                        culprit.get('commit_position'),
+                                        analysis_approach_type.TRY_JOB,
+                                        master_name, builder_name, build_number,
+                                        failure_type.COMPILE, failures, None)

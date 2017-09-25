@@ -5,7 +5,7 @@
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
-from libs.gitiles.gitiles_repository import GitilesRepository
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
@@ -41,7 +41,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   def setUp(self):
     super(IdentifyTryJobCulpritPipelineTest, self).setUp()
 
-    self.mock(GitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
+    self.mock(CachedGitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
 
   def _CreateEntities(self,
                       master_name,

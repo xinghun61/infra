@@ -907,3 +907,10 @@ def SaveSuspectedCLs(suspected_cls, master_name, builder_name, build_number,
         suspected_cl['commit_position'], analysis_approach_type.HEURISTIC,
         master_name, builder_name, build_number, current_failure_type,
         suspected_cl['failures'], suspected_cl['top_score'])
+
+
+def GetHeuristicSuspectedCLs(analysis):
+  """Gets revisions of suspected cls found by heuristic approach."""
+  if analysis and analysis.suspected_cls:
+    return [[cl['repo_name'], cl['revision']] for cl in analysis.suspected_cls]
+  return []

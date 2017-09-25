@@ -7,7 +7,7 @@ import urlparse
 
 from infra_api_clients.codereview.rietveld import Rietveld
 from libs import analysis_status as status
-from libs.gitiles.gitiles_repository import GitilesRepository
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from model.wf_suspected_cl import WfSuspectedCL
 from services import revert
 from waterfall import send_notification_for_culprit_pipeline
@@ -62,7 +62,7 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
       return MockedChangeLog()
 
-    self.mock(GitilesRepository, 'GetChangeLog', Mocked_GetChangeLog)
+    self.mock(CachedGitilesRepository, 'GetChangeLog', Mocked_GetChangeLog)
 
   def testShouldNotSendNotificationForSingleFailedBuild(self):
     culprit = WfSuspectedCL.Create('chromium', 'r1', 1)

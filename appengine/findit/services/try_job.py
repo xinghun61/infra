@@ -12,18 +12,23 @@ It provides functions to:
   * Preliminary check to decide if a new try job is needed.
 """
 
+import copy
 from datetime import timedelta
 import logging
 
 from google.appengine.ext import ndb
 
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import analysis_status
 from libs import time_util
+from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_failure_group import WfFailureGroup
 from model.wf_try_job import WfTryJob
 from services import gtest
+from waterfall import swarming_util
 from waterfall import waterfall_config
 
 
@@ -222,3 +227,66 @@ def GetSuspectsFromHeuristicResult(heuristic_result):
     for cl in failure['suspected_cls']:
       suspected_revisions.add(cl['revision'])
   return list(suspected_revisions)
+
+
+def GetResultAnalysisStatus(analysis, result):
+  """Returns the analysis status based on existing status and try job result.
+
+  Args:
+    analysis: The WfAnalysis entity corresponding to this try job.
+    result: A result dict containing the result of this try job.
+
+  Returns:
+    A result_status code.
+  """
+
+  old_result_status = analysis.result_status
+
+  # Only return an updated analysis result status if no results were already
+  # found (by the heuristic-based approach) but were by the try job. Note it is
+  # possible the heuristic-based result was triaged before the completion of
+  # this try job.
+  try_job_found_culprit = result and result.get('culprit')
+  if (try_job_found_culprit and
+      (old_result_status is None or
+       old_result_status == result_status.NOT_FOUND_UNTRIAGED or
+       old_result_status == result_status.NOT_FOUND_INCORRECT or
+       old_result_status == result_status.NOT_FOUND_CORRECT)):
+    return result_status.FOUND_UNTRIAGED
+
+  return old_result_status
+
+
+def GetUpdatedAnalysisResult(analysis, flaky_failures):
+  if not analysis or not analysis.result or not analysis.result.get('failures'):
+    return {}, False
+
+  analysis_result = copy.deepcopy(analysis.result)
+  all_flaky = swarming_util.UpdateAnalysisResult(analysis_result,
+                                                 flaky_failures)
+
+  return analysis_result, all_flaky
+
+
+def GetCulpritInfo(failed_revisions):
+  """Gets commit_positions and review urls for revisions."""
+
+  git_repo = CachedGitilesRepository(
+      HttpClientAppengine(),
+      'https://chromium.googlesource.com/chromium/src.git')
+  culprits = {}
+  # TODO(crbug/767759): remove hard-coded 'chromium' when DEPS file parsing is
+  # supported.
+  for failed_revision in failed_revisions:
+    culprits[failed_revision] = {
+        'revision': failed_revision,
+        'repo_name': 'chromium'
+    }
+    change_log = git_repo.GetChangeLog(failed_revision)
+    if change_log:
+      culprits[failed_revision]['commit_position'] = (
+          change_log.commit_position)
+      culprits[failed_revision]['url'] = (change_log.code_review_url or
+                                          change_log.commit_url)
+
+  return culprits

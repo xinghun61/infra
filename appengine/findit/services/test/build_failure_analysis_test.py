@@ -4,10 +4,10 @@
 
 from collections import defaultdict
 from datetime import datetime
-import logging
 import mock
 
 from common.waterfall import failure_type
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs.deps import chrome_dependency_fetcher
 from libs.deps.dependency import Dependency
@@ -16,7 +16,6 @@ from libs.gitiles.blame import Region
 from libs.gitiles.change_log import Contributor
 from libs.gitiles.change_log import FileChangeInfo
 from libs.gitiles.diff import ChangeType
-from libs.gitiles.gitiles_repository import GitilesRepository
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
@@ -353,9 +352,9 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                                      expected_score,
                                      line_numbers,
                                      expected_hints=None):
-    self.mock(GitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
-    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
-    self.mock(GitilesRepository, 'GetCommitsBetweenRevisions',
+    self.mock(CachedGitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
+    self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(CachedGitilesRepository, 'GetCommitsBetweenRevisions',
               self._MockGetCommitsBetweenRevisions)
     justification = build_failure_analysis._Justification()
     build_failure_analysis._CheckFileInDependencyRolls(
@@ -616,10 +615,10 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             ]
         }
     }
-    self.mock(GitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
-    self.mock(GitilesRepository, 'GetCommitsBetweenRevisions',
+    self.mock(CachedGitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
+    self.mock(CachedGitilesRepository, 'GetCommitsBetweenRevisions',
               self._MockGetCommitsBetweenRevisions)
-    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
     justification = build_failure_analysis.CheckFiles(
         FailureSignal.FromDict(failure_signal_json), change_log_json, deps_info)
     self.assertIsNotNone(justification)
@@ -633,14 +632,14 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'revision': '8'
     }
     file_path = 'a/b/c.cc'
-    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
     blame = build_failure_analysis._GetGitBlame(repo_info, file_path)
     self.assertIsNotNone(blame)
 
   def testGetGitBlameEmpty(self):
     repo_info = {}
     file_path = 'a/b/c.cc'
-    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
     blame = build_failure_analysis._GetGitBlame(repo_info, file_path)
     self.assertIsNone(blame)
 
@@ -656,7 +655,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     line_numbers = [2, 7, 8]
     commit_revision = '7'
-    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
     changed_line_numbers = (
         build_failure_analysis._GetChangedLinesForChromiumRepo(
             repo_info, touched_file, line_numbers, commit_revision))
@@ -675,7 +674,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     line_numbers = [2, 7, 8]
     commit_revision = '9'
-    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
     changed_line_numbers = (
         build_failure_analysis._GetChangedLinesForChromiumRepo(
             repo_info, touched_file, line_numbers, commit_revision))
@@ -694,7 +693,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     line_numbers = [15]
     commit_revision = '7'
-    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
     changed_line_numbers = (
         build_failure_analysis._GetChangedLinesForChromiumRepo(
             repo_info, touched_file, line_numbers, commit_revision))
@@ -713,7 +712,7 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     line_numbers = [2, 7, 8]
     commit_revision = '7'
-    self.mock(GitilesRepository, 'GetBlame', self._MockGetBlame)
+    self.mock(CachedGitilesRepository, 'GetBlame', self._MockGetBlame)
     changed_line_numbers = (
         build_failure_analysis._GetChangedLinesForChromiumRepo(
             repo_info, touched_file, line_numbers, commit_revision))
@@ -1282,3 +1281,25 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         build_number, {}, {}, {})
     self.assertIsNone(result)
     self.assertIsNone(max_score)
+
+  def testGetHeuristicSuspectedCLs(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.suspected_cls = [{
+        'repo_name': 'chromium',
+        'revision': 'r123_2',
+        'commit_position': None,
+        'url': None,
+        'failures': {
+            'b': ['Unittest2.Subtest1', 'Unittest3.Subtest2']
+        },
+        'top_score': 4
+    }]
+    analysis.put()
+
+    suspected_cls = [['chromium', 'r123_2']]
+
+    self.assertEqual(suspected_cls,
+                     build_failure_analysis.GetHeuristicSuspectedCLs(analysis))
+
+  def testGetHeuristicSuspectedCLsNoAnalysis(self):
+    self.assertEqual([], build_failure_analysis.GetHeuristicSuspectedCLs(None))

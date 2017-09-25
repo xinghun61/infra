@@ -7,6 +7,7 @@ import mock
 
 from common.waterfall import failure_type
 from libs.gitiles.diff import ChangeType
+from model.wf_analysis import WfAnalysis
 from services import build_failure_analysis
 from services.compile_failure import compile_failure_analysis
 from waterfall import waterfall_config
@@ -407,3 +408,56 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
+
+  def testGetUpdatedSuspectedCLs(self):
+    analysis = WfAnalysis.Create('m', 'b', 123)
+    analysis.suspected_cls = [{
+        'repo_name': 'chromium',
+        'revision': 'r123_2',
+        'commit_position': 1232,
+        'url': 'url_2',
+        'failures': {
+            'compile': []
+        },
+        'top_score': 4
+    }]
+    analysis.put()
+
+    culprits = {
+        'r123_1': {
+            'revision': 'r123_1',
+            'commit_position': 1231,
+            'url': 'url_1',
+            'repo_name': 'chromium'
+        },
+        'r123_2': {
+            'revision': 'r123_2',
+            'commit_position': 1232,
+            'url': 'url_2',
+            'repo_name': 'chromium'
+        }
+    }
+
+    expected_cls = [{
+        'repo_name': 'chromium',
+        'revision': 'r123_2',
+        'commit_position': 1232,
+        'url': 'url_2',
+        'failures': {
+            'compile': []
+        },
+        'top_score': 4
+    }, {
+        'revision': 'r123_1',
+        'commit_position': 1231,
+        'url': 'url_1',
+        'repo_name': 'chromium',
+        'failures': {
+            'compile': []
+        },
+        'top_score': None
+    }]
+
+    self.assertListEqual(expected_cls,
+                         compile_failure_analysis.GetUpdatedSuspectedCLs(
+                             analysis, culprits))

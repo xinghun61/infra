@@ -7,6 +7,8 @@ import mock
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from model.wf_try_job import WfTryJob
+from pipelines.compile_failure import (identify_compile_try_job_culprit_pipeline
+                                       as culprit_pipeline)
 from pipelines.compile_failure import start_compile_try_job_pipeline
 from pipelines.compile_failure.start_compile_try_job_pipeline import (
     StartCompileTryJobPipeline)
@@ -77,16 +79,16 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         expected_args=[try_job.key.urlsafe(), try_job_type, 'try_job_id'],
         expected_kwargs={})
     self.MockPipeline(
-        start_compile_try_job_pipeline.IdentifyTryJobCulpritPipeline,
+        culprit_pipeline.IdentifyCompileTryJobCulpritPipeline,
         'final_result',
         expected_args=[
-            master_name, builder_name, build_number, try_job_type,
-            'try_job_id', 'try_job_result'
+            master_name, builder_name, build_number, 'try_job_id',
+            'try_job_result'
         ],
         expected_kwargs={})
 
-    pipeline = StartCompileTryJobPipeline(
-        'm', 'b', 1, failure_info, {}, {}, True, False)
+    pipeline = StartCompileTryJobPipeline('m', 'b', 1, failure_info, {}, {},
+                                          True, False)
     pipeline.start()
     self.execute_queued_tasks()
 

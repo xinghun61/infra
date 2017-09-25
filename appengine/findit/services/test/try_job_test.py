@@ -7,13 +7,19 @@ from datetime import timedelta
 import mock
 
 from common.waterfall import failure_type
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
+from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_failure_group import WfFailureGroup
 from model.wf_try_job import WfTryJob
 from services import try_job as try_job_util
 from waterfall.test import wf_testcase
+
+_GIT_REPO = CachedGitilesRepository(
+    HttpClientAppengine(), 'https://chromium.googlesource.com/chromium/src.git')
 
 
 class TryJobUtilTest(wf_testcase.WaterfallTestCase):
@@ -269,3 +275,224 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def testNoSuspectsIfNoHeuristicResult(self):
     self.assertEqual([], try_job_util.GetSuspectsFromHeuristicResult({}))
+
+  def testGetResultAnalysisStatusWithTryJobCulpritNotFoundUntriaged(self):
+    # Heuristic analysis provided no results, but the try job found a culprit.
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.result_status = result_status.NOT_FOUND_UNTRIAGED
+    analysis.put()
+
+    result = {
+        'culprit': {
+            'compile': {
+                'revision': 'rev1',
+                'commit_position': 1,
+                'url': 'url_1',
+                'repo_name': 'chromium'
+            }
+        }
+    }
+
+    status = try_job_util.GetResultAnalysisStatus(analysis, result)
+
+    self.assertEqual(status, result_status.FOUND_UNTRIAGED)
+
+  def testGetResultAnalysisStatusWithTryJobCulpritNotFoundCorrect(self):
+    # Heuristic analysis found no results, which was correct. In this case, the
+    # try job result is actually a false positive.
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.result_status = result_status.NOT_FOUND_CORRECT
+    analysis.put()
+
+    result = {
+        'culprit': {
+            'compile': {
+                'revision': 'rev1',
+                'commit_position': 1,
+                'url': 'url_1',
+                'repo_name': 'chromium'
+            }
+        }
+    }
+
+    status = try_job_util.GetResultAnalysisStatus(analysis, result)
+
+    self.assertEqual(status, result_status.FOUND_UNTRIAGED)
+
+  def testGetResultanalysisStatusWithTryJobCulpritNotFoundIncorrect(self):
+    # Heuristic analysis found no results and was triaged to incorrect before a
+    # try job result was found. In this case the try job result should override
+    # the heuristic result.
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.result_status = result_status.NOT_FOUND_INCORRECT
+    analysis.put()
+
+    result = {
+        'culprit': {
+            'compile': {
+                'revision': 'rev1',
+                'commit_position': 1,
+                'url': 'url_1',
+                'repo_name': 'chromium'
+            }
+        }
+    }
+
+    status = try_job_util.GetResultAnalysisStatus(analysis, result)
+
+    self.assertEqual(status, result_status.FOUND_UNTRIAGED)
+
+  def testGetResultanalysisStatusWithTryJobCulpritNoHeuristicResult(self):
+    # In this case, the try job found a result before the heuristic result is
+    # available. This case should generally never happen, as heuristic analysis
+    # is usually much faster than try jobs.
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.put()
+
+    result = {
+        'culprit': {
+            'compile': {
+                'revision': 'rev1',
+                'commit_position': 1,
+                'url': 'url_1',
+                'repo_name': 'chromium'
+            }
+        }
+    }
+
+    status = try_job_util.GetResultAnalysisStatus(analysis, result)
+
+    self.assertEqual(status, result_status.FOUND_UNTRIAGED)
+
+  def testGetResultanalysisStatusWithNoTryJobCulpritNoHeuristicResult(self):
+    # In this case, the try job completed faster than heuristic analysis
+    # (which should never happen) but no results were found.
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.put()
+
+    result = {}
+
+    status = try_job_util.GetResultAnalysisStatus(analysis, result)
+    self.assertIsNone(status)
+
+  def testGetResultanalysisStatusWithTryJobCulpritAndHeuristicResult(self):
+    # In this case, heuristic analysis found the correct culprit. The try job
+    # result should not overwrite it.
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.result_status = result_status.FOUND_CORRECT
+    analysis.put()
+
+    result = {
+        'culprit': {
+            'compile': {
+                'revision': 'rev1',
+                'commit_position': 1,
+                'url': 'url_1',
+                'repo_name': 'chromium'
+            }
+        }
+    }
+
+    status = try_job_util.GetResultAnalysisStatus(analysis, result)
+    self.assertEqual(status, result_status.FOUND_CORRECT)
+
+  def testGetResultanalysisStatusWithNoCulpritTriagedCorrect(self):
+    # In this case, heuristic analysis correctly found no culprit and was
+    # triaged, and the try job came back with nothing. The try job result should
+    # not overwrite the heuristic result.
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.result_status = result_status.NOT_FOUND_CORRECT
+    analysis.put()
+
+    result = {}
+
+    status = try_job_util.GetResultAnalysisStatus(analysis, result)
+    self.assertEqual(status, result_status.NOT_FOUND_CORRECT)
+
+  def testGetResultanalysisStatusWithNoCulpritTriagedIncorrect(self):
+    # In this case, heuristic analysis correctly found no culprit and was
+    # triaged, and the try job came back with nothing. The try job result should
+    # not overwrite the heuristic result.
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.result_status = result_status.NOT_FOUND_INCORRECT
+    analysis.put()
+
+    result = {}
+    status = try_job_util.GetResultAnalysisStatus(analysis, result)
+    self.assertEqual(status, result_status.NOT_FOUND_INCORRECT)
+
+  def testGetUpdatedAnalysisResultNoAnalysis(self):
+    result, flaky = try_job_util.GetUpdatedAnalysisResult(None, None)
+    self.assertEqual({}, result)
+    self.assertFalse(flaky)
+
+  def testGetUpdatedAnalysisResult(self):
+    analysis = WfAnalysis.Create('m', 'b', 1)
+    analysis.result = {
+        'failures': [
+            {
+                'step_name': 'compile',
+                'suspected_cls': [
+                    {
+                        'revision': 'r1',
+                    },
+                ],
+            },
+        ]
+    }
+    analysis.put()
+
+    flaky_failures = {'compile': []}
+
+    expected_result = {
+        'failures': [
+            {
+                'step_name': 'compile',
+                'suspected_cls': [
+                    {
+                        'revision': 'r1',
+                    },
+                ],
+                'flaky': True
+            },
+        ]
+    }
+
+    result, flaky = try_job_util.GetUpdatedAnalysisResult(
+        analysis, flaky_failures)
+    self.assertEqual(expected_result, result)
+    self.assertTrue(flaky)
+
+  def _MockGetChangeLog(self, revision):
+
+    class MockedChangeLog(object):
+
+      def __init__(self, commit_position, code_review_url):
+        self.commit_position = commit_position
+        self.code_review_url = code_review_url
+        self.change_id = str(commit_position)
+
+    mock_change_logs = {}
+    mock_change_logs['rev1'] = None
+    mock_change_logs['rev2'] = MockedChangeLog(123, 'url')
+    return mock_change_logs.get(revision)
+
+  def testGetCulpritInfo(self):
+    failed_revisions = ['rev1', 'rev2']
+
+    self.mock(CachedGitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
+
+    expected_culprits = {
+        'rev1': {
+            'revision': 'rev1',
+            'repo_name': 'chromium'
+        },
+        'rev2': {
+            'revision': 'rev2',
+            'repo_name': 'chromium',
+            'commit_position': 123,
+            'url': 'url'
+        }
+    }
+    self.assertEqual(expected_culprits,
+                     try_job_util.GetCulpritInfo(failed_revisions))

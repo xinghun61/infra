@@ -6,11 +6,15 @@ import mock
 
 from common.waterfall import failure_type
 from libs import analysis_status
+from model import analysis_approach_type
+from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_failure_group import WfFailureGroup
 from model.wf_try_job import WfTryJob
 from services import try_job as try_job_util
+from services.compile_failure import compile_failure_analysis
 from services.compile_failure import compile_try_job
+from waterfall import suspected_cl_util
 from waterfall import swarming_util
 from waterfall.test import wf_testcase
 
@@ -777,3 +781,177 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
                      compile_try_job.GetParametersToScheduleCompileTryJob(
                          master_name, builder_name, build_number, failure_info,
                          None, None))
+
+  def testGetFailedRevisionFromCompileResult(self):
+    culprit = '1234567'
+    compile_result = {'report': {'culprit': culprit}}
+    self.assertEqual(
+        culprit,
+        compile_try_job.GetFailedRevisionFromCompileResult(compile_result))
+
+  def testCompileFailureIsNotFlaky(self):
+    result = {
+        'report': {
+            'culprit': 'rev',
+            'result': 'result',
+            'metadata': {
+                'sub_ranges': []
+            }
+        }
+    }
+    self.assertFalse(compile_try_job.CompileFailureIsFlaky(result))
+
+  def testCompileFailureIsFlakyNoResult(self):
+    self.assertFalse(compile_try_job.CompileFailureIsFlaky(None))
+
+  def testCompileFailureIsFlaky(self):
+    result = {
+        'report': {
+            'result': {
+                'r0': 'failed',
+                'r1': 'passed',
+                'r2': 'passed',
+                'r3': 'passed',
+                'r4': 'passed',
+            },
+            'metadata': {
+                'sub_ranges': [[None, 'r1', 'r2'], ['r3', 'r4']]
+            }
+        }
+    }
+    self.assertTrue(compile_try_job.CompileFailureIsFlaky(result))
+
+  def testUpdateTryJobResultNoCulprit(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    WfTryJob.Create(master_name, builder_name, build_number).put()
+    compile_try_job.UpdateTryJobResult(master_name, builder_name, build_number,
+                                       None, None, None)
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(analysis_status.COMPLETED, try_job.status)
+
+  def testUpdateTryJobResultUpdat(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    result = {'culprit': {'compile': 'rev'}}
+    culprits = {'rev': {'revision': 'rev'}}
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.compile_results = [{'try_job_id': '2'}]
+    try_job.put()
+
+    expected_results = [{'try_job_id': '2', 'culprit': {'compile': 'rev'}}]
+
+    compile_try_job.UpdateTryJobResult(master_name, builder_name, build_number,
+                                       result, '2', culprits)
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(analysis_status.COMPLETED, try_job.status)
+    self.assertEqual(expected_results, try_job.compile_results)
+
+  def testUpdateTryJobResultAppend(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    result = {'culprit': {'compile': 'rev'}}
+    culprits = {'rev': {'revision': 'rev'}}
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.compile_results = [{'try_job_id': '1'}]
+    try_job.put()
+
+    expected_results = [{'try_job_id': '1'}, {'culprit': {'compile': 'rev'}}]
+
+    compile_try_job.UpdateTryJobResult(master_name, builder_name, build_number,
+                                       result, '2', culprits)
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(analysis_status.COMPLETED, try_job.status)
+    self.assertListEqual(expected_results, try_job.compile_results)
+
+  @mock.patch.object(compile_try_job, '_GetUpdatedAnalysisResult')
+  def testUpdateWfAnalysisWithTryJobResultNoCulprit(self, mock_fn):
+    compile_try_job.UpdateWfAnalysisWithTryJobResult('m', 'b', 1, None, None,
+                                                     False)
+    mock_fn.assert_not_called()
+
+  @mock.patch.object(
+      try_job_util,
+      'GetResultAnalysisStatus',
+      return_value=result_status.FOUND_UNTRIAGED)
+  @mock.patch.object(
+      compile_failure_analysis, 'GetUpdatedSuspectedCLs', return_value=[])
+  def testUpdateWfAnalysisWithTryJobResult(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.result = {
+        'failures': [{
+            'step_name': 'compile',
+        }]
+    }
+    analysis.put()
+    culprits = {'rev': {'revision': 'rev', 'repo_name': 'chromium'}}
+
+    compile_try_job.UpdateWfAnalysisWithTryJobResult(
+        master_name, builder_name, build_number, None, culprits, False)
+
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertEqual(result_status.FOUND_UNTRIAGED, analysis.result_status)
+
+  @mock.patch.object(try_job_util, 'GetResultAnalysisStatus', return_value=None)
+  @mock.patch.object(
+      compile_failure_analysis, 'GetUpdatedSuspectedCLs', return_value=None)
+  def testNoNeedToUpdateWfAnalysisWithTryJobResult(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    WfAnalysis.Create(master_name, builder_name, build_number).put()
+    culprits = {'rev': {'revision': 'rev', 'repo_name': 'chromium'}}
+
+    compile_try_job.UpdateWfAnalysisWithTryJobResult(
+        master_name, builder_name, build_number, None, culprits, False)
+
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertIsNone(analysis.result_status)
+
+  @mock.patch.object(suspected_cl_util, 'UpdateSuspectedCL')
+  def testUpdateSuspectedCLsNoCulprit(self, mock_fn):
+    compile_try_job.UpdateSuspectedCLs('m', 'b', 1, None)
+    mock_fn.assert_not_called()
+
+  @mock.patch.object(suspected_cl_util, 'UpdateSuspectedCL')
+  def testUpdateSuspectedCLs(self, mock_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    culprits = {'rev': {'revision': 'rev', 'repo_name': 'chromium'}}
+    compile_try_job.UpdateSuspectedCLs(master_name, builder_name, build_number,
+                                       culprits)
+    mock_fn.assert_called_with(
+        'chromium', 'rev', None, analysis_approach_type.TRY_JOB, master_name,
+        builder_name, build_number, failure_type.COMPILE, {'compile': []}, None)
+
+  def testGetUpdatedAnalysisResultFlaky(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.result = {
+        'failures': [{
+            'step_name': 'Failure_reason'
+        }, {
+            'step_name': 'compile',
+        }]
+    }
+    analysis.put()
+
+    expected_result = {
+        'failures': [{
+            'step_name': 'Failure_reason'
+        }, {
+            'step_name': 'compile',
+            'flaky': True
+        }]
+    }
+    self.assertEqual(expected_result,
+                     compile_try_job._GetUpdatedAnalysisResult(analysis, True))
