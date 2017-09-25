@@ -300,8 +300,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     test_name = 't'
 
     rerun = False
-    iterations = (
-        determine_true_pass_rate_pipeline._ITERATIONS_TO_RUN_AFTER_TIMEOUT)
+    iterations = flake_constants.DEFAULT_ITERATIONS_TO_RUN_AFTER_TIMEOUT
     timeout = 3600
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,

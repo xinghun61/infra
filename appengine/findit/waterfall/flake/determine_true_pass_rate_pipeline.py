@@ -28,11 +28,6 @@ from waterfall.process_flake_swarming_task_result_pipeline import (
 from waterfall.trigger_flake_swarming_task_pipeline import (
     TriggerFlakeSwarmingTaskPipeline)
 
-# Static number of iterations to run to be reasonably confident that the
-# task will complete. To be used on the run after a timeout occurs.
-# TODO (crbug.com/766729): Make this configurable.
-_ITERATIONS_TO_RUN_AFTER_TIMEOUT = 10
-
 
 def _HasPassRateConverged(pass_rate_a, pass_rate_b):
   """Determines if the pass rate has converged to an acceptable level.
@@ -256,7 +251,9 @@ class DetermineTruePassRatePipeline(BasePipeline):
     if swarming_error_code == swarming_util.TIMED_OUT:
       # If the previous run timed out, run a smaller, fixed, number of
       # iterations so it's liekly to finish.
-      iterations_for_task = _ITERATIONS_TO_RUN_AFTER_TIMEOUT
+      iterations_for_task = (analysis.algorithm_parameters.get(
+          'iterations_to_run_after_timeout',
+          flake_constants.DEFAULT_ITERATIONS_TO_RUN_AFTER_TIMEOUT))
 
     analysis.LogInfo('Running %d iterations with a %d second timeout' %
                      (iterations_for_task, time_for_task_seconds))

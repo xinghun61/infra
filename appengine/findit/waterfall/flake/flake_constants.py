@@ -19,6 +19,10 @@ DEFAULT_DATA_POINT_SAMPLE_SIZE = 5
 # and the default length of a test being two minutes.
 DEFAULT_ITERATIONS_PER_TASK = 35
 
+# Static number of iterations to run to be reasonably confident that the
+# task will complete. To be used on the run after a timeout occurs.
+DEFAULT_ITERATIONS_TO_RUN_AFTER_TIMEOUT = 10
+
 # The maximum pass rate of a data point to be considered stable and failing.
 DEFAULT_LOWER_FLAKE_THRESHOLD = 0.02
 
