@@ -3,20 +3,21 @@
 # found in the LICENSE file.
 
 from datetime import datetime
+from datetime import timedelta
 import copy
 import mock
 
 from common import constants
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
+from libs import time_util
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
-
+from pipelines.delay_pipeline import DelayPipeline
 from waterfall import swarming_util
 from waterfall.flake import flake_constants
 from waterfall.flake import recursive_flake_pipeline
-
 from waterfall.flake.determine_true_pass_rate_pipeline import (
     DetermineTruePassRatePipeline)
 from waterfall.flake.finish_build_analysis_pipeline import (
@@ -289,6 +290,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         None,
         expected_args=[analysis.key.urlsafe(), None, None, None, False])
 
+    self.MockPipeline(DelayPipeline, None, expected_args=[0])
+
     pipeline_job = RecursiveFlakePipeline(
         analysis.key.urlsafe(),
         build_number,
@@ -416,7 +419,9 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
-  @mock.patch.object(swarming_util, 'GetETAToStartAnalysis', return_value=None)
+  @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(1, 1, 1))
+  @mock.patch.object(
+      swarming_util, 'GetETAToStartAnalysis', return_value=datetime(1, 1, 1))
   @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=False)
   @mock.patch.object(FlakeSwarmingTask, 'Get')
   def testRetriesExceedMax(self, mock_flake_swarming_task, *_):
@@ -454,6 +459,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
         FinishBuildAnalysisPipeline,
         None,
         expected_args=[analysis.key.urlsafe(), None, None, None, False])
+
+    self.MockAsynchronousPipeline(DelayPipeline, 0, 0)
 
     pipeline_job = RecursiveFlakePipeline(
         analysis.key.urlsafe(),

@@ -14,13 +14,14 @@ from libs import analysis_status
 from libs import time_util
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.wf_swarming_task import WfSwarmingTask
+from pipelines.delay_pipeline import DelayPipeline
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants
-from waterfall.flake.next_build_number_pipeline import NextBuildNumberPipeline
 from waterfall.flake.determine_true_pass_rate_pipeline import (
     DetermineTruePassRatePipeline)
+from waterfall.flake.next_build_number_pipeline import NextBuildNumberPipeline
 from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
     SaveLastAttemptedSwarmingTaskIdPipeline)
 from waterfall.flake.update_flake_analysis_data_points_pipeline import (
@@ -128,17 +129,6 @@ class RecursiveFlakePipeline(BasePipeline):
     self.previous_build_number = previous_build_number
     self.retries = retries
     self.force = force
-
-  def _StartOffPSTPeakHours(self, *args, **kwargs):
-    """Starts the pipeline off PST peak hours if not triggered manually."""
-    kwargs['eta'] = swarming_util.GetETAToStartAnalysis(self.manually_triggered)
-    self.start(*args, **kwargs)
-
-  def _RetryWithDelay(self, *args, **kwargs):
-    """Trys to start the pipeline later."""
-    kwargs['countdown'] = kwargs.get(
-        'retries', 1) * flake_constants.BASE_COUNT_DOWN_SECONDS
-    self.start(*args, **kwargs)
 
   def _LogUnexpectedAbort(self):
     if not self.was_aborted:
@@ -265,38 +255,33 @@ class RecursiveFlakePipeline(BasePipeline):
           force=force)
     else:  # Can't start analysis, reschedule.
       retries += 1
-      pipeline_job = RecursiveFlakePipeline(
-          analysis_urlsafe_key,
-          preferred_run_build_number,
-          lower_bound_build_number,
-          upper_bound_build_number,
-          user_specified_iterations,
-          step_metadata=step_metadata,
-          manually_triggered=manually_triggered,
-          use_nearby_neighbor=use_nearby_neighbor,
-          previous_build_number=previous_build_number,
-          retries=retries,
-          force=force)
-
-      # Disable attribute 'target' defined outside __init__ pylint warning,
-      # because pipeline generates its own __init__ based on run function.
-      pipeline_job.target = (  # pylint: disable=W0201
-          appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
-
       if retries > flake_constants.MAX_RETRY_TIMES:
-        pipeline_job._StartOffPSTPeakHours(queue_name=self.queue_name or
-                                           constants.DEFAULT_QUEUE)
         logging.info('Retrys exceed max count, RecursiveFlakePipeline on '
                      'MasterFlakeAnalysis %s/%s/%s/%s/%s will start off peak '
                      'hour', self.master_name, self.builder_name,
                      self.triggering_build_number, self.step_name,
                      self.test_name)
+        delay_delta = swarming_util.GetETAToStartAnalysis(
+            self.manually_triggered) - time_util.GetUTCNow()
+        delay_seconds = int(delay_delta.total_seconds())
       else:
-        pipeline_job._RetryWithDelay(queue_name=self.queue_name or
-                                     constants.DEFAULT_QUEUE)
-        countdown = retries * flake_constants.BASE_COUNT_DOWN_SECONDS
+        delay_seconds = retries * flake_constants.BASE_COUNT_DOWN_SECONDS
         logging.info('No available swarming bots, RecursiveFlakePipeline on '
                      'MasterFlakeAnalysis %s/%s/%s/%s/%s will be tried after'
                      '%d seconds', self.master_name, self.builder_name,
                      self.triggering_build_number, self.step_name,
-                     self.test_name, countdown)
+                     self.test_name, delay_seconds)
+      delay = yield DelayPipeline(delay_seconds)
+      with pipeline.After(delay):
+        yield RecursiveFlakePipeline(
+            analysis_urlsafe_key,
+            preferred_run_build_number,
+            lower_bound_build_number,
+            upper_bound_build_number,
+            user_specified_iterations,
+            step_metadata=step_metadata,
+            manually_triggered=manually_triggered,
+            use_nearby_neighbor=use_nearby_neighbor,
+            previous_build_number=previous_build_number,
+            retries=retries,
+            force=force)
