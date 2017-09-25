@@ -59,7 +59,8 @@
       "retry",
       "fetch",
       "origin",
-      "master"
+      "master",
+      "--progress"
     ],
     "cwd": "[HACK]/foo_builder",
     "env": {
@@ -123,7 +124,8 @@
       "retry",
       "fetch",
       "origin",
-      "master"
+      "master",
+      "--progress"
     ],
     "cwd": "[START_DIR]/overlay",
     "env": {

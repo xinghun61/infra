@@ -82,7 +82,8 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/v2.1.2"
+      "refs/tags/v2.1.2",
+      "--progress"
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
@@ -1301,7 +1302,8 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/v2.12.2.2"
+      "refs/tags/v2.12.2.2",
+      "--progress"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {
@@ -2216,7 +2218,8 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/v1.7.2"
+      "refs/tags/v1.7.2",
+      "--progress"
     ],
     "cwd": "[START_DIR]/ninja/checkout",
     "env": {
@@ -2431,7 +2434,8 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/v3.9.1"
+      "refs/tags/v3.9.1",
+      "--progress"
     ],
     "cwd": "[START_DIR]/cmake/checkout",
     "env": {
@@ -2739,7 +2743,8 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/rel-3.0.12"
+      "refs/tags/rel-3.0.12",
+      "--progress"
     ],
     "cwd": "[START_DIR]/swig/checkout",
     "env": {

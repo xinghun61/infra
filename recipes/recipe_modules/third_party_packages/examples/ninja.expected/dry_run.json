@@ -83,7 +83,8 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/v1.7.4"
+      "refs/tags/v1.7.4",
+      "--progress"
     ],
     "cwd": "[START_DIR]/ninja/checkout",
     "env": {

@@ -78,7 +78,8 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/v3.9.2"
+      "refs/tags/v3.9.2",
+      "--progress"
     ],
     "cwd": "[START_DIR]/cmake/checkout",
     "env": {

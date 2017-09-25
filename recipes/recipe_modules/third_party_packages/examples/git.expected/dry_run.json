@@ -87,7 +87,8 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/v2.12.2.2"
+      "refs/tags/v2.12.2.2",
+      "--progress"
     ],
     "cwd": "[START_DIR]/git/checkout",
     "env": {

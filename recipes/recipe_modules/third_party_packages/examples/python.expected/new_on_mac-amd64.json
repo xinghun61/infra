@@ -90,7 +90,8 @@
       "retry",
       "fetch",
       "origin",
-      "refs/tags/v2.1.2"
+      "refs/tags/v2.1.2",
+      "--progress"
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
