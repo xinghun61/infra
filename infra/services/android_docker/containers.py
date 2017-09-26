@@ -164,7 +164,7 @@ class DockerClient(object):
       # chown'ed.
       os.chown(container_workdir, uid, gid)
     volumes = _DOCKER_VOLUMES.copy()
-    volumes[container_workdir] = container_workdir
+    volumes[container_workdir] = '/b/'
     new_container = self._client.containers.create(
         image=image_name,
         hostname=container_hostname,
