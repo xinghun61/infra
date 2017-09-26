@@ -94,11 +94,7 @@ endif
 
 
 ##### Unit tests ###
-clean-expect_tests:  # $$ is to escape $ in makefile.
-	ps auxef | grep ENV/bin/expect_tests | grep -v grep | \
-	  awk '{print $$2}' | xargs kill -9
-
-test: clean-expect_tests
+test:
 	@mkdir -p $(TMPDIR)/coverage
 	$(INFRAPYTHON) ../../test.py test appengine/findit \
 	  --html-report $(TMPDIR)/coverage
