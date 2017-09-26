@@ -102,7 +102,8 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
     # matched with 'src' in between, it should be matched to the trimmed 'src'
     # in the beginning.
     if (not normalized_path.startswith(THIRD_PARTY_FILE_PATH_MARKER) and
-        (dep_path in normalized_path or dep_path_lower in normalized_path)):
+        (dep_path + '/' in normalized_path or
+         dep_path_lower + '/' in normalized_path)):
       if dep_path in normalized_path:
         current_dep_path = dep_path
       else:
