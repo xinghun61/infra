@@ -74,6 +74,55 @@ class DepsParserTest(unittest.TestCase):
     self.assertEqual(1, len(result))
     self.assertEqual(expected_deps, result[0])
 
+  def testParseDepsForNonSrcInternalCheckOut(self):
+    """Tests deleting 'src-internal' dep for non-src-internal checkout."""
+    result = deps_parser.ParseDEPSContent('', keys=['deps'])
+    self.assertEqual(1, len(result))
+    self.assertEqual({}, result[0])
+
+    result = deps_parser.ParseDEPSContent(
+        textwrap.dedent("""
+            vars = {
+              'cr_repo': 'https://cr.repo',
+              'a': '1',
+            }
+            deps = {
+              'depA': Var('cr_repo') + '/a.git' + '@' + Var('a'),
+              'src-internal': {
+                  'url': 'https://cr-internal_repo@1234',
+                  'condition': 'checkout_src_internal',
+              },
+            }"""),
+        keys=['deps'], include_src_internal=False)
+    expected_deps = {'depA': 'https://cr.repo/a.git@1'}
+    self.assertEqual(1, len(result))
+    self.assertEqual(expected_deps, result[0])
+
+  def testParseDepsForSrcInternalCheckOut(self):
+    """Tests getting 'src' of 'src-internal' dep for src-internal checkout."""
+    result = deps_parser.ParseDEPSContent('', keys=['deps'])
+    self.assertEqual(1, len(result))
+    self.assertEqual({}, result[0])
+
+    result = deps_parser.ParseDEPSContent(
+        textwrap.dedent("""
+            vars = {
+              'cr_repo': 'https://cr.repo',
+              'a': '1',
+            }
+            deps = {
+              'depA': Var('cr_repo') + '/a.git' + '@' + Var('a'),
+              'src-internal': {
+                  'url': 'https://cr-internal_repo@1234',
+                  'condition': 'checkout_src_internal',
+              },
+            }"""),
+        keys=['deps'], include_src_internal=True)
+    expected_deps = {'depA': 'https://cr.repo/a.git@1',
+                     'src-internal': 'https://cr-internal_repo@1234'}
+    self.assertEqual(1, len(result))
+    self.assertDictEqual(expected_deps, result[0])
+
   def testParseDepsOs(self):
     result = deps_parser.ParseDEPSContent('', keys=['deps_os'])
     self.assertEqual(1, len(result))
