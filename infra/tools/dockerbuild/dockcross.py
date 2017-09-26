@@ -146,12 +146,7 @@ class Builder(object):
     util.LOGGER.info('Mirroring base image [%s] => [%s]',
                      docker_image.public_id, docker_image.internal_id)
 
-    if not plat.dockcross_base_upstream:
-      util.LOGGER.warning('Not pulling platform [%s]: no upstream base image',
-                          plat.name)
-    else:
-      self._pull_image(docker_image.public_id)
-
+    self._pull_image(docker_image.public_id)
     self._tag_for_internal(docker_image)
 
     if upload:
