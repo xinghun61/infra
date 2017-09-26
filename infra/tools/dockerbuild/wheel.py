@@ -251,7 +251,7 @@ def _build_source(system, wheel, src, universal=False):
     check_run(
         system,
         dx,
-        tdir, 
+        tdir,
         cmd,
         cwd=build_dir)
 
@@ -505,6 +505,15 @@ SPECS = {s.spec.tag: s for s in (
   BuildWheel('crcmod', '1.7', packaged=()),
   BuildWheel('grpcio', '1.4.0'),
   BuildWheel('scan-build', '2.0.8'),
+
+  # Prefer to use 'cryptography' instead of PyCrypto, if possible. We have to
+  # use PyCrypto for GAE dev server (it's the only crypto package available on
+  # GAE). Since we support it only on Linux and OSX, build only for these
+  # platforms.
+  BuildWheel('pycrypto', '2.6.1',
+      packaged=(),
+      only_plat=['manylinux-x64', 'mac-x64'],
+  ),
 
   Universal('appdirs', '1.4.3'),
   UniversalSource('Appium_Python_Client', '0.24',
