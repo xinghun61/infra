@@ -56,9 +56,6 @@ class ClusterfuzzDashBoardTest(AppengineTestCase):
     analysis.job_type = 'asan_job'
     analysis.crash_type = 'check'
     analysis.platform = 'win'
-    analysis.sanitizer = 'asan'
-    analysis.regression_range = {'repo_path': 'src', 'repo_url': 'https://repo',
-                                 'old_revision': 'rev2', 'new_revision': 'rev8'}
     analysis.commit_count_in_regression_range = 3
     analysis.error_name = 'Failed to parse stacktrace'
     analysis.result = {
@@ -75,9 +72,6 @@ class ClusterfuzzDashBoardTest(AppengineTestCase):
         'job_type': 'asan_job',
         'crash_type': 'check',
         'platform': 'win',
-        'sanitizer': 'asan',
-        'regression_range': {'repo_path': 'src', 'repo_url': 'https://repo',
-                             'old_revision': 'rev2', 'new_revision': 'rev8'},
         'commits': 3,
         'error_name': 'Failed to parse stacktrace',
         'suspected_cls': [{'author': 'someone'}],

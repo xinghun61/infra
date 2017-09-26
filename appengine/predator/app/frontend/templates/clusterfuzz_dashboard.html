@@ -5,6 +5,12 @@
   <link rel="stylesheet" href="/common.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
   <style type="text/css">
+    .truncated {
+      max-width: 120px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
     .previous, .next {
       color: #0645AD;
       background: none;
@@ -169,10 +175,8 @@
         <th>Testcase</th>
         <th>Crash type</th>
         <th>Crash state</th>
-        <th>Regression range</th>
         <th>Commits</th>
         <th>Platform</th>
-        <th>Sanitizer</th>
         <th>Job type</th>
         <th>Error</th>
         <th>Suspected cls</th>
@@ -189,20 +193,14 @@
             <td>
               <a href="./result-feedback?key={{crash.key}}" target="_blank"><pre>{{crash.signature}}</pre></a>
             </td>
-            {% if crash.regression_range %}
-              <td><a href="https://chromium.googlesource.com/chromium/src/+log/{{crash.regression_range[0]}}..{{crash.regression_range[1]}}?pretty=fuller">{{crash.regression_range[0]}} : {{crash.regression_range[1]}}</td>
-            {% else %}
-              <td></td>
-            {% endif %}
             <td>{{ crash.commits }}</td>
             <td>{{ crash.platform }}</td>
-            <td>{{ crash.sanitizer }}</td>
-            <td>{{ crash.job_type }}</td>
+            <td class="truncated">{{ crash.job_type }}</td>
             <td>{{ crash.error_name }}</td>
             <td>
             {% if crash.suspected_cls %}
               {% for suspected_cl in crash.suspected_cls %}
-              <li>
+              <li class="truncated">
                 <a href="{{suspected_cl.url}}">{{suspected_cl.revision}}</a>
               </li>
               {% endfor %}

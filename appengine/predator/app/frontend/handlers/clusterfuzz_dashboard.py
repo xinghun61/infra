@@ -48,8 +48,6 @@ class ClusterfuzzDashBoard(DashBoard):
           'job_type': crash.job_type,
           'crash_type': crash.crash_type,
           'platform': crash.platform,
-          'sanitizer': crash.sanitizer,
-          'regression_range': crash.regression_range,
           'commits': crash.commit_count_in_regression_range,
           'error_name': crash.error_name or '',
           'suspected_cls': (crash.result.get('suspected_cls', [])
