@@ -82,22 +82,12 @@ def DistanceBetweenLineRanges((start1, end1), (start2, end2)):
 
 
 class MinDistanceFeature(Feature):
-  """Returns the minimum min_distance scaled between -inf and 0.
+  """Returns the minimum min_distance scaled between 0 and 1.
 
-  That is, the normal-domain value is scaled linearly between 0 and 1,
-  but since we want to return a log-domain value we take the logarithm
-  of that (hence -inf to 0). This ensures that when a suspect has a
-  linearly-scaled value of 0 (aka log-scaled value of -inf) we absolutely
-  refuse to blame that suspect. This heuristic behavior is intended. Before
-  changing it to be less aggressive about refusing to blame the suspect,
-  we should delta test to be sure the new heuristic acts as indented.
-
-  When the actual minimum min_distance is zero, we return the log-domain
-  value 0 (aka normal-domain value of 1). When the suspect has no files
-  or the actual minimum min_distance is greater than the ``maximum``,
-  we return the log-domain value -inf (aka normal-domain value of 0). In
-  between we scale the normal-domain values linearly, which means the
-  log-domain values are scaled exponentially.
+  If the distance is more than _DEFAULT_MAX_LINE_DISTANCE, the value is 0.
+  If the distance is 0, the value is 1.0.
+  For distance that is less than _DEFAULT_MAX_LINE_DISTANCE and more than 0,
+  the value is linearly scaled between (0, 1).
   """
   def __init__(self, get_repository, maximum=_DEFAULT_MAX_LINE_DISTANCE):
     """
@@ -228,9 +218,11 @@ class MinDistanceFeature(Feature):
 
       value = LinearlyScaled(float(distance.distance), float(self._maximum))
       if distance.frame is not None:
-        reason = ('Minimum distance between changed lines and stacktrace lines '
-                  'in %s is %d' % (os.path.basename(distance.frame.file_path),
-                                   int(distance.distance)))
+        reason = (
+            'Changelist touched lines near the crashed line in '
+            'frame #%d %s (distance = %d lines away)' % (
+                distance.frame.index, distance.frame.function,
+                int(distance.distance)))
       else:
         reason = None
 
