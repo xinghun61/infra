@@ -130,6 +130,9 @@ def CollateCurrentDeps(deps_content, prefix_path="."):
       submod_data[0].append(deps_os)
   for (dep, url) in deps_content['deps'].iteritems():
     fix_dep_name = _AddPrefixToDepname(dep, prefix_path)
+    # If DEP has conditional then we need to extract URL from dict.
+    if isinstance(url, dict):
+      url = url['url']
     submods[fix_dep_name] = [['all']] + spliturl(url)
   return submods
 
