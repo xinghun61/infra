@@ -84,7 +84,7 @@
     "cmd": [
       "python",
       "-u",
-      "[START_DIR]/infra/go/src/github.com/luci/luci-go/web/web.py",
+      "[START_DIR]/infra/go/src/go.chromium.org/luci/web/web.py",
       "install"
     ],
     "env": {
@@ -104,7 +104,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "[START_DIR]/infra/go/src/github.com/luci/luci-go/web/bower.json",
+      "[START_DIR]/infra/go/src/go.chromium.org/luci/web/bower.json",
       "/path/to/tmp/"
     ],
     "infra_step": true,
@@ -151,7 +151,7 @@
       "--json-output",
       "/path/to/tmp/json",
       "copy",
-      "[START_DIR]/infra/go/src/github.com/luci/luci-go/web/package.json",
+      "[START_DIR]/infra/go/src/go.chromium.org/luci/web/package.json",
       "/path/to/tmp/"
     ],
     "infra_step": true,
