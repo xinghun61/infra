@@ -11,7 +11,9 @@ TBD: The method of importing these elements and their dependencies for use.
 Please add demos and documentation for elements as described in the [polymer docs](https://www.polymer-project.org/2.0/docs/tools/documentation#document-an-element).
 
 Check that your demo and documentation are working and correct by running:
-polymer analyze > analysis.json
-polymer serve
 
-and visit http://localhost:XXXX/components/chops-ui/docs.html
+polymer analyze > static/analysis.json
+eval `../../../../../env.py`
+gae.py devserver -A chopsui-gallery
+
+and visit http://localhost:8080/
