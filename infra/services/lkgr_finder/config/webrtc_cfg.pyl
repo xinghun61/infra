@@ -8,6 +8,32 @@
     'kjellander@google.com,'
     'ehmaldonado@google.com'),
   'masters': {
+    'chromium.webrtc.fyi': {
+      'base_url': 'https://build.chromium.org/p/chromium.webrtc.fyi',
+      'builders': [
+        'Android Builder (dbg)',
+        'Android Builder ARM64 (dbg)',
+        'Android Builder',
+        'Android Tests (dbg) (K Nexus5)',
+        'Android Tests (dbg) (L Nexus5)',
+        'Android Tests (dbg) (L Nexus6)',
+        'Android Tests (dbg) (L Nexus7.2)',
+        'Android Tests (dbg) (L Nexus9)',
+        'Linux Builder (dbg)',
+        'Linux Builder',
+        'Linux Tester',
+        'Mac Builder (dbg)',
+        'Mac Builder',
+        'Mac Tester',
+        'Win Builder (dbg)',
+        'Win Builder',
+        'Win10 Tester',
+        'Win7 Tester',
+        'Win8 Tester',
+        'ios-device',
+        'ios-simulator',
+      ],
+    },
     'client.webrtc': {
       'base_url': 'https://build.chromium.org/p/client.webrtc',
       'builders': [
