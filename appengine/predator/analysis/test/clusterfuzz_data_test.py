@@ -23,7 +23,12 @@ class CusterfuzzDataTest(AnalysisTestCase):
 
   def testProperties(self):
     """Tests ``ClusterfuzzData`` specific properties."""
-    raw_crash_data = self.GetDummyClusterfuzzData(sanitizer='ASAN')
+    regression_range = {'repo_url': 'http://repo',
+                        'repo_path': 'src',
+                        'old_revision': 'rev2',
+                        'new_revision': 'rev7'}
+    raw_crash_data = self.GetDummyClusterfuzzData(
+        sanitizer='ASAN', regression_range=regression_range)
     crash_data = ClusterfuzzData(raw_crash_data, self.GetMockRepoFactory())
     self.assertEqual(crash_data.crash_address,
                      raw_crash_data['customized_data']['crash_address'])
@@ -34,11 +39,15 @@ class CusterfuzzDataTest(AnalysisTestCase):
     self.assertEqual(crash_data.job_type,
                      raw_crash_data['customized_data']['job_type'])
     self.assertEqual(crash_data.regression_range,
-                     raw_crash_data['customized_data']['regression_range'])
+                     ('rev2', 'rev7'))
     self.assertEqual(crash_data.testcase_id,
                      raw_crash_data['customized_data']['testcase_id'])
     self.assertEqual(crash_data.security_flag,
                      raw_crash_data['customized_data']['security_flag'])
+
+    raw_crash_data['customized_data']['regression_range'] = None
+    crash_data = ClusterfuzzData(raw_crash_data, self.GetMockRepoFactory())
+    self.assertIsNone(crash_data.regression_range)
 
   @mock.patch('analysis.clusterfuzz_parser.ClusterfuzzParser.Parse')
   def testParseStacktraceFailed(self, mock_parse):

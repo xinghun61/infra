@@ -160,11 +160,13 @@ class ClusterfuzzData(CrashData):
 
   @cached_property
   def regression_range(self):
-    if not self._regression_repository:
+    if not self._regression_repository or not (
+        'old_revision' in self._regression_repository or
+        'new_revision' in self._regression_repository):
       return None
 
-    return (self._regression_repository['old_revision'],
-            self._regression_repository['new_revision'])
+    return (self._regression_repository.get('old_revision'),
+            self._regression_repository.get('new_revision'))
 
   @cached_property
   def dependencies(self):
@@ -179,8 +181,9 @@ class ClusterfuzzData(CrashData):
     return {
         roll['dep_path']:
         DependencyRoll(roll['dep_path'], roll['repo_url'],
-                       roll['old_revision'], roll['new_revision'])
+                       roll.get('old_revision'), roll.get('new_revision'))
         for roll in self._raw_dependency_rolls
+        if 'old_revision' in roll or 'new_revision' in roll
     }
 
   @property
