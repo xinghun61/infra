@@ -456,6 +456,8 @@ class SomAlertView extends Polymer.mixinBehaviors(
                             alert.extension.builders,
                             alert.extension.stages);
         this._mergeRegressionRanges(group.extension, alert.extension);
+        group.extension.reason = this._mergeReason(group.extension,
+                                                   alert.extension);
       }
       group.alerts.push(alert);
       if (resolved) {
@@ -464,6 +466,20 @@ class SomAlertView extends Polymer.mixinBehaviors(
     } else {
       // Ungrouped alert.
       alertItems.push(alert);
+    }
+  }
+
+  _mergeReason(groupExtension, alertExtension) {
+    if (!alertExtension.reason || !alertExtension.reason.test_names || alertExtension.reason.test_names.length == 0) {
+      return alertExtension.reason;
+    }
+
+    if (!groupExtension.reason) {
+      return alertExtension.reason;
+    }
+
+    if (alertExtension.reason.test_names.length != groupExtension.reason.test_names.length) {
+      console.error(alertExtension.reason.test_names + " is not equal to " + groupExtension.reason.test_names + " but they were merged together. This should never happen, because merging is done server side by looking at the reason data.");
     }
   }
 
@@ -504,6 +520,10 @@ class SomAlertView extends Polymer.mixinBehaviors(
   }
 
   _mergeRegressionRange(groupRange, alertRange) {
+    if (!!groupRange.error) {
+      return groupRange;
+    }
+
     if (alertRange === undefined || !groupRange || !groupRange.positions) {
       return undefined;
     }
@@ -542,8 +562,9 @@ class SomAlertView extends Polymer.mixinBehaviors(
     if (lower > upper) {
       console.warn("Bad regression ranges", gRR, aRR)
       return {
+        repo: groupRange.repo,
         error: "Invalid regression range",
-        explanation: `Two regression ranges, ${gRR[0]} - ${aRR[0]} and ${gRR[gRR.length - 1]} - ${aRR[aRR.length-1]}, were merged together, but don't share any common commit positions. This probably means this alert should be split into a few different alerts, each with different root causes.`,
+        explanation: `Two regression ranges, ${gRR[0]} - ${gRR[gRR.length - 1]} and ${aRR[0]} - ${aRR[aRR.length-1]}, were merged together, but don't share any common commit positions. This probably means this alert should be split into a few different alerts, each with different root causes.`,
         bad_range: [lower, upper]
       };
     }

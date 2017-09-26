@@ -1,8 +1,11 @@
 package handler
 
 import (
+	"crypto/sha1"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sort"
 	"testing"
 	"time"
 
@@ -12,6 +15,7 @@ import (
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/client/mock"
 	testhelper "infra/appengine/sheriff-o-matic/som/client/test"
+	"infra/appengine/sheriff-o-matic/som/model"
 	"infra/monitoring/messages"
 
 	"go.chromium.org/gae/impl/dummy"
@@ -323,4 +327,162 @@ func TestEnqueueLogDiffTask(t *testing.T) {
 		err := enqueueLogDiffTask(c, alerts)
 		So(err, ShouldNotBeNil)
 	})
+}
+
+type fakeReasonRaw struct {
+	signature string
+	title     string
+}
+
+func (f *fakeReasonRaw) Signature() string {
+	if f.signature != "" {
+		return f.signature
+	}
+
+	return "fakeSignature"
+}
+
+func (f *fakeReasonRaw) Kind() string {
+	return "fakeKind"
+}
+
+func (f *fakeReasonRaw) Title([]*messages.BuildStep) string {
+	if f.title == "" {
+		return "fakeTitle"
+	}
+	return f.title
+}
+
+func (f *fakeReasonRaw) Severity() messages.Severity {
+	return messages.NewFailure
+}
+
+func TestMergeAlertsByReason(t *testing.T) {
+	Convey("test MergeAlertsByReason", t, func() {
+		tests := []struct {
+			name    string
+			in      []messages.Alert
+			want    []model.Annotation
+			wantErr error
+		}{
+			{
+				name: "empty",
+				want: []model.Annotation{},
+			},
+			{
+				name: "no merges",
+				in: []messages.Alert{
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{
+									signature: "reason_a",
+								},
+							},
+						},
+						Key: "a",
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{
+									signature: "reason_b",
+								},
+							},
+						},
+						Key: "b",
+					},
+				},
+				want: []model.Annotation{},
+			},
+			{
+				name: "multiple builders fail on bad_test",
+				in: []messages.Alert{
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{
+									signature: "bad_test",
+								},
+							},
+						},
+						Key: "buildera.bad_test",
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{
+									signature: "bad_test",
+								},
+							},
+						},
+						Key: "builderb.bad_test",
+					},
+					{
+						Type: messages.AlertBuildFailure,
+						Extension: messages.BuildFailure{
+							Reason: &messages.Reason{
+								Raw: &fakeReasonRaw{
+									signature: "bad_test",
+								},
+							},
+						},
+						Key: "builderc.bad_test",
+					},
+				},
+				want: []model.Annotation{
+					{
+						KeyDigest: fmt.Sprintf("%x", sha1.Sum([]byte("buildera.bad_test"))),
+						Key:       "buildera.bad_test",
+						GroupID:   "fakeTitle",
+					},
+					{
+						KeyDigest: fmt.Sprintf("%x", sha1.Sum([]byte("builderb.bad_test"))),
+						Key:       "builderb.bad_test",
+						GroupID:   "fakeTitle",
+					},
+					{
+						KeyDigest: fmt.Sprintf("%x", sha1.Sum([]byte("builderc.bad_test"))),
+						Key:       "builderc.bad_test",
+						GroupID:   "fakeTitle",
+					},
+				},
+			},
+		}
+
+		for _, test := range tests {
+			ctx := newTestContext()
+			test := test
+			Convey(test.name, func() {
+				err := mergeAlertsByReason(ctx, test.in)
+				So(err, ShouldResemble, test.wantErr)
+
+				allAnns := []model.Annotation{}
+				q := datastore.NewQuery("Annotation")
+				So(datastore.GetAll(ctx, q, &allAnns), ShouldBeNil)
+
+				sort.Sort(annList(allAnns))
+				sort.Sort(annList(test.want))
+				So(allAnns, ShouldResemble, test.want)
+			})
+		}
+	})
+}
+
+type annList []model.Annotation
+
+func (a annList) Len() int {
+	return len(a)
+}
+
+func (a annList) Less(i, j int) bool {
+	return a[i].Key < a[j].Key
+}
+
+func (a annList) Swap(i, j int) {
+	a[i], a[j] = a[j], a[i]
 }
