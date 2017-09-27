@@ -178,6 +178,13 @@ class LookbackAlgorithmTest(TestCase):
     self.assertIsNone(next_run)
     self.assertIsNone(result)
 
+  def testIsFullyStable(self):
+    self.assertTrue(lookback_algorithm.IsFullyStable(1.0))
+    self.assertTrue(lookback_algorithm.IsFullyStable(0.0))
+    self.assertFalse(lookback_algorithm.IsFullyStable(0.99))
+    self.assertFalse(lookback_algorithm.IsFullyStable(0.02))
+    self.assertTrue(lookback_algorithm.IsFullyStable(-1))
+
   def testTestDoesNotExist(self):
     data_points = [NormalizedDataPoint(100, -1)]
     next_run, result = lookback_algorithm._ExponentialSearch(

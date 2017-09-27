@@ -7,6 +7,23 @@ def IsStable(pass_rate, lower_flake_threshold, upper_flake_threshold):
   return pass_rate < lower_flake_threshold or pass_rate > upper_flake_threshold
 
 
+def IsFullyStable(pass_rate):
+  """Determines whether a pass rate is fully stable.
+
+      Fully stable data points have pass rates that are either -1 (nonexistent)
+      test, 0%, or 100%.
+
+  Args:
+    pass_rate (float): A data point's pass rate.
+
+  Returns:
+    Boolean whether the pass rate is fully stable, which disallows tolerances
+        in the analysis' lower/upper flake thresholds.
+  """
+  assert pass_rate is not None
+  return pass_rate < 0.0000000001 or pass_rate > 0.99999999999
+
+
 def _TestDoesNotExist(pass_rate):
   return pass_rate < 0
 

@@ -28,6 +28,9 @@ DEFAULT_MAX_BUILD_NUMBERS = 500
 # Maximum number of times to rerun at a certain build number.
 DEFAULT_MAX_ITERATIONS_TO_RERUN = 400
 
+# Default minimum confidence score to run try jobs.
+DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6
+
 # Default iterations to rerun if our config is empty.
 DEFAULT_SWARMING_TASK_ITERATIONS_TO_RERUN = 100
 

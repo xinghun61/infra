@@ -21,47 +21,6 @@ from waterfall.flake.recursive_flake_try_job_pipeline import (
 from waterfall.flake.send_notification_for_flake_culprit_pipeline import (
     SendNotificationForFlakeCulpritPipeline)
 
-_DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6
-
-
-def _SuspectedBuildResultOfDive(analysis):
-  """Determines whether a suspected build point was a dive from flaky.
-
-      Because Findit also identifies suspected builds due dives in pass rate
-      from already-flaky data points, revision analysis will likely yield a
-      false result for the culprit that introduced flakiness. For example,
-      if build 1000 is flaky with an 80% pass rate, and 1001 flaky at 30%, build
-      1001 will be identified as a suspected build. Revision-level analysis
-      should not occur in this case. However if 1000 is stable at 100% or 0%,
-      revision-level analysis should still occur. The analysis' suspected flake
-      build number is assumed to be flaky.
-
-  Args:
-    analysis (MasterFlakeAnalysis): The flake analysis entity whose data points
-        will be analyzed.
-
-  Returns:
-    Boolean whether the suspected build was the result of a dive in pass rate.
-  """
-  suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
-  if not suspected_build_point:
-    return False
-
-  previous_build_point = analysis.FindMatchingDataPointWithBuildNumber(
-      suspected_build_point.build_number - 1)
-
-  if not previous_build_point:
-    return False
-
-  lower_flake_threshold = analysis.algorithm_parameters.get(
-      'lower_flake_threshold', flake_constants.DEFAULT_LOWER_FLAKE_THRESHOLD)
-  upper_flake_threshold = analysis.algorithm_parameters.get(
-      'upper_flake_threshold', flake_constants.DEFAULT_UPPER_FLAKE_THRESHOLD)
-
-  return not lookback_algorithm.IsStable(previous_build_point.pass_rate,
-                                         lower_flake_threshold,
-                                         upper_flake_threshold)
-
 
 def _HasSufficientConfidenceToRunTryJobs(analysis):
   """Determines whether there is sufficient confidence to run try jobs.
@@ -79,7 +38,7 @@ def _HasSufficientConfidenceToRunTryJobs(analysis):
   """
   minimum_confidence_score = analysis.algorithm_parameters.get(
       'minimum_confidence_score_to_run_tryjobs',
-      _DEFAULT_MINIMUM_CONFIDENCE_SCORE)
+      flake_constants.DEFAULT_MINIMUM_CONFIDENCE_SCORE)
   return analysis.confidence_in_suspected_build >= minimum_confidence_score
 
 
@@ -119,6 +78,56 @@ def _GetFullBlamedCLsAndLowerBound(suspected_build_point, data_points):
   return blamed_cls, point_lower_bound.previous_build_commit_position
 
 
+def _DataPointBeforeSuspectIsFullyStable(analysis):
+  assert analysis.suspected_flake_build_number is not None
+  # Note when migrating to LUCI there is no concept of build number, but a
+  # build ID (str). TODO(crbug.com/769374): Use commit position only instead of
+  # build number,
+  previous_data_point = analysis.FindMatchingDataPointWithBuildNumber(
+      analysis.suspected_flake_build_number - 1)
+  assert previous_data_point
+
+  return lookback_algorithm.IsFullyStable(previous_data_point.pass_rate)
+
+
+def _ShouldRunTryJobs(analysis, user_specified_range):
+  """Determines whether try jobs should be run.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The main analysis being run.
+    user_specified_range (boolean): whetehr this analysis is in progress due to
+        a user specifying a range to rerun.
+
+  Returns:
+    Boolean whether try jobs should be run after identifying a suspected build
+        cycle.
+  """
+  if analysis.suspected_flake_build_number is None:
+    analysis.LogInfo(
+        'Skipping try jobs due to no suspected flake build being identified')
+    return False
+
+  if user_specified_range:
+    # Always run try jobs if the user specified a range to analyze that led to
+    # a suspected flake build number being identified.
+    analysis.LogInfo('Running try jobs on user-specified range')
+    return True
+
+  if not _DataPointBeforeSuspectIsFullyStable(analysis):
+    # The previous data point is only slightly flaky. Running try jobs may yield
+    # false positives so bail out.
+    analysis.LogInfo('Skipping try jobs due to previous data point being '
+                     'slightly flaky')
+    return False
+
+  if not _HasSufficientConfidenceToRunTryJobs(analysis):
+    logging.info(
+        'Skipping try jobs due to insufficient confidence in suspected build')
+    return False
+
+  return True
+
+
 class InitializeFlakeTryJobPipeline(BasePipeline):
   """Determines whether try jobs need to be run and where to start."""
 
@@ -145,29 +154,7 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
     builder_name = analysis.builder_name
     triggering_build_number = analysis.build_number
 
-    if analysis.confidence_in_suspected_build is None:
-      analysis.LogInfo(
-          'Skipping try jobs due to no suspected flake build being identified')
-      analysis.Update(
-          end_time=time_util.GetUTCNow(),
-          try_job_status=analysis_status.SKIPPED)
-    elif _SuspectedBuildResultOfDive(analysis) and not user_specified_range:
-      # Suspected flakes as a result of already-flaky data points becoming
-      # much flakier should skip revision-level analysis, unless explicitly
-      # requested by a user.
-      analysis.LogInfo(
-          'Skipping try jobs for dives in pass rate when already flaky')
-      analysis.Update(
-          end_time=time_util.GetUTCNow(),
-          try_job_status=analysis_status.SKIPPED)
-    elif not (_HasSufficientConfidenceToRunTryJobs(analysis) or
-              user_specified_range):
-      logging.info('Bailing out from automatic try job analysis due to '
-                   'insufficiene confidence in suspected build')
-      analysis.Update(
-          end_time=time_util.GetUTCNow(),
-          try_job_status=analysis_status.SKIPPED)
-    else:
+    if _ShouldRunTryJobs(analysis, user_specified_range):
       suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
       assert suspected_build_point
       blamed_cls, lower_bound_commit_position = _GetFullBlamedCLsAndLowerBound(
@@ -226,3 +213,7 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
             try_job_status=analysis_status.ERROR,
             error=error,
             end_time=time_util.GetUTCNow())
+    else:
+      analysis.Update(
+          end_time=time_util.GetUTCNow(),
+          try_job_status=analysis_status.SKIPPED)

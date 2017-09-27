@@ -36,46 +36,6 @@ class MockInfo(object):
 class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  def testSuspectedBuildResultOfDived(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = {
-        'lower_flake_threshold': 0.02,
-        'upper_flake_threshold': 0.98,
-    }
-    analysis.data_points = [
-        DataPoint.Create(pass_rate=0.3, build_number=123),
-        DataPoint.Create(pass_rate=0.8, build_number=122)
-    ]
-    analysis.suspected_flake_build_number = 123
-    self.assertTrue(
-        initialize_flake_try_job_pipeline._SuspectedBuildResultOfDive(analysis))
-
-  def testSuspectedBuildResultOfDiveNoSuspectedBuild(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = {
-        'lower_flake_threshold': 0.02,
-        'upper_flake_threshold': 0.98,
-    }
-    analysis.data_points = [
-        DataPoint.Create(pass_rate=0.3, build_number=123),
-        DataPoint.Create(pass_rate=0.8, build_number=122)
-    ]
-    self.assertFalse(
-        initialize_flake_try_job_pipeline._SuspectedBuildResultOfDive(analysis))
-
-  def testSuspectedBuildResultOfDiveNoPreviousBuild(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = {
-        'lower_flake_threshold': 0.02,
-        'upper_flake_threshold': 0.98,
-    }
-    analysis.data_points = [
-        DataPoint.Create(pass_rate=0.3, build_number=123),
-    ]
-    analysis.suspected_flake_build_number = 123
-    self.assertFalse(
-        initialize_flake_try_job_pipeline._SuspectedBuildResultOfDive(analysis))
-
   def testHasSufficientConfidenceToRunTryJobs(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.algorithm_parameters = {
@@ -191,6 +151,79 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         initialize_flake_try_job_pipeline._GetFullBlamedCLsAndLowerBound(
             suspected_point, data_points))
 
+  def testDataPointBeforeSuspectedIsFullyStable(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 100
+    analysis.data_points = [
+        DataPoint.Create(pass_rate=1.0, build_number=99),
+        DataPoint.Create(pass_rate=1.0, build_number=100)
+    ]
+    self.assertTrue(
+        initialize_flake_try_job_pipeline._DataPointBeforeSuspectIsFullyStable(
+            analysis))
+
+  def testDataPointBeforeSuspectedIsNotFullyStable(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 100
+    analysis.data_points = [
+        DataPoint.Create(pass_rate=0.99, build_number=99),
+        DataPoint.Create(pass_rate=0.97, build_number=100)
+    ]
+    self.assertFalse(
+        initialize_flake_try_job_pipeline._DataPointBeforeSuspectIsFullyStable(
+            analysis))
+
+  def testShouldRunTryJobsNoSuspectedBuild(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    self.assertFalse(
+        initialize_flake_try_job_pipeline._ShouldRunTryJobs(analysis, True))
+    self.assertFalse(
+        initialize_flake_try_job_pipeline._ShouldRunTryJobs(analysis, False))
+
+  def testShouldRunTryJobsUserSpecifiedRange(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 100
+    self.assertTrue(
+        initialize_flake_try_job_pipeline._ShouldRunTryJobs(analysis, True))
+
+  @mock.patch.object(
+      initialize_flake_try_job_pipeline,
+      '_DataPointBeforeSuspectIsFullyStable',
+      return_value=False)
+  def testShouldRunTryJobsPreviousDataPointNotStable(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 100
+    self.assertFalse(
+        initialize_flake_try_job_pipeline._ShouldRunTryJobs(analysis, False))
+
+  @mock.patch.object(
+      initialize_flake_try_job_pipeline,
+      '_DataPointBeforeSuspectIsFullyStable',
+      return_value=True)
+  @mock.patch.object(
+      initialize_flake_try_job_pipeline,
+      '_HasSufficientConfidenceToRunTryJobs',
+      return_value=False)
+  def testShouldRunTryJobsPreviousDataPointInsufficientConfidence(self, *_):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 100
+    self.assertFalse(
+        initialize_flake_try_job_pipeline._ShouldRunTryJobs(analysis, False))
+
+  @mock.patch.object(
+      initialize_flake_try_job_pipeline,
+      '_DataPointBeforeSuspectIsFullyStable',
+      return_value=True)
+  @mock.patch.object(
+      initialize_flake_try_job_pipeline,
+      '_HasSufficientConfidenceToRunTryJobs',
+      return_value=True)
+  def testShouldRunTryJobsPreviousDataPointSufficientConfidence(self, *_):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 100
+    self.assertTrue(
+        initialize_flake_try_job_pipeline._ShouldRunTryJobs(analysis, False))
+
   def testInitializeFlakeTryJopPipelineNoSuspectedBuild(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
@@ -221,9 +254,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(
-      initialize_flake_try_job_pipeline,
-      '_HasSufficientConfidenceToRunTryJobs',
-      return_value=True)
+      initialize_flake_try_job_pipeline, '_ShouldRunTryJobs', return_value=True)
   def testInitializeFlakeTryJopPipelineNoBlamelist(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.suspected_flake_build_number = 100
@@ -248,16 +279,12 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertIsNotNone(analysis.error)
 
-  @mock.patch.object(initialize_flake_try_job_pipeline,
-                     '_HasSufficientConfidenceToRunTryJobs')
-  @mock.patch.object(confidence, 'SteppinessForCommitPosition')
   @mock.patch.object(recursive_flake_try_job_pipeline, 'UpdateCulprit')
   @mock.patch.object(MasterFlakeAnalysis, 'Update')
+  @mock.patch.object(initialize_flake_try_job_pipeline, '_ShouldRunTryJobs')
   def testInitializeFlakeTryJopPipelineSingleCommit(
-      self, mocked_update_analysis, mocked_update_culprit, mocked_stepiness,
-      mocked_confidence):
-    mocked_confidence.return_value = True
-    mocked_stepiness.return_value = 0.8
+      self, mocked_run_try_jobs, mocked_update_analysis, mocked_update_culprit):
+    mocked_run_try_jobs.return_value = True
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.suspected_flake_build_number = 100
     analysis.confidence_in_suspected_build = 0.7
@@ -290,51 +317,9 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mocked_update_culprit.assert_called_once()
     mocked_update_analysis.assert_called_once()
 
-  @mock.patch.object(
-      initialize_flake_try_job_pipeline,
-      '_HasSufficientConfidenceToRunTryJobs',
-      return_value=True)
   @mock.patch.object(build_util, 'GetBuildInfo', return_value=MockInfo())
-  def testInitializeFlakeTryJobPipelineBailOutForDive(self, *_):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.suspected_flake_build_number = 100
-    analysis.confidence_in_suspected_build = 0.9
-    analysis.algorithm_parameters = {
-        'lower_flake_threshold': 0.02,
-        'upper_flake_threshold': 0.98
-    }
-    analysis.data_points = [
-        DataPoint.Create(pass_rate=0.3, build_number=100),
-        DataPoint.Create(pass_rate=0.9, build_number=99)
-    ]
-    analysis.Save()
-
-    self.MockPipeline(
-        RecursiveFlakeTryJobPipeline,
-        '',
-        expected_args=[
-            analysis.key.urlsafe(), 997, 'r997', 995, 1000, None,
-            _DEFAULT_CACHE_NAME, None
-        ],
-        expected_kwargs={'rerun': False,
-                         'retries': 0})
-    self.MockPipeline(
-        SendNotificationForFlakeCulpritPipeline,
-        '',
-        expected_args=[analysis.key.urlsafe()],
-        expected_kwargs={})
-
-    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
-                                                 False, False)
-    pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
-    self.execute_queued_tasks()
-    self.assertEqual(analysis_status.SKIPPED, analysis.try_job_status)
-
   @mock.patch.object(
-      initialize_flake_try_job_pipeline,
-      '_HasSufficientConfidenceToRunTryJobs',
-      return_value=True)
-  @mock.patch.object(build_util, 'GetBuildInfo', return_value=MockInfo())
+      initialize_flake_try_job_pipeline, '_ShouldRunTryJobs', return_value=True)
   def testInitializeFlakeTryJobPipelineRunTryJobs(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.suspected_flake_build_number = 100
@@ -368,3 +353,41 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     self.assertEqual(analysis_status.RUNNING, analysis.try_job_status)
+
+  @mock.patch.object(
+      initialize_flake_try_job_pipeline,
+      '_ShouldRunTryJobs',
+      return_value=False)
+  def testInitializeFlakeTryJobPipelineBailOutOfTryJobs(self, *_):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 100
+    analysis.confidence_in_suspected_build = 0.7
+    analysis.data_points = [
+        DataPoint.Create(
+            pass_rate=0.8,
+            build_number=100,
+            commit_position=1000,
+            previous_build_commit_position=995,
+            blame_list=['r996', 'r997', 'r998', 'r999', 'r1000'])
+    ]
+    analysis.Save()
+
+    self.MockPipeline(
+        RecursiveFlakeTryJobPipeline,
+        '',
+        expected_args=[
+            analysis.key.urlsafe(), 997, 'r997', 995, 1000, None,
+            _DEFAULT_CACHE_NAME, None, False
+        ],
+        expected_kwargs={'retries': 0})
+    self.MockPipeline(
+        SendNotificationForFlakeCulpritPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe()],
+        expected_kwargs={})
+
+    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
+                                                 False, False)
+    pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+    self.assertEqual(analysis_status.SKIPPED, analysis.try_job_status)
