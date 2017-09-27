@@ -93,7 +93,7 @@ func TestCompare(t *testing.T) {
 			So(comp.StatusReason, ShouldEqual, "Incorrect")
 			So(comp.Correctness, ShouldAlmostEqual, 0.5)
 			So(comp.TotalGroups, ShouldEqual, 5)
-			So(comp.CorrectnessGroups, ShouldEqual, 4)
+			So(comp.CorrectnessGroups(), ShouldEqual, 4)
 			So(comp.FalseFailures, ShouldHaveLength, 1)
 			So(comp.FalseFailures[0].Key, ShouldEqual, "set1")
 			So(comp.FalseSuccesses, ShouldHaveLength, 1)

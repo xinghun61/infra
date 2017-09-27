@@ -17,6 +17,7 @@ package analysis
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -56,6 +57,7 @@ type Tryjobs struct {
 }
 
 // Analyze compares buildbot and LUCI tryjobs.
+// Logs details of inconsistencies.
 func (t *Tryjobs) Analyze(c context.Context, builder, buildbotBucket, luciBucket string, currentStatus storage.MigrationStatus) (
 	result *storage.BuilderMigration, detailsHTML string, err error) {
 
@@ -64,11 +66,36 @@ func (t *Tryjobs) Analyze(c context.Context, builder, buildbotBucket, luciBucket
 		return nil, "", err
 	}
 
+	t.logDiff(c, comp)
+
 	detailsBuf := &bytes.Buffer{}
 	if err := tmplDetails.Execute(detailsBuf, comp); err != nil {
 		return nil, "", errors.Annotate(err, "could not render report template").Err()
 	}
 	return &comp.BuilderMigration, detailsBuf.String(), nil
+}
+
+func (t *Tryjobs) logDiff(c context.Context, d *diff) {
+	timeRange := func(s groupSide) string {
+		const layout = "Jan 2 15:04:05.000000000"
+		oldest := bbutil.ParseTimestamp(s[0].CreatedTs).Format(layout)
+		newest := bbutil.ParseTimestamp(s[len(s)-1].CreatedTs).Format(layout)
+		return fmt.Sprintf("[%s..%s]", oldest, newest)
+	}
+
+	logGroups := func(category string, groups []*group) {
+		logging.Infof(c, "%d %s groups", len(groups), category)
+		for _, g := range groups {
+			logging.Errorf(
+				c,
+				"  group %q, buildbot %s, LUCI %s",
+				g.Key, timeRange(g.Buildbot), timeRange(g.LUCI))
+		}
+	}
+
+	logGroups("consistent", d.ConsistentGroups)
+	logGroups("false failure", d.FalseFailures)
+	logGroups("false success", d.FalseSuccesses)
 }
 
 func (t *Tryjobs) analyze(c context.Context, builder, buildbotBucket, luciBucket string, currentStatus storage.MigrationStatus) (*diff, error) {

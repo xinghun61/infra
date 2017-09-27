@@ -43,16 +43,20 @@ type diff struct {
 
 	TotalGroups int
 
-	CorrectnessGroups int
-	FalseFailures     []*group
-	FalseSuccesses    []*group
+	ConsistentGroups []*group
+	FalseFailures    []*group
+	FalseSuccesses   []*group
 
 	AvgTimeDeltaGroups int
 	AvgTimeDelta       time.Duration // Average overhead of LUCI across patchsets.
 }
 
+func (d *diff) CorrectnessGroups() int {
+	return len(d.ConsistentGroups) + len(d.FalseFailures) + len(d.FalseSuccesses)
+}
+
 func (d *diff) RejectedCorrectnessGroups() int {
-	return d.TotalGroups - d.CorrectnessGroups
+	return d.TotalGroups - d.CorrectnessGroups()
 }
 
 // compare compares Buildbot and LUCI builds within groups.
@@ -66,13 +70,13 @@ func compare(groups []*group, minCorrectnessGroups int, currentStatus storage.Mi
 	avgBuildbotTimeSecs := 0.0
 	for _, g := range groups {
 		if g.trustworthy() {
-			comp.CorrectnessGroups++
-			if luciSuccess := g.LUCI.success(); luciSuccess != g.Buildbot.success() {
-				if luciSuccess {
-					comp.FalseSuccesses = append(comp.FalseSuccesses, g)
-				} else {
-					comp.FalseFailures = append(comp.FalseFailures, g)
-				}
+			switch luciSuccess := g.LUCI.success(); {
+			case luciSuccess == g.Buildbot.success():
+				comp.ConsistentGroups = append(comp.ConsistentGroups, g)
+			case luciSuccess:
+				comp.FalseSuccesses = append(comp.FalseSuccesses, g)
+			default:
+				comp.FalseFailures = append(comp.FalseFailures, g)
 			}
 		}
 
@@ -88,7 +92,8 @@ func compare(groups []*group, minCorrectnessGroups int, currentStatus storage.Mi
 		}
 	}
 
-	if comp.CorrectnessGroups == 0 || comp.CorrectnessGroups < minCorrectnessGroups {
+	correctnessGroups := comp.CorrectnessGroups()
+	if correctnessGroups == 0 || correctnessGroups < minCorrectnessGroups {
 		comp.Status = storage.StatusInsufficientData
 		comp.StatusReason = ("Insufficient LUCI and Buildbot builds that " +
 			"share same patchsets and can be used for correctness estimation")
@@ -100,7 +105,7 @@ func compare(groups []*group, minCorrectnessGroups int, currentStatus storage.Mi
 		return comp
 	}
 	badGroups := len(comp.FalseSuccesses) + len(comp.FalseFailures)
-	comp.Correctness = 1.0 - float64(badGroups)/float64(comp.CorrectnessGroups)
+	comp.Correctness = 1.0 - float64(badGroups)/float64(correctnessGroups)
 
 	avgBuildbotTimeSecs /= float64(buildbotBuilds)
 	comp.AvgTimeDelta /= time.Duration(comp.AvgTimeDeltaGroups)
