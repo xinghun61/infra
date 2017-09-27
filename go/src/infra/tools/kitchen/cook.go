@@ -398,6 +398,9 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	}
 	log.Infof(ctx, "using properties:\n%s", propsJSON)
 
+	// Print emails of available LUCI accounts, if any.
+	c.reportServiceAccounts(ctx)
+
 	// If we're not using LogDog, send out annotations.
 	bootstrapSuccess := false
 	if c.CookFlags.LogDogFlags.ShouldEmitAnnotations() {
@@ -509,6 +512,28 @@ func (c *cookRun) updateEnv(env environ.Env) {
 	}
 	for _, v := range []string{"TEMPDIR", "TMPDIR", "TEMP", "TMP", "MAC_CHROMIUM_TMPDIR"} {
 		env.Set(v, c.TempDir)
+	}
+}
+
+// reportServiceAccounts examines the environment (in particular LUCI_CONTEXT)
+// and logs service account emails.
+func (c *cookRun) reportServiceAccounts(ctx context.Context) {
+	defaultAuth := auth.NewAuthenticator(ctx, auth.SilentLogin, infraenv.DefaultAuthOptions())
+	email, err := defaultAuth.GetEmail()
+	if err != nil {
+		log.Warningf(ctx, "Default account email is not known: %s", err)
+	} else {
+		log.Infof(ctx, "Default account email is %s", email)
+	}
+
+	systemAuth, err := c.systemAuthenticator(ctx, auth.OAuthScopeEmail)
+	if err == nil {
+		email, err = systemAuth.GetEmail()
+	}
+	if err != nil {
+		log.Warningf(ctx, "System account email is not known: %s", err)
+	} else {
+		log.Infof(ctx, "System account email is %s", email)
 	}
 }
 
