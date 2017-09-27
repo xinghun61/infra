@@ -51,6 +51,10 @@ def RunSteps(api):
   with api.step.defer_results():
     with api.context(cwd=api.path['checkout']):
       api.python('python tests', 'test.py', ['test'])
+      if internal and any(f.startswith('infra_internal/services/cq')
+                          for f in files):
+        api.python('python cq tests', 'test.py',
+                   ['test', 'infra_internal/services/cq'])
 
     if not internal:
       # TODO(phajdan.jr): should we make recipe tests run on other platforms?
@@ -63,8 +67,7 @@ def RunSteps(api):
             'recipe lint', api.path['checkout'].join('recipes', 'recipes.py'),
             ['lint'])
 
-    if all(f.startswith('infra_internal/') or f.startswith('commit_queue/')
-           for f in files):
+    if all(f.startswith('infra_internal/') for f in files):
       # Don't do Go testing if only Python packages are modified.
       api.step('skipping Go tests', cmd=None)
     else:
@@ -155,8 +158,8 @@ def GenTests(api):
   yield (
     api.test('infra_internal') +
     api.properties.tryserver(
-        mastername='internal.infra',
         buildername='infra-internal-tester',
+        mastername='internal.infra.try',
         patch_project='infra_internal') +
     diff('infra/stuff.py', 'go/src/infra/stuff.go')
   )
@@ -166,9 +169,19 @@ def GenTests(api):
     api.properties.tryserver(
         gerrit_project='infra/infra_internal',
         gerrit_url='https://chrome-internal-review.googlesource.com',
-        mastername='tryserver.infra',
+        mastername='internal.infra.try',
         buildername='infra_tester') +
     diff('infra/stuff.py', 'go/src/infra/stuff.go')
+  )
+
+  yield (
+    api.test('infra_internal_with_cq') +
+    api.properties.tryserver(
+        gerrit_project='infra/infra_internal',
+        gerrit_url='https://chrome-internal-review.googlesource.com',
+        mastername='internal.infra.try',
+        buildername='infra_tester') +
+    diff('infra_internal/services/cq/cq.py')
   )
 
   yield (
@@ -176,9 +189,9 @@ def GenTests(api):
     api.properties.tryserver(
         gerrit_project='infra/infra_internal',
         gerrit_url='https://chrome-internal-review.googlesource.com',
-        mastername='tryserver.infra',
+        mastername='internal.infra.try',
         buildername='infra_tester') +
-    diff('commit_queue/stuff.py', 'infra_internal/git_admin_tool.py')
+    diff('infra_internal/git_admin_tool.py')
   )
 
   yield (

@@ -147,7 +147,7 @@
     "name": "get change list",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_LOG_LINE@change list@infra_internal/git_admin_tool.py@@@",
+      "@@@STEP_LOG_LINE@change list@infra_internal/services/cq/cq.py@@@",
       "@@@STEP_LOG_END@change list@@@"
     ]
   },
@@ -160,6 +160,17 @@
     ],
     "cwd": "[START_DIR]/infra_internal",
     "name": "python tests"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "test.py",
+      "test",
+      "infra_internal/services/cq"
+    ],
+    "cwd": "[START_DIR]/infra_internal",
+    "name": "python cq tests"
   },
   {
     "cmd": [],
