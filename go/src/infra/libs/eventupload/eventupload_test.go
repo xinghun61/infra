@@ -60,34 +60,31 @@ func TestClose(t *testing.T) {
 
 	Convey("Test Close", t, func() {
 		u := make(mockUploader, 1)
-		bu, err := NewBatchUploader(u)
+		bu, err := NewBatchUploader(context.Background(), u, make(chan time.Time))
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		closed := false
-		ctx := context.Background()
 		defer func() {
 			if !closed {
-				bu.Close(ctx)
+				bu.Close()
 			}
 		}()
 
-		bu.TickC = make(chan time.Time)
-
 		Convey("Expect Stage to add event to pending queue", func() {
-			bu.Stage(ctx, fakeEvent{})
+			bu.Stage(fakeEvent{})
 			So(bu.pending, ShouldHaveLength, 1)
 		})
 
 		Convey("Expect Close to flush pending queue", func() {
-			bu.Stage(ctx, fakeEvent{})
-			bu.Close(ctx)
+			bu.Stage(fakeEvent{})
+			bu.Close()
 			closed = true
 			So(bu.pending, ShouldHaveLength, 0)
 			So(u, shouldHavePut, []fakeEvent{{}})
-			So(bu.closed, ShouldBeTrue)
-			So(func() { bu.Stage(ctx, fakeEvent{}) }, ShouldPanic)
+			So(bu.isClosed(), ShouldBeTrue)
+			So(func() { bu.Stage(fakeEvent{}) }, ShouldPanic)
 		})
 	})
 }
@@ -97,17 +94,14 @@ func TestUpload(t *testing.T) {
 
 	Convey("Test Upload", t, func() {
 		u := make(mockUploader, 1)
-		bu, err := NewBatchUploader(&u)
+		tickc := make(chan time.Time)
+		bu, err := NewBatchUploader(context.Background(), &u, tickc)
 		if err != nil {
 			t.Fatal(err)
 		}
-		ctx := context.Background()
-		defer bu.Close(ctx)
+		defer bu.Close()
 
-		tickc := make(chan time.Time)
-		bu.TickC = tickc
-
-		bu.Stage(ctx, fakeEvent{})
+		bu.Stage(fakeEvent{})
 		Convey("Expect Put to wait for tick to call upload", func() {
 			So(u, ShouldHaveLength, 0)
 			tickc <- time.Time{}
@@ -201,16 +195,15 @@ func TestStage(t *testing.T) {
 
 	Convey("Stage can accept single events and slices of events", t, func() {
 		u := make(mockUploader, 1)
-		bu, err := NewBatchUploader(&u)
+		bu, err := NewBatchUploader(context.Background(), &u, make(chan time.Time))
 		if err != nil {
 			t.Fatal(err)
 		}
-		ctx := context.Background()
-		defer bu.Close(ctx)
+		defer bu.Close()
 
 		for _, tc := range tcs {
 			Convey(fmt.Sprintf("Test %s", tc.desc), func() {
-				bu.Stage(ctx, tc.src)
+				bu.Stage(tc.src)
 				So(bu.pending, ShouldHaveLength, tc.wantLen)
 				So(bu.pending[len(bu.pending)-1], ShouldHaveSameTypeAs, fakeEvent{})
 			})
