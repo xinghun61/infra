@@ -577,6 +577,32 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(result)
     self.assertIsNone(error)
 
+  @mock.patch.object(swarming_util, '_SendRequestToServer')
+  @mock.patch.object(swarming_util, '_FetchOutputJsonInfoFromIsolatedServer')
+  def testDownloadTestResultsNeedRequestToUrl(self, mock_fetch, mock_send):
+    isolated_data = {
+        'digest':
+            'shard1_isolated',
+        'namespace':
+            'default-gzip',
+        'isolatedserver':
+            waterfall_config.GetSwarmingSettings().get('isolated_server')
+    }
+    fetch_content1 = {'url': 'url_hash'}
+    fetch_content2 = {'url': 'url_test_log'}
+    mock_fetch.side_effect = [(json.dumps(fetch_content1), None),
+                              (json.dumps(fetch_content2), None)]
+
+    send_content1 = {'files': {'output.json': {'h': 'output_json_hash'}}}
+    send_content2 = {'all_tests': []}
+    mock_send.side_effect = [(zlib.compress(json.dumps(send_content1)), None),
+                             (zlib.compress(json.dumps(send_content2)), None)]
+
+    result, _ = swarming_util._DownloadTestResults(isolated_data,
+                                                   self.http_client)
+
+    self.assertEqual(send_content2, result)
+
   def testRetrieveShardedTestResultsFromIsolatedServer(self):
     isolated_data = [{
         'digest':
@@ -721,12 +747,12 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_result, result)
     self.assertIsNone(error)
 
-  def testRetrieveOutputJsonFileGetDirectly(self):
+  def testProcessRetrievedContentGetDirectly(self):
     output_json_content = ('{"content": "eJyrVkpLzMwpLUotVrKKVgpJLS4xV'
                            'IrVUVAqS8zJTFGyUigpKk2tBQDr9wxZ"}')
 
-    failure_log = swarming_util._RetrieveOutputJsonFile(output_json_content,
-                                                        self.http_client)
+    failure_log = swarming_util._ProcessRetrievedContent(
+        output_json_content, self.http_client)
 
     expected_failure_log = {'failures': ['Test1'], 'valid': True}
 

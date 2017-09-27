@@ -420,23 +420,7 @@ def _FetchOutputJsonInfoFromIsolatedServer(isolated_data, http_client):
   return _SendRequestToServer(url, http_client, post_data)
 
 
-def _GetOutputJsonHash(content):
-  """Gets hash for output.json.
-
-  Parses response content of the request using hash for .isolated file and
-  returns the hash for output.json file.
-
-  Args:
-    content (string): Content returned by the POST request to isolated server
-        for hash to output.json.
-  """
-  content_json = json.loads(content)
-  content_string = zlib.decompress(base64.b64decode(content_json['content']))
-  json_result = json.loads(content_string)
-  return json_result.get('files', {}).get('output.json', {}).get('h')
-
-
-def _RetrieveOutputJsonFile(output_json_content, http_client):
+def _ProcessRetrievedContent(output_json_content, http_client):
   """Downloads output.json file from isolated server or process it directly.
 
   If there is a url provided, send get request to that url to download log;
@@ -460,14 +444,25 @@ def _RetrieveOutputJsonFile(output_json_content, http_client):
 
 
 def _DownloadTestResults(isolated_data, http_client):
-  """Downloads the output.json file and returns the json object."""
+  """Downloads the output.json file and returns the json object.
+
+  The basic steps to get test results are:
+  1. Use isolated_data to get hash to output.json,
+  2. Use hash from step 1 to get test results.
+
+  But in each step, if the returned content is too big, we may not directly get
+  the content, instead we get a url and we need to send an extra request to the
+  url. This is handled in _ProcessRetrievedContent.
+  """
   # First POST request to get hash for the output.json file.
   content, error = _FetchOutputJsonInfoFromIsolatedServer(
       isolated_data, http_client)
   if error:
     return None, error
 
-  output_json_hash = _GetOutputJsonHash(content)
+  processed_content = _ProcessRetrievedContent(content, http_client)
+  output_json_hash = processed_content.get('files', {}).get(
+      'output.json', {}).get('h') if processed_content else None
   if not output_json_hash:
     return None, None
 
@@ -484,7 +479,7 @@ def _DownloadTestResults(isolated_data, http_client):
     return None, error
 
   # GET Request to get output.json file.
-  return _RetrieveOutputJsonFile(output_json_content, http_client), None
+  return _ProcessRetrievedContent(output_json_content, http_client), None
 
 
 def _MergeListsOfDicts(merged, shard):
