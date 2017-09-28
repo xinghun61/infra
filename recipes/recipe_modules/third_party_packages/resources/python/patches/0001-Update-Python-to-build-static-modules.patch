@@ -1,7 +1,7 @@
-From abd93cf606a2619dc74151bc937c5323aa7bd221 Mon Sep 17 00:00:00 2001
+From 9131067547a21c7370634442ad3dee5afc561dcc Mon Sep 17 00:00:00 2001
 From: Dan Jacques <dnj@chromium.org>
 Date: Sun, 3 Sep 2017 15:00:32 -0700
-Subject: [PATCH] [infra] Update Python to build static modules.
+Subject: [PATCH 1/2] Update Python to build static modules.
 
 This includes:
 
@@ -12,7 +12,7 @@ This includes:
  1 file changed, 2 insertions(+)
 
 diff --git a/Modules/makesetup b/Modules/makesetup
-index 1bffcbf4fd..85449855dc 100755
+index db5c47ee04..b13c12e46b 100755
 --- a/Modules/makesetup
 +++ b/Modules/makesetup
 @@ -176,6 +176,7 @@ sed -e 's/[ 	]*#.*//' -e '/^[ 	]*$/d' |
@@ -32,5 +32,5 @@ index 1bffcbf4fd..85449855dc 100755
  			esac
  			obj="$srcdir/$obj"
 -- 
-2.13.1.chromium10
+2.14.1.chromium11
 

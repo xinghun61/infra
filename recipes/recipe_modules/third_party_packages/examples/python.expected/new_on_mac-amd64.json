@@ -173,7 +173,8 @@
       "-c",
       "user.email=third_party_packages@example.com",
       "am",
-      "RECIPE_MODULE[infra::third_party_packages]/resources/python/patches/0001-infra-Update-Python-to-build-static-modules.patch"
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/patches/0001-Update-Python-to-build-static-modules.patch",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/patches/0002-Enable-manual-version-specification.patch"
     ],
     "cwd": "[START_DIR]/python/checkout",
     "env": {
@@ -897,6 +898,21 @@
   },
   {
     "cmd": [
+      "autoconf"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+      ]
+    },
+    "name": "generate configure"
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
@@ -927,6 +943,7 @@
       "--disable-shared",
       "--without-system-ffi",
       "--enable-ipv6",
+      "--enable-py-version-override=2.1.2+chromium12",
       "--enable-unicode=ucs2",
       "--with-threads",
       "--enable-toolbox-glue"
@@ -970,6 +987,7 @@
       "--disable-shared",
       "--without-system-ffi",
       "--enable-ipv6",
+      "--enable-py-version-override=2.1.2+chromium12",
       "--enable-unicode=ucs2",
       "--with-threads",
       "--enable-toolbox-glue"
@@ -1212,7 +1230,8 @@
     "cwd": "[START_DIR]/python",
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6",
-      "PYTHON_TEST_CIPD_PACKAGE": "[START_DIR]/python/package.cipd"
+      "PYTHON_TEST_CIPD_PACKAGE": "[START_DIR]/python/package.cipd",
+      "PYTHON_TEST_EXPECTED_VERSION": "2.1.2+chromium12"
     },
     "name": "test"
   },

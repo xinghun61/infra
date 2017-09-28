@@ -19,8 +19,9 @@ git am --reject $TPP_PATCHES/*.patch
 git add ...
 git am --continue
 
-# Finally, regenerate the patch set:
-git format-patch refs/tags/v2.14.1 -o $TPP_PATCHES/
+# Finally, regenerate the patch set. Use a limited diff context so we don't
+# pull in version-specific information.
+git format-patch -U2 FETCH_HEAD -o $TPP_PATCHES/
 ```
 
 ## Dry Runs

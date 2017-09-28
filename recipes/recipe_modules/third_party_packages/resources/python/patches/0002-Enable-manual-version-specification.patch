@@ -1,0 +1,71 @@
+From 3f2657f43c2c8ae75f1a7d16c0d0293b931b4bfd Mon Sep 17 00:00:00 2001
+From: Dan Jacques <dnj@chromium.org>
+Date: Wed, 27 Sep 2017 09:56:47 -0400
+Subject: [PATCH 2/2] Enable manual version specification.
+
+Add the "--enable-py-version-override" option, which overrides the
+version that the Python interpreter reports.
+---
+ Include/patchlevel.h | 10 ++++++++++
+ configure.ac         | 12 ++++++++++++
+ pyconfig.h.in        |  3 +++
+ 3 files changed, 25 insertions(+)
+
+diff --git a/Include/patchlevel.h b/Include/patchlevel.h
+index 8d05b91f01..e41d99229d 100644
+--- a/Include/patchlevel.h
++++ b/Include/patchlevel.h
+@@ -41,3 +41,13 @@
+ 			(PY_MICRO_VERSION <<  8) | \
+ 			(PY_RELEASE_LEVEL <<  4) | \
+ 			(PY_RELEASE_SERIAL << 0))
++
++/* Infra-specific extension: if a version override is provided, replace prefer
++   it over our hard-coded PY_VERSION.
++
++   We define this here so diffs aren't upset when PY_VERSION changes. */
++#include "pyconfig.h"
++#if defined(PY_VERSION_OVERRIDE)
++#undef PY_VERSION
++#define PY_VERSION PY_VERSION_OVERRIDE
++#endif /* PY_VERSION_OVERRIDE */
+diff --git a/configure.ac b/configure.ac
+index 780f2758c8..8fbc7e4efe 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -2436,6 +2436,18 @@ AC_CHECK_LIB(net, socket, [LIBS="-lnet $LIBS"], [], $LIBS) # BeOS
+ ;;
+ esac
+ 
++# py-vesion-override option
++AC_MSG_CHECKING(for Python version override)
++AC_ARG_ENABLE(py-version-override,
++AS_HELP_STRING([--enable-py-version-override=PY_VERSION],
++               [Manually override Python version.]),
++[
++	AC_MSG_RESULT(overridden: $enable_py_version_override)
++	AC_DEFINE_UNQUOTED(PY_VERSION_OVERRIDE, "$enable_py_version_override",
++                     [Define to override PY_VERSION])
++],
++[AC_MSG_RESULT(no value specified)])
++
+ AC_MSG_CHECKING(for --with-libs)
+ AC_ARG_WITH(libs,
+             AS_HELP_STRING([--with-libs='lib1 ...'], [link against additional libs]),
+diff --git a/pyconfig.h.in b/pyconfig.h.in
+index 98a76a55f4..05b89ecded 100644
+--- a/pyconfig.h.in
++++ b/pyconfig.h.in
+@@ -992,6 +992,9 @@
+ /* Define if you want to have a Unicode type. */
+ #undef Py_USING_UNICODE
+ 
++/* Define to override the PY_VERSION reported Python version. */
++#undef PY_VERSION_OVERRIDE
++
+ /* assume C89 semantics that RETSIGTYPE is always void */
+ #undef RETSIGTYPE
+ 
+-- 
+2.14.1.chromium11
+

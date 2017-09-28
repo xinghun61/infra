@@ -165,7 +165,8 @@
       "-c",
       "user.email=third_party_packages@example.com",
       "am",
-      "RECIPE_MODULE[infra::third_party_packages]/resources/python/patches/0001-infra-Update-Python-to-build-static-modules.patch"
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/patches/0001-Update-Python-to-build-static-modules.patch",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/python/patches/0002-Enable-manual-version-specification.patch"
     ],
     "cwd": "[START_DIR]/python/checkout",
     "infra_step": true,
@@ -876,6 +877,21 @@
   },
   {
     "cmd": [
+      "autoconf"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env_prefixes": {
+      "PATH": [
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+      ]
+    },
+    "name": "python.generate configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
       "python",
       "-u",
       "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
@@ -906,6 +922,7 @@
       "--disable-shared",
       "--without-system-ffi",
       "--enable-ipv6",
+      "--enable-py-version-override=2.1.2+chromium12",
       "--enable-unicode=ucs4",
       "--with-fpectl",
       "--with-dbmliborder=bdb:gdbm",
@@ -946,6 +963,7 @@
       "--disable-shared",
       "--without-system-ffi",
       "--enable-ipv6",
+      "--enable-py-version-override=2.1.2+chromium12",
       "--enable-unicode=ucs4",
       "--with-fpectl",
       "--with-dbmliborder=bdb:gdbm",
@@ -1262,7 +1280,8 @@
     ],
     "cwd": "[START_DIR]/python",
     "env": {
-      "PYTHON_TEST_CIPD_PACKAGE": "[START_DIR]/python/package.cipd"
+      "PYTHON_TEST_CIPD_PACKAGE": "[START_DIR]/python/package.cipd",
+      "PYTHON_TEST_EXPECTED_VERSION": "2.1.2+chromium12"
     },
     "name": "python.test",
     "~followup_annotations": [

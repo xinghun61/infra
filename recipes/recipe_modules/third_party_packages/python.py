@@ -34,13 +34,22 @@ class PythonApi(util.ModuleShim):
 
     tag = self.get_latest_release_tag(REPO_URL, 'v2.')
     version = tag.lstrip('v') + PACKAGE_VERSION_SUFFIX
+
+    # Determine our Python interpreter version. It will use PEP440's "local
+    # version identifier" to specify a local Python version based on our
+    # PACKAGE_VERSION_SUFFIX.
+    py_version = '%s+%s' % (
+        tag.lstrip('v'),
+        PACKAGE_VERSION_SUFFIX.lstrip('.'))
+
     workdir = self.m.path['start_dir'].join('python')
     self.m.file.rmtree('rmtree workdir', workdir)
 
     def install(target_dir, _tag):
       # Apply any applicable patches.
       patches = [self.resource('python', 'patches').join(x) for x in (
-          '0001-infra-Update-Python-to-build-static-modules.patch',
+          '0001-Update-Python-to-build-static-modules.patch',
+          '0002-Enable-manual-version-specification.patch',
       )]
       self.m.git(*[
           '-c', 'user.name=third_party_packages',
@@ -83,6 +92,7 @@ class PythonApi(util.ModuleShim):
         '--disable-shared',
         '--without-system-ffi',
         '--enable-ipv6',
+        '--enable-py-version-override=%s' % (py_version,),
       ]
       bootstrap_configure_env = configure_env.copy()
 
@@ -225,6 +235,9 @@ class PythonApi(util.ModuleShim):
       gnu_sed = support.ensure_gnu_sed()
 
       with self.m.context(env_prefixes={'PATH': [gnu_sed.bin_dir]}):
+        # Generate our configure script.
+        self.m.step('generate configure', ['autoconf'])
+
         # Create our 'pybuilddir.txt' and bootstrap interpreter.
         #
         # The "platform" target just builds the bootstrap interpreter without
@@ -372,7 +385,10 @@ class PythonApi(util.ModuleShim):
           '*.so')
 
     def test(package_path):
-      with self.m.context(env={'PYTHON_TEST_CIPD_PACKAGE': package_path}):
+      with self.m.context(env={
+        'PYTHON_TEST_CIPD_PACKAGE': package_path,
+        'PYTHON_TEST_EXPECTED_VERSION': py_version,
+      }):
         self.m.python(
             'test',
             self.resource('python', 'python_test.py'))
