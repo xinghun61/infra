@@ -24,6 +24,8 @@ import (
 	"go.chromium.org/luci/common/system/filesystem"
 	"go.chromium.org/luci/common/testing/testfs"
 
+	"go.chromium.org/luci/vpython"
+
 	"golang.org/x/net/context"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -45,6 +47,7 @@ func TestMain(t *testing.T) {
 
 	// Are we a spawned subprocess of TestMain?
 	env := environ.System()
+	env.Remove(vpython.EnvironmentStampPathENV)
 	if v := env.GetEmpty(testMainRunScriptENV); v != "" {
 		os.Exit(testMainRunDelegate(self, v))
 		return
@@ -56,7 +59,9 @@ func TestMain(t *testing.T) {
 	for _, tc := range testCases {
 		tc := tc
 		if *vpythonTestCase == "" || tc.name == *vpythonTestCase {
-			t.Run(tc.name, tc.run)
+			t.Run(tc.name, func(t *testing.T) {
+				tc.run(t, env.Clone())
+			})
 		}
 	}
 }
@@ -71,16 +76,12 @@ type testDelegateCommand struct {
 	output bytes.Buffer
 	tc     *testCase
 	params testDelegateParams
+	env    environ.Env
 }
 
 func (tdc *testDelegateCommand) prepare() {
-	base := tdc.Env
-	if len(base) == 0 {
-		base = os.Environ()
-	}
-	env := environ.New(base)
-	env.Set(testMainRunScriptENV, encodeEnvironmentParam(&tdc.params))
-	tdc.Env = env.Sorted()
+	tdc.env.Set(testMainRunScriptENV, encodeEnvironmentParam(&tdc.params))
+	tdc.Env = tdc.env.Sorted()
 }
 
 func (tdc *testDelegateCommand) Start() error {
@@ -159,7 +160,7 @@ func loadTestCases(t *testing.T, self string) []testCase {
 
 func (tc *testCase) String() string { return tc.name }
 
-func (tc *testCase) getDelegateCommand(c context.Context, root string) *testDelegateCommand {
+func (tc *testCase) getDelegateCommand(c context.Context, root string, env environ.Env) *testDelegateCommand {
 	args := []string{
 		"-vpython-root", root,
 	}
@@ -173,6 +174,7 @@ func (tc *testCase) getDelegateCommand(c context.Context, root string) *testDele
 		params: testDelegateParams{
 			Args: args,
 		},
+		env: env,
 	}
 
 	tdc.Cmd = exec.CommandContext(c, tdc.tc.self, "-test.run", "^TestMain$")
@@ -182,7 +184,7 @@ func (tc *testCase) getDelegateCommand(c context.Context, root string) *testDele
 	return &tdc
 }
 
-func (tc *testCase) run(t *testing.T) {
+func (tc *testCase) run(t *testing.T, env environ.Env) {
 	t.Parallel()
 
 	Convey(fmt.Sprintf(`Testing %q`, tc), t, testfs.MustWithTempDir(t, "vpython", func(td string) {
@@ -194,18 +196,20 @@ func (tc *testCase) run(t *testing.T) {
 		case "test_signals":
 			// Singal forwarding is not supported on Windows.
 			if runtime.GOOS != "windows" {
-				tc.runTestSignals(c, t, td)
+				tc.runTestSignals(c, t, td, env)
 			}
 		case "test_exit_code":
-			tc.runCommon(c, t, td, 42)
+			tc.runCommon(c, t, td, env, 42)
+		case "test_bypass":
+			tc.runBypass(c, t, td, env)
 		default:
-			tc.runCommon(c, t, td, 0)
+			tc.runCommon(c, t, td, env, 0)
 		}
 	}))
 }
 
-func (tc *testCase) runCommon(c context.Context, t *testing.T, td string, exitCode int) {
-	tdc := tc.getDelegateCommand(c, td)
+func (tc *testCase) runCommon(c context.Context, t *testing.T, td string, env environ.Env, exitCode int) {
+	tdc := tc.getDelegateCommand(c, td, env)
 
 	err := tdc.Run(t)
 	if rc, ok := exitcode.Get(err); ok {
@@ -216,7 +220,7 @@ func (tc *testCase) runCommon(c context.Context, t *testing.T, td string, exitCo
 	So(tdc.CheckOutput(t), ShouldBeTrue)
 }
 
-func (tc *testCase) runTestSignals(c context.Context, t *testing.T, td string) {
+func (tc *testCase) runTestSignals(c context.Context, t *testing.T, td string, env environ.Env) {
 	// We set up a mechanism for our subprocess to signal to us that it has
 	// established its signal handlers and is ready for testing.
 	//
@@ -227,7 +231,7 @@ func (tc *testCase) runTestSignals(c context.Context, t *testing.T, td string) {
 		t.Fatalf("Could not create signal file %q: %v", signalFilePath, err)
 	}
 
-	tdc := tc.getDelegateCommand(c, td)
+	tdc := tc.getDelegateCommand(c, td, env)
 	tdc.params.Args = append(tdc.params.Args, signalFilePath)
 
 	if err := tdc.Start(); err != nil {
@@ -264,6 +268,14 @@ func (tc *testCase) runTestSignals(c context.Context, t *testing.T, td string) {
 	So(tdc.CheckOutput(t), ShouldBeTrue)
 }
 
+func (tc *testCase) runBypass(c context.Context, t *testing.T, td string, env environ.Env) {
+	env.Set(BypassENV, BypassSentinel)
+	tdc := tc.getDelegateCommand(c, td, env)
+
+	So(tdc.Run(t), ShouldBeNil)
+	So(tdc.CheckOutput(t), ShouldBeTrue)
+}
+
 func testMainRunDelegate(self, v string) int {
 	var p testDelegateParams
 	if err := decodeEnvironmentParam(v, &p); err != nil {
@@ -275,7 +287,7 @@ func testMainRunDelegate(self, v string) int {
 	argv = append(argv, p.Args...)
 
 	c := context.Background()
-	return mainImpl(c, argv)
+	return mainImpl(c, argv, environ.System())
 }
 
 func encodeEnvironmentParam(i interface{}) string {

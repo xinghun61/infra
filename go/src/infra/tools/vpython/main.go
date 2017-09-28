@@ -22,6 +22,18 @@ import (
 	cipdClient "go.chromium.org/luci/cipd/client/cipd"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/logging/gologger"
+	"go.chromium.org/luci/common/system/environ"
+)
+
+const (
+	// BypassENV is an environment variable that is used to detect if we shouldn't
+	// do any vpython stuff at all, but should instead directly invoke the next
+	// `python` on PATH.
+	BypassENV = "VPYTHON_BYPASS"
+
+	// BypassSentinel must be the BypassENV value (verbatim) in order to trigger
+	// vpython bypass.
+	BypassSentinel = "manually managed python not supported by chrome operations"
 )
 
 var cipdPackageLoader = cipd.PackageLoader{
@@ -57,12 +69,12 @@ var defaultConfig = application.Config{
 	MaxScriptPathLen:  127, // Maximum POSIX shebang length.
 }
 
-func mainImpl(c context.Context, argv []string) int {
+func mainImpl(c context.Context, argv []string, env environ.Env) int {
 	// Initialize our CIPD package loader from the environment.
 	//
 	// If we don't have an environment-specific CIPD cache directory, use one
 	// relative to the user's home directory.
-	if err := cipdPackageLoader.Options.LoadFromEnv(os.Getenv); err != nil {
+	if err := cipdPackageLoader.Options.LoadFromEnv(env.GetEmpty); err != nil {
 		logging.Errorf(c, "Could not inialize CIPD package loader: %s", err)
 		return 1
 	}
@@ -76,12 +88,14 @@ func mainImpl(c context.Context, argv []string) int {
 		}
 	}
 
+	// Determine if we're bypassing "vpython".
 	defaultConfig.WithVerificationConfig = withVerificationConfig
-	return defaultConfig.Main(c, argv)
+	defaultConfig.Bypass = env.GetEmpty(BypassENV) == BypassSentinel
+	return defaultConfig.Main(c, argv, env)
 }
 
 func main() {
 	c := context.Background()
 	c = gologger.StdConfig.Use(logging.SetLevel(c, logging.Warning))
-	os.Exit(mainImpl(c, os.Args))
+	os.Exit(mainImpl(c, os.Args, environ.System()))
 }
