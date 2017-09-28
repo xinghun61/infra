@@ -22,6 +22,7 @@ import (
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	log "go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/common/proto/milo"
 	"go.chromium.org/luci/common/system/environ"
 	"go.chromium.org/luci/common/system/exitcode"
 	"go.chromium.org/luci/common/system/filesystem"
@@ -154,6 +155,7 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		if err != nil {
 			return fail(errors.Annotate(err, "failed to run recipe").Err())
 		}
+		setAnnotationText(result.Annotations)
 	} else {
 		// This code is reachable only in buildbot mode.
 		recipeCmd, err := c.rr.command(ctx, filepath.Join(c.TempDir, "rr"), env)
@@ -597,4 +599,15 @@ func parseProperties(properties map[string]interface{}, propertiesFile string) (
 		}
 	}
 	return
+}
+
+func setAnnotationText(s *milo.Step) {
+	// TODO(nodir,iaanucci): clean this up when we define a new UI proto
+	s.Text = nil
+	for _, substep := range s.Substep {
+		ss := substep.GetStep()
+		if ss != nil && ss.Status == milo.Status_FAILURE {
+			s.Text = append(s.Text, fmt.Sprintf("Failure %s", s.Name))
+		}
+	}
 }
