@@ -1419,7 +1419,7 @@ def _make_new(request, form):
   data, url, separate_patches = data_url
 
   project = form.cleaned_data['project']
-  if project in django_settings.READ_ONLY_PROJECTS:
+  if project not in django_settings.UPLOADABLE_PROJECTS:
     form.errors['data'] = (
       'Project %s has been marked read-only, no new issues allowed.' % project)
     return (None, None)

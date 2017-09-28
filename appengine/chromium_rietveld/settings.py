@@ -129,22 +129,8 @@ PREFERRED_DOMAIN_NAMES = {
 }
 
 # We are in the process of turning Rietveld read-only. To that end, we
-# are refusing uploads to projects which are fully supported on other
-# review systems.
-READ_ONLY_PROJECTS = [
-  'build',
-  'chromium',
-  'depot_tools',
-  'infra',
-  'infra_experimental',
-  'luci-gae',
-  'luci-go',
-  'luci-py',
-  'pdfium',
-  'recipe_engine',
-  'skia',
-  'v8',
-]
+# are refusing uploads to all projects which are not whitelisted.
+UPLOADABLE_PROJECTS = []
 
 UPLOAD_PY_SOURCE = os.path.join(os.path.dirname(__file__), 'upload.py')
 
