@@ -161,7 +161,7 @@ class Build(ndb.Model):
 
   complete_time = ndb.DateTimeProperty()
   result = msgprop.EnumProperty(BuildResult)
-  result_details = ndb.JsonProperty()
+  result_details = ndb.JsonProperty(compressed=True)
   cancelation_reason = msgprop.EnumProperty(CancelationReason)
   failure_reason = msgprop.EnumProperty(FailureReason)
 

@@ -736,17 +736,11 @@ def _sync_build_in_memory(
     logging.info('Build %s result: %s', build.key.id(), build.result)
     build.clear_lease()
     build.complete_time = now
-    small_build_run_result = None
-    if build_run_result:
-      small_build_run_result = build_run_result.copy()
-      # Exclude annotations from the build run result because they may exceed
-      # Build entity size limit.
-      small_build_run_result.pop('annotations', None)
     build.result_details = {
       'swarming': {
         'task_result': task_result,
       },
-      'build_run_result': small_build_run_result,
+      'build_run_result': build_run_result,
     }
     if errmsg:
       build.result_details['error'] = {'message': errmsg}
