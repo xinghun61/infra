@@ -155,3 +155,9 @@ class CusterfuzzDataTest(AnalysisTestCase):
         self.GetMockRepoFactory())
 
     self.assertEqual(crash_data.commit_count_in_regression_range, 6)
+
+  def testAlwaysRedoClusterfuzzAnalysis(self):
+    """Tests the redo of ClusterfuzzData is always True."""
+    crash_data = ClusterfuzzData(
+        self.GetDummyClusterfuzzData(), self.GetMockRepoFactory())
+    self.assertTrue(crash_data.redo)

@@ -187,6 +187,11 @@ class ClusterfuzzData(CrashData):
     }
 
   @property
+  def redo(self):
+    # Always redo analysis for clusterfuzz.
+    return True
+
+  @property
   def identifiers(self):
     return self.testcase_id
 
