@@ -62,7 +62,7 @@ func init() {
 	r.GET("/revision_range", frontendMW, revisionHandler)
 
 	// POST endpoints.
-	r.POST("/testfile/upload", authMW.Extend(withParsedUploadForm), uploadHandler)
+	r.POST("/testfile/upload", authMW.Extend(withParsedUploadForm), (&uploadHandler{}).Serve)
 
 	r.POST(
 		deleteKeysPath,

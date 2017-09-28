@@ -39,6 +39,14 @@ func (db AlwaysInWhitelistAuthDB) IsInWhitelist(c context.Context, ip net.IP, wh
 	return true, nil
 }
 
+func createTestUploadHandler() *uploadHandler {
+	return &uploadHandler{
+		sendEvent: func(c context.Context, tre *model.TestResultEvent) error {
+			return nil
+		},
+	}
+}
+
 func createTestUploadRequest(serverURL string, master string, data []byte) *http.Request {
 	var buf bytes.Buffer
 	multi := multipart.NewWriter(&buf)
@@ -91,7 +99,8 @@ func TestUploadAndGetHandlers(t *testing.T) {
 	r := router.New()
 	mw := router.NewMiddlewareChain(withTestingContext)
 	r.GET("/testfile", mw.Extend(templatesMiddleware()), getHandler)
-	r.POST("/testfile/upload", mw.Extend(withParsedUploadForm), uploadHandler)
+	uh := createTestUploadHandler()
+	r.POST("/testfile/upload", mw.Extend(withParsedUploadForm), (uh).Serve)
 	srv := httptest.NewTLSServer(r)
 
 	// Create a client that ignores bad certificates. This is needed to generate
@@ -369,12 +378,13 @@ func TestUses409ResponseCodeForBuildNumberConflict(t *testing.T) {
 		data = bytes.TrimSpace(data)
 		So(err, ShouldBeNil)
 
-		So(updateFullResults(ctx, bytes.NewReader(data)), ShouldBeNil)
+		uh := createTestUploadHandler()
+		So(uh.updateFullResults(ctx, bytes.NewReader(data)), ShouldBeNil)
 
 		// Ensure that the file is saved in datastore. See http://crbug.com/648817.
 		datastore.GetTestable(ctx).CatchupIndexes()
 
-		err = updateFullResults(ctx, bytes.NewReader(data))
+		err = uh.updateFullResults(ctx, bytes.NewReader(data))
 		se, ok := err.(statusError)
 		So(ok, ShouldBeTrue)
 		So(se.code, ShouldEqual, 409)

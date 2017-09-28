@@ -17,6 +17,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	"google.golang.org/appengine"
+
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/common/errors"
@@ -31,6 +33,60 @@ import (
 
 	"cloud.google.com/go/bigquery"
 )
+
+type uploadHandler struct {
+	// If nil, send to BigQuery
+	sendEvent func(c context.Context, tre *model.TestResultEvent) error
+	r         *http.Request
+}
+
+// Serve handles upload requests.
+func (h *uploadHandler) Serve(ctx *router.Context) {
+	// Only bots should upload test results. Check IP address against a whitelist.
+	c, w, r := ctx.Context, ctx.Writer, ctx.Request
+	h.r = r
+	whitelisted, err := auth.GetState(c).DB().IsInWhitelist(
+		c, auth.GetState(c).PeerIP(), "bots")
+	if err != nil {
+		logging.WithError(err).Errorf(c, "uploadHandler: check IP whitelist")
+		http.Error(w, "Failed IP whitelist check", http.StatusInternalServerError)
+		return
+	}
+
+	if !whitelisted {
+		logging.WithError(err).Errorf(
+			c, "Uploading IP %s is not whitelisted", auth.GetState(c).PeerIP())
+		http.Error(w, "IP is not whitelisted", http.StatusUnauthorized)
+		return
+	}
+
+	if r.TLS == nil {
+		logging.Errorf(c, "uploadHandler: only allow HTTPS")
+		http.Error(w, "Only HTTPS requests are allowed", http.StatusUnauthorized)
+		return
+	}
+
+	fileheaders := r.MultipartForm.File["file"]
+
+	for _, fh := range fileheaders {
+		if err := h.doFileUpload(c, fh); err != nil {
+			msg := logging.WithError(err)
+			code := http.StatusInternalServerError
+			if se, ok := err.(statusError); ok {
+				code = se.code
+			}
+			if code >= http.StatusInternalServerError {
+				msg.Errorf(c, "uploadHandler")
+			} else {
+				msg.Warningf(c, "uploadHandler")
+			}
+			http.Error(w, err.Error(), code)
+			return
+		}
+	}
+
+	io.WriteString(w, "OK")
+}
 
 type statusError struct {
 	error
@@ -141,55 +197,7 @@ func withParsedUploadForm(ctx *router.Context, next router.Handler) {
 	next(ctx)
 }
 
-// uploadHandler is the HTTP handler for upload
-// requests.
-func uploadHandler(ctx *router.Context) {
-	// Only bots should upload test results. Check IP address against a whitelist.
-	c, w, r := ctx.Context, ctx.Writer, ctx.Request
-	whitelisted, err := auth.GetState(c).DB().IsInWhitelist(
-		c, auth.GetState(c).PeerIP(), "bots")
-	if err != nil {
-		logging.WithError(err).Errorf(c, "uploadHandler: check IP whitelist")
-		http.Error(w, "Failed IP whitelist check", http.StatusInternalServerError)
-		return
-	}
-
-	if !whitelisted {
-		logging.WithError(err).Errorf(
-			c, "Uploading IP %s is not whitelisted", auth.GetState(c).PeerIP())
-		http.Error(w, "IP is not whitelisted", http.StatusUnauthorized)
-		return
-	}
-
-	if r.TLS == nil {
-		logging.Errorf(c, "uploadHandler: only allow HTTPS")
-		http.Error(w, "Only HTTPS requests are allowed", http.StatusUnauthorized)
-		return
-	}
-
-	fileheaders := r.MultipartForm.File["file"]
-
-	for _, fh := range fileheaders {
-		if err := doFileUpload(c, fh); err != nil {
-			msg := logging.WithError(err)
-			code := http.StatusInternalServerError
-			if se, ok := err.(statusError); ok {
-				code = se.code
-			}
-			if code >= http.StatusInternalServerError {
-				msg.Errorf(c, "uploadHandler")
-			} else {
-				msg.Warningf(c, "uploadHandler")
-			}
-			http.Error(w, err.Error(), code)
-			return
-		}
-	}
-
-	io.WriteString(w, "OK")
-}
-
-func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
+func (h *uploadHandler) doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 	file, err := fh.Open()
 	if err != nil {
 		logging.WithError(err).Errorf(c, "doFileUpload: file open")
@@ -209,7 +217,7 @@ func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 		return updateIncremental(c, &incr)
 
 	case "full_results.json":
-		return updateFullResults(c, r)
+		return h.updateFullResults(c, r)
 
 	case "failing_results.json":
 		r, err = model.CleanJSON(r)
@@ -292,7 +300,7 @@ func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 	return datastore.Put(c, &tf)
 }
 
-func sendTestResultEvent(c context.Context, tre *model.TestResultEvent) error {
+func sendEventToBigQuery(c context.Context, tre *model.TestResultEvent) error {
 	if tre.MasterName == "" || tre.BuilderName == "" || tre.TestType == "" || tre.Version == 0 || tre.UsecSinceEpoch == 0 {
 		return errors.Reason("TestResultEvent is missing required field").Err()
 	}
@@ -379,7 +387,7 @@ func createTestResUploadTask(c context.Context, f *model.FullResult, p *UploadPa
 //
 // The supplied data should unmarshal into model.FullResult.
 // Otherwise, an error is returned.
-func updateFullResults(c context.Context, data io.Reader) error {
+func (h *uploadHandler) updateFullResults(c context.Context, data io.Reader) error {
 	buf := &bytes.Buffer{}
 	tee := io.TeeReader(data, buf)
 	dec := json.NewDecoder(tee)
@@ -443,7 +451,11 @@ func updateFullResults(c context.Context, data io.Reader) error {
 			logging.WithError(err).Errorf(c, "could not create TestResultEvent")
 			return
 		}
-		err = sendTestResultEvent(c, tre)
+		if h.sendEvent == nil {
+			err = sendEventToBigQuery(appengine.WithContext(c, h.r), tre)
+		} else {
+			err = h.sendEvent(c, tre)
+		}
 		if err != nil {
 			logging.WithError(err).Errorf(c, "could not send TestResultEvent")
 		}
