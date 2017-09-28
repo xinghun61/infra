@@ -10,8 +10,8 @@ from services import revert
 
 class CreateRevertCLPipeline(BasePipeline):
 
-  def __init__(self, repo_name, revision):
-    super(CreateRevertCLPipeline, self).__init__(repo_name, revision)
+  def __init__(self, repo_name, revision, _):
+    super(CreateRevertCLPipeline, self).__init__(repo_name, revision, _)
     self.repo_name = repo_name
     self.revision = revision
 
@@ -31,7 +31,7 @@ class CreateRevertCLPipeline(BasePipeline):
     self._LogUnexpectedAborting(self.was_aborted)
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, repo_name, revision):
+  def run(self, build_id, repo_name, revision):
     if revert.ShouldRevert(repo_name, revision, self.pipeline_id):
-      return revert.RevertCulprit(repo_name, revision)
+      return revert.RevertCulprit(repo_name, revision, build_id=build_id)
     return revert.SKIPPED
