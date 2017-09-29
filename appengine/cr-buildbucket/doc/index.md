@@ -66,10 +66,10 @@ A Build JSON object may have the following keys:
 *   `utcnow_ts`: current UTC time on the server.
 *   `canary_preference`: whether the build should use canary of build
     infrastructure. Can take values `PROD`, `CANARY` and `AUTO` (default).
+    If `CANARY` and canary infrastructure does not exist, build creation
+    response must be BAD REQUEST.
 *   `canary`: a boolean that indicates whether a canary of the build
     infrastructure is used to run this build.
-    Even If `canary_preference` is `CANARY`, `canary` may be false if the
-    underlying build infrastructure does not support canary.
 
 All timestamps are in microseconds since Unix Epoch.
 
