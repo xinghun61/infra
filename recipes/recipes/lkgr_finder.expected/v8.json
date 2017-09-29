@@ -5,7 +5,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
-      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
+      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}, {'deps_file': '.DEPS.git', 'managed': True, 'name': 'v8', 'url': 'https://chromium.googlesource.com/v8/v8'}]",
       "--patch_root",
       "infra",
       "--revision_mapping_file",
@@ -78,7 +78,7 @@
       "--format",
       "json"
     ],
-    "name": "lkgr from ref",
+    "name": "read lkgr from ref",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"author\": {@@@",
@@ -104,43 +104,6 @@
   },
   {
     "cmd": [
-      "vpython",
-      "-u",
-      "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
-      "--url",
-      "https://v8-status.appspot.com/lkgr",
-      "--status-json",
-      "/path/to/tmp/json",
-      "--outfile",
-      "/path/to/tmp/"
-    ],
-    "name": "lkgr from app"
-  },
-  {
-    "cmd": [
-      "python",
-      "-u",
-      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
-      "--json-file",
-      "/path/to/tmp/json",
-      "--url",
-      "https://chromium.googlesource.com/v8/v8/+log/deadbeef2..97ab2f7d6e7bab812309e05884bdeeaef11962f7",
-      "--format",
-      "json",
-      "--log-limit",
-      "0"
-    ],
-    "name": "check lkgr override",
-    "~followup_annotations": [
-      "@@@STEP_TEXT@<br />0 commits fetched@@@",
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"log\": []@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [
       "python",
       "-u",
       "[START_DIR]/infra/run.py",
@@ -150,6 +113,10 @@
       "--verbose",
       "--email-errors",
       "--post",
+      "--read-from-file",
+      "97ab2f7d6e7bab812309e05884bdeeaef11962f7",
+      "--write-to-file",
+      "/path/to/tmp/",
       "--allowed-lag=4",
       "--html",
       "/path/to/tmp/"
@@ -169,7 +136,7 @@
       "cp",
       "-a",
       "public-read",
-      "<html>lkgr-status</html>",
+      "<html>lkgr</html>",
       "gs://chromium-v8/lkgr-status/v8-lkgr-status.html"
     ],
     "infra_step": true,
@@ -177,6 +144,17 @@
     "~followup_annotations": [
       "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-v8/lkgr-status/v8-lkgr-status.html@@@"
     ]
+  },
+  {
+    "cmd": [
+      "git",
+      "push",
+      "https://chromium.googlesource.com/v8/v8",
+      "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef:refs/heads/lkgr"
+    ],
+    "cwd": "[START_DIR]/v8",
+    "infra_step": true,
+    "name": "push lkgr to ref"
   },
   {
     "name": "$result",

@@ -98,6 +98,8 @@ def ParseArgs(argv):
                             help='Post the LKGR to the configured status app.')
   output_group.add_argument('--tag', action='store_true',
                             help='Update the lkgr tag (Git repos only)')
+  output_group.add_argument('--read-from-file', metavar='FILE',
+                            help='Read the LKGR from the specified file.')
   output_group.add_argument('--write-to-file', metavar='FILE',
                             help='Write the LKGR to the specified file.')
   output_group.add_argument('--dump-build-data', metavar='FILE',
@@ -220,19 +222,22 @@ def main(argv):
   lkgr = None
   if not args.force:
     # Get old/current LKGR.
-    if args.write_to_file:
+    # TODO(sergiyb): Deprecate --write-to-file as an input when all clients are
+    # passing --read-from-file instead.
+    read_from_file = args.read_from_file or args.write_to_file
+    if read_from_file:
       # If the new lkgr should be written to a file, read the current one from
       # the same file.
-      lkgr = lkgr_lib.ReadLKGR(args.write_to_file)
+      lkgr = lkgr_lib.ReadLKGR(read_from_file)
       if lkgr is None:
         if args.email_errors and 'error_recipients' in config:
           lkgr_lib.SendMail(config['error_recipients'],
                             'Failed to read %s LKGR. Please seed an initial '
                             'LKGR in file %s' %
-                            (args.project, args.write_to_file),
+                            (args.project, read_from_file),
                             '\n'.join(lkgr_lib.RunLogger.log), args.dry_run)
         LOGGER.fatal('Failed to read current %s LKGR. Please seed an initial '
-                     'LKGR in file %s' % (args.project, args.write_to_file))
+                     'LKGR in file %s' % (args.project, read_from_file))
         return 1
     else:
       lkgr = lkgr_lib.FetchLKGR(config['status_url'] + repo.status_path)

@@ -6,16 +6,18 @@ from recipe_engine.recipe_api import Property
 from recipe_engine.types import freeze
 
 DEPS = [
+  'build/v8',
+  'build/webrtc',
   'depot_tools/bot_update',
   'depot_tools/gclient',
+  'depot_tools/git',
   'depot_tools/gitiles',
   'depot_tools/gsutil',
+  'recipe_engine/context',
   'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/raw_io',
-  'recipe_engine/step',
-  'recipe_engine/url',
 ]
 
 
@@ -31,11 +33,21 @@ BUILDERS = freeze({
     'lkgr_status_gs_path': 'chromium-v8/lkgr-status',
     'repo': 'https://chromium.googlesource.com/v8/v8',
     'ref': 'refs/heads/lkgr',
+    'gclient_config': 'v8',
+    'checkout_dir': 'v8',
   },
   'WebRTC lkgr finder': {
     'project': 'webrtc',
     'repo': 'https://webrtc.googlesource.com/src',
+    # TODO(sergiyb): This ref does not actually exist yet, but this is needed
+    # for tests below. When this recipe starts to be actually used for 'WebRTC
+    # lkgr finder' builder, one would need to create the refs/heads/lkgr first.
+    'ref': 'refs/heads/lkgr',
+    'gclient_config': 'webrtc',
+    'checkout_dir': 'src',
   }
+  # When adding a new builder, please make sure to add dep containing relevant
+  # gclient_config into DEPS list above.
 })
 
 
@@ -43,8 +55,20 @@ def RunSteps(api, buildername):
   botconfig = BUILDERS[buildername]
   api.gclient.set_config('infra')
   api.gclient.c.revisions['infra'] = 'HEAD'
+  api.gclient.apply_config(botconfig['gclient_config'])
+
+  # Projects can define revision mappings that conflict with infra revision
+  # mapping, so we overide them here to only map infra's revision so that it
+  # shows up on the buildbot page.
+  api.gclient.c.got_revision_mapping = {}
+  api.gclient.c.got_revision_reverse_mapping = {'got_revision': 'infra'}
+
   api.bot_update.ensure_checkout()
   api.gclient.runhooks()
+
+  repo, ref = botconfig['repo'], botconfig['ref']
+  lkgr_from_ref = api.gitiles.commit_log(
+      repo, ref, step_name='read lkgr from ref')['commit']
 
   args = [
     'infra.services.lkgr_finder',
@@ -54,79 +78,54 @@ def RunSteps(api, buildername):
         botconfig['project'],
     '--verbose',
     '--email-errors',
+    # TODO(sergiyb): Remove this after we have verified that pushing to ref
+    # works and removed LKGR pushing mechanism from the
+    # auto_roll_release_process recipe.
     '--post',
+    '--read-from-file', api.raw_io.input_text(lkgr_from_ref),
+    '--write-to-file', api.raw_io.output_text(name='lkgr_ref'),
   ]
-
-  # Check if somebody manually pushed a newer lkgr to the lkgr ref.
-  # In this case manually override the lkgr in the app. This can be used
-  # to manually advance the lkgr when backing services are down.
-  if botconfig.get('ref'):
-    lkgr_from_ref = api.gitiles.commit_log(
-        botconfig['repo'], botconfig['ref'],
-        step_name='lkgr from ref')['commit']
-    lkgr_from_app = api.url.get_text(
-        'https://%s-status.appspot.com/lkgr' % botconfig['project'],
-        step_name='lkgr from app'
-    ).output
-    commits, _ = api.gitiles.log(
-        botconfig['repo'], '%s..%s' % (lkgr_from_app, lkgr_from_ref),
-        step_name='check lkgr override')
-    if commits:
-      args.append('--manual=%s' % lkgr_from_ref)
+  step_test_data = api.raw_io.test_api.output_text(
+      'deadbeef' * 5, name='lkgr_ref')
 
   if botconfig.get('allowed_lag') is not None:
     args.append('--allowed-lag=%d' % botconfig['allowed_lag'])
 
-  kwargs = {}
   if botconfig.get('lkgr_status_gs_path'):
-    args += ['--html', api.raw_io.output_text()]
-    kwargs['step_test_data'] = lambda: api.raw_io.test_api.output_text(
-        '<html>lkgr-status</html>')
+    args += ['--html', api.raw_io.output_text(name='html')]
+    step_test_data += api.raw_io.test_api.output_text(
+        '<html>lkgr</html>', name='html')
 
   step_result = api.python(
       'calculate %s lkgr' % botconfig['project'],
-      api.path['checkout'].join('run.py'),
+      api.path['start_dir'].join('infra', 'run.py'),
       args,
-      **kwargs
+      step_test_data=lambda: step_test_data
   )
 
   if botconfig.get('lkgr_status_gs_path'):
     api.gsutil.upload(
-      api.raw_io.input_text(step_result.raw_io.output_text),
+      api.raw_io.input_text(step_result.raw_io.output_texts['html']),
       botconfig['lkgr_status_gs_path'],
       '%s-lkgr-status.html' % botconfig['project'],
       args=['-a', 'public-read'],
       metadata={'Content-Type': 'text/html'},
     )
 
+  lkgr_commit = step_result.raw_io.output_texts['lkgr_ref']
+  if lkgr_commit != lkgr_from_ref:
+    with api.context(cwd=api.path['start_dir'].join(botconfig['checkout_dir'])):
+      api.git('push', repo, '%s:%s' % (lkgr_commit, ref),
+              name='push lkgr to ref')
+
 
 def GenTests(api):
-  def lkgr_test_data(buildername, botconfig, suffix='', revision=None, n=3):
-    test_data = (
-        api.test(botconfig['project'] + suffix) +
-        api.properties.generic(
-            buildername=buildername,
-            revision=revision,
+  for buildername, botconfig in BUILDERS.iteritems():
+    yield (
+        api.test(botconfig['project']) +
+        api.properties.generic(buildername=buildername) +
+        api.step_data(
+            'read lkgr from ref',
+            api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'),
         )
     )
-    if botconfig.get('ref'):
-      test_data += (
-          api.step_data(
-              'lkgr from ref',
-              api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'),
-          ) +
-          api.url.text(
-              'lkgr from app',
-              'deadbeef2',
-          ) +
-          api.step_data(
-              'check lkgr override',
-              api.gitiles.make_log_test_data('A', n=n),
-          )
-      )
-    return test_data
-
-  for buildername, botconfig in BUILDERS.iteritems():
-    yield lkgr_test_data(buildername, botconfig, n=0)
-    yield lkgr_test_data(buildername, botconfig, suffix='_manual',
-                         revision='deadbeef')

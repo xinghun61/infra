@@ -5,7 +5,7 @@
       "-u",
       "RECIPE_MODULE[depot_tools::bot_update]/resources/bot_update.py",
       "--spec-path",
-      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}]",
+      "cache_dir = '[CACHE]/git'\nsolutions = [{'deps_file': '.DEPS.git', 'managed': True, 'name': 'infra', 'url': 'https://chromium.googlesource.com/infra/infra.git'}, {'deps_file': 'DEPS', 'managed': True, 'name': 'src', 'url': 'https://webrtc.googlesource.com/src'}, {'deps_file': 'DEPS', 'managed': True, 'name': 'webrtc-limited', 'url': 'https://chrome-internal.googlesource.com/chrome/deps/webrtc-limited'}]",
       "--patch_root",
       "infra",
       "--revision_mapping_file",
@@ -70,15 +70,66 @@
     "cmd": [
       "python",
       "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://webrtc.googlesource.com/src/+/refs/heads/lkgr",
+      "--format",
+      "json"
+    ],
+    "name": "read lkgr from ref",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"author\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"email\": \"testauthor@fake.chromium.org\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"name\": \"Test Author\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"time\": \"Mon Jan 01 00:00:00 2015\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"commit\": \"97ab2f7d6e7bab812309e05884bdeeaef11962f7\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"committer\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"email\": \"testauthor@fake.chromium.org\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"name\": \"Test Author\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"time\": \"Mon Jan 01 00:00:00 2015\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"message\": \"Commit1\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"parents\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"d26d1a035d941e46e74ac6aadb118396675509fd\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  ], @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"tree\": \"f8201e09e096480ad7ee6672bf0858aef1be2473\", @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"tree_diff\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "[START_DIR]/infra/run.py",
       "infra.services.lkgr_finder",
       "--project=webrtc",
       "--password-file=/creds/gatekeeper/webrtc_status_password",
       "--verbose",
       "--email-errors",
-      "--post"
+      "--post",
+      "--read-from-file",
+      "97ab2f7d6e7bab812309e05884bdeeaef11962f7",
+      "--write-to-file",
+      "/path/to/tmp/"
     ],
     "name": "calculate webrtc lkgr"
+  },
+  {
+    "cmd": [
+      "git",
+      "push",
+      "https://webrtc.googlesource.com/src",
+      "deadbeefdeadbeefdeadbeefdeadbeefdeadbeef:refs/heads/lkgr"
+    ],
+    "cwd": "[START_DIR]/src",
+    "infra_step": true,
+    "name": "push lkgr to ref"
   },
   {
     "name": "$result",
