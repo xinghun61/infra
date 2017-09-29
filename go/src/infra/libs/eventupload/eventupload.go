@@ -21,7 +21,8 @@ import (
 	"golang.org/x/net/context"
 )
 
-var id InsertIDGenerator
+// ID is the global InsertIDGenerator
+var ID InsertIDGenerator
 
 // eventUploader is an interface for types which implement a Put method. It
 // exists for the purpose of mocking Uploader in tests.
@@ -184,10 +185,7 @@ func prepareSrc(s bigquery.Schema, src interface{}) ([]*bigquery.StructSaver, er
 			}
 		}
 
-		insertID, err := id.Generate()
-		if err != nil {
-			return nil, err
-		}
+		insertID := ID.Generate()
 		ss := &bigquery.StructSaver{
 			Schema:   schema,
 			InsertID: insertID,

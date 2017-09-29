@@ -7,26 +7,21 @@ package eventupload
 
 import (
 	"fmt"
+	"math/rand"
 	"os"
 	"sync/atomic"
 	"time"
 )
 
 var (
-	// These global value is used to populate a zero-value
+	// defaultPrefix is a global value is used to populate a zero-value
 	// InsertIDGenerator.
-	defaultPrefix      string
-	defaultPrefixError error
+	defaultPrefix string
 )
 
 func init() {
-	h, err := os.Hostname()
-	if err != nil {
-		h = "UNKNOWN"
-		defaultPrefixError = err
-	}
 	t := time.Now().UnixNano()
-	defaultPrefix = fmt.Sprintf("%s:%d:%d", h, os.Getpid(), t)
+	defaultPrefix = fmt.Sprintf("%d:%d:%d", rand.Int(), os.Getpid(), t)
 }
 
 // InsertIDGenerator generates unique Insert IDs.
@@ -49,15 +44,11 @@ type InsertIDGenerator struct {
 }
 
 // Generate returns a unique Insert ID.
-func (id *InsertIDGenerator) Generate() (string, error) {
-	var err error
+func (id *InsertIDGenerator) Generate() string {
 	prefix := id.Prefix
 	if prefix == "" {
-		if defaultPrefixError != nil {
-			return "", defaultPrefixError
-		}
 		prefix = defaultPrefix
 	}
 	c := atomic.AddInt64(&id.Counter, 1)
-	return fmt.Sprintf("%s:%d", prefix, c), err
+	return fmt.Sprintf("%s:%d", prefix, c)
 }

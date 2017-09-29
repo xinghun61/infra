@@ -23,10 +23,7 @@ func TestGenerate(t *testing.T) {
 			for i := 1; i < 10; i++ {
 				want := fmt.Sprintf("%s:%d", prefix, i)
 				Convey(fmt.Sprintf("When Generate is called %d time(s), the value of the counter is correct", i), func() {
-					got, err := id.Generate()
-					if err != nil {
-						t.Fatal(err)
-					}
+					got := id.Generate()
 					So(got, ShouldEqual, want)
 				})
 			}
