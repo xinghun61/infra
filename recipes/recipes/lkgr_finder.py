@@ -67,7 +67,7 @@ def RunSteps(api, buildername):
   api.gclient.runhooks()
 
   repo, ref = botconfig['repo'], botconfig['ref']
-  lkgr_from_ref = api.gitiles.commit_log(
+  current_lkgr = api.gitiles.commit_log(
       repo, ref, step_name='read lkgr from ref')['commit']
 
   args = [
@@ -82,11 +82,11 @@ def RunSteps(api, buildername):
     # works and removed LKGR pushing mechanism from the
     # auto_roll_release_process recipe.
     '--post',
-    '--read-from-file', api.raw_io.input_text(lkgr_from_ref),
-    '--write-to-file', api.raw_io.output_text(name='lkgr_ref'),
+    '--read-from-file', api.raw_io.input_text(current_lkgr),
+    '--write-to-file', api.raw_io.output_text(name='lkgr_hash'),
   ]
   step_test_data = api.raw_io.test_api.output_text(
-      'deadbeef' * 5, name='lkgr_ref')
+      'deadbeef' * 5, name='lkgr_hash')
 
   if botconfig.get('allowed_lag') is not None:
     args.append('--allowed-lag=%d' % botconfig['allowed_lag'])
@@ -112,11 +112,10 @@ def RunSteps(api, buildername):
       metadata={'Content-Type': 'text/html'},
     )
 
-  lkgr_commit = step_result.raw_io.output_texts['lkgr_ref']
-  if lkgr_commit != lkgr_from_ref:
+  new_lkgr = step_result.raw_io.output_texts['lkgr_hash']
+  if new_lkgr and new_lkgr != current_lkgr:
     with api.context(cwd=api.path['start_dir'].join(botconfig['checkout_dir'])):
-      api.git('push', repo, '%s:%s' % (lkgr_commit, ref),
-              name='push lkgr to ref')
+      api.git('push', repo, '%s:%s' % (new_lkgr, ref), name='push lkgr to ref')
 
 
 def GenTests(api):
