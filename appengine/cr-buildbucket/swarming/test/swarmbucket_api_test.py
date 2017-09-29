@@ -141,12 +141,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
       ]
     })
 
-  @mock.patch('components.net.json_request', autospec=True)
-  def test_get_task_def(self, json_request):
-    json_request.return_value = {
-      'id': 'https://shorturl',
-    }
-
+  def test_get_task_def(self):
     req = {
       'build_request': {
         'bucket': 'luci.chromium.try',
@@ -154,10 +149,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
           'builder_name': 'linux_chromium_rel_ng',
         }),
       },
-      'api_explorer_link': True,
     }
-    self.call_api('get_task_def', req)
-    # Call second time to ensure we shorten the same long link only once.
     resp = self.call_api('get_task_def', req).json_body
     actual_task_def = json.loads(resp['task_definition'])
     expected_task_def = {
@@ -225,20 +217,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     }
     self.assertEqual(actual_task_def, expected_task_def)
 
-    expected_long_api_explorer_link = (
-        'https://swarming.example.com/_ah/api/explorer'
-        '#p/swarming/v1/swarming.tasks.new?resource=' +
-        urllib.quote(resp['task_definition']))
-
-    self.assertEqual(resp['api_explorer_link'], 'https://shorturl')
-    self.assertEqual(json_request.call_count, 1)
-    json_request.assert_called_with(
-        url='https://www.googleapis.com/urlshortener/v1/url',
-        method='POST',
-        payload={'longUrl': expected_long_api_explorer_link},
-        scopes='https://www.googleapis.com/auth/urlshortener',
-    )
-
   def test_get_task_def_bad_request(self):
     req = {
       'build_request': {
@@ -247,7 +225,6 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
           'builder_name': 'linux_chromium_rel_ng',
         }),
       },
-      'api_explorer_link': False,
     }
     self.call_api('get_task_def', req, status=400)
 
