@@ -26,7 +26,6 @@ class DelayPipeline(pipelines.AsynchronousPipeline):
     except (taskqueue.TombstonedTaskError,
             taskqueue.TaskAlreadyExistsError):  # pragma: no cover
       pass
-    return seconds
 
   def CallbackImpl(self, seconds, _):
-    self.complete(seconds)
+    self.Complete(seconds)
