@@ -1,0 +1,39 @@
+// Schemas for tree configs.
+
+syntax = "proto3";
+
+package tree;
+
+// SomCfg stores options related to the Sheriff-o-Matic frontend.
+message SomCfg {
+  // BugQueueLabel is a Monorail label to use for a sheriffing bug queue
+  // attached to this tree.
+  string bug_queue_label = 1;
+  // AlertStreams are tree names that a sheriffing view for a tree should pull
+  // from. The terminology here is a little weird since a "Sheriff-o-Matic
+  // tree" can technically pull from more than one "Gatekeeper/Analyzer tree".
+  repeated string alert_streams = 2;
+}
+
+// Tree stores the configuration for a single tree.
+message Tree {
+  // Name is a unique string key to mark a specific tree. Should be lowercase
+  // and use only URL-safe characters.
+  string name = 1;
+  // DisplayName is a fancier name for the tree, which can include spaces,
+  // capitalization, and any other string fanciness.
+  string display_name = 2;
+  // Som can be set to tell Sheriff-o-Matic to load the tree into its UI and
+  // search for alerts.
+  SomCfg som = 3;
+  // StatusUrl is a URL for the Tree-Status app attached to this tree. This
+  // should eventually be replaced once we consolidate the Tree-Status app.
+  string status_url = 4;
+}
+
+// TreeCfg is the project level configuration for services which require
+// knowledge of what a tree is.
+message TreeCfg {
+  // Trees stores all of the trees specified in a configuration file.
+  repeated Tree trees = 1;
+}
