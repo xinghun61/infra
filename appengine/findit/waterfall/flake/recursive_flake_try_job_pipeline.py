@@ -35,7 +35,6 @@ from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
 _GIT_REPO = CachedGitilesRepository(
     HttpClientAppengine(), 'https://chromium.googlesource.com/chromium/src.git')
-_DEFAULT_ITERATIONS_TO_RERUN = 100
 
 _MAX_RETRY_TIMES = 5
 _BASE_COUNT_DOWN_SECONDS = 2 * 60
@@ -175,6 +174,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
 
   def __init__(self,
                urlsafe_flake_analysis_key,
+               remaining_suspected_commit_positions,
                commit_position,
                revision,
                lower_bound_commit_position,
@@ -186,6 +186,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
                retries=0):
     super(RecursiveFlakeTryJobPipeline, self).__init__(
         urlsafe_flake_analysis_key,
+        remaining_suspected_commit_positions,
         commit_position,
         revision,
         lower_bound_commit_position,
@@ -245,6 +246,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self,
           urlsafe_flake_analysis_key,
+          remaining_suspected_commit_positions,
           commit_position,
           revision,
           lower_bound_commit_position,
@@ -259,6 +261,9 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
     Args:
       urlsafe_flake_analysis_key (str): The urlsafe-key of the flake analysis
           for which the try jobs are to analyze.
+      remaining_suspected_commit_positions (list): A list of commit positions
+          not yet analyzed but may aid in finding the culprit faster than
+          bisecting.
       commit_position (int): The commit position corresponding to |revision| to
           analyze.
       revision (str): The revision to run the try job against corresponding to
@@ -311,7 +316,8 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
 
           yield NextCommitPositionPipeline(
               urlsafe_flake_analysis_key,
-              try_job.key.urlsafe(), lower_bound_commit_position,
+              try_job.key.urlsafe(), remaining_suspected_commit_positions,
+              commit_position, lower_bound_commit_position,
               upper_bound_commit_position, user_specified_iterations,
               cache_name, dimensions, rerun)
       else:
@@ -319,6 +325,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
 
         pipeline_job = RecursiveFlakeTryJobPipeline(
             urlsafe_flake_analysis_key,
+            remaining_suspected_commit_positions,
             commit_position,
             revision,
             lower_bound_commit_position,
@@ -357,7 +364,8 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
     else:
       yield NextCommitPositionPipeline(
           urlsafe_flake_analysis_key,
-          try_job.key.urlsafe(), lower_bound_commit_position,
+          try_job.key.urlsafe(), remaining_suspected_commit_positions,
+          commit_position, lower_bound_commit_position,
           upper_bound_commit_position, user_specified_iterations, cache_name,
           dimensions, rerun)
 
@@ -436,11 +444,68 @@ def _GetSuspectedCommitConfidenceScore(analysis, suspected_commit_position,
                                                 suspected_commit_position)
 
 
+def _GetNextCommitPositionAndRemainingSuspects(
+    analysis, remaining_suspected_commit_positions,
+    previously_run_commit_position, next_bisect_commit_position):
+  """Gets the next commit to run and remaining suspects to try.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The analysis being run.
+    remaining_suspected_commit_positions (list): An list of commit positions in
+        ascending order determined by heuristic analysis that have not yet been
+        analyzed.
+    previously_run_commit_position (int): The most previously-run commit
+        position to determine it's pass rate.
+    next_bisect_commit_position (int): The commit position bisect suggests to
+        run against already-ran data points.
+
+  Returns:
+    (int): The next commit position (int) to run, either from heuristic results
+        or bisect.
+    ([int]): The remainining list of suspected commit positions to try.
+  """
+  if remaining_suspected_commit_positions:
+    # Try the suggested commit position first.
+    next_suspected_commit_position = remaining_suspected_commit_positions[0]
+    previously_run_data_point = (
+        analysis.FindMatchingDataPointWithCommitPosition(
+            previously_run_commit_position))
+    assert previously_run_data_point
+
+    lower_flake_threshold = (analysis.algorithm_parameters.get(
+        'try_job_rerun', {}).get('lower_flake_threshold',
+                                 flake_constants.DEFAULT_LOWER_FLAKE_THRESHOLD))
+    upper_flake_threshold = (analysis.algorithm_parameters.get(
+        'try_job_rerun', {}).get('upper_flake_threshold',
+                                 flake_constants.DEFAULT_UPPER_FLAKE_THRESHOLD))
+
+    if not lookback_algorithm.IsStable(previously_run_data_point.pass_rate,
+                                       lower_flake_threshold,
+                                       upper_flake_threshold):
+      # The suggested results are in ascending order and run before bisect. Thus
+      # the previously-ran data point will always have a smaller commit
+      # position than those in remaining_suspected_ommit_positions. If it was
+      # identified already to be flaky, all subsequent suggested commit
+      # positions will be flaky too and need not be tried. Fallback to
+      # next_bisect_commit_position, which has already been computed to be the
+      # bisection of the lowest flaky commit position
+      # (previously_run_commit_position) and latest preceding stable commit
+      # position. remaining_suspected_commit_positions can safely be discarded.
+      return next_bisect_commit_position, []
+
+    return (next_suspected_commit_position,
+            remaining_suspected_commit_positions[1:])
+
+  # Fallback to the bisect/exponential lookback point.
+  return next_bisect_commit_position, []
+
+
 class NextCommitPositionPipeline(BasePipeline):
   """Returns the next index in the blame list to run a try job on."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, urlsafe_flake_analysis_key, urlsafe_try_job_key,
+          remaining_suspected_commit_positions, previously_run_commit_position,
           lower_bound_commit_position, upper_bound_commit_position,
           user_specified_iterations, cache_name, dimensions, rerun):
     """Determines the next commit position to run a try job on.
@@ -450,6 +515,9 @@ class NextCommitPositionPipeline(BasePipeline):
           flake analysis that triggered this pipeline.
       urlsafe_try_job_key (str): The url-safe key to the try job that was just
           run.
+      remaining_suspected_commit_positions ([int]): A list of commit positions
+          not yet analyzed but may aid in finding the culprit faster than
+          bisecting.
       lower_bound_commit_position (int): The lower bound commit position to
           consider when deciding the next run point number.
       upper_bound_commit_position (int): The upper bound commit position to
@@ -482,7 +550,8 @@ class NextCommitPositionPipeline(BasePipeline):
     data_points = _GetNormalizedTryJobDataPoints(flake_analysis,
                                                  lower_bound_commit_position,
                                                  upper_bound_commit_position)
-    next_commit_position, suspected_commit_position = (
+
+    next_bisect_commit_position, suspected_commit_position = (
         lookback_algorithm.GetNextRunPointNumber(
             data_points,
             algorithm_settings,
@@ -508,12 +577,21 @@ class NextCommitPositionPipeline(BasePipeline):
       yield SendNotificationForFlakeCulpritPipeline(urlsafe_flake_analysis_key)
       return
 
+    flake_analysis.LogInfo('Remaining suspected commit positions: %r' %
+                           remaining_suspected_commit_positions)
+    (next_commit_position,
+     remaining_suspects) = _GetNextCommitPositionAndRemainingSuspects(
+         flake_analysis, remaining_suspected_commit_positions,
+         previously_run_commit_position, next_bisect_commit_position)
+
     next_revision = suspected_build_data_point.GetRevisionAtCommitPosition(
         next_commit_position)
 
+    assert next_revision is not None
+
     pipeline_job = RecursiveFlakeTryJobPipeline(
-        urlsafe_flake_analysis_key, next_commit_position, next_revision,
-        lower_bound_commit_position, upper_bound_commit_position,
+        urlsafe_flake_analysis_key, remaining_suspects, next_commit_position,
+        next_revision, lower_bound_commit_position, upper_bound_commit_position,
         user_specified_iterations, cache_name, dimensions, rerun)
     # Disable attribute 'target' defined outside __init__ pylint warning,
     # because pipeline generates its own __init__ based on run function.

@@ -43,6 +43,7 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     upper_bound = 10
     user_range = True
     iterations = 100
+    suspected_ranges = [[None, 'r1']]
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -63,19 +64,22 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={})
     self.MockPipeline(
         IdentifySuspectedRevisionsPipeline,
-        '',
+        suspected_ranges,
         expected_args=[analysis.key.urlsafe(), test_location],
         expected_kwargs={})
+    self.MockPipeline(
+        InitializeFlakeTryJobPipeline,
+        '',
+        expected_args=[
+            analysis.key.urlsafe(), suspected_ranges, iterations, user_range,
+            False
+        ],
+        expected_kwargs={})
+
     self.MockPipeline(
         UpdateFlakeBugPipeline,
         '',
         expected_args=[analysis.key.urlsafe()],
-        expected_kwargs={})
-
-    self.MockPipeline(
-        InitializeFlakeTryJobPipeline,
-        '',
-        expected_args=[analysis.key.urlsafe(), iterations, user_range, False],
         expected_kwargs={})
 
     pipeline = FinishBuildAnalysisPipeline(analysis.key.urlsafe(), lower_bound,

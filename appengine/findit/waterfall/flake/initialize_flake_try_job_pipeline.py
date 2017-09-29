@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging
-
 from google.appengine.ext import ndb
 
 from gae_libs.pipeline_wrapper import BasePipeline
@@ -14,6 +12,7 @@ from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
 from waterfall.flake import flake_constants
+from waterfall.flake import heuristic_analysis_util
 from waterfall.flake import lookback_algorithm
 from waterfall.flake import recursive_flake_try_job_pipeline
 from waterfall.flake.recursive_flake_try_job_pipeline import (
@@ -121,19 +120,49 @@ def _ShouldRunTryJobs(analysis, user_specified_range):
     return False
 
   if not _HasSufficientConfidenceToRunTryJobs(analysis):
-    logging.info(
+    analysis.LogInfo(
         'Skipping try jobs due to insufficient confidence in suspected build')
     return False
 
   return True
 
 
+def _RevisionToCommitPositions(commits_to_revisions_dict):
+  """Inverts commit_position:revision mappings to revision:commit_position.
+
+      Assumes all keys and values in commtis_to_revisions_dict are unique.
+
+  Args:
+    commits_to_revisions_dict (dict): A dict mapping commit positions to
+        revisions. For example:
+        {
+            101: 'r101',
+            102: 'r102',
+        }
+
+  Returns:
+    (dict): A dict mapping revisions to commit positions that is the inverse of
+        the input dict. For example,
+        {
+            'r101': 101,
+            'r102': 102,
+        }
+  """
+  # Enforce all commits and revisions are unique.
+  commits = commits_to_revisions_dict.keys()
+  revisions = commits_to_revisions_dict.values()
+  assert len(commits) == len(list(set(commits)))
+  assert len(revisions) == len(list(set(revisions)))
+
+  return dict(reversed(item) for item in commits_to_revisions_dict.items())
+
+
 class InitializeFlakeTryJobPipeline(BasePipeline):
   """Determines whether try jobs need to be run and where to start."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, analysis_urlsafe_key, user_specified_iterations,
-          user_specified_range, force):
+  def run(self, analysis_urlsafe_key, suspected_ranges,
+          user_specified_iterations, user_specified_range, force):
     """Pipeline to trigger try jobs on a suspected build range.
 
     Args:
@@ -155,6 +184,9 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
     triggering_build_number = analysis.build_number
 
     if _ShouldRunTryJobs(analysis, user_specified_range):
+      analysis.LogInfo('Preparing to perform revision-level analysis')
+      analysis.LogInfo('Suspected ranges: %r' % suspected_ranges)
+
       suspected_build_point = analysis.GetDataPointOfSuspectedBuild()
       assert suspected_build_point
       blamed_cls, lower_bound_commit_position = _GetFullBlamedCLsAndLowerBound(
@@ -164,9 +196,26 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
         upper_bound_commit_position = suspected_build_point.commit_position
 
         if len(blamed_cls) > 1:
-          start_commit_position = lookback_algorithm.BisectPoint(
-              lower_bound_commit_position, upper_bound_commit_position)
+          revisions_to_commits = _RevisionToCommitPositions(blamed_cls)
+          suspected_commit_positions = (
+              heuristic_analysis_util.ListCommitPositionsFromSuspectedRanges(
+                  revisions_to_commits, suspected_ranges))
+          analysis.LogInfo('Commit positions to analyze first from heuristic '
+                           'analysis %r --> %r' % (suspected_ranges,
+                                                   suspected_commit_positions))
+
+          if suspected_commit_positions:
+            # Run commit positions suggested by heuristic analysis first.
+            start_commit_position = suspected_commit_positions[0]
+            assert start_commit_position >= lower_bound_commit_position
+            assert start_commit_position <= upper_bound_commit_position
+          else:
+            # Fallback to bisect if no heuristic results.
+            start_commit_position = lookback_algorithm.BisectPoint(
+                lower_bound_commit_position, upper_bound_commit_position)
+
           start_revision = blamed_cls[start_commit_position]
+          remaining_suspected_commit_positions = suspected_commit_positions[1:]
           build_info = build_util.GetBuildInfo(master_name, builder_name,
                                                triggering_build_number)
           parent_mastername = build_info.parent_mastername or master_name
@@ -175,23 +224,18 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
                                                   parent_buildername)
           dimensions = waterfall_config.GetTrybotDimensions(
               parent_mastername, parent_buildername)
-          logging.info(
-              'Running try-jobs against commits in regression range [%d:%d]',
-              lower_bound_commit_position, upper_bound_commit_position)
+          analysis.LogInfo(
+              'Running try-jobs against commits in regression range [%d:%d]' %
+              (lower_bound_commit_position, upper_bound_commit_position))
           analysis.Update(try_job_status=analysis_status.RUNNING)
 
           yield RecursiveFlakeTryJobPipeline(
-              analysis.key.urlsafe(),
-              start_commit_position,
-              start_revision,
-              lower_bound_commit_position,
-              upper_bound_commit_position,
-              user_specified_iterations,
-              cache_name,
-              dimensions,
-              rerun=force)
+              analysis.key.urlsafe(), remaining_suspected_commit_positions,
+              start_commit_position, start_revision,
+              lower_bound_commit_position, upper_bound_commit_position,
+              user_specified_iterations, cache_name, dimensions, force)
         else:
-          logging.info('Single commit in the blame list of suspected build')
+          analysis.LogInfo('Single commit in the blame list of suspected build')
           culprit_confidence_score = confidence.SteppinessForCommitPosition(
               analysis.data_points, upper_bound_commit_position)
           culprit = recursive_flake_try_job_pipeline.UpdateCulprit(
@@ -204,7 +248,7 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
 
           yield SendNotificationForFlakeCulpritPipeline(analysis_urlsafe_key)
       else:
-        logging.error('Cannot run flake try jobs against empty blame list')
+        analysis.LogError('Cannot run flake try jobs against empty blame list')
         error = {
             'error': 'Could not start try jobs',
             'message': 'Empty blame list'

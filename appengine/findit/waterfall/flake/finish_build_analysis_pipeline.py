@@ -168,14 +168,13 @@ class FinishBuildAnalysisPipeline(BasePipeline):
     with pipeline.InOrder():
       # Perform heuristic analysis to identify suspects to examine first.
       test_location = yield GetTestLocationPipeline(analysis_urlsafe_key)
-      yield IdentifySuspectedRevisionsPipeline(analysis_urlsafe_key,
-                                               test_location)
 
-      # Identify culprit using try jobs. TODO(crbug.com/735533): Incorporate
-      # results from heuristic analysis into the try job pipeline.
-      yield InitializeFlakeTryJobPipeline(analysis.key.urlsafe(),
-                                          user_specified_iterations,
-                                          user_specified_range, force)
+      suspected_ranges = yield IdentifySuspectedRevisionsPipeline(
+          analysis_urlsafe_key, test_location)
+
+      yield InitializeFlakeTryJobPipeline(
+          analysis.key.urlsafe(), suspected_ranges, user_specified_iterations,
+          user_specified_range, force)
 
       # Update the bug associated with the analysis with results of findings.
       yield UpdateFlakeBugPipeline(analysis.key.urlsafe())

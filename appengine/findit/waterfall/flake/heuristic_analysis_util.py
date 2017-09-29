@@ -13,11 +13,11 @@ def GenerateSuspectedRanges(suspected_revisions, revision_range):
   """Generates a list of revision tuples.
 
   Args:
-    suspected_revisions (list): A list of suspected revisions according to
-        git blame.
     revision_range (list): The list of revisions of a suspected flake build.
         The revisions are expected to be in chronological order as a
         DataPoint's blame_list.
+    suspected_revisions (list): A list of suspected revisions according to
+        git blame.
 
   Returns:
     A list of (previous, suspected_revision) tuples. For example, if r1-r10 are
@@ -57,6 +57,42 @@ def GetSuspectedRevisions(git_blame, revision_range):
   # score them appropriately.
   return list(
       set(region.revision for region in git_blame) & set(revision_range))
+
+
+def ListCommitPositionsFromSuspectedRanges(revisions_to_commits,
+                                           suspected_ranges):
+  """Generates an ordered list of commit positions (ints) from suspected_ranges.
+
+      This list is to be consumed when attempting to identify flake culprits
+      using heuristic guidance and its corresponding revisions analyzed first in
+      the order given.
+
+  Args:
+    revisions_to_commits (dict): A dict mapping revisions to commit
+        positions.
+    suspected_ranges (list): A list of pairs of revisions, where the first of
+        each pair is previous revision of the second in the pair, e.g.
+        [('r1', 'r2'), ('r4', 'r5')].
+
+  Returns:
+    A flattened list of commit positions. For example, if
+        [(None, 'r1'), ('r4', 'r5')] is passed in where 'r1' has commit position
+        1, returns [1, 4, 5]. The returned list should be in ascending order.
+  """
+
+  def Flatten(revision_ranges):
+    # Flattens revision_ranges into a list of revisions.
+    return [r for revision_range in revision_ranges for r in revision_range]
+
+  commit_positions = set()
+
+  for revision in Flatten(suspected_ranges):
+    if revision in revisions_to_commits:
+      commit_positions.add(revisions_to_commits[revision])
+
+  # TODO(crbug.com/759806): Incorporate scores with heurstic results to
+  # associate scores with suspects and sort by highest score.
+  return sorted(list(commit_positions))
 
 
 # pylint: disable=E1120

@@ -31,7 +31,9 @@ class IdentifySuspectedRevisionsPipeline(BasePipeline):
       }
 
     Returns:
-      A list of revision tuples as output by _GenerateSuspectedRanges().
+      A list of revision tuples as output by
+          heuristc_analysis_util.GenerateSuspectedRanges(), e.g.
+          [('r1', 'r2'), ('r4', 'r5')].
     """
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
@@ -63,5 +65,8 @@ class IdentifySuspectedRevisionsPipeline(BasePipeline):
     heuristic_analysis_util.SaveFlakeCulpritsForSuspectedRevisions(
         self.GIT_REPO, analysis_urlsafe_key, suspected_revisions)
 
-    return heuristic_analysis_util.GenerateSuspectedRanges(
+    suspected_ranges = heuristic_analysis_util.GenerateSuspectedRanges(
         suspected_revisions, blame_list)
+    analysis.LogInfo('Identified suspected ranges: %r' % suspected_ranges)
+
+    return suspected_ranges

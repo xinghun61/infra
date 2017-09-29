@@ -224,6 +224,17 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(
         initialize_flake_try_job_pipeline._ShouldRunTryJobs(analysis, False))
 
+  def testRevisionToCommitPositions(self):
+    self.assertEqual(
+        {
+            'a': 1,
+            'b': 2
+        },
+        initialize_flake_try_job_pipeline._RevisionToCommitPositions({
+            1: 'a',
+            2: 'b'
+        }))
+
   def testInitializeFlakeTryJopPipelineNoSuspectedBuild(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.Save()
@@ -231,8 +242,8 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(
         RecursiveFlakeTryJobPipeline, '', expected_args=[], expected_kwargs={})
 
-    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
-                                                 False, False)
+    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), [],
+                                                 None, False, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -248,8 +259,8 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(
         RecursiveFlakeTryJobPipeline, '', expected_args=[], expected_kwargs={})
 
-    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
-                                                 False, False)
+    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), [],
+                                                 None, False, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -272,8 +283,8 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(
         RecursiveFlakeTryJobPipeline, '', expected_args=[], expected_kwargs={})
 
-    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
-                                                 False, False)
+    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), [],
+                                                 None, False, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -309,8 +320,8 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         expected_args=[analysis.key.urlsafe()],
         expected_kwargs={})
 
-    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
-                                                 False, False)
+    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), [],
+                                                 None, False, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -338,7 +349,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         RecursiveFlakeTryJobPipeline,
         '',
         expected_args=[
-            analysis.key.urlsafe(), 997, 'r997', 995, 1000, None,
+            analysis.key.urlsafe(), [], 997, 'r997', 995, 1000, None,
             _DEFAULT_CACHE_NAME, None, False
         ],
         expected_kwargs={'retries': 0})
@@ -348,8 +359,8 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         expected_args=[analysis.key.urlsafe()],
         expected_kwargs={})
 
-    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
-                                                 False, False)
+    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), [],
+                                                 None, False, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     self.assertEqual(analysis_status.RUNNING, analysis.try_job_status)
@@ -376,7 +387,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         RecursiveFlakeTryJobPipeline,
         '',
         expected_args=[
-            analysis.key.urlsafe(), 997, 'r997', 995, 1000, None,
+            analysis.key.urlsafe(), [], 997, 'r997', 995, 1000, None,
             _DEFAULT_CACHE_NAME, None, False
         ],
         expected_kwargs={'retries': 0})
@@ -386,8 +397,47 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         expected_args=[analysis.key.urlsafe()],
         expected_kwargs={})
 
-    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), None,
-                                                 False, False)
+    pipeline_job = InitializeFlakeTryJobPipeline(analysis.key.urlsafe(), [],
+                                                 None, False, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     self.assertEqual(analysis_status.SKIPPED, analysis.try_job_status)
+
+  @mock.patch.object(
+      initialize_flake_try_job_pipeline, '_ShouldRunTryJobs', return_value=True)
+  @mock.patch.object(build_util, 'GetBuildInfo', return_value=MockInfo())
+  def testInitializeFlakeTryJobPipelineRunTryJobsWithHeuristicResults(self, *_):
+    suspected_ranges = [('r996', 'r997')]
+    expected_remaining_commits = [997]
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 100
+    analysis.confidence_in_suspected_build = 0.7
+    analysis.data_points = [
+        DataPoint.Create(
+            pass_rate=0.8,
+            build_number=100,
+            commit_position=1000,
+            previous_build_commit_position=995,
+            blame_list=['r996', 'r997', 'r998', 'r999', 'r1000'])
+    ]
+    analysis.Save()
+
+    self.MockPipeline(
+        RecursiveFlakeTryJobPipeline,
+        '',
+        expected_args=[
+            analysis.key.urlsafe(), expected_remaining_commits, 996, 'r996',
+            995, 1000, None, _DEFAULT_CACHE_NAME, None, False
+        ],
+        expected_kwargs={'retries': 0})
+    self.MockPipeline(
+        SendNotificationForFlakeCulpritPipeline,
+        '',
+        expected_args=[analysis.key.urlsafe()],
+        expected_kwargs={})
+
+    pipeline_job = InitializeFlakeTryJobPipeline(
+        analysis.key.urlsafe(), suspected_ranges, None, False, False)
+    pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+    self.assertEqual(analysis_status.RUNNING, analysis.try_job_status)

@@ -64,6 +64,35 @@ class HeuristicAnalysisUtilTest(wf_testcase.WaterfallTestCase):
                      heuristic_analysis_util.GetSuspectedRevisions(
                          blame, ['r4']))
 
+  def testListCommitPositionsFromSuspectedRanges(self):
+    self.assertEqual(  # No heuristic results.
+        [],
+        heuristic_analysis_util.ListCommitPositionsFromSuspectedRanges({}, []))
+    self.assertEqual(  # Blame list not available.
+        [],
+        heuristic_analysis_util.ListCommitPositionsFromSuspectedRanges(
+            {}, [('r1', 'r2')]))
+    self.assertEqual(  # Blame list available. This should be the expected case.
+        [1, 2],
+        heuristic_analysis_util.ListCommitPositionsFromSuspectedRanges({
+            'r1': 1,
+            'r2': 2,
+        }, [('r1', 'r2')]))
+    self.assertEqual(  # First revision is suspected.
+        [1],
+        heuristic_analysis_util.ListCommitPositionsFromSuspectedRanges({
+            'r1': 1,
+            'r2': 2,
+        }, [(None, 'r1')]))
+    self.assertEqual(  # Two suspects in a row 'r3' and 'r4'.
+        [1, 2, 3, 4],
+        heuristic_analysis_util.ListCommitPositionsFromSuspectedRanges({
+            'r1': 1,
+            'r2': 2,
+            'r3': 3,
+            'r4': 4,
+        }, [(None, 'r1'), ('r2', 'r3'), ('r3', 'r4')]))
+
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
   def testSaveFlakeCulpritsForSuspectedRevisions(self, mocked_fn):
     master_name = 'm'
