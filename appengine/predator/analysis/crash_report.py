@@ -29,7 +29,8 @@ class _FrozenDict(dict):
 
 class CrashReport(namedtuple(
     'CrashReport', ['crashed_version', 'signature', 'platform', 'stacktrace',
-                    'regression_range', 'dependencies', 'dependency_rolls'])):
+                    'regression_range', 'dependencies', 'dependency_rolls',
+                    'root_repo_url', 'root_repo_path'])):
   """A crash report with all information needed for analysis for clients.
 
   This class comprises the inputs to the Predator library; as distinguished
@@ -61,9 +62,11 @@ class CrashReport(namedtuple(
   __slots__ = ()
 
   def __new__(cls, crashed_version, signature, platform, stacktrace,
-              regression_range, dependencies, dependency_rolls):
+              regression_range, dependencies, dependency_rolls,
+              root_repo_url=None, root_repo_path=None):
     return super(CrashReport, cls).__new__(
         cls, crashed_version, signature, platform, stacktrace,
         tuple(regression_range) if regression_range else None,
         _FrozenDict(dependencies) if dependencies else {},
-        _FrozenDict(dependency_rolls) if dependency_rolls else {})
+        _FrozenDict(dependency_rolls) if dependency_rolls else {},
+        root_repo_url, root_repo_path)

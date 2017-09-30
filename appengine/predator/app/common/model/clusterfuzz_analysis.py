@@ -62,6 +62,14 @@ class ClusterfuzzAnalysis(CrashAnalysis):
             if self.testcase_id else '')
 
   @property
+  def root_repo_url(self):
+    return self.regression_repository['repo_url']
+
+  @property
+  def root_repo_path(self):
+    return self.regression_repository['dep_path']
+
+  @property
   def customized_data(self):
     return {
         'regression_range': self.regression_repository,

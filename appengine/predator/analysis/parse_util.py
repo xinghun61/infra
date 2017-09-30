@@ -6,9 +6,11 @@ import logging
 import os
 import re
 
+from analysis.constants import CHROMIUM_REPO_URL
+from analysis.constants import CHROMIUM_ROOT_PATH
+
 GENERATED_CODE_FILE_PATH_PATTERN = re.compile(r'.*out/[^/]+/gen/')
 THIRD_PARTY_FILE_PATH_MARKER = 'third_party'
-CHROMIUM_REPO_URL = 'https://chromium.googlesource.com/chromium/src.git'
 
 JAVA_CHROMIUM_FUNCTION_MARKER = 'org.chromium.chrome.browser'
 JAVA_CHROMIUM_CODE_REPOSITORY_PATH = 'src/chrome/android/java/src'
@@ -49,7 +51,9 @@ def GetCrashedLineRange(line_range_str):
   return range(line_number, line_number + range_length + 1)
 
 
-def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
+def GetDepPathAndNormalizedFilePath(path, deps, is_java=False,
+                                    root_path=None,
+                                    root_repo_url=None):
   """Determines the dep of a file path and normalizes the path.
 
   Args:
@@ -64,6 +68,9 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
     normalized_path (str): Normalized relative file path starting from dep_path.
     repo_url (str): Repository url corresponding to dep_path.
   """
+  # Default the root repo to chromium if None provided.
+  root_path = root_path or CHROMIUM_ROOT_PATH
+  root_repo_url = root_repo_url or CHROMIUM_REPO_URL
   # First normalize the path by retrieving the normalized path.
   normalized_path = os.path.normpath(path).replace('\\', '/')
 
@@ -77,8 +84,9 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
     # are many cases, especially in linux platform, the file paths are like,
     # 'third_party/WebKit/Source/...', or 'v8/...'.
     trimmed_dep_path = dep_path
-    if trimmed_dep_path.startswith('src/') and trimmed_dep_path != 'src':
-      trimmed_dep_path = trimmed_dep_path[len('src/'):]
+    if (trimmed_dep_path.startswith(root_path + '/') and
+        trimmed_dep_path != root_path):
+      trimmed_dep_path = trimmed_dep_path[len(root_path + '/'):]
 
     # We need to consider when the lowercased dep path is in the path,
     # because syzyasan builds and win canary crashes return lowercased file
@@ -122,4 +130,4 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False):
   # For some crashes, the file path looks like this:
   # third_party/WebKit/Source/a.cc, the src in the beginning is trimmed, so
   # default the dep path to 'src' if no match found.
-  return 'src', normalized_path, CHROMIUM_REPO_URL
+  return root_path, normalized_path, root_repo_url

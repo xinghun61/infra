@@ -34,7 +34,10 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
   def testInitializeWithCrashData(self):
     """Tests ``Initialize`` initialize all properties from crash data."""
     predator = self.GetMockPredatorApp()
-    raw_crash_data = self.GetDummyClusterfuzzData()
+    regression_range = {'dep_path': 'v8', 'repo_url': 'https://v8.git',
+                        'old_revision': '1', 'new_revision': '9'}
+    raw_crash_data = self.GetDummyClusterfuzzData(
+        regression_range=regression_range)
     class MockClusterfuzzData(ClusterfuzzData):
 
       def __init__(self, raw_crash_data):
@@ -72,6 +75,8 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
     self.assertEqual(analysis.job_type, crash_data.job_type)
     self.assertEqual(analysis.sanitizer, crash_data.sanitizer)
     self.assertEqual(analysis.security_flag, crash_data.security_flag)
+    self.assertEqual(analysis.root_repo_url, 'https://v8.git')
+    self.assertEqual(analysis.root_repo_path, 'v8')
 
   def testProperties(self):
     testcase_id = '1232435'

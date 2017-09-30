@@ -6,6 +6,8 @@ import copy
 from datetime import datetime
 import mock
 
+from analysis.constants import CHROMIUM_REPO_URL
+from analysis.constants import CHROMIUM_ROOT_PATH
 from analysis.crash_report import CrashReport
 from analysis.stacktrace import CallStack
 from analysis.stacktrace import StackFrame
@@ -159,7 +161,9 @@ class CrashAnalysisTest(AppengineTestCase):
     analysis.Initialize(crash_data)
 
     expected_crash_report = CrashReport(None, signature, platform,
-                                        None, regression_range, {}, {})
+                                        None, regression_range, {}, {},
+                                        CHROMIUM_REPO_URL,
+                                        CHROMIUM_ROOT_PATH)
     self.assertTupleEqual(analysis.ToCrashReport(), expected_crash_report)
 
   @mock.patch('google.appengine.ext.ndb.Key.urlsafe')

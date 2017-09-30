@@ -9,6 +9,8 @@ import json
 
 from google.appengine.ext import ndb
 
+from analysis.constants import CHROMIUM_REPO_URL
+from analysis.constants import CHROMIUM_ROOT_PATH
 from analysis.crash_report import CrashReport
 from common.model import triage_status
 from gae_libs import appengine_util
@@ -232,7 +234,8 @@ class CrashAnalysis(ndb.Model):
     """Converts this model to ``CrashReport`` to give to Predator library."""
     return CrashReport(self.crashed_version, self.signature, self.platform,
                        self.stacktrace, self.regression_range,
-                       self.dependencies, self.dependency_rolls)
+                       self.dependencies, self.dependency_rolls,
+                       self.root_repo_url, self.root_repo_path)
 
   @property
   def client_id(self):
@@ -247,6 +250,14 @@ class CrashAnalysis(ndb.Model):
   @property
   def crash_url(self):
     raise NotImplementedError()
+
+  @property
+  def root_repo_url(self):
+    return CHROMIUM_REPO_URL
+
+  @property
+  def root_repo_path(self):
+    return CHROMIUM_ROOT_PATH
 
   def ToJson(self):
     # ``stack_trace`` is the raw stacktrace string, ``stacktrace`` is the parsed
