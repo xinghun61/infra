@@ -67,6 +67,14 @@ class ProjectClassifier(object):
     return ProjectClassifier._GetTopProject(projects,
                                             rank_function=rank_function)
 
+  def ClassifyDepPath(self, dep_path):
+    """Determine which project is responsible for this dep_path."""
+    for project in self.projects:
+      if project.MatchesDepPath(dep_path):
+        return project.GetName(dep_path)
+
+    return ''
+
   def ClassifySuspect(self, suspect):
     """Determine which project is responsible for this suspect."""
     if not suspect or not suspect.changelog:

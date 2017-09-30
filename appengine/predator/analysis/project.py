@@ -51,6 +51,24 @@ class Project(namedtuple('Project',
     return super(cls, Project).__new__(
         cls, name, path_regexes, function_regexes, host_directories)
 
+  def MatchesFilePath(self, file_path):
+    """Returns True if this project matches the file_path."""
+    # Sometimes some marker information are in the frame.raw_file_path.
+    # An example, the path_regex for android_os is --
+    # "https___googleplex-android.googlesource.com_a_platform_manifest.git/".
+    # It can only be found in frame.raw_file_path, since the frame.file_path
+    # has those kind of information stripped.
+    return file_path and any(r.match(file_path) for r in self.path_regexes)
+
+  def MatchesFunction(self, function):
+    """Returns True if this project matches the function."""
+    return function and any(r.match(function) for r in self.function_regexes)
+
+  def MatchesDepPath(self, dep_path):
+    """Returns True if this project matches the dep_path."""
+    return dep_path and any(dep_path.startswith(host)
+                            for host in self.host_directories)
+
   def MatchesStackFrame(self, frame):
     """Returns true if this project matches the frame."""
     # Sometimes some marker information are in the frame.raw_file_path.
@@ -58,23 +76,21 @@ class Project(namedtuple('Project',
     # "https___googleplex-android.googlesource.com_a_platform_manifest.git/".
     # It can only be found in frame.raw_file_path, since the frame.file_path
     # has those kind of information stripped.
-    for path_regex in self.path_regexes:
-      if (frame.dep_path and frame.file_path and
-          path_regex.match(os.path.join(frame.dep_path, frame.file_path))):
+    if frame.dep_path and frame.file_path:
+      if self.MatchesFilePath(os.path.join(frame.dep_path, frame.file_path)):
         return True
 
-      if frame.raw_file_path and path_regex.match(frame.raw_file_path):
+    if frame.raw_file_path:
+      if self.MatchesFilePath(frame.raw_file_path):
         return True
 
     if frame.function:
-      for function_regex in self.function_regexes:
-        if function_regex.match(frame.function):
-          return True
+      if self.MatchesFunction(frame.function):
+        return True
 
     if frame.dep_path:
-      for host_directory in self.host_directories:
-        if frame.dep_path.startswith(host_directory):
-          return True
+      if self.MatchesDepPath(frame.dep_path):
+        return True
 
     return False
 

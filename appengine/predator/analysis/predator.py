@@ -21,6 +21,9 @@ class Predator(object): # pragma: no cover
 
     suspected_project = self.project_classifier.ClassifyCallStack(
         report.stacktrace.crash_stack) if report.stacktrace else ''
+    suspected_project = (
+        suspected_project or
+        self.project_classifier.ClassifyDepPath(report.root_repo_path))
 
     suspected_components = self.component_classifier.ClassifyCallStack(
         report.stacktrace.crash_stack) if report.stacktrace else []

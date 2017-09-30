@@ -16,7 +16,8 @@ from libs.gitiles.diff import ChangeType
 PROJECT_CONFIG = {
     'project_path_function_hosts': [
         ['android_os', ['googleplex-android/'], ['android.'], None],
-        ['chromium', None, ['org.chromium'], ['src']]
+        ['chromium', None, ['org.chromium'], ['src']],
+        ['v8', [], [], ['v8']]
     ],
     'non_chromium_project_rank_priority': {
         'android_os': '-1',
@@ -99,3 +100,9 @@ class ProjectClassifierTest(AnalysisTestCase):
 
     self.assertEqual(self.classifier.ClassifySuspects(
         [suspect1, suspect2, suspect3]), 'chromium-dep')
+
+  def testClassifyDepPath(self):
+    """Tests ``ClassifyDepPath`` classify a dep_path."""
+    self.assertEqual(self.classifier.ClassifyDepPath('src'), 'chromium')
+    self.assertEqual(self.classifier.ClassifyDepPath('v8'), 'v8')
+    self.assertEqual(self.classifier.ClassifyDepPath('dummy'), '')
