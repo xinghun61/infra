@@ -24,6 +24,11 @@ class Predator(object): # pragma: no cover
 
     suspected_components = self.component_classifier.ClassifyCallStack(
         report.stacktrace.crash_stack) if report.stacktrace else []
+    # If there is no components find in stacktrace, try to find component from
+    # the root repo, because the crash may be a component build crash.
+    suspected_components = (
+        suspected_components or
+        self.component_classifier.ClassifyRepoUrl(report.root_repo_url))
 
     return Culprit(project=suspected_project,
                    components=suspected_components,

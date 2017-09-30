@@ -31,6 +31,11 @@ COMPONENT_CONFIG = {
     'top_n': 4
 }
 
+_MOCK_REPO_TO_DEP_PATH = {
+    'https://chromium.git': 'src',
+    'https://chromium.v8.git': 'src/v8',
+}
+
 
 class ComponentClassifierTest(AnalysisTestCase):
   """Tests ``ComponentClassifier`` class."""
@@ -42,7 +47,8 @@ class ComponentClassifierTest(AnalysisTestCase):
                   for info in COMPONENT_CONFIG['component_info']]
     # Only construct the classifier once, rather than making a new one every
     # time we call a method on it.
-    self.classifier = ComponentClassifier(components, COMPONENT_CONFIG['top_n'])
+    self.classifier = ComponentClassifier(
+        components, COMPONENT_CONFIG['top_n'], _MOCK_REPO_TO_DEP_PATH)
 
   def testClassifyStackFrameEmptyFrame(self):
     """Tests that ``ClassifyStackFrame`` returns None for empty frame."""
@@ -55,55 +61,25 @@ class ComponentClassifierTest(AnalysisTestCase):
   def testClassifyCallStack(self):
     """Tests ``ClassifyCallStack`` method."""
     callstack = CallStack(
-        0, [StackFrame(0, 'src/', 'func', 'comp1/a.cc', 'src/comp1/a.cc', [2])])
+        0, [StackFrame(0, 'src/', 'func', 'comp1/a.cc', 'src/comp1/a.cc', [2],
+                       repo_url='https://chromium.git')])
     self.assertEqual(self.classifier.ClassifyCallStack(callstack),
                      ['Comp1>Dummy'])
 
     callstack = CallStack(
         0, [StackFrame(0, 'dummy/', 'no_func', 'comp2/a.cc',
-                       'dummy/comp2.cc', [32])])
+                       'dummy/comp2.cc', [32], repo_url='dummy_url')])
     self.assertEqual(self.classifier.ClassifyCallStack(callstack), [])
 
     crash_stack = CallStack(0, frame_list=[
-        StackFrame(0, 'src/', 'func', 'comp1/a.cc', 'src/comp1/a.cc', [2]),
-        StackFrame(1, 'src/', 'ff', 'comp1/a.cc', 'src/comp1/a.cc', [21]),
-        StackFrame(2, 'src/', 'func2', 'comp2/b.cc', 'src/comp2/b.cc', [8])])
+        StackFrame(0, 'src/', 'func', 'comp1/a.cc', 'src/comp1/a.cc', [2],
+                   repo_url='https://chromium.git'),
+        StackFrame(1, 'src/', 'ff', 'comp1/a.cc', 'src/comp1/a.cc', [21],
+                   repo_url='https://chromium.git'),
+        StackFrame(2, 'src/', 'func2', 'comp2/b.cc', 'src/comp2/b.cc', [8],
+                   repo_url='https://chromium.git')])
 
     self.assertEqual(self.classifier.ClassifyCallStack(crash_stack),
-                     ['Comp1>Dummy', 'Comp2>Dummy'])
-
-  def testClassifySuspect(self):
-    """Tests ``ClassifySuspect`` method."""
-    suspect = Suspect(self.GetDummyChangeLog(), 'src/')
-    suspect.changelog = suspect.changelog._replace(
-        touched_files = [FileChangeInfo(ChangeType.MODIFY,
-                                        'comp1/a.cc', 'comp1/b.cc')])
-    self.assertEqual(self.classifier.ClassifySuspect(suspect), ['Comp1>Dummy'])
-
-  def testClassifyEmptySuspect(self):
-    """Tests ``ClassifySuspect`` returns None for empty suspect."""
-    self.assertIsNone(self.classifier.ClassifySuspect(None))
-
-  def testClassifySuspectNoMatch(self):
-    """Tests ``ClassifySuspect`` returns None if there is no file match."""
-    suspect = Suspect(self.GetDummyChangeLog(), 'dummy')
-    suspect.changelog = suspect.changelog._replace(
-        touched_files = [FileChangeInfo(ChangeType.MODIFY,
-                                        'comp1.cc', 'comp1.cc')])
-    self.assertEqual(self.classifier.ClassifySuspect(suspect), [])
-
-  def testClassifySuspects(self):
-    """Tests ``ClassifySuspects`` classify a list of ``Suspect``s."""
-    suspect1 = Suspect(self.GetDummyChangeLog(), 'src/')
-    suspect1.changelog = suspect1.changelog._replace(
-        touched_files = [FileChangeInfo(ChangeType.MODIFY,
-                                        'comp1/a.cc', 'comp1/b.cc')])
-    suspect2 = Suspect(self.GetDummyChangeLog(), 'src/')
-    suspect2.changelog = suspect2.changelog._replace(
-        touched_files = [FileChangeInfo(ChangeType.MODIFY,
-                                        'comp2/a.cc', 'comp2/b.cc')])
-
-    self.assertEqual(self.classifier.ClassifySuspects([suspect1, suspect2]),
                      ['Comp1>Dummy', 'Comp2>Dummy'])
 
   def testMergeComponents(self):
@@ -130,6 +106,22 @@ class ComponentClassifierTest(AnalysisTestCase):
                   None, None),
         Component('Blink>JavaScript>GC', ['src/v8/src/heap'], None, None)]
 
-    classifier = ComponentClassifier(components, 3)
+    classifier = ComponentClassifier(components, 3, _MOCK_REPO_TO_DEP_PATH)
     self.assertEqual(classifier.ClassifyFilePath('src/v8/src/heap/a.cc'),
                      'Blink>JavaScript>GC')
+
+  def testClassifyTouchedFile(self):
+    """Tests ``ClassifyTouchedFile`` method."""
+    touched_file = FileChangeInfo(ChangeType.MODIFY, 'comp1/a.cc', 'comp1/b.cc')
+    self.assertEqual(self.classifier.ClassifyTouchedFile('src', touched_file),
+                     'Comp1>Dummy')
+
+  def testClassifyRepoUrl(self):
+    """Tests ``ClassifyRepoUrl`` method."""
+    components = [
+        Component('Blink>JavaScript', ['src/v8', 'src/v8/src/base/blabla...'],
+                  None, None)]
+
+    classifier = ComponentClassifier(components, 3, _MOCK_REPO_TO_DEP_PATH)
+    self.assertEqual(['Blink>JavaScript'],
+                     classifier.ClassifyRepoUrl('https://chromium.v8.git'))

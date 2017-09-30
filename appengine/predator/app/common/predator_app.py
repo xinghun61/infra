@@ -58,7 +58,8 @@ class PredatorApp(object):
                             info.get('function'), info.get('team'))
                   for info in config.component_classifier['component_info']]
     self._component_classifier = ComponentClassifier(
-        components, config.component_classifier['top_n'])
+        components, config.component_classifier['top_n'],
+        config.repo_to_dep_path)
 
     self._config = config
 

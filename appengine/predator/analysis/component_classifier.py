@@ -43,7 +43,7 @@ class ComponentClassifier(object):
   For example: ['Blink>DOM', 'Blink>HTML'].
   """
 
-  def __init__(self, components, top_n_frames):
+  def __init__(self, components, top_n_frames, repo_to_dep_path):
     """Build a classifier for components.
 
     Args:
@@ -54,6 +54,14 @@ class ComponentClassifier(object):
     super(ComponentClassifier, self).__init__()
     self.components = components or []
     self.top_n_frames = top_n_frames
+    self.repo_to_dep_path = repo_to_dep_path
+
+  def _RepoUrlToDepPath(self, repo_url):
+    repo_url_without_git = (repo_url[:-len('.git')] if repo_url.endswith('.git')
+                            else repo_url)
+    repo_url_git = repo_url_without_git + '.git'
+    return (self.repo_to_dep_path.get(repo_url_git) or
+            self.repo_to_dep_path.get(repo_url_without_git, ''))
 
   def ClassifyFilePath(self, file_path):
     """Determines which component is responsible for this file_path."""
@@ -70,10 +78,22 @@ class ComponentClassifier(object):
 
   def ClassifyStackFrame(self, frame):
     """Determines which component is responsible for this frame."""
-    if frame.dep_path is None or frame.file_path is None:
+    if not frame.dep_path or not frame.file_path:
       return None
 
-    file_path = os.path.join(frame.dep_path, frame.file_path)
+    dep_path = self._RepoUrlToDepPath(frame.repo_url) or frame.dep_path
+    file_path = os.path.join(dep_path, frame.file_path)
+    return self.ClassifyFilePath(file_path)
+
+  def ClassifyRepoUrl(self, repo_url):
+    """Determines which component is responsible for this repository."""
+    dep_path = self._RepoUrlToDepPath(repo_url)
+    component = self.ClassifyFilePath(dep_path + '/')
+    return [component] if component else []
+
+  def ClassifyTouchedFile(self, dep_path, touched_file):
+    """Determine which component is responsible for a touched file."""
+    file_path = os.path.join(dep_path, touched_file.changed_path)
     return self.ClassifyFilePath(file_path)
 
   # TODO(http://crbug.com/657177): return the Component objects
@@ -92,50 +112,3 @@ class ComponentClassifier(object):
     components = map(self.ClassifyStackFrame,
                      stack.frames[:self.top_n_frames])
     return MergeComponents(RankByOccurrence(components, top_n_components))
-
-  def ClassifyTouchedFile(self, dep_path, touched_file):
-    """Determine which component is responsible for a touched file."""
-    file_path = os.path.join(dep_path, touched_file.changed_path)
-    return self.ClassifyFilePath(file_path)
-
-  # TODO(http://crbug.com/657177): return the Component objects
-  # themselves, rather than strings naming them.
-  def ClassifySuspects(self, suspects, top_n_components=2):
-    """Classifies component of a list of suspects.
-
-    Args:
-      suspects (list of Suspect): Culprit suspects.
-      top_n_components (int): The number of top components for the stack,
-        defaults to 2.
-
-    Returns:
-      List of top 2 components.
-    """
-    components = []
-    for suspect in suspects:
-      components.extend(self.ClassifySuspect(suspect))
-
-    return MergeComponents(RankByOccurrence(
-        components, top_n_components,
-        rank_function=lambda x: -len(x)))
-
-  def ClassifySuspect(self, suspect, top_n_components=2):
-    """ Classifies components of a suspect.
-
-    Args:
-      suspect (Suspect): a change log
-      top_n_components (int): number of components assigned to this suspect,
-        defaults to 2.
-
-    Returns:
-      List of components
-    """
-    if not suspect or not suspect.changelog:
-      return None
-
-    classify_touched_file_func = functools.partial(self.ClassifyTouchedFile,
-                                                    suspect.dep_path)
-    components = map(classify_touched_file_func,
-                     suspect.changelog.touched_files)
-    return RankByOccurrence(components, top_n_components,
-                            rank_function=lambda x: -len(x))

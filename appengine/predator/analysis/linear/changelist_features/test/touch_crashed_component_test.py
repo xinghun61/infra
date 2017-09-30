@@ -63,6 +63,11 @@ _DUMMY_CHANGELOG = ChangeLog.FromDict({
     'reverted_revision': None
 })
 
+_MOCK_REPO_TO_DEP_PATH = {
+    'https://chromium.git': 'src',
+    'https://chromium.v8.git': 'src/v8',
+}
+
 
 class TouchCrashedComponentFeatureTest(AnalysisTestCase):
   """Tests ``TouchCrashedComponentFeature``."""
@@ -74,7 +79,8 @@ class TouchCrashedComponentFeatureTest(AnalysisTestCase):
                   for info in COMPONENT_CONFIG['component_info']]
     # Only construct the classifier once, rather than making a new one every
     # time we call a method on it.
-    self.classifier = ComponentClassifier(components, COMPONENT_CONFIG['top_n'])
+    self.classifier = ComponentClassifier(components, COMPONENT_CONFIG['top_n'],
+                                          _MOCK_REPO_TO_DEP_PATH)
     self.feature = TouchCrashedComponentFeature(self.classifier)
 
   def testFeatureValueIsOneWhenThereIsMatchedComponent(self):
