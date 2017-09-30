@@ -74,6 +74,12 @@ class AnalysisTestCase(BaseTestCase):  #pragma: no cover.
       job_type='android_asan', sanitizer='ASAN', dependencies=None,
       dependency_rolls=None, redo=False, security_flag=False):
     crash_identifiers = {'testcase_id': testcase_id}
+    regression_range = regression_range or {
+        'dep_path': 'src',
+        'repo_url': 'https://chromium.git',
+        'old_revision': '3',
+        'new_revision': '9',
+    }
     customized_data = {
         'crash_type': crash_type,
         'crash_address': crash_address,

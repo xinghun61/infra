@@ -7,6 +7,8 @@ import math
 import re
 
 from analysis import parse_util
+from analysis.constants import CHROMIUM_ROOT_PATH
+from analysis.constants import CHROMIUM_REPO_URL
 from analysis.type_enums import CallStackFormatType
 from analysis.type_enums import LanguageType
 
@@ -233,7 +235,8 @@ class StackFrame(namedtuple('StackFrame',
   # derieved or replaced by formate_type.
   @staticmethod
   def Parse(language_type, format_type, line, deps,
-            default_stack_frame_index=None):
+            default_stack_frame_index=None,
+            root_path=None, root_repo_url=None):
     """Parse line into a StackFrame instance, if possible.
 
     Args:
@@ -247,6 +250,8 @@ class StackFrame(namedtuple('StackFrame',
     Returns:
       A ``StackFrame`` or ``None``.
     """
+    root_path = root_path or CHROMIUM_ROOT_PATH
+    root_repo_url = root_repo_url or CHROMIUM_REPO_URL
     # TODO(wrengr): how can we avoid duplicating this logic from ``CallStack``?
     format_type = format_type or _DEFAULT_FORMAT_TYPE
 
@@ -296,7 +301,8 @@ class StackFrame(namedtuple('StackFrame',
           match.group(2) + (match.group(3) if match.group(3) else ''))
     # Normalize the file path so that it can be compared to repository path.
     dep_path, file_path, repo_url = parse_util.GetDepPathAndNormalizedFilePath(
-        raw_file_path, deps, language_type == LanguageType.JAVA)
+        raw_file_path, deps, language_type == LanguageType.JAVA,
+        root_path=root_path, root_repo_url=root_repo_url)
 
     # If we have the common stack frame index pattern, then use it
     # since it is more reliable.

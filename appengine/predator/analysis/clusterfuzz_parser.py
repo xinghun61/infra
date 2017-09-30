@@ -86,7 +86,7 @@ class ClusterfuzzParser(object):
 
   def Parse(self, stacktrace_string, deps, job_type,
             crash_type, signature=None, top_n_frames=None,
-            crash_address=None):
+            crash_address=None, root_path=None, root_repo_url=None):
     """Parse clusterfuzz stacktrace string into Stacktrace instance."""
     filters = [FilterJavaJreSdkFrames(),
                KeepV8FramesIfV8GeneratedJITCrash(),
@@ -118,7 +118,8 @@ class ClusterfuzzParser(object):
       else:
         frame = StackFrame.Parse(stack_buffer.language_type,
                                  stack_buffer.format_type, line, deps,
-                                 len(stack_buffer.frames))
+                                 len(stack_buffer.frames), root_path=root_path,
+                                 root_repo_url=root_repo_url)
         if frame is not None:
           stack_buffer.frames.append(frame)
         # Turn on flags if condition met.

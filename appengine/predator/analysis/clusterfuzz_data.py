@@ -51,10 +51,10 @@ class ClusterfuzzData(CrashData):
           'customized_data': {
               # The regression range (right now for most crashes, it is chromium
               # regression ranges).
-              'regression_range': [
-                  'a6537f98f55d016e1d37dd60679253eb6e6ff8e8',
-                  'b63c7f98f55d016e1d37dd60679253eb6e6ff8e8'
-              ],
+              'regression_range': {'dep_path': 'src/',
+                   'repo_url': 'https://chromium.googlesource.com/cr/src/',
+                   'old_revision': 'a6537f9...'
+                   'new_revision': 'b63c7f9...'},
               # All related crashed dependencies.
               'dependencies': [
                   # dependency information - [dep_path, repo_url, revision]
@@ -151,7 +151,9 @@ class ClusterfuzzData(CrashData):
     stacktrace = ClusterfuzzParser().Parse(
         self._raw_stacktrace, self.dependencies, self.job_type,
         self.crash_type, signature=self.signature,
-        top_n_frames=self._top_n_frames, crash_address=self.crash_address)
+        top_n_frames=self._top_n_frames, crash_address=self.crash_address,
+        root_path=self.regression_repository['dep_path'],
+        root_repo_url=self.regression_repository['repo_url'])
     if not stacktrace:
       logging.warning('Failed to parse the stacktrace %s',
                       self._raw_stacktrace)
