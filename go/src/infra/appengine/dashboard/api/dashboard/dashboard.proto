@@ -43,6 +43,7 @@ message ChopsIncident {
   int64 start_time = 3;
   int64 end_time = 4;
   Severity severity = 5;
+  string incident_link = 6;
 }
 
 message ChopsService {

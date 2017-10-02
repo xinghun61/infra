@@ -19,31 +19,33 @@ import (
 
 var baseTime = time.Date(2017, time.April, 11, 23, 0, 0, 0, time.UTC)
 var serviceIncOne = backend.ServiceIncident{
-	ID:        "idRedOne",
+	ID:        "0.kh5wxqhhu9dx",
 	Open:      false,
 	StartTime: baseTime.AddDate(0, 0, -4),
 	EndTime:   baseTime.AddDate(0, 0, -3),
 	Severity:  backend.SeverityRed,
 }
 var chopsIncOne = &dashpb.ChopsIncident{
-	Id:        serviceIncOne.ID,
-	Open:      serviceIncOne.Open,
-	StartTime: serviceIncOne.StartTime.Unix(),
-	EndTime:   serviceIncOne.EndTime.Unix(),
-	Severity:  dashpb.Severity(int(serviceIncOne.Severity)),
+	Id:           serviceIncOne.ID,
+	Open:         serviceIncOne.Open,
+	StartTime:    serviceIncOne.StartTime.Unix(),
+	EndTime:      serviceIncOne.EndTime.Unix(),
+	Severity:     dashpb.Severity(int(serviceIncOne.Severity)),
+	IncidentLink: "http://a/i/2695189489298440197",
 }
 var serviceIncTwo = backend.ServiceIncident{
-	ID:        "idYellowTwo",
+	ID:        "0.kh5wxqhhu9e0",
 	Open:      true,
 	StartTime: baseTime,
 	Severity:  backend.SeverityYellow,
 }
 var chopsIncTwo = &dashpb.ChopsIncident{
-	Id:        serviceIncTwo.ID,
-	Open:      serviceIncTwo.Open,
-	StartTime: serviceIncTwo.StartTime.Unix(),
-	EndTime:   0,
-	Severity:  dashpb.Severity(int(serviceIncTwo.Severity)),
+	Id:           serviceIncTwo.ID,
+	Open:         serviceIncTwo.Open,
+	StartTime:    serviceIncTwo.StartTime.Unix(),
+	EndTime:      0,
+	Severity:     dashpb.Severity(int(serviceIncTwo.Severity)),
+	IncidentLink: "http://a/i/2695189489298440200",
 }
 var serviceIncidents = []backend.ServiceIncident{serviceIncOne, serviceIncTwo}
 var service = backend.Service{
@@ -67,6 +69,7 @@ var emptyChopsService = dashpb.ChopsService{
 }
 
 func TestConvertToChopsIncident(t *testing.T) {
+	ctx := newTestContext()
 	testCases := []struct {
 		serviceIncident *backend.ServiceIncident
 		chopsIncident   *dashpb.ChopsIncident
@@ -81,7 +84,7 @@ func TestConvertToChopsIncident(t *testing.T) {
 		},
 	}
 	for i, tc := range testCases {
-		convertedInc := ConvertToChopsIncident(tc.serviceIncident)
+		convertedInc := ConvertToChopsIncident(ctx, tc.serviceIncident)
 		if !reflect.DeepEqual(tc.chopsIncident, convertedInc) {
 			t.Errorf("%d: expected %+v, found %+v", i, tc.chopsIncident, convertedInc)
 		}
@@ -89,6 +92,7 @@ func TestConvertToChopsIncident(t *testing.T) {
 }
 
 func TestConvertToChopsService(t *testing.T) {
+	ctx := newTestContext()
 	testCases := []struct {
 		service          *backend.Service
 		serviceIncidents []backend.ServiceIncident
@@ -105,7 +109,7 @@ func TestConvertToChopsService(t *testing.T) {
 		},
 	}
 	for i, tc := range testCases {
-		convertedService := ConvertToChopsService(tc.service, tc.serviceIncidents)
+		convertedService := ConvertToChopsService(ctx, tc.service, tc.serviceIncidents)
 		if !reflect.DeepEqual(tc.chopsService, convertedService) {
 			t.Errorf("%d: expected %+v, found %+v", i, tc.chopsService, convertedService)
 		}

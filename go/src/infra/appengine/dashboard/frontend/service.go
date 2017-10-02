@@ -77,12 +77,12 @@ func (s *dashboardService) GetAllServicesData(ctx context.Context, req *dashpb.G
 	}
 	chopsServices := make([]*dashpb.ChopsService, len(slaTemplateService))
 	for i, templateService := range slaTemplateService {
-		chopsServices[i] = ConvertToChopsService(&templateService.Service, templateService.Incidents)
+		chopsServices[i] = ConvertToChopsService(ctx, &templateService.Service, templateService.Incidents)
 	}
 
 	nonSLAChopsServices := make([]*dashpb.ChopsService, len(nonSLATemplateService))
 	for i, templateService := range nonSLATemplateService {
-		nonSLAChopsServices[i] = ConvertToChopsService(&templateService.Service, templateService.Incidents)
+		nonSLAChopsServices[i] = ConvertToChopsService(ctx, &templateService.Service, templateService.Incidents)
 	}
 
 	return &dashpb.GetAllServicesDataResponse{
