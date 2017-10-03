@@ -5,7 +5,7 @@
 import time
 import urllib
 
-_NO_RETRY_CODE = [200, 302, 401, 403, 404, 409, 501]
+from libs.http.interceptor import LoggingInterceptor
 
 
 class RetryHttpClient(object):
@@ -14,10 +14,13 @@ class RetryHttpClient(object):
   Subclasses should implement abstract functions below.
   """
 
-  def __init__(self, no_error_logging_statuses=None):
+  def __init__(self,
+               no_error_logging_statuses=None,
+               interceptor=LoggingInterceptor()):
     # If an http request results in the given statuses, the subclasses should
     # not log an error.
     self.no_error_logging_statuses = no_error_logging_statuses
+    self.interceptor = interceptor
 
   def _Get(self, url, timeout_seconds, headers):  # pylint: disable=W0613, R0201
     """Sends the actual HTTP GET request.
@@ -75,21 +78,50 @@ class RetryHttpClient(object):
     if params and method == 'GET':
       url = '%s?%s' % (url, urllib.urlencode(params))
 
+    if self.interceptor:
+      request = {'url': url, 'headers': headers or {}}
+      request = self.interceptor.OnRequest(request)
+
+      # Inject auth-headers.
+      request['headers'].update(
+          self.interceptor.GetAuthenticationHeaders(request))
+
+      url = request.get('url')
+      headers = request.get('headers')
+
+    # Default values in case retries are exhausted with retriable exception.
+    status_code = 0
+    content = ""
+
     tries = 0
     while tries < max_retries:
       tries += 1
 
-      if method == 'POST':
-        status_code, content = self._Post(url, data, timeout_seconds, headers)
-      elif method == 'PUT':
-        status_code, content = self._Put(url, data, timeout_seconds, headers)
-      else:
-        status_code, content = self._Get(url, timeout_seconds, headers)
+      try:
+        if method == 'POST':
+          status_code, content = self._Post(url, data, timeout_seconds, headers)
+        elif method == 'PUT':
+          status_code, content = self._Put(url, data, timeout_seconds, headers)
+        else:
+          status_code, content = self._Get(url, timeout_seconds, headers)
 
-      if status_code in _NO_RETRY_CODE:
-        break
-      else:
-        time.sleep(self.GetBackoff(retry_backoff, tries))
+        retry = False
+        if self.interceptor:
+          response, retry = self.interceptor.OnResponse(
+              request, {'status_code': status_code,
+                        'content': content})
+          status_code, content = response.get('status_code'), response.get(
+              'content')
+
+        if not retry:
+          break
+      except Exception as e:
+        if self.interceptor:
+          e = self.interceptor.OnException(request, e)
+        if e is not None:
+          raise e
+
+      time.sleep(self.GetBackoff(retry_backoff, tries))
 
     return status_code, content
 

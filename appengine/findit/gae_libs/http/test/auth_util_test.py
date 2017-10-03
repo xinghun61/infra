@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import mock
 import unittest
 
@@ -9,6 +10,7 @@ from google.appengine.api import oauth
 from google.appengine.api import users
 
 from gae_libs.http import auth_util
+from gae_libs.http import http_client_appengine
 
 
 class AuthUtilTest(unittest.TestCase):
@@ -128,3 +130,17 @@ class AuthUtilTest(unittest.TestCase):
         'login_url': 'http://login',
     }
     self.assertEqual(expected_info, auth_util.GetUserInfo())
+
+  @mock.patch.object(
+      auth_util.app_identity, 'get_access_token', return_value=('abc', 123))
+  def testAuthenticatingInterceptor(self, _):
+
+    class HeaderReturningHttpClient(http_client_appengine.HttpClientAppengine):
+
+      def _Get(self, _url, _timeout_seconds, headers):
+        return 200, json.dumps(headers)
+
+    client = HeaderReturningHttpClient(
+        interceptor=auth_util.AuthenticatingInterceptor())
+    _status, content = client.Get('https://codereview.chromium.org/api')
+    self.assertEqual('{"Authorization": "Bearer abc"}', content)

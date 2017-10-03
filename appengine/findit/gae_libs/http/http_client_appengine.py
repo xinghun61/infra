@@ -16,12 +16,13 @@ class HttpClientAppengine(RetryHttpClient):
 
   def __init__(self,
                follow_redirects=True,
-               authenticator=auth_util.Authenticator(),
+               interceptor=auth_util.AuthenticatingInterceptor(),
                *args,
                **kwargs):
-    super(HttpClientAppengine, self).__init__(*args, **kwargs)
+    """Create a new client suitable for use within the app engine app."""
+    super(HttpClientAppengine, self).__init__(
+        interceptor=interceptor, *args, **kwargs)
     self.follow_redirects = follow_redirects
-    self.authenticator = authenticator
 
   def _ShouldLogError(self, status_code):
     if status_code == 200:
@@ -31,11 +32,7 @@ class HttpClientAppengine(RetryHttpClient):
     return status_code not in self.no_error_logging_statuses
 
   def _SendRequest(self, url, method, data, timeout, headers=None):
-    # We wanted to validate certificate to avoid the man in the middle.
     headers = headers or {}
-
-    # For google hosts, add Oauth2.0 token to authenticate the requests.
-    headers.update(self.authenticator.GetHttpHeadersFor(url))
 
     result = urlfetch.fetch(
         url,

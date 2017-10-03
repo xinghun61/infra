@@ -55,9 +55,10 @@ class MockTryJob(object):
 
 class SwarmingHttpClient(RetryHttpClient):
 
-  def __init__(self):
+  def __init__(self, interceptor=None):
     self.get_responses = dict()
     self.post_responses = dict()
+    self.interceptor = interceptor
 
   def _GetData(self, data_type, file_name=None):
     file_name_map = {
@@ -140,9 +141,10 @@ class SwarmingHttpClient(RetryHttpClient):
 
 class _LoggedHttpClient(RetryHttpClient):
 
-  def __init__(self):
+  def __init__(self, interceptor=None):
     self.responses = collections.defaultdict(dict)
     self.requests = {}
+    self.interceptor = interceptor
 
   def _Get(self, url, _, headers):
     self.requests[url] = ('get', None, headers)

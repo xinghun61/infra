@@ -2,11 +2,24 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+import mock
 import urllib
 
 from testing_utils import testing
 
 from libs.http import retry_http_client
+from libs.http.interceptor import LoggingInterceptor
+
+
+class RetryRuntimeErrorInterceptor(LoggingInterceptor):
+
+  def OnException(self, request, exception):
+    exception = super(RetryRuntimeErrorInterceptor, self).OnException(
+        request, exception)
+    if type(exception) == RuntimeError:
+      return None
+    return exception
 
 
 class DummyHttpClient(retry_http_client.RetryHttpClient):
@@ -22,6 +35,11 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
     return 0
 
   def _Get(self, url, timeout_seconds, headers=None):
+    if 'runtimeerror' in url:
+      raise RuntimeError(url)
+    elif 'exception' in url:
+      raise Exception(url)
+
     self.requests.append({
         'url': url,
         'timeout_seconds': timeout_seconds,
@@ -120,6 +138,15 @@ class HttpClientTest(testing.AppengineTestCase):
     self.assertEquals(503, status_code)
     self.assertEquals('failure - GET', content)
 
+  def testFailedRequestWithNoInterceptor(self):
+    dummy_http_client = DummyHttpClient(5, 503)
+    dummy_http_client.interceptor = None
+    status_code, content = dummy_http_client.Get(
+        'http://test', max_retries=2, retry_backoff=0.01)
+    self.assertEquals(1, dummy_http_client.request_count)
+    self.assertEquals(503, status_code)
+    self.assertEquals('failure - GET', content)
+
   def testNoRetryForSpecificHttpStatusCode(self):
     for expected_status_code in (302, 401, 403, 404, 501):
       dummy_http_client = DummyHttpClient(20000000, expected_status_code)
@@ -187,3 +214,26 @@ class HttpClientTest(testing.AppengineTestCase):
     self.assertEquals(3, dummy_http_client.request_count)
     self.assertEquals(503, status_code)
     self.assertEquals('failure - PUT', content)
+
+  @mock.patch.object(logging, 'exception')
+  def testRetriableException(self, mock_logging):
+    dummy_http_client = DummyHttpClient(0, 404)
+    dummy_http_client.interceptor = RetryRuntimeErrorInterceptor()
+    status_code, content = dummy_http_client.Get('http://runtimeerror')
+    self.assertFalse(status_code)
+    self.assertFalse(content)
+    self.assertEqual(5, len(mock_logging.call_args_list))
+
+  @mock.patch.object(logging, 'exception')
+  def testNonRetriableException(self, mock_logging):
+    dummy_http_client = DummyHttpClient(0, 404)
+    dummy_http_client.interceptor = RetryRuntimeErrorInterceptor()
+    with self.assertRaises(Exception):
+      _status_code, _content = dummy_http_client.Get('http://exception')
+    self.assertEqual(1, len(mock_logging.call_args_list))
+
+  def testNonRetriableExceptionWithInterceptor(self):
+    dummy_http_client = DummyHttpClient(0, 404)
+    dummy_http_client.interceptor = None
+    with self.assertRaises(Exception):
+      _status_code, _content = dummy_http_client.Get('http://exception')

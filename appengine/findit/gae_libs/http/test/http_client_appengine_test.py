@@ -40,7 +40,8 @@ class HttpClientAppengineTest(unittest.TestCase):
     mocked_fetch.side_effect = [
         _Result(status_code=200, content='OK', headers={})
     ]
-    status_code, content = client._Get('https://test', timeout, headers)
+    status_code, content = client.Get(
+        'https://test', None, timeout, headers=headers)
 
     self.assertEqual(200, status_code)
     self.assertEqual('OK', content)
@@ -65,17 +66,18 @@ class HttpClientAppengineTest(unittest.TestCase):
     timeout = 60
     client = http_client_appengine.HttpClientAppengine()
     mocked_fetch.side_effect = [
-        _Result(status_code=500, content='E', headers={})
+        _Result(status_code=500, content='E', headers={}),
+        _Result(status_code=200, content='P', headers={})
     ]
-    status_code, content = client._Post('https://test', 'data', timeout,
-                                        headers)
+    status_code, content = client.Post(
+        'https://test', 'data', timeout, headers=headers)
 
-    self.assertEqual(500, status_code)
-    self.assertEqual('E', content)
-    mocked_GetHttpHeadersFor.assert_called_once_with('https://test')
+    self.assertEqual(200, status_code)
+    self.assertEqual('P', content)
+    mocked_GetHttpHeadersFor.assert_called_with('https://test')
 
     expected_headers = {'a': 'a', 'auth': 'key'}
-    mocked_fetch.assert_called_once_with(
+    mocked_fetch.assert_called_with(
         'https://test',
         payload='data',
         method=urlfetch.POST,
@@ -96,7 +98,8 @@ class HttpClientAppengineTest(unittest.TestCase):
     mocked_fetch.side_effect = [
         _Result(status_code=200, content='OK', headers={'n': 'v'})
     ]
-    status_code, content = client._Put('https://test', 'data', timeout, headers)
+    status_code, content = client.Put(
+        'https://test', 'data', timeout, headers=headers)
 
     self.assertEqual(200, status_code)
     self.assertEqual('OK', content)
@@ -106,6 +109,34 @@ class HttpClientAppengineTest(unittest.TestCase):
         'https://test',
         payload='data',
         method=urlfetch.PUT,
+        headers=headers,
+        deadline=timeout,
+        follow_redirects=True,
+        validate_certificate=True)
+
+  @mock.patch.object(
+      http_client_appengine.auth_util.Authenticator,
+      'GetHttpHeadersFor',
+      return_value={})
+  @mock.patch.object(http_client_appengine.urlfetch, 'fetch')
+  def testGetNoAuth(self, mocked_fetch, mocked_GetHttpHeadersFor):
+    headers = {'a': 'a'}
+    timeout = 60
+    client = http_client_appengine.HttpClientAppengine(interceptor=None)
+    mocked_fetch.side_effect = [
+        _Result(status_code=200, content='OK', headers={})
+    ]
+    status_code, content = client.Get(
+        'https://test', None, timeout, headers=headers)
+
+    self.assertEqual(200, status_code)
+    self.assertEqual('OK', content)
+    mocked_GetHttpHeadersFor.not_called()
+
+    mocked_fetch.assert_called_once_with(
+        'https://test',
+        payload=None,
+        method=urlfetch.GET,
         headers=headers,
         deadline=timeout,
         follow_redirects=True,

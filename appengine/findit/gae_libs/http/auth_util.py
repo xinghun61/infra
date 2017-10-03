@@ -10,6 +10,8 @@ from google.appengine.api import oauth
 from google.appengine.api import users
 from google.appengine.api.app_identity import app_identity
 
+from libs.http.interceptor import LoggingInterceptor
+
 _EMAIL_SCOPE = 'https://www.googleapis.com/auth/userinfo.email'
 _HOST_REGEX_TO_SCOPES = [
     (
@@ -97,3 +99,10 @@ def GetUserInfo(url='/'):
   else:
     info['login_url'] = GetLoginUrl(url)
   return info
+
+
+class AuthenticatingInterceptor(LoggingInterceptor):
+  """Interceptor that injects auth header to http requests."""
+
+  def GetAuthenticationHeaders(self, request):
+    return Authenticator().GetHttpHeadersFor(request.get('url'))
