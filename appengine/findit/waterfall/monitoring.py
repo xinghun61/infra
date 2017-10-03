@@ -57,3 +57,10 @@ culprit_found = gae_ts_mon.CounterMetric(
         #   revert_status_error, commit_error, culprit_notified.
         gae_ts_mon.StringField('action_taken')
     ])
+
+flake_analyses = gae_ts_mon.CounterMetric(
+    'findit/flake-analyses', 'Flake analyses completed by findit', [
+        gae_ts_mon.StringField('result'),
+        gae_ts_mon.StringField('action_taken'),
+        gae_ts_mon.StringField('reason'),
+    ])

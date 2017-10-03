@@ -266,3 +266,94 @@ class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
         mock.call().getIssue(123),
         mock.call().update(dummy_issue, mock.ANY, send_email=True)
     ])
+
+  @mock.patch('google.appengine.api.app_identity.get_application_id',
+              lambda: 'findit-for-me')
+  @mock.patch('waterfall.flake.update_flake_bug_pipeline.IssueTrackerAPI')
+  def testBugUpdatedWithCulpritFound(self, issue_tracker):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.bug_id = 123
+    analysis.suspected_flake_build_number = 1
+    analysis.confidence_in_culprit = 0.6713
+    analysis.algorithm_parameters = {'update_monorail_bug': True}
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    culprit = FlakeCulprit.Create('c', 'r', 123, 'http://')
+    culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
+    culprit.put()
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.put()
+
+    dummy_issue = Issue({})
+    mocked_instance = mock.Mock()
+    mocked_instance.getIssue.return_value = dummy_issue
+    issue_tracker.return_value = mocked_instance
+    pipeline = update_flake_bug_pipeline.UpdateFlakeBugPipeline()
+    self.assertTrue(pipeline.run(analysis.key.urlsafe()))
+    issue_tracker.assert_has_calls([
+        mock.call('chromium', use_staging=False),
+        mock.call().getIssue(123),
+        mock.call().update(dummy_issue, mock.ANY, send_email=True)
+    ])
+
+  @mock.patch('waterfall.flake.update_flake_bug_pipeline.IssueTrackerAPI')
+  def testBugNotUpdatedWithCulpritFoundIfBUpdateDisabled(self, issue_tracker):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.bug_id = 123
+    analysis.suspected_flake_build_number = 1
+    analysis.confidence_in_culprit = 0.6713
+    analysis.algorithm_parameters = {'update_monorail_bug': False}
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    culprit = FlakeCulprit.Create('c', 'r', 123, 'http://')
+    culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
+    culprit.put()
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.put()
+
+    dummy_issue = Issue({})
+    pipeline = update_flake_bug_pipeline.UpdateFlakeBugPipeline()
+    self.assertFalse(pipeline.run(analysis.key.urlsafe()))
+    issue_tracker.assert_not_called()
+
+  @mock.patch('google.appengine.api.app_identity.get_application_id',
+              lambda: 'findit-for-me')
+  @mock.patch('waterfall.flake.update_flake_bug_pipeline.IssueTrackerAPI')
+  def testNoUpdateWithCulpritIfBugDeleted(self, issue_tracker):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.suspected_flake_build_number = 1
+    analysis.confidence_in_suspected_build = 0.7
+    analysis.bug_id = 123
+    analysis.algorithm_parameters = {'update_monorail_bug': True}
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    culprit = FlakeCulprit.Create('c', 'r', 123, 'http://')
+    culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
+    culprit.put()
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.put()
+
+    mocked_instance = mock.Mock()
+    mocked_instance.getIssue.return_value = None
+    issue_tracker.return_value = mocked_instance
+    pipeline = update_flake_bug_pipeline.UpdateFlakeBugPipeline()
+    self.assertFalse(pipeline.run(analysis.key.urlsafe()))
+    issue_tracker.assert_has_calls(
+        [mock.call('chromium', use_staging=False),
+         mock.call().getIssue(123)])
+
+  def testNoUpdateWithCulpritIfNoBugId(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
+    analysis.status = analysis_status.COMPLETED
+    analysis.suspected_flake_build_number = 1
+    analysis.confidence_in_suspected_build = 0.7
+    analysis.algorithm_parameters = {'update_monorail_bug': True}
+    analysis.data_points = [DataPoint(), DataPoint(), DataPoint()]
+    culprit = FlakeCulprit.Create('c', 'r', 123, 'http://')
+    culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
+    culprit.put()
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.put()
+
+    pipeline = update_flake_bug_pipeline.UpdateFlakeBugPipeline()
+    self.assertFalse(pipeline.run(analysis.key.urlsafe()))

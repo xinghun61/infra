@@ -92,32 +92,83 @@ def _LogBugNotUpdated(reason):
 def _ShouldUpdateBugForAnalysis(analysis):
   if analysis.error:
     _LogBugNotUpdated('error in analysis: %s' % analysis.error.get('message'))
+    monitoring.flake_analyses.increment({
+        'result': 'culprit-not-identified',
+        'action_taken': 'none',
+        'reason': 'error',
+    })
     return False
 
   if not analysis.completed:
+    monitoring.flake_analyses.increment({
+        'result': 'culprit-not-identified',
+        'action_taken': 'none',
+        'reason': 'analysis-incomplete',
+    })
     _LogBugNotUpdated('completed=%s' % analysis.completed)
     return False
 
   if not analysis.bug_id:
     _LogBugNotUpdated('bug=%s' % analysis.bug_id)
+    if analysis.culprit_urlsafe_key:
+      monitoring.flake_analyses.increment({
+          'result': 'culprit-identified',
+          'action_taken': 'none',
+          'reason': 'no-bug-to-update',
+      })
+    else:
+      monitoring.flake_analyses.increment({
+          'result': 'culprit-not-identified',
+          'action_taken': 'none',
+          'reason': 'no-bug-to-update',
+      })
     return False
 
   if len(analysis.data_points) < 2:
     _LogBugNotUpdated('%d data points' % len(analysis.data_points))
+    monitoring.flake_analyses.increment({
+        'result': 'culprit-not-identified',
+        'action_taken': 'none',
+        'reason': 'insufficient-datapoints',
+    })
     return False
 
   if analysis.suspected_flake_build_number is None:
     _LogBugNotUpdated('no regression range identifed')
+    monitoring.flake_analyses.increment({
+        'result': 'culprit-not-identified',
+        'action_taken': 'none',
+        'reason': 'no-regression-range-indentified',
+    })
     return False
 
   if not analysis.algorithm_parameters.get('update_monorail_bug'):
     _LogBugNotUpdated('update_monorail_bug not set or is False')
+    if analysis.culprit_urlsafe_key:
+      monitoring.flake_analyses.increment({
+          # There is a culprit, but updating bugs is disabled.
+          'result': 'culprit-identified',
+          'action_taken': 'none',
+          'reason': 'update-bug-disabled',
+      })
+    else:
+      monitoring.flake_analyses.increment({
+          # There is a culprit, but updating bugs is disabled.
+          'result': 'culprit-not-identified',
+          'action_taken': 'none',
+          'reason': 'update-bug-disabled',
+      })
     return False
 
   if (not analysis.culprit_urlsafe_key and
       analysis.confidence_in_suspected_build < analysis.algorithm_parameters.
       get('minimum_confidence_score_to_run_tryjobs')):
     _LogBugNotUpdated('insufficient confidence in suspected build')
+    monitoring.flake_analyses.increment({
+        'result': 'culprit-not-identified',
+        'action_taken': 'none',
+        'reason': 'insufficient-confidence',
+    })
     return False
 
   return True
@@ -146,6 +197,13 @@ class UpdateFlakeBugPipeline(BasePipeline):
     if not issue:
       logging.warn('Bug %s/%s or the merged-into one seems deleted!',
                    project_name, analysis.bug_id)
+      if analysis.culprit_urlsafe_key:
+        monitoring.flake_analyses.increment({
+            # There is a culprit, but there is no bug to update.
+            'result': 'culprit-identified',
+            'action_taken': 'none',
+            'reason': 'missing-bug-not-updated',
+        })
       return False
 
     comment = _GenerateComment(analysis)
@@ -157,6 +215,12 @@ class UpdateFlakeBugPipeline(BasePipeline):
       issue.labels.append(_FINDIT_ANALYZED_LABEL_TEXT)
 
     monitoring.issues.increment({'operation': 'update', 'category': 'flake'})
+    if analysis.culprit_urlsafe_key:
+      monitoring.flake_analyses.increment({
+          'result': 'culprit-identified',
+          'action_taken': 'bug-updated',
+          'reason': ''
+      })
 
     issue_tracker.update(issue, comment, send_email=True)
     logging.info('Bug %s/%s was updated.', project_name, analysis.bug_id)
