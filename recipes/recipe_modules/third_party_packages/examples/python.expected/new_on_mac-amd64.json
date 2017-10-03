@@ -897,6 +897,81 @@
     ]
   },
   {
+    "cmd": [],
+    "cwd": "[START_DIR]/python/checkout",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
+    "name": "autoconf-2.69"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[START_DIR]/python/_support/autoconf-2.69"
+    ],
+    "cwd": "[START_DIR]/python/checkout",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
+    "infra_step": true,
+    "name": "autoconf-2.69.makedirs workdir",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[infra::third_party_packages]/resources/archive_util.py",
+      "[START_DIR]/python/_support/sources/autoconf-2.69.tar.gz",
+      "[START_DIR]/python/_support/autoconf-2.69"
+    ],
+    "cwd": "[START_DIR]/python/_support/autoconf-2.69",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
+    "name": "autoconf-2.69.extract",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "./configure",
+      "--prefix=[START_DIR]/python/_support/autoconf-2.69/prefix"
+    ],
+    "cwd": "[START_DIR]/python/_support/autoconf-2.69/autoconf-2.69",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
+    "name": "autoconf-2.69.configure",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "make",
+      "install"
+    ],
+    "cwd": "[START_DIR]/python/_support/autoconf-2.69/autoconf-2.69",
+    "env": {
+      "MACOSX_DEPLOYMENT_TARGET": "10.6"
+    },
+    "name": "autoconf-2.69.make",
+    "~followup_annotations": [
+      "@@@STEP_NEST_LEVEL@1@@@"
+    ]
+  },
+  {
     "cmd": [
       "autoconf"
     ],
@@ -906,7 +981,8 @@
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
       ]
     },
     "name": "generate configure"
@@ -929,7 +1005,8 @@
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
       ]
     },
     "infra_step": true,
@@ -956,7 +1033,8 @@
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
       ]
     },
     "name": "configure bootstrap"
@@ -974,7 +1052,8 @@
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
       ]
     },
     "name": "make bootstrap"
@@ -1002,7 +1081,8 @@
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
       ]
     },
     "name": "configure"
@@ -1022,7 +1102,8 @@
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
       ]
     },
     "name": "make platform"
@@ -1064,7 +1145,8 @@
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
       ]
     },
     "name": "static modules"
@@ -1080,7 +1162,8 @@
     },
     "env_prefixes": {
       "PATH": [
-        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin"
+        "[START_DIR]/python/_support/sed-4.2.2/prefix/bin",
+        "[START_DIR]/python/_support/autoconf-2.69/prefix/bin"
       ]
     },
     "name": "make"

@@ -257,7 +257,10 @@ class PythonApi(util.ModuleShim):
       # definitely produces.
       gnu_sed = support.ensure_gnu_sed()
 
-      with self.m.context(env_prefixes={'PATH': [gnu_sed.bin_dir]}):
+      autoconf = support.ensure_autoconf()
+      with self.m.context(env_prefixes={
+          'PATH': [gnu_sed.bin_dir, autoconf.bin_dir],
+      }):
         # Generate our configure script.
         self.m.step('generate configure', ['autoconf'])
 
