@@ -52,13 +52,13 @@
       "search",
       "infra/python/cpython/linux-386",
       "-tag",
-      "version:2.1.2.chromium12",
+      "version:2.1.2.chromium13",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
       "/creds/service_accounts/service-account-cipd-builder.json"
     ],
-    "name": "cipd search infra/python/cpython/linux-386 version:2.1.2.chromium12",
+    "name": "cipd search infra/python/cpython/linux-386 version:2.1.2.chromium13",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
@@ -876,7 +876,7 @@
       "--disable-shared",
       "--without-system-ffi",
       "--enable-ipv6",
-      "--enable-py-version-override=2.1.2+chromium12",
+      "--enable-py-version-override=2.1.2+chromium13",
       "--enable-unicode=ucs4",
       "--with-fpectl",
       "--with-dbmliborder=bdb:gdbm",
@@ -911,7 +911,7 @@
       "--disable-shared",
       "--without-system-ffi",
       "--enable-ipv6",
-      "--enable-py-version-override=2.1.2+chromium12",
+      "--enable-py-version-override=2.1.2+chromium13",
       "--enable-unicode=ucs4",
       "--with-fpectl",
       "--with-dbmliborder=bdb:gdbm",
@@ -920,7 +920,7 @@
     "cwd": "[START_DIR]/python/checkout",
     "env": {
       "CPPFLAGS": "-I[START_DIR]/python/_support/bzip2-1.0.6/prefix/include -I[START_DIR]/python/_support/readline-7.0/prefix/include -I[START_DIR]/python/_support/ncurses-6.0/prefix/include -I[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/include -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include -I[START_DIR]/python/_support/libnsl-1.0.4/prefix/include -I[START_DIR]/python/_support/openssl-1.1.0f/prefix/include -I[START_DIR]/python/tpp_libffi -I[START_DIR]/python/tpp_libffi/include",
-      "LDFLAGS": "-L[START_DIR]/python/_support/bzip2-1.0.6/prefix/lib -L[START_DIR]/python/_support/readline-7.0/prefix/lib -L[START_DIR]/python/_support/ncurses-6.0/prefix/lib -L[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/lib -L[START_DIR]/python/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/python/_support/libnsl-1.0.4/prefix/lib -L[START_DIR]/python/_support/openssl-1.1.0f/prefix/lib"
+      "LDFLAGS": "-L[START_DIR]/python/_support/bzip2-1.0.6/prefix/lib -L[START_DIR]/python/_support/readline-7.0/prefix/lib -L[START_DIR]/python/_support/ncurses-6.0/prefix/lib -L[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/lib -L[START_DIR]/python/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/python/_support/libnsl-1.0.4/prefix/lib -L[START_DIR]/python/_support/openssl-1.1.0f/prefix/lib -Wl,--exclude-libs,ALL -Wl,--version-script=RECIPE_MODULE[infra::third_party_packages]/resources/python/gnu_version_script.txt"
     },
     "env_prefixes": {
       "PATH": [
@@ -937,7 +937,7 @@
     "cwd": "[START_DIR]/python/checkout",
     "env": {
       "CPPFLAGS": "-I[START_DIR]/python/_support/bzip2-1.0.6/prefix/include -I[START_DIR]/python/_support/readline-7.0/prefix/include -I[START_DIR]/python/_support/ncurses-6.0/prefix/include -I[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/include -I[START_DIR]/python/_support/zlib-1.2.11/prefix/include -I[START_DIR]/python/_support/libnsl-1.0.4/prefix/include -I[START_DIR]/python/_support/openssl-1.1.0f/prefix/include -I[START_DIR]/python/tpp_libffi -I[START_DIR]/python/tpp_libffi/include",
-      "LDFLAGS": "-L[START_DIR]/python/_support/bzip2-1.0.6/prefix/lib -L[START_DIR]/python/_support/readline-7.0/prefix/lib -L[START_DIR]/python/_support/ncurses-6.0/prefix/lib -L[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/lib -L[START_DIR]/python/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/python/_support/libnsl-1.0.4/prefix/lib -L[START_DIR]/python/_support/openssl-1.1.0f/prefix/lib"
+      "LDFLAGS": "-L[START_DIR]/python/_support/bzip2-1.0.6/prefix/lib -L[START_DIR]/python/_support/readline-7.0/prefix/lib -L[START_DIR]/python/_support/ncurses-6.0/prefix/lib -L[START_DIR]/python/_support/sqlite-autoconf-3190300/prefix/lib -L[START_DIR]/python/_support/zlib-1.2.11/prefix/lib -L[START_DIR]/python/_support/libnsl-1.0.4/prefix/lib -L[START_DIR]/python/_support/openssl-1.1.0f/prefix/lib -Wl,--exclude-libs,ALL -Wl,--version-script=RECIPE_MODULE[infra::third_party_packages]/resources/python/gnu_version_script.txt"
     },
     "env_prefixes": {
       "PATH": [
@@ -1058,15 +1058,6 @@
     "~followup_annotations": [
       "@@@STEP_NEST_LEVEL@1@@@"
     ]
-  },
-  {
-    "cmd": [
-      "strip",
-      "--strip-all",
-      "[START_DIR]/python/package/bin/python"
-    ],
-    "cwd": "[START_DIR]/python/checkout",
-    "name": "strip"
   },
   {
     "cmd": [
@@ -1192,7 +1183,7 @@
     "cwd": "[START_DIR]/python",
     "env": {
       "PYTHON_TEST_CIPD_PACKAGE": "[START_DIR]/python/package.cipd",
-      "PYTHON_TEST_EXPECTED_VERSION": "2.1.2+chromium12"
+      "PYTHON_TEST_EXPECTED_VERSION": "2.1.2+chromium13"
     },
     "name": "test"
   },
@@ -1208,7 +1199,7 @@
       "-ref",
       "latest",
       "-tag",
-      "version:2.1.2.chromium12"
+      "version:2.1.2.chromium13"
     ],
     "name": "register infra/python/cpython/linux-386",
     "~followup_annotations": [

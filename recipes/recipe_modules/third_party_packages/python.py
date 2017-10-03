@@ -14,7 +14,7 @@ PACKAGE_PREFIX = 'infra/python/cpython/'
 
 # This version suffix serves to distinguish different revisions of Python built
 # with this recipe.
-PACKAGE_VERSION_SUFFIX = '.chromium12'
+PACKAGE_VERSION_SUFFIX = '.chromium13'
 
 class PythonApi(util.ModuleShim):
 
@@ -172,7 +172,13 @@ class PythonApi(util.ModuleShim):
         ]
       elif self.m.platform.is_linux:
         # On Linux, "-s" is an aggressive strip.
-        strip_flags = ['--strip-all']
+        #
+        # TODO: Stripping is disabled for now, since it interferes with
+        # debugging to save a few megabytes. When the Python bundle is stable,
+        # we can re-enable stripping as an optimization.
+        #
+        # strip_flags = ['--strip-all']
+        strip_flags = None
 
         configure_flags += [
           # Linux Python (Ubuntu) installations use 4-byte Unicode.
@@ -222,6 +228,23 @@ class PythonApi(util.ModuleShim):
                 '-I%s' % (libffi_dir,),
                 '-I%s' % (libffi_dir.join('include'),),
             ]
+
+        # On Linux, we need to ensure that most symbols from our static-embedded
+        # libraries (notably OpenSSL) don't get exported. If they do, they can
+        # conflict with the same libraries from wheels or other dynamically
+        # linked sources.
+        #
+        # This set of commands was determined by trial, see:
+        # - crbug.com/763792
+        ldflags += [
+            # Tell symbols from imported static libraries to be marked as LOCAL.
+            # This seems to not cover all symbols, but it gets most of them.
+            '-Wl,--exclude-libs,ALL',
+
+            # Use this to get any remaining problematic symbols.
+            '-Wl,--version-script=%s' % (
+              self.resource('python', 'gnu_version_script.txt'),),
+        ]
 
       configure_env['CPPFLAGS'] = ' '.join(cppflags)
       configure_env['LDFLAGS'] = ' '.join(ldflags)
@@ -346,7 +369,7 @@ class PythonApi(util.ModuleShim):
       # of good debugging information. Comment this out to produce a package
       # with the full symbol set.
       target_python = target_dir.join('bin', 'python')
-      if strip_flags is not None:
+      if strip_flags is not None: # pragma: nocover
         self.m.step(
             'strip',
             ['strip'] + strip_flags + [target_python],
