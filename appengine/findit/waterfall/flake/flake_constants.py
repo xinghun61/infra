@@ -35,6 +35,9 @@ DEFAULT_MAX_ITERATIONS_TO_RERUN = 400
 # Default minimum confidence score to run try jobs.
 DEFAULT_MINIMUM_CONFIDENCE_SCORE = 0.6
 
+# Default minimum confidence score to post notifications to code reviews.
+DEFAULT_MINIMUM_CONFIDENCE_SCORE_TO_UPDATE_CR = 0.7
+
 # Default iterations to rerun if our config is empty.
 DEFAULT_SWARMING_TASK_ITERATIONS_TO_RERUN = 100
 
@@ -64,6 +67,12 @@ MINIMUM_ITERATIONS_REQUIRED_FOR_CONVERGENCE = 100
 
 # Value to indicate a test does not exist at a build number or commit position.
 PASS_RATE_TEST_NOT_FOUND = -1
+
+# The minimum required number of fully-stable points before a culprit in order
+# to send a notification to the code review. Based on historical data 3 stable
+# points should be able to weed out most false positives, and should not be
+# configurable.
+REQUIRED_NUMBER_OF_STABLE_POINTS_BEFORE_CULPRIT = 3
 
 # Cushion multiplier for test setup/teardown.
 SWARMING_TASK_CUSHION_MULTIPLIER = 1.25
