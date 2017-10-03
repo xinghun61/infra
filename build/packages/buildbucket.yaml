@@ -6,6 +6,7 @@ builders:
   - infra-continuous-precise-64
   - infra-continuous-win-32
   - infra-continuous-win-64
+supports_cross_compilation: true
 go_packages:
   - go.chromium.org/luci/buildbucket/client/cmd/buildbucket
 root: ../../go/bin
