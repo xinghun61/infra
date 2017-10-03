@@ -40,3 +40,9 @@ try_job_errors = gae_ts_mon.CounterMetric(
         gae_ts_mon.StringField('master_name'),
         gae_ts_mon.StringField('builder_name')
     ])
+
+analysis_durations = gae_ts_mon.CumulativeDistributionMetric(
+    'findit/analysis-durations', 'Durations of analyses performed', [
+        gae_ts_mon.StringField('type'),
+        gae_ts_mon.StringField('result'),
+    ])

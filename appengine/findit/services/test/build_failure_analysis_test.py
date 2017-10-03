@@ -881,7 +881,9 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     build_number = 98
     analysis_result = {'result': {}}
 
-    WfAnalysis.Create(master_name, builder_name, build_number).put()
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.start_time = datetime(2016, 06, 26, 23)
+    analysis.put()
 
     build_failure_analysis.SaveAnalysisAfterHeuristicAnalysisCompletes(
         master_name, builder_name, build_number, True, analysis_result, [])

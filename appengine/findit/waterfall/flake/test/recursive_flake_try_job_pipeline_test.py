@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import copy
+from datetime import datetime
 import mock
 
 from google.appengine.ext import ndb
@@ -488,6 +489,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
+    analysis.start_time = datetime(2016, 6, 26, 23)
     analysis.status = analysis_status.COMPLETED
     analysis.try_job_status = analysis_status.RUNNING
     analysis.data_points = [
@@ -566,6 +568,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
+    analysis.start_time = datetime(2016, 6, 26, 23)
     analysis.status = analysis_status.COMPLETED
     analysis.try_job_status = analysis_status.RUNNING
     analysis.data_points = [
@@ -635,6 +638,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
+    analysis.start_time = datetime(2016, 6, 26, 23)
     analysis.put()
 
     self.MockPipeline(
@@ -931,6 +935,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.start_time = datetime(2016, 6, 26, 23)
     analysis.status = analysis_status.COMPLETED
     analysis.Save()
 
@@ -975,6 +980,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.start_time = datetime(2016, 6, 26, 23)
     analysis.status = analysis_status.COMPLETED
     analysis.Save()
 

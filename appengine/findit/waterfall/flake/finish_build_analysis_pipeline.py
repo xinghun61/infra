@@ -21,6 +21,7 @@ from waterfall.flake.identify_suspected_revisions_pipeline import (
 from waterfall.flake.initialize_flake_try_job_pipeline import (
     InitializeFlakeTryJobPipeline)
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
+from waterfall import monitoring
 
 
 def _UpdateAnalysisResults(analysis,
@@ -60,6 +61,11 @@ def _UpdateAnalysisResults(analysis,
   if error:
     analysis.end_time = time_util.GetUTCNow()
     analysis.error = error
+    duration = analysis.end_time - analysis.start_time
+    monitoring.analysis_durations.add(duration.total_seconds(), {
+        'type': 'flake',
+        'result': 'error',
+    })
   else:
     # Clear info about the last attempted swarming task since it will be stored
     # in the data point.

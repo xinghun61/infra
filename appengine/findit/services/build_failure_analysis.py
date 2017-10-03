@@ -15,6 +15,7 @@ import re
 
 from google.appengine.ext import ndb
 
+from common.waterfall import failure_type
 from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
@@ -25,6 +26,7 @@ from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from services import deps
+from waterfall import monitoring
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
@@ -896,6 +898,14 @@ def SaveAnalysisAfterHeuristicAnalysisCompletes(master_name, builder_name,
   analysis.suspected_cls = _GetSuspectedCLsWithOnlyCLInfo(suspected_cls)
   analysis.end_time = time_util.GetUTCNow()
   analysis.put()
+
+  duration = analysis.end_time - analysis.start_time
+  status = result_status.RESULT_STATUS_TO_DESCRIPTION.get(
+      analysis.result_status, 'no result')
+  monitoring.analysis_durations.add(duration.total_seconds(), {
+      'type': failure_type.GetDescriptionForFailureType(analysis.failure_type),
+      'result': 'heuristic-' + status,
+  })
 
 
 def SaveSuspectedCLs(suspected_cls, master_name, builder_name, build_number,

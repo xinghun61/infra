@@ -251,6 +251,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
+    analysis.start_time = datetime(2017, 6, 26, 23)
     analysis.status = analysis_status.PENDING
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])
@@ -413,6 +414,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
+    analysis.start_time = datetime(2017, 6, 26, 23)
     analysis.status = analysis_status.PENDING
     analysis.swarming_task_attempts_for_build = 10
     analysis.algorithm_parameters = copy.deepcopy(
@@ -444,6 +446,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
 
     analysis = MasterFlakeAnalysis.Create(
         master_name, builder_name, master_build_number, step_name, test_name)
+    analysis.start_time = datetime(2017, 6, 26, 23)
     analysis.status = analysis_status.PENDING
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])

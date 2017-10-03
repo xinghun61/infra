@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import mock
 
 from common import constants
@@ -237,6 +238,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   def testInitializeFlakeTryJopPipelineNoSuspectedBuild(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.start_time = datetime(2016, 6, 26, 23)
     analysis.Save()
 
     self.MockPipeline(
@@ -253,6 +255,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
       return_value=False)
   def testInitializeFlakeTryJopPipelineInsufficientConfidence(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.start_time = datetime(2016, 6, 26, 23)
     analysis.confidence_in_suspected_build = 0.7
     analysis.Save()
 
@@ -268,6 +271,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
       initialize_flake_try_job_pipeline, '_ShouldRunTryJobs', return_value=True)
   def testInitializeFlakeTryJopPipelineNoBlamelist(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.start_time = datetime(2016, 6, 26, 23)
     analysis.suspected_flake_build_number = 100
     analysis.confidence_in_suspected_build = 0.7
     analysis.data_points = [
@@ -371,6 +375,7 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
       return_value=False)
   def testInitializeFlakeTryJobPipelineBailOutOfTryJobs(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.start_time = datetime(2016, 6, 26, 23)
     analysis.suspected_flake_build_number = 100
     analysis.confidence_in_suspected_build = 0.7
     analysis.data_points = [

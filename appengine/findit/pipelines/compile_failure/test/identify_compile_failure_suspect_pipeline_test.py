@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import mock
 from testing_utils import testing
 
@@ -26,8 +27,8 @@ class IdentifyCompileFailureSuspectPipelineTest(testing.AppengineTestCase):
       return_value=({
           'failures': []
       }, []))
-  def testIdentifyCulpritPipelineForCompile(
-      self, mock_analyze, mock_deps, mock_changelog):
+  def testIdentifyCulpritPipelineForCompile(self, mock_analyze, mock_deps,
+                                            mock_changelog):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -35,6 +36,7 @@ class IdentifyCompileFailureSuspectPipelineTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.result = None
     analysis.status = analysis_status.RUNNING
+    analysis.start_time = datetime(2017, 6, 26, 23)
     analysis.put()
 
     failure_info = {

@@ -13,6 +13,7 @@ from gae_libs import appengine_util
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from model.flake.flake_swarming_task import FlakeSwarmingTask
+from waterfall import monitoring
 from waterfall import swarming_util
 from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants
@@ -91,8 +92,14 @@ def _UpdateAnalysisWithSwarmingTaskError(flake_swarming_task, analysis):
       'error': 'Swarming task failed',
       'message': 'The last swarming task did not complete as expected'
   }
+
   analysis.Update(
       status=analysis_status.ERROR, error=error, end_time=time_util.GetUTCNow())
+  duration = analysis.end_time - analysis.start_time
+  monitoring.analysis_durations.add(duration.total_seconds(), {
+      'type': 'flake',
+      'result': 'error',
+  })
 
 
 def _GetTimeoutForTask(analysis, timeout_per_test, iterations_for_task):

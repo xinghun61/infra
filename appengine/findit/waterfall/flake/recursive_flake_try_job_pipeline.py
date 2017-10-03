@@ -32,6 +32,7 @@ from waterfall.flake.schedule_flake_try_job_pipeline import (
 from waterfall.flake.send_notification_for_flake_culprit_pipeline import (
     SendNotificationForFlakeCulpritPipeline)
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
+from waterfall import monitoring
 
 _GIT_REPO = CachedGitilesRepository(
     HttpClientAppengine(), 'https://chromium.googlesource.com/chromium/src.git')
@@ -220,6 +221,11 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
     }
     flake_analysis.end_time = time_util.GetUTCNow()
     flake_analysis.put()
+    duration = flake_analysis.end_time - flake_analysis.start_time
+    monitoring.analysis_durations.add(duration.total_seconds(), {
+        'type': 'flake',
+        'result': 'error',
+    })
 
     try_job = FlakeTryJob.Get(
         flake_analysis.master_name, flake_analysis.builder_name,
@@ -540,6 +546,10 @@ class NextCommitPositionPipeline(BasePipeline):
           try_job_status=analysis_status.ERROR,
           error=try_job_data.error,
           end_time=time_util.GetUTCNow())
+      duration = flake_analysis.end_time - flake_analysis.start_time
+      monitoring.analysis_durations.add(duration.total_seconds(),
+                                        {'type': 'flake',
+                                         'result': 'error'})
       return
 
     algorithm_settings = flake_analysis.algorithm_parameters.get(
@@ -573,6 +583,11 @@ class NextCommitPositionPipeline(BasePipeline):
           confidence_in_culprit=confidence_score,
           try_job_status=analysis_status.COMPLETED,
           end_time=time_util.GetUTCNow())
+      duration = flake_analysis.end_time - flake_analysis.start_time
+      monitoring.analysis_durations.add(duration.total_seconds(), {
+          'type': 'flake',
+          'result': 'completed',
+      })
 
       yield SendNotificationForFlakeCulpritPipeline(urlsafe_flake_analysis_key)
       return

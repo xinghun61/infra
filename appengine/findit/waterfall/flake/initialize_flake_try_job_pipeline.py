@@ -8,6 +8,7 @@ from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
 from libs import time_util
 from waterfall import build_util
+from waterfall import monitoring
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
@@ -257,7 +258,17 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
             try_job_status=analysis_status.ERROR,
             error=error,
             end_time=time_util.GetUTCNow())
+        duration = analysis.end_time - analysis.start_time
+        monitoring.analysis_durations.add(duration.total_seconds(), {
+            'type': 'flake',
+            'result': 'error',
+        })
     else:
       analysis.Update(
           end_time=time_util.GetUTCNow(),
           try_job_status=analysis_status.SKIPPED)
+      duration = analysis.end_time - analysis.start_time
+      monitoring.analysis_durations.add(duration.total_seconds(), {
+          'type': 'flake',
+          'result': 'skipped',
+      })

@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import mock
 from testing_utils import testing
 
@@ -34,6 +35,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.result = None
     analysis.status = analysis_status.RUNNING
+    analysis.start_time = datetime(2017, 6, 26, 23)
     analysis.put()
 
     failure_info = {
@@ -75,6 +77,7 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.result = None
     analysis.status = analysis_status.RUNNING
+    analysis.start_time = datetime(2017, 6, 26, 23)
     analysis.put()
 
     failure_info = {

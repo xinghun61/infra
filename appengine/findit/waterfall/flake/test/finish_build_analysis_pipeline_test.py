@@ -131,6 +131,7 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(2017, 6, 27))
   def testUpdateAnalysisResultsWithError(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.start_time = datetime(2017, 6, 26, 23)
     analysis.last_attempted_swarming_task_id = '12345'
     finish_build_analysis_pipeline._UpdateAnalysisResults(
         analysis, None, analysis_status.ERROR, {'error': 'error'})
