@@ -20,6 +20,7 @@ import (
 	"google.golang.org/appengine"
 
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/gae/service/info"
 	"go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
@@ -40,29 +41,39 @@ type uploadHandler struct {
 	r         *http.Request
 }
 
-// Serve handles upload requests.
-func (h *uploadHandler) Serve(ctx *router.Context) {
-	// Only bots should upload test results. Check IP address against a whitelist.
+func requestOK(ctx *router.Context) bool {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
-	h.r = r
+	if info.IsDevAppServer(c) {
+		return true
+	}
+	// Only bots should upload test results. Check IP address against a whitelist.
 	whitelisted, err := auth.GetState(c).DB().IsInWhitelist(
 		c, auth.GetState(c).PeerIP(), "bots")
 	if err != nil {
 		logging.WithError(err).Errorf(c, "uploadHandler: check IP whitelist")
 		http.Error(w, "Failed IP whitelist check", http.StatusInternalServerError)
-		return
+		return false
 	}
-
 	if !whitelisted {
 		logging.WithError(err).Errorf(
 			c, "Uploading IP %s is not whitelisted", auth.GetState(c).PeerIP())
 		http.Error(w, "IP is not whitelisted", http.StatusUnauthorized)
-		return
+		return false
 	}
-
 	if r.TLS == nil {
 		logging.Errorf(c, "uploadHandler: only allow HTTPS")
 		http.Error(w, "Only HTTPS requests are allowed", http.StatusUnauthorized)
+		return false
+	}
+	return true
+}
+
+// Serve handles upload requests.
+func (h *uploadHandler) Serve(ctx *router.Context) {
+	c, w, r := ctx.Context, ctx.Writer, ctx.Request
+	h.r = r
+
+	if !requestOK(ctx) {
 		return
 	}
 

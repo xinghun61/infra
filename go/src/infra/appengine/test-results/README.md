@@ -22,6 +22,23 @@ npm install -g vulcanize
 Google employees should follow instructions at http://go/nodejs to install
 NodeJS 4.x or later.
 
+## Devserver
+
+To run test-results locally:
+
+```
+make devserver
+```
+
+You can use the -F flag with curl to send multipart/form data. For example, to
+send request to test `testfile/upload`:
+
+```
+curl -v -F master='tryserver.chromium.mac' -F builder='linux_chromium_rel_ng' -F
+file=@<local-path-to-test-results-file> -F testtype='browser_tests (with patch)'
+http://localhost:8080/testfile/upload
+```
+
 ## Build
 
 ```
@@ -81,7 +98,8 @@ You can start uploading your test results in 3 steps:
    * master, e.g. `tryserver.chromium.linux` (note the missing `master.` prefix),
    * builder, e.g. `linux_chromium_rel_ng`,
    * testtype, e.g. `browser_tests (with patch)`, and
-   * file, e.g. [this file][example-json-file].
+   * file, e.g. [this file][example-json-file] (but rename to remove the "_0"
+     suffix).
 1. Deploy the changes to production and verify that your test results are shown
    in Flakiness Dashboard after selecting test type that matches your step name.
 
@@ -100,7 +118,7 @@ and we’ll use your feedback to improve this doc.
 [Flakiness Surface]: https://test-results.appspot.com/flakiness
 [JSON Test Results Format]: https://www.chromium.org/developers/the-json-test-results-format
 [multipart/form-data]: https://www.w3.org/TR/html401/interact/forms.html#h-17.13.4.2
-[example-json-file]: https://test-results.appspot.com/testfile?builder=linux_chromium_rel_ng&name=full_results.json&master=tryserver.chromium.linux&testtype=browser_tests%20%28with%20patch%29&buildnumber=421920
+[example-json-file]: ./frontend/testdata/full_results_0.json
 [test\_results.upload function]: https://cs.chromium.org/chromium/build/scripts/slave/recipe_modules/test_results/api.py?l=11&rcl=4892db3bf1623b939c31f5929c139abec080c9a6
 [recipe-upload-example]: https://cs.chromium.org/chromium/build/scripts/slave/recipe_modules/chromium_tests/steps.py?l=432&rcl=4892db3bf1623b939c31f5929c139abec080c9a6
 [python-upload-example]: https://cs.chromium.org/chromium/build/scripts/slave/recipe_modules/test_results/resources/test_results_uploader.py?l=31&rcl=4892db3bf1623b939c31f5929c139abec080c9a6
