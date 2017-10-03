@@ -149,7 +149,7 @@ class DockerClient(object):
       logging.debug('Found stopped container %s. Removing it.', container.name)
       container.remove()
 
-  def create_container(self, device, image_name, swarming_url):
+  def create_container(self, device, image_name, swarming_url, labels):
     """Creates a container for an android device."""
     container_name = get_container_name(device)
     container_hostname = get_container_hostname(device)
@@ -177,6 +177,7 @@ class DockerClient(object):
         },
         name=container_name,
         detach=True,  # Don't block until it exits.
+        labels=labels,
     )
     new_container.start()
     logging.debug('Launched new container (%s) for device %s.',
@@ -188,6 +189,10 @@ class Container(object):
   def __init__(self, container):
     self._container = container
     self.name = container.name
+
+  @property
+  def labels(self):
+    return self._container.attrs.get('Config', {}).get('Labels', {})
 
   @property
   def state(self):

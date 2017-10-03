@@ -6,6 +6,7 @@ import argparse
 import contextlib
 from datetime import datetime
 import fcntl
+import json
 import logging
 import logging.handlers
 import os
@@ -36,6 +37,24 @@ _REBOOT_GRACE_PERIOD_MIN = 240
 
 _DEVICE_LOCK_FILE = '/var/lock/android_docker.%(device_id)s.lock'
 _USB_BUS_LOCK_FILE = '/var/lock/android_docker.usb_bus.lock'
+
+# Defined in
+# https://chromium.googlesource.com/infra/infra/+/master/build/packages/android_docker.yaml
+_CIPD_VERSION_FILE = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), '..', '..', '..', 'CIPD_VERSION.json'))
+
+
+def get_cipd_version():
+  if not os.path.exists(_CIPD_VERSION_FILE):
+    logging.warning('Unable to find cipd version file %s', _CIPD_VERSION_FILE)
+    return None
+  try:
+    with open(_CIPD_VERSION_FILE) as f:
+      d = json.load(f)
+    return d.get('instance_id')
+  except (IOError, ValueError):
+    logging.exception('Unable to read cipd version file %s', _CIPD_VERSION_FILE)
+    return None
 
 
 def get_host_uptime():
@@ -184,6 +203,7 @@ def launch(docker_client, android_devices, args):
     # or all of them regardless of uptime if draining. This stays outside the
     # per-device flock below due to the fact that a container's device might
     # go missing, so we need to examine *all* containers here.
+    current_cipd_version = get_cipd_version()
     if draining_host:
       for c in running_containers:
         c.kill_swarming_bot()
@@ -195,6 +215,14 @@ def launch(docker_client, android_devices, args):
       docker_client.stop_old_containers(
           running_containers, args.max_container_uptime)
 
+      # Also stop any outdated container.
+      if current_cipd_version is not None:
+        for c in running_containers:
+          if c.labels.get('cipd_version') != current_cipd_version:
+            logging.debug(
+                'Container %s is out of date. Shutting it down.', c.name)
+            c.kill_swarming_bot()
+
     # Create a container for each device that doesn't already have one.
     if not draining_host:
       def _create_container(d):
@@ -202,7 +230,13 @@ def launch(docker_client, android_devices, args):
           with flock(_DEVICE_LOCK_FILE % {'device_id': d.serial}):
             c = docker_client.get_container(d)
             if c is None:
-              docker_client.create_container(d, image_url, args.swarming_server)
+              labels = {}
+              # Attach current cipd version to container's metadata so it can
+              # be restarted if version changes.
+              if current_cipd_version is not None:
+                labels['cipd_version'] = current_cipd_version
+              docker_client.create_container(
+                  d, image_url, args.swarming_server, labels)
               add_device(docker_client, d, args)
             elif c.state == 'paused':
               # Occasionally a container gets stuck in the paused state. Since

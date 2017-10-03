@@ -313,7 +313,7 @@ class TestDockerClient(unittest.TestCase):
     mock_from_env.return_value = self.fake_client
 
     container = containers.DockerClient().create_container(
-        device, 'image', 'swarm-url.com')
+        device, 'image', 'swarm-url.com', {})
     self.assertEquals(container.name, containers.get_container_name(device))
     mock_chown.assert_called_with(mock_mkdir.call_args[0][0], 1, 2)
 
