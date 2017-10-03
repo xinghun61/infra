@@ -46,3 +46,14 @@ analysis_durations = gae_ts_mon.CumulativeDistributionMetric(
         gae_ts_mon.StringField('type'),
         gae_ts_mon.StringField('result'),
     ])
+
+culprit_found = gae_ts_mon.CounterMetric(
+    'findit/culprits',
+    'Culprits identified by findit',
+    [
+        gae_ts_mon.StringField('type'),
+        # Valid values:
+        #   revert_created, revert_committed, revert_confirmed,
+        #   revert_status_error, commit_error, culprit_notified.
+        gae_ts_mon.StringField('action_taken')
+    ])

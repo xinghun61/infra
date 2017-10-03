@@ -24,6 +24,7 @@ from libs import time_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import buildbot
+from waterfall import monitoring
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 
@@ -41,9 +42,11 @@ _DEFAULT_AUTO_COMMIT_DAILY_THRESHOLD = 4
 _DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS = 24
 
 # List of emails of auto rollers.
-_AUTO_ROLLER_EMAILS = [
-    'skia-deps-roller@chromium.org', 'catapult-deps-roller@chromium.org',
-    'pdfium-deps-roller@chromium.org', 'v8-autoroll@chromium.org',
+_AUTO_ROLLER_EMAILS = [  # yapf: disable
+    'skia-deps-roller@chromium.org',
+    'catapult-deps-roller@chromium.org',
+    'pdfium-deps-roller@chromium.org',
+    'v8-autoroll@chromium.org',
     'ios-autoroll@chromium.org'
 ]
 
@@ -394,7 +397,25 @@ def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
 
 
 def CommitRevert(repo_name, revision, revert_status, pipeline_id):
+  # Note that we don't know which was the final action taken by the pipeline
+  # before this point. That is why this is where we increment the appropriate
+  # metrics.
   if not _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
+    if revert_status == CREATED_BY_FINDIT:
+      monitoring.culprit_found.increment({
+          'type': 'compile',
+          'action_taken': 'revert_created'
+      })
+    elif revert_status == CREATED_BY_SHERIFF:
+      monitoring.culprit_found.increment({
+          'type': 'compile',
+          'action_taken': 'revert_confirmed'
+      })
+    else:
+      monitoring.culprit_found.increment({
+          'type': 'compile',
+          'action_taken': 'revert_status_error'
+      })
     return False
 
   culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
@@ -409,6 +430,14 @@ def CommitRevert(repo_name, revision, revert_status, pipeline_id):
   if committed:
     _UpdateCulprit(
         repo_name, revision, revert_submission_status=status.COMPLETED)
+    monitoring.culprit_found.increment({
+        'type': 'compile',
+        'action_taken': 'revert_committed'
+    })
   else:
     _UpdateCulprit(repo_name, revision, revert_submission_status=status.ERROR)
+    monitoring.culprit_found.increment({
+        'type': 'compile',
+        'action_taken': 'commit_error'
+    })
   return committed
