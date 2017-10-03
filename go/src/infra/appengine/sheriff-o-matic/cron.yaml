@@ -70,3 +70,11 @@ cron:
   retry_parameters:
     min_backoff_seconds: 2.5
     max_doublings: 5
+
+- description: Update Chromium Sandbox alerts
+  url: /_cron/analyze/chromium.sandbox
+  schedule: every 5 minutes
+  target: analyzer
+  retry_parameters:
+    min_backoff_seconds: 2.5
+    max_doublings: 5
