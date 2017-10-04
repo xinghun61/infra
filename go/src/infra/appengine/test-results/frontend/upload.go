@@ -35,10 +35,13 @@ import (
 	"cloud.google.com/go/bigquery"
 )
 
+// requestKey is used as a context key to embed the http.Request object into the
+// context.
+var requestKey = "http.request"
+
 type uploadHandler struct {
 	// If nil, send to BigQuery
 	sendEvent func(c context.Context, tre *model.TestResultEvent) error
-	r         *http.Request
 }
 
 func requestOK(ctx *router.Context) bool {
@@ -71,7 +74,7 @@ func requestOK(ctx *router.Context) bool {
 // Serve handles upload requests.
 func (h *uploadHandler) Serve(ctx *router.Context) {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
-	h.r = r
+	c = context.WithValue(c, &requestKey, r)
 
 	if !requestOK(ctx) {
 		return
@@ -463,7 +466,11 @@ func (h *uploadHandler) updateFullResults(c context.Context, data io.Reader) err
 			return
 		}
 		if h.sendEvent == nil {
-			err = sendEventToBigQuery(appengine.WithContext(c, h.r), tre)
+			req, ok := c.Value(&requestKey).(*http.Request)
+			if !ok {
+				panic("No http.request found in context")
+			}
+			err = sendEventToBigQuery(appengine.WithContext(c, req), tre)
 		} else {
 			err = h.sendEvent(c, tre)
 		}
