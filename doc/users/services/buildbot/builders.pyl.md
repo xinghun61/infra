@@ -145,6 +145,12 @@ If set, it should contain the string value of the
 buildbot master. If it is not set, it defaults to `None`. By convention,
 buckets are named to match the master name, e.g. "master.tryserver.nacl".
 
+### default_remote_run_repository
+
+This is an *optional* field, and is deprecated; Setting this is
+equivalent to specifying `remote_run_repository` in builder_defaults,
+and you should set that instead (or set it in a mixin or per-builder).
+
 ### master_classname
 
 This is an *optional* field. If it is not specified, it is synthesized
@@ -342,8 +348,29 @@ set this to true at this point.
 
 ### remote_run_repository
 
-This is an *optional* field that must be present and set to the repository
+This is an *optional* field that should be present and set to the repository
 the recipe is found in if `use_remote_run` is set to true.
+
+### remote_run_sync_revision
+
+This is an *optional* field; if present and set to true, then the
+repository used for the recipe (i.e., the `remote_run_repository`)
+will be synced to the revision specified in the `revision` property
+of the build, rather than using the HEAD version. This is useful for
+when the recipe lives in the same repo as the code you are checking out
+(i.e., for src-side recipes or the equivalent), in which case you probably
+want to use the same revision for both the recipe and the code being built
+and tested. In other situations, you almost certainly want this to be false,
+since the revision will not even be for the right repo.
+
+### repository
+
+This is an *optional*, deprecated field and means the same thing as
+`remote_run_repository`. If `remote_run_repository` is not set and this is,
+it will be used. `remote_run_repository` is preferred because it makes the
+purpose clearer; `repository` might be construed to be the repo that is
+being checked out in the build, but that is not controlled here, it
+is controlled in the recipe itself.
 
 ### no_output_timeout_s
 
