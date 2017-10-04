@@ -15,6 +15,8 @@ func (ds TableDef_DataSet) ID() string {
 		return "raw_events"
 	case TableDef_AGGREGATED:
 		return "aggregated"
+	case TableDef_TEST_DATA:
+		return "test_data"
 	default:
 		panic(fmt.Errorf("unknown data set: %v", ds))
 	}
