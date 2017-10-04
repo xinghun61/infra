@@ -27,7 +27,6 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
-    build_id = 'm/b/124'
     repo_name = 'chromium'
     revision = 'r1'
     culprits = {
@@ -41,7 +40,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     self.MockPipeline(
         CreateRevertCLPipeline,
         revert.CREATED_BY_SHERIFF,
-        expected_args=[repo_name, revision, build_id])
+        expected_args=[repo_name, revision])
     self.MockPipeline(
         SubmitRevertCLPipeline,
         True,

@@ -59,11 +59,8 @@ class RevertAndNotifyCulpritPipeline(BasePipeline):
       revision = culprit['revision']
 
       force_notify = [repo_name, revision] in heuristic_cls
-      build_id = build_util.CreateBuildId(master_name, builder_name,
-                                          build_number)
 
-      revert_status = yield CreateRevertCLPipeline(repo_name, revision,
-                                                   build_id)
+      revert_status = yield CreateRevertCLPipeline(repo_name, revision)
       yield SubmitRevertCLPipeline(repo_name, revision, revert_status)
       yield SendNotificationToIrcPipeline(repo_name, revision, revert_status)
       yield SendNotificationForCulpritPipeline(

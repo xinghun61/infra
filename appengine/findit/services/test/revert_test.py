@@ -72,23 +72,10 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     mock_revert.return_value = '54321'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, commit_position)
-    culprit.builds = {
-        'm/b/2': {
-            'status': None
-        },
-        'm/b/1': {
-            'status': None
-        },
-        'm/b/3': {
-            'status': None
-        },
-        'm1/b/0': {
-            'status': None
-        },
-    }
+    culprit.builds = {'m/b/1': {'status': None}}
     culprit.put()
 
-    revert_status = revert.RevertCulprit(repo_name, revision, 'm/b/1')
+    revert_status = revert.RevertCulprit(repo_name, revision)
 
     self.assertEquals(revert_status, revert.CREATED_BY_FINDIT)
 
@@ -122,7 +109,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
 
     WfSuspectedCL.Create(repo_name, revision, 123).put()
 
-    revert_status = revert.RevertCulprit(repo_name, revision, 'm/b/1')
+    revert_status = revert.RevertCulprit(repo_name, revision)
 
     self.assertEquals(revert_status, revert.CREATED_BY_SHERIFF)
 
@@ -157,7 +144,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
 
     WfSuspectedCL.Create(repo_name, revision, 123).put()
 
-    revert_status = revert.RevertCulprit(repo_name, revision, 'm/b/1')
+    revert_status = revert.RevertCulprit(repo_name, revision)
 
     self.assertEquals(revert_status, revert.ERROR)
 
@@ -195,7 +182,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.cr_notification_status = status.COMPLETED
     culprit.put()
 
-    revert_status = revert.RevertCulprit(repo_name, revision, 'm/b/1')
+    revert_status = revert.RevertCulprit(repo_name, revision)
 
     self.assertEquals(revert_status, revert.CREATED_BY_FINDIT)
 
@@ -220,7 +207,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    revert_status = revert.RevertCulprit(repo_name, revision, 'm/b/1')
+    revert_status = revert.RevertCulprit(repo_name, revision)
 
     self.assertEquals(revert_status, revert.SKIPPED)
 
@@ -245,7 +232,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    revert_status = revert.RevertCulprit(repo_name, revision, 'm/b/1')
+    revert_status = revert.RevertCulprit(repo_name, revision)
 
     self.assertEquals(revert_status, revert.SKIPPED)
 
