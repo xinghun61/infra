@@ -1,12 +1,14 @@
 [
   {
     "cmd": [
-      "/opt/infra-tools/authutil",
+      "authutil",
       "token",
       "-service-account-json",
-      "/creds/service_accounts/service-account-recipe-roller.json"
+      "/creds/service_accounts/service-account-recipe-roller.json",
+      "-lifetime",
+      "600s"
     ],
-    "name": "Get auth token",
+    "name": "get access token for service-account-recipe-roller.json",
     "stdout": "/path/to/tmp/"
   },
   {
@@ -21,7 +23,7 @@
       "--outfile",
       "/path/to/tmp/json",
       "--headers-json",
-      "{\"Authorization\": \"Bearer ya29.foobar\"}"
+      "{\"Authorization\": \"Bearer extra.secret.token.should.not.be.logged\"}"
     ],
     "name": "Get luci-config projects"
   },

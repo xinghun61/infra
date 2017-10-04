@@ -1,11 +1,14 @@
 [
   {
     "cmd": [
-      "/opt/infra-tools/authutil",
+      "authutil",
       "token",
-      "-service-account-json=/creds/service_accounts/service-account-build_limited.json"
+      "-service-account-json",
+      "/creds/service_accounts/service-account-build_limited.json",
+      "-lifetime",
+      "600s"
     ],
-    "name": "get access token",
+    "name": "get access token for service-account-build_limited.json",
     "stdout": "/path/to/tmp/"
   },
   {
@@ -20,7 +23,7 @@
       "--outfile",
       "/path/to/tmp/json",
       "--headers-json",
-      "{\"Authorization\": \"Bearer abc124\"}"
+      "{\"Authorization\": \"Bearer extra.secret.token.should.not.be.logged\"}"
     ],
     "name": "Get luci-config projects"
   },
@@ -80,7 +83,7 @@
       "--outfile",
       "/path/to/tmp/json",
       "--headers-json",
-      "{\"Authorization\": \"Bearer abc124\"}"
+      "{\"Authorization\": \"Bearer extra.secret.token.should.not.be.logged\"}"
     ],
     "name": "Get project 'build' config 'recipes.cfg'"
   },

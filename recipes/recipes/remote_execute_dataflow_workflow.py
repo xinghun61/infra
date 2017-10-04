@@ -5,7 +5,7 @@
 from recipe_engine.recipe_api import Property
 
 DEPS = [
-    'build/service_account',
+    'build/puppet_service_account',
     'depot_tools/bot_update',
     'depot_tools/gclient',
     'recipe_engine/context',
@@ -37,7 +37,7 @@ def RunSteps(api, workflow, job_name):
   # Clear PYTHONPATH since we want to use infra/ENV and not whatever the recipe
   # sets
   env = {'PYTHONPATH': '', 'GOOGLE_APPLICATION_CREDENTIALS':
-         api.service_account.get_json_path('dataflow-launcher')}
+         api.puppet_service_account.get_key_path('dataflow-launcher')}
   with api.context(env=env):
     api.step('Remote execute', [python_path, workflow_path, '--job_name',
                                 job_name, '--project', 'chrome-infra-events',

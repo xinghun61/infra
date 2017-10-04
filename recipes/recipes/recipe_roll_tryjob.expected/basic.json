@@ -1,11 +1,14 @@
 [
   {
     "cmd": [
-      "/opt/infra-tools/authutil",
+      "authutil",
       "token",
-      "-service-account-json=/creds/service_accounts/service-account-recipe-roll-tester.json"
+      "-service-account-json",
+      "/creds/service_accounts/service-account-recipe-roll-tester.json",
+      "-lifetime",
+      "600s"
     ],
-    "name": "get access token",
+    "name": "get access token for service-account-recipe-roll-tester.json",
     "stdout": "/path/to/tmp/"
   },
   {
@@ -20,7 +23,7 @@
       "--outfile",
       "/path/to/tmp/json",
       "--headers-json",
-      "{\"Authorization\": \"Bearer abc124\"}"
+      "{\"Authorization\": \"Bearer extra.secret.token.should.not.be.logged\"}"
     ],
     "name": "Get luci-config projects"
   },

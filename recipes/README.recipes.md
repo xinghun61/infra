@@ -366,23 +366,19 @@ installations.
 &mdash; **def [gsutil\_upload](/recipes/recipes/publish_tarball.py#31)(api, source, bucket, dest, args):**
 ### *recipes* / [recipe\_autoroller](/recipes/recipes/recipe_autoroller.py)
 
-[DEPS](/recipes/recipes/recipe_autoroller.py#7): [build/luci\_config][build/recipe_modules/luci_config], [recipe\_autoroller](#recipe_modules-recipe_autoroller), [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
+[DEPS](/recipes/recipes/recipe_autoroller.py#7): [build/luci\_config][build/recipe_modules/luci_config], [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [recipe\_autoroller](#recipe_modules-recipe_autoroller), [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
 
 Rolls recipes.cfg dependencies for public projects.
 
-&mdash; **def [RunSteps](/recipes/recipes/recipe_autoroller.py#65)(api, projects, auth_token, service_account):**
-
-&mdash; **def [get\_auth\_token](/recipes/recipes/recipe_autoroller.py#34)(api, service_account):**
-
-Returns an access token for the service account.
+&mdash; **def [RunSteps](/recipes/recipes/recipe_autoroller.py#50)(api, projects, auth_token, service_account):**
 ### *recipes* / [recipe\_roll\_tryjob](/recipes/recipes/recipe_roll_tryjob.py)
 
-[DEPS](/recipes/recipes/recipe_roll_tryjob.py#8): [build/luci\_config][build/recipe_modules/luci_config], [build/service\_account][build/recipe_modules/service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/tryserver][depot_tools/recipe_modules/tryserver], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/recipe_roll_tryjob.py#8): [build/luci\_config][build/recipe_modules/luci_config], [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/tryserver][depot_tools/recipe_modules/tryserver], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 &mdash; **def [RunSteps](/recipes/recipes/recipe_roll_tryjob.py#83)(api, upstream_project, downstream_project, auth_token, service_account):**
 ### *recipes* / [recipe\_simulation](/recipes/recipes/recipe_simulation.py)
 
-[DEPS](/recipes/recipes/recipe_simulation.py#8): [build/luci\_config][build/recipe_modules/luci_config], [build/service\_account][build/recipe_modules/service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/recipe_simulation.py#8): [build/luci\_config][build/recipe_modules/luci_config], [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 A continuous builder which runs recipe tests.
 
@@ -394,7 +390,7 @@ A continuous builder which runs recipe tests.
 &mdash; **def [RunSteps](/recipes/recipes/recipes_py_continuous.py#22)(api, mastername, buildername, buildnumber):**
 ### *recipes* / [remote\_execute\_dataflow\_workflow](/recipes/recipes/remote_execute_dataflow_workflow.py)
 
-[DEPS](/recipes/recipes/remote_execute_dataflow_workflow.py#7): [build/service\_account][build/recipe_modules/service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/remote_execute_dataflow_workflow.py#7): [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 &mdash; **def [RunSteps](/recipes/recipes/remote_execute_dataflow_workflow.py#27)(api, workflow, job_name):**
 ### *recipes* / [sheriff-o-matic-wct](/recipes/recipes/sheriff-o-matic-wct.py)
@@ -507,15 +503,15 @@ See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 
 Runs a step which adds a link to the current CL if there is one.
 
-[build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/1cf42e653d6aafaca77ae0799b436cc17853866f/scripts/slave/README.recipes.md#recipe_modules-chromium
-[build/recipe_modules/goma]: https://chromium.googlesource.com/chromium/tools/build.git/+/1cf42e653d6aafaca77ae0799b436cc17853866f/scripts/slave/README.recipes.md#recipe_modules-goma
-[build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/1cf42e653d6aafaca77ae0799b436cc17853866f/scripts/slave/README.recipes.md#recipe_modules-luci_config
-[build/recipe_modules/perf_dashboard]: https://chromium.googlesource.com/chromium/tools/build.git/+/1cf42e653d6aafaca77ae0799b436cc17853866f/scripts/slave/README.recipes.md#recipe_modules-perf_dashboard
-[build/recipe_modules/service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/1cf42e653d6aafaca77ae0799b436cc17853866f/scripts/slave/README.recipes.md#recipe_modules-service_account
-[build/recipe_modules/trigger]: https://chromium.googlesource.com/chromium/tools/build.git/+/1cf42e653d6aafaca77ae0799b436cc17853866f/scripts/slave/README.recipes.md#recipe_modules-trigger
-[build/recipe_modules/v8]: https://chromium.googlesource.com/chromium/tools/build.git/+/1cf42e653d6aafaca77ae0799b436cc17853866f/scripts/slave/README.recipes.md#recipe_modules-v8
-[build/recipe_modules/webrtc]: https://chromium.googlesource.com/chromium/tools/build.git/+/1cf42e653d6aafaca77ae0799b436cc17853866f/scripts/slave/README.recipes.md#recipe_modules-webrtc
-[build/recipe_modules/zip]: https://chromium.googlesource.com/chromium/tools/build.git/+/1cf42e653d6aafaca77ae0799b436cc17853866f/scripts/slave/README.recipes.md#recipe_modules-zip
+[build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/8993b9bbb02443e02353e55fac997a270de0e12a/scripts/slave/README.recipes.md#recipe_modules-chromium
+[build/recipe_modules/goma]: https://chromium.googlesource.com/chromium/tools/build.git/+/8993b9bbb02443e02353e55fac997a270de0e12a/scripts/slave/README.recipes.md#recipe_modules-goma
+[build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/8993b9bbb02443e02353e55fac997a270de0e12a/scripts/slave/README.recipes.md#recipe_modules-luci_config
+[build/recipe_modules/perf_dashboard]: https://chromium.googlesource.com/chromium/tools/build.git/+/8993b9bbb02443e02353e55fac997a270de0e12a/scripts/slave/README.recipes.md#recipe_modules-perf_dashboard
+[build/recipe_modules/puppet_service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/8993b9bbb02443e02353e55fac997a270de0e12a/scripts/slave/README.recipes.md#recipe_modules-puppet_service_account
+[build/recipe_modules/trigger]: https://chromium.googlesource.com/chromium/tools/build.git/+/8993b9bbb02443e02353e55fac997a270de0e12a/scripts/slave/README.recipes.md#recipe_modules-trigger
+[build/recipe_modules/v8]: https://chromium.googlesource.com/chromium/tools/build.git/+/8993b9bbb02443e02353e55fac997a270de0e12a/scripts/slave/README.recipes.md#recipe_modules-v8
+[build/recipe_modules/webrtc]: https://chromium.googlesource.com/chromium/tools/build.git/+/8993b9bbb02443e02353e55fac997a270de0e12a/scripts/slave/README.recipes.md#recipe_modules-webrtc
+[build/recipe_modules/zip]: https://chromium.googlesource.com/chromium/tools/build.git/+/8993b9bbb02443e02353e55fac997a270de0e12a/scripts/slave/README.recipes.md#recipe_modules-zip
 [depot_tools/recipe_modules/bot_update]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/c634ba57059c1ff965ccbfa3277bf025fb1ae891/recipes/README.recipes.md#recipe_modules-bot_update
 [depot_tools/recipe_modules/cipd]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/c634ba57059c1ff965ccbfa3277bf025fb1ae891/recipes/README.recipes.md#recipe_modules-cipd
 [depot_tools/recipe_modules/depot_tools]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/c634ba57059c1ff965ccbfa3277bf025fb1ae891/recipes/README.recipes.md#recipe_modules-depot_tools

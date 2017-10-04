@@ -17,7 +17,7 @@ DEPS = [
   'recipe_engine/step',
 
   'build/luci_config',
-  'build/service_account',
+  'build/puppet_service_account',
 ]
 
 PROPERTIES = {
@@ -31,7 +31,7 @@ PROPERTIES = {
 
 def RunSteps(api, project_under_test, auth_with_account):
   if auth_with_account:
-    api.luci_config.c.auth_token = api.service_account.get_token(
+    api.luci_config.c.auth_token = api.puppet_service_account.get_access_token(
         auth_with_account)
 
   root_dir = api.path['start_dir']

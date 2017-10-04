@@ -2,12 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from recipe_engine.recipe_api import Property, defer_results
+from recipe_engine.recipe_api import Property
 
 
 DEPS = [
   'build/luci_config',
-  'build/service_account',
+  'build/puppet_service_account',
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
@@ -89,7 +89,7 @@ def RunSteps(
 
   api.luci_config.set_config('basic')
   if service_account:
-    auth_token = api.service_account.get_token(service_account)
+    auth_token = api.puppet_service_account.get_access_token(service_account)
   if auth_token:
     api.luci_config.c.auth_token = auth_token
 

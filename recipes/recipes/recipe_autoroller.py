@@ -8,6 +8,7 @@ DEPS = [
   'recipe_autoroller',
 
   'build/luci_config',
+  'build/puppet_service_account',
 
   'recipe_engine/json',
   'recipe_engine/properties',
@@ -31,22 +32,6 @@ PROJECTS = [
 ]
 
 
-def get_auth_token(api, service_account):
-  """Returns an access token for the service account."""
-  cmd = [
-    '/opt/infra-tools/authutil',
-    'token',
-    '-service-account-json',
-    '/creds/service_accounts/service-account-%s.json' % service_account
-  ]
-
-  result = api.step(
-      'Get auth token', cmd,
-      stdout=api.raw_io.output(),
-      step_test_data=lambda: api.raw_io.test_api.stream_output('ya29.foobar'))
-  return result.stdout.strip()
-
-
 PROPERTIES = {
   'projects': recipe_api.Property(default=PROJECTS),
 
@@ -65,7 +50,7 @@ PROPERTIES = {
 def RunSteps(api, projects, auth_token, service_account):
   api.luci_config.set_config('basic')
   if not auth_token and service_account:
-    auth_token = get_auth_token(api, service_account)
+    auth_token = api.puppet_service_account.get_access_token(service_account)
   else:
     assert not service_account, (
         "Only one of \"service_account\" and \"auth_token\" may be set")
