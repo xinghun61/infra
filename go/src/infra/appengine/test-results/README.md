@@ -64,7 +64,7 @@ make test
 ## Deploy
 
 ```
-make [deploy_staging|deploy_prod|deploy_cron|deploy_dispatch|deploy_queues]
+make [deploy_staging|deploy_prod]
 ```
 
 Then migrate traffic to the new version.
