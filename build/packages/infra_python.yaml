@@ -30,6 +30,9 @@ data:
   - dir: "infra"
     exclude:
       - .*\.pyc
+      # Unused and is always changing due to recipe_roller, creating new
+      # packages.
+      - config
       - path_hacks
       # TODO(vadimsh): Depends on depot_tools.
       - services/git_cache_updater
