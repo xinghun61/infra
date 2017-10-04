@@ -105,13 +105,16 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Analyze
 	}
 	res := []*tricium.AnalyzerProgress{}
 	for _, wr := range workerResults {
-		res = append(res, &tricium.AnalyzerProgress{
-			Analyzer:       wr.Analyzer,
-			Platform:       wr.Platform,
-			State:          wr.State,
-			SwarmingTaskId: fmt.Sprintf("%s/task?id=%s", run.SwarmingServerURL, wr.SwarmingTaskID),
-			NumComments:    int32(wr.NumComments),
-		})
+		p := &tricium.AnalyzerProgress{
+			Analyzer:    wr.Analyzer,
+			Platform:    wr.Platform,
+			State:       wr.State,
+			NumComments: int32(wr.NumComments),
+		}
+		if len(wr.SwarmingTaskID) > 0 {
+			p.SwarmingTaskId = fmt.Sprintf("%s/task?id=%s", run.SwarmingServerURL, wr.SwarmingTaskID)
+		}
+		res = append(res, p)
 	}
 	return requestRes.State, res, nil
 }
