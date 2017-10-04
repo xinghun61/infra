@@ -161,21 +161,23 @@ Args:
 
 #### **class [ThirdPartyPackagesApi](/recipes/recipe_modules/third_party_packages/api.py#16)([RecipeApi][recipe_engine/wkt/RecipeApi]):**
 
-&mdash; **def [build\_package](/recipes/recipe_modules/third_party_packages/api.py#128)(self, name, workdir, root, install_mode):**
+&mdash; **def [build\_package](/recipes/recipe_modules/third_party_packages/api.py#131)(self, name, workdir, root, install_mode):**
 
 &emsp; **@property**<br>&mdash; **def [cmake](/recipes/recipe_modules/third_party_packages/api.py#52)(self):**
 
-&mdash; **def [does\_package\_exist](/recipes/recipe_modules/third_party_packages/api.py#124)(self, name, version):**
+&mdash; **def [does\_package\_exist](/recipes/recipe_modules/third_party_packages/api.py#127)(self, name, version):**
 
 &emsp; **@dry_run.setter**<br>&mdash; **def [dry\_run](/recipes/recipe_modules/third_party_packages/api.py#26)(self, v):**
 
-&mdash; **def [ensure\_package](/recipes/recipe_modules/third_party_packages/api.py#63)(self, workdir, repo_url, package_name_prefix, install_fn, tag, version, cipd_install_mode, test_fn=None):**
+&mdash; **def [ensure\_package](/recipes/recipe_modules/third_party_packages/api.py#66)(self, workdir, repo_url, package_name_prefix, install_fn, tag, version, cipd_install_mode, test_fn=None):**
 
 Ensures that the specified CIPD package exists.
 
 &emsp; **@property**<br>&mdash; **def [gcloud](/recipes/recipe_modules/third_party_packages/api.py#44)(self):**
 
-&mdash; **def [get\_latest\_release\_tag](/recipes/recipe_modules/third_party_packages/api.py#101)(self, repo_url, prefix='v'):**
+&mdash; **def [get\_latest\_release\_tag](/recipes/recipe_modules/third_party_packages/api.py#104)(self, repo_url, prefix='v'):**
+
+&mdash; **def [get\_package\_name](/recipes/recipe_modules/third_party_packages/api.py#63)(self, package_name_prefix):**
 
 &emsp; **@property**<br>&mdash; **def [git](/recipes/recipe_modules/third_party_packages/api.py#40)(self):**
 
@@ -183,7 +185,7 @@ Ensures that the specified CIPD package exists.
 
 &emsp; **@property**<br>&mdash; **def [python](/recipes/recipe_modules/third_party_packages/api.py#36)(self):**
 
-&mdash; **def [register\_package](/recipes/recipe_modules/third_party_packages/api.py#133)(self, package_file, name, version):**
+&mdash; **def [register\_package](/recipes/recipe_modules/third_party_packages/api.py#136)(self, package_file, name, version):**
 
 &mdash; **def [support\_prefix](/recipes/recipe_modules/third_party_packages/api.py#60)(self, base):**
 

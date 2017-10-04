@@ -1,5 +1,87 @@
 [
   {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]\\resources\\gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/python/cpython/+refs",
+      "--format",
+      "json"
+    ],
+    "name": "refs",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"HEAD\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/heads/master\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/not-a-version\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.1\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.2\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v2.1.3rc1\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v3.0.0\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@refs@HEAD@@@",
+      "@@@STEP_LOG_LINE@refs@refs/heads/master@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/not-a-version@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.1@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.2@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v2.1.3rc1@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v3.0.0@@@",
+      "@@@STEP_LOG_END@refs@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd.bat",
+      "search",
+      "infra/python/cpython/windows-amd64",
+      "-tag",
+      "version:2.1.2.chromium14",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "C:\\creds\\service_accounts\\service-account-cipd-builder.json"
+    ],
+    "name": "cipd search infra/python/cpython/windows-amd64 version:2.1.2.chromium14",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd.bat",
+      "set-tag",
+      "infra/python/cpython/windows-amd64",
+      "-version",
+      "1ba7d485930b05eb07f6bc7724447d6a7c22a6b6",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "C:\\creds\\service_accounts\\service-account-cipd-builder.json",
+      "-tag",
+      "version:2.1.2.chromium14"
+    ],
+    "name": "cipd set-tag infra/python/cpython/windows-amd64",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/python/cpython/windows-amd64\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"pin\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"1ba7d485930b05eb07f6bc7724447d6a7c22a6b6\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/python/cpython/windows-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
     "name": "$result",
     "recipe_result": null,
     "status_code": 0

@@ -63,15 +63,14 @@ def GenTests(api):
         api.platform.bits(bits) +
         api.properties(dry_run=False)
     )
-    if platform_name != 'win':
-      test_data += api.step_data('refs', api.gitiles.make_refs_test_data(*REFS))
-      test_data += api.override_step_data(
-          'cipd search %s version:2.1.2%s' % (
-            package_name, python.PACKAGE_VERSION_SUFFIX),
-          api.cipd.example_search(
-              package_name,
-              instances=(1 if exists else 0))
-      )
+    test_data += api.step_data('refs', api.gitiles.make_refs_test_data(*REFS))
+    test_data += api.override_step_data(
+        'cipd search %s version:2.1.2%s' % (
+          package_name, python.PACKAGE_VERSION_SUFFIX),
+        api.cipd.example_search(
+            package_name,
+            instances=(1 if exists else 0))
+    )
 
     return test_data
 
@@ -83,6 +82,11 @@ def GenTests(api):
   yield (
       api.test('mac_exists') +
       GenTest('mac', 64, 'mac-amd64', exists=True)
+  )
+
+  yield (
+      api.test('win_exists') +
+      GenTest('win', 64, 'windows-amd64', exists=True)
   )
 
   yield (

@@ -1,0 +1,7 @@
+# The `recipes` attribute controls which additional files are included in the
+# recipes bundle when running the `//recipes/recipes.py bundle` command. These
+# files will also be available to other repos' recipes when they pull in
+# depot_tools as a recipe dependency.
+
+# Used by "third_party_packages"'s Python unit test.
+/go/src/infra/tools/vpython/test_data/test_requests_get.py.vpython  recipes

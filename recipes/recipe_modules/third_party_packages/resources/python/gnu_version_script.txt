@@ -1,22 +1,17 @@
 /*
- * This is a GNU "ld" version script. It is used with the "--version-script"
- * option when linking Python for Linux.
+ * This is a GNU "ld" version script.
  *
  * It is typically used to version symbols, but can also be used to set the
- * exportability of symbols. We use it to suppress the export of some of the
- * global symbols from static libraries.
- *
- * We use the "-Wl,--exclude-libs,ALL", which localizes most symbols. However,
- * some seem to be skipped. This script fills in those blanks.
+ * exportability of symbols. We use it to limit global export of symbols to
+ * only those that are part of the Python ABI, excluding symbols in the
+ * peripheral statically-linked libraries (notably OpenSSL).
  */
 
 {
   global:
-    *;
+    Py*;
+    *_Py*;
 
   local:
-    /* OpenSSL exported lock Symbols */
-    global_engine_lock;
-    bio_lookup_lock;
-    bio_type_lock;
+    *;
 };

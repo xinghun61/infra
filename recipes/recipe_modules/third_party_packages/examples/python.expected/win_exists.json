@@ -37,7 +37,7 @@
     "cmd": [
       "cipd.bat",
       "search",
-      "infra/python/cpython/windows-386",
+      "infra/python/cpython/windows-amd64",
       "-tag",
       "version:2.1.2.chromium14",
       "-json-output",
@@ -45,38 +45,15 @@
       "-service-account-json",
       "C:\\creds\\service_accounts\\service-account-cipd-builder.json"
     ],
-    "name": "cipd search infra/python/cpython/windows-386 version:2.1.2.chromium14",
+    "name": "cipd search infra/python/cpython/windows-amd64 version:2.1.2.chromium14",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
-      "@@@STEP_LOG_LINE@json.output@}@@@",
-      "@@@STEP_LOG_END@json.output@@@"
-    ]
-  },
-  {
-    "cmd": [
-      "cipd.bat",
-      "set-tag",
-      "infra/python/cpython/windows-386",
-      "-version",
-      "784395f01d1ae7c2f8d63d6c61418dcd774b8146",
-      "-json-output",
-      "/path/to/tmp/json",
-      "-service-account-json",
-      "C:\\creds\\service_accounts\\service-account-cipd-builder.json",
-      "-tag",
-      "version:2.1.2.chromium14"
-    ],
-    "name": "cipd set-tag infra/python/cpython/windows-386",
-    "~followup_annotations": [
-      "@@@STEP_LOG_LINE@json.output@{@@@",
-      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@    \"package\": \"infra/python/cpython/windows-386\", @@@",
-      "@@@STEP_LOG_LINE@json.output@    \"pin\": {@@@",
-      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"784395f01d1ae7c2f8d63d6c61418dcd774b8146\", @@@",
-      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/python/cpython/windows-386\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-instance_id_1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/python/cpython/windows-amd64\"@@@",
       "@@@STEP_LOG_LINE@json.output@    }@@@",
-      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
       "@@@STEP_LOG_LINE@json.output@}@@@",
       "@@@STEP_LOG_END@json.output@@@"
     ]

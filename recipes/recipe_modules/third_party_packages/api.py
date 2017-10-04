@@ -60,10 +60,13 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
   def support_prefix(self, base):
     return SupportPrefix(self, base)
 
+  def get_package_name(self, package_name_prefix):
+    return package_name_prefix + self.m.cipd.platform_suffix()
+
   def ensure_package(self, workdir, repo_url, package_name_prefix, install_fn,
                      tag, version, cipd_install_mode, test_fn=None):
     """Ensures that the specified CIPD package exists."""
-    package_name = package_name_prefix + self.m.cipd.platform_suffix()
+    package_name = self.get_package_name(package_name_prefix)
 
     # Check if the package already exists.
     if self.does_package_exist(package_name, version):

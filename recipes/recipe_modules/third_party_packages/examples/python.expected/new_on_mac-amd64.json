@@ -52,7 +52,7 @@
       "search",
       "infra/python/cpython/mac-amd64",
       "-tag",
-      "version:2.1.2.chromium13",
+      "version:2.1.2.chromium14",
       "-json-output",
       "/path/to/tmp/json",
       "-service-account-json",
@@ -61,7 +61,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"
     },
-    "name": "cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium13",
+    "name": "cipd search infra/python/cpython/mac-amd64 version:2.1.2.chromium14",
     "~followup_annotations": [
       "@@@STEP_LOG_LINE@json.output@{@@@",
       "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
@@ -1020,7 +1020,7 @@
       "--disable-shared",
       "--without-system-ffi",
       "--enable-ipv6",
-      "--enable-py-version-override=2.1.2+chromium13",
+      "--enable-py-version-override=2.1.2+chromium14",
       "--enable-unicode=ucs2",
       "--with-threads",
       "--enable-toolbox-glue"
@@ -1066,7 +1066,7 @@
       "--disable-shared",
       "--without-system-ffi",
       "--enable-ipv6",
-      "--enable-py-version-override=2.1.2+chromium13",
+      "--enable-py-version-override=2.1.2+chromium14",
       "--enable-unicode=ucs2",
       "--with-threads",
       "--enable-toolbox-glue"
@@ -1314,7 +1314,7 @@
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6",
       "PYTHON_TEST_CIPD_PACKAGE": "[START_DIR]/python/package.cipd",
-      "PYTHON_TEST_EXPECTED_VERSION": "2.1.2+chromium13"
+      "PYTHON_TEST_EXPECTED_VERSION": "2.1.2+chromium14"
     },
     "name": "test"
   },
@@ -1330,7 +1330,7 @@
       "-ref",
       "latest",
       "-tag",
-      "version:2.1.2.chromium13"
+      "version:2.1.2.chromium14"
     ],
     "env": {
       "MACOSX_DEPLOYMENT_TARGET": "10.6"

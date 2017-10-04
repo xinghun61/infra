@@ -14,26 +14,39 @@ PACKAGE_PREFIX = 'infra/python/cpython/'
 
 # This version suffix serves to distinguish different revisions of Python built
 # with this recipe.
-PACKAGE_VERSION_SUFFIX = '.chromium13'
+PACKAGE_VERSION_SUFFIX = '.chromium14'
+
+# Windows packages are built by hand. However, when PACKAGE_VERSION_SUFFIX
+# updates, we need to make sure the latest by-hand Windows version is
+# appropriately tagged.
+#
+# See //doc/packaging/python.md
+#
+# This is the tag of the Windows mirror
+PACKAGE_WINDOWS_MIRROR_ID = {
+    'windows-386': '784395f01d1ae7c2f8d63d6c61418dcd774b8146',
+    'windows-amd64': '1ba7d485930b05eb07f6bc7724447d6a7c22a6b6',
+}
 
 class PythonApi(util.ModuleShim):
 
   @recipe_api.composite_step
   def package(self):
+    tag = self.get_latest_release_tag(REPO_URL, 'v2.')
+    version = tag.lstrip('v') + PACKAGE_VERSION_SUFFIX
+
     if self.m.platform.is_win:
       # We don't currently package Python for Windows.
-      return
-    self._package_unix()
+      self._mirror_windows(version)
+    else:
+      self._package_unix(tag, version)
 
-  def _package_unix(self):
+  def _package_unix(self, tag, version):
     """Builds Python for Unix and uploads it to CIPD."""
 
     workdir = self.m.path['start_dir'].join('python')
     support = self.support_prefix(
         workdir.join('_support'))
-
-    tag = self.get_latest_release_tag(REPO_URL, 'v2.')
-    version = tag.lstrip('v') + PACKAGE_VERSION_SUFFIX
 
     # Determine our Python interpreter version. It will use PEP440's "local
     # version identifier" to specify a local Python version based on our
@@ -234,14 +247,9 @@ class PythonApi(util.ModuleShim):
         # conflict with the same libraries from wheels or other dynamically
         # linked sources.
         #
-        # This set of commands was determined by trial, see:
+        # This set of symbols was determined by trial, see:
         # - crbug.com/763792
         ldflags += [
-            # Tell symbols from imported static libraries to be marked as LOCAL.
-            # This seems to not cover all symbols, but it gets most of them.
-            '-Wl,--exclude-libs,ALL',
-
-            # Use this to get any remaining problematic symbols.
             '-Wl,--version-script=%s' % (
               self.resource('python', 'gnu_version_script.txt'),),
         ]
@@ -434,3 +442,13 @@ class PythonApi(util.ModuleShim):
           'copy',
           test_fn=test,
       )
+
+  def _mirror_windows(self, version):
+    package_name = self.get_package_name(PACKAGE_PREFIX)
+    if self.does_package_exist(package_name, version):
+      return
+
+    self.m.cipd.set_tag(
+        package_name,
+        PACKAGE_WINDOWS_MIRROR_ID[self.m.cipd.platform_suffix()],
+        {'version': version})
