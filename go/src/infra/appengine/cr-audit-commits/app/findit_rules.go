@@ -301,3 +301,21 @@ func RevertOfCulprit(ctx context.Context, ap *AuditParams, rc *RelevantCommit, c
 	}
 	return result
 }
+
+// OnlyCommitsOwnChange is a RuleFunc that verifies that commits landed by the
+// service account were also authored by that service account.
+func OnlyCommitsOwnChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
+	result := &RuleResult{}
+	result.RuleName = "OnlyCommitsOwnChange"
+	result.RuleResultStatus = ruleFailed
+	if rc.CommitterAccount == ap.TriggeringAccount {
+		if rc.CommitterAccount != rc.AuthorAccount {
+			result.RuleResultStatus = ruleFailed
+			result.Message = fmt.Sprintf("Service account %s committed a commit by someone else: %s",
+				rc.CommitterAccount, rc.AuthorAccount)
+			return result
+		}
+	}
+	result.RuleResultStatus = rulePassed
+	return result
+}

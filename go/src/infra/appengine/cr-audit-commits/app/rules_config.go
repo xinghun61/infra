@@ -72,6 +72,7 @@ var RuleMap = map[string]*RepoConfig{
 				CulpritInBuild,
 				FailedBuildIsCompileFailure,
 				RevertOfCulprit,
+				OnlyCommitsOwnChange,
 			},
 		}},
 	},

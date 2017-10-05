@@ -104,6 +104,29 @@ func TestFinditRules(t *testing.T) {
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 
 		})
+		Convey("Only commits own change Pass", func() {
+			// Run rule
+			rr := OnlyCommitsOwnChange(ctx, ap, rc, testClients)
+			// Check result code
+			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
+
+		})
+		Convey("Only commits own change Pass (someone else commits)", func() {
+			rc.CommitterAccount = "bad-dude@creepy.domain"
+			// Run rule
+			rr := OnlyCommitsOwnChange(ctx, ap, rc, testClients)
+			// Check result code
+			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
+
+		})
+		Convey("Only commits own change Fail", func() {
+			rc.AuthorAccount = "bad-dude@creepy.domain"
+			// Run rule
+			rr := OnlyCommitsOwnChange(ctx, ap, rc, testClients)
+			// Check result code
+			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
+
+		})
 		Convey("Culprit age Error", func() {
 			// Inject gitiles error
 			testClients.gitiles = &mockGitilesClient{e: errors.New("Some error")}
