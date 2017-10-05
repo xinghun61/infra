@@ -127,34 +127,23 @@ func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revis
 			logging.Warningf(ctx, "failed to unmarshal comment: %v", err)
 			break
 		}
-		// TODO(emso): Replace with Comment.Path once the anlayzer runtime is aware of files.
-		path := "README.md"
-		if _, ok := robos[path]; !ok {
-			robos[path] = []*robotCommentInput{}
+		if _, ok := robos[comment.Path]; !ok {
+			robos[comment.Path] = []*robotCommentInput{}
 		}
-		// TODO(emso): Values used for testing, update to use values in comment after making sure they are added.
-		robos[path] = append(robos[path], &robotCommentInput{
+		robos[comment.Path] = append(robos[comment.Path], &robotCommentInput{
 			Message:    comment.Message,
 			RobotID:    comment.Category,
 			RobotRunID: strconv.FormatInt(runID, 10),
-			Path:       path,
+			URL:        comment.Url,
+			Path:       comment.Path,
+			Line:       int(comment.StartLine),
+			Range: &commentRange{
+				StartLine:      int(comment.StartLine),
+				EndLine:        int(comment.EndLine),
+				StartCharacter: int(comment.StartChar),
+				EndCharacter:   int(comment.EndChar),
+			},
 		})
-		/*
-		   		robos[comment.Path] = append(robos[comment.Path], &robotCommentInput{
-		   			Message:    comment.Message,
-		   			RobotID:    comment.Category,
-		   			RobotRunID: strconv.FormatInt(runID, 10),
-		   			URL:        comment.Url,
-		   			Path:       comment.Path,
-		   			Line:       int(comment.StartLine),
-		   			Range: &commentRange{
-		   				StartLine:      int(comment.StartLine),
-		   				EndLine:        int(comment.EndLine),
-		   				StartCharacter: int(comment.StartChar),
-		   				EndCharacter:   int(comment.EndChar),
-		   			},
-		   i		})
-		*/
 	}
 	return g.setReview(ctx, host, change, revision, &reviewInput{RobotComments: robos})
 }
