@@ -8,6 +8,7 @@ from recipe_engine.types import freeze
 DEPS = [
   'build/v8',
   'build/webrtc',
+  'build/chromium_checkout',
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
@@ -39,9 +40,6 @@ BUILDERS = freeze({
   'WebRTC lkgr finder': {
     'project': 'webrtc',
     'repo': 'https://webrtc.googlesource.com/src',
-    # TODO(sergiyb): This ref does not actually exist yet, but this is needed
-    # for tests below. When this recipe starts to be actually used for 'WebRTC
-    # lkgr finder' builder, one would need to create the refs/heads/lkgr first.
     'ref': 'refs/heads/lkgr',
     'gclient_config': 'webrtc',
     'checkout_dir': 'src',
@@ -63,7 +61,9 @@ def RunSteps(api, buildername):
   api.gclient.c.got_revision_mapping = {}
   api.gclient.c.got_revision_reverse_mapping = {'got_revision': 'infra'}
 
-  api.bot_update.ensure_checkout()
+  checkout_dir = api.chromium_checkout.get_checkout_dir({})
+  with api.context(cwd=checkout_dir):
+    api.bot_update.ensure_checkout()
   api.gclient.runhooks()
 
   repo, ref = botconfig['repo'], botconfig['ref']
@@ -96,12 +96,13 @@ def RunSteps(api, buildername):
     step_test_data += api.raw_io.test_api.output_text(
         '<html>lkgr</html>', name='html')
 
-  step_result = api.python(
-      'calculate %s lkgr' % botconfig['project'],
-      api.path['start_dir'].join('infra', 'run.py'),
-      args,
-      step_test_data=lambda: step_test_data
-  )
+  with api.context(cwd=checkout_dir.join('infra')):
+    step_result = api.python(
+        'calculate %s lkgr' % botconfig['project'],
+        checkout_dir.join('infra', 'run.py'),
+        args,
+        step_test_data=lambda: step_test_data
+    )
 
   if botconfig.get('lkgr_status_gs_path'):
     api.gsutil.upload(
@@ -114,7 +115,7 @@ def RunSteps(api, buildername):
 
   new_lkgr = step_result.raw_io.output_texts['lkgr_hash']
   if new_lkgr and new_lkgr != current_lkgr:
-    with api.context(cwd=api.path['start_dir'].join(botconfig['checkout_dir'])):
+    with api.context(cwd=checkout_dir.join(botconfig['checkout_dir'])):
       api.git('push', repo, '%s:%s' % (new_lkgr, ref), name='push lkgr to ref')
 
 
@@ -123,6 +124,7 @@ def GenTests(api):
     yield (
         api.test(botconfig['project']) +
         api.properties.generic(buildername=buildername) +
+        api.properties(path_config='kitchen') +
         api.step_data(
             'read lkgr from ref',
             api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'),
