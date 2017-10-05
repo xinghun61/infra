@@ -1,3 +1,4 @@
+dataset_id: "raw_events"
 table_id: "test_results"
 name: "Test Results"
 description: "Test results reported to test-results.appspot.com by the test launcher. Based on original JSON format: https://www.chromium.org/developers/the-json-test-results-format. "

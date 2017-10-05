@@ -7,17 +7,8 @@ syntax = "proto3";
 package tabledef;
 
 message TableDef {
-  // DataSet is the set of BigQuery event monitoring data sets supported by
-  // Chrome Infrastructure.
-  enum DataSet {
-    // Events sent directly from code.
-    RAW_EVENTS = 0;
-    // Events aggregated by Cloud Dataflow.
-    AGGREGATED = 1;
-    // Test data.
-    TEST_DATA = 3;
-  }
-  DataSet dataset = 1;
+  // Name of the dataset.
+  string dataset_id = 1;
   // Name of the table.
   string table_id = 2;
   // Human-readable name of the table. (optional)

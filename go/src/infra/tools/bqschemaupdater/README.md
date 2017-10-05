@@ -11,7 +11,7 @@ bqschemaupdater <path to json schema file> [--help] [--dry-run]
 
 # Standard Practices
 
-Table IDs should be underscored delimited, e.g. `test_results`.
+Table IDs and Dataset IDs should be underscored delimited, e.g. `test_results`.
 
 # Supported Uses
 

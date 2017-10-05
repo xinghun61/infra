@@ -40,7 +40,7 @@ func loadTableDef(path string) (*pb.TableDef, error) {
 }
 
 func updateFromTableDef(ctx context.Context, ts tableStore, td *pb.TableDef) error {
-	_, err := ts.getTableMetadata(ctx, td.Dataset.ID(), td.TableId)
+	_, err := ts.getTableMetadata(ctx, td.DatasetId, td.TableId)
 	if errNotFound(err) {
 		var options []bigquery.CreateTableOption
 		if td.PartitionTable {
@@ -48,7 +48,7 @@ func updateFromTableDef(ctx context.Context, ts tableStore, td *pb.TableDef) err
 			tp := bigquery.TimePartitioning{Expiration: time.Duration(i) * time.Second}
 			options = append(options, tp)
 		}
-		err = ts.createTable(ctx, td.Dataset.ID(), td.TableId, options...)
+		err = ts.createTable(ctx, td.DatasetId, td.TableId, options...)
 		if err != nil {
 			return err
 		}
@@ -58,7 +58,7 @@ func updateFromTableDef(ctx context.Context, ts tableStore, td *pb.TableDef) err
 		Description: td.Description,
 		Schema:      pb.BQSchema(td.Fields),
 	}
-	err = ts.updateTable(ctx, td.Dataset.ID(), td.TableId, md)
+	err = ts.updateTable(ctx, td.DatasetId, td.TableId, md)
 	return err
 }
 
@@ -98,7 +98,7 @@ func main() {
 		ts = dryRunTableStore{ts: ts, w: os.Stdout}
 	}
 
-	log.Printf("Updating dataset %q, table %q in project %q...", td.Dataset.ID(), td.TableId, *project)
+	log.Printf("Updating dataset %q, table %q in project %q...", td.DatasetId, td.TableId, *project)
 	err = updateFromTableDef(ctx, ts, td)
 	if err != nil {
 		log.Fatalf("Failed to update table: %s", err)

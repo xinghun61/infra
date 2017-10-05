@@ -1,4 +1,4 @@
-dataset: AGGREGATED
+dataset_id: "aggregated"
 table_id: "cq_attempts"
 name: "CQ Attempts"
 fields: <

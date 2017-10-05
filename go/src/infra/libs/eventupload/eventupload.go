@@ -61,9 +61,9 @@ type Uploader struct {
 // metric.
 func NewUploader(ctx context.Context, c *bigquery.Client, td *tabledef.TableDef) *Uploader {
 	return &Uploader{
-		DatasetID: td.GetDataset().ID(),
+		DatasetID: td.DatasetId,
 		TableID:   td.TableId,
-		Uploader:  c.Dataset(td.GetDataset().ID()).Table(td.TableId).Uploader(),
+		Uploader:  c.Dataset(td.DatasetId).Table(td.TableId).Uploader(),
 		s:         tabledef.BQSchema(td.Fields),
 	}
 }

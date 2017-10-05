@@ -6,7 +6,7 @@ package buildevent
 
 const (
 	// ResultUnknown and associated Result* values are suitable for the "Result"
-	// enum field in LegacyCompletedBuilds and LegacyBuildEvents.
+	// enum field in CompletedBuildsLegacy and BuildEventsLegacy.
 	ResultUnknown = ""
 	// ResultSuccess is a successful build result.
 	ResultSuccess = "SUCCESS"
@@ -24,7 +24,7 @@ const (
 
 const (
 	// CategoryUnknown and associated Category* values are suitable for the
-	// "Category" enum field in LegacyCompletedBuilds.
+	// "Category" enum field in CompletedBuildsLegacy.
 	CategoryUnknown = ""
 	// CategoryCQ is a scheduling category for the commit queue.
 	CategoryCQ = "CQ"

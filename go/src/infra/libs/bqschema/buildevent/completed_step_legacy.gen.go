@@ -8,8 +8,8 @@ import time "time"
 // CompletedStepLegacyTable is the TableDef for the
 // "raw_events" dataset's "completed_step_legacy" table.
 var CompletedStepLegacyTable = &pb.TableDef{
-	Dataset: pb.TableDef_RAW_EVENTS,
-	TableId: "completed_step_legacy",
+	DatasetId: "raw_events",
+	TableId:   "completed_step_legacy",
 }
 
 // CompletedStepLegacy is the schema for "CompletedStepLegacyTable".

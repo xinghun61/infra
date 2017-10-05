@@ -4,6 +4,7 @@
 # For the underlying protobuf, see:
 # https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/libs/bqschema/tabledef/table_def.proto
 
+dataset_id: "raw_events"
 table_id: "completed_step_legacy"
 name: "Legacy information about completed build steps"
 description: "Legacy record of build steps."

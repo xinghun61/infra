@@ -17,7 +17,7 @@ import (
 func TestUpdateFromTableDef(t *testing.T) {
 	ctx := context.Background()
 	ts := localTableStore{}
-	datasetID := pb.TableDef_AGGREGATED.ID()
+	datasetID := "test_dataset"
 	tableID := "test_table"
 
 	field := &pb.FieldSchema{
@@ -36,9 +36,9 @@ func TestUpdateFromTableDef(t *testing.T) {
 	}
 	for _, tc := range tcs {
 		td := &pb.TableDef{
-			Dataset: pb.TableDef_AGGREGATED,
-			TableId: tableID,
-			Fields:  tc,
+			DatasetId: "test_dataset",
+			TableId:   tableID,
+			Fields:    tc,
 		}
 		err := updateFromTableDef(ctx, ts, td)
 		if err != nil {

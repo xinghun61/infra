@@ -6,10 +6,10 @@ import pb "infra/libs/bqschema/tabledef"
 import civil "cloud.google.com/go/civil"
 
 // TestSchemaTable is the TableDef for the
-// "raw_events" dataset's "table-id" table.
+// "dataset_id" dataset's "table_id" table.
 var TestSchemaTable = &pb.TableDef{
-	Dataset: pb.TableDef_RAW_EVENTS,
-	TableId: "table-id",
+	DatasetId: "dataset_id",
+	TableId:   "table_id",
 }
 
 // TestSchema_Rec is a record for the "Rec" field.

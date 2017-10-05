@@ -7,8 +7,8 @@ import pb "infra/libs/bqschema/tabledef"
 // TestResultEventTable is the TableDef for the
 // "raw_events" dataset's "test_results" table.
 var TestResultEventTable = &pb.TableDef{
-	Dataset: pb.TableDef_RAW_EVENTS,
-	TableId: "test_results",
+	DatasetId: "raw_events",
+	TableId:   "test_results",
 }
 
 // TestResultEvent_Tests is a record for the "tests" field.

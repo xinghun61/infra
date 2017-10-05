@@ -14,9 +14,9 @@ import (
 
 // TestSchemaTable is a schema table used for testing.
 var TestSchemaTable = tabledef.TableDef{
-	Dataset:                    tabledef.TableDef_RAW_EVENTS,
+	DatasetId:                  "dataset_id",
 	Description:                "Table Def Description",
-	TableId:                    "table-id",
+	TableId:                    "table_id",
 	Name:                       "Friendly Name",
 	PartitionTable:             true,
 	PartitionExpirationSeconds: 1337,

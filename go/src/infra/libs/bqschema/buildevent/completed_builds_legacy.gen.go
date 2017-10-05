@@ -8,8 +8,8 @@ import time "time"
 // CompletedBuildsLegacyTable is the TableDef for the
 // "raw_events" dataset's "completed_builds_legacy" table.
 var CompletedBuildsLegacyTable = &pb.TableDef{
-	Dataset: pb.TableDef_RAW_EVENTS,
-	TableId: "completed_builds_legacy",
+	DatasetId: "raw_events",
+	TableId:   "completed_builds_legacy",
 }
 
 // CompletedBuildsLegacy_Swarming is a record for the "swarming" field.
@@ -52,7 +52,7 @@ type CompletedBuildsLegacy_Recipes struct {
 	// The recipe name that was invoked.
 	Name string `bigquery:"name"`
 
-	// List of recipe packages the recipe depends on. See also
+	// List of recipe packages the recipe depends on.
 	Deps []*CompletedBuildsLegacy_Deps `bigquery:"deps"`
 }
 

@@ -58,9 +58,9 @@ import {{.Alias}} "{{.Path}}"
 {{end -}}
 
 // {{.TableDefName}} is the TableDef for the
-// "{{.DatasetName}}" dataset's "{{.TableID}}" table.
+// "{{.DatasetID}}" dataset's "{{.TableID}}" table.
 var {{.TableDefName}} = &pb.TableDef{
-	Dataset: pb.TableDef_{{.Dataset}},
+	DatasetId: "{{.DatasetID}}",
 	TableId: "{{.TableID}}",
 }
 {{range .Structs -}}
@@ -106,8 +106,7 @@ func Export(ctx context.Context, td *tabledef.TableDef, packageName, structName,
 		Package      string
 		Imports      []*packageImport
 		TableDefName string
-		DatasetName  string
-		Dataset      string
+		DatasetID    string
 		TableID      string
 		Structs      []*structDef
 	}
@@ -121,8 +120,7 @@ func Export(ctx context.Context, td *tabledef.TableDef, packageName, structName,
 		Package:      packageName,
 		Imports:      make([]*packageImport, 0, len(a.packages)),
 		TableDefName: tableDefName,
-		DatasetName:  td.Dataset.ID(),
-		Dataset:      td.Dataset.String(),
+		DatasetID:    td.DatasetId,
 		TableID:      td.TableId,
 		Structs:      a.structDefs,
 	}
