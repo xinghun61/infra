@@ -8,6 +8,7 @@ from recipe_engine.types import freeze
 DEPS = [
   'build/v8',
   'build/webrtc',
+  'build/chromium_checkout',
   'depot_tools/bot_update',
   'depot_tools/gclient',
   'depot_tools/git',
@@ -39,9 +40,6 @@ BUILDERS = freeze({
   'WebRTC lkgr finder': {
     'project': 'webrtc',
     'repo': 'https://webrtc.googlesource.com/src',
-    # TODO(sergiyb): This ref does not actually exist yet, but this is needed
-    # for tests below. When this recipe starts to be actually used for 'WebRTC
-    # lkgr finder' builder, one would need to create the refs/heads/lkgr first.
     'ref': 'refs/heads/lkgr',
     'gclient_config': 'webrtc',
     'checkout_dir': 'src',
@@ -63,7 +61,10 @@ def RunSteps(api, buildername):
   api.gclient.c.got_revision_mapping = {}
   api.gclient.c.got_revision_reverse_mapping = {'got_revision': 'infra'}
 
-  api.bot_update.ensure_checkout()
+  checkout_dir = api.chromium_checkout.get_checkout_dir({})
+  with api.context(cwd=api.context.cwd or checkout_dir):
+    api.bot_update.ensure_checkout()
+
   api.gclient.runhooks()
 
   repo, ref = botconfig['repo'], botconfig['ref']
@@ -123,6 +124,7 @@ def GenTests(api):
     yield (
         api.test(botconfig['project']) +
         api.properties.generic(buildername=buildername) +
+        api.properties(path_config='kitchen') +
         api.step_data(
             'read lkgr from ref',
             api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'),
