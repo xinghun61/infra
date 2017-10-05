@@ -475,12 +475,24 @@ func (h *uploadHandler) updateFullResults(c context.Context, data io.Reader) err
 			err = h.sendEvent(c, tre)
 		}
 		if err != nil {
-			logging.WithError(err).Errorf(c, "could not send TestResultEvent")
+			if pme, ok := err.(bigquery.PutMultiError); ok {
+				logPutMultiError(c, pme)
+			} else {
+				logging.WithError(err).Errorf(c, "error sending event")
+			}
 		}
 	}()
 
 	wg.Wait()
 	return nil
+}
+
+func logPutMultiError(c context.Context, pme bigquery.PutMultiError) {
+	for _, rie := range pme {
+		for _, e := range rie.Errors {
+			logging.WithError(e).Errorf(c, "error sending event to BigQuery")
+		}
+	}
 }
 
 func createEmptyAggregateTestFileEntity(p model.TestFileParams) *model.TestFile {
