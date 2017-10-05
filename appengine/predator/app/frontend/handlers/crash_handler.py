@@ -6,6 +6,8 @@ import base64
 import json
 import logging
 
+from google.appengine.ext.db import BadRequestError
+
 from common import constants
 from common import crash_pipeline
 from common.model.crash_config import CrashConfig
@@ -78,7 +80,8 @@ class CrashHandler(BaseHandler):
       if need_analysis:
         StartNewAnalysis(json_crash_data['client_id'], crash_data.identifiers)
 
-    except (KeyError, ValueError):  # pragma: no cover.
+    except (KeyError, ValueError, BadRequestError):  # pragma: no cover.
+      # TODO(katesonia): fix the too big entity exception, and then revert.
       # TODO: save exception in datastore and create a page to show them.
       logging.exception('Failed to process crash message')
       logging.info(self.request.body)
