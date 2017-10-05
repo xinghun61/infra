@@ -10,6 +10,8 @@ import (
 	"time"
 
 	. "github.com/smartystreets/goconvey/convey"
+
+	"infra/tricium/api/v1"
 )
 
 func TestComposeChangesQueryURL(t *testing.T) {
@@ -26,5 +28,53 @@ func TestComposeChangesQueryURL(t *testing.T) {
 				fmt.Sprintf("%s/a/changes/?o=CURRENT_REVISION&o=CURRENT_FILES&q=project%%3A%s+after%%3A%%22%s%%22&start=0",
 					instance, formattedProject, formattedTime))
 		})
+	})
+}
+
+func TestCreateRobotComment(t *testing.T) {
+	Convey("Test Enviroinment", t, func() {
+		runID := int64(1234567)
+		Convey("File comment has no position info", func() {
+			roco := createRobotComment(runID, tricium.Data_Comment{
+				Path:     "README.md",
+				Message:  "Message",
+				Category: "Hello",
+			})
+			So(roco.Line, ShouldEqual, 0)
+			So(roco.Range, ShouldBeNil)
+		})
+		Convey("Line comment has no range info", func() {
+			line := int32(10)
+			roco := createRobotComment(runID, tricium.Data_Comment{
+				Path:      "README.md",
+				Message:   "Message",
+				Category:  "Hello",
+				StartLine: line,
+			})
+			So(roco.Line, ShouldEqual, line)
+			So(roco.Range, ShouldBeNil)
+		})
+		Convey("Range comment has range", func() {
+			startLine := int32(10)
+			endLine := int32(20)
+			startChar := int32(2)
+			endChar := int32(18)
+			roco := createRobotComment(runID, tricium.Data_Comment{
+				Path:      "README.md",
+				Message:   "Message",
+				Category:  "Hello",
+				StartLine: startLine,
+				EndLine:   endLine,
+				StartChar: startChar,
+				EndChar:   endChar,
+			})
+			So(roco.Line, ShouldEqual, startLine)
+			So(roco.Range, ShouldNotBeNil)
+			So(roco.Range.StartLine, ShouldEqual, startLine)
+			So(roco.Range.EndLine, ShouldEqual, endLine)
+			So(roco.Range.StartCharacter, ShouldEqual, startChar)
+			So(roco.Range.EndCharacter, ShouldEqual, endChar)
+		})
+
 	})
 }

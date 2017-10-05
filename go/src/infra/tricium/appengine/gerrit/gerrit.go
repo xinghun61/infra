@@ -130,22 +130,35 @@ func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revis
 		if _, ok := robos[comment.Path]; !ok {
 			robos[comment.Path] = []*robotCommentInput{}
 		}
-		robos[comment.Path] = append(robos[comment.Path], &robotCommentInput{
-			Message:    comment.Message,
-			RobotID:    comment.Category,
-			RobotRunID: strconv.FormatInt(runID, 10),
-			URL:        comment.Url,
-			Path:       comment.Path,
-			Line:       int(comment.StartLine),
-			Range: &commentRange{
+		robos[comment.Path] = append(robos[comment.Path], createRobotComment(runID, comment))
+	}
+	return g.setReview(ctx, host, change, revision, &reviewInput{RobotComments: robos})
+}
+
+// createRobotComment creates a Gerrit robot comment from a Tricium comment.
+//
+// Checks for presence of position info to distinguish file comments,
+// line comments, and comments with character ranges.
+func createRobotComment(runID int64, comment tricium.Data_Comment) *robotCommentInput {
+	roco := &robotCommentInput{
+		Message:    comment.Message,
+		RobotID:    comment.Category,
+		RobotRunID: strconv.FormatInt(runID, 10),
+		URL:        comment.Url,
+		Path:       comment.Path,
+	}
+	if comment.StartLine > 0 {
+		roco.Line = int(comment.StartLine)
+		if comment.EndLine > 0 {
+			roco.Range = &commentRange{
 				StartLine:      int(comment.StartLine),
 				EndLine:        int(comment.EndLine),
 				StartCharacter: int(comment.StartChar),
 				EndCharacter:   int(comment.EndChar),
-			},
-		})
+			}
+		}
 	}
-	return g.setReview(ctx, host, change, revision, &reviewInput{RobotComments: robos})
+	return roco
 }
 
 // composeChangesQueryURL composes the URL used to query Gerrit for updated changes.
