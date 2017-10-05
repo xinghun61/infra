@@ -322,7 +322,7 @@ class StacktraceBufferTest(AnalysisTestCase):
 
     self._VerifyTwoCallStacksEqual(stacktrace.crash_stack, stack1.ToCallStack())
 
-  def testStacktraceBufferWithSignature(self):
+  def testSettingStackWithIsSignatureStackMetaDataAsCrashStack(self):
     """Tests using stack with signature as crash_stack with signature."""
     frame_list1 = [
         StackFrame(0, 'src', 'func', 'file0.cc', 'src/file0.cc', [32])]
@@ -330,11 +330,12 @@ class StacktraceBufferTest(AnalysisTestCase):
     frame_list2 = [
         StackFrame(0, 'src', 'signature_func2', 'f.cc', 'src/f.cc', [32])]
 
-    stack1 = CallStackBuffer(0, frame_list=frame_list1)
+    stack1 = CallStackBuffer(0, frame_list=frame_list1,
+                             metadata={'is_signature_stack': True})
     stack2 = CallStackBuffer(1, frame_list=frame_list2)
-    stacktrace = StacktraceBuffer([stack1, stack2], 'signature').ToStacktrace()
+    stacktrace = StacktraceBuffer([stack1, stack2]).ToStacktrace()
 
-    self._VerifyTwoCallStacksEqual(stacktrace.crash_stack, stack2.ToCallStack())
+    self._VerifyTwoCallStacksEqual(stacktrace.crash_stack, stack1.ToCallStack())
 
   def testAddFitleredStackWithNoFilters(self):
     """Tests that ``AddFilteredStack`` returns None if there is no filters."""

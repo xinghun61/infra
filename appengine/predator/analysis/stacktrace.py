@@ -475,26 +475,16 @@ class StacktraceBuffer(object):
   Note, to make this class fully mutable, it should contain CallStackBuffer
   list instead of CallStack list.
   """
-  def __init__(self, stacks=None, signature=None, filters=None):
+  def __init__(self, stacks=None, filters=None):
     """Initialize StacktraceBuffer instance.
 
     Args:
       stacks (list of CallStackBuffer): CallStackBuffer objects to
         build stacktrace.
-      signature (str): The signature is used to determine the crash stack.
       filters (list of CallStackFilters): List of ``CallStackFilter`` instances,
         which filter frames if necessary.
     """
     self.stacks = stacks or []
-    if signature:
-      # Filter out the types of signature, for example [Out of Memory].
-      signature = re.sub('[[][^]]*[]]\s*', '', signature)
-      # For clusterfuzz crash, the signature is crash state. It is
-      # usually the top 3 important stack frames separated by '\n'.
-      self.signature_parts = signature.splitlines()
-    else:
-      self.signature_parts = None
-
     self.filters = filters
 
   def __nonzero__(self):
@@ -504,7 +494,7 @@ class StacktraceBuffer(object):
 
   def AddFilteredStack(self, stack_buffer):
     """Filters stack_buffer and add it to stacks if it's not empty."""
-    # If the callstack is the initial one (infinte priority) or empty, return
+    # If the callstack is the initial one (infinite priority) or empty, return
     # None.
     if math.isinf(stack_buffer.priority) or not stack_buffer.frames:
       return
@@ -521,37 +511,18 @@ class StacktraceBuffer(object):
     if not self:
       return None
 
-    # Get the callstack with the highest priority (i.e., whose priority
-    # field is numerically the smallest) in the stacktrace.
-    crash_stack_index = None
-    if self.signature_parts:
-      def _IsSignatureCallstack(callstack):
-        for index, frame in enumerate(callstack.frames):
-          for signature_part in self.signature_parts:
-            if signature_part in frame.function:
-              return True, index
+    callstacks = []
+    crash_stack = None
+    for stack_buffer in self.stacks:
+      if stack_buffer.metadata.get('is_signature_stack'):
+        crash_stack = stack_buffer.ToCallStack()
+        callstacks.append(crash_stack)
+      else:
+        callstacks.append(stack_buffer.ToCallStack())
 
-        return False, 0
-
-      # Set the crash stack using signature callstack.
-      for stack_index, stack_buffer in enumerate(
-          self.stacks):  # pragma: no cover.
-        is_signature_stack, frame_index = _IsSignatureCallstack(stack_buffer)
-        if is_signature_stack:
-          # Filter all the stack frames before signature.
-          stack_buffer.frames = stack_buffer.frames[frame_index:]
-          crash_stack_index = stack_index
-          break
-
-    # Convert mutable callstack buffers to immutable callstacks.
-    callstacks = [stack_buffer.ToCallStack()
-                  for stack_buffer in self.stacks]
-
-    if crash_stack_index is None:
+    if crash_stack is None:
       # If there is no signature callstack, fall back to set crash stack using
       # the first least priority callstack.
       crash_stack = min(callstacks, key=lambda stack: stack.priority)
-    else:
-      crash_stack = callstacks[crash_stack_index]
 
     return Stacktrace(tuple(callstacks), crash_stack)

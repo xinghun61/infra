@@ -343,3 +343,101 @@ class FilterV8FramesIfV8notInTopFramesTest(AnalysisTestCase):
     self._VerifyTwoCallStacksEqual(
         callstack_filters.FilterV8FramesIfV8NotInTopFrames(2)(stack_buffer),
         stack_buffer)
+
+
+class FilterFramesBeforeAndInBetweenSignaturePartsTest(AnalysisTestCase):
+  """Tests ``FilterFramesBeforeAndInBetweenSignaturePartsTest`` filter."""
+
+  def testDoNothingIfSignatueIsEmpty(self):
+    """Tests filter does nothing if the signature is empty."""
+    frame_list = [
+        StackFrame(
+            0, 'src', 'func0', 'a.cc', 'a.cc', [1]),
+        StackFrame(
+            1, 'src', 'func1', 'b.cc', 'b.cc', [1]),
+    ]
+
+    stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+    expected_stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.FilterFramesBeforeAndInBetweenSignatureParts(None)(
+            stack_buffer),
+        expected_stack_buffer)
+
+  def testDoNothingIfNoMatchBetweenFramesAndSignature(self):
+    """Tests filter does nothing if frames and signature do not match."""
+    frame_list = [
+        StackFrame(
+            0, 'src', 'func0', 'a.cc', 'a.cc', [1]),
+        StackFrame(
+            1, 'src', 'func1', 'b.cc', 'b.cc', [1]),
+    ]
+
+    stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+    expected_stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.FilterFramesBeforeAndInBetweenSignatureParts(
+            'signature')(stack_buffer),
+        expected_stack_buffer)
+
+  def testFilterAllFramesBeforeTheFirstMatchedSignaturePart(self):
+    """Tests filtering frames before the first matched signature part."""
+    frame_list = [
+        StackFrame(
+            0, 'src/v8', 'func0', 'a.cc', 'a.cc', [1]),
+        StackFrame(
+            1, 'src', 'func1', 'b.cc', 'b.cc', [1]),
+        StackFrame(
+            2, 'src', 'func2', 'c.cc', 'c.cc', [2, 3]),
+        StackFrame(
+            3, 'src/v8', 'func3', 'd.cc', 'd.cc', [1]),
+    ]
+
+    stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+    expected_stack_buffer = CallStackBuffer(0, frame_list=frame_list[2:])
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.FilterFramesBeforeAndInBetweenSignatureParts(
+            'dummy\nfunc2\nfunc3\n')(stack_buffer),
+        expected_stack_buffer)
+
+  def testFilterFramesInBetweenSignatureParts(self):
+    """Tests filtering frames in between signature parts."""
+    frame_list = [
+        StackFrame(
+            0, 'src/v8', 'func0', 'a.cc', 'a.cc', [1]),
+        StackFrame(
+            1, 'src', 'func1', 'b.cc', 'b.cc', [1]),
+        StackFrame(
+            2, 'src', 'func2', 'c.cc', 'c.cc', [2, 3]),
+        StackFrame(
+            3, 'src/v8', 'func3', 'd.cc', 'd.cc', [1]),
+    ]
+
+    stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+    expected_stack_buffer = CallStackBuffer(
+        0, frame_list=[frame_list[0], frame_list[3]])
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.FilterFramesBeforeAndInBetweenSignatureParts(
+            'func0\nfunc3')(stack_buffer),
+        expected_stack_buffer)
+
+  def testFilterFramesBothBeforeAndInBetweenSignatureParts(self):
+    """Tests filtering frames both before and in between signature parts."""
+    frame_list = [
+        StackFrame(
+            0, 'src/v8', 'func0', 'a.cc', 'a.cc', [1]),
+        StackFrame(
+            1, 'src', 'func1', 'b.cc', 'b.cc', [1]),
+        StackFrame(
+            2, 'src', 'func2', 'c.cc', 'c.cc', [2, 3]),
+        StackFrame(
+            3, 'src/v8', 'func3', 'd.cc', 'd.cc', [1]),
+    ]
+
+    stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+    expected_stack_buffer = CallStackBuffer(
+        0, frame_list=[frame_list[1], frame_list[3]])
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.FilterFramesBeforeAndInBetweenSignatureParts(
+            'func1\nfunc3')(stack_buffer),
+        expected_stack_buffer)

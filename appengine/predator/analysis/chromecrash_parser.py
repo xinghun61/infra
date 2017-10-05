@@ -6,7 +6,10 @@ import math
 import re
 
 from analysis import callstack_detectors
-from analysis import callstack_filters
+from analysis.callstack_filters import (
+    FilterFramesBeforeAndInBetweenSignatureParts)
+from analysis.callstack_filters import FilterInlineFunction
+from analysis.callstack_filters import KeepTopNFrames
 from analysis.stacktrace import CallStackBuffer
 from analysis.stacktrace import StacktraceBuffer
 from analysis.stacktrace import StackFrame
@@ -22,10 +25,10 @@ class FracasCrashParser(object):
   def Parse(self, stacktrace_string, deps, signature=None, top_n_frames=None):
     """Parse fracas stacktrace string into Stacktrace instance."""
     # Filters to filter callstack buffers.
-    filters = [callstack_filters.FilterInlineFunction(),
-               callstack_filters.KeepTopNFrames(top_n_frames or
-                                                DEFAULT_TOP_N_FRAMES)]
-    stacktrace_buffer = StacktraceBuffer(signature=signature, filters=filters)
+    filters = [FilterFramesBeforeAndInBetweenSignatureParts(signature),
+               FilterInlineFunction(),
+               KeepTopNFrames(top_n_frames or DEFAULT_TOP_N_FRAMES)]
+    stacktrace_buffer = StacktraceBuffer(filters=filters)
 
     stack_detector = callstack_detectors.ChromeCrashStackDetector()
     # Initial background callstack which is not to be added into Stacktrace.

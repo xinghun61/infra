@@ -7,6 +7,8 @@ import re
 
 from analysis import callstack_detectors
 from analysis.callstack_filters import FilterFramesAfterBlinkGeneratedCode
+from analysis.callstack_filters import (
+    FilterFramesBeforeAndInBetweenSignatureParts)
 from analysis.callstack_filters import FilterJavaJreSdkFrames
 from analysis.callstack_filters import FilterV8FramesForV8APIBindingCode
 from analysis.callstack_filters import FilterV8FramesIfV8NotInTopFrames
@@ -88,13 +90,14 @@ class ClusterfuzzParser(object):
             crash_type, signature=None, top_n_frames=None,
             crash_address=None, root_path=None, root_repo_url=None):
     """Parse clusterfuzz stacktrace string into Stacktrace instance."""
-    filters = [FilterJavaJreSdkFrames(),
+    filters = [FilterFramesBeforeAndInBetweenSignatureParts(signature),
+               FilterJavaJreSdkFrames(),
                KeepV8FramesIfV8GeneratedJITCrash(),
                FilterV8FramesForV8APIBindingCode(crash_address),
                FilterFramesAfterBlinkGeneratedCode(),
                FilterV8FramesIfV8NotInTopFrames(),
                KeepTopNFrames(top_n_frames or DEFAULT_TOP_N_FRAMES)]
-    stacktrace_buffer = StacktraceBuffer(signature=signature, filters=filters)
+    stacktrace_buffer = StacktraceBuffer(filters=filters)
     stack_detectors = GetCallStackDetectors(job_type, crash_type)
 
     # Initial background callstack which is not to be added into Stacktrace.

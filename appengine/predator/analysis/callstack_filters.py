@@ -230,3 +230,63 @@ class FilterV8FramesIfV8NotInTopFrames(CallStackFilter):
     stack_buffer.frames = filter(
         lambda f: V8_DEP_PATH_MARKER not in f.dep_path, stack_buffer.frames)
     return stack_buffer
+
+
+# TODO(katesonia):  If the crash state has the information we need, it will
+# work. But sometimes it doesn't. For example some Msan jobs.
+class FilterFramesBeforeAndInBetweenSignatureParts(CallStackFilter):
+  """Filters all frames before and in between signature parts frames.
+
+  Note, for cracas, fracas, the signature is usually one function, however for
+  clusterfuzz, the signature is crash_state, which is usually the top 3
+  important functions separated by '\n'.
+  """
+  def __init__(self, signature):
+    if signature:
+      # Filter out the types of signature, for example [Out of Memory].
+      signature = re.sub('[[][^]]*[]]\s*', '', signature)
+      # For clusterfuzz crash, the signature is crash state. It is
+      # usually the top 3 important stack frames separated by '\n'.
+      self.signature_parts = signature.splitlines()
+    else:
+      self.signature_parts = None
+
+  def __call__(self, stack_buffer):
+    if not self.signature_parts:
+      return stack_buffer
+
+    def MatchSignatureWithFrames(frames, signature_parts):
+      for frame in frames:
+        for index, signature_part in enumerate(signature_parts):
+          if signature_part in frame.function:
+            return True, signature_parts[index:]
+
+      return False, None
+
+    def FilterFrames(frames, signature_parts):
+      frame_index = 0
+      signature_index = 0
+      filtered_index = []
+      while (signature_index < len(signature_parts) and
+             frame_index < len(frames)):
+        frame = frames[frame_index]
+        signature_part = signature_parts[signature_index]
+        if signature_part in frame.function:
+          signature_index += 1
+        else:
+          filtered_index.append(frame_index)
+
+        frame_index += 1
+
+      return [frame for index, frame in enumerate(frames)
+              if not index in filtered_index]
+
+    match, valid_signature_parts = MatchSignatureWithFrames(
+        stack_buffer.frames, self.signature_parts)
+    if match:
+      # Filter all the stack frames before signature.
+      stack_buffer.frames = FilterFrames(
+          stack_buffer.frames, valid_signature_parts)
+      stack_buffer.metadata['is_signature_stack'] = True
+
+    return stack_buffer
