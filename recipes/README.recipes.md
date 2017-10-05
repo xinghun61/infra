@@ -312,9 +312,9 @@ Returns file size if file exists, else None
 &mdash; **def [upload\_isolate](/recipes/recipes/isolate_go_perf.py#87)(api, isolate):**
 ### *recipes* / [lkgr\_finder](/recipes/recipes/lkgr_finder.py)
 
-[DEPS](/recipes/recipes/lkgr_finder.py#8): [build/chromium\_checkout][build/recipe_modules/chromium_checkout], [build/v8][build/recipe_modules/v8], [build/webrtc][build/recipe_modules/webrtc], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io]
+[DEPS](/recipes/recipes/lkgr_finder.py#8): [build/v8][build/recipe_modules/v8], [build/webrtc][build/recipe_modules/webrtc], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io]
 
-&mdash; **def [RunSteps](/recipes/recipes/lkgr_finder.py#52)(api, buildername):**
+&mdash; **def [RunSteps](/recipes/recipes/lkgr_finder.py#54)(api, buildername):**
 ### *recipes* / [luci\_gae](/recipes/recipes/luci_gae.py)
 
 [DEPS](/recipes/recipes/luci_gae.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/presubmit][depot_tools/recipe_modules/presubmit], [depot\_tools/tryserver][depot_tools/recipe_modules/tryserver], [infra\_checkout](#recipe_modules-infra_checkout), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -504,7 +504,6 @@ See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 Runs a step which adds a link to the current CL if there is one.
 
 [build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/541399835f496ccd0dce021f12f46138d7ebf68c/scripts/slave/README.recipes.md#recipe_modules-chromium
-[build/recipe_modules/chromium_checkout]: https://chromium.googlesource.com/chromium/tools/build.git/+/541399835f496ccd0dce021f12f46138d7ebf68c/scripts/slave/README.recipes.md#recipe_modules-chromium_checkout
 [build/recipe_modules/goma]: https://chromium.googlesource.com/chromium/tools/build.git/+/541399835f496ccd0dce021f12f46138d7ebf68c/scripts/slave/README.recipes.md#recipe_modules-goma
 [build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/541399835f496ccd0dce021f12f46138d7ebf68c/scripts/slave/README.recipes.md#recipe_modules-luci_config
 [build/recipe_modules/perf_dashboard]: https://chromium.googlesource.com/chromium/tools/build.git/+/541399835f496ccd0dce021f12f46138d7ebf68c/scripts/slave/README.recipes.md#recipe_modules-perf_dashboard
