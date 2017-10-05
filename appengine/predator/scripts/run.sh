@@ -44,7 +44,8 @@ print_usage() {
   echo "Supported commands:"
   echo "  test                 Run unittests"
   echo "  run                  Run Predator locally"
-  echo "  deploy-prod          Deploy predator to predator-for-me for release"
+  # TODO(katesonia): Switch to predator-for-me later.
+  echo "  deploy-prod          Deploy predator to google.com:findit-for-me for release"
   echo "  deploy-test-prod     Deploy predator to predator-for-me-test for test"
   echo "  deploy-staging       Deploy predator to predator-for-me-staging for test"
   exit 1
@@ -83,7 +84,8 @@ deploy_for_test() {
   local app_env=$1
   if [[ -z ${app_id_to_use} ]]; then
     if [[ "${app_env}" == "prod" ]]; then
-      local app_id_to_use="predator-for-me"
+      # TODO(katesonia): Switch to predator-for-me later.
+      local app_id_to_use="google.com:findit-for-me"
     else
       local app_id_to_use="predator-for-me-staging"
     fi
@@ -101,7 +103,8 @@ deploy_for_test() {
 }
 
 deploy_for_prod() {
-  local app_id="predator-for-me"
+  # TODO(katesonia): Switch to predator-for-me later.
+  local app_id="google.com:findit-for-me"
 
   # Sync to latest code.
   local update_log="${TMP_DIR}/update.log"
