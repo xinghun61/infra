@@ -53,7 +53,7 @@ class TouchCrashedFileFeature(Feature):
       return FeatureValue(
           name=self.name,
           value=1.0,
-          reason='Touched files in stacktrace - %s' % ', '.join([
+          reason='Touched file(s) in stacktrace - %s' % ', '.join([
               os.path.basename(touched_file.new_path)
               for match in matches.itervalues()
               for touched_file in match.touched_files]),

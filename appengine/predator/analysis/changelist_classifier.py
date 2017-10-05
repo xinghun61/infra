@@ -65,7 +65,8 @@ class ChangelistClassifier(object):
     if len(suspects) == 1:
       suspect = suspects[0]
       suspect.confidence = _ABSOLUTE_CONFIDENCE_SCORE
-      suspect.reasons = ['The suspect is the only cl in the regression range.']
+      suspect.reasons = [
+          'The suspect is the only commit in the regression range.']
       return [suspect]
 
     if not report.stacktrace:
