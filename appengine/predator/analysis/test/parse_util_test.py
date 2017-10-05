@@ -27,7 +27,7 @@ class ParseUtilTest(testing.AppengineTestCase):
 
   def testGetDepPathAndNormalizedFilePath(self):
     deps = {'src': Dependency('src', 'https://repo', '1'),
-            'src/Upper': Dependency('src/Upper', 'https://repo', '2')}
+            'src/Upper': Dependency('src/Upper', 'https://repo_upper', '2')}
 
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('out/r/gen/b.cc', deps),
@@ -38,16 +38,21 @@ class ParseUtilTest(testing.AppengineTestCase):
 
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('src/Upper/a/b.cc', deps),
-        ('src/Upper', 'a/b.cc', 'https://repo'))
+        ('src/Upper', 'a/b.cc', 'https://repo_upper'))
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('src/upper/a/b.cc', deps),
-        ('src/Upper', 'a/b.cc', 'https://repo'))
+        ('src/Upper', 'a/b.cc', 'https://repo_upper'))
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('Upper/a/b.cc', deps),
-        ('src/Upper', 'a/b.cc', 'https://repo'))
+        ('src/Upper', 'a/b.cc', 'https://repo_upper'))
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('upper/a/b.cc', deps),
-        ('src/Upper', 'a/b.cc', 'https://repo'))
+        ('src/Upper', 'a/b.cc', 'https://repo_upper'))
+    self.assertEqual(
+        parse_util.GetDepPathAndNormalizedFilePath(
+            'upperdummy/a/b.cc', deps, root_path='src_root',
+            root_repo_url='https://root'),
+        ('src_root', 'upperdummy/a/b.cc', 'https://root'))
 
     self.assertEqual(
         parse_util.GetDepPathAndNormalizedFilePath('dummy/path/b.cc', deps),

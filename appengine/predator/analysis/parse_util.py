@@ -96,10 +96,10 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False,
 
     current_dep_path = ''
 
-    if (normalized_path.startswith(trimmed_dep_path) or
-        normalized_path.startswith(trimmed_dep_path_lower)):
+    if (normalized_path.startswith(trimmed_dep_path + '/') or
+        normalized_path.startswith(trimmed_dep_path_lower + '/')):
       # Case when the retrieved path is in lowercase.
-      if normalized_path.startswith(trimmed_dep_path):
+      if normalized_path.startswith(trimmed_dep_path + '/'):
         current_dep_path = trimmed_dep_path
       else:
         current_dep_path = trimmed_dep_path_lower
@@ -112,7 +112,7 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False,
     if (not normalized_path.startswith(THIRD_PARTY_FILE_PATH_MARKER) and
         (dep_path + '/' in normalized_path or
          dep_path_lower + '/' in normalized_path)):
-      if dep_path in normalized_path:
+      if dep_path + '/' in normalized_path:
         current_dep_path = dep_path
       else:
         current_dep_path = dep_path_lower
@@ -120,9 +120,7 @@ def GetDepPathAndNormalizedFilePath(path, deps, is_java=False,
     # Normalize the path by stripping everything off the dep's relative
     # path.
     if current_dep_path:
-      parts = normalized_path.split(current_dep_path + '/', 1)
-      if len(parts) > 1:  # pragma: no branch. TODO(katesonia): investigate.
-        normalized_path = parts[1]
+      normalized_path = normalized_path.split(current_dep_path + '/', 1)[1]
       return dep_path, normalized_path, deps[dep_path].repo_url
 
   # If path is a java stack path, don't default dep_path to src.
