@@ -2,30 +2,20 @@ dataset: "cq"
 table_id: "attempts"
 name: "CQ Attempts"
 fields: <
-  name: "attempt_start_msec"
+  name: "attempt_start"
   description: "Time when the attempt starts. CQ calculates this by searching for the last 'The CQ bit checked by...' message, which corresponds to the moment when the user has clicked on the CQ checkbox"
   is_required: true
-  type: FLOAT
+  type: TIMESTAMP
 >
 fields: <
-  name: "first_start_msec"
-  description: "The time when CQ actually start processing the patch (first start message)."
-  type: INTEGER
+  name: "start"
+  description: "The time when CQ actually starts processing the patch."
+  type: TIMESTAMP
 >
 fields: <
-  name: "last_start_msec"
-  description: "The time when last start message was posted."
-  type: INTEGER
->
-fields: <
-  name: "first_stop_msec"
-  description: "The time when first stop message was posted"
-  type: INTEGER
->
-fields: <
-  name: "last_stop_msec"
-  description: "The time when CQ stopped processing the patchset (last stop message). This is when attempt ends."
-  type: INTEGER
+  name: "stop"
+  description: "The time when CQ stopped processing the patchset. This is when attempt ends."
+  type: TIMESTAMP
 >
 fields: <
   name: "committed"
