@@ -348,6 +348,10 @@ def _create_task_def_async(
     )
     if build_number is not None:  # pragma: no branch
       build_properties['buildnumber'] = build_number
+    if not fake_build:  # pragma: no branch
+      build_properties['build_id'] = 'buildbucket/%s/%d' % (
+          app_identity.get_default_version_hostname(), build.key.id())
+
 
     changes = params.get(PARAM_CHANGES)
     if changes:  # pragma: no branch
