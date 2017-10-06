@@ -441,6 +441,25 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 		return fail(errors.Annotate(err, "failed to update process PATH").Err())
 	}
 
+	// knownProperties contains properties known and used by Kitchen.
+	var knownProperties struct {
+		Kitchen struct {
+			GitAuth bool `json:"$git_auth"`
+		} `json:"$kitchen"`
+	}
+
+	if err := json.Unmarshal([]byte(c.Properties.String()), &knownProperties); err != nil {
+		return fail(errors.Annotate(err, "failed to unmarshal properties").Err())
+	}
+
+	// Setup Git credential helper if requested.
+	if knownProperties.Kitchen.GitAuth {
+		log.Infof(ctx, "Enabling git auth")
+		if err := os.Setenv("INFRA_GIT_WRAPPER_AUTH", "1"); err != nil {
+			return fail(errors.Annotate(err, "failed to set INFRA_GIT_WRAPPER_AUTH").Err())
+		}
+	}
+
 	// Run the recipe.
 	result := c.ensureAndRunRecipe(ctx, env)
 
