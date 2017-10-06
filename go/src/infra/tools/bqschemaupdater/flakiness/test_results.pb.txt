@@ -2,6 +2,7 @@ dataset: "flakiness"
 table_id: "test_results"
 name: "Test Results"
 description: "Test results reported to test-results.appspot.com by the test launcher. Based on original JSON format: https://www.chromium.org/developers/the-json-test-results-format. "
+partition_table: true
 fields: <
   name: "master_name"
   description: "Name of the master on which tests were run."
@@ -49,10 +50,9 @@ fields: <
   is_required: true
 >
 fields: <
-  name: "tests"
-  description: "Test results for individual tests."
+  name: "test"
+  description: "Test result for individual test."
   type: RECORD
-  is_repeated: true
   schema: <
     name: "test_name"
     description: "Full name of the test. Created by combining names of each nesting level in JSON format, e.g.  test suite name, test case and actual test name using a separator as specified in \"path_delimiter\" field."
