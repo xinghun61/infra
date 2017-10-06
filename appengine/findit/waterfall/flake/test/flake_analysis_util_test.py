@@ -44,33 +44,76 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(normalized_data_points[2].pass_rate, 0.8)
 
   def testEstimateSwarmingIterationTimeout(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.data_points = [
-        DataPoint.Create(iterations=10, elapsed_seconds=10000, pass_rate=1),
-        DataPoint.Create(iterations=10, elapsed_seconds=10000, pass_rate=1),
-        DataPoint.Create(iterations=10, elapsed_seconds=10000, pass_rate=1),
-        DataPoint.Create(iterations=10, elapsed_seconds=10000, pass_rate=1),
-        DataPoint.Create(iterations=10, elapsed_seconds=10000, pass_rate=1),
-        DataPoint.Create(iterations=10, elapsed_seconds=10000, pass_rate=1),
-        DataPoint.Create(iterations=10, elapsed_seconds=10000, pass_rate=1),
-        DataPoint.Create(iterations=10, elapsed_seconds=10000, pass_rate=1)
+        DataPoint.Create(
+            build_number=100, iterations=10, elapsed_seconds=100, pass_rate=1),
+        DataPoint.Create(
+            build_number=111, iterations=10, elapsed_seconds=200, pass_rate=1),
+        DataPoint.Create(
+            build_number=123, iterations=10, elapsed_seconds=1000, pass_rate=1),
+        DataPoint.Create(
+            build_number=133, iterations=10, elapsed_seconds=300, pass_rate=1),
+        DataPoint.Create(
+            build_number=144, iterations=10, elapsed_seconds=400, pass_rate=1)
     ]
     analysis.put()
 
-    timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
+    timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(
+        analysis, 123)
 
-    self.assertEqual(1250, timeout)
+    self.assertEqual(125, timeout)
 
-  def testEstimateSwarmingIterationTimeoutWithAnalysisWithNoDataPoints(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+  def testEstimateSwarmingIterationTimeoutWithMissingData(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+
+    analysis.data_points = [
+        DataPoint.Create(build_number=123, iterations=10, pass_rate=1)
+    ]
+    analysis.put()
+    with self.assertRaises(AssertionError):  # Without elapsed_seconds.
+      flake_analysis_util.EstimateSwarmingIterationTimeout(analysis, 123)
+
+    analysis.data_points = [
+        DataPoint.Create(build_number=123, elapsed_seconds=100, pass_rate=1)
+    ]
+    analysis.put()
+    with self.assertRaises(AssertionError):  # Without iterations.
+      flake_analysis_util.EstimateSwarmingIterationTimeout(analysis, 123)
+
+    analysis.data_points = [
+        DataPoint.Create(build_number=123, elapsed_seconds=100, iterations=10)
+    ]
+    analysis.put()
+    with self.assertRaises(AssertionError):  # Without pass rate.
+      flake_analysis_util.EstimateSwarmingIterationTimeout(analysis, 123)
+
+  def testEstimateSwarmingIterationTimeoutWithBadPassRate(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+
+    analysis.data_points = [
+        DataPoint.Create(
+            build_number=123, iterations=10, elapsed_seconds=400, pass_rate=-1)
+    ]
+    analysis.put()
+    with self.assertRaises(AssertionError):
+      flake_analysis_util.EstimateSwarmingIterationTimeout(analysis, 123)
+
+  def testEstimateSwarmingIterationTimeoutWithAnalysisWithNoDataForBuild(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.data_points = []
     analysis.put()
 
-    timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
+    timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(
+        analysis, 123)
 
     self.assertEqual(timeout, 120)
 
@@ -97,45 +140,3 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         flake_analysis_util.CalculateNumberOfIterationsToRunWithinTimeout(
             analysis, timeout_per_test), 1)
-
-  def testEstimateSwarmingIterationTimeoutWithAnalysisLessDataPoints(self):
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = copy.deepcopy(
-        DEFAULT_CONFIG_DATA['check_flake_settings'])
-
-    analysis.data_points = [
-        DataPoint.Create(
-            build_number=100, iterations=10, elapsed_seconds=100, pass_rate=1),
-        DataPoint.Create(
-            build_number=101, iterations=20, elapsed_seconds=200, pass_rate=1)
-    ]
-    analysis.put()
-
-    try:
-      previous_cushion = flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER
-      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = 1
-      timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
-    finally:
-      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = previous_cushion
-
-    self.assertEqual(10, timeout)
-
-  def testEstimateSwarmingIterationTimeoutWithDefaultTimeout(self):
-
-    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.algorithm_parameters = copy.deepcopy(
-        DEFAULT_CONFIG_DATA['check_flake_settings'])
-
-    analysis.data_points = [
-        DataPoint.Create(build_number=100, iterations=10, elapsed_seconds=1000),
-    ]
-    analysis.put()
-
-    try:
-      previous_cushion = flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER
-      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = 1
-      timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(analysis)
-    finally:
-      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER = previous_cushion
-
-    self.assertEqual(120, timeout)

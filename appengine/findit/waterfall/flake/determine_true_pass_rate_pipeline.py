@@ -123,18 +123,19 @@ def _GetTimeoutForTask(analysis, timeout_per_test, iterations_for_task):
                  flake_constants.DEFAULT_TIMEOUT_PER_SWARMING_TASK_SECONDS))
 
 
-def _CalculateRunParametersForSwarmingTask(analysis):
+def _CalculateRunParametersForSwarmingTask(analysis, build_number):
   """Calculates and returns the iterations and timeout for swarming tasks
 
   Args:
     analysis (MasterFlakeAnalysis): The analysis we're getting parameters for.
+    build_number (int): The current build number running.
 
   Returns:
       ((int) iterations, (int) timeout) Tuple containing the iterations to run
           for this swarming task, and the timeout for that task.abs
   """
   timeout_per_test = flake_analysis_util.EstimateSwarmingIterationTimeout(
-      analysis)
+      analysis, build_number)
   iterations_for_task = (
       flake_analysis_util.CalculateNumberOfIterationsToRunWithinTimeout(
           analysis, timeout_per_test))
@@ -253,7 +254,8 @@ class DetermineTruePassRatePipeline(BasePipeline):
       return
 
     (iterations_for_task,
-     time_for_task_seconds) = _CalculateRunParametersForSwarmingTask(analysis)
+     time_for_task_seconds) = _CalculateRunParametersForSwarmingTask(
+         analysis, build_number)
 
     if swarming_error_code == swarming_util.TIMED_OUT:
       # If the previous run timed out, run a smaller, fixed, number of

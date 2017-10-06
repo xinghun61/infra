@@ -90,31 +90,38 @@ def CalculateNumberOfIterationsToRunWithinTimeout(analysis, timeout_per_test):
   return max(1, iterations)
 
 
-def EstimateSwarmingIterationTimeout(analysis):
+def EstimateSwarmingIterationTimeout(analysis, build_number):
   """Estimates a timeout per iteration based on previous data points.
 
   Uses the amount of time previous data points at this build number took to
   estimate a timeout for an iteration.
+
+  Args:
+    analysis (MasterFlakeAnalysis): The analysis being run.
+    build_number (int): The current build number.
+
+  Return:
+    (int) Timeout for one iteration in seconds.
   """
-  default_timeout_per_test = analysis.algorithm_parameters.get(
-      'swarming_rerun',
-      {}).get('timeout_per_test_seconds',
-              flake_constants.DEFAULT_TIMEOUT_PER_TEST_SECONDS)
 
-  points = [point for point in analysis.data_points if point.pass_rate >= 0]
+  point = analysis.FindMatchingDataPointWithBuildNumber(build_number)
 
-  if not points:
-    return default_timeout_per_test
+  if not point:
+    return analysis.algorithm_parameters.get('swarming_rerun', {}).get(
+        'timeout_per_test_seconds',
+        flake_constants.DEFAULT_TIMEOUT_PER_TEST_SECONDS)
 
-  for point in points:
-    assert point.elapsed_seconds > 0
-    assert point.iterations > 0
-
-  total_seconds = sum([point.elapsed_seconds for point in points])
-  total_iterations = sum([point.iterations for point in points])
+  assert point.elapsed_seconds > 0
+  assert point.iterations > 0
+  assert point.pass_rate >= 0
 
   # Set lower threshold for timeout per iteration.
-  time_per_iteration = float(total_seconds) / float(total_iterations)
+  time_per_iteration = float(point.elapsed_seconds) / float(point.iterations)
+
+  analysis.LogInfo(('Estimated %d seconds timeout per iterations based on '
+                    '%d elapsed seconds and %d iterations.' %
+                    (int(time_per_iteration), point.elapsed_seconds,
+                     point.iterations)))
 
   return int(
       flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER * time_per_iteration)

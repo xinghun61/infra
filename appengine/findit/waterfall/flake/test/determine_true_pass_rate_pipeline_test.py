@@ -545,7 +545,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual((30, 3600),
                      determine_true_pass_rate_pipeline.
-                     _CalculateRunParametersForSwarmingTask(analysis))
+                     _CalculateRunParametersForSwarmingTask(analysis, 123))
 
   def testCalculateRunParametersForSwarmingTaskWithSumLessThanAnHour(self):
     master_name = 'm'
@@ -570,7 +570,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual((28, 3600),
                      determine_true_pass_rate_pipeline.
-                     _CalculateRunParametersForSwarmingTask(analysis))
+                     _CalculateRunParametersForSwarmingTask(
+                         analysis, build_number))
 
   def testCalculateRunParametersForSwarmingTaskWithSumMoreThanAnHour(self):
     master_name = 'm'
@@ -595,7 +596,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual((1, 5000),
                      determine_true_pass_rate_pipeline.
-                     _CalculateRunParametersForSwarmingTask(analysis))
+                     _CalculateRunParametersForSwarmingTask(
+                         analysis, build_number))
 
   def testTestDoesNotExist(self):
     self.assertFalse(determine_true_pass_rate_pipeline._TestDoesNotExist(1, 1))
