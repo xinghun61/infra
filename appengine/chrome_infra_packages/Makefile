@@ -1,5 +1,12 @@
-APP_DIR:=$(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-NODE_DIR:=${APP_DIR}/../../node
+.PHONY: test
+APP_DIR := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
+NODE_DIR := ${APP_DIR}/../../node
+
+default: help
+
+help:
+	@echo "Available commands:"
+	@sed -n '/^[a-zA-Z0-9_]*:/s/:.*//p' <Makefile
 
 setup:
 	${NODE_DIR}/npm.py install --save vulcanize@1.10.4
@@ -13,10 +20,16 @@ build:
 		${APP_DIR}/static/html/index.html > \
 		${APP_DIR}/static/html/index-vulcanized.html
 
-deploy-staging:	build
+devserver: clean
+	${APP_DIR}/tools/gae devserver
+
+deploy_staging:	build
 	${APP_DIR}/tools/gae upload -A chrome-infra-packages-dev
 	rm -f ${APP_DIR}/static/html/*-vulcanized.html
 
-deploy-prod:	build
+deploy_prod:	build
 	${APP_DIR}/tools/gae upload -A chrome-infra-packages
 	rm -f ${APP_DIR}/static/html/*-vulcanized.html
+
+test:
+	${APP_DIR}/tools/run_tests.sh
