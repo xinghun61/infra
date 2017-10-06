@@ -64,17 +64,24 @@ def _MinimumIterationsReached(iterations_completed_a, iterations_completed_b):
           iterations_completed_b > iterations_completed_a)
 
 
-def _GetSwarmingTaskErrorCode(analysis, flake_swarming_task):
+def _GetSwarmingTaskErrorCode(analysis, flake_swarming_task,
+                              previous_pass_rate):
   """Check the flake swarming task for error, and increment the model.
 
   Args:
     analysis (MasterFlakeAnalysis): The current flake analysis.
     flake_swarming_task (FlakeSwarmingTask): The swarming task to examine.
+    previous_pass_rate (float): The pass rate from a previous iteration of
+        determinetruepassratepipeline, used to determine if this is the first
+        iteration of the pipeline.
 
   Return:
     (int) Error code of the swarming task error if any, else None.
   """
-  if (flake_swarming_task and flake_swarming_task.error):
+  if previous_pass_rate is None:
+    return None
+
+  if flake_swarming_task and flake_swarming_task.error:
     analysis.LogInfo(
         'Swarming task attempt ended in error. Analysis already had %d errors' %
         analysis.swarming_task_attempts_for_build)
@@ -219,8 +226,9 @@ class DetermineTruePassRatePipeline(BasePipeline):
         analysis.master_name, analysis.builder_name, build_number,
         analysis.step_name, analysis.test_name)
 
-    swarming_error_code = _GetSwarmingTaskErrorCode(analysis,
-                                                    flake_swarming_task)
+    # Only get the error code if looking at tasks this pipeline has executed.
+    swarming_error_code = _GetSwarmingTaskErrorCode(
+        analysis, flake_swarming_task, previous_pass_rate)
 
     # If there are too many swarming tasks that fail for a certain build_number
     # bail out completely.
@@ -239,6 +247,8 @@ class DetermineTruePassRatePipeline(BasePipeline):
       analysis.LogError('Swarming task %s ended in error after %d attempts.' %
                         (flake_swarming_task,
                          analysis.swarming_task_attempts_for_build))
+      analysis.Update(swarming_task_attempts_for_build=0)
+
       raise pipeline.Abort()
 
     analysis.LogInfo(

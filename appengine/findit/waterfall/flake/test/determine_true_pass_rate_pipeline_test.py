@@ -272,14 +272,19 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(), build_number, iterations, timeout, rerun
         ])
 
-    pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
-                                                 build_number, rerun)
+    pipeline_job = DetermineTruePassRatePipeline(
+        analysis.key.urlsafe(),
+        build_number,
+        rerun,
+        previous_pass_rate=1.0,
+        previous_iterations_completed=100)
 
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
-    self.assertEqual(flake_constants.MAX_SWARMING_TASK_RETRIES_PER_BUILD,
-                     analysis.swarming_task_attempts_for_build)
+    # analysis.swarming_task_attempts_for_build should have been reset on
+    # abort.
+    self.assertEqual(0, analysis.swarming_task_attempts_for_build)
 
   @mock.patch.object(
       determine_true_pass_rate_pipeline,
@@ -325,11 +330,68 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(), build_number, iterations, timeout, rerun
         ])
 
+    pipeline_job = DetermineTruePassRatePipeline(
+        analysis.key.urlsafe(),
+        build_number,
+        rerun,
+        previous_pass_rate=1.0,
+        previous_iterations_completed=100)
+
+    pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+
+  @mock.patch.object(
+      determine_true_pass_rate_pipeline,
+      '_HasPassRateConverged',
+      side_effect=[False, True])
+  @mock.patch.object(
+      determine_true_pass_rate_pipeline,
+      '_MinimumIterationsReached',
+      return_value=True)
+  @mock.patch.object(
+      determine_true_pass_rate_pipeline,
+      '_TestDoesNotExist',
+      return_value=False)
+  def testDetermineTruePassRatePipelineWithSwarmingTaskErrorOnFirstIteration(
+      self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    rerun = False
+    iterations = 30
+    timeout = 3600
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.status = analysis_status.PENDING
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.swarming_task_attempts_for_build = 0
+    analysis.put()
+
+    flake_swarming_task = FlakeSwarmingTask.Create(
+        master_name, builder_name, build_number, step_name, test_name)
+    flake_swarming_task.status = analysis_status.ERROR
+    flake_swarming_task.error = {'code': swarming_util.TIMED_OUT}
+    flake_swarming_task.put()
+
+    self.MockPipeline(
+        AnalyzeFlakeForBuildNumberPipeline,
+        '',
+        expected_args=[
+            analysis.key.urlsafe(), build_number, iterations, timeout, rerun
+        ])
+
     pipeline_job = DetermineTruePassRatePipeline(analysis.key.urlsafe(),
                                                  build_number, rerun)
 
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
+
+    self.assertEqual(0, analysis.swarming_task_attempts_for_build)
 
   @mock.patch.object(
       flake_analysis_util, 'EstimateSwarmingIterationTimeout', return_value=60)
@@ -659,7 +721,10 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         swarming_util.TIMED_OUT,
         determine_true_pass_rate_pipeline._GetSwarmingTaskErrorCode(
-            analysis, task))
+            analysis, task, 1.0))
+    self.assertIsNone(
+        determine_true_pass_rate_pipeline._GetSwarmingTaskErrorCode(
+            analysis, task, None))
 
     task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
                                     step_name, test_name)
@@ -669,13 +734,11 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         None,
         determine_true_pass_rate_pipeline._GetSwarmingTaskErrorCode(
-            analysis, task))
-    self.assertEqual(
-        None,
+            analysis, task, 1.0))
+    self.assertIsNone(
         determine_true_pass_rate_pipeline._GetSwarmingTaskErrorCode(
-            analysis, task))
-    self.assertEqual(
-        None,
+            analysis, task, 1.0))
+    self.assertIsNone(
         determine_true_pass_rate_pipeline._GetSwarmingTaskErrorCode(
-            analysis, None))
+            analysis, None, 1.0))
     self.assertEqual(1, analysis.swarming_task_attempts_for_build)
