@@ -240,7 +240,8 @@ def _ValidateFlakeAnalyzerSwarmingRerunSettings(settings):
           isinstance(settings.get('timeout_per_swarming_task_seconds'), int) and
           isinstance(settings.get('data_point_sample_size'), int) and
           isinstance(settings.get('swarming_task_retries_per_build'), int) and
-          isinstance(settings.get('iterations_to_run_after_timeout'), int))
+          isinstance(settings.get('iterations_to_run_after_timeout'), int) and
+          isinstance(settings.get('max_iterations_per_task'), int))
 
 
 def _ValidateFlakeAnalyzerTryJobRerunSettings(settings):

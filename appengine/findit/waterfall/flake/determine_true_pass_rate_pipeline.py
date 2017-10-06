@@ -141,6 +141,13 @@ def _CalculateRunParametersForSwarmingTask(analysis, build_number):
           analysis, timeout_per_test))
   time_for_task_seconds = _GetTimeoutForTask(analysis, timeout_per_test,
                                              iterations_for_task)
+
+  # If we're above the iteration maximum, then bring it down. Don't touch
+  # the timeout, swarming will return after the iterations are complete.
+  max_iterations_per_task = analysis.algorithm_parameters.get(
+      'swarming_rerun', {}).get('max_iterations_per_task',
+                                flake_constants.MAX_ITERATIONS_PER_TASK)
+  iterations_for_task = min(max_iterations_per_task, iterations_for_task)
   return iterations_for_task, time_for_task_seconds
 
 

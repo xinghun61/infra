@@ -117,6 +117,7 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
         'data_point_sample_size': 5,
         'swarming_task_retries_per_build': 2,
         'iterations_to_run_after_timeout': 10,
+        'max_iterations_per_task': 200,
     },
     'try_job_rerun': {
         'lower_flake_threshold': 0.02,
@@ -1217,6 +1218,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1233,6 +1235,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1249,6 +1252,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1265,6 +1269,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1281,6 +1286,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1297,6 +1303,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1313,6 +1320,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1329,6 +1337,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1347,6 +1356,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1364,6 +1374,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1383,6 +1394,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1403,6 +1415,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1423,6 +1436,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1443,6 +1457,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1463,6 +1478,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': {},  # Should be an int
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1483,6 +1499,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': {},  # Should be an int.
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
     self.assertFalse(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1503,6 +1520,28 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': {},  # Should be an int.
+            'max_iterations_per_task': 200,
+        }))
+    self.assertFalse(
+        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
+            'lower_flake_threshold': 0.02,
+            'upper_flake_threshold': 0.98,
+            'max_flake_in_a_row': 4,
+            'max_stable_in_a_row': 4,
+            'iterations_to_rerun': 100,
+            'max_build_numbers_to_look_back': 1000,
+            'use_nearby_neighbor': True,
+            'update_monorail_bug': True,
+            'max_dive_in_a_row': 4,
+            'dive_rate_threshold': 0.4,
+            'max_iterations_to_rerun': 800,
+            'per_iteration_timeout_seconds': 60,
+            'timeout_per_test_seconds': 120,
+            'timeout_per_swarming_task_seconds': 3600,
+            'data_point_sample_size': 5,
+            'swarming_task_retries_per_build': 2,
+            'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 2.00,  # Should be an int.
         }))
     self.assertTrue(
         config._ValidateFlakeAnalyzerSwarmingRerunSettings({
@@ -1523,6 +1562,7 @@ class ConfigTest(testing.AppengineTestCase):
             'data_point_sample_size': 5,
             'swarming_task_retries_per_build': 2,
             'iterations_to_run_after_timeout': 10,
+            'max_iterations_per_task': 200,
         }))
 
   def testValidateCodeReviewSettings(self):

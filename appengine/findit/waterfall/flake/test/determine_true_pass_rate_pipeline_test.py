@@ -529,7 +529,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
                      determine_true_pass_rate_pipeline._GetTimeoutForTask(
                          analysis, 100, 100))
 
-  def testCalculateRunParametersForSwarmingTaskDefault(self):
+  def testCalculateRunParametersForSwarmingTask(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -544,6 +544,28 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     self.assertEqual((30, 3600),
+                     determine_true_pass_rate_pipeline.
+                     _CalculateRunParametersForSwarmingTask(analysis, 123))
+
+  def testCalculateRunParametersForSwarmingTaskExceedsMaxTasks(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.status = analysis_status.PENDING
+    analysis.data_points = [
+        DataPoint.Create(
+            build_number=123, iterations=100, elapsed_seconds=100, pass_rate=1)
+    ]
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.put()
+
+    self.assertEqual((200, 3600),
                      determine_true_pass_rate_pipeline.
                      _CalculateRunParametersForSwarmingTask(analysis, 123))
 

@@ -50,6 +50,9 @@ DEFAULT_TIMEOUT_PER_TEST_SECONDS = 120
 # The minimum pass rate of a data point to be considered stable and passing.
 DEFAULT_UPPER_FLAKE_THRESHOLD = 0.98
 
+# Maximum iterations allowed per swarming task.
+MAX_ITERATIONS_PER_TASK = 200
+
 # Tries to start the RecursiveFlakePipeline on peak hours at most 5 times.
 MAX_RETRY_TIMES = 5
 
