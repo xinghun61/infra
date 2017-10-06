@@ -215,11 +215,6 @@ class DetermineTruePassRatePipeline(BasePipeline):
     if iterations_completed >= max_iterations_to_rerun:
       analysis.LogInfo(
           'Max iterations reached for build number %d' % build_number)
-
-      # Reset analysis after the build number has been run.
-      analysis.swarming_task_attempts_for_build = 0
-      analysis.put()
-
       return
 
     flake_swarming_task = FlakeSwarmingTask.Get(
@@ -247,8 +242,6 @@ class DetermineTruePassRatePipeline(BasePipeline):
       analysis.LogError('Swarming task %s ended in error after %d attempts.' %
                         (flake_swarming_task,
                          analysis.swarming_task_attempts_for_build))
-      analysis.Update(swarming_task_attempts_for_build=0)
-
       raise pipeline.Abort()
 
     analysis.LogInfo(
@@ -264,10 +257,6 @@ class DetermineTruePassRatePipeline(BasePipeline):
           _HasPassRateConverged(previous_pass_rate, pass_rate)):
       analysis.LogInfo(
           'Pass rate has converged for build number %d.' % build_number)
-
-      # Reset analysis after the build number has been run.
-      analysis.swarming_task_attempts_for_build = 0
-      analysis.put()
       return
 
     (iterations_for_task,

@@ -232,6 +232,8 @@ class RecursiveFlakePipeline(BasePipeline):
                    analysis.build_number, analysis.step_name,
                    analysis.test_name, preferred_run_build_number)
 
+      # Reset attempts before running build.
+      analysis.Update(swarming_task_attempts_for_build=0)
       with pipeline.InOrder():
         yield DetermineTruePassRatePipeline(analysis_urlsafe_key,
                                             preferred_run_build_number, force)

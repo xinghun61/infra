@@ -284,7 +284,8 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
 
     # analysis.swarming_task_attempts_for_build should have been reset on
     # abort.
-    self.assertEqual(0, analysis.swarming_task_attempts_for_build)
+    self.assertEqual(flake_constants.MAX_SWARMING_TASK_RETRIES_PER_BUILD,
+                     analysis.swarming_task_attempts_for_build)
 
   @mock.patch.object(
       determine_true_pass_rate_pipeline,
