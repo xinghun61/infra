@@ -64,7 +64,7 @@ class FlakeAnalysisUtilTest(wf_testcase.WaterfallTestCase):
     timeout = flake_analysis_util.EstimateSwarmingIterationTimeout(
         analysis, 123)
 
-    self.assertEqual(125, timeout)
+    self.assertEqual(200, timeout)
 
   def testEstimateSwarmingIterationTimeoutWithMissingData(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 100, 's', 't')

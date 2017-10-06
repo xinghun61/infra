@@ -590,7 +590,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.put()
 
-    self.assertEqual((28, 3600),
+    self.assertEqual((18, 3600),
                      determine_true_pass_rate_pipeline.
                      _CalculateRunParametersForSwarmingTask(
                          analysis, build_number))
@@ -616,7 +616,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
     ]
     analysis.put()
 
-    self.assertEqual((1, 5000),
+    self.assertEqual((1, 8000),
                      determine_true_pass_rate_pipeline.
                      _CalculateRunParametersForSwarmingTask(
                          analysis, build_number))

@@ -141,7 +141,7 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
         'max_iterations_to_rerun': 800,
         'timeout_per_test_seconds': 120,
         'timeout_per_swarming_task_seconds': 3600,
-        'data_point_sample_size': 5,
+        'swarming_task_cushion': 2.0,
         'swarming_task_retries_per_build': 2,
         'iterations_to_run_after_timeout': 10,
         'max_iterations_per_task': 200,

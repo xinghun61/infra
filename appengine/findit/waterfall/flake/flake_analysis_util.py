@@ -124,4 +124,6 @@ def EstimateSwarmingIterationTimeout(analysis, build_number):
                      point.iterations)))
 
   return int(
-      flake_constants.SWARMING_TASK_CUSHION_MULTIPLIER * time_per_iteration)
+      analysis.algorithm_parameters.get(
+          'swarming_task_cushion', flake_constants.
+          SWARMING_TASK_CUSHION_MULTIPLIER) * time_per_iteration)
