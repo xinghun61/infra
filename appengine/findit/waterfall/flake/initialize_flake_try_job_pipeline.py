@@ -90,8 +90,23 @@ def _DataPointBeforeSuspectIsFullyStable(analysis):
   return lookback_algorithm.IsFullyStable(previous_data_point.pass_rate)
 
 
+def _HasHeuristicResults(analysis):
+  """Determines whether an analysis has heuristic results."""
+  return bool(analysis.suspect_urlsafe_keys)
+
+
 def _ShouldRunTryJobs(analysis, user_specified_range):
   """Determines whether try jobs should be run.
+
+  Rules should be followed in order of precedence:
+  1. Never run try jobs if there is no suspected flake build.
+  2. Always run try jobs if the user requested a specific range to run that
+     leads to a suspected build.
+  3. Never run try jobs if the stable build before the suspect isn't a full 100%
+     passing or failing.
+  4. Always run try jobs if heuristic analysis suggests a culprit.
+  5. Never run try jobs if there is insufficient confidence in the suspected
+     build.
 
   Args:
     analysis (MasterFlakeAnalysis): The main analysis being run.
@@ -120,11 +135,17 @@ def _ShouldRunTryJobs(analysis, user_specified_range):
                      'slightly flaky')
     return False
 
+  if _HasHeuristicResults(analysis):
+    # Analyses with heuristic results are highly-suspect. Run try jobs to check.
+    analysis.LogInfo('Running try jobs with heuristic-guidance')
+    return True
+
   if not _HasSufficientConfidenceToRunTryJobs(analysis):
     analysis.LogInfo(
         'Skipping try jobs due to insufficient confidence in suspected build')
     return False
 
+  analysis.LogInfo('All checks for running try jobs passed')
   return True
 
 

@@ -174,6 +174,17 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         initialize_flake_try_job_pipeline._DataPointBeforeSuspectIsFullyStable(
             analysis))
 
+  def testHasHeuristicResultsPositiveCase(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspect_urlsafe_keys = ['key']
+    self.assertTrue(
+        initialize_flake_try_job_pipeline._HasHeuristicResults(analysis))
+
+  def testHasHeuristicResultsNegativeCase(self):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    self.assertFalse(
+        initialize_flake_try_job_pipeline._HasHeuristicResults(analysis))
+
   def testShouldRunTryJobsNoSuspectedBuild(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     self.assertFalse(
@@ -203,7 +214,25 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
       return_value=True)
   @mock.patch.object(
       initialize_flake_try_job_pipeline,
+      '_HasHeuristicResults',
+      return_value=True)
+  def testShouldRunTryJobsHasHeuristicResults(self, *_):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.suspected_flake_build_number = 100
+    self.assertTrue(
+        initialize_flake_try_job_pipeline._ShouldRunTryJobs(analysis, False))
+
+  @mock.patch.object(
+      initialize_flake_try_job_pipeline,
+      '_DataPointBeforeSuspectIsFullyStable',
+      return_value=True)
+  @mock.patch.object(
+      initialize_flake_try_job_pipeline,
       '_HasSufficientConfidenceToRunTryJobs',
+      return_value=False)
+  @mock.patch.object(
+      initialize_flake_try_job_pipeline,
+      '_HasHeuristicResults',
       return_value=False)
   def testShouldRunTryJobsPreviousDataPointInsufficientConfidence(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
