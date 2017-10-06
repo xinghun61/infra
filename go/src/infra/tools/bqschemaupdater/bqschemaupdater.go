@@ -14,16 +14,15 @@ import (
 	"os"
 	"time"
 
-	pb "infra/libs/bqschema/tabledef"
-	"infra/libs/infraenv"
-
-	"go.chromium.org/luci/common/auth"
-
 	"cloud.google.com/go/bigquery"
-	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
 	"google.golang.org/api/option"
 
-	"golang.org/x/net/context"
+	"go.chromium.org/luci/common/auth"
+	"go.chromium.org/luci/common/proto"
+
+	pb "infra/libs/bqschema/tabledef"
+	"infra/libs/infraenv"
 )
 
 func loadTableDef(path string) (*pb.TableDef, error) {
@@ -33,7 +32,7 @@ func loadTableDef(path string) (*pb.TableDef, error) {
 	}
 
 	td := &pb.TableDef{}
-	if err := proto.UnmarshalText(string(content), td); err != nil {
+	if err := proto.UnmarshalTextML(string(content), td); err != nil {
 		return nil, err
 	}
 	return td, nil

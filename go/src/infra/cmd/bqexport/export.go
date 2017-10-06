@@ -14,13 +14,13 @@ import (
 	"text/template"
 	"unicode"
 
-	"infra/libs/bqschema/tabledef"
+	"github.com/golang/protobuf/proto"
+	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/errors"
+	luciproto "go.chromium.org/luci/common/proto"
 
-	"github.com/golang/protobuf/proto"
-
-	"golang.org/x/net/context"
+	"infra/libs/bqschema/tabledef"
 )
 
 func sanitizeComment(v string) string {
@@ -86,7 +86,7 @@ func LoadTableDef(path string) (*tabledef.TableDef, error) {
 	}
 
 	var tdef tabledef.TableDef
-	return &tdef, proto.UnmarshalText(string(content), &tdef)
+	return &tdef, luciproto.UnmarshalTextML(string(content), &tdef)
 }
 
 // Export exports the specified TableDef as a set of Go structs for the
