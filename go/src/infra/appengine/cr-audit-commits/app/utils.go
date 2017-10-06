@@ -42,8 +42,8 @@ type gerritClientInterface interface {
 }
 
 type gitilesClientInterface interface {
-	LogForward(context.Context, string, string, string) ([]gitiles.Commit, error)
-	Log(context.Context, string, string, int) ([]gitiles.Commit, error)
+	LogForward(context.Context, string, string, string, ...gitiles.LogOption) ([]gitiles.Commit, error)
+	Log(context.Context, string, string, ...gitiles.LogOption) ([]gitiles.Commit, error)
 }
 
 type miloClientInterface interface {

@@ -27,11 +27,11 @@ type mockGitilesClient struct {
 	e error
 }
 
-func (c mockGitilesClient) LogForward(ctx context.Context, baseURL, rev, branch string) ([]gitiles.Commit, error) {
+func (c mockGitilesClient) LogForward(ctx context.Context, baseURL, rev, branch string, opts ...gitiles.LogOption) ([]gitiles.Commit, error) {
 	return c.r, c.e
 }
 
-func (c mockGitilesClient) Log(ctx context.Context, baseURL, treeish string, limit int) ([]gitiles.Commit, error) {
+func (c mockGitilesClient) Log(ctx context.Context, baseURL, treeish string, opts ...gitiles.LogOption) ([]gitiles.Commit, error) {
 	return c.r, c.e
 }
 

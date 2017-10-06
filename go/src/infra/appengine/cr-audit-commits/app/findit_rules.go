@@ -15,6 +15,7 @@ import (
 
 	ds "go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/api/gerrit"
+	"go.chromium.org/luci/common/api/gitiles"
 )
 
 // Role is an enum describing the relationship between an email account and a
@@ -149,7 +150,7 @@ func CulpritAge(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Cl
 		panic(fmt.Errorf("Commit %q does not appear to be a revert according to gerrit", rc.CommitHash))
 	}
 
-	c, err := cs.gitiles.Log(ctx, ap.RepoCfg.BaseRepoURL, culprit.CurrentRevision, 1)
+	c, err := cs.gitiles.Log(ctx, ap.RepoCfg.BaseRepoURL, culprit.CurrentRevision, gitiles.Limit(1))
 	if err != nil {
 		panic(err)
 	}

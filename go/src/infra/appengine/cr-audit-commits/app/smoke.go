@@ -12,6 +12,7 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/api/gerrit"
+	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 
@@ -71,7 +72,7 @@ var (
 			}
 			base := "https://chromium.googlesource.com/chromium/src.git"
 			branch := "master"
-			_, err = g.Log(ctx, base, branch, 1)
+			_, err = g.Log(ctx, base, branch, gitiles.Limit(1))
 			if err != nil {
 				return err
 			}
