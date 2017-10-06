@@ -73,15 +73,8 @@ def RunSteps(api, buildername):
   args = [
     'infra.services.lkgr_finder',
     '--project=%s' % botconfig['project'],
-    # TODO(machenbach,friedman): Add shared creds for status apps.
-    '--password-file=/creds/gatekeeper/%s_status_password' %
-        botconfig['project'],
     '--verbose',
     '--email-errors',
-    # TODO(sergiyb): Remove this after we have verified that pushing to ref
-    # works and removed LKGR pushing mechanism from the
-    # auto_roll_release_process recipe.
-    '--post',
     '--read-from-file', api.raw_io.input_text(current_lkgr),
     '--write-to-file', api.raw_io.output_text(name='lkgr_hash'),
   ]
