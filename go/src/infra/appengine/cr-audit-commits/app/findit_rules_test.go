@@ -62,13 +62,22 @@ func TestFinditRules(t *testing.T) {
 			ChangeNumber:    666,
 			CurrentRevision: "badc0de",
 		}
+		bad := &gerrit.Change{
+			ChangeID: "badcid",
+			RevertOf: 666,
+		}
 		q := map[string][]*gerrit.Change{
 			"12ebe127":  {rvc},
 			"revertcid": {rvc},
 			"666":       {cc},
+			"badbadbad": {bad},
+			"badcid":    {bad},
+		}
+		pr := map[string]bool{
+			"revertcid": true,
 		}
 		testClients = &Clients{}
-		testClients.gerrit = &mockGerritClient{q: q}
+		testClients.gerrit = &mockGerritClient{q: q, pr: pr}
 
 		Convey("Culprit age Pass", func() {
 			// Inject gitiles log response
@@ -249,7 +258,14 @@ func TestFinditRules(t *testing.T) {
 			rr := RevertOfCulprit(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, rulePassed)
 		})
-		Convey("RevertOfCulprit Fail - no revert", func() {
+		Convey("RevertOfCulprit Fail - revert, but not pure", func() {
+			rc.CommitMessage = "This reverts commit badc0de\n" + rc.CommitMessage
+			rc.CommitHash = "badbadbad"
+			rr := RevertOfCulprit(ctx, ap, rc, testClients)
+			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
+			So(rr.Message, ShouldContainSubstring, "*pure* revert")
+		})
+		Convey("RevertOfCulprit Fail - not revert", func() {
 			testClients.gerrit.(*mockGerritClient).q["12ebe127"][0].RevertOf = 0
 			rr := RevertOfCulprit(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)

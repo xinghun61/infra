@@ -145,8 +145,8 @@ func CulpritAge(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Cl
 	result := &RuleResult{}
 	result.RuleName = "CulpritAge"
 
-	culprit, ok := getCulpritChange(ctx, ap, rc, cs)
-	if !ok {
+	_, culprit := getRevertAndCulpritChanges(ctx, ap, rc, cs)
+	if culprit == nil {
 		panic(fmt.Errorf("Commit %q does not appear to be a revert according to gerrit", rc.CommitHash))
 	}
 
@@ -178,8 +178,8 @@ func CulpritInBuild(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs
 	result := &RuleResult{}
 	result.RuleName = "CulpritInBuild"
 
-	culprit, ok := getCulpritChange(ctx, ap, rc, cs)
-	if !ok {
+	_, culprit := getRevertAndCulpritChanges(ctx, ap, rc, cs)
+	if culprit == nil {
 		panic(fmt.Errorf("Commit %q does not appear to be a revert according to gerrit",
 			rc.CommitHash))
 	}
@@ -214,13 +214,13 @@ func CulpritInBuild(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs
 // TODO(robertocn): Move all gerrit/milo/gitiles/monorail specific logic to a
 // file dedicated to each external dependency.
 
-// getCulpritChange finds (through Gerrit) the CL being reverted by another.
-// returns false as a second return value if the CL given is not a revert.
+// getRevertAndCulpritChanges gets (through Gerrit) the details of the revert
+// CL and  the CL it reverts.
 //
 // Note: The RevertOf property of a Change does not guarantee that the cl is a
-// pure revert of another. In the case of Findit, this is guaranteed by the
-// submit rule on Gerrit, hence we are not duplicating that check here.
-func getCulpritChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) (*gerrit.Change, bool) {
+// pure revert of another; instead, the get-pure-revert api of Gerrit needs to
+// be checked, like RevertOfCulprit below does.
+func getRevertAndCulpritChanges(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) (*gerrit.Change, *gerrit.Change) {
 	cls, _, err := cs.gerrit.ChangeQuery(ctx, gerrit.ChangeQueryRequest{Query: rc.CommitHash})
 	if err != nil {
 		panic(err)
@@ -228,22 +228,23 @@ func getCulpritChange(ctx context.Context, ap *AuditParams, rc *RelevantCommit, 
 	if len(cls) == 0 {
 		panic(fmt.Sprintf("no CL found for commit %q", rc.CommitHash))
 	}
-	d, err := cs.gerrit.GetChangeDetails(ctx, cls[0].ChangeID, []string{})
+	revert, err := cs.gerrit.GetChangeDetails(ctx, cls[0].ChangeID, []string{})
 
 	if err != nil {
 		panic(err)
 	}
-	if d.RevertOf == 0 {
-		return nil, false
+	if revert.RevertOf == 0 {
+		return revert, nil
 	}
-	culprit, err := cs.gerrit.GetChangeDetails(ctx, strconv.Itoa(d.RevertOf), []string{"CURRENT_REVISION"})
+
+	culprit, err := cs.gerrit.GetChangeDetails(ctx, strconv.Itoa(revert.RevertOf), []string{"CURRENT_REVISION"})
 	if err != nil {
 		panic(err)
 	}
 	if culprit.CurrentRevision == "" {
 		panic(fmt.Sprintf("Could not get current_revision property for cl %q", culprit.ChangeNumber))
 	}
-	return culprit, true
+	return revert, culprit
 }
 
 // FailedBuildIsCompileFailure is a RuleFunc that verifies that the referred
@@ -285,21 +286,32 @@ func FailedBuildIsCompileFailure(ctx context.Context, ap *AuditParams, rc *Relev
 func RevertOfCulprit(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) *RuleResult {
 	result := &RuleResult{}
 	result.RuleName = "RevertOfCulprit"
-	result.RuleResultStatus = rulePassed
+	result.RuleResultStatus = ruleFailed
 
-	culprit, ok := getCulpritChange(ctx, ap, rc, cs)
-	if !ok {
-		result.RuleResultStatus = ruleFailed
-		result.Message = fmt.Sprintf("Commit %q does not appear to be a revert according to gerrit",
+	revert, culprit := getRevertAndCulpritChanges(ctx, ap, rc, cs)
+	if culprit == nil {
+		result.Message = fmt.Sprintf("Commit %q does not appear to be a revert, according to gerrit",
 			rc.CommitHash)
 		return result
 	}
+
+	pr, err := cs.gerrit.IsChangePureRevert(ctx, revert.ChangeID)
+	if err != nil {
+		panic(err)
+	}
+	if !pr {
+		result.Message = fmt.Sprintf("Commit %q is a revert but not a *pure* revert, according to gerrit",
+			rc.CommitHash)
+		return result
+	}
+
 	// The CommitMessage of the revert must contain the culprit' hash.
 	if !strings.Contains(rc.CommitMessage, culprit.CurrentRevision) {
-		result.RuleResultStatus = ruleFailed
 		result.Message = fmt.Sprintf("Commit %q does not include the revision it reverts in its commit message",
 			rc.CommitHash)
+		return result
 	}
+	result.RuleResultStatus = rulePassed
 	return result
 }
 

@@ -36,8 +36,9 @@ func (c mockGitilesClient) Log(ctx context.Context, baseURL, treeish string, opt
 }
 
 type mockGerritClient struct {
-	q map[string][]*gerrit.Change
-	e error
+	q  map[string][]*gerrit.Change
+	pr map[string]bool
+	e  error
 }
 
 func (c mockGerritClient) ChangeQuery(ctx context.Context, r gerrit.ChangeQueryRequest) ([]*gerrit.Change, bool, error) {
@@ -48,6 +49,13 @@ func (c mockGerritClient) ChangeQuery(ctx context.Context, r gerrit.ChangeQueryR
 func (c mockGerritClient) GetChangeDetails(ctx context.Context, cid string, options []string) (*gerrit.Change, error) {
 	ret := c.q[cid]
 	return ret[0], c.e
+}
+
+func (c mockGerritClient) IsChangePureRevert(ctx context.Context, cid string) (bool, error) {
+	// Say a revert is a pure revert if present in c.pr, and its value is
+	// true.
+	val, ok := c.pr[cid]
+	return ok && val, c.e
 }
 
 func fakeRelevantCommits(n int, k *ds.Key, bh string, s AuditStatus, t time.Time, d time.Duration, a, c string) []*RelevantCommit {
