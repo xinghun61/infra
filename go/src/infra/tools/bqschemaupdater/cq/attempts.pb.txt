@@ -1,6 +1,7 @@
 dataset: "cq"
 table_id: "attempts"
 name: "CQ Attempts"
+partition_table: true
 fields: <
   name: "attempt_start"
   description: "Time when the attempt starts. CQ calculates this by searching for the last 'The CQ bit checked by...' message, which corresponds to the moment when the user has clicked on the CQ checkbox"

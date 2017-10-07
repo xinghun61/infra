@@ -2,6 +2,7 @@ dataset: "cq"
 table_id: "events"
 name: "CQ Events"
 description: "Events from commit queue."
+partition_table: true
 fields: <
   name: "timestamp"
   description: "Time of event."
