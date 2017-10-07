@@ -36,17 +36,6 @@ func GetMiloBuildbot(c context.Context) milo.BuildbotClient {
 func WithMiloBuildInfo(c context.Context, mc milo.BuildInfoClient) context.Context {
 	return context.WithValue(c, miloBuildInfoKey, mc)
 }
-
-// GetMiloBuildInfo returns the currently registered Milo BuildInfo client, or panics.
-func GetMiloBuildInfo(c context.Context) milo.BuildInfoClient {
-	v := c.Value(miloBuildInfoKey)
-	ret, ok := v.(milo.BuildInfoClient)
-	if !ok {
-		panic("error reading milo buildinfo service dependency")
-	}
-	return ret
-}
-
 func (r *reader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
 	bbClient := GetMiloBuildbot(ctx)
 
