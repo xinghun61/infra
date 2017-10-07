@@ -87,8 +87,12 @@ def _GetMasterJsonData(http_client,
                        master_name,
                        builder_name='',
                        build_number=''):
+  req = {
+      'name': master_name,
+      'exclude_deprecated': True,
+  }
   response_json = rpc_util.DownloadJsonData(_MILO_ENDPOINT_MASTER,
-                                            {'name': master_name}, http_client)
+                                            req, http_client)
 
   return _ProcessMiloData(response_json, master_name, builder_name,
                           build_number)
@@ -186,7 +190,8 @@ def GetBuildDataFromMilo(master_name, builder_name, build_number, http_client):
   data = {
       'master': master_name,
       'builder': builder_name,
-      'buildNum': build_number
+      'buildNum': build_number,
+      'exclude_deprecated': True,
   }
   response_json = rpc_util.DownloadJsonData(_MILO_ENDPOINT_BUILD, data,
                                             http_client)

@@ -173,7 +173,8 @@ def _GetTimesFromBuildbot(buildbot_url):
   data = json.dumps({
       'master': master,
       'builder': builder,
-      'buildNum': buildnum
+      'buildNum': buildnum,
+      'exclude_deprecated': True,
   })
 
   _, response = CLIENT_SINGLETON.Post(
