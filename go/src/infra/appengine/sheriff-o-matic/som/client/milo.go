@@ -39,7 +39,12 @@ func WithMiloBuildInfo(c context.Context, mc milo.BuildInfoClient) context.Conte
 func (r *reader) Build(ctx context.Context, master *messages.MasterLocation, builder string, buildNum int64) (*messages.Build, error) {
 	bbClient := GetMiloBuildbot(ctx)
 
-	req := &milo.BuildbotBuildRequest{Master: master.Name(), Builder: builder, BuildNum: buildNum}
+	req := &milo.BuildbotBuildRequest{
+		Master:            master.Name(),
+		Builder:           builder,
+		BuildNum:          buildNum,
+		ExcludeDeprecated: true,
+	}
 	resp, err := bbClient.GetBuildbotBuildJSON(ctx, req)
 	if err != nil {
 		logging.Errorf(ctx, "error getting build %s/%s/%d: %v", master.Name(), builder, buildNum, err)
@@ -71,7 +76,10 @@ func stripUnusedFields(b *messages.Build) {
 func (r *reader) BuildExtract(ctx context.Context, master *messages.MasterLocation) (*messages.BuildExtract, error) {
 	bbClient := GetMiloBuildbot(ctx)
 
-	req := &milo.MasterRequest{Name: master.Name()}
+	req := &milo.MasterRequest{
+		Name:              master.Name(),
+		ExcludeDeprecated: true,
+	}
 	resp, err := bbClient.GetCompressedMasterJSON(ctx, req)
 	if err != nil {
 		logging.Errorf(ctx, "error getting build extract for %s: %v", master.Name(), err)
