@@ -19,5 +19,5 @@ recipes-py
 !/cipd/README.md
 reasons.sqlite
 
-# Used by "bootstrap/luci-deploy-init.py".
-.luci_deploy
+# Used by "infra/tools/dockerbuild".
+.dockerbuild
