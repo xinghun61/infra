@@ -5,6 +5,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -238,6 +239,12 @@ func getPEP425CIPDTemplateForTag(tag *vpython.PEP425Tag) (map[string]string, err
 		return nil, errors.Reason("failed to infer CIPD platform for tag [%s]", tag).Err()
 	}
 	template["platform"] = platform
+
+	// Build the sum tag, "vpython_platform",
+	// "${platform}_${py_python}_${py_abi}"
+	if platform != "" && tag.Python != "" && tag.Abi != "" {
+		template["vpython_platform"] = fmt.Sprintf("%s_%s_%s", platform, tag.Python, tag.Abi)
+	}
 
 	return template, nil
 }

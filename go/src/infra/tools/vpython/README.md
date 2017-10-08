@@ -67,6 +67,9 @@ configuration enables some additional tags:
 - **py_python** is the system's PEP 425 "python" field.
 - **py_abi** is the system's PEP 425 "ABI" field.
 - **py_platform** is the system's PEP 425 "platform" field.
+- **vpython_platform** is the combination string:
+  `${platform}_${py_python}_${py_abi}`. This is the naming convention used by
+  `dockerbuild` to upload binary wheels.
 
 A given system may expose several PEP 425 tag combinations. To view the
 combination on a given system, run:
@@ -100,7 +103,7 @@ So far, Infra has been following these general guidelines:
 
 - A single CIPD package should hold a single wheel.
 - CIPD wheel packages are named:
-  - `infra/python/wheels/name/${platform}_${py_python}_${py_abi}`, for
+  - `infra/python/wheels/name/${vpython_platform}`, for
     platform-specific wheels.
     - (For example, `infra/python/wheels/cryptography/linux-amd64_cp27_cp27mu`)
   - `infra/python/wheels/name_${py_platform}` for universal wheels.

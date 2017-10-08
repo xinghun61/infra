@@ -169,7 +169,7 @@ Because the script is called `test.py`, we edit a file called
 ```protobuf
 python: "2.7"
 wheel: <
-  name: "infra/python/wheels/psutil/${platform}_${py_python}_${py_abi}"
+  name: "infra/python/wheels/psutil/${vpython_platform}"
   version: "version:5.2.2"
 >
 ```
@@ -308,7 +308,7 @@ directory alongside it and be named `foo.py.vpython`.
   ```protobuf
   python: "2.7"
   wheel: <
-    name: "infra/python/wheels/coverage/${platform}_${py_python}_${py_abi}"
+    name: "infra/python/wheels/coverage/${vpython_platform}"
     version: "version:4.3.4"
   >
   ```
@@ -357,7 +357,7 @@ For example:
 
   # [VPYTHON:BEGIN]
   # wheel: <
-  #   name: "infra/python/wheels/coverage/${platform}_${py_python}_${py_abi}"
+  #   name: "infra/python/wheels/coverage/${vpython_platform}"
   #   version: "version:4.3.4"
   # >
   # [VPYTHON:END]
@@ -392,7 +392,7 @@ For example:
   ```protobuf
   python: "2.7"
   wheel: <
-    name: "infra/python/wheels/coverage/${platform}_${py_python}_${py_abi}"
+    name: "infra/python/wheels/coverage/${vpython_platform}"
     version: "version:4.3.4"
   >
   ```
@@ -532,7 +532,7 @@ From the `dockerbuild` list, the following packaged wheel bundles are available:
 * Coverage 4.3.4
   ```protobuf
   wheel: <
-    name: "infra/python/wheels/coverage/${platform}_${py_python}_${py_abi}"
+    name: "infra/python/wheels/coverage/${vpython_platform}"
     version: "version:4.3.4"
   >
   ```
@@ -540,7 +540,7 @@ From the `dockerbuild` list, the following packaged wheel bundles are available:
 * cffi 1.10.0
   ```protobuf
   wheel: <
-    name: "infra/python/wheels/cffi/${platform}_${py_python}_${py_abi}"
+    name: "infra/python/wheels/cffi/${vpython_platform}"
     version: "version:1.10.0"
   >
   ```
@@ -548,7 +548,7 @@ From the `dockerbuild` list, the following packaged wheel bundles are available:
 * numpy 1.12.1
   ```protobuf
   wheel: <
-    name: "infra/python/wheels/numpy/${platform}_${py_python}_${py_abi}"
+    name: "infra/python/wheels/numpy/${vpython_platform}"
     version: "version:1.12.1"
   >
   ```
@@ -556,7 +556,7 @@ From the `dockerbuild` list, the following packaged wheel bundles are available:
 * psutil 5.2.2
   ```protobuf
   wheel: <
-    name: "infra/python/wheels/psutil/${platform}_${py_python}_${py_abi}"
+    name: "infra/python/wheels/psutil/${vpython_platform}"
     version: "version:5.2.2"
   >
   ```
@@ -564,7 +564,7 @@ From the `dockerbuild` list, the following packaged wheel bundles are available:
 * scipy 0.19.0
   ```protobuf
   wheel: <
-    name: "infra/python/wheels/scipy/${platform}_${py_python}_${py_abi}"
+    name: "infra/python/wheels/scipy/${vpython_platform}"
     version: "version:0.19.0"
   >
   ```
@@ -572,7 +572,7 @@ From the `dockerbuild` list, the following packaged wheel bundles are available:
 * opencv_python 3.2.0.7
   ```protobuf
   wheel: <
-    name: "infra/python/wheels/opencv/${platform}_${py_python}_${py_abi}"
+    name: "infra/python/wheels/opencv/${vpython_platform}"
     version: "version:3.2.0.7"
   >
   ```
@@ -580,7 +580,7 @@ From the `dockerbuild` list, the following packaged wheel bundles are available:
 * cryptography 1.8.1
   ```protobuf
   wheel: <
-    name: "infra/python/wheels/cryptography/${platform}_${py_python}_${py_abi}"
+    name: "infra/python/wheels/cryptography/${vpython_platform}"
     version: "version:1.8.1"
   >
   ```
@@ -868,7 +868,7 @@ wheel: <
 ##
 
 wheel: <
-  name: "infra/python/wheels/cryptography/${platform}_${py_python}_${py_abi}"
+  name: "infra/python/wheels/cryptography/${vpython_platform}"
   version: "version:2.0.3"
 >
 
@@ -888,7 +888,7 @@ wheel: <
 >
 
 wheel: <
-  name: "infra/python/wheels/cffi/${platform}_${py_python}_${py_abi}"
+  name: "infra/python/wheels/cffi/${vpython_platform}"
   version: "version:1.10.0"
 >
 
