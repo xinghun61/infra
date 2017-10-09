@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import collections
+import copy
 import contextlib
 import datetime
 import logging
@@ -550,33 +551,78 @@ def _log_inconsistent_search_results(error_message):  # pragma: no cover
   logging.error(error_message)
 
 
-def search(
-    buckets=None, tags=None,
-    status=None, result=None, failure_reason=None, cancelation_reason=None,
-    created_by=None, max_builds=None, start_cursor=None,
-    retry_of=None, canary=None, create_time_low=None, create_time_high=None):
+class SearchQuery(object):
+  """Argument for search. Mutable."""
+
+  def __init__(
+      self, buckets=None, tags=None, status=None, result=None,
+      failure_reason=None, cancelation_reason=None, created_by=None,
+      max_builds=None, start_cursor=None, retry_of=None, canary=None,
+      create_time_low=None, create_time_high=None):
+    """Initializes SearchQuery.
+
+    Args:
+      buckets (list of str): a list of buckets to search in.
+        A build must be in one of the buckets.
+      tags (list of str): a list of tags that a build must have.
+        All of the |tags| must be present in a build.
+      status (model.BuildStatus): build status.
+      result (model.BuildResult): build result.
+      failure_reason (model.FailureReason): failure reason.
+      cancelation_reason (model.CancelationReason): build cancelation reason.
+      created_by (str): identity who created a build.
+      max_builds (int): maximum number of builds to return.
+      start_cursor (string): a value of "next" cursor returned by previous
+        search_by_tags call. If not None, return next builds in the query.
+      retry_of (int): value of retry_of attribute.
+      canary (bool): if not None, value of "canary" field.
+        Search by canary_preference is not supported.
+      create_time_low (datetime.datetime): if not None, minimum value of
+        create_time attribute. Inclusive.
+      create_time_high (datetime.datetime): if not None, maximum value of
+        create_time attribute. Exclusive.
+    """
+    self.buckets = buckets
+    self.tags = tags
+    self.status = status
+    self.result = result
+    self.failure_reason = failure_reason
+    self.cancelation_reason = cancelation_reason
+    self.created_by = created_by
+    self.retry_of = retry_of
+    self.canary = canary
+    self.create_time_low = create_time_low
+    self.create_time_high = create_time_high
+    self.max_builds = max_builds
+    self.start_cursor = start_cursor
+
+  def __copy__(self):
+    return SearchQuery(**self.__dict__)
+
+  def __deepcopy__(self, memodict):  # pylint: disable=unused-argument
+    q = SearchQuery(**self.__dict__)
+    if self.buckets:
+      q.buckets = copy.deepcopy(self.buckets)
+    if self.tags:  # pragma: no branch
+      q.tags = copy.deepcopy(self.tags)
+    return q
+
+  def __eq__(self, other):  # pragma: no cover
+    # "pragma: no cover" because this code is executed
+    # by mock module, not service_test
+    return type(self) == type(other) and self.__dict__ == other.__dict__
+
+  def __ne__(self, other):  # pragma: no cover
+    # "pragma: no cover" because this code is executed
+    # by mock module, not service_test
+    return not self.__eq__(other)
+
+
+def search(q):
   """Searches for builds.
 
   Args:
-    buckets (list of str): a list of buckets to search in.
-      A build must be in one of the buckets.
-    tags (list of str): a list of tags that a build must have.
-      All of the |tags| must be present in a build.
-    status (model.BuildStatus): build status.
-    result (model.BuildResult): build result.
-    failure_reason (model.FailureReason): failure reason.
-    cancelation_reason (model.CancelationReason): build cancelation reason.
-    created_by (str): identity who created a build.
-    max_builds (int): maximum number of builds to return.
-    start_cursor (string): a value of "next" cursor returned by previous
-      search_by_tags call. If not None, return next builds in the query.
-    retry_of (int): value of retry_of attribute.
-    canary (bool): if not None, value of "canary" field.
-      Search by canary_preference is not supported.
-    create_time_low (datetime.datetime): if not None, minimum value of
-      create_time attribute. Inclusive.
-    create_time_high (datetime.datetime): if not None, maximum value of
-      create_time attribute. Exclusive.
+    q (SearchQuery): the query.
 
   Returns:
     A tuple:
@@ -584,50 +630,47 @@ def search(
       next_cursor (string): cursor for the next page.
         None if there are no more builds.
   """
-  if buckets is not None and not isinstance(buckets, list):
+  if q.buckets is not None and not isinstance(q.buckets, list):
     raise errors.InvalidInputError('Buckets must be a list or None')
-  validate_tags(tags, 'search')
+  validate_tags(q.tags, 'search')
 
-  if (create_time_low is not None and
-      create_time_low < model.BEGINING_OF_THE_WORLD):
-    create_time_low = None
-  if create_time_high is not None:
-    if create_time_high <= model.BEGINING_OF_THE_WORLD:
+  q = copy.copy(q)
+  if (q.create_time_low is not None and
+      q.create_time_low < model.BEGINING_OF_THE_WORLD):
+    q.create_time_low = None
+  if q.create_time_high is not None:
+    if q.create_time_high <= model.BEGINING_OF_THE_WORLD:
       return [], None
-    if create_time_low is not None and create_time_low >= create_time_high:
+    if (q.create_time_low is not None and
+        q.create_time_low >= q.create_time_high):
       return [], None
 
-  tags = tags or []
-  max_builds = fix_max_builds(max_builds)
-  created_by = parse_identity(created_by)
+  q.tags = q.tags or []
+  q.max_builds = fix_max_builds(q.max_builds)
+  q.created_by = parse_identity(q.created_by)
 
-  if not buckets and retry_of is not None:
-    retry_of_build = model.Build.get_by_id(retry_of)
+  if not q.buckets and q.retry_of is not None:
+    retry_of_build = model.Build.get_by_id(q.retry_of)
     if retry_of_build:
-      buckets = [retry_of_build.bucket]
-  if buckets:
-    _check_search_acls(buckets)
-    buckets = set(buckets)
-
-  search_args = (
-    buckets, tags, status, result, failure_reason, cancelation_reason,
-    created_by, max_builds, start_cursor, retry_of, canary,
-    create_time_low, create_time_high)
+      q.buckets = [retry_of_build.bucket]
+  if q.buckets:
+    _check_search_acls(q.buckets)
+    q.buckets = set(q.buckets)
 
   is_tag_index_cursor = (
-    start_cursor and TAG_INDEX_SEARCH_CURSOR_RE.match(start_cursor))
+    q.start_cursor and TAG_INDEX_SEARCH_CURSOR_RE.match(q.start_cursor))
   can_use_tag_index = (
-    _indexed_tags(tags) and (not start_cursor or is_tag_index_cursor))
+    _indexed_tags(q.tags) and (not q.start_cursor or is_tag_index_cursor))
   if is_tag_index_cursor and not can_use_tag_index:
     raise errors.InvalidInputError('invalid cursor')
-  can_use_query_search = not start_cursor or not is_tag_index_cursor
+  can_use_query_search = not q.start_cursor or not is_tag_index_cursor
   assert can_use_tag_index or can_use_query_search
 
   # Try searching using tag index.
   if can_use_tag_index:
     try:
       search_start_time = utils.utcnow()
-      results = _tag_index_search(*search_args)
+      results = _tag_index_search(q)
       logging.info(
           'tag index search took %dms',
           (utils.utcnow() - search_start_time).total_seconds() * 1000)
@@ -642,7 +685,7 @@ def search(
   # Searching using datastore query.
   assert can_use_query_search
   search_start_time = utils.utcnow()
-  results = _query_search(*search_args)
+  results = _query_search(q)
   logging.info(
       'query search took %dms',
       (utils.utcnow() - search_start_time).total_seconds() * 1000)
@@ -658,30 +701,27 @@ def _between(value, low, high):  # pragma: no cover
   return True
 
 
-def _query_search(
-    buckets, tags, status, result, failure_reason, cancelation_reason,
-    created_by, max_builds, start_cursor, retry_of, canary,
-    create_time_low, create_time_high):
+def _query_search(q):
   """Searches for builds using NDB query. For args doc, see search().
 
   Assumes:
   - arguments are valid
   - if bool(buckets), permissions are checked.
   """
-  if not buckets:
-    buckets = acl.get_available_buckets()
-    if buckets is not None and len(buckets) == 0:
+  if not q.buckets:
+    q.buckets = acl.get_available_buckets()
+    if q.buckets is not None and len(q.buckets) == 0:
       return [], None
   # (buckets is None) means the requester has access to all buckets.
-  assert buckets is None or buckets
+  assert q.buckets is None or q.buckets
 
-  check_buckets_locally = retry_of is not None
-  q = model.Build.query()
-  for t in tags:
-    q = q.filter(model.Build.tags == t)
-  filter_if = lambda p, v: q if v is None else q.filter(p == v)
+  check_buckets_locally = q.retry_of is not None
+  dq = model.Build.query()
+  for t in q.tags:
+    dq = dq.filter(model.Build.tags == t)
+  filter_if = lambda p, v: dq if v is None else dq.filter(p == v)
 
-  if status == model.BuildStatus.COMPLETED:
+  if q.status == model.BuildStatus.COMPLETED:
     # Vast majority of builds in the datastore are COMPLETED b/c
     # that's the ultimate final state of any build.
     # It is very inefficient to filter by status=COMPLETED using datastore
@@ -690,43 +730,40 @@ def _query_search(
     # Omit the status in the query filter and filter in application.
     pass
   else:
-    q = filter_if(model.Build.status, status)
-  q = filter_if(model.Build.result, result)
-  q = filter_if(model.Build.failure_reason, failure_reason)
-  q = filter_if(model.Build.cancelation_reason, cancelation_reason)
-  q = filter_if(model.Build.created_by, created_by)
-  q = filter_if(model.Build.retry_of, retry_of)
-  q = filter_if(model.Build.canary, canary)
+    dq = filter_if(model.Build.status, q.status)
+  dq = filter_if(model.Build.result, q.result)
+  dq = filter_if(model.Build.failure_reason, q.failure_reason)
+  dq = filter_if(model.Build.cancelation_reason, q.cancelation_reason)
+  dq = filter_if(model.Build.created_by, q.created_by)
+  dq = filter_if(model.Build.retry_of, q.retry_of)
+  dq = filter_if(model.Build.canary, q.canary)
 
   # buckets is None if the current identity has access to ALL buckets.
-  if buckets and not check_buckets_locally:
-    q = q.filter(model.Build.bucket.IN(buckets))
+  if q.buckets and not check_buckets_locally:
+    dq = dq.filter(model.Build.bucket.IN(q.buckets))
 
-  id_low, id_high = model.build_id_range(create_time_low, create_time_high)
+  id_low, id_high = model.build_id_range(q.create_time_low, q.create_time_high)
   if id_low is not None:
-    q = q.filter(model.Build.key >= ndb.Key(model.Build, id_low))
+    dq = dq.filter(model.Build.key >= ndb.Key(model.Build, id_low))
   if id_high is not None:
-    q = q.filter(model.Build.key < ndb.Key(model.Build, id_high))
+    dq = dq.filter(model.Build.key < ndb.Key(model.Build, id_high))
 
-  q = q.order(model.Build.key)
+  dq = dq.order(model.Build.key)
 
   def local_predicate(build):
-    if status is not None and build.status != status:  # pragma: no coverage
+    if q.status is not None and build.status != q.status:  # pragma: no coverage
       return False
-    if buckets and build.bucket not in buckets:
+    if q.buckets and build.bucket not in q.buckets:
       return False
-    if not _between(build.create_time, create_time_low, create_time_high):
+    if not _between(build.create_time, q.create_time_low, q.create_time_high):
       return False  # pragma: no cover
     return True
 
   return _fetch_page(
-      q, max_builds, start_cursor, predicate=local_predicate)
+      dq, q.max_builds, q.start_cursor, predicate=local_predicate)
 
 
-def _tag_index_search(
-    buckets, tags, status, result, failure_reason, cancelation_reason,
-    created_by, max_builds, start_cursor, retry_of, canary,
-    create_time_low, create_time_high):
+def _tag_index_search(q):
   """Searches for builds using TagIndex entities. For args doc, see search().
 
   Assumes:
@@ -738,17 +775,17 @@ def _tag_index_search(
     errors.InvalidIndexEntryOrder if raised when the tag index entry order is
       invalid.
   """
-  assert tags
-  assert not buckets or isinstance(buckets, set)
+  assert q.tags
+  assert not q.buckets or isinstance(q.buckets, set)
 
   # Choose a tag to search by.
-  all_indexed_tags = _indexed_tags(tags)
+  all_indexed_tags = _indexed_tags(q.tags)
   assert all_indexed_tags
   indexed_tag = all_indexed_tags[0] # choose the most selective tag.
   indexed_tag_key = indexed_tag.split(':', 1)[0]
   # Exclude the indexed tag from the tag filter.
-  tags = tags[:]
-  tags.remove(indexed_tag)
+  q = copy.deepcopy(q)
+  q.tags.remove(indexed_tag)
 
   idx = model.TagIndex.get_by_id(indexed_tag)
   if idx and idx.permanently_incomplete:
@@ -764,7 +801,7 @@ def _tag_index_search(
 
   # If buckets were not specified explicitly, permissions were not checked
   # earlier. In this case, check permissions for each build.
-  check_permissions = not buckets
+  check_permissions = not q.buckets
   has_access_cache = {}
 
   def has_access(bucket):
@@ -778,14 +815,14 @@ def _tag_index_search(
   # end. Start from the end.
   entry_index = len(idx.entries) - 1
 
-  id_low, id_high = model.build_id_range(create_time_low, create_time_high)
+  id_low, id_high = model.build_id_range(q.create_time_low, q.create_time_high)
 
   # Skip entries with build ids that are less or equal to the id in the cursor.
-  if start_cursor:
+  if q.start_cursor:
     # The cursor is a minimum build id, exclusive. Such cursor is resilient
     # to duplicates and additions of index entries to beginning or end.
-    assert TAG_INDEX_SEARCH_CURSOR_RE.match(start_cursor)
-    min_id_exclusive = int(start_cursor[len('id>'):])
+    assert TAG_INDEX_SEARCH_CURSOR_RE.match(q.start_cursor)
+    min_id_exclusive = int(q.start_cursor[len('id>'):])
     if id_low is not None and id_low > min_id_exclusive:
       # If the minimum build id requested is greater than the cursor, we need
       # to skip more entries. Subtract 1 because id_low is inclusive.
@@ -805,13 +842,13 @@ def _tag_index_search(
   # scalar_filters maps a name of a model.Build attribute to a filter value.
   # Applies only to non-repeated fields.
   scalar_filters = [
-    ('status', status),
-    ('result', result),
-    ('failure_reason', failure_reason),
-    ('cancelation_reason', cancelation_reason),
-    ('created_by', created_by),
-    ('retry_of', retry_of),
-    ('canary', canary),
+    ('status', q.status),
+    ('result', q.result),
+    ('failure_reason', q.failure_reason),
+    ('cancelation_reason', q.cancelation_reason),
+    ('created_by', q.created_by),
+    ('retry_of', q.retry_of),
+    ('canary', q.canary),
   ]
   scalar_filters = [(a, v) for a, v in scalar_filters if v is not None]
 
@@ -821,8 +858,8 @@ def _tag_index_search(
   skipped_entries = 0
   inconsistent_entries = 0
   eof = False
-  while len(result) < max_builds:
-    fetch_count = max_builds - len(result)
+  while len(result) < q.max_builds:
+    fetch_count = q.max_builds - len(result)
     entries_to_fetch = [] # ordered by build id by ascending.
     while entry_index >= 0:
       e = idx.entries[entry_index]
@@ -843,7 +880,7 @@ def _tag_index_search(
         break
       # If we filter by bucket, check it here without fetching the build.
       # This is not a security check.
-      if buckets and e.bucket not in buckets:
+      if q.buckets and e.bucket not in q.buckets:
         continue
       if check_permissions and not has_access(e.bucket):
         continue
@@ -866,9 +903,9 @@ def _tag_index_search(
       if any(getattr(b, a) != v for a, v in scalar_filters):
         skipped_entries += 1
         continue
-      if not _between(b.create_time, create_time_low, create_time_high):
+      if not _between(b.create_time, q.create_time_low, q.create_time_high):
         continue  # pragma: no cover
-      if any(t not in b.tags for t in tags):
+      if any(t not in b.tags for t in q.tags):
         skipped_entries += 1
         continue
       result.append(b)

@@ -302,7 +302,7 @@ class BuildBucketApi(remote.Service):
   def search(self, request):
     """Searches for builds."""
     assert isinstance(request.tag, list)
-    builds, next_cursor = service.search(
+    builds, next_cursor = service.search(service.SearchQuery(
         buckets=request.bucket,
         tags=request.tag,
         status=request.status,
@@ -316,7 +316,7 @@ class BuildBucketApi(remote.Service):
         canary=request.canary,
         create_time_low=parse_datetime(request.creation_ts_low),
         create_time_high=parse_datetime(request.creation_ts_high),
-    )
+    ))
     return self.SearchResponseMessage(
         builds=map(api_common.build_to_message, builds),
         next_cursor=next_cursor,

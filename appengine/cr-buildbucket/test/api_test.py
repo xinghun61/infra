@@ -260,46 +260,8 @@ class ApiTests(object):
     self.test_build.put()
     search.return_value = ([self.test_build], 'the cursor')
 
-    req = {
-      'bucket': ['chromium'],
-      'cancelation_reason': 'CANCELED_EXPLICITLY',
-      'created_by': 'user:x@chromium.org',
-      'result': 'CANCELED',
-      'status': 'COMPLETED',
-      'tag': ['important'],
-      'retry_of': '42',
-      'canary': True,
-    }
-
-    res = self.call_api('search', req).json_body
-
-    search.assert_called_once_with(
-      buckets=req['bucket'],
-      tags=req['tag'],
-      status=model.BuildStatus.COMPLETED,
-      result=model.BuildResult.CANCELED,
-      failure_reason=None,
-      cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY,
-      created_by='user:x@chromium.org',
-      max_builds=None,
-      start_cursor=None,
-      retry_of=42,
-      canary=True,
-      create_time_low=None,
-      create_time_high=None,
-    )
-    self.assertEqual(len(res['builds']), 1)
-    self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
-    self.assertEqual(res['next_cursor'], 'the cursor')
-
-  @mock.patch('service.search', autospec=True)
-  def test_bounded_search(self, search):
-    self.test_build.put()
-    search.return_value = ([self.test_build], 'the cursor')
-
     time_low  = model.BEGINING_OF_THE_WORLD
     time_high = datetime.datetime(2120, 5, 4)
-
     req = {
       'bucket': ['chromium'],
       'cancelation_reason': 'CANCELED_EXPLICITLY',
@@ -315,7 +277,7 @@ class ApiTests(object):
 
     res = self.call_api('search', req).json_body
 
-    search.assert_called_once_with(
+    search.assert_called_once_with(service.SearchQuery(
       buckets=req['bucket'],
       tags=req['tag'],
       status=model.BuildStatus.COMPLETED,
@@ -329,7 +291,7 @@ class ApiTests(object):
       canary=True,
       create_time_low=time_low,
       create_time_high=time_high,
-    )
+    ))
     self.assertEqual(len(res['builds']), 1)
     self.assertEqual(res['builds'][0]['id'], str(self.test_build.key.id()))
     self.assertEqual(res['next_cursor'], 'the cursor')

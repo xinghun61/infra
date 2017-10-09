@@ -538,13 +538,16 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   #################################### SEARCH ##################################
 
+  def search(self, **query_attrs):
+    return service.search(service.SearchQuery(**query_attrs))
+
   def test_search(self):
     build2 = model.Build(bucket=self.test_build.bucket)
     self.put_build(build2)
 
     self.test_build.tags = ['important:true']
     self.put_build(self.test_build)
-    builds, _ = service.search(
+    builds, _ = self.search(
         buckets=[self.test_build.bucket],
         tags=self.test_build.tags,
     )
@@ -557,25 +560,25 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.put_build(self.test_build)
     self.put_build(build2)
 
-    builds, _ = service.search(tags=[self.INDEXED_TAG])
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
-    builds, _ = service.search()
+    builds, _ = self.search()
     self.assertEqual(builds, [self.test_build])
 
     # All buckets are available.
     acl.get_available_buckets.return_value = None
     acl.can_async.side_effect = None
-    builds, _ = service.search()
+    builds, _ = self.search()
     self.assertEqual(builds, [build2, self.test_build])
-    builds, _ = service.search(tags=[self.INDEXED_TAG])
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [build2, self.test_build])
 
     # No buckets are available.
     acl.get_available_buckets.return_value = []
     self.mock_cannot(acl.Action.SEARCH_BUILDS)
-    builds, _ = service.search()
+    builds, _ = self.search()
     self.assertEqual(builds, [])
-    builds, _ = service.search(tags=[self.INDEXED_TAG])
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [])
 
   def test_search_with_auth_error(self):
@@ -583,7 +586,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.put_build(self.test_build)
 
     with self.assertRaises(auth.AuthorizationError):
-      service.search(buckets=[self.test_build.bucket])
+      self.search(buckets=[self.test_build.bucket])
 
   def test_search_many_tags(self):
     self.test_build.tags = [self.INDEXED_TAG, 'important:true', 'author:ivan']
@@ -595,13 +598,13 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.put_build(build2)
 
     # Search by both tags.
-    builds, _ = service.search(
+    builds, _ = self.search(
         tags=[self.INDEXED_TAG, 'important:true', 'author:ivan'],
         buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [self.test_build])
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         tags=['important:true', 'author:ivan'],
         buckets=[self.test_build.bucket],
     )
@@ -614,7 +617,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.put_build(self.test_build)
 
     get_available_buckets.return_value = [self.test_build.bucket]
-    builds, _ = service.search(tags=[build_address])
+    builds, _ = self.search(tags=[build_address])
     self.assertEqual(builds, [self.test_build])
 
   def test_search_bucket(self):
@@ -624,7 +627,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.put_build(build2)
 
-    builds, _ = service.search(buckets=[self.test_build.bucket])
+    builds, _ = self.search(buckets=[self.test_build.bucket])
     self.assertEqual(builds, [self.test_build])
 
   def test_search_by_status(self):
@@ -639,23 +642,23 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.put_build(build2)
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         buckets=[self.test_build.bucket],
         status=model.BuildStatus.SCHEDULED)
     self.assertEqual(builds, [self.test_build])
-    builds, _ = service.search(
+    builds, _ = self.search(
         buckets=[self.test_build.bucket],
         status=model.BuildStatus.SCHEDULED,
         tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         buckets=[self.test_build.bucket],
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.FAILURE,
         tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [])
-    builds, _ = service.search(
+    builds, _ = self.search(
         buckets=[self.test_build.bucket],
         status=model.BuildStatus.COMPLETED,
         result=model.BuildResult.FAILURE)
@@ -670,12 +673,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.put_build(build2)
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         created_by='x@chromium.org',
         buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [build2])
-    builds, _ = service.search(
+    builds, _ = self.search(
         created_by='x@chromium.org',
         buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
@@ -700,32 +703,32 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     # Test lower bound
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_low=too_old,
         buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [self.test_build, old_build])
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_low=old_time,
         buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [self.test_build, old_build])
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_low=old_time,
         buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [self.test_build, old_build])
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_low=new_time,
         buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [self.test_build])
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_low=new_time,
         buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
@@ -734,31 +737,31 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     # Test upper bound
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_high=too_old,
         buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [])
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_high=old_time,
         buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [])
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_high=old_time,
         buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_high=new_time,
         buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
     )
     self.assertEqual(builds, [old_build])
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_high=(
             self.test_build.create_time + datetime.timedelta(milliseconds=1)),
         buckets=[self.test_build.bucket],
@@ -768,21 +771,21 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     # Test both sides bounded
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_low=new_time,
         create_time_high=old_time,
         buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [])
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_low=old_time,
         create_time_high=new_time,
         buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [old_build])
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_low=old_time,
         create_time_high=new_time,
         buckets=[self.test_build.bucket],
@@ -792,7 +795,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     # Test reversed bounds
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         create_time_low=new_time,
         create_time_high=old_time,
         buckets=[self.test_build.bucket],
@@ -809,9 +812,9 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     )
     self.put_build(build2)
 
-    builds, _ = service.search(retry_of=42)
+    builds, _ = self.search(retry_of=42)
     self.assertEqual(builds, [build2])
-    builds, _ = service.search(retry_of=42, tags=[self.INDEXED_TAG])
+    builds, _ = self.search(retry_of=42, tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [build2])
 
   def test_search_by_retry_of_and_buckets(self):
@@ -819,12 +822,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.put_build(self.test_build)
     self.put_build(model.Build(bucket='other bucket', retry_of=42))
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         retry_of=42,
         buckets=[self.test_build.bucket],
     )
     self.assertEqual(builds, [self.test_build])
-    builds, _ = service.search(
+    builds, _ = self.search(
         retry_of=42,
         buckets=[self.test_build.bucket],
         tags=[self.INDEXED_TAG],
@@ -843,27 +846,27 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(auth.AuthorizationError):
       # The build we are looking for was a retry of a build that is in a bucket
       # that we don't have access to.
-      service.search(retry_of=self.test_build.key.id())
+      self.search(retry_of=self.test_build.key.id())
     with self.assertRaises(auth.AuthorizationError):
       # The build we are looking for was a retry of a build that is in a bucket
       # that we don't have access to.
-      service.search(retry_of=self.test_build.key.id(), tags=[self.INDEXED_TAG])
+      self.search(retry_of=self.test_build.key.id(), tags=[self.INDEXED_TAG])
 
   def test_search_by_created_by_with_bad_string(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.search(created_by='blah')
+      self.search(created_by='blah')
 
   def test_search_with_paging_using_datastore_query(self):
     self.put_many_builds()
 
-    first_page, next_cursor = service.search(
+    first_page, next_cursor = self.search(
         buckets=[self.test_build.bucket],
         max_builds=10,
     )
     self.assertEqual(len(first_page), 10)
     self.assertTrue(next_cursor)
 
-    second_page, _ = service.search(
+    second_page, _ = self.search(
         buckets=[self.test_build.bucket],
         max_builds=10,
         start_cursor=next_cursor)
@@ -875,20 +878,20 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_search_with_paging_using_tag_index(self):
     self.put_many_builds(20, tags=[self.INDEXED_TAG])
 
-    first_page, first_cursor = service.search(
+    first_page, first_cursor = self.search(
         tags=[self.INDEXED_TAG],
         max_builds=10,
     )
     self.assertEqual(len(first_page), 10)
     self.assertEqual(first_cursor, 'id>%d' % first_page[-1].key.id())
 
-    second_page, second_cursor = service.search(
+    second_page, second_cursor = self.search(
         tags=[self.INDEXED_TAG],
         max_builds=10,
         start_cursor=first_cursor)
     self.assertEqual(len(second_page), 10)
 
-    third_page, third_cursor = service.search(
+    third_page, third_cursor = self.search(
         tags=[self.INDEXED_TAG],
         max_builds=10,
         start_cursor=second_cursor)
@@ -898,7 +901,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_search_with_bad_tags(self):
     def test_bad_tag(tags):
       with self.assertRaises(errors.InvalidInputError):
-        service.search(buckets=['bucket'], tags=tags)
+        self.search(buckets=['bucket'], tags=tags)
 
     test_bad_tag(['x'])
     test_bad_tag([1])
@@ -907,17 +910,17 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_search_with_bad_buckets(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.search(buckets={})
+      self.search(buckets={})
     with self.assertRaises(errors.InvalidInputError):
-      service.search(buckets=[1])
+      self.search(buckets=[1])
 
   def test_search_with_non_number_max_builds(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.search(buckets=['b'], tags=['a:b'], max_builds='a')
+      self.search(buckets=['b'], tags=['a:b'], max_builds='a')
 
   def test_search_with_negative_max_builds(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.search(buckets=['b'], tags=['a:b'], max_builds=-2)
+      self.search(buckets=['b'], tags=['a:b'], max_builds=-2)
 
   def test_search_by_indexed_tag(self):
     self.put_build(self.test_build)
@@ -941,7 +944,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.put_build(different_bucket)
 
     self.mock_cannot(acl.Action.SEARCH_BUILDS, 'secret.bucket')
-    builds, _ = service.search(
+    builds, _ = self.search(
         tags=[self.INDEXED_TAG], buckets=[self.test_build.bucket])
     self.assertEqual(builds, [self.test_build])
 
@@ -963,12 +966,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         ]
     ).put()
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
 
     with self.assertRaises(errors.InvalidIndexEntryOrder):
-      service.search(
+      self.search(
           buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG],
           start_cursor='id>0')
 
@@ -985,7 +988,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         entries=[entry, entry],
     ).put()
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
 
@@ -997,17 +1000,17 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
         id=self.INDEXED_TAG,
         permanently_incomplete=True).put()
 
-    builds, _ = service.search(
+    builds, _ = self.search(
         buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
 
     with self.assertRaises(errors.TagIndexIncomplete):
-      service.search(
+      self.search(
           buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG],
           start_cursor='id>0')
 
   def test_search_with_no_tag_index(self):
-    builds, _ = service.search()
+    builds, _ = self.search()
     self.assertEqual(builds, [])
 
   def test_search_with_inconsistent_entries(self):
@@ -1024,13 +1027,13 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     buildset_will_change.tags = []
     buildset_will_change.put()
 
-    builds, _ = service.search(tags=[self.INDEXED_TAG])
+    builds, _ = self.search(tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
 
   def test_search_with_tag_index_cursor(self):
     builds = self.put_many_builds(10)
     builds.reverse()
-    res, cursor = service.search(
+    res, cursor = self.search(
         tags=[self.INDEXED_TAG],
         start_cursor='id>%d' % builds[-1].key.id())
     self.assertEqual(res, [])
@@ -1038,7 +1041,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     builds = self.put_many_builds(10, tags=[self.INDEXED_TAG])
     builds.reverse()
-    res, cursor = service.search(
+    res, cursor = self.search(
         tags=[self.INDEXED_TAG],
         buckets=[self.test_build.bucket],
         create_time_low=builds[5].create_time,
@@ -1046,7 +1049,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.assertEqual(res, [])
     self.assertIsNone(cursor)
 
-    res, cursor = service.search(
+    res, cursor = self.search(
         tags=[self.INDEXED_TAG],
         buckets=[self.test_build.bucket],
         create_time_high=builds[7].create_time,
@@ -1057,7 +1060,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_search_with_tag_index_cursor_but_no_inded_tag(self):
     with self.assertRaises(errors.InvalidInputError):
-      service.search(start_cursor='id>1')
+      self.search(start_cursor='id>1')
 
   #################################### PEEK ####################################
 
