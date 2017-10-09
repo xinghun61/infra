@@ -13,6 +13,8 @@ from waterfall.send_notification_to_irc_pipeline import (
     SendNotificationToIrcPipeline)
 from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 
+_BYPASS_MASTER_NAME = 'master.chromium.sandbox'
+
 
 class RevertAndNotifyCompileCulpritPipeline(BasePipeline):
   """A wrapper pipeline to revert culprit and send notification."""
@@ -20,6 +22,13 @@ class RevertAndNotifyCompileCulpritPipeline(BasePipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, master_name, builder_name, build_number, culprits,
           heuristic_cls):
+
+    if master_name == _BYPASS_MASTER_NAME:
+      # This is a hack to prevent Findit taking any actions on
+      # master.chromium.sandbox.
+      # TODO(crbug/772972): remove the check after the master is removed.
+      return
+
     assert culprits
 
     if ci_failure.AnyNewBuildSucceeded(master_name, builder_name, build_number):

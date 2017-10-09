@@ -83,3 +83,17 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     mocked_pipeline.assert_not_called()
+
+  @mock.patch.object(ci_failure, 'AnyNewBuildSucceeded')
+  def testFinditNotTakeActionsOnFakeMaster(self, mock_fn):
+    culprits = {
+        'r1': {
+            'repo_name': 'chromium',
+            'revision': 'r1',
+        }
+    }
+    pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
+        wrapper_pipeline._BYPASS_MASTER_NAME, 'b', 123, culprits, [])
+    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+    mock_fn.assert_not_called()
