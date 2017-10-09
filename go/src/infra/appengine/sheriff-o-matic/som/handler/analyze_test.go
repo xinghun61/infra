@@ -162,7 +162,7 @@ func setUpGitiles(c context.Context) context.Context {
 		}})
 }
 
-func TestGetAnalyzeHandler(t *testing.T) {
+func TestGenerateAlerts(t *testing.T) {
 	Convey("bad request", t, func() {
 		c := gaetesting.TestingContext()
 		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
@@ -177,7 +177,7 @@ func TestGetAnalyzeHandler(t *testing.T) {
 			Request: makeGetRequest(),
 			Params:  makeParams("tree", "unknown.tree"),
 		}
-		GetAnalyzeHandler(ctx)
+		_, _ = generateAlerts(ctx)
 
 		So(w.Code, ShouldEqual, http.StatusNotFound)
 	})
@@ -191,6 +191,7 @@ func TestGetAnalyzeHandler(t *testing.T) {
 
 		c = gologger.StdConfig.Use(c)
 		c = authtest.MockAuthConfig(c)
+
 		mockCtrl := gomock.NewController(t)
 		bbMock := mock.NewMockBuildbotClient(mockCtrl)
 		biMock := mock.NewMockBuildInfoClient(mockCtrl)
@@ -205,14 +206,19 @@ func TestGetAnalyzeHandler(t *testing.T) {
 		})
 
 		w := httptest.NewRecorder()
+		r := makeGetRequest()
+		c = info.SetFactory(c, func(ic context.Context) info.RawInterface {
+			return giMock{dummy.Info(), "", time.Now(), nil}
+		})
+		c = setUpGitiles(c)
 
 		ctx := &router.Context{
 			Context: c,
 			Writer:  w,
-			Request: makeGetRequest(),
+			Request: r,
 			Params:  makeParams("tree", "chromium"),
 		}
-		GetAnalyzeHandler(ctx)
+		_, _ = generateAlerts(ctx)
 
 		So(w.Code, ShouldEqual, http.StatusOK)
 	})
@@ -223,24 +229,23 @@ func TestGetAnalyzeHandler(t *testing.T) {
 			return giMock{dummy.Info(), "", time.Now(), nil}
 		})
 		c = urlfetch.Set(c, &testhelper.MockGitilesTransport{})
-
 		c = client.WithReader(c, testhelper.MockReader{
 			BuildExtracts: map[string]*messages.BuildExtract{
 				"chromium": {},
 			},
 		})
-
 		w := httptest.NewRecorder()
+		r := makeGetRequest()
 
 		ctx := &router.Context{
 			Context: c,
 			Writer:  w,
-			Request: makeGetRequest(),
+			Request: r,
 			Params:  makeParams("tree", "chromium"),
 		}
-		GetAnalyzeHandler(ctx)
+		_, err := generateAlerts(ctx)
 
-		So(w.Code, ShouldEqual, http.StatusInternalServerError)
+		So(err, ShouldNotBeNil)
 	})
 }
 

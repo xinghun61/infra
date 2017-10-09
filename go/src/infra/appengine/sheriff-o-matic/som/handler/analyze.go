@@ -11,10 +11,13 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
+	"google.golang.org/appengine"
 
 	"infra/appengine/sheriff-o-matic/som/analyzer"
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/model"
+	"infra/libs/eventupload"
+	"infra/libs/infraenv"
 	"infra/monitoring/messages"
 
 	"go.chromium.org/gae/service/datastore"
@@ -26,6 +29,8 @@ import (
 	"go.chromium.org/luci/common/tsmon/field"
 	"go.chromium.org/luci/common/tsmon/metric"
 	"go.chromium.org/luci/server/router"
+
+	"cloud.google.com/go/bigquery"
 )
 
 const (
@@ -60,6 +65,32 @@ func (a bySeverity) Less(i, j int) bool {
 // GetAnalyzeHandler enqueues a request to run an analysis on a particular tree.
 // This is usually hit by appengine cron rather than manually.
 func GetAnalyzeHandler(ctx *router.Context) {
+	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+
+	tree := p.ByName("tree")
+	alertsSummary, err := generateAlerts(ctx)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	c = appengine.WithContext(c, r)
+	if err := putAlertsBigQuery(c, tree, alertsSummary); err != nil {
+		logging.Errorf(c, "error sending alerts to bigquery: %v", err)
+		// Not fatal, just log and continue.
+	}
+
+	if tree == "chromium" {
+		if err := enqueueLogDiffTask(c, alertsSummary.Alerts); err != nil {
+			errStatus(c, w, http.StatusInternalServerError, err.Error())
+		}
+	}
+
+	w.Write([]byte("ok"))
+}
+
+func generateAlerts(ctx *router.Context) (*messages.AlertsSummary, error) {
 	c, w, p := ctx.Context, ctx.Writer, ctx.Params
 
 	tree := p.ByName("tree")
@@ -67,23 +98,20 @@ func GetAnalyzeHandler(ctx *router.Context) {
 	gkRules, err := getGatekeeperRules(c)
 	if err != nil {
 		logging.Errorf(c, "error getting gatekeeper rules: %v", err)
-		errStatus(c, w, http.StatusInternalServerError, err.Error())
-		return
+		return nil, err
 	}
 
 	trees, err := getGatekeeperTrees(c)
 	if err != nil {
-		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("getting gatekeeper trees: %v", err))
-		return
+		logging.Errorf(c, fmt.Sprintf("getting gatekeeper trees: %v", err))
+		return nil, err
 	}
 
 	treeCfgs, ok := trees[tree]
 	if !ok {
 		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("unrecoginzed tree: %s", tree))
-		return
+		return nil, nil
 	}
-
-	logging.Debugf(c, "%s tree has %d configs", tree, len(treeCfgs))
 
 	a := analyzer.New(5, 100)
 	a.Gatekeeper = gkRules
@@ -123,33 +151,31 @@ func GetAnalyzeHandler(ctx *router.Context) {
 		if anyErr != nil {
 			// TODO: Deal with partial failures so some errors are tolerated so long
 			// as some analysis succeeded.
-			errStatus(c, w, http.StatusInternalServerError, anyErr.Error())
-			return
+			logging.Errorf(c, "error creating alerts: %v", anyErr)
+			return nil, anyErr
 		}
 
 		err := mergeAlertsByReason(c, alerts)
 		if err != nil {
-			errStatus(c, w, http.StatusInternalServerError, err.Error())
-			return
+			logging.Errorf(c, "error merging alerts by reason: %v", err)
+			return nil, err
 		}
 	}
 
 	alertCount.Set(c, int64(len(alerts)), tree)
 	logging.Debugf(c, "storing %d alerts for %s", len(alerts), tree)
 
-	if err := storeAlertsSummary(c, a, tree, &messages.AlertsSummary{
+	alertsSummary := &messages.AlertsSummary{
 		RevisionSummaries: map[string]messages.RevisionSummary{},
 		Alerts:            alerts,
-	}); err != nil {
+	}
+
+	if err := storeAlertsSummary(c, a, tree, alertsSummary); err != nil {
 		logging.Errorf(c, "error storing alerts: %v", err)
-		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return nil, err
 	}
-	if tree == "chromium" {
-		if err := enqueueLogDiffTask(c, alerts); err != nil {
-			errStatus(c, w, http.StatusInternalServerError, err.Error())
-		}
-	}
-	w.Write([]byte("ok"))
+
+	return alertsSummary, nil
 }
 
 // mergeAlertsByReason merges alerts for step failures occurring across multiple builders into
@@ -312,4 +338,44 @@ func storeAlertsSummary(c context.Context, a *analyzer.Analyzer, tree string, al
 
 	// TODO(seanmccullough): remove "milo." prefix.
 	return putAlertsDatastore(c, "milo."+tree, alertsSummary, true)
+}
+
+func putAlertsBigQuery(c context.Context, tree string, alertsSummary *messages.AlertsSummary) error {
+	client, err := bigquery.NewClient(c, infraenv.ChromeInfraEventsProject)
+	if err != nil {
+		return err
+	}
+	up := eventupload.NewUploader(c, client, model.SOMAlertsEventTable)
+	up.SkipInvalidRows = true
+	up.IgnoreUnknownValues = true
+
+	row := model.SOMAlertsEvent{
+		Timestamp: alertsSummary.Timestamp.Time(),
+		Tree:      tree,
+	}
+	for _, a := range alertsSummary.Alerts {
+		alertEvt := &model.SOMAlertsEvent_Alerts{
+			Key:   a.Key,
+			Title: a.Title,
+			Body:  a.Body,
+			Type:  string(a.Type),
+		}
+
+		if bf, ok := a.Extension.(messages.BuildFailure); ok {
+			for _, builder := range bf.Builders {
+				newBF := &model.SOMAlertsEvent_BuildFailures{
+					Master:        builder.Master,
+					Builder:       builder.Name,
+					Step:          bf.StepAtFault.Step.Name,
+					FirstFailure:  builder.FirstFailure,
+					LatestFailure: builder.LatestFailure,
+					LatestPassing: builder.LatestPassing,
+				}
+				alertEvt.BuildFailures = append(alertEvt.BuildFailures, newBF)
+			}
+		}
+
+		row.Alerts = append(row.Alerts, alertEvt)
+	}
+	return up.Put(c, row)
 }
