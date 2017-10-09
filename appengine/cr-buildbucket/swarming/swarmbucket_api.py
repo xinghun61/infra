@@ -35,9 +35,8 @@ def swarmbucket_api_method(
   def decorator(fn):
     fn = auth.public(fn)
     fn = endpoints_decorator(fn)
-    fn = ndb.toplevel(fn)
-    def ts_mon_time():
-      return utils.datetime_to_timestamp(utils.utcnow()) / 1000000.0
+
+    ts_mon_time = lambda: utils.datetime_to_timestamp(utils.utcnow()) / 1e6
     fn = gae_ts_mon.instrument_endpoint(time_fn=ts_mon_time)(fn)
     return fn
 
