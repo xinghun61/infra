@@ -328,6 +328,22 @@ func sendEventToBigQuery(c context.Context, tre *model.TestResultEvent) error {
 	return up.Put(c, tre)
 }
 
+func sendEventsToBigQuery(c context.Context, tres []*TestResultEvent) error {
+	for _, tre := range tres {
+		if tre.MasterName == "" || tre.BuilderName == "" || tre.TestType == "" || tre.Version == 0 || tre.UsecSinceEpoch == 0 {
+			return errors.Reason("TestResultEvent is missing required field").Err()
+		}
+	}
+	client, err := bigquery.NewClient(c, infraenv.ChromeInfraEventsProject)
+	if err != nil {
+		return err
+	}
+	up := eventupload.NewUploader(c, client, TestResultEventTable)
+	up.SkipInvalidRows = true
+	up.IgnoreUnknownValues = true
+	return up.Put(c, tres)
+}
+
 func createTestResultEvent(c context.Context, f *model.FullResult, p *UploadParams) (*model.TestResultEvent, error) {
 	var i bool
 	if f.Interrupted != nil {
@@ -360,6 +376,41 @@ func createTestResultEvent(c context.Context, f *model.FullResult, p *UploadPara
 		UsecSinceEpoch: int64(f.SecondsEpoch) * 1000000,
 		Tests:          tests,
 	}, nil
+}
+
+func createTestResultEvents(c context.Context, f *model.FullResult, p *UploadParams) ([]*TestResultEvent, error) {
+	var i bool
+	if f.Interrupted != nil {
+		i = *(f.Interrupted)
+	}
+
+	if f.PathDelim == nil {
+		return nil, errors.Reason("FullResult must have PathDelim to flatten Tests").Err()
+	}
+	s := *(f.PathDelim)
+
+	var tres []*TestResultEvent
+	for name, ftl := range f.Tests.Flatten(s) {
+		test := TestResultEvent_Test{
+			TestName: name,
+			Actual:   ftl.Actual,
+			Expected: ftl.Expected,
+			Bugs:     ftl.Bugs,
+		}
+		tres = append(tres, &TestResultEvent{
+			MasterName:     p.Master,
+			BuilderName:    p.Builder,
+			BuildNumber:    int64(f.BuildNumber),
+			TestType:       p.TestType,
+			StepName:       p.StepName,
+			Interrupted:    i,
+			Version:        int64(f.Version),
+			UsecSinceEpoch: int64(f.SecondsEpoch) * 1000000,
+			Test:           &test,
+		})
+	}
+
+	return tres, nil
 }
 
 func createTestResUploadTask(c context.Context, f *model.FullResult, p *UploadParams) {
@@ -465,20 +516,29 @@ func (h *uploadHandler) updateFullResults(c context.Context, data io.Reader) err
 			logging.WithError(err).Errorf(c, "could not create TestResultEvent")
 			return
 		}
+		tres, err := createTestResultEvents(c, &f, p)
+		if err != nil {
+			logging.WithError(err).Errorf(c, "could not create TestResultEvents")
+			return
+		}
+		eventErrs := []error{}
 		if h.sendEvent == nil {
 			req, ok := c.Value(&requestKey).(*http.Request)
 			if !ok {
 				panic("No http.request found in context")
 			}
-			err = sendEventToBigQuery(appengine.WithContext(c, req), tre)
+			eventErrs = append(eventErrs, sendEventToBigQuery(appengine.WithContext(c, req), tre))
+			eventErrs = append(eventErrs, sendEventsToBigQuery(appengine.WithContext(c, req), tres))
 		} else {
-			err = h.sendEvent(c, tre)
+			eventErrs = append(eventErrs, h.sendEvent(c, tre))
 		}
-		if err != nil {
-			if pme, ok := err.(bigquery.PutMultiError); ok {
-				logPutMultiError(c, pme)
-			} else {
-				logging.WithError(err).Errorf(c, "error sending event")
+		for _, err := range eventErrs {
+			if err != nil {
+				if pme, ok := err.(bigquery.PutMultiError); ok {
+					logPutMultiError(c, pme)
+				} else {
+					logging.WithError(err).Errorf(c, "error sending event")
+				}
 			}
 		}
 	}()
