@@ -181,6 +181,7 @@ class SwarmingTest(BaseTest):
     bad = [
       {'properties': []},
       {'properties': {'buildername': 'bar'}},
+      {'properties': {'blamelist': ['a@example.com']}},
       {'changes': 0},
       {'changes': [0]},
       {'changes': [{'author': 0}]},
@@ -197,6 +198,14 @@ class SwarmingTest(BaseTest):
       p['builder_name'] = 'foo'
       with self.assertRaises(errors.InvalidInputError):
         swarming.validate_build_parameters(p['builder_name'], p)
+
+    swarming.validate_build_parameters('foo', {
+      'builder_name': 'foo',
+      'properties': {
+        'blamelist': ['a@example.com'],
+      },
+      'changes': [{'author': {'email': 'a@example.com'}}],
+    })
 
   def test_shared_cache(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]

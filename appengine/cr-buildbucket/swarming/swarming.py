@@ -161,11 +161,34 @@ def validate_build_parameters(builder_name, params):
     if not isinstance(value, dict):
       bad('%s parameter must be an object' % name)
 
+  changes = params.pop(PARAM_CHANGES, None)
+  if changes is not None:
+    if not isinstance(changes, list):
+      bad('changes param must be an array')
+    for c in changes:  # pragma: no branch
+      if not isinstance(c, dict):
+        bad('changes param must contain only objects')
+      repo_url = c.get('repo_url')
+      if repo_url is not None and not isinstance(repo_url, basestring):
+        bad('change repo_url must be a string')
+      author = c.get('author')
+      if not isinstance(author, dict):
+        bad('change author must be an object')
+      email = author.get('email')
+      if not isinstance(email, basestring):
+        bad('change author email must be a string')
+      if not email:
+        bad('change author email not specified')
+
   properties = params.pop(PARAM_PROPERTIES, None)
   if properties is not None:
     assert_object('properties', properties)
     if properties.get('buildername', builder_name) != builder_name:
       bad('inconsistent builder name')
+    expected_emails = [c['author']['email'] for c in (changes or [])]
+    if properties.get('blamelist') not in (None, expected_emails):
+        bad('inconsistent blamelist property; blamelist must not be set or '
+            'it must match the emails in the "changes" build parameter')
 
   swarming = params.pop(PARAM_SWARMING, None)
   if swarming is not None:
@@ -176,8 +199,7 @@ def validate_build_parameters(builder_name, params):
     if override_builder_cfg_data is not None:
       assert_object('swarming.override_builder_cfg', override_builder_cfg_data)
       if 'build_numbers' in override_builder_cfg_data:
-        bad(
-            'swarming.override_builder_cfg parameter '
+        bad('swarming.override_builder_cfg parameter '
             'cannot override build_numbers')
 
       override_builder_cfg = project_config_pb2.Builder()
@@ -198,26 +220,6 @@ def validate_build_parameters(builder_name, params):
 
     if swarming:
       bad('unrecognized keys in swarming param: %r', swarming.keys())
-
-  changes = params.pop(PARAM_CHANGES, None)
-  if changes is not None:
-    if not isinstance(changes, list):
-      bad('changes param must be an array')
-    for c in changes:  # pragma: no branch
-      if not isinstance(c, dict):
-        bad('changes param must contain only objects')
-      repo_url = c.get('repo_url')
-      if repo_url is not None and not isinstance(repo_url, basestring):
-        bad('change repo_url must be a string')
-      author = c.get('author')
-      if not isinstance(author, dict):
-        bad('change author must be an object')
-      email = author.get('email')
-      if not isinstance(email, basestring):
-        bad('change author email must be a string')
-      if not email:
-        bad('change author email not specified')
-
 
 # Mocked in tests.
 def should_use_canary_template(percentage):  # pragma: no cover
