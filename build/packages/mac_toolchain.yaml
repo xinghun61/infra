@@ -1,0 +1,10 @@
+package: infra/tools/mac_toolchain/${platform}
+description: CLI tools to package and install Xcode toolchains on Mac OS.
+builders:
+  - infra-continuous-mac-10.9-64
+go_packages:
+  - infra/cmd/mac_toolchain
+root: ../../go/bin
+data:
+  - file: mac_toolchain${exe_suffix}
+  - version_file: .versions/mac_toolchain${exe_suffix}.cipd_version
