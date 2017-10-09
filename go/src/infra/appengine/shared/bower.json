@@ -17,6 +17,7 @@
       "iron-dropdown": "PolymerElements/iron-dropdown",
       "paper-item": "PolymerElements/paper-item",
       "paper-input": "PolymerElements/paper-input",
+      "paper-tooltip": "PolymerElements/paper-tooltip",
       "polymer": "Polymer/polymer#^2.0.0",
       "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.1"
   },

@@ -1,0 +1,89 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+
+<dom-module id="user-id">
+  <template>
+    <style>
+      a {
+        color: black;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      .user-label {
+        font-size: .81em;
+        border-radius: 15px;
+        padding: 2px 8px;
+        background-color: #E0E0E0;
+      }
+    </style>
+    <span class="user-label">
+      <template is="dom-if" if="[[profileLink]]">
+        <a href$="[[profileLink]]">[[userId]]</a>
+      </template>
+      <template is="dom-if" if="[[!profileLink]]">
+        [[userId]]
+      </template>
+      <paper-tooltip>[[fullName]] [[email]]</paper-tooltip>
+    </span>
+  </template>
+  <script>
+    'use strict';
+
+    /**
+    * `<user-id>` is an element used for displaying users.
+    *
+    * The only required attribute is userId. If the profile-link is provided
+    * the userId text will be displayed as a link. If an email and/or fullName
+    * are provided they will be visible when hovering over the element.
+    *
+    *
+    * @customElement
+    * @polymer
+    * @demo /demo/user-id_demo.html
+    */
+    class UserId extends Polymer.Element {
+      static get is() { return 'user-id'; }
+
+      static get properties() {
+        return {
+          /**
+           * The user's id to be displayed. Required.
+           *
+           * @type String
+           */
+          userId: {
+            type: String,
+          },
+          /**
+           * The user's email. Optional.
+           *
+           * @type String
+           */
+          email: {
+            type: String,
+          },
+          /**
+           * The full name of the user. Optional.
+           *
+           * @type String
+           */
+          fullName: {
+            type: String,
+          },
+          /**
+           * The link to the user's profile page. Optional.
+           *
+           * @type String
+           */
+          profileLink: {
+            type: String,
+            value: "",
+          },
+        }
+      }
+    }
+    customElements.define(UserId.is, UserId);
+  </script>
+  <dom-module>
