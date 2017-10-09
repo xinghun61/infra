@@ -68,13 +68,13 @@
           that one table is for services covered by an SLA and one is not.-->
         <template is="dom-if" if="[[services.length]]">
           <div class="table">
-            <status-table services="[[services]]" latest-date-ts="{{latestDateTs}}">
-          </status-table>
+            <status-table services="[[services]]" latest-date-ts="{{latestDateTs}}" is-googler="[[isGoogler]]">
+            </status-table>
           </div>
         </template>
         <template is="dom-if" if="[[nonSLAServices.length]]">
           <div class="table">
-            <status-table services="[[nonSLAServices]]" latest-date-ts="{{latestDateTs}}">
+            <status-table services="[[nonSLAServices]]" latest-date-ts="{{latestDateTs}}" is-googler="[[isGoogler]]">
             </status-table>
           </div>
         </template>
@@ -116,6 +116,7 @@
         return {
           isGoogler: {
             type: Boolean,
+            value: false,
           },
           lastUpdated: {
             type: Object,

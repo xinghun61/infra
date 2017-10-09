@@ -61,7 +61,7 @@ func TestDashboard(t *testing.T) {
 				body := string(r)
 				So(body, ShouldContainSubstring, "chopsdash-app")
 				So(w.Code, ShouldEqual, 200)
-				So(body, ShouldContainSubstring, "is-googler=\"false\"")
+				So(body, ShouldNotContainSubstring, "is-googler")
 				So(body, ShouldContainSubstring, "user=\"user@example.com\"")
 			})
 
@@ -79,7 +79,7 @@ func TestDashboard(t *testing.T) {
 				body := string(r)
 				So(body, ShouldContainSubstring, "chopsdash-app")
 				So(w.Code, ShouldEqual, 200)
-				So(body, ShouldContainSubstring, "is-googler=\"true\"")
+				So(body, ShouldContainSubstring, "is-googler")
 				So(body, ShouldContainSubstring, "user=\"user@example.com\"")
 			})
 		})

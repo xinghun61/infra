@@ -5,7 +5,7 @@
   <template>
     <span>
       <template is="dom-repeat" items="{{incidents}}">
-        <incident-icon incident="[[item]]" dates="[[dates]]"></incident-icon>
+        <incident-icon incident="[[item]]" dates="[[dates]]" is-googler="[[isGoogler]]"></incident-icon>
       </template>
     </span>
   </template>
@@ -27,6 +27,10 @@
             type: Array,
             value: [],
           },
+          isGoogler: {
+            type: Boolean,
+            value: false,
+          }
         }
       }
     }

@@ -1,5 +1,4 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
-<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
 
 <dom-module id="incident-icon">
   <template>
@@ -17,19 +16,21 @@
         /* Show red alerts if red + yellow alerts were active simultaneously.*/
         z-index: var(--incident-z-index);
       }
+      .googler-access {
+        cursor: pointer;
+      }
     </style>
     <link rel="stylesheet" type="text/css" href="/static/icons.css">
     <i id="jsIncident" class="incident">
       <i id="jsLeft" class$="left [[_computeColor(incident)]]"></i>
       <i id="jsRight" class$="right [[_computeColor(incident)]]"></i>
-      <paper-tooltip>Details coming soon!</paper-tooltip>
     </i>
   </template>
   <script>
     'use strict';
 
     class IncidentIcon extends Polymer.Element {
-      static get is() {return 'incident-icon'; }
+      static get is() { return 'incident-icon'; }
 
       ready() {
         super.ready();
@@ -47,6 +48,11 @@
             type: Array,
             value: [],
           },
+          isGoogler: {
+            type: Boolean,
+            value: false,
+            observer: '_configureAccess',
+          },
         }
       }
 
@@ -54,6 +60,15 @@
         return [
           '_computeStyle(incident, dates)'
         ]
+      }
+
+      _configureAccess() {
+        if (this.isGoogler) {
+          this.$.jsIncident.addEventListener("click", () => {
+              window.location = this.incident.incidentLink;
+          });
+          this.$.jsIncident.classList.add('googler-access');
+        }
       }
 
       _computeColor(incident) {

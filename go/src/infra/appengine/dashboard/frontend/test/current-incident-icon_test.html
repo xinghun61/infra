@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<title>currentIncidentIcon</title>
+<meta charset="utf-8">
+<link rel="import" href="/elements/current-incident-icon.html">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+
+<test-fixture id="current-incident-icon-test">
+  <template>
+    <current-incident-icon></current-incident-icon>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  let incidentY = {severity: 'YELLOW', open: 'true', incidentLink: 'https://www.google.com'};
+  let incidentYC = {severity: 'YELLOW'};
+  let incidentR = {severity: 'RED', open: 'true', incidentLink: 'https://www.google.com'};
+  let incidentRC = {severity: 'RED'};
+
+  suite('current-incident-icon', function() {
+    var element;
+    setup(function() {
+      element = fixture('current-incident-icon-test');
+    });
+
+    test('_icon', function(done) {
+      flush(function() {
+        element.incidents = [incidentY, incidentYC, incidentR, incidentRC];
+        assert.deepEqual(element._icon, incidentR);
+
+        element.incidents = [incidentY, incidentYC, incidentRC];
+        assert.deepEqual(element._icon, incidentY);
+
+        element.incidents = [incidentYC, incidentRC];
+        assert.deepEqual(element._icon, {severity: 'GREEN', incidentLink: ''});
+
+        done();
+      });
+    });
+
+    test('click enabled', function(done) {
+      element.isGoogler = true;
+      element.incidents = [incidentY, incidentYC, incidentR, incidentRC];
+      flush(function() {
+        assert.isTrue(element.$.jsCurrentIncident.classList.contains('clickable'));
+        done();
+      });
+    });
+
+    test('click disabled', function(done) {
+      element.isGoogler = true;
+      element.incidents = [incidentYC, incidentRC];
+      flush(function() {
+        assert.isFalse(element.$.jsCurrentIncident.classList.contains('clickable'));
+        done();
+      });
+    });
+
+  });
+</script>

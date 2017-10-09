@@ -1,5 +1,5 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
-<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+<link rel="import" href="/elements/current-incident-icon.html">
 <link rel="import" href="/elements/service-row.html">
 <link rel="import" href="/elements/table-footer.html">
 
@@ -17,9 +17,6 @@
         color: rgba(0, 0, 0, 0.87);
         font: 1.2em "Roboto";
         padding: 24px;
-      }
-      .circle-container {
-        padding-left: 10px;
       }
       .date-th {
         width: 11.43%;
@@ -68,7 +65,6 @@
         border-bottom: none;
       }
     </style>
-    <link rel="stylesheet" type="text/css" href="/static/icons.css">
     <div class="layout horizontal center-justified">
       <div class="card">
         <table>
@@ -81,14 +77,7 @@
           <template is="dom-repeat" items="[[services]]">
             <tr>
               <td>
-                <template is="dom-repeat" items="[[_computeCurrentIncidents(item.incidents)]]">
-                  <span class="circle-container">
-                    <i class$="circle [[item]]"></i>
-                    <template is="dom-if" if="{{_showToolTip(item)}}">
-                      <paper-tooltip>Details coming soon!</paper-tooltip>
-                    </template>
-                  </span>
-                </template>
+                <current-incident-icon incidents="[[item.incidents]]" is-googler="[[isGoogler]]"></current-incident-icon>
                 [[item.name]]
               </td>
               <td colspan="7">
@@ -96,7 +85,7 @@
                   <i class="marker" style="left: [[position]]%"></i>
                 </template>
                 <service-row incidents="[[_computePreviousIncidents(item.incidents)]]"
-                  dates="[[dates]]"></service-row>
+                  dates="[[dates]]" is-googler="[[isGoogler]]"></service-row>
               </td>
             </tr>
           </template>
@@ -147,6 +136,10 @@
             type: Array,
             value: () => { return MARKER_POSITIONS; }
           },
+          isGoogler: {
+            type: Boolean,
+            value: false,
+          },
         }
       }
 
@@ -173,20 +166,6 @@
         }
       }
 
-      _computeCurrentIncidents(incidents) {
-        let currInc = 'green';
-        incidents.forEach(incident => {
-          if (currInc == 'green' && incident['open']) {
-            currInc = incident['severity'].toLowerCase();
-          }
-          else if (currInc == 'yellow' && incident['severity'] == 'RED') {
-            currInc = 'red';
-          }
-
-        });
-        return [currInc];
-      }
-
       _computePreviousIncidents(incidents) {
         let prevInc = [];
         incidents.forEach(incident => {
@@ -197,9 +176,6 @@
         return prevInc;
       }
 
-      _showToolTip(color) {
-        return color != 'green';
-      }
     }
     customElements.define(StatusTable.is, StatusTable);
   </script>
