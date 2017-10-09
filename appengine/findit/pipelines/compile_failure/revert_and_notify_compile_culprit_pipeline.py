@@ -13,7 +13,7 @@ from waterfall.send_notification_to_irc_pipeline import (
     SendNotificationToIrcPipeline)
 from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 
-_BYPASS_MASTER_NAME = 'master.chromium.sandbox'
+_BYPASS_MASTER_NAME = 'chromium.sandbox'
 
 
 class RevertAndNotifyCompileCulpritPipeline(BasePipeline):
