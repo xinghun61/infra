@@ -514,7 +514,7 @@ def prepare_task_def_async(build, settings, fake_build=False):
 
   build_number = None
   if builder_cfg.build_numbers:  # pragma: no branch
-    seq_name = '%s/%s' % (build.bucket, builder_name)
+    seq_name = number_sequence_name(build.bucket, builder_name)
     if fake_build:  # pragma: no cover | covered by swarmbucket_api_test
       build_number = 0
     else:
@@ -525,6 +525,11 @@ def prepare_task_def_async(build, settings, fake_build=False):
       project_id, bucket_cfg.swarming, builder_cfg, build, build_number,
       settings, fake_build)
   raise ndb.Return(task_def)
+
+
+def number_sequence_name(bucket, builder):
+  """Returns name of a number sequence for the builder."""
+  return '%s/%s' % (bucket, builder)
 
 
 @ndb.tasklet

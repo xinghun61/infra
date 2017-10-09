@@ -61,3 +61,25 @@ def generate_async(seq_name, count):
   metrics.SEQUENCE_NUMBER_GEN_DURATION_MS.add(
       ellapsed_ms, fields={'sequence': seq_name})
   raise ndb.Return(number)
+
+
+@ndb.transactional
+def set_next(seq_name, next_number):
+  """Sets the next number to generate.
+
+  Args:
+    name: name of the sequence.
+    next_number: the next number. Cannot be less than the number
+      that would be generated otherwise.
+
+  Raises:
+    ValueError if the supplied number is too small.
+  """
+  assert isinstance(next_number, int)
+  seq = NumberSequence.get_by_id(seq_name) or NumberSequence(id=seq_name)
+  if next_number == seq.next_number:
+    return
+  elif next_number < seq.next_number:
+    raise ValueError('next number must be at least %d' % seq.next_number)
+  seq.next_number = next_number
+  seq.put()

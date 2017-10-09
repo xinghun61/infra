@@ -23,6 +23,7 @@ import acl
 import api
 import config
 import errors
+import sequence
 
 
 def swarmbucket_api_method(
@@ -70,6 +71,12 @@ class GetTaskDefinitionResponseMessage(messages.Message):
   # A definition of the swarming task that would be created for the specified
   # build.
   task_definition = messages.StringField(1)
+
+
+class SetNextBuildNumberRequest(messages.Message):
+  bucket = messages.StringField(1, required=True)
+  builder = messages.StringField(2, required=True)
+  next_number = messages.IntegerField(3, required=True)
 
 
 @auth.endpoints_api(
@@ -136,3 +143,17 @@ class SwarmbucketApi(remote.Service):
     except errors.InvalidInputError as ex:
       raise endpoints.BadRequestException(
           'invalid build request: %s' % ex.message)
+
+  @swarmbucket_api_method(
+      SetNextBuildNumberRequest,
+      message_types.VoidMessage)
+  def set_next_build_number(self, request):
+    """Sets the build number that will be used for the next build."""
+    if not acl.can_set_next_number(request.bucket):
+      raise endpoints.ForbiddenException('access denied')
+    seq_name = swarming.number_sequence_name(request.bucket, request.builder)
+    try:
+      sequence.set_next(seq_name, request.next_number)
+    except ValueError as ex:
+      raise endpoints.BadRequestException(str(ex))
+    return message_types.VoidMessage()

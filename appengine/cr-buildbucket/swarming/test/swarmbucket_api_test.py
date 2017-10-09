@@ -4,8 +4,6 @@
 
 import datetime
 import json
-import mock
-import urllib
 
 from components import auth
 from components import auth_testing
@@ -15,6 +13,7 @@ from test import config_test
 from swarming import swarmbucket_api
 from test.test_util import future
 import config
+import sequence
 
 
 class SwarmbucketApiTest(testing.EndpointsTestCase):
@@ -250,3 +249,23 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     }
 
     self.call_api('get_task_def', req, status=403)
+
+  def test_set_next_build_number(self):
+    seq = sequence.NumberSequence(id='a/b', next_number=10)
+    seq.put()
+    req = {
+      'bucket': 'a',
+      'builder': 'b',
+      'next_number': 20,
+    }
+
+    self.call_api('set_next_build_number', req, status=403)
+    self.assertEqual(seq.key.get().next_number, 10)
+
+    self.patch('acl.can_set_next_number', return_value=True)
+    self.call_api('set_next_build_number', req)
+    self.assertEqual(seq.key.get().next_number, 20)
+
+    req['next_number'] = 10
+    self.call_api('set_next_build_number', req, status=400)
+    self.assertEqual(seq.key.get().next_number, 20)
