@@ -118,6 +118,9 @@ func (u *Uploader) Put(ctx context.Context, src interface{}) error {
 	if err != nil {
 		return err
 	}
+	if len(sss) == 0 {
+		return nil
+	}
 	err = u.Uploader.Put(ctx, sss)
 	if err != nil {
 		logging.WithError(err).Errorf(ctx, "eventupload: Uploader.Put failed")
@@ -159,7 +162,7 @@ func prepareSrc(s bigquery.Schema, src interface{}) ([]*bigquery.StructSaver, er
 	srcV := reflect.ValueOf(src)
 	if srcV.Kind() == reflect.Slice {
 		srcs = make([]interface{}, srcV.Len())
-		for i := 0; i < srcV.Len(); i++ {
+		for i := 0; i < len(srcs); i++ {
 			itemV := srcV.Index(i)
 			if err := validateSingleValue(itemV); err != nil {
 				return nil, err
@@ -173,7 +176,7 @@ func prepareSrc(s bigquery.Schema, src interface{}) ([]*bigquery.StructSaver, er
 		srcs = []interface{}{src}
 	}
 
-	var prepared []*bigquery.StructSaver
+	prepared := make([]*bigquery.StructSaver, len(srcs))
 	for i, src := range srcs {
 		// If no schema is supplied explicitly via TableDef, infer it from each
 		// individual element. This inference is cached based on the type.
@@ -185,14 +188,11 @@ func prepareSrc(s bigquery.Schema, src interface{}) ([]*bigquery.StructSaver, er
 			}
 		}
 
-		insertID := ID.Generate()
-		ss := &bigquery.StructSaver{
+		prepared[i] = &bigquery.StructSaver{
 			Schema:   schema,
-			InsertID: insertID,
+			InsertID: ID.Generate(),
 			Struct:   src,
 		}
-
-		prepared = append(prepared, ss)
 	}
 	return prepared, nil
 }
