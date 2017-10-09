@@ -259,6 +259,18 @@ class IssueTrackerAPITestCase(unittest.TestCase):
     self.assertEquals(issues[0].id, '345')
     self.assertEquals(issues[1].id, '123')
 
+  def test_get_issues_no_results(self):
+    api = monorail_api.IssueTrackerAPI('my-project')
+    list_method = self.client.issues.return_value.list
+    list_method.return_value.execute.side_effect = [
+        {
+            'totalResults': '0',
+        },
+    ]
+
+    issues = api.getIssues('my-project')
+    self.assertEquals(len(issues), 0)
+
   def test_get_issue_on_another_project(self):
     api = monorail_api.IssueTrackerAPI('my-project')
     get_method = self.client.issues.return_value.get

@@ -150,4 +150,4 @@ class IssueTrackerAPI(object):
       project_id = self.project_name
     request = self.client.issues().list(projectId=project_id, q=query)
     feed = endpoints.retry_request(request)
-    return [Issue(entry) for entry in feed['items']]
+    return [Issue(entry) for entry in feed.get('items', [])]
