@@ -19,7 +19,9 @@ from libs import time_util
 
 _FEEDBACK_URL_TEMPLATE = 'https://%s/%s/result-feedback?key=%s'
 _CLOUD_STORAGE_MARKER = 'Google storage stacktrace:'
-_PROPERTY_MAXIMUM_SIZE = 1048487
+# If the entity size is greater than ~1MB, we'll hit an exception.
+# Some fields can be very large, so we limit them to 800KB.
+_PROPERTY_MAXIMUM_SIZE = 800000
 _STORAGE_PATH = '/big_stacktrace'
 _BACKOFF_FACTOR = 1.1
 
