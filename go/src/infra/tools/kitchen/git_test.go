@@ -5,7 +5,6 @@
 package main
 
 import (
-	"context"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -13,8 +12,12 @@ import (
 	"strings"
 	"testing"
 
-	. "github.com/smartystreets/goconvey/convey"
+	"golang.org/x/net/context"
+
+	"go.chromium.org/luci/common/auth/authtest"
 	"go.chromium.org/luci/common/system/environ"
+
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func init() {
@@ -28,7 +31,11 @@ func TestGit(t *testing.T) {
 	}
 
 	Convey("checkoutRepository", t, func() {
-		ctx := context.Background()
+		fakeAuth := authtest.FakeContext{}
+		ctx, err := fakeAuth.Start(context.Background())
+		So(err, ShouldBeNil)
+		defer fakeAuth.Stop(ctx)
+
 		tmp, err := ioutil.TempDir("", "")
 		So(err, ShouldBeNil)
 		defer os.RemoveAll(tmp)

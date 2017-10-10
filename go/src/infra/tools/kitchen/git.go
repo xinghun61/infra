@@ -104,7 +104,8 @@ func gitGetRevision(c context.Context, env environ.Env, gitDir string) (string, 
 	return string(bytes.TrimSpace(out)), nil
 }
 
-// runGit prints the git command, runs it, redirects Stdout and Stderr and returns an error.
+// runGit prints the git command, runs it, redirects Stdout and Stderr and
+// returns an error.
 func runGit(c context.Context, env environ.Env, workDir string, args ...string) ([]byte, error) {
 	// Make the tests independent of user/bot configuration.
 	newArgs := args

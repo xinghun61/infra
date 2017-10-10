@@ -9,7 +9,7 @@ import (
 	"flag"
 )
 
-// PropertyFlag parses a
+// PropertyFlag is parsed JSON supplied to -property flag.
 type PropertyFlag map[string]interface{}
 
 var _ flag.Value = (*PropertyFlag)(nil)

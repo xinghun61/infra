@@ -16,6 +16,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
+	"go.chromium.org/luci/common/auth/authtest"
 	"go.chromium.org/luci/common/flag/stringlistflag"
 	"go.chromium.org/luci/common/flag/stringmapflag"
 	log "go.chromium.org/luci/common/logging"
@@ -68,6 +69,12 @@ func TestCook(t *testing.T) {
 			}
 			c = logCfg.Set(c)
 
+			// Setup fake auth.
+			fakeAuth := authtest.FakeContext{}
+			c, err := fakeAuth.Start(c)
+			So(err, ShouldBeNil)
+			defer fakeAuth.Stop(c)
+
 			// Setup tempdir.
 			tdir, err := ioutil.TempDir("", "kitchen-test-")
 			So(err, ShouldBeNil)
@@ -106,6 +113,9 @@ func TestCook(t *testing.T) {
 						"exitCode":           recipeExitCode,
 						"mocked_result_path": mockedRecipeResultPath,
 					},
+					"$kitchen": map[string]interface{}{
+						"git_auth": true,
+					},
 				})
 				So(err, ShouldBeNil)
 				args := []string{
@@ -137,6 +147,11 @@ func TestCook(t *testing.T) {
 					So(err, ShouldBeNil)
 					t.Logf("logdog debug file:\n%s\n", logdogFileContents)
 				}
+
+				// Check parsed kitchen own properties.
+				So(cook.kitchenProps, ShouldResemble, &kitchenProperties{
+					GitAuth: true,
+				})
 
 				// Check recipes.py input.
 				recipeInputFile, err := ioutil.ReadFile(recipeInputPath)

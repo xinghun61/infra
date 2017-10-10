@@ -61,12 +61,21 @@ type cookRun struct {
 
 	cookflags.CookFlags
 
-	mode cookMode
-	rr   recipeRun
+	mode         cookMode
+	rr           recipeRun
+	kitchenProps *kitchenProperties
 
 	// testRun is set to true during testing to instruct Kitchen not to try and
 	// send monitoring events.
 	testRun bool
+}
+
+// kitchenProperties defines the structure of "$kitchen" build property.
+//
+// It is consumed exclusively by Kitchen and not even passed along to the recipe
+// engine.
+type kitchenProperties struct {
+	GitAuth bool `json:"git_auth"`
 }
 
 // normalizeFlags validates and normalizes flags.
@@ -98,6 +107,15 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		return result
 	}
 
+	// Export LUCI_CONTEXT into the environment used by git and recipe engine.
+	lc, err := lucictx.Export(ctx, "")
+	if err != nil {
+		return fail(errors.Annotate(err, "failed to export LUCI_CONTEXT").Err())
+	}
+	defer lc.Close()
+	env = env.Clone()
+	lc.SetInEnviron(env)
+
 	result.Recipe = &build.BuildRunResult_Recipe{
 		Name: c.RecipeName,
 	}
@@ -109,6 +127,11 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		}
 		c.rr.cmdPrefix = []string{recipesPath}
 	} else {
+		// TODO(vadimsh): Switch to 'system' LUCI account here. Will require
+		// executing 'recipes.py fetch' in system context too before running the
+		// recipe. Will also require separate lucictx.Export step to export system
+		// LUCI_CONTEXT.
+
 		// Fetch the recipe. Record the fetched revision.
 		rev, err := checkoutRepository(ctx, env, c.CheckoutDir, c.RepositoryURL, c.Revision)
 		if err != nil {
@@ -137,7 +160,6 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 	}
 
 	// Setup our working directory.
-	var err error
 	c.rr.workDir, err = prepareRecipeRunWorkDir(c.rr.workDir)
 	if err != nil {
 		return fail(errors.Annotate(err, "failed to prepare workdir").Err())
@@ -264,14 +286,15 @@ func (c *cookRun) pathModuleProperties() (map[string]string, error) {
 	return props, nil
 }
 
-// prepareProperties parses the properties specified by flags,
-// validates them and add some extra properties to describe current build
-// environment.
-// May mutate some properties.
-func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, error) {
+// prepareProperties parses the properties specified by flags, validates them,
+// add some extra properties to describe current build environment and pops
+// properties consumed specifically by kitchen.
+//
+// May mutate some other properties too.
+func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, *kitchenProperties, error) {
 	props, err := parseProperties(c.Properties, c.PropertiesFile)
 	if err != nil {
-		return nil, errors.Annotate(err, "could not parse properties").Err()
+		return nil, nil, errors.Annotate(err, "could not parse properties").Err()
 	}
 	if props == nil {
 		props = map[string]interface{}{}
@@ -288,14 +311,14 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 	}
 	for _, p := range rejectProperties {
 		if _, ok := props[p]; ok {
-			return nil, inputError("%s property must not be set", p)
+			return nil, nil, inputError("%s property must not be set", p)
 		}
 	}
 
 	// Configure paths that the recipe will use.
 	pathProps, err := c.pathModuleProperties()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	props["$recipe_engine/path"] = pathProps
 
@@ -308,13 +331,26 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, er
 	props["path_config"] = "generic"
 
 	if err := c.mode.addProperties(props, env); err != nil {
-		return nil, errors.Annotate(err, "chosen mode could not add properties").Err()
+		return nil, nil, errors.Annotate(err, "chosen mode could not add properties").Err()
 	}
 	if _, ok := props[PropertyBotID]; !ok {
-		return nil, errors.Reason("chosen mode didn't add %s property", PropertyBotID).Err()
+		return nil, nil, errors.Reason("chosen mode didn't add %s property", PropertyBotID).Err()
 	}
 
-	return props, nil
+	// Extract "$kitchen" properties into more usable struct.
+	kitchenProps := &kitchenProperties{}
+	if val, _ := props["$kitchen"]; val != nil {
+		blob, err := json.Marshal(val)
+		if err != nil {
+			return nil, nil, errors.Annotate(err, "impossible serialization error").Err()
+		}
+		if err := json.Unmarshal(blob, kitchenProps); err != nil {
+			return nil, nil, errors.Annotate(err, "failed to deserialize $kitchen properties").Err()
+		}
+	}
+	delete(props, "$kitchen")
+
+	return props, kitchenProps, nil
 }
 
 func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -391,14 +427,15 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 
 	// Prepare recipe properties. Print them too.
 	var err error
-	if c.rr.properties, err = c.prepareProperties(env); err != nil {
+	if c.rr.properties, c.kitchenProps, err = c.prepareProperties(env); err != nil {
 		return fail(err)
 	}
-	propsJSON, err := json.MarshalIndent(c.rr.properties, "", "  ")
-	if err != nil {
-		return fail(errors.Annotate(err, "could not marshal properties to JSON").Err())
+	if err := c.reportProperties(ctx, "recipe engine", c.rr.properties); err != nil {
+		return fail(err)
 	}
-	log.Infof(ctx, "using properties:\n%s", propsJSON)
+	if err := c.reportProperties(ctx, "kitchen", c.kitchenProps); err != nil {
+		return fail(err)
+	}
 
 	// Print emails of available LUCI accounts, if any.
 	c.reportServiceAccounts(ctx)
@@ -445,19 +482,8 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 		return fail(errors.Annotate(err, "failed to update process PATH").Err())
 	}
 
-	// knownProperties contains properties known and used by Kitchen.
-	var knownProperties struct {
-		Kitchen struct {
-			GitAuth bool `json:"$git_auth"`
-		} `json:"$kitchen"`
-	}
-
-	if err := json.Unmarshal([]byte(c.Properties.String()), &knownProperties); err != nil {
-		return fail(errors.Annotate(err, "failed to unmarshal properties").Err())
-	}
-
 	// Setup Git credential helper if requested.
-	if knownProperties.Kitchen.GitAuth {
+	if c.kitchenProps.GitAuth {
 		log.Infof(ctx, "Enabling git auth")
 		env.Set("INFRA_GIT_WRAPPER_AUTH", "1")
 	}
@@ -536,6 +562,16 @@ func (c *cookRun) updateEnv(env environ.Env) {
 	for _, v := range []string{"TEMPDIR", "TMPDIR", "TEMP", "TMP", "MAC_CHROMIUM_TMPDIR"} {
 		env.Set(v, c.TempDir)
 	}
+}
+
+// reportProperties serializes to JSON and logs given properties.
+func (c *cookRun) reportProperties(ctx context.Context, realm string, props interface{}) error {
+	propsJSON, err := json.MarshalIndent(props, "", "  ")
+	if err != nil {
+		return errors.Annotate(err, "could not marshal properties to JSON").Err()
+	}
+	log.Infof(ctx, "using %s properties:\n%s", realm, propsJSON)
+	return nil
 }
 
 // reportServiceAccounts examines the environment (in particular LUCI_CONTEXT)
