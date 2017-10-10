@@ -1,3 +1,33 @@
+# Release Notes sheriff-o-matic 2017-10-10
+
+- 10 commits, 2 bugs affected since 05ddbf8 (2017-09-20T22:14:39Z)
+- 4 Authors:
+  - seanmccullough@chromium.org
+  - nodir@google.com
+  - tandrii@chromium.org
+  - martiniss@chromium.org
+
+## Changes in this release
+
+- [SOM: Remove regression ranges for merged alert](https://chromium-review.googlesource.com/710225) (martiniss@chromium.org)
+- [[som] Write alert events to BQ.](https://chromium-review.googlesource.com/701927) (seanmccullough@chromium.org)
+- [SoM: pass exclude_deprecated to Milo](https://chromium-review.googlesource.com/706296) (nodir@google.com)
+- [SoM: remove unused client.MiloGetBuildInfo](https://chromium-review.googlesource.com/706295) (nodir@google.com)
+- [SoM: add cron for new master.chromium.sandbox tree.](https://chromium-review.googlesource.com/699517) (tandrii@chromium.org)
+- [Reland "SOM: Group alerts using annotations"](https://chromium-review.googlesource.com/679622) (martiniss@chromium.org)
+- [SoM: remove unused client.LatestBuilds](https://chromium-review.googlesource.com/679458) (nodir@google.com)
+- [SOM: Fix undefined range check](https://chromium-review.googlesource.com/672155) (martiniss@chromium.org)
+- [Roll infra/go/src/go.chromium.org/luci/ 0b4a49dd7..6195d71a7 (32 commits)](https://chromium-review.googlesource.com/677570) (nodir@google.com)
+- [gofmt and goimport everything](https://chromium-review.googlesource.com/677469) (nodir@google.com)
+
+
+## Bugs updated, by author
+- nodir@google.com:
+  -  [https://crbug.com/712421](https://crbug.com/712421)
+
+- tandrii@chromium.org:
+  -  [https://crbug.com/771408](https://crbug.com/771408)
+
 # Release Notes sheriff-o-matic 2017-09-20
 
 - 6 commits, 1 bugs affected since fed5bcc (2017-09-13T00:11:13Z)
