@@ -6,36 +6,22 @@ import logging
 
 from google.appengine.ext import ndb
 
-from common import constants
-from gae_libs import appengine_util
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
 from libs import time_util
-from model.flake.flake_swarming_task import FlakeSwarmingTask
-from model.wf_swarming_task import WfSwarmingTask
 from pipelines.delay_pipeline import DelayPipeline
 from waterfall import swarming_util
-from waterfall import waterfall_config
-from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants
 from waterfall.flake.determine_true_pass_rate_pipeline import (
     DetermineTruePassRatePipeline)
 from waterfall.flake.next_build_number_pipeline import NextBuildNumberPipeline
-from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
-    SaveLastAttemptedSwarmingTaskIdPipeline)
-from waterfall.flake.update_flake_analysis_data_points_pipeline import (
-    UpdateFlakeAnalysisDataPointsPipeline)
-from waterfall.process_flake_swarming_task_result_pipeline import (
-    ProcessFlakeSwarmingTaskResultPipeline)
-from waterfall.trigger_flake_swarming_task_pipeline import (
-    TriggerFlakeSwarmingTaskPipeline)
 from waterfall.flake.finish_build_analysis_pipeline import (
     FinishBuildAnalysisPipeline)
 
 
 def _CanStartAnalysis(step_metadata, retries, force):
-  """Determines if an analysis should be started
+  """Determines if an analysis should be started.
 
   Args:
     step_metadata (dict): Step metadata for the test, used to find bots.
@@ -243,18 +229,18 @@ class RecursiveFlakePipeline(BasePipeline):
             lower_bound_build_number, upper_bound_build_number,
             user_specified_iterations)
 
-      yield RecursiveFlakePipeline(
-          analysis_urlsafe_key,
-          next_build_number,
-          lower_bound_build_number,
-          upper_bound_build_number,
-          user_specified_iterations,
-          step_metadata=step_metadata,
-          manually_triggered=manually_triggered,
-          use_nearby_neighbor=use_nearby_neighbor,
-          previous_build_number=preferred_run_build_number,
-          retries=retries,
-          force=force)
+        yield RecursiveFlakePipeline(
+            analysis_urlsafe_key,
+            next_build_number,
+            lower_bound_build_number,
+            upper_bound_build_number,
+            user_specified_iterations,
+            step_metadata=step_metadata,
+            manually_triggered=manually_triggered,
+            use_nearby_neighbor=use_nearby_neighbor,
+            previous_build_number=preferred_run_build_number,
+            retries=retries,
+            force=force)
     else:  # Can't start analysis, reschedule.
       retries += 1
       if retries > flake_constants.MAX_RETRY_TIMES:

@@ -65,6 +65,7 @@ class BaseSwarmingTask(ndb.Model):
     self.tests_statuses = {}
     self.status = analysis_status.PENDING
     self.error = None
+    self.build_revision = None
     self.created_time = None
     self.started_time = None
     self.completed_time = None
@@ -73,3 +74,5 @@ class BaseSwarmingTask(ndb.Model):
     self.callback_target = None
     self.parameters = {}
     self.canonical_step_name = None
+    self.timeout_seconds = None
+    self.triggering_source = None

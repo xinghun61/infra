@@ -19,15 +19,7 @@ from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
     AnalyzeFlakeForBuildNumberPipeline)
-from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
-    SaveLastAttemptedSwarmingTaskIdPipeline)
-from waterfall.flake.update_flake_analysis_data_points_pipeline import (
-    UpdateFlakeAnalysisDataPointsPipeline)
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
-from waterfall.process_flake_swarming_task_result_pipeline import (
-    ProcessFlakeSwarmingTaskResultPipeline)
-from waterfall.trigger_flake_swarming_task_pipeline import (
-    TriggerFlakeSwarmingTaskPipeline)
 
 
 def _HasPassRateConverged(pass_rate_a, pass_rate_b):
@@ -130,12 +122,15 @@ def _GetTimeoutForTask(analysis, timeout_per_test, iterations_for_task):
                  flake_constants.DEFAULT_TIMEOUT_PER_SWARMING_TASK_SECONDS))
 
 
-def _CalculateRunParametersForSwarmingTask(analysis, build_number):
+def _CalculateRunParametersForSwarmingTask(analysis, build_number,
+                                           swarming_error_code):
   """Calculates and returns the iterations and timeout for swarming tasks
 
   Args:
-    analysis (MasterFlakeAnalysis): The analysis we're getting parameters for.
-    build_number (int): The current build number running.
+    analysis (MasterFlakeAnalysis): The analysis in progress.
+    build_number (int): The current build number being analyzed.
+    swarming_error_code (int): The error code of the previously-run swarming
+        task at this build number. Can be None if no error was encountered.
 
   Returns:
       ((int) iterations, (int) timeout) Tuple containing the iterations to run
@@ -149,12 +144,22 @@ def _CalculateRunParametersForSwarmingTask(analysis, build_number):
   time_for_task_seconds = _GetTimeoutForTask(analysis, timeout_per_test,
                                              iterations_for_task)
 
-  # If we're above the iteration maximum, then bring it down. Don't touch
-  # the timeout, swarming will return after the iterations are complete.
-  max_iterations_per_task = analysis.algorithm_parameters.get(
-      'swarming_rerun', {}).get('max_iterations_per_task',
-                                flake_constants.MAX_ITERATIONS_PER_TASK)
-  iterations_for_task = min(max_iterations_per_task, iterations_for_task)
+  if swarming_error_code == swarming_util.TIMED_OUT:
+    # If the previous run timed out, run a smaller, fixed number of
+    # iterations so the next attempt is more likely to finish.
+    # TODO(crbug.com/772509): Task results may still be salvaged even in case
+    # of timeout, so rerun may be unnecessary.
+    iterations_for_task = (analysis.algorithm_parameters.get(
+        'iterations_to_run_after_timeout',
+        flake_constants.DEFAULT_ITERATIONS_TO_RUN_AFTER_TIMEOUT))
+  else:
+    # If we're above the iteration maximum, then bring it down. Don't touch
+    # the timeout, swarming will return after the iterations are complete.
+    max_iterations_per_task = analysis.algorithm_parameters.get(
+        'swarming_rerun', {}).get('max_iterations_per_task',
+                                  flake_constants.MAX_ITERATIONS_PER_TASK)
+    iterations_for_task = min(max_iterations_per_task, iterations_for_task)
+
   return iterations_for_task, time_for_task_seconds
 
 
@@ -261,23 +266,12 @@ class DetermineTruePassRatePipeline(BasePipeline):
 
     (iterations_for_task,
      time_for_task_seconds) = _CalculateRunParametersForSwarmingTask(
-         analysis, build_number)
-
-    if swarming_error_code == swarming_util.TIMED_OUT:
-      # If the previous run timed out, run a smaller, fixed, number of
-      # iterations so it's liekly to finish.
-      iterations_for_task = (analysis.algorithm_parameters.get(
-          'iterations_to_run_after_timeout',
-          flake_constants.DEFAULT_ITERATIONS_TO_RUN_AFTER_TIMEOUT))
+         analysis, build_number, swarming_error_code)
 
     analysis.LogInfo('Running %d iterations with a %d second timeout' %
                      (iterations_for_task, time_for_task_seconds))
 
-    # If the swarming task already exists, delete it so no caching occurs.
-    if flake_swarming_task:
-      flake_swarming_task.key.delete()
-
-    # Run swarming task, aggregate results and recurse
+    # Run swarming task, aggregate results and recurse.
     with pipeline.InOrder():
       yield AnalyzeFlakeForBuildNumberPipeline(
           analysis_urlsafe_key, build_number, iterations_for_task,

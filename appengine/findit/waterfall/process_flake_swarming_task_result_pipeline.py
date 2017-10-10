@@ -45,6 +45,8 @@ class ProcessFlakeSwarmingTaskResultPipeline(
 
     flake_swarming_task = FlakeSwarmingTask.Get(
         master_name, builder_name, build_number, step_name, test_name)
+    assert flake_swarming_task
+
     flake_swarming_task.tries = tries
     flake_swarming_task.successes = successes
     flake_swarming_task.put()

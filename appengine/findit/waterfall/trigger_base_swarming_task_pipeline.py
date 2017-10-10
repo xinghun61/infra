@@ -157,31 +157,22 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
 
   def _NeedANewSwarmingTask(self, *args, **kwargs):
     swarming_task = self._GetSwarmingTask(*args)
-    iterations_to_rerun = kwargs.get('iterations_to_rerun') if kwargs else None
-    force = kwargs.get('force') if kwargs else False
+
     if not swarming_task:
       swarming_task = self._CreateSwarmingTask(*args)
       swarming_task.status = analysis_status.PENDING
       swarming_task.put()
       return True
-    else:
-      if isinstance(swarming_task, FlakeSwarmingTask) and swarming_task.queued:
-        # The task has been created but has not yet been executed for cases it
-        # was triggered through Findit API.
-        return True
 
-      if (force or (swarming_task.parameters and iterations_to_rerun and
-                    swarming_task.parameters.get('iterations_to_rerun') !=
-                    iterations_to_rerun)):
-        # Triggering a new swarming task on the same build for flaky analysis.
-        # Resets the existing swarming task.
-        swarming_task.Reset()
-        swarming_task.put()
-        return True
+    force = kwargs.get('force') if kwargs else False
+    if force:
+      swarming_task.Reset()
+      swarming_task.put()
+      return True
 
-      # TODO(http://crbug.com/585676): Rerun the Swarming task if it runs into
-      # unexpected infra errors.
-      return False
+    # TODO(http://crbug.com/585676): Rerun the Swarming task if it runs into
+    # unexpected infra errors.
+    return False
 
   def _GetSwarmingTaskId(self, *args):
     swarming_settings = waterfall_config.GetSwarmingSettings()
@@ -223,8 +214,8 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     try:
       build_data = json.loads(json_data)
     except ValueError:
-      logging.error('Failed to decode build data for %s, %s, %s' %
-                    (master_name, builder_name, build_number))
+      logging.error('Failed to decode build data for %s, %s, %s', master_name,
+                    builder_name, build_number)
       return False
 
     build_result = buildbot.GetBuildResult(build_data)
@@ -260,9 +251,9 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
     call_args = self._GetArgs(master_name, builder_name, build_number,
                               step_name, tests)
     # Check if a new Swarming Task is really needed.
-    if not self._NeedANewSwarmingTask(
-        *call_args, iterations_to_rerun=iterations_to_rerun, force=force):
+    if not self._NeedANewSwarmingTask(*call_args, force=force):
       return self._GetSwarmingTaskId(*call_args)
+
     assert tests
     http_client = HttpClientAppengine()
 

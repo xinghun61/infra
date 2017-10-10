@@ -9,7 +9,6 @@ import time
 from common.waterfall import pubsub_callback
 from gae_libs import token
 from libs import analysis_status
-from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.wf_swarming_task import WfSwarmingTask
 from waterfall import swarming_util
 from waterfall import waterfall_config
@@ -17,8 +16,6 @@ from waterfall.swarming_task_request import SwarmingTaskRequest
 from waterfall.test import wf_testcase
 from waterfall.trigger_base_swarming_task_pipeline import (
     TriggerBaseSwarmingTaskPipeline)
-from waterfall.trigger_flake_swarming_task_pipeline import (
-    TriggerFlakeSwarmingTaskPipeline)
 from waterfall.trigger_swarming_task_pipeline import TriggerSwarmingTaskPipeline
 
 
@@ -59,21 +56,25 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
         pipeline, '_GetSwarmingTask', return_value=swarming_task):
       self.assertTrue(pipeline._NeedANewSwarmingTask(force=True))
 
-  def testWaitingForTheTaskId(self):
+  @mock.patch.object(
+      TriggerBaseSwarmingTaskPipeline,
+      '_NeedANewSwarmingTask',
+      return_value=False)
+  def testWaitingForTheTaskId(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
     step_name = 's'
     tests = ['a.b']
 
-    swarming_task = FlakeSwarmingTask.Create(master_name, builder_name,
-                                             build_number, step_name, tests[0])
+    swarming_task = WfSwarmingTask.Create(master_name, builder_name,
+                                          build_number, step_name)
     swarming_task.status = analysis_status.PENDING
     swarming_task.put()
 
     def MockedSleep(*_):
-      swarming_task = FlakeSwarmingTask.Get(master_name, builder_name,
-                                            build_number, step_name, tests[0])
+      swarming_task = WfSwarmingTask.Get(master_name, builder_name,
+                                         build_number, step_name)
       self.assertEqual(analysis_status.PENDING, swarming_task.status)
       swarming_task.status = analysis_status.RUNNING
       swarming_task.task_id = 'task_id'
@@ -81,7 +82,7 @@ class TriggerBaseSwarmingTaskPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.mock(time, 'sleep', MockedSleep)
 
-    pipeline = TriggerFlakeSwarmingTaskPipeline()
+    pipeline = TriggerSwarmingTaskPipeline()
     task_id = pipeline.run(master_name, builder_name, build_number, step_name,
                            tests)
     self.assertEqual('task_id', task_id)

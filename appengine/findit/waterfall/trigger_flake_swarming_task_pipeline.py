@@ -36,6 +36,43 @@ class TriggerFlakeSwarmingTaskPipeline(TriggerBaseSwarmingTaskPipeline):
                                              build_number, step_name, test_name)
     return swarming_task
 
+  def _NeedANewSwarmingTask(self, *args, **_):
+    """Creates or resets an existing flake swarming task entity.
+
+    For determining the true pass rate of tests, multiple swarming tasks at the
+    same build configuration are run until the pass rates converge or up to a
+    total maximum number of iterations. Thus when triggering a flake swarming
+    task, a new task is always needed and the old data should always be reset
+    to avoid unintentional caching.
+
+    TODO(crbug.com/772169): It is possible a request made through Findit API
+    triggers an analysis at the same build configuration, which may result in
+    conflicts through multiple pipelines modifying the same swarming task
+    entity. This is expected to be extremely rare, but should be handled.
+
+    Args:
+      *args ([(str), (str), (int), (str), (str)]): The master_name,
+          builder_name, build_number, step_name, test_name to reference an
+          existing task with.
+
+    Returns:
+      True upon creating or resetting a swarming task.
+    """
+    swarming_task = (self._GetSwarmingTask(*args) or
+                     self._CreateSwarmingTask(*args))
+
+    # Queued will be set to true if The task has been created but has not yet
+    # been executed for cases it was triggered through Findit API. Queued should
+    # Be preserved in case multiple requests come through Findit API for the
+    # same configuration but the task has not yet been run, such as due to
+    # bot unavailability.
+    queued = swarming_task.queued
+    swarming_task.Reset()
+    swarming_task.queued = queued
+    swarming_task.put()
+
+    return True
+
   def _GetIterationsToRerun(self):
     flake_settings = waterfall_config.GetCheckFlakeSettings()
     swarming_rerun_settings = flake_settings.get('swarming_rerun', {})
