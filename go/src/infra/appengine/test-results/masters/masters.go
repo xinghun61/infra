@@ -92,6 +92,10 @@ var Known = []*Master{
 		Identifier: "client.webrtc.fyi",
 	},
 	{
+		Name:       "WebRTCPerf",
+		Identifier: "client.webrtc.perf",
+	},
+	{
 		Name:       "WebRTCTryServer",
 		Identifier: "tryserver.webrtc",
 	},
