@@ -17,7 +17,7 @@
     </style>
     <div id="dropdown" class="resize">
       <template is="dom-repeat" items="[[suggestions]]">
-        <paper-item id$="[[index]]" on-click="_userSelected">[[item]]</paper-item>
+        <paper-item id$="[[index]]" on-click="_userSelected">[[_computeUserDisplay(item)]]</paper-item>
       </template>
     </div>
   </template>
@@ -42,7 +42,7 @@
         /**
          * The array of users that should be listed.
          *
-         * @type Array<string>
+         * @type Array<Object{userId, email(opt), profileLink(opt), fullName(opt)}>
          */
           suggestions: {
             type: Array,
@@ -70,6 +70,10 @@
       _userSelected(e) {
         let user = this.suggestions[e.currentTarget.id];
         this.dispatchEvent(new CustomEvent('user-selected', {detail: {selectedUser: user}}));
+      }
+
+      _computeUserDisplay(user) {
+        return user.email ? `${user.userId} <${user.email}> ` : user.userId;
       }
 
       /**

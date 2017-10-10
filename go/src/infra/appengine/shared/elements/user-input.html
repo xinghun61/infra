@@ -1,5 +1,6 @@
 <link rel="import" href="/bower_components/polymer/polymer.html">
 <link rel="import" href="/elements/users-dropdown.html">
+<link rel="import" href="/elements/user-id.html">
 <link rel="import" href="/bower_components/paper-input/paper-input.html">
 <link rel="import" href="/bower_components/iron-behaviors/iron-control-state.html">
 
@@ -7,12 +8,16 @@
   <template>
     <style>
     </style>
-    <paper-input on-value-changed="_updateSuggestions" id="input">
-      <!--
+    <paper-input id="input" value="{{inputValue}}" disabled="[[_inputDisabled]]">
       <template is="dom-repeat" items="[[selectedUsers]]">
-        <user-id-link slot="prefix" user-id="[[item]]"></user-id-link>
+        <user-id
+          slot="prefix"
+          user-id="[[item.userId]]"
+          email="[[item.email]]"
+          profile-link="[[item.profileLink]]"
+          full-name="[[item.fullName]]">
+        </user-id>
       </template>
-      -->
     </paper-input>
     <users-dropdown id="dropdown" on-user-selected="_saveUser" suggestions="[[suggestions]]">
     </users-dropdown>
@@ -25,9 +30,8 @@
      * `<user-input>` as an input element for choosing users with
      * dropdown suggestions and autocomplete.
      *
-     * When using, provide all possible suggestions to the suggestions
-     * property. The final (list) of selected users will be in the
-     * selectedUsers property.
+     * Provide all possible users as allUsers. The final list of
+     * of selected users will be in the selectedUsers property.
      *
      * customElement
      * @polymer
@@ -41,9 +45,19 @@
       static get properties() {
         return {
           /**
+           * The current input value.
+           *
+           * @type String
+           */
+          inputValue: {
+            type: String,
+            value: '',
+            notify: true,
+          },
+          /**
            * List of suggestions displayed in the dropdown.
            *
-           * @type Array<string>
+           * @type Array<Object{userId, email(opt), profileLink(opt), fullName(opt)}>
            */
           suggestions: {
             type: Array,
@@ -52,18 +66,50 @@
           /**
            * List of users selected, so far.
            *
-           * @type Array<string>
+           * @type Array<Object{userId, email(opt), profileLink(opt), fullName(opt)}>
            */
           selectedUsers: {
             type: Array,
             value: () => { return []; },
-          }
+          },
+          /**
+           * If true, multiple users can be selected.
+           *
+           * @type Boolean
+           */
+          multiple: {
+            type: Boolean,
+            value: false,
+          },
+          /**
+           * If true, additional users cannot be selected.
+           *
+           * @type Boolean
+           */
+          _inputDisabled: {
+            type: Boolean,
+            value: false,
+          },
         }
+      }
+
+      static get observers() {
+        return [
+          '_updateInputDisabled(selectedUsers.length)'
+        ]
       }
 
       ready() {
         super.ready();
         this.addEventListener('focused-changed', e => this._toggleDropdown(e));
+      }
+
+      /** Updates inputDisabled. */
+      _updateInputDisabled(length) {
+        if (!this.multiple && length) {
+          this._inputDisabled = true;
+          this.$.dropdown.close();
+        }
       }
 
       /** Toggles the visibility of the dropdown element. */
@@ -80,12 +126,6 @@
       _saveUser(e) {
         this.push('selectedUsers', e.detail.selectedUser);
       }
-
-      /** Updates the suggestions property. */
-      _updateSuggestions() {
-        // TODO(jojwang): use this.$.input.value to update this.suggestions
-      }
-
     }
     customElements.define(UserInput.is, UserInput);
   </script>

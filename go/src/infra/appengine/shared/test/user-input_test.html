@@ -43,6 +43,22 @@
         element._saveUser({detail: {selectedUser: 'user2'}});
         assert.deepEqual(element.selectedUsers, ['user1', 'user2']);
 
+        // Test _updateInputDisabled
+        element.multiple = false;
+        element._inputDisabled = false;
+        element._updateInputDisabled(1);
+        assert.isTrue(element._inputDisabled);
+
+        element.multiple = false;
+        element._inputDisabled = false;
+        element._updateInputDisabled(0);
+        assert.isFalse(element._inputDisabled)
+
+        element.multiple = true;
+        element._inputDisabled = false;
+        element._updateInputDisabled(1);
+        assert.isFalse(element._inputDisabled);
+
         done();
       });
     });
@@ -61,11 +77,11 @@
       });
     });
 
-    test('_updateSuggestions-called', function(done) {
-      let updateStub = sinon.stub(element, '_updateSuggestions');
+    test('_updateInputDisabled-called', function(done) {
+      let updateStub = sinon.stub(element, '_updateInputDisabled');
 
       flush(function() {
-        element.$.input.value = 'DIFFERENT';
+        element.selectedUsers = [{userId: 'newlySelectedUser'}]
         sinon.assert.calledOnce(updateStub);
 
         done();
