@@ -188,7 +188,7 @@ func TestPoll(t *testing.T) {
 			lastChangeTs := tc.Now().UTC()
 			// Fill up with a change per project
 			rev := "abcdefg"
-			changeID := "1"
+			changeID := "project~branch~Ideadc0de"
 			file := "README.md"
 			for _, gd := range gerritProjects {
 				files := make(map[string]*gr.FileInfo)
@@ -197,8 +197,8 @@ func TestPoll(t *testing.T) {
 				revisions[rev] = gr.RevisionInfo{Files: files}
 				api.addChanges(gd.Host, gd.Project, []gr.ChangeInfo{
 					{
+						ID:              changeID,
 						Project:         gd.Project,
-						ChangeID:        changeID,
 						CurrentRevision: rev,
 						Updated:         gr.TimeStamp(lastChangeTs),
 						Revisions:       revisions,
@@ -235,21 +235,22 @@ func TestPoll(t *testing.T) {
 			// Fill up projects with changes
 			numChanges := 6
 			revBase := "abcdefg"
-			changeIDBase := "1"
+			branch := "master"
+			changeIDFooter := "Ideadc0de"
 			file := "README.md"
 			for _, gd := range gerritProjects {
 				var changes []gr.ChangeInfo
 				for i := 0; i < numChanges; i++ {
 					tc.Add(time.Second)
-					changeID := fmt.Sprintf("%s%s%d", changeIDBase, gd.Project, i)
+					changeID := fmt.Sprintf("%s~%s~%s%d", gd.Project, branch, changeIDFooter, i)
 					rev := fmt.Sprintf("%s%d", revBase, i)
 					files := make(map[string]*gr.FileInfo)
 					files[file] = &gr.FileInfo{Status: "M"}
 					revisions := make(map[string]gr.RevisionInfo)
 					revisions[rev] = gr.RevisionInfo{Files: files}
 					changes = append(changes, gr.ChangeInfo{
+						ID:              changeID,
 						Project:         gd.Project,
-						ChangeID:        changeID,
 						CurrentRevision: rev,
 						Updated:         gr.TimeStamp(tc.Now().UTC()),
 						Revisions:       revisions,
@@ -266,7 +267,7 @@ func TestPoll(t *testing.T) {
 				for _, gd := range gerritProjects {
 					for i := 0; i < numChanges; i++ {
 						So(ds.Get(ctx, &Change{
-							ID:     fmt.Sprintf("%s%s%d", changeIDBase, gd.Project, i),
+							ID:     fmt.Sprintf("%s~%s~%s%d", gd.Project, branch, changeIDFooter, i),
 							Parent: ds.NewKey(ctx, "GerritProject", gerritProjectID(gd.Host, gd.Project), 0, nil),
 						}), ShouldBeNil)
 					}

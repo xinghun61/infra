@@ -44,7 +44,8 @@ type Project struct {
 // Change tracks the last seen revision for a Gerrit change.
 //
 // Mutable entity.
-// LUCI datastore ID (=changeID) and parent (=key to GerritProject entity) fields.
+// LUCI datastore ID (=fully-qualified Gerrit change ID)
+// and parent (=key to GerritProject entity) fields.
 type Change struct {
 	ID           string  `gae:"$id"`
 	Parent       *ds.Key `gae:"$parent"`
@@ -232,7 +233,7 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 	pkey := ds.NewKey(c, "GerritProject", p.ID, 0, nil)
 	var trackedChanges []*Change
 	for _, change := range changes {
-		trackedChanges = append(trackedChanges, &Change{ID: change.ChangeID, Parent: pkey})
+		trackedChanges = append(trackedChanges, &Change{ID: change.ID, Parent: pkey})
 	}
 	if err := ds.Get(c, trackedChanges); err != nil {
 		if me, ok := err.(errors.MultiError); ok {
@@ -259,33 +260,33 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 	// Compare polled changes to tracked changes, update tracking and add to the
 	// diff list when there is an updated revision change.
 	for _, change := range changes {
-		tc, ok := t[change.ChangeID]
+		tc, ok := t[change.ID]
 		switch {
 		// For untracked and new/draft, start tracking and add to diff list.
 		case !ok && (change.Status == "NEW" || change.Status == "DRAFT"):
-			logging.Debugf(c, "Found untracked %s change (%s); tracking.", change.Status, change.ChangeID)
-			tc.ID = change.ChangeID
+			logging.Debugf(c, "Found untracked %s change (%s); tracking.", change.Status, change.ID)
+			tc.ID = change.ID
 			tc.LastRevision = change.CurrentRevision
 			uchanges = append(uchanges, &tc)
 			diff = append(diff, change)
 		// Untracked and not new/draft, move on to the next change.
 		case !ok:
-			logging.Debugf(c, "Found untracked %s change (%s); leaving untracked.", change.Status, change.ChangeID)
+			logging.Debugf(c, "Found untracked %s change (%s); leaving untracked.", change.Status, change.ID)
 		// For tracked and merged/abandoned, stop tracking (clean up).
 		case change.Status == "MERGED" || change.Status == "ABANDONED":
-			logging.Debugf(c, "Found tracked %s change (%s); removing.", change.Status, change.ChangeID)
+			logging.Debugf(c, "Found tracked %s change (%s); removing.", change.Status, change.ID)
 			// Note that we are only adding keys for entries already present in the
 			// datastore to the delete list. That is, we should not get any NoSuchEntity
 			// errors.
 			dchanges = append(dchanges, &tc)
 		// For tracked and unseen revision, update tracking and add to diff list.
 		case tc.LastRevision != change.CurrentRevision:
-			logging.Debugf(c, "Found tracked %s change (%s) with new revision; updating.", change.Status, change.ChangeID)
+			logging.Debugf(c, "Found tracked %s change (%s) with new revision; updating.", change.Status, change.ID)
 			tc.LastRevision = change.CurrentRevision
 			uchanges = append(uchanges, &tc)
 			diff = append(diff, change)
 		default:
-			logging.Debugf(c, "Found tracked %s change (%s) with no update; leaving as is.", change.Status, change.ChangeID)
+			logging.Debugf(c, "Found tracked %s change (%s) with no update; leaving as is.", change.Status, change.ID)
 		}
 	}
 	return diff, uchanges, dchanges, nil
