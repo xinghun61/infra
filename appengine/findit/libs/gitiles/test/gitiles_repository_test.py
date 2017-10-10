@@ -438,3 +438,14 @@ class GitRepositoryTest(TestCase):
     repo = gitiles_repository.GitilesRepository(self.http_client_for_git,
                                                 'http://repo_url')
     self.assertEqual(repo.repo_url, 'http://repo_url')
+
+  def testGetChangeLogUrl(self):
+    """Tests ``_GetChangeLogUrl`` for start_revision and end_revision."""
+    repo = gitiles_repository.GitilesRepository(self.http_client_for_git,
+                                                'http://repo_url')
+    self.assertEqual(repo._GetChangeLogUrl('rev2', 'rev5'),
+                     'http://repo_url/+log/rev2..rev5')
+    self.assertEqual(repo._GetChangeLogUrl(None, 'rev5'),
+                     'http://repo_url/+log/rev5')
+    self.assertEqual(repo._GetChangeLogUrl('rev2', None),
+                     'http://repo_url/+log/rev2..master')

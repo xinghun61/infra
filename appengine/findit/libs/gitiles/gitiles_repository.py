@@ -137,12 +137,33 @@ class GitilesRepository(GitRepository):
 
     return self._ParseChangeLogFromLogData(data)
 
+  def _GetChangeLogUrl(self, start_revision, end_revision):
+    """Generate url to get changelogs in (start_revision, end_revision]."""
+    # We don't support (None, None) range, since it will return everything and
+    # that will be a performance burden.
+    assert start_revision or end_revision, (
+        'At least one of start_revision and end_revision should be non-empty.')
+
+    if not end_revision:
+      # Set the end_revision to master to get all the changelogs after the
+      # start_revision.
+      end_revision = 'master'
+
+    if not start_revision:
+      # Url that contains all the changelogs before and including end_revision.
+      return '%s/+log/%s' % (self.repo_url, end_revision)
+
+    return '%s/+log/%s..%s' % (self.repo_url, start_revision, end_revision)
+
   def GetCommitsBetweenRevisions(self, start_revision, end_revision, n=1000):
     """Gets a list of commit hashes between start_revision and end_revision.
 
     Args:
-      start_revision: The oldest revision in the range.
-      end_revision: The latest revision in the range.
+      start_revision: The oldest revision in the range. If it's None, we will
+        return all commits before and including end_revision (since the very
+        first commit).
+      end_revision: The latest revision in the range. If it's None, we will
+        return all commits after the start_revision (till the latest commit).
       n: The maximum number of revisions to request at a time.
 
     Returns:
@@ -154,9 +175,8 @@ class GitilesRepository(GitRepository):
     next_end_revision = end_revision
     commits = []
 
-    while next_end_revision:
-      url = '%s/+log/%s..%s' % (self.repo_url, start_revision,
-                                next_end_revision)
+    while True:
+      url = self._GetChangeLogUrl(start_revision, next_end_revision)
       data = self._SendRequestForJsonResponse(url, params)
 
       if not data:
@@ -167,7 +187,10 @@ class GitilesRepository(GitRepository):
         if commit:
           commits.append(commit)
 
-      next_end_revision = data.get('next')
+      if 'next' in data:
+        next_end_revision = data['next']
+      else:
+        break
 
     return commits
 
@@ -206,8 +229,11 @@ class GitilesRepository(GitRepository):
     """Gets a list of ChangeLogs in revision range by batch.
 
     Args:
-      start_revision (str): The oldest revision in the range.
-      end_revision (str): The latest revision in the range.
+      start_revision: The oldest revision in the range. If it's None, we will
+        return all commits before and including end_revision (since the very
+        first commit).
+      end_revision: The latest revision in the range. If it's None, we will
+        return all commits after the start_revision (till the latest commit).
       n (int): The maximum number of revisions to request at a time (default
         to 1000).
 
@@ -217,9 +243,8 @@ class GitilesRepository(GitRepository):
     next_end_revision = end_revision
     changelogs = []
 
-    while next_end_revision:
-      url = '%s/+log/%s..%s' % (self.repo_url, start_revision,
-                                next_end_revision)
+    while True:
+      url = self._GetChangeLogUrl(start_revision, next_end_revision)
       data = self._SendRequestForJsonResponse(
           url, params={'n': str(n),
                        'name-status': '1'})
@@ -231,6 +256,6 @@ class GitilesRepository(GitRepository):
       if 'next' in data:
         next_end_revision = data['next']
       else:
-        next_end_revision = None
+        break
 
     return changelogs
