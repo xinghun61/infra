@@ -10,6 +10,40 @@ fields: <
   type: TIMESTAMP
 >
 fields: <
+  name: "project_id"
+  description: "LUCI project id"
+  type: STRING
+>
+fields: <
+  name: "gerrit"
+  description: "Gerrit change"
+  type: RECORD
+  schema: <
+    name: "host"
+    description: "Gerrit host, e.g. chromium-review.googlesource.com"
+    is_required: True
+    type: STRING
+  >
+  schema: <
+    name: "project"
+    description: "Gerrit host, e.g. chormium/src"
+    is_required: True
+    type: STRING
+  >
+  schema: <
+    name: "change"
+    description: "Change number"
+    is_required: True
+    type: INTEGER
+  >
+  schema: <
+    name: "patchset"
+    description: "Patch set number"
+    is_required: True
+    type: INTEGER
+  >
+>
+fields: <
   name: "action"
   description: "Type of CQ event, e.g. PATCH_COMMITTED."
   type: STRING
@@ -18,21 +52,6 @@ fields: <
   name: "attempt_start"
   description: "Time when the CQ attempt was started (user clicked on CQ bit)."
   type: TIMESTAMP
->
-fields: <
-  name: "cq_name"
-  description: "Name of the CQ that sends this event."
-  type: STRING
->
-fields: <
-  name: "issue"
-  description: "Issue ID that is processed by CQ."
-  type: STRING
->
-fields: <
-  name: "patchset"
-  description: "Patchset ID that is processed by CQ."
-  type: STRING
 >
 fields: <
   name: "dry_run"
@@ -56,7 +75,8 @@ fields: <
     is_repeated: true
     type: RECORD
     schema: <
-      name: "master"
+      name: "bucket"
+      description: "Buildbucket bucket"
       type: STRING
     >
     schema: <
@@ -65,6 +85,7 @@ fields: <
     >
     schema: <
       name: "build_id"
+      description: "Build id. See also build_id in the build.builds table."
       type: INTEGER
     >
     schema: <
@@ -74,8 +95,11 @@ fields: <
   >
 >
 fields: <
-  name: "contributing_buildbucket_ids"
-  description: "List of build buildbucket IDs that contributed to an attempt."
+  name: "build_ids"
+  description: <<END
+    List of build IDs that contributed to the attempt.
+    See also build_id in the build.builds table.
+  END
   is_repeated: true
   type: INTEGER
 >
