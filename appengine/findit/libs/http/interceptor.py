@@ -66,7 +66,7 @@ class HttpInterceptorBase(object):
     _ = request
     return response, response.get('status_code') not in _NO_RETRY_CODE
 
-  def OnException(self, request, exception):
+  def OnException(self, request, exception, can_retry):
     """Override to check and/or tweak an exception raised when sending request.
 
     The http client is expected to call this method with any exception raised
@@ -77,9 +77,13 @@ class HttpInterceptorBase(object):
       - request(dict): A dict with the relevant fields, such as 'url' and
         'headers' for the request that was sent to obtain the response.
       - exception(Exception): The exception raised by the underlying call.
+      - can_retry(bool): Whether the caller will retry if the interceptor
+        swallows the exception. Useful to take action on persistent exceptions
+        and not on transient ones.
     Retruns: An exception to be raised to the caller or None.
     """
     _ = request
+    _ = can_retry
     return exception
 
 
@@ -93,7 +97,12 @@ class LoggingInterceptor(HttpInterceptorBase):
     # Call the base's OnResponse to keep the retry functionality.
     return super(LoggingInterceptor, self).OnResponse(request, response)
 
-  def OnException(self, request, exception):
-    logging.exception('got exception %s("%s") for url %s',
+  def OnException(self, request, exception, can_retry):
+    if can_retry:
+      logging.warning('got exception %s("%s") for url %s',
                       type(exception), exception.message, request.get('url'))
-    return super(LoggingInterceptor, self).OnException(request, exception)
+    else:
+      logging.exception('got exception %s("%s") for url %s',
+                        type(exception), exception.message, request.get('url'))
+    return super(LoggingInterceptor, self).OnException(request, exception,
+                                                       can_retry)

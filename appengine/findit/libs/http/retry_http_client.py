@@ -117,7 +117,8 @@ class RetryHttpClient(object):
           break
       except Exception as e:
         if self.interceptor:
-          e = self.interceptor.OnException(request, e)
+          e = self.interceptor.OnException(
+              request, e, can_retry=tries < max_retries)
         if e is not None:
           raise e
 

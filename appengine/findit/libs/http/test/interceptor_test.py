@@ -41,12 +41,22 @@ class InterceptorTest(testing.AppengineTestCase):
     self.assertEqual(content, 'hello')
     mock_logging.assert_called_once_with('got response %d for url %s', 200, url)
 
-  @mock.patch.object(logging, 'exception')
+  @mock.patch.object(logging, 'warning')
   def testWithException(self, mock_logging):
     client = DummyHttpClient()
     url = 'https://test.com/'
     with self.assertRaises(NotImplementedError):
       _status, _content = client.Post(url, {})
+    mock_logging.assert_called_once_with('got exception %s("%s") for url %s',
+                                         NotImplementedError,
+                                         'Post not supported', url)
+
+  @mock.patch.object(logging, 'exception')
+  def testWithExceptionNoRetries(self, mock_logging):
+    client = DummyHttpClient()
+    url = 'https://test.com/'
+    with self.assertRaises(NotImplementedError):
+      _status, _content = client.Post(url, {}, max_retries=1)
     mock_logging.assert_called_once_with('got exception %s("%s") for url %s',
                                          NotImplementedError,
                                          'Post not supported', url)

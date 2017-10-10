@@ -14,9 +14,10 @@ from libs.http.interceptor import LoggingInterceptor
 
 class RetryRuntimeErrorInterceptor(LoggingInterceptor):
 
-  def OnException(self, request, exception):
+  def OnException(self, request, exception, can_retry):
+    _ = can_retry
     exception = super(RetryRuntimeErrorInterceptor, self).OnException(
-        request, exception)
+        request, exception, can_retry)
     if type(exception) == RuntimeError:
       return None
     return exception
@@ -215,16 +216,18 @@ class HttpClientTest(testing.AppengineTestCase):
     self.assertEquals(503, status_code)
     self.assertEquals('failure - PUT', content)
 
+  @mock.patch.object(logging, 'warning')
   @mock.patch.object(logging, 'exception')
-  def testRetriableException(self, mock_logging):
+  def testRetriableException(self, mock_except, mock_warn):
     dummy_http_client = DummyHttpClient(0, 404)
     dummy_http_client.interceptor = RetryRuntimeErrorInterceptor()
     status_code, content = dummy_http_client.Get('http://runtimeerror')
     self.assertFalse(status_code)
     self.assertFalse(content)
-    self.assertEqual(5, len(mock_logging.call_args_list))
+    self.assertEqual(4, len(mock_warn.call_args_list))
+    self.assertEqual(1, len(mock_except.call_args_list))
 
-  @mock.patch.object(logging, 'exception')
+  @mock.patch.object(logging, 'warning')
   def testNonRetriableException(self, mock_logging):
     dummy_http_client = DummyHttpClient(0, 404)
     dummy_http_client.interceptor = RetryRuntimeErrorInterceptor()
