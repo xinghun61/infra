@@ -455,7 +455,13 @@ class SomAlertView extends Polymer.mixinBehaviors(
         this._mergeBuilders(group.extension.builders,
                             alert.extension.builders,
                             alert.extension.stages);
-        this._mergeRegressionRanges(group.extension, alert.extension);
+        // TODO(martiniss): Comment this back in once the logic is robust.
+        // Right now this isn't very useful if you actually want to use these
+        // regression ranges to determine which alerts should be grouped
+        // together, etc.... In addition, usage of regression ranges by sheriffs
+        // is pretty low, so I think disabling this for now should be ok, and
+        // fairly unnoticed.
+        //this._mergeRegressionRanges(group.extension, alert.extension);
         group.extension.reason = this._mergeReason(group.extension,
                                                    alert.extension);
       }
