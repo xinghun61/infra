@@ -38,6 +38,7 @@ deploy-prod: _deploy
 	@echo "Please force a re-run of a recent build failure on dashboard: "\
 	"https://$(LOCAL_VERSION)-dot-waterfall-frontend-"\
 	"dot-$(APPID).appspot.com/waterfall/list-analyses"
+	@echo "Choose a first failure to make sure a new try job is triggered."
 	@echo "Please also force a re-run of a recent flake analysis on dashboard: "\
 	"https://$(LOCAL_VERSION)-dot-waterfall-frontend-"\
 	"dot-$(APPID).appspot.com/waterfall/list-flakes"
