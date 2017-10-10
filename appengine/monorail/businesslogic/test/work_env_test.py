@@ -12,6 +12,7 @@ from google.appengine.ext import testbed
 
 from businesslogic import work_env
 from framework import exceptions
+from proto import project_pb2
 from services import issue_svc
 from services import project_svc
 from services import service_manager
@@ -39,8 +40,33 @@ class WorkEnvTest(unittest.TestCase):
   # FUTURE: GetSiteBannerMessage()
   # FUTURE: SetSiteBannerMessage()
 
-  # FUTURE: CreateProject()
-  # FUTURE: ListProjects()
+  def testCreateProject_Normal(self):
+    """We can create a project."""
+    with self.work_env as we:
+      project_id = we.CreateProject(
+          'testproj', [111L], [222L], [333L], 'summary', 'desc')
+      actual = we.GetProject(project_id)
+
+    self.assertEqual('summary', actual.summary)
+    self.assertEqual('desc', actual.description)
+
+  def testCreateProject_AlreadyExists(self):
+    """We can create a project."""
+    self.services.project.TestAddProject('testproj', project_id=789)
+    with self.assertRaises(exceptions.ProjectAlreadyExists):
+      with self.work_env as we:
+        we.CreateProject('testproj', [111L], [222L], [333L], 'summary', 'desc')
+
+  def testListProjects(self):
+    """We can get the project IDs of projects visible to the current user."""
+    self.services.project.TestAddProject('proj1', project_id=1)
+    self.services.project.TestAddProject(
+        'proj2', project_id=2, access=project_pb2.ProjectAccess.MEMBERS_ONLY)
+    self.services.project.TestAddProject('proj3', project_id=3)
+    with self.work_env as we:
+      actual = we.ListProjects()
+
+    self.assertEqual([1, 3], actual)
 
   def testGetProject_Normal(self):
     """We can get an existing project by project_id."""
@@ -52,7 +78,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testGetProject_NoSuchProject(self):
     """We reject attempts to get a non-existent project."""
-    with self.assertRaises(project_svc.NoSuchProjectException):
+    with self.assertRaises(exceptions.NoSuchProjectException):
       with self.work_env as we:
         _actual = we.GetProject(999)
 
@@ -66,7 +92,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testGetProjectByName_NoSuchProject(self):
     """We reject attempts to get a non-existent project."""
-    with self.assertRaises(project_svc.NoSuchProjectException):
+    with self.assertRaises(exceptions.NoSuchProjectException):
       with self.work_env as we:
         _actual = we.GetProjectByName('huh-what')
 
@@ -88,7 +114,7 @@ class WorkEnvTest(unittest.TestCase):
   def testGetProjectConfig_NoSuchProject(self):
     """We reject attempts to get a non-existent config."""
     self.services.config.strict = True
-    with self.assertRaises(project_svc.NoSuchProjectException):
+    with self.assertRaises(exceptions.NoSuchProjectException):
       with self.work_env as we:
         _actual = we.GetProjectConfig(789)
 

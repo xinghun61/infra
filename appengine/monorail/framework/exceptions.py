@@ -16,4 +16,13 @@ class InputException(Error):
   pass
 
 
+class ProjectAlreadyExists(Error):
+  """Tried to create a project that already exists."""
+
+
+class NoSuchProjectException(Error):
+  """No project with the specified name exists."""
+  pass
+
+
 # TODO(jrobbins): move more exceptions here.

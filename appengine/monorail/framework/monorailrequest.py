@@ -547,7 +547,7 @@ class MonorailRequest(object):
     """Get information about the current project (if any) from the request.
 
     Raises:
-      project_svc.NoSuchProjectException if there is no project with that name.
+      NoSuchProjectException if there is no project with that name.
     """
     with work_env.WorkEnv(
         self, services, phase='get current project, if any') as we:

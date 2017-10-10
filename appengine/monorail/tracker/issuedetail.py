@@ -696,17 +696,17 @@ class IssueDetail(issuepeek.IssuePeek):
 
     orig_blocked_on = issue.blocked_on_iids
     if not mr.errors.AnyErrors():
-      try:
-        if parsed.attachments:
-          new_bytes_used = tracker_helpers.ComputeNewQuotaBytesUsed(
-              mr.project, parsed.attachments)
-          self.services.project.UpdateProject(
-              mr.cnxn, mr.project.project_id,
-              attachment_bytes_used=new_bytes_used)
+      with work_env.WorkEnv(mr, self.services) as we:
+        try:
+          if parsed.attachments:
+            new_bytes_used = tracker_helpers.ComputeNewQuotaBytesUsed(
+                mr.project, parsed.attachments)
+            we.UpdateProject(
+                mr.project.project_id, attachment_bytes_used=new_bytes_used)
 
-        # Store everything we got from the form.  If the user lacked perms
-        # any attempted edit would be a no-op because of the logic above.
-        amendments, _ = self.services.issue.ApplyIssueComment(
+          # Store everything we got from the form.  If the user lacked perms
+          # any attempted edit would be a no-op because of the logic above.
+          amendments, _ = self.services.issue.ApplyIssueComment(
             mr.cnxn, self.services,
             mr.auth.user_id, mr.project_id, mr.local_id, summary, status,
             owner_id, cc_ids, labels, field_values, component_ids,
@@ -715,18 +715,18 @@ class IssueDetail(issuepeek.IssuePeek):
             page_gen_ts=page_generation_time, comment=parsed.comment,
             is_description=is_description, attachments=parsed.attachments,
             kept_attachments=parsed.kept_attachments if is_description else [])
-        self.services.project.UpdateRecentActivity(
-            mr.cnxn, mr.project.project_id)
+          self.services.project.UpdateRecentActivity(
+              mr.cnxn, mr.project.project_id)
 
-        # Also update the Issue PB we have in RAM so that the correct
-        # CC list will be used for an issue merge.
-        # TODO(jrobbins): refactor the call above to: 1. compute the updates
-        # and update the issue PB in RAM, then 2. store the updated issue.
-        issue.cc_ids = cc_ids
-        issue.labels = labels
+          # Also update the Issue PB we have in RAM so that the correct
+          # CC list will be used for an issue merge.
+          # TODO(jrobbins): refactor the call above to: 1. compute the updates
+          # and update the issue PB in RAM, then 2. store the updated issue.
+          issue.cc_ids = cc_ids
+          issue.labels = labels
 
-      except tracker_helpers.OverAttachmentQuota:
-        mr.errors.attachments = 'Project attachment quota exceeded.'
+        except tracker_helpers.OverAttachmentQuota:
+          mr.errors.attachments = 'Project attachment quota exceeded.'
 
       if (merge_into_issue and merge_into_iid != orig_merged_into_iid and
           merge_allowed):

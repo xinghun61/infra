@@ -30,6 +30,7 @@ import settings
 from features import filterrules_helpers
 from features import notify
 from framework import actionlimit
+from framework import exceptions
 from framework import framework_constants
 from framework import framework_helpers
 from framework import framework_views
@@ -111,7 +112,7 @@ def monorail_api_method(
         approximate_http_status = 404
         raise endpoints.NotFoundException(
             'The user does not exist: %s' % str(e))
-      except (project_svc.NoSuchProjectException,
+      except (exceptions.NoSuchProjectException,
               issue_svc.NoSuchIssueException,
               config_svc.NoSuchComponentException) as e:
         approximate_http_status = 404
@@ -191,8 +192,7 @@ def api_base_checks(request, requester, services, cnxn,
   Raises:
     endpoints.UnauthorizedException: If the requester is anonymous.
     user_svc.NoSuchUserException: If the requester does not exist in Monorail.
-    project_svc.NoSuchProjectException: If the project does not exist in
-        Monorail.
+    NoSuchProjectException: If the project does not exist in Monorail.
     permissions.BannedUserException: If the requester is banned.
     permissions.PermissionException: If the requester does not have
         permisssion to view.
@@ -250,7 +250,7 @@ def api_base_checks(request, requester, services, cnxn,
     project = services.project.GetProjectByName(
         cnxn, project_name)
     if not project:
-      raise project_svc.NoSuchProjectException(
+      raise exceptions.NoSuchProjectException(
           'Project %s does not exist' % project_name)
     if project.state != project_pb2.ProjectState.LIVE:
       raise permissions.PermissionException(

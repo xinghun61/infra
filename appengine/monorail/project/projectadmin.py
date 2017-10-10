@@ -11,6 +11,7 @@ import time
 from third_party import cloudstorage
 from third_party import ezt
 
+from businesslogic import work_env
 from framework import emailfmt
 from framework import framework_bizobj
 from framework import framework_constants
@@ -125,15 +126,15 @@ class ProjectAdmin(servlet.Servlet):
 
     # 2. Call services layer to save changes.
     if not mr.errors.AnyErrors():
-      self.services.project.UpdateProject(
-          mr.cnxn, mr.project.project_id, issue_notify_address=issue_notify,
-          summary=summary, description=description,
-          only_owners_remove_restrictions=only_owners_remove_restrictions,
-          only_owners_see_contributors=only_owners_see_contributors,
-          process_inbound_email=process_inbound_email, access=access,
-          home_page=home_page, docs_url=docs_url, source_url=source_url,
-          logo_gcs_id=logo_gcs_id, logo_file_name=logo_file_name,
-          )
+      with work_env.WorkEnv(mr, self.services) as we:
+        we.UpdateProject(
+            mr.project.project_id, issue_notify_address=issue_notify,
+            summary=summary, description=description,
+            only_owners_remove_restrictions=only_owners_remove_restrictions,
+            only_owners_see_contributors=only_owners_see_contributors,
+            process_inbound_email=process_inbound_email, access=access,
+            home_page=home_page, docs_url=docs_url, source_url=source_url,
+            logo_gcs_id=logo_gcs_id, logo_file_name=logo_file_name)
 
     # 3. Determine the next page in the UI flow.
     if mr.errors.AnyErrors():

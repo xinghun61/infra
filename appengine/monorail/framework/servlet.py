@@ -200,7 +200,7 @@ class Servlet(webapp2.RequestHandler):
       logging.info('Rejecting invalid input: %r', e)
       self.response.status = httplib.BAD_REQUEST
 
-    except project_svc.NoSuchProjectException as e:
+    except exceptions.NoSuchProjectException as e:
       logging.info('Rejecting invalid request: %r', e)
       self.response.status = httplib.BAD_REQUEST
 

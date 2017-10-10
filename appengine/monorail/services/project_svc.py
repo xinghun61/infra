@@ -17,6 +17,7 @@ import logging
 import time
 
 import settings
+from framework import exceptions
 from framework import framework_bizobj
 from framework import permissions
 from framework import sql
@@ -189,7 +190,7 @@ class ProjectService(object):
     """
     assert framework_bizobj.IsValidProjectName(project_name)
     if self.LookupProjectIDs(cnxn, [project_name]):
-      raise ProjectAlreadyExists()
+      raise exceptions.ProjectAlreadyExists()
 
     project = project_pb2.MakeProject(
         project_name, state=state, access=access,
@@ -305,7 +306,7 @@ class ProjectService(object):
         {p.project_name: p.project_id for p in project_dict.itervalues()})
 
     if missed_ids:
-      raise NoSuchProjectException()
+      raise exceptions.NoSuchProjectException()
 
     return project_dict
 
@@ -362,7 +363,7 @@ class ProjectService(object):
     exists = self.project_tbl.SelectValue(
       cnxn, 'project_name', project_id=project_id)
     if not exists:
-      raise NoSuchProjectException()
+      raise exceptions.NoSuchProjectException()
 
     delta = {}
     if summary is not None:
@@ -420,7 +421,7 @@ class ProjectService(object):
     exists = self.project_tbl.SelectValue(
       cnxn, 'project_name', project_id=project_id)
     if not exists:
-      raise NoSuchProjectException()
+      raise exceptions.NoSuchProjectException()
 
     now = now or int(time.time())
     self.project_tbl.Update(
@@ -656,15 +657,3 @@ class ProjectService(object):
       self.acexclusion_tbl.Delete(
           cnxn, project_id=project_id, user_id=member_id)
 
-
-class Error(Exception):
-  """Base exception class for this package."""
-
-
-class ProjectAlreadyExists(Error):
-  """Tried to create a project that already exists."""
-
-
-class NoSuchProjectException(Error):
-  """No project with the specified name exists."""
-  pass

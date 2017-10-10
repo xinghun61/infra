@@ -18,6 +18,7 @@ import time
 
 from third_party import ezt
 
+from businesslogic import work_env
 from framework import framework_constants
 from framework import framework_helpers
 from framework import permissions
@@ -159,9 +160,9 @@ class ProjectAdminAdvanced(servlet.Servlet):
       self.PleaseCorrect(mr)  # Don't echo back the bad input, just start over.
       return
 
-    self.services.project.UpdateProject(
-        mr.cnxn, mr.project.project_id,
-        attachment_quota=new_attachment_quota)
+    with work_env.WorkEnv(mr, self.services) as we:
+      we.UpdateProject(
+          mr.project.project_id, attachment_quota=new_attachment_quota)
 
   def _ProcessPublishingOptions(self, mr, post_data):
     """Process form data to update project state."""
@@ -170,43 +171,40 @@ class ProjectAdminAdvanced(servlet.Servlet):
 
     state = mr.project.state
 
-    if 'archivebtn' in post_data and not mr.project.delete_time:
-      self.services.project.UpdateProject(
-          mr.cnxn, mr.project.project_id,
-          state=project_pb2.ProjectState.ARCHIVED)
+    with work_env.WorkEnv(mr, self.services) as we:
+      if 'archivebtn' in post_data and not mr.project.delete_time:
+        we.UpdateProject(
+            mr.project.project_id, state=project_pb2.ProjectState.ARCHIVED)
 
-    elif 'deletebtn' in post_data:  # Mark the project for immediate deletion.
-      if state != project_pb2.ProjectState.ARCHIVED:
-        raise permissions.PermissionException(
-            'Projects must be archived before being deleted')
-      self.services.project.MarkProjectDeletable(
-          mr.cnxn, mr.project_id, self.services.config)
+      elif 'deletebtn' in post_data:  # Mark the project for immediate deletion.
+        if state != project_pb2.ProjectState.ARCHIVED:
+          raise permissions.PermissionException(
+              'Projects must be archived before being deleted')
+        self.services.project.MarkProjectDeletable(
+            mr.cnxn, mr.project_id, self.services.config)
 
-    elif 'doombtn' in post_data:  # Go from any state to forced ARCHIVED.
-      if not self.CheckPerm(mr, permissions.PUBLISH_PROJECT):
-        raise permissions.PermissionException(
-            'User is not allowed to doom projects')
-      reason = post_data.get('reason')
-      delete_time = time.time() + framework_constants.DEFAULT_DOOM_PERIOD
-      self.services.project.UpdateProject(
-          mr.cnxn, mr.project.project_id,
-          state=project_pb2.ProjectState.ARCHIVED, state_reason=reason,
-          delete_time=delete_time)
+      elif 'doombtn' in post_data:  # Go from any state to forced ARCHIVED.
+        if not self.CheckPerm(mr, permissions.PUBLISH_PROJECT):
+          raise permissions.PermissionException(
+              'User is not allowed to doom projects')
+        reason = post_data.get('reason')
+        delete_time = time.time() + framework_constants.DEFAULT_DOOM_PERIOD
+        we.UpdateProject(
+            mr.project.project_id, state=project_pb2.ProjectState.ARCHIVED,
+            state_reason=reason, delete_time=delete_time)
 
-    elif 'publishbtn' in post_data:  # Go from any state to LIVE
-      if (mr.project.delete_time and
-          not self.CheckPerm(mr, permissions.PUBLISH_PROJECT)):
-        raise permissions.PermissionException(
-            'User is not allowed to unarchive doomed projects')
-      self.services.project.UpdateProject(
-          mr.cnxn, mr.project.project_id,
-          state=project_pb2.ProjectState.LIVE, state_reason='', delete_time=0,
-          read_only_reason='')
+      elif 'publishbtn' in post_data:  # Go from any state to LIVE
+        if (mr.project.delete_time and
+            not self.CheckPerm(mr, permissions.PUBLISH_PROJECT)):
+          raise permissions.PermissionException(
+              'User is not allowed to unarchive doomed projects')
+        we.UpdateProject(
+            mr.project.project_id, state=project_pb2.ProjectState.LIVE,
+            state_reason='', delete_time=0, read_only_reason='')
 
-    elif 'movedbtn' in post_data:  # Record the moved_to location.
-      if state != project_pb2.ProjectState.LIVE:
-        raise permissions.PermissionException(
-            'This project is not live, no user can move it')
-      moved_to = post_data.get('moved_to', '')
-      self.services.project.UpdateProject(
-          mr.cnxn, mr.project.project_id, moved_to=moved_to)
+      elif 'movedbtn' in post_data:  # Record the moved_to location.
+        if state != project_pb2.ProjectState.LIVE:
+          raise permissions.PermissionException(
+              'This project is not live, no user can move it')
+        moved_to = post_data.get('moved_to', '')
+        we.UpdateProject(mr.project.project_id, moved_to=moved_to)

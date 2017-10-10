@@ -11,6 +11,7 @@ import re
 import time
 
 import settings
+from framework import exceptions
 from framework import framework_helpers
 from framework import monorailrequest
 from framework import permissions
@@ -696,12 +697,13 @@ class ProjectService(object):
       logo_gcs_id=None, logo_file_name=None):
     """Create and store a Project with the given attributes."""
     if project_name in self.test_projects:
-      raise project_svc.ProjectAlreadyExists()
-    self.TestAddProject(
+      raise exceptions.ProjectAlreadyExists()
+    project = self.TestAddProject(
         project_name, summary=summary, state=state,
         owner_ids=owner_ids, committer_ids=committer_ids,
         contrib_ids=contributor_ids, description=description,
         access=access)
+    return project.project_id
 
   def ExpungeProject(self, _cnxn, project_id):
     project = self.projects_by_id.get(project_id)
@@ -723,7 +725,12 @@ class ProjectService(object):
 
   def GetVisibleLiveProjects(self, _cnxn, logged_in_user, effective_ids,
                              use_cache=True):
-    return self.projects_by_id.keys()
+    project_ids = self.projects_by_id.keys()
+    visible_project_ids = [
+        pid for pid in project_ids
+        if permissions.UserCanViewProject(
+            logged_in_user, effective_ids, self.projects_by_id[pid])]
+    return visible_project_ids
 
   def GetProjects(self, _cnxn, project_ids, use_cache=True):
     result = {}
@@ -745,7 +752,7 @@ class ProjectService(object):
     """Load the specified project from the database."""
     project_id_dict = self.GetProjects(cnxn, [project_id], use_cache=use_cache)
     if project_id not in project_id_dict:
-      raise project_svc.NoSuchProjectException()
+      raise exceptions.NoSuchProjectException()
     return project_id_dict[project_id]
 
   @staticmethod
@@ -780,7 +787,7 @@ class ProjectService(object):
       docs_url=None, source_url=None, logo_gcs_id=None, logo_file_name=None):
     project = self.projects_by_id.get(project_id)
     if not project:
-      raise project_svc.NoSuchProjectException(
+      raise exceptions.NoSuchProjectException(
           'Project "%s" not found!' % project_id)
 
     # TODO(jrobbins): implement all passed arguments - probably as a utility
@@ -793,7 +800,7 @@ class ProjectService(object):
       contributor_ids, now=None):
     project = self.projects_by_id.get(project_id)
     if not project:
-      raise project_svc.NoSuchProjectException(
+      raise exceptions.NoSuchProjectException(
           'Project "%s" not found!' % project_id)
 
     project.owner_ids = owner_ids
@@ -898,7 +905,7 @@ class ConfigService(object):
     if project_id in self.project_configs:
       return self.project_configs[project_id]
     elif self.strict:
-      raise project_svc.NoSuchProjectException()
+      raise exceptions.NoSuchProjectException()
     else:
       return tracker_bizobj.MakeDefaultProjectIssueConfig(project_id)
 

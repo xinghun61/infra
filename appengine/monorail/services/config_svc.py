@@ -18,6 +18,7 @@ import logging
 from google.appengine.api import memcache
 
 import settings
+from framework import exceptions
 from framework import sql
 from proto import tracker_pb2
 from services import caches
@@ -822,7 +823,7 @@ class ConfigService(object):
     config_dict, missed_ids = self.config_2lc.GetAll(
         cnxn, project_ids, use_cache=use_cache)
     if missed_ids:
-      raise project_svc.NoSuchProjectException()
+      raise exceptions.NoSuchProjectException()
     return config_dict
 
   def GetProjectConfig(self, cnxn, project_id, use_cache=True):

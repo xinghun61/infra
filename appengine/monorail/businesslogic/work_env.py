@@ -41,6 +41,8 @@ Responsibilities of the Services layer:
 
 from framework import exceptions
 from services import project_svc
+from proto import project_pb2
+
 
 # TODO(jrobbins): rate limiting and permission checking in each method.
 
@@ -74,8 +76,53 @@ class WorkEnv(object):
 
   ### Project methods
 
-  # FUTURE: CreateProject()
-  # FUTURE: ListProjects()
+  def CreateProject(
+      self, project_name, owner_ids, committer_ids, contributor_ids,
+      summary, description, state=project_pb2.ProjectState.LIVE,
+      access=None, read_only_reason=None, home_page=None, docs_url=None,
+      source_url=None, logo_gcs_id=None, logo_file_name=None):
+    """Create and store a Project with the given attributes.
+
+    Args:
+      cnxn: connection to SQL database.
+      project_name: a valid project name, all lower case.
+      owner_ids: a list of user IDs for the project owners.
+      committer_ids: a list of user IDs for the project members.
+      contributor_ids: a list of user IDs for the project contributors.
+      summary: one-line explanation of the project.
+      description: one-page explanation of the project.
+      state: a project state enum defined in project_pb2.
+      access: optional project access enum defined in project.proto.
+      read_only_reason: if given, provides a status message and marks
+        the project as read-only.
+      home_page: home page of the project
+      docs_url: url to redirect to for wiki/documentation links
+      source_url: url to redirect to for source browser links
+      logo_gcs_id: google storage object id of the project's logo
+      logo_file_name: uploaded file name of the project's logo
+
+    Returns:
+      The int project_id of the new project.
+
+    Raises:
+      ProjectAlreadyExists: if a project with that name already exists.
+    """
+    with self.mr.profiler.Phase('creating project %r' % project_name):
+      project_id = self.services.project.CreateProject(
+          self.mr.cnxn, project_name, owner_ids, committer_ids, contributor_ids,
+          summary, description, state=state, access=access,
+          read_only_reason=read_only_reason, home_page=home_page,
+          docs_url=docs_url, source_url=source_url, logo_gcs_id=logo_gcs_id,
+          logo_file_name=logo_file_name)
+    return project_id
+
+  def ListProjects(self, use_cache=True):
+    """Return a list of project IDs that the current user may view."""
+    with self.mr.profiler.Phase('list projects for %r' % self.mr.auth.user_id):
+      project_ids = self.services.project.GetVisibleLiveProjects(
+          self.mr.cnxn, self.mr.auth.user_pb, self.mr.auth.effective_ids,
+          use_cache=use_cache)
+    return project_ids
 
   def GetProject(self, project_id, use_cache=True):
     """Return the specified project, TODO: iff the signed in user may view it.
@@ -88,7 +135,7 @@ class WorkEnv(object):
       The specified project.
 
     Raise:
-      project_svc.NoSuchProjectException if there is no project with that ID.
+      NoSuchProjectException if there is no project with that ID.
     """
     with self.mr.profiler.Phase('getting project %r' % project_id):
       project = self.services.project.GetProject(
@@ -106,16 +153,43 @@ class WorkEnv(object):
       The specified project.
 
     Raise:
-      project_svc.NoSuchProjectException if there is no project with that name.
+      NoSuchProjectException if there is no project with that name.
     """
     with self.mr.profiler.Phase('getting project %r' % project_name):
       project = self.services.project.GetProjectByName(
           self.mr.cnxn, project_name, use_cache=use_cache)
     if not project:
-      raise project_svc.NoSuchProjectException()
+      raise exceptions.NoSuchProjectException()
     return project
 
-  # FUTURE: UpdateProject()
+  def UpdateProject(
+      self, project_id, summary=None, description=None,
+      state=None, state_reason=None, access=None, issue_notify_address=None,
+      attachment_bytes_used=None, attachment_quota=None, moved_to=None,
+      process_inbound_email=None, only_owners_remove_restrictions=None,
+      read_only_reason=None, cached_content_timestamp=None,
+      only_owners_see_contributors=None, delete_time=None,
+      recent_activity=None, revision_url_format=None, home_page=None,
+      docs_url=None, source_url=None, logo_gcs_id=None, logo_file_name=None):
+    """Update the DB with the given project information."""
+    with self.mr.profiler.Phase('updating project %r' % project_id):
+      self.services.project.UpdateProject(
+          self.mr.cnxn, project_id, summary=summary, description=description,
+          state=state, state_reason=state_reason, access=access,
+          issue_notify_address=issue_notify_address,
+          attachment_bytes_used=attachment_bytes_used,
+          attachment_quota=attachment_quota, moved_to=moved_to,
+          process_inbound_email=process_inbound_email,
+          only_owners_remove_restrictions=only_owners_remove_restrictions,
+          read_only_reason=read_only_reason,
+          cached_content_timestamp=cached_content_timestamp,
+          only_owners_see_contributors=only_owners_see_contributors,
+          delete_time=delete_time, recent_activity=recent_activity,
+          revision_url_format=revision_url_format, home_page=home_page,
+          docs_url=docs_url, source_url=source_url,
+          logo_gcs_id=logo_gcs_id, logo_file_name=logo_file_name)
+
+
   # FUTURE: DeleteProject()
 
   # FUTURE: SetProjectStar()
@@ -132,13 +206,13 @@ class WorkEnv(object):
       The specified config.
 
     Raise:
-      project_svc.NoSuchProjectException if there is no matching config.
+      NoSuchProjectException if there is no matching config.
     """
     with self.mr.profiler.Phase('getting config for %r' % project_id):
       config = self.services.config.GetProjectConfig(
           self.mr.cnxn, project_id, use_cache=use_cache)
     if not config:
-      raise project_svc.NoSuchProjectException()
+      raise exceptions.NoSuchProjectException()
     return config
 
   # FUTURE: labels, statuses, fields, components, rules, templates, and views.

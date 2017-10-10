@@ -13,6 +13,7 @@ from mock import Mock
 from protorpc import messages
 from protorpc import message_types
 
+from framework import exceptions
 from framework import monorailrequest
 from framework import permissions
 from framework.profiler import Profiler
@@ -1046,7 +1047,7 @@ class AllBaseChecksTest(unittest.TestCase):
     request = RequestMock()
     request.projectId = 'notexist-project'
     requester = RequesterMock(email='test@example.com')
-    with self.assertRaises(project_svc.NoSuchProjectException):
+    with self.assertRaises(exceptions.NoSuchProjectException):
       api_svc_v1.api_base_checks(
           request, requester, self.services, None, self.auth_client_ids, [])
 

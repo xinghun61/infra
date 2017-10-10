@@ -9,6 +9,7 @@ import datetime
 import logging
 import time
 
+from framework import exceptions
 from framework import framework_constants
 from framework import framework_helpers
 from framework import permissions
@@ -369,7 +370,7 @@ def issue_global_ids(project_local_id_pairs, project_id, mar, services):
       local_id = int(pair_ary[1])
       project = services.project.GetProjectByName(mar.cnxn, project_name)
       if not project:
-        raise project_svc.NoSuchProjectException(
+        raise exceptions.NoSuchProjectException(
             'Project %s does not exist' % project_name)
       issue_project_id = project.project_id
     else:

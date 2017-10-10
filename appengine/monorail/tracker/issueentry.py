@@ -10,6 +10,7 @@ import logging
 import string
 import time
 
+from businesslogic import work_env
 from features import hotlist_helpers
 from features import notify
 from framework import actionlimit
@@ -273,47 +274,48 @@ class IssueEntry(servlet.Servlet):
     new_local_id = None
 
     if not mr.errors.AnyErrors():
-      try:
-        if parsed.attachments:
-          new_bytes_used = tracker_helpers.ComputeNewQuotaBytesUsed(
-              mr.project, parsed.attachments)
-          self.services.project.UpdateProject(
-              mr.cnxn, mr.project.project_id,
-              attachment_bytes_used=new_bytes_used)
+      with work_env.WorkEnv(mr, self.services) as we:
+        try:
+          if parsed.attachments:
+            new_bytes_used = tracker_helpers.ComputeNewQuotaBytesUsed(
+                mr.project, parsed.attachments)
+            we.UpdateProject(
+              mr.project.project_id, attachment_bytes_used=new_bytes_used)
 
-        template_content = ''
-        for wkp in config.templates:
-          if wkp.name == parsed.template_name:
-            template_content = wkp.content
-        marked_comment = _MarkupDescriptionOnInput(
-            parsed.comment, template_content)
-        has_star = 'star' in post_data and post_data['star'] == '1'
+          template_content = ''
+          for wkp in config.templates:
+            if wkp.name == parsed.template_name:
+              template_content = wkp.content
+          marked_comment = _MarkupDescriptionOnInput(
+              parsed.comment, template_content)
+          has_star = 'star' in post_data and post_data['star'] == '1'
 
-        new_local_id = self.services.issue.CreateIssue(
-            mr.cnxn, self.services,
-            mr.project_id, parsed.summary, parsed.status, parsed.users.owner_id,
-            parsed.users.cc_ids, labels, field_values,
-            component_ids, reporter_id, marked_comment,
-            blocked_on=parsed.blocked_on.iids, blocking=parsed.blocking.iids,
-            attachments=parsed.attachments)
-        self.services.project.UpdateRecentActivity(
-            mr.cnxn, mr.project.project_id)
+          new_local_id = self.services.issue.CreateIssue(
+              mr.cnxn, self.services, mr.project_id,
+              parsed.summary, parsed.status, parsed.users.owner_id,
+              parsed.users.cc_ids, labels, field_values,
+              component_ids, reporter_id, marked_comment,
+              blocked_on=parsed.blocked_on.iids, blocking=parsed.blocking.iids,
+              attachments=parsed.attachments)
+          self.services.project.UpdateRecentActivity(
+              mr.cnxn, mr.project.project_id)
 
-        issue = self.services.issue.GetIssueByLocalID(
-            mr.cnxn, mr.project_id, new_local_id)
+          issue = self.services.issue.GetIssueByLocalID(
+              mr.cnxn, mr.project_id, new_local_id)
 
-        if has_star:
-          self.services.issue_star.SetStar(
+          if has_star:
+            self.services.issue_star.SetStar(
               mr.cnxn, self.services, config, issue.issue_id, reporter_id, True)
 
-        if hotlist_pbs:
-          hotlist_ids = {hotlist.hotlist_id for hotlist in hotlist_pbs}
-          issue_tuple = (issue.issue_id, mr.auth.user_id, int(time.time()), '')
-          self.services.features.AddIssueToHotlists(
-              mr.cnxn, hotlist_ids, issue_tuple)
+          if hotlist_pbs:
+            hotlist_ids = {hotlist.hotlist_id for hotlist in hotlist_pbs}
+            issue_tuple = (issue.issue_id, mr.auth.user_id, int(time.time()),
+                           '')
+            self.services.features.AddIssueToHotlists(
+                mr.cnxn, hotlist_ids, issue_tuple)
 
-      except tracker_helpers.OverAttachmentQuota:
-        mr.errors.attachments = 'Project attachment quota exceeded.'
+        except tracker_helpers.OverAttachmentQuota:
+          mr.errors.attachments = 'Project attachment quota exceeded.'
 
       counts = {actionlimit.ISSUE_COMMENT: 1,
                 actionlimit.ISSUE_ATTACHMENT: len(parsed.attachments)}

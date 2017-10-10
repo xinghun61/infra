@@ -10,7 +10,9 @@ import logging
 from third_party import ezt
 
 import settings
+from businesslogic import work_env
 from framework import actionlimit
+from framework import exceptions
 from framework import filecontent
 from framework import framework_bizobj
 from framework import framework_constants
@@ -149,31 +151,32 @@ class ProjectCreate(servlet.Servlet):
 
     # 2. Call services layer to save changes.
     if not mr.errors.AnyErrors():
-      try:
-        project_id = self.services.project.CreateProject(
-            mr.cnxn, project_name, [mr.auth.user_id],
-            committer_ids, contributor_ids, summary, description,
-            access=access, home_page=home_page, docs_url=docs_url)
+      with work_env.WorkEnv(mr, self.services) as we:
+        try:
+          project_id = we.CreateProject(
+              project_name, [mr.auth.user_id],
+              committer_ids, contributor_ids, summary, description,
+              access=access, home_page=home_page, docs_url=docs_url)
 
-        config = tracker_bizobj.MakeDefaultProjectIssueConfig(project_id)
-        self.services.config.StoreConfig(mr.cnxn, config)
-        # Note: No need to store any canned queries or rules yet.
-        self.services.issue.InitializeLocalID(mr.cnxn, project_id)
+          config = tracker_bizobj.MakeDefaultProjectIssueConfig(project_id)
+          self.services.config.StoreConfig(mr.cnxn, config)
+          # Note: No need to store any canned queries or rules yet.
+          self.services.issue.InitializeLocalID(mr.cnxn, project_id)
 
-        # Update project with  logo if specified.
-        if logo_provided:
-          item = post_data['logo']
-          logo_file_name = item.filename
-          logo_gcs_id = gcs_helpers.StoreLogoInGCS(
-              logo_file_name, item.value, project_id)
-          self.services.project.UpdateProject(
-              mr.cnxn, project_id, logo_gcs_id=logo_gcs_id,
-              logo_file_name=logo_file_name)
+          # Update project with  logo if specified.
+          if logo_provided:
+            item = post_data['logo']
+            logo_file_name = item.filename
+            logo_gcs_id = gcs_helpers.StoreLogoInGCS(
+                logo_file_name, item.value, project_id)
+            we.UpdateProject(
+                project_id, logo_gcs_id=logo_gcs_id,
+                logo_file_name=logo_file_name)
 
-        self.CountRateLimitedActions(
-            mr, {actionlimit.PROJECT_CREATION: 1})
-      except project_svc.ProjectAlreadyExists:
-        mr.errors.projectname = _MSG_PROJECT_NAME_NOT_AVAIL
+          self.CountRateLimitedActions(
+              mr, {actionlimit.PROJECT_CREATION: 1})
+        except exceptions.ProjectAlreadyExists:
+          mr.errors.projectname = _MSG_PROJECT_NAME_NOT_AVAIL
 
     # 3. Determine the next page in the UI flow.
     if mr.errors.AnyErrors():

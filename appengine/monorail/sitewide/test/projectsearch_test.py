@@ -52,7 +52,8 @@ class ProjectSearchTest(unittest.TestCase):
 
   def SetUpZeroResults(self):
     self.services.project.GetVisibleLiveProjects(
-        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).AndReturn([])
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        use_cache=True).AndReturn([])
 
   def testZeroResults(self):
     self.SetUpZeroResults()
@@ -63,7 +64,8 @@ class ProjectSearchTest(unittest.TestCase):
 
   def SetUpNonzeroResults(self):
     self.services.project.GetVisibleLiveProjects(
-        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).AndReturn([1, 2, 3])
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        use_cache=True).AndReturn([1, 2, 3])
 
   def testNonzeroResults(self):
     self.SetUpNonzeroResults()
@@ -75,8 +77,8 @@ class ProjectSearchTest(unittest.TestCase):
 
   def SetUpTwoPageResults(self):
     self.services.project.GetVisibleLiveProjects(
-        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg()).AndReturn(
-            range(1, 106))
+        mox.IgnoreArg(), mox.IgnoreArg(), mox.IgnoreArg(),
+        use_cache=True).AndReturn(range(1, 106))
 
   def testTwoPageResults(self):
     """Test more than one pagination page of results."""

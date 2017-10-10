@@ -7,6 +7,7 @@
 
 import logging
 
+from businesslogic import work_env
 from framework import framework_helpers
 from framework import paginate
 from framework import permissions
@@ -31,9 +32,8 @@ class ProjectSearchPipeline(object):
 
   def SearchForIDs(self):
     """Get project IDs the user has permission to view."""
-    with self.profiler.Phase('getting user visible projects'):
-      self.allowed_project_ids = self.services.project.GetVisibleLiveProjects(
-          self.mr.cnxn, self.mr.auth.user_pb, self.mr.auth.effective_ids)
+    with work_env.WorkEnv(self.mr, self.services) as we:
+      self.allowed_project_ids = we.ListProjects()
       logging.info('allowed_project_ids is %r', self.allowed_project_ids)
 
   def GetProjectsAndPaginate(self, cnxn, list_page_url):
