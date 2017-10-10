@@ -14,7 +14,12 @@ import (
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
+	"go.chromium.org/luci/common/system/environ"
 )
+
+func init() {
+	isRunningUnitTests = true // see git.go
+}
 
 func TestGit(t *testing.T) {
 	t.Parallel()
@@ -28,32 +33,34 @@ func TestGit(t *testing.T) {
 		So(err, ShouldBeNil)
 		defer os.RemoveAll(tmp)
 
+		env := environ.System()
+
 		srcRepo := filepath.Join(tmp, "src")
 		So(os.Mkdir(srcRepo, 0777), ShouldBeNil)
-		_, err = runGit(ctx, srcRepo, "init")
+		_, err = runGit(ctx, env, srcRepo, "init")
 		So(err, ShouldBeNil)
 
 		So(ioutil.WriteFile(filepath.Join(srcRepo, "a"), []byte("a"), 0777), ShouldBeNil)
 
-		_, err = runGit(ctx, srcRepo, "add", "-A")
+		_, err = runGit(ctx, env, srcRepo, "add", "-A")
 		So(err, ShouldBeNil)
 
-		_, err = runGit(ctx, srcRepo, "commit", "-m", "c1")
+		_, err = runGit(ctx, env, srcRepo, "commit", "-m", "c1")
 		So(err, ShouldBeNil)
 
 		So(ioutil.WriteFile(filepath.Join(srcRepo, "b"), []byte("b"), 0777), ShouldBeNil)
 
-		_, err = runGit(ctx, srcRepo, "add", "-A")
+		_, err = runGit(ctx, env, srcRepo, "add", "-A")
 		So(err, ShouldBeNil)
 
-		_, err = runGit(ctx, srcRepo, "commit", "-m", "c2")
+		_, err = runGit(ctx, env, srcRepo, "commit", "-m", "c2")
 		So(err, ShouldBeNil)
 
 		destRepo := filepath.Join(tmp, "dest")
-		_, err = checkoutRepository(ctx, destRepo, srcRepo, "refs/heads/master")
+		_, err = checkoutRepository(ctx, env, destRepo, srcRepo, "refs/heads/master")
 		So(err, ShouldBeNil)
 
-		out, err := runGit(ctx, destRepo, "log", "--format=%s")
+		out, err := runGit(ctx, env, destRepo, "log", "--format=%s")
 		So(err, ShouldBeNil)
 		So(strings.Split(strings.TrimSpace(string(out)), "\n"), ShouldResemble, []string{"c2", "c1"})
 	})

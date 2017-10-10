@@ -82,11 +82,11 @@ func TestCook(t *testing.T) {
 			kitchenTempDir := filepath.Join(tdir, "tmp")
 			cacheDirPath := filepath.Join(tdir, "cache-dir")
 
-			// Prepare recipe dir.
-			So(setupRecipeRepo(c, recipeRepoDir), ShouldBeNil)
-
 			env := environ.System()
 			mode := "swarming"
+
+			// Prepare recipe dir.
+			So(setupRecipeRepo(c, env, recipeRepoDir), ShouldBeNil)
 
 			run := func(mockRecipeResult *recipe_engine.Result, recipeExitCode int) *build.BuildRunResult {
 				// Mock recipes.py result
@@ -232,17 +232,17 @@ func TestCook(t *testing.T) {
 	})
 }
 
-func setupRecipeRepo(c context.Context, targetDir string) error {
+func setupRecipeRepo(c context.Context, env environ.Env, targetDir string) error {
 	if err := copyDir(targetDir, filepath.Join("testdata", "recipe_repo")); err != nil {
 		return err
 	}
-	if _, err := runGit(c, targetDir, "init"); err != nil {
+	if _, err := runGit(c, env, targetDir, "init"); err != nil {
 		return err
 	}
-	if _, err := runGit(c, targetDir, "add", "-A"); err != nil {
+	if _, err := runGit(c, env, targetDir, "add", "-A"); err != nil {
 		return err
 	}
-	if _, err := runGit(c, targetDir, "commit", "-m", "inital"); err != nil {
+	if _, err := runGit(c, env, targetDir, "commit", "-m", "inital"); err != nil {
 		return err
 	}
 	return nil

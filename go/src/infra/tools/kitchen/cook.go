@@ -110,7 +110,7 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		c.rr.cmdPrefix = []string{recipesPath}
 	} else {
 		// Fetch the recipe. Record the fetched revision.
-		rev, err := checkoutRepository(ctx, c.CheckoutDir, c.RepositoryURL, c.Revision)
+		rev, err := checkoutRepository(ctx, env, c.CheckoutDir, c.RepositoryURL, c.Revision)
 		if err != nil {
 			return fail(errors.Annotate(err, "could not checkout %q at %q to %q",
 				c.RepositoryURL, c.Revision, c.CheckoutDir).Err())
@@ -434,8 +434,12 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	}
 
 	c.updateEnv(env)
-	// Make kitchen use the new $PATH too.
-	// In practice, we do it so that kitchen uses the installed git wrapper.
+
+	// Make kitchen use the new $PATH too. This is needed for exec.LookPath called
+	// by kitchen to pick up binaries in the modified $PATH. In practice, we do it
+	// so that kitchen uses the installed git wrapper.
+	//
+	// All other env modifications must be performed using 'env' object.
 	path, _ := env.Get("PATH")
 	if err := os.Setenv("PATH", path); err != nil {
 		return fail(errors.Annotate(err, "failed to update process PATH").Err())
@@ -455,9 +459,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	// Setup Git credential helper if requested.
 	if knownProperties.Kitchen.GitAuth {
 		log.Infof(ctx, "Enabling git auth")
-		if err := os.Setenv("INFRA_GIT_WRAPPER_AUTH", "1"); err != nil {
-			return fail(errors.Annotate(err, "failed to set INFRA_GIT_WRAPPER_AUTH").Err())
-		}
+		env.Set("INFRA_GIT_WRAPPER_AUTH", "1")
 	}
 
 	// Run the recipe.
