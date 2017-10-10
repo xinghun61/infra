@@ -21,7 +21,7 @@ import time
 # https://chromium.googlesource.com/infra/infra/+/master/infra_libs/logs/README.md
 LOGGER = logging.getLogger(__name__)
 if sys.platform == 'win32':  # pragma: no cover
-  GIT = 'C:\\setup\\depot_tools\\git.bat'
+  GIT = 'git.exe'
 else:  # pragma: no cover
   GIT = '/usr/bin/git'
 
