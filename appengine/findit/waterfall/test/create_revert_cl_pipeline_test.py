@@ -57,6 +57,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
     commit_position = 123
+    build_id = 'm/b/123'
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
     cl_info.commits.append(
@@ -69,8 +70,8 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.builds = {'m/b/1': {'status': None}}
     culprit.put()
 
-    pipeline = CreateRevertCLPipeline(repo_name, revision)
-    revert_status = pipeline.run(repo_name, revision)
+    pipeline = CreateRevertCLPipeline(repo_name, revision, build_id)
+    revert_status = pipeline.run(repo_name, revision, build_id)
 
     self.assertEquals(revert_status, revert.CREATED_BY_FINDIT)
 
@@ -83,48 +84,56 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
         culprit for failures in the build cycles as shown on:
         https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
         Sample Failed Build: %s""") % (commit_position, culprit.key.urlsafe(),
-                                       buildbot.CreateBuildUrl('m', 'b', '1'))
+                                       buildbot.CreateBuildUrl('m', 'b', '123'))
     mock_revert.assert_called_with(reason, self.review_change_id, '20001')
 
   @mock.patch.object(waterfall_config, 'GetActionSettings', return_value={})
   def testRevertTurnedOff(self, _):
     repo_name = 'chromium'
     revision = 'rev1'
+    build_id = 'm/b/123'
 
-    pipeline = CreateRevertCLPipeline(repo_name, revision)
-    revert_status = pipeline.run(repo_name, revision)
+    pipeline = CreateRevertCLPipeline(repo_name, revision, build_id)
+    revert_status = pipeline.run(repo_name, revision, build_id)
 
     self.assertEqual(revert.SKIPPED, revert_status)
 
   def testLogUnexpectedAborting(self):
     repo_name = 'chromium'
     revision = 'rev1'
+    build_id = 'm/b/123'
+
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_status = status.RUNNING
     culprit.put()
 
-    CreateRevertCLPipeline(repo_name, revision)._LogUnexpectedAborting(True)
+    CreateRevertCLPipeline(repo_name, revision,
+                           build_id)._LogUnexpectedAborting(True)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEquals(culprit.revert_status, status.ERROR)
 
   def testLogUnexpectedAbortingNoChange(self):
     repo_name = 'chromium'
     revision = 'rev1'
+    build_id = 'm/b/123'
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    CreateRevertCLPipeline(repo_name, revision)._LogUnexpectedAborting(True)
+    CreateRevertCLPipeline(repo_name, revision,
+                           build_id)._LogUnexpectedAborting(True)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertIsNone(culprit.revert_status)
 
   def testLogUnexpectedAbortingPipelineIdNotMatch(self):
     repo_name = 'chromium'
     revision = 'rev1'
+    build_id = 'm/b/123'
+
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_pipeline_id = 'pipeline_id'
     culprit.put()
 
-    pipeline = CreateRevertCLPipeline(repo_name, revision)
+    pipeline = CreateRevertCLPipeline(repo_name, revision, build_id)
     pipeline.start_test()
     pipeline._LogUnexpectedAborting(True)
     culprit = WfSuspectedCL.Get(repo_name, revision)

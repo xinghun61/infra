@@ -158,12 +158,14 @@ def _IsOwnerFindit(owner_email):
   return owner_email == constants.DEFAULT_SERVICE_ACCOUNT
 
 
-def RevertCulprit(repo_name, revision):
+def RevertCulprit(repo_name, revision, build_id):
   """Creates a revert of a culprit and adds reviewers.
 
   Args:
     repo_name (str): Name of the repo.
     revision (str): revision of the culprit.
+    build_id (str): master_name/builder_name/build_number of the analysis that
+      triggers this revert.
 
   Returns:
     Status of this reverting.
@@ -237,7 +239,7 @@ def RevertCulprit(repo_name, revision):
   # TODO (chanli): Better handle cases where 2 analyses are trying to revert
   # at the same time.
   if not revert_change_id:
-    sample_build = list(culprit.builds)[0].split('/')
+    sample_build = build_id.split('/')
     sample_build_url = buildbot.CreateBuildUrl(*sample_build)
     revert_reason = textwrap.dedent("""
         Findit (https://goo.gl/kROfz5) identified CL at revision %s as the
