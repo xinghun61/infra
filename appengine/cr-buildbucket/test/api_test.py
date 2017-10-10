@@ -280,7 +280,7 @@ class ApiTests(object):
     search.assert_called_once_with(service.SearchQuery(
       buckets=req['bucket'],
       tags=req['tag'],
-      status=model.BuildStatus.COMPLETED,
+      status=service.StatusFilter.COMPLETED,
       result=model.BuildResult.CANCELED,
       failure_reason=None,
       cancelation_reason=model.CancelationReason.CANCELED_EXPLICITLY,

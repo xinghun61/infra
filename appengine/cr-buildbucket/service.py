@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import collections
-import copy
 import contextlib
 import datetime
 import logging
@@ -16,6 +15,7 @@ from google.appengine.api import modules
 from google.appengine.ext import db
 from google.appengine.ext import deferred
 from google.appengine.ext import ndb
+from protorpc import messages
 
 from components import auth
 from components import net
@@ -551,6 +551,18 @@ def _log_inconsistent_search_results(error_message):  # pragma: no cover
   logging.error(error_message)
 
 
+class StatusFilter(messages.Enum):
+  # A build must have status model.BuildStatus.SCHEDULED.
+  SCHEDULED = model.BuildStatus.SCHEDULED.number
+  # A build must have status model.BuildStatus.STARTED.
+  STARTED = model.BuildStatus.STARTED.number
+  # A build must have status model.BuildStatus.COMPLETED.
+  COMPLETED = model.BuildStatus.COMPLETED.number
+  # A build must have status model.BuildStatus.SCHEDULED or
+  # model.BuildStatus.STARTED.
+  INCOMPLETE = 10
+
+
 class SearchQuery(object):
   """Argument for search. Mutable."""
 
@@ -566,7 +578,7 @@ class SearchQuery(object):
         A build must be in one of the buckets.
       tags (list of str): a list of tags that a build must have.
         All of the |tags| must be present in a build.
-      status (model.BuildStatus): build status.
+      status (StatusFilter): build status.
       result (model.BuildResult): build result.
       failure_reason (model.FailureReason): failure reason.
       cancelation_reason (model.CancelationReason): build cancelation reason.
@@ -596,16 +608,8 @@ class SearchQuery(object):
     self.max_builds = max_builds
     self.start_cursor = start_cursor
 
-  def __copy__(self):
+  def copy(self):
     return SearchQuery(**self.__dict__)
-
-  def __deepcopy__(self, memodict):  # pylint: disable=unused-argument
-    q = SearchQuery(**self.__dict__)
-    if self.buckets:
-      q.buckets = copy.deepcopy(self.buckets)
-    if self.tags:  # pragma: no branch
-      q.tags = copy.deepcopy(self.tags)
-    return q
 
   def __eq__(self, other):  # pragma: no cover
     # "pragma: no cover" because this code is executed
@@ -634,7 +638,7 @@ def search(q):
     raise errors.InvalidInputError('Buckets must be a list or None')
   validate_tags(q.tags, 'search')
 
-  q = copy.copy(q)
+  q = q.copy()
   if (q.create_time_low is not None and
       q.create_time_low < model.BEGINING_OF_THE_WORLD):
     q.create_time_low = None
@@ -721,16 +725,23 @@ def _query_search(q):
     dq = dq.filter(model.Build.tags == t)
   filter_if = lambda p, v: dq if v is None else dq.filter(p == v)
 
-  if q.status == model.BuildStatus.COMPLETED:
-    # Vast majority of builds in the datastore are COMPLETED b/c
-    # that's the ultimate final state of any build.
-    # It is very inefficient to filter by status=COMPLETED using datastore
-    # because datastore merge-joins indexes for other filtering properties with
-    # with huge list of completed builds.
-    # Omit the status in the query filter and filter in application.
-    pass
-  else:
-    dq = filter_if(model.Build.status, q.status)
+  expected_statuses = None
+  if q.status == StatusFilter.INCOMPLETE:
+    expected_statuses = (model.BuildStatus.SCHEDULED, model.BuildStatus.STARTED)
+    dq = dq.filter(model.Build.incomplete == True)
+  elif q.status is not None:
+    s = model.BuildStatus.lookup_by_number(q.status.number)
+    expected_statuses = (s,)
+    if s == model.BuildStatus.COMPLETED:
+      # Vast majority of builds in the datastore are COMPLETED b/c
+      # that's the ultimate final state of any build.
+      # It is very inefficient to filter by status=COMPLETED using datastore
+      # because datastore merge-joins indexes for other filtering properties
+      # with huge list of completed builds.
+      # Omit the status in the query filter and filter in application.
+      pass
+    else:
+      dq = filter_if(model.Build.status, s)
   dq = filter_if(model.Build.result, q.result)
   dq = filter_if(model.Build.failure_reason, q.failure_reason)
   dq = filter_if(model.Build.cancelation_reason, q.cancelation_reason)
@@ -751,8 +762,8 @@ def _query_search(q):
   dq = dq.order(model.Build.key)
 
   def local_predicate(build):
-    if q.status is not None and build.status != q.status:  # pragma: no coverage
-      return False
+    if expected_statuses and build.status not in expected_statuses:
+      return False  # pragma: no cover
     if q.buckets and build.bucket not in q.buckets:
       return False
     if not _between(build.create_time, q.create_time_low, q.create_time_high):
@@ -784,7 +795,7 @@ def _tag_index_search(q):
   indexed_tag = all_indexed_tags[0] # choose the most selective tag.
   indexed_tag_key = indexed_tag.split(':', 1)[0]
   # Exclude the indexed tag from the tag filter.
-  q = copy.deepcopy(q)
+  q.tags = q.tags[:]
   q.tags.remove(indexed_tag)
 
   idx = model.TagIndex.get_by_id(indexed_tag)
@@ -842,7 +853,6 @@ def _tag_index_search(q):
   # scalar_filters maps a name of a model.Build attribute to a filter value.
   # Applies only to non-repeated fields.
   scalar_filters = [
-    ('status', q.status),
     ('result', q.result),
     ('failure_reason', q.failure_reason),
     ('cancelation_reason', q.cancelation_reason),
@@ -851,6 +861,11 @@ def _tag_index_search(q):
     ('canary', q.canary),
   ]
   scalar_filters = [(a, v) for a, v in scalar_filters if v is not None]
+  if q.status == StatusFilter.INCOMPLETE:
+    scalar_filters.append(('incomplete', True))
+  elif q.status is not None:
+    scalar_filters.append(
+        ('status', model.BuildStatus.lookup_by_number(q.status.number)))
 
   # Find the builds.
   result = [] # ordered by build id by ascending.

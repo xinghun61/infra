@@ -7,7 +7,6 @@ import json
 import logging
 
 from google.appengine.api import taskqueue
-from google.appengine.ext import ndb
 
 from protorpc import messages
 from protorpc import message_types
@@ -277,7 +276,7 @@ class BuildBucketApi(remote.Service):
       bucket=messages.StringField(2, repeated=True),
       # All specified tags must be present in a build.
       tag=messages.StringField(3, repeated=True),
-      status=messages.EnumField(model.BuildStatus, 4),
+      status=messages.EnumField(service.StatusFilter, 4),
       result=messages.EnumField(model.BuildResult, 5),
       cancelation_reason=messages.EnumField(model.CancelationReason, 6),
       failure_reason=messages.EnumField(model.FailureReason, 7),

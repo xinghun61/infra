@@ -6,7 +6,6 @@ import datetime
 import random
 
 from components import auth
-from components import utils
 from google.appengine.ext import ndb
 
 from google.appengine.ext.ndb import msgprop
@@ -103,6 +102,8 @@ class Build(ndb.Model):
   """
 
   status = msgprop.EnumProperty(BuildStatus, default=BuildStatus.SCHEDULED)
+  incomplete = ndb.ComputedProperty(
+      lambda self: self.status != BuildStatus.COMPLETED)
   status_changed_time = ndb.DateTimeProperty(auto_now_add=True)
   update_time = ndb.DateTimeProperty(auto_now=True)
 

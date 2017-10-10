@@ -644,25 +644,35 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     builds, _ = self.search(
         buckets=[self.test_build.bucket],
-        status=model.BuildStatus.SCHEDULED)
+        status=service.StatusFilter.SCHEDULED)
     self.assertEqual(builds, [self.test_build])
     builds, _ = self.search(
         buckets=[self.test_build.bucket],
-        status=model.BuildStatus.SCHEDULED,
+        status=service.StatusFilter.SCHEDULED,
         tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [self.test_build])
 
     builds, _ = self.search(
         buckets=[self.test_build.bucket],
-        status=model.BuildStatus.COMPLETED,
+        status=service.StatusFilter.COMPLETED,
         result=model.BuildResult.FAILURE,
         tags=[self.INDEXED_TAG])
     self.assertEqual(builds, [])
     builds, _ = self.search(
         buckets=[self.test_build.bucket],
-        status=model.BuildStatus.COMPLETED,
+        status=service.StatusFilter.COMPLETED,
         result=model.BuildResult.FAILURE)
     self.assertEqual(builds, [])
+
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket],
+        status=service.StatusFilter.INCOMPLETE)
+    self.assertEqual(builds, [self.test_build])
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket],
+        status=service.StatusFilter.INCOMPLETE,
+        tags=[self.INDEXED_TAG])
+    self.assertEqual(builds, [self.test_build])
 
   def test_search_by_created_by(self):
     self.put_build(self.test_build)
