@@ -6,6 +6,7 @@
 package crauditcommits
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,6 +19,14 @@ import (
 	"go.chromium.org/luci/common/api/gitiles"
 	"go.chromium.org/luci/server/router"
 )
+
+func mustGitilesTime(v string) gitiles.Time {
+	var gt gitiles.Time
+	if err := gt.UnmarshalJSON([]byte(fmt.Sprintf(`"%s"`, v))); err != nil {
+		panic(fmt.Errorf("could not parse time %q: %v", v, err))
+	}
+	return gt
+}
 
 func TestCommitScanner(t *testing.T) {
 
@@ -85,22 +94,22 @@ func TestCommitScanner(t *testing.T) {
 							Commit: "006a006a",
 							Author: gitiles.User{
 								Email: "new@test.com",
-								Time:  "Sun Sep 03 00:56:34 2017",
+								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
 							},
 							Committer: gitiles.User{
 								Email: "new@test.com",
-								Time:  "Sun Sep 03 00:56:34 2017",
+								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
 							},
 						},
 						{
 							Commit: "c001c0de",
 							Author: gitiles.User{
 								Email: "new@test.com",
-								Time:  "Sun Sep 03 00:56:34 2017",
+								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
 							},
 							Committer: gitiles.User{
 								Email: "new@test.com",
-								Time:  "Sun Sep 03 00:56:34 2017",
+								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
 							},
 						},
 						{Commit: "deadbeef"},
@@ -162,11 +171,11 @@ func TestCommitScanner(t *testing.T) {
 							Commit: "c001c0de",
 							Author: gitiles.User{
 								Email: "old@test.com",
-								Time:  "Sun Sep 03 00:56:34 2017",
+								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
 							},
 							Committer: gitiles.User{
 								Email: "old@test.com",
-								Time:  "Sun Sep 03 00:56:34 2017",
+								Time:  mustGitilesTime("Sun Sep 03 00:56:34 2017"),
 							},
 						},
 						{Commit: "deadbeef"},

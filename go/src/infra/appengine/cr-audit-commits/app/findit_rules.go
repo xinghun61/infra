@@ -157,10 +157,7 @@ func CulpritAge(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Cl
 	if len(c) == 0 {
 		panic(fmt.Sprintf("commit %s not found in repo.", culprit.CurrentRevision))
 	}
-	commitTime, err := c[0].Committer.GetTime()
-	if err != nil {
-		panic(err)
-	}
+	commitTime := c[0].Committer.Time.Time
 	if rc.CommitTime.Sub(commitTime) > MaxCulpritAge {
 		result.RuleResultStatus = ruleFailed
 		result.Message = fmt.Sprintf("The revert %s landed more than %s after the culprit %s landed",

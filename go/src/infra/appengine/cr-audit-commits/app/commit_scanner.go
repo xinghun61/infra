@@ -114,7 +114,7 @@ func CommitScanner(rc *router.Context) {
 		ScannedCommits.Add(ctx, 1, relevant, repo)
 		repoState.LastKnownCommit = commit.Commit
 		// Ignore possible error, this time is used for display purposes only.
-		repoState.LastKnownCommitTime, _ = commit.Committer.GetTime()
+		repoState.LastKnownCommitTime = commit.Committer.Time.Time
 	}
 	// If this Put or the one in saveNewRelevantCommit fail, we risk
 	// auditing the same commit twice.
@@ -128,17 +128,12 @@ func CommitScanner(rc *router.Context) {
 func saveNewRelevantCommit(ctx context.Context, state *RepoState, commit gitiles.Commit) (*RelevantCommit, error) {
 	rk := ds.KeyForObj(ctx, state)
 
-	commitTime, err := commit.Committer.GetTime()
-	if err != nil {
-		logging.WithError(err).Errorf(ctx, "Could not get commit time from commit")
-		return nil, err
-	}
 	rc := &RelevantCommit{
 		RepoStateKey:           rk,
 		CommitHash:             commit.Commit,
 		PreviousRelevantCommit: state.LastRelevantCommit,
 		Status:                 auditScheduled,
-		CommitTime:             commitTime,
+		CommitTime:             commit.Committer.Time.Time,
 		CommitterAccount:       commit.Committer.Email,
 		AuthorAccount:          commit.Author.Email,
 		CommitMessage:          commit.Message,

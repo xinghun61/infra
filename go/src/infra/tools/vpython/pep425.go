@@ -98,6 +98,18 @@ func pep425IsBetterMacPlatform(cur, candidate string) bool {
 	}
 }
 
+// Determies if the specified platform is a Linux platform and, if so, if it
+// is a "manylinux1_" Linux platform.
+func isLinuxPlatform(plat string) (is bool, many bool) {
+	switch {
+	case strings.HasPrefix(plat, "linux_"):
+		is = true
+	case strings.HasPrefix(plat, "manylinux1_"):
+		is, many = true, true
+	}
+	return
+}
+
 // pep425IsBetterLinuxPlatform processes two PEP425 platform strings and
 // returns true if "candidate" is a superior PEP425 tag candidate than "cur".
 //
@@ -110,18 +122,6 @@ func pep425IsBetterMacPlatform(cur, candidate string) bool {
 //	- linux1_i686
 //	- manylinux1_i686
 func pep425IsBetterLinuxPlatform(cur, candidate string) bool {
-	// Determies if the specified platform is a Linux platform and, if so, if it
-	// is a "manylinux1_" Linux platform.
-	isLinuxPlatform := func(plat string) (is bool, many bool) {
-		switch {
-		case strings.HasPrefix(plat, "linux_"):
-			is = true
-		case strings.HasPrefix(plat, "manylinux1_"):
-			is, many = true, true
-		}
-		return
-	}
-
 	// We prefer "manylinux1_" platforms over "linux_" platforms.
 	curIs, curMany := isLinuxPlatform(cur)
 	candidateIs, candidateMany := isLinuxPlatform(candidate)
@@ -137,20 +137,39 @@ func pep425IsBetterLinuxPlatform(cur, candidate string) bool {
 	}
 }
 
+// preferredPlatformFuncForTagSet examines a tag set and returns a function
+// that compares two "platform" tags.
+//
+// The comparison function is chosen based on the operating system represented
+// by the tag set. This choice is made with the assumption that the tag set
+// represents a realistic platform (e.g., no mixed Mac and Linux tags).
+func preferredPlatformFuncForTagSet(tags []*vpython.PEP425Tag) func(cur, candidate string) bool {
+	// Identify the operating system from the tag set. Iterate through tags until
+	// we see an indicator.
+	for _, tag := range tags {
+		// Linux?
+		if is, _ := isLinuxPlatform(tag.Platform); is {
+			return pep425IsBetterLinuxPlatform
+		}
+
+		// Mac
+		if plat := parsePEP425MacPlatform(tag.Platform); plat != nil {
+			return pep425IsBetterMacPlatform
+		}
+	}
+
+	// No opinion.
+	return func(cur, candidate string) bool { return false }
+}
+
 // pep425TagSelector chooses the "best" PEP425 tag from a set of potential tags.
 // This "best" tag will be used to resolve our CIPD templates and allow for
 // Python implementation-specific CIPD template parameters.
-func pep425TagSelector(goOS string, tags []*vpython.PEP425Tag) *vpython.PEP425Tag {
+func pep425TagSelector(tags []*vpython.PEP425Tag) *vpython.PEP425Tag {
 	var best *vpython.PEP425Tag
 
 	// isPreferredOSPlatform is an OS-specific platform preference function.
-	isPreferredOSPlatform := func(cur, candidate string) bool { return false }
-	switch goOS {
-	case "linux":
-		isPreferredOSPlatform = pep425IsBetterLinuxPlatform
-	case "darwin":
-		isPreferredOSPlatform = pep425IsBetterMacPlatform
-	}
+	isPreferredOSPlatform := preferredPlatformFuncForTagSet(tags)
 
 	isBetter := func(t *vpython.PEP425Tag) bool {
 		switch {

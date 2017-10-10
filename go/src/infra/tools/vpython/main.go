@@ -7,7 +7,6 @@ package main
 import (
 	"os"
 	"path/filepath"
-	"runtime"
 	"time"
 
 	"golang.org/x/net/context"
@@ -41,8 +40,8 @@ var cipdPackageLoader = cipd.PackageLoader{
 		ServiceURL: chromeinfra.CIPDServiceURL,
 		UserAgent:  "vpython",
 	},
-	Template: func(c context.Context, e *vpython.Environment) (map[string]string, error) {
-		tag := pep425TagSelector(runtime.GOOS, e.Pep425Tag)
+	Template: func(c context.Context, tags []*vpython.PEP425Tag) (map[string]string, error) {
+		tag := pep425TagSelector(tags)
 		if tag == nil {
 			return nil, nil
 		}
@@ -64,9 +63,10 @@ var defaultConfig = application.Config{
 		Name:    "infra/python/virtualenv",
 		Version: "version:15.1.0",
 	},
-	PruneThreshold:    7 * 24 * time.Hour, // One week.
-	MaxPrunesPerSweep: 3,
-	MaxScriptPathLen:  127, // Maximum POSIX shebang length.
+	PruneThreshold:          7 * 24 * time.Hour, // One week.
+	MaxPrunesPerSweep:       3,
+	MaxScriptPathLen:        127, // Maximum POSIX shebang length.
+	DefaultVerificationTags: verificationScenarios,
 }
 
 func mainImpl(c context.Context, argv []string, env environ.Env) int {
@@ -89,7 +89,6 @@ func mainImpl(c context.Context, argv []string, env environ.Env) int {
 	}
 
 	// Determine if we're bypassing "vpython".
-	defaultConfig.WithVerificationConfig = withVerificationConfig
 	defaultConfig.Bypass = env.GetEmpty(BypassENV) == BypassSentinel
 	return defaultConfig.Main(c, argv, env)
 }

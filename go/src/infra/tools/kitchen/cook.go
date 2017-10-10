@@ -108,7 +108,7 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 	}
 
 	// Export LUCI_CONTEXT into the environment used by git and recipe engine.
-	lc, err := lucictx.Export(ctx, "")
+	lc, err := lucictx.Export(ctx)
 	if err != nil {
 		return fail(errors.Annotate(err, "failed to export LUCI_CONTEXT").Err())
 	}

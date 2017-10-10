@@ -85,7 +85,7 @@ func TestFinditRules(t *testing.T) {
 				{
 					Commit: "badc0de",
 					Committer: gitiles.User{
-						Time: "Fri Aug 25 07:00:00 2017",
+						Time: mustGitilesTime("Fri Aug 25 07:00:00 2017"),
 					},
 				},
 			}
@@ -102,7 +102,7 @@ func TestFinditRules(t *testing.T) {
 				{
 					Commit: "badc0de",
 					Committer: gitiles.User{
-						Time: "Fri Aug 18 07:00:00 2017",
+						Time: mustGitilesTime("Fri Aug 18 07:00:00 2017"),
 					},
 				},
 			}

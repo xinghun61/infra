@@ -21,12 +21,10 @@ func TestPEP425TagSelector(t *testing.T) {
 	t.Parallel()
 
 	testCases := []struct {
-		goOS     string
 		tags     []*vpython.PEP425Tag
 		template map[string]string
 	}{
 		{
-			"linux",
 			[]*vpython.PEP425Tag{
 				{"py2", "none", "any"},
 				{"py27", "none", "any"},
@@ -47,7 +45,6 @@ func TestPEP425TagSelector(t *testing.T) {
 		},
 
 		{
-			"darwin",
 			[]*vpython.PEP425Tag{
 				{"cp27", "cp27m", "macosx_10_12_x86_64"},
 				{"cp27", "cp27m", "macosx_10_12_fat64"},
@@ -100,7 +97,6 @@ func TestPEP425TagSelector(t *testing.T) {
 		},
 
 		{
-			"linux",
 			[]*vpython.PEP425Tag{
 				{"py27", "none", "any"},
 				{"py27", "none", "linux_i686"},
@@ -118,7 +114,6 @@ func TestPEP425TagSelector(t *testing.T) {
 		},
 
 		{
-			"linux",
 			[]*vpython.PEP425Tag{
 				{"py27", "none", "any"},
 				{"py27", "none", "linux_x86_64"},
@@ -160,15 +155,15 @@ func TestPEP425TagSelector(t *testing.T) {
 					for i, tag := range tags {
 						tagsStr[i] = tag.TagString()
 					}
-					t.Logf("Test case #%d, using OS %q, tags: %v", i, tc.goOS, tagsStr)
+					t.Logf("Test case #%d, using tags: %v", i, tagsStr)
 
 					// We have to sort the tags list used in the title because Convey
 					// statements must be deterministic.
 					sort.Strings(tagsStr)
 					tagsList := strings.Join(tagsStr, ", ")
 
-					Convey(fmt.Sprintf(`On OS %q, generates template for [%s]`, tc.goOS, tagsList), func() {
-						tag := pep425TagSelector(tc.goOS, tags)
+					Convey(fmt.Sprintf(`Generates template for [%s]`, tagsList), func() {
+						tag := pep425TagSelector(tags)
 
 						template, err := getPEP425CIPDTemplateForTag(tag)
 						So(err, ShouldBeNil)
@@ -179,7 +174,7 @@ func TestPEP425TagSelector(t *testing.T) {
 		}
 
 		Convey(`Returns an error when no tag is selected.`, func() {
-			tag := pep425TagSelector("linux", nil)
+			tag := pep425TagSelector(nil)
 			So(tag, ShouldBeNil)
 
 			_, err := getPEP425CIPDTemplateForTag(tag)
@@ -187,7 +182,7 @@ func TestPEP425TagSelector(t *testing.T) {
 		})
 
 		Convey(`Returns an error when an unknown platform is selected.`, func() {
-			tag := pep425TagSelector("linux", []*vpython.PEP425Tag{
+			tag := pep425TagSelector([]*vpython.PEP425Tag{
 				{"py27", "none", "any"},
 				{"py27", "foo", "bar"},
 			})
