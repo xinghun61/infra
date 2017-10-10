@@ -17,9 +17,11 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-type mockUploader chan []fakeEvent
+// MockUploader is an EventUploader that can be used for testing.
+type MockUploader chan []fakeEvent
 
-func (u mockUploader) Put(ctx context.Context, src interface{}) error {
+// Put sends events on the MockUploader.
+func (u MockUploader) Put(ctx context.Context, src interface{}) error {
 	srcs := src.([]interface{})
 	var fes []fakeEvent
 	for _, fe := range srcs {
@@ -31,8 +33,9 @@ func (u mockUploader) Put(ctx context.Context, src interface{}) error {
 
 type fakeEvent struct{}
 
-func shouldHavePut(actual interface{}, expected ...interface{}) string {
-	u := actual.(mockUploader)
+// ShouldHavePut verifies that Put was called with the expected set of events.
+func ShouldHavePut(actual interface{}, expected ...interface{}) string {
+	u := actual.(MockUploader)
 
 	select {
 	case got := <-u:
@@ -59,7 +62,7 @@ func TestClose(t *testing.T) {
 	t.Parallel()
 
 	Convey("Test Close", t, func() {
-		u := make(mockUploader, 1)
+		u := make(MockUploader, 1)
 		bu, err := NewBatchUploader(context.Background(), u, make(chan time.Time))
 		if err != nil {
 			t.Fatal(err)
@@ -82,7 +85,7 @@ func TestClose(t *testing.T) {
 			bu.Close()
 			closed = true
 			So(bu.pending, ShouldHaveLength, 0)
-			So(u, shouldHavePut, []fakeEvent{{}})
+			So(u, ShouldHavePut, []fakeEvent{{}})
 			So(bu.isClosed(), ShouldBeTrue)
 			So(func() { bu.Stage(fakeEvent{}) }, ShouldPanic)
 		})
@@ -93,7 +96,7 @@ func TestUpload(t *testing.T) {
 	t.Parallel()
 
 	Convey("Test Upload", t, func() {
-		u := make(mockUploader, 1)
+		u := make(MockUploader, 1)
 		tickc := make(chan time.Time)
 		bu, err := NewBatchUploader(context.Background(), &u, tickc)
 		if err != nil {
@@ -105,7 +108,7 @@ func TestUpload(t *testing.T) {
 		Convey("Expect Put to wait for tick to call upload", func() {
 			So(u, ShouldHaveLength, 0)
 			tickc <- time.Time{}
-			So(u, shouldHavePut, []fakeEvent{{}})
+			So(u, ShouldHavePut, []fakeEvent{{}})
 		})
 	})
 }
@@ -194,7 +197,7 @@ func TestStage(t *testing.T) {
 	}
 
 	Convey("Stage can accept single events and slices of events", t, func() {
-		u := make(mockUploader, 1)
+		u := make(MockUploader, 1)
 		bu, err := NewBatchUploader(context.Background(), &u, make(chan time.Time))
 		if err != nil {
 			t.Fatal(err)

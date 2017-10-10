@@ -24,9 +24,9 @@ import (
 // ID is the global InsertIDGenerator
 var ID InsertIDGenerator
 
-// eventUploader is an interface for types which implement a Put method. It
+// EventUploader is an interface for types which implement a Put method. It
 // exists for the purpose of mocking Uploader in tests.
-type eventUploader interface {
+type EventUploader interface {
 	Put(ctx context.Context, src interface{}) error
 }
 
@@ -200,7 +200,7 @@ func prepareSrc(s bigquery.Schema, src interface{}) ([]*bigquery.StructSaver, er
 // BatchUploader contains the necessary data for asynchronously sending batches
 // of event row data to BigQuery.
 type BatchUploader struct {
-	u        eventUploader
+	u        EventUploader
 	stopc    chan struct{}
 	stoppedc chan struct{}
 
@@ -220,13 +220,13 @@ type BatchUploader struct {
 // BatchUploader. If ctx is cancelled before calling Close(), the goroutine will
 // panic.
 //
-// Uploader implements eventUploader.
+// Uploader implements EventUploader.
 //
 // c is a channel used by BatchUploader to prompt event upload. A
 // <-chan time.Time with a ticker can be constructed with
 // time.NewTicker(time.Duration).C. If left unset, the default upload
 // interval is one minute.
-func NewBatchUploader(ctx context.Context, u eventUploader, c <-chan time.Time) (*BatchUploader, error) {
+func NewBatchUploader(ctx context.Context, u EventUploader, c <-chan time.Time) (*BatchUploader, error) {
 	bu := &BatchUploader{
 		u:        u,
 		stopc:    make(chan struct{}),
