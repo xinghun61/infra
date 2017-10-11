@@ -5,6 +5,7 @@
 """Manages the generation and uploading of Python wheel CIPD packages."""
 
 import collections
+import glob
 import itertools
 import os
 import shutil
@@ -56,7 +57,19 @@ class Wheel(_Wheel):
 
   @property
   def platform(self):
-    return 'any' if self.spec.universal else self.plat.wheel_plat
+    return ['any'] if self.spec.universal else self.plat.wheel_plat
+
+  @property
+  def primary_platform(self):
+    """The platform to use when naming intermediate wheels and requesting
+    wheel from "pip". Generally, platforms that this doesn't work on (e.g.,
+    ARM) will not have wheels in PyPi, and platforms with wheels in
+    PyPi will have only one platform.
+
+    This is also used for naming when building wheels; this choice is
+    inconsequential in this context, as the wheel is renamed after the build.
+    """
+    return self.platform[0]
 
   def default_filename(self):
     d = {
@@ -64,7 +77,7 @@ class Wheel(_Wheel):
         'version': self.spec.version,
         'pyversion': self.pyversion_str,
         'abi': self.abi,
-        'platform': self.platform,
+        'platform': '.'.join(self.platform),
     }
     return '%(name)s-%(version)s-%(pyversion)s-%(abi)s-%(platform)s.whl' % d
 
@@ -102,6 +115,23 @@ class Builder(object):
 
   def __init__(self, spec, build_fn, arch_map=None, abi_map=None,
                only_plat=None, skip_plat=None):
+    """Initializes a new wheel Builder.
+
+    spec (Spec): The wheel specification.
+    build_fn (callable): Callable build function, used to generate the acutal
+        wheel.
+    arch_map (dict or None): Naming map for architectures. If the current
+        platform has an entry in this map, the generated wheel will use the
+        value as the "platform" field.
+    abi_map (dict or None): Naming map for ABI. If the current platform
+        has an entry in this map, the generated wheel will use the
+        value as the "abi" field.
+    only_plat (iterable or None): If not None, this Builder will only declare
+        that it can build for the named platforms.
+    skip_plat (iterable or None): If not None, this Builder will avoid declaring
+        that it can build for the named platforms.
+    """
+
     self._spec = spec
     self._build_fn = build_fn
     self._arch_map = arch_map or {}
@@ -126,13 +156,14 @@ class Builder(object):
     # layout. This can differ from the local platform value if the package was
     # valid and built for multiple platforms, which seems to happen on Mac a
     # lot.
+    plat_wheel = wheel._replace(
+      plat=wheel.plat._replace(
+        wheel_abi=self._abi_map.get(plat.name, plat.wheel_abi),
+        wheel_plat=self._arch_map.get(plat.name, plat.wheel_plat),
+      ),
+    )
     return wheel._replace(
-        filename=wheel._replace(
-          plat=wheel.plat._replace(
-            wheel_abi=self._abi_map.get(plat.name, plat.wheel_abi),
-            wheel_plat=self._arch_map.get(plat.name, plat.wheel_plat),
-          ),
-        ).default_filename(),
+        filename=plat_wheel.default_filename(),
     )
 
   def build(self, wheel, system, rebuild=False):
@@ -205,6 +236,17 @@ def check_run_script(system, dx, work_root, script, args=None, cwd=None):
   return check_run(system, dx, work_root, cmd, cwd=cwd)
 
 
+def _stage_wheel_for_package(system, wheel_dir, wheel):
+  # Find the wheel in "wheel_dir". We scan expecting exactly one wheel.
+  wheels = glob.glob(os.path.join(wheel_dir, '*.whl'))
+  assert len(wheels) == 1, 'Unexpected wheels: %s' % (wheels,)
+  dst = os.path.join(system.wheel_dir, wheel.filename)
+
+  source_path = wheels[0]
+  util.LOGGER.debug('Identified source wheel: %s', source_path)
+  shutil.copy(source_path, dst)
+
+
 def _build_package(system, wheel):
   with system.temp_subdir('%s_%s' % wheel.spec.tuple) as tdir:
     check_run(
@@ -218,12 +260,12 @@ def _build_package(system, wheel):
           '--only-binary=:all:',
           '--abi=%s' % (wheel.abi,),
           '--python-version=%s' % (wheel.pyversion,),
-          '--platform=%s' % (wheel.platform,),
+          '--platform=%s' % (wheel.primary_platform,),
           '%s==%s' % (wheel.spec.name, wheel.spec.version),
         ],
         cwd=tdir)
-    wheel_path = os.path.join(tdir, wheel.filename)
-    shutil.copy(wheel_path, system.wheel_dir)
+
+    _stage_wheel_for_package(system, tdir, wheel)
 
 
 def _build_source(system, wheel, src, universal=False):
@@ -235,7 +277,7 @@ def _build_source(system, wheel, src, universal=False):
     if universal:
       bdist_wheel_opts.append('--universal')
     else:
-      bdist_wheel_opts.append('--plat-name=%s' % (wheel.plat.wheel_plat,))
+      bdist_wheel_opts.append('--plat-name=%s' % (wheel.primary_platform,))
 
     cmd = [
       'pip',
@@ -245,7 +287,7 @@ def _build_source(system, wheel, src, universal=False):
       '--wheel-dir', tdir,
     ]
     for opt in bdist_wheel_opts:
-      cmd += ['--build-option', opt]
+      cmd += ['--build-option=%s' % (opt,)]
     cmd.append('.')
 
     check_run(
@@ -255,8 +297,7 @@ def _build_source(system, wheel, src, universal=False):
         cmd,
         cwd=build_dir)
 
-    wheel_path = os.path.join(tdir, wheel.filename)
-    shutil.copy(wheel_path, system.wheel_dir)
+    _stage_wheel_for_package(system, tdir, wheel)
 
 
 def _build_cryptography(system, wheel, src, openssl_src):
@@ -328,17 +369,34 @@ def _build_cryptography(system, wheel, src, openssl_src):
             '--force', 'build',
             '--force', 'build_scripts',
             '--executable=/usr/local/bin/python',
-            '--force', 'bdist_wheel', '--plat-name', wheel.plat.wheel_plat,
+            '--force', 'bdist_wheel',
+            '--plat-name', wheel.primary_platform,
           ]),
         ],
         cwd=crypt_dir,
     )
 
-    wheel_path = os.path.join(crypt_dir, 'dist', wheel.filename)
-    shutil.copy(wheel_path, system.wheel_dir)
+    _stage_wheel_for_package(system, os.path.join(crypt_dir, 'dist'), wheel)
 
 
 def BuildWheel(name, version, **kwargs):
+  """General-purpose wheel builder.
+
+  If the wheel is "packaged" (see arg for description), it is expected that it
+  is resident in PyPi and will be downloaded; otherwise, it will be built from
+  source.
+
+  Args:
+    name (str): The wheel name.
+    version (str): The wheel version.
+    packaged (iterable or None): The names of platforms that have this wheel
+        available via PyPi. If None, a default set of packaged wheels will be
+        generated based on standard PyPi expectations, encoded with each
+        Platform's "packaged" property.
+    kwargs: Keyword arguments forwarded to Builder.
+
+  Returns (Builder): A configured Builder for the specified wheel.
+  """
   pypi_src = source.pypi_sdist(name, version)
   spec = Spec(name=name, version=pypi_src.version, universal=None)
 
@@ -354,6 +412,21 @@ def BuildWheel(name, version, **kwargs):
 
 def BuildCryptographyWheel(name, crypt_src, openssl_src, packaged=None,
                            arch_map=None):
+  """Specialized wheel builder for the "cryptography" package.
+
+  Args:
+    name (str): The wheel name.
+    crypt_src (Source): The Source for the cryptography package. The wheel
+        version will be extracted from this.
+    openssl_src (Source): The OpenSSL source to build against.
+    packaged (iterable or None): The names of platforms that have this wheel
+        available via PyPi. If None, a default set of packaged wheels will be
+        generated based on standard PyPi expectations, encoded with each
+        Platform's "packaged" property.
+    arch_map: (See Builder's "arch_map" argument.)
+
+  Returns (Builder): A configured Builder for the specified wheel.
+  """
   spec = Spec(name=name, version=crypt_src.version, universal=None)
 
   def build_fn(system, wheel):
@@ -365,6 +438,16 @@ def BuildCryptographyWheel(name, crypt_src, openssl_src, packaged=None,
 
 
 def Packaged(name, version, only_plat, **kwargs):
+  """Wheel builder for prepared wheels that must be downloaded from PyPi.
+
+  Args:
+    name (str): The wheel name.
+    version (str): The wheel version.
+    only_plat: (See Builder's "only_plat" argument.)
+    kwargs: Keyword arguments forwarded to Builder.
+
+  Returns (Builder): A configured Builder for the specified wheel.
+  """
   spec = Spec(
       name=name,
       version=version,
@@ -379,6 +462,17 @@ def Packaged(name, version, only_plat, **kwargs):
 
 
 def Universal(name, version, pyversions=None, **kwargs):
+  """Universal wheel version of BuildWheel.
+
+  Args:
+    name (str): The wheel name.
+    version (str): The wheel version.
+    pyversions (iterable or None): The list of "python" wheel fields (see
+        "Wheel.pyversion_str"). If None, a default Python version will be used.
+    kwargs: Keyword arguments forwarded to Builder.
+
+  Returns (Builder): A configured Builder for the specified wheel.
+  """
   spec = Spec(
       name=name,
       version=version,
@@ -392,6 +486,20 @@ def Universal(name, version, pyversions=None, **kwargs):
 
 def UniversalSource(name, pypi_version, pyversions=None, pypi_name=None,
                     **kwargs):
+  """Universal wheel version of BuildWheel that always builds from source.
+
+  Args:
+    name (str): The wheel name.
+    version (str): The wheel version.
+    pyversions (iterable or None): The list of "python" wheel fields (see
+        "Wheel.pyversion_str"). If None, a default Python version will be used.
+    pypi_name (str or None): Name of the package in PyPi. This can be useful
+        when translating between the CIPD package name (uses underscores) and
+        the PyPi package name (may use hyphens).
+    kwargs: Keyword arguments forwarded to Builder.
+
+  Returns (Builder): A configured Builder for the specified wheel.
+  """
   pypi_src = source.pypi_sdist(
       name=pypi_name or name,
       version=pypi_version)
@@ -504,7 +612,7 @@ SPECS = {s.spec.tag: s for s in (
 
   BuildWheel('crcmod', '1.7', packaged=()),
   BuildWheel('grpcio', '1.4.0'),
-  BuildWheel('scan-build', '2.0.8'),
+  BuildWheel('scan-build', '2.0.8', packaged=()),
 
   # Prefer to use 'cryptography' instead of PyCrypto, if possible. We have to
   # use PyCrypto for GAE dev server (it's the only crypto package available on
