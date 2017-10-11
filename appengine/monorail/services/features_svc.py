@@ -77,7 +77,7 @@ class HotlistTwoLevelCache(caches.AbstractTwoLevelCache):
       hotlist_rows: a list of hotlist rows from HOTLIST_TABLE_NAME.
       issue_rows: a list of issue rows from HOTLIST2ISSUE_TABLE_NAME,
         ordered by rank DESC, issue_id.
-      role_rows: a list of role rows from HOTLIST2USER_TABLE_NAME
+      role_rows: a list of role rows from HOTLIST2USER_TABLE_NAME.
 
     Returns:
       a dict mapping hotlist_id to hotlist PB"""
@@ -592,8 +592,8 @@ class FeaturesService(object):
 
     Args:
       cnxn: connection to SQL database.
-      hotlist_ids: a list of hotlist_ids to add the issues
-      issue_tuple: (issue_id, user_id, ts, note) of the issue to be added
+      hotlist_ids: a list of hotlist_ids to add the issues to.
+      issue_tuple: (issue_id, user_id, ts, note) of the issue to be added.
     """
     self.AddIssuesToHotlists(cnxn, hotlist_ids, [issue_tuple], commit=commit)
 
@@ -602,12 +602,32 @@ class FeaturesService(object):
 
     Args:
       cnxn: connection to SQL database.
-      hotlist_ids: a list of hotlist_ids to add the issues
+      hotlist_ids: a list of hotlist_ids to add the issues to.
       added_tuples: a list of (issue_id, user_id, ts, note)
-        for issues to be added
+        for issues to be added.
     """
     for hotlist_id in hotlist_ids:
       self.UpdateHotlistItems(cnxn, hotlist_id, [], added_tuples, commit=commit)
+
+  def RemoveIssueFromHotlist(self, cnxn, hotlist_id, issue_id, commit=True):
+    """Remove a single issue from a hotlist.
+
+    Args:
+      cnxn: connection to SQL database.
+      hotlist_id: hotlist's id.
+      issue_id: issue_id of the issue to be removed.
+    """
+    self.UpdateHotlistItems(cnxn, hotlist_id, [issue_id], [], commit=commit)
+
+  def RemoveIssuesFromHotlist(self, cnxn, hotlist_id, issue_ids, commit=True):
+    """Remove the issues given in issue_ids from a hotlist.
+
+    Args:
+      cnxn: connection to SQL database.
+      hotlist_id: hotlist's id.
+      issue_ids: a list of issue_ids to be removed.
+    """
+    self.UpdateHotlistItems(cnxn, hotlist_id, issue_ids, [], commit=commit)
 
   def UpdateHotlistItems(
       self, cnxn, hotlist_id, remove, added_tuples, commit=True):
@@ -615,10 +635,10 @@ class FeaturesService(object):
 
     Args:
       cnxn: connection to SQL database.
-      hotlist_id: the ID of the hotlist to update
-      remove: a list of issue_ids for be removed
+      hotlist_id: the ID of the hotlist to update.
+      remove: a list of issue_ids for be removed.
       added_tuples: a list of (issue_id, user_id, ts, note)
-        for issues to be added
+        for issues to be added.
     """
     hotlist = self.GetHotlist(cnxn, hotlist_id, use_cache=False)
     if not hotlist:
@@ -666,9 +686,9 @@ class FeaturesService(object):
 
     Args:
       cnxn: connection to SQL database.
-      hotlist_id: the ID of the hotlist to update
-      new_ranks : This should be a dictionary of {issue_id: rank}
-      new_notes: This should be a diciontary of {issue_id: note}
+      hotlist_id: the ID of the hotlist to update.
+      new_ranks : This should be a dictionary of {issue_id: rank}.
+      new_notes: This should be a diciontary of {issue_id: note}.
       commit: set to False to skip the DB commit and do it in the caller.
     """
     hotlist = self.GetHotlist(cnxn, hotlist_id, use_cache=False)

@@ -1765,6 +1765,12 @@ class FeaturesService(object):
     for hotlist_id in hotlist_ids:
       self.UpdateHotlistItems(cnxn, hotlist_id, [], added_tuples, commit=commit)
 
+  def RemoveIssueFromHotlist(self, cnxn, hotlist_id, issue_id, commit=True):
+    self.UpdateHotlistItems(cnxn, hotlist_id, [issue_id], [], commit=commit)
+
+  def RemoveIssuesFromHotlist(self, cnxn, hotlist_id, issue_ids, commit=True):
+    self.UpdateHotlistItems(cnxn, hotlist_id, issue_ids, [], commit=commit)
+
   def UpdateHotlistItems(
       self, cnxn, hotlist_id, remove, added_issue_tuples, commit=True):
     hotlist = self.hotlists_by_id.get(hotlist_id)

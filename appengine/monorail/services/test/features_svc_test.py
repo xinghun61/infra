@@ -646,9 +646,9 @@ class FeaturesServiceTest(unittest.TestCase):
         self.cnxn, 456, [111L, 222L], [333L], [])
     self.mox.VerifyAll()
 
-  def SetUpUpdateHotlistItems(self, cnxn, hotlist_id, _remove, added_tuples):
+  def SetUpUpdateHotlistItems(self, cnxn, hotlist_id, remove, added_tuples):
     self.features_service.hotlist2issue_tbl.Delete(
-        cnxn, hotlist_id=hotlist_id, issue_id=[], commit=False)
+        cnxn, hotlist_id=hotlist_id, issue_id=remove, commit=False)
     rank = 1L
     added_tuples_with_rank = [(issue_id, rank+10*mult, user_id, ts, note) for
                               mult, (issue_id, user_id, ts, note) in
@@ -668,25 +668,49 @@ class FeaturesServiceTest(unittest.TestCase):
             (333L, None, None, '')]
     self.SetUpGetHotlists(456)
     self.SetUpUpdateHotlistItems(
-        self. cnxn, 456, [555L], added_tuples)
+        self. cnxn, 456, [], added_tuples)
     self.SetUpGetHotlists(567)
     self.SetUpUpdateHotlistItems(
-        self. cnxn, 567, [555L], added_tuples)
+        self. cnxn, 567, [], added_tuples)
     self.mox.ReplayAll()
     self.features_service.AddIssuesToHotlists(
         self.cnxn, [456, 567], added_tuples, commit=False)
     self.mox.VerifyAll()
 
+  def testRemoveIssuesFromHotlist(self):
+    self.SetUpGetHotlists(
+        456, issue_rows=[
+            (456, 555L, 1L, None, None, ''),
+            (456, 666L, 11L, None, None, '')])
+    self.SetUpUpdateHotlistItems(
+        self. cnxn, 456, [555L], [])
+    self.mox.ReplayAll()
+    self.features_service.RemoveIssuesFromHotlist(
+        self.cnxn, 456, [555L], commit=False)
+    self.mox.VerifyAll()
+
+  def testRemoveIssueFromHotlist(self):
+    self.SetUpGetHotlists(
+        456, issue_rows=[
+            (456, 555L, 1L, None, None, ''),
+            (456, 666L, 11L, None, None, '')])
+    self.SetUpUpdateHotlistItems(
+        self. cnxn, 456, [555L], [])
+    self.mox.ReplayAll()
+    self.features_service.RemoveIssueFromHotlist(
+        self.cnxn, 456, 555L, commit=False)
+    self.mox.VerifyAll()
+
   def testUpdateHotlistItems(self):
     self.SetUpGetHotlists(456)
     self.SetUpUpdateHotlistItems(
-        self. cnxn, 456, [555L], [
+        self. cnxn, 456, [], [
             (111L, None, None, ''),
             (222L, None, None, ''),
             (333L, None, None, '')])
     self.mox.ReplayAll()
     self.features_service.UpdateHotlistItems(
-        self.cnxn, 456, [555L],
+        self.cnxn, 456, [],
         [(111L, None, None, ''),
          (222L, None, None, ''),
          (333L, None, None, '')], commit=False)
