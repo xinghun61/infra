@@ -77,6 +77,7 @@ from tracker import componentdetail
 from tracker import fieldcreate
 from tracker import fielddetail
 from tracker import issueaddtohotlist
+from tracker import issueremovehotlist
 from tracker import issueadmin
 from tracker import issueadvsearch
 from tracker import issueattachment
@@ -330,6 +331,7 @@ class ServletRegistry(object):
         urls.GROUP_DELETE: grouplist.GroupList,
         urls.HOTLIST_CREATE: hotlistcreate.HotlistCreate,
         urls.ADD_ISSUES_TO_HOTLIST: issueaddtohotlist.AddToHotlist,
+        urls.REMOVE_ISSUE_FROM_HOTLIST:issueremovehotlist.RemoveFromHotlist,
         urls.BAN_SPAMMER_TASK: banspammer.BanSpammerTask,
         })
 
