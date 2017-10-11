@@ -47,8 +47,8 @@ var cmdCook = &subcommands.Command{
 		var c cookRun
 
 		// Initialize our AnnotationFlags operational argument.
-		c.rr.opArgs.AnnotationFlags = &recipe_engine.Arguments_AnnotationFlags{}
-		c.rr.opArgs.EngineFlags = &recipe_engine.Arguments_EngineFlags{}
+		c.engine.opArgs.AnnotationFlags = &recipe_engine.Arguments_AnnotationFlags{}
+		c.engine.opArgs.EngineFlags = &recipe_engine.Arguments_EngineFlags{}
 
 		c.CookFlags.Register(&c.Flags)
 
@@ -62,7 +62,7 @@ type cookRun struct {
 	cookflags.CookFlags
 
 	mode         cookMode
-	rr           recipeRun
+	engine       recipeEngine
 	kitchenProps *kitchenProperties
 
 	// testRun is set to true during testing to instruct Kitchen not to try and
@@ -85,16 +85,20 @@ func (c *cookRun) normalizeFlags() error {
 	}
 
 	c.mode = cookModeSelector[c.Mode]
-	c.rr.workDir = c.WorkDir
-	c.rr.recipeName = c.RecipeName
+	c.engine.workDir = c.WorkDir
+	c.engine.recipeName = c.RecipeName
 
 	return nil
 }
 
 // ensureAndRunRecipe ensures that we have the recipe (according to -repository,
-// -revision and -checkout-dir) and runs it.
+// -revision and -checkout-dir) and all its deps and runs it.
 func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *build.BuildRunResult {
-	result := &build.BuildRunResult{}
+	result := &build.BuildRunResult{
+		Recipe: &build.BuildRunResult_Recipe{
+			Name: c.RecipeName,
+		},
+	}
 
 	fail := func(err error) *build.BuildRunResult {
 		if err == nil {
@@ -116,16 +120,13 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 	env = env.Clone()
 	lc.SetInEnviron(env)
 
-	result.Recipe = &build.BuildRunResult_Recipe{
-		Name: c.RecipeName,
-	}
 	if c.RepositoryURL == "" {
 		// The ready-to-run recipe is already present on the file system.
 		recipesPath, err := exec.LookPath(filepath.Join(c.CheckoutDir, "recipes"))
 		if err != nil {
 			return fail(errors.Annotate(err, "could not find bundled recipes").Err())
 		}
-		c.rr.cmdPrefix = []string{recipesPath}
+		c.engine.cmdPrefix = []string{recipesPath}
 	} else {
 		// TODO(vadimsh): Switch to 'system' LUCI account here. Will require
 		// executing 'recipes.py fetch' in system context too before running the
@@ -153,36 +154,43 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		if err != nil {
 			return fail(errors.Annotate(err, "could not read recipes.cfg").Err())
 		}
-		c.rr.cmdPrefix = []string{
+		c.engine.cmdPrefix = []string{
 			"python",
 			filepath.Join(c.CheckoutDir, filepath.FromSlash(recipesPath), "recipes.py"),
 		}
+
+		// Fetch all recipe dependencies. They are fetched into some internal guts
+		// controlled by the engine (not a work dir). So we can do it before setting
+		// up the work dir.
+		if err := c.engine.fetchRecipeDeps(ctx, env); err != nil {
+			return fail(errors.Annotate(err, "failed to fetch recipe deps").Err())
+		}
 	}
 
-	// Setup our working directory.
-	c.rr.workDir, err = prepareRecipeRunWorkDir(c.rr.workDir)
+	// Setup our working directory. This is cwd for the recipe itself.
+	c.engine.workDir, err = prepareRecipeRunWorkDir(c.engine.workDir)
 	if err != nil {
 		return fail(errors.Annotate(err, "failed to prepare workdir").Err())
 	}
 
 	// Tell the recipe to write the result protobuf message to a file and read
 	// it below.
-	c.rr.opArgs.EngineFlags.UseResultProto = true
-	c.rr.outputResultJSONFile = filepath.Join(c.TempDir, "recipe-result.json")
+	c.engine.opArgs.EngineFlags.UseResultProto = true
+	c.engine.outputResultJSONFile = filepath.Join(c.TempDir, "recipe-result.json")
 
 	rv := 0
 	if c.CookFlags.LogDogFlags.Active() {
 		result.AnnotationUrl = c.CookFlags.LogDogFlags.AnnotationURL.String()
-		rv, result.Annotations, err = c.runWithLogdogButler(ctx, &c.rr, env)
+		rv, result.Annotations, err = c.runWithLogdogButler(ctx, &c.engine, env)
 		if err != nil {
 			return fail(errors.Annotate(err, "failed to run recipe").Err())
 		}
 		setAnnotationText(result.Annotations)
 	} else {
 		// This code is reachable only in buildbot mode.
-		recipeCmd, err := c.rr.command(ctx, filepath.Join(c.TempDir, "rr"), env)
+		recipeCmd, err := c.engine.commandRun(ctx, filepath.Join(c.TempDir, "rr"), env)
 		if err != nil {
-			return fail(errors.Annotate(err, "failed to build recipe command").Err())
+			return fail(errors.Annotate(err, "failed to build recipe run command").Err())
 		}
 		printCommand(ctx, recipeCmd)
 
@@ -199,12 +207,12 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 	result.RecipeExitCode = &build.OptionalInt32{Value: int32(rv)}
 
 	// Now read the recipe result file.
-	recipeResultFile, err := os.Open(c.rr.outputResultJSONFile)
+	recipeResultFile, err := os.Open(c.engine.outputResultJSONFile)
 	if err != nil {
 		// The recipe result file must exist and be readable.
 		// If it is not, it is a fatal error.
 		return fail(errors.Annotate(err,
-			"could not read recipe result file at %q", c.rr.outputResultJSONFile).Err())
+			"could not read recipe result file at %q", c.engine.outputResultJSONFile).Err())
 	}
 	defer recipeResultFile.Close()
 
@@ -212,7 +220,7 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		st, err := recipeResultFile.Stat()
 		if err != nil {
 			return fail(errors.Annotate(err,
-				"could not stat recipe result file at %q", c.rr.outputResultJSONFile).Err())
+				"could not stat recipe result file at %q", c.engine.outputResultJSONFile).Err())
 		}
 
 		if sz := st.Size(); sz > int64(c.RecipeResultByteLimit) {
@@ -427,10 +435,10 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 
 	// Prepare recipe properties. Print them too.
 	var err error
-	if c.rr.properties, c.kitchenProps, err = c.prepareProperties(env); err != nil {
+	if c.engine.properties, c.kitchenProps, err = c.prepareProperties(env); err != nil {
 		return fail(err)
 	}
-	if err := c.reportProperties(ctx, "recipe engine", c.rr.properties); err != nil {
+	if err := c.reportProperties(ctx, "recipe engine", c.engine.properties); err != nil {
 		return fail(err)
 	}
 	if err := c.reportProperties(ctx, "kitchen", c.kitchenProps); err != nil {
@@ -460,7 +468,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 			}
 		}()
 
-		for k, v := range c.rr.properties {
+		for k, v := range c.engine.properties {
 			// Order is not stable, but that is okay.
 			jv, err := json.Marshal(v)
 			if err != nil {

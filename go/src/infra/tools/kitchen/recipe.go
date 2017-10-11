@@ -6,6 +6,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -18,10 +19,11 @@ import (
 	"go.chromium.org/luci/common/errors"
 	log "go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/system/environ"
+	"go.chromium.org/luci/common/system/exitcode"
 )
 
-// localRecipeRun can run a local recipe.
-type recipeRun struct {
+// recipeEngine can invoke the recipe engine configured with some single recipe.
+type recipeEngine struct {
 	// put these args at the beginning of the Cmd. Must include the python
 	// interpreter if necessary.
 	cmdPrefix []string
@@ -33,48 +35,82 @@ type recipeRun struct {
 	outputResultJSONFile string                  // path to the result file
 }
 
-// command prepares a command that runs a recipe.
-func (rr *recipeRun) command(ctx context.Context, tdir string, env environ.Env) (*exec.Cmd, error) {
-	if len(rr.cmdPrefix) == 0 {
+// commandRun prepares a command that runs a recipe.
+func (eng *recipeEngine) commandRun(ctx context.Context, tdir string, env environ.Env) (*exec.Cmd, error) {
+	if len(eng.cmdPrefix) == 0 {
 		return nil, errors.New("empty command prefix")
 	}
 	if err := ensureDir(tdir); err != nil {
 		return nil, err
 	}
+
 	// Pass properties in a file.
 	propertiesPath := filepath.Join(tdir, "properties.json")
-	if err := encodeJSONToPath(propertiesPath, rr.properties); err != nil {
+	if err := encodeJSONToPath(propertiesPath, eng.properties); err != nil {
 		return nil, errors.Annotate(err, "could not write properties file at %q", propertiesPath).Err()
 	}
 
 	// Write our operational arguments.
-	log.Debugf(ctx, "Using operational args: %s", rr.opArgs.String())
+	log.Debugf(ctx, "Using operational args: %s", eng.opArgs.String())
 	opArgsPath := filepath.Join(tdir, "op_args.json")
-	if err := encodeJSONToPath(opArgsPath, &rr.opArgs); err != nil {
+	if err := encodeJSONToPath(opArgsPath, &eng.opArgs); err != nil {
 		return nil, errors.Annotate(err, "could not write arguments file at %q", opArgsPath).Err()
 	}
 
 	// Build our command (arguments first).
-	args := append(rr.cmdPrefix,
+	args := []string{}
+	args = append(args, eng.cmdPrefix...)
+	args = append(args,
 		"--operational-args-path", opArgsPath,
 		"run",
 		"--properties-file", propertiesPath,
-		"--workdir", rr.workDir,
+		"--workdir", eng.workDir,
 	)
+	if eng.outputResultJSONFile != "" {
+		args = append(args, "--output-result-json", eng.outputResultJSONFile)
+	}
+	args = append(args, eng.recipeName)
+
+	// Build the final exec.Cmd.
+	recipeCmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	recipeCmd.Env = env.Sorted()
+	return recipeCmd, nil
+}
+
+// commandFetch prepares a command that fetches recipe dependences.
+func (eng *recipeEngine) commandFetch(ctx context.Context, env environ.Env) (*exec.Cmd, error) {
+	if len(eng.cmdPrefix) == 0 {
+		return nil, errors.New("empty command prefix")
+	}
+
+	args := []string{}
+	args = append(args, eng.cmdPrefix...)
+	args = append(args, "-v", "fetch")
 
 	recipeCmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	if rr.outputResultJSONFile != "" {
-		recipeCmd.Args = append(recipeCmd.Args,
-			"--output-result-json", rr.outputResultJSONFile)
-	}
-	recipeCmd.Args = append(recipeCmd.Args, rr.recipeName)
-
-	// Apply our environment.
-	if env.Len() > 0 {
-		recipeCmd.Env = env.Sorted()
-	}
-
+	recipeCmd.Env = env.Sorted()
 	return recipeCmd, nil
+}
+
+// fetchRecipeDeps fetches recipe dependencies via 'recipes.py fetch'.
+func (eng *recipeEngine) fetchRecipeDeps(ctx context.Context, env environ.Env) error {
+	cmd, err := eng.commandFetch(ctx, env)
+	if err != nil {
+		return err
+	}
+	printCommand(ctx, cmd)
+
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	err = cmd.Run()
+	switch rv, hasRV := exitcode.Get(err); {
+	case !hasRV:
+		return errors.Annotate(err, "failed to run recipe fetch").Err()
+	case rv != 0:
+		return errors.New(fmt.Sprintf("recipes fetch failed with exit code %d", rv))
+	}
+	return nil
 }
 
 func getRecipesPath(repoDir string) (string, error) {

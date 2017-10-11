@@ -59,7 +59,7 @@ func disableGRPCLogging(ctx context.Context) {
 //	  - Otherwise, wait for the process to finish.
 //	- Shut down the Butler instance.
 // If recipe engine returns non-zero value, the returned err is nil.
-func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env environ.Env) (rc int, build *milo.Step, err error) {
+func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, env environ.Env) (rc int, build *milo.Step, err error) {
 	flags := c.CookFlags.LogDogFlags
 
 	log.Infof(ctx, "Using LogDog URL: %s", flags.AnnotationURL)
@@ -70,7 +70,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	disableGRPCLogging(ctx)
 
 	// We need to dump initial properties so our annotation stream includes them.
-	rr.opArgs.AnnotationFlags.EmitInitialProperties = true
+	eng.opArgs.AnnotationFlags.EmitInitialProperties = true
 
 	// Construct our global tags. We will prefer user-supplied tags to our
 	// generated ones.
@@ -78,7 +78,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	if c.BuildURL != "" {
 		globalTags[logDogViewerURLTag] = c.BuildURL
 	}
-	if err := c.mode.addLogDogGlobalTags(globalTags, rr.properties, env); err != nil {
+	if err := c.mode.addLogDogGlobalTags(globalTags, eng.properties, env); err != nil {
 		return 0, nil, errors.Annotate(err, "failed to add global tags").Err()
 	}
 	for k, v := range flags.GlobalTags {
@@ -126,7 +126,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, rr *recipeRun, env en
 	procCtx, procCancelFunc := context.WithCancel(ctx)
 	defer procCancelFunc()
 
-	proc, err := rr.command(procCtx, filepath.Join(c.TempDir, "rr"), env)
+	proc, err := eng.commandRun(procCtx, filepath.Join(c.TempDir, "rr"), env)
 	if err != nil {
 		return 0, nil, errors.Annotate(err, "failed to build recipe comamnd").Err()
 	}

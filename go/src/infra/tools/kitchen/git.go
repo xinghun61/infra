@@ -128,9 +128,7 @@ func runGit(c context.Context, env environ.Env, workDir string, args ...string) 
 
 	// Apply our environment. Note that PATH there doesn't affect where we look
 	// for 'git', since exec.CommandContext above uses os.Getenv("PATH").
-	if env.Len() > 0 {
-		cmd.Env = env.Sorted()
-	}
+	cmd.Env = env.Sorted()
 
 	// Log our Git command.
 	renderedWorkDir := workDir
