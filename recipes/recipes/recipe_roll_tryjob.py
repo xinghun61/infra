@@ -310,12 +310,15 @@ def GenTests(api):
   yield (
     api.test('diff_test_fail') +
     api.properties.tryserver(
-        upstream_project='recipe_engine', downstream_project='depot_tools') +
+        upstream_project='recipe_engine',
+        downstream_project='depot_tools',
+        gerrit_project='chromium/tools/depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
     api.override_step_data(
-        'git_cl description', stdout=api.raw_io.output('')) +
+      'gerrit changes', api.json.output(
+        [{'revisions': {1: {'_number': 12, 'commit': {'message': ''}}}}])) +
     api.override_step_data(
         'parse description', api.json.output({}))
   )
@@ -323,13 +326,16 @@ def GenTests(api):
   yield (
     api.test('diff_test_fail_ack') +
     api.properties.tryserver(
-        upstream_project='recipe_engine', downstream_project='depot_tools') +
+        upstream_project='recipe_engine',
+        downstream_project='depot_tools',
+        gerrit_project='chromium/tools/depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
     api.override_step_data(
-        'git_cl description', stdout=api.raw_io.output(
-            'Recipe-Nontrivial-Roll: depot_tools')) +
+      'gerrit changes', api.json.output(
+        [{'revisions': {1: {'_number': 12, 'commit': {
+          'message': 'Recipe-Nontrivial-Roll: depot_tools'}}}}])) +
     api.override_step_data(
         'parse description', api.json.output(
             {'Recipe-Nontrivial-Roll': ['depot_tools']}))
@@ -338,14 +344,17 @@ def GenTests(api):
   yield (
     api.test('diff_train_fail') +
     api.properties.tryserver(
-        upstream_project='recipe_engine', downstream_project='depot_tools') +
+        upstream_project='recipe_engine',
+        downstream_project='depot_tools',
+        gerrit_project='chromium/tools/depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
     api.step_data('diff (train)', retcode=1) +
     api.override_step_data(
-        'git_cl description', stdout=api.raw_io.output(
-            'Recipe-Nontrivial-Roll: depot_tools')) +
+      'gerrit changes', api.json.output(
+        [{'revisions': {1: {'_number': 12, 'commit': {
+          'message': 'Recipe-Nontrivial-Roll: depot_tools'}}}}])) +
     api.override_step_data(
         'parse description', api.json.output(
             {'Recipe-Nontrivial-Roll': ['depot_tools']}))
@@ -354,14 +363,17 @@ def GenTests(api):
   yield (
     api.test('diff_train_fail_ack') +
     api.properties.tryserver(
-        upstream_project='recipe_engine', downstream_project='depot_tools') +
+        upstream_project='recipe_engine',
+        downstream_project='depot_tools',
+        gerrit_project='chromium/tools/depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
     api.step_data('diff (train)', retcode=1) +
     api.override_step_data(
-        'git_cl description', stdout=api.raw_io.output(
-            'Recipe-Manual-Change: depot_tools')) +
+      'gerrit changes', api.json.output(
+        [{'revisions': {1: {'_number': 12, 'commit': {
+          'message': 'Recipe-Manual-Change: depot_tools'}}}}])) +
     api.override_step_data(
         'parse description', api.json.output(
             {'Recipe-Manual-Change': ['depot_tools']}))
@@ -370,14 +382,17 @@ def GenTests(api):
   yield (
     api.test('diff_train_fail_ack_engine_checkout') +
     api.properties.tryserver(
-        upstream_project='depot_tools', downstream_project='build') +
+        upstream_project='depot_tools',
+        downstream_project='build',
+        gerrit_project='chromium/tools/build') +
     api.luci_config.get_projects(('depot_tools', 'build')) +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
     api.step_data('diff (train)', retcode=1) +
     api.override_step_data(
-        'git_cl description', stdout=api.raw_io.output(
-            'Recipe-Manual-Change: build')) +
+      'gerrit changes', api.json.output(
+        [{'revisions': {1: {'_number': 12, 'commit': {
+          'message': 'Recipe-Manual-Change: build'}}}}])) +
     api.override_step_data(
         'parse description', api.json.output(
             {'Recipe-Manual-Change': ['build']}))
@@ -386,13 +401,16 @@ def GenTests(api):
   yield (
     api.test('bypass') +
     api.properties.tryserver(
-        upstream_project='recipe_engine', downstream_project='depot_tools') +
+        upstream_project='recipe_engine',
+        downstream_project='depot_tools',
+        gerrit_project='chromium/tools/depot_tools') +
     api.luci_config.get_projects(('recipe_engine', 'depot_tools')) +
     api.step_data('test (with patch)', retcode=1) +
     api.step_data('diff (test)', retcode=1) +
     api.override_step_data(
-        'git_cl description', stdout=api.raw_io.output(
-            'Recipe-Tryjob-Bypass-Reason: Autoroller')) +
+      'gerrit changes', api.json.output(
+        [{'revisions': {1: {'_number': 12, 'commit': {
+          'message': 'Recipe-Tryjob-Bypass-Reason: Autoroller'}}}}])) +
     api.override_step_data(
         'parse description', api.json.output(
             {'Recipe-Tryjob-Bypass-Reason': ['Autoroller']}))
