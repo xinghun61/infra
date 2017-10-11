@@ -1154,7 +1154,7 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings({}))
     self.assertFalse(
         config._ValidateFlakeAnalyzerTryJobRerunSettings({
-            'lower_flake_threshold': 1,  # Should be a float.
+            'lower_flake_threshold': 'b',  # Should be a float.
             'upper_flake_threshold': 0.98,
             'max_flake_in_a_row': 4,
             'max_stable_in_a_row': 4,

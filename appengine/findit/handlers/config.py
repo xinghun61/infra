@@ -198,7 +198,8 @@ def _ValidateSwarmingSettings(settings):
               int) and isinstance(settings.get('should_retry_server'), bool) and
           isinstance(settings.get('minimum_number_of_available_bots'), int) and
           isinstance(
-              settings.get('minimum_percentage_of_available_bots'), float) and
+              settings.get('minimum_percentage_of_available_bots'),
+              (float, int)) and
           isinstance(settings.get('per_iteration_timeout_seconds'), int))
 
 
@@ -225,20 +226,20 @@ def _ValidateActionSettings(settings):
 
 def _ValidateFlakeAnalyzerSwarmingRerunSettings(settings):
   return (isinstance(settings, dict) and
-          isinstance(settings.get('lower_flake_threshold'), float) and
-          isinstance(settings.get('upper_flake_threshold'), float) and
+          isinstance(settings.get('lower_flake_threshold'), (float, int)) and
+          isinstance(settings.get('upper_flake_threshold'), (float, int)) and
           isinstance(settings.get('max_flake_in_a_row'), int) and
           isinstance(settings.get('max_stable_in_a_row'), int) and
           isinstance(settings.get('iterations_to_rerun'), int) and
           isinstance(settings.get('max_build_numbers_to_look_back'), int) and
           isinstance(settings.get('use_nearby_neighbor'), bool) and
           isinstance(settings.get('max_dive_in_a_row'), int) and
-          isinstance(settings.get('dive_rate_threshold'), float) and
+          isinstance(settings.get('dive_rate_threshold'), (float, int)) and
           isinstance(settings.get('max_iterations_to_rerun'), int) and
           isinstance(settings.get('per_iteration_timeout_seconds'), int) and
           isinstance(settings.get('timeout_per_test_seconds'), int) and
           isinstance(settings.get('timeout_per_swarming_task_seconds'), int) and
-          isinstance(settings.get('swarming_task_cushion'), float) and
+          isinstance(settings.get('swarming_task_cushion'), (float, int)) and
           isinstance(settings.get('swarming_task_retries_per_build'), int) and
           isinstance(settings.get('iterations_to_run_after_timeout'), int) and
           isinstance(settings.get('max_iterations_per_task'), int))
@@ -246,8 +247,8 @@ def _ValidateFlakeAnalyzerSwarmingRerunSettings(settings):
 
 def _ValidateFlakeAnalyzerTryJobRerunSettings(settings):
   return (isinstance(settings, dict) and
-          isinstance(settings.get('lower_flake_threshold'), float) and
-          isinstance(settings.get('upper_flake_threshold'), float) and
+          isinstance(settings.get('lower_flake_threshold'), (float, int)) and
+          isinstance(settings.get('upper_flake_threshold'), (float, int)) and
           isinstance(settings.get('max_flake_in_a_row'), int) and
           isinstance(settings.get('max_stable_in_a_row'), int) and
           isinstance(settings.get('iterations_to_rerun'), int))
@@ -260,9 +261,10 @@ def _ValidateCheckFlakeSettings(settings):
           settings.get('swarming_rerun')) and
       _ValidateFlakeAnalyzerTryJobRerunSettings(settings.get('try_job_rerun'))
       and isinstance(
-          settings.get('minimum_confidence_score_to_run_tryjobs'), float) and
+          settings.get('minimum_confidence_score_to_run_tryjobs'),
+          (float, int)) and
       isinstance(settings.get('update_monorail_bug'), bool) and
-      isinstance(settings.get('minimum_confidence_to_update_cr'), float))
+      isinstance(settings.get('minimum_confidence_to_update_cr'), (float, int)))
 
 
 def _ValidateCodeReviewSettings(settings):
