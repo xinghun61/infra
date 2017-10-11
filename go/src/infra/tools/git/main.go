@@ -9,16 +9,13 @@ import (
 	"io"
 	"os"
 	"regexp"
-	"strings"
 	"time"
 
 	"golang.org/x/net/context"
 
-	"infra/libs/infraenv"
 	"infra/tools/git/state"
 
 	"go.chromium.org/luci/cipd/version"
-	"go.chromium.org/luci/common/auth"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/logging/gologger"
@@ -53,9 +50,10 @@ const gitWrapperCheckENV = "INFRA_GIT_WRAPPER_CHECK"
 // NOTE: This can get in the way of some processes that require output parsing.
 const gitWrapperTraceENV = "INFRA_GIT_WRAPPER_TRACE"
 
-// gitAuthEnv is set and not empty, instructs Git wrapper to enable
-// authentication using LUCI_CONTEXT.
-const gitWrapperAuthENV = "INFRA_GIT_WRAPPER_AUTH"
+// gitWrapperHomeENV, if set and not empty, instructs Git wrapper to substitute
+// HOME with given value when calling git. Setting it to empty string removes
+// HOME env var completely. Useful for overriding global git configs.
+const gitWrapperHomeENV = "INFRA_GIT_WRAPPER_HOME"
 
 // gitProbe is the SystemProbe used by the main application to locate Git.
 var gitProbe = SystemProbe{
@@ -75,22 +73,6 @@ func probeVersionString() string {
 		return fmt.Sprintf("%s @ %s", info.PackageName, info.InstanceID)
 	}
 	return "Unknown Version"
-}
-
-// authentication tries to obtain the user info using the authenticator and
-// sets up the luci credential helper for Git.
-func authentication(c context.Context) ([]string, error) {
-	opts := infraenv.DefaultAuthOptions()
-	authenticator := auth.NewAuthenticator(c, auth.SilentLogin, opts)
-	email, err := authenticator.GetEmail()
-	if err != nil {
-		return nil, errors.Annotate(err, "cannot get email associated with the credentials").Err()
-	}
-	return []string{
-		"-c", "user.name=" + strings.SplitN(email, "@", 2)[0],
-		"-c", "user.email=" + email,
-		"-c", "credential.helper=luci",
-	}, nil
 }
 
 func mainImpl(c context.Context, argv []string, env environ.Env, stdin io.Reader, stdout, stderr io.Writer) int {
@@ -148,18 +130,14 @@ func mainImpl(c context.Context, argv []string, env environ.Env, stdin io.Reader
 	}
 	logging.Debugf(c, "Identified system Git at: %s", st.GitPath)
 
-	args := argv[1:]
-
-	// Setup authentication if requested.
-	if _, ok := env.Get(gitWrapperAuthENV); ok {
-		authArgs, err := authentication(c)
-		if err != nil {
-			errors.Log(c, errors.Annotate(err, "failed to setup authentication").Err())
-			return gitWrapperErrorReturnCode
+	// Setup custom HOME, if requested. This makes git lookup .gitconfig and
+	// .netrc there instead of default '~'.
+	if newHome, ok := env.Get(gitWrapperHomeENV); ok {
+		if newHome != "" {
+			env.Set("HOME", newHome)
+		} else {
+			env.Remove("HOME")
 		}
-		args = append(authArgs, args...)
-		// Ensure that Git doesn't try to load existing .gitconfig or .netrc.
-		env.Remove("HOME")
 	}
 
 	// Construct and execute a managed Git command.
@@ -173,7 +151,7 @@ func mainImpl(c context.Context, argv []string, env environ.Env, stdin io.Reader
 		Stdout:        stdout,
 		Stderr:        stderr,
 	}
-	rc, err := cmd.Run(c, args, env)
+	rc, err := cmd.Run(c, argv[1:], env)
 	if err != nil {
 		errors.Log(c, errors.Annotate(err, "failed to run Git").Err())
 		return gitWrapperErrorReturnCode
