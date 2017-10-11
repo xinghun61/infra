@@ -6,7 +6,7 @@ default. We can add support for different projects when needed in the future.
 # Usage
 
 ```
-bqschemaupdater <path to json schema file> [--help] [--dry-run]
+bqschemaupdater [--project <project-id, chrome-infra-events by default>] <path to json schema file> [--help] [--dry-run]
 ```
 
 # Standard Practices
