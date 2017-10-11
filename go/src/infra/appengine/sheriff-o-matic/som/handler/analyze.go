@@ -339,6 +339,7 @@ func putAlertsBigQuery(c context.Context, tree string, alertsSummary *messages.A
 	row := model.SOMAlertsEvent{
 		Timestamp: alertsSummary.Timestamp.Time(),
 		Tree:      tree,
+		RequestID: appengine.RequestID(c),
 	}
 	for _, a := range alertsSummary.Alerts {
 		alertEvt := &model.SOMAlertsEvent_Alerts{

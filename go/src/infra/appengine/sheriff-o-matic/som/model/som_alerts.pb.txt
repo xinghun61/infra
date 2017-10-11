@@ -16,6 +16,14 @@ fields: <
   is_required: true
 >
 fields: <
+  name: "requestID"
+  description: <<END
+    ID of the request that generated these alerts.
+    This ID appears in GAE request logs as protoPayload.requestId.
+  END
+  type: STRING
+>
+fields: <
   name: "alerts"
   type: RECORD
   is_repeated: true

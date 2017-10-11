@@ -59,5 +59,8 @@ type SOMAlertsEvent struct {
 	// Timestamp when the alerts were generated.
 	Timestamp time.Time `bigquery:"timestamp"`
 
+	// ID of the request that generated these alerts. This ID appears in GAE request logs as protoPayload.requestId.
+	RequestID string `bigquery:"requestID"`
+
 	Alerts []*SOMAlertsEvent_Alerts `bigquery:"alerts"`
 }
