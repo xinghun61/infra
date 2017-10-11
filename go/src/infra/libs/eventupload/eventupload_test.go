@@ -213,3 +213,27 @@ func TestStage(t *testing.T) {
 		}
 	})
 }
+
+func TestBatch(t *testing.T) {
+	t.Parallel()
+
+	Convey("Test batch", t, func() {
+		rowLimit := 2
+		sss := make([]*bigquery.StructSaver, 3)
+		for i := 0; i < 3; i++ {
+			sss[i] = &bigquery.StructSaver{}
+		}
+
+		want := [][]*bigquery.StructSaver{
+			{
+				&bigquery.StructSaver{},
+				&bigquery.StructSaver{},
+			},
+			{
+				&bigquery.StructSaver{},
+			},
+		}
+		rowSets := batch(sss, rowLimit)
+		So(rowSets, ShouldResemble, want)
+	})
+}

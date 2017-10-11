@@ -6,6 +6,7 @@
 package eventupload
 
 import (
+	"math"
 	"reflect"
 	"sync"
 	"sync/atomic"
@@ -23,6 +24,8 @@ import (
 
 // ID is the global InsertIDGenerator
 var ID InsertIDGenerator
+
+const insertLimit = 10000
 
 // EventUploader is an interface for types which implement a Put method. It
 // exists for the purpose of mocking Uploader in tests.
@@ -113,31 +116,45 @@ func (u *Uploader) Put(ctx context.Context, src interface{}) error {
 		ctx, c = context.WithTimeout(ctx, time.Minute)
 		defer c()
 	}
-	var failed int64
 	sss, err := prepareSrc(u.s, src)
 	if err != nil {
 		return err
 	}
-	if len(sss) == 0 {
-		return nil
-	}
-	err = u.Uploader.Put(ctx, sss)
-	if err != nil {
-		logging.WithError(err).Errorf(ctx, "eventupload: Uploader.Put failed")
-		if merr, ok := err.(bigquery.PutMultiError); ok {
-			failed = int64(len(merr))
-		} else {
-			failed = int64(len(sss))
+	for _, rowSet := range batch(sss, insertLimit) {
+		var failed int
+		err = u.Uploader.Put(ctx, rowSet)
+		if err != nil {
+			logging.WithError(err).Errorf(ctx, "eventupload: Uploader.Put failed")
+			if merr, ok := err.(bigquery.PutMultiError); ok {
+				if failed = len(merr); failed > len(rowSet) {
+					logging.Errorf(ctx, "eventupload: %v failures trying to insert %v rows", failed, len(rowSet))
+				}
+			} else {
+				failed = len(rowSet)
+			}
+			u.updateUploads(ctx, int64(failed), "failure")
 		}
-		u.updateUploads(ctx, failed, "failure")
+		succeeded := len(rowSet) - failed
+		u.updateUploads(ctx, int64(succeeded), "success")
+		if err != nil {
+			return err
+		}
 	}
-	succeeded := int64(len(sss)) - failed
-	if succeeded < 0 {
-		logging.Errorf(ctx, "eventupload: Uploader.Put succeeded < 0: %v", succeeded)
-	} else {
-		u.updateUploads(ctx, succeeded, "success")
+	return nil
+}
+
+func batch(rows []*bigquery.StructSaver, insertLimit int) [][]*bigquery.StructSaver {
+	rowSetsLen := int(math.Ceil(float64(len(rows) / insertLimit)))
+	rowSets := make([][]*bigquery.StructSaver, 0, rowSetsLen)
+	for len(rows) > 0 {
+		batch := rows
+		if len(batch) > insertLimit {
+			batch = batch[:insertLimit]
+		}
+		rowSets = append(rowSets, batch)
+		rows = rows[len(batch):]
 	}
-	return err
+	return rowSets
 }
 
 func prepareSrc(s bigquery.Schema, src interface{}) ([]*bigquery.StructSaver, error) {
