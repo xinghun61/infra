@@ -1,0 +1,48 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This file *partially* describes Monorail API.
+// It is derived from
+// https://chromium.googlesource.com/infra/infra/+/f2e2a4d/appengine/monorail/services/api_svc_v1.py
+// and
+// https://chromium.googlesource.com/infra/infra/+/f2e2a4d/appengine/monorail/proto/api_pb2_v1.py
+
+syntax = "proto3";
+
+package bugtemplate;
+
+option go_package = "main";
+
+// A monorail issue template.
+message Template {
+    // A one line description of the issue.
+    string summary = 1;
+    // The text body of the issue.
+    string description = 2;
+    // Emails of people participating in the issue discussion.
+    repeated string cc = 3;
+    // Monorail components for this issue.
+    repeated string components = 4;
+    // Issue priority.
+    Priority pri = 5;
+    // Issue type.
+    Type type = 6;
+    // Bug labels.
+    repeated string labels = 7;
+}
+
+enum Priority {
+    PriUnset = 0;
+    P0 = 1;
+    P1 = 2;
+    P2 = 3;
+    P3 = 4;
+}
+
+enum Type {
+    TypeUnset = 0;
+    Bug = 1;
+    Feature = 2;
+    Task = 3;
+}

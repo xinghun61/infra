@@ -1,0 +1,34 @@
+summary: "Register LUCI project <project id>"
+
+description: <<END
+  Please register a LUCI project
+
+  // Please delete commented out sections before submission
+
+  // choose a short project id, regex:^[a-z_][a-z0-9_-]*$)
+  // examples: https://chrome-internal.googlesource.com/infradata/config/+/master/configs/luci-config/projects.cfg
+  - project id:
+
+  // provide a URL of the Gitiles repo where you will keep LUCI
+  // config files. If ref is omitted, `refs/heads/infra/config` will be used.
+  // Typically it is the main repo of the project,
+  // e.g. chromium's configs are in
+  // https://chromium.googlesource.com/chromium/src/+/infra/config
+  - config repo:
+
+  // A project should have groups on chrome-infra-auth.appspot.com
+  // with names project-<project-id>-{admins,committers,tryjob-access}
+  // They will be created.
+  // In the project has groups, but they are called differently, fill the following
+  // section, otherwise delete it
+  - malformed CIA groups:
+
+// TODO(nodir,estaab): add more here
+END
+
+components: "Infra>Platform"
+cc: "nodir@chromium.org"
+cc: "estaab@chromium.org"
+cc: "efoo@chromium.org"
+type: Task
+pri: P2
