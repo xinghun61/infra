@@ -50,16 +50,17 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
 
     self.mock(suspected_cl_util, 'GetCulpritInfo', MockGetCulpritInfo)
 
+  @mock.patch.object(waterfall_config, 'GetActionSettings', return_value={})
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 16, 0, 0))
   @mock.patch.object(_CODEREVIEW, 'PostMessage', return_value=True)
-  @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'CreateRevert')
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testRevertCLSucceed(self, mock_fn, mock_revert, *_):
+  def testRevertCLSucceed(self, mock_fn, mock_revert, mock_add, *_):
     repo_name = 'chromium'
     revision = 'rev1'
     commit_position = 123
@@ -102,7 +103,27 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
         https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
         Sample Failed Build: %s""") % (commit_position, culprit.key.urlsafe(),
                                        buildbot.CreateBuildUrl('m', 'b', '1'))
-    mock_revert.assert_called_with(reason, self.review_change_id, '20001')
+    mock_revert.assert_called_once_with(reason, self.review_change_id, '20001')
+
+    false_positive_bug_link = (
+        'https://bugs.chromium.org/p/chromium/issues/entry?'
+        'status=Available&labels=Test-Findit-Wrong&'
+        'components=Tools>Test>FindIt&summary=Wrongly blame %s&'
+        'comment=Detail is https://findit-for-me.appspot.com/waterfall/'
+        'culprit?key=%s') % (revision, culprit.key.urlsafe())
+    auto_revert_bug_link = (
+        'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&'
+        '&components=Tools>Test>FindIt>Autorevert&summary=Auto Revert failed '
+        'on %s&comment=Detail is https://findit-for-me.appspot.com/waterfall/'
+        'culprit?key=%s') % (revision, culprit.key.urlsafe())
+    message = textwrap.dedent("""
+        Sheriffs, CL owner or CL reviewers:
+        Please approve and submit this revert if it is correct.
+        If it is a false positive, please abandon and report it
+        at %s.
+        If failed to submit the revert, please abandon it and report the failure
+        at %s.""") % (false_positive_bug_link, auto_revert_bug_link)
+    mock_add.assert_called_once_with('54321', ['a@b.com'], message)
 
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
@@ -134,6 +155,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(culprit.revert_cl)
     self.assertIsNone(culprit.revert_pipeline_id)
 
+  @mock.patch.object(waterfall_config, 'GetActionSettings', return_value={})
   @mock.patch.object(_CODEREVIEW, 'PostMessage', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=False)
   @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
@@ -389,9 +411,11 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 5, 0, 0))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
+  @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'SubmitRevert')
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testSubmitRevertFailed(self, mock_fn, mock_commit, *_):
+  def testSubmitRevertFailed(self, mock_fn, mock_commit, mock_add, *_):
     repo_name = 'chromium'
     revision = 'rev1'
     commit_position = 123
@@ -416,10 +440,29 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
                                     'pipeline_id')
 
     self.assertFalse(committed)
-    mock_commit.assert_called_with(revert_change_id)
+    mock_commit.assert_called_once_with(revert_change_id)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_submission_status, status.ERROR)
+    false_positive_bug_link = (
+        'https://bugs.chromium.org/p/chromium/issues/entry?'
+        'status=Available&labels=Test-Findit-Wrong&'
+        'components=Tools>Test>FindIt&summary=Wrongly blame %s&'
+        'comment=Detail is https://findit-for-me.appspot.com/waterfall/'
+        'culprit?key=%s') % (revision, culprit.key.urlsafe())
+    auto_revert_bug_link = (
+        'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&'
+        '&components=Tools>Test>FindIt>Autorevert&summary=Auto Revert failed '
+        'on %s&comment=Detail is https://findit-for-me.appspot.com/waterfall/'
+        'culprit?key=%s') % (revision, culprit.key.urlsafe())
+    message = textwrap.dedent("""
+        Sheriffs, CL owner or CL reviewers:
+        Please approve and submit this revert if it is correct.
+        If it is a false positive, please abandon and report it
+        at %s.
+        If failed to submit the revert, please abandon it and report the failure
+        at %s.""") % (false_positive_bug_link, auto_revert_bug_link)
+    mock_add.assert_called_once_with('54321', ['a@b.com'], message)
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 4, 5, 0, 0))
@@ -460,9 +503,11 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 5, 0, 0))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  @mock.patch.object(rotations, 'current_sheriffs', return_value=['a@b.com'])
+  @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'SubmitRevert')
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testSubmitRevertSucceed(self, mock_fn, mock_commit, *_):
+  def testSubmitRevertSucceed(self, mock_fn, mock_commit, mock_add, *_):
     repo_name = 'chromium'
     revision = 'rev1'
     commit_position = 123
@@ -490,7 +535,19 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_submission_status, status.COMPLETED)
 
-    mock_commit.assert_called_with(revert_change_id)
+    mock_commit.assert_called_once_with(revert_change_id)
+
+    bug_link = ('https://bugs.chromium.org/p/chromium/issues/entry?'
+                'status=Available&labels=Test-Findit-Wrong&'
+                'components=Tools>Test>FindIt&summary=Wrongly blame %s&'
+                'comment=Detail is https://findit-for-me.appspot.com/waterfall/'
+                'culprit?key=%s') % (revision, culprit.key.urlsafe())
+    message = textwrap.dedent("""
+        Sheriffs, CL owner or CL reviewers:
+        Please confirm this revert if it is correct.
+        If it is a false positive, please revert and report it
+        at %s.""") % bug_link
+    mock_add.assert_called_once_with(revert_change_id, ['a@b.com'], message)
 
   def testUpdateCulprit(self):
     repo_name = 'chromium'

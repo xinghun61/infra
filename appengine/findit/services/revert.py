@@ -41,15 +41,6 @@ _DEFAULT_AUTO_REVERT_DAILY_THRESHOLD = 10
 _DEFAULT_AUTO_COMMIT_DAILY_THRESHOLD = 4
 _DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS = 24
 
-# List of emails of auto rollers.
-_AUTO_ROLLER_EMAILS = [  # yapf: disable
-    'skia-deps-roller@chromium.org',
-    'catapult-deps-roller@chromium.org',
-    'pdfium-deps-roller@chromium.org',
-    'v8-autoroll@chromium.org',
-    'ios-autoroll@chromium.org'
-]
-
 
 @ndb.transactional
 def _UpdateCulprit(repo_name,
@@ -86,6 +77,55 @@ def _UpdateCulprit(repo_name,
 
   culprit.put()
   return culprit
+
+
+def _AddReviewers(revision, culprit_key, codereview, revert_change_id,
+                  submitted):
+  """Adds sheriffs to reviewers and sends messages.
+
+  Based on the status of the revert - submitted or not, sends different messages
+  to reviewers.
+
+  Args:
+    culprit_key (str): url-safe key for the culprit.
+    revert_change_id (str): Id of the revert change.
+    submitted (bool): If the revert is submitted or not.
+  """
+  culprit_link = ('https://findit-for-me.appspot.com/waterfall/culprit?key=%s' %
+                  culprit_key)
+  false_positive_bug_link = (
+      'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&'
+      'labels=Test-Findit-Wrong&components=Tools>Test>FindIt&summary=Wrongly '
+      'blame %s&comment=Detail is %s') % (revision, culprit_link)
+  auto_revert_bug_link = (
+      'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&'
+      '&components=Tools>Test>FindIt>Autorevert&summary=Auto Revert failed on '
+      '%s&comment=Detail is %s') % (revision, culprit_link)
+
+  new_reviewers = rotations.current_sheriffs()
+
+  if not submitted:
+    # Findit only creates the revert but doesn't intend to submit it.
+    # This should only be used when auto_commit is disabled.
+    message = textwrap.dedent("""
+        Sheriffs, CL owner or CL reviewers:
+        Please approve and submit this revert if it is correct.
+        If it is a false positive, please abandon and report it
+        at %s.
+        If failed to submit the revert, please abandon it and report the failure
+        at %s.""") % (false_positive_bug_link, auto_revert_bug_link)
+  else:
+    # Findit submits the revert successfully. Add sheriffs to confirm the
+    # revert is correct.
+    message = textwrap.dedent("""
+        Sheriffs, CL owner or CL reviewers:
+        Please confirm this revert if it is correct.
+        If it is a false positive, please revert and report it
+        at %s.""") % false_positive_bug_link
+
+  # Original CL owner and reviewers are already reviewers when creating the
+  # revert, add sheriffs or Findit members to reviewers as well.
+  return codereview.AddReviewers(revert_change_id, new_reviewers, message)
 
 
 ###################### Functions to create a revert. ######################
@@ -265,21 +305,17 @@ def RevertCulprit(repo_name, revision, build_id):
     _UpdateCulprit(repo_name, revision, None, revert_cl=revert_cl)
 
   # 3. Add reviewers.
-  sheriffs = rotations.current_sheriffs()
-  message = textwrap.dedent("""
-      Sheriffs, CL owner or CL reviewers:
-      Please confirm and "Quick L-G-T-M & CQ" this revert if it is correct.
-      If it is a false positive, please close it.
-      Findit (https://goo.gl/kROfz5) identified the original CL as the culprit
-      for failures in the build cycles as shown on:
-      https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
-      culprit.key.urlsafe())
-  success = codereview.AddReviewers(revert_change_id, sheriffs, message)
-  if not success:  # pragma: no cover
-    _UpdateCulprit(repo_name, revision, status.ERROR)
-    logging.error('Failed to add reviewers for revert of'
-                  ' culprit %s/%s' % (repo_name, revision))
-    return ERROR
+  # If Findit cannot commit the revert, add sheriffs as reviewers and ask them
+  # to 'LGTM' and commit the revert.
+  if not waterfall_config.GetActionSettings().get('commit_gerrit_revert'):
+    success = _AddReviewers(revision,
+                            culprit.key.urlsafe(), codereview, revert_change_id,
+                            False)
+    if not success:  # pragma: no cover
+      _UpdateCulprit(repo_name, revision, status.ERROR)
+      logging.error('Failed to add reviewers for revert of'
+                    ' culprit %s/%s' % (repo_name, revision))
+      return ERROR
   _UpdateCulprit(repo_name, revision, revert_status=status.COMPLETED)
   return CREATED_BY_FINDIT
 
@@ -327,7 +363,7 @@ def _GetDailyNumberOfCommits(limit):
 
 def _CulpritIsDEPSAutoRoll(culprit_info):
   author_email = culprit_info['author']['email']
-  return author_email in _AUTO_ROLLER_EMAILS
+  return author_email in constants.AUTO_ROLLER_EMAILS
 
 
 def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
@@ -428,6 +464,8 @@ def CommitRevert(repo_name, revision, revert_status, pipeline_id):
   committed = codereview.SubmitRevert(revert_change_id)
 
   if committed:
+    _AddReviewers(revision,
+                  culprit.key.urlsafe(), codereview, revert_change_id, True)
     _UpdateCulprit(
         repo_name, revision, revert_submission_status=status.COMPLETED)
     monitoring.culprit_found.increment({
@@ -435,6 +473,8 @@ def CommitRevert(repo_name, revision, revert_status, pipeline_id):
         'action_taken': 'revert_committed'
     })
   else:
+    _AddReviewers(revision,
+                  culprit.key.urlsafe(), codereview, revert_change_id, False)
     _UpdateCulprit(repo_name, revision, revert_submission_status=status.ERROR)
     monitoring.culprit_found.increment({
         'type': 'compile',

@@ -49,6 +49,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 5, 0, 0))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  @mock.patch.object(revert_util, '_AddReviewers', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'SubmitRevert')
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
   def testSubmitRevertSucceed(self, mock_fn, mock_commit, *_):

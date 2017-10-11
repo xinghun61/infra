@@ -55,3 +55,13 @@ HTML_TEMPLATE_DIR = os.path.realpath(
     os.path.join(os.path.dirname(__file__), os.path.pardir, 'templates'))
 
 DEFAULT_SERVICE_ACCOUNT = 'findit-for-me@appspot.gserviceaccount.com'
+
+# TODO(chanli@): Move emails to config or other locations and avoid hard coding.
+# List of emails of auto rollers.
+AUTO_ROLLER_EMAILS = [  # yapf: disable
+    'skia-deps-roller@chromium.org',
+    'catapult-deps-roller@chromium.org',
+    'pdfium-deps-roller@chromium.org',
+    'v8-autoroll@chromium.org',
+    'ios-autoroll@chromium.org'
+]
