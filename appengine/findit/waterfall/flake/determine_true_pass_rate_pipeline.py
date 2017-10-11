@@ -7,13 +7,13 @@ import logging
 from google.appengine.ext import ndb
 
 from common import constants
+from common import monitoring
 from libs import analysis_status
 from libs import time_util
 from gae_libs import appengine_util
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from model.flake.flake_swarming_task import FlakeSwarmingTask
-from waterfall import monitoring
 from waterfall import swarming_util
 from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants

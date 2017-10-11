@@ -17,6 +17,7 @@ import textwrap
 from google.appengine.ext import ndb
 
 from common import constants
+from common import monitoring
 from common import rotations
 from infra_api_clients.codereview import codereview_util
 from libs import analysis_status as status
@@ -24,7 +25,6 @@ from libs import time_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import buildbot
-from waterfall import monitoring
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 

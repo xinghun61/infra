@@ -4,9 +4,9 @@
 
 import logging
 
+from common.findit_http_client import FinditHttpClient
 from common import constants
 from gae_libs import appengine_util
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from model.flake.flake_swarming_task import FlakeSwarmingTask
@@ -31,7 +31,7 @@ def ScheduleFlakeSwarmingTask(master_name, builder_name, build_number,
 
   step_metadata = buildbot.GetStepLog(master_name, builder_name, build_number,
                                       step_name,
-                                      HttpClientAppengine(), 'step_metadata')
+                                      FinditHttpClient(), 'step_metadata')
 
   if swarming_util.BotsAvailableForTask(step_metadata):
     # Sufficient bots are avialable, trigger the swarming task immediately.

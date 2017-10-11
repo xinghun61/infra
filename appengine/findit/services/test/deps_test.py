@@ -6,15 +6,15 @@ import logging
 import mock
 from testing_utils import testing
 
+from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs.deps import chrome_dependency_fetcher
 from libs.deps.dependency import Dependency
 from libs.gitiles.diff import ChangeType
 from services import deps
 
 _DEP_FETCHER = chrome_dependency_fetcher.ChromeDependencyFetcher(
-    CachedGitilesRepository.Factory(HttpClientAppengine()))
+    CachedGitilesRepository.Factory(FinditHttpClient()))
 
 
 class DepsTest(testing.AppengineTestCase):

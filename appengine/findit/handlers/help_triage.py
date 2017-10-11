@@ -2,11 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from common.findit_http_client import FinditHttpClient
 from gae_libs import token
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from model.wf_analysis import WfAnalysis
 from waterfall import buildbot
 from waterfall import build_util
@@ -41,8 +41,7 @@ def _AllFailedStepsPassed(passed_steps, current_failed_steps):
 def GetPossibleRevertInfoFromRevision(revision):
   """Parse message to get information of reverting and reverted cls."""
   git_repo = CachedGitilesRepository(
-      HttpClientAppengine(),
-      'https://chromium.googlesource.com/chromium/src.git')
+      FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
   change_log = git_repo.GetChangeLog(revision)
   if not change_log:  # pragma: no cover
     return {}

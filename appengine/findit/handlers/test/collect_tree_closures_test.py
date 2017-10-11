@@ -39,7 +39,7 @@ class CollectTreeClosuresTest(TestCase):
     checking_point = collect_tree_closures._GetCurrentCheckingPointForTree('c')
     self.assertEqual(expected_checking_point, checking_point)
 
-  @mock.patch.object(collect_tree_closures.HttpClientAppengine, 'Get')
+  @mock.patch.object(collect_tree_closures.FinditHttpClient, 'Get')
   def testRetrieveTreeStatusSuccess(self, mocked_Get):
     mocked_Get.side_effect = [(200, json.dumps([{
         'date': '2017-04-01 12:12:12',
@@ -68,7 +68,7 @@ class CollectTreeClosuresTest(TestCase):
             'endTime': 1490918400,
         })
 
-  @mock.patch.object(collect_tree_closures.HttpClientAppengine, 'Get')
+  @mock.patch.object(collect_tree_closures.FinditHttpClient, 'Get')
   def testRetrieveTreeStatusFailure(self, mocked_Get):
     mocked_Get.side_effect = [(400, 'error')]
     statuses = collect_tree_closures._RetrieveTreeStatus(
@@ -205,8 +205,8 @@ class CollectTreeClosuresTest(TestCase):
       collect_tree_closures, '_DetectTreeClosureForTree', return_value=2)
   def testGetWithoutStartTime(self, mocked_detect_fun, mocked_retrive_fun,
                               mocked_check_fun):
-    response = self.test_app.get('/collect-tree-closures',
-                                 headers={'X-AppEngine-Cron': 'true'})
+    response = self.test_app.get(
+        '/collect-tree-closures', headers={'X-AppEngine-Cron': 'true'})
     self.assertEquals(200, response.status_int)
     expected_result = {'chromium': 2}
     self.assertEqual(expected_result, response.json_body)

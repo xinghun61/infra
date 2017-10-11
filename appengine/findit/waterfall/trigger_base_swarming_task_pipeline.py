@@ -7,8 +7,8 @@ import json
 import logging
 import time
 
+from common.findit_http_client import FinditHttpClient
 from common.waterfall.pubsub_callback import MakeSwarmingPubsubCallback
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
 from libs import time_util
@@ -255,7 +255,7 @@ class TriggerBaseSwarmingTaskPipeline(BasePipeline):  # pragma: no cover.
       return self._GetSwarmingTaskId(*call_args)
 
     assert tests
-    http_client = HttpClientAppengine()
+    http_client = FinditHttpClient()
 
     # 0. Retrieve existing Swarming task ids for the given step.
     swarming_task_items = swarming_util.ListSwarmingTasksDataByTags(

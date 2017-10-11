@@ -3,14 +3,14 @@
 # found in the LICENSE file.
 
 from common import constants
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
 from model.wf_build import WfBuild
 from waterfall import buildbot
 
-HTTP_CLIENT_LOGGING_ERRORS = HttpClientAppengine()
-HTTP_CLIENT_NO_404_ERROR = HttpClientAppengine(no_error_logging_statuses=[404])
+HTTP_CLIENT_LOGGING_ERRORS = FinditHttpClient()
+HTTP_CLIENT_NO_404_ERROR = FinditHttpClient(no_error_logging_statuses=[404])
 
 
 def _BuildDataNeedUpdating(build):

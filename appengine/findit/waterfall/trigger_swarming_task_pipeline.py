@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from common import monitoring
 from model.wf_swarming_task import WfSwarmingTask
-from waterfall import monitoring
 from waterfall import waterfall_config
 from waterfall.trigger_base_swarming_task_pipeline import (
     TriggerBaseSwarmingTaskPipeline)

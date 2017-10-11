@@ -5,8 +5,9 @@
 import logging
 
 from google.appengine.ext import ndb
+
+from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
@@ -29,7 +30,7 @@ def _GetCommitsBetweenRevisions(start_revision, end_revision):
   Returns:
     A list of revisions sorted in order by oldest to newest.
   """
-  repo = CachedGitilesRepository(HttpClientAppengine(), _CHROMIUM_REPO_URL)
+  repo = CachedGitilesRepository(FinditHttpClient(), _CHROMIUM_REPO_URL)
   commits = repo.GetCommitsBetweenRevisions(start_revision, end_revision)
   commits.reverse()
   return commits

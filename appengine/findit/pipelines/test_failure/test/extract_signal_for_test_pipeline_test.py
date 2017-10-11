@@ -4,22 +4,22 @@
 
 import mock
 
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from pipelines.test_failure import extract_signal_for_test_pipeline
 from pipelines.test_failure.extract_signal_for_test_pipeline import (
     ExtractSignalForTestPipeline)
 from services.test_failure import extract_test_signal
 from waterfall.test import wf_testcase
 
-_HTTP_CLIENT = HttpClientAppengine()
+_HTTP_CLIENT = FinditHttpClient()
 
 
 class ExtractSignalForTestPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       extract_signal_for_test_pipeline,
-      'HttpClientAppengine',
+      'FinditHttpClient',
       autospec=True,
       return_value=_HTTP_CLIENT)
   @mock.patch.object(extract_test_signal, 'ExtractSignalsForTestFailure')

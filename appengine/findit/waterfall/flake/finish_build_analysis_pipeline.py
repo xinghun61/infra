@@ -10,6 +10,8 @@ from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
 from libs import time_util
+
+from common import monitoring
 from model import result_status
 from waterfall.flake import confidence
 from waterfall.flake import flake_analysis_util
@@ -21,7 +23,6 @@ from waterfall.flake.identify_suspected_revisions_pipeline import (
 from waterfall.flake.initialize_flake_try_job_pipeline import (
     InitializeFlakeTryJobPipeline)
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
-from waterfall import monitoring
 
 
 def _UpdateAnalysisResults(analysis,

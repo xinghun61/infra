@@ -15,8 +15,8 @@ from google.appengine.api.urlfetch_errors import DeadlineExceededError
 from google.appengine.api.urlfetch_errors import DownloadError
 from google.appengine.api.urlfetch_errors import ConnectionClosedError
 
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from infra_api_clients import logdog_util
 from libs.http.retry_http_client import RetryHttpClient
 from model.wf_config import FinditConfig
@@ -226,7 +226,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
       }))
   def testGetSwarmingTaskRequestError(self, _):
     self.assertIsNone(
-        swarming_util.GetSwarmingTaskRequest('task_id1', HttpClientAppengine()))
+        swarming_util.GetSwarmingTaskRequest('task_id1', FinditHttpClient()))
 
   def testTriggerSwarmingTask(self):
     request = SwarmingTaskRequest()
@@ -302,7 +302,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   def testTriggerSwarmingTaskError(self, _):
     request = SwarmingTaskRequest()
     task_id, error = swarming_util.TriggerSwarmingTask(request,
-                                                       HttpClientAppengine())
+                                                       FinditHttpClient())
     self.assertIsNone(task_id)
     self.assertIsNotNone(error)
 
@@ -720,7 +720,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
       }))
   def testGetSwarmingTaskResultByIdError(self, _):
     data, error = swarming_util.GetSwarmingTaskResultById(
-        'task_id', HttpClientAppengine())
+        'task_id', FinditHttpClient())
     self.assertEqual({}, data)
     self.assertIsNotNone(error)
 
@@ -776,7 +776,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
       RetryHttpClient, 'Get', side_effect=ConnectionClosedError())
   def testSendRequestToServerConnectionClosedError(self, _):
     content, error = swarming_util._SendRequestToServer(
-        'http://www.someurl.url', HttpClientAppengine())
+        'http://www.someurl.url', FinditHttpClient())
     self.assertIsNone(content)
     self.assertEqual(error['code'],
                      swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
@@ -785,7 +785,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
       RetryHttpClient, 'Get', side_effect=DeadlineExceededError())
   def testSendRequestToServerDeadlineExceededError(self, _):
     content, error = swarming_util._SendRequestToServer(
-        'http://www.someurl.com', HttpClientAppengine())
+        'http://www.someurl.com', FinditHttpClient())
     self.assertIsNone(content)
     self.assertEqual(error['code'],
                      swarming_util.URLFETCH_DEADLINE_EXCEEDED_ERROR)
@@ -793,7 +793,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(RetryHttpClient, 'Get', side_effect=DownloadError())
   def testSendRequestToServerDownloadError(self, _):
     content, error = swarming_util._SendRequestToServer(
-        'http://www.someurl.com', HttpClientAppengine())
+        'http://www.someurl.com', FinditHttpClient())
     self.assertIsNone(content)
     self.assertEqual(error['code'], swarming_util.URLFETCH_DOWNLOAD_ERROR)
 
@@ -812,7 +812,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.UpdateUnitTestConfigSettings('swarming_settings',
                                       override_swarming_settings)
     content, error = swarming_util._SendRequestToServer(
-        'http://www.someurl.com', HttpClientAppengine())
+        'http://www.someurl.com', FinditHttpClient())
     self.assertIsNone(content)
     self.assertEqual(error['code'],
                      swarming_util.URLFETCH_CONNECTION_CLOSED_ERROR)
@@ -823,7 +823,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     unexpected_status_code = 12345
     mocked_get.return_value = (unexpected_status_code, None)
     content, error = swarming_util._SendRequestToServer(
-        'http://www.someurl.com', HttpClientAppengine())
+        'http://www.someurl.com', FinditHttpClient())
     self.assertIsNone(content)
     self.assertEqual(unexpected_status_code, error['code'])
 

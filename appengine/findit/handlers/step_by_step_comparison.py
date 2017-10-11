@@ -6,10 +6,10 @@
 from collections import namedtuple
 import json
 
+from common.findit_http_client import FinditHttpClient
 from common import rpc_util
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
 
 from waterfall import buildbot
@@ -161,7 +161,7 @@ class StepByStepComparison(BaseHandler):
   PERMISSION_LEVEL = Permission.ANYONE
 
   def HandleGet(self):
-    http_client = HttpClientAppengine()
+    http_client = FinditHttpClient()
     left_url = self.request.get('swarmbucket_try_job')
     right_url = self.request.get('buildbot_try_job')
     if not left_url or not right_url:

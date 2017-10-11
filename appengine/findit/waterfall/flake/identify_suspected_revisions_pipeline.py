@@ -4,8 +4,8 @@
 
 from google.appengine.ext import ndb
 
+from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from waterfall import extractor_util
 from waterfall.flake import heuristic_analysis_util
@@ -15,8 +15,7 @@ class IdentifySuspectedRevisionsPipeline(BasePipeline):
   """Generates suspected CLs for flake analysis."""
 
   GIT_REPO = CachedGitilesRepository(
-      HttpClientAppengine(),
-      'https://chromium.googlesource.com/chromium/src.git')
+      FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, analysis_urlsafe_key, test_location):

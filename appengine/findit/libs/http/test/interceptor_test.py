@@ -60,3 +60,9 @@ class InterceptorTest(testing.AppengineTestCase):
     mock_logging.assert_called_once_with('got exception %s("%s") for url %s',
                                          NotImplementedError,
                                          'Post not supported', url)
+
+  def testGetHost(self):
+    self.assertEqual(
+        'test.com',
+        interceptor.HttpInterceptorBase.GetHost('https://test.com/long/path'))
+    self.assertIsNone(interceptor.HttpInterceptorBase.GetHost(''))

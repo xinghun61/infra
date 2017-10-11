@@ -4,9 +4,9 @@
 
 from collections import defaultdict
 
+from common.findit_http_client import FinditHttpClient
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 from model.wf_config import FinditConfig
 from waterfall import buildbot
@@ -102,7 +102,7 @@ class CheckTrybotMapping(BaseHandler):
   PERMISSION_LEVEL = Permission.ADMIN
 
   def HandleGet(self):
-    http_client = HttpClientAppengine()
+    http_client = FinditHttpClient()
     supported_masters = _GetSupportedMasters()
     main_waterfall_builders = _GetBuildersOnMasters(supported_masters,
                                                     http_client)

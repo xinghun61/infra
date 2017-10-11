@@ -19,16 +19,16 @@ from google.appengine.api.urlfetch_errors import DownloadError
 from google.appengine.api.urlfetch_errors import ConnectionClosedError
 from google.appengine.ext import ndb
 
+from common.findit_http_client import FinditHttpClient
+from common import monitoring
 from common.waterfall import buildbucket_client
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.http import auth_util
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from infra_api_clients import logdog_util
 from libs import time_util
 from model.wf_try_bot_cache import WfTryBot
 from model.wf_try_bot_cache import WfTryBotCache
 from model.wf_step import WfStep
-from waterfall import monitoring
 from waterfall import waterfall_config
 from waterfall.swarming_task_request import SwarmingTaskRequest
 
@@ -593,7 +593,7 @@ def BotsAvailableForTask(step_metadata):
           'minimum_percentage_of_available_bots',
           DEFAULT_MINIMUM_PERCENTAGE_AVAILABLE_BOTS))
   dimensions = step_metadata.get('dimensions')
-  bot_counts = GetSwarmingBotCounts(dimensions, HttpClientAppengine())
+  bot_counts = GetSwarmingBotCounts(dimensions, FinditHttpClient())
 
   total_count = bot_counts.get('count') or -1
   available_count = bot_counts.get('available', 0)

@@ -6,9 +6,9 @@ from datetime import datetime
 from datetime import timedelta
 import mock
 
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
 from model import result_status
 from model.wf_analysis import WfAnalysis
@@ -19,7 +19,7 @@ from services import try_job as try_job_util
 from waterfall.test import wf_testcase
 
 _GIT_REPO = CachedGitilesRepository(
-    HttpClientAppengine(), 'https://chromium.googlesource.com/chromium/src.git')
+    FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
 
 
 class TryJobUtilTest(wf_testcase.WaterfallTestCase):

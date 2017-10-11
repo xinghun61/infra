@@ -4,7 +4,7 @@
 
 import logging
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
+from common.findit_http_client import FinditHttpClient
 from waterfall import buildbot
 from waterfall import swarming_util
 
@@ -95,7 +95,7 @@ def FindMatchingWaterfallStep(build_step, test_name):
   build_step.swarmed = False
   build_step.supported = False
 
-  http_client = HttpClientAppengine()
+  http_client = FinditHttpClient()
 
   if build_step.on_cq:
     wf_master_name, wf_builder_name, wf_build_number, wf_step_name, metadata = (

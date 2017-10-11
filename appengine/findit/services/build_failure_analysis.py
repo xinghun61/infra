@@ -15,8 +15,9 @@ import re
 
 from google.appengine.ext import ndb
 
+from common.findit_http_client import FinditHttpClient
+from common import monitoring
 from common.waterfall import failure_type
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
@@ -26,7 +27,6 @@ from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from services import deps
-from waterfall import monitoring
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
@@ -63,7 +63,7 @@ def _GetGitBlame(repo_info, touched_file_path):
   """
   if repo_info:
     repo_url = repo_info['repo_url']
-    git_repo = CachedGitilesRepository(HttpClientAppengine(), repo_url)
+    git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url)
     revision = repo_info['revision']
     return git_repo.GetBlame(touched_file_path, revision)
 
@@ -503,7 +503,7 @@ def _GetChangedLinesForDependencyRepo(roll, file_path_in_log, line_numbers):
     Tests if the same lines mentioned in failure log are changed within
     the DEPS roll, if so, return those line numbers.
   """
-  roll_repo = CachedGitilesRepository(HttpClientAppengine(), roll['repo_url'])
+  roll_repo = CachedGitilesRepository(FinditHttpClient(), roll['repo_url'])
   old_revision = roll['old_revision']
   new_revision = roll['new_revision']
   old_change_log = roll_repo.GetChangeLog(old_revision)
@@ -784,8 +784,7 @@ def PullChangeLogs(failure_info):
     }
   """
   git_repo = CachedGitilesRepository(
-      HttpClientAppengine(),
-      'https://chromium.googlesource.com/chromium/src.git')
+      FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
 
   change_logs = {}
   for build in failure_info.get('builds', {}).values():
@@ -834,7 +833,7 @@ def ExtractDepsInfo(failure_info, change_logs):
                                        failure_info['builder_name'])
 
   dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
-      CachedGitilesRepository.Factory(HttpClientAppengine()))
+      CachedGitilesRepository.Factory(FinditHttpClient()))
 
   return {
       'deps':

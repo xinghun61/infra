@@ -4,7 +4,7 @@
 
 from google.appengine.ext import ndb
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
+from common.findit_http_client import FinditHttpClient
 from gae_libs.pipeline_wrapper import BasePipeline
 from waterfall import swarming_util
 
@@ -41,15 +41,15 @@ class GetTestLocationPipeline(BasePipeline):
 
     task_id = suspected_build_point.task_id
     task_output = swarming_util.GetIsolatedOutputForTask(
-        task_id, HttpClientAppengine())
+        task_id, FinditHttpClient())
 
     test_locations = task_output.get('test_locations')
 
     if test_locations is None:
       analysis.LogWarning(
           'Failed to get test locations from isolated output for task %s for '
-          'on suspected build %s' % (
-              task_id, suspected_build_point.build_number))
+          'on suspected build %s' % (task_id,
+                                     suspected_build_point.build_number))
       return None
 
     test_location = test_locations.get(analysis.test_name)

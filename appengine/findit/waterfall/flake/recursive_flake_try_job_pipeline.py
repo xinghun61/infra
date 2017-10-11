@@ -7,10 +7,11 @@ import logging
 from google.appengine.ext import ndb
 
 from common import constants
+from common.findit_http_client import FinditHttpClient
+from common import monitoring
 from common.waterfall import failure_type
 from gae_libs import appengine_util
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
@@ -32,10 +33,9 @@ from waterfall.flake.schedule_flake_try_job_pipeline import (
 from waterfall.flake.send_notification_for_flake_culprit_pipeline import (
     SendNotificationForFlakeCulpritPipeline)
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
-from waterfall import monitoring
 
 _GIT_REPO = CachedGitilesRepository(
-    HttpClientAppengine(), 'https://chromium.googlesource.com/chromium/src.git')
+    FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
 
 _MAX_RETRY_TIMES = 5
 _BASE_COUNT_DOWN_SECONDS = 2 * 60
@@ -160,7 +160,7 @@ def _CanStartTryJob(try_job, rerun, retries):
       retries < _MAX_RETRY_TIMES):
     dimensions = waterfall_config.GetTrybotDimensions(try_master, try_builder)
     bot_counts = swarming_util.GetSwarmingBotCounts(dimensions,
-                                                    HttpClientAppengine())
+                                                    FinditHttpClient())
     waterfall_reserved_rate = waterfall_config.GetTryJobSettings().get(
         'waterfall_reserved_rate', .5)
     total_count = bot_counts.get('count') or -1

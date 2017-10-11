@@ -4,7 +4,7 @@
 
 import mock
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
+from common.findit_http_client import FinditHttpClient
 from model.flake.flake_analysis_request import BuildStep
 from waterfall import buildbot
 from waterfall import swarming_util
@@ -23,7 +23,7 @@ class StepMapperTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
     super(StepMapperTest, self).setUp()
-    self.http_client = HttpClientAppengine()
+    self.http_client = FinditHttpClient()
     self.master_name = 'tryserver.m'
     self.wf_master_name = 'm'
     self.builder_name = 'b'

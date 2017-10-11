@@ -10,9 +10,9 @@ import re
 
 from google.appengine.ext import ndb
 
+from common.findit_http_client import FinditHttpClient
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import time_util
 from model.tree_closure import TreeClosure
 from model.tree_closure import TreeStatus
@@ -62,7 +62,7 @@ def _RetrieveTreeStatus(tree_name, start_time, end_time=None):
   if end_time:
     # Tree status app treats startTime as the end of the time range.
     params['startTime'] = time_util.ConvertToTimestamp(end_time)
-  http_client = HttpClientAppengine()
+  http_client = FinditHttpClient()
   status_code, content = http_client.Get(url, params=params)
   if status_code == 200:
     all_statuses = map(_CreateTreeStatus, json.loads(content))

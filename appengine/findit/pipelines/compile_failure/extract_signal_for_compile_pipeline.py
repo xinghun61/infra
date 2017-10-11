@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
+from common.findit_http_client import FinditHttpClient
 from gae_libs.pipeline_wrapper import BasePipeline
 from services.compile_failure import extract_compile_signal
 
@@ -27,4 +27,4 @@ class ExtractSignalForCompilePipeline(BasePipeline):
     """
 
     return extract_compile_signal.ExtractSignalsForCompileFailure(
-        failure_info, HttpClientAppengine())
+        failure_info, FinditHttpClient())

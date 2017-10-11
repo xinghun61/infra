@@ -6,7 +6,7 @@
 import json
 import logging
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
+from common.findit_http_client import FinditHttpClient
 from model.wf_step import WfStep
 from services import gtest
 from waterfall import swarming_util
@@ -197,7 +197,7 @@ def _UpdateFailureInfoBuilds(failed_steps, builds):
 def CheckFirstKnownFailureForSwarmingTests(master_name, builder_name,
                                            build_number, failed_steps, builds):
   """Uses swarming test results to update first failure info at test level."""
-  http_client = HttpClientAppengine()
+  http_client = FinditHttpClient()
 
   # Identifies swarming tests and saves isolated data to them.
   result = swarming_util.GetIsolatedDataForFailedBuild(

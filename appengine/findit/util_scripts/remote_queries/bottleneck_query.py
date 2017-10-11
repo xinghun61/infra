@@ -23,7 +23,7 @@ _FINDIT_DIR = os.path.join(
 sys.path.insert(1, _FINDIT_DIR)
 from local_libs import remote_api
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
+from common.findit_http_client import FinditHttpClient
 from libs import time_util
 from model.wf_analysis import WfAnalysis
 from pipeline_utils.appengine_third_party_pipeline_python_src_pipeline \
@@ -45,7 +45,7 @@ THREAD_COUNT = 64
 # If more than 1199 entities are requested at once, the ndb query.fetch_page()
 # operation will stall.
 MAX_ENTITIES_PER_REQUEST = 1199
-CLIENT_SINGLETON = HttpClientAppengine()
+CLIENT_SINGLETON = FinditHttpClient()
 
 
 def _BigFetch(query, page_size=MAX_ENTITIES_PER_REQUEST):

@@ -8,7 +8,7 @@ import os
 import urllib
 import zlib
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
+from common.findit_http_client import FinditHttpClient
 from model.wf_step import WfStep
 from services.test_failure import ci_test_failure
 from waterfall import swarming_util
@@ -284,7 +284,7 @@ class CITestFailureServicesTest(wf_testcase.WaterfallTestCase):
 
     ci_test_failure._UpdateFirstFailureOnTestLevel(
         master_name, builder_name, build_number, step_name, failed_step,
-        HttpClientAppengine())
+        FinditHttpClient())
 
     expected_failed_step = {
         'current_failure': 224,
@@ -330,7 +330,7 @@ class CITestFailureServicesTest(wf_testcase.WaterfallTestCase):
 
     ci_test_failure._UpdateFirstFailureOnTestLevel(
         master_name, builder_name, build_number, step_name, failed_step,
-        HttpClientAppengine())
+        FinditHttpClient())
 
     expected_failed_step = {
         'current_failure': 223,

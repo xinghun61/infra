@@ -9,8 +9,8 @@ from google.appengine.ext import ndb
 
 from monorail_api import IssueTrackerAPI
 
+from common import monitoring
 from gae_libs.pipeline_wrapper import BasePipeline
-from waterfall import monitoring
 
 
 def _GetIssue(bug_id, issue_tracker):

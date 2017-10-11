@@ -2,13 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
+from common.findit_http_client import FinditHttpClient
 from infra_api_clients.codereview.rietveld import Rietveld
 from infra_api_clients.codereview.gerrit import Gerrit
 
-HTTP_CLIENT = HttpClientAppengine()
+HTTP_CLIENT = FinditHttpClient()
 _DEFAULT_RIETVELD_HOST = 'codereview.chromium.org'
 _DEFAULT_GERRIT_HOST = 'chromium-review.googlesource.com'
+
 
 def GetCodeReviewForReview(review_server_host, code_review_settings=None):
   """Returns an instance of CodeReview implementation or None if unknown."""
@@ -30,5 +31,5 @@ def IsCodeReviewRietveld(review_server_host, code_review_settings=None):
 
 def IsCodeReviewGerrit(review_server_host, code_review_settings=None):
   settings = code_review_settings or {}
-  return review_server_host in settings.get(
-      'gerrit_hosts', [_DEFAULT_GERRIT_HOST])
+  return review_server_host in settings.get('gerrit_hosts',
+                                            [_DEFAULT_GERRIT_HOST])

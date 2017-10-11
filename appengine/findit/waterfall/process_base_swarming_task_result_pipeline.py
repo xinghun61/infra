@@ -11,8 +11,8 @@ import time
 from google.appengine.api import taskqueue
 
 from common import constants
+from common.findit_http_client import FinditHttpClient
 from gae_libs import appengine_util
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
 from waterfall import swarming_util
@@ -28,7 +28,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
   generate a dict for statuses for each test run.
   """
 
-  HTTP_CLIENT = HttpClientAppengine()
+  HTTP_CLIENT = FinditHttpClient()
   # Making this pipeline asynchronous by setting this class variable.
   async = True
 

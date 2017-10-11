@@ -8,8 +8,8 @@ import json
 import logging
 
 from gae_libs.http import auth_util
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 
+from common.findit_http_client import FinditHttpClient
 from common.waterfall.pubsub_callback import MakeTryJobPubsubCallback
 
 # TODO: save these settings in datastore and create a role account.
@@ -180,7 +180,7 @@ def TriggerTryJobs(try_jobs, notification_id=''):
   }
 
   for try_job in try_jobs:
-    status_code, content = HttpClientAppengine().Put(
+    status_code, content = FinditHttpClient().Put(
         _BUILDBUCKET_PUT_GET_ENDPOINT,
         json.dumps(try_job.ToBuildbucketRequest(notification_id)),
         headers=headers)
@@ -211,7 +211,7 @@ def GetTryJobs(build_ids):
   }
 
   for build_id in build_ids:
-    status_code, content = HttpClientAppengine().Get(
+    status_code, content = FinditHttpClient().Get(
         _BUILDBUCKET_PUT_GET_ENDPOINT + '/' + build_id, headers=headers)
     if status_code == 200:  # pragma: no cover
       json_results.append(json.loads(content))

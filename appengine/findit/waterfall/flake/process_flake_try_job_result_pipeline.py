@@ -4,7 +4,7 @@
 
 from google.appengine.ext import ndb
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
+from common.findit_http_client import FinditHttpClient
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
 from model.flake.master_flake_analysis import DataPoint
@@ -17,7 +17,7 @@ def _GetSwarmingTaskIdForTryJob(report, revision, step_name, test_name):
   if not report:
     return None
 
-  http_client = HttpClientAppengine()
+  http_client = FinditHttpClient()
 
   step_result = report.get('result', {}).get(revision, {}).get(step_name, {})
   pass_fail_counts = step_result.get('pass_fail_counts', {}).get(test_name)

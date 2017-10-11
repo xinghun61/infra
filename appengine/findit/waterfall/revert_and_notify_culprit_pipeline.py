@@ -4,13 +4,13 @@
 
 import logging
 
+from common import monitoring
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from waterfall import buildbot
 from waterfall import build_util
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
-from waterfall import monitoring
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 from waterfall.send_notification_to_irc_pipeline import (
@@ -19,7 +19,7 @@ from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 
 
 def _AnyBuildSucceeded(master_name, builder_name, build_number):
-  http_client = HttpClientAppengine()
+  http_client = FinditHttpClient()
   latest_build_numbers = buildbot.GetRecentCompletedBuilds(
       master_name, builder_name, http_client)
 

@@ -5,10 +5,10 @@
 import logging
 
 from common import constants
+from common import monitoring
 from libs import email_util
 from libs import time_util
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
-from waterfall import monitoring
 from waterfall.flake import initialize_flake_pipeline
 from waterfall.flake import step_mapper
 from waterfall.test_info import TestInfo

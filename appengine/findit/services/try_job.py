@@ -18,8 +18,8 @@ import logging
 
 from google.appengine.ext import ndb
 
+from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import analysis_status
 from libs import time_util
 from model import result_status
@@ -272,8 +272,7 @@ def GetCulpritInfo(failed_revisions):
   """Gets commit_positions and review urls for revisions."""
 
   git_repo = CachedGitilesRepository(
-      HttpClientAppengine(),
-      'https://chromium.googlesource.com/chromium/src.git')
+      FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
   culprits = {}
   # TODO(crbug/767759): remove hard-coded 'chromium' when DEPS file parsing is
   # supported.

@@ -4,10 +4,10 @@
 
 import logging
 
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from waterfall import swarming_util
 
 _FINDIT_SWARMING_POOL = 'Chrome.Findit'
@@ -42,7 +42,7 @@ def _BotUpdateTryJob(bot_id, platform):
 
 def _TriggerUpdateJobs():
   tryjobs = []
-  http_client = HttpClientAppengine()
+  http_client = FinditHttpClient()
   for os_name in _PLATFORM_BUILDER_MAP:
     dimensions = ['pool:%s' % _FINDIT_SWARMING_POOL, 'os:%s' % os_name]
     bots = swarming_util.GetBotsByDimension(dimensions, http_client)

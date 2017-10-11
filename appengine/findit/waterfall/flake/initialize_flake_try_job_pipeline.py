@@ -7,8 +7,9 @@ from google.appengine.ext import ndb
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
 from libs import time_util
+
+from common import monitoring
 from waterfall import build_util
-from waterfall import monitoring
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence

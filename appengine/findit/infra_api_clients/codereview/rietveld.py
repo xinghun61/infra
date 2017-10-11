@@ -17,10 +17,10 @@ import logging
 import re
 import urlparse
 
+from common.findit_http_client import FinditHttpClient
 from libs import time_util
 from infra_api_clients.codereview import cl_info
 from infra_api_clients.codereview import codereview
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 _RIETVELD_ISSUE_NUMBER_RE = re.compile('^/(\d+)/?.*')
 _PATCHSET_REVERTED_TO_ISSUE_REGEX = re.compile(
@@ -40,7 +40,7 @@ _COMMIT_ATTEMPT_REGEX = re.compile(r'^The CQ bit was checked by [^ ]+$')
 
 class Rietveld(codereview.CodeReview):
   """The implementation of CodeReview interface for Rietveld."""
-  HTTP_CLIENT = HttpClientAppengine(follow_redirects=False)
+  HTTP_CLIENT = FinditHttpClient(follow_redirects=False)
 
   def __init__(self, server_hostname):
     super(Rietveld, self).__init__(server_hostname)

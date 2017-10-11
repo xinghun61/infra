@@ -10,13 +10,14 @@ from google.appengine.api import taskqueue
 from google.appengine.ext import ndb
 
 from common import constants
+from common.findit_http_client import FinditHttpClient
+from common import monitoring
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
 from common.waterfall import try_job_error
 from common.waterfall.buildbucket_client import BuildbucketBuild
 from gae_libs import appengine_util
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
@@ -25,7 +26,6 @@ from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_try_bot_cache import WfTryBotCache
 from model.wf_try_job_data import WfTryJobData
 from waterfall import buildbot
-from waterfall import monitoring
 from waterfall import swarming_util
 from waterfall import waterfall_config
 
@@ -206,7 +206,7 @@ def _RecordCacheStats(build, report):
   cache_name = swarming_util.GetBuilderCacheName(build)
   if bot and cache_name:
     git_repo = CachedGitilesRepository(
-        HttpClientAppengine(),
+        FinditHttpClient(),
         'https://chromium.googlesource.com/chromium/src.git')
 
     last_checked_out_revision = report.get('last_checked_out_revision')
@@ -482,8 +482,8 @@ class MonitorTryJobPipeline(BasePipeline):
 
       if swarming_task_id:
         try:
-          report = swarming_util.GetStepLog(
-              try_job_id, 'report', HttpClientAppengine(), 'report')
+          report = swarming_util.GetStepLog(try_job_id, 'report',
+                                            FinditHttpClient(), 'report')
           if report:
             _RecordCacheStats(build, report)
         except (ValueError, TypeError) as e:  # pragma: no cover
@@ -496,9 +496,10 @@ class MonitorTryJobPipeline(BasePipeline):
             buildbot.ParseBuildUrl(build.url))
 
         try:
-          report = buildbot.GetStepLog(
-              try_job_master_name, try_job_builder_name, try_job_build_number,
-              'report', HttpClientAppengine(), 'report')
+          report = buildbot.GetStepLog(try_job_master_name,
+                                       try_job_builder_name,
+                                       try_job_build_number, 'report',
+                                       FinditHttpClient(), 'report')
         except (ValueError, TypeError) as e:  # pragma: no cover
           report = {}
           logging.exception(

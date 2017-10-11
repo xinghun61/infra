@@ -5,8 +5,8 @@
 import logging
 
 from common import constants
+from common.findit_http_client import FinditHttpClient
 from gae_libs import appengine_util
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from libs import analysis_status
 from libs import time_util
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -159,7 +159,7 @@ def ScheduleAnalysisIfNeeded(
     step_metadata = buildbot.GetStepLog(
         normalized_test.master_name, normalized_test.builder_name,
         normalized_test.build_number, normalized_test.step_name,
-        HttpClientAppengine(), 'step_metadata')
+        FinditHttpClient(), 'step_metadata')
 
     logging.info('Initializing flake analysis pipeline for key: %s',
                  analysis.key)

@@ -7,9 +7,9 @@ import copy
 
 from google.appengine.ext import ndb
 
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
 from model import analysis_approach_type
@@ -23,7 +23,7 @@ from waterfall.revert_and_notify_culprit_pipeline import (
     RevertAndNotifyCulpritPipeline)
 
 GIT_REPO = CachedGitilesRepository(
-    HttpClientAppengine(), 'https://chromium.googlesource.com/chromium/src.git')
+    FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
 
 
 def _GetResultAnalysisStatus(analysis, result, all_flaked=False):

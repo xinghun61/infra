@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from services.compile_failure import extract_compile_signal
 from services.test_failure import extract_test_signal
@@ -12,7 +12,7 @@ from services.test_failure import extract_test_signal
 class ExtractSignalPipeline(BasePipeline):
   """A pipeline to extract failure signals from each failed step."""
 
-  HTTP_CLIENT = HttpClientAppengine()
+  HTTP_CLIENT = FinditHttpClient()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, failure_info):

@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import logging
+import urlparse
 
 _NO_RETRY_CODE = [200, 302, 401, 403, 404, 409, 501]
 
@@ -85,6 +86,24 @@ class HttpInterceptorBase(object):
     _ = request
     _ = can_retry
     return exception
+
+  @staticmethod
+  def GetHost(url):
+    """Standarized way for interceptors to get the host from the requested urls.
+
+    The point of having this here instead of making each interceptor parse the
+    url, is that we may have a single point to use special-casing for some hosts
+    and/or paths.
+
+    Args:
+      - url(str): A string containing the requested url.
+    Returns:
+      The hostname part of the url(str), None if url is empty or None.
+    """
+    host = None
+    if url:
+      host = urlparse.urlparse(url).hostname
+    return host
 
 
 class LoggingInterceptor(HttpInterceptorBase):

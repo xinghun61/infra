@@ -2,14 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from common import monitoring
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from model.wf_build import WfBuild
 from waterfall import buildbot
-from waterfall import monitoring
 from waterfall import swarming_util
 from waterfall import waterfall_config
 
@@ -71,8 +71,7 @@ class ScheduleTryJobPipeline(BasePipeline):
         tryserver_mastername, tryserver_buildername, None, properties, [],
         additional_parameters, cache_name, dimensions)
     # This is a no-op if the tryjob is not on swarmbucket.
-    swarming_util.AssignWarmCacheHost(try_job, cache_name,
-                                      HttpClientAppengine())
+    swarming_util.AssignWarmCacheHost(try_job, cache_name, FinditHttpClient())
     error, build = buildbucket_client.TriggerTryJobs([try_job],
                                                      self.pipeline_id)[0]
 

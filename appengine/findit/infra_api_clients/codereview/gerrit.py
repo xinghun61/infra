@@ -6,7 +6,7 @@ import json
 import logging
 import re
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
+from common.findit_http_client import FinditHttpClient
 from infra_api_clients.codereview import cl_info
 from infra_api_clients.codereview import codereview
 from libs import time_util
@@ -14,7 +14,7 @@ from libs import time_util
 
 class Gerrit(codereview.CodeReview):
   """Stub for implementing Gerrit support."""
-  HTTP_CLIENT = HttpClientAppengine(follow_redirects=False)
+  HTTP_CLIENT = FinditHttpClient(follow_redirects=False)
 
   def __init__(self, host, settings=None):
     super(Gerrit, self).__init__(host)

@@ -5,12 +5,12 @@
 
 import json
 
+from common.findit_http_client import FinditHttpClient
 from libs import time_util
-from gae_libs.http.http_client_appengine import HttpClientAppengine
 
 ROTATIONS_URL = 'https://build.chromium.org/p/chromium/all_rotations.js'
 
-HTTP_CLIENT = HttpClientAppengine()
+HTTP_CLIENT = FinditHttpClient()
 
 
 def get_all_rotations():

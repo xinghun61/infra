@@ -14,6 +14,11 @@ outgoing_http_errors = gae_ts_mon.CounterMetric(
     [gae_ts_mon.StringField('host'),
      gae_ts_mon.StringField('exception')])
 
+outgoing_http_statuses = gae_ts_mon.CounterMetric(
+    'findit/outgoinghttpstatuses', 'Http requests to external services',
+    [gae_ts_mon.StringField('host'),
+     gae_ts_mon.StringField('status_code')])
+
 issues = gae_ts_mon.CounterMetric(
     'findit/issues', 'Bugs updated with findings',
     [gae_ts_mon.StringField('category'),

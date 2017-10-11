@@ -6,7 +6,7 @@ import logging
 
 from google.appengine.ext import ndb
 
-from gae_libs.http.http_client_appengine import HttpClientAppengine
+from common.findit_http_client import FinditHttpClient
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
@@ -146,7 +146,7 @@ def _GetBoundedRangeFromBuild(commit_position, master_name, builder_name,
 def _GetLatestBuildNumber(master_name, builder_name):
   """Attempts to get the latest build number on master_name/builder_name."""
   recent_builds = buildbot.GetRecentCompletedBuilds(master_name, builder_name,
-                                                    HttpClientAppengine())
+                                                    FinditHttpClient())
 
   if recent_builds is None:  # pragma: no cover
     # Likely a network error.
@@ -310,7 +310,7 @@ class RegressionRangeAnalysisPipeline(BasePipeline):
         upper_bound_commit_position, analysis)
     step_metadata = buildbot.GetStepLog(
         analysis.master_name, analysis.builder_name, analysis.build_number,
-        analysis.step_name, HttpClientAppengine(), 'step_metadata')
+        analysis.step_name, FinditHttpClient(), 'step_metadata')
 
     _RemoveStablePointsWithinRange(analysis, lower_bound_build_number,
                                    upper_bound_build_number,
