@@ -1,3 +1,22 @@
+# Release Notes sheriff-o-matic 2017-10-11
+
+- 3 commits, 1 bugs affected since 9334646 (2017-10-10T21:44:46Z)
+- 2 Authors:
+  - seanmccullough@chromium.org
+  - martiniss@chromium.org
+
+## Changes in this release
+
+- [[som] authenticate RPCs to Milo](https://chromium-review.googlesource.com/713589) (seanmccullough@chromium.org)
+- [[som] SoM manages its own bq tables instead of using chrome-infra-events](https://chromium-review.googlesource.com/711134) (seanmccullough@chromium.org)
+- [SOM: Fix grouping logic](https://chromium-review.googlesource.com/710854) (martiniss@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/773674](https://crbug.com/773674)
+
+
 # Release Notes sheriff-o-matic 2017-10-10
 
 - 10 commits, 2 bugs affected since 05ddbf8 (2017-09-20T22:14:39Z)
