@@ -6,10 +6,10 @@ import pb "infra/libs/bqschema/tabledef"
 import time "time"
 
 // SOMAlertsEventTable is the TableDef for the
-// "test_data" dataset's "som_alerts" table.
+// "events" dataset's "alerts" table.
 var SOMAlertsEventTable = &pb.TableDef{
-	DatasetId: "test_data",
-	TableId:   "som_alerts",
+	DatasetId: "events",
+	TableId:   "alerts",
 }
 
 // SOMAlertsEvent_BuildFailures is a record for the "build_failures" field.

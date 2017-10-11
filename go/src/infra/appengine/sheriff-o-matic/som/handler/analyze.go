@@ -16,7 +16,6 @@ import (
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/model"
 	"infra/libs/eventupload"
-	"infra/libs/infraenv"
 	"infra/monitoring/messages"
 
 	"go.chromium.org/gae/service/datastore"
@@ -329,7 +328,7 @@ func storeAlertsSummary(c context.Context, a *analyzer.Analyzer, tree string, al
 }
 
 func putAlertsBigQuery(c context.Context, tree string, alertsSummary *messages.AlertsSummary) error {
-	client, err := bigquery.NewClient(c, infraenv.ChromeInfraEventsProject)
+	client, err := bigquery.NewClient(c, info.AppID(c))
 	if err != nil {
 		return err
 	}

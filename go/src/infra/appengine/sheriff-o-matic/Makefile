@@ -10,6 +10,7 @@ help:
 
 build:
 	cd frontend && make build
+	cd som/model && go generate
 
 clean:
 	cd frontend && make clean
@@ -37,6 +38,15 @@ getversion:
 deploy_prod: build getversion
 	gcloud app deploy --no-promote --no-stop-previous-version frontend/app.yaml backend/app.yaml dispatch.yaml cron.yaml frontend/queue.yaml --project sheriff-o-matic --version $(VERS)
 	rm frontend/elements/som-app/som-app.vulcanized.html
+
+bqtools:
+	go install infra/tools/bqschemaupdater
+
+update_bq_staging: bqtools
+	bqschemaupdater -project sheriff-o-matic-staging som/model/som_alerts.pb.txt
+
+update_bq_prod: bqtools
+	bqschemaupdater -project sheriff-o-matic som/model/som_alerts.pb.txt
 
 deploy_staging: build getversion
 	gcloud app deploy --no-promote --no-stop-previous-version frontend/app.yaml backend/app.yaml dispatch.yaml cron.yaml frontend/queue.yaml --project sheriff-o-matic-staging --version $(VERS)
