@@ -54,7 +54,7 @@ func (t *testFailure) Title(bses []*messages.BuildStep) string {
 		return fmt.Sprintf("%s failing on %s/%s", GetTestSuite(f), f.Master.Name(), f.Build.BuilderName)
 	}
 
-	return fmt.Sprintf("%s failing on %d builders", GetTestSuite(f), len(bses))
+	return fmt.Sprintf("%s failing on multiple builders", GetTestSuite(f))
 }
 
 // testWithResult stores the information provided by Findit for a specific test,

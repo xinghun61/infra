@@ -78,7 +78,7 @@ func (b *basicFailure) Title(bses []*messages.BuildStep) string {
 		return fmt.Sprintf("%s failing on %s/%s", f.Step.Name, f.Master.Name(), f.Build.BuilderName)
 	}
 
-	return fmt.Sprintf("%s failing on %d builders", f.Step.Name, len(bses))
+	return fmt.Sprintf("%s failing on multiple builders", f.Step.Name)
 }
 
 func basicAnalyzer(ctx context.Context, fs []*messages.BuildStep) ([]messages.ReasonRaw, []error) {

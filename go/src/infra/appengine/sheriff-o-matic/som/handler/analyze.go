@@ -7,7 +7,6 @@ import (
 	"net/url"
 	"sort"
 	"strconv"
-	"sync"
 	"time"
 
 	"golang.org/x/net/context"
@@ -23,7 +22,6 @@ import (
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
 	tq "go.chromium.org/gae/service/taskqueue"
-	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/common/tsmon/field"
@@ -201,65 +199,55 @@ func mergeAlertsByReason(ctx context.Context, alerts []messages.Alert) error {
 
 	sort.Strings(sortedReasons)
 
-	wg := sync.WaitGroup{}
-	var allErrs []error
-	for _, reason := range sortedReasons {
-		stepAlerts := byReason[reason]
-		if len(stepAlerts) == 1 {
-			continue
-		}
-
-		sort.Sort(messages.Alerts(stepAlerts))
-		mergedBF := stepAlerts[0].Extension.(messages.BuildFailure)
-
-		stepsAtFault := make([]*messages.BuildStep, len(stepAlerts))
-		for i := range stepAlerts {
-			bf, ok := stepAlerts[i].Extension.(messages.BuildFailure)
-			if !ok {
+	return parallel.WorkPool(groupingPoolSize, func(workC chan<- func() error) {
+		for _, reason := range sortedReasons {
+			stepAlerts := byReason[reason]
+			if len(stepAlerts) == 1 {
 				continue
 			}
 
-			stepsAtFault[i] = bf.StepAtFault
-		}
-		groupTitle := mergedBF.Reason.Title(stepsAtFault)
-		err := parallel.WorkPool(groupingPoolSize, func(workC chan<- func() error) {
-			for _, alr := range stepAlerts {
-				wg.Add(1)
-				alr := alr
-				workC <- func() error {
-					defer wg.Done()
+			workC <- func() error {
+				sort.Sort(messages.Alerts(stepAlerts))
+				mergedBF := stepAlerts[0].Extension.(messages.BuildFailure)
+
+				stepsAtFault := make([]*messages.BuildStep, len(stepAlerts))
+				for i := range stepAlerts {
+					bf, ok := stepAlerts[i].Extension.(messages.BuildFailure)
+					if !ok {
+						return fmt.Errorf("alert extension %s was not a BuildFailure", stepAlerts[i].Extension)
+					}
+
+					stepsAtFault[i] = bf.StepAtFault
+				}
+
+				groupTitle := mergedBF.Reason.Title(stepsAtFault)
+				for _, alr := range stepAlerts {
 					ann := &model.Annotation{
 						KeyDigest: fmt.Sprintf("%x", sha1.Sum([]byte(alr.Key))),
 						Key:       alr.Key,
 					}
 					err := datastore.Get(ctx, ann)
 					if err != nil && err != datastore.ErrNoSuchEntity {
-						return fmt.Errorf("got err while getting annotation from key %s: %s", alr.Key, err)
+						logging.Warningf(ctx, "got err while getting annotation from key %s: %s. Ignoring", alr.Key, err)
 					}
-					if ann.GroupID != "" {
-						logging.Warningf(ctx, "Found groupID %s, wanted to set %s", ann.GroupID, groupTitle)
+					// If we didn't find an annotation, then the default group ID will be present.
+					// We only want the case where the user explicitly sets the group to something.
+					// Ungrouping an alert sets the group ID to "".
+					if err != datastore.ErrNoSuchEntity && ann.GroupID != groupTitle {
+						logging.Warningf(ctx, "Found groupID %s, wanted to set %s. Assuming user set group manually.", ann.GroupID, groupTitle)
+						continue
 					}
 
 					ann.GroupID = groupTitle
 					if err := datastore.Put(ctx, ann); err != nil {
 						return fmt.Errorf("got err while put: %s", err)
 					}
-					return nil
+
 				}
+				return nil
 			}
-		})
-		if err != nil {
-			allErrs = append(allErrs, err)
 		}
-	}
-
-	wg.Wait()
-
-	if len(allErrs) > 0 {
-		return errors.NewMultiError(allErrs...)
-	}
-
-	return nil
+	})
 }
 
 func enqueueLogDiffTask(ctx context.Context, alerts []messages.Alert) error {
