@@ -199,9 +199,14 @@ class ClusterfuzzData(CrashData):
 
   @cached_property
   def commit_count_in_regression_range(self):
-    return (GetCommitCountInRegressionRange(
+    # 0 commits if the regression range is empty.
+    if (not self.regression_repository or
+        (not self.regression_repository.get('old_revision') and
+         not self.regression_repository.get('new_revision'))):
+      return 0
+
+    return GetCommitCountInRegressionRange(
         self._get_repository,
         self.regression_repository['repo_url'],
-        self.regression_repository['old_revision'],
-        self.regression_repository['new_revision'])
-            if self.regression_repository else 0)
+        self.regression_repository.get('old_revision'),
+        self.regression_repository.get('new_revision'))

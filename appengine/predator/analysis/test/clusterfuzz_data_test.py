@@ -144,6 +144,16 @@ class CusterfuzzDataTest(AnalysisTestCase):
             regression_range['repo_url'], regression_range['old_revision'],
             regression_range['new_revision']), 3)
 
+  def testCommitCountInRegressionRangeReturns0ForEmptyRegressionRange(self):
+    """Tests ``commit_count_in_regression_range`` property."""
+    regression_range = {'dep_path': 'src', 'repo_url': 'https://repo',
+                        'old_revision': None, 'new_revision': None}
+    crash_data = ClusterfuzzData(
+        self.GetDummyClusterfuzzData(regression_range=regression_range),
+        self.GetMockRepoFactory())
+
+    self.assertEqual(crash_data.commit_count_in_regression_range, 0)
+
   @mock.patch('analysis.clusterfuzz_data.GetCommitCountInRegressionRange')
   def testCommitCountInRegressionRangeProperty(self, mock_get_commits):
     """Tests ``commit_count_in_regression_range`` property."""
