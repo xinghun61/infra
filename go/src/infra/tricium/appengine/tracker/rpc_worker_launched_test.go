@@ -49,7 +49,7 @@ func TestWorkerLaunchedRequest(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		Convey("Marks worker as launched", func() {
-			analyzerName, err := track.ExtractAnalyzerName(fileIsolator)
+			analyzerName, _, err := track.ExtractAnalyzerPlatform(fileIsolator)
 			So(err, ShouldBeNil)
 			analyzerKey := ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
 			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, analyzerKey)

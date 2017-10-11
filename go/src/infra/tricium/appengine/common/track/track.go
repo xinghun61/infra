@@ -270,14 +270,14 @@ type CommentFeedback struct {
 
 const workerSeparator = "_"
 
-// ExtractAnalyzerName extracts the analyzer name from a worker name.
+// ExtractAnalyzerPlatform extracts the analyzer and platform name from a worker name.
 //
 // The worker name must be on the form 'AnalyzerName_PLATFORM'.
-func ExtractAnalyzerName(workerName string) (string, error) {
+func ExtractAnalyzerPlatform(workerName string) (string, string, error) {
 	parts := strings.SplitN(workerName, workerSeparator, 2)
 	if len(parts) != 2 {
-		return "", fmt.Errorf("malformed worker name: %s", workerName)
+		return "", "", fmt.Errorf("malformed worker name: %s", workerName)
 	}
-	return parts[0], nil
+	return parts[0], parts[1], nil
 
 }

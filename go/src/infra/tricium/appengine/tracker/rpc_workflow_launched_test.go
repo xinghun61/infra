@@ -78,7 +78,7 @@ func TestWorkflowLaunchedRequest(t *testing.T) {
 			}, mockWorkflowProvider{})
 			So(err, ShouldBeNil)
 
-			analyzerName, err := track.ExtractAnalyzerName(fileIsolator)
+			analyzerName, _, err := track.ExtractAnalyzerPlatform(fileIsolator)
 
 			Convey("Marks workflow run as launched", func() {
 				// Run entry is marked as launched.

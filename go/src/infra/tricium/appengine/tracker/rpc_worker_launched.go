@@ -45,7 +45,7 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 	// Compute needed keys.
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 	runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
-	analyzerName, err := track.ExtractAnalyzerName(req.Worker)
+	analyzerName, _, err := track.ExtractAnalyzerPlatform(req.Worker)
 	if err != nil {
 		return fmt.Errorf("failed to extract analyzer name: %v", err)
 	}

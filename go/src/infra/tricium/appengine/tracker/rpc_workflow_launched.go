@@ -157,7 +157,7 @@ func extractAnalyzerWorkerStructure(c context.Context, wf *admin.Workflow) (map[
 	m := map[string]*analyzerToWorkers{}
 	var analyzers []string
 	for _, w := range wf.Workers {
-		analyzer, err := track.ExtractAnalyzerName(w.Name)
+		analyzer, _, err := track.ExtractAnalyzerPlatform(w.Name)
 		if err != nil {
 			logging.Errorf(c, "Failed to extract analyzer name: %v", err)
 		}

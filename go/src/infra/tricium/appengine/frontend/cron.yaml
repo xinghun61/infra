@@ -1,9 +1,16 @@
 cron:
+
 - description: "Gerrit poll"
   url: /gerrit/internal/poll
   schedule: every 1 mins
   target: gerrit
+
 - description: "Config cache refresh"
   url: /admin/config/cache/manager
   schedule: every 10 mins
+  target: default
+
+- description: "tsmon housekeeping task"
+  url: /internal/cron/ts_mon/housekeeping
+  schedule: every 1 minutes
   target: default

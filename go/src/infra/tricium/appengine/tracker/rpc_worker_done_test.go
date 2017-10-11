@@ -53,7 +53,7 @@ func TestWorkerDoneRequest(t *testing.T) {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
 
-		analyzerName, err := track.ExtractAnalyzerName(fileIsolator)
+		analyzerName, _, err := track.ExtractAnalyzerPlatform(fileIsolator)
 		So(err, ShouldBeNil)
 
 		// Add pending run entry.

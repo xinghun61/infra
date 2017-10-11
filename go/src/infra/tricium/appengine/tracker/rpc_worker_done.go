@@ -48,7 +48,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	// Get keys for entities.
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 	runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
-	analyzerName, err := track.ExtractAnalyzerName(req.Worker)
+	analyzerName, platformName, err := track.ExtractAnalyzerPlatform(req.Worker)
 	if err != nil {
 		return fmt.Errorf("failed to extract analyzer name: %v", err)
 	}
@@ -189,6 +189,8 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			if err := ds.Put(c, entities); err != nil {
 				return fmt.Errorf("failed to add CommentSelection/CommentFeedback entries: %v", err)
 			}
+			// Monitor comment count per category.
+			commentCount.Set(c, int64(len(comments)), analyzerName, platformName)
 			return nil
 		},
 		// Update worker state, isolated output, and number of result comments.
@@ -198,6 +200,12 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			workerRes.NumComments = len(comments)
 			if err := ds.Put(c, workerRes); err != nil {
 				return fmt.Errorf("failed to update WorkerRunResult: %v", err)
+			}
+			// Monitor worker success/failure.
+			if workerState == tricium.State_SUCCESS {
+				workerSuccessCount.Add(c, 1, analyzerName, platformName)
+			} else {
+				workerFailureCount.Add(c, 1, analyzerName, platformName, workerState)
 			}
 			return nil
 		},

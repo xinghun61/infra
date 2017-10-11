@@ -10,14 +10,15 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestExtractAnalyzerName(t *testing.T) {
+func TestExtractAnalyzerPlatform(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		analyzerName := "Lint"
 		platform := "UBUNTU"
-		a, err := ExtractAnalyzerName(analyzerName + workerSeparator + platform)
+		a, p, err := ExtractAnalyzerPlatform(analyzerName + workerSeparator + platform)
 		So(err, ShouldBeNil)
 		So(a, ShouldEqual, analyzerName)
-		_, err = ExtractAnalyzerName(analyzerName)
+		So(p, ShouldEqual, platform)
+		_, _, err = ExtractAnalyzerPlatform(analyzerName)
 		So(err, ShouldNotBeNil)
 	})
 }
