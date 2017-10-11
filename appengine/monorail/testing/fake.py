@@ -1870,7 +1870,7 @@ class FeaturesService(object):
 
   def GetHotlistsByIssueID(self, cnxn, issue_id, use_cache=True):
     """Get a list of hotlist PBs for a given issue."""
-    hotlist_id_dict = self.LookUpIssueHotlists(cnxn, [issue_id])
+    hotlist_id_dict = self.LookupIssueHotlists(cnxn, [issue_id])
     hotlists = self.GetHotlists(cnxn, hotlist_id_dict.get(
         issue_id, []), use_cache=use_cache)
     return hotlists.values()

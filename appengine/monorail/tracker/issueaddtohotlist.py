@@ -72,18 +72,22 @@ class AddToHotlist(jsonfeed.JsonFeed):
     added_hotlist_pbs = [self.services.features.GetHotlist(
         mr.cnxn, hotlist_id) for hotlist_id in hotlist_ids]
 
-    user_issue_hotlists = list(set(self.services.features.GetHotlistsByUserID(
-        mr.cnxn, mr.auth.user_id)) &
-                               set(self.services.features.GetHotlistsByIssueID(
-                                   mr.cnxn, selected_iids[0])))
-    all_hotlist_urls = [hotlist_helpers.GetURLOfHotlist(
-        mr.cnxn, hotlist, self.services.user) for
-                        hotlist in user_issue_hotlists]
-    all_hotlist_names = [hotlist.name for hotlist in user_issue_hotlists]
-    return {'addedHotlistIDs': hotlist_ids,
-            # hotlist_ids issues were added to or new hotlist's id
-            'missed': missed,  # missed issues
-            'addedHotlistNames': [h.name for h in added_hotlist_pbs],
-            # hotlist names issues were added to or new hotlist's name
+    all_hotlist_names = []
+    all_hotlist_urls = []
+    if selected_iids:
+      # For updating user's hotlist when adding issues via the issue
+      # details page. selected_iids should only contain one issue in this case.
+      user_issue_hotlists = list(
+          set(self.services.features.GetHotlistsByUserID(
+              mr.cnxn, mr.auth.user_id)) &
+          set(self.services.features.GetHotlistsByIssueID(
+              mr.cnxn, selected_iids[0])))
+      all_hotlist_urls = [hotlist_helpers.GetURLOfHotlist(
+          mr.cnxn, hotlist, self.services.user) for
+                          hotlist in user_issue_hotlists]
+      all_hotlist_names = [hotlist.name for hotlist in user_issue_hotlists]
+    return {'missed': missed,  # missed issues
+            'updatedHotlistNames': [h.name for h in added_hotlist_pbs],
+            # names of hotlsits that issues were added to or new hotlist
             'allHotlistNames': all_hotlist_names,  # user's hotlists' names
             'allHotlistUrls': all_hotlist_urls}  # user's hotlists' urls

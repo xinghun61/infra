@@ -1196,11 +1196,12 @@ function AddIssuesToHotlist(onResponse, opt_SelectedIssueRefs) {
 }
 
 function createResponseMessage(response) {
-  var hotlists = response['addedHotlistNames'].join(', ');
-  var message = 'Successfully added to ' + hotlists;
+  let message;
   if (response['missed'] && response['missed'].length > 0) {
-    missed = ' \n' + response['missed'].join(', ') + ' could not be added.';
-    message = message + missed;
+    message =
+        `The following issues could not be updated: ${response['missed'].join(', ')}`;
+  } else {
+    message = `Successfully updated ${response['updatedHotlistNames'].join(', ')}`;
   }
   return message;
 }
