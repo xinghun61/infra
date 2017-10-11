@@ -510,8 +510,13 @@ func WithProdClients(ctx context.Context) context.Context {
 	ctx = WithCrRev(ctx, "https://cr-rev.appspot.com")
 	ctx = WithFindit(ctx, "https://findit-for-me.appspot.com")
 
+	client, err := getAsSelfOAuthClient(ctx)
+	if err != nil {
+		panic("No OAuth client in context")
+	}
+
 	miloPRPCClient := &prpc.Client{
-		C:       &http.Client{Transport: urlfetch.Get(ctx)},
+		C:       client, //&http.Client{Transport: urlfetch.Get(ctx)},
 		Host:    "luci-milo.appspot.com",
 		Options: prpc.DefaultOptions(),
 	}
