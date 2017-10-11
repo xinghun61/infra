@@ -69,7 +69,7 @@ deploy-prod: _deploy
 	@echo "Released by $(USER)@"
 
 deploy-staging: test polymer-check
-	@$(INFRAPYTHON) $(GAE_PY) upload -A --switch $(STAGING_APPID);
+	@$(INFRAPYTHON) $(GAE_PY) upload -A $(STAGING_APPID);
 
 _deploy: test polymer-check
 	@$(INFRAPYTHON) $(GAE_PY) upload -A $(APPID);
