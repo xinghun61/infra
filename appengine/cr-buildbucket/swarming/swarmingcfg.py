@@ -347,21 +347,18 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
       if subctx.result().has_errors:
         should_try_merge = False
 
-  if not swarming.builders:
-    ctx.error('builders are not defined')
-  else:
-    for i, b in enumerate(swarming.builders):
-      with ctx.prefix('builder %s: ' % (b.name or '#%s' % (i + 1))):
-        # Validate b before merging, otherwise merging will fail.
-        subctx = make_subctx()
-        validate_builder_cfg(b, mixins, False, subctx)
-        if subctx.result().has_errors or not should_try_merge:
-          # Do no try to merge invalid configs.
-          continue
+  for i, b in enumerate(swarming.builders):
+    with ctx.prefix('builder %s: ' % (b.name or '#%s' % (i + 1))):
+      # Validate b before merging, otherwise merging will fail.
+      subctx = make_subctx()
+      validate_builder_cfg(b, mixins, False, subctx)
+      if subctx.result().has_errors or not should_try_merge:
+        # Do no try to merge invalid configs.
+        continue
 
-        merged = copy.deepcopy(b)
-        flatten_builder(merged, swarming.builder_defaults, mixins)
-        validate_builder_cfg(merged, mixins, True, ctx)
+      merged = copy.deepcopy(b)
+      flatten_builder(merged, swarming.builder_defaults, mixins)
+      validate_builder_cfg(merged, mixins, True, ctx)
 
 
 def has_pool_dimension(dimensions):

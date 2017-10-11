@@ -64,9 +64,6 @@ class ProjectCfgTest(testing.AppengineTestCase):
         '',
         [])
 
-  def test_empty(self):
-    self.cfg_test('', '', ['builders are not defined'])
-
   def test_bad(self):
     self.cfg_test(
         '''
