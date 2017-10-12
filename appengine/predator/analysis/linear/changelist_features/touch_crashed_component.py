@@ -82,10 +82,19 @@ class TouchCrashedComponentFeature(Feature):
                             reason=None,
                             changed_files=None)
 
+      crashed_components = [component.value for component in matches]
+      plural = len(crashed_components) > 1
+
+      reason = [
+          'Suspected changelist touched file(s) associated with the '
+          'component%s %s, which we believe is related to this testcase based '
+          'on information in OWNERS files.' % (
+              's' if plural else '', ', '.join(crashed_components))]
+
       return FeatureValue(
           name=self.name,
           value=1.0,
-          reason='\n'.join([str(match) for match in matches.itervalues()]),
+          reason=reason,
           changed_files=None)
 
     return FeatureValueGivenReport

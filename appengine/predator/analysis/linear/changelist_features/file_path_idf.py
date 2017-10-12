@@ -118,8 +118,8 @@ class FilePathIdfFeature(Feature):
       logging.info('Computing crash idf feature')
       max_idf, max_idf_file_path = GetMaxIdfInMatches(matches)
       value = LogRegressNomalize(max_idf)
-      reason = 'Frame with highest idf (%.3f) - %s' % (
-          value, os.path.basename(max_idf_file_path))
+      reason = ['Suspected changelist modified the file %s, which is not '
+                'commonly changed.' % os.path.basename(max_idf_file_path)]
 
       return FeatureValue(self.name, value, reason, None)
 

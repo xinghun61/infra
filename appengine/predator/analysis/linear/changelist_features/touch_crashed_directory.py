@@ -17,11 +17,10 @@ from libs.gitiles.diff import ChangeType
 
 
 class TouchCrashedDirectoryFeature(Feature):
-  """Returns either log one or log zero.
+  """Returns either one or zero.
 
-  When a suspect touched crashed directory, we return the log-domain
-  value 0 (aka normal-domain value of 1). When the there is no directory match,
-  we return log-domain value -inf (aka normal-domain value of 0).
+  When a suspect touched crashed directory, we return the
+  value 1. When the there is no directory match, we return value 0.
   """
   def __init__(self, include_test_files=True):
     """
@@ -92,10 +91,20 @@ class TouchCrashedDirectoryFeature(Feature):
                             reason=None,
                             changed_files=None)
 
+      crashed_directories = [directory.value for directory in matches]
+      plural = len(crashed_directories) > 1
+
+      reason = [
+          'Suspected changelist touched file(s) in the %s %s, which '
+          'appear%s in the stack trace.' % (
+                'directories' if plural else 'directory',
+                ', '.join(crashed_directories),
+                '' if plural else 's')]
+
       return FeatureValue(
           name=self.name,
           value=1.0,
-          reason='\n'.join([str(match) for match in matches.itervalues()]),
+          reason=reason,
           changed_files=None)
 
     return FeatureValueGivenReport

@@ -50,13 +50,19 @@ class TouchCrashedFileFeature(Feature):
                             reason=None,
                             changed_files=None)
 
+      touched_files = [os.path.basename(touched_file.new_path)
+                       for match in matches.itervalues()
+                       for touched_file in match.touched_files]
+      plural = len(touched_files) > 1
+
+      reason = ['Suspected changelist touched file%s %s, which appear%s in the '
+                'stack trace.' % ('s' if plural else '',
+                                  ', '.join(touched_files),
+                                  '' if plural else 's')]
       return FeatureValue(
           name=self.name,
           value=1.0,
-          reason='Touched file(s) in stacktrace - %s' % ', '.join([
-              os.path.basename(touched_file.new_path)
-              for match in matches.itervalues()
-              for touched_file in match.touched_files]),
+          reason=reason,
           changed_files=None)
 
     return FeatureValueGivenReport

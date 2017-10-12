@@ -53,7 +53,6 @@ class FrameInfo(namedtuple('FrameInfo', ['frame', 'priority'])):
 
 class CrashMatch(namedtuple('CrashMatch',
                             ['crashed_group', 'touched_files', 'frame_infos'])):
-
   """Represents a match between touched files with frames in stacktrace.
 
   The ``touched_files`` and ``frame_infos`` are matched under the same
@@ -61,21 +60,3 @@ class CrashMatch(namedtuple('CrashMatch',
   CrashedDirectory('dir/').
   """
   __slots__ = ()
-
-  def __str__(self):  # pragma: no cover
-    frame_file_path_to_index = defaultdict(list)
-    for frame_info in self.frame_infos:
-      frame_file_path_to_index[
-          frame_info.frame.file_path].append(frame_info.frame.index)
-
-    frame_file_path_to_index = {
-        file_path:
-            'frame #%s' % ','.join([str(indice) for indice in set(index)])
-        for file_path, index in frame_file_path_to_index.iteritems()
-    }
-    return 'Changed file(s) %s with the same %s (%s) as %s' % (
-        ', '.join([os.path.basename(f.new_path) for f in self.touched_files
-                   if f.new_path]),
-        self.crashed_group.name, self.crashed_group.value,
-        ', '.join(['%s (in %s)' % (os.path.basename(path), index)
-                   for path, index in frame_file_path_to_index.iteritems()]))

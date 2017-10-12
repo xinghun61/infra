@@ -32,10 +32,11 @@ class UnnormalizedLogLinearModelTest(LinearTestCase):
   def testFilterReasonWithWeight(self):
     meta_weight = MetaWeight({'f1': Weight(2.), 'f2': Weight(0.),
                               'f3': Weight(1.)})
-    reason = MetaDict({'f1': 'reason1', 'f2': 'reason2'})
+    reason = MetaDict({'f1': ['reason1', 'reason3'], 'f2': ['reason2']})
 
     model = UnnormalizedLogLinearModel(None, meta_weight)
-    self.assertListEqual(model.FilterReasonWithWeight(reason), ['reason1'])
+    self.assertListEqual(model.FilterReasonWithWeight(reason), ['reason1',
+                                                                'reason3'])
 
 
 class LoglinearTest(LinearTestCase):

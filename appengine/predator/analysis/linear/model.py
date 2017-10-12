@@ -208,7 +208,7 @@ class UnnormalizedLogLinearModel(object):
     """Filters reasons with zero weights.
 
     Args:
-      reason (dict): Dict mapping feature name to reason string.
+      reason (dict): Dict mapping feature name to reason list.
 
     Returns:
       A list of reason strings.
@@ -225,7 +225,11 @@ class UnnormalizedLogLinearModel(object):
         key=lambda item: -_FEATURE_TO_REASON_PRIORITY.get(
             item[0], -float('inf')))
 
-    return [reason for _, reason in sorted_reasons]
+    reasons = []
+    for _, reason in sorted_reasons:
+      reasons.extend(reason)
+
+    return reasons
 
 
 class LogLinearModel(UnnormalizedLogLinearModel):

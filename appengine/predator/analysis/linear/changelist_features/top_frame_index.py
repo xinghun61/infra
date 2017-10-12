@@ -15,22 +15,12 @@ _DEFAULT_MAX_FRAME_INDEX = 7
 
 
 class TopFrameIndexFeature(Feature):
-  """Returns the minimum frame index scaled between -inf and 0.
+  """Returns the minimum frame index scaled between 0 and 1.
 
-  That is, the normal-domain value is scaled linearly between 0 and 1,
-  but since we want to return a log-domain value we take the logarithm
-  of that (hence -inf to 0). This ensures that when a suspect has a
-  linearly-scaled value of 0 (aka log-scaled value of -inf) we absolutely
-  refuse to blame that suspect. This heuristic behavior is intended. Before
-  changing it to be less aggressive about refusing to blame the suspect,
-  we should delta test to be sure the new heuristic acts as indented.
-
-  When the actual minimum frame index is zero, we return the log-domain
-  value 0 (aka normal-domain value of 1). When the suspect has no frames or
-  the actual minimum frame index is greater than the ``max_frame_index``,
-  we return the log-domain value -inf (aka normal-domain value of 0). In
-  between we scale the normal-domain values linearly, which means the
-  log-domain values are scaled exponentially.
+  If a suspect touched crashed files in stacktrace, the closer the touched frame
+  is to the signature frame(top frame), the more likely the suspect is the
+  culprit.
+  ``TopFrameIndexFeature`` emphasizes signature frame and frames near it.
   """
   def __init__(self, max_frame_index=_DEFAULT_MAX_FRAME_INDEX):
     """
@@ -83,13 +73,11 @@ class TopFrameIndexFeature(Feature):
       top_frame = TopFrameInMatches(matches)
       value = LinearlyScaled(float(top_frame.index),
                              float(self.max_frame_index))
-      if value <= _MINIMUM_FEATURE_VALUE:
-        reason = None
-      else:
-        reason = 'Top touched frame is #%d %s(in %s)' % (
-            top_frame.index, re.sub('\(.*\)', '', top_frame.function),
-            os.path.basename(top_frame.file_path))
 
-      return FeatureValue(self.name, value, reason, None)
+      # This feature reason is redundant to MinDistance or TouchedCrashedFile
+      # features, which also mentioned which files the suspected cl touched with
+      # more useful information. So the reason for this feature is not very
+      # helpful, we are not providing the reason for this feature.
+      return FeatureValue(self.name, value, None, None)
 
     return FeatureValueGivenReport

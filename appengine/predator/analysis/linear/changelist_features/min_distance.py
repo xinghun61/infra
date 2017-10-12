@@ -218,11 +218,11 @@ class MinDistanceFeature(Feature):
 
       value = LinearlyScaled(float(distance.distance), float(self._maximum))
       if distance.frame is not None:
-        reason = (
-            'Changelist touched lines near the crashed line in '
-            'frame #%d %s (distance = %d lines away)' % (
-                distance.frame.index, distance.frame.function,
-                int(distance.distance)))
+        reason = [
+            'Suspected changelist touched lines near the crashing line in '
+            '%s (%d lines away)' % (
+                os.path.basename(distance.frame.file_path),
+                int(distance.distance))]
       else:
         reason = None
 
