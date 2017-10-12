@@ -459,6 +459,15 @@
     <p>
       status: <a href="{{ pipeline_status_path }}" target="_blank">pipeline status</a>
     </p>
+
+    <!-- Cancel analysis button -->
+    <form action="/waterfall/flake" method="post">
+      <input type="hidden" name="debug" value="1" />
+      <input type="hidden" name="cancel" value="1" />
+      <input type="hidden" name="key" value="{{key}}" />
+      <input type="hidden" name="xsrf_token" value="{{xsrf_token}}" />
+      <input type="submit" value="Cancel Analysis" />
+    </form>
   {% endif %}
 
   {% if show_admin_options %}
@@ -497,15 +506,6 @@
         <input type="hidden" name="key" value="{{key}}" />
         <input type="hidden" name="xsrf_token" value="{{xsrf_token}}" />
         <input type="submit" value="Rerun Analysis" />
-      </form>
-
-      <!-- Cancel analysis button -->
-      <form action="/waterfall/flake" method="post">
-        <input type="hidden" name="debug" value="1" />
-        <input type="hidden" name="cancel" value="1" />
-        <input type="hidden" name="key" value="{{key}}" />
-        <input type="hidden" name="xsrf_token" value="{{xsrf_token}}" />
-        <input type="submit" value="Cancel Analysis" />
       </form>
     </div>
   {% endif %}
