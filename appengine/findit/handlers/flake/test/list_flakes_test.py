@@ -177,6 +177,13 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
     analysis_key = self.master_flake_analysis1.key.urlsafe()
     mocked_fn.return_value = analyses, self.prev_cursor, self.cursor
 
+    confidence_in_suspected_build = 0.9
+    confidence_in_culprit = 0.8
+    bug_id = 98765
+    self.master_flake_analysis1.confidence_in_suspected_build = 0.9
+    self.master_flake_analysis1.confidence_in_culprit = 0.8
+    self.master_flake_analysis1.bug_id = bug_id
+
     response = self.test_app.get(
         '/waterfall/list-flakes',
         params={'step_name': self.step_name1,
@@ -191,8 +198,12 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
                 self.build_number1,
             'builder_name':
                 self.builder_name1,
+            'bug_id':
+                bug_id,
             'confidence_in_suspected_build':
-                None,
+                confidence_in_suspected_build,
+            'confidence_in_culprit':
+                confidence_in_culprit,
             'culprit': {},
             'key':
                 analysis_key,
@@ -268,7 +279,11 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
                 self.build_number1,
             'builder_name':
                 self.builder_name1,
+            'bug_id':
+                None,
             'confidence_in_suspected_build':
+                None,
+            'confidence_in_culprit':
                 None,
             'culprit': {},
             'key':

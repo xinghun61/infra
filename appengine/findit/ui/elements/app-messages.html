@@ -64,6 +64,7 @@
         </template>
         <template is="dom-if" if="[[_isPredefinedMessage(_message, 400)]]">
           <div>
+            <h3>Regression Range Analysis Status</h3>
             Swarming tasks are triggered on a series of builds to identify the build that may contain the CL that introduced test flakiness
             <ul>
               <li>Pending: A request for a build-level analysis has been made, however tasks have not yet begun</li>
@@ -72,16 +73,15 @@
               <li>Error: The analysis was halted due to an unexpected error</li>
             </ul>
           </div>
-        </template>
-        <template is="dom-if" if="[[_isPredefinedMessage(_message, 500)]]">
           <div>
+            <h3>Culprit Analysis Status</h3>
             Try jobs are triggered on the regression range of a build suspected to contain the CL that introduced test flakiness.
             <ul>
               <li>Running: A suspected build number has been identified and try jobs analysis is running</li>
               <li>Completed: Try job analysis is complete</li>
               <li>Error: The analysis was halted due to an unexpected error</li>
               <li>Skipped: Try jobs will not be triggered either due to no suspected build being identified, insufficient confidence in the suspected build, or build-level analysis ending in error</li>
-              <li>(Blank): Try job analysis has not yet begun, since analysis at the build level is still in progress</li>
+              <li>(Blank): Try job analysis has not yet begun, since analysis at the build level is still in progress or ended in error</li>
             </ul>
           </div>
         </template>
@@ -106,12 +106,11 @@
    (function() {
      'use strict';
 
-     var messageTitiles = {
+     var messageTitles = {
        100: 'No Permission',
        200: 'Score Explanation',
        300: 'Choose a range or point to analyze',
-       400: 'Build Analysis Status',
-       500: 'Culprit Analysis Status',
+       400: 'Analysis Status',
      };
 
      Polymer({
@@ -135,15 +134,15 @@
        },
 
        _getMessageTitile: function(message) {
-         return message.title || messageTitiles[message.messageId] || 'Message';
+         return message.title || messageTitles[message.messageId] || 'Message';
        },
 
        _isPredefinedMessage: function(message, id) {
-         return Boolean(message && messageTitiles[message.messageId] && message.messageId == id);
+         return Boolean(message && messageTitles[message.messageId] && message.messageId == id);
        },
 
        _isCustomizedMessage: function(message) {
-         return Boolean(message && (!message.messageId || !messageTitiles[message.messageId]));
+         return Boolean(message && (!message.messageId || !messageTitles[message.messageId]));
        },
      });
    })();

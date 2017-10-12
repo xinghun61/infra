@@ -105,8 +105,12 @@ class ListFlakes(BaseHandler):
               master_flake_analysis.build_number,
           'builder_name':
               master_flake_analysis.builder_name,
-          'confidence_in_suspected_build': (
-              master_flake_analysis.confidence_in_suspected_build),
+          'bug_id':
+              master_flake_analysis.bug_id,
+          'confidence_in_culprit':
+              master_flake_analysis.confidence_in_culprit,
+          'confidence_in_suspected_build':
+              master_flake_analysis.confidence_in_suspected_build,
           'culprit':
               culprit.to_dict() if culprit else {},
           'key':

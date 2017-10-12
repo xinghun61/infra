@@ -33,6 +33,23 @@
       border-bottom:1px solid #d3d3d3;
       cursor: pointer;
     }
+
+    /*Analysis statuses*/
+    .completed {
+      color: #ffffff;
+      background-color: #8fdf5f;
+      border-color: #4f8530;
+    }
+    .error {
+      color: #ffffff;
+      background-color: #e98080;
+      border-color: #a77272;
+    }
+    .running {
+      color: #666666;
+      background-color: #fffc6c;
+      border-color: #c5c56d;
+    }
   </style>
   <script>
     function getParameters() {
@@ -119,12 +136,8 @@
         $('.previous').prop('disabled', false);
       }
 
-      $('.swarming-rerun-status-info').click(function() {
-        displayMessage(400);  // Explanation of Build Analysis Status.
-      });
-
-      $('.try-job-status-info').click(function() {
-        displayMessage(500);  // Explanation of Culprit Analysis Status.
+      $('.analysis-status-info').click(function() {
+        displayMessage(400);  // Explanation of Analysis Status.
       });
 
       document.getElementById('app').userInfo = {{ (user_info or {}) | tojson | safe }};
@@ -169,18 +182,20 @@
     <table>
       <thead>
         <tr>
-          <th>Analysis Request Time</th>
+          <th>Request Time</th>
           <th>Build</th>
           <th>Step</th>
           <th>Test</th>
-          <th>Build Analysis Status (<a class="swarming-rerun-status-info" href="javascript:">?</a>)</th>
-          <th>Suspected Build (Confidence %)</th>
-          <th>Culprit Analysis Status (<a class="try-job-status-info" href="javascript:">?</a>)</th>
-          <th>Culprit</th>
-          <th>Analysis</th>
+          <th>
+            Analysis Status (<a class="analysis-status-info" href="javascript:">?</a>)<br>
+            Regression Range / Culprit
+          </th>
+          <th>Regressed Build / Culprit (Confidence)</th>
+          <th>Culprit Notified</th>
+          <th>Bug ID</th>
           <th>
             <select id="result_status">
-              <option value="default">Result Status</option>
+              <option value="default">Triage Status</option>
               <option value="0">Correct - Found</option>
               <option value="10">Incorrect - Found</option>
               <option value="20">Incorrect - Not Found</option>
@@ -198,29 +213,42 @@
           <td>
             {{ analysis.master_name }}, {{ analysis.builder_name }}, {{ analysis.build_number }}
           </td>
-          <td class="truncated" title="{{ analysis.step_name }}">{{ analysis.step_name }}</td>
-          <td class="truncated" title="{{ analysis.test_name }}">{{ analysis.test_name }}</td>
-          <td>{{ analysis.build_analysis_status }}</td>
+          <td class="truncated" title="{{ analysis.step_name }}">
+            {{ analysis.step_name }}
+          </td>
+          <td class="truncated" title="{{ analysis.test_name }}">
+            <a href="/waterfall/flake?key={{ analysis.key }}" target="_blank">{{ analysis.test_name }}</a>
+          </td>
+          <td>
+            <span class={{ analysis.build_analysis_status.lower() }}>{{ analysis.build_analysis_status }}</span> /
+            {% if analysis.try_job_status %}
+              <span class={{ analysis.try_job_status.lower() }}>{{ analysis.try_job_status }}</span>
+            {% endif %}
+          </td>
           <td>
             {% if analysis.suspected_build %}
-              <a href="https://luci-milo.appspot.com/buildbot/{{ analysis.master_name }}/{{ analysis.builder_name }}/{{ analysis.suspected_build }}" target="_blank">{{ analysis.suspected_build }}</a>
+              Build: <a href="https://luci-milo.appspot.com/buildbot/{{ analysis.master_name }}/{{ analysis.builder_name }}/{{ analysis.suspected_build }}" target="_blank">{{ analysis.suspected_build }}</a>
               {% if analysis.confidence_in_suspected_build %}
                 ({{ '%0.1f%%' % (analysis.confidence_in_suspected_build * 100) }})
+              {% endif %}
+               /
+            {% endif %}
+            {% if analysis.culprit %}
+              {{ analysis.culprit.repo_name }}: <a href={{ analysis.culprit.url }} target="_blank">{{ analysis.culprit.commit_position }}</a>
+              {% if analysis.confidence_in_culprit %}
+                ({{ '%0.1f%%' % (analysis.confidence_in_culprit * 100) }})
               {% endif %}
             {% endif %}
           </td>
           <td>
-            {% if analysis.try_job_status %}
-              {{ analysis.try_job_status }}
-            {% endif %}
-          </td>
-          <td>
             {% if analysis.culprit %}
-              {{ analysis.culprit.repo_name }}: <a href={{ analysis.culprit.url }} target="_blank">{{ analysis.culprit.commit_position }}</a>
+              {{ analysis.culprit.cr_notified }}
             {% endif %}
           </td>
           <td>
-            <a href="/waterfall/flake?key={{ analysis.key }}" target="_blank">Link</a>
+            {% if analysis.bug_id %}
+              <a href="https://bugs.chromium.org/p/chromium/issues/detail?id={{ analysis.bug_id }}" target="_blank">{{ analysis.bug_id }}</a>
+            {% endif %}
           </td>
           <td>
             {% if analysis.result_status %}

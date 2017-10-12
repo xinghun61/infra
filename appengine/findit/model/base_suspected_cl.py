@@ -120,3 +120,12 @@ class BaseSuspectedCL(ndb.Model):
   @classmethod
   def Get(cls, repo_name, revision):  # pragma: no cover
     return cls._CreateKey(repo_name, revision).get()
+
+  def to_dict(self):
+    """Overloads ndb.Model's to_dict() method to include @property fields."""
+    result_dict = super(BaseSuspectedCL, self).to_dict()
+    result_dict['cr_notification_processed'] = self.cr_notification_processed
+    result_dict['cr_notified'] = self.cr_notified
+    result_dict['revert_cl_url'] = self.revert_cl_url
+    result_dict['project_name'] = self.repo_name
+    return result_dict

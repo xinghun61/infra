@@ -34,3 +34,13 @@ class BaseSuspectedCLTest(wf_testcase.WaterfallTestCase):
     culprit = BaseSuspectedCL.Create('repo', 'revision', 123)
     culprit.cr_notification_status = analysis_status.COMPLETED
     self.assertTrue(culprit.cr_notified)
+
+  def testToDict(self):
+    culprit = BaseSuspectedCL.Create('repo', 'revision', 123)
+    culprit.cr_notification_status = analysis_status.COMPLETED
+    result_dict = culprit.to_dict()
+
+    self.assertIn('cr_notification_processed', result_dict)
+    self.assertIn('cr_notified', result_dict)
+    self.assertIn('revert_cl_url', result_dict)
+    self.assertIn('project_name', result_dict)
