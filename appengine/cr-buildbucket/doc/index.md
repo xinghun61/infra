@@ -109,12 +109,16 @@ work together.
 
 ### buildset tag
 
-The `buildset` tag is used to group related builds.
+The `buildset` tag is used to group related builds. Established formats:
 
-If a build is related to a CL revision, buildset should have format:
-
-*   For Rietveld: `patch/rietveld/<hostname>/<issue_id>/<patchset_id>`
-*   For Gerrit: `patch/gerrit/<hostname>/<numeric_change_id>/<numeric_patch_number>`
+*   Rietveld CL: `patch/rietveld/<hostname>/<issue_id>/<patchset_id>`
+    e.g. "patch/rietveld/codereview.chromium.org/2979743003/1".
+*   Gerrit CL: `patch/gerrit/<hostname>/<numeric_change_id>/<numeric_patch_number>`
+    e.g. "patch/gerrit/chromium-review.googlesource.com/677784/5".
+*   Gitiles commit:
+    `commit/gitiles/<hostname>/<project_name>/+/<commit hash>`,
+    e.g. "commit/gitiles/chromium.googlesource.com/infra/luci/luci-go/+/b7a757f457487cd5cfe2dae83f65c5bc10e288b7".
+    Typically builds with such a buildset also have "gitiles_ref" tag.
 
 When a build triggers a new build, the buildset tag must be copied.
 
