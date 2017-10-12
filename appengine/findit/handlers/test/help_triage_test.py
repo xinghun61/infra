@@ -20,8 +20,8 @@ from waterfall.build_info import BuildInfo
 EXPECTED_RESULTS_120 = [
     {
         'fixed_cl_review_url': 'https://codereview.chromium.org/12578123',
-        'fixing_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/121'),
-        'fixed_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/120'),
+        'fixing_build_url': ('https://ci.chromium.org/buildbot/m/b/121'),
+        'fixed_build_url': ('https://ci.chromium.org/buildbot/m/b/120'),
         'fixed_build_number': 120,
         'fixing_cl_review_url': 'https://codereview.chromium.org/1280463001',
         'fixing_cl_commit_position': 342013,
@@ -33,8 +33,8 @@ EXPECTED_RESULTS_120 = [
     },
     {
         'fixed_cl_review_url': 'https://codereview.chromium.org/1263223005',
-        'fixing_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/122'),
-        'fixed_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/120'),
+        'fixing_build_url': ('https://ci.chromium.org/buildbot/m/b/122'),
+        'fixed_build_url': ('https://ci.chromium.org/buildbot/m/b/120'),
         'fixed_build_number': 120,
         'fixing_cl_review_url': 'https://codereview.chromium.org/1280463003',
         'fixing_cl_commit_position': 342014,
@@ -46,8 +46,8 @@ EXPECTED_RESULTS_120 = [
     },
     {
         'fixed_cl_review_url': 'https://codereview.chromium.org/1268183002',
-        'fixing_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/121'),
-        'fixed_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/120'),
+        'fixing_build_url': ('https://ci.chromium.org/buildbot/m/b/121'),
+        'fixed_build_url': ('https://ci.chromium.org/buildbot/m/b/120'),
         'fixed_build_number': 120,
         'fixing_cl_review_url': 'https://codereview.chromium.org/1280463006',
         'fixing_cl_commit_position': 342015,
@@ -59,8 +59,8 @@ EXPECTED_RESULTS_120 = [
     },
     {
         'fixed_cl_review_url': 'https://codereview.chromium.org/1260813007',
-        'fixing_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/123'),
-        'fixed_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/120'),
+        'fixing_build_url': ('https://ci.chromium.org/buildbot/m/b/123'),
+        'fixed_build_url': ('https://ci.chromium.org/buildbot/m/b/120'),
         'fixed_build_number': 120,
         'fixing_cl_review_url': 'https://codereview.chromium.org/1280463100',
         'fixing_cl_commit_position': 332070,
@@ -74,8 +74,8 @@ EXPECTED_RESULTS_120 = [
 
 EXPECTED_RESULTS_121 = [{
     'fixed_cl_review_url': 'https://codereview.chromium.org/1263223005',
-    'fixing_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/122'),
-    'fixed_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/120'),
+    'fixing_build_url': ('https://ci.chromium.org/buildbot/m/b/122'),
+    'fixed_build_url': ('https://ci.chromium.org/buildbot/m/b/120'),
     'fixed_build_number': 120,
     'fixing_cl_review_url': 'https://codereview.chromium.org/1280463003',
     'action': 'Reverted',
@@ -86,8 +86,8 @@ EXPECTED_RESULTS_121 = [{
     'fixing_revision': '123456671bcdb98eae1fb0d92b2b7df04fc3'
 }, {
     'fixed_cl_review_url': 'https://codereview.chromium.org/1260813007',
-    'fixing_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/123'),
-    'fixed_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/120'),
+    'fixing_build_url': ('https://ci.chromium.org/buildbot/m/b/123'),
+    'fixed_build_url': ('https://ci.chromium.org/buildbot/m/b/120'),
     'fixed_build_number': 120,
     'fixing_cl_review_url': 'https://codereview.chromium.org/1280463100',
     'action': 'Reverted',
@@ -98,8 +98,8 @@ EXPECTED_RESULTS_121 = [{
     'fixing_revision': '123455668d4ab0670331a6c0ebfc4f3ab8e6'
 }, {
     'fixed_cl_review_url': 'https://codereview.chromium.org/1280463006',
-    'fixing_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/122'),
-    'fixed_build_url': ('https://luci-milo.appspot.com/buildbot/m/b/121'),
+    'fixing_build_url': ('https://ci.chromium.org/buildbot/m/b/122'),
+    'fixed_build_url': ('https://ci.chromium.org/buildbot/m/b/121'),
     'fixed_build_number': 121,
     'fixing_cl_review_url': 'https://codereview.chromium.org/1161773008',
     'action': 'Reverted',
@@ -210,8 +210,8 @@ class HelpTriageTest(testing.AppengineTestCase):
                                         118)
     self.assertEqual(expected_results, results)
 
-  @mock.patch.object(help_triage.token, 'ValidateAuthToken',
-                     return_value=(True, False))
+  @mock.patch.object(
+      help_triage.token, 'ValidateAuthToken', return_value=(True, False))
   def testHelpTriageHandler(self, _):
     build_url = buildbot.CreateBuildUrl(self.master_name, self.builder_name,
                                         121)
@@ -239,8 +239,8 @@ class HelpTriageTest(testing.AppengineTestCase):
     self.assertEqual(200, response.status_int)
     self.assertEqual(EXPECTED_RESULTS_121, response.json_body)
 
-  @mock.patch.object(help_triage.token, 'ValidateAuthToken',
-                     return_value=(True, False))
+  @mock.patch.object(
+      help_triage.token, 'ValidateAuthToken', return_value=(True, False))
   def testHelpTriageHandlerReturnNoneForGreenBuild(self, _):
     build_url = buildbot.CreateBuildUrl(self.master_name, self.builder_name,
                                         123)

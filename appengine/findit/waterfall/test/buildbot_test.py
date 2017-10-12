@@ -86,6 +86,7 @@ class BuildBotTest(unittest.TestCase):
         'http://build.chromium.org/p/chromium': 'chromium',
         'http://build.chromium.org/p/chromium/builders/Linux': 'chromium',
         'https://abc.def.google.com/i/m1/builders/Linux': 'm1',
+        'https://ci.chromium.org/buildbot/m2/b/123': 'm2',
         'https://luci-milo.appspot.com/buildbot/m2/b/123': 'm2',
     }
 
@@ -111,6 +112,7 @@ class BuildBotTest(unittest.TestCase):
         'https://abc.def.google.com/i/m1/builders/b1/builds/234': ('m1', 'b1',
                                                                    234),
         'https://luci-milo.appspot.com/buildbot/m2/b2/123': ('m2', 'b2', 123),
+        'https://ci.chromium.org/buildbot/m2/b2/123': ('m2', 'b2', 123),
     }
 
     for url, expected_result in cases.iteritems():
@@ -143,7 +145,7 @@ class BuildBotTest(unittest.TestCase):
     master_name = 'a'
     builder_name = 'Win7 Tests (1)'
     build_number = 123
-    expected_url = ('https://luci-milo.appspot.com/buildbot/a/'
+    expected_url = ('https://ci.chromium.org/buildbot/a/'
                     'Win7%20Tests%20%281%29/123')
     self.assertEqual(expected_url,
                      buildbot.CreateBuildUrl(master_name, builder_name,
@@ -434,13 +436,27 @@ class BuildBotTest(unittest.TestCase):
         'Failed to json load data for step_metadata. Data is: log.')
 
   def testGetSwarmingTaskIdFromUrl(self):
-    swarm_url = 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10'
-    non_swarm_url = ('https://luci-milo.appspot.com/buildbot/chromium.linux'
-                     '/Linux%20Builder/82087')
+    cases = {
+        'https://unknown.host/swarming/task/3595be5002f4bc10':
+            None,
+        'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10': (
+            '3595be5002f4bc10'),
+        'http://build.chromium.org/p/chromium/builders/Linux':
+            None,
+        'https://ci.chromium.org/swarming/task/3595be5002f4bc10': (
+            '3595be5002f4bc10'),
+        'https://ci.chromium.org/buildbot/m2/b/123':
+            None,
+        'https://luci-milo.appspot.com/buildbot/chromium.linux'
+        '/Linux%20Builder/82087':
+            None,
+    }
 
-    self.assertEqual('3595be5002f4bc10',
-                     buildbot.GetSwarmingTaskIdFromUrl(swarm_url))
-    self.assertIsNone(buildbot.GetSwarmingTaskIdFromUrl(non_swarm_url))
+    for url, expected_result in cases.iteritems():
+      result = buildbot.GetSwarmingTaskIdFromUrl(url)
+      print url, expected_result
+      print result
+      self.assertEqual(expected_result, result)
 
   def testValidateBuildUrl(self):
     swarm_url = 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10'

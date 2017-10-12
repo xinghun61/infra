@@ -23,8 +23,25 @@ _MASTER_URL_PATTERN = re.compile(r'^%s/([^/]+)(?:/.*)?$' % _HOST_NAME_PATTERN)
 _MILO_MASTER_URL_PATTERN = re.compile(
     r'^https?://luci-milo\.appspot\.com/buildbot/([^/]+)(?:/.*)?$')
 
+_CI_MASTER_URL_PATTERN = re.compile(
+    r'^https?://ci\.chromium\.org/buildbot/([^/]+)(?:/.*)?$')
+
+_MASTER_URL_PATTERNS = [  # yapf: disable
+    _MASTER_URL_PATTERN,
+    _MILO_MASTER_URL_PATTERN,
+    _CI_MASTER_URL_PATTERN
+]
+
 _MILO_SWARMING_TASK_URL_PATTERN = re.compile(
     r'^https?://luci-milo\.appspot\.com/swarming/task/([^/]+)(?:/.*)?$')
+
+_CI_SWARMING_TASK_URL_PATTERN = re.compile(
+    r'^https?://ci\.chromium\.org/swarming/task/([^/]+)(?:/.*)?$')
+
+_SWARMING_TASK_URL_PATTERNS = [  # yapf: disable
+    _MILO_SWARMING_TASK_URL_PATTERN,
+    _CI_SWARMING_TASK_URL_PATTERN
+]
 
 _BUILD_URL_PATTERN = re.compile(
     r'^%s/([^/]+)/builders/([^/]+)/builds/(\d+)(?:/.*)?$' % _HOST_NAME_PATTERN)
@@ -32,6 +49,16 @@ _BUILD_URL_PATTERN = re.compile(
 _MILO_BUILD_URL_PATTERN = re.compile(
     r'^https?://luci-milo\.appspot\.com/buildbot/([^/]+)/([^/]+)/(\d+)'
     '(?:/.*)?$')
+
+_CI_BUILD_URL_PATTERN = re.compile(
+    r'^https?://ci\.chromium\.org/buildbot/([^/]+)/([^/]+)/(\d+)'
+    '(?:/.*)?$')
+
+_BUILD_URL_PATTERNS = [  # yapf: disable
+    _BUILD_URL_PATTERN,
+    _MILO_BUILD_URL_PATTERN,
+    _CI_BUILD_URL_PATTERN
+]
 
 _MILO_BUILDINFO_ENDPOINT = ('https://luci-milo.appspot.com/'
                             'prpc/milo.BuildInfo/Get')
@@ -91,8 +118,8 @@ def _GetMasterJsonData(http_client,
       'name': master_name,
       'exclude_deprecated': True,
   }
-  response_json = rpc_util.DownloadJsonData(_MILO_ENDPOINT_MASTER,
-                                            req, http_client)
+  response_json = rpc_util.DownloadJsonData(_MILO_ENDPOINT_MASTER, req,
+                                            http_client)
 
   return _ProcessMiloData(response_json, master_name, builder_name,
                           build_number)
@@ -127,14 +154,22 @@ def GetMasterNameFromUrl(url):
   if not url:
     return None
 
-  match = _MASTER_URL_PATTERN.match(url) or _MILO_MASTER_URL_PATTERN.match(url)
+  match = None
+  for pattern in _MASTER_URL_PATTERNS:
+    match = pattern.match(url)
+    if match:
+      break
   if not match:
     return None
   return match.group(1)
 
 
 def GetSwarmingTaskIdFromUrl(url):
-  swarming_match = _MILO_SWARMING_TASK_URL_PATTERN.match(url)
+  swarming_match = None
+  for pattern in _SWARMING_TASK_URL_PATTERNS:
+    swarming_match = pattern.match(url)
+    if swarming_match:
+      break
   if swarming_match:
     task_id = swarming_match.groups()[0]
     return task_id
@@ -150,7 +185,11 @@ def ParseBuildUrl(url):
   if not url:
     return None
 
-  match = _BUILD_URL_PATTERN.match(url) or _MILO_BUILD_URL_PATTERN.match(url)
+  match = None
+  for pattern in _BUILD_URL_PATTERNS:
+    match = pattern.match(url)
+    if match:
+      break
   if not match:
     return None
 
@@ -180,9 +219,9 @@ def ParseStepUrl(url):
 def CreateBuildUrl(master_name, builder_name, build_number):
   """Creates the url for the given build."""
   builder_name = urllib.quote(builder_name)
-  return 'https://luci-milo.appspot.com/buildbot/%s/%s/%s' % (master_name,
-                                                              builder_name,
-                                                              build_number)
+  return 'https://ci.chromium.org/buildbot/%s/%s/%s' % (master_name,
+                                                        builder_name,
+                                                        build_number)
 
 
 def GetBuildDataFromMilo(master_name, builder_name, build_number, http_client):
