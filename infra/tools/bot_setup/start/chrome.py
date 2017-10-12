@@ -45,8 +45,8 @@ solutions = [
 # Because of various issues (eg. pywin32 not installed in the infra virtualenv)
 # We can't use the virtualenv for running buildbot :(.
 if IS_WINDOWS:
-  PYTHON = 'c:\\setup\\depot_tools\\python.bat'
-  GIT = 'C:\\setup\\depot_tools\\git.exe'
+  PYTHON = 'python.exe'
+  GIT = 'git.exe'
   GCLIENT_BIN = 'gclient.bat'
   TEMP_DEPOT_TOOLS = 'C:\\tmp\\depot_tools'
 else:
