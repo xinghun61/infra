@@ -9,6 +9,7 @@ import logging
 from third_party import ezt
 
 import settings
+from businesslogic import work_env
 from framework import permissions
 from framework import servlet
 from framework import template_helpers
@@ -44,15 +45,13 @@ class HostingHome(servlet.Servlet):
         mr, self.services, self.profiler)
 
     # Meanwhile, determine which projects the signed-in user has starred.
-    starred_project_ids = set()
+    with work_env.WorkEnv(mr, self.services) as we:
+      starred_projects = we.ListStarredProjects()
+      starred_project_ids = {p.project_id for p in starred_projects}
+
     # A dict of project id to the user's membership status.
     project_memberships = {}
     if mr.auth.user_id:
-      starred_projects = sitewide_helpers.GetViewableStarredProjects(
-          mr.cnxn, self.services, mr.auth.user_id,
-          mr.auth.effective_ids, mr.auth.user_pb)
-      starred_project_ids = {p.project_id for p in starred_projects}
-
       owned, _archive_owned, member_of, contrib_of = (
           sitewide_helpers.GetUserProjects(
               mr.cnxn, self.services, mr.auth.user_pb, mr.auth.effective_ids,
@@ -83,23 +82,3 @@ class HostingHome(servlet.Servlet):
         'projects': project_view_list,
         'pagination': pipeline.pagination,
         }
-
-
-def _MakeExampleLabelGrid(label_list):
-  """Return a list of EZTItems to make it easy to display example searches."""
-  labels = label_list[:]  # Don't mess with the given labels.
-
-  if len(labels) < 15:
-    cols = 4
-  elif len(labels) < 20:
-    cols = 5
-  else:
-    cols = 6
-
-  rows = []
-  while labels:
-    current_row = labels[:cols]
-    labels = labels[cols:]
-    rows.append(template_helpers.EZTItem(labels=current_row))
-
-  return rows

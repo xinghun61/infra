@@ -121,6 +121,8 @@ class HelperFunctionsTest(unittest.TestCase):
   def testGetStarredProjects_OnlyViewableLiveStarred(self):
     viewed_user_id = 123
     for p in self.services.project.test_projects.values():
+      # We go straight to the services layer because this is a test set up
+      # rather than an actual user request.
       self.services.project_star.SetStar(
           self.cnxn, p.project_id, viewed_user_id, True)
 

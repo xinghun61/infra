@@ -15,6 +15,7 @@ from framework import exceptions
 from framework import framework_helpers
 from framework import monorailrequest
 from framework import permissions
+from framework import profiler
 from framework import validate
 from proto import features_pb2
 from proto import project_pb2
@@ -164,6 +165,7 @@ class MonorailRequest(monorailrequest.MonorailRequest):
         self.auth.effective_ids = {user_info['user_id']}
 
     self.perms = perms or permissions.ADMIN_PERMISSIONSET
+    self.profiler = profiler.Profiler()
     self.project = project
     self.hotlist = hotlist
     if hotlist is not None:

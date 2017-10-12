@@ -34,6 +34,8 @@ class UserProjectsTest(unittest.TestCase):
         'contributorto-proj', project_id=3, owner_ids=[2], contrib_ids=[1])
     self.services.project.TestAddProject(
         'starred-proj', project_id=4)
+    # We go straight to the services layer because this is a test set up
+    # rather than an actual user request.
     self.services.project_star.SetStar(None, 4, 1, True)
 
     mr = testing_helpers.MakeMonorailRequest(

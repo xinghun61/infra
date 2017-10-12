@@ -5,6 +5,7 @@
 
 """Classes for the user projects feed."""
 
+from businesslogic import work_env
 from framework import jsonfeed
 from sitewide import sitewide_helpers
 
@@ -40,10 +41,8 @@ class ProjectsJsonFeed(jsonfeed.JsonFeed):
       (visible_ownership, _visible_deleted, visible_membership,
        visible_contrib) = project_lists
 
-    with self.profiler.Phase('GetStarredProjects'):
-      starred_projects = sitewide_helpers.GetViewableStarredProjects(
-          mr.cnxn, self.services, mr.auth.user_id,
-          mr.auth.effective_ids, mr.auth.user_pb)
+    with work_env.WorkEnv(mr, self.services) as we:
+      starred_projects = we.ListStarredProjects()
 
     projects_dict = {
         'memberof': [p.project_name for p in visible_membership],

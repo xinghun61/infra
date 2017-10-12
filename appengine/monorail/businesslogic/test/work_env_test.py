@@ -31,9 +31,14 @@ class WorkEnvTest(unittest.TestCase):
         user=fake.UserService(),
         project=fake.ProjectService(),
         issue_star=fake.IssueStarService(),
+        project_star=fake.ProjectStarService(),
         spam=fake.SpamService())
     self.work_env = work_env.WorkEnv(
       self.mr, self.services, 'Testing phase')
+
+  def SignIn(self, user_id=111L):
+    self.mr.auth.user_id = user_id
+    self.mr.auth.effective_ids = {user_id}
 
   # FUTURE: GetSiteReadOnlyState()
   # FUTURE: SetSiteReadOnlyState()
@@ -96,11 +101,105 @@ class WorkEnvTest(unittest.TestCase):
       with self.work_env as we:
         _actual = we.GetProjectByName('huh-what')
 
-  # FUTURE: UpdateProject()
-  # FUTURE: DeleteProject()
+  def testUpdateProject_Normal(self):
+    """We can update an existing project."""
+    project = self.services.project.TestAddProject('proj', project_id=789)
+    with self.work_env as we:
+      we.UpdateProject(789, read_only_reason='test reason')
+      project = we.GetProject(789)
 
-  # FUTURE: SetProjectStar()
-  # FUTURE: GetProjectStarsByUser()
+    self.assertEqual('test reason', project.read_only_reason)
+
+  def testUpdateProject_NoSuchProject(self):
+    """Updating a nonexistent project raises an exception."""
+    with self.assertRaises(exceptions.NoSuchProjectException):
+      with self.work_env as we:
+        we.UpdateProject(789, summary='new summary')
+
+  def testDeleteProject_Normal(self):
+    """We can mark an existing project as deletable."""
+    project = self.services.project.TestAddProject('proj', project_id=789)
+    with self.work_env as we:
+      we.DeleteProject(789)
+
+    self.assertEqual(project_pb2.ProjectState.DELETABLE, project.state)
+
+  def testDeleteProject_NoSuchProject(self):
+    """Changing a nonexistent project raises an exception."""
+    with self.assertRaises(exceptions.NoSuchProjectException):
+      with self.work_env as we:
+        we.DeleteProject(999)
+
+  def testStarProject_Normal(self):
+    """We can star and unstar a project."""
+    self.SignIn()
+    self.services.project.TestAddProject('proj', project_id=789)
+    with self.work_env as we:
+      self.assertFalse(we.IsProjectStarred(789))
+      we.StarProject(789, True)
+      self.assertTrue(we.IsProjectStarred(789))
+      we.StarProject(789, False)
+      self.assertFalse(we.IsProjectStarred(789))
+
+  def testStarProject_NoSuchProject(self):
+    """We can't star a nonexistent project."""
+    self.SignIn()
+    with self.assertRaises(exceptions.NoSuchProjectException):
+      with self.work_env as we:
+        we.StarProject(999, True)
+
+  def testStarProject_Anon(self):
+    """Anon user can't star a project."""
+    self.services.project.TestAddProject('proj', project_id=789)
+    with self.assertRaises(ValueError):
+      with self.work_env as we:
+        we.StarProject(789, True)
+
+  def testIsProjectStarred_Normal(self):
+    """We can check if a project is starred."""
+    # Tested by method testStarProject_Normal().
+    pass
+
+  def testIsProjectStarred_NoProjectSpecified(self):
+    """For non-project pages, we always return false."""
+    with self.work_env as we:
+      self.assertFalse(we.IsProjectStarred(None))
+
+  def testIsProjectStarred_NoSuchProject(self):
+    """We can't check for stars on a nonexistent project."""
+    with self.assertRaises(exceptions.NoSuchProjectException):
+      with self.work_env as we:
+        we.IsProjectStarred(999)
+
+  def testListStarredProjects_ViewingSelf(self):
+    """A user can view their own starred projects, if they still have access."""
+    project1 = self.services.project.TestAddProject('proj1', project_id=789)
+    project2 = self.services.project.TestAddProject('proj2', project_id=890)
+    with self.work_env as we:
+      self.SignIn()
+      we.StarProject(project1.project_id, True)
+      we.StarProject(project2.project_id, True)
+      self.assertItemsEqual(
+        [project1, project2], we.ListStarredProjects())
+      project2.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+      self.assertItemsEqual(
+        [project1], we.ListStarredProjects())
+
+  def testListStarredProjects_ViewingOther(self):
+    """A user can view their own starred projects, if they still have access."""
+    project1 = self.services.project.TestAddProject('proj1', project_id=789)
+    project2 = self.services.project.TestAddProject('proj2', project_id=890)
+    with self.work_env as we:
+      self.SignIn(user_id=222L)
+      we.StarProject(project1.project_id, True)
+      we.StarProject(project2.project_id, True)
+      self.SignIn(user_id=111L)
+      self.assertEqual([], we.ListStarredProjects())
+      self.assertItemsEqual(
+        [project1, project2], we.ListStarredProjects(viewed_user_id=222L))
+      project2.access = project_pb2.ProjectAccess.MEMBERS_ONLY
+      self.assertItemsEqual(
+        [project1], we.ListStarredProjects(viewed_user_id=222L))
 
   def testGetProjectConfig_Normal(self):
     """We can get an existing config by project_id."""
@@ -187,13 +286,16 @@ class WorkEnvTest(unittest.TestCase):
   # FUTURE: UpdateComment()
   # FUTURE: DeleteComment()
 
-  # FUTURE: SetIssueStar()
-  # FUTURE: GetIssueStars()
-  # FUTURE: GetIssueStarsByUser()
+  # FUTURE: StarIssue()
+  # FUTURE: IsIssueStarred()
+  # FUTURE: ListStarredIssues()
 
   # FUTURE: GetUser()
   # FUTURE: UpdateUser()
   # FUTURE: DeleteUser()
+  # FUTURE: StarUser()
+  # FUTURE: IsUserStarred()
+  # FUTURE: ListStarredUsers()
 
   # FUTURE: CreateGroup()
   # FUTURE: ListGroups()

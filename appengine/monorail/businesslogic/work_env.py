@@ -41,6 +41,7 @@ Responsibilities of the Services layer:
 
 from framework import exceptions
 from services import project_svc
+from sitewide import sitewide_helpers
 from proto import project_pb2
 
 
@@ -105,7 +106,7 @@ class WorkEnv(object):
       The int project_id of the new project.
 
     Raises:
-      ProjectAlreadyExists: if a project with that name already exists.
+      ProjectAlreadyExists: A project with that name already exists.
     """
     with self.mr.profiler.Phase('creating project %r' % project_name):
       project_id = self.services.project.CreateProject(
@@ -134,8 +135,8 @@ class WorkEnv(object):
     Returns:
       The specified project.
 
-    Raise:
-      NoSuchProjectException if there is no project with that ID.
+    Raises:
+      NoSuchProjectException: There is no project with that ID.
     """
     with self.mr.profiler.Phase('getting project %r' % project_id):
       project = self.services.project.GetProject(
@@ -152,8 +153,8 @@ class WorkEnv(object):
     Returns:
       The specified project.
 
-    Raise:
-      NoSuchProjectException if there is no project with that name.
+    Raises:
+      NoSuchProjectException: There is no project with that name.
     """
     with self.mr.profiler.Phase('getting project %r' % project_name):
       project = self.services.project.GetProjectByName(
@@ -190,10 +191,83 @@ class WorkEnv(object):
           logo_gcs_id=logo_gcs_id, logo_file_name=logo_file_name)
 
 
-  # FUTURE: DeleteProject()
+  def DeleteProject(self, project_id):
+    """Mark the project as deletable.  It will be reaped by a cron job.
 
-  # FUTURE: SetProjectStar()
-  # FUTURE: GetProjectStarsByUser()
+    Args:
+      project_id: int ID of the project to delete.
+
+    Returns:
+      Nothing.
+
+    Raises:
+      NoSuchProjectException: There is no project with that ID.
+    """
+    with self.mr.profiler.Phase('marking deletable %r' % project_id):
+      _project = self.GetProject(project_id)
+      self.services.project.MarkProjectDeletable(
+          self.mr.cnxn, project_id, self.services.config)
+
+  def StarProject(self, project_id, starred):
+    """Star or unstar the specified project.
+
+    Args:
+      project_id: int ID of the project to star/unstar.
+      starred: true to add a star, false to remove it.
+
+    Returns:
+      Nothing.
+
+    Raises:
+      NoSuchProjectException: There is no project with that ID.
+    """
+    if not self.mr.auth.user_id:
+      raise ValueError('Anon user cannot star')
+    with self.mr.profiler.Phase('(un)starring project %r' % project_id):
+      _project = self.GetProject(project_id)
+      self.services.project_star.SetStar(
+          self.mr.cnxn, project_id, self.mr.auth.user_id, starred)
+
+  def IsProjectStarred(self, project_id):
+    """Return True if the current user has starred the given project.
+
+    Args:
+      project_id: int ID of the project to check.
+
+    Returns:
+      True if starred.
+
+    Raises:
+      NoSuchProjectException: There is no project with that ID.
+    """
+    if project_id is None:
+      return False
+    with self.mr.profiler.Phase('checking project star %r' % project_id):
+      _project = self.GetProject(project_id)
+      return self.services.project_star.IsItemStarredBy(
+        self.mr.cnxn, project_id, self.mr.auth.user_id)
+
+  def ListStarredProjects(self, viewed_user_id=None):
+    """Return a list of projects starred by the current or viewed user.
+
+    Args:
+      viewed_user_id: optional user ID for another user's profile page, if
+          not supplied, the signed in user is used.
+
+    Returns:
+      A list of projects that were starred by current user and that they
+      are currently allowed to view.
+    """
+    if viewed_user_id is None:
+      if self.mr.auth.user_id:
+        viewed_user_id = self.mr.auth.user_id
+      else:
+        return []  # Anon user and no viewed user specified.
+    with self.mr.profiler.Phase('ListStarredProjects for %r' % viewed_user_id):
+      viewable_projects = sitewide_helpers.GetViewableStarredProjects(
+          self.mr.cnxn, self.services, viewed_user_id,
+          self.mr.auth.effective_ids, self.mr.auth.user_pb)
+    return viewable_projects
 
   def GetProjectConfig(self, project_id, use_cache=True):
     """Return the specifed config, TODO: iff the signed in user may view it.
@@ -205,8 +279,8 @@ class WorkEnv(object):
     Returns:
       The specified config.
 
-    Raise:
-      NoSuchProjectException if there is no matching config.
+    Raises:
+      NoSuchProjectException: There is no matching config.
     """
     with self.mr.profiler.Phase('getting config for %r' % project_id):
       config = self.services.config.GetProjectConfig(
@@ -243,8 +317,8 @@ class WorkEnv(object):
       The specified Issue PB.
 
     Raises:
-      exception.InputException if something was not specified properly.
-      issue_svc.NoSuchIssueException if the issue does not exist.
+      exception.InputException: Something was not specified properly.
+      issue_svc.NoSuchIssueException: The issue does not exist.
     """
     if project_id is None:
       raise exceptions.InputException('No project specified')
@@ -273,15 +347,18 @@ class WorkEnv(object):
   # FUTURE: UpdateComment()
   # FUTURE: DeleteComment()
 
-  # FUTURE: SetIssueStar()
-  # FUTURE: GetIssueStars()
-  # FUTURE: GetIssueStarsByUser()
+  # FUTURE: StarIssue()
+  # FUTURE: IsIssueStarred()
+  # FUTURE: ListStarredIssues()
 
   ### User methods
 
   # FUTURE: GetUser()
   # FUTURE: UpdateUser()
   # FUTURE: DeleteUser()
+  # FUTURE: StarUser()
+  # FUTURE: IsUserStarred()
+  # FUTURE: ListStarredUsers()
 
   ### Group methods
 

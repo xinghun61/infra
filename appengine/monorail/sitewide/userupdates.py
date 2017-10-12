@@ -16,6 +16,7 @@ import logging
 
 from third_party import ezt
 
+from businesslogic import work_env
 from features import activities
 from framework import servlet
 from framework import urls
@@ -78,9 +79,9 @@ class UserUpdatesProjects(AbstractUserUpdatesPage):
 
   def _GetProjectIDsForUpdates(self, mr):
     """Returns a list of project IDs whom to retrieve activities from."""
-    starred_projects = sitewide_helpers.GetViewableStarredProjects(
-        mr.cnxn, self.services, mr.viewed_user_auth.user_id,
-        mr.auth.effective_ids, mr.auth.user_pb)
+    with work_env.WorkEnv(mr, self.services) as we:
+      starred_projects = we.ListStarredProjects(
+          viewed_user_id=mr.viewed_user_auth.user_id)
     return [project.project_id for project in starred_projects]
 
 

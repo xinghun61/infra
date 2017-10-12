@@ -10,6 +10,7 @@ import time
 
 from third_party import ezt
 
+from businesslogic import work_env
 from framework import framework_helpers
 from framework import framework_views
 from framework import permissions
@@ -44,15 +45,11 @@ class UserProfile(servlet.Servlet):
 
     viewed_user_display_name = framework_views.GetViewedUserDisplayName(mr)
 
-    with self.profiler.Phase('GetStarredProjects'):
-      starred_projects = sitewide_helpers.GetViewableStarredProjects(
-          mr.cnxn, self.services, mr.viewed_user_auth.user_id,
-          mr.auth.effective_ids, mr.auth.user_pb)
-
-    logged_in_starred_pids = []
-    if mr.auth.user_id:
-      logged_in_starred_pids = self.services.project_star.LookupStarredItemIDs(
-          mr.cnxn, mr.auth.user_id)
+    with work_env.WorkEnv(mr, self.services) as we:
+      starred_projects = we.ListStarredProjects(
+          viewed_user_id=mr.viewed_user_auth.user_id)
+      logged_in_starred = we.ListStarredProjects()
+      logged_in_starred_pids = {p.project_id for p in logged_in_starred}
 
     starred_user_ids = self.services.user_star.LookupStarredItemIDs(
         mr.cnxn, mr.viewed_user_auth.user_id)

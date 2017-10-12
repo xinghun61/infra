@@ -180,8 +180,7 @@ class ProjectAdminAdvanced(servlet.Servlet):
         if state != project_pb2.ProjectState.ARCHIVED:
           raise permissions.PermissionException(
               'Projects must be archived before being deleted')
-        self.services.project.MarkProjectDeletable(
-            mr.cnxn, mr.project_id, self.services.config)
+        we.DeleteProject(mr.project_id)
 
       elif 'doombtn' in post_data:  # Go from any state to forced ARCHIVED.
         if not self.CheckPerm(mr, permissions.PUBLISH_PROJECT):

@@ -65,6 +65,8 @@ class HostingHomeTest(unittest.TestCase):
   def testStarCounts(self):
     """Test the display of star counts on each displayed project."""
     self.services.mock_visible_results = [self.project_a, self.project_b]
+    # We go straight to the services layer because this is a test set up
+    # rather than an actual user request.
     self.services.project_star.SetStar('fake cnxn', 1, 111L, True)
     self.services.project_star.SetStar('fake cnxn', 1, 222L, True)
     page_data = self.servlet.GatherPageData(self.mr)
@@ -97,31 +99,3 @@ class HostingHomeTest(unittest.TestCase):
     mr.perms = permissions.PermissionSet([])
     page_data = self.servlet.GatherPageData(mr)
     self.assertEqual(ezt.boolean(False), page_data['can_create_project'])
-
-  def testMakeExampleLabelGrid(self):
-    self.assertEqual([], hostinghome._MakeExampleLabelGrid([]))
-
-    grid = hostinghome._MakeExampleLabelGrid(
-        ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'])
-    self.assertEqual(2, len(grid))
-    self.assertEqual(['a', 'b', 'c', 'd'], grid[0].labels)
-    self.assertEqual(['e', 'f', 'g', 'h'], grid[1].labels)
-
-    grid = hostinghome._MakeExampleLabelGrid(
-        ['a', 'b', 'c', 'd', 'e', 'f', 'g'])
-    self.assertEqual(2, len(grid))
-    self.assertEqual(['a', 'b', 'c', 'd'], grid[0].labels)
-    self.assertEqual(['e', 'f', 'g'], grid[1].labels)
-
-    grid = hostinghome._MakeExampleLabelGrid(['lab'] * 15)
-    self.assertEqual(3, len(grid))
-    self.assertEqual(5, len(grid[0].labels))
-    self.assertEqual(5, len(grid[1].labels))
-    self.assertEqual(5, len(grid[2].labels))
-
-    grid = hostinghome._MakeExampleLabelGrid(['lab'] * 24)
-    self.assertEqual(4, len(grid))
-    self.assertEqual(6, len(grid[0].labels))
-    self.assertEqual(6, len(grid[1].labels))
-    self.assertEqual(6, len(grid[2].labels))
-    self.assertEqual(6, len(grid[3].labels))

@@ -49,6 +49,8 @@ class Reap(jsonfeed.InternalTask):
         state='archived', limit=1000)
     doomed_project_ids = [row[0] for row in doomed_project_rows]
     for project_id in doomed_project_ids:
+      # Note: We go straight to services layer because this is an internal
+      # request, not a request from a user.
       self.services.project.MarkProjectDeletable(
           cnxn, project_id, self.services.config)
 

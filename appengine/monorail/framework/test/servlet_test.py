@@ -41,7 +41,9 @@ class TestableServlet(servlet.Servlet):
 class ServletTest(unittest.TestCase):
 
   def setUp(self):
-    services = service_manager.Services(project=fake.ProjectService())
+    services = service_manager.Services(
+        project=fake.ProjectService(),
+        project_star=fake.ProjectStarService())
     self.page_class = TestableServlet(
         webapp2.Request.blank('/'), webapp2.Response(), services=services)
     self.testbed = testbed.Testbed()
@@ -56,9 +58,9 @@ class ServletTest(unittest.TestCase):
     self.assertEqual(None, self.page_class._PAGE_TEMPLATE)
 
   def testGatherBaseData(self):
-    project = fake.Project(
-        project_name='testproj', cached_content_timestamp=12345,
-        state=project_pb2.ProjectState.LIVE)
+    project = self.page_class.services.project.TestAddProject(
+        'testproj', state=project_pb2.ProjectState.LIVE)
+    project.cached_content_timestamp = 12345
 
     (_request, mr) = testing_helpers.GetRequestObjects(
         path='/p/testproj/feeds', project=project)

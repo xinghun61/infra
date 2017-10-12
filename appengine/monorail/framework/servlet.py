@@ -32,6 +32,7 @@ from google.appengine.api import users
 import webapp2
 
 import settings
+from businesslogic import work_env
 from features import savedqueries_helpers
 from features import features_bizobj
 from features import hotlist_views
@@ -541,13 +542,8 @@ class Servlet(webapp2.RequestHandler):
       project_home_page = project.home_page
       project_thumbnail_url = tracker_views.LogoView(project).thumbnail_url
 
-    # If we have both a project and a logged in user, we need to check if the
-    # user has starred that project.
-    with self.profiler.Phase('project star'):
-      is_project_starred = False
-      if mr.project and mr.auth.user_id:
-        is_project_starred = self.services.project_star.IsItemStarredBy(
-            mr.cnxn, mr.project_id, mr.auth.user_id)
+    with work_env.WorkEnv(mr, self.services) as we:
+      is_project_starred = we.IsProjectStarred(mr.project_id)
 
     project_view = None
     if mr.project:

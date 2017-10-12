@@ -7,6 +7,7 @@
 
 import logging
 
+from businesslogic import work_env
 from framework import exceptions
 from framework import jsonfeed
 
@@ -27,22 +28,22 @@ class SetStarsFeed(jsonfeed.JsonFeed):
     logging.info('Handling user set star request: %r %r %r %r',
                  starrer_id, item, scope, starred)
 
-    if scope == PROJECT_STARS_SCOPE:
-      project = self.services.project.GetProjectByName(mr.cnxn, item)
-      self.services.project_star.SetStar(
-          mr.cnxn, project.project_id, starrer_id, starred)
+    with work_env.WorkEnv(mr, self.services) as we:
+      if scope == PROJECT_STARS_SCOPE:
+        project = self.services.project.GetProjectByName(mr.cnxn, item)
+        we.StarProject(project.project_id, starred)
 
-    elif scope == USER_STARS_SCOPE:
-      user_id = int(item)
-      self.services.user_star.SetStar(mr.cnxn, user_id, starrer_id, starred)
+      elif scope == USER_STARS_SCOPE:
+        user_id = int(item)
+        self.services.user_star.SetStar(mr.cnxn, user_id, starrer_id, starred)
 
-    elif scope == HOTLIST_STARS_SCOPE:
-      hotlist_id = int(item)
-      self.services.hotlist_star.SetStar(
-          mr.cnxn, hotlist_id, starrer_id, starred)
+      elif scope == HOTLIST_STARS_SCOPE:
+        hotlist_id = int(item)
+        self.services.hotlist_star.SetStar(
+            mr.cnxn, hotlist_id, starrer_id, starred)
 
-    else:
-      raise exceptions.InputException('unexpected star scope: %s' % scope)
+      else:
+        raise exceptions.InputException('unexpected star scope: %s' % scope)
 
     return {
         'starred': starred,
