@@ -427,6 +427,112 @@
     "cmd": [
       "python",
       "-u",
+      "[START_DIR]/infra/build/build.py",
+      "--builder",
+      "infra-continuous-precise-64"
+    ],
+    "env": {
+      "GOARCH": "ppc64",
+      "GOOS": "linux"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
+    "name": "cipd - build packages [GOOS:linux GOARCH:ppc64]"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/build/build.py",
+      "--no-rebuild",
+      "--upload",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--builder",
+      "infra-continuous-precise-64",
+      "--tags",
+      "buildbot_build:chromium.infra/infra-continuous-precise-64/123",
+      "git_repository:https://chromium.googlesource.com/infra/infra",
+      "git_revision:5e03a58dc0850e5137a8ebbce29610670c756aed"
+    ],
+    "env": {
+      "GOARCH": "ppc64",
+      "GOOS": "linux"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
+    "name": "cipd - upload packages [GOOS:linux GOARCH:ppc64]",
+    "~followup_annotations": [
+      "@@@STEP_LOG_END@json.output (invalid)@@@",
+      "@@@STEP_LOG_LINE@json.output (exception)@No JSON object could be decoded@@@",
+      "@@@STEP_LOG_END@json.output (exception)@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/build/build.py",
+      "--builder",
+      "infra-continuous-precise-64"
+    ],
+    "env": {
+      "GOARCH": "ppc64le",
+      "GOOS": "linux"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
+    "name": "cipd - build packages [GOOS:linux GOARCH:ppc64le]"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "[START_DIR]/infra/build/build.py",
+      "--no-rebuild",
+      "--upload",
+      "--service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json",
+      "--json-output",
+      "/path/to/tmp/json",
+      "--builder",
+      "infra-continuous-precise-64",
+      "--tags",
+      "buildbot_build:chromium.infra/infra-continuous-precise-64/123",
+      "git_repository:https://chromium.googlesource.com/infra/infra",
+      "git_revision:5e03a58dc0850e5137a8ebbce29610670c756aed"
+    ],
+    "env": {
+      "GOARCH": "ppc64le",
+      "GOOS": "linux"
+    },
+    "env_prefixes": {
+      "PATH": [
+        "/opt/infra-system/bin"
+      ]
+    },
+    "name": "cipd - upload packages [GOOS:linux GOARCH:ppc64le]",
+    "~followup_annotations": [
+      "@@@STEP_LOG_END@json.output (invalid)@@@",
+      "@@@STEP_LOG_LINE@json.output (exception)@No JSON object could be decoded@@@",
+      "@@@STEP_LOG_END@json.output (exception)@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
       "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
       "--json-output",
       "/path/to/tmp/json",

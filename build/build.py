@@ -556,7 +556,8 @@ def get_target_package_vars():
   goos = os.environ['GOOS']
   goarch = os.environ['GOARCH']
 
-  if goarch not in ('386', 'amd64', 'arm', 'arm64', 'mips', 'mips64', 's390x'):
+  if goarch not in ('386', 'amd64', 'arm', 'arm64', 'mips', 'mips64', 's390x',
+                    'ppc64', 'ppc64le'):
     raise BuildException('Unsupported GOARCH %s' % goarch)
 
   # There are many ARMs, pick the concrete instruction set. 'v6' is the default,

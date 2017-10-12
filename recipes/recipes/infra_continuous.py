@@ -24,10 +24,14 @@ DEPS = [
 
 # Builder name => [{GOOS: ..., GOARCH: ...}].
 CROSS_COMPILING_BUILDERS = {
-  'infra-continuous-precise-64': [{'GOOS': 'linux', 'GOARCH': 'arm'},
-                                  {'GOOS': 'linux', 'GOARCH': 'arm64'},
-                                  {'GOOS': 'linux', 'GOARCH': 'mips64'},
-                                  {'GOOS': 'linux', 'GOARCH': 's390x'}]
+  'infra-continuous-precise-64': [
+    {'GOOS': 'linux', 'GOARCH': 'arm'},
+    {'GOOS': 'linux', 'GOARCH': 'arm64'},
+    {'GOOS': 'linux', 'GOARCH': 'mips64'},
+    {'GOOS': 'linux', 'GOARCH': 's390x'},
+    {'GOOS': 'linux', 'GOARCH': 'ppc64'},
+    {'GOOS': 'linux', 'GOARCH': 'ppc64le'},
+  ],
 }
 
 
