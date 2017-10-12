@@ -107,8 +107,8 @@ class FinditConfig(VersionedConfig):
   # {
   #     'cr_notification_build_threshold': 2,
   #     'cr_notification_latency_limit_minutes': 30,
-  #     'revert_compile_culprit': True,
-  #     'commit_gerrit_revert': False,
+  #     'auto_create_revert_compile': True,
+  #     'auto_commit_revert_compile': False,
   #     'culprit_commit_limit_hours': 24,
   #     'auto_commit_daily_threshold': 4,
   #     'auto_revert_daily_threshold': 10,

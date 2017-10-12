@@ -92,8 +92,8 @@ _MOCK_ACTION_SETTINGS = {
     'cr_notification_build_threshold': 2,
     'cr_notification_latency_limit_minutes': 1000,
     'cr_notification_should_notify_flake_culprit': True,
-    'revert_compile_culprit': True,
-    'commit_gerrit_revert': False,
+    'auto_create_revert_compile': True,
+    'auto_commit_revert_compile': False,
     'culprit_commit_limit_hours': 24,
     'auto_commit_daily_threshold': 4,
     'auto_revert_daily_threshold': 10,
@@ -1084,7 +1084,7 @@ class ConfigTest(testing.AppengineTestCase):
         config._ValidateActionSettings({
             'cr_notification_build_threshold': 2,
             'cr_notification_latency_limit_minutes': 1000,
-            'revert_compile_culprit': 'True',  # Should be boolean.
+            'auto_create_revert_compile': 'True',  # Should be boolean.
         }))
     self.assertFalse(
         config._ValidateActionSettings({
@@ -1092,15 +1092,15 @@ class ConfigTest(testing.AppengineTestCase):
             'cr_notification_latency_limit_minutes': 1000,
             'cr_notification_should_notify_flake_culprit': [
             ],  # Should be boolean.
-            'revert_compile_culprit': True,
+            'auto_create_revert_compile': True,
         }))
     self.assertFalse(
         config._ValidateActionSettings({
             'cr_notification_build_threshold': 2,
             'cr_notification_latency_limit_minutes': 1000,
             'cr_notification_should_notify_flake_culprit': True,
-            'revert_compile_culprit': True,
-            'commit_gerrit_revert': 'False',  # Should be boolean.
+            'auto_create_revert_compile': True,
+            'auto_commit_revert_compile': 'False',  # Should be boolean.
             'culprit_commit_limit_hours': 24,
             'auto_commit_daily_threshold': 4,
             'auto_revert_daily_threshold': 10,
@@ -1110,8 +1110,8 @@ class ConfigTest(testing.AppengineTestCase):
             'cr_notification_build_threshold': 2,
             'cr_notification_latency_limit_minutes': 1000,
             'cr_notification_should_notify_flake_culprit': True,
-            'revert_compile_culprit': True,
-            'commit_gerrit_revert': False,
+            'auto_create_revert_compile': True,
+            'auto_commit_revert_compile': False,
             'culprit_commit_limit_hours': '24',  # Should be int.
             'auto_commit_daily_threshold': 4,
             'auto_revert_daily_threshold': 10,
@@ -1121,8 +1121,8 @@ class ConfigTest(testing.AppengineTestCase):
             'cr_notification_build_threshold': 2,
             'cr_notification_latency_limit_minutes': 1000,
             'cr_notification_should_notify_flake_culprit': True,
-            'revert_compile_culprit': True,
-            'commit_gerrit_revert': False,
+            'auto_create_revert_compile': True,
+            'auto_commit_revert_compile': False,
             'culprit_commit_limit_hours': 24,
             'auto_commit_daily_threshold': '4',  # Should be int.
             'auto_revert_daily_threshold': 10,
@@ -1132,8 +1132,8 @@ class ConfigTest(testing.AppengineTestCase):
             'cr_notification_build_threshold': 2,
             'cr_notification_latency_limit_minutes': 1000,
             'cr_notification_should_notify_flake_culprit': True,
-            'revert_compile_culprit': True,
-            'commit_gerrit_revert': False,
+            'auto_create_revert_compile': True,
+            'auto_commit_revert_compile': False,
             'culprit_commit_limit_hours': 24,
             'auto_commit_daily_threshold': 4,
             'auto_revert_daily_threshold': '10',  # Should be int.
@@ -1143,8 +1143,8 @@ class ConfigTest(testing.AppengineTestCase):
             'cr_notification_build_threshold': 2,
             'cr_notification_latency_limit_minutes': 1000,
             'cr_notification_should_notify_flake_culprit': True,
-            'revert_compile_culprit': True,
-            'commit_gerrit_revert': False,
+            'auto_create_revert_compile': True,
+            'auto_commit_revert_compile': False,
             'culprit_commit_limit_hours': 24,
             'auto_commit_daily_threshold': 4,
             'auto_revert_daily_threshold': 10,

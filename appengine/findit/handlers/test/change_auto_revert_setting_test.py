@@ -26,7 +26,7 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
     response = self.test_app.get('/change-auto-revert-setting?format=json')
 
     expected_response = {
-        'auto_revert_on': True,
+        'auto_create_revert_compile_on': True,
         'xsrf_token': response.json_body.get('xsrf_token')
     }
     self.assertEqual(200, response.status_int)
@@ -38,7 +38,7 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
 
     params = {
         'xsrf_token': 'token',
-        'revert_compile_culprit': 'false',
+        'auto_create_revert_compile': 'false',
         'update_reason': 'reason'
     }
 
@@ -53,7 +53,7 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
 
     params = {
         'xsrf_token': 'token',
-        'revert_compile_culprit': 'true',
+        'auto_create_revert_compile': 'true',
         'update_reason': 'reason'
     }
 
@@ -72,7 +72,7 @@ class ChangeAutoRevertSettingTest(wf_testcase.WaterfallTestCase):
 
     params = {
         'xsrf_token': 'token',
-        'revert_compile_culprit': 'false',
+        'auto_create_revert_compile': 'false',
         'update_reason': '\n'
     }
 

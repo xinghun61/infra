@@ -175,7 +175,7 @@ def ShouldRevert(repo_name, revision, pipeline_id):
   """
   action_settings = waterfall_config.GetActionSettings()
   # Auto revert has been turned off.
-  if not bool(action_settings.get('revert_compile_culprit')):
+  if not bool(action_settings.get('auto_create_revert_compile')):
     return False
 
   if not _CanRevert(repo_name, revision, pipeline_id):
@@ -307,7 +307,7 @@ def RevertCulprit(repo_name, revision, build_id):
   # 3. Add reviewers.
   # If Findit cannot commit the revert, add sheriffs as reviewers and ask them
   # to 'LGTM' and commit the revert.
-  if not waterfall_config.GetActionSettings().get('commit_gerrit_revert'):
+  if not waterfall_config.GetActionSettings().get('auto_commit_revert_compile'):
     success = _AddReviewers(revision,
                             culprit.key.urlsafe(), codereview, revert_change_id,
                             False)
@@ -380,8 +380,8 @@ def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
   """
   action_settings = waterfall_config.GetActionSettings()
   if (not revert_status == CREATED_BY_FINDIT or
-      not bool(action_settings.get('commit_gerrit_revert')) or
-      not bool(action_settings.get('revert_compile_culprit'))):
+      not bool(action_settings.get('auto_commit_revert_compile')) or
+      not bool(action_settings.get('auto_create_revert_compile'))):
     return False
 
   if not _CanCommitRevert(repo_name, revision, pipeline_id):

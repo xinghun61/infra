@@ -215,8 +215,8 @@ def _ValidateActionSettings(settings):
       isinstance(settings, dict) and
       isinstance(settings.get('cr_notification_build_threshold'), int) and
       isinstance(settings.get('cr_notification_latency_limit_minutes'), int) and
-      isinstance(settings.get('revert_compile_culprit'), bool) and
-      isinstance(settings.get('commit_gerrit_revert'), bool) and
+      isinstance(settings.get('auto_create_revert_compile'), bool) and
+      isinstance(settings.get('auto_commit_revert_compile'), bool) and
       isinstance(settings.get('culprit_commit_limit_hours'), int) and
       isinstance(settings.get('auto_commit_daily_threshold'), int) and
       isinstance(settings.get('auto_revert_daily_threshold'), int) and

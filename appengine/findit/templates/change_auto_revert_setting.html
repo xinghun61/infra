@@ -14,7 +14,7 @@
 </head>
 <body>
   <findit-app id="app" login-required="true">
-    {% if auto_revert_on %}
+    {% if auto_create_revert_compile_on %}
       <h1>Auto Revert: On.</h1>
     {% else %}
       <h1>Auto Revert: Off.</h1>
@@ -22,13 +22,13 @@
     <br><br>
     <form id="change-auto-revert-setting-form" action="/waterfall/change-auto-revert-setting" method="post">
       <input type="hidden" name="xsrf_token" value="{{xsrf_token}}"/>
-      Please enter update reason (required).<br>
+      Please enter update reason (<font color="red">*required</font>).<br>
       <textarea id="update_reason" name="update_reason" rows="4" cols="80" required></textarea>
       <br><br>
-      {% if auto_revert_on %}
-        <button type="submit" name="revert_compile_culprit" value="false">Disable Auto Revert</button>
+      {% if auto_create_revert_compile_on %}
+        <button type="submit" name="auto_create_revert_compile" value="false">Disable Auto Revert</button>
       {% else %}
-        <button type="submit" name="revert_compile_culprit" value="true">Enable Auto Revert</button>
+        <button type="submit" name="auto_create_revert_compile" value="true">Enable Auto Revert</button>
       {% endif %}
     </form>
   </findit-app>

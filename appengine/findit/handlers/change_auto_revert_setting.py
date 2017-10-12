@@ -20,12 +20,12 @@ class ChangeAutoRevertSetting(BaseHandler):
 
   @token.AddXSRFToken(action_id='config')
   def HandleGet(self):
-    auto_revert_on = waterfall_config.GetActionSettings().get(
-        'revert_compile_culprit', False)
+    auto_create_revert_compile_on = waterfall_config.GetActionSettings().get(
+        'auto_create_revert_compile', False)
     return {
         'template': 'change_auto_revert_setting.html',
         'data': {
-            'auto_revert_on': auto_revert_on
+            'auto_create_revert_compile_on': auto_create_revert_compile_on
         }
     }
 
@@ -36,17 +36,17 @@ class ChangeAutoRevertSetting(BaseHandler):
 
     action_settings = copy.deepcopy(waterfall_config.GetActionSettings())
 
-    revert_compile_culprit = json.loads(
-        self.request.params.get('revert_compile_culprit').lower())
-    action_settings[revert_compile_culprit] = revert_compile_culprit
+    auto_create_revert_compile = json.loads(
+        self.request.params.get('auto_create_revert_compile').lower())
+    action_settings['auto_create_revert_compile'] = auto_create_revert_compile
 
     message = self.request.params.get('update_reason').strip()
     if not message:
       return BaseHandler.CreateError('Please enter the reason.', 501)
 
     updated = False
-    if revert_compile_culprit != waterfall_config.GetActionSettings().get(
-        'revert_compile_culprit'):
+    if auto_create_revert_compile != waterfall_config.GetActionSettings().get(
+        'auto_create_revert_compile'):
       updated = wf_config.FinditConfig.Get().Update(
           user,
           acl.IsPrivilegedUser(user.email(), is_admin),
@@ -54,8 +54,8 @@ class ChangeAutoRevertSetting(BaseHandler):
           action_settings=action_settings)
 
     if not updated:
-      return BaseHandler.CreateError(
-          'Failed to update auto-revert setting. '
-          'Please refresh the page and try again.', 501)
+      return BaseHandler.CreateError('Failed to update auto-revert setting. '
+                                     'Please refresh the page and try again.',
+                                     501)
 
     return self.CreateRedirect('/waterfall/change-auto-revert-setting')
