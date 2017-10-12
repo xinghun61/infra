@@ -155,8 +155,7 @@ class RietveldTest(testing.AppengineTestCase):
     self.http_client.SetResponse('%s/api/%s?messages=true' %
                                  (rietveld_url, revert_change_id), response)
     cl_info = self.rietveld.GetClDetails(change_id)
-
-    self.assertEqual(cl_info.serialize(), {
+    expected_cl_info = {
         'server_hostname':
             'server.host.name',
         'change_id':
@@ -212,6 +211,8 @@ class RietveldTest(testing.AppengineTestCase):
                 'subject':
                     None,
                 'description':
+                    None,
+                'revert_of':
                     None
             },
             'reverting_user_email': 'reviewer@chromium.org',
@@ -224,8 +225,11 @@ class RietveldTest(testing.AppengineTestCase):
         'subject':
             None,
         'description':
+            None,
+        'revert_of':
             None
-    })
+    }
+    self.assertEqual(cl_info.serialize(), expected_cl_info)
 
   @mock.patch('libs.time_util.DatetimeFromString',
               lambda x: datetime.datetime.strptime(x, '%Y-%m-%d %H:%M:%S.%f'))

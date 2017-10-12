@@ -33,7 +33,7 @@ CREATED_BY_SHERIFF = 1
 ERROR = 2
 SKIPPED = 3
 
-CULPRIT_OWNED_BY_FINDIT = 'Culprit is a revert created by Findit.'
+CULPRIT_IS_A_REVERT = 'Culprit is a revert.'
 AUTO_REVERT_OFF = 'Author of the culprit revision has turned off auto-revert.'
 REVERTED_BY_SHERIFF = 'Culprit has been reverted by a sheriff or the CL owner.'
 
@@ -198,6 +198,10 @@ def _IsOwnerFindit(owner_email):
   return owner_email == constants.DEFAULT_SERVICE_ACCOUNT
 
 
+def _IsCulpritARevert(cl_info):
+  return bool(cl_info.revert_of)
+
+
 def RevertCulprit(repo_name, revision, build_id):
   """Creates a revert of a culprit and adds reviewers.
 
@@ -231,13 +235,13 @@ def RevertCulprit(repo_name, revision, build_id):
     _UpdateCulprit(repo_name, revision, revert_status=status.ERROR)
     return ERROR
 
-  # Checks if the culprit is a revert created by Findit. If yes, bail out.
-  if _IsOwnerFindit(culprit_cl_info.owner_email):
+  # Checks if the culprit is a revert. If yes, bail out.
+  if _IsCulpritARevert(culprit_cl_info):
     _UpdateCulprit(
         repo_name,
         revision,
         status.SKIPPED,
-        skip_revert_reason=CULPRIT_OWNED_BY_FINDIT)
+        skip_revert_reason=CULPRIT_IS_A_REVERT)
     return SKIPPED
 
   if culprit_cl_info.auto_revert_off:

@@ -229,12 +229,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testCulpritCreatedByFindit(self, mock_fn, _):
+  def testCulpritIsARevert(self, mock_fn, _):
     repo_name = 'chromium'
     revision = 'rev1'
 
     cl_info = ClInfo(self.review_server_host, self.review_change_id)
-    cl_info.owner_email = constants.DEFAULT_SERVICE_ACCOUNT
+    cl_info.revert_of = 123456
     cl_info.commits.append(
         Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
     mock_fn.return_value = cl_info
@@ -249,7 +249,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.SKIPPED)
     self.assertIsNone(culprit.revert_cl)
-    self.assertEqual(culprit.skip_revert_reason, revert.CULPRIT_OWNED_BY_FINDIT)
+    self.assertEqual(culprit.skip_revert_reason, revert.CULPRIT_IS_A_REVERT)
 
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)

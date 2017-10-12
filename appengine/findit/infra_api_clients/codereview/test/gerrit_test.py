@@ -398,7 +398,9 @@ class GerritTest(testing.AppengineTestCase):
                 }
             },
             'subject':
-                'subject'
+                'subject',
+            'revert_of':
+                446905
         }]):
       cl_info = self.gerrit.GetClDetails(change_id)
     self.assertEqual(cl_info.serialize(), {
@@ -468,14 +470,18 @@ class GerritTest(testing.AppengineTestCase):
                     'patchset_id': 1,
                     'timestamp': '2017-02-27 19:04:53 UTC',
                     'committing_user_email': 'one@chromium.org'
-                }]
+                }],
+                'revert_of':
+                    446905
             }
         }],
         'commit_attempts': [{
             'patchset_id': 1,
             'timestamp': '2017-02-27 18:47:15 UTC',
             'committing_user_email': 'one@chromium.org'
-        }]
+        }],
+        'revert_of':
+            None
     })
 
   def testCreateRevertSuccessful(self):

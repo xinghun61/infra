@@ -105,6 +105,12 @@ class ClInfo(object):
 
     self.description = None
 
+    # The value will be set if this CL is a revert of another CL.
+    # The value is numeric change id (_number) of the original CL.
+    # This is only relevant to Gerrit, so for changes in rietveld,
+    # the value should always be None.
+    self.revert_of = None
+
   def AddCqAttempt(self, patchset_id, committer, timestamp):
     if patchset_id not in self.commit_attempts.keys():
       self.commit_attempts[patchset_id] = CommitAttempt(patchset_id, committer,
@@ -139,7 +145,9 @@ class ClInfo(object):
         'subject':
             self.subject,
         'description':
-            self.description
+            self.description,
+        'revert_of':
+            self.revert_of
     }
 
   def GetPatchsetIdByRevision(self, revision):

@@ -214,6 +214,7 @@ class Gerrit(codereview.CodeReview):
     result.closed = change_info['status'] == 'MERGED'
     result.owner_email = change_info['owner']['email']
     result.subject = change_info['subject']
+    result.revert_of = change_info.get('revert_of')
 
     # If the status is merged, look at the commit details for the current
     # commit.

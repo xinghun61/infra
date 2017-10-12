@@ -62,7 +62,8 @@ class ClInfoTest(unittest.TestCase):
             'reverts': [],
             'reviewers': [],
             'server_hostname': 'codereview.chromium.org',
-            'subject': None
+            'subject': None,
+            'revert_of': None
         }
     }, revert.serialize())
 
@@ -82,7 +83,7 @@ class ClInfoTest(unittest.TestCase):
         self.timestamp + datetime.timedelta(hours=1))
 
     commit_1 = cl_info.Commit(self.patchset_id, self.revision,
-                             self.timestamp + hours(1))
+                              self.timestamp + hours(1))
     cl.commits.append(commit_1)
     self.assertEqual(commit_1, cl.GetCommitInfoByRevision(self.revision))
     self.assertIsNone(cl.GetCommitInfoByRevision('randomrevision'))
