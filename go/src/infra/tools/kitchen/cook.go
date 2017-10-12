@@ -677,7 +677,7 @@ func setAnnotationText(s *milo.Step) {
 	s.Text = nil
 	for _, substep := range s.Substep {
 		ss := substep.GetStep()
-		if ss != nil && ss.Status == milo.Status_FAILURE {
+		if ss != nil && ss.Status == milo.Status_FAILURE && ss.Name != "Failure reason" {
 			s.Text = append(s.Text, fmt.Sprintf("Failure %s", ss.Name))
 		}
 	}
