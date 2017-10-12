@@ -110,6 +110,23 @@ _SUPPORTED_TYPE_NAMES = ', '.join([t.__name__ for t in _SUPPORTED_TYPES])
 _ENCODED_PARAMETER_FLAG = 'ENCODED:boHH6HlAZEbA0jDg7NHrcEFIN'
 
 
+# TODO(crbug.com/773340): Remove this when all pipelines are the new style.
+def CreateInputObjectInstance(cls, **kwargs):
+  """Returns structured object instance that accepts pipeline Future as value.
+
+  Used as a temporary measure while we migrate our pipelines to the new style.
+
+  Args:
+    cls (class): A subclass of StructuredObject.
+    kwargs (dict): A mapping from attributes to values.
+  """
+
+  def Func(_, value):
+    return isinstance(value, pipeline.PipelineFuture)
+
+  return cls(type_validation_func=Func, **kwargs)
+
+
 def _ValidateType(parameter_type, parameter_name):
   """Asserts the attribute type is supported.
 
@@ -245,7 +262,7 @@ class GeneratorPipeline(BasePipeline):
   # Output of a generator pipeline is the same as its last sub-pipeline.
   output_type = type(None)
 
-  def CreateInstance(self, cls, **kwargs):
+  def CreateInputObjectInstance(self, cls, **kwargs):
     """Returns structured object instance that accepts pipeline Future as value.
 
     Args:

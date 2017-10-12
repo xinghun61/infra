@@ -136,3 +136,13 @@ class FlakeAnalysisRequestTest(TestCase):
 
     self.assertEqual(analysis,
                      request.FindMatchingAnalysisForConfiguration('m', 'b'))
+
+  def testUpdate(self):
+    request = FlakeAnalysisRequest.Create('test', False, 123)
+    request.Update(name='foo')
+    self.assertEqual('foo', request.name)
+
+  def testUpdateNoChanges(self):
+    request = FlakeAnalysisRequest.Create('test', False, 123)
+    request.Update(name='test')
+    self.assertEqual('test', request.name)

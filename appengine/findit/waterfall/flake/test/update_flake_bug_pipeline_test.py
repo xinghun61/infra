@@ -17,69 +17,6 @@ from waterfall.test import wf_testcase
 
 class UpdateFlakeToBugPipelineTest(wf_testcase.WaterfallTestCase):
 
-  def testGetIssueWithoutMergeInto(self):
-    issue_tracker = mock.Mock()
-    expected_issue = Issue({'id': 123})
-    issue_tracker.getIssue.return_value = expected_issue
-
-    issue = update_flake_bug_pipeline._GetIssue(123, issue_tracker)
-    self.assertEqual(expected_issue, issue)
-    issue_tracker.assert_has_calls([mock.call.getIssue(123)])
-
-  def testGetIssueWithMergeInto(self):
-    issue_tracker = mock.Mock()
-    expected_issue = Issue({'id': 345})
-    issue_tracker.getIssue.side_effect = [
-        Issue({
-            'id': 123,
-            'mergedInto': {
-                'issueId': 234
-            }
-        }),
-        Issue({
-            'id': 234,
-            'mergedInto': {
-                'issueId': 345
-            }
-        }),
-        expected_issue,
-    ]
-
-    issue = update_flake_bug_pipeline._GetIssue(123, issue_tracker)
-    self.assertEqual(expected_issue, issue)
-    issue_tracker.assert_has_calls([
-        mock.call.getIssue(123),
-        mock.call.getIssue(234),
-        mock.call.getIssue(345)
-    ])
-
-  def testGetIssueWithMergeInACircle(self):
-    issue_tracker = mock.Mock()
-    expected_issue = Issue({'id': 123})
-    issue_tracker.getIssue.side_effect = [
-        Issue({
-            'id': 123,
-            'mergedInto': {
-                'issueId': 234
-            }
-        }),
-        Issue({
-            'id': 234,
-            'mergedInto': {
-                'issueId': 123
-            }
-        }),
-        expected_issue,
-    ]
-
-    issue = update_flake_bug_pipeline._GetIssue(123, issue_tracker)
-    self.assertEqual(expected_issue, issue)
-    issue_tracker.assert_has_calls([
-        mock.call.getIssue(123),
-        mock.call.getIssue(234),
-        mock.call.getIssue(123)
-    ])
-
   def testGenerateCommentUponError(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 1, 's', 't')
     analysis.status = analysis_status.ERROR

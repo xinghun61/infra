@@ -88,6 +88,11 @@ class FlakeAnalysisRequest(VersionedModel):
   # The bug id for this flake on Monorail.
   bug_id = ndb.IntegerProperty(indexed=False)
 
+  # The reporter of this bug, use triggering_source as an emun to define this
+  # value. The triggering source FINDIT_PIPELINES should be used for when
+  # Findit itself reports a bug.
+  bug_reported_by = ndb.IntegerProperty(indexed=False)
+
   # The emails of users who request analysis of this flake.
   user_emails = ndb.StringProperty(indexed=False, repeated=True)
 
@@ -171,3 +176,25 @@ class FlakeAnalysisRequest(VersionedModel):
         return analysis_key.get()
 
     return None
+
+  def Update(self, **kwargs):
+    """Updates fields according to what's specified in kwargs.
+
+      Fields specified in kwargs will be updated accordingly, while those not
+      present in kwargs will be untouched.
+
+    Args:
+      **kwargs (dict): The keys in kwargs should match the name of the field you
+          want to update, and the values should be the value you update it to.
+    """
+    # TODO(crbug.com/772156): Refactor this into a base model.
+    any_changes = False
+
+    for arg, value in kwargs.iteritems():
+      current_value = getattr(self, arg, None)
+      if current_value != value:
+        setattr(self, arg, value)
+        any_changes = True
+
+    if any_changes:
+      self.put()

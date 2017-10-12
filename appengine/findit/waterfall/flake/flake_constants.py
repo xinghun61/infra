@@ -63,6 +63,9 @@ MAX_SWARMING_TASK_RETRIES_PER_BUILD = 2
 # non-configurable 3 hours.
 MAX_TIMEOUT_SECONDS = 3 * 60 * 60
 
+# The minimum confidence required to create a bug.
+MINIMUM_CONFIDENCE_TO_CREATE_BUG = 1.0
+
 # The minimum number of iterations to be run before convergance is considered.
 # All variables related to convergence aren't configurable right now since it
 # should be a constant.

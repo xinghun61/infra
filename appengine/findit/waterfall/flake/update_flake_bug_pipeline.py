@@ -6,27 +6,11 @@ import logging
 
 from google.appengine.api import app_identity
 from google.appengine.ext import ndb
-
 from monorail_api import IssueTrackerAPI
-
-from common import monitoring
 from gae_libs.pipeline_wrapper import BasePipeline
 
-
-def _GetIssue(bug_id, issue_tracker):
-  """Returns the issue of the given bug.
-
-  Traverse if the bug was merged into another."""
-  issue = issue_tracker.getIssue(bug_id)
-  checked_issues = {}
-  while issue and issue.merged_into:
-    logging.info('%s was merged into %s' % (issue.id, issue.merged_into))
-    checked_issues[issue.id] = issue
-    issue = issue_tracker.getIssue(issue.merged_into)
-    if issue.id in checked_issues:
-      break  # Break the loop.
-  return issue
-
+from services.flake_failure import issue_tracking_service
+from common import monitoring
 
 _COMMENT_FOOTER = """
 Automatically posted by the findit-for-me app (https://goo.gl/Ot9f7N).
@@ -61,28 +45,33 @@ _FINDIT_ANALYZED_LABEL_TEXT = 'Test-Findit-Analyzed'
 def _GenerateComment(analysis):
   """Generates a comment based on the analysis result."""
   if analysis.failed:
-    return _ERROR_COMMENT_TEMPLATE % (analysis.original_master_name,
-                                      analysis.original_builder_name,
-                                      analysis.key.urlsafe(),)
+    return _ERROR_COMMENT_TEMPLATE % (
+        analysis.original_master_name,
+        analysis.original_builder_name,
+        analysis.key.urlsafe(),)
   elif analysis.culprit_urlsafe_key is not None:
     culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
     assert culprit
     assert analysis.confidence_in_culprit is not None
-    return _CULPRIT_COMMENT_TEMPLATE % (culprit.commit_position,
-                                        analysis.confidence_in_culprit * 100,
-                                        analysis.original_master_name,
-                                        analysis.original_builder_name,
-                                        analysis.key.urlsafe(),)
+    return _CULPRIT_COMMENT_TEMPLATE % (
+        culprit.commit_position,
+        analysis.confidence_in_culprit * 100,
+        analysis.original_master_name,
+        analysis.original_builder_name,
+        analysis.key.urlsafe(),)
   elif (analysis.suspected_flake_build_number and
         analysis.confidence_in_suspected_build > 0.6):
     return _BUILD_HIGH_CONFIDENCE_COMMENT_TEMPLATE % (
-        analysis.suspected_flake_build_number, analysis.original_master_name,
+        analysis.suspected_flake_build_number,
+        analysis.original_master_name,
         analysis.original_builder_name,
-        analysis.confidence_in_suspected_build * 100, analysis.key.urlsafe(),)
+        analysis.confidence_in_suspected_build * 100,
+        analysis.key.urlsafe(),)
   else:
-    return _LOW_FLAKINESS_COMMENT_TEMPLATE % (analysis.original_master_name,
-                                              analysis.original_builder_name,
-                                              analysis.key.urlsafe(),)
+    return _LOW_FLAKINESS_COMMENT_TEMPLATE % (
+        analysis.original_master_name,
+        analysis.original_builder_name,
+        analysis.key.urlsafe(),)
 
 
 def _LogBugNotUpdated(reason):
@@ -193,7 +182,8 @@ class UpdateFlakeBugPipeline(BasePipeline):
     project_name = 'chromium'
     is_staging = app_identity.get_application_id().endswith('-staging')
     issue_tracker = IssueTrackerAPI(project_name, use_staging=is_staging)
-    issue = _GetIssue(analysis.bug_id, issue_tracker)
+    issue = issue_tracking_service.TraverseMergedIssues(analysis.bug_id,
+                                                        issue_tracker)
     if not issue:
       logging.warn('Bug %s/%s or the merged-into one seems deleted!',
                    project_name, analysis.bug_id)

@@ -73,7 +73,7 @@ class _GeneratorPipelineWithSubPipelines(pipelines.GeneratorPipeline):
   def RunImpl(self, arg):
     a = self._ComputeRightAway()
     b = yield _SynchronousPipelineWithSimpleInfoAsOutputType(arg)
-    complex_info = self.CreateInstance(_ComplexInfo, a=a, b=b)
+    complex_info = self.CreateInputObjectInstance(_ComplexInfo, a=a, b=b)
     yield _SynchronousPipelineWithComplexInfoAsInputType(complex_info)
 
 
@@ -124,8 +124,37 @@ class _AsynchronousPipelineOutputAList(pipelines.AsynchronousPipeline):
     self.Complete([int(parameters['a'])])
 
 
+class _GeneratorPipelineUnwrapInput(pipelines.GeneratorPipeline):
+  input_type = _SimpleInfo
+  output_type = int
+
+  def RunImpl(self, arg):
+    yield _SynchronousPipelineWithBuiltInOutputType(arg.param)
+
+
 class PipelinesTest(TestCase):
   app_module = pipelines.pipeline_handlers._APP
+
+  def testModuleCreateInputObjectInstance(self):
+    input_obj = pipelines.CreateInputObjectInstance(_SimpleInfo, param=1)
+    self.assertEqual(input_obj.param, 1)
+
+    p = _GeneratorPipelineUnwrapInput(input_obj)
+    p.start()
+    self.execute_queued_tasks()
+    p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
+    self.assertFalse(p.was_aborted)
+
+  def testModuleCreateInputObjectInstanceWithWrongType(self):
+    with self.assertRaises(AssertionError):
+      pipelines.CreateInputObjectInstance(_SimpleInfo, param='foo')
+
+  def testModuleCreateInputObjectInstanceWithFuture(self):
+    future = pipelines.pipeline.PipelineFuture([1])
+    input_obj = pipelines.CreateInputObjectInstance(_SimpleInfo, param=future)
+    input_obj_dict = input_obj.ToDict()
+    self.assertTrue('param' in input_obj_dict)
+    self.assertEqual(input_obj_dict['param'], future)
 
   def testAssertionForOnlyOnePositionalInputParameter(self):
     cases = [

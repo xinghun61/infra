@@ -221,6 +221,7 @@ def ScheduleAnalysisForFlake(request,
         'Schedule failed because user is not authorized. user:%s, admin:%s',
         user_email, is_admin)
     return None
+  request.bug_reported_by = triggering_source
   request.user_emails = [user_email]
 
   manually_triggered = user_email.endswith('@google.com')

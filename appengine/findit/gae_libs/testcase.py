@@ -73,3 +73,19 @@ class TestCase(BaseTestCase, testing.AppengineTestCase):  # pragma: no cover.
       pipeline_class_instance.Complete(mocked_output)
 
     self.mock(pipeline_class, 'RunImpl', Mocked_RunImpl)
+
+  def MockGeneratorPipeline(self, pipeline_class, expected_input,
+                            mocked_output):
+    """Mocks a generator pipeline to return a output and assert the input.
+
+    Args:
+      pipeline_class (class): The class of the pipeline to be mocked.
+      expected_input (object): The single input expected by the pipeline.
+      mocked_output (object): The mocked result to be returned by the pipeline.
+    """
+
+    def Mocked_RunImpl(_, arg):
+      self.assertEqual(expected_input, arg)
+      return mocked_output
+
+    self.mock(pipeline_class, 'RunImpl', Mocked_RunImpl)

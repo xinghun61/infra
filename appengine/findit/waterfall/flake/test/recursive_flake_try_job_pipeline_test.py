@@ -8,6 +8,7 @@ import mock
 
 from google.appengine.ext import ndb
 
+from gae_libs.pipelines import CreateInputObjectInstance
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.gitiles.change_log import ChangeLog
 
@@ -20,6 +21,11 @@ from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+from pipelines.flake_failure.create_bug_for_flake_pipeline import (
+    CreateBugForFlakePipeline)
+from pipelines.flake_failure.create_bug_for_flake_pipeline import (
+    CreateBugForFlakePipelineInputObject)
+
 from waterfall import swarming_util
 from waterfall.flake import confidence
 from waterfall.flake import flake_constants
@@ -28,6 +34,7 @@ from waterfall.flake.recursive_flake_try_job_pipeline import (
     _GetNextCommitPositionAndRemainingSuspects)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     _GetNormalizedTryJobDataPoints)
+from waterfall.flake.get_test_location_pipeline import GetTestLocationPipeline
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     NextCommitPositionPipeline)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
@@ -527,6 +534,18 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         '',
         expected_args=[analysis.key.urlsafe()],
         expected_kwargs={})
+    test_location = {'file': 'foo/bar', 'line': 1}
+    self.MockPipeline(
+        GetTestLocationPipeline,
+        test_location,
+        expected_args=[analysis.key.urlsafe()])
+
+    input_obj = CreateInputObjectInstance(
+        CreateBugForFlakePipelineInputObject,
+        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        test_location=test_location)
+
+    self.MockGeneratorPipeline(CreateBugForFlakePipeline, input_obj, None)
 
     pipeline_job = NextCommitPositionPipeline(
         analysis.key.urlsafe(),
@@ -595,6 +614,18 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         '',
         expected_args=[analysis.key.urlsafe()],
         expected_kwargs={})
+
+    test_location = {'file': 'foo/bar', 'line': 1}
+    self.MockPipeline(
+        GetTestLocationPipeline,
+        test_location,
+        expected_args=[analysis.key.urlsafe()])
+
+    input_obj = CreateInputObjectInstance(
+        CreateBugForFlakePipelineInputObject,
+        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        test_location=test_location)
+    self.MockGeneratorPipeline(CreateBugForFlakePipeline, input_obj, None)
 
     pipeline_job = NextCommitPositionPipeline(
         analysis.key.urlsafe(),

@@ -466,6 +466,9 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   # The bug id in which this flake is reported.
   bug_id = ndb.IntegerProperty(indexed=True)
 
+  # A bit to track if a bug filing has been attempted.
+  has_attempted_filing = ndb.BooleanProperty(default=False)
+
   # A list of dicts containing information about each swarming rerun's results
   # that were involved in this analysis. The contents of this list will be used
   # for metrics, such as the number of cache hits this analysis benefited from,

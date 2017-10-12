@@ -19,6 +19,11 @@ from libs import time_util
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
+from pipelines.flake_failure.create_bug_for_flake_pipeline import (
+    CreateBugForFlakePipeline)
+from pipelines.flake_failure.create_bug_for_flake_pipeline import (
+    CreateBugForFlakePipelineInputObject)
+from gae_libs import pipelines
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
@@ -26,6 +31,7 @@ from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants
 from waterfall.flake import lookback_algorithm
 from waterfall.flake.flake_analysis_util import NormalizedDataPoint
+from waterfall.flake.get_test_location_pipeline import GetTestLocationPipeline
 from waterfall.flake.process_flake_try_job_result_pipeline import (
     ProcessFlakeTryJobResultPipeline)
 from waterfall.flake.schedule_flake_try_job_pipeline import (
@@ -582,13 +588,23 @@ class NextCommitPositionPipeline(BasePipeline):
           culprit_urlsafe_key=culprit.key.urlsafe(),
           confidence_in_culprit=confidence_score,
           try_job_status=analysis_status.COMPLETED,
-          end_time=time_util.GetUTCNow())
+          end_time=time_util.GetUTCNow(),
+          has_attempted_filing=False)
       duration = flake_analysis.end_time - flake_analysis.start_time
       monitoring.analysis_durations.add(duration.total_seconds(), {
           'type': 'flake',
           'result': 'completed',
       })
 
+      test_location = yield GetTestLocationPipeline(
+          flake_analysis.key.urlsafe())
+
+      input_obj = pipelines.CreateInputObjectInstance(
+          CreateBugForFlakePipelineInputObject,
+          analysis_urlsafe_key=unicode(flake_analysis.key.urlsafe()),
+          test_location=test_location)
+
+      yield CreateBugForFlakePipeline(input_obj)
       yield SendNotificationForFlakeCulpritPipeline(urlsafe_flake_analysis_key)
       return
 
