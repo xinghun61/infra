@@ -13,9 +13,9 @@ from waterfall import swarming_util
 _FINDIT_SWARMING_POOL = 'Chrome.Findit'
 _TARGET_MASTER = 'luci.chromium.try'
 _PLATFORM_BUILDER_MAP = {
-    'Linux': 'LUCI linux_chromium_variable',
-    'Mac': 'LUCI mac_chromium_variable',
-    'Windows': 'LUCI win_chromium_variable',
+    'Linux': 'linux_chromium_variable',
+    'Mac': 'mac_chromium_variable',
+    'Windows': 'win_chromium_variable',
 }
 _PLATFORM_CACHE_NAME_MAP = {
     'Linux': swarming_util.GetCacheName('chromium.linux', 'Linux Builder'),

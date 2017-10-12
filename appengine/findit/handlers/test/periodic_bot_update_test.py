@@ -64,7 +64,7 @@ class PeriodicBotUpdateTest(wf_testcase.WaterfallTestCase):
                         }]
                     }
                 },
-                'builder_name': 'LUCI linux_chromium_variable',
+                'builder_name': 'linux_chromium_variable',
                 'properties': {
                     'recipe': 'findit/chromium/preemptive_bot_update'
                 }
