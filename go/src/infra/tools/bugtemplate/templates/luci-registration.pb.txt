@@ -1,29 +1,53 @@
-summary: "Register LUCI project <project id>"
+summary: "[Register LUCI Project] project ID"
 
 description: <<END
-  Please register a LUCI project
+Please register a LUCI project
 
-  // Please delete commented out sections before submission
+// Please delete commented out sections before submission
+// Feel free to add free form text.
 
-  // choose a short project id, regex:^[a-z_][a-z0-9_-]*$)
-  // examples: https://chrome-internal.googlesource.com/infradata/config/+/master/configs/luci-config/projects.cfg
-  - project id:
+// choose a short project id, regex:^[a-z_][a-z0-9_-]*$)
+// examples: https://chrome-internal.googlesource.com/infradata/config/+/master/configs/luci-config/projects.cfg
+project_id: <id>
 
-  // provide a URL of the Gitiles repo where you will keep LUCI
-  // config files. If ref is omitted, `refs/heads/infra/config` will be used.
-  // Typically it is the main repo of the project,
-  // e.g. chromium's configs are in
-  // https://chromium.googlesource.com/chromium/src/+/infra/config
-  - config repo:
+// Choose a short nice project name for humans
+project_name: <name>
 
-  // A project should have groups on chrome-infra-auth.appspot.com
-  // with names project-<project-id>-{admins,committers,tryjob-access}
-  // They will be created.
-  // In the project has groups, but they are called differently, fill the following
-  // section, otherwise delete it
-  - malformed CIA groups:
+// Is this project public? E.g. the project id / name are not confidential,
+// build logs are not confidential, etc.
+public: <true or false>
 
-// TODO(nodir,estaab): add more here
+// A project should have groups on chrome-infra-auth.appspot.com
+// with names project-${PROJECT_ID}-{admins,committers,tryjob-access}.
+// If the groups already exist and are correct, delete this section.
+add project admin: <emails> // besides yourself
+// Once you are a project admin, you can change other project groups to your
+// liking.
+// If the project has groups, but they are called differently, fill the
+// following section, otherwise delete it
+malformed CIA groups: <group names>
+
+// Where is the project source code?
+// This will be used for CI. Let us know if you don't need CI.
+main_repo: <Gitiles URL>
+
+// Where the LUCI configs will live?
+// Each LUCI project has a place to keep its configs for LUCI.
+// By convention, it is on `infra/config` branch on the main repo.
+// Omit this field if you are OK with that.
+// Let us know if a new repo is needed.
+config_location: <gitiles REPO url>
+
+// URL of the repo that contains recipes (go/recipes)
+// Omit recipes_repo_url if same as ${MAIN_REPO}
+recipes_repo_url: <Gitiles URL>
+recipe_name: <recipe file name without extension>
+
+------------
+
+How to process this ticket: go/register-luci-project-instructions
+Also, it contains instructions how to change this bug template.
+
 END
 
 components: "Infra>Platform"
@@ -32,3 +56,4 @@ cc: "estaab@chromium.org"
 cc: "efoo@chromium.org"
 type: Task
 pri: P2
+labels: "Restrict-View-Google"

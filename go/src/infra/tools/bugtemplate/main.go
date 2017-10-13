@@ -21,6 +21,11 @@ var defPath = flag.String(
 	"",
 	"path to the file with text proto Template message, see template.proto")
 
+var queryEscape = flag.Bool(
+	"query-escape",
+	false,
+	"escape the URL as a query string parameter")
+
 func (p Priority) Label() string {
 	if p == 0 {
 		return ""
@@ -70,7 +75,11 @@ func run() error {
 	params.Set("cc", strings.Join(cleanStrings(template.Cc), ","))
 	params.Set("components", strings.Join(cleanStrings(template.Components), ","))
 	params.Set("labels", strings.Join(cleanStrings(template.Labels), ","))
-	fmt.Printf("https://bugs.chromium.org/p/chromium/issues/entry?%s\n", params.Encode())
+	ret := "https://bugs.chromium.org/p/chromium/issues/entry?" + params.Encode()
+	if *queryEscape {
+		ret = url.QueryEscape(ret)
+	}
+	fmt.Println(ret)
 	return nil
 }
 
