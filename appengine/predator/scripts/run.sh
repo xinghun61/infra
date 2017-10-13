@@ -78,6 +78,19 @@ run_locally() {
   python ${GOOGLE_APP_ENGINE_DIR}/dev_appserver.py ${options} ${DEFAULT_MODULE} ${BACKEND_MODULES}
 }
 
+get_default_host() {
+  # Gets default host for app_id.
+  local app_id=$1
+  # Check if the app_id looks like 'google.com:app-id'.
+  if [[ ${app_id} == "google.com:"* ]]; then
+    # Strip 'google.com' in the front of app_id.
+    local stripped_app_id=${app_id:11}
+    echo "${stripped_app_id}.googleplex.com"
+  else
+    echo "${app_id}.appspot.com"
+  fi
+}
+
 deploy_for_test() {
   # Deploy a version for testing, the version name is the same as the user name.
   local app_id_to_use=${APP_ID}
@@ -99,7 +112,7 @@ deploy_for_test() {
   echo "-----------------------------------"
   print_command_for_queue_cron_dispatch ${app_id_to_use}
   echo "-----------------------------------"
-  echo "Predator was deployed to https://${new_version}-dot-${app_id_to_use}.appspot.com/"
+  echo "Predator was deployed to https://${new_version}-dot-$(get_default_host ${app_id_to_use})/"
 }
 
 deploy_for_prod() {
@@ -136,7 +149,8 @@ deploy_for_prod() {
   fi
 
   # Check current deployed version.
-  local current_version=`curl -s https://${app_id}.appspot.com/version`
+  local current_version=`curl -s https://$(get_default_host ${app_id})/version`
+
   if ! [[ ${current_version} =~ ^[0-9a-fA-F]+$ ]]; then
     echo "Failed to retrieve current version of predator from the live app."
     echo "Please input the current version, followed by [ENTER]:"
@@ -157,7 +171,7 @@ deploy_for_prod() {
   echo "New version '${new_version}' of Predator was deployed to ${app_id}."
 
   app_console_url="https://pantheon.corp.google.com/appengine/versions?project=${app_id}"
-  local frontend_url="https://${new_version}-dot-${app_id}.appspot.com/"
+  local frontend_url="https://${new_version}-dot-$(get_default_host ${app_id})/"
   echo "Please checkout the frontend ${frontend_url}, and verify that the new version works as expected."
   echo
   echo "Then press [ENTER] to confirm that the new version works as expected:"
