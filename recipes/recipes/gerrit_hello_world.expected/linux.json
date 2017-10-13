@@ -1,0 +1,86 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "ensure-directory",
+      "--mode",
+      "0777",
+      "[TMP_BASE]/repo"
+    ],
+    "infra_step": true,
+    "name": "make dir"
+  },
+  {
+    "cmd": [
+      "git",
+      "clone",
+      "https://chromium.googlesource.com/playground/access_test",
+      "."
+    ],
+    "cwd": "[TMP_BASE]/repo",
+    "name": "git clone"
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-b",
+      "cl"
+    ],
+    "cwd": "[TMP_BASE]/repo",
+    "name": "git checkout -b"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "copy",
+      "1337000001.5",
+      "time.txt"
+    ],
+    "cwd": "[TMP_BASE]/repo",
+    "infra_step": true,
+    "name": "drop file"
+  },
+  {
+    "cmd": [
+      "git",
+      "add",
+      "time.txt"
+    ],
+    "cwd": "[TMP_BASE]/repo",
+    "name": "git add"
+  },
+  {
+    "cmd": [
+      "git",
+      "commit",
+      "-m",
+      "Test commit"
+    ],
+    "cwd": "[TMP_BASE]/repo",
+    "name": "git commit"
+  },
+  {
+    "cmd": [
+      "git",
+      "push",
+      "origin",
+      "HEAD:refs/for/refs/heads/master"
+    ],
+    "cwd": "[TMP_BASE]/repo",
+    "name": "push for review"
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]

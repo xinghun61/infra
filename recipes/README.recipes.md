@@ -18,6 +18,7 @@
   * [build_gsutil_cipd_pkg](#recipes-build_gsutil_cipd_pkg)
   * [depot_tools_builder](#recipes-depot_tools_builder) &mdash; Recipe to build windows depot_tools bootstrap zipfile.
   * [gerrit_cq_test](#recipes-gerrit_cq_test)
+  * [gerrit_hello_world](#recipes-gerrit_hello_world) &mdash; Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
   * [git_hash_metric](#recipes-git_hash_metric)
   * [goma_hello_world](#recipes-goma_hello_world) &mdash; Compiles trivial C++ program using Goma.
   * [infra_checkout:examples/full](#recipes-infra_checkout_examples_full)
@@ -242,6 +243,13 @@ Recipe to build windows depot_tools bootstrap zipfile.
 [DEPS](/recipes/recipes/gerrit_cq_test.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 &mdash; **def [RunSteps](/recipes/recipes/gerrit_cq_test.py#15)(api):**
+### *recipes* / [gerrit\_hello\_world](/recipes/recipes/gerrit_hello_world.py)
+
+[DEPS](/recipes/recipes/gerrit_hello_world.py#8): [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
+
+Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
+
+&mdash; **def [RunSteps](/recipes/recipes/gerrit_hello_world.py#22)(api):**
 ### *recipes* / [git\_hash\_metric](/recipes/recipes/git_hash_metric.py)
 
 [DEPS](/recipes/recipes/git_hash_metric.py#7): [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python]
