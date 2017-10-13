@@ -26,7 +26,8 @@ def RunSteps(api):
   with api.context(cwd=root_dir):
     api.step('git clone', ['git', 'clone', PLAYGROUND_REPO, '.'])
     api.step('git checkout -b', ['git', 'checkout', '-b', 'cl'])
-    api.file.write_text('drop file', 'time.txt', str(api.time.time()))
+    api.file.write_text(
+        'drop file', root_dir.join('time.txt'), str(api.time.time()))
     api.step('git add', ['git', 'add', 'time.txt'])
     api.step('git commit', ['git', 'commit', '-m', 'Test commit'])
     api.step(

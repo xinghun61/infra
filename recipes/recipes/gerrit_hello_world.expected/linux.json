@@ -43,7 +43,7 @@
       "/path/to/tmp/json",
       "copy",
       "1337000001.5",
-      "time.txt"
+      "[TMP_BASE]/repo/time.txt"
     ],
     "cwd": "[TMP_BASE]/repo",
     "infra_step": true,
