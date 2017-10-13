@@ -51,8 +51,8 @@ def _HashFeatures(content, num_features):
   return features
 
 
-def GenerateFeatures(summary, description, num_hashes):
-  """ Generates a vector of features for a given issue or comment.
+def GenerateFeaturesRaw(summary, description, num_hashes):
+  """Generates a vector of features for a given issue or comment.
 
   Args:
     summary: The summary text of the Issue.
@@ -79,15 +79,30 @@ def GenerateFeatures(summary, description, num_hashes):
   num_urls_feature = len(urls) if urls else 0
   num_duplicate_urls_feature = len(urls) - len(list(set(urls)))
 
-  ret = [
-    '%s' % num_urls_feature,
-    '%s' % num_duplicate_urls_feature,
-    '%s' % uncompressed_summary_len,
-    '%s' % compressed_summary_len,
-    '%s' % uncompressed_description_len,
-    '%s' % compressed_description_len,
-   ]
+  return {
+    'num_urls': num_urls_feature,
+    'num_duplicate_urls': num_duplicate_urls_feature,
+    'uncompressed_summary_len': uncompressed_summary_len,
+    'compressed_summary_len': compressed_summary_len,
+    'uncompressed_description_len': uncompressed_description_len,
+    'compressed_description_len': compressed_description_len,
+    'word_hashes': feature_hashes,
+  }
 
-  ret.extend(['%f' % f for f in feature_hashes])
-  return ret
 
+def GenerateFeatures(summary, description, num_hashes):
+  """Stringifies GenerateFeatures.
+
+  This function must be named GenerateFeatures to preserve
+  backward-compatibility.
+  """
+
+  features = GenerateFeaturesRaw(summary, description, num_hashes)
+  return [
+    '%s' % features['num_urls'],
+    '%s' % features['num_duplicate_urls'],
+    '%s' % features['uncompressed_summary_len'],
+    '%s' % features['compressed_summary_len'],
+    '%s' % features['uncompressed_description_len'],
+    '%s' % features['compressed_description_len'],
+   ] + ['%f' % f for f in features['word_hashes']]

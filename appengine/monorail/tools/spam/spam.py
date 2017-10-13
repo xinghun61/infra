@@ -50,6 +50,9 @@ credentials = GoogleCredentials.get_application_default()
 service = build(
     'prediction', 'v1.6', credentials=credentials)
 
+# This must be identical with settings.spam_feature_hashes.
+SPAM_FEATURE_HASHES = 500
+
 def Status(args):
   result = service.trainedmodels().get(
       project=args.project,
@@ -353,8 +356,44 @@ def Generate(args):
     return {"status": "ok"}
 
 
+def Predict(args):
+  ml = googleapiclient.discovery.build('ml', 'v1', credentials=credentials)
+
+  summary = raw_input('Summary: ')
+  description = raw_input('Description: ')
+  instance = spam_helpers.GenerateFeaturesRaw(summary, description,
+    SPAM_FEATURE_HASHES)
+
+  project_ID = 'projects/%s' % args.project
+  model_name = '%s/models/spam' % project_ID
+  request = ml.projects().predict(name=model_name, body={
+    'instances': [instance]
+  })
+
+  try:
+    response = request.execute()
+    print(response)
+  except googleapiclient.errors.HttpError, err:
+    print('There was an error. Check the details:')
+    print(err._get_reason())
+
+
+def LocalPredict(_):
+  print('This will write /tmp/instances.json.')
+  print('Then you can call:')
+  print('gcloud ml-engine local predict --json-instances /tmp/instances.json')
+
+  summary = raw_input('Summary: ')
+  description = raw_input('Description: ')
+  instance = spam_helpers.GenerateFeaturesRaw(summary, description,
+    SPAM_FEATURE_HASHES)
+
+  with open('/tmp/instances.json', 'w') as f:
+      json.dump(instance, f)
+
+
 def main():
-  if 'GOOGLE_APPLICATION_CREDENTIALS' not in os.environ:
+  if not credentials and 'GOOGLE_APPLICATION_CREDENTIALS' not in os.environ:
     print ('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. '
           'Exiting.')
     sys.exit(1)
@@ -421,6 +460,12 @@ def main():
   parser_generate.add_argument('--keep_scratch', '-k', type=bool, default=False,
       help='Keep scratch dir after run.', )
 
+  subparsers.add_parser('predict',
+      help='Submit a prediction to the default model in ML Engine.')
+
+  subparsers.add_parser('local-predict',
+      help='Submit a prediction to a model on the local filesystem.')
+
   args = parser.parse_args()
 
   cmds = {
@@ -432,6 +477,8 @@ def main():
       "prep": Prep,
       'roc':  ROC,
       'generate':  Generate,
+      'predict':  Predict,
+      'local-predict':  LocalPredict,
   }
   res = cmds[args.command](args)
 

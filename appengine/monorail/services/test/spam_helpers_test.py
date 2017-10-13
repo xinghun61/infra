@@ -59,7 +59,7 @@ class SpamHelpersTest(unittest.TestCase):
     features = spam_helpers.GenerateFeatures(
         'abc…', 'abc … def', 5)
     self.assertEquals(11, len(features))
-    self.assertEquals(['0', '0', '6', '14', '11', '19', 
+    self.assertEquals(['0', '0', '6', '14', '11', '19',
         '0.250000', '0.000000', '0.250000', '0.250000', '0.250000'], features)
 
     # Empty input
@@ -68,3 +68,27 @@ class SpamHelpersTest(unittest.TestCase):
     self.assertEquals(11, len(features))
     self.assertEquals(['0', '0', '0', '8', '0', '8',
         '1.000000', '0.000000', '0.000000', '0.000000', '0.000000'], features)
+
+  def testGenerateFeaturesRaw(self):
+    num_word_hashes = 5
+    features = spam_helpers.GenerateFeaturesRaw(
+        'abc', 'abc def http://www.google.com http://www.google.com',
+        num_word_hashes)
+    self.assertEquals({
+      'num_urls': 2,
+      'num_duplicate_urls': 1,
+      'uncompressed_summary_len': 3,
+      'compressed_summary_len': 11,
+      'uncompressed_description_len': 51,
+      'compressed_description_len': 39,
+      'word_hashes': [
+        0.36363636363636365,
+        0.0,
+        0.18181818181818182,
+        0.0,
+        0.45454545454545453
+      ],
+    }, features)
+
+    self.assertEquals(num_word_hashes, len(features['word_hashes']))
+
