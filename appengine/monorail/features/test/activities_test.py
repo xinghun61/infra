@@ -57,7 +57,7 @@ class ActivitiesTest(unittest.TestCase):
   def testActivities_NoUpdates(self):
     mr = testing_helpers.MakeMonorailRequest()
     updates_data = activities.GatherUpdatesData(
-        self.services, mr, profiler.Profiler(), project_ids=[self.project_id],
+        self.services, mr, project_ids=[self.project_id],
         user_ids=None, ending=None, updates_page_url=None, autolink=None,
         highlight=None)
 
@@ -109,7 +109,7 @@ class ActivitiesTest(unittest.TestCase):
 
     updates_page_url='testing/testing'
     updates_data = activities.GatherUpdatesData(
-        self.services, mr, profiler.Profiler(), project_ids=project_ids,
+        self.services, mr, project_ids=project_ids,
         user_ids=user_ids, ending=None, autolink=None,
         highlight='highlightme', updates_page_url=updates_page_url)
     self.mox.VerifyAll()

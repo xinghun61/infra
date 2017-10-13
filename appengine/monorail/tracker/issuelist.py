@@ -68,23 +68,22 @@ class IssueList(servlet.Servlet):
       except issue_svc.NoSuchIssueException:
         pass  # The user is searching for a number that is not an issue ID.
 
-    with self.profiler.Phase('finishing config work'):
+    with mr.profiler.Phase('finishing config work'):
       if mr.project_id:
         config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
       else:
         config = tracker_bizobj.MakeDefaultProjectIssueConfig(None)
 
-    with self.profiler.Phase('starting frontend search pipeline'):
+    with mr.profiler.Phase('starting frontend search pipeline'):
       pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-          mr, self.services, self.profiler,
-          tracker_constants.DEFAULT_RESULTS_PER_PAGE)
+          mr, self.services, tracker_constants.DEFAULT_RESULTS_PER_PAGE)
 
     # Perform promises that require authentication information.
-    with self.profiler.Phase('getting stars'):
+    with mr.profiler.Phase('getting stars'):
       starred_iid_set = _GetStarredIssues(
           mr.cnxn, mr.auth.user_id, self.services)
 
-    with self.profiler.Phase('computing col_spec'):
+    with mr.profiler.Phase('computing col_spec'):
       mr.ComputeColSpec(config)
 
     if not mr.errors.AnyErrors():
@@ -92,10 +91,10 @@ class IssueList(servlet.Servlet):
       pipeline.MergeAndSortIssues()
       pipeline.Paginate()
 
-    with self.profiler.Phase('publishing emails'):
+    with mr.profiler.Phase('publishing emails'):
       framework_views.RevealAllEmailsToMembers(mr, pipeline.users_by_id)
 
-    with self.profiler.Phase('getting related issues'):
+    with mr.profiler.Phase('getting related issues'):
       related_iids = set()
       if pipeline.grid_mode:
         results_needing_related = pipeline.allowed_results or []
@@ -118,7 +117,7 @@ class IssueList(servlet.Servlet):
           mr.cnxn, list(related_iids))
       related_issues = {issue.issue_id: issue for issue in related_issues_list}
 
-    with self.profiler.Phase('building table/grid'):
+    with mr.profiler.Phase('building table/grid'):
       if pipeline.grid_mode:
         page_data = grid_view_helpers.GetGridViewData(
             mr, pipeline.allowed_results or [], pipeline.harmonized_config,
@@ -131,7 +130,7 @@ class IssueList(servlet.Servlet):
 
     # We show a special message when no query will every produce any results
     # because the project has no issues in it.
-    with self.profiler.Phase('starting stars promise'):
+    with mr.profiler.Phase('starting stars promise'):
       if mr.project_id:
         project_has_any_issues = (
             pipeline.allowed_results or
@@ -139,7 +138,7 @@ class IssueList(servlet.Servlet):
       else:
         project_has_any_issues = True  # Message only applies in a project.
 
-    with self.profiler.Phase('making page perms'):
+    with mr.profiler.Phase('making page perms'):
       page_perms = self.MakePagePerms(
           mr, None,
           permissions.SET_STAR,

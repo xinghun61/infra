@@ -28,8 +28,8 @@ HotlistRef = collections.namedtuple('HotlistRef', 'user_id, hotlist_name')
 
 
 def GetSortedHotlistIssues(
-    mr, hotlist_issues, issues_list, harmonized_config, profiler, services):
-  with profiler.Phase('Checking issue permissions and getting ranks'):
+    mr, hotlist_issues, issues_list, harmonized_config, services):
+  with mr.profiler.Phase('Checking issue permissions and getting ranks'):
 
     allowed_issues = FilterIssues(mr, issues_list, services)
     allowed_iids = [issue.issue_id for issue in allowed_issues]
@@ -56,13 +56,13 @@ def GetSortedHotlistIssues(
         for hotlist_issue in hotlist_issues if
         hotlist_issue.issue_id in allowed_iids}
 
-  with profiler.Phase('Making user views'):
+  with mr.profiler.Phase('Making user views'):
     issues_users_by_id = framework_views.MakeAllUserViews(
         mr.cnxn, services.user,
         tracker_bizobj.UsersInvolvedInIssues(allowed_issues or []))
     issues_users_by_id.update(issue_adders)
 
-  with profiler.Phase('Sorting issues'):
+  with mr.profiler.Phase('Sorting issues'):
     sortable_fields = tracker_helpers.SORTABLE_FIELDS.copy()
     sortable_fields.update(
         {'rank': lambda issue: hotlist_issues_context[
@@ -86,19 +86,19 @@ def GetSortedHotlistIssues(
     return sorted_issues, hotlist_issues_context, issues_users_by_id
 
 
-def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
+def CreateHotlistTableData(mr, hotlist_issues, services):
   """Creates the table data for the hotlistissues table."""
-  with profiler.Phase('getting stars'):
+  with mr.profiler.Phase('getting stars'):
     starred_iid_set = set(services.issue_star.LookupStarredItemIDs(
         mr.cnxn, mr.auth.user_id))
 
-  with profiler.Phase('Computing col_spec'):
+  with mr.profiler.Phase('Computing col_spec'):
     mr.ComputeColSpec(mr.hotlist)
 
   issues_list = services.issue.GetIssues(
         mr.cnxn,
         [hotlist_issue.issue_id for hotlist_issue in hotlist_issues])
-  with profiler.Phase('Getting config'):
+  with mr.profiler.Phase('Getting config'):
     hotlist_issues_project_ids = GetAllProjectsOfIssues(
         [issue for issue in issues_list])
     is_cross_project = len(hotlist_issues_project_ids) > 1
@@ -108,9 +108,9 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
 
   (sorted_issues, hotlist_issues_context,
    issues_users_by_id) = GetSortedHotlistIssues(
-       mr, hotlist_issues, issues_list, harmonized_config, profiler, services)
+       mr, hotlist_issues, issues_list, harmonized_config, services)
 
-  with profiler.Phase("getting related issues"):
+  with mr.profiler.Phase("getting related issues"):
     related_iids = set()
     results_needing_related = sorted_issues
     lower_cols = mr.col_spec.lower().split()
@@ -125,7 +125,7 @@ def CreateHotlistTableData(mr, hotlist_issues, profiler, services):
         mr.cnxn, list(related_iids))
     related_issues = {issue.issue_id: issue for issue in related_issues_list}
 
-  with profiler.Phase('building table'):
+  with mr.profiler.Phase('building table'):
     context_for_all_issues = {
         issue.issue_id: hotlist_issues_context[issue.issue_id]
                               for issue in sorted_issues}

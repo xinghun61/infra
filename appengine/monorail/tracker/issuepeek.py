@@ -91,7 +91,7 @@ class IssuePeek(servlet.Servlet):
     descriptions, visible_comments, cmnt_pagination = PaginateComments(
         mr, issue, comments, config)
 
-    with self.profiler.Phase('making user proxies'):
+    with mr.profiler.Phase('making user proxies'):
       involved_user_ids = tracker_bizobj.UsersInvolvedInIssues([issue])
       group_ids = self.services.usergroup.DetermineWhichUserIDsAreGroups(
           mr.cnxn, involved_user_ids)
@@ -106,7 +106,7 @@ class IssuePeek(servlet.Servlet):
      comment_views) = self._MakeIssueAndCommentViews(
          mr, issue, users_by_id, descriptions, visible_comments, config)
 
-    with self.profiler.Phase('getting starring info'):
+    with mr.profiler.Phase('getting starring info'):
       starred = star_promise.WaitAndGetValue()
       star_cnxn.Close()
       permit_edit = permissions.CanEditIssue(
@@ -216,7 +216,7 @@ class IssuePeek(servlet.Servlet):
       the whole issue, a list of IssueCommentViews for the issue descriptions,
       and then a list of IssueCommentViews for each additional comment.
     """
-    with self.profiler.Phase('getting related issues'):
+    with mr.profiler.Phase('getting related issues'):
       open_related, closed_related = (
           tracker_helpers.GetAllowedOpenAndClosedRelatedIssues(
               self.services, mr, issue))
@@ -225,17 +225,17 @@ class IssuePeek(servlet.Servlet):
         all_related_iids.append(issue.merged_into)
       all_related = self.services.issue.GetIssues(mr.cnxn, all_related_iids)
 
-    with self.profiler.Phase('making issue view'):
+    with mr.profiler.Phase('making issue view'):
       issue_view = tracker_views.IssueView(
           issue, users_by_id, config,
           open_related=open_related, closed_related=closed_related,
           all_related={rel.issue_id: rel for rel in all_related})
 
-    with self.profiler.Phase('autolinker object lookup'):
+    with mr.profiler.Phase('autolinker object lookup'):
       all_ref_artifacts = self.services.autolink.GetAllReferencedArtifacts(
           mr, [c.content for c in descriptions + comments])
 
-    with self.profiler.Phase('making comment views'):
+    with mr.profiler.Phase('making comment views'):
       reporter_auth = monorailrequest.AuthData.FromUserID(
           mr.cnxn, descriptions[0].user_id, self.services)
       desc_views = [

@@ -21,7 +21,7 @@ from testing import testing_helpers
 
 class MockProjectSearchPipeline(object):
 
-  def __init__(self, _mr, services, _profiler):
+  def __init__(self, _mr, services):
     self.visible_results = services.mock_visible_results
     self.pagination = None
 

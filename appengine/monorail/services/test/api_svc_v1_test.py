@@ -16,7 +16,7 @@ from protorpc import message_types
 from framework import exceptions
 from framework import monorailrequest
 from framework import permissions
-from framework.profiler import Profiler
+from framework import profiler
 from framework import template_helpers
 from proto import project_pb2
 from proto import tracker_pb2
@@ -46,8 +46,8 @@ def MakeFakeServiceManager():
 
 class FakeMonorailApiRequest(object):
 
-  def __init__(self, request, services, profiler=None, perms=None):
-    self.profiler = profiler
+  def __init__(self, request, services, perms=None):
+    self.profiler = profiler.Profiler()
     self.cnxn = None
     self.auth = monorailrequest.AuthData.FromEmail(
         self.cnxn, request['requester'], services)
@@ -158,7 +158,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
           'issueId': 1}
     self.mock(api_svc_v1.MonorailApi, 'mar_factory',
               lambda x, y: FakeMonorailApiRequest(
-                  self.request, self.services, profiler=Profiler()))
+                  self.request, self.services))
 
     # api_base_checks is tested in AllBaseChecksTest,
     # so mock it to reduce noise.
@@ -370,7 +370,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     """Find issues of one project."""
 
     self.mock(frontendsearchpipeline, 'FrontendSearchPipeline',
-              lambda x, y, z, w: FakeFrontendSearchPipeline())
+              lambda x, y, z: FakeFrontendSearchPipeline())
 
     self.services.project.TestAddProject(
         'test-project', owner_ids=[2],
@@ -746,8 +746,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.request.pop("userId", None)
     self.mock(api_svc_v1.MonorailApi, 'mar_factory',
               lambda x, y: FakeMonorailApiRequest(
-                  request, self.services, perms=perms,
-                  profiler=Profiler()))
+                  request, self.services, perms=perms))
     return request
 
   def testGroupsCreate_Normal(self):

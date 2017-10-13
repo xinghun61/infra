@@ -41,7 +41,7 @@ class ProjectUpdatesTest(unittest.TestCase):
   def testGatherPageData(self):
     self.mox.StubOutWithMock(activities, 'GatherUpdatesData')
     activities.GatherUpdatesData(
-        self.services, self.mr, mox.IgnoreArg(), project_ids=[self.project_id],
+        self.services, self.mr, project_ids=[self.project_id],
         ending='by_user',
         updates_page_url='/p/%s/updates/list' % self.project_name,
         autolink=self.services.autolink).AndReturn({'test': 'testing'})

@@ -60,7 +60,7 @@ class IssueEntry(servlet.Servlet):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
-    with self.profiler.Phase('getting config'):
+    with mr.profiler.Phase('getting config'):
       config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
 
     # In addition to checking perms, we adjust some default field values for

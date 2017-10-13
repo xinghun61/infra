@@ -65,10 +65,9 @@ class FrontendSearchPipeline(object):
   is pretty much in the order of the source code lines here.
   """
 
-  def __init__(self, mr, services, prof, default_results_per_page):
+  def __init__(self, mr, services, default_results_per_page):
     self.mr = mr
     self.services = services
-    self.profiler = prof
     self.default_results_per_page = default_results_per_page
     self.grid_mode = (mr.mode == 'grid')
     self.grid_limited = False
@@ -117,14 +116,14 @@ class FrontendSearchPipeline(object):
 
   def SearchForIIDs(self):
     """Use backends to search each shard and store their results."""
-    with self.profiler.Phase('Checking cache and calling Backends'):
+    with self.mr.profiler.Phase('Checking cache and calling Backends'):
       rpc_tuples = _StartBackendSearch(
           self.mr, self.query_project_names, self.query_project_ids,
           self.harmonized_config, self.unfiltered_iids,
           self.search_limit_reached, self.nonviewable_iids,
           self.error_responses, self.services)
 
-    with self.profiler.Phase('Waiting for Backends'):
+    with self.mr.profiler.Phase('Waiting for Backends'):
       try:
         _FinishBackendSearch(rpc_tuples)
       except Exception as e:
@@ -135,7 +134,7 @@ class FrontendSearchPipeline(object):
       logging.error('%r error responses. Incomplete search results.',
                     self.error_responses)
 
-    with self.profiler.Phase('Filtering cached results'):
+    with self.mr.profiler.Phase('Filtering cached results'):
       for shard_key in self.unfiltered_iids:
         shard_id, _subquery = shard_key
         if shard_id not in self.nonviewable_iids:
@@ -152,7 +151,7 @@ class FrontendSearchPipeline(object):
         self.filtered_iids[shard_key] = filtered_shard_iids
 
     seen_iids_by_shard_id = collections.defaultdict(set)
-    with self.profiler.Phase('Dedupping result IIDs across shards'):
+    with self.mr.profiler.Phase('Dedupping result IIDs across shards'):
       for shard_key in self.filtered_iids:
         shard_id, _subquery = shard_key
         deduped = [iid for iid in self.filtered_iids[shard_key]
@@ -160,19 +159,19 @@ class FrontendSearchPipeline(object):
         self.filtered_iids[shard_key] = deduped
         seen_iids_by_shard_id[shard_id].update(deduped)
 
-    with self.profiler.Phase('Counting all filtered results'):
+    with self.mr.profiler.Phase('Counting all filtered results'):
       for shard_key in self.filtered_iids:
         self.total_count += len(self.filtered_iids[shard_key])
 
     if not self.grid_mode:
-      with self.profiler.Phase('Trimming results beyond pagination page'):
+      with self.mr.profiler.Phase('Trimming results beyond pagination page'):
         for shard_key in self.filtered_iids:
           self.filtered_iids[shard_key] = self.filtered_iids[shard_key][
               :self.mr.start + self.mr.num]
 
   def MergeAndSortIssues(self):
     """Merge and sort results from all shards into one combined list."""
-    with self.profiler.Phase('selecting issues to merge and sort'):
+    with self.mr.profiler.Phase('selecting issues to merge and sort'):
       if not self.grid_mode:
         self._NarrowFilteredIIDs()
       self.allowed_iids = []
@@ -186,14 +185,14 @@ class FrontendSearchPipeline(object):
       self.grid_limited = True
       self.allowed_iids = self.allowed_iids[:limit]
 
-    with self.profiler.Phase('getting allowed results'):
+    with self.mr.profiler.Phase('getting allowed results'):
       self.allowed_results = self.services.issue.GetIssues(
           self.mr.cnxn, self.allowed_iids)
 
     # Note: At this point, we have results that are only sorted within
     # each backend's shard.  We still need to sort the merged result.
     self._LookupNeededUsers(self.allowed_results)
-    with self.profiler.Phase('merging and sorting issues'):
+    with self.mr.profiler.Phase('merging and sorting issues'):
       self.allowed_results = _SortIssues(
           self.mr, self.allowed_results, self.harmonized_config,
           self.users_by_id)
@@ -408,7 +407,7 @@ class FrontendSearchPipeline(object):
 
   def _LookupNeededUsers(self, issues):
     """Look up user info needed to sort issues, if any."""
-    with self.profiler.Phase('lookup of owner, reporter, and cc'):
+    with self.mr.profiler.Phase('lookup of owner, reporter, and cc'):
       additional_user_views_by_id = (
           tracker_helpers.MakeViewsForUsersInIssues(
               self.mr.cnxn, issues, self.services.user,

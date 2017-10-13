@@ -40,7 +40,7 @@ class IssueListCsv(issuelist.IssueList):
 
     # Rewrite the colspec to add some extra columns that make the CSV
     # file more complete.
-    with self.profiler.Phase('finishing config work'):
+    with mr.profiler.Phase('finishing config work'):
       config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
 
     mr.ComputeColSpec(config)

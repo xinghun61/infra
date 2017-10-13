@@ -121,11 +121,11 @@ class IssueDetail(issuepeek.IssuePeek):
         if (features_bizobj.IssueIsInHotlist(hotlist, issue.issue_id) and
             permissions.CanViewHotlist(mr.auth.effective_ids, hotlist)):
           self.hotlist_id = hotlist_id
-          return _HotlistFlipper(self.services, self.profiler, hotlist)
+          return _HotlistFlipper(self.services, mr.profiler, hotlist)
 
     # if not hotlist/hotlist_id return a _TrackerFlipper
     # The flipper is not itself a Promise, but it contains Promises.
-    return _TrackerFlipper(mr, self.services, self.profiler)
+    return _TrackerFlipper(mr, self.services)
 
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page.
@@ -136,7 +136,7 @@ class IssueDetail(issuepeek.IssuePeek):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
-    with self.profiler.Phase('getting project issue config'):
+    with mr.profiler.Phase('getting project issue config'):
       config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
 
     if mr.local_id is None:
@@ -230,14 +230,14 @@ class IssueDetail(issuepeek.IssuePeek):
           self.services.spam.LookupIssueVerdictHistory, issue_spam_hist_cnxn,
           [issue.issue_id])
 
-    with self.profiler.Phase('finishing getting comments and pagination'):
+    with mr.profiler.Phase('finishing getting comments and pagination'):
       (descriptions, visible_comments,
        cmnt_pagination) = self._PaginatePartialComments(mr, issue)
 
     users_involved_in_issue = tracker_bizobj.UsersInvolvedInIssues([issue])
     users_involved_in_comment_list = tracker_bizobj.UsersInvolvedInCommentList(
         descriptions + visible_comments)
-    with self.profiler.Phase('making user views'):
+    with mr.profiler.Phase('making user views'):
       users_by_id = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, users_involved_in_issue,
           users_involved_in_comment_list)
@@ -252,7 +252,7 @@ class IssueDetail(issuepeek.IssuePeek):
          mr, issue, users_by_id, descriptions, visible_comments, config,
          issue_flaggers, comment_flaggers)
 
-    with self.profiler.Phase('getting starring info'):
+    with mr.profiler.Phase('getting starring info'):
       starred = star_promise.WaitAndGetValue()
       star_cnxn.Close()
       permit_edit = permissions.CanEditIssue(
@@ -1251,13 +1251,12 @@ class _HotlistFlipper(_Flipper):
 class _TrackerFlipper(_Flipper):
   """Helper class for user to flip among issues within a search result."""
 
-  def __init__(self, mr, services, prof):
+  def __init__(self, mr, services):
     """Store info for issue flipper widget (prev & next navigation).
 
     Args:
       mr: commonly used info parsed from the request.
       services: connections to backend services.
-      prof: a Profiler for the sevlet's handling of the current request.
     """
 
     super(_TrackerFlipper, self).__init__(services)
@@ -1267,7 +1266,7 @@ class _TrackerFlipper(_Flipper):
       return
 
     self.pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-        mr, services, prof, None)
+        mr, services, None)
 
   def SearchForIIDs(self, mr, issue):
     """Do the next step of searching for issue IDs for the flipper.

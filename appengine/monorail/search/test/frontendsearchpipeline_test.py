@@ -14,7 +14,6 @@ from google.appengine.ext import testbed
 from google.appengine.api import urlfetch
 
 import settings
-from framework import profiler
 from framework import sorting
 from framework import urls
 from proto import ast_pb2
@@ -43,7 +42,6 @@ class FrontendSearchPipelineTest(unittest.TestCase):
         issue=fake.IssueService(),
         config=fake.ConfigService(),
         cache_manager=fake.CacheManager())
-    self.profiler = profiler.Profiler()
     self.services.user.TestAddUser('a@example.com', 111L)
     self.project = self.services.project.TestAddProject('proj', project_id=789)
     self.mr = testing_helpers.MakeMonorailRequest(
@@ -85,7 +83,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
     pipeline.unfiltered_iids = unfiltered_iids
     pipeline.nonviewable_iids = nonviewable_iids
     pipeline.SearchForIIDs()
@@ -108,7 +106,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
     pipeline.unfiltered_iids = unfiltered_iids
     pipeline.nonviewable_iids = nonviewable_iids
     pipeline.SearchForIIDs()
@@ -133,7 +131,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
     self.mox.ReplayAll()
 
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
     pipeline.unfiltered_iids = unfiltered_iids
     pipeline.nonviewable_iids = nonviewable_iids
     pipeline.SearchForIIDs()
@@ -143,7 +141,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
 
   def testMergeAndSortIssues_EmptyResult(self):
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
     pipeline.filtered_iids = {0: [], 1: [], 2: []}
 
     pipeline.MergeAndSortIssues()
@@ -153,7 +151,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
 
   def testMergeAndSortIssues_Normal(self):
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
     # In this unit test case we are not calling SearchForIIDs(), instead just
     # set pipeline.filtered_iids directly.
     pipeline.filtered_iids = {
@@ -174,7 +172,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
 
   def testDetermineIssuePosition_Normal(self):
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
     # In this unit test case we are not calling SearchForIIDs(), instead just
     # set pipeline.filtered_iids directly.
     pipeline.filtered_iids = {
@@ -192,7 +190,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
 
   def testDetermineIssuePosition_NotInResults(self):
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
     # In this unit test case we are not calling SearchForIIDs(), instead just
     # set pipeline.filtered_iids directly.
     pipeline.filtered_iids = {
@@ -210,7 +208,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
 
   def testDetermineIssuePositionInShard_IssueIsInShard(self):
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
     # Let's assume issues 1, 2, and 3 are all in the same shard.
     pipeline.filtered_iids = {
       0: [self.issue_1.issue_id, self.issue_2.issue_id, self.issue_3.issue_id],
@@ -237,7 +235,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
 
   def testDetermineIssuePositionInShard_IssueIsNotInShard(self):
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
 
     # The total ordering is issue_1, issue_3, issue_2 for high, med, low.
     pipeline.filtered_iids = {
@@ -270,7 +268,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
   def testFetchAllSamples_Empty(self):
     filtered_iids = {}
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-        self.mr, self.services, self.profiler, 100)
+        self.mr, self.services, 100)
     samples_by_shard, sample_iids_to_shard = pipeline._FetchAllSamples(
         filtered_iids)
     self.assertEqual({}, samples_by_shard)
@@ -282,7 +280,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
         1: [101, 111, 121],
         }
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-        self.mr, self.services, self.profiler, 100)
+        self.mr, self.services, 100)
 
     samples_by_shard, sample_iids_to_shard = pipeline._FetchAllSamples(
         filtered_iids)
@@ -291,7 +289,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
 
   def testFetchAllSamples_Normal(self):
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-        self.mr, self.services, self.profiler, 100)
+        self.mr, self.services, 100)
     issues = self.MakeIssues(23)
     filtered_iids = {
         0: [issue.issue_id for issue in issues],
@@ -309,7 +307,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
   def testChooseSampleIssues_Empty(self):
     """When the search gave no results, there cannot be any samples."""
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
     issue_ids = []
     on_hand_issues, needed_iids = pipeline._ChooseSampleIssues(issue_ids)
     self.assertEqual({}, on_hand_issues)
@@ -318,7 +316,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
   def testChooseSampleIssues_Small(self):
     """When the search gave few results, don't bother with samples."""
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
     issue_ids = [78901, 78902]
     on_hand_issues, needed_iids = pipeline._ChooseSampleIssues(issue_ids)
     self.assertEqual({}, on_hand_issues)
@@ -335,7 +333,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
   def testChooseSampleIssues_Normal(self):
     """We will choose at least one sample for every 10 results in a shard."""
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
     issues = self.MakeIssues(23)
     issue_ids = [issue.issue_id for issue in issues]
     on_hand_issues, needed_iids = pipeline._ChooseSampleIssues(issue_ids)
@@ -346,7 +344,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
 
   def testLookupNeededUsers(self):
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
 
     pipeline._LookupNeededUsers([])
     self.assertEqual([], pipeline.users_by_id.keys())
@@ -357,7 +355,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
   def testPaginate_Grid(self):
     self.mr.mode = 'grid'
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
     pipeline.allowed_iids = [
       self.issue_1.issue_id, self.issue_2.issue_id, self.issue_3.issue_id]
     pipeline.allowed_results = [self.issue_1, self.issue_2, self.issue_3]
@@ -369,7 +367,7 @@ class FrontendSearchPipelineTest(unittest.TestCase):
 
   def testPaginate_List(self):
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-      self.mr, self.services, self.profiler, 100)
+      self.mr, self.services, 100)
     pipeline.allowed_iids = [
       self.issue_1.issue_id, self.issue_2.issue_id, self.issue_3.issue_id]
     pipeline.allowed_results = [self.issue_1, self.issue_2, self.issue_3]

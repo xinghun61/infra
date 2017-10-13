@@ -28,14 +28,14 @@ class HotlistsJsonFeed(jsonfeed.JsonFeed):
 
     json_data = {}
 
-    with self.profiler.Phase('page processing'):
+    with mr.profiler.Phase('page processing'):
       json_data.update(self._GatherHotlists(mr))
 
     return json_data
 
   def _GatherHotlists(self, mr):
     """Return a dict of hotlist names the current user is involved in."""
-    with self.profiler.Phase('GetUserHotlists'):
+    with mr.profiler.Phase('GetUserHotlists'):
       user_hotlists = self.services.features.GetHotlistsByUserID(
           mr.cnxn, mr.auth.user_id)
 

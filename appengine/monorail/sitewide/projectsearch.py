@@ -19,12 +19,11 @@ DEFAULT_RESULTS_PER_PAGE = 100
 class ProjectSearchPipeline(object):
   """Manage the process of project search, filter, fetch, and pagination."""
 
-  def __init__(self, mr, services, prof,
+  def __init__(self, mr, services,
                default_results_per_page=DEFAULT_RESULTS_PER_PAGE):
 
     self.mr = mr
     self.services = services
-    self.profiler = prof
     self.default_results_per_page = default_results_per_page
     self.pagination = None
     self.allowed_project_ids = None
@@ -46,7 +45,7 @@ class ProjectSearchPipeline(object):
     self.pagination = paginate.ArtifactPagination(
         self.mr, self.allowed_project_ids, self.default_results_per_page,
         list_page_url)
-    with self.profiler.Phase('getting projects on current pagination page'):
+    with self.mr.profiler.Phase('getting projects on current pagination page'):
       project_dict = self.services.project.GetProjects(
           cnxn, self.pagination.visible_results)
       self.visible_results = [

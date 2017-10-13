@@ -44,7 +44,7 @@ class AttachmentText(servlet.Servlet):
     Returns:
       Dict of values used by EZT for rendering almost the page.
     """
-    with self.profiler.Phase('get issue, comment, and attachment'):
+    with mr.profiler.Phase('get issue, comment, and attachment'):
       try:
         attachment, issue = tracker_helpers.GetAttachmentIfAllowed(
             mr, self.services)

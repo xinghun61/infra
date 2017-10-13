@@ -127,14 +127,13 @@ class ActivityView(template_helpers.PBProxy):
 
 
 def GatherUpdatesData(
-    services, mr, prof, project_ids=None, user_ids=None, ending=None,
+    services, mr, project_ids=None, user_ids=None, ending=None,
     updates_page_url=None, autolink=None, highlight=None):
   """Gathers and returns updates data.
 
   Args:
     services: Connections to backend services.
     mr: HTTP request info, used by the artifact autolink.
-    prof: The profiler to use.
     project_ids: List of project IDs we want updates for.
     user_ids: List of user IDs we want updates for.
     ending: Ending type for activity titles, 'in_project' or 'by_user'.
@@ -161,7 +160,7 @@ def GatherUpdatesData(
     updates_data['no_stars'] = ezt.boolean(True)
     return updates_data
 
-  with prof.Phase('get activities'):
+  with mr.profiler.Phase('get activities'):
     # TODO(jrobbins): make this into a persist method.
     # TODO(jrobbins): this really needs permission checking in SQL, which will
     # be slow.
@@ -255,7 +254,7 @@ def GatherUpdatesData(
   thisyear = []
   older = []
 
-  with prof.Phase('rendering activities'):
+  with mr.profiler.Phase('rendering activities'):
     for activity in displayed_activities:
       entry = ActivityView(
           activity, services, mr, prefetched_issues, users_by_id,

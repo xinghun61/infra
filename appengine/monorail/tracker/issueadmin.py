@@ -503,7 +503,7 @@ class AdminViews(IssueAdminBase):
       Dict of values used by EZT for rendering the page.
     """
     page_data = super(AdminViews, self).GatherPageData(mr)
-    with self.profiler.Phase('getting canned queries'):
+    with mr.profiler.Phase('getting canned queries'):
       canned_queries = self.services.features.GetCannedQueriesByProjectID(
           mr.cnxn, mr.project_id)
 

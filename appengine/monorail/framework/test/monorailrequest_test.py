@@ -17,7 +17,6 @@ import webapp2
 from framework import exceptions
 from framework import monorailrequest
 from framework import permissions
-from framework import profiler
 from proto import project_pb2
 from proto import tracker_pb2
 from services import service_manager
@@ -83,7 +82,6 @@ class MonorailRequestUnitTest(unittest.TestCase):
         'TestHotlist', owner_ids=[111])
     self.services.user.TestAddUser('jrobbins@example.com', 111)
 
-    self.profiler = profiler.Profiler()
     self.mox = mox.Mox()
     self.mox.StubOutWithMock(users, 'get_current_user')
     users.get_current_user().AndReturn(None)
@@ -111,21 +109,21 @@ class MonorailRequestUnitTest(unittest.TestCase):
     self.assertEqual(notice_id, value)
 
   def testGetIntListParam_NoParam(self):
-    mr = monorailrequest.MonorailRequest(profiler=self.profiler)
+    mr = monorailrequest.MonorailRequest()
     mr.ParseRequest(webapp2.Request.blank('servlet'), self.services)
     self.assertEquals(mr.GetIntListParam('ids'), None)
     self.assertEquals(mr.GetIntListParam('ids', default_value=['test']),
                       ['test'])
 
   def testGetIntListParam_OneValue(self):
-    mr = monorailrequest.MonorailRequest(profiler=self.profiler)
+    mr = monorailrequest.MonorailRequest()
     mr.ParseRequest(webapp2.Request.blank('servlet?ids=11'), self.services)
     self.assertEquals(mr.GetIntListParam('ids'), [11])
     self.assertEquals(mr.GetIntListParam('ids', default_value=['test']),
                       [11])
 
   def testGetIntListParam_MultiValue(self):
-    mr = monorailrequest.MonorailRequest(profiler=self.profiler)
+    mr = monorailrequest.MonorailRequest()
     mr.ParseRequest(
         webapp2.Request.blank('servlet?ids=21,22,23'), self.services)
     self.assertEquals(mr.GetIntListParam('ids'), [21, 22, 23])
@@ -133,20 +131,20 @@ class MonorailRequestUnitTest(unittest.TestCase):
                       [21, 22, 23])
 
   def testGetIntListParam_BogusValue(self):
-    mr = monorailrequest.MonorailRequest(profiler=self.profiler)
+    mr = monorailrequest.MonorailRequest()
     with self.assertRaises(exceptions.InputException):
       mr.ParseRequest(
           webapp2.Request.blank('servlet?ids=not_an_int'), self.services)
 
   def testGetIntListParam_Malformed(self):
-    mr = monorailrequest.MonorailRequest(profiler=self.profiler)
+    mr = monorailrequest.MonorailRequest()
     with self.assertRaises(exceptions.InputException):
       mr.ParseRequest(
           webapp2.Request.blank('servlet?ids=31,32,,'), self.services)
 
   def testDefaultValuesNoUrl(self):
     """If request has no param, default param values should be used."""
-    mr = monorailrequest.MonorailRequest(profiler=self.profiler)
+    mr = monorailrequest.MonorailRequest()
     mr.ParseRequest(webapp2.Request.blank('servlet'), self.services)
     self.assertEquals(mr.GetParam('r', 3), 3)
     self.assertEquals(mr.GetIntParam('r', 3), 3)
@@ -156,8 +154,7 @@ class MonorailRequestUnitTest(unittest.TestCase):
   def _MRWithMockRequest(
       self, path, headers=None, *mr_args, **mr_kwargs):
     request = webapp2.Request.blank(path, headers=headers)
-    mr = monorailrequest.MonorailRequest(
-        *mr_args, profiler=self.profiler, **mr_kwargs)
+    mr = monorailrequest.MonorailRequest(*mr_args, **mr_kwargs)
     mr.ParseRequest(request, self.services)
     return mr
 
@@ -475,9 +472,8 @@ class TestPermissionLookup(unittest.TestCase):
     self.mox.ReplayAll()
 
     request = webapp2.Request.blank('/p/' + project_name)
-    prof = profiler.Profiler()
-    mr = monorailrequest.MonorailRequest(profiler=prof)
-    with prof.Phase('parse user info'):
+    mr = monorailrequest.MonorailRequest()
+    with mr.profiler.Phase('parse user info'):
       mr.ParseRequest(request, self.services)
     return mr
 

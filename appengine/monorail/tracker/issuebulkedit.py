@@ -67,13 +67,13 @@ class IssueBulkEdit(servlet.Servlet):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
-    with self.profiler.Phase('getting issues'):
+    with mr.profiler.Phase('getting issues'):
       if not mr.local_id_list:
         raise exceptions.InputException()
       requested_issues = self.services.issue.GetIssuesByLocalIDs(
           mr.cnxn, mr.project_id, sorted(mr.local_id_list))
 
-    with self.profiler.Phase('filtering issues'):
+    with mr.profiler.Phase('filtering issues'):
       # TODO(jrobbins): filter out issues that the user cannot edit and
       # provide that as feedback rather than just siliently ignoring them.
       open_issues, closed_issues = (
@@ -109,7 +109,7 @@ class IssueBulkEdit(servlet.Servlet):
     for fv in field_views:
       fv.field_def.is_required_bool = None
 
-    with self.profiler.Phase('making issue proxies'):
+    with mr.profiler.Phase('making issue proxies'):
       issue_views = [
           template_helpers.EZTItem(
               local_id=issue.local_id, summary=issue.summary,
@@ -407,7 +407,7 @@ class IssueBulkEdit(servlet.Servlet):
           labels=bounce_labels)
       return
 
-    with self.profiler.Phase('reindexing issues'):
+    with mr.profiler.Phase('reindexing issues'):
       logging.info('starting reindexing')
       start = time.time()
       # Get the updated issues and index them

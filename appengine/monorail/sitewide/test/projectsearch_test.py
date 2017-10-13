@@ -37,11 +37,9 @@ class ProjectSearchTest(unittest.TestCase):
 
   def TestPipeline(self, expected_last, expected_len):
     mr = testing_helpers.MakeMonorailRequest()
-
     mr.can = 1
-    prof = profiler.Profiler()
 
-    pipeline = projectsearch.ProjectSearchPipeline(mr, self.services, prof)
+    pipeline = projectsearch.ProjectSearchPipeline(mr, self.services)
     pipeline.SearchForIDs()
     pipeline.GetProjectsAndPaginate('fake cnxn', '/hosting/search')
     self.assertEqual(1, pipeline.pagination.start)

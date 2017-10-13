@@ -53,7 +53,7 @@ class AbstractUserUpdatesPage(servlet.Servlet):
     user_ids = self._GetUserIDsForUpdates(mr)
     project_ids = self._GetProjectIDsForUpdates(mr)
     page_data.update(activities.GatherUpdatesData(
-        self.services, mr, self.profiler, user_ids=user_ids,
+        self.services, mr, user_ids=user_ids,
         project_ids=project_ids, ending=self._ENDING,
         updates_page_url=self._UPDATES_PAGE_URL, highlight=self._HIGHLIGHT))
 

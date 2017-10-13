@@ -47,7 +47,7 @@ class HotlistPeopleList(servlet.Servlet):
     hotlist_url = hotlist_helpers.GetURLOfHotlist(
         mr.cnxn, mr.hotlist, self.services.user)
 
-    with self.profiler.Phase('gathering members on this page'):
+    with mr.profiler.Phase('gathering members on this page'):
       users_by_id = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, all_members)
       framework_views.RevealAllEmailsToMembers(mr, users_by_id)
@@ -55,7 +55,7 @@ class HotlistPeopleList(servlet.Servlet):
     untrusted_user_group_proxies = []
     # TODO(jojwang): implement FindUntrustedGroups()
 
-    with self.profiler.Phase('making member views'):
+    with mr.profiler.Phase('making member views'):
       owner_views = self._MakeMemberViews(mr, mr.hotlist.owner_ids, users_by_id)
       editor_views = self._MakeMemberViews(mr, mr.hotlist.editor_ids,
                                            users_by_id)

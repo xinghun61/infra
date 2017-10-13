@@ -24,7 +24,7 @@ class ProjectSummary(servlet.Servlet):
   def GatherPageData(self, mr):
     """Build up a dictionary of data values to use when rendering the page."""
 
-    with self.profiler.Phase('getting project star count'):
+    with mr.profiler.Phase('getting project star count'):
       num_stars = self.services.project_star.CountItemStars(
           mr.cnxn, mr.project_id)
       plural = '' if num_stars == 1 else 's'

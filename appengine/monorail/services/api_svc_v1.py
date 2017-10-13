@@ -36,7 +36,6 @@ from framework import framework_helpers
 from framework import framework_views
 from framework import monorailrequest
 from framework import permissions
-from framework.profiler import Profiler
 from framework import ratelimiter
 from framework import sql
 from project import project_helpers
@@ -307,8 +306,7 @@ class MonorailApi(remote.Service):
 
   def mar_factory(self, request):
     if not self._mar:
-      self._mar = monorailrequest.MonorailApiRequest(
-          request, self._services, profiler=Profiler())
+      self._mar = monorailrequest.MonorailApiRequest(request, self._services)
     return self._mar
 
   def aux_delete_comment(self, request, delete=True):
@@ -742,7 +740,7 @@ class MonorailApi(remote.Service):
               'The user %s has no permission for project %s' %
               (mar.auth.email, project_name))
     pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-        mar, self._services, mar.profiler, mar.num)
+        mar, self._services, mar.num)
     if not mar.errors.AnyErrors():
       pipeline.SearchForIIDs()
       pipeline.MergeAndSortIssues()
@@ -1137,8 +1135,7 @@ class ClientConfigApi(remote.Service):
 
   def mar_factory(self, request):
     if not self._mar:
-      self._mar = monorailrequest.MonorailApiRequest(
-          request, self._services, profiler=Profiler())
+      self._mar = monorailrequest.MonorailApiRequest(request, self._services)
     return self._mar
 
   @endpoints.method(

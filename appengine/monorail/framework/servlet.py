@@ -46,7 +46,6 @@ from framework import framework_helpers
 from framework import framework_views
 from framework import monorailrequest
 from framework import permissions
-from framework import profiler
 from framework import ratelimiter
 from framework import servlet_helpers
 from framework import template_helpers
@@ -146,7 +145,6 @@ class Servlet(webapp2.RequestHandler):
         self._TEMPLATE_PATH + self._MISSING_PERMISSIONS_TEMPLATE)
     self.services = services or self.app.config.get('services')
     self.content_type = content_type
-    self.profiler = profiler.Profiler()
     self.mr = None
     self.ratelimiter = ratelimiter.RateLimiter()
 
@@ -156,7 +154,7 @@ class Servlet(webapp2.RequestHandler):
 
     logging.info('\n\n\nRequest handler: %r', self)
 
-    self.mr = monorailrequest.MonorailRequest(profiler=self.profiler)
+    self.mr = monorailrequest.MonorailRequest()
 
     self.ratelimiter.CheckStart(self.request)
     self.response.headers.add('Strict-Transport-Security',
@@ -166,7 +164,7 @@ class Servlet(webapp2.RequestHandler):
       # TODO(jrobbins): don't do this step if invalidation_timestep was
       # passed via the request and matches our last timestep
       try:
-        with self.profiler.Phase('distributed invalidation'):
+        with self.mr.profiler.Phase('distributed invalidation'):
           self.services.cache_manager.DoDistributedInvalidation(self.mr.cnxn)
 
       except MySQLdb.OperationalError as e:
@@ -183,7 +181,7 @@ class Servlet(webapp2.RequestHandler):
         return
 
     try:
-      with self.profiler.Phase('parsing request and doing lookups'):
+      with self.mr.profiler.Phase('parsing request and doing lookups'):
         self.mr.ParseRequest(self.request, self.services)
 
       self.response.headers['X-Frame-Options'] = 'SAMEORIGIN'
@@ -235,10 +233,10 @@ class Servlet(webapp2.RequestHandler):
     logging.warn('Processed request in %d ms',
                  int(total_processing_time * 1000))
     if settings.enable_profiler_logging:
-      self.profiler.LogStats()
+      self.mr.profiler.LogStats()
 
   def _AddHelpDebugPageData(self, page_data):
-    with self.profiler.Phase('help and debug data'):
+    with self.mr.profiler.Phase('help and debug data'):
       page_data.update(self.GatherHelpData(self.mr, page_data))
       page_data.update(self.GatherDebugData(self.mr, page_data))
 
@@ -297,7 +295,7 @@ class Servlet(webapp2.RequestHandler):
 
       self._AddHelpDebugPageData(page_data)
 
-      with self.profiler.Phase('rendering template'):
+      with self.mr.profiler.Phase('rendering template'):
         self._RenderResponse(page_data)
 
     except (MethodNotSupportedError, NotImplementedError) as e:
@@ -327,7 +325,7 @@ class Servlet(webapp2.RequestHandler):
             'reason': e.message,
             'http_response_code': httplib.FORBIDDEN,
             }
-        with self.profiler.Phase('gather base data'):
+        with self.mr.profiler.Phase('gather base data'):
           page_data.update(self.GatherBaseData(self.mr, nonce))
         self._AddHelpDebugPageData(page_data)
         self._missing_permissions_template.WriteResponse(
@@ -407,18 +405,18 @@ class Servlet(webapp2.RequestHandler):
 
   def _DoCommonRequestProcessing(self, request, mr):
     """Do common processing dependent on having the user and project pbs."""
-    with self.profiler.Phase('basic processing'):
+    with mr.profiler.Phase('basic processing'):
       self._CheckForMovedProject(mr, request)
       self.AssertBasePermission(mr)
 
   def _DoPageProcessing(self, mr, nonce):
     """Do user lookups and gather page-specific ezt data."""
-    with self.profiler.Phase('common request data'):
+    with mr.profiler.Phase('common request data'):
       self._DoCommonRequestProcessing(self.request, mr)
       page_data = self.GatherBaseData(mr, nonce)
       page_data.update(self.GatherCaptchaData(mr))
 
-    with self.profiler.Phase('page processing'):
+    with mr.profiler.Phase('page processing'):
       page_data.update(self.GatherPageData(mr))
       page_data.update(mr.form_overrides)
       template_helpers.ExpandLabels(page_data)
@@ -574,7 +572,7 @@ class Servlet(webapp2.RequestHandler):
     issue_entry_url = 'entry'
     config = None
     if mr.project_id and self.services.config:
-      with self.profiler.Phase('getting config'):
+      with mr.profiler.Phase('getting config'):
         config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
         canned_queries = self.services.features.GetCannedQueriesByProjectID(
             mr.cnxn, mr.project_id)
@@ -586,7 +584,7 @@ class Servlet(webapp2.RequestHandler):
       issue_entry_url = _LoginOrIssueEntryURL(mr, config)
 
     if mr.auth.user_id and self.services.features:
-      with self.profiler.Phase('getting saved queries'):
+      with mr.profiler.Phase('getting saved queries'):
         saved_queries = self.services.features.GetSavedQueriesByUserID(
             mr.cnxn, mr.me_user_id)
         saved_query_views = [
@@ -787,7 +785,7 @@ class Servlet(webapp2.RequestHandler):
       return {
           'dbg': 'on',
           'debug': debug,
-          'profiler': self.profiler,
+          'profiler': mr.profiler,
           }
     else:
       if '?' in mr.current_page_url:

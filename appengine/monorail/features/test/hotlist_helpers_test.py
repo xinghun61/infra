@@ -70,7 +70,7 @@ class HotlistTableDataTest(unittest.TestCase):
   def testCreateHotlistTableData(self):
     self.setUpCreateHotlistTableDataTestMR(hotlist=self.test_hotlist)
     table_data, table_related_dict = hotlist_helpers.CreateHotlistTableData(
-        self.mr, self.hotlist_items_list, profiler.Profiler(), self.services)
+        self.mr, self.hotlist_items_list, self.services)
     self.assertEqual(len(table_data), 3)
     start_index = 100001
     for row in table_data:
@@ -90,14 +90,14 @@ class HotlistTableDataTest(unittest.TestCase):
     self.setUpCreateHotlistTableDataTestMR(
         hotlist=self.test_hotlist, path='/123?num=2')
     table_data, _ = hotlist_helpers.CreateHotlistTableData(
-        self.mr, self.hotlist_items_list, profiler.Profiler(), self.services)
+        self.mr, self.hotlist_items_list, self.services)
     self.assertEqual(len(table_data), 2)
 
   def testCreateHotlistTableData_EndPagination(self):
     self.setUpCreateHotlistTableDataTestMR(
         hotlist=self.test_hotlist, path='/123?num=2&start=2')
     table_data, _ = hotlist_helpers.CreateHotlistTableData(
-        self.mr, self.hotlist_items_list, profiler.Profiler(), self.services)
+        self.mr, self.hotlist_items_list, self.services)
     self.assertEqual(len(table_data), 1)
 
 

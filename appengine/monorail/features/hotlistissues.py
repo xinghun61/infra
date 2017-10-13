@@ -62,7 +62,7 @@ class HotlistIssues(servlet.Servlet):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
-    with self.profiler.Phase('getting hotlist'):
+    with mr.profiler.Phase('getting hotlist'):
       if mr.hotlist_id is None:
         self.abort(404, 'no hotlist specified')
     if mr.auth.user_id:
@@ -74,7 +74,7 @@ class HotlistIssues(servlet.Servlet):
     else:
       page_data = self.GetTableViewData(mr)
 
-    with self.profiler.Phase('making page perms'):
+    with mr.profiler.Phase('making page perms'):
       owner_permissions = permissions.CanAdministerHotlist(
           mr.auth.effective_ids, mr.hotlist)
       editor_permissions = permissions.CanEditHotlist(
@@ -141,7 +141,7 @@ class HotlistIssues(servlet.Servlet):
       Dictionary of page data for rendering of the Table View.
     """
     table_data, table_related_dict = hotlist_helpers.CreateHotlistTableData(
-        mr, mr.hotlist.items, self.profiler, self.services)
+        mr, mr.hotlist.items, self.services)
     columns = mr.col_spec.split()
     ordered_columns = [template_helpers.EZTItem(col_index=i, name=col)
                        for i, col in enumerate(columns)]

@@ -51,11 +51,10 @@ class BackendSearchPipeline(object):
   """
 
   def __init__(
-      self, mr, services, prof, default_results_per_page,
+      self, mr, services, default_results_per_page,
       query_project_names, logged_in_user_id, me_user_id):
 
     self.mr = mr
-    self.profiler = prof
     self.services = services
     self.default_results_per_page = default_results_per_page
 
@@ -108,7 +107,7 @@ class BackendSearchPipeline(object):
 
   def SearchForIIDs(self):
     """Wait for the search Promises and store their results."""
-    with self.profiler.Phase('WaitOnPromises'):
+    with self.mr.profiler.Phase('WaitOnPromises'):
       self.result_iids, self.search_limit_reached, self.error = (
           self.result_iids_promise.WaitAndGetValue())
 

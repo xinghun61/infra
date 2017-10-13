@@ -27,14 +27,14 @@ class ProjectsJsonFeed(jsonfeed.JsonFeed):
 
     json_data = {}
 
-    with self.profiler.Phase('page processing'):
+    with mr.profiler.Phase('page processing'):
       json_data.update(self._GatherProjects(mr))
 
     return json_data
 
   def _GatherProjects(self, mr):
     """Return a dict of project names the current user is involved in."""
-    with self.profiler.Phase('GetUserProjects'):
+    with mr.profiler.Phase('GetUserProjects'):
       project_lists = sitewide_helpers.GetUserProjects(
           mr.cnxn, self.services, mr.auth.user_pb, mr.auth.effective_ids,
           mr.auth.effective_ids)

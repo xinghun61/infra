@@ -46,7 +46,7 @@ class BackendSearch(jsonfeed.InternalTask):
     # Users are never logged into backends, so the frontends tell us.
     logging.info('query_project_names is %r', mr.query_project_names)
     pipeline = backendsearchpipeline.BackendSearchPipeline(
-        mr, self.services, self.profiler, self._DEFAULT_RESULTS_PER_PAGE,
+        mr, self.services, self._DEFAULT_RESULTS_PER_PAGE,
         mr.query_project_names, mr.specified_logged_in_user_id,
         mr.specified_me_user_id)
     pipeline.SearchForIIDs()

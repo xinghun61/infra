@@ -50,7 +50,7 @@ class RerankHotlistIssue(jsonfeed.JsonFeed):
       sorting.InvalidateArtValuesKeys(
           mr.cnxn, [hotlist_item.issue_id for hotlist_item in hotlist_items])
       (table_data, _) = hotlist_helpers.CreateHotlistTableData(
-          mr, hotlist_items, self.profiler, self.services)
+          mr, hotlist_items, self.services)
 
       json_table_data = [{
           'cells': [{

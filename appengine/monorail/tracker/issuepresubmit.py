@@ -55,14 +55,14 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
       with work_env.WorkEnv(mr, self.services) as we:
         existing_issue = we.GetIssueByLocalID(mr.project_id, mr.local_id)
 
-    with self.profiler.Phase('parsing request'):
+    with mr.profiler.Phase('parsing request'):
       post_data = mr.request.POST
       parsed = tracker_helpers.ParseIssueRequest(
           mr.cnxn, post_data, self.services, mr.errors, mr.project_name)
 
     logging.info('parsed.users %r', parsed.users)
 
-    with self.profiler.Phase('making user views'):
+    with mr.profiler.Phase('making user views'):
       involved_user_ids = [parsed.users.owner_id]
       users_by_id = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, involved_user_ids)
@@ -73,22 +73,22 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
       component_ids = tracker_helpers.LookupComponentIDs(
           parsed.components.paths, config, mr.errors)
 
-    with self.profiler.Phase('initializing proposed_issue'):
+    with mr.profiler.Phase('initializing proposed_issue'):
       proposed_issue = self.MakeProposedIssue(
           mr, existing_issue, parsed, config, component_ids)
 
-    with self.profiler.Phase('applying rules'):
+    with mr.profiler.Phase('applying rules'):
       traces = filterrules_helpers.ApplyFilterRules(
           mr.cnxn, self.services, proposed_issue, config)
       logging.info('proposed_issue is now: %r', proposed_issue)
       logging.info('traces are: %r', traces)
 
-    with self.profiler.Phase('making derived user views'):
+    with mr.profiler.Phase('making derived user views'):
       derived_users_by_id = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, [proposed_issue.derived_owner_id],
           proposed_issue.derived_cc_ids)
 
-    with self.profiler.Phase('pair derived values with rule explanations'):
+    with mr.profiler.Phase('pair derived values with rule explanations'):
       (derived_labels_and_why, derived_owner_and_why,
        derived_cc_and_why, warnings_and_why, errors_and_why
        ) = PairDerivedValuesWithRuleExplanations(

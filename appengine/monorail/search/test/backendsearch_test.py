@@ -45,7 +45,7 @@ class BackendSearchTest(unittest.TestCase):
         error=None)
     self.mox.StubOutWithMock(backendsearchpipeline, 'BackendSearchPipeline')
     backendsearchpipeline.BackendSearchPipeline(
-      self.mr, self.services, self.servlet.profiler, 100, ['proj'], 111L, 222L
+      self.mr, self.services, 100, ['proj'], 111L, 222L
       ).AndReturn(pipeline)
     self.mox.ReplayAll()
 
@@ -65,7 +65,7 @@ class BackendSearchTest(unittest.TestCase):
         error=None)
     self.mox.StubOutWithMock(backendsearchpipeline, 'BackendSearchPipeline')
     backendsearchpipeline.BackendSearchPipeline(
-      self.mr, self.services, self.servlet.profiler, 100, ['proj'], 111L, 222L
+      self.mr, self.services, 100, ['proj'], 111L, 222L
       ).AndReturn(pipeline)
     self.mox.StubOutWithMock(self.services.issue, 'GetIssues')
     # All issues are prefetched because they fit  on the first pagination page.
@@ -88,7 +88,7 @@ class BackendSearchTest(unittest.TestCase):
         error=None)
     self.mox.StubOutWithMock(backendsearchpipeline, 'BackendSearchPipeline')
     backendsearchpipeline.BackendSearchPipeline(
-      self.mr, self.services, self.servlet.profiler, 100, ['proj'], 111L, 222L
+      self.mr, self.services, 100, ['proj'], 111L, 222L
       ).AndReturn(pipeline)
     self.mox.StubOutWithMock(self.services.issue, 'GetIssues')
     # First 5 issues are prefetched because num=5
@@ -112,7 +112,7 @@ class BackendSearchTest(unittest.TestCase):
         error=error)
     self.mox.StubOutWithMock(backendsearchpipeline, 'BackendSearchPipeline')
     backendsearchpipeline.BackendSearchPipeline(
-      self.mr, self.services, self.servlet.profiler, 100, ['proj'], 111L, 222L
+      self.mr, self.services, 100, ['proj'], 111L, 222L
       ).AndReturn(pipeline)
     self.mox.ReplayAll()
 

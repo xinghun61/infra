@@ -34,6 +34,6 @@ class ProjectUpdates(servlet.Servlet):
 
     url = '/p/%s%s' % (mr.project_name, urls.UPDATES_LIST)
     return activities.GatherUpdatesData(
-        self.services, mr, self.profiler, project_ids=[mr.project_id],
+        self.services, mr, project_ids=[mr.project_id],
         ending='by_user', updates_page_url=url,
         autolink=self.services.autolink)

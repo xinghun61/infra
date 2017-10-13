@@ -49,7 +49,7 @@ class PeopleList(servlet.Servlet):
                    mr.project.committer_ids +
                    mr.project.contributor_ids)
 
-    with self.profiler.Phase('gathering members on this page'):
+    with mr.profiler.Phase('gathering members on this page'):
       users_by_id = framework_views.MakeAllUserViews(
           mr.cnxn, self.services.user, all_members)
       framework_views.RevealAllEmailsToMembers(mr, users_by_id)
@@ -57,15 +57,15 @@ class PeopleList(servlet.Servlet):
     # TODO(jrobbins): re-implement FindUntrustedGroups()
     untrusted_user_group_proxies = []
 
-    with self.profiler.Phase('gathering commitments (notes)'):
+    with mr.profiler.Phase('gathering commitments (notes)'):
       project_commitments = self.services.project.GetProjectCommitments(
           mr.cnxn, mr.project_id)
 
-    with self.profiler.Phase('gathering autocomple exclusion ids'):
+    with mr.profiler.Phase('gathering autocomple exclusion ids'):
       acexclusion_ids = self.services.project.GetProjectAutocompleteExclusion(
           mr.cnxn, mr.project_id)
 
-    with self.profiler.Phase('making member views'):
+    with mr.profiler.Phase('making member views'):
       owner_views = self._MakeMemberViews(
           mr.auth.user_id, users_by_id, mr.project.owner_ids, mr.project,
           project_commitments, acexclusion_ids)

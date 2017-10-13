@@ -41,8 +41,7 @@ class HostingHome(servlet.Servlet):
     can_create_project = permissions.CanCreateProject(mr.perms)
 
     # Kick off the search pipeline, it has its own promises for parallelism.
-    pipeline = projectsearch.ProjectSearchPipeline(
-        mr, self.services, self.profiler)
+    pipeline = projectsearch.ProjectSearchPipeline(mr, self.services)
 
     # Meanwhile, determine which projects the signed-in user has starred.
     with work_env.WorkEnv(mr, self.services) as we:

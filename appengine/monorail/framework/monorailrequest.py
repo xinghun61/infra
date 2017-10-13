@@ -31,7 +31,7 @@ from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_views
 from framework import permissions
-from framework.profiler import Profiler
+from framework import profiler
 from framework import sql
 from framework import template_helpers
 from proto import api_pb2_v1
@@ -149,27 +149,62 @@ class AuthData(object):
         auth.user_view = framework_views.UserView(auth.user_pb)
 
 
-class MonorailApiRequest(object):
+class MonorailRequestBase(object):
+  """A base class with common attributes for internal and external requests."""
+
+  def __init__(
+      self, services=None, user_id=None, user_email=None, cnxn=None):
+    self.cnxn = cnxn or sql.MonorailConnection()
+    self.profiler = profiler.Profiler()
+    if user_id:
+      assert services
+      self.auth = AuthData.FromUserID(self.cnxn, user_id, services)
+    elif user_email:
+      assert services
+      self.auth = AuthData.FromEmail(self.cnxn, user_email, services)
+    else:
+      self.auth = AuthData()
+
+    self.project_name = None
+    self.project = None
+    self.config = None
+    self.warnings = []
+    self.errors = template_helpers.EZTError()
+    self.perms = None
+
+  def LookupLoggedInUserPerms(self):
+    """Once we have the user and project, calculate their permissions."""
+    with self.profiler.Phase('looking up signed in user permissions'):
+      self.perms = permissions.GetPermissions(
+          self.auth.user_pb, self.auth.effective_ids, self.project)
+
+  @property
+  def project_id(self):
+    return self.project.project_id if self.project else None
+
+  def CleanUp(self):
+    """Close the database connection so that the app does not run out."""
+    if self.cnxn:
+      self.cnxn.Close()
+      self.cnxn = None
+
+
+class MonorailApiRequest(MonorailRequestBase):
   """A class to hold information parsed from the Endpoints API request."""
 
   # pylint: disable=attribute-defined-outside-init
-  def __init__(self, request, services, profiler=None):
-    self.profiler = profiler
+  def __init__(self, request, services):
     requester = (
         endpoints.get_current_user() or
         oauth.get_current_user(
             framework_constants.OAUTH_SCOPE))
     requester_email = requester.email().lower()
-    self.cnxn = sql.MonorailConnection()
-    self.auth = AuthData.FromEmail(
-          self.cnxn, requester_email, services)
+    super(MonorailApiRequest, self).__init__(
+        services=services, user_email=requester_email)
     self.me_user_id = self.auth.user_id
     self.viewed_username = None
     self.viewed_user_auth = None
-    self.project_name = None
-    self.project = None
     self.issue = None
-    self.config = None
     self.granted_perms = set()
 
     # query parameters
@@ -183,8 +218,6 @@ class MonorailApiRequest(object):
       'projects': [],
       'hotlists':[]}
     self.use_cached_searches = True
-    self.warnings = []
-    self.errors = template_helpers.EZTError()
     self.mode = None
 
     if hasattr(request, 'projectId'):
@@ -214,8 +247,7 @@ class MonorailApiRequest(object):
             self.cnxn, self.viewed_username, services)
       except user_svc.NoSuchUserException:
         self.viewed_user_auth = None
-    self.perms = permissions.GetPermissions(
-        self.auth.user_pb, self.auth.effective_ids, self.project)
+    self.LookupLoggedInUserPerms()
 
     # Build q.
     if hasattr(request, 'q') and request.q:
@@ -268,10 +300,6 @@ class MonorailApiRequest(object):
     self.start = self.GetParam('start')
     self.num = self.GetParam('num')
 
-  @property
-  def project_id(self):
-    return self.project.project_id if self.project else None
-
   def GetParam(self, query_param_name, default_value=None,
                _antitamper_re=None):
     return self.params.get(query_param_name, default_value)
@@ -282,7 +310,7 @@ class MonorailApiRequest(object):
                0)
 
 
-class MonorailRequest(object):
+class MonorailRequest(MonorailRequestBase):
   """A class to hold information parsed from the HTTP request.
 
   The goal of MonorailRequest is to do almost all URL path and query string
@@ -303,23 +331,14 @@ class MonorailRequest(object):
   """
 
   # pylint: disable=attribute-defined-outside-init
-  def __init__(self, profiler=None, params=None):
+  def __init__(self, params=None):
     """Initialize the MonorailRequest object."""
+    super(MonorailRequest, self).__init__()
     self.form_overrides = {}
-    self.profiler = profiler
     if params:
       self.form_overrides.update(params)
-    self.warnings = []
-    self.errors = template_helpers.EZTError()
     self.debug_enabled = False
     self.use_cached_searches = True
-    self.cnxn = sql.MonorailConnection()
-
-    self.auth = AuthData()  # Authentication info for logged-in user
-
-    self.project_name = None
-    self.project = None
-    self.config = None
 
     self.hotlist_id = None
     self.hotlist = None
@@ -327,16 +346,6 @@ class MonorailRequest(object):
 
     self.viewed_username = None
     self.viewed_user_auth = AuthData()
-
-  @property
-  def project_id(self):
-    return self.project.project_id if self.project else None
-
-  def CleanUp(self):
-    """Close the database connection so that the app does not run out."""
-    if self.cnxn:
-      self.cnxn.Close()
-      self.cnxn = None
 
   def ParseRequest(self, request, services, do_user_lookups=True):
     """Parse tons of useful info from the given request object.
@@ -584,9 +593,7 @@ class MonorailRequest(object):
     self.me_user_id = (self.GetIntParam('me') or
                        self.viewed_user_auth.user_id or self.auth.user_id)
 
-    with self.profiler.Phase('looking up signed in user permissions'):
-      self.perms = permissions.GetPermissions(
-          self.auth.user_pb, self.auth.effective_ids, self.project)
+    self.LookupLoggedInUserPerms()
 
   def ComputeColSpec(self, config):
     """Set col_spec based on param, default in the config, or site default."""

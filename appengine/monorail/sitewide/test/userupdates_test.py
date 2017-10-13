@@ -51,8 +51,7 @@ class ProjectUpdatesTest(unittest.TestCase):
 
     self.mox.StubOutWithMock(activities, 'GatherUpdatesData')
     activities.GatherUpdatesData(
-        self.services, self.mr, mox.IgnoreArg(),
-        user_ids=None,
+        self.services, self.mr, user_ids=None,
         project_ids=[self.project_id],
         ending=uup._ENDING,
         updates_page_url=uup._UPDATES_PAGE_URL,
@@ -77,10 +76,8 @@ class ProjectUpdatesTest(unittest.TestCase):
 
     self.mox.StubOutWithMock(activities, 'GatherUpdatesData')
     activities.GatherUpdatesData(
-        self.services, self.mr, mox.IgnoreArg(),
-        user_ids=[self.user_id],
-        project_ids=None,
-        ending=uud._ENDING,
+        self.services, self.mr, user_ids=[self.user_id],
+        project_ids=None, ending=uud._ENDING,
         updates_page_url=uud._UPDATES_PAGE_URL,
         highlight=uud._HIGHLIGHT).AndReturn({})
 
@@ -98,10 +95,9 @@ class ProjectUpdatesTest(unittest.TestCase):
 
     self.mox.StubOutWithMock(activities, 'GatherUpdatesData')
     activities.GatherUpdatesData(
-        self.services, self.mr, mox.IgnoreArg(),
+        self.services, self.mr,
         user_ids=[self.mr.viewed_user_auth.user_id],
-        project_ids=None,
-        ending=uui._ENDING,
+        project_ids=None, ending=uui._ENDING,
         updates_page_url=uui._UPDATES_PAGE_URL,
         highlight=uui._HIGHLIGHT).AndReturn({})
 
