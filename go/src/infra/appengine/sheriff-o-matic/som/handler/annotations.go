@@ -14,12 +14,15 @@ import (
 	"strings"
 	"time"
 
+	"google.golang.org/appengine"
+
 	"infra/appengine/sheriff-o-matic/som/model"
 	"infra/monorail"
 
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/gae/service/info"
 	"go.chromium.org/gae/service/memcache"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/data/stringset"
@@ -216,6 +219,9 @@ func PostAnnotationsHandler(ctx *router.Context) {
 	}
 
 	needRefresh := false
+	if info.AppID(c) != "" && info.AppID(c) != "app" {
+		c = appengine.WithContext(c, r)
+	}
 	// The annotation probably doesn't exist if we're adding something.
 	data := bytes.NewReader([]byte(*req.Data))
 	if action == "add" {

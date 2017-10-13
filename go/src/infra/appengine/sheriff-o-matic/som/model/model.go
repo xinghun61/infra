@@ -14,9 +14,16 @@ import (
 	"strings"
 	"time"
 
+	"infra/libs/eventupload"
+
+	"cloud.google.com/go/bigquery"
+	"google.golang.org/appengine"
+
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/data/stringset"
+	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"golang.org/x/net/context"
 )
@@ -174,14 +181,14 @@ func (a *Annotation) Add(c context.Context, r io.Reader) (bool, error) {
 		}
 	}
 
+	user := auth.CurrentIdentity(c)
+	commentTime := clock.Now(c)
 	if change.Comments != nil {
-		user := auth.CurrentIdentity(c)
-		time := clock.Now(c)
 		comments := make([]Comment, len(change.Comments))
 		for i, c := range change.Comments {
 			comments[i].Text = c
 			comments[i].User = user.Email()
-			comments[i].Time = time
+			comments[i].Time = commentTime
 		}
 
 		a.Comments = append(a.Comments, comments...)
@@ -195,6 +202,23 @@ func (a *Annotation) Add(c context.Context, r io.Reader) (bool, error) {
 
 	if modified {
 		a.ModificationTime = clock.Now(c)
+	}
+
+	evt := createAnnotationEvent(c, a, "add")
+	evt.Bugs = change.Bugs
+	evt.SnoozeTime = time.Unix(int64(a.SnoozeTime/1000), 0)
+	evt.GroupId = change.GroupID
+	for _, c := range change.Comments {
+		evt.Comments = append(evt.Comments, &SOMAnnotationEvent_Comments{
+			Text: c,
+			User: user.Email(),
+			Time: commentTime,
+		})
+	}
+
+	if err := writeAnnotationEvent(c, evt); err != nil {
+		logging.Errorf(c, "error writing annotation event to bigquery: %v", err)
+		// Continue. This isn't fatal.
 	}
 
 	return needRefresh, nil
@@ -227,10 +251,12 @@ func (a *Annotation) Remove(c context.Context, r io.Reader) (bool, error) {
 	}
 
 	// Client passes in a list of comment indices to delete.
+	deletedComments := []Comment{}
 	for _, i := range change.Comments {
 		if i < 0 || i >= len(a.Comments) {
 			return false, errors.New("Invalid comment index")
 		}
+		deletedComments = append(deletedComments, a.Comments[i])
 		a.Comments = append(a.Comments[:i], a.Comments[i+1:]...)
 		modified = true
 	}
@@ -244,5 +270,55 @@ func (a *Annotation) Remove(c context.Context, r io.Reader) (bool, error) {
 		a.ModificationTime = clock.Now(c)
 	}
 
+	evt := createAnnotationEvent(c, a, "remove")
+	evt.Bugs = change.Bugs
+	evt.SnoozeTime = time.Unix(int64(a.SnoozeTime), 0)
+	evt.GroupId = a.GroupID
+	for _, c := range deletedComments {
+		evt.Comments = append(evt.Comments, &SOMAnnotationEvent_Comments{
+			Text: c.Text,
+			User: c.User,
+			Time: c.Time,
+		})
+	}
+
+	if err := writeAnnotationEvent(c, evt); err != nil {
+		logging.Errorf(c, "error writing annotation event to bigquery: %v", err)
+		// Continue. This isn't fatal.
+	}
+
 	return false, nil
+}
+
+func createAnnotationEvent(ctx context.Context, a *Annotation, operation string) *SOMAnnotationEvent {
+	evt := &SOMAnnotationEvent{
+		Timestamp:        a.ModificationTime,
+		AlertKeyDigest:   a.KeyDigest,
+		AlertKey:         a.Key,
+		RequestId:        appengine.RequestID(ctx),
+		Operation:        operation,
+		ModificationTime: a.ModificationTime,
+	}
+
+	for _, c := range a.Comments {
+		evt.Comments = append(evt.Comments, &SOMAnnotationEvent_Comments{
+			Text: c.Text,
+			User: c.User,
+			Time: c.Time,
+		})
+	}
+
+	return evt
+}
+
+func writeAnnotationEvent(c context.Context, evt *SOMAnnotationEvent) error {
+	client, err := bigquery.NewClient(c, info.AppID(c))
+	if err != nil {
+		return err
+	}
+	up := eventupload.NewUploader(c, client, SOMAnnotationEventTable)
+	up.SkipInvalidRows = true
+	up.IgnoreUnknownValues = true
+
+	return up.Put(c, evt)
 }
