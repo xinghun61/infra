@@ -35,5 +35,19 @@
         done();
       });
     });
+    test('user-removed', function(done) {
+      element.removeable = true;
+      element.userId = 'yourLDAP';
+      element.profileLink = 'www.some-url.com';
+      element.email = 'something@gmail.com';
+      let user = {userId: 'yourLDAP', email: 'something@gmail.com', profileLink: 'www.some-url.com'};
+      element.addEventListener('remove-user', (event) => {
+        assert.deepEqual(event.detail.removedUser, user);
+        done();
+      });
+      flush(function() {
+        element.shadowRoot.querySelector('iron-icon').click();
+      });
+    });
   });
 </script>
