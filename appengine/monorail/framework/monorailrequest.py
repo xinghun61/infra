@@ -506,6 +506,8 @@ class MonorailRequest(MonorailRequestBase):
 
     # For adding issues to hotlists servlet
     self.hotlist_ids = self.GetIntListParam('hotlist_ids')
+    self.hotlist_ids_remove = self.GetIntListParam('hotlist_ids_remove')
+    self.hotlist_ids_add = self.GetIntListParam('hotlist_ids_add')
     self.issue_refs = self.GetListParam('issue_refs')
 
   def _ParseFormOverrides(self):

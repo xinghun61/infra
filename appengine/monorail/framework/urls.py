@@ -16,6 +16,7 @@ GROUP_CREATE = '/hosting/createGroup'
 GROUP_DELETE = '/hosting/deleteGroup'
 ADD_ISSUES_TO_HOTLIST = '/hosting/addToHotlist'
 REMOVE_ISSUE_FROM_HOTLIST = '/hosting/removeFromHotlist'
+UPDATE_ISSUES_IN_HOTLISTS = '/hosting/updateHotlists'
 
 # URLs of project pages
 SUMMARY = '/'  # Now just a redirect to /issues/list
