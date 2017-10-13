@@ -263,6 +263,30 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       service.validate_tags([':'], 'search')
 
+  def test_validate_buildset(self):
+    service.validate_build_set(
+        'commit/gitiles/chromium.googlesource.com/chromium/src/+/'
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+    )
+    service.validate_build_set(
+      'patch/gerrit/chromium-review.googlesource.com/123/456'
+    )
+
+    service.validate_build_set(
+        'patch/gerrit/chromium-review.googlesource.com/aa/bb'
+    )
+
+    bad = [
+      ('commit/gitiles/chromium.googlesource.com/a/chromium/src/+/'
+       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
+      ('commit/gitiles/chromium.googlesource.com/chromium/src.git/+/'
+       'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
+      'commit/gitiles/chromium.googlesource.com/chromium/src.git/+/aaaaaaaa',
+    ]
+    for bs in bad:
+      with self.assertRaises(errors.InvalidInputError):
+        service.validate_build_set(bs)
+
   def test_add_builder_tag(self):
     build = service.add(service.BuildRequest(
         bucket='chromium',

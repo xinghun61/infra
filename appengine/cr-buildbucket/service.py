@@ -33,7 +33,15 @@ MAX_RETURN_BUILDS = 100
 MAX_LEASE_DURATION = datetime.timedelta(hours=2)
 DEFAULT_LEASE_DURATION = datetime.timedelta(minutes=1)
 MAX_BUILDSET_LENGTH = 1024
-TAG_INDEX_SEARCH_CURSOR_RE = re.compile('^id>\d+$')
+RE_TAG_INDEX_SEARCH_CURSOR = re.compile('^id>\d+$')
+# Gitiles commit buildset pattern. Example:
+# ('commit/gitiles/chromium.googlesource.com/infra/luci/luci-go/+/'
+#  'b7a757f457487cd5cfe2dae83f65c5bc10e288b7')
+RE_BUILDSET_GITILES_COMMIT = re.compile(
+    r'^commit/gitiles/[^/]+/(.+?)/\+/[a-f0-9]{40}$')
+# Gerrit CL buildset pattern. Example:
+# patch/gerrit/chromium-review.googlesource.com/677784/5
+RE_BUILDSET_GERRIT_CL = re.compile(r'^patch/gerrit/[^/]+/\d+/\d+$')
 
 validate_bucket_name = errors.validate_bucket_name
 
@@ -81,6 +89,33 @@ def fix_max_builds(max_builds):
   return min(MAX_RETURN_BUILDS, max_builds)
 
 
+def validate_build_set(bs):
+  """Validates a buildset."""
+  if len('buildset:') + len(bs) > MAX_BUILDSET_LENGTH:
+    raise errors.InvalidInputError('too long')
+
+  # Verify that a buildset with a known prefix is well formed.
+  if bs.startswith('commit/gitiles/'):
+    m = RE_BUILDSET_GITILES_COMMIT.match(bs)
+    if not m:
+      raise errors.InvalidInputError(
+          'does not match regex "%s"' % RE_BUILDSET_GITILES_COMMIT.pattern)
+    project = m.group(1)
+    if project.startswith('a/'):
+      raise errors.InvalidInputError(
+          'gitiles project must not start with "a/"')
+    if project.endswith('.git'):
+      raise errors.InvalidInputError(
+          'gitiles project must not end with ".git"')
+
+  elif bs.startswith('patch/gerrit/'):
+    if not RE_BUILDSET_GERRIT_CL.match(bs):
+      # TODO(nodir): turn into an exception when we verify that
+      # cr-buildbucket.appspot.com users do not use invalid format
+      logging.error(
+          'does not match regex "%s"', RE_BUILDSET_GERRIT_CL.pattern)
+
+
 def validate_tags(tags, mode, builder=None):
   """Validates build tags.
 
@@ -100,14 +135,19 @@ def validate_tags(tags, mode, builder=None):
   builder_tag = None
   for t in tags:
     if not isinstance(t, basestring):
-      raise errors.InvalidInputError('Invalid tag "%s": must be a string')
+      raise errors.InvalidInputError(
+          'Invalid tag "%s": must be a string' % (t, ))
     if ':' not in t:
-      raise errors.InvalidInputError('Invalid tag "%s": does not contain ":"')
+      raise errors.InvalidInputError(
+          'Invalid tag "%s": does not contain ":"' % t)
     if t[0] == ':':
-      raise errors.InvalidInputError('Invalid tag "%s": starts with ":"')
+      raise errors.InvalidInputError('Invalid tag "%s": starts with ":"' % t)
     k, v = t.split(':', 1)
-    if k == 'buildset' and len(t) > MAX_BUILDSET_LENGTH:
-      raise errors.InvalidInputError('Tag "buildset" is too long: %s', t)
+    if k == 'buildset':
+      try:
+        validate_build_set(v)
+      except errors.InvalidInputError as ex:
+        raise errors.InvalidInputError('Invalid tag "%s": %s' % (t, ex))
     if k == 'build_address' and mode != 'search':
       raise errors.InvalidInputError('Tag "build_address" is reserved')
     if k == 'builder':
@@ -662,7 +702,7 @@ def search(q):
     q.buckets = set(q.buckets)
 
   is_tag_index_cursor = (
-    q.start_cursor and TAG_INDEX_SEARCH_CURSOR_RE.match(q.start_cursor))
+    q.start_cursor and RE_TAG_INDEX_SEARCH_CURSOR.match(q.start_cursor))
   can_use_tag_index = (
     _indexed_tags(q.tags) and (not q.start_cursor or is_tag_index_cursor))
   if is_tag_index_cursor and not can_use_tag_index:
@@ -832,7 +872,7 @@ def _tag_index_search(q):
   if q.start_cursor:
     # The cursor is a minimum build id, exclusive. Such cursor is resilient
     # to duplicates and additions of index entries to beginning or end.
-    assert TAG_INDEX_SEARCH_CURSOR_RE.match(q.start_cursor)
+    assert RE_TAG_INDEX_SEARCH_CURSOR.match(q.start_cursor)
     min_id_exclusive = int(q.start_cursor[len('id>'):])
     if id_low is not None and id_low > min_id_exclusive:
       # If the minimum build id requested is greater than the cursor, we need
