@@ -138,7 +138,7 @@ class AuthUtilTest(unittest.TestCase):
     class HeaderReturningHttpClient(http_client_appengine.HttpClientAppengine):
 
       def _Get(self, _url, _timeout_seconds, headers):
-        return 200, json.dumps(headers)
+        return 200, json.dumps(headers), {}
 
     client = HeaderReturningHttpClient(
         interceptor=auth_util.AuthenticatingInterceptor())

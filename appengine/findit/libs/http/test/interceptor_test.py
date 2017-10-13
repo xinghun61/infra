@@ -24,7 +24,7 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
     query = urlparse.parse_qs(url.query)
     status_string = query.get('status', ['404'])[0]  # parse_qs returns a list.
     content = query.get('content', [''])[0]  # Ditto.
-    return int(status_string), content
+    return int(status_string), content, {}
 
   def _Post(self, url, data, timeout_seconds, headers=None):
     raise NotImplementedError('Post not supported')
@@ -39,7 +39,8 @@ class InterceptorTest(testing.AppengineTestCase):
     status, content = client.Get(url)
     self.assertEqual(status, 200)
     self.assertEqual(content, 'hello')
-    mock_logging.assert_called_once_with('got response %d for url %s', 200, url)
+    mock_logging.assert_called_once_with('got response status 200 for url %s',
+                                         url)
 
   @mock.patch.object(logging, 'warning')
   def testWithException(self, mock_logging):
@@ -66,3 +67,16 @@ class InterceptorTest(testing.AppengineTestCase):
         'test.com',
         interceptor.HttpInterceptorBase.GetHost('https://test.com/long/path'))
     self.assertIsNone(interceptor.HttpInterceptorBase.GetHost(''))
+
+
+  @mock.patch.object(logging, 'info')
+  def testNoExceptionHttpError(self, mock_logging):
+    client = DummyHttpClient()
+    url = 'https://test.com/help?status=404&content=Not_Found'
+    status, content = client.Get(url)
+    self.assertEqual(status, 404)
+    self.assertEqual(content, 'Not_Found')
+    mock_logging.assert_called_once_with(
+        'request to %s responded with %d http status and headers %s', url, 404,
+        '{}')
+

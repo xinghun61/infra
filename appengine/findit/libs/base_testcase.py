@@ -25,9 +25,9 @@ class MockHttpClient(retry_http_client.RetryHttpClient):  # pragma: no cover.
   def _Get(self, url, *_):
     response = self.response_for_url.get(url)
     if response is None:
-      return 404, 'Not Found'
+      return 404, 'Not Found', {}
     else:
-      return 200, response
+      return 200, response, {}
 
   def _Post(self, *_):
     pass

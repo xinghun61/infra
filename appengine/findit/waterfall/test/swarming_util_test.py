@@ -126,14 +126,14 @@ class SwarmingHttpClient(RetryHttpClient):
 
   def _Get(self, url, *_):
     if url in self.get_responses:
-      return 200, self.get_responses[url]
-    return 404, 'Download Failed!'
+      return 200, self.get_responses[url], {}
+    return 404, 'Download Failed!', {}
 
   def _Post(self, url, data, *_):
     data = json.loads(data)
     if data and data.get('digest') and data['digest'] in self.post_responses:
-      return 200, self.post_responses[data['digest']]
-    return 404, 'Download Failed!'
+      return 200, self.post_responses[data['digest']], {}
+    return 404, 'Download Failed!', {}
 
   def _Put(self, *_):  # pragma: no cover
     pass
@@ -158,7 +158,7 @@ class _LoggedHttpClient(RetryHttpClient):
     pass
 
   def SetResponse(self, method, url, content=None, status_code=200):
-    self.responses[method][url] = (status_code, content)
+    self.responses[method][url] = (status_code, content, {})
 
   def GetRequest(self, url):
     return self.requests.get(url)

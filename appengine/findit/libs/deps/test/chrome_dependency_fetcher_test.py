@@ -134,7 +134,7 @@ class ChromiumDEPSTest(testing.AppengineTestCase):
   def testDEPSDownloaderForChromeVersion(self):
 
     def _MockGet(*_):
-      return 200, base64.b64encode('Dummy DEPS content')
+      return 200, base64.b64encode('Dummy DEPS content'), {}
 
     self.mock(HttpClientAppengine, '_Get', _MockGet)
     deps_downloader = chrome_dependency_fetcher.DEPSDownloader(

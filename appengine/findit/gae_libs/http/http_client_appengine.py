@@ -47,7 +47,7 @@ class HttpClientAppengine(RetryHttpClient):
       logging.error('Request to %s resulted in %d, headers:%s', url,
                     result.status_code, json.dumps(result.headers.items()))
 
-    return result.status_code, result.content
+    return result.status_code, result.content, result.headers
 
   def _Get(self, url, timeout, headers):
     return self._SendRequest(url, urlfetch.GET, None, timeout, headers)

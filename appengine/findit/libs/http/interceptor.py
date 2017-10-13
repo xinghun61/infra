@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import json
 import logging
 import urlparse
 
@@ -110,9 +111,13 @@ class LoggingInterceptor(HttpInterceptorBase):
   """A minimal interceptor that logs status code and url."""
 
   def OnResponse(self, request, response):
-    # TODO(crbug.com/771390): Log headers for non-200 responses.
-    logging.info('got response %d for url %s',
-                 response.get('status_code', 0), request.get('url'))
+    if response.get('status_code') != 200:
+      logging.info('request to %s responded with %d http status and headers %s',
+                   request.get('url'),
+                   response.get('status_code', 0),
+                   json.dumps(response.get('headers', {})))
+    else:
+      logging.info('got response status 200 for url %s', request.get('url'))
     # Call the base's OnResponse to keep the retry functionality.
     return super(LoggingInterceptor, self).OnResponse(request, response)
 

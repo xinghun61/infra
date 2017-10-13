@@ -44,11 +44,13 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
 
   def _Get(self, url, _, headers):  # pragma: no cover
     self.requests.append((url, None, headers))
-    return self._GetResponse(url)
+    response = self._GetResponse(url)
+    return response[0], response[1], {}
 
   def _Post(self, url, data, _, headers):
     self.requests.append((url, data, headers))
-    return self._GetResponse(url)
+    response = self._GetResponse(url)
+    return response[0], response[1], {}
 
   def _GetResponse(self, url):
     """Get the appropriate response.

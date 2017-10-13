@@ -22,7 +22,7 @@ class DummyHttpClient(findit_http_client.FinditHttpClient):
     query = urlparse.parse_qs(url.query)
     status_string = query.get('status', ['404'])[0]  # parse_qs returns a list.
     content = query.get('content', [''])[0]  # Ditto.
-    return int(status_string), content
+    return int(status_string), content, {}
 
   def _Post(self, url, data, timeout_seconds, headers=None):
     raise NotImplementedError('Post not supported')

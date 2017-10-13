@@ -47,9 +47,9 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
     })
     self.request_count += 1
     if self.request_count > self.simulated_failures:
-      return 200, 'success - GET'
+      return 200, 'success - GET', {}
     else:
-      return self.failure_status, 'failure - GET'
+      return self.failure_status, 'failure - GET', {}
 
   def _Post(self, url, data, timeout_seconds, headers=None):
     self.requests.append({
@@ -58,9 +58,9 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
     })
     self.request_count += 1
     if self.request_count > self.simulated_failures:
-      return 200, 'success - POST'
+      return 200, 'success - POST', {}
     else:
-      return self.failure_status, 'failure - POST'
+      return self.failure_status, 'failure - POST', {}
 
   def _Put(self, url, data, timeout_seconds, headers=None):
     self.requests.append({
@@ -69,9 +69,9 @@ class DummyHttpClient(retry_http_client.RetryHttpClient):
     })
     self.request_count += 1
     if self.request_count > self.simulated_failures:
-      return 200, 'success - PUT'
+      return 200, 'success - PUT', {}
     else:
-      return self.failure_status, 'failure - PUT'
+      return self.failure_status, 'failure - PUT', {}
 
 
 class HttpClientTest(testing.AppengineTestCase):

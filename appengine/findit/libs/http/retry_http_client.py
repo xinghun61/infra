@@ -26,7 +26,7 @@ class RetryHttpClient(object):
     """Sends the actual HTTP GET request.
 
     Returns:
-      (status_code, content)
+      (status_code, content, headers)
       status_code: the HTTP status code of the response.
       content: the content of the response.
     """
@@ -37,7 +37,7 @@ class RetryHttpClient(object):
     """Sends the actual HTTP POST request.
 
     Returns:
-      (status_code, content)
+      (status_code, content, headers)
     """
     raise NotImplementedError(
         '_Post() should be implemented in the child class')  # pragma: no cover
@@ -46,7 +46,7 @@ class RetryHttpClient(object):
     """Sends the actual HTTP PUT request.
 
     Returns:
-      (status_code, content)
+      (status_code, content, headers)
     """
     raise NotImplementedError(
         '_Put() should be implemented in the child class')  # pragma: no cover
@@ -82,16 +82,16 @@ class RetryHttpClient(object):
       request = {'url': url, 'headers': headers or {}}
       request = self.interceptor.OnRequest(request)
 
-      # Inject auth-headers.
-      request['headers'].update(
-          self.interceptor.GetAuthenticationHeaders(request))
-
       url = request.get('url')
       headers = request.get('headers')
+
+      # Inject auth-headers.
+      headers.update(self.interceptor.GetAuthenticationHeaders(request))
 
     # Default values in case retries are exhausted with retriable exception.
     status_code = 0
     content = ""
+    response_headers = {}
 
     tries = 0
     while tries < max_retries:
@@ -99,19 +99,24 @@ class RetryHttpClient(object):
 
       try:
         if method == 'POST':
-          status_code, content = self._Post(url, data, timeout_seconds, headers)
+          status_code, content, response_headers = self._Post(
+              url, data, timeout_seconds, headers)
         elif method == 'PUT':
-          status_code, content = self._Put(url, data, timeout_seconds, headers)
+          status_code, content, response_headers = self._Put(
+              url, data, timeout_seconds, headers)
         else:
-          status_code, content = self._Get(url, timeout_seconds, headers)
+          status_code, content, response_headers = self._Get(
+              url, timeout_seconds, headers)
 
         retry = False
         if self.interceptor:
-          response, retry = self.interceptor.OnResponse(
-              request, {'status_code': status_code,
-                        'content': content})
-          status_code, content = response.get('status_code'), response.get(
-              'content')
+          response, retry = self.interceptor.OnResponse(request, {
+              'status_code': status_code,
+              'content': content,
+              'headers': response_headers
+          })
+          status_code, content, response_headers = response.get(
+              'status_code'), response.get('content'), response.get('headers')
 
         if not retry:
           break
