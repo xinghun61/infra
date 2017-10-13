@@ -127,7 +127,7 @@
   },
   {
     "cmd": [
-      "[CACHE]/goma_client/g++",
+      "[CACHE]/goma_client/gomacc",
       "-c",
       "[TMP_BASE]/hello_world.cpp",
       "-o",
@@ -141,7 +141,7 @@
   },
   {
     "cmd": [
-      "[CACHE]/goma_client/g++",
+      "[CACHE]/goma_client/gomacc",
       "-c",
       "[TMP_BASE]/module.cpp",
       "-o",
@@ -155,7 +155,7 @@
   },
   {
     "cmd": [
-      "[CACHE]/goma_client/g++",
+      "[CACHE]/goma_client/gomacc",
       "-o",
       "[TMP_BASE]/compiled_binary",
       "[TMP_BASE]/hello_world.o",

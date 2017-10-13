@@ -59,7 +59,7 @@ def RunSteps(api):
   api.goma.ensure_goma(canary=True)
   api.goma.start()
 
-  gcc = api.goma.goma_dir.join('g++')
+  gcc = api.goma.goma_dir.join('gomacc')
   out = root_dir.join('compiled_binary')
 
   try:
