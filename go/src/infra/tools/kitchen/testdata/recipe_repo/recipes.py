@@ -3,8 +3,9 @@
 
 import argparse
 import json
-import sys
+import os
 import shutil
+import sys
 
 
 def main():
@@ -23,11 +24,18 @@ def main():
   args, _ = parser.parse_known_args()
 
   if args.command == 'fetch':
+    # Fetch happens under the system account. See localauth.Server config in
+    # cook_test.go.
+    assert get_current_account() == 'system_acc', get_current_account()
     return 0
 
   assert args.command == 'run'
   assert args.output_result_json
   assert args.properties_file
+
+  # Actual recipe execution happens under the recipe account. See
+  # localauth.Server config in cook_test.go.
+  assert get_current_account() == 'recipe_acc', get_current_account()
 
   with open(args.properties_file) as f:
     properties = json.load(f)
@@ -43,6 +51,12 @@ def main():
   if mocked_result_path:
     shutil.copyfile(mocked_result_path, args.output_result_json)
   return cfg['exitCode']
+
+
+def get_current_account():
+  with open(os.environ['LUCI_CONTEXT'], 'rt') as f:
+    lc = json.load(f)
+  return lc["local_auth"]["default_account_id"]
 
 
 if __name__ == '__main__':

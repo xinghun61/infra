@@ -74,9 +74,10 @@ func TestCook(t *testing.T) {
 			// Setup fake auth.
 			fakeAuth := localauth.Server{
 				TokenGenerators: map[string]localauth.TokenGenerator{
-					"fake": &authtest.FakeTokenGenerator{},
+					"recipe_acc": &authtest.FakeTokenGenerator{Email: "recipe@example.com"},
+					"system_acc": &authtest.FakeTokenGenerator{Email: "system@example.com"},
 				},
-				DefaultAccountID: "fake",
+				DefaultAccountID: "recipe_acc",
 			}
 			la, err := fakeAuth.Start(c)
 			So(err, ShouldBeNil)
@@ -139,6 +140,7 @@ func TestCook(t *testing.T) {
 					"-logdog-debug-out-file", logdogFilePath,
 					"-output-result-json", resultFilePath,
 					"-recipe-result-byte-limit", "500000",
+					"-luci-system-account", "system_acc",
 				}
 
 				// Cook.

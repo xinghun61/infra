@@ -72,8 +72,6 @@ func (es *bigQueryMonitoringEventSender) Put(ctx context.Context, td *tabledef.T
 // Monitoring provides facilities to measure and report on the monitored aspects
 // of a Kitchen run.
 type Monitoring struct {
-	cook *cookRun
-
 	executionStart time.Time
 	executionEnd   time.Time
 	result         *build.BuildRunResult
@@ -87,13 +85,9 @@ func (m *Monitoring) endExecution(ctx context.Context, result *build.BuildRunRes
 
 // SendBuildCompletedReport sends a build completed report to BigQuery event
 // monitoring.
-func (m *Monitoring) SendBuildCompletedReport(ctx context.Context) error {
+func (m *Monitoring) SendBuildCompletedReport(ctx context.Context, auth *AuthContext) error {
 	// Set up BigQuery client authentication.
-	a, err := m.cook.systemAuthenticator(ctx, bigquery.Scope)
-	if err != nil {
-		return errors.Annotate(err, "could not get authenticator for BigQuery events").Err()
-	}
-	ts, err := a.TokenSource()
+	ts, err := auth.Authenticator([]string{bigquery.Scope}).TokenSource()
 	if err != nil {
 		return errors.Annotate(err, "could not get token source").Err()
 	}

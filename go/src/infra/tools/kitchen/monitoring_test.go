@@ -30,9 +30,7 @@ func TestMonitoring(t *testing.T) {
 		ctx := context.Background()
 		ctx, tc := testclock.UseTime(ctx, testclock.TestRecentTimeLocal)
 
-		m := Monitoring{
-			cook: nil,
-		}
+		m := Monitoring{}
 
 		// Pretend that we scheduled it 5 minutes prior to the build starting.
 		sched := tc.Now().UTC()

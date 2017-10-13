@@ -134,13 +134,8 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	// Register and instantiate our LogDog Output.
 	var o output.Output
 	if flags.FilePath == "" {
-		authenticator, err := c.systemAuthenticator(ctx, out.Scopes()...)
-		if err != nil {
-			return 0, nil, errors.Annotate(err, "failed to get system authenticator").Err()
-		}
-
 		ocfg := out.Config{
-			Auth:    authenticator,
+			Auth:    c.systemAuth.Authenticator(out.Scopes()),
 			Host:    flags.AnnotationURL.Host,
 			Project: flags.AnnotationURL.Project,
 			Prefix:  prefix,
@@ -150,7 +145,6 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 			RPCTimeout:     defaultRPCTimeout,
 			PublishContext: withNonCancel(ctx),
 		}
-
 		if o, err = ocfg.Register(ctx); err != nil {
 			return 0, nil, errors.Annotate(err, "failed to create LogDog Output instance").Err()
 		}

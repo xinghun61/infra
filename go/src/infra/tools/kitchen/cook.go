@@ -18,7 +18,6 @@ import (
 	"github.com/maruel/subcommands"
 	"golang.org/x/net/context"
 
-	"go.chromium.org/luci/common/auth"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
 	log "go.chromium.org/luci/common/logging"
@@ -28,7 +27,6 @@ import (
 	"go.chromium.org/luci/common/system/filesystem"
 	"go.chromium.org/luci/lucictx"
 
-	"infra/libs/infraenv"
 	"infra/tools/kitchen/build"
 	"infra/tools/kitchen/cookflags"
 	"infra/tools/kitchen/third_party/recipe_engine"
@@ -64,6 +62,9 @@ type cookRun struct {
 	mode         cookMode
 	engine       recipeEngine
 	kitchenProps *kitchenProperties
+
+	systemAuth *AuthContext // used by kitchen itself for logdog, bigquery, git
+	recipeAuth *AuthContext // used by the recipe
 
 	// testRun is set to true during testing to instruct Kitchen not to try and
 	// send monitoring events.
@@ -111,15 +112,6 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		return result
 	}
 
-	// Export LUCI_CONTEXT into the environment used by git and recipe engine.
-	lc, err := lucictx.Export(ctx)
-	if err != nil {
-		return fail(errors.Annotate(err, "failed to export LUCI_CONTEXT").Err())
-	}
-	defer lc.Close()
-	env = env.Clone()
-	lc.SetInEnviron(env)
-
 	if c.RepositoryURL == "" {
 		// The ready-to-run recipe is already present on the file system.
 		recipesPath, err := exec.LookPath(filepath.Join(c.CheckoutDir, "recipes"))
@@ -128,13 +120,16 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		}
 		c.engine.cmdPrefix = []string{recipesPath}
 	} else {
-		// TODO(vadimsh): Switch to 'system' LUCI account here. Will require
-		// executing 'recipes.py fetch' in system context too before running the
-		// recipe. Will also require separate lucictx.Export step to export system
-		// LUCI_CONTEXT.
+		// Run initial git fetch in system account context (which is always present
+		// on bots), since recipes bootstrap is considered part of the overall
+		// "Recipes on Swarming" offering. Users that run recipes on Swarming
+		// expect the recipe to actually start, even if their task is not associated
+		// with a service account (the recipe runs in anonymous context in this
+		// case).
+		sysEnv := c.systemAuth.ExportIntoEnv(env)
 
 		// Fetch the recipe. Record the fetched revision.
-		rev, err := checkoutRepository(ctx, env, c.CheckoutDir, c.RepositoryURL, c.Revision)
+		rev, err := checkoutRepository(ctx, sysEnv, c.CheckoutDir, c.RepositoryURL, c.Revision)
 		if err != nil {
 			return fail(errors.Annotate(err, "could not checkout %q at %q to %q",
 				c.RepositoryURL, c.Revision, c.CheckoutDir).Err())
@@ -162,12 +157,13 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 		// Fetch all recipe dependencies. They are fetched into some internal guts
 		// controlled by the engine (not a work dir). So we can do it before setting
 		// up the work dir.
-		if err := c.engine.fetchRecipeDeps(ctx, env); err != nil {
+		if err := c.engine.fetchRecipeDeps(ctx, sysEnv); err != nil {
 			return fail(errors.Annotate(err, "failed to fetch recipe deps").Err())
 		}
 	}
 
 	// Setup our working directory. This is cwd for the recipe itself.
+	var err error
 	c.engine.workDir, err = prepareRecipeRunWorkDir(c.engine.workDir)
 	if err != nil {
 		return fail(errors.Annotate(err, "failed to prepare workdir").Err())
@@ -178,17 +174,21 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 	c.engine.opArgs.EngineFlags.UseResultProto = true
 	c.engine.outputResultJSONFile = filepath.Join(c.TempDir, "recipe-result.json")
 
+	// Run the recipe in the appropriate auth context by exporting it into the
+	// environ of the recipe engine.
+	recipeEnv := c.recipeAuth.ExportIntoEnv(env)
+
 	rv := 0
 	if c.CookFlags.LogDogFlags.Active() {
 		result.AnnotationUrl = c.CookFlags.LogDogFlags.AnnotationURL.String()
-		rv, result.Annotations, err = c.runWithLogdogButler(ctx, &c.engine, env)
+		rv, result.Annotations, err = c.runWithLogdogButler(ctx, &c.engine, recipeEnv)
 		if err != nil {
 			return fail(errors.Annotate(err, "failed to run recipe").Err())
 		}
 		setAnnotationText(result.Annotations)
 	} else {
 		// This code is reachable only in buildbot mode.
-		recipeCmd, err := c.engine.commandRun(ctx, filepath.Join(c.TempDir, "rr"), env)
+		recipeCmd, err := c.engine.commandRun(ctx, filepath.Join(c.TempDir, "rr"), recipeEnv)
 		if err != nil {
 			return fail(errors.Annotate(err, "failed to build recipe run command").Err())
 		}
@@ -400,9 +400,7 @@ func (c *cookRun) Run(a subcommands.Application, args []string, env subcommands.
 
 // run runs the cook subcommmand and returns cook result.
 func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *build.BuildRunResult {
-	mon := Monitoring{
-		cook: c,
-	}
+	mon := Monitoring{}
 	mon.beginExecution(ctx)
 
 	fail := func(err error) *build.BuildRunResult {
@@ -444,9 +442,6 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	if err := c.reportProperties(ctx, "kitchen", c.kitchenProps); err != nil {
 		return fail(err)
 	}
-
-	// Print emails of available LUCI accounts, if any.
-	c.reportServiceAccounts(ctx)
 
 	// If we're not using LogDog, send out annotations.
 	bootstrapSuccess := false
@@ -490,11 +485,13 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 		return fail(errors.Annotate(err, "failed to update process PATH").Err())
 	}
 
-	// Setup Git credential helper if requested.
-	if c.kitchenProps.GitAuth {
-		log.Infof(ctx, "Enabling git auth")
-		env.Set("INFRA_GIT_WRAPPER_AUTH", "1")
+	// Create systemAuth and recipeAuth authentication contexts, since we are
+	// about to start making authenticated requests now.
+	if err := c.setupAuth(ctx, c.kitchenProps.GitAuth); err != nil {
+		return fail(errors.Annotate(err, "failed to setup auth").Err())
 	}
+	defer c.recipeAuth.Close()
+	defer c.systemAuth.Close()
 
 	// Run the recipe.
 	result := c.ensureAndRunRecipe(ctx, env)
@@ -503,12 +500,8 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 	// the failure, but it is non-fatal.
 	mon.endExecution(ctx, result)
 	if !c.testRun {
-		if ctx, err = c.withSystemAccount(ctx); err == nil {
-			if err := mon.SendBuildCompletedReport(ctx); err != nil {
-				log.Errorf(ctx, "Failed to send 'build completed' monitoring report: %s", err)
-			}
-		} else {
-			log.Errorf(ctx, "Failed to enter 'system' logical account: %s", err)
+		if err := mon.SendBuildCompletedReport(ctx, c.systemAuth); err != nil {
+			log.Errorf(ctx, "Failed to send 'build completed' monitoring report: %s", err)
 		}
 	}
 
@@ -582,69 +575,80 @@ func (c *cookRun) reportProperties(ctx context.Context, realm string, props inte
 	return nil
 }
 
-// reportServiceAccounts examines the environment (in particular LUCI_CONTEXT)
-// and logs service account emails.
-func (c *cookRun) reportServiceAccounts(ctx context.Context) {
-	defaultAuth := auth.NewAuthenticator(ctx, auth.SilentLogin, infraenv.DefaultAuthOptions())
-	email, err := defaultAuth.GetEmail()
-	if err != nil {
-		log.Warningf(ctx, "Default account email is not known: %s", err)
-	} else {
-		log.Infof(ctx, "Default account email is %s", email)
+// setupAuth prepares systemAuth and recipeAuth contexts based on incoming
+// environment and command line flags.
+func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth bool) error {
+	// Don't mess with git authentication in Buildbot mode, it won't work without
+	// proper LUCI_CONTEXT environment.
+	if enableGitAuth && !c.mode.allowCustomGitAuth() {
+		log.Warningf(ctx, "Git authentication is not supported in the current mode")
+		enableGitAuth = false
 	}
 
-	systemAuth, err := c.systemAuthenticator(ctx, auth.OAuthScopeEmail)
-	if err == nil {
-		email, err = systemAuth.GetEmail()
-	}
-	if err != nil {
-		log.Warningf(ctx, "System account email is not known: %s", err)
-	} else {
-		log.Infof(ctx, "System account email is %s", email)
-	}
-}
-
-// withSystemAccount derives a Context that uses the system logical account.
-//
-// If no system logical account is provided (via "-system-account" command-line
-// flag), withSystemAccount will not change the Context.
-//
-// On error, the original Context will be returned.
-func (c *cookRun) withSystemAccount(ctx context.Context) (context.Context, error) {
-	if v := c.CookFlags.SystemAccount; v != "" {
-		cc, err := lucictx.SwitchLocalAccount(ctx, v)
-		if err != nil {
-			return ctx, errors.Annotate(err, "failed to switch to system logical account %q", v).Err()
-		}
-		return cc, nil
-	}
-	return ctx, nil
-}
-
-func (c *cookRun) systemAuthenticator(ctx context.Context, scopes ...string) (*auth.Authenticator, error) {
-	// If we explicitly supply a system account JSON field, use that.
-	//
+	// If we are explicitly given a system account JSON key, use it for Kitchen.
 	// This happens when Kitchen is used from BuildBot ("LUCI Emulation Mode").
-	if c.SystemAccountJSON != "" {
-		// If the user explicitly specifies a LogDog service account to use.
-		return auth.NewAuthenticator(ctx, auth.SilentLogin, auth.Options{
-			// leave auth method to be auto-selected, so that it is GCE
-			// if ServiceAccountJSONPath is ":gce".
-			Scopes:                 scopes,
-			ServiceAccountJSONPath: c.SystemAccountJSON,
-		}), nil
+	//
+	// Otherwise, if we are given -luci-system-account flag, use the corresponding
+	// logical account if it's in the LUCI_CONTEXT (fail if not). This is what's
+	// used on Swarming.
+	//
+	// And if neither are given run Kitchen with whatever is default account now
+	// (don't switch to a system one). Happens when running Kitchen manually
+	// locally. It picks up the developer account.
+	systemAuth := &AuthContext{
+		Title:         "system account",
+		EnableGitAuth: enableGitAuth,
+	}
+	switch {
+	case c.SystemAccountJSON != "":
+		if c.SystemAccount != "" {
+			return errors.New("-luci-system-account and -luci-system-account-json shouldn't be used together")
+		}
+		systemAuth.ServiceAccountJSONPath = c.SystemAccountJSON
+	case c.SystemAccount != "":
+		la := lucictx.GetLocalAuth(ctx)
+		if la == nil {
+			return errors.New("can't use -luci-system-account, no local_auth in LUCI_CONTEXT")
+		}
+		for _, acc := range la.Accounts {
+			if acc.ID == c.SystemAccount {
+				la.DefaultAccountID = c.SystemAccount // use it by default
+				systemAuth.LocalAuth = la
+				break
+			}
+		}
+		if systemAuth.LocalAuth == nil {
+			return errors.New(fmt.Sprintf("can't change system account, no such logical account %q in LUCI_CONTEXT", c.SystemAccount))
+		}
+	default:
+		systemAuth.LocalAuth = lucictx.GetLocalAuth(ctx)
 	}
 
-	// Use the system LUCI context account.
-	ctx, err := c.withSystemAccount(ctx)
-	if err != nil {
-		return nil, err
+	// Recipes always use the account that is set as default when kitchen starts
+	// (it is a task-associated account on Swarming). So just grab the current
+	// LUCI_CONTEXT["local_auth"] and retain it for recipes.
+	recipeAuth := &AuthContext{
+		Title:         "task account",
+		LocalAuth:     lucictx.GetLocalAuth(ctx),
+		EnableGitAuth: enableGitAuth,
 	}
 
-	// Set up an Authenticator for the specified scopes.
-	authOpts := infraenv.DefaultAuthOptions()
-	authOpts.Scopes = scopes
-	return auth.NewAuthenticator(ctx, auth.SilentLogin, authOpts), nil
+	// Launching the auth context may create files or start background goroutines.
+	if err := systemAuth.Launch(ctx); err != nil {
+		return errors.Annotate(err, "failed to start system auth context").Err()
+	}
+	if err := recipeAuth.Launch(ctx); err != nil {
+		systemAuth.Close() // best effort cleanup
+		return errors.Annotate(err, "failed to start recipe auth context").Err()
+	}
+
+	// Log the actual service account emails corresponding to each context.
+	systemAuth.ReportServiceAccount()
+	recipeAuth.ReportServiceAccount()
+	c.systemAuth = systemAuth
+	c.recipeAuth = recipeAuth
+
+	return nil
 }
 
 func parseProperties(properties map[string]interface{}, propertiesFile string) (result map[string]interface{}, err error) {
