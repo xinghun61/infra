@@ -7,6 +7,7 @@ from google.appengine.ext import ndb
 from common.findit_http_client import FinditHttpClient
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
+from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from waterfall import swarming_util
 
@@ -119,6 +120,12 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
     assert flake_analysis
     assert try_job
 
+    try_job_id = try_job.try_job_ids[-1]
+    assert try_job_id
+
+    try_job_data = FlakeTryJobData.Get(try_job_id)
+    assert try_job_data
+
     try_job.status = analysis_status.COMPLETED
     try_job.put()
 
@@ -156,6 +163,8 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
     data_point.pass_rate = pass_rate
     data_point.try_job_url = try_job.flake_results[-1].get('url')
     data_point.iterations = tries
+    data_point.elapsed_seconds = int(
+        (try_job_data.end_time - try_job_data.start_time).total_seconds())
     data_point.task_id = _GetSwarmingTaskIdForTryJob(
         try_job.flake_results[-1].get('report'), revision, step_name, test_name)
     flake_analysis.data_points.append(data_point)

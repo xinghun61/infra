@@ -2,10 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from datetime import datetime
 import mock
 
 from gae_libs.testcase import TestCase
 from model.flake.flake_try_job import FlakeTryJob
+from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import swarming_util
 from waterfall.flake import process_flake_try_job_result_pipeline
@@ -60,14 +62,24 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     }]
     try_job.try_job_ids = [try_job_id]
     try_job.put()
+
+    try_job_data = FlakeTryJobData.Create(try_job_id)
+    try_job_data.start_time = datetime(2017, 10, 13, 13, 0, 0)
+    try_job_data.end_time = datetime(2017, 10, 13, 14, 0, 0)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
     ProcessFlakeTryJobResultPipeline().run(revision, commit_position,
                                            try_job_result,
                                            try_job.key.urlsafe(),
                                            analysis.key.urlsafe())
+
     resulting_data_point = analysis.data_points[-1]
+
     self.assertEqual(0.2, resulting_data_point.pass_rate)
     self.assertEqual(commit_position, resulting_data_point.commit_position)
     self.assertEqual(url, resulting_data_point.try_job_url)
+    self.assertEqual(3600, resulting_data_point.elapsed_seconds)
 
   @mock.patch.object(
       process_flake_try_job_result_pipeline,
@@ -107,11 +119,20 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     }]
     try_job.try_job_ids = [try_job_id]
     try_job.put()
+
+    try_job_data = FlakeTryJobData.Create(try_job_id)
+    try_job_data.start_time = datetime(2017, 10, 13, 13, 0, 0)
+    try_job_data.end_time = datetime(2017, 10, 13, 14, 0, 0)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
     ProcessFlakeTryJobResultPipeline().run(revision, commit_position,
                                            try_job_result,
                                            try_job.key.urlsafe(),
                                            analysis.key.urlsafe())
+
     resulting_data_point = analysis.data_points[-1]
+
     self.assertEqual(-1, resulting_data_point.pass_rate)
     self.assertEqual(commit_position, resulting_data_point.commit_position)
     self.assertEqual(url, resulting_data_point.try_job_url)
@@ -160,10 +181,18 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     }]
     try_job.try_job_ids = [try_job_id]
     try_job.put()
+
+    try_job_data = FlakeTryJobData.Create(try_job_id)
+    try_job_data.start_time = datetime(2017, 10, 13, 13, 0, 0)
+    try_job_data.end_time = datetime(2017, 10, 13, 14, 0, 0)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
     ProcessFlakeTryJobResultPipeline().run(revision, commit_position,
                                            try_job_result,
                                            try_job.key.urlsafe(),
                                            analysis.key.urlsafe())
+
     self.assertEqual(expected_error, try_job.error)
     self.assertEqual([], analysis.data_points)
 
@@ -212,6 +241,7 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
 
     task_id = process_flake_try_job_result_pipeline._GetSwarmingTaskIdForTryJob(
         report, revision, step_name, test_name)
+
     self.assertEquals('task2', task_id)
 
   def testGetSwarmingTaskIdForTryJobNoReport(self):
@@ -355,8 +385,16 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     }]
     try_job.try_job_ids = [try_job_id]
     try_job.put()
+
+    try_job_data = FlakeTryJobData.Create(try_job_id)
+    try_job_data.start_time = datetime(2017, 10, 13, 13, 0, 0)
+    try_job_data.end_time = datetime(2017, 10, 13, 14, 0, 0)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
     ProcessFlakeTryJobResultPipeline().run(revision, commit_position,
                                            try_job_result,
                                            try_job.key.urlsafe(),
                                            analysis.key.urlsafe())
+
     self.assertEqual([], analysis.data_points)
