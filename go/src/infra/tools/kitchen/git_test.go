@@ -5,6 +5,7 @@
 package main
 
 import (
+	"context"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -12,10 +13,10 @@ import (
 	"strings"
 	"testing"
 
-	"golang.org/x/net/context"
-
 	"go.chromium.org/luci/common/auth/authtest"
+	"go.chromium.org/luci/common/auth/localauth"
 	"go.chromium.org/luci/common/system/environ"
+	"go.chromium.org/luci/lucictx"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -31,10 +32,18 @@ func TestGit(t *testing.T) {
 	}
 
 	Convey("checkoutRepository", t, func() {
-		fakeAuth := authtest.FakeContext{}
-		ctx, err := fakeAuth.Start(context.Background())
+		ctx := context.Background()
+
+		fakeAuth := localauth.Server{
+			TokenGenerators: map[string]localauth.TokenGenerator{
+				"fake": &authtest.FakeTokenGenerator{},
+			},
+			DefaultAccountID: "fake",
+		}
+		la, err := fakeAuth.Start(ctx)
 		So(err, ShouldBeNil)
 		defer fakeAuth.Stop(ctx)
+		ctx = lucictx.SetLocalAuth(ctx, la)
 
 		tmp, err := ioutil.TempDir("", "")
 		So(err, ShouldBeNil)

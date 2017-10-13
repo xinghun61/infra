@@ -17,11 +17,13 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/auth/authtest"
+	"go.chromium.org/luci/common/auth/localauth"
 	"go.chromium.org/luci/common/flag/stringlistflag"
 	"go.chromium.org/luci/common/flag/stringmapflag"
 	log "go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/logging/gologger"
 	"go.chromium.org/luci/common/system/environ"
+	"go.chromium.org/luci/lucictx"
 
 	"infra/tools/kitchen/build"
 	"infra/tools/kitchen/third_party/recipe_engine"
@@ -70,10 +72,16 @@ func TestCook(t *testing.T) {
 			c = logCfg.Set(c)
 
 			// Setup fake auth.
-			fakeAuth := authtest.FakeContext{}
-			c, err := fakeAuth.Start(c)
+			fakeAuth := localauth.Server{
+				TokenGenerators: map[string]localauth.TokenGenerator{
+					"fake": &authtest.FakeTokenGenerator{},
+				},
+				DefaultAccountID: "fake",
+			}
+			la, err := fakeAuth.Start(c)
 			So(err, ShouldBeNil)
 			defer fakeAuth.Stop(c)
+			c = lucictx.SetLocalAuth(c, la)
 
 			// Setup tempdir.
 			tdir, err := ioutil.TempDir("", "kitchen-test-")
