@@ -596,8 +596,9 @@ func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth bool) error {
 	// (don't switch to a system one). Happens when running Kitchen manually
 	// locally. It picks up the developer account.
 	systemAuth := &AuthContext{
-		Title:         "system account",
-		EnableGitAuth: enableGitAuth,
+		ID:               "system",
+		EnableGitAuth:    enableGitAuth,
+		KnownGerritHosts: c.KnownGerritHost,
 	}
 	switch {
 	case c.SystemAccountJSON != "":
@@ -628,16 +629,17 @@ func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth bool) error {
 	// (it is a task-associated account on Swarming). So just grab the current
 	// LUCI_CONTEXT["local_auth"] and retain it for recipes.
 	recipeAuth := &AuthContext{
-		Title:         "task account",
-		LocalAuth:     lucictx.GetLocalAuth(ctx),
-		EnableGitAuth: enableGitAuth,
+		ID:               "task",
+		LocalAuth:        lucictx.GetLocalAuth(ctx),
+		EnableGitAuth:    enableGitAuth,
+		KnownGerritHosts: c.KnownGerritHost,
 	}
 
 	// Launching the auth context may create files or start background goroutines.
-	if err := systemAuth.Launch(ctx); err != nil {
+	if err := systemAuth.Launch(ctx, c.TempDir); err != nil {
 		return errors.Annotate(err, "failed to start system auth context").Err()
 	}
-	if err := recipeAuth.Launch(ctx); err != nil {
+	if err := recipeAuth.Launch(ctx, c.TempDir); err != nil {
 		systemAuth.Close() // best effort cleanup
 		return errors.Annotate(err, "failed to start recipe auth context").Err()
 	}

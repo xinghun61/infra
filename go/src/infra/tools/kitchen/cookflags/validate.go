@@ -15,7 +15,10 @@ import (
 	"go.chromium.org/luci/common/system/filesystem"
 )
 
-var validRevisionRe = regexp.MustCompile("^([a-z0-9]{40}|HEAD|refs/.+)$")
+var (
+	validRevisionRe = regexp.MustCompile("^([a-z0-9]{40}|HEAD|refs/.+)$")
+	validHostnameRe = regexp.MustCompile("^[a-zA-Z0-9\\-_.]+$") // good enough
+)
 
 // InputError indicates an error in the kitchen's input, e.g. command line flag
 // or env variable.
@@ -122,6 +125,13 @@ func (c *CookFlags) Normalize() error {
 	}
 
 	c.OutputResultJSONPath = filepath.FromSlash(c.OutputResultJSONPath)
+
+	// Make sure gerrit hosts indeed look like hostnames.
+	for _, value := range c.KnownGerritHost {
+		if !validHostnameRe.MatchString(value) {
+			return inputError("invalid gerrit hostname %q", value)
+		}
+	}
 
 	return c.LogDogFlags.setupAndValidate(c.Mode)
 }

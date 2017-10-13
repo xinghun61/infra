@@ -45,6 +45,8 @@ type CookFlags struct {
 	SystemAccount     string `json:"system_account"`
 	SystemAccountJSON string `json:"system_account_json"`
 
+	KnownGerritHost stringlistflag.Flag `json:"known_gerrit_host"`
+
 	LogDogFlags LogDogFlags `json:"logdog_flags"`
 }
 
@@ -157,6 +159,14 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 		"",
 		"Explicitly authenticate system operations using this service account JSON file.")
 
+	fs.Var(
+		&c.KnownGerritHost,
+		"known-gerrit-host",
+		"A hostname of a Gerrit host to force git authentication for. By default public "+
+			"hosts are accessed anonymously, and the anonymous access has very low quota. Kitchen "+
+			"needs to know all such hostnames in advance to be able to force authenticated access "+
+			"to them.")
+
 	c.LogDogFlags.register(fs)
 }
 
@@ -184,6 +194,7 @@ func (c *CookFlags) Dump() []string {
 	ret.stringMap("set-env-abspath", c.SetEnvAbspath)
 	ret.str("luci-system-account", c.SystemAccount)
 	ret.str("luci-system-account-json", c.SystemAccountJSON)
+	ret.list("known-gerrit-host", c.KnownGerritHost)
 
 	return append(ret, c.LogDogFlags.Dump()...)
 }

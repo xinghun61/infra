@@ -5,6 +5,10 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
+
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/auth"
@@ -37,8 +41,8 @@ import (
 // selected as default. It also implements necessary support for running third
 // party tools (such as git and gsutil) with proper authentication.
 type AuthContext struct {
-	// Title is used only in logs, it is friendly name of this context.
-	Title string
+	// ID is used in logs and file names, it is friendly name of this context.
+	ID string
 
 	// LocalAuth defines authentication related configuration that propagates to
 	// the subprocesses through LUCI_CONTEXT.
@@ -71,26 +75,58 @@ type AuthContext struct {
 	// binary is in PATH.
 	EnableGitAuth bool
 
-	ctx      context.Context  // stores modified LUCI_CONTEXT
-	exported lucictx.Exported // exported LUCI_CONTEXT on disk
+	// KnownGerritHosts is list of Gerrit hosts to force git authentication for.
+	//
+	// By default public hosts are accessed anonymously, and the anonymous access
+	// has very low quota. Kitchen needs to know all such hostnames in advance to
+	// be able to force authenticated access to them.
+	KnownGerritHosts []string
+
+	ctx       context.Context  // stores modified LUCI_CONTEXT
+	exported  lucictx.Exported // exported LUCI_CONTEXT on disk
+	anonymous bool             // true if not associated with any account
+	email     string           // an account email or "" for anonymous
+
+	gitHome string // custom HOME for git or "" if not using git auth
 }
 
 // Launch launches this auth context. It must be called before any other method.
 //
 // Callers shouldn't modify AuthContext fields after Launch is called.
-func (ac *AuthContext) Launch(ctx context.Context) error {
-	ctx = lucictx.SetLocalAuth(ctx, ac.LocalAuth)
-	exported, err := lucictx.Export(ctx)
-	if err != nil {
-		return errors.Annotate(err, "failed to export LUCI_CONTEXT for %s", ac.Title).Err()
+func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
+	defer func() {
+		if err != nil {
+			ac.Close()
+		}
+	}()
+
+	ac.ctx = lucictx.SetLocalAuth(ctx, ac.LocalAuth)
+	if ac.exported, err = lucictx.Export(ac.ctx); err != nil {
+		return errors.Annotate(err, "failed to export LUCI_CONTEXT for %q account", ac.ID).Err()
+	}
+
+	// Figure out what email is associated with this account (if any).
+	ac.email, err = ac.Authenticator([]string{auth.OAuthScopeEmail}).GetEmail()
+	switch {
+	case err == auth.ErrLoginRequired:
+		// This context is not associated with any account. This happens when
+		// running Swarming tasks without service account specified.
+		ac.anonymous = true
+	case err != nil:
+		return errors.Annotate(err, "failed to get email of %q account", ac.ID).Err()
 	}
 
 	if ac.EnableGitAuth {
-		// TODO(vadimsh): Prepare new HOME with .gitconfig.
+		// Create new HOME for git and populate it with .gitconfig.
+		ac.gitHome = filepath.Join(tempDir, "git_home_"+ac.ID)
+		if err := os.Mkdir(ac.gitHome, 0777); err != nil {
+			return errors.Annotate(err, "failed to create git HOME for %q account at %s", ac.ID, ac.gitHome).Err()
+		}
+		if err := ac.writeGitConfig(); err != nil {
+			return errors.Annotate(err, "failed to setup .gitconfig for %q account", ac.ID).Err()
+		}
 	}
 
-	ac.ctx = ctx
-	ac.exported = exported
 	return nil
 }
 
@@ -99,16 +135,23 @@ func (ac *AuthContext) Launch(ctx context.Context) error {
 // The context is not usable after this. Logs errors inside (there's nothing
 // caller can do about them anyway).
 func (ac *AuthContext) Close() {
-	if ac.EnableGitAuth {
-		// TODO(vadimsh): Kill git home.
+	if ac.gitHome != "" {
+		if err := os.RemoveAll(ac.gitHome); err != nil {
+			logging.Warningf(ac.ctx, "Failed to clean up git HOME for %q account at [%s]: %s", ac.ID, ac.gitHome, err)
+		}
 	}
 
-	if err := ac.exported.Close(); err != nil {
-		logging.Errorf(ac.ctx, "Failed to delete exported LUCI_CONTEXT for %s - %s", ac.Title, err)
+	if ac.exported != nil {
+		if err := ac.exported.Close(); err != nil {
+			logging.Errorf(ac.ctx, "Failed to delete exported LUCI_CONTEXT for %q account - %s", ac.ID, err)
+		}
 	}
 
 	ac.ctx = nil
 	ac.exported = nil
+	ac.anonymous = false
+	ac.email = ""
+	ac.gitHome = ""
 }
 
 // Authenticator returns an authenticator that can be used by Kitchen itself.
@@ -129,17 +172,39 @@ func (ac *AuthContext) ExportIntoEnv(env environ.Env) environ.Env {
 	env = env.Clone()
 	ac.exported.SetInEnviron(env)
 	if ac.EnableGitAuth {
-		// TODO(vadimsh): Export git env vars.
+		env.Set("GIT_TERMINAL_PROMPT", "0")           // no interactive prompts
+		env.Set("INFRA_GIT_WRAPPER_HOME", ac.gitHome) // tell gitwrapper about the new HOME
 	}
 	return env
 }
 
 // ReportServiceAccount logs service account email used by this auth context.
 func (ac *AuthContext) ReportServiceAccount() {
-	email, err := ac.Authenticator([]string{auth.OAuthScopeEmail}).GetEmail()
-	if err != nil {
-		logging.Warningf(ac.ctx, "%s email is not known: %s", ac.Title, err)
+	if ac.anonymous {
+		logging.Infof(ac.ctx, "%q account is anonymous", ac.ID)
 	} else {
-		logging.Infof(ac.ctx, "%s email is %s", ac.Title, email)
+		logging.Infof(ac.ctx, "%q account email is %s", ac.ID, ac.email)
 	}
+}
+
+////
+
+func (ac *AuthContext) writeGitConfig() error {
+	var cfg gitConfig
+	if !ac.anonymous {
+		cfg = gitConfig{
+			UserEmail:           ac.email,
+			UserName:            strings.Split(ac.email, "@")[0],
+			UseCredentialHelper: true,
+			KnownGerritHosts:    ac.KnownGerritHosts,
+		}
+	} else {
+		cfg = gitConfig{
+			UserEmail:           "anonymous@example.com", // otherwise git doesn't work
+			UserName:            "anonymous",
+			UseCredentialHelper: false, // fetch will be anonymous, push will fail
+			KnownGerritHosts:    nil,   // don't force non-anonymous fetch for public hosts
+		}
+	}
+	return cfg.Write(filepath.Join(ac.gitHome, ".gitconfig"))
 }

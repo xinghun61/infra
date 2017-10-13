@@ -112,6 +112,16 @@ var flagTestCases = []struct {
 		flags: []string{
 			"-mode", "buildbot",
 			"-repository", "meep",
+			"-recipe", "cool_recipe",
+			"-known-gerrit-host", "zzz zzz zzz",
+		},
+		errValidate: `invalid gerrit hostname "zzz zzz zzz"`,
+	},
+
+	{
+		flags: []string{
+			"-mode", "buildbot",
+			"-repository", "meep",
 			"-properties", `{"something":"awesome"}`,
 			"-temp-dir", "tmp",
 			"-recipe", "cool_recipe",
@@ -119,6 +129,8 @@ var flagTestCases = []struct {
 			"-prefix-path-env", "foo",
 			"-prefix-path-env", "foo",
 			"-set-env-abspath", "DORK=sup",
+			"-known-gerrit-host", "abc.googlesource.com",
+			"-known-gerrit-host", "def.googlesource.com",
 			"-logdog-tag", "A=B",
 			"-logdog-tag", "Roffle=Copter",
 		},
@@ -145,6 +157,10 @@ var flagTestCases = []struct {
 			},
 			Properties: PropertyFlag{
 				"something": "awesome",
+			},
+			KnownGerritHost: []string{
+				"abc.googlesource.com",
+				"def.googlesource.com",
 			},
 		},
 	},

@@ -244,6 +244,7 @@ func TestCook(t *testing.T) {
 				})
 			}
 			Convey("swarming mode", func() {
+				env.Remove("BUILDBOT_SLAVENAME")
 				env.Set("SWARMING_TASK_ID", "task")
 				env.Set("SWARMING_BOT_ID", "bot")
 				tests()
@@ -251,6 +252,8 @@ func TestCook(t *testing.T) {
 			Convey("buildbot mode", func() {
 				mode = "buildbot"
 				env.Set("BUILDBOT_SLAVENAME", "bot")
+				env.Remove("SWARMING_TASK_ID")
+				env.Remove("SWARMING_BOT_ID")
 				tests()
 			})
 		})

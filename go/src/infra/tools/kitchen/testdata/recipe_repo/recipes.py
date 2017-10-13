@@ -27,6 +27,9 @@ def main():
     # Fetch happens under the system account. See localauth.Server config in
     # cook_test.go.
     assert get_current_account() == 'system_acc', get_current_account()
+    # Git is enabled only in Swarming mode.
+    if os.environ.get('SWARMING_TASK_ID'):
+      assert get_git_email() == 'system@example.com', get_git_email()
     return 0
 
   assert args.command == 'run'
@@ -36,6 +39,8 @@ def main():
   # Actual recipe execution happens under the recipe account. See
   # localauth.Server config in cook_test.go.
   assert get_current_account() == 'recipe_acc', get_current_account()
+  if os.environ.get('SWARMING_TASK_ID'):
+    assert get_git_email() == 'recipe@example.com', get_git_email()
 
   with open(args.properties_file) as f:
     properties = json.load(f)
@@ -57,6 +62,17 @@ def get_current_account():
   with open(os.environ['LUCI_CONTEXT'], 'rt') as f:
     lc = json.load(f)
   return lc["local_auth"]["default_account_id"]
+
+
+def get_git_email():
+  home = os.environ['INFRA_GIT_WRAPPER_HOME']
+  with open(os.path.join(home, '.gitconfig'), 'rt') as f:
+    cfg = f.read()
+  for line in cfg.splitlines():
+    line = line.strip()
+    if line.startswith('email = '):
+      return line[len('email = '):]
+  return None
 
 
 if __name__ == '__main__':
