@@ -735,13 +735,13 @@ func updateAggregate(c context.Context, tf *model.TestFile, aggr, incr *model.Ag
 			msg := logging.WithError(err)
 			switch err {
 			case model.ErrBuilderNameConflict:
-				msg.Warningf(c, "updateAggregate: merge")
+				msg.Warningf(c, "updateAggregate: merge for master: %q, builder: %q, file: %q", tf.Master, tf.Builder, tf.Name)
 				return statusError{err, http.StatusBadRequest}
 			case model.ErrBuildNumberConflict:
-				msg.Warningf(c, "updateAggregate: merge")
+				msg.Warningf(c, "updateAggregate: merge for master: %q, builder: %q, file: %q", tf.Master, tf.Builder, tf.Name)
 				return statusError{err, http.StatusConflict}
 			default:
-				msg.Errorf(c, "updateAggregate: merge")
+				msg.Errorf(c, "updateAggregate: merge for master: %q, builder: %q, file: %q", tf.Master, tf.Builder, tf.Name)
 				return statusError{err, http.StatusInternalServerError}
 			}
 		}
