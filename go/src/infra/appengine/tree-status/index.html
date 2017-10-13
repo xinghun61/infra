@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<title>Tree-Status</title>
+<link rel="shortcut icon" href="/images/favicon.ico" type="image/x-icon">
+<meta name="viewport" content="width=device-width, minimum-scale=1.0">
+<base href="/">
+
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="bower_components/webcomponentsjs/webcomponents-loader.js"></script>
+
+<script>
+window.xsrfToken = '{{.XsrfToken}}';
+
+// TODO: Replace this with tree config loaded from Luci-Config.
+window.trees = [
+  {
+    'name': 'android',
+    'status_url': 'https://c-status.appspot.com/',
+  },
+  {
+    'name': 'chromium',
+    'status_url': 'https://chromium-status.appspot.com',
+  },
+  {
+    'name': 'chromeos',
+    'status_url': 'https://chromiumos-status.appspot.com',
+  },
+  {
+    'name': 'dart',
+    'status_url': 'https://dart-status.appspot.com/',
+  },
+  {
+    'name': 'naclports',
+    'status_url': 'https://naclports-status.appspot.com/',
+  },
+  {
+    'name': 'nativeclient',
+    'status_url': 'https://nativeclient-status.appspot.com/',
+  },
+  {
+    'name': 'infra',
+    'status_url': 'https://infra-status.appspot.com/',
+  },
+  {
+    'name': 'v8-roll',
+    'status_url': 'https://v8-roll.appspot.com/',
+  },
+  {
+    'name': 'v8',
+    'status_url': 'https://v8-status.appspot.com/',
+  },
+  {
+    'name': 'webrtc',
+    'status_url': 'https://webrtc-status.appspot.com/',
+  }
+];
+
+function loadNonVulcanized() {
+  var link = document.createElement('link');
+  link.rel = 'import';
+  link.href = 'elements/ts-app/ts-app.html';
+  document.documentElement.appendChild(link);
+}
+</script>
+<link rel="import" href="elements/ts-app/ts-app.vulcanized.html" onerror="loadNonVulcanized()">
+
+<style>
+  html {
+    height: 100%;
+    /* This fontsize is so that rems are similar to pixels. ie: 1.4rem = 14px */
+    font-size: 62.5%;
+  }
+
+  @media (max-width: 800px) {
+    html {
+      /* Responsively decrease the size of all rem units by a constant factor. */
+      font-size: 50%;
+    }
+  }
+
+  body {
+    font-size: 1.4rem;
+    font-family: 'Open Sans', sans-serif;
+    height: 100%;
+    margin: 0;
+  }
+
+  .warningBanner {
+    background-color: #e75d54;
+    font-size: 16px;
+    padding: 0.5em 0;
+    position: fixed;
+    text-align: center;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    z-index: 100;
+  }
+</style>
+{{if .IsStaging}}
+<div class="warningBanner">
+  This is the staging server. You might want to use the
+  <a href="https://tree-status.appspot.com/">production server</a>.
+</div>
+{{end}}
+
+<ts-app></ts-app>
+
+<script>
+  (function(i,s,o,g,r,a,m){i['CrDXObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://storage.googleapis.com/crdx-feedback.appspot.com/feedback.js','crdx');
+
+crdx('setFeedbackButtonLink', 'https://goto.google.com/tree-status-bug');
+
+{{if not .IsDevAppServer}}
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', '{{.AnalyticsID}}', 'auto');
+  ga('send', 'pageview');
+
+  // Track client-side navigations as individual page views.
+  window.addEventListener('location-changed', function() {
+    ga('set', 'page', window.location.pathname);
+    ga('send', 'pageview');
+  });
+
+{{end}}
+</script>

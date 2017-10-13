@@ -1,0 +1,100 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+<link rel="import" href="../../bower_components/app-route/app-location.html">
+<link rel="import" href="../../bower_components/app-route/app-route.html">
+
+<link rel="import" href="../../elements/ts-tree-row/ts-tree-row.html">
+<link rel="import" href="../../elements/ts-tree-view/ts-tree-view.html">
+
+<dom-module id="ts-app">
+  <template>
+    <style>
+      #tsContainer {
+        padding: 1em 1.6rem;
+      }
+      #tsHeader {
+        background: #dce5f8;
+        font-size: 1.6rem;
+        width: 100%;
+        height: 6rem;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 10;
+      }
+      #tsTitle {
+        font-size: 2.4rem;
+        display: flex;
+        align-items: center;
+      }
+      #tsTitle a {
+        color: #222;
+        text-decoration: none;
+      }
+      #tsTitle a:hover {
+        text-decoration: underline;
+      }
+      #tsTitle img {
+        height: 3.2rem;
+        width: 3.2rem;
+      }
+      #tsTitle small {
+        font-size: 1.6rem;
+      }
+      #tsTitleText {
+        display: flex;
+        align-items: baseline;
+      }
+      #tsTitleTextMain {
+        padding: 0 0.8rem;
+      }
+      .header-section {
+        padding: 0.5em 1.6rem;
+        display: flex;
+        align-items: center;
+      }
+    </style>
+    <div id="tsHeader">
+      <div id="tsTitle" class="header-section">
+        <a href="/">
+          <img src="/images/chromium.png" alt="Chromium" title="Chromium" />
+        </a>
+        <span id="tsTitleText">
+          <a id="tsTitleTextMain" href="/">
+            Tree-Status
+          </a>
+          <template is="dom-if" if="[[_tree]]">
+            <small>
+              &gt;
+              <a href$="/[[_tree.name]]">
+                [[_capitalizeWords(_tree.name)]]-Status
+              </a>
+            </small>
+          </template>
+        </span>
+      </div>
+      <div class="header-section">
+        <span>
+          Logged in as User (<a href$="[[logoutUrl]]">Log Out</a>)
+        </span>
+      </div>
+    </div>
+    <div id="tsContainer">
+      <app-location route="{{route}}" query-params={{queryParams}}></app-location>
+      <app-route route="{{route}}" pattern="/" active="{{_mainRouteIsActive}}">
+        <template is="dom-if" if="[[_mainRouteIsActive]]">
+          <template is="dom-repeat" items="[[_trees]]" as="tree">
+            <ts-tree-row tree="[[tree]]"></ts-tree-row>
+          </template>
+        </template>
+      </app-route>
+      <app-route route="{{route}}" pattern="/:tree" data="{{_treeViewData}}">
+        <template is="dom-if" if="[[_tree]]">
+          <ts-tree-view tree="[[_tree]]" status-limit="[[queryParams.limit]]"></ts-tree-view>
+        </template>
+      </app-route>
+    </div>
+  </template>
+  <script src="ts-app.js"></script>
+</dom-module>

@@ -1,0 +1,21 @@
+{
+  "name": "ts",
+  "version": "1.0.0",
+  "description": "Tree Status app in Polymer/Go",
+  "main": "index.html",
+  "directories": {
+    "test": "test"
+  },
+  "devDependencies": {
+    "polylint": "^2.9.0",
+    "vulcanize": "~1.14.8",
+    "istanbul": "^0.4.4",
+    "web-component-tester": "^5.0.0",
+    "web-component-tester-istanbul": "https://github.com/t2ym/web-component-tester-istanbul/tarball/0.10.1"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "zhangtiff",
+  "license": "ISC"
+}

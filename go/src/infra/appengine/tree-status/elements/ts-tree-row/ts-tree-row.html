@@ -1,0 +1,55 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+
+<link rel="import" href="../tree-status-styles.html">
+
+<dom-module id="ts-tree-row">
+  <template>
+    <style include="tree-status-styles">
+      .status-indicator {
+        width: 3.2rem;
+        height: 3.2rem;
+        margin: 0.5em 1.6rem;
+        border-radius: 50%;
+        flex-grow: 0;
+        flex-shrink: 0;
+      }
+      .status-message {
+        line-height: 150%;
+        padding: 0.5em 0;
+      }
+      .tree-status-container {
+        border-bottom: 1px solid #ddd;
+        margin-bottom: 1em;
+        padding-bottom: 0.5em;
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+      }
+      h2 {
+        margin: 0;
+        line-height: 180%;
+      }
+    </style>
+    <iron-ajax
+      id="treeStatusAjax"
+      url="[[tree.status_url]]/current?format=json"
+      handle-as="json"
+      last-error="{{_statusError}}"
+      last-response="{{_status}}"
+      debounce-duration="300"></iron-ajax>
+    <div class="tree-status-container">
+      <div class$="status-indicator [[_status.general_state]]" title$="[[_status.general_state]]"></div>
+      <div>
+        <h2>
+          <a href$="/[[tree.name]]">[[tree.name]] Tree Status</a>
+        </h2>
+        <span class="status-message">
+          [[_status.message]]
+        </span>
+      </div>
+    </div>
+  </template>
+  <script src="ts-tree-row.js"></script>
+</dom-module>

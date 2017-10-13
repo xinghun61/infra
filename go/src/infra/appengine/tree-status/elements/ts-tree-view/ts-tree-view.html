@@ -1,0 +1,124 @@
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<link rel="import" href="../../bower_components/iron-ajax/iron-ajax.html">
+
+<link rel="import" href="../tree-status-styles.html">
+
+<script src="../../bower_components/moment/min/moment.min.js"></script>
+<script src="../../bower_components/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
+
+<dom-module id="ts-tree-view">
+  <template>
+    <style include="tree-status-styles">
+      #error {
+        box-sizing: border-box;
+        width: 100%;
+        padding: 0.5em 8px;
+        margin: 0.5em auto;
+        border: 1px solid #ccc;
+        color: #222;
+        word-wrap: break-word;
+        background-color: #e98080;
+      }
+      #error a,
+      #statusTable a {
+        color: #222;
+      }
+      #statusTable {
+        width: 100%;
+        box-sizing: border-box;
+        word-break: break-all;
+        border-collapse: collapse;
+      }
+      #statusTable table, th, td {
+        text-align: left;
+        border-bottom: 2px solid #fff;
+        padding: 0.5em 8px;
+        min-width: 90px;
+      }
+      .help {
+        float: right;
+      }
+      .page-section {
+        box-sizing: border-box;
+        width: 100%;
+        text-align: center;
+        padding: 0.5em 4px;
+      }
+      .timestamp {
+        font-family: monospace;
+        min-width: 150px;
+        font-size: smaller;
+      }
+      textarea {
+        width: 60%;
+      }
+    </style>
+    <iron-ajax
+      id="treeStatusAjax"
+      url="[[tree.status_url]]/allstatus?format=json&limit=[[_statusLimit]]"
+      handle-as="json"
+      last-error="{{_statusError}}"
+      last-response="{{_statusList}}"
+      debounce-duration="300"></iron-ajax>
+    <div id="error" hidden$="[[!_hasError]]">
+      Error fetching tree status history from <a href$="[[_statusUrl]]" target="_blank">[[_statusUrl]]</a>
+    </div>
+    <div class="page-section">
+      <a href$="https://sheriff-o-matic.appspot.com/[[tree.name]]">
+        [[tree.display_name]] Sheriff View
+      </a> &bull;
+      <a href$="[[_statusUrl]]" target="_blank">
+        Old Status App
+      </a>
+    </div>
+    <template is="dom-if" if="[[_statusList.length]]">
+      <div class="page-section">
+        <textarea id="updateStatus"
+          placeholder="Change tree status">[[_computeMessage(_latestStatus)]]</textarea>
+
+        <div id="help" class="help">
+          The message is scanned for partial matches (in the order listed)<br>
+          and will set the tree state accordingly. The scan order does <b>not</b><br>
+          correspond to the severity of the tree state.<br>
+          <br>
+          &nbsp;(1) "<span class="maintenance">maint</span>": The tree is closed for
+            maintenance<br>
+          &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; (also needs to have the text
+            "close")<br>
+          &nbsp;(2) "<span class="throttled">throt</span>": The tree is throttled;
+            tread carefully<br>
+          &nbsp;(3) "<span class="closed">close</span>": The tree is closed<br>
+          &nbsp;(4) Otherwise, the tree is <span class="open">open</span> for business
+        </div>
+      </div>
+      <h2>
+        <span>
+          Last <a href$="/[[tree.name]]/?limit=[[_statusLimit]]">[[_statusLimit]]</a>
+          [[tree.display_name]] Tree Statuses
+        </span>
+      </h2>
+      <table id="statusTable">
+        <tr>
+          <th>Status</th>
+          <th>Who</th>
+          <th>When (PDT)</th>
+          <th>Message</th>
+        </tr>
+        <template is="dom-repeat" items="[[_statusList]]" as="status">
+          <tr class$="[[_computeStatus(status)]]">
+            <td class="status">[[_computeStatus(status)]]</td>
+            <td class="user">
+              <a href="mailto:[[_computeEmail(status)]]">[[_computeUsername(status)]]</a>
+            </td>
+            <td class="timestamp">[[_computeTime(status)]]</td>
+            <td class="message">
+              [[_computeMessage(status)]]
+            </td>
+          </tr>
+        </template>
+      </table>
+    </template>
+  </template>
+  <script src="ts-tree-view.js"></script>
+</dom-module>
