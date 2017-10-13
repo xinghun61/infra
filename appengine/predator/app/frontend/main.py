@@ -8,6 +8,7 @@ import gae_ts_mon
 
 from frontend.handlers import clusterfuzz_dashboard
 from frontend.handlers import clusterfuzz_result_feedback
+from frontend.handlers import clusterfuzz_public_dashboard
 from frontend.handlers import cracas_dashboard
 from frontend.handlers import cracas_result_feedback
 from frontend.handlers import crash_config
@@ -34,6 +35,8 @@ gae_ts_mon.initialize(pipeline_status_application)
 
 frontend_web_pages_handler_mappings = [
     ('/clusterfuzz/dashboard', clusterfuzz_dashboard.ClusterfuzzDashBoard),
+    ('/clusterfuzz/public-dashboard',
+     clusterfuzz_public_dashboard.ClusterfuzzPublicDashBoard),
     ('/clusterfuzz/result-feedback',
      clusterfuzz_result_feedback.ClusterfuzzResultFeedback),
     ('/clusterfuzz/triage-analysis', triage_analysis.TriageAnalysis),
