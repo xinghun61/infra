@@ -13,6 +13,7 @@ import time
 
 from google.appengine.ext.webapp.mail_handlers import BounceNotificationHandler
 
+from businesslogic import work_env
 from features import commitlogcommands
 from features import inboundemail
 from framework import emailfmt
@@ -34,6 +35,7 @@ class InboundEmailTest(unittest.TestCase):
         config=fake.ConfigService(),
         issue=fake.IssueService(),
         user=fake.UserService(),
+        usergroup=fake.UserGroupService(),
         project=fake.ProjectService())
     self.project = self.services.project.TestAddProject(
         'proj', project_id=987, process_inbound_email=True)
@@ -215,27 +217,26 @@ class InboundEmailTest(unittest.TestCase):
 
   def testProcessAlert_NewIssue(self):
     """When an alert for a new incident comes in, create a new issue."""
-    self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
-    self.services.config.LookupLabelID(
-        self.cnxn, self.project.project_id, 'Incident-Id-incident-1'
-    ).AndReturn(None)
-
-    self.mox.StubOutWithMock(self.services.issue, 'CreateIssue')
-    self.services.issue.CreateIssue(
-        self.cnxn, self.services, self.project.project_id, 'issue title',
-        'Available', None, [], ['Infra-Troopers-Alerts', 'Restrict-View-Google',
-        'Pri-2', 'Incident-Id-incident-1'], [], [], 111L,
-        'Filed by user@example.com on behalf of user@google.com\n\nissue body'
-        ).AndReturn(None)
-
-    self.mox.ReplayAll()
-
     ret = self.inbound.ProcessAlert(
         self.cnxn, self.project, self.project_addr, 'user@google.com',
         'user@example.com', 111L, 'issue title', 'issue body', 'incident-1')
 
-    self.mox.VerifyAll()
     self.assertIsNone(ret)
+    actual_issue = self.services.issue.GetIssueByLocalID(
+        self.cnxn, self.project.project_id, 101)
+    actual_comments = self.services.issue.GetCommentsForIssue(
+        self.cnxn, actual_issue.issue_id)
+    self.assertEqual('issue title', actual_issue.summary)
+    self.assertEqual('Available', actual_issue.status)
+    self.assertEqual(111L, actual_issue.reporter_id)
+    self.assertEqual(None, actual_issue.owner_id)
+    self.assertEqual(
+        ['Infra-Troopers-Alerts', 'Restrict-View-Google',
+         'Pri-2', 'Incident-Id-incident-1'],
+        actual_issue.labels)
+    self.assertEqual(
+        'Filed by user@example.com on behalf of user@google.com\n\nissue body',
+        actual_comments[0].content)
 
   def testProcessAlert_ExistingIssue(self):
     """When an alert for an ongoing incident comes in, add a comment."""

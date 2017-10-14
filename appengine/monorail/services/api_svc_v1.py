@@ -27,6 +27,7 @@ from protorpc import protojson
 from protorpc import remote
 
 import settings
+from businesslogic import work_env
 from features import filterrules_helpers
 from features import notify
 from framework import actionlimit
@@ -671,51 +672,49 @@ class MonorailApi(remote.Service):
           'The requester %s is not allowed to create issues for project %s.' %
           (mar.auth.email, mar.project_name))
 
-    owner_id = None
-    if request.owner:
-      try:
-        owner_id = self._services.user.LookupUserID(
-            mar.cnxn, request.owner.name)
-      except user_svc.NoSuchUserException:
+    with work_env.WorkEnv(mar, self._services) as we:
+      owner_id = None
+      if request.owner:
+        try:
+          owner_id = self._services.user.LookupUserID(
+              mar.cnxn, request.owner.name)
+        except user_svc.NoSuchUserException:
+          raise endpoints.BadRequestException(
+              'The specified owner %s does not exist.' % request.owner.name)
+
+      cc_ids = []
+      if request.cc:
+        cc_ids = self._services.user.LookupUserIDs(
+            mar.cnxn, [ap.name for ap in request.cc],
+            autocreate=True).values()
+      comp_ids = api_pb2_v1_helpers.convert_component_ids(
+          mar.config, request.components)
+      fields_add, _, _, fields_labels, _ = (
+          api_pb2_v1_helpers.convert_field_values(
+              request.fieldValues, mar, self._services))
+      field_helpers.ValidateCustomFields(
+          mar, self._services, fields_add, mar.config, mar.errors)
+      if mar.errors.AnyErrors():
         raise endpoints.BadRequestException(
-            'The specified owner %s does not exist.' % request.owner.name)
+            'Invalid field values: %s' % mar.errors.custom_fields)
 
-    cc_ids = []
-    if request.cc:
-      cc_ids = self._services.user.LookupUserIDs(
-          mar.cnxn, [ap.name for ap in request.cc],
-          autocreate=True).values()
-    comp_ids = api_pb2_v1_helpers.convert_component_ids(
-        mar.config, request.components)
-    fields_add, _, _, fields_labels, _ = (
-        api_pb2_v1_helpers.convert_field_values(
-            request.fieldValues, mar, self._services))
-    field_helpers.ValidateCustomFields(
-        mar, self._services, fields_add, mar.config, mar.errors)
-    if mar.errors.AnyErrors():
-      raise endpoints.BadRequestException(
-          'Invalid field values: %s' % mar.errors.custom_fields)
+      new_issue = we.CreateIssue(
+          mar.project_id, request.summary, request.status, owner_id,
+          cc_ids, request.labels + fields_labels, fields_add,
+          comp_ids, request.description,
+          blocked_on=api_pb2_v1_helpers.convert_issueref_pbs(
+              request.blockedOn, mar, self._services),
+          blocking=api_pb2_v1_helpers.convert_issueref_pbs(
+              request.blocking, mar, self._services))
 
-    local_id = self._services.issue.CreateIssue(
-        mar.cnxn, self._services, mar.project_id,
-        request.summary, request.status, owner_id,
-        cc_ids, request.labels + fields_labels, fields_add,
-        comp_ids, mar.auth.user_id, request.description,
-        blocked_on=api_pb2_v1_helpers.convert_issueref_pbs(
-            request.blockedOn, mar, self._services),
-        blocking=api_pb2_v1_helpers.convert_issueref_pbs(
-            request.blocking, mar, self._services))
-    new_issue = self._services.issue.GetIssueByLocalID(
-        mar.cnxn, mar.project_id, local_id)
+      self._services.issue_star.SetStar(
+          mar.cnxn, self._services, mar.config, new_issue.issue_id,
+          mar.auth.user_id, True)
 
-    self._services.issue_star.SetStar(
-        mar.cnxn, self._services, mar.config, new_issue.issue_id,
-        mar.auth.user_id, True)
-
-    if request.sendEmail:
-      notify.PrepareAndSendIssueChangeNotification(
-          new_issue.issue_id, framework_helpers.GetHostPort(),
-          new_issue.reporter_id, 0)
+      if request.sendEmail:
+        notify.PrepareAndSendIssueChangeNotification(
+            new_issue.issue_id, framework_helpers.GetHostPort(),
+            new_issue.reporter_id, 0)
 
     return api_pb2_v1_helpers.convert_issue(
         api_pb2_v1.IssuesGetInsertResponse, new_issue, mar, self._services)

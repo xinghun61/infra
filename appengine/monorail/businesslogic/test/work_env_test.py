@@ -221,7 +221,24 @@ class WorkEnvTest(unittest.TestCase):
   # FUTURE: project saved queries.
   # FUTURE: GetProjectPermissionsForUser()
 
-  # FUTURE: CreateIssue()
+  def testCreateIssue_Normal(self):
+    """We can create an issue."""
+    self.SignIn(user_id=111L)
+    with self.work_env as we:
+      actual_issue = we.CreateIssue(
+          789, 'sum', 'New', 222L, [333L], ['Hot'], [], [], 'desc')
+    self.assertEqual(789, actual_issue.project_id)
+    self.assertEqual('sum', actual_issue.summary)
+    self.assertEqual('New', actual_issue.status)
+    self.assertEqual(111L, actual_issue.reporter_id)
+    self.assertEqual(222L, actual_issue.owner_id)
+    self.assertEqual([333L], actual_issue.cc_ids)
+    self.assertEqual([], actual_issue.field_values)
+    self.assertEqual([], actual_issue.component_ids)
+    actual_comments = self.services.issue.GetCommentsForIssue(
+        self.cnxn, actual_issue.issue_id)
+    self.assertEqual('desc', actual_comments[0].content)
+
   # FUTURE: ListIssues()
 
   def testGetIssue_Normal(self):

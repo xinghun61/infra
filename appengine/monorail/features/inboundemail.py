@@ -20,6 +20,7 @@ from google.appengine.ext.webapp.mail_handlers import BounceNotificationHandler
 import webapp2
 
 import settings
+from businesslogic import work_env
 from features import commitlogcommands
 from features import notify_helpers
 from framework import emailfmt
@@ -231,58 +232,60 @@ class InboundEmail(webapp2.RequestHandler):
     component_ids = []
     body = 'Filed by %s on behalf of %s\n\n%s' % (author_addr, from_addr, body)
 
-    owner_id = None
-    if owner_email:
-      owner_id = self.services.user.LookupUserID(cnxn, owner_email,
-          autocreate=True)
-      status = 'Assigned'
+    mr = monorailrequest.MonorailRequestBase(
+        services=self.services, user_id=author_id, cnxn=cnxn)
+    with work_env.WorkEnv(mr, self.services) as we:
+      owner_id = None
+      if owner_email:
+        owner_id = self.services.user.LookupUserID(cnxn, owner_email,
+            autocreate=True)
+        status = 'Assigned'
 
-    if incident_id:
-      incident_label = 'Incident-Id-' + incident_id
-      labels.append(incident_label)
+      if incident_id:
+        incident_label = 'Incident-Id-' + incident_id
+        labels.append(incident_label)
 
-      label_id = self.services.config.LookupLabelID(
-          cnxn, project.project_id, incident_label)
+        label_id = self.services.config.LookupLabelID(
+            cnxn, project.project_id, incident_label)
 
-      if label_id:
-        issue_ids = self.services.issue.GetIIDsByLabelIDs(
-            cnxn, [label_id], project.project_id, None)
+        if label_id:
+          issue_ids = self.services.issue.GetIIDsByLabelIDs(
+              cnxn, [label_id], project.project_id, None)
 
-        issues, _ = self.services.issue.GetOpenAndClosedIssues(
-            cnxn, issue_ids)
+          issues, _ = self.services.issue.GetOpenAndClosedIssues(
+              cnxn, issue_ids)
 
-        latest_issue = None
-        # Find the most recently modified open issue.
-        for issue in issues:
-          if not latest_issue:
-            latest_issue = issue
-          elif issue.modified_timestamp > latest_issue.modified_timestamp:
-            latest_issue = issue
+          latest_issue = None
+          # Find the most recently modified open issue.
+          for issue in issues:
+            if not latest_issue:
+              latest_issue = issue
+            elif issue.modified_timestamp > latest_issue.modified_timestamp:
+              latest_issue = issue
 
-        if latest_issue:
-          # Find all comments on the issue by the current user.
-          comments = self.services.issue.GetComments(cnxn,
-            issue_id=[latest_issue.issue_id], commenter_id=[author_id])
+          if latest_issue:
+            # Find all comments on the issue by the current user.
+            comments = self.services.issue.GetComments(cnxn,
+                issue_id=[latest_issue.issue_id], commenter_id=[author_id])
 
-          # Timestamp for 24 hours ago in seconds from epoch.
-          yesterday = int(time.time()) - 24 * 60 * 60
+            # Timestamp for 24 hours ago in seconds from epoch.
+            yesterday = int(time.time()) - 24 * 60 * 60
 
-          for comment in comments:
-            # Stop early if we find a comment created within the last 24 hours.
-            if comment.timestamp > yesterday:
-                logging.info('Alert fired again with incident id: %s',
-                    incident_id)
-                return None
+            for comment in comments:
+              # Stop early if we find a comment created in the last 24 hours.
+              if comment.timestamp > yesterday:
+                  logging.info('Alert fired again with incident id: %s',
+                      incident_id)
+                  return None
 
-          # Add a reply to the existing issue for this incident.
-          self.services.issue.CreateIssueComment(
-              cnxn, latest_issue, author_id, body)
-          return None
+            # Add a reply to the existing issue for this incident.
+            self.services.issue.CreateIssueComment(
+                cnxn, latest_issue, author_id, body)
+            return None
 
-    self.services.issue.CreateIssue(
-        cnxn, self.services, project.project_id, subject, status, owner_id,
-        cc_ids, labels, field_values, component_ids, author_id, body)
-    self.services.project.UpdateRecentActivity(cnxn, project.project_id)
+      we.CreateIssue(
+          project.project_id, subject, status, owner_id,
+          cc_ids, labels, field_values, component_ids, body)
 
 
   def ProcessIssueReply(

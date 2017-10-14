@@ -271,8 +271,6 @@ class IssueEntry(servlet.Servlet):
     hotlist_pbs = ProcessParsedHotlistRefs(
         mr, self.services, parsed.hotlists.hotlist_refs)
 
-    new_local_id = None
-
     if not mr.errors.AnyErrors():
       with work_env.WorkEnv(mr, self.services) as we:
         try:
@@ -290,18 +288,11 @@ class IssueEntry(servlet.Servlet):
               parsed.comment, template_content)
           has_star = 'star' in post_data and post_data['star'] == '1'
 
-          new_local_id = self.services.issue.CreateIssue(
-              mr.cnxn, self.services, mr.project_id,
-              parsed.summary, parsed.status, parsed.users.owner_id,
-              parsed.users.cc_ids, labels, field_values,
-              component_ids, reporter_id, marked_comment,
-              blocked_on=parsed.blocked_on.iids, blocking=parsed.blocking.iids,
-              attachments=parsed.attachments)
-          self.services.project.UpdateRecentActivity(
-              mr.cnxn, mr.project.project_id)
-
-          issue = self.services.issue.GetIssueByLocalID(
-              mr.cnxn, mr.project_id, new_local_id)
+          issue = we.CreateIssue(
+              mr.project_id, parsed.summary, parsed.status,
+              parsed.users.owner_id, parsed.users.cc_ids, labels, field_values,
+              component_ids, marked_comment, blocked_on=parsed.blocked_on.iids,
+              blocking=parsed.blocking.iids, attachments=parsed.attachments)
 
           if has_star:
             self.services.issue_star.SetStar(
@@ -348,7 +339,7 @@ class IssueEntry(servlet.Servlet):
 
     # format a redirect url
     return framework_helpers.FormatAbsoluteURL(
-        mr, urls.ISSUE_DETAIL, id=new_local_id)
+        mr, urls.ISSUE_DETAIL, id=issue.local_id)
 
 def _MatchesTemplate(content, config):
     content = content.strip(string.whitespace)

@@ -39,6 +39,8 @@ Responsibilities of the Services layer:
   - E.g., GAE search, GCS, monorail-predict
 """
 
+import logging
+
 from framework import exceptions
 from services import project_svc
 from sitewide import sitewide_helpers
@@ -295,7 +297,43 @@ class WorkEnv(object):
 
   ### Issue methods
 
-  # FUTURE: CreateIssue()
+  def CreateIssue(
+      self, project_id, summary, status, owner_id, cc_ids, labels,
+      field_values, component_ids, marked_description, blocked_on=None,
+      blocking=None, attachments=None):
+    """Create and store a new issue with all the given information.
+
+    Args:
+      project_id: int ID for the current project.
+      summary: one-line summary string summarizing this issue.
+      status: string issue status value.  E.g., 'New'.
+      owner_id: user ID of the issue owner.
+      cc_ids: list of user IDs for users to be CC'd on changes.
+      labels: list of label strings.  E.g., 'Priority-High'.
+      field_values: list of FieldValue PBs.
+      component_ids: list of int component IDs.
+      marked_description: issue description with initial HTML markup.
+      blocked_on: list of issue_ids that this issue is blocked on.
+      blocking: list of issue_ids that this issue blocks.
+      attachments: [(filename, contents, mimetype),...] attachments uploaded at
+          the time the comment was made.
+
+    Returns:
+      The newly created Issue.
+    """
+    with self.mr.profiler.Phase('creating issue in project %r' % project_id):
+      reporter_id = self.mr.auth.user_id
+      new_local_id = self.services.issue.CreateIssue(
+          self.mr.cnxn, self.services, project_id, summary, status,
+          owner_id, cc_ids, labels, field_values, component_ids, reporter_id,
+          marked_description, blocked_on=blocked_on, blocking=blocking,
+          attachments=attachments)
+      logging.info('created issue %r in project %r', new_local_id, project_id)
+      self.services.project.UpdateRecentActivity(self.mr.cnxn, project_id)
+      new_issue = self.services.issue.GetIssueByLocalID(
+          self.mr.cnxn, project_id, new_local_id)
+      return new_issue
+
   # FUTURE: ListIssues()
 
   def GetIssue(self, issue_id, use_cache=True):
