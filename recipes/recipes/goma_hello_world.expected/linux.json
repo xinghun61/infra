@@ -128,6 +128,7 @@
   {
     "cmd": [
       "[CACHE]/goma_client/gomacc",
+      "g++",
       "-c",
       "[TMP_BASE]/hello_world.cpp",
       "-o",
@@ -142,6 +143,7 @@
   {
     "cmd": [
       "[CACHE]/goma_client/gomacc",
+      "g++",
       "-c",
       "[TMP_BASE]/module.cpp",
       "-o",
@@ -156,6 +158,7 @@
   {
     "cmd": [
       "[CACHE]/goma_client/gomacc",
+      "g++",
       "-o",
       "[TMP_BASE]/compiled_binary",
       "[TMP_BASE]/hello_world.o",

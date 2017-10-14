@@ -59,7 +59,7 @@ def RunSteps(api):
   api.goma.ensure_goma(canary=True)
   api.goma.start()
 
-  gcc = api.goma.goma_dir.join('gomacc')
+  gomacc = api.goma.goma_dir.join('gomacc')
   out = root_dir.join('compiled_binary')
 
   try:
@@ -74,9 +74,10 @@ def RunSteps(api):
       for name in sorted(source_code):
         obj = root_dir.join(name.replace('.cpp', '.o'))
         api.step(
-            'compile %s' % name, [gcc, '-c', root_dir.join(name), '-o', obj])
+            'compile %s' % name,
+            [gomacc, 'g++', '-c', root_dir.join(name), '-o', obj])
         objs.append(obj)
-      api.step('link', [gcc, '-o', out] + objs)
+      api.step('link', [gomacc, 'g++', '-o', out] + objs)
   finally:
     api.goma.stop()
 
