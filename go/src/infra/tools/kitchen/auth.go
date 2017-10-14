@@ -7,6 +7,7 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -173,6 +174,7 @@ func (ac *AuthContext) ExportIntoEnv(env environ.Env) environ.Env {
 	ac.exported.SetInEnviron(env)
 	if ac.EnableGitAuth {
 		env.Set("GIT_TERMINAL_PROMPT", "0")           // no interactive prompts
+		env.Set("GIT_CONFIG_NOSYSTEM", "1")           // no $(prefix)/etc/gitconfig
 		env.Set("INFRA_GIT_WRAPPER_HOME", ac.gitHome) // tell gitwrapper about the new HOME
 	}
 	return env
@@ -193,6 +195,7 @@ func (ac *AuthContext) writeGitConfig() error {
 	var cfg gitConfig
 	if !ac.anonymous {
 		cfg = gitConfig{
+			IsWindows:           runtime.GOOS == "windows",
 			UserEmail:           ac.email,
 			UserName:            strings.Split(ac.email, "@")[0],
 			UseCredentialHelper: true,
@@ -200,6 +203,7 @@ func (ac *AuthContext) writeGitConfig() error {
 		}
 	} else {
 		cfg = gitConfig{
+			IsWindows:           runtime.GOOS == "windows",
 			UserEmail:           "anonymous@example.com", // otherwise git doesn't work
 			UserName:            "anonymous",
 			UseCredentialHelper: false, // fetch will be anonymous, push will fail
