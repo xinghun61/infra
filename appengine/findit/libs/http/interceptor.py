@@ -115,7 +115,7 @@ class LoggingInterceptor(HttpInterceptorBase):
       logging.info('request to %s responded with %d http status and headers %s',
                    request.get('url'),
                    response.get('status_code', 0),
-                   json.dumps(response.get('headers', {})))
+                   json.dumps(response.get('headers', {}).items()))
     else:
       logging.info('got response status 200 for url %s', request.get('url'))
     # Call the base's OnResponse to keep the retry functionality.

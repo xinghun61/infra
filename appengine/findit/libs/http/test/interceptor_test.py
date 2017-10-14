@@ -78,5 +78,5 @@ class InterceptorTest(testing.AppengineTestCase):
     self.assertEqual(content, 'Not_Found')
     mock_logging.assert_called_once_with(
         'request to %s responded with %d http status and headers %s', url, 404,
-        '{}')
+        '[]')
 
