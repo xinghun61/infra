@@ -806,7 +806,7 @@ class FlipperTest(unittest.TestCase):
                                 (3L, 30, 111L, ts, '')]
     self.hotlist = fake.Hotlist('name', 123, self.hotlist_item_fields)
     self.hotlist_flipper = issuedetail._HotlistFlipper(
-        self.services, profiler.Profiler(), self.hotlist)
+        self.services, self.hotlist)
 
   def testAssignFlipperValues_Normal(self):
     self.hotlist_flipper.AssignFlipperValues(self.mr, 1L, 1, 3L, 3)
@@ -842,7 +842,7 @@ class FlipperTest(unittest.TestCase):
     one_issue_hotlist = fake.Hotlist(
         'name1', 122, [self.hotlist_item_fields[0]])
     no_show_hotlist_flipper = issuedetail._HotlistFlipper(
-        self.services, profiler.Profiler(), one_issue_hotlist)
+        self.services, one_issue_hotlist)
     no_show_hotlist_flipper.AssignFlipperValues(self.mr, None, 0, None, 1)
     self.assertFalse(no_show_hotlist_flipper.show)
 

@@ -121,7 +121,7 @@ class IssueDetail(issuepeek.IssuePeek):
         if (features_bizobj.IssueIsInHotlist(hotlist, issue.issue_id) and
             permissions.CanViewHotlist(mr.auth.effective_ids, hotlist)):
           self.hotlist_id = hotlist_id
-          return _HotlistFlipper(self.services, mr.profiler, hotlist)
+          return _HotlistFlipper(self.services, hotlist)
 
     # if not hotlist/hotlist_id return a _TrackerFlipper
     # The flipper is not itself a Promise, but it contains Promises.
@@ -1200,19 +1200,17 @@ class _Flipper(object):
 class _HotlistFlipper(_Flipper):
   """Helper class for user to flip among issues within a hotlist."""
 
-  def __init__(self, services, profiler, hotlist):
+  def __init__(self, services, hotlist):
     """Store info for a hotlist's issue flipper widget (prev & next nav.)
 
     Args:
       mr: commonly used info parsed from the request.
       services: connections to backend services.
-      profiler: a Profiler for the sevlet's handling of the current request.
       hotlist: the hotlist this flipper is flipping through.
     """
 
     super(_HotlistFlipper, self).__init__(services)
     self.hotlist = hotlist
-    self.profiler = profiler
     self.is_hotlist_flipper = True
 
   def SearchForIIDs(self, mr, current_issue):
@@ -1235,7 +1233,7 @@ class _HotlistFlipper(_Flipper):
     (sorted_issues, _hotlist_issues_context,
      _users) = hotlist_helpers.GetSortedHotlistIssues(
          mr, self.hotlist.items, issues_list, harmonized_config,
-         self.profiler, self.services)
+         self.services)
 
     (prev_iid, cur_index,
      next_iid) = features_bizobj.DetermineHotlistIssuePosition(
