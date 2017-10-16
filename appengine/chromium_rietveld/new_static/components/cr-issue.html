@@ -10,7 +10,6 @@ found in the LICENSE file. -->
 <link rel="import" href="../common/cr-view-handler.html">
 <link rel="import" href="../diff/cr-diff-cursor.html">
 <link rel="import" href="../linkify/cr-linkified-text.html">
-<link rel="import" href="cr-issue-discard-drafts-dialog.html">
 <link rel="import" href="cr-issue-edit-dialog.html">
 <link rel="import" href="cr-issue-messages.html">
 <link rel="import" href="cr-issue-meta.html">
@@ -72,11 +71,6 @@ found in the LICENSE file. -->
 
         <header>
             <h2>Patches</h2>
-            <div class="ui-actions">
-                <template if="{{ issue.draftCount }}">
-                    <a is="cr-action" on-tap="{{ discardAllDrafts }}">Discard all drafts</a>
-                </template>
-            </div>
         </header>
 
         <cr-issue-patchsets id="patchsets" patchsets="{{ issue.patchsets }}"
@@ -171,11 +165,6 @@ found in the LICENSE file. -->
                 this.async(function() {
                     this.$.messages.scrollIntoViewIfNeeded();
                 }, null, 350);
-            },
-            discardAllDrafts: function() {
-                var dialog = document.createElement("cr-issue-discard-drafts-dialog");
-                dialog.issue = this.issue;
-                this.showDialog(dialog);
             },
             saveMessage: function(event) {
                 if (event.detail.messageText)

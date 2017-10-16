@@ -6,7 +6,6 @@ found in the LICENSE file. -->
 <link rel="import" href="../common/cr-date.html">
 <link rel="import" href="../common/cr-view-handler.html">
 <link rel="import" href="../linkify/cr-linkified-text.html">
-<link rel="import" href="cr-issue-message-reply.html">
 
 <polymer-element name="cr-issue-message" attributes="message selected">
     <template>
@@ -27,7 +26,6 @@ found in the LICENSE file. -->
             <div class="message-text">
                 <cr-linkified-text text="{{ message.text }}" pre></cr-linkified-text>
             </div>
-            <cr-issue-message-reply message="{{ message }}"></cr-issue-message-reply>
         </cr-collapsible>
     </template>
     <script>

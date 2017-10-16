@@ -63,31 +63,6 @@ found in the LICENSE file. -->
                 <cr-linkified-text text="{{ message.text }}" pre></cr-linkified-text>
             </div>
         </template>
-        <template if="{{ !message.draft }}">
-            <cr-toolbar>
-                <a is="cr-action" on-tap="{{ reply }}">Reply</a>
-            </cr-toolbar>
-        </template>
-        <template if="{{ message.draft }}">
-            <template if="{{ !expanded }}">
-                <cr-toolbar>
-                    <a is="cr-action" on-tap="{{ expand }}">Edit</a>
-                </cr-toolbar>
-            </template>
-            <template if="{{ expanded }}">
-                <fieldset class="message-edit" disabled?="{{ saving }}">
-                    <textarea id="textarea" rows="10" value="{{ text }}"></textarea>
-                </fieldset>
-                <cr-toolbar>
-                    <button is="cr-button" primary on-tap="{{ save }}">Save</button>
-                    <button is="cr-button" on-tap="{{ cancel }}">Cancel</button>
-                    <template if="{{ message.date }}">
-                        <button is="cr-button" on-tap="{{ discard }}">Discard</button>
-                    </template>
-                </cr-toolbar>
-                <cr-keyboard on-key-escape="{{ handleCancelKey }}"></cr-keyboard>
-            </template>
-        </template>
     </template>
     <script>
         Polymer({
@@ -108,11 +83,6 @@ found in the LICENSE file. -->
                 this.expanded = true;
                 this.saving = false;
             },
-            reply: function() {
-                this.fire("file-message-reply", {
-                    message: this.message,
-                });
-            },
             expandedChanged: function() {
                 this.async(this.focusInput);
             },
@@ -123,38 +93,6 @@ found in the LICENSE file. -->
                 var textarea = this.shadowRoot.getElementById("textarea");
                 if (textarea)
                     textarea.focus();
-            },
-            save: function() {
-                if (!this.text.trim()) {
-                    this.discard();
-                    return;
-                }
-                this.saving = true;
-                this.fire("file-message-save", {
-                    text: this.text,
-                    message: this.message,
-                });
-            },
-            cancel: function() {
-                this.text = "";
-                this.expanded = false;
-                this.fire("file-message-cancel", {
-                    message: this.message,
-                });
-            },
-            discard: function() {
-                if (!this.message.date) {
-                    this.cancel();
-                }
-                this.fire("file-message-discard", {
-                    message: this.message,
-                });
-            },
-            handleCancelKey: function(event) {
-                if (!this.shadowRoot.querySelector("* /deep/ :focus"))
-                    return;
-                event.preventDefault();
-                this.cancel();
             },
         });
     </script>

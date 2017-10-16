@@ -242,18 +242,6 @@ Issue.prototype.publish = function(options)
     });
 };
 
-Issue.prototype.discardAllDrafts = function()
-{
-    var drafts = this.getDrafts();
-    return sendFormData(this.getDiscardAllDraftsUrl(), null, {
-        sendXsrfToken: true,
-    }).then(function() {
-        drafts.forEach(function(draft) {
-            draft.file.removeMessage(draft);
-        });
-    });
-};
-
 Issue.prototype.getDrafts = function()
 {
     var drafts = [];

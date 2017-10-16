@@ -41,7 +41,6 @@ function PatchFile(patchset, name)
 
 PatchFile.DIFF_URL = "/download/issue{1}_{2}_{3}.diff";
 PatchFile.CONTEXT_URL = "/{1}/diff_skipped_lines/{2}/{3}/{4}/{5}/a/2000";
-PatchFile.DRAFT_URL = "/api/{1}/{2}/{3}/draft_message";
 PatchFile.IMAGE_URL = "/{1}/image/{2}/{3}/{4}";
 PatchFile.SINGLE_VIEW_URL = "/{1}/diff/{2}/{3}";
 
@@ -194,57 +193,6 @@ PatchFile.prototype.getContextUrl = function(start, end)
         encodeURIComponent(this.id),
         encodeURIComponent(start),
         encodeURIComponent(end));
-};
-
-PatchFile.prototype.getDraftUrl = function()
-{
-    return PatchFile.DRAFT_URL.assign(
-        encodeURIComponent(this.patchset.issue.id),
-        encodeURIComponent(this.patchset.id),
-        encodeURIComponent(this.id));
-};
-
-PatchFile.prototype.saveDraft = function(message, newText)
-{
-    var self = this;
-    var data = this.createDraftData(message);
-    data.text = newText;
-    return sendFormData(this.getDraftUrl(), data, {
-        responseType: "json",
-    }).then(function(xhr) {
-        if (!(xhr.response instanceof Object))
-            throw new Error("Server error.");
-        message.parseData(xhr.response);
-        self.addMessage(message);
-        return true;
-    });
-};
-
-PatchFile.prototype.discardDraft = function(message)
-{
-    if (!message.messageId) {
-        this.removeMessage(message);
-        return;
-    }
-    var self = this;
-    var data = this.createDraftData(message)
-    data.text = "";
-    return sendFormData(this.getDraftUrl(), data, {
-        responseType: "json",
-    }).then(function() {
-        self.removeMessage(message);
-        return true;
-    });
-};
-
-PatchFile.prototype.createDraftData = function(message)
-{
-    return {
-        lineno: message.line,
-        left: message.left,
-        text: message.text,
-        message_id: message.messageId,
-    };
 };
 
 PatchFile.prototype.loadDiff = function()

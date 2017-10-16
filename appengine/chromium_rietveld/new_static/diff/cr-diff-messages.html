@@ -22,10 +22,7 @@ found in the LICENSE file. -->
             }
         </style>
 
-        <div on-file-message-save="{{ handleSaveDraft }}"
-            on-file-message-discard="{{ handleDiscardDraft }}"
-            on-file-message-cancel="{{ handleCancelDraft }}"
-            on-file-message-reply="{{ handleReplyDraft }}">
+        <div>
             <div id="before">
                 <template repeat="{{ message in beforeMessages }}">
                     <cr-diff-message message="{{ message }}"></cr-diff-message>
@@ -44,84 +41,6 @@ found in the LICENSE file. -->
                 this.beforeMessages = [];
                 this.afterMessages = [];
                 this.file = null;
-            },
-            handleSaveDraft: function(event) {
-                var self = this;
-                var message = event.detail.message;
-                var text = event.detail.text;
-                var target = event.target;
-                this.fire("butterbar-update", {
-                    message: "Saving..."
-                });
-                this.file.saveDraft(message, text).then(function() {
-                    self.fire("butterbar-update");
-                    target.expanded = false;
-                }).catch(function(e) {
-                    self.fire("butterbar-update", {
-                        message: "Error saving. :(",
-                    });
-                    target.saving = false;
-                    console.log(e);
-                });
-            },
-            handleCancelDraft: function(event) {
-                var message = event.detail.message;
-                var target = event.target;
-                if (!message.date)
-                    this.removeMessage(message);
-            },
-            handleDiscardDraft: function(event) {
-                var self = this;
-                var message = event.detail.message;
-                var target = event.target;
-                this.fire("butterbar-update", {
-                    message: "Saving..."
-                });
-                this.file.discardDraft(message).then(function() {
-                    self.fire("butterbar-update");
-                    self.removeMessage(message);
-                }).catch(function(e) {
-                    self.fire("butterbar-update");
-                    console.log(e);
-                });
-            },
-            handleReplyDraft: function(event) {
-                var message = event.detail.message;
-                var text = message.emailQuote();
-                var side = message.left ? "before" : "after";
-                this.addDraft(side, message.line, text);
-            },
-            addDraft: function(side, line, text) {
-                if (side != "before" && side != "after")
-                    throw new Error("Valid sides are either 'before' or 'after', saw: " + side);
-                var container = this.$[side];
-                var lastMessage = container.querySelector("cr-diff-message:last-child");
-                if (lastMessage && lastMessage.message.draft) {
-                    lastMessage.expand();
-                    lastMessage.focusInput();
-                    return;
-                }
-                var message = new PatchFileMessage(this.file);
-                message.draft = true;
-                message.author = User.current;
-                message.text = text || "";
-                message.line = line;
-                if (side == "before")
-                    message.left = true;
-                this.file.addMessage(message);
-                if (side == "before") {
-                    this.beforeMessages.push(message);
-                } else {
-                    this.afterMessages.push(message);
-                }
-            },
-            removeMessage: function(message) {
-                this.file.removeMessage(message);
-                this.beforeMessages.remove(message);
-                this.afterMessages.remove(message);
-                // TODO(esprehn): Is there a better way than removing yourself?
-                if (!this.beforeMessages.length && !this.afterMessages.length)
-                    this.remove();
             },
         });
     </script>

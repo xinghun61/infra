@@ -3056,175 +3056,6 @@ def _add_next_prev2(ps_left, ps_right, patch_right):
   patch_right.next_with_comment = next_patch_with_comment
 
 
-def _add_or_update_comment(user, issue, patch, lineno, left, text, message_id):
-  comment = None
-  if message_id:
-    comment = models.Comment.get_by_id(message_id, parent=patch.key)
-    if comment is None or not comment.draft or comment.author != user:
-      comment = None
-      message_id = None
-  if not message_id:
-    # Prefix with 'z' to avoid key names starting with digits.
-    message_id = 'z' + binascii.hexlify(_random_bytes(16))
-
-  if not text.rstrip():
-    if comment is not None:
-      assert comment.draft and comment.author == user
-      comment.key.delete()  # Deletion
-      comment = None
-      # Re-query the comment count.
-      models.Account.current_user_account.update_drafts(issue)
-  else:
-    if comment is None:
-      comment = models.Comment(id=message_id, parent=patch.key)
-    comment.patch_key = patch.key
-    comment.lineno = lineno
-    comment.left = left
-    comment.text = text
-    comment.message_id = message_id
-    comment.put()
-    logging.info('New comment author is %r', comment.author)
-    # The actual count doesn't matter, just that there's at least one.
-    models.Account.current_user_account.update_drafts(issue, 1)
-  return comment
-
-
-@deco.require_methods('POST')
-def inline_draft(request):
-  """/inline_draft - Ajax handler to submit an in-line draft comment.
-
-  This wraps _inline_draft(); all exceptions are logged and cause an
-  abbreviated response indicating something went wrong.
-
-  Note: creating or editing draft comments is *not* XSRF-protected,
-  because it is not unusual to come back after hours; the XSRF tokens
-  time out after 1 or 2 hours.  The final submit of the drafts for
-  others to view *is* XSRF-protected.
-  """
-  try:
-    return _inline_draft(request)
-  except Exception as err:
-    logging.exception('Exception in inline_draft processing:')
-    # TODO(guido): return some kind of error instead?
-    # Return HttpResponse for now because the JS part expects
-    # a 200 status code.
-    return HttpHtmlResponse(
-        '<font color="red">Error: %s; please report!</font>' %
-        err.__class__.__name__)
-
-@deco.require_methods('POST')
-@deco.patch_required
-@deco.json_response
-def api_draft_message(request):
-  """/api/<issue>/<patchset>/<patch>/draft_message - Creates or updates a draft
-  message on a patch file.
-  """
-  user = request.user
-  patch = request.patch
-  issue = request.issue
-  left = (request.POST['left'] == 'true')
-  text = request.POST['text']
-  lineno = int(request.POST['lineno'])
-  message_id = request.POST['message_id']
-
-  # Get the existing message or create a new one.
-  if message_id:
-    comment = models.Comment.get_by_id(message_id, parent=patch.key)
-    if comment is None or not comment.draft or comment.author != user:
-      return HttpTextResponse(
-        'No comment exists with that id (%s)' % message_id, status=404)
-  else:
-    # Prefix with 'z' to avoid key names starting with digits.
-    message_id = 'z' + binascii.hexlify(_random_bytes(16))
-    comment = models.Comment(id=message_id, parent=patch.key)
-
-  # Saving an empty (or all whitespace) string as the text deletes the comment.
-  if not text.rstrip():
-    comment.key.delete()
-    models.Account.current_user_account.update_drafts(issue)
-    return None
-
-  comment.patch_key = patch.key
-  comment.lineno = lineno
-  comment.left = left
-  comment.text = text
-  comment.message_id = message_id
-  comment.put()
-  logging.info('Saved comment with author = %r', comment.author)
-  issue.calculate_draft_count_by_user()
-  issue.put()
-  models.Account.current_user_account.update_drafts(issue, have_drafts=True)
-
-  return {
-    'author': library.get_nickname(comment.author, True, request),
-    'author_email': comment.author.email(),
-    'date': str(comment.date),
-    'lineno': comment.lineno,
-    'text': comment.text,
-    'left': comment.left,
-    'draft': comment.draft,
-    'message_id': comment.message_id,
-  }
-
-
-def _inline_draft(request):
-  """Helper to submit an in-line draft comment."""
-  # TODO(guido): turn asserts marked with XXX into errors
-  # Don't use @login_required, since the JS doesn't understand redirects.
-  if not request.user:
-    # Don't log this, spammers have started abusing this.
-    return HttpTextResponse('Not logged in')
-  snapshot = request.POST.get('snapshot')
-  assert snapshot in ('old', 'new'), repr(snapshot)
-  left = (snapshot == 'old')
-  side = request.POST.get('side')
-  assert side in ('a', 'b'), repr(side)  # Display left (a) or right (b)
-  issue_id = int(request.POST['issue'])
-  issue = models.Issue.get_by_id(issue_id)
-  assert issue  # XXX
-  patchset_id = int(request.POST.get('patchset') or
-                    request.POST[side == 'a' and 'ps_left' or 'ps_right'])
-  patchset = models.PatchSet.get_by_id(int(patchset_id), parent=issue.key)
-  assert patchset  # XXX
-  patch_id = int(request.POST.get('patch') or
-                 request.POST[side == 'a' and 'patch_left' or 'patch_right'])
-  patch = models.Patch.get_by_id(int(patch_id), parent=patchset.key)
-  assert patch  # XXX
-  text = request.POST.get('text')
-  lineno = int(request.POST['lineno'])
-  message_id = request.POST.get('message_id')
-  comment = _add_or_update_comment(user=request.user, issue=issue, patch=patch,
-                                   lineno=lineno, left=left,
-                                   text=text, message_id=message_id)
-  issue.calculate_draft_count_by_user()
-  issue_fut = issue.put_async()
-
-  query = (models.Comment
-           .query(models.Comment.lineno == lineno, models.Comment.left == left,
-                  ancestor=patch.key)
-           .order(models.Comment.date))
-  comments = list(c for c in query if not c.draft or c.author == request.user)
-  if comment is not None and comment.author is None:
-    # Show anonymous draft even though we don't save it
-    comments.append(comment)
-  issue_fut.get_result()
-  if not comments:
-    return HttpTextResponse(' ')
-  for c in comments:
-    c.complete()
-  return render_to_response('inline_comment.html',
-                            {'user': request.user,
-                             'patch': patch,
-                             'patchset': patchset,
-                             'issue': issue,
-                             'comments': comments,
-                             'lineno': lineno,
-                             'snapshot': snapshot,
-                             'side': side,
-                             },
-                            context_instance=RequestContext(request))
-
-
 def _get_affected_files(issue, full_diff=False):
   """Helper to return a list of affected files from the latest patchset.
 
@@ -3429,22 +3260,6 @@ def publish(request):
   if form.cleaned_data.get('no_redirect', False):
     return HttpTextResponse('OK')
   return HttpResponseRedirect(reverse(show, args=[issue.key.id()]))
-
-
-@deco.login_required
-@deco.issue_required
-@deco.xsrf_required
-def delete_drafts(request):
-  """Deletes all drafts of the current user for an issue."""
-  query = models.Comment.query(
-      models.Comment.author == request.user, models.Comment.draft == True,
-      ancestor=request.issue.key)
-  keys = query.fetch(keys_only=True)
-  ndb.delete_multi(keys)
-  request.issue.calculate_draft_count_by_user()
-  request.issue.put()
-  return HttpResponseRedirect(
-    reverse(publish, args=[request.issue.key.id()]))
 
 
 def _encode_safely(s):
@@ -3822,13 +3637,7 @@ def _add_plus_addr(addr, accounts, issue):
 @deco.login_required
 @deco.issue_required
 def draft_message(request):
-  """/<issue>/draft_message - Retrieve, modify and delete draft messages.
-
-  Note: creating or editing draft messages is *not* XSRF-protected,
-  because it is not unusual to come back after hours; the XSRF tokens
-  time out after 1 or 2 hours.  The final submit of the drafts for
-  others to view *is* XSRF-protected.
-  """
+  """/<issue>/draft_message - Retrieve draft messages."""
   query = models.Message.query(
       models.Message.sender == request.user.email(),
       models.Message.draft == True,
@@ -3838,54 +3647,8 @@ def draft_message(request):
   else:
     draft_message = query.get()
   if request.method == 'GET':
-    return _get_draft_message(draft_message)
-  elif request.method == 'POST':
-    return _post_draft_message(request, draft_message)
-  elif request.method == 'DELETE':
-    return _delete_draft_message(draft_message)
+    return HttpTextResponse(draft_message.text if draft_message else '')
   return HttpTextResponse('An error occurred.', status=500)
-
-
-def _get_draft_message(draft):
-  """Handles GET requests to /<issue>/draft_message.
-
-  Arguments:
-    draft: A Message instance or None.
-
-  Returns the content of a draft message or an empty string if draft is None.
-  """
-  return HttpTextResponse(draft.text if draft else '')
-
-
-def _post_draft_message(request, draft):
-  """Handles POST requests to /<issue>/draft_message.
-
-  If draft is None a new message is created.
-
-  Arguments:
-    request: The current request.
-    draft: A Message instance or None.
-  """
-  if draft is None:
-    draft = models.Message(
-      issue_key=request.issue.key, parent=request.issue.key,
-      sender=request.user.email(), draft=True)
-  draft.text = request.POST.get('reviewmsg')
-  draft.put()
-  return HttpTextResponse(draft.text)
-
-
-def _delete_draft_message(draft):
-  """Handles DELETE requests to /<issue>/draft_message.
-
-  Deletes a draft message.
-
-  Arguments:
-    draft: A Message instance or None.
-  """
-  if draft is not None:
-    draft.key.delete()
-  return HttpTextResponse('OK')
 
 
 @deco.access_control_allow_origin_star

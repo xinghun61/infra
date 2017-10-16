@@ -12,28 +12,6 @@ login_warned = false;
 // -->
 </script>
 
-{%if user%}
-<!-- Form used by in-line comment JS; XXX filled in by JS code -->
-<form id="dainlineform" style="display: none;"
-      action="{%url codereview.views.inline_draft%}" method="post">
-  <div class="comment-border">
-    <input type="hidden" name="snapshot" value="XXX">
-    <input type="hidden" name="lineno" value="XXX">
-    <input type="hidden" name="side" value="XXX">
-    <input type="hidden" name="issue" value="{{issue.key.id}}">
-    <input type="hidden" name="patchset" value="{{patchset.key.id}}">
-    <input type="hidden" name="patch" value="{{patch.key.id}}">
-    <textarea name="text" style="width:96%" rows="10"></textarea><br>
-    <input type="submit" name="save" value="Save"
-           onclick="return M_submitInlineComment(this.form);">
-    <input type="reset" name="cancel" value="Cancel"
-           onclick="M_removeTempInlineComment(this.form)">
-  </div>
-  <div class="comment-border" style="padding: 0pt;"></div>
-</form>
-<a id="resizer" style="display:none;cursor:pointer"><img src="{{media_url}}zippyplus.gif"></a>
-{%endif%}
-
 <div style="float: left;">
   <h2 style="margin-bottom: 0em; margin-top: 0em;">Unified Diff: {{patch.filename}}</h2>
   {%ifnotequal patch.nav_type "patch"%}
@@ -56,11 +34,7 @@ login_warned = false;
     Use n/p to move between diff chunks;
     N/P to move between comments.
     {%if user%}
-    Double-click a line to add a draft in-line comment.
-    <br><span style="color:red">Draft comments are only viewable by you;</span>
-    use <a href="{%url codereview.views.publish issue.key.id%}" class="novisit">Publish+Mail Comments</a> ('m') to let others view them.
-    {%else%}
-    Please Sign in to add in-line comments.
+    <span style="color:red">Draft comments are only viewable by you.</span>
     {%endif%}
   </div>
 </div>
@@ -94,8 +68,6 @@ login_warned = false;
   <div style="margin-top: 5px;">
     <a class="novisit" href="{%url codereview.views.publish issue.key.id%}">Publish+Mail
     Comments</a> ('m')
-    |
-    <a class="novisit" href="javascript:draftMessage.dialog_show()">Edit draft message</a> ('M')
   </div>
   {%endif%}
 </div>
@@ -123,11 +95,7 @@ login_warned = false;
 {%else%}
 <span id="hook-sel" style="display:none;"></span>
 
-<table style="padding: 5px;" cellpadding="0" cellspacing="0" id="thecode"
-       ondblclick="M_handleTableDblClick(event)"
-       ontouchstart="M_handleTableTouchStart(event)"
-       ontouchmove="M_handleTableTouchMove(event)"
-       ontouchend="M_handleTableTouchEnd(event)">
+<table style="padding: 5px;" cellpadding="0" cellspacing="0" id="thecode">
 {%for row in rows%}{{row|safe}}{%endfor%}
 </table>
 {%endif%}
@@ -148,7 +116,5 @@ hookState.updateHooks();
 
 // -->
 </script>
-
-{%include "draft_message.html"%}
 
 {%endblock%}

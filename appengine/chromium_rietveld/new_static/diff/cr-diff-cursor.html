@@ -102,13 +102,6 @@ found in the LICENSE file. -->
                     node = node.parentNode;
                 return node.host;
             },
-            handleCommentKey: function(event) {
-                if (!this.target || !this.target.classList.contains("row"))
-                    return;
-                if (!User.current)
-                    return;  // TODO(jrobbins): prompt user to sign in.
-                this.findCrDiff().addDraft(this.target);
-            },
             handleMoveToLeftColumn: function(event) {
                 var crDiff = this.findCrDiff();
                 if (!crDiff || crDiff.mode != "side-by-side" || this.wrongSide == "right")
