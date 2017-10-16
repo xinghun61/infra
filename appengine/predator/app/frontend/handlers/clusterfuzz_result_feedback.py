@@ -10,7 +10,7 @@ from gae_libs.handlers.base_handler import Permission
 
 
 class ClusterfuzzResultFeedback(ResultFeedback):
-  PERMISSION_LEVEL = Permission.ADMIN
+  PERMISSION_LEVEL = Permission.CORP_USER
 
   @property
   def client(self):
