@@ -114,27 +114,21 @@ class MonorailConnection(object):
     logging.info('%d rows in %d ms', cursor.rowcount,
                  int((time.time() - start_time) * 1000))
     if commit and not stmt_str.startswith('SELECT'):
-      start_time = time.time()
       try:
         sql_cnxn.commit()
       except MySQLdb.DatabaseError:
         sql_cnxn.rollback()
-      logging.info('commit took %d ms',
-                   int((time.time() - start_time) * 1000))
 
     return cursor
 
   def Commit(self):
     """Explicitly commit any pending txns.  Normally done automatically."""
     sql_cnxn = self.GetMasterConnection()
-    start_time = time.time()
     try:
       sql_cnxn.commit()
     except MySQLdb.DatabaseError:
       logging.exception('Commit failed for cnxn, rolling back')
       sql_cnxn.rollback()
-    logging.info('final commit took %d ms',
-                 int((time.time() - start_time) * 1000))
 
   def Close(self):
     """Safely close any connections that are still open."""

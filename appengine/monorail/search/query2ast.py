@@ -218,7 +218,6 @@ def ParseUserQuery(
   conjunctions = [
       _ParseConjunction(sq, scope, combined_fields, warnings, now=now)
       for sq in subqueries]
-  logging.info('search warnings: %r', warnings)
   return ast_pb2.QueryAST(conjunctions=conjunctions)
 
 
@@ -232,7 +231,6 @@ def _HasParens(s):
 
 def _ParseConjunction(subquery, scope, fields, warnings, now=None):
   """Parse part of a user query into a Conjunction PB."""
-  logging.info('Parsing sub query: %r in scope %r', subquery, scope)
   scoped_query = ('%s %s' % (scope, subquery)).lower()
   cond_strs = _ExtractConds(scoped_query, warnings)
   conds = [_ParseCond(cond_str, fields, warnings, now=now)

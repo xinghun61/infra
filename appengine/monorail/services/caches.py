@@ -91,8 +91,6 @@ class RamCache(object):
     """Drop the given key from this cache, without distributed notification."""
     if key in self.cache:
       logging.info('Locally invalidating %r in kind=%r', key, self.kind)
-    else:
-      logging.info('Did not have %r in kind=%r in RAM', key, self.kind)
     self.cache.pop(key, None)
 
   def Invalidate(self, cnxn, key):
@@ -273,7 +271,6 @@ class AbstractTwoLevelCache(object):
     logging.info(
         'decoded %d values from memcache %s, missing %d',
         len(memcache_hits), self.memcache_prefix, len(still_missing_keys))
-    logging.info('_ReadFromMemcache got %r', memcache_hits)
     return memcache_hits, still_missing_keys
 
   # pylint: disable=unused-argument
@@ -302,7 +299,6 @@ class AbstractTwoLevelCache(object):
 
     logging.info('cached batch of %d values in memcache %s',
                  len(retrieved_dict), self.memcache_prefix)
-    logging.info('_WriteToMemcache wrote %r', retrieved_dict)
 
   def _KeyToStr(self, key):
     """Convert our int IDs to strings for use as memcache keys."""

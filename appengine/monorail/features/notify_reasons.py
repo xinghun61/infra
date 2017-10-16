@@ -128,7 +128,8 @@ def ComputeIssueChangeAddressPermList(
       AddrPerm(recipient_is_member, addr, user, reply_perm))
 
   logging.info('For %s %s, will notify: %r',
-               project.project_name, issue.local_id, memb_addr_perm_list)
+               project.project_name, issue.local_id,
+               [ap.address for ap in memb_addr_perm_list])
 
   return memb_addr_perm_list
 
@@ -223,7 +224,6 @@ def EvaluateSubscriptions(
       if issue.project_id not in sq.executes_in_project_ids:
         continue
       cond = savedqueries_helpers.SavedQueryToCond(sq)
-      logging.info('evaluating query %s: %r', sq.name, cond)
       cond, _warnings = searchpipeline.ReplaceKeywordsWithUserID(uid, cond)
       cond_ast = query2ast.ParseUserQuery(
         cond, '', query2ast.BUILTIN_ISSUE_FIELDS, config)
