@@ -7,10 +7,142 @@ import datetime
 from monorail_api import Issue
 from waterfall.test import wf_testcase
 from libs import time_util
+
+from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from services.flake_failure import issue_tracking_service
+from waterfall.flake import flake_constants
 
 
 class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
+
+  @mock.patch.object(
+      issue_tracking_service, '_HasPreviousAttempt', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service,
+      '_HasSufficientConfidenceInCulprit',
+      return_value=True)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+  def testShouldFileBugForAnalysis(self, label_exists_fn, id_exists_fn,
+                                   sufficient_confidence_fn,
+                                   previous_attempt_fn):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.Save()
+
+    self.assertTrue(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
+    self.assertTrue(label_exists_fn.called)
+    self.assertTrue(id_exists_fn.called)
+    self.assertTrue(sufficient_confidence_fn.called)
+    self.assertTrue(previous_attempt_fn.called)
+
+  @mock.patch.object(
+      issue_tracking_service, '_HasPreviousAttempt', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service,
+      '_HasSufficientConfidenceInCulprit',
+      return_value=True)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForId', return_value=True)
+  def testShouldFileBugForAnalysisWhenBugIdExists(self, id_exists_fn, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.bug_id = 1
+    analysis.Save()
+
+    self.assertFalse(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
+    self.assertTrue(id_exists_fn.called)
+
+  @mock.patch.object(
+      issue_tracking_service, '_HasPreviousAttempt', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service,
+      '_HasSufficientConfidenceInCulprit',
+      return_value=True)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=True)
+  def testShouldFileBugForAnalysisWhenLabelExists(self, label_exists_fn, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.Save()
+
+    self.assertFalse(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
+    self.assertTrue(label_exists_fn.called)
+
+  @mock.patch.object(
+      issue_tracking_service, '_HasPreviousAttempt', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service,
+      '_HasSufficientConfidenceInCulprit',
+      return_value=False)
+  def testShouldFileBugForAnalysisWithoutSufficientConfidence(
+      self, confidence_fn, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.confidence_in_culprit = 0.5
+    analysis.Save()
+
+    self.assertFalse(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
+    self.assertTrue(confidence_fn.called)
+
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service,
+      '_HasSufficientConfidenceInCulprit',
+      return_value=True)
+  @mock.patch.object(
+      issue_tracking_service, '_HasPreviousAttempt', return_value=True)
+  def testShouldFileBugForAnalysisWithPreviousAttempt(self, attempt_fn, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.confidence_in_culprit = 0.5
+    analysis.Save()
+
+    self.assertFalse(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
+    self.assertTrue(attempt_fn.called)
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 3))
@@ -184,3 +316,43 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
         mock.call.getIssue(234),
         mock.call.getIssue(123)
     ])
+
+  def testHasPreviousAttempt(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.has_attempted_filing = True
+    analysis.Save()
+    self.assertTrue(issue_tracking_service._HasPreviousAttempt(analysis))
+
+    analysis.has_attempted_filing = False
+    analysis.put()
+    self.assertFalse(issue_tracking_service._HasPreviousAttempt(analysis))
+
+  def testHasSufficientConfidenceInCulprit(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+
+    analysis.confidence_in_culprit = None
+    analysis.Save()
+    self.assertFalse(
+        issue_tracking_service._HasSufficientConfidenceInCulprit(analysis))
+
+    analysis.confidence_in_culprit = 1.0
+    analysis.Save()
+    self.assertTrue(
+        issue_tracking_service._HasSufficientConfidenceInCulprit(analysis))
+
+    analysis.confidence_in_culprit = .9
+    analysis.put()
+    self.assertFalse(
+        issue_tracking_service._HasSufficientConfidenceInCulprit(analysis))

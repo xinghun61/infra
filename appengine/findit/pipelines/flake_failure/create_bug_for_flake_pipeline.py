@@ -24,19 +24,6 @@ BODY_TEMPLATE = ('Findit has detected a flake at test %s. Track this'
                  'analysis here:\n%s')
 
 
-def _HasPreviousAttempt(analysis):
-  """Returns true if filing a bug has been attempted before."""
-  return analysis.has_attempted_filing
-
-
-def _HasSufficientConfidenceInCulprit(analysis):
-  """Returns true is there's enough confidence in the culprit."""
-  if not analysis.confidence_in_culprit:
-    return False
-  return (abs(analysis.confidence_in_culprit -
-              flake_constants.MINIMUM_CONFIDENCE_TO_CREATE_BUG) <= 0.001)
-
-
 class CreateBugForFlakePipelineInputObject(StructuredObject):
   analysis_urlsafe_key = unicode
   test_location = dict
@@ -55,38 +42,13 @@ class CreateBugForFlakePipeline(GeneratorPipeline):
     be retried since it files a bug with monorail. Instead a bit is set
     in MasterFlakeAnalysis before a filing is attempted `has_attemped_filing`
     in the event in a retry this pipeline will be abandoned entirely.
-
-    Ths requirements for a bug to be filed.
-    - The pipeline hasn't been attempted before (see above).
-    - The analysis has sufficient confidence (1.0).
-    - The analysis doesn't already have a bug associated with it.
-    - A bug isn't open for the same test.
     """
     analysis = ndb.Key(urlsafe=input_object.analysis_urlsafe_key).get()
     assert analysis
 
     analysis.LogInfo('RunImpl being called for CreateBugForFlakePipeline')
 
-    # TODO(crbug.com/773870): Factor these conditions to the service layer.
-    if _HasPreviousAttempt(analysis):
-      analysis.LogWarning(
-          'There has already been an attempt at filing a bug, aborting.')
-      return
-
-    if not _HasSufficientConfidenceInCulprit(analysis):
-      analysis.LogInfo('Bailing out because %d isn\'t high enough confidence' %
-                       analysis.confidence_in_culprit)
-      return
-
-    # Check if there's already a bug attached to this issue.
-    if issue_tracking_service.BugAlreadyExistsForId(analysis.bug_id):
-      analysis.LogInfo(
-          'Bailing out because bug with id %d already exists' % analysis.bug_id)
-      return
-
-    if issue_tracking_service.BugAlreadyExistsForLabel(analysis.test_name):
-      analysis.LogInfo('Bailing out because bug already exists for label %s' %
-                       analysis.test_name)
+    if not issue_tracking_service.ShouldFileBugForAnalysis(analysis):
       return
 
     # TODO(crbug.com/773526): Make sure the test is enabled and flaky on recent

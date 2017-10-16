@@ -50,6 +50,9 @@ DEFAULT_TIMEOUT_PER_TEST_SECONDS = 120
 # The minimum pass rate of a data point to be considered stable and passing.
 DEFAULT_UPPER_FLAKE_THRESHOLD = 0.98
 
+# Epsilon for floating point comparison.
+EPSILON = 0.001
+
 # Maximum iterations allowed per swarming task.
 MAX_ITERATIONS_PER_TASK = 200
 
