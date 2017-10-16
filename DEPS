@@ -9,6 +9,13 @@ deps = {
   "build":
     "https://chromium.googlesource.com/chromium/tools/build.git",
 
+  # Used to initiate bootstrapping.
+  #
+  # This commit resolves to tag "15.1.0".
+  "infra/bootstrap/virtualenv-ext":
+   ("https://chromium.googlesource.com/external/github.com/pypa/virtualenv"
+     "@2db288fe1f8b6755f8df53b8a8a0667a0f71b1cf"),
+
   "infra/luci":
    ("https://chromium.googlesource.com/infra/luci/luci-py"
      "@64952dec8a63a34245e0e581c1e37dfffef2454d"),

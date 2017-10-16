@@ -3,6 +3,7 @@
 .expect_tests_coverage*
 ENV
 .wheelcache
+bootstrap/virtualenv-ext
 luci
 appengine/swarming
 appengine/milo/vulcanized_main.html

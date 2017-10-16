@@ -19,7 +19,7 @@ DISABLED_PROJECTS = [
     '.+_pb2.py',
     '\.git',
     '\.wheelcache',
-    'bootstrap/virtualenv',
+    'bootstrap/virtualenv-ext',
     '.*/six.py',
 ]
 

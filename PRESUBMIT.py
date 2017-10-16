@@ -28,14 +28,12 @@ DISABLED_PROJECTS = [
     '.*/__pycache__',
     '\.git',
     '\.wheelcache',
-    'bootstrap/virtualenv',
+    'bootstrap/virtualenv-ext',
 ]
 
 # List of third_party direcories.
 THIRD_PARTY_DIRS = [
   'appengine/third_party',
-  # Remove this when virtualenv is unvendored.
-  'bootstrap/virtualenv',
 ]
 
 # List of directories to jshint.

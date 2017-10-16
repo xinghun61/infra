@@ -210,7 +210,8 @@ def activate_env(env, manifest, quiet=False, run_within_virtualenv=False):
     if not quiet:
       print '  Building new environment'
     # Add in bundled virtualenv lib
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'virtualenv'))
+    sys.path.insert(0,
+        os.path.join(os.path.dirname(__file__), 'virtualenv-ext'))
     import virtualenv  # pylint: disable=F0401
     virtualenv.create_environment(
         env, search_dirs=virtualenv.file_search_dirs())
