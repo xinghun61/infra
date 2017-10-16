@@ -3853,40 +3853,6 @@ def _add_plus_addr(addr, accounts, issue):
   return addr
 
 
-@deco.require_methods('POST')
-@deco.login_required
-@deco.xsrf_required
-@deco.issue_required
-def star(request):
-  """Add a star to an Issue."""
-  account = models.Account.current_user_account
-  account.user_has_selected_nickname()  # This will preserve account.fresh.
-  if account.stars is None:
-    account.stars = []
-  keyid = request.issue.key.id()
-  if keyid not in account.stars:
-    account.stars.append(keyid)
-    account.put()
-  return respond(request, 'issue_star.html', {'issue': request.issue})
-
-
-@deco.require_methods('POST')
-@deco.login_required
-@deco.issue_required
-@deco.xsrf_required
-def unstar(request):
-  """Remove the star from an Issue."""
-  account = models.Account.current_user_account
-  account.user_has_selected_nickname()  # This will preserve account.fresh.
-  if account.stars is None:
-    account.stars = []
-  keyid = request.issue.key.id()
-  if keyid in account.stars:
-    account.stars[:] = [i for i in account.stars if i != keyid]
-    account.put()
-  return respond(request, 'issue_star.html', {'issue': request.issue})
-
-
 @deco.login_required
 @deco.issue_required
 def draft_message(request):

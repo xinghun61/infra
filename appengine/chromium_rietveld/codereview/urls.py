@@ -91,8 +91,6 @@ urlpatterns = patterns(
     (r'^(\d+)/upload_complete/(\d+)?$', 'upload_complete'),
     (r'^(\d+)/description$', 'description'),
     (r'^(\d+)/fields', 'fields'),
-    (r'^(\d+)/star$', 'star'),
-    (r'^(\d+)/unstar$', 'unstar'),
     (r'^(\d+)/draft_message$', 'draft_message'),
     (r'^api/(\d+)/?$', 'api_issue'),
     (r'^api/tryservers/?$', 'api_tryservers'),
