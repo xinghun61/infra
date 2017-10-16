@@ -98,12 +98,6 @@ login_warned = false;
            <a href="{%url codereview.views.download_patch issue.key.id,ps_right.key.id,patch_right.key.id%}"
              title="Download patch for {{patch_right.filename}}">Download</a>
     {%endif%}
-    {%if user%}
-  </div>
-  <div style="margin-top: 5px;">
-    <a class="novisit" href="{%url codereview.views.publish issue.key.id%}">Publish+Mail
-    Comments</a> ('m')
-    {%endif%}
   </div>
 </div>
 <div style="clear: both;"></div>

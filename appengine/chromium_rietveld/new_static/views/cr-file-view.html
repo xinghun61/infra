@@ -233,11 +233,6 @@ found in the LICENSE file. -->
                 if (this.patchset)
                     this.showFile();
             },
-            handlePublish: function() {
-                this.asyncFire("navigate", {
-                    url: "/" + this.issueId + "/publish",
-                });
-            },
             handlePrevious: function() {
                 if (this.file && this.file.previousFile)
                     this.filename = this.file.previousFile.name;

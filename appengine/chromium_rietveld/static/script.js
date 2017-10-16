@@ -744,48 +744,6 @@ function M_collapseAllInlineComments() {
   }
 }
 
-// Non-inline comment actions
-
-
-/**
-/* TODO(andi): docstring
- */
-function M_replyToMessage(message_id, written_time, author,
-                          db_message_object_key) {
-  var form = document.getElementById('message-reply-form');
-  form = form.cloneNode(true);
-  var container = document.getElementById('message-reply-'+message_id);
-  var replyLink = document.getElementById('message-reply-href-'+message_id);
-  var msgTextarea = replyLink.nextSibling.nextSibling;
-  form.insertBefore(msgTextarea, form.firstChild);
-  M_showElement(msgTextarea);
-  container.appendChild(form);
-  M_showElement(container);
-  form.in_reply_to.value = db_message_object_key;
-
-  form.discard.onclick = function () {
-    form.message.value = "";
-    M_getParent(container).insertBefore(msgTextarea, replyLink.nextSibling.nextSibling);
-    M_showElement(replyLink);
-    M_hideElement(msgTextarea);
-    container.innerHTML = "";
-  }
-
-  if (!form.message.value) {
-    form.message.value = "On " + written_time + ", " + author + " wrote:\n";
-    var divs = document.getElementsByName("cl-message-" + message_id);
-    form.message.focus();
-    M_setValueFromDivs(divs, form.message);
-    form.message.value += "\n";
-  }
-  // Scroll view to bottom of message textarea and scroll textarea to bottom
-  // too, so that the user can write w/o adjusting the views first.
-  M_scrollIntoView(window, form.send_mail, 1);
-  form.message.scrollTop = form.message.scrollHeight;
-  M_addTextResizer_(form);
-  M_hideElement(replyLink);
-}
-
 
 // Inline comments (file.html)
 
@@ -1800,8 +1758,6 @@ function M_changelistKeyDown(evt) {
       if (dashboardState) dashboardState.gotoPrev();
     } else if (key == 'J') {
       if (dashboardState) dashboardState.gotoNext();
-    } else if (key == 'M') {
-      document.location.href = publish_link;
     } else if (key == 'U') {
       // back to dashboard
       document.location.href = base_url;

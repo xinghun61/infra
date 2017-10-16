@@ -14,7 +14,6 @@ found in the LICENSE file. -->
 <link rel="import" href="cr-issue-messages.html">
 <link rel="import" href="cr-issue-meta.html">
 <link rel="import" href="cr-issue-patchsets.html">
-<link rel="import" href="cr-issue-publish-dialog.html">
 <link rel="import" href="cr-issue-subject.html">
 <link rel="import" href="cr-try-results.html">
 
@@ -34,10 +33,6 @@ found in the LICENSE file. -->
             <div class="issue-content">
                 <div class="issue-toolbar-container">
                     <cr-toolbar class="issue-toolbar">
-                        <button is="cr-button" on-tap="{{ showPublishDialog }}" create>Publish</button>
-                        <template if="{{ !issue.owner.isCurrentUser }}">
-                            <button is="cr-button" on-tap="{{ quickLgtm }}">Quick LGTM</button>
-                        </template>
                         <template if="{{ issue.editAllowed }}">
                             <div class="ui-actions">
                                 <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
@@ -46,7 +41,7 @@ found in the LICENSE file. -->
                     </cr-toolbar>
                     <template if="{{ !hasBeenSent(issue) }}">
                         <div class="notice">
-                            This issue has not been sent to reviewers yet.  Press "Publish" to notify them.
+                            This issue has not been sent to reviewers.
                         </div>
                     </template>
                 </div>
@@ -91,7 +86,7 @@ found in the LICENSE file. -->
             </header>
         </template>
 
-        <cr-issue-messages messages="{{ issue.messages }}" id="messages" on-message-save="{{ saveMessage }}"></cr-issue-messages>
+        <cr-issue-messages messages="{{ issue.messages }}" id="messages"></cr-issue-messages>
 
         <div id="dialogs"></div>
 
@@ -109,10 +104,6 @@ found in the LICENSE file. -->
                 this.issue = null;
                 this.tryJobResults = null;
                 this.butterbarMessage = "";
-            },
-            attached: function() {
-                if (window.location.pathname.endsWith("/publish"))
-                    this.showPublishDialog();
             },
             issueChanged: function(oldValue, newValue) {
                 this.loadCommitTryJobs();
@@ -148,11 +139,6 @@ found in the LICENSE file. -->
                 dialog.issue = this.issue;
                 this.showDialog(dialog);
             },
-            showPublishDialog: function() {
-                var dialog = document.createElement("cr-issue-publish-dialog");
-                dialog.issue = this.issue;
-                this.showDialog(dialog);
-            },
             collapseAllMessages: function() {
                 this.issue.messages.forEach(function(message) {
                     message.active = false;
@@ -165,35 +151,6 @@ found in the LICENSE file. -->
                 this.async(function() {
                     this.$.messages.scrollIntoViewIfNeeded();
                 }, null, 350);
-            },
-            saveMessage: function(event) {
-                if (event.detail.messageText)
-                    this.publish({message: event.detail.messageText});
-            },
-            quickLgtm: function(options) {
-                this.publish({lgtm: true});
-            },
-            quickLgtmAndCommit: function(options) {
-                this.publish({
-                    lgtm: true,
-                    commit: true,
-                });
-            },
-            handlePublishKey: function(event) {
-                event.preventDefault();
-                this.showPublishDialog();
-            },
-            publish: function(options) {
-                this.butterbarMessage = "Saving...";
-                var self = this;
-                this.issue.publish(options).then(function() {
-                    self.butterbarMessage = "";
-                    self.fire("issue-refresh");
-                }).catch(function(e) {
-                    self.butterbarMessage = "";
-                    console.log(e);
-                    // TODO(esprehn): We should show an error message.
-                });
             },
             handlePatchsetToggled: function(event) {
                 this.$.diffCursor.resetStops();

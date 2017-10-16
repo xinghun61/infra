@@ -55,66 +55,6 @@ class TestUtilities(TestCase):
         views._add_HTML_tags(body))
 
 
-class TestPublish(TestCase):
-  """Test publish functions."""
-
-  def setUp(self):
-    super(TestPublish, self).setUp()
-    self.user = User('foo@example.com')
-    self.login('foo@example.com')
-    self.issue = models.Issue(subject='test')
-    self.issue.local_base = False
-    self.issue.put()
-    self.ps = models.PatchSet(parent=self.issue.key, issue_key=self.issue.key)
-    self.ps.data = load_file('ps1.diff')
-    self.ps.put()
-    self.patches = engine.ParsePatchSet(self.ps)
-    ndb.put_multi(self.patches)
-
-  def test_draft_details_no_base_file(self):
-    request = MockRequest(User('foo@example.com'), issue=self.issue)
-    # add a comment and render
-    cmt1 = models.Comment(
-      patch_key=self.patches[0].key, parent=self.patches[0].key)
-    cmt1.text = 'test comment'
-    cmt1.lineno = 1
-    cmt1.left = False
-    cmt1.draft = True
-    cmt1.author = self.user
-    cmt1.put()
-    # Add a second comment
-    cmt2 = models.Comment(
-      patch_key=self.patches[1].key, parent=self.patches[1].key)
-    cmt2.text = 'test comment 2'
-    cmt2.lineno = 2
-    cmt2.left = False
-    cmt2.draft = True
-    cmt2.author = self.user
-    cmt2.put()
-    # Add fake content
-    content1 = models.Content(text="foo\nbar\nbaz\nline\n")
-    content1.put()
-    content2 = models.Content(text="foo\nbar\nbaz\nline\n")
-    content2.put()
-    cmt1_patch = cmt1.patch_key.get()
-    cmt1_patch.content_key = content1.key
-    cmt1_patch.put()
-    cmt2_patch = cmt2.patch_key.get()
-    cmt2_patch.content_key = content2.key
-    cmt2_patch.put()
-    # Mock get content calls. The first fails with an FetchError,
-    # the second succeeds (see issue384).
-    def raise_err():
-      raise models.FetchError()
-    cmt1.patch_key.get().get_content = raise_err
-    cmt2.patch_key.get().get_patched_content = lambda: content2
-    _, comments = views._get_draft_comments(request, self.issue)
-    self.assertEqual(len(comments), 2)
-    # Try to render draft details using the patched Comment
-    # instances from here.
-    views._get_draft_details(request, [cmt1, cmt2])
-
-
 class TestSearch(TestCase):
 
   def setUp(self):

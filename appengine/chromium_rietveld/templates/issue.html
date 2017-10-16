@@ -8,10 +8,7 @@
     comment{{issue.draft_count|pluralize}}{%endif%}
     {%if has_draft_message%}{%if issue.draft_count%}and {%endif%}a draft
     message{%endif%}.
-    Drafts are not viewable by others;
-    use <a class="novisit"
-	   href="{%url codereview.views.publish issue.key.id%}">
-    Publish+Mail Comments</a> ('m') to let others view them.
+    Drafts are not viewable by others.
   </div>
 {%endif%}
 
@@ -152,17 +149,6 @@
             <pre name="cl-message-{{forloop.counter0}}"
             >{{message.text|wordwrap:80|urlizetrunc:80}}</pre>
           </div>
-          <div class="message-actions">
-            {%if user%}
-              <a href="javascript:M_replyToMessage('{{forloop.counter0}}', '{{message.date|date:"Y/m/d H:i:s"}}', '{%nickname message.sender True%}', '{{message.key.id}}')"
-                 id="message-reply-href-{{forloop.counter0}}">Reply</a>
-              <textarea rows="20" name="message" style="display:none; width:99%"></textarea>
-              <div id="message-reply-{{forloop.counter0}}"
-                   style="display:none;"></div>
-            {%else%}
-              <a href="{{sign_in}}">Sign in</a> to reply to this message.
-            {%endif%}
-          </div>
         </div>
 
       </div>
@@ -206,31 +192,5 @@ var lastMsgID = {{messages|length}};
   // -->
 </script>
 
-
-{%if user%}
-  <div style="display:none;">
-    <form method="POST" action="{%url codereview.views.publish issue.key.id%}"
-          id="message-reply-form">
-      <input type="hidden" name="xsrf_token" value="{{xsrf_token}}">
-      <div></div>
-      <input type="hidden" name="in_reply_to" value="" />
-      <input type="hidden" name="subject" value="{{issue.subject}}" />
-      <input type="hidden" name="message_only" value="1" />
-      <input type="submit" value="Send Message" />
-      <input type="button" value="Discard" name="discard" />
-      <input type="checkbox" name="send_mail" value="1"
-        id="message-reply-send-mail" checked="checked" />
-      <label for="message-reply-send-mail">Send mail to reviewers</label>
-      <input type="hidden" name="add_as_reviewer" value="0" />
-      <input type="checkbox" name="add_as_reviewer" value="1"
-        id="message-reply-add-as-reviewer" />
-        <label for="message-reply-add-as-reviewer">
-          Add yourself as a reviewer</label>
-    </form>
-  </div>
-  <a id="resizer" class="resizer" style="display:none;cursor:pointer">
-    <img src="{{media_url}}zippyplus.gif">
-  </a>
-{%endif%}
 
 {%endblock issue_body%}

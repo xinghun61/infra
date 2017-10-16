@@ -5,7 +5,6 @@
 "use strict";
 
 // https://codereview.chromium.org/api/148223004/?messages=true
-// TODO(esprehn): support loading all drafts by parsing /publish and then doing PatchFile.loadDrafts()
 function Issue(id)
 {
     this.description = "";
@@ -39,18 +38,12 @@ function Issue(id)
 }
 
 Issue.DETAIL_URL = "/api/{1}?messages=true";
-Issue.PUBLISH_URL = "/{1}/publish";
 Issue.EDIT_URL = "/{1}/edit";
 Issue.DELETE_DRAFTS_URL = "/{1}/delete_drafts";
 
 Issue.prototype.getDetailUrl = function()
 {
     return Issue.DETAIL_URL.assign(encodeURIComponent(this.id));
-};
-
-Issue.prototype.getPublishUrl = function()
-{
-    return Issue.PUBLISH_URL.assign(encodeURIComponent(this.id));
 };
 
 Issue.prototype.getEditUrl = function()
@@ -210,35 +203,6 @@ Issue.prototype.edit = function(options)
         var error = new Error(errorData.message);
         error.fieldName = errorData.fieldName;
         throw error;
-    });
-};
-
-Issue.prototype.publish = function(options)
-{
-    var message = options.message || "";
-    var addAsReviewer = options.addAsReviewer;
-    var publishDrafts = options.publishDrafts;
-    var commit = options.commit;
-    var cqDryRun = options.cqDryRun;
-    var reviewers = Object.has(options, "reviewers") ? options.reviewers : this.reviewerEmails();
-    var cc = Object.has(options, "cc") ? options.cc : this.ccEmails();
-    if (options.lgtm) {
-        message = "lgtm\n\n" + message;
-        addAsReviewer = true;
-        publishDrafts = true;
-    }
-    return sendFormData(this.getPublishUrl(), {
-        subject: this.subject,
-        message_only: publishDrafts ? "0" : "1",
-        add_as_reviewer: addAsReviewer ? "1" : "0",
-        commit: commit ? "1" : "0",
-        cq_dry_run: cqDryRun ? "1" : "0",
-        message: message,
-        send_mail: "1",
-        reviewers: reviewers,
-        cc: cc,
-    }, {
-        sendXsrfToken: true,
     });
 };
 

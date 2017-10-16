@@ -59,21 +59,6 @@
               <span class="disabled">Can't Edit</span>
             {%endif%}
             <br/>
-            {%if user%}
-              <a class="novisit"
-                 href="{%url codereview.views.publish issue.key.id%}">
-                Publish+Mail Comments
-              </a> ('m')
-            {%else%}
-              <span class="disabled">Can't Publish+Mail</span>
-            {%endif%}
-            {%if last_patchset and first_patch%}
-              <br/>
-              <a class="novisit"
-                 href="{%url codereview.views.diff issue.key.id,last_patchset.key.id,first_patch.filename%}">
-                <b>Start Review</b>
-              </a>
-            {%endif%}
           </div>
         {%endblock%}
         <div class="issue_details_sidebar">

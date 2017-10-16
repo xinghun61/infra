@@ -286,73 +286,6 @@ class EditLocalBaseForm(forms.Form):
     return None
 
 
-class PublishForm(forms.Form):
-
-  subject = forms.CharField(max_length=MAX_SUBJECT,
-                            widget=forms.TextInput(attrs={'size': 60}))
-  reviewers = forms.CharField(
-      required=False,
-      max_length=MAX_REVIEWERS,
-      widget=AccountInput(attrs={'size': 60}),
-      help_text=REQUIRED_REVIEWERS_HELP_TEXT)
-  cc = forms.CharField(required=False,
-                       max_length=MAX_CC,
-                       label = 'CC',
-                       widget=AccountInput(attrs={'size': 60}))
-  send_mail = forms.BooleanField(required=False)
-  add_as_reviewer = forms.BooleanField(required=False, initial=True)
-  message = forms.CharField(required=False,
-                            max_length=MAX_MESSAGE,
-                            widget=forms.Textarea(attrs={'cols': 60}))
-  message_only = forms.BooleanField(required=False,
-                                    widget=forms.HiddenInput())
-  no_redirect = forms.BooleanField(required=False,
-                                   widget=forms.HiddenInput())
-  commit = forms.BooleanField(required=False, widget=forms.HiddenInput())
-  in_reply_to = forms.CharField(required=False,
-                                max_length=MAX_DB_KEY_LENGTH,
-                                widget=forms.HiddenInput())
-  auto_generated = forms.BooleanField(required=False,
-                                      widget=forms.HiddenInput(),
-                                      initial=False)
-  cq_dry_run = forms.BooleanField(required=False,
-                                  widget=forms.HiddenInput(),
-                                  initial=False)
-  cq_status_url = forms.CharField(required=False,
-                                  widget=forms.HiddenInput())
-
-
-class MiniPublishForm(forms.Form):
-
-  reviewers = forms.CharField(
-      required=False,
-      max_length=MAX_REVIEWERS,
-      widget=AccountInput(attrs={'size': 60}),
-      help_text=REQUIRED_REVIEWERS_HELP_TEXT)
-  cc = forms.CharField(required=False,
-                       max_length=MAX_CC,
-                       label = 'CC',
-                       widget=AccountInput(attrs={'size': 60}))
-  send_mail = forms.BooleanField(required=False)
-  add_as_reviewer = forms.BooleanField(required=False, initial=True)
-  message = forms.CharField(required=False,
-                            max_length=MAX_MESSAGE,
-                            widget=forms.Textarea(attrs={'cols': 60}))
-  message_only = forms.BooleanField(required=False,
-                                    widget=forms.HiddenInput())
-  no_redirect = forms.BooleanField(required=False,
-                                   widget=forms.HiddenInput())
-  commit = forms.BooleanField(required=False, widget=forms.HiddenInput())
-  auto_generated = forms.BooleanField(required=False,
-                                      widget=forms.HiddenInput(),
-                                      initial=False)
-  cq_dry_run = forms.BooleanField(required=False,
-                                  widget=forms.HiddenInput(),
-                                  initial=False)
-  cq_status_url = forms.CharField(required=False,
-                                  widget=forms.HiddenInput())
-
-
 class BlockForm(forms.Form):
   blocked = forms.BooleanField(
       required=False,
@@ -3109,159 +3042,6 @@ def _get_mail_template(request, issue, full_diff=False):
   return template, context
 
 
-@deco.login_required
-@deco.issue_required
-@deco.xsrf_required
-def publish(request):
-  """ /<issue>/publish - Publish draft comments and send mail."""
-  issue = request.issue
-  if issue.edit_allowed:
-    form_class = PublishForm
-  else:
-    form_class = MiniPublishForm
-  draft_message = None
-  if not request.POST.get('message_only', None):
-    query = models.Message.query(
-        models.Message.sender == request.user.email(),
-        models.Message.draft == True,
-        ancestor=issue.key)
-    draft_message = query.get()
-  if request.method != 'POST':
-    if _use_new_ui(request):
-      return _serve_new_ui(request)
-    reviewers = issue.reviewers[:]
-    cc = issue.cc[:]
-    reviewers = [models.Account.get_nickname_for_email(reviewer,
-                                                       default=reviewer)
-                 for reviewer in reviewers]
-    required_reviewers = [models.Account.get_nickname_for_email(
-                              required_reviewer, default=required_reviewer)
-                          for required_reviewer in issue.required_reviewers]
-    reviewers_with_required_prefix = _get_reviewers_with_required_prefix(
-        reviewers, required_reviewers)
-    ccs = [models.Account.get_nickname_for_email(cc, default=cc) for cc in cc]
-    tbd, comments = _get_draft_comments(request, issue, True)
-    preview = _get_draft_details(request, comments)
-    if draft_message is None:
-      msg = ''
-    else:
-      msg = draft_message.text
-    form = form_class(initial={'subject': issue.subject,
-                               'reviewers': ', '.join(
-                                   reviewers_with_required_prefix),
-                               'cc': ', '.join(ccs),
-                               'send_mail': True,
-                               'message': msg,
-                               })
-    return respond(request, 'publish.html', {'form': form,
-                                             'issue': issue,
-                                             'preview': preview,
-                                             'draft_message': draft_message,
-                                             })
-
-  # Supply subject so that if this is a bare request to /publish, it won't
-  # fail out if we've selected PublishForm (which requires a subject).
-  augmented_POST = request.POST.copy()
-  if issue.subject:
-    augmented_POST.setdefault('subject', issue.subject)
-  form = form_class(augmented_POST)
-
-  # If the user is blocked, intentionally redirects him to the form again to
-  # confuse him.
-  account = models.Account.get_account_for_user(request.user)
-  if account.blocked or not form.is_valid():
-    return respond(request, 'publish.html', {'form': form, 'issue': issue})
-  if issue.edit_allowed:
-    issue.subject = form.cleaned_data['subject']
-  if form.is_valid() and not form.cleaned_data.get('message_only', False):
-    reviewers, required_reviewers = _get_emails(form, 'reviewers')
-  else:
-    reviewers = issue.reviewers
-    required_reviewers = issue.required_reviewers
-  # Avoid adding service accounts to reviewers
-  if (form.is_valid() and
-      form.cleaned_data.get('add_as_reviewer', True) and
-      not request.user.email().endswith('gserviceaccount.com') and
-      request.user != issue.owner and
-      request.user.email() not in reviewers and
-      not issue.is_collaborator(request.user)):
-    reviewers.append(request.user.email())
-
-  if form.is_valid() and not form.cleaned_data.get('message_only', False):
-    cc, _ = _get_emails(form, 'cc')
-  else:
-    cc = issue.cc
-    # The user is in the reviewer list, remove them from CC if they're there.
-    if request.user.email() in cc:
-      cc.remove(request.user.email())
-  if not form.is_valid():
-    return respond(request, 'publish.html', {'form': form, 'issue': issue})
-
-  _log_reviewers_if_changed(
-      request=request, orig_reviewers=issue.reviewers, new_reviewers=reviewers,
-      label='reviewers')
-  _log_reviewers_if_changed(
-      request=request, orig_reviewers=issue.required_reviewers,
-      new_reviewers=required_reviewers,
-      label='required reviewers')
-  issue.reviewers = reviewers
-  issue.required_reviewers = required_reviewers
-  issue.cc = cc
-  if (form.cleaned_data['commit'] and issue.edit_allowed and not issue.closed
-      and issue.is_cq_available):
-    issue.commit = True
-    commit_checked_msg = 'The CQ bit was checked by %s' % (
-        request.user.email().lower())
-    make_message(request, issue, commit_checked_msg, send_mail=False,
-                 auto_generated=True).put()
-  if not form.cleaned_data.get('message_only', False):
-    tbd, comments = _get_draft_comments(request, issue)
-  else:
-    tbd = []
-    comments = []
-  issue.update_comment_count(len(comments))
-  tbd.append(issue)
-
-  if comments:
-    logging.warn('Publishing %d comments', len(comments))
-
-  email_to = None
-  if request.user.email().lower() in (CQ_COMMIT_BOT_EMAIL, CQ_SERVICE_ACCOUNT):
-    if form.cleaned_data['cq_status_url']:
-      issue.update_cq_status_url_if_any(
-          form.cleaned_data['cq_status_url'].strip())
-
-    if form.cleaned_data['cq_dry_run']:
-      # Email only the triggerer and the CL owner the dry run result,
-      # More details are in http://crbug.com/626427.
-      email_to = list(set([issue.owner.email(),
-                           issue.cq_dry_run_last_triggered_by]))
-
-  msg = make_message(request, issue,
-                     form.cleaned_data['message'],
-                     comments,
-                     form.cleaned_data['send_mail'],
-                     draft=draft_message,
-                     email_to=email_to,
-                     in_reply_to=form.cleaned_data.get('in_reply_to'),
-                     auto_generated=form.cleaned_data['auto_generated'])
-  tbd.append(msg)
-
-  for obj in tbd:
-    obj.put()
-
-  if form.cleaned_data['commit'] and not issue.cq_dry_run and not issue.closed:
-    notify_approvers_of_new_patchsets(request, issue)
-
-  notify_xmpp.notify_issue(request, issue, 'Comments published')
-
-  # There are now no comments here (modulo race conditions)
-  models.Account.current_user_account.update_drafts(issue, 0)
-  if form.cleaned_data.get('no_redirect', False):
-    return HttpTextResponse('OK')
-  return HttpResponseRedirect(reverse(show, args=[issue.key.id()]))
-
-
 def _encode_safely(s):
   """Helper to turn a unicode string into 8-bit bytes."""
   if isinstance(s, unicode):
@@ -3994,10 +3774,6 @@ def _process_incoming_mail(raw_message, recipients):
                        text=body,
                        draft=False,
                        issue_was_closed=issue.closed)
-  if msg.approval:
-    publish_url = _absolute_url_in_preferred_domain(
-        issue.project, publish, args=[issue.key.id()])
-    _send_lgtm_reminder(sender, subject, publish_url)
   msg.was_inbound_email = True
 
   # Add sender to reviewers if needed.
@@ -4018,13 +3794,6 @@ def _process_incoming_mail(raw_message, recipients):
   issue.calculate_updates_for(msg)
   issue.put()
   msg.put()
-
-
-def _absolute_url_in_preferred_domain(project, handler, args=None):
-  """Return a URL for handler via our preferred domain name, if possible."""
-  handler_url_path = reverse(handler, args=args)
-  host = common.get_preferred_domain(project)
-  return 'https://%s%s' % (host, handler_url_path)
 
 
 LGTM_REMINDER_BODY = """
