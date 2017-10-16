@@ -5,67 +5,57 @@ indexes:
   properties:
   - name: found_suspects
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: has_regression_range
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: found_suspects
   - name: has_regression_range
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: found_suspects
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: found_suspects
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: has_regression_range
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: has_regression_range
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -73,7 +63,6 @@ indexes:
   - name: has_regression_range
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -81,7 +70,6 @@ indexes:
   - name: has_regression_range
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -89,7 +77,6 @@ indexes:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -97,7 +84,6 @@ indexes:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -106,48 +92,41 @@ indexes:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: suspected_components_triage_status
   - name: requested_time
-    direction: desc
 
 # With search by signature feature.
 - kind: FracasCrashAnalysis
   properties:
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: found_suspects
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: has_regression_range
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
   - name: regression_range_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -155,7 +134,6 @@ indexes:
   - name: has_regression_range
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -163,7 +141,6 @@ indexes:
   - name: regression_range_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -171,7 +148,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -179,7 +155,6 @@ indexes:
   - name: regression_range_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -187,7 +162,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -195,7 +169,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -204,7 +177,6 @@ indexes:
   - name: regression_range_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -213,7 +185,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -222,7 +193,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -231,7 +201,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: FracasCrashAnalysis
   properties:
@@ -241,74 +210,63 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 # For cracas crash dashboard.
 - kind: CracasCrashAnalysis
   properties:
   - name: found_suspects
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: has_regression_range
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: found_suspects
   - name: has_regression_range
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: found_suspects
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: found_suspects
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: has_regression_range
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: has_regression_range
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -316,7 +274,6 @@ indexes:
   - name: has_regression_range
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -324,7 +281,6 @@ indexes:
   - name: has_regression_range
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -332,7 +288,6 @@ indexes:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -340,7 +295,6 @@ indexes:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -349,48 +303,41 @@ indexes:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: suspected_components_triage_status
   - name: requested_time
-    direction: desc
 
 # With search by signature feature.
 - kind: CracasCrashAnalysis
   properties:
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: found_suspects
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: has_regression_range
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
   - name: regression_range_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -398,7 +345,6 @@ indexes:
   - name: has_regression_range
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -406,7 +352,6 @@ indexes:
   - name: regression_range_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -414,7 +359,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -422,7 +366,6 @@ indexes:
   - name: regression_range_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -430,7 +373,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -438,7 +380,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -447,7 +388,6 @@ indexes:
   - name: regression_range_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -456,7 +396,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -465,7 +404,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -474,7 +412,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: CracasCrashAnalysis
   properties:
@@ -484,74 +421,63 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 # For clusterfuzz crash dashboard.
 - kind: ClusterfuzzAnalysis
   properties:
   - name: found_suspects
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: has_regression_range
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: found_suspects
   - name: has_regression_range
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: found_suspects
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: found_suspects
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: has_regression_range
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: has_regression_range
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -559,7 +485,6 @@ indexes:
   - name: has_regression_range
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -567,7 +492,6 @@ indexes:
   - name: has_regression_range
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -575,7 +499,6 @@ indexes:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -583,7 +506,6 @@ indexes:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -592,48 +514,41 @@ indexes:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: suspected_components_triage_status
   - name: requested_time
-    direction: desc
 
 # With search by testcase_id feature.
 - kind: ClusterfuzzAnalysis
   properties:
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: found_suspects
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: has_regression_range
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: suspected_cls_triage_status
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
   - name: regression_range_triage_status
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -641,7 +556,6 @@ indexes:
   - name: has_regression_range
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -649,7 +563,6 @@ indexes:
   - name: regression_range_triage_status
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -657,7 +570,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -665,7 +577,6 @@ indexes:
   - name: regression_range_triage_status
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -673,7 +584,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -681,7 +591,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -690,7 +599,6 @@ indexes:
   - name: regression_range_triage_status
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -699,7 +607,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -708,7 +615,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -717,7 +623,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 - kind: ClusterfuzzAnalysis
   properties:
@@ -727,74 +632,63 @@ indexes:
   - name: suspected_cls_triage_status
   - name: testcase_id
   - name: requested_time
-    direction: desc
 
 # For UMA sampling profiler crash dashboard.
 - kind: UMASamplingProfiler
   properties:
   - name: found_suspects
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: has_regression_range
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: found_suspects
   - name: has_regression_range
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: found_suspects
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: found_suspects
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: has_regression_range
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: has_regression_range
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -802,7 +696,6 @@ indexes:
   - name: has_regression_range
   - name: regression_range_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -810,7 +703,6 @@ indexes:
   - name: has_regression_range
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -818,7 +710,6 @@ indexes:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -826,7 +717,6 @@ indexes:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -835,48 +725,41 @@ indexes:
   - name: regression_range_triage_status
   - name: suspected_cls_triage_status
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: suspected_components_triage_status
   - name: requested_time
-    direction: desc
 
 # With search by signature feature.
 - kind: UMASamplingProfiler
   properties:
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: found_suspects
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: has_regression_range
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
   - name: regression_range_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -884,7 +767,6 @@ indexes:
   - name: has_regression_range
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -892,7 +774,6 @@ indexes:
   - name: regression_range_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -900,7 +781,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -908,7 +788,6 @@ indexes:
   - name: regression_range_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -916,7 +795,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -924,7 +802,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -933,7 +810,6 @@ indexes:
   - name: regression_range_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -942,7 +818,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -951,7 +826,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -960,7 +834,6 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
 
 - kind: UMASamplingProfiler
   properties:
@@ -970,4 +843,3 @@ indexes:
   - name: suspected_cls_triage_status
   - name: signature
   - name: requested_time
-    direction: desc
