@@ -391,6 +391,9 @@ if __name__ == '__main__':
     sys.exit(1)
   try:
     sys.exit(main())
+  except containers.FrozenEngineError:
+    logging.exception('Docker engine frozen, triggering host reboot.')
+    reboot_host()
   except Exception as e:
     logging.exception('Exception:')
     raise e

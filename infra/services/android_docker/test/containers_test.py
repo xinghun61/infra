@@ -1,11 +1,13 @@
 # Copyright (c) 2016 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+# pylint: disable=unused-argument
 
 from datetime import datetime
 import collections
 import docker
 import mock
+import requests
 import unittest
 
 from infra.services.android_docker import containers
@@ -92,12 +94,13 @@ class FakeContainerBackend(object):
     self.name = name
     self.was_deleted = False
     self.was_started = False
+    self.was_stopped = False
     self.is_paused = False
     self.exec_outputs = []
     self.exec_inputs = []
     self.attrs = {}
 
-  def remove(self):
+  def remove(self, **kwargs):
     self.was_deleted = True
 
   def start(self):
@@ -111,7 +114,10 @@ class FakeContainerBackend(object):
     assert self.is_paused
     self.is_paused = False
 
-  def exec_run(self, cmd):
+  def stop(self, **kwargs):
+    self.was_stopped = True
+
+  def exec_run(self, cmd, **kwargs):
     self.exec_inputs.append(cmd)
     return self.exec_outputs.pop(0)
 
@@ -287,6 +293,20 @@ class TestDockerClient(unittest.TestCase):
     self.assertTrue(old_container.swarming_bot_killed)
 
   @mock.patch('docker.from_env')
+  def test_stop_frozen_containers(self, mock_from_env):
+    def _raise_frozen_container(*args, **kwargs):
+      raise containers.FrozenContainerError()
+    frozen_container1 = FakeContainer('frozen_container1', uptime=999)
+    frozen_container1.kill_swarming_bot = _raise_frozen_container
+    frozen_container2 = FakeContainer('frozen_container2', uptime=999)
+    frozen_container2.kill_swarming_bot = _raise_frozen_container
+    mock_from_env.return_value = self.fake_client
+
+    with self.assertRaises(containers.FrozenEngineError):
+      containers.DockerClient().stop_old_containers(
+          [frozen_container1, frozen_container2], 100)
+
+  @mock.patch('docker.from_env')
   def test_delete_stopped_containers(self, mock_from_env):
     mock_from_env.return_value = self.fake_client
 
@@ -352,6 +372,13 @@ class TestContainer(unittest.TestCase):
     pid = self.container.get_swarming_bot_pid()
     self.assertEquals(pid, None)
 
+  def test_get_swarming_bot_pid_404_error(self):
+    def _raises_docker_not_found(*args, **kwargs):
+      raise docker.errors.NotFound('404')
+    self.container_backend.exec_run = _raises_docker_not_found
+    pid = self.container.get_swarming_bot_pid()
+    self.assertEquals(pid, None)
+
   def test_kill_swarming_bot(self):
     self.container_backend.exec_outputs = ['123', '']
     self.container.kill_swarming_bot()
@@ -363,6 +390,35 @@ class TestContainer(unittest.TestCase):
     # Ensure nothing was killed when the bot's pid couldn't be found.
     self.assertFalse(
         any('kill -15' in cmd for cmd in self.container_backend.exec_inputs))
+    self.assertTrue(self.container_backend.was_stopped)
+
+  def test_kill_swarming_bot_cant_kill(self):
+    def _raise_requests_timeout(**kwargs):
+      raise requests.exceptions.ReadTimeout()
+    self.container_backend.exec_outputs = ['omg failure']
+    self.container_backend.stop = _raise_requests_timeout
+    self.container.kill_swarming_bot()
+    # Ensure nothing was killed when the bot's pid couldn't be found.
+    self.assertFalse(
+        any('kill -15' in cmd for cmd in self.container_backend.exec_inputs))
+    self.assertFalse(self.container_backend.was_stopped)
+    self.assertTrue(self.container_backend.was_deleted)
+
+  def test_kill_swarming_bot_cant_remove(self):
+    def _raise_requests_timeout(**kwargs):
+      raise requests.exceptions.ReadTimeout()
+    def _raise_docker_api_error(**kwargs):
+      raise docker.errors.APIError('omg error')
+    self.container_backend.exec_outputs = ['omg failure']
+    self.container_backend.stop = _raise_requests_timeout
+    self.container_backend.remove = _raise_docker_api_error
+    with self.assertRaises(containers.FrozenContainerError):
+      self.container.kill_swarming_bot()
+    # Ensure nothing was killed when the bot's pid couldn't be found.
+    self.assertFalse(
+        any('kill -15' in cmd for cmd in self.container_backend.exec_inputs))
+    self.assertFalse(self.container_backend.was_stopped)
+    self.assertFalse(self.container_backend.was_deleted)
 
   @mock.patch('time.sleep')
   @mock.patch('os.open')

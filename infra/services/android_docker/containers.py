@@ -47,6 +47,14 @@ _DOCKER_CGROUP = '/sys/fs/cgroup/devices/docker'
 _SWARMING_URL_ENV_VAR = 'SWARM_URL'
 
 
+class FrozenEngineError(Exception):
+  """Raised when the docker engine is unresponsive."""
+
+
+class FrozenContainerError(Exception):
+  """Raised when a container is unresponsive."""
+
+
 def get_container_name(device):
   """Maps a device to its container name."""
   return 'android_%s' % device.serial
@@ -137,12 +145,19 @@ class DockerClient(object):
 
   def stop_old_containers(self, running_containers, max_uptime):
     now = datetime.utcnow()
+    frozen_containers = 0
     for container in running_containers:
       uptime = container.get_container_uptime(now)
       logging.debug(
-          'Container %s has uptime of %d minutes.', container.name, uptime)
+          'Container %s has uptime of %s minutes.', container.name, str(uptime))
       if uptime is not None and uptime > max_uptime:
-        container.kill_swarming_bot()
+        try:
+          container.kill_swarming_bot()
+        except FrozenContainerError:
+          frozen_containers += 1
+    if frozen_containers == len(running_containers):
+      logging.error('All containers frozen. Docker engine most likely hosed.')
+      raise FrozenEngineError()
 
   def delete_stopped_containers(self):
     for container in self._client.containers.list(filters={'status':'exited'}):
@@ -207,8 +222,13 @@ class Container(object):
     return ((now - start_time).total_seconds())/60
 
   def get_swarming_bot_pid(self):
-    output = self._container.exec_run(
-        'su chrome-bot -c "lsof -t /b/swarming/swarming.lck"').strip()
+    try:
+      output = self._container.exec_run(
+          'su chrome-bot -c "lsof -t /b/swarming/swarming.lck"',
+          detach=True).strip()
+    except docker.errors.NotFound:
+      logging.error('Docker engine returned 404 for container %s', self.name)
+      return None
     if 'rpc error:' in output:
       logging.error(
           'Unable to get bot pid of %s: %s', self._container.name, output)
@@ -216,8 +236,9 @@ class Container(object):
     try:
       return int(output)
     except ValueError:
-      logging.exception(
-          'Unable to get bot pid of %s: %s', self._container.name, output)
+      logging.error(
+          'Unable to get bot pid of %s. Output of lsof: "%s"',
+          self._container.name, output)
       return None
 
   def kill_swarming_bot(self):
@@ -232,6 +253,19 @@ class Container(object):
         logging.exception('Unable to send SIGTERM to swarming bot.')
       else:
         logging.info('Sent SIGTERM to swarming bot of %s.', self.name)
+    else:
+      logging.warning('Unknown bot pid. Stopping container.')
+      try:
+        self.stop()
+      except requests.exceptions.ReadTimeout:
+        logging.error('Timeout when stopping %s, force removing...', self.name)
+        try:
+          self.remove(force=True)
+        except docker.errors.APIError:
+          logging.exception(
+              'Unable to remove %s. The docker engine is most likely stuck '
+              'and will need a reboot.', self.name)
+          raise FrozenContainerError()
 
   def _make_dev_file_cmd(self, path, major, minor):
     cmd = ('mknod %(path)s c %(major)d %(minor)d && '
@@ -248,6 +282,12 @@ class Container(object):
 
   def unpause(self):
     self._container.unpause()
+
+  def stop(self, timeout=10):
+    self._container.stop(timeout=timeout)
+
+  def remove(self, force=False):
+    self._container.remove(force=force)
 
   def add_device(self, device, sleep_time=1.0):
     # Remove the old dev file from the container and wait one second to
