@@ -36,6 +36,7 @@ class TestRepo(test_util.TestBasis):
         f.write(fake_git_config)
     prev_env = os.environ.copy()
     os.environ['HOME'] = fake_home
+    os.environ.pop('INFRA_GIT_WRAPPER_HOME', None)  # see crbug.com/756224#c33
     try:
       r = self.mkRepo()
       # make a mirror of THAT, .netrc is not actually used, but whatever, code
