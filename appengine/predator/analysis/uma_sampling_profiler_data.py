@@ -56,6 +56,9 @@ class UMASamplingProfilerData(CrashData):
            {'version': '54.0.2834.0', 'channel': 'canary'},
            {'version': '54.0.2835.0', 'channel': 'canary'},
         ],
+        # Unique identifier for collection scenario and release pair associated
+        # with this regression subtree.
+        'configuration_id': '37497AC5DD7ACEC4',
         # Depth of the root of the subtree in the stacks, with the root at depth
         # 0:
         'subtree_root_depth': 19,
@@ -79,6 +82,7 @@ class UMASamplingProfilerData(CrashData):
     self.thread_type = regression_data['thread_type']
     self.collection_trigger = regression_data['collection_trigger']
     self.chrome_releases = regression_data['chrome_releases']
+    self.configuration_id = regression_data['configuration_id']
     # Unique identifier for the subtree:
     self.subtree_id = regression_data['subtree_id']
     self.subtree_root_id = regression_data['subtree_root_id']
@@ -126,12 +130,7 @@ class UMASamplingProfilerData(CrashData):
 
   @property
   def identifiers(self):
-    return {'platform': self.platform,
-            'process_type': self.process_type,
-            'thread_type': self.thread_type,
-            'collection_trigger': self.collection_trigger,
-            'startup_phase': self.startup_phase,
-            'chrome_releases': self.chrome_releases,
+    return {'configuration_id': self.configuration_id,
             'subtree_id': self.subtree_id}
 
   @property

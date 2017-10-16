@@ -40,6 +40,7 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
   thread_type = ndb.StringProperty()
   collection_trigger = ndb.StringProperty()
   chrome_releases = ndb.JsonProperty()
+  configuration_id = ndb.StringProperty()
   subtree_id = ndb.StringProperty()
   subtree_root_id = ndb.StringProperty()
   subtree_change_ids = ndb.JsonProperty()
@@ -53,6 +54,7 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
     self.thread_type = None
     self.collection_trigger = None
     self.chrome_releases = None
+    self.configuration_id = None
     self.subtree_id = None
     self.subtree_root_id = None
     self.subtree_change_ids = None
@@ -72,6 +74,7 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
     self.thread_type = regression_data.thread_type
     self.collection_trigger = regression_data.collection_trigger
     self.chrome_releases = regression_data.chrome_releases
+    self.configuration_id = regression_data.configuration_id
     self.subtree_id = regression_data.subtree_id
     self.subtree_root_id = regression_data.subtree_root_id
     self.subtree_change_ids = regression_data.subtree_change_ids
@@ -137,6 +140,7 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
         'thread_type': self.thread_type,
         'collection_trigger': self.collection_trigger,
         'chrome_releases': self.chrome_releases,
+        'configuration_id': self.configuration_id,
         'subtree_id': self.subtree_id,
         'subtree_root_id': self.subtree_root_id,
         'subtree_change_ids': self.subtree_change_ids,
@@ -153,6 +157,7 @@ class UMASamplingProfilerAnalysis(CrashAnalysis):
         'collection_trigger': self.collection_trigger,
         'chrome_releases': self.chrome_releases,
         'subtree_root_depth': self.subtree_root_depth,
+        'configuration_id': self.configuration_id,
         'subtree_id': self.subtree_id,
         'subtree_root_id': self.subtree_root_id,
         'subtree_change_ids': self.subtree_change_ids,

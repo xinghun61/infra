@@ -61,6 +61,7 @@ TEST_DATA = {
       ]
     }
   ],
+  'configuration_id': '37497AC5DD7ACEC4',
   'subtree_id': 'AEF6F487C2EE7935',
   'subtree_root_id': '9F4E0F78CF2B2668',
   'subtree_change_ids': ['EEC7F9CAAE0BDE58', '817FAD6EAEBCCF14'],
@@ -92,6 +93,7 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
     self.assertEquals(uma_data.process_type, 'BROWSER_PROCESS')
     self.assertEquals(uma_data.startup_phase, 'MAIN_LOOP_START')
     self.assertEquals(uma_data.platform, 'win')
+    self.assertEquals(uma_data.configuration_id, '37497AC5DD7ACEC4')
     self.assertEquals(uma_data.subtree_id, 'AEF6F487C2EE7935')
     self.assertEquals(uma_data.subtree_root_id, '9F4E0F78CF2B2668')
     self.assertEquals(uma_data.subtree_change_ids,
@@ -103,13 +105,7 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
     self.assertEquals(uma_data.crashed_version, '54.0.2835.0')
     self.assertEquals(uma_data.regression_range, ('54.0.2834.0', '54.0.2835.0'))
     self.assertEquals(uma_data.identifiers, {
-        'platform': 'win',
-        'process_type': 'BROWSER_PROCESS',
-        'thread_type': 'UI_THREAD',
-        'collection_trigger': 'PROCESS_STARTUP',
-        'startup_phase': 'MAIN_LOOP_START',
-        'chrome_releases': [{'version': '54.0.2834.0', 'channel': 'canary'},
-                            {'version': '54.0.2835.0', 'channel': 'canary'}],
+        'configuration_id': '37497AC5DD7ACEC4',
         'subtree_id': 'AEF6F487C2EE7935',
     })
     self.assertEquals(uma_data.signature, 'wWinMain')

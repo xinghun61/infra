@@ -25,6 +25,7 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
     analysis.thread_type = 'UI_THREAD'
     analysis.collection_trigger = 'PROCESS_STARTUP'
     analysis.subtree_root_depth = 19
+    analysis.configuration_id = '37497AC5DD7ACEC4'
     analysis.subtree_id = 'AEF6F487C2EE7935'
     analysis.subtree_root_id = '9F4E0F78CF2B2668'
     analysis.subtree_change_ids = ['EEC7F9CAAE0BDE58', '817FAD6EAEBCCF14']
@@ -43,6 +44,7 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
     self.assertIsNone(analysis.startup_phase)
     self.assertIsNone(analysis.thread_type)
     self.assertIsNone(analysis.collection_trigger)
+    self.assertIsNone(analysis.configuration_id)
     self.assertIsNone(analysis.subtree_root_depth)
     self.assertIsNone(analysis.subtree_id)
     self.assertIsNone(analysis.subtree_root_id)
@@ -89,6 +91,8 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
     self.assertEqual(analysis.thread_type, regression_data.thread_type)
     self.assertEqual(analysis.collection_trigger,
                      regression_data.collection_trigger)
+    self.assertEqual(analysis.configuration_id,
+                     regression_data.configuration_id)
     self.assertEqual(analysis.subtree_id, regression_data.subtree_id)
     self.assertEqual(analysis.subtree_root_id, regression_data.subtree_root_id)
     self.assertEqual(analysis.subtree_change_ids,
@@ -164,6 +168,7 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
         'startup_phase': analysis.startup_phase,
         'thread_type': analysis.thread_type,
         'collection_trigger': analysis.collection_trigger,
+        'configuration_id': analysis.configuration_id,
         'subtree_root_depth': analysis.subtree_root_depth,
         'subtree_id': analysis.subtree_id,
         'subtree_root_id': analysis.subtree_root_id,
@@ -184,6 +189,7 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
         'thread_type': analysis.thread_type,
         'collection_trigger': analysis.collection_trigger,
         'chrome_releases': analysis.chrome_releases,
+        'configuration_id': analysis.configuration_id,
         'subtree_root_depth': analysis.subtree_root_depth,
         'subtree_id': analysis.subtree_id,
         'subtree_root_id': analysis.subtree_root_id,
@@ -203,6 +209,7 @@ class UMASamplingProfilerAnalysisTest(AppengineTestCase):
         'thread_type': analysis.thread_type,
         'collection_trigger': analysis.collection_trigger,
         'chrome_releases': analysis.chrome_releases,
+        'configuration_id': analysis.configuration_id,
         'subtree_root_depth': analysis.subtree_root_depth,
         'subtree_id': analysis.subtree_id,
         'subtree_root_id': analysis.subtree_root_id,
