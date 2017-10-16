@@ -53,6 +53,7 @@ COPY \
   ./
 RUN \
   chmod +x ./install-01-perl.sh \
+&& sync \
 && ARCHIVE_PATH=$$(basename ${perl5_relpath}) \
   ./install-01-perl.sh \
 && rm -rf $${SETUP_ROOT}/perl

@@ -208,7 +208,6 @@ class Builder(object):
       # Build the Docker image.
       self._system.docker([
         'build',
-        '--squash',
         '-t', dx.identifier,
         '-f', dockerfile,
         tdir,

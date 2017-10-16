@@ -30,6 +30,17 @@ def ensure_directory(*parts):
   return name
 
 
+def copy_to(src, dest_dir):
+  dst = os.path.join(dest_dir, os.path.basename(src))
+
+  LOGGER.debug('Copy %r => %r', src, dst)
+  if os.path.isdir(src):
+    shutil.copytree(src, dst, symlinks=True)
+  else:
+    shutil.copy(src, dst)
+  return dst
+
+
 def removeall(path):
   if os.path.isfile(path):
     os.remove(path)
