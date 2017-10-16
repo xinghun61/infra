@@ -17,9 +17,10 @@ class UpdateHotlists(jsonfeed.JsonFeed):
 
   def AssertBasePermission(self, mr):
     super(UpdateHotlists, self).AssertBasePermission(mr)
-    if mr.hotlist_ids:
+    hotlist_ids = (mr.hotlist_ids_add or []) + (mr.hotlist_ids_remove or [])
+    if hotlist_ids:
       hotlist_ids_dict = self.services.features.GetHotlists(
-          mr.cnxn, mr.hotlist_ids)
+          mr.cnxn, hotlist_ids)
       for _id, hotlist in hotlist_ids_dict.iteritems():
         if not permissions.CanEditHotlist(mr.auth.effective_ids, hotlist):
           raise permissions.PermissionException(

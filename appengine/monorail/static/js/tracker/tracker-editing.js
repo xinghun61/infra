@@ -1178,7 +1178,7 @@ function ShowAddToHotlistDialog() {
 function CreateNewHotlistWithIssues(onResponse, opt_SelectedIssueRefs) {
   var selectedIssueRefs = opt_SelectedIssueRefs || GetSelectedIssues();
   var data = {'issue_refs': selectedIssueRefs.join(',')}
-  CS_doPost('/hosting/addToHotlist.do', onResponse, data);
+  CS_doPost('/hosting/updateHotlists.do', onResponse, data);
 }
 
 function AddIssuesToHotlist(onResponse, opt_SelectedIssueRefs) {
@@ -1186,10 +1186,10 @@ function AddIssuesToHotlist(onResponse, opt_SelectedIssueRefs) {
   selectedHotlistIDs = GetSelectedHotlists();
   if (selectedHotlistIDs.length > 0) {
     var data = {
-      hotlist_ids: selectedHotlistIDs.join(','),
+      hotlist_ids_add: selectedHotlistIDs.join(','),
       issue_refs: selectedIssueRefs.join(','),
     }
-    CS_doPost('/hosting/addToHotlist.do', onResponse, data);
+    CS_doPost('/hosting/updateHotlists.do', onResponse, data);
   } else {
     alert('Please select some hotlists');
   }
@@ -1222,9 +1222,9 @@ function onResponseUpdateUI(event) {
   while (list.firstChild) {
     list.removeChild(list.firstChild);
   }
-  for (var i = 0; i < response['allHotlistNames'].length; i++) {
-    var url = response['allHotlistUrls'][i];
-    var name = response['allHotlistNames'][i];
+  for (var i = 0; i < response['issueHotlistNames'].length; i++) {
+    var url = response['issueHotlistUrls'][i];
+    var name = response['issueHotlistNames'][i];
     var hotlistLink = document.createElement('a');
     hotlistLink.setAttribute('href', url);
     hotlistLink.textContent = name;

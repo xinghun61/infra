@@ -505,7 +505,6 @@ class MonorailRequest(MonorailRequestBase):
     self.split_above = self.GetBoolParam('split_above')
 
     # For adding issues to hotlists servlet
-    self.hotlist_ids = self.GetIntListParam('hotlist_ids')
     self.hotlist_ids_remove = self.GetIntListParam('hotlist_ids_remove')
     self.hotlist_ids_add = self.GetIntListParam('hotlist_ids_add')
     self.issue_refs = self.GetListParam('issue_refs')
