@@ -11,6 +11,7 @@ from google.appengine.ext import ndb
 
 from common import constants
 from common.findit_http_client import FinditHttpClient
+from common.findit_http_client import HttpClientMetricsInterceptor
 from common import monitoring
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
@@ -480,10 +481,15 @@ class MonitorTryJobPipeline(BasePipeline):
     elif build.status == BuildbucketBuild.COMPLETED:
       swarming_task_id = buildbot.GetSwarmingTaskIdFromUrl(build.url)
 
+      # We want to retry 404s due to logdog's propagation delay (inherent to
+      # pubsub) of up to 3 minutes.
+      http_client = FinditHttpClient(interceptor=HttpClientMetricsInterceptor(
+          no_retry_codes=[200, 302, 401, 403, 409, 501]))
+
       if swarming_task_id:
         try:
-          report = swarming_util.GetStepLog(try_job_id, 'report',
-                                            FinditHttpClient(), 'report')
+          report = swarming_util.GetStepLog(try_job_id, 'report', http_client,
+                                            'report')
           if report:
             _RecordCacheStats(build, report)
         except (ValueError, TypeError) as e:  # pragma: no cover
@@ -496,10 +502,9 @@ class MonitorTryJobPipeline(BasePipeline):
             buildbot.ParseBuildUrl(build.url))
 
         try:
-          report = buildbot.GetStepLog(try_job_master_name,
-                                       try_job_builder_name,
-                                       try_job_build_number, 'report',
-                                       FinditHttpClient(), 'report')
+          report = buildbot.GetStepLog(
+              try_job_master_name, try_job_builder_name, try_job_build_number,
+              'report', http_client, 'report')
         except (ValueError, TypeError) as e:  # pragma: no cover
           report = {}
           logging.exception(

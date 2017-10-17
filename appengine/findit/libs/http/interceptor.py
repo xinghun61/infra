@@ -6,7 +6,7 @@ import json
 import logging
 import urlparse
 
-_NO_RETRY_CODE = [200, 302, 401, 403, 404, 409, 501]
+_NO_RETRY_CODES = [200, 302, 401, 403, 404, 409, 501]
 
 
 class HttpInterceptorBase(object):
@@ -20,6 +20,9 @@ class HttpInterceptorBase(object):
   It is expected that the caller will use the returned values for each of these
   methods instead of the ones originally sent to them.
   """
+
+  def __init__(self, no_retry_codes=None):
+    self.no_retry_codes = no_retry_codes or _NO_RETRY_CODES
 
   def GetAuthenticationHeaders(self, request):
     """An interceptor can override this method to produce auth headers.
@@ -66,7 +69,7 @@ class HttpInterceptorBase(object):
       the 'response' arg, **and a boolean indicating whether to retry**
     """
     _ = request
-    return response, response.get('status_code') not in _NO_RETRY_CODE
+    return response, response.get('status_code') not in self.no_retry_codes
 
   def OnException(self, request, exception, can_retry):
     """Override to check and/or tweak an exception raised when sending request.
