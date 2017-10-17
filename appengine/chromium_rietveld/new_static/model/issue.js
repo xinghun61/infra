@@ -42,7 +42,6 @@ function Issue(id)
 Issue.DETAIL_URL = "/api/{1}?messages=true";
 Issue.PUBLISH_URL = "/{1}/publish";
 Issue.EDIT_URL = "/{1}/edit";
-Issue.CLOSE_URL = "/{1}/close";
 Issue.FLAGS_URL = "/{1}/edit_flags";
 Issue.DELETE_DRAFTS_URL = "/{1}/delete_drafts";
 
@@ -64,11 +63,6 @@ Issue.prototype.getEditUrl = function()
 Issue.prototype.getFlagsUrl = function()
 {
     return Issue.FLAGS_URL.assign(encodeURIComponent(this.id));
-};
-
-Issue.prototype.getCloseUrl = function()
-{
-    return Issue.CLOSE_URL.assign(encodeURIComponent(this.id));
 };
 
 Issue.prototype.getDiscardAllDraftsUrl = function()
@@ -203,24 +197,6 @@ Issue.prototype.updateScores = function() {
             reviewerEmails[email] = true;
             issue.reviewers.push(User.forMailingListEmail(email));
         }
-    });
-};
-
-Issue.prototype.toggleClosed = function()
-{
-    // If we're already closed the only way to reopen is to edit().
-    if (this.closed) {
-        return this.edit({
-            subject: this.subject,
-            description: this.description,
-            reviewers: this.reviewerEmails(),
-            cc: this.ccEmails(),
-            closed: false,
-            private: this.private,
-        });
-    }
-    return sendFormData(this.getCloseUrl(), null, {
-        sendXsrfToken: true,
     });
 };
 

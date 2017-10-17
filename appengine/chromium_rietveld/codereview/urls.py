@@ -62,7 +62,6 @@ urlpatterns = patterns(
     (r'^upload$', 'upload'),
     (r'^(\d+)/edit$', 'edit'),
     (r'^(\d+)/delete$', 'delete'),
-    (r'^(\d+)/close$', 'close'),
     (r'^(\d+)/mail$', 'mailissue'),
     (r'^(\d+)/publish$', 'publish'),
     (r'^(\d+)/delete_drafts$', 'delete_drafts'),

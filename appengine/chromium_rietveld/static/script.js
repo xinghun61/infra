@@ -3312,30 +3312,6 @@ function M_jumpToPatch(select, issue, patchset, unified, opt_part) {
 }
 
 /**
- * Close a given issue.
- * @param {Integer} id The issue id.
- */
-function M_closeIssue(id) {
-  var httpreq = M_getXMLHttpRequest();
-  if (!httpreq) {
-    return true;
-  }
-  httpreq.onreadystatechange = function () {
-    if (httpreq.readyState == 4) {
-      if (httpreq.status == 200) {
-	  var elem = document.getElementById("issue-close-" + id);
-	  elem.innerHTML = '';
-	  var elem = document.getElementById("issue-title-" + id);
-	  elem.innerHTML += ' (' + httpreq.responseText + ')';
-      }
-    }
-  }
-  httpreq.open("POST", base_url + id + "/close", true);
-  httpreq.send("xsrf_token=" + xsrfToken);
-}
-
-
-/**
  * Generic callback when page is unloaded.
  */
 function M_unloadPage() {

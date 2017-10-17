@@ -2200,22 +2200,6 @@ def delete_patchset(request):
 
 
 @deco.require_methods('POST')
-@deco.issue_editor_required
-@deco.xsrf_required
-def close(request):
-  """/<issue>/close - Close an issue."""
-  issue = request.issue
-  issue.closed = True
-  issue.commit = False
-  if request.method == 'POST':
-    new_description = request.POST.get('description')
-    if new_description:
-      issue.description = new_description
-  issue.put()
-  return HttpTextResponse('Closed')
-
-
-@deco.require_methods('POST')
 @deco.issue_required
 @deco.upload_required
 def mailissue(request):
