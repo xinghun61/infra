@@ -120,7 +120,7 @@ function M_editPatchsetTitle(issue, patchset, xsrf_token,
   var new_patchset_title = prompt(
       'Please enter the new title of Patch Set ' + patch_count,
       original_patchset_title);
-  if (new_patchset_title == null) { 
+  if (new_patchset_title == null) {
     return false;
   } else if (new_patchset_title == original_patchset_title) {
     // Do not make an HTTP req if the new specified title is exactly the same.
@@ -629,7 +629,7 @@ function M_editFlags(issue) {
 }
 
 /**
- * Edit the list of pending try jobs for the given patchset. 
+ * Edit the list of pending try jobs for the given patchset.
  * @param {String} patchset The patchset key.
  */
 function M_editPendingTryJobs(patchset) {
@@ -658,9 +658,9 @@ function M_editPendingTryJobs(patchset) {
   // Move popup as need to be on screen.
   var popupRect = popupElement.getBoundingClientRect();
   if (popupRect.bottom > window.innerHeight)
-    popupElement.style.top = (anchorRect.bottom - (popupRect.bottom - window.innerHeight) - scrollbarWidth) + 'px';  
+    popupElement.style.top = (anchorRect.bottom - (popupRect.bottom - window.innerHeight) - scrollbarWidth) + 'px';
   if (popupRect.right > window.innerWidth)
-    popupElement.style.left = (anchorRect.left - (popupRect.right - window.innerWidth) - scrollbarWidth) + 'px';  
+    popupElement.style.left = (anchorRect.left - (popupRect.right - window.innerWidth) - scrollbarWidth) + 'px';
 }
 
 /**
@@ -676,20 +676,20 @@ function M_updatePendingTrybots(issue, patchset, xsrf_token) {
   jQuery('input:checkbox', popup).each(function(i) {
     var self = jQuery(this);
     if (self.attr('checked'))
-      builders.push(self.attr('name')); 
+      builders.push(self.attr('name'));
   });
-  
+
   // Build POST data for request.
   var data = [];
   data.push('xsrf_token=' + xsrf_token);
   data.push('last_patchset=' + patchset);
   data.push('builders=' + builders.join(','));
-  
+
   M_sendEditFlagsRequest(issue, data.join("&"), function(xhr) {
     if (xhr.status == 200)
       window.location.reload();
   });
-  
+
   // Hide the popup.
   jQuery('#trybot-popup').css('display', 'none');
   return true;
@@ -703,7 +703,7 @@ function M_closePendingTrybots() {
 }
 
 /**
- * Show or hide older try bot results. 
+ * Show or hide older try bot results.
  * @param {String} id The id of the div elements that holds all the try job
  *     a elements.
  * @param makeVisible If true, makes older try bots visible.
@@ -2272,97 +2272,6 @@ function M_findCommentsForCurrentHook_(self) {
   return comments;
 }
 
-/**
- * If the currently selected hook is a comment, either respond to it or edit
- * the draft if there is one already. Prefer the right side of the table.
- */
-M_HookState.prototype.markAsDone = function() {
-  var comments = M_findCommentsForCurrentHook_(this);
-  var commentsLength = comments.length;
-  if (!comments || !commentsLength)
-    return;
-
-  var last = null;
-  // Try responding to the last comment. The general hope is that
-  // these are returned in DOM order.
-  for (var i = commentsLength - 1; i >= 0; i--) {
-    if (comments[i].getAttribute("name") == "comment-border") {
-      last = comments[i];
-      break;
-    }
-  }
-  if (!last)
-    return;
-
-  var links = last.getElementsByTagName("a");
-  if (links) {
-    for (var i = links.length - 1; i >= 0; i--) {
-      if (links[i].getAttribute("name") == "comment-done" &&
-          links[i].style.display != "none") {
-        document.location.href = links[i].href;
-	// Prevent done from being posted again.
-	links[i].setAttribute("name", "");
-        return;
-      }
-    }
-  }
-};
-
-/**
- * If the currently selected hook is a comment, either respond to it or edit
- * the draft if there is one already. Prefer the right side of the table.
- */
-M_HookState.prototype.respond = function() {
-  if (this.indicated_element &&
-      ! this.indicated_element.getAttribute("name") != "hook") {
-    // Turn indicated element into a "real" hook so we can add comments.
-    this.indicated_element.setAttribute("name", "hook");
-  }
-  this.updateHooks();
-  var hooks = this.visibleHookCache;
-  var hasHook = (this.hookPos >= 0 && this.hookPos < hooks.length &&
-                 M_isElementVisible(this.win, hooks[this.hookPos].cells[0]));
-  if (!hasHook)
-    return;
-
-  var comments = M_findCommentsForCurrentHook_(this);
-  var commentsLength = comments.length;
-  if (comments && commentsLength > 0) {
-    var last = null;
-    for (var i = commentsLength - 1; i >= 0; i--) {
-      if (comments[i].getAttribute("name") == "comment-border") {
-        last = comments[i];
-        break;
-      }
-    }
-    if (last) {
-      var links = last.getElementsByTagName("a");
-      if (links) {
-        for (var i = links.length - 1; i >= 0; i--) {
-          if (links[i].getAttribute("name") == "comment-reply" &&
-              links[i].style.display != "none") {
-            document.location.href = links[i].href;
-            return;
-          }
-        }
-      }
-    }
-  } else {
-    // Create a comment at this line
-    // TODO: Implement this in a sane fashion, e.g. opens up a comment
-    // at the end of the diff chunk.
-    var tr = hooks[this.hookPos];
-    for (var i = tr.cells.length - 1; i >= 0; i--) {
-      if (tr.cells[i].id.substr(0, 7) == "newcode") {
-        M_createInlineComment(parseInt(tr.cells[i].id.substr(7)), 'b');
-        return;
-      } else if (tr.cells[i].id.substr(0, 7) == "oldcode") {
-        M_createInlineComment(parseInt(tr.cells[i].id.substr(7)), 'a');
-        return;
-      }
-    }
-  }
-};
 
 // Intra-line diff handling
 
@@ -2652,10 +2561,6 @@ function M_keyDown(evt) {
     } else if (key == 'Shift-K') {
       // prev file with comment
       M_jumpToHrefOrChangelist('prevFileWithComment')
-    } else if (key == 'M') {
-      document.location.href = publish_link;
-    } else if (key == 'Shift-M') {
-      if (draftMessage) { draftMessage.dialog_show(); }
     } else if (key == 'U') {
       // up to CL
       M_upToChangelist();
@@ -2669,12 +2574,6 @@ function M_keyDown(evt) {
       M_expandAllInlineComments();
     } else if (key == 'C') {
       M_collapseAllInlineComments();
-    } else if (key == 'Enter') {
-      // respond to current comment
-      if (hookState) hookState.respond();
-    } else if (key == 'D') {
-      // mark current comment as done
-      if (hookState) hookState.markAsDone();
     } else {
       return true;
     }
