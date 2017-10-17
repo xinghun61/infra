@@ -43,6 +43,10 @@
         element._saveUser({detail: {selectedUser: 'user2'}});
         assert.deepEqual(element.selectedUsers, ['user1', 'user2']);
 
+        // Test _removeUser
+        element._removeUser({detail: {removedUser: 'user2'}});
+        assert.deepEqual(element.selectedUsers, ['user1']);
+
         // Test _updateInputDisabled
         element.multiple = false;
         element._inputDisabled = false;
@@ -99,5 +103,19 @@
         done();
       });
     });
+
+    test('_removeUser-called', function(done) {
+      let removeStub = sinon.stub(element, '_removeUser');
+      element.selectedUsers = [{userId: 'user1'}]
+
+      flush(function() {
+        element.shadowRoot.querySelector('user-id').dispatchEvent(
+          new CustomEvent('remove-user', {detail: {removedUser: {userId:'user1'}}}));
+        sinon.assert.calledOnce(removeStub);
+
+        done();
+      });
+    });
+
   });
 </script>

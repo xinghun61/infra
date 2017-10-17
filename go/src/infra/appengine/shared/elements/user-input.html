@@ -8,14 +8,16 @@
   <template>
     <style>
     </style>
-    <paper-input id="input" value="{{inputValue}}" disabled="[[_inputDisabled]]">
+    <paper-input id="input" value="{{inputValue}}">
       <template is="dom-repeat" items="[[selectedUsers]]">
         <user-id
           slot="prefix"
           user-id="[[item.userId]]"
           email="[[item.email]]"
           profile-link="[[item.profileLink]]"
-          full-name="[[item.fullName]]">
+          full-name="[[item.fullName]]"
+          on-remove-user="_removeUser"
+          removeable>
         </user-id>
       </template>
     </paper-input>
@@ -30,8 +32,10 @@
      * `<user-input>` as an input element for choosing users with
      * dropdown suggestions and autocomplete.
      *
-     * Provide all possible users as allUsers. The final list of
-     * of selected users will be in the selectedUsers property.
+     * It is up to the developer using this element to provide and update
+     * the users listed in the `suggestions` property. The properties,
+     * `inputValue` and `selectedUsers` are available for two-way binding
+     * for this purpose.
      *
      * customElement
      * @polymer
@@ -62,6 +66,7 @@
           suggestions: {
             type: Array,
             value: () => { return []; },
+            notify: true,
           },
           /**
            * List of users selected, so far.
@@ -71,6 +76,7 @@
           selectedUsers: {
             type: Array,
             value: () => { return []; },
+            notify: true,
           },
           /**
            * If true, multiple users can be selected.
@@ -102,19 +108,23 @@
       ready() {
         super.ready();
         this.addEventListener('focused-changed', e => this._toggleDropdown(e));
+        this.addEventListener('click', e => this._toggleDropdown(e));
       }
 
       /** Updates inputDisabled. */
       _updateInputDisabled(length) {
-        if (!this.multiple && length) {
-          this._inputDisabled = true;
-          this.$.dropdown.close();
-        }
+        this._inputDisabled = Boolean(!this.multiple && length);
       }
 
       /** Toggles the visibility of the dropdown element. */
-      _toggleDropdown() {
-        this.focused ? this.$.dropdown.open() : this.$.dropdown.close();
+      _toggleDropdown(e) {
+        if (!this._inputDisabled) {
+          if (!this.focused) {
+            this.$.dropdown.close();
+          } else {
+            this.$.dropdown.open();
+          }
+        }
       }
 
       /**
@@ -124,8 +134,29 @@
        * in the detail{}.
        */
       _saveUser(e) {
-        this.push('selectedUsers', e.detail.selectedUser);
+         this.push('selectedUsers', e.detail.selectedUser);
+         this.$.dropdown.close();
       }
+
+      /**
+       * Removes a selected user from the selectedUser property.
+       *
+       * @param {Event} e event that triggered the function with removedUser
+       * in the detail{}.
+      */
+      _removeUser(e) {
+        let userId = e.detail.removedUser.userId;
+        let index = -1;
+        this.selectedUsers.forEach((user, i) => {
+          if (user.userId === userId) {
+            index = i;
+          }
+        });
+        if (index != -1) {
+          this.splice('selectedUsers', index, 1);
+        }
+      }
+
     }
     customElements.define(UserInput.is, UserInput);
   </script>
