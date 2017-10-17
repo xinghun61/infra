@@ -127,7 +127,7 @@
             "recipients": [
                 "author@chromium.org"
             ],
-            "text": "CQ is trying da patch. Follow status at\n  https://chromium-cq-status.appspot.com/v2/patch-status/test/246800001/20001",
+            "text": "CQ is trying the patch. Follow status at\n  https://chromium-cq-status.appspot.com/v2/patch-status/test/246800001/20001",
             "issue_was_closed": false,
             "disapproval": false,
             "date": "2017-02-23 21:25:27.299030",
@@ -140,7 +140,7 @@
             "recipients": [
                 "author@chromium.org"
             ],
-            "text": "CQ is committing da patch.\n\nBot data: {\"patchset_id\": 20001, \"attempt_start_ts\": 1487885087930420, \"parent_rev\": \"67ce2eef955ec99e685af794efe0d60a51d0d1de\", \"commit_rev\": \"deadbeefdeadbeefc001c001c001ce120ce120aa\"}",
+            "text": "CQ is committing the patch.\n\nBot data: {\"patchset_id\": 20001, \"attempt_start_ts\": 1487885087930420, \"parent_rev\": \"67ce2eef955ec99e685af794efe0d60a51d0d1de\", \"commit_rev\": \"deadbeefdeadbeefc001c001c001ce120ce120aa\"}",
             "issue_was_closed": false,
             "disapproval": false,
             "date": "2017-02-23 23:17:15.197000",
