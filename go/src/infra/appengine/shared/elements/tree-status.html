@@ -35,20 +35,47 @@
   </template>
   <script>
     'use strict';
-
+    /**
+     * `<tree-status>` is an element used for displaying the tree status
+     * available via the statusUrl.
+     *
+     * Provide a statusUrl like 'https://infra-status.appspot.com/' or
+     * 'http://chromium-status.appspot.com/'
+     *
+     * @customElement
+     * @polymer
+     * @demo /demo/tree-status_demo.html
+     */
     class TreeStatus extends Polymer.Element {
       static get is() { return 'tree-status'; }
 
       static get properties() {
         return {
+          /**
+           * The url where the tree's status can be found.
+           *
+           * @type String
+           */
           statusUrl: {
             type: String,
             value: '',
           },
+          /**
+           * The error data json. This property should only be passed in if
+           * there was an error getting the status.
+           *
+           * @type Object{error}
+           */
           statusErrorJson: {
             type: Object,
             value: () => { return {}; },
           },
+          /**
+           * The tree status data json. This can be taken directly from the
+           * 'current?format=json' page and passed directly to <tree-status>
+           *
+           * @type Object{username, generatl_status, date, message}
+           */
           statusJson: {
             type: Object,
             value: () => {
