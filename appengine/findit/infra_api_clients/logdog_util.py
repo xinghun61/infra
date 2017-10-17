@@ -47,8 +47,12 @@ def _GetLogForPath(host, project, path, http_client):
   base_error_log = 'Error when fetch log: %s'
   data = {'project': project, 'path': path}
 
-  response_json = rpc_util.DownloadJsonData(_LOGDOG_GET_ENDPOINT % host, data,
-                                            http_client)
+  # Retry 7 times to allow for logdog's up to 180 second propagation delay.
+  # Exponential backoff starts at 1.5 seconds, reaches 96 seconds for the 7th
+  # retry, for an accumulated total of 190.5 seconds of waiting time.
+  # Should be enough for our purposes.
+  response_json = rpc_util.DownloadJsonData(
+      _LOGDOG_GET_ENDPOINT % host, data, http_client, max_retries=7)
   if not response_json:
     logging.error(base_error_log % 'cannot get json log.')
     return None
@@ -87,8 +91,8 @@ def _GetAnnotationsProtoForPath(host, project, path, http_client):
 
   data = {'project': project, 'path': path}
 
-  response_json = rpc_util.DownloadJsonData(_LOGDOG_TAIL_ENDPOINT % host, data,
-                                            http_client)
+  response_json = rpc_util.DownloadJsonData(
+      _LOGDOG_TAIL_ENDPOINT % host, data, http_client, max_retries=7)
   if not response_json:
     return None
 

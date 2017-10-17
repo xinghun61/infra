@@ -8,13 +8,13 @@ import logging
 _RESPONSE_PREFIX = ')]}\'\n'
 
 
-def DownloadData(url, data, http_client):
+def DownloadData(url, data, http_client, **kwargs):
   """Downloads data from rpc endpoints like Logdog or Milo."""
 
   headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
 
   status_code, response = http_client.Post(
-      url, json.dumps(data), headers=headers)
+      url, json.dumps(data), headers=headers, **kwargs)
   if status_code != 200 or not response:
     logging.error('Post request to %s failed' % url)
     return None
@@ -31,7 +31,17 @@ def _GetResultJson(response):
   return response
 
 
-def DownloadJsonData(url, data, http_client):
-  """Downloads data from rpc endpoints and converts response in json format."""
-  response = DownloadData(url, data, http_client)
+def DownloadJsonData(url, data, http_client, **kwargs):
+  """Downloads data from rpc endpoints and converts response in json format.
+
+  Args:
+    url(str): The url to request.
+    data(dict): Json-serializable data to pass to the rpc endpoint via post.
+    http_client(libs.http.retry_http_client): Http client instance.
+    kwargs: Piped to the .Post call done to the http client.
+
+  Returns:
+    The response deserialized from json into a python object (likely a dict).
+  """
+  response = DownloadData(url, data, http_client, **kwargs)
   return _GetResultJson(response) if response else None
