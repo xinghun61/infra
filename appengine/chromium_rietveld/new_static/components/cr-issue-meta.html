@@ -64,17 +64,6 @@ found in the LICENSE file. -->
                 <div class="issue-meta-type">Modified</div>
                 <div class="issue-meta-value"><cr-date date="{{ issue.lastModified }}"></cr-date></div>
             </div>
-            <div class="issue-modified issue-meta-item">
-                <div class="issue-meta-type">CQ</div>
-                <div class="issue-meta-value">
-                    <template if="{{ issue.commit }}">
-                        <a href="https://chromium-cq-status.appspot.com/recent#issue={{ issue.id }}" target="_blank">Yes</a>
-                    </template>
-                    <template if="{{ !issue.commit }}">
-                        No
-                    </template>
-                </div>
-            </div>
             <div class="issue-reviewers issue-meta-item">
                 <div class="issue-meta-type">Reviewers</div>
                 <div class="issue-meta-value">

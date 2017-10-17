@@ -35,7 +35,6 @@ from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.http import HttpResponseServerError
 from django.utils import simplejson as json
 
-from codereview import buildbucket
 from codereview import decorators as deco
 from codereview import decorators_chromium as deco_cr
 from codereview import models
@@ -45,13 +44,6 @@ from codereview import views
 
 
 ### Forms ###
-
-
-class EditFlagsForm(forms.Form):
-  last_patchset = forms.IntegerField(widget=forms.HiddenInput())
-  commit = forms.BooleanField(required=False)
-  cq_dry_run = forms.BooleanField(required=False)
-  builders = forms.CharField(max_length=16*1024, required=False)
 
 
 class TryPatchSetForm(forms.Form):
@@ -333,97 +325,6 @@ def _is_job_valid(job):
 
 ### View handlers ###
 
-@deco.issue_editor_required
-@deco.xsrf_required
-def edit_flags(request):
-  """/<issue>/edit_flags - Edit issue's flags."""
-  last_patchset = models.PatchSet.query(ancestor=request.issue.key).order(
-    -models.PatchSet.created).get()
-  if not last_patchset:
-    return HttpResponseForbidden('Can only modify flags on last patchset',
-        content_type='text/plain')
-  if request.issue.closed:
-    return HttpResponseForbidden('Can not modify flags for a closed issue',
-        content_type='text/plain')
-
-  if request.method == 'GET':
-    # TODO(maruel): Have it set per project.
-    initial_builders = 'win_rel, mac_rel, linux_rel'
-    form = EditFlagsForm(initial={
-        'last_patchset': last_patchset.key.id(),
-        'commit': request.issue.commit,
-        'builders': initial_builders})
-
-    return responses.respond(request,
-                         'edit_flags.html',
-                         {'issue': request.issue, 'form': form})
-
-  form = EditFlagsForm(request.POST)
-  if not form.is_valid():
-    return HttpResponseBadRequest('Invalid POST arguments',
-        content_type='text/plain')
-  if (form.cleaned_data['last_patchset'] != last_patchset.key.id()):
-    return HttpResponseForbidden('Can only modify flags on last patchset',
-        content_type='text/plain')
-
-  if 'commit' in request.POST:
-    if request.issue.private and form.cleaned_data['commit'] :
-      return HttpResponseBadRequest(
-        'Cannot set commit on private issues', content_type='text/plain')
-    if not request.issue.is_cq_available and form.cleaned_data['commit']:
-      return HttpResponseBadRequest(
-        'Cannot set commit on an issue that does not have a commit queue',
-        content_type='text/plain')
-    request.issue.commit = form.cleaned_data['commit']
-    request.issue.cq_dry_run = form.cleaned_data['cq_dry_run']
-    user_email = request.user.email().lower()
-    if user_email == views.CQ_SERVICE_ACCOUNT:
-      user_email = views.CQ_COMMIT_BOT_EMAIL
-    if (request.issue.commit and  # Add as reviewer if setting, not clearing.
-        user_email != request.issue.owner.email() and
-        user_email not in request.issue.reviewers and
-        user_email not in request.issue.collaborator_emails()):
-      request.issue.reviewers.append(request.user.email())
-    # Update the issue with the checking/unchecking of the CQ box but reduce
-    # spam by not emailing users.
-    action = 'checked' if request.issue.commit else 'unchecked'
-    commit_checked_msg = 'The CQ bit was %s by %s' % (action, user_email)
-    if request.issue.cq_dry_run:
-      commit_checked_msg += ' to run a CQ dry run'
-      request.issue.cq_dry_run_last_triggered_by = user_email
-      logging.info('CQ dry run has been triggered by %s for %d/%d', user_email,
-                   request.issue.key.id(), last_patchset.key.id())
-    # Mail just the owner and only if the CQ bit was unchecked by someone other
-    # than the owner or CQ itself. More details in
-    # https://code.google.com/p/skia/issues/detail?id=3093
-    send_mail = (user_email != request.issue.owner.email() and
-                 user_email != views.CQ_COMMIT_BOT_EMAIL and
-                 not request.issue.commit)
-    views.make_message(request, request.issue, commit_checked_msg,
-                       send_mail=send_mail, auto_generated=True,
-                       email_to=[request.issue.owner.email()]).put()
-    request.issue.put()
-    if request.issue.commit and not request.issue.cq_dry_run:
-      views.notify_approvers_of_new_patchsets(request, request.issue)
-
-  if 'builders' in request.POST:
-    new_builders = filter(None, map(unicode.strip,
-                                    form.cleaned_data['builders'].split(',')))
-    if request.issue.private and new_builders:
-      return HttpResponseBadRequest(
-        'Cannot add trybots on private issues', content_type='text/plain')
-
-    builds = []
-    for b in new_builders:
-      bucket, builder = b.split(':', 1)
-      builds.append({
-        'bucket': bucket,
-        'builder': builder,
-      })
-    buildbucket.schedule(request.issue, last_patchset.key.id(), builds)
-  return HttpResponse('OK', content_type='text/plain')
-
-
 @deco.login_required
 @deco.xsrf_required
 def conversions(request):
@@ -632,72 +533,6 @@ def delete_old_pending_jobs_task(request):
   logging.info(msg)
   return HttpResponse(msg, content_type='text/plain')
 
-
-@deco.require_methods('POST')
-@deco.xsrf_required
-@deco.patchset_required
-@deco.json_response
-def try_patchset(request):
-  """/<issue>/try/<patchset> - Add a try job for the given patchset."""
-  # Only allow trying the last patchset of an issue.
-  last_patchset_key = models.PatchSet.query(ancestor=request.issue.key).order(
-    -models.PatchSet.created).get(keys_only=True)
-  if last_patchset_key != request.patchset.key:
-    content = (
-        'Patchset %d/%d invalid: Can only try the last patchset of an issue.' %
-        (request.issue.key.id(), request.patchset.key.id()))
-    logging.info(content)
-    return HttpResponseBadRequest(content, content_type='text/plain')
-
-  form = TryPatchSetForm(request.POST)
-  if not form.is_valid():
-    return HttpResponseBadRequest('Invalid POST arguments',
-                                  content_type='text/plain')
-  reason = form.cleaned_data['reason']
-  revision = form.cleaned_data['revision']
-  clobber = form.cleaned_data['clobber']
-  master = form.cleaned_data['master']
-  category = form.cleaned_data.get('category', 'cq')
-
-  try:
-    builders = json.loads(form.cleaned_data['builders'])
-  except json.JSONDecodeError:
-    content = 'Invalid json for builder spec: ' + form.cleaned_data['builders']
-    logging.error(content)
-    return HttpResponseBadRequest(content, content_type='text/plain')
-
-  if not isinstance(builders, dict):
-    content = 'Invalid builder spec: ' + form.cleaned_data['builders']
-    logging.error(content)
-    return HttpResponseBadRequest(content, content_type='text/plain')
-
-  logging.debug(
-      'clobber=%s\nrevision=%s\nreason=%s\nmaster=%s\nbuilders=%s\category=%s',
-      clobber, revision, reason, master, builders, category)
-
-  builds = []
-  for builder, tests in builders.iteritems():
-    props = {
-      'reason': reason,
-      'testfilter': tests,
-    }
-    if clobber:
-      # clobber property is checked for presence. Its value is ignored.
-      props['clobber'] = True
-    builds.append({
-      'bucket': 'master.%s' % master,
-      'builder': builder,
-      'category': category,
-      'properties': props,
-      'revision': revision,
-    })
-
-  scheduled_builds = buildbucket.schedule(
-      request.issue, request.patchset.key.id(), builds)
-  logging.info('Started %d jobs: %r', len(scheduled_builds), scheduled_builds)
-  return {
-    'jobs': scheduled_builds,
-  }
 
 @deco.json_response
 def get_pending_try_patchsets(request):

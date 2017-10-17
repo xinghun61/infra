@@ -4,7 +4,6 @@ found in the LICENSE file. -->
 
 <link rel="import" href="../common/cr-action.html">
 <link rel="import" href="../common/cr-toolbar.html">
-<link rel="import" href="cr-issue-cq-dry-run-dialog.html">
 <link rel="import" href="cr-issue-patchfile.html">
 <link rel="import" href="cr-try-results.html">
 <link rel="import" href="../diff/cr-diff-controls.html">
@@ -58,17 +57,6 @@ found in the LICENSE file. -->
                 <template if="{{ tryJobResults.length }}">
                     <cr-try-results results="{{ tryJobResults }}"></cr-try-results>
                 </template>
-                <template if="{{ patchset.mostRecent && !patchset.issue.closed && !patchset.issue.commit }}">
-                    <a class="choose-trybots" is="cr-action" on-tap="{{ handleAddMore }}">Choose try jobs</a>
-                    <template if="{{ failedBuilders && failedBuilders.length }}">
-                      /
-                      <a class="retry-failed-try-jobs" is="cr-action" on-tap="{{ handleRetryFailedTryJobs }}">Retry failed try jobs</a>
-                    </template>
-                    <template if="{{ patchset.issue.offer_cq }}">
-                      /
-                      <a class="trigger-dry-run" is="cr-action" on-tap="{{ showDryRunDialog }}">CQ dry run</a>
-                    </template>
-                </template>
             </div>
         </template>
         <template if="{{ patchset.dependsOnPatchset }}">
@@ -106,19 +94,6 @@ found in the LICENSE file. -->
                 this.tryJobResults = null;
                 this.failedBuilders = null;
             },
-            showDryRunDialog: function() {
-              if (this.patchset.issue.closed)
-                  return;
-              var dialog = document.createElement("cr-issue-cq-dry-run-dialog");
-              this.showDialog(dialog);
-            },
-            showDialog: function(dialog) {
-                this.$.dialogs.appendChild(dialog);
-                dialog.addEventListener("close", function() {
-                    dialog.remove();
-                });
-                dialog.showModal();
-            },
             patchsetChanged: function(oldValue, newValue) {
                 var self = this;
                 var list = new TryJobResultList(this.patchset);
@@ -151,13 +126,6 @@ found in the LICENSE file. -->
                 return Promise.all(this.getFiles().map(function(file) {
                     return file.hideDiff();
                 }));
-            },
-            handleAddMore: function() {
-                this.fire("show-try-dialog");
-            },
-            handleRetryFailedTryJobs: function() {
-                if (this.failedBuilders)
-                    this.fire("retry-failed-try-jobs", { builders: this.failedBuilders });
             },
         });
     </script>

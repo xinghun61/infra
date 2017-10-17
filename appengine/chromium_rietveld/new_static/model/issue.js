@@ -42,7 +42,6 @@ function Issue(id)
 Issue.DETAIL_URL = "/api/{1}?messages=true";
 Issue.PUBLISH_URL = "/{1}/publish";
 Issue.EDIT_URL = "/{1}/edit";
-Issue.FLAGS_URL = "/{1}/edit_flags";
 Issue.DELETE_DRAFTS_URL = "/{1}/delete_drafts";
 
 Issue.prototype.getDetailUrl = function()
@@ -58,11 +57,6 @@ Issue.prototype.getPublishUrl = function()
 Issue.prototype.getEditUrl = function()
 {
     return Issue.EDIT_URL.assign(encodeURIComponent(this.id));
-};
-
-Issue.prototype.getFlagsUrl = function()
-{
-    return Issue.FLAGS_URL.assign(encodeURIComponent(this.id));
 };
 
 Issue.prototype.getDiscardAllDraftsUrl = function()
@@ -246,22 +240,6 @@ Issue.prototype.publish = function(options)
         reviewers: reviewers,
         cc: cc,
     }, {
-        sendXsrfToken: true,
-    });
-};
-
-Issue.prototype.setFlags = function(options)
-{
-    var data = {
-        last_patchset: this.patchsets.last().id,
-    };
-    if (Object.has(options, "commit"))
-        data.commit = options.commit ? 1 : 0;
-    if (Object.has(options, "cqDryRun"))
-        data.cq_dry_run = options.cqDryRun ? 1 : 0;
-    if (options.builders)
-        data.builders = options.builders;
-    return sendFormData(this.getFlagsUrl(), data, {
         sendXsrfToken: true,
     });
 };

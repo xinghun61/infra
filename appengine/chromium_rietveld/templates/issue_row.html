@@ -2,7 +2,7 @@
     {%if issue.has_updates %}class="updated"{%endif%} name="issue">
   <td class="first" width="14"><img src="{{media_url}}closedtriangle.gif"
     style="visibility: hidden;" width="12" height="9" /></td>
-  <td width="17" align="left" style="white-space: nowrap">{%include "issue_star.html"%}</td>
+  <td width="34" align="left" style="white-space: nowrap">{%include "issue_star.html"%}</td>
   <td align="right"><div class="subject">
       <a href="{%url codereview.views.show issue.key.id%}">{{issue.key.id}}</a>
     </div>

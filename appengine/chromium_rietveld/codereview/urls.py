@@ -153,9 +153,7 @@ urlpatterns += patterns(
 # Chromium urls
 urlpatterns += patterns(
     'codereview.views_chromium',
-    (r'^(\d+)/edit_flags$', 'edit_flags'),
     (r'^(\d+)/binary/(\d+)/(\d+)/(\d+)$', 'download_binary'),
-    (r'^(\d+)/try/(\d+)/?$', 'try_patchset'),
     (r'^conversions$', 'conversions'),
     (r'^status_listener$', 'status_listener'),
     (r'^get_pending_try_patchsets$', 'get_pending_try_patchsets'),

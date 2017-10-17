@@ -159,12 +159,6 @@ found in the LICENSE file. -->
                 <template if="{{ !issue.closed }}">
                     <template if="{{ !issue.owner.isCurrentUser }}">
                         <button is="cr-button" on-tap="{{ handleLgtm }}">LGTM</button>
-                        <template if="{{ !issue.commit && issue.editAllowed }}">
-                            <button is="cr-button" on-tap="{{ handleLgtmAndCommit }}">LGTM + CQ</button>
-                        </template>
-                    </template>
-                    <template if="{{ issue.owner.isCurrentUser && !issue.commit }}">
-                        <button is="cr-button" on-tap="{{ handleSendAndCommit }}">Send + CQ</button>
                     </template>
                 </template>
                 <button is="cr-button" on-tap="{{ cancel }}">Cancel</button>
@@ -215,17 +209,8 @@ found in the LICENSE file. -->
             handleSend: function(event) {
                 this.send();
             },
-            handleSendAndCommit: function(event) {
-                this.send({commit: true});
-            },
             handleLgtm: function(event) {
                 this.send({lgtm: true});
-            },
-            handleLgtmAndCommit: function(event) {
-                this.send({
-                    lgtm: true,
-                    commit: true,
-                });
             },
             send: function(options) {
                 var data = this.$.editor.createEditData();

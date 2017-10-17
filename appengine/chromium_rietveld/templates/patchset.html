@@ -116,23 +116,6 @@
         <a id="tryjobdiv-{{patchset.key.id}}-lesslink" style="display: none;"
            href="#" onclick="M_showTryJobResult('tryjobdiv-{{patchset.key.id}}', false); return false">
            &lt;&lt;&lt;Less</a>
-
-        {%if not issue.closed and not issue.private %}
-          {%if user%}
-            {%if not patchset.issue_key.get.commit %}
-              {%ifequal last_patchset.key.id patchset.key.id%}
-                |
-                <a id="tryjobchange-{{patchset.key.id}}" href="#"
-                    onclick="M_editPendingTryJobs('{{patchset.key.id}}'); return false">Choose trybots</a>
-                {%if offer_cq%}
-                  | <a href="#" onclick="M_triggerCQDryRun('{{issue.key.id}}')">CQ dry run</a>
-                {%endif%}
-              {%endifequal%}
-            {%endif%}
-          {%else%}
-            <a href="{{sign_in}}">Sign in</a> to try more bots
-          {%endif%}
-        {%endif%}
       {%endif%}
 
       <br>
@@ -150,29 +133,6 @@
 
   {%ifequal last_patchset.key.id patchset.key.id%}
     {%if offer_cq and is_editor%}
-      <form id="commitform" name="commitform" method="post">
-        <input type="hidden" name="xsrf_token" value="{{xsrf_token}}">
-        <input type="hidden" name="last_patchset" value="{{last_patchset.key.id}}">
-        <input type="hidden" id="cq_dry_run" name="cq_dry_run" value=false>
-        Commit: <input type="checkbox" id="commit" name="commit"
-          {%if issue.commit%}checked{%endif%}
-          {%if not request.user or issue.closed or issue.private%}disabled{%endif%}
-          onchange="document.commitform.cq_dry_run.value=false; M_editFlags('{{issue.key.id}}')" />
-        {%if not request.user%}
-          (user is not authenticated)
-        {%elif issue.closed%}
-          (issue is closed)
-        {%elif issue.private%}
-          (issue is private)
-        {%elif issue.commit and issue.cq_dry_run %}
-          (dry run)
-        {% endif %}
-        {%if patchset.cq_status_url%}
-          <a style="margin-left:10px" href="{{patchset.cq_status_url}}">CQ Status</a>
-        {% endif %}
-        <a style="margin-left:10px" href="https://bugs.chromium.org/p/chromium/issues/entry?template=Build%20Infrastructure&labels=Restrict-View-Google&components=Infra%3ECQ&summary=Please%20enter%20CQ%20issue%20summary%20here&comment=Please%20explain%20below%20why%20you%20believe%20CQ%20is%20not%20working.%0A%0AThis%20issue%20was%20created%20with%20help%20of%20the%20%22CQ%20not%20working?%22%20link%20on%20Rietveld.">CQ not working?</a>
-      </form>
-      <br/>
       <form action="{%url codereview.revert_patchset.revert_patchset issue.key.id,patchset.key.id%}"
             method="post" enctype="multipart/form-data" id="revert-form" name="revert_form"
             onsubmit="return M_createRevertPatchset(); return false;" >
@@ -201,14 +161,6 @@
         }
       </script>
       {% endif %}
-    {%else%}
-      <span style="color:#777">
-        {% if not is_editor %}
-          Commit queue not available (can’t edit this change).
-        {% else %}
-          Project "{{issue.project}}" does not have a commit queue.
-        {% endif %}
-      </span>
     {%endif%}
   {%endifequal%}
   {%if patchset.depends_on_patchset %}
