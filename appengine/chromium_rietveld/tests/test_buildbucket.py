@@ -205,6 +205,33 @@ class BuildbucketFunctionsTest(TestCase):
         put_builds_req_headers['X-Delegation-Token-V1'],
         'deltok')
 
+  def test_schedule(self):
+    put_builds_response = {
+      'results': [
+        {
+          'build': {'id': '1'},
+        },
+        {
+          'build': {'id': '1'},
+        },
+      ]
+    }
+    self.fake_responses = [
+      {'token': 'deltok', 'delegationSubtoken': {'validityDuration': 18000}},
+      put_builds_response,
+    ]
+    issue = models.Issue(
+        id='123',
+        project='chromium',
+        owner=users.User(email='owner@chromium.org'),
+    )
+    builds = buildbucket.schedule(issue, '1', [
+        {'bucket': 'master.tryserver.chromium.linux', 'builder': 'linux_rel'},
+        {'bucket': 'master.tryserver.chromium.linux', 'builder': 'linux_debug'},
+    ])
+    self.assertEqual(
+        builds, [r['build'] for r in put_builds_response['results']])
+
   def test_get_builders(self):
     get_builders_response = {
       'buckets': [

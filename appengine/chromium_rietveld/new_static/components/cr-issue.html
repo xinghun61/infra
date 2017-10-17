@@ -16,7 +16,6 @@ found in the LICENSE file. -->
 <link rel="import" href="cr-issue-meta.html">
 <link rel="import" href="cr-issue-patchsets.html">
 <link rel="import" href="cr-issue-publish-dialog.html">
-<link rel="import" href="cr-issue-revert-dialog.html">
 <link rel="import" href="cr-issue-subject.html">
 <link rel="import" href="cr-try-results.html">
 
@@ -41,9 +40,6 @@ found in the LICENSE file. -->
                             <button is="cr-button" on-tap="{{ quickLgtm }}">Quick LGTM</button>
                         </template>
                         <template if="{{ issue.editAllowed }}">
-                            <template if="{{ issue.closed }}">
-                                <button is="cr-button" on-tap="{{ startRevertDialog }}">Revert</button>
-                            </template>
                             <div class="ui-actions">
                                 <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
                             </div>
@@ -121,8 +117,6 @@ found in the LICENSE file. -->
                 this.butterbarMessage = "";
             },
             attached: function() {
-                if (window.location.pathname.endsWith("/revert"))
-                    this.showRevertDialog();
                 if (window.location.pathname.endsWith("/publish"))
                     this.showPublishDialog();
             },
@@ -164,28 +158,6 @@ found in the LICENSE file. -->
                 var dialog = document.createElement("cr-issue-publish-dialog");
                 dialog.issue = this.issue;
                 this.showDialog(dialog);
-            },
-            startRevertDialog: function() {
-                this.showRevertDialog();
-                var url = window.location.pathname;
-                if (!url.endsWith("/")) url += "/";
-                url += "revert";
-                window.history.pushState(null, null, url);
-            },
-            showRevertDialog: function() {
-                if (!this.issue.closed || this.issue.patchsets.isEmpty())
-                    return;
-                var dialog = document.createElement("cr-issue-revert-dialog");
-                dialog.patchset = this.issue.patchsets.last();
-                dialog.landed_days_ago = this.issue.landed_days_ago;
-                dialog.revert_will_skip_checks = this.issue.revert_will_skip_checks;
-                this.showDialog(dialog);
-                dialog.addEventListener("close", function() {
-                    var path = window.location.pathname;
-                    if (path.endsWith("/revert"))
-                        window.history.replaceState(
-                            null, null, path.slice(0, -6));
-                });
             },
             collapseAllMessages: function() {
                 this.issue.messages.forEach(function(message) {

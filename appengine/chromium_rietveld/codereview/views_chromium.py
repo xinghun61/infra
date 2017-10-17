@@ -35,6 +35,7 @@ from django.http import HttpResponseBadRequest, HttpResponseForbidden
 from django.http import HttpResponseServerError
 from django.utils import simplejson as json
 
+from codereview import buildbucket
 from codereview import decorators as deco
 from codereview import decorators_chromium as deco_cr
 from codereview import models
