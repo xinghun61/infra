@@ -1127,7 +1127,7 @@ function TKR_flagSpam(isSpam) {
 function TKR_addToHotlist() {
   var selectedIssueRefs = GetSelectedIssues();
   if (selectedIssueRefs.length > 0) {
-    ShowAddToHotlistDialog();
+    ShowUpdateHotlistDialog();
   } else {
     alert('Please select some issues to add to a hotlist')
   }
@@ -1161,18 +1161,28 @@ function GetSelectedIssues() {
 
 function GetSelectedHotlists() {
   var selectedHotlistIDs = [];
-  for (var i = 0; i < usersHotlists.length; i++) {
-    var checkbox = document.getElementById('cb_hotlist_' + usersHotlists[i]);
+  usersHotlists.forEach((hotlistId) => {
+    let checkbox = document.getElementById('cb_hotlist_' + hotlistId);
     if (checkbox && checkbox.checked) {
-      selectedHotlistIDs.push(usersHotlists[i]);
+      selectedHotlistIDs.push(hotlistId);
     }
-  }
+  });
   return selectedHotlistIDs;
 }
 
+function GetUnselectedHotlists() {
+  let unselectedHotlistIds = [];
+  usersIssueHotlists.forEach((hotlistId) => {
+    let checkbox = document.getElementById('cb_issue_hotlist_' + hotlistId);
+    if(checkbox && !checkbox.checked) {
+      unselectedHotlistIds.push(hotlistId);
+    }
+  });
+  return unselectedHotlistIds;
+}
 
-function ShowAddToHotlistDialog() {
-  $('add-to-hotlist').style.display = 'block';
+function ShowUpdateHotlistDialog() {
+  $('update-issues-hotlists').style.display = 'block';
 }
 
 function CreateNewHotlistWithIssues(onResponse, opt_SelectedIssueRefs) {
@@ -1181,17 +1191,19 @@ function CreateNewHotlistWithIssues(onResponse, opt_SelectedIssueRefs) {
   CS_doPost('/hosting/updateHotlists.do', onResponse, data);
 }
 
-function AddIssuesToHotlist(onResponse, opt_SelectedIssueRefs) {
-  var selectedIssueRefs = opt_SelectedIssueRefs || GetSelectedIssues();
-  selectedHotlistIDs = GetSelectedHotlists();
-  if (selectedHotlistIDs.length > 0) {
-    var data = {
-      hotlist_ids_add: selectedHotlistIDs.join(','),
+function UpdateIssuesInHotlists(onResponse, opt_SelectedIssueRefs) {
+  let selectedIssueRefs = opt_SelectedIssueRefs || GetSelectedIssues();
+  let hotlistIdsAdd = GetSelectedHotlists();
+  let hotlistIdsRemove = GetUnselectedHotlists();
+  if (hotlistIdsAdd.length > 0 || hotlistIdsRemove.length > 0) {
+    let data = {
+      hotlist_ids_add: hotlistIdsAdd.join(','),
+      hotlist_ids_remove: hotlistIdsRemove.join(','),
       issue_refs: selectedIssueRefs.join(','),
     }
     CS_doPost('/hosting/updateHotlists.do', onResponse, data);
   } else {
-    alert('Please select some hotlists');
+    alert('Please select/un-select some hotlists');
   }
 }
 
@@ -1204,6 +1216,54 @@ function createResponseMessage(response) {
     message = `Successfully updated ${response['updatedHotlistNames'].join(', ')}`;
   }
   return message;
+}
+
+function updateHotlistsDialog(response) {
+  let table = $('js-hotlists-table');
+  while(table.firstChild) {
+    table.removeChild(table.firstChild);
+  }
+  updateHotlistRows(
+      table,
+      'cb_issue_hotlist_',
+      response['issueHotlistIds'],
+      response['issueHotlistNames'],
+      true);
+   updateHotlistRows(
+      table,
+      'cb_hotlist_',
+      response['remainingHotlistIds'],
+      response['remainingHotlistNames'],
+      false);
+  usersHotlists = response['remainingHotlistIds'];
+  usersIssueHotlists = response['issueHotlistIds'];
+}
+
+function updateHotlistRows(table, idPrefix, hotlistIds, hotlistNames, checked) {
+  for (let i = 0; i< hotlistNames.length; i++) {
+    let name = hotlistNames[i];
+    let id = hotlistIds[i];
+    let tr = document.createElement('tr');
+    tr.classList.add('hotlist_rows');
+
+    let cbCell = document.createElement('td');
+    let cb = document.createElement('input');
+    cb.classList.add('checkRangeSelect');
+    cb.setAttribute('id', idPrefix + id);
+    cb.setAttribute('type', 'checkbox');
+    cb.checked = checked;
+    cbCell.appendChild(cb);
+
+    let nameCell = document.createElement('td');
+    let label = document.createElement('label');
+    label.htmlFor = cb.id;
+    label.textContent = name;
+    nameCell.appendChild(label);
+
+    tr.appendChild(cbCell);
+    tr.appendChild(nameCell);
+    table.appendChild(tr);
+  }
 }
 
 function onResponseUpdateUI(event) {
@@ -1231,9 +1291,10 @@ function onResponseUpdateUI(event) {
     list.appendChild(hotlistLink);
     list.appendChild(document.createElement('br'));
   }
+  updateHotlistsDialog(response);
   message = createResponseMessage(response);
   $('user-hotlists').style.display = 'block';
-  $('add-to-hotlist').style.display = 'none';
+  $('update-issues-hotlists').style.display = 'none';
   noticeText = $('notice');
   $('notice').textContent = message;
   $('alert-table').style.display = 'table';
@@ -1254,7 +1315,7 @@ function onAddIssuesResponse(event) {
   message = createResponseMessage(response);
   noticeText = $('notice');
   noticeText.textContent = message;
-  $('add-to-hotlist').style.display = 'none';
+  $('update-issues-hotlists').style.display = 'none';
   $('alert-table').style.display = 'table';
 }
 

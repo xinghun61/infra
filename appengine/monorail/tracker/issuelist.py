@@ -170,6 +170,7 @@ class IssueList(servlet.Servlet):
         'search_error_message': search_error_message,
         'is_hotlist': ezt.boolean(False),
         'user_hotlists': user_hotlists,
+        'user_issue_hotlists': [], # for update-issues-hotlsits-dialog
         # the following are needed by templates for hotlists
         'owner_permissions': ezt.boolean(False),
         'editor_permissions': ezt.boolean(False),

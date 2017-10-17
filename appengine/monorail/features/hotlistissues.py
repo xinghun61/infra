@@ -100,7 +100,6 @@ class HotlistIssues(servlet.Servlet):
                       'editor_permissions': ezt.boolean(editor_permissions),
                       'issue_tab_mode': 'issueList',
                       'grid_mode': ezt.boolean(mr.mode == 'grid'),
-                      'set_star_token': '', # needed for shared ezt templates.
                       'page_perms': page_perms,
                       'colspec': mr.col_spec,
                       'allow_rerank': ezt.boolean(allow_rerank),
@@ -110,6 +109,10 @@ class HotlistIssues(servlet.Servlet):
                       'col_spec': mr.col_spec.lower(),
                       'user_hotlists': user_hotlists,
                       'viewing_user_page': ezt.boolean(True),
+                      'set_star_token': '', # needed for shared ezt templates.
+                      # for update-issues-hotlists-dialog in
+                      # issue-list-controls.
+                      'user_issue_hotlists': [],
                       })
     return page_data
   # TODO(jojwang): implement peek issue on hover, implement starring issues

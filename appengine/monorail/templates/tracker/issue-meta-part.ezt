@@ -243,12 +243,12 @@
           [for user_issue_hotlists]
             <a href="[user_issue_hotlists.url]">[user_issue_hotlists.name]</a><br>
           [end]
-          <br>
         </div>
+        <br>
     </span>
 
-    [if-any logged_in_user]<a id="add-issue-to-hotlist">Add to hotlist</a><br>
-    [include "add-to-hotlist-dialog.ezt"]
+    [if-any logged_in_user]<a id="add-issue-to-hotlist">Update hotlists</a><br>
+    [include "update-issues-hotlists-dialog.ezt"]
     [end]
 
     [if-any involved_users_issue_hotlists]
@@ -310,12 +310,13 @@ runOnLoad(function() {
       event.preventDefault();
     });
   }
+  window.issueRef = "[issue.project_name]:[issue.local_id]";
   [if-any logged_in_user]
   $("add-issue-to-hotlist").addEventListener("click", function(event) {
-    ShowAddToHotlistDialog();
+    ShowUpdateHotlistDialog();
   });
-  $('add-issues').addEventListener('click', function () {
-    AddIssuesToHotlist(onResponseUpdateUI, [[]"[issue.project_name]:[issue.local_id]"])
+  $('save-issues-hotlists').addEventListener('click', function () {
+    UpdateIssuesInHotlists(onResponseUpdateUI, [[]"[issue.project_name]:[issue.local_id]"]);
   });
   $('create-new-hotlist').addEventListener('click', function () {
     CreateNewHotlistWithIssues(onResponseUpdateUI, [[]"[issue.project_name]:[issue.local_id]"])
