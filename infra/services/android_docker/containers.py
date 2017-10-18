@@ -224,8 +224,7 @@ class Container(object):
   def get_swarming_bot_pid(self):
     try:
       output = self._container.exec_run(
-          'su chrome-bot -c "lsof -t /b/swarming/swarming.lck"',
-          detach=True).strip()
+          'su chrome-bot -c "lsof -t /b/swarming/swarming.lck"').strip()
     except docker.errors.NotFound:
       logging.error('Docker engine returned 404 for container %s', self.name)
       return None
