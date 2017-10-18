@@ -82,7 +82,6 @@ from codereview import library
 from codereview import models
 from codereview import models_chromium
 from codereview import net
-from codereview import notify_xmpp
 from codereview import patching
 from codereview import utils
 from codereview import common
@@ -2339,12 +2338,7 @@ def settings(request):
             account.display_exp_tryjob_results,
         'send_from_email_addr': account.send_from_email_addr,
         })
-
-    chat_status = None
-    if account.notify_by_chat:
-      chat_status = notify_xmpp.get_chat_status(account)
-    return respond(request, 'settings.html', {'form': form,
-                                              'chat_status': chat_status})
+    return respond(request, 'settings.html', {'form': form})
   form = SettingsForm(request.POST)
   if form.is_valid():
     account.nickname = form.cleaned_data.get('nickname')
@@ -2353,9 +2347,7 @@ def settings(request):
     account.deprecated_ui = form.cleaned_data.get('deprecated_ui')
     account.default_tab_spaces = form.cleaned_data.get('tab_spaces')
     account.notify_by_email = form.cleaned_data.get('notify_by_email')
-    notify_by_chat = form.cleaned_data.get('notify_by_chat')
-    must_invite = notify_by_chat and not account.notify_by_chat
-    account.notify_by_chat = notify_by_chat
+    account.notify_by_chat = form.cleaned_data.get('notify_by_chat')
     account.add_plus_role = form.cleaned_data.get('add_plus_role')
     account.display_generated_msgs = form.cleaned_data.get(
         'display_generated_msgs')
@@ -2365,8 +2357,6 @@ def settings(request):
 
     account.fresh = False
     account.put()
-    if must_invite:
-      notify_xmpp.must_invite(account)
   else:
     return respond(request, 'settings.html', {'form': form})
   return HttpResponseRedirect(reverse(index))
