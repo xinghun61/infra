@@ -63,22 +63,6 @@ def admin_required(func):
   return admin_wrapper
 
 
-def editor_required(func):
-  """Decorator that insists you own the issue.
-
-  It must appear after issue_required or equivalent, like patchset_required.
-  """
-
-  @functools.wraps(func)
-  @login_required
-  def editor_wrapper(request, *args, **kwds):
-    if not request.issue.edit_allowed:
-      return HttpTextResponse('You do not own this issue', status=403)
-    return func(request, *args, **kwds)
-
-  return editor_wrapper
-
-
 def image_required(func):
   """Decorator that processes the image argument.
 
@@ -107,40 +91,6 @@ def image_required(func):
     return func(request, *args, **kwds)
 
   return image_wrapper
-
-
-def issue_editor_required(func):
-  """Decorator that processes the issue_id argument and insists the user has
-  permission to edit it."""
-
-  @functools.wraps(func)
-  @login_required
-  @issue_required
-  def issue_editor_wrapper(request, *args, **kwds):
-    if not request.issue.edit_allowed:
-      return HttpTextResponse(
-          'You do not have permission to edit this issue', status=403)
-    return func(request, *args, **kwds)
-
-  return issue_editor_wrapper
-
-
-def issue_uploader_required(func):
-  """Decorator that processes the issue_id argument and insists the user has
-  permission to add a patchset to it."""
-
-  @functools.wraps(func)
-  @login_required
-  @issue_required
-  def issue_uploader_wrapper(request, *args, **kwds):
-    logging.info('issue_uploader_required checking')
-    if not request.issue.upload_allowed:
-      logging.info('issue_uploader_required failed')
-      return HttpTextResponse(
-          'You do not have permission to upload to this issue', status=403)
-    return func(request, *args, **kwds)
-
-  return issue_uploader_wrapper
 
 
 def issue_required(func):
@@ -251,19 +201,6 @@ def patch_required(func):
     return func(request, *args, **kwds)
 
   return patch_wrapper
-
-
-def patchset_editor_required(func):
-  """Decorator that processes the patchset_id argument and insists you own the
-  issue."""
-
-  @functools.wraps(func)
-  @patchset_required
-  @editor_required
-  def patchset_editor_wrapper(request, *args, **kwds):
-    return func(request, *args, **kwds)
-
-  return patchset_editor_wrapper
 
 
 def require_methods(*methods):

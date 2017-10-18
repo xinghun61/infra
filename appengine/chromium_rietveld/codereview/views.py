@@ -398,11 +398,6 @@ class InvalidIncomingEmailError(Exception):
 ### Helper functions ###
 
 
-def _random_bytes(n):
-  """Helper returning a string of random bytes of given length."""
-  return ''.join(map(chr, (random.randrange(256) for i in xrange(n))))
-
-
 def _clean_int(value, default, min_value=None, max_value=None):
   """Helper to cast value to int and to clip it to min or max_value.
 
@@ -670,6 +665,7 @@ def _optimize_draft_counts(issues):
 
 
 @deco.login_required
+@deco.require_methods('GET')
 def mine(request):
   """/mine - Show a list of issues created by the current user."""
   request.user_to_show = request.user
@@ -678,6 +674,7 @@ def mine(request):
 
 @deco.json_response
 @deco.user_key_required
+@deco.require_methods('GET')
 def api_user_inbox(request):
   """/api/user_inbox/USER - JSON dict of lists of issues for the polymer
   dashboard.
@@ -714,6 +711,7 @@ def _scored_reviewers(issue):
 
 
 @deco.login_required
+@deco.require_methods('GET')
 def starred(request):
   """/starred - Show a list of issues starred by the current user."""
   stars = models.Account.current_user_account.stars
@@ -740,6 +738,7 @@ def _load_users_for_issues(issues):
 
 
 @deco.user_key_required
+@deco.require_methods('GET')
 def show_user(request):
   """/user - Show the user's dashboard"""
   return _show_user(request)
@@ -844,7 +843,8 @@ def _show_user(request):
 
 
 @deco.access_control_allow_origin_star
-@deco.require_methods('POST')
+# TODO(agable): remove POST after crrev.com/c/723824 lands.
+@deco.require_methods('GET', 'POST')
 @deco.patchset_required
 @deco.json_response
 def get_depends_on_patchset(request):
@@ -866,6 +866,7 @@ def get_depends_on_patchset(request):
 @deco.admin_required
 @deco.user_key_required
 @deco.xsrf_required
+@deco.require_methods('GET', 'POST')
 def block_user(request):
   """/user/<user>/block - Blocks a specific user."""
   account = models.Account.get_account_for_user(request.user_to_show)
@@ -909,52 +910,7 @@ def block_user(request):
   return respond(request, 'block_user.html', templates)
 
 
-def _get_emails_from_raw(raw_emails, form=None, label=None):
-  emails = []
-  required_emails = []  # Emails marked as required.
-  for email in raw_emails:
-    email = email.strip()
-    required_email = email.startswith(models.REQUIRED_REVIEWER_PREFIX)
-    email = email.lstrip(models.REQUIRED_REVIEWER_PREFIX)
-    if email:
-      try:
-        if '@' not in email:
-          account = models.Account.get_account_for_nickname(email)
-          if account is None:
-            raise db.BadValueError('Unknown user: %s' % email)
-          db_email = account.user.email().lower()
-        elif email.count('@') != 1:
-          raise db.BadValueError('Invalid email address: %s' % email)
-        else:
-          _, tail = email.split('@')
-          if '.' not in tail:
-            raise db.BadValueError('Invalid email address: %s' % email)
-          db_email = email.lower()
-      except db.BadValueError as err:
-        if form:
-          form.errors[label] = [unicode(err)]
-        return (None, None)
-      if db_email not in emails:
-        emails.append(db_email)
-      if required_email and db_email not in required_emails:
-        required_emails.append(db_email)
-  # Remove blocked accounts
-  _remove_blocked_emails(emails)
-  _remove_blocked_emails(required_emails)
-  return (emails, required_emails)
-
-
-def _remove_blocked_emails(emails):
-  """Remove blocked accounts from the specified list of emails."""
-  for account in models.Account.get_multiple_accounts_by_email(emails).values():
-    if account.blocked:
-      try:
-        emails.remove(account.email)
-      except IndexError:
-        pass
-
-
-def replace_bug(message):
+def _replace_bug(message):
   dit_base_tracker_url = 'http://code.google.com/p/%s/issues/detail?id=%s'
   dit_valid_trackers = ('chrome-os-partner', 'chromium-os', 'libyuv')
   monorail_base_tracker_url = (
@@ -1009,6 +965,7 @@ def _map_base_url(base):
 
 
 @deco.issue_required
+@deco.require_methods('GET')
 def show(request):
   """/<issue> - Show an issue."""
   if _use_new_ui(request):
@@ -1044,7 +1001,7 @@ def show(request):
   re_string = r"(?<=BUG=)"
   re_string += "(\s*(?:[a-z0-9-]+:)?\d+\s*(?:,\s*(?:[a-z0-9-]+:)?\d+\s*)*)"
   expression = re.compile(re_string, re.IGNORECASE)
-  issue.description = re.sub(expression, replace_bug, issue.description)
+  issue.description = re.sub(expression, _replace_bug, issue.description)
   src_url = _map_base_url(issue.base)
 
   display_generated_msgs = False
@@ -1062,7 +1019,7 @@ def show(request):
   try_job_loading_error = False
   try_job_results = []
   try:
-    try_job_results = get_patchset_try_job_results(last_patchset)
+    try_job_results = _get_patchset_try_job_results(last_patchset)
     for try_job in try_job_results:
       if try_job.parent_name:
         builds_to_parents.setdefault(try_job.builder,
@@ -1081,7 +1038,6 @@ def show(request):
     logging.exception('Error while loading try job results')
     try_job_loading_error = True
 
-  auto_open_revert = request.issue.closed and request.path.endswith('/revert')
   return respond(request, 'issue.html', {
     'default_builders':
       models_chromium.TryserverBuilders.get_builders(),
@@ -1101,12 +1057,11 @@ def show(request):
     'display_generated_msgs': display_generated_msgs,
     'display_exp_tryjob_results': display_exp_tryjob_results,
     'offer_cq': request.issue.is_cq_available,
-    'auto_open_revert': auto_open_revert,
     'landed_days_ago': issue.get_time_since_landed() or 'unknown',
   })
 
 
-def get_patchset_try_job_results(patchset, swallow_exceptions=True):
+def _get_patchset_try_job_results(patchset, swallow_exceptions=True):
   """Returns a list of try job results for the |patchset|.
 
   Combines try job results stored in datastore and in buildbucket. Deduplicates
@@ -1164,6 +1119,7 @@ def get_patchset_try_job_results(patchset, swallow_exceptions=True):
 
 
 @deco.patchset_required
+@deco.require_methods('GET')
 def patchset(request):
   """/patchset/<key> - Returns patchset information."""
   display_exp_tryjob_results = False
@@ -1176,7 +1132,7 @@ def patchset(request):
     if ps.key.id() == request.patchset.key.id():
       patchset = ps
 
-  try_job_results = get_patchset_try_job_results(patchset)
+  try_job_results = _get_patchset_try_job_results(patchset)
   if display_exp_tryjob_results:
     has_exp_jobs = False
     for try_job in try_job_results:
@@ -1199,6 +1155,7 @@ def patchset(request):
 
 
 @deco.login_required
+@deco.require_methods('GET')
 def account(request):
   """/account/?q=blah&limit=10&timestamp=blah - Used for autocomplete."""
   def searchAccounts(prop, domain, added, response):
@@ -1245,6 +1202,7 @@ def account(request):
 
 @deco.access_control_allow_origin_star
 @deco.patchset_required
+@deco.require_methods('GET')
 def download(request):
   """/download/<issue>_<patchset>.diff - Download a patch set."""
   if request.patchset.data is None:
@@ -1260,6 +1218,7 @@ def download(request):
 
 
 @deco.patchset_required
+@deco.require_methods('GET')
 def tarball(request):
   """/tarball/<issue>/<patchset>/[lr] - Returns a .tar.bz2 file
   containing a/ and b/ trees of the complete files for the entire patchset."""
@@ -1317,72 +1276,39 @@ def tarball(request):
 
 
 @deco.issue_required
-@deco.upload_required
+@deco.require_methods('GET')
 def description(request):
-  """/<issue>/description - Gets/Sets an issue's description.
-
-  Used by upload.py or similar scripts.
-  """
-  if request.method != 'POST':
-    description = request.issue.description or ""
-    return HttpTextResponse(description)
-  if not request.issue.edit_allowed:
-    if not common.IS_DEV:
-      return HttpTextResponse('Login required', status=401)
-  issue = request.issue
-
-  issue.description = request.POST.get('description')
-  issue.put()
-  return HttpTextResponse('')
+  """/<issue>/description - Gets an issue's description."""
+  description = request.issue.description or ""
+  return HttpTextResponse(description)
 
 
 @deco.issue_required
-@deco.upload_required
 @deco.json_response
+@deco.require_methods('GET')
 def fields(request):
-  """/<issue>/fields - Gets/Sets fields on the issue.
-
-  Used by upload.py or similar scripts for partial updates of the issue
-  without a patchset..
-  """
-  # Only recognizes a few fields for now.
-  if request.method != 'POST':
-    fields = request.GET.getlist('field')
-    response = {}
-    if 'reviewers' in fields:
-      response['reviewers'] = request.issue.reviewers or []
-    if 'description' in fields:
-      response['description'] = request.issue.description
-    if 'subject' in fields:
-      response['subject'] = request.issue.subject
-    return response
-
-  if not request.issue.edit_allowed:
-    if not common.IS_DEV:
-      return HttpTextResponse('Login required', status=401)
-  fields = json.loads(request.POST.get('fields'))
-  issue = request.issue
-  if 'description' in fields:
-    issue.description = fields['description']
+  """/<issue>/fields - Gets fields on the issue."""
+  fields = request.GET.getlist('field')
+  response = {}
   if 'reviewers' in fields:
-    issue.reviewers, issue.required_reviewers = _get_emails_from_raw(
-        fields['reviewers'])
-    issue.calculate_updates_for()
+    response['reviewers'] = request.issue.reviewers or []
+  if 'description' in fields:
+    response['description'] = request.issue.description
   if 'subject' in fields:
-    issue.subject = fields['subject']
-  issue.put()
-  return HttpTextResponse('')
+    response['subject'] = request.issue.subject
+  return response
 
 
 @deco.patch_required
+@deco.require_methods('GET')
 def patch(request):
   """/<issue>/patch/<patchset>/<patch> - View a raw patch."""
   if _use_new_ui(request):
     return _serve_new_ui(request)
-  return patch_helper(request)
+  return _patch_helper(request)
 
 
-def patch_helper(request, nav_type='patch'):
+def _patch_helper(request, nav_type='patch'):
   """Returns a unified diff.
 
   Args:
@@ -1417,6 +1343,7 @@ def patch_helper(request, nav_type='patch'):
 
 @deco.access_control_allow_origin_star
 @deco.image_required
+@deco.require_methods('GET')
 def image(request):
   """/<issue>/image/<patchset>/<patch>/<content> - Return patch's content."""
   response = HttpResponse(request.content.data, content_type=request.mime_type)
@@ -1429,6 +1356,7 @@ def image(request):
 
 @deco.access_control_allow_origin_star
 @deco.patch_required
+@deco.require_methods('GET')
 def download_patch(request):
   """/download/issue<issue>_<patchset>_<patch>.diff - Download patch."""
   return HttpTextResponse(request.patch.text)
@@ -1498,7 +1426,7 @@ def _patchset_as_dict(
     'files': {},
   }
   if try_jobs:
-    try_job_results = get_patchset_try_job_results(
+    try_job_results = _get_patchset_try_job_results(
         patchset, swallow_exceptions=swallow_exceptions)
     values['try_job_results'] = [t.to_dict() for t in try_job_results]
 
@@ -1563,6 +1491,7 @@ def _patchset_as_dict(
 @deco.access_control_allow_origin_star
 @deco.issue_required
 @deco.json_response
+@deco.require_methods('GET')
 def api_issue(request):
   """/api/<issue> - Gets issue's data as a JSON-encoded dictionary."""
   messages = request.GET.get('messages', 'false').lower() == 'true'
@@ -1572,6 +1501,7 @@ def api_issue(request):
 # pylint: disable=W0613
 @deco.access_control_allow_origin_star
 @deco.json_response
+@deco.require_methods('GET')
 def api_tryservers(request):
   """/api/tryservers - Gets tryservers as a JSON-encoded dictionary."""
   return models_chromium.TryserverBuilders.get_curated_tryservers()
@@ -1579,6 +1509,7 @@ def api_tryservers(request):
 @deco.access_control_allow_origin_star
 @deco.patchset_required
 @deco.json_response
+@deco.require_methods('GET')
 def api_patchset(request):
   """/api/<issue>/<patchset> - Gets an issue's patchset data as a JSON-encoded
   dictionary.
@@ -1600,11 +1531,12 @@ def api_patchset(request):
 @deco.access_control_allow_origin_star
 @deco.patchset_required
 @deco.json_response
+@deco.require_methods('GET')
 def api_patchset_try_job_results(request):
   """/api/<issue>/<patchset>/try_job_results - Gets a patchset's try job
   results as a JSON-encoded list of dictionaries.
   """
-  try_job_results = get_patchset_try_job_results(
+  try_job_results = _get_patchset_try_job_results(
       request.patchset, swallow_exceptions=False)
   return [r.to_dict() for r in try_job_results]
 
@@ -1659,6 +1591,7 @@ def _get_tab_spaces_for_user(request):
 
 
 @deco.patch_filename_required
+@deco.require_methods('GET')
 def diff(request):
   """/<issue>/diff/<patchset>/<patch> - View a patch as a side-by-side diff"""
   if _use_new_ui(request):
@@ -1667,7 +1600,7 @@ def diff(request):
   if request.patch.no_base_file:
     # Can't show side-by-side diff since we don't have the base file.  Show the
     # unified diff instead.
-    return patch_helper(request, 'diff')
+    return _patch_helper(request, 'diff')
 
   patchset = request.patchset
   patch = request.patch
@@ -1745,6 +1678,7 @@ def _get_diff_table_rows(request, patch, context, column_width, tab_spaces):
 
 @deco.patch_required
 @deco.json_response
+@deco.require_methods('GET')
 def diff_skipped_lines(request, id_before, id_after, where, column_width,
                        tab_spaces=None):
   """/<issue>/diff/<patchset>/<patch> - Returns a fragment of skipped lines.
@@ -1893,6 +1827,7 @@ def _get_diff2_data(request, ps_left_id, ps_right_id, patch_id, context,
 
 
 @deco.issue_required
+@deco.require_methods('GET')
 def diff2(request, ps_left_id, ps_right_id, patch_filename):
   """/<issue>/diff2/... - View the delta between two different patch sets."""
   context = _get_context_for_user(request)
@@ -1944,6 +1879,7 @@ def diff2(request, ps_left_id, ps_right_id, patch_filename):
 
 @deco.issue_required
 @deco.json_response
+@deco.require_methods('GET')
 def diff2_skipped_lines(request, ps_left_id, ps_right_id, patch_id,
                         id_before, id_after, where, column_width,
                         tab_spaces=None):
@@ -2221,6 +2157,7 @@ def _get_draft_details(request, comments):
 
 @deco.login_required
 @deco.issue_required
+@deco.require_methods('GET')
 def draft_message(request):
   """/<issue>/draft_message - Retrieve draft messages."""
   query = models.Message.query(
@@ -2238,6 +2175,7 @@ def draft_message(request):
 
 @deco.access_control_allow_origin_star
 @deco.json_response
+@deco.require_methods('GET', 'POST')
 def search(request):
   """/search - Search for issues or patchset.
 
@@ -2374,6 +2312,7 @@ def search(request):
 
 @deco.login_required
 @deco.xsrf_required
+@deco.require_methods('GET', 'POST')
 def settings(request):
   account = models.Account.current_user_account
 
@@ -2435,6 +2374,7 @@ def settings(request):
 
 @deco.login_required
 @deco.json_response
+@deco.require_methods('GET')
 def api_settings(_request):
   """Repond with user prefs in JSON."""
   account = models.Account.current_user_account
@@ -2465,6 +2405,7 @@ def account_delete(_request):
 
 
 @deco.user_key_required
+@deco.require_methods('GET')
 def user_popup(request):
   """/user_popup - Pop up to show the user info."""
   try:
@@ -2501,6 +2442,7 @@ def _user_popup(request):
 
 
 @deco.login_required
+@deco.require_methods('GET')
 def xsrf_token(request):
   """/xsrf_token - Return the user's XSRF token.
 
@@ -2517,6 +2459,7 @@ def xsrf_token(request):
 
 
 @deco.task_queue_required('deltacalculation')
+@deco.require_methods('POST')
 def task_calculate_delta(request):
   """/restricted/tasks/calculate_delta - Calculate deltas for a patchset.
 
@@ -2604,6 +2547,7 @@ def _validate_port(port_value):
 
 
 @deco.login_required
+@deco.require_methods('GET')
 def get_access_token(request):
   """/get-access-token - Facilitates OAuth 2.0 dance for client.
 
@@ -2651,6 +2595,7 @@ def get_access_token(request):
 
 
 @deco.login_required
+@deco.require_methods('GET')
 def oauth2callback(request):
   """/oauth2callback - Callback handler for OAuth 2.0 redirect.
 
@@ -2673,6 +2618,7 @@ def oauth2callback(request):
 
 
 @deco.admin_required
+@deco.require_methods('GET', 'POST')
 def set_client_id_and_secret(request):
   """/restricted/set-client-id-and-secret - Allows admin to set Client ID and
   Secret.
@@ -2711,6 +2657,7 @@ def set_client_id_and_secret(request):
 DATE_FORMAT = '%Y-%m-%d'
 
 
+@deco.require_methods('GET', 'POST')
 def update_stats(request):
   """Endpoint that will trigger a taskqueue to update the score of all
   AccountStatsBase derived entities.
@@ -2792,6 +2739,7 @@ def update_stats(request):
       {'form': form, 'dashboard': dashboard, 'msg': msg})
 
 
+@deco.require_methods('GET', 'POST')
 def cron_update_yesterday_stats(_request):
   """Daily cron job to trigger all the necessary task queue.
 
@@ -3602,6 +3550,7 @@ def show_user_impl(user, when):
 
 
 @deco.user_key_required
+@deco.require_methods('GET')
 def show_user_stats(request, when):
   stats = show_user_impl(request.user_to_show.email(), when)
   if not stats:
@@ -3637,6 +3586,7 @@ def show_user_stats(request, when):
 
 @deco.json_response
 @deco.user_key_required
+@deco.require_methods('GET')
 def show_user_stats_json(request, when):
   stats = show_user_impl(request.user_to_show.email(), when)
   if not stats:
@@ -3692,6 +3642,7 @@ def stats_to_dict(t):
 
 
 @deco.json_response
+@deco.require_methods('GET')
 def leaderboard_json(request, when):
   limit = _clean_int(request.GET.get('limit'), 300, 1, 1000)
   data = leaderboard_impl(when, limit)
@@ -3700,6 +3651,7 @@ def leaderboard_json(request, when):
   return [stats_to_dict(t) for t in data]
 
 
+@deco.require_methods('GET')
 def leaderboard(request, when):
   """Prints the leaderboard for this Rietveld instance."""
   limit = _clean_int(request.GET.get('limit'), 300, 1, 1000)
