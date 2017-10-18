@@ -278,13 +278,61 @@ def _ValidateProjectClassifierConfig(project_classifier_config):
   return True
 
 
+def _ValidateRepoToDepPathConfig(repo_to_dep_path):
+  """Checks that the repo_to_dep_path is properly formatted.
+
+  Args:
+    repo_to_dep_path (dict): A dictionary mapping repository url to its
+      chromium repo path.
+      For example:
+      {
+          "https://boringssl.googlesource.com/boringssl.git":
+              "src/third_party/boringssl/src",
+          "https://chromium.googlesource.com/android_tools.git":
+              "src/third_party/android_tools",
+          "https://chromium.googlesource.com/angle/angle.git":
+              "src/third_party/angle",
+          ...
+      }
+
+  Returns:
+    True if ``repo_to_dep_path`` is properly formatted, False otherwise.
+  """
+  if not isinstance(repo_to_dep_path, dict):
+    return False
+
+  return True
+
+
+def _ValidateFeatureOptions(feature_options):
+  """Checks that the feature_options is properly formatted.
+
+  Args:
+    feature_options (dict): A dictionary mapping feature to its
+      configurations.
+      For example:
+      {
+          'TouchCrashedComponent': {
+              'blacklist': ['Internals>Core'],
+      }
+  Returns:
+    True if ``feature_options`` is properly formatted, False otherwise.
+  """
+  if not isinstance(feature_options, dict):
+    return False
+
+  return True
+
+
 _CONFIG_VALIDATION_FUNCTIONS = {
     'fracas': _ValidateChromeCrashConfig,
     'cracas': _ValidateChromeCrashConfig,
     'clusterfuzz': _ValidateClusterfuzzConfig,
     'uma_sampling_profiler': _ValidateUMASamplingProfilerConfig,
     'component_classifier': _ValidateComponentClassifierConfig,
-    'project_classifier': _ValidateProjectClassifierConfig
+    'project_classifier': _ValidateProjectClassifierConfig,
+    'repo_to_dep_path': _ValidateRepoToDepPathConfig,
+    'feature_options': _ValidateFeatureOptions,
 }
 
 
@@ -335,6 +383,7 @@ class CrashConfig(BaseHandler):
         'component_classifier': settings.component_classifier,
         'project_classifier': settings.project_classifier,
         'repo_to_dep_path': settings.repo_to_dep_path,
+        'feature_options': settings.feature_options,
     }
 
     return {'template': 'crash_config.html', 'data': data}

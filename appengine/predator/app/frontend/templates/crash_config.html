@@ -13,6 +13,7 @@
     crash.component_classifier = {{ component_classifier | tojson | safe }};
     crash.project_classifier = {{ project_classifier | tojson | safe }};
     crash.repo_to_dep_path = {{ repo_to_dep_path | tojson | safe }};
+    crash.feature_options = {{ feature_options | tojson | safe }};
 
     function getJsonOfTextarea(textId) {
       return JSON.parse($('#' + textId).val());
@@ -31,6 +32,7 @@
         'component_classifier': getJsonOfTextarea('component-classifier'),
         'project_classifier': getJsonOfTextarea('project-classifier'),
         'repo_to_dep_path': getJsonOfTextarea('repo-to-dep-path'),
+        'feature_options': getJsonOfTextarea('feature_options'),
       };
       $.post('config', { data: JSON.stringify(newConfig) }).done(function() {
         window.location.reload();  // Reload after successful saving.
@@ -51,6 +53,7 @@
       $('#component-classifier').val(getStringFromJson(crash.component_classifier));
       $('#project-classifier').val(getStringFromJson(crash.project_classifier));
       $('#repo-to-dep-path').val(getStringFromJson(crash.repo_to_dep_path));
+      $('#feature_options').val(getStringFromJson(crash.feature_options));
     });
   </script>
 </head>
@@ -83,6 +86,10 @@
   <div>
     Mapping from repository url to dependency path in chromium:<br>
     <textarea id="repo-to-dep-path" rows="20" cols="80"></textarea>
+  </div>
+  <div>
+    Settings for features:<br>
+    <textarea id="feature_options" rows="20" cols="80"></textarea>
   </div>
   <button type="submit" id="save-button">Save</button>
 </body>

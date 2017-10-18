@@ -72,6 +72,12 @@ _MOCK_REPO_TO_DEP_PATH = {
     'https://chromium.v8.git': 'src/v8',
 }
 
+_MOCK_FEATURES_CONFIG = {
+    'TouchCrashedComponent': {
+        'blacklist': ['Internals>Core'],
+    },
+}
+
 _MOCK_CONFIG = {
     'fracas': _MOCK_FRACAS_CONFIG,
     'cracas': _MOCK_FRACAS_CONFIG,
@@ -80,6 +86,7 @@ _MOCK_CONFIG = {
     'component_classifier': _MOCK_COMPONENT_CONFIG,
     'project_classifier': _MOCK_PROJECT_CONFIG,
     'repo_to_dep_path': _MOCK_REPO_TO_DEP_PATH,
+    'feature_options': _MOCK_FEATURES_CONFIG,
 }
 
 
@@ -324,6 +331,16 @@ class CrashConfigTest(TestCase):
 
     self.assertTrue(crash_config._ValidateProjectClassifierConfig(
         _MOCK_PROJECT_CONFIG))
+
+  def testValidateRepoToDepPathConfig(self):
+    """Tests ``_ValidateRepoToDepPathConfig`` function."""
+    self.assertFalse(crash_config._ValidateRepoToDepPathConfig(None))
+    self.assertTrue(crash_config._ValidateRepoToDepPathConfig({}))
+
+  def testValidateFeatureOptions(self):
+    """Tests ``_ValidateFeatureOptions`` function."""
+    self.assertFalse(crash_config._ValidateFeatureOptions(None))
+    self.assertTrue(crash_config._ValidateFeatureOptions({}))
 
   def testConfigurationDictIsValid(self):
     """Tests ``_ConfigurationDictIsValid`` function."""
