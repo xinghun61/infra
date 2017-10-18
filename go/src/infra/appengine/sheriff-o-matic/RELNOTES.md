@@ -1,3 +1,14 @@
+# Release Notes sheriff-o-matic 2017-10-18
+
+- 2 commits, 0 bugs affected since daed6f1 (2017-10-11T19:51:00Z)
+- 1 Authors:
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Add structured event logging for user annotations on alerts](https://chromium-review.googlesource.com/719962) (seanmccullough@chromium.org)
+- [[som] Add GAE requestID to alerts event table](https://chromium-review.googlesource.com/714025) (seanmccullough@chromium.org)
+
 # Release Notes sheriff-o-matic 2017-10-11
 
 - 3 commits, 1 bugs affected since 9334646 (2017-10-10T21:44:46Z)
