@@ -48,21 +48,8 @@ EXE_SFX = '.exe' if sys.platform == 'win32' else ''
 # On Windows we use git from depot_tools.
 GIT_EXE = 'git.bat' if sys.platform == 'win32' else 'git'
 
-# Pinned version of Go toolset to download. See http://golang.org/dl/.
-TOOLSET_VERSION = 'go1.8.3'
-
-# Platform and toolset dependent portion of a download URL.
-# See NATIVE_DOWNLOAD_URL_PREFIX.
-TOOLSET_VARIANTS = {
-  'darwin-amd64': 'darwin-amd64.tar.gz',
-  'linux2-386': 'linux-386.tar.gz',
-  'linux2-amd64': 'linux-amd64.tar.gz',
-  'win32-386': 'windows-386.zip',
-  'win32-amd64': 'windows-amd64.zip',
-}
-
-# Download URL root for official native toolsets.
-NATIVE_DOWNLOAD_URL_PREFIX = 'https://storage.googleapis.com/golang'
+# Version of Go toolset CIPD package (infra/go/${platform}) to install.
+TOOLSET_VERSION = '1.9.1'
 
 # Describes how to fetch 'glide'.
 GLIDE_SOURCE = {
@@ -144,44 +131,6 @@ class Failure(Exception):
   """Bootstrap failed."""
 
 
-def get_default_toolset():
-  """Name of a toolset native for this platform.
-
-  E.g. 'darwin-amd64'. Doesn't include version.
-  """
-  machine = platform.machine().lower()
-  if (machine == 'x86_64' and platform.system() == 'Linux'):
-    # This Linux may be running a 32-bit userspace, in which case we should play
-    # along and want to use 32-bit toolchain and packages.
-    dist, _, _ = platform.linux_distribution()
-    if dist.lower() in ('ubuntu', 'debian'):
-      # Use "dpkg" to authoritatively determine if we're running in a 32-bit
-      # userspace.
-      machine = subprocess.check_output(['dpkg', '--print-architecture'])
-      machine = machine.strip()
-    elif sys.maxsize == ((2 ** 31) - 1):
-      # We're a 32-bit Python, so assume that this means 32-bit userspace.
-      machine = 'x86'
-
-  # Name arch the same way Go does it.
-  arch = {
-    'amd64': 'amd64',
-    'x86_64': 'amd64',
-    'i386': '386',
-    'i686': '386',
-    'x86': '386',
-  }.get(machine)
-  return '%s-%s' % (sys.platform, arch)
-
-
-def get_toolset_url(toolset):
-  """URL of a specific Go toolset archive."""
-  variant = TOOLSET_VARIANTS.get(toolset)
-  if not variant:
-    raise Failure('Unrecognized toolset')
-  return '%s/%s.%s' % (NATIVE_DOWNLOAD_URL_PREFIX, TOOLSET_VERSION, variant)
-
-
 def read_file(path):
   """Returns contents of a given file or None if not readable."""
   assert isinstance(path, (list, tuple))
@@ -216,28 +165,23 @@ def remove_directory(path):
   shutil.rmtree(p, onerror=onerror if sys.platform == 'win32' else None)
 
 
-def install_toolset(toolset_root, url):
-  """Downloads and installs Go toolset.
+def install_toolset(toolset_root, version):
+  """Downloads and installs Go toolset from CIPD.
 
   GOROOT would be <toolset_root>/go/.
   """
-  if not os.path.exists(toolset_root):
-    os.makedirs(toolset_root)
-  pkg_path = os.path.join(toolset_root, url[url.rfind('/')+1:])
-
-  LOGGER.info('Downloading %s...', url)
-  download_file(url, pkg_path)
-
-  LOGGER.info('Extracting...')
-  if pkg_path.endswith('.zip'):
-    with zipfile.ZipFile(pkg_path, 'r') as f:
-      f.extractall(toolset_root)
-  elif pkg_path.endswith('.tar.gz'):
-    with tarfile.open(pkg_path, 'r:gz') as f:
-      f.extractall(toolset_root)
-  else:
-    raise Failure('Unrecognized archive format')
-
+  cmd = subprocess.Popen(
+    [
+      'cipd.bat' if sys.platform == 'win32' else 'cipd',
+      'ensure', '-ensure-file', '-', '-root', toolset_root,
+    ],
+    stdin=subprocess.PIPE)
+  cmd.communicate(
+    '@Subdir go\n'
+    'infra/go/${platform} version:%s\n' % version
+  )
+  if cmd.returncode:
+    raise Failure('CIPD call failed, exit code %d' % cmd.returncode)
   LOGGER.info('Validating...')
   if not check_hello_world(toolset_root):
     raise Failure('Something is not right, test program doesn\'t work')
@@ -304,29 +248,25 @@ def write_infra_version(root):
   write_file([root, 'INFRA_VERSION'], str(INFRA_VERSION))
 
 
-def ensure_toolset_installed(toolset_root):
+def ensure_toolset_installed(toolset_root, version):
   """Installs or updates Go toolset if necessary.
 
   Returns True if new toolset was installed.
   """
-  toolset = get_default_toolset()
-  infra_outdated = infra_version_outdated(toolset_root)
   installed = read_file([toolset_root, 'INSTALLED_TOOLSET'])
-  available = '%s %s' % (toolset,  TOOLSET_VERSION)
-
-  if infra_outdated:
+  if infra_version_outdated(toolset_root):
     LOGGER.info('Infra version is out of date.')
-  elif installed == available:
+  elif installed == version:
     LOGGER.debug('Go toolset is up-to-date: %s', installed)
     return False
 
   LOGGER.info('Installing Go toolset.')
   LOGGER.info('  Old toolset is %s', installed)
-  LOGGER.info('  New toolset is %s', available)
+  LOGGER.info('  New toolset is %s', version)
   remove_directory([toolset_root])
-  install_toolset(toolset_root, get_toolset_url(toolset))
-  LOGGER.info('Go toolset installed: %s', available)
-  write_file([toolset_root, 'INSTALLED_TOOLSET'], available)
+  install_toolset(toolset_root, version)
+  LOGGER.info('Go toolset installed: %s', version)
+  write_file([toolset_root, 'INSTALLED_TOOLSET'], version)
   write_infra_version(toolset_root)
   return True
 
@@ -551,7 +491,8 @@ def bootstrap(layout, logging_level):
     prev_environ[k] = os.environ.pop(k, None)
 
   try:
-    toolset_updated = ensure_toolset_installed(layout.toolset_root)
+    toolset_updated = ensure_toolset_installed(
+        layout.toolset_root, TOOLSET_VERSION)
     ensure_glide_installed(layout.toolset_root)
     vendor_updated = toolset_updated
     for p in layout.vendor_paths:
