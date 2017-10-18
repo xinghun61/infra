@@ -91,8 +91,6 @@ urlpatterns = patterns(
     (r'^account_delete$', 'account_delete'),
     (r'^user_popup/(.+)$', 'user_popup'),
     (r'^(\d+)/patchset/(\d+)$', 'patchset'),
-    (r'^(\d+)/patchset/(\d+)/delete$', 'delete_patchset'),
-    (r'^(\d+)/patchset/(\d+)/edit_patchset_title$', 'edit_patchset_title'),
     (r'^(\d+)/patchset/(\d+)/get_depends_on_patchset$',
      'get_depends_on_patchset'),
     (r'^account$', 'account'),

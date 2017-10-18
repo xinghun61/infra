@@ -4,7 +4,6 @@ found in the LICENSE file. -->
 
 <link rel="import" href="../common/cr-action.html">
 <link rel="import" href="../common/cr-date.html">
-<link rel="import" href="cr-patchset-edit-dialog.html">
 
 <polymer-element name="cr-patchset-header" attributes="patchset">
     <template>
@@ -44,12 +43,6 @@ found in the LICENSE file. -->
             </template>
         </div>
         <div class="patchset-date"><cr-date date="{{ patchset.created }}" relative></cr-date></div>
-        <div class="patchset-actions">
-            <template if="{{ patchset.issue.owner.isCurrentUser }}">
-                <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
-            </template>
-        </div>
-        <div id="dialogs" on-tap="{{ handleDialogTap }}"></div>
     </template>
     <script>
         Polymer({
@@ -62,21 +55,6 @@ found in the LICENSE file. -->
                 if (count == 1)
                     return count + " " + text;
                 return count + " " + text.pluralize();
-            },
-            handleDialogTap: function(event) {
-                // Tapping on a dialog shouldn't collapse the header.
-                event.stopPropagation();
-            },
-            showEditDialog: function(event) {
-                // Don't collapse the patchset.
-                event.stopPropagation();
-                var dialog = document.createElement("cr-patchset-edit-dialog");
-                dialog.patchset = this.patchset;
-                dialog.addEventListener("close", function() {
-                    dialog.remove();
-                });
-                this.$.dialogs.appendChild(dialog);
-                dialog.showModal();
             },
         });
     </script>

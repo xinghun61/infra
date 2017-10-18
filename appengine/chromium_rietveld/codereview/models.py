@@ -800,35 +800,6 @@ class PatchSet(ndb.Model):
       self._try_job_results.sort(key=GetKey, reverse=True)
     return self._try_job_results
 
-  def nuke(self):
-    ps_id = self.key.id()
-    patches = []
-    for patchset in self.issue_key.get().patchsets:
-      if patchset.created <= self.created:
-        continue
-      patches.extend(
-        p for p in patchset.patches if p.delta_calculated and ps_id in p.delta)
-
-    def _patchset_delete(patches):
-      """Transactional helper for delete_patchset.
-
-      Args:
-        patches: Patches that have delta against patches of ps_delete.
-
-      """
-      patchset_id = self.key.id()
-      tbp = []
-      for patch in patches:
-        patch.delta.remove(patchset_id)
-        tbp.append(patch)
-      if tbp:
-        ndb.put_multi(tbp)
-      tbd = [self]
-      for cls in [Patch, Comment, TryJobResult]:
-        tbd.extend(cls.query(ancestor=self.key))
-      ndb.delete_multi(entity.key for entity in tbd)
-    ndb.transaction(lambda: _patchset_delete(patches))
-
 
 class Message(ndb.Model):
   """A copy of a message sent out in email.

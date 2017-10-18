@@ -958,24 +958,6 @@ def _show_user(request):
   return respond(request, 'user.html', dashboard_dict)
 
 
-@deco.require_methods('POST')
-@deco.login_required
-@deco.patchset_required
-@deco.xsrf_required
-def edit_patchset_title(request):
-  """/<issue>/edit_patchset_title - Edit the specified patchset's title."""
-
-  if request.user.email().lower() != request.issue.owner.email():
-    return HttpResponseBadRequest(
-        'Only the issue owner can edit patchset titles')
-
-  patchset = request.patchset
-  patchset.message = request.POST.get('patchset_title')
-  patchset.put()
-
-  return HttpResponse('OK', content_type='text/plain')
-
-
 @deco.access_control_allow_origin_star
 @deco.require_methods('POST')
 @deco.patchset_required
@@ -1974,34 +1956,6 @@ deleted_patchsets = gae_ts_mon.CounterMetric(
     'rietveld/deleted_patchsets',
     'Number of patchsets that was deleted.',
     None)
-
-
-@deco.require_methods('POST')
-@deco.patchset_editor_required
-@deco.xsrf_required
-def delete_patchset(request):
-  """/<issue>/patch/<patchset>/delete - Delete a patchset.
-
-  There is no way back.
-  """
-  # Log patchset deletion.
-  patchset_num = 0
-  for patchset in list(request.issue.patchsets):
-    patchset_num += 1
-    if patchset.key.id() == request.patchset.key.id():
-      break
-  delete_msg = 'Patchset #%s (id:%s) has been deleted' % (
-      patchset_num, request.patchset.key.id())
-  make_message(request, request.issue, delete_msg, send_mail=False,
-               auto_generated=True).put()
-  # Update all dependents of this patchset.
-  dependency_utils.remove_dependencies(request.patchset)
-  # Remove this patchset as a dependent.
-  dependency_utils.remove_as_dependent(request.patchset)
-  # Delete the patchset.
-  request.patchset.nuke()
-  deleted_patchsets.increment()
-  return HttpResponseRedirect(reverse(show, args=[request.issue.key.id()]))
 
 
 @deco.require_methods('POST')

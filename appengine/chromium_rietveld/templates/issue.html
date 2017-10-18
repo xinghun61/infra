@@ -33,12 +33,6 @@
       {%if patchset.message%}: {{patchset.message}}{%endif%}
       <span class="anchor">#</span>
     </a>
-    {%ifequal issue.owner user%}
-      <a class="editpatchset" onclick="M_editPatchsetTitle(
-          '{{issue.key.id}}', '{{patchset.key.id}}', '{{xsrf_token}}',
-          {%if patchset.message%}'{{patchset.message|escapejs}}'{% else %}''{% endif %},
-          '{{forloop.counter}}')">(edit)</a>
-    {%endifequal%}
   </h3>
 
   {%if patchset.num_comments or patchset.n_drafts%}

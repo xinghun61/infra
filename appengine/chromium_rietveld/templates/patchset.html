@@ -19,17 +19,6 @@
       {% else %}
         <span class="disabled">(Patch set is too large to download)</span>
       {% endif %}
-      {%ifnotequal 1 num_patchsets%}
-        {%if is_editor %}
-        <form method="post" action="{%url codereview.views.delete_patchset issue.key.id patchset.key.id %}">
-          <input type="hidden" name="xsrf_token" value="{{xsrf_token}}">
-          <input type="hidden" name="_method" value="delete" />
-          |
-          <input onclick="return confirm('Are you sure?');"
-                 type="submit" value="Delete" class="link-to"/>
-        </form>
-        {%endif%}
-      {%endifnotequal%}
     </div>
     <div style="clear:both;"></div>
   </div>

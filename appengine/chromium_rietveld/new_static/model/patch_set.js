@@ -30,8 +30,6 @@ function PatchSet(issue, id, sequence)
 
 PatchSet.DETAIL_URL = "/api/{1}/{2}/?comments=true&try_jobs=false";
 PatchSet.REVERT_URL = "/api/{1}/{2}/revert";
-PatchSet.DELETE_URL = "/{1}/patchset/{2}/delete";
-PatchSet.TITLE_URL = "/{1}/patchset/{2}/edit_patchset_title";
 PatchSet.PATCHSET_URL = "/{1}/#ps{2}";
 
 PatchSet.prototype.getPatchsetUrl = function()
@@ -51,20 +49,6 @@ PatchSet.prototype.getDetailUrl = function()
 PatchSet.prototype.getRevertUrl = function()
 {
     return PatchSet.REVERT_URL.assign(
-        encodeURIComponent(this.issue.id),
-        encodeURIComponent(this.id));
-};
-
-PatchSet.prototype.getEditTitleUrl = function()
-{
-    return PatchSet.TITLE_URL.assign(
-        encodeURIComponent(this.issue.id),
-        encodeURIComponent(this.id));
-};
-
-PatchSet.prototype.getDeleteUrl = function()
-{
-    return PatchSet.DELETE_URL.assign(
         encodeURIComponent(this.issue.id),
         encodeURIComponent(this.id));
 };
@@ -95,25 +79,6 @@ PatchSet.prototype.revert = function(options)
         revert_reason: options.reason,
         revert_cq: options.commit ? "1" : "0",
     }, {
-        sendXsrfToken: true,
-    });
-};
-
-PatchSet.prototype.setTitle = function(value)
-{
-    var patchset = this;
-    return sendFormData(patchset.getEditTitleUrl(), {
-        patchset_title: value,
-    }, {
-        sendXsrfToken: true,
-    }).then(function() {
-        patchset.title = value;
-    });
-};
-
-PatchSet.prototype.delete = function()
-{
-    return sendFormData(this.getDeleteUrl(), null, {
         sendXsrfToken: true,
     });
 };
