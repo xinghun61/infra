@@ -56,7 +56,6 @@ urlpatterns = patterns(
     (r'^starred$', 'starred'),
     (r'^(\d+)/(?:show)?$', 'show'),
 
-    (r'^upload$', 'upload'),
     (r'^(\d+)/mail$', 'mailissue'),
     (r'^download/issue(\d+)_(\d+)\.diff', 'download'),
     (r'^download/issue(\d+)_(\d+)_(\d+)\.diff', 'download_patch'),
@@ -78,9 +77,6 @@ urlpatterns = patterns(
      '/(\d+)/(\d+)$', 'diff2_skipped_lines'),
     (r'^(\d+)/diff2_skipped_lines/(\d+):(\d+)/(\d+)/$',
      django.views.defaults.page_not_found, {}, 'diff2_skipped_lines_prefix'),
-    (r'^(\d+)/upload_content/(\d+)/(\d+)$', 'upload_content'),
-    (r'^(\d+)/upload_patch/(\d+)$', 'upload_patch'),
-    (r'^(\d+)/upload_complete/(\d+)?$', 'upload_complete'),
     (r'^(\d+)/description$', 'description'),
     (r'^(\d+)/fields', 'fields'),
     (r'^api/(\d+)/?$', 'api_issue'),
@@ -94,10 +90,7 @@ urlpatterns = patterns(
     (r'^(\d+)/patchset/(\d+)/get_depends_on_patchset$',
      'get_depends_on_patchset'),
     (r'^account$', 'account'),
-    (r'^use_uploadpy$', 'use_uploadpy'),
     (r'^xsrf_token$', 'xsrf_token'),
-    # patching upload.py on the fly
-    (r'^static/upload.py$', 'customized_upload_py'),
     (r'^search$', 'search'),
     (r'^get-access-token$', 'get_access_token'),
     (r'^oauth2callback$', 'oauth2callback'),
