@@ -19,8 +19,6 @@ from django.conf.urls.defaults import url
 import django.views.defaults
 from django.views.generic.base import RedirectView
 
-from codereview import feeds
-
 urlpatterns = patterns(
     'codereview.views',
 
@@ -105,16 +103,6 @@ urlpatterns = patterns(
     (r'^restricted/user/([^/]+)/block$', 'block_user'),
     )
 
-
-### RSS Feed support
-urlpatterns += patterns(
-    '',
-    url(r'^rss/all$', feeds.AllFeed(), name='rss_all'),
-    url(r'^rss/mine/(.*)$', feeds.MineFeed(), name='rss_mine'),
-    url(r'^rss/reviews/(.*)$', feeds.ReviewsFeed(), name='rss_reviews'),
-    url(r'^rss/closd/(.*)$', feeds.ClosedFeed(), name='rss_closed'),
-    url(r'^rss/issue/(.*)$', feeds.OneIssueFeed(), name='rss_issue'),
-)
 
 # Chromium urls
 urlpatterns += patterns(
