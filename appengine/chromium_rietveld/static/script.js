@@ -362,9 +362,7 @@ function M_showAllDiffs(num) {
     // Since the user may not have JS, the template only shows the diff inline
     // for the onclick action, not the href. In order to activate it, we must
     // call the link's onclick action.
-    if (link.className.indexOf("reverted") == -1) {
-      link.onclick();
-    }
+    link.onclick();
   }
 }
 
@@ -464,38 +462,6 @@ function M_toggleSectionForPS(issue, patchset) {
   http_request.onreadystatechange = M_PatchSetFetched;
   http_request.div_id = id;
   http_request.send(null);
-}
-
-/**
- * Toggle the visibility of the revert reason popup.
- */
-function M_toggleRevertReasonPopup(display) {
-  var popupElement = document.getElementById("revert-reason-popup-div");
-  // Remove all text from the textarea while toggling.
-  document.getElementById("revert_reason_textarea").value = ""
-  popupElement.style.display = display ? "" : "none";
-}
-
-/**
- * Validates the revert reason and submits the revert form.
- */
-function M_createRevertPatchset() {
-  revert_reason = document.getElementById("revert_reason_textarea").value;
-  // Validate that the revert reason is not null and does not contain only
-  // newlines and whitespace characters.
-  if (revert_reason == null ||
-      revert_reason.replace(/(\s+|\r\n|\n|\r)/gm, "") == "") {
-    alert('Must enter a revert reason. Please try again.');
-    return false;
-  }
-
-  document.getElementById("revert-form")["revert_reason"].value = revert_reason;
-
-  check_cq_value = document.getElementById("check_cq").checked ? '1' : '0';
-  document.getElementById("revert-form")["revert_cq"].value = check_cq_value;
-
-  // Confirm that this patchset should really be reverted.
-  return confirm("Proceed with creating a revert of this patchset?");
 }
 
 /**
@@ -1903,25 +1869,6 @@ function M_collapseGroups(parents) {
   }
   document.getElementById("history-expander").style.display = "";
   document.getElementById("history-collapser").style.display = "none";
-}
-
-/**
- * Expands the reverted files section of the files list in the changelist view.
- *
- * @param {String} tableid The id of the table element that contains hidden TR's
- * @param {String} hide The id of the element to hide after this is completed.
- */
-function M_showRevertedFiles(tableid, hide) {
-  var table = document.getElementById(tableid);
-  if (!table) return;
-  var rowsLength = table.rows.length;
-  for (var i = 0; i < rowsLength; i++) {
-    var row = table.rows[i];
-    if (row.getAttribute("name") == "afile") row.style.display = "";
-  }
-  if (dashboardState) dashboardState.initialize();
-  var h = document.getElementById(hide);
-  if (h) h.style.display = "none";
 }
 
 

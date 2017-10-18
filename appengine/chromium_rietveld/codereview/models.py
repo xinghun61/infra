@@ -36,7 +36,6 @@ from django.conf import settings
 from codereview import auth_utils
 from codereview import committer_list
 from codereview import engine_utils
-from codereview import invert_patches
 from codereview import patching
 from codereview import utils
 from codereview.exceptions import FetchError
@@ -525,13 +524,6 @@ class Issue(ndb.Model):
     logging.error('CQ posted CQ Status URL %s with unrecognized patchset %s',
                   url, patchset_num)
 
-
-
-def can_skip_checks_on_revert(landed_age):
-  """Returns whether CQ checks on revert can be skipped."""
-  if landed_age is None:
-    return False
-  return landed_age < REVERT_MAX_AGE_FOR_CHECKS_BYPASSING
 
 
 def _calculate_delta(patch, patchset_id, patchsets):
@@ -1029,52 +1021,6 @@ class Patch(ndb.Model):
   def count_startswith(self, prefix):
     """Returns the number of lines with the specified prefix."""
     return sum(1 for l in self.lines if l.startswith(prefix))
-
-  def make_inverted(self, patchset):
-    """Calculates the inverse of this Patch.
-
-    Returns an inverted Patch object that has not been committed yet.
-    """
-    # Only git patches are supported.
-    diff_header = invert_patches.split_header(self.text)[0]
-    assert invert_patches.is_git_diff_header(diff_header), \
-        'Can only invert Git patches.'
-
-    # Find the content and the patched content to use for inverse diffing.
-    if self.is_binary:
-      original_content = self.content_key.get()
-      original_patched_content = (
-          self.patched_content_key.get() if self.patched_content_key else None)
-      original_file_data = original_content.data
-    else:
-      original_content = self.get_content()
-      original_patched_content = self.get_patched_content()
-      original_file_data = original_content.text
-
-    invert_git_patches = invert_patches.InvertGitPatches(
-        self.text, self.filename)
-
-    content_for_diff = (
-        original_patched_content.lines if original_patched_content else [])
-    if (original_content and not invert_git_patches.status ==
-          invert_patches.COPIED_AND_MODIFIED_STATUS):
-      patched_content_for_diff = original_content.lines
-    else:
-      # The patched content text for 'A +' statuses is always empty.
-      patched_content_for_diff = []
-
-    inverted_patch_text = invert_git_patches.get_inverted_patch_text(
-        content_for_diff, patched_content_for_diff, original_file_data,
-        self.is_binary)
-
-    first_patch_id, _ = Patch.allocate_ids(1, parent=patchset.key)
-    patch_key = ndb.Key(Patch, first_patch_id, parent=patchset.key)
-    return Patch(key=patch_key,
-                 patchset_key=patchset.key,
-                 filename=self.filename,
-                 status=invert_git_patches.inverted_patch_status,
-                 text=inverted_patch_text,
-                 is_binary=self.is_binary)
 
   def get_content(self):
     """Get self.content, or fetch it if necessary.

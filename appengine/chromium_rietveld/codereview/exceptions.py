@@ -21,7 +21,3 @@ class RietveldError(Exception):
 
 class FetchError(RietveldError):
   """Exception raised when fetching of remote files fails."""
-
-
-class RevertError(RietveldError):
-  """Exception raised when reverting a patchset fails."""

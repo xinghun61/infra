@@ -122,13 +122,6 @@ urlpatterns += patterns(
 )
 
 
-### Revert patchset support
-urlpatterns += patterns(
-  'codereview.revert_patchset',
-  (r'^api/(\d+)/(\d+)/revert$', 'revert_patchset'),
-)
-
-
 ### RSS Feed support
 urlpatterns += patterns(
     '',

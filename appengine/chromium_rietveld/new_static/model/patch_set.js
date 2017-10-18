@@ -29,7 +29,6 @@ function PatchSet(issue, id, sequence)
 }
 
 PatchSet.DETAIL_URL = "/api/{1}/{2}/?comments=true&try_jobs=false";
-PatchSet.REVERT_URL = "/api/{1}/{2}/revert";
 PatchSet.PATCHSET_URL = "/{1}/#ps{2}";
 
 PatchSet.prototype.getPatchsetUrl = function()
@@ -42,13 +41,6 @@ PatchSet.prototype.getPatchsetUrl = function()
 PatchSet.prototype.getDetailUrl = function()
 {
     return PatchSet.DETAIL_URL.assign(
-        encodeURIComponent(this.issue.id),
-        encodeURIComponent(this.id));
-};
-
-PatchSet.prototype.getRevertUrl = function()
-{
-    return PatchSet.REVERT_URL.assign(
         encodeURIComponent(this.issue.id),
         encodeURIComponent(this.id));
 };
@@ -69,18 +61,6 @@ PatchSet.prototype.findFileById = function(id)
 PatchSet.prototype.findFileByName = function(name)
 {
     return this.files.find({name: name});
-};
-
-PatchSet.prototype.revert = function(options)
-{
-    if (!options.reason)
-        return Promise.reject(new Error("Must supply a reason"));
-    return sendFormData(this.getRevertUrl(), {
-        revert_reason: options.reason,
-        revert_cq: options.commit ? "1" : "0",
-    }, {
-        sendXsrfToken: true,
-    });
 };
 
 PatchSet.prototype.parseData = function(data)
