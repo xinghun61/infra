@@ -20,11 +20,11 @@
       "-u",
       "RECIPE_MODULE[recipe_engine::url]/resources/pycurl.py",
       "--url",
-      "https://golang.org/",
+      "https://golang.org/VERSION?m=text",
       "--status-json",
       "/path/to/tmp/json",
       "--outfile",
-      "/path/to/tmp/json"
+      "/path/to/tmp/"
     ],
     "name": "version",
     "~followup_annotations": [

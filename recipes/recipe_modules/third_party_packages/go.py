@@ -4,14 +4,12 @@
 
 """Packages the Go toolchain for multiple platforms."""
 
-import re
-
 from . import util
 
 from recipe_engine import recipe_api
 
 
-VERSION_URL = 'https://golang.org/'
+VERSION_URL = 'https://golang.org/VERSION?m=text'
 BASE_URL = 'https://storage.googleapis.com/golang'
 DOWNLOAD_TEMPLATE = (BASE_URL +
     '/go%(version)s.%(os)s-%(arch)s%(ext)s')
@@ -20,9 +18,6 @@ PACKAGE_TEMPLATE = 'infra/go/%(platform)s'
 # This version suffix serves to distinguish different revisions of go built
 # with this recipe.
 PACKAGE_VERSION_SUFFIX = ''
-
-
-VERSION_RE = re.compile(r'Build version go(\d+(\.\d+)*).')
 
 
 class PlatformNotSupported(Exception):
@@ -75,13 +70,12 @@ class GoApi(util.ModuleShim):
   def _get_latest_version(self, platform_name, platform_bits):
     # Get the latest version of Go. We do this by checking the build version
     # on the Go front page.
-    resp = self.m.url.get_json(VERSION_URL, step_name='version',
-        default_test_data='Build version go1.2.3.')
+    resp = self.m.url.get_text(VERSION_URL, step_name='version',
+        default_test_data='go1.2.3')
     resp.raise_on_error()
 
-    m = VERSION_RE.match(resp.output)
-    assert m is not None
-    version = m.group(1)
+    assert resp.output and resp.output.startswith("go")
+    version = resp.output[2:]
 
     url = self._get_download_url(version, platform_name, platform_bits)
     self.m.step.active_result.presentation.links['go %r' % (version,)] = (
