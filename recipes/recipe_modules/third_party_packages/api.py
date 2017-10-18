@@ -8,6 +8,7 @@ from . import python as tpp_python
 from . import ninja as tpp_ninja
 from . import cmake as tpp_cmake
 from . import swig as tpp_swig
+from . import go as tpp_go
 from .support_prefix import SupportPrefix
 
 from recipe_engine import recipe_api
@@ -56,6 +57,10 @@ class ThirdPartyPackagesApi(recipe_api.RecipeApi):
   @property
   def swig(self):
     return self._get_singleton(tpp_swig.SwigApi)
+
+  @property
+  def go(self):
+    return self._get_singleton(tpp_go.GoApi)
 
   def support_prefix(self, base):
     return SupportPrefix(self, base)

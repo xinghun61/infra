@@ -40,6 +40,8 @@ def RunSteps(api, dry_run):
       api.third_party_packages.cmake.package()
     with api.step.nest('swig'):
       api.third_party_packages.swig.package()
+    with api.step.nest('go'):
+      api.third_party_packages.go.package()
 
 
 def GenTests(api):
@@ -91,7 +93,13 @@ def GenTests(api):
       cipd_search(
         'swig',
         api.third_party_packages.swig.PACKAGE_PREFIX + platform,
-        '3.0.12' + api.third_party_packages.swig.PACKAGE_VERSION_SUFFIX)
+        '3.0.12' + api.third_party_packages.swig.PACKAGE_VERSION_SUFFIX) +
+      cipd_search(
+        'go',
+        api.third_party_packages.go.PACKAGE_TEMPLATE % {
+          'platform': platform,
+        },
+        '1.2.3' + api.third_party_packages.go.PACKAGE_VERSION_SUFFIX)
     )
 
   yield (
