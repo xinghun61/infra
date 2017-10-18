@@ -16,8 +16,8 @@ from google.appengine.ext.webapp.mail_handlers import BounceNotificationHandler
 from businesslogic import work_env
 from features import commitlogcommands
 from features import inboundemail
+from framework import authdata
 from framework import emailfmt
-from framework import monorailrequest
 from framework import permissions
 from proto import project_pb2
 from proto import tracker_pb2
@@ -158,8 +158,8 @@ class InboundEmailTest(unittest.TestCase):
     emailfmt.ValidateReferencesHeader(
         mox.IgnoreArg(), self.project, mox.IgnoreArg(),
         mox.IgnoreArg()).AndReturn(True)
-    self.mox.StubOutWithMock(monorailrequest.AuthData, 'FromEmail')
-    monorailrequest.AuthData.FromEmail(
+    self.mox.StubOutWithMock(authdata.AuthData, 'FromEmail')
+    authdata.AuthData.FromEmail(
         mox.IgnoreArg(), 'user@example.com', self.services,
         autocreate=False).AndReturn(mock_auth_data)
     self.mox.ReplayAll()
@@ -186,8 +186,8 @@ class InboundEmailTest(unittest.TestCase):
         mox.IgnoreArg(), self.project, mox.IgnoreArg(),
         mox.IgnoreArg()).AndReturn(True)
 
-    self.mox.StubOutWithMock(monorailrequest.AuthData, 'FromEmail')
-    monorailrequest.AuthData.FromEmail(
+    self.mox.StubOutWithMock(authdata.AuthData, 'FromEmail')
+    authdata.AuthData.FromEmail(
         mox.IgnoreArg(), 'user@example.com', self.services,
         autocreate=False).AndReturn(mock_auth_data)
 

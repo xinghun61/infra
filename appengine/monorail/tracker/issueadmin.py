@@ -18,6 +18,7 @@ import time
 from features import filterrules_helpers
 from features import filterrules_views
 from features import savedqueries_helpers
+from framework import authdata
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
@@ -290,7 +291,7 @@ class AdminTemplates(IssueAdminBase):
       owner = post_data['owner_%s' % i]
       if owner:
         user_id = self.services.user.LookupUserID(mr.cnxn, owner)
-        auth = monorailrequest.AuthData.FromUserID(
+        auth = authdata.AuthData.FromUserID(
             mr.cnxn, user_id, self.services)
         if framework_bizobj.UserIsInProject(mr.project, auth.effective_ids):
           owner_id = user_id

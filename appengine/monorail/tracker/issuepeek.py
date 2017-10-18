@@ -13,11 +13,11 @@ import settings
 from businesslogic import work_env
 from features import commands
 from features import notify
+from framework import authdata
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
 from framework import framework_views
-from framework import monorailrequest
 from framework import paginate
 from framework import permissions
 from framework import servlet
@@ -236,7 +236,7 @@ class IssuePeek(servlet.Servlet):
           mr, [c.content for c in descriptions + comments])
 
     with mr.profiler.Phase('making comment views'):
-      reporter_auth = monorailrequest.AuthData.FromUserID(
+      reporter_auth = authdata.AuthData.FromUserID(
           mr.cnxn, descriptions[0].user_id, self.services)
       desc_views = [
           tracker_views.IssueCommentView(

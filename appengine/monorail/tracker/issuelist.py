@@ -13,6 +13,7 @@ import logging
 from third_party import ezt
 
 import settings
+from businesslogic import work_env
 from framework import framework_helpers
 from framework import framework_views
 from framework import grid_view_helpers
@@ -23,7 +24,6 @@ from framework import table_view_helpers
 from framework import template_helpers
 from framework import urls
 from framework import xsrf
-from search import frontendsearchpipeline
 from search import searchpipeline
 from search import query2ast
 from services import issue_svc
@@ -74,9 +74,8 @@ class IssueList(servlet.Servlet):
       else:
         config = tracker_bizobj.MakeDefaultProjectIssueConfig(None)
 
-    with mr.profiler.Phase('starting frontend search pipeline'):
-      pipeline = frontendsearchpipeline.FrontendSearchPipeline(
-          mr, self.services, tracker_constants.DEFAULT_RESULTS_PER_PAGE)
+    with work_env.WorkEnv(mr, self.services) as we:
+      pipeline = we.ListIssues()
 
     # Perform promises that require authentication information.
     with mr.profiler.Phase('getting stars'):
@@ -85,11 +84,6 @@ class IssueList(servlet.Servlet):
 
     with mr.profiler.Phase('computing col_spec'):
       mr.ComputeColSpec(config)
-
-    if not mr.errors.AnyErrors():
-      pipeline.SearchForIIDs()
-      pipeline.MergeAndSortIssues()
-      pipeline.Paginate()
 
     with mr.profiler.Phase('publishing emails'):
       framework_views.RevealAllEmailsToMembers(mr, pipeline.users_by_id)

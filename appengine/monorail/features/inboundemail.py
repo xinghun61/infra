@@ -23,6 +23,7 @@ import settings
 from businesslogic import work_env
 from features import commitlogcommands
 from features import notify_helpers
+from framework import authdata
 from framework import emailfmt
 from framework import framework_constants
 from framework import monorailrequest
@@ -154,7 +155,7 @@ class InboundEmail(webapp2.RequestHandler):
     # and replies to the old thread will no longer work because the subject
     # line hash will not match, which seems reasonable.
     try:
-      auth = monorailrequest.AuthData.FromEmail(
+      auth = authdata.AuthData.FromEmail(
           cnxn, author_addr, self.services, autocreate=is_alert)
       author_id = auth.user_id
     except user_svc.NoSuchUserException:

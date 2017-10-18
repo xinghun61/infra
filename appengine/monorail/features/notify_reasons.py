@@ -11,11 +11,11 @@ import logging
 import settings
 from features import filterrules_helpers
 from features import savedqueries_helpers
+from framework import authdata
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
 from framework import framework_views
-from framework import monorailrequest
 from framework import permissions
 from proto import tracker_pb2
 from search import query2ast
@@ -96,7 +96,7 @@ def ComputeIssueChangeAddressPermList(
       logging.info('Not notifying %r: user preference', user.email)
       continue
     # TODO(jrobbins): doing a bulk operation would reduce DB load.
-    auth = monorailrequest.AuthData.FromUserID(cnxn, user_id, services)
+    auth = authdata.AuthData.FromUserID(cnxn, user_id, services)
     perms = permissions.GetPermissions(user, auth.effective_ids, project)
     config = services.config.GetProjectConfig(cnxn, project.project_id)
     granted_perms = tracker_bizobj.GetGrantedPerms(

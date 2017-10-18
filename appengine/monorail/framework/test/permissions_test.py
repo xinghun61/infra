@@ -11,9 +11,9 @@ import unittest
 import mox
 
 import settings
+from framework import authdata
 from framework import framework_constants
 from framework import framework_views
-from framework import monorailrequest
 from framework import permissions
 from proto import features_pb2
 from proto import project_pb2
@@ -752,7 +752,7 @@ class ShouldCheckForAbandonmentTest(unittest.TestCase):
   def setUp(self):
     self.mr = testing_helpers.Blank(
         project=project_pb2.Project(),
-        auth=monorailrequest.AuthData())
+        auth=authdata.AuthData())
 
   def testOwner(self):
     self.mr.auth.effective_ids = {111L}

@@ -14,8 +14,8 @@ import settings
 from proto import features_pb2
 from features import hotlist_views
 from features import notify
+from framework import authdata
 from framework import framework_views
-from framework import monorailrequest
 from framework import permissions
 from framework import profiler
 from framework import template_helpers
@@ -789,60 +789,66 @@ class FlipperTest(unittest.TestCase):
         project=fake.ProjectService())
     self.mr = testing_helpers.MakeMonorailRequest()
 
-    issue1 = fake.MakeTestIssue(
+    self.services.project.TestAddProject('proj1', project_id=1)
+    self.services.project.TestAddProject('proj2', project_id=2)
+    self.issue1 = fake.MakeTestIssue(
         001, 1, 'issue_summary', 'New', 111L, project_name='project1',
         issue_id=1L)
-    self.services.issue.TestAddIssue(issue1)
-    issue2 = fake.MakeTestIssue(
+    self.services.issue.TestAddIssue(self.issue1)
+    self.issue2 = fake.MakeTestIssue(
          001, 2, 'issue_summary', 'New', 111L, project_name='project1',
          issue_id=2L)
-    self.services.issue.TestAddIssue(issue2)
-    issue3 = fake.MakeTestIssue(
+    self.services.issue.TestAddIssue(self.issue2)
+    self.issue3 = fake.MakeTestIssue(
          002, 3, 'issue_summary', 'New', 111L, project_name='project2',
          issue_id=3L)
-    self.services.issue.TestAddIssue(issue3)
-    ts = 20091111111111
+    self.services.issue.TestAddIssue(self.issue3)
+    ts = 1508139356
     self.hotlist_item_fields = [(1L, 10, 111L, ts, ''), (2L, 20, 111L, ts, ''),
                                 (3L, 30, 111L, ts, '')]
     self.hotlist = fake.Hotlist('name', 123, self.hotlist_item_fields)
-    self.hotlist_flipper = issuedetail._HotlistFlipper(
-        self.services, self.hotlist)
 
   def testAssignFlipperValues_Normal(self):
-    self.hotlist_flipper.AssignFlipperValues(self.mr, 1L, 1, 3L, 3)
-    self.assertTrue(self.hotlist_flipper.show)
-    self.assertEqual(self.hotlist_flipper.current, 2)
-    self.assertEqual(self.hotlist_flipper.total_count, 3)
-    self.assertEqual(self.hotlist_flipper.next_id, 3L)
-    self.assertEqual(self.hotlist_flipper.next_project_name, 'project2')
-    self.assertTrue('/project2/' in self.hotlist_flipper.next_url)
-    self.assertTrue('/project1/' in self.hotlist_flipper.prev_url)
+    hotlist_flipper = issuedetail._HotlistFlipper(
+        self.mr, self.services, self.issue2, self.hotlist)
+    hotlist_flipper.AssignFlipperValues(self.mr, 1L, 1, 3L, 3)
+    self.assertTrue(hotlist_flipper.show)
+    self.assertEqual(hotlist_flipper.current, 2)
+    self.assertEqual(hotlist_flipper.total_count, 3)
+    self.assertEqual(hotlist_flipper.next_id, 3L)
+    self.assertEqual(hotlist_flipper.next_project_name, 'project2')
+    self.assertTrue('/project2/' in hotlist_flipper.next_url)
+    self.assertTrue('/project1/' in hotlist_flipper.prev_url)
 
   def testAssignFlipperValues_First(self):
-    self.hotlist_flipper.AssignFlipperValues(self.mr, None, 0, 2L, 3)
-    self.assertTrue(self.hotlist_flipper.show)
-    self.assertEqual(self.hotlist_flipper.current, 1)
-    self.assertEqual(self.hotlist_flipper.total_count, 3)
-    self.assertEqual(self.hotlist_flipper.next_id, 2L)
-    self.assertEqual(self.hotlist_flipper.next_project_name, 'project1')
-    self.assertTrue('/project1/' in self.hotlist_flipper.next_url)
-    self.assertEqual(self.hotlist_flipper.prev_url, '')
+    hotlist_flipper = issuedetail._HotlistFlipper(
+        self.mr, self.services, self.issue1, self.hotlist)
+    hotlist_flipper.AssignFlipperValues(self.mr, None, 0, 2L, 3)
+    self.assertTrue(hotlist_flipper.show)
+    self.assertEqual(hotlist_flipper.current, 1)
+    self.assertEqual(hotlist_flipper.total_count, 3)
+    self.assertEqual(hotlist_flipper.next_id, 2L)
+    self.assertEqual(hotlist_flipper.next_project_name, 'project1')
+    self.assertTrue('/project1/' in hotlist_flipper.next_url)
+    self.assertEqual(hotlist_flipper.prev_url, '')
 
   def testAssignFlipperValues_Last(self):
-    self.hotlist_flipper.AssignFlipperValues(self.mr, 2L, 2, None, 3)
-    self.assertTrue(self.hotlist_flipper.show)
-    self.assertEqual(self.hotlist_flipper.current, 3)
-    self.assertEqual(self.hotlist_flipper.total_count, 3)
-    self.assertEqual(self.hotlist_flipper.next_id, None)
-    self.assertEqual(self.hotlist_flipper.next_project_name, None)
-    self.assertTrue('/project1/' in self.hotlist_flipper.prev_url)
-    self.assertEqual(self.hotlist_flipper.next_url, '')
+    hotlist_flipper = issuedetail._HotlistFlipper(
+        self.mr, self.services, self.issue3, self.hotlist)
+    hotlist_flipper.AssignFlipperValues(self.mr, 2L, 2, None, 3)
+    self.assertTrue(hotlist_flipper.show)
+    self.assertEqual(hotlist_flipper.current, 3)
+    self.assertEqual(hotlist_flipper.total_count, 3)
+    self.assertEqual(hotlist_flipper.next_id, None)
+    self.assertEqual(hotlist_flipper.next_project_name, None)
+    self.assertTrue('/project1/' in hotlist_flipper.prev_url)
+    self.assertEqual(hotlist_flipper.next_url, '')
 
   def testAssignFlipperValues_NoShow(self):
     one_issue_hotlist = fake.Hotlist(
         'name1', 122, [self.hotlist_item_fields[0]])
     no_show_hotlist_flipper = issuedetail._HotlistFlipper(
-        self.services, one_issue_hotlist)
+        self.mr, self.services, self.issue1, one_issue_hotlist)
     no_show_hotlist_flipper.AssignFlipperValues(self.mr, None, 0, None, 1)
     self.assertFalse(no_show_hotlist_flipper.show)
 
@@ -880,7 +886,7 @@ class ModuleFunctionsTest(unittest.TestCase):
     self.userviews_by_id = {k: framework_views.UserView(v)
         for k, v in users_by_id.items()}
 
-    self.user_auth = monorailrequest.AuthData.FromEmail(
+    self.user_auth = authdata.AuthData.FromEmail(
         self.cnxn, 'ul1', self.services)
 
     self.hotlist_item_fields = [(self.issue_id, None, None, None, None)]

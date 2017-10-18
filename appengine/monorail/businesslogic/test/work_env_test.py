@@ -239,7 +239,21 @@ class WorkEnvTest(unittest.TestCase):
         self.cnxn, actual_issue.issue_id)
     self.assertEqual('desc', actual_comments[0].content)
 
-  # FUTURE: ListIssues()
+  def testListIssues_Normal(self):
+    """We can do a query that generates some results."""
+    pass  # TODO(jrobbins): add unit test
+
+  def testListIssues_Error(self):
+    """Errors are safely reported."""
+    pass  # TODO(jrobbins): add unit test
+
+  def testFindIssuePositionInSearch_Normal(self):
+    """We can find an issue position for the flipper."""
+    pass  # TODO(jrobbins): add unit test
+
+  def testFindIssuePositionInSearch_Error(self):
+    """Errors are safely reported."""
+    pass  # TODO(jrobbins): add unit test
 
   def testGetIssue_Normal(self):
     """We can get an existing issue by issue_id."""

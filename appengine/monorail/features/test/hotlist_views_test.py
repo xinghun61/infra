@@ -8,7 +8,7 @@
 import unittest
 
 from features import hotlist_views
-from framework import monorailrequest
+from framework import authdata
 from framework import framework_views
 from services import service_manager
 from testing import fake
@@ -52,7 +52,7 @@ class HotlistViewTest(unittest.TestCase):
     self.user4 = self.services.user.TestAddUser('user4', 444L, banned=True)
     self.user4_view = framework_views.UserView(self.user4)
 
-    self.user_auth = monorailrequest.AuthData.FromEmail(
+    self.user_auth = authdata.AuthData.FromEmail(
         None, 'user3', self.services)
     self.user_auth.effective_ids = {3}
     self.user_auth.user_id = 3

@@ -28,6 +28,7 @@ import settings
 from features import autolink
 from features import notify_helpers
 from features import notify_reasons
+from framework import authdata
 from framework import emailfmt
 from framework import framework_bizobj
 from framework import framework_constants
@@ -228,7 +229,7 @@ class NotifyIssueChangeTask(notify_helpers.NotifyTaskBase):
     omit_addrs = set([commenter_email] +
                      [users_by_id[omit_id].email for omit_id in omit_ids])
 
-    auth = monorailrequest.AuthData.FromUserID(
+    auth = authdata.AuthData.FromUserID(
         cnxn, comment.user_id, self.services)
     commenter_in_project = framework_bizobj.UserIsInProject(
         project, auth.effective_ids)
@@ -505,7 +506,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
         # TODO(jrobbins): implement batch GetUser() for speed.
         if not user_id:
           continue
-        auth = monorailrequest.AuthData.FromUserID(
+        auth = authdata.AuthData.FromUserID(
             cnxn, user_id, self.services)
         if (auth.user_pb.notify_issue_change and
             not auth.effective_ids.isdisjoint(issue_participants)):
@@ -531,7 +532,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
       subscribers_to_consider = notify_reasons.EvaluateSubscriptions(
           cnxn, issue, users_to_queries, self.services, config)
       for sub_id in subscribers_to_consider:
-        auth = monorailrequest.AuthData.FromUserID(cnxn, sub_id, self.services)
+        auth = authdata.AuthData.FromUserID(cnxn, sub_id, self.services)
         sub_perms = permissions.GetPermissions(
             auth.user_pb, auth.effective_ids, project)
         granted_perms = tracker_bizobj.GetGrantedPerms(
@@ -570,7 +571,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
       user_issues = ids_to_notify_of_issue[user_id]
       if not user_issues:
         continue  # user's prefs indicate they don't want these notifications
-      auth = monorailrequest.AuthData.FromUserID(
+      auth = authdata.AuthData.FromUserID(
           cnxn, user_id, self.services)
       is_member = bool(framework_bizobj.UserIsInProject(
           project, auth.effective_ids))
@@ -583,8 +584,7 @@ class NotifyBulkChangeTask(notify_helpers.NotifyTaskBase):
     for addr, addr_issues in additional_addrs_to_notify_of_issue.iteritems():
       auth = None
       try:
-        auth = monorailrequest.AuthData.FromEmail(
-            cnxn, addr, self.services)
+        auth = authdata.AuthData.FromEmail(cnxn, addr, self.services)
       except:  # pylint: disable=bare-except
         logging.warning('Cannot find user of email %s ', addr)
       if auth:

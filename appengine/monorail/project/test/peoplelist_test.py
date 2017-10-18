@@ -7,7 +7,7 @@
 
 import unittest
 
-from framework import monorailrequest
+from framework import authdata
 from framework import permissions
 from project import peoplelist
 from services import service_manager
@@ -93,7 +93,7 @@ class PeopleListTest(unittest.TestCase):
         path='/p/proj/people/list',
         project=self.project,
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET)
-    mr.auth = monorailrequest.AuthData()
+    mr.auth = authdata.AuthData()
     page_data = self.servlet.GatherPageData(mr)
 
     self.assertEqual(1, page_data['total_num_owners'])

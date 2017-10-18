@@ -11,8 +11,8 @@ import unittest
 
 import webapp2
 
+from framework import authdata
 from framework import exceptions
-from framework import monorailrequest
 from framework import permissions
 from project import peopledetail
 from proto import project_pb2
@@ -107,7 +107,7 @@ class PeopleDetailTest(unittest.TestCase):
         path='/p/proj/people/detail?u=111',
         project=self.project,
         perms=permissions.OWNER_ACTIVE_PERMISSIONSET)
-    mr.auth = monorailrequest.AuthData()
+    mr.auth = authdata.AuthData()
     page_data = self.servlet.GatherPageData(mr)
     self.assertFalse(page_data['warn_abandonment'])
     self.assertEquals(2, page_data['total_num_owners'])

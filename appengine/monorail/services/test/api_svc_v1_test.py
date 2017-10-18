@@ -13,8 +13,8 @@ from mock import Mock
 from protorpc import messages
 from protorpc import message_types
 
+from framework import authdata
 from framework import exceptions
-from framework import monorailrequest
 from framework import permissions
 from framework import profiler
 from framework import template_helpers
@@ -49,7 +49,7 @@ class FakeMonorailApiRequest(object):
   def __init__(self, request, services, perms=None):
     self.profiler = profiler.Profiler()
     self.cnxn = None
-    self.auth = monorailrequest.AuthData.FromEmail(
+    self.auth = authdata.AuthData.FromEmail(
         self.cnxn, request['requester'], services)
     self.me_user_id = self.auth.user_id
     self.project_name = None
@@ -59,12 +59,12 @@ class FakeMonorailApiRequest(object):
     self.config = None
     if 'userId' in request:
       self.viewed_username = request['userId']
-      self.viewed_user_auth = monorailrequest.AuthData.FromEmail(
+      self.viewed_user_auth = authdata.AuthData.FromEmail(
           self.cnxn, self.viewed_username, services)
     elif 'groupName' in request:
       self.viewed_username = request['groupName']
       try:
-        self.viewed_user_auth = monorailrequest.AuthData.FromEmail(
+        self.viewed_user_auth = authdata.AuthData.FromEmail(
           self.cnxn, self.viewed_username, services)
       except user_svc.NoSuchUserException:
         self.viewed_user_auth = None

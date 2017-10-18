@@ -19,13 +19,13 @@ from third_party import ezt
 
 from google.appengine.api import app_identity
 from google.appengine.api import oauth
-from google.appengine.api import users
 
 import webapp2
 
 import settings
 from businesslogic import work_env
 from features import features_constants
+from framework import authdata
 from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
@@ -35,118 +35,12 @@ from framework import profiler
 from framework import sql
 from framework import template_helpers
 from proto import api_pb2_v1
-from proto import user_pb2
 from services import user_svc
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 
 
 _HOSTPORT_RE = re.compile('^[-a-z0-9.]+(:\d+)?$', re.I)
-
-
-class AuthData(object):
-  """This object holds authentication data about a user.
-
-  This is used by MonorailRequest as it determines which user the
-  requester is authenticated as and fetches the user's data.  It can
-  also be used to lookup perms for user IDs specified in issue fields.
-
-  Attributes:
-    user_id: The user ID of the user (or 0 if not signed in).
-    effective_ids: A set of user IDs that includes the signed in user's
-        direct user ID and the user IDs of all their user groups.
-        This set will be empty for anonymous users.
-    user_view: UserView object for the signed-in user.
-    user_pb: User object for the signed-in user.
-    email: email address for the user, or None.
-  """
-
-  def __init__(self):
-    self.user_id = 0
-    self.effective_ids = set()
-    self.user_view = None
-    self.user_pb = user_pb2.MakeUser(0)
-    self.email = None
-
-  @classmethod
-  def FromRequest(cls, cnxn, services):
-    """Determine auth information from the request and fetches user data.
-
-    If everything works and the user is signed in, then all of the public
-    attributes of the AuthData instance will be filled in appropriately.
-
-    Args:
-      cnxn: connection to the SQL database.
-      services: Interface to all persistence storage backends.
-
-    Returns:
-      A new AuthData object.
-    """
-    user = users.get_current_user()
-    if user is None:
-      return cls()
-    else:
-      # We create a User row for each user who visits the site.
-      # TODO(jrobbins): we should really only do it when they take action.
-      return cls.FromEmail(cnxn, user.email(), services, autocreate=True)
-
-  @classmethod
-  def FromEmail(cls, cnxn, email, services, autocreate=False):
-    """Determine auth information for the given user email address.
-
-    Args:
-      cnxn: monorail connection to the database.
-      email: string email address of the user.
-      services: connections to backend servers.
-      autocreate: set to True to create a new row in the Users table if needed.
-
-    Returns:
-      A new AuthData object.
-
-    Raises:
-      user_svc.NoSuchUserException: If the user of the email does not exist.
-    """
-    auth = cls()
-    auth.email = email
-    if email:
-      auth.user_id = services.user.LookupUserID(
-          cnxn, email, autocreate=autocreate)
-      assert auth.user_id
-
-    cls._FinishInitialization(cnxn, auth, services)
-    return auth
-
-  @classmethod
-  def FromUserID(cls, cnxn, user_id, services):
-    """Determine auth information for the given user ID.
-
-    Args:
-      cnxn: monorail connection to the database.
-      user_id: int user ID of the user.
-      services: connections to backend servers.
-
-    Returns:
-      A new AuthData object.
-    """
-    auth = cls()
-    auth.user_id = user_id
-    if auth.user_id:
-      auth.email = services.user.LookupUserEmail(cnxn, user_id)
-
-    cls._FinishInitialization(cnxn, auth, services)
-    return auth
-
-  @classmethod
-  def _FinishInitialization(cls, cnxn, auth, services):
-    """Fill in the test of the fields based on the user_id."""
-    # TODO(jrobbins): re-implement same_org
-    if auth.user_id:
-      auth.effective_ids = services.usergroup.LookupMemberships(
-          cnxn, auth.user_id)
-      auth.effective_ids.add(auth.user_id)
-      auth.user_pb = services.user.GetUser(cnxn, auth.user_id)
-      if auth.user_pb:
-        auth.user_view = framework_views.UserView(auth.user_pb)
 
 
 class MonorailRequestBase(object):
@@ -158,12 +52,12 @@ class MonorailRequestBase(object):
     self.profiler = profiler.Profiler()
     if user_id:
       assert services
-      self.auth = AuthData.FromUserID(self.cnxn, user_id, services)
+      self.auth = authdata.AuthData.FromUserID(self.cnxn, user_id, services)
     elif user_email:
       assert services
-      self.auth = AuthData.FromEmail(self.cnxn, user_email, services)
+      self.auth = authdata.AuthData.FromEmail(self.cnxn, user_email, services)
     else:
-      self.auth = AuthData()
+      self.auth = authdata.AuthData()
 
     self.project_name = None
     self.project = None
@@ -238,12 +132,12 @@ class MonorailApiRequest(MonorailRequestBase):
       self.viewed_username = request.userId.lower()
       if self.viewed_username == 'me':
         self.viewed_username = requester_email
-      self.viewed_user_auth = AuthData.FromEmail(
+      self.viewed_user_auth = authdata.AuthData.FromEmail(
           self.cnxn, self.viewed_username, services)
     elif hasattr(request, 'groupName'):
       self.viewed_username = request.groupName.lower()
       try:
-        self.viewed_user_auth = AuthData.FromEmail(
+        self.viewed_user_auth = authdata.AuthData.FromEmail(
             self.cnxn, self.viewed_username, services)
       except user_svc.NoSuchUserException:
         self.viewed_user_auth = None
@@ -345,7 +239,7 @@ class MonorailRequest(MonorailRequestBase):
     self.hotlist_name = None
 
     self.viewed_username = None
-    self.viewed_user_auth = AuthData()
+    self.viewed_user_auth = authdata.AuthData()
 
   def ParseRequest(self, request, services, do_user_lookups=True):
     """Parse tons of useful info from the given request object.
@@ -544,7 +438,7 @@ class MonorailRequest(MonorailRequestBase):
     """Get information about the viewed user (if any) from the request."""
     try:
       with self.profiler.Phase('get viewed user, if any'):
-        self.viewed_user_auth = AuthData.FromEmail(
+        self.viewed_user_auth = authdata.AuthData.FromEmail(
             self.cnxn, self.viewed_username, services, autocreate=False)
     except user_svc.NoSuchUserException:
       logging.info('could not find user %r', self.viewed_username)
@@ -590,7 +484,7 @@ class MonorailRequest(MonorailRequestBase):
   def _LookupLoggedInUser(self, services):
     """Get information about the signed-in user (if any) from the request."""
     with self.profiler.Phase('get user info, if any'):
-      self.auth = AuthData.FromRequest(self.cnxn, services)
+      self.auth = authdata.AuthData.FromRequest(self.cnxn, services)
     self.me_user_id = (self.GetIntParam('me') or
                        self.viewed_user_auth.user_id or self.auth.user_id)
 

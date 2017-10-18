@@ -8,10 +8,10 @@
 import logging
 from third_party import ezt
 
+from framework import authdata
 from framework import framework_helpers
 from framework import framework_views
 from framework import jsonfeed
-from framework import monorailrequest
 from framework import permissions
 from project import project_helpers
 from tracker import tracker_helpers
@@ -153,7 +153,7 @@ class IssueOptionsJSON(jsonfeed.JsonFeed):
         for uv in visible_member_views:
           # TODO(jrobbins): Similar code occurs in field_helpers.py.
           user = self.services.user.GetUser(mr.cnxn, uv.user_id)
-          auth = monorailrequest.AuthData.FromUserID(
+          auth = authdata.AuthData.FromUserID(
               mr.cnxn, uv.user_id, self.services)
           user_perms = permissions.GetPermissions(
               user, auth.effective_ids, mr.project)

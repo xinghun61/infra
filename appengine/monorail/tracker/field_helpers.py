@@ -9,9 +9,9 @@ import collections
 import logging
 import re
 
+from framework import authdata
 from framework import framework_bizobj
 from framework import framework_constants
-from framework import monorailrequest
 from framework import permissions
 from framework import timestr
 from proto import tracker_pb2
@@ -209,7 +209,7 @@ def _ValidateOneCustomField(mr, services, field_def, field_val):
     if field_val.user_id == INVALID_USER_ID:
       return 'User not found'
     if field_def.needs_member:
-      auth = monorailrequest.AuthData.FromUserID(
+      auth = authdata.AuthData.FromUserID(
           mr.cnxn, field_val.user_id, services)
       user_value_in_project = framework_bizobj.UserIsInProject(
           mr.project, auth.effective_ids)

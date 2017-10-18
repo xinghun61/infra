@@ -16,12 +16,12 @@ import urllib
 
 import settings
 
+from framework import authdata
 from framework import filecontent
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
 from framework import framework_views
-from framework import monorailrequest
 from framework import permissions
 from framework import sorting
 from framework import template_helpers
@@ -365,7 +365,7 @@ def IsValidIssueOwner(cnxn, project, owner_id, services):
   if owner_id == framework_constants.NO_USER_SPECIFIED:
     return True, None
 
-  auth = monorailrequest.AuthData.FromUserID(cnxn, owner_id, services)
+  auth = authdata.AuthData.FromUserID(cnxn, owner_id, services)
   if not framework_bizobj.UserIsInProject(project, auth.effective_ids):
     return False, 'Issue owner must be a project member'
 

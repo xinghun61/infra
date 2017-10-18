@@ -54,21 +54,6 @@ class HostportReTest(unittest.TestCase):
       self.assertFalse(monorailrequest._HOSTPORT_RE.match(hostport),
                        msg='Incorrectly accepted %r' % hostport)
 
-class AuthDataTest(unittest.TestCase):
-
-  def setUp(self):
-    self.mox = mox.Mox()
-
-  def tearDown(self):
-    self.mox.UnsetStubs()
-
-  def testGetUserID(self):
-    pass  # TODO(jrobbins): re-impement
-
-  def testExamineRequestUserID(self):
-    pass  # TODO(jrobbins): re-implement
-
-
 class MonorailRequestUnitTest(unittest.TestCase):
 
   def setUp(self):

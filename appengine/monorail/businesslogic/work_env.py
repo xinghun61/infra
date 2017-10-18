@@ -42,6 +42,7 @@ Responsibilities of the Services layer:
 import logging
 
 from framework import exceptions
+from search import frontendsearchpipeline
 from services import project_svc
 from sitewide import sitewide_helpers
 from proto import project_pb2
@@ -334,7 +335,38 @@ class WorkEnv(object):
           self.mr.cnxn, project_id, new_local_id)
       return new_issue
 
-  # FUTURE: ListIssues()
+  def ListIssues(self):
+    """Do an issue search using info in mr and return a pipeline object."""
+    with self.mr.profiler.Phase('searching issues'):
+      pipeline = frontendsearchpipeline.FrontendSearchPipeline(
+          self.mr, self.services, self.mr.num)
+      if not self.mr.errors.AnyErrors():
+        pipeline.SearchForIIDs()
+        pipeline.MergeAndSortIssues()
+        pipeline.Paginate()
+      return pipeline
+
+  def FindIssuePositionInSearch(self, issue):
+    """Do an issue search and return flipper info for the given issue.
+
+    Args:
+      issue: issue that the user is currently viewing.
+
+    Returns:
+      A 4-tuple of flipper info: (prev_iid, cur_index, next_iid, total_count).
+    """
+    with self.mr.profiler.Phase('finding issue position in search'):
+      pipeline = frontendsearchpipeline.FrontendSearchPipeline(
+          self.mr, self.services, None)
+      if not self.mr.errors.AnyErrors():
+        # Only do the search if the user's query parsed OK.
+        pipeline.SearchForIIDs()
+
+      # Note: we never call MergeAndSortIssues() because we don't need a unified
+      # sorted list, we only need to know the position on such a list of the
+      # current issue.
+      prev_iid, cur_index, next_iid = pipeline.DetermineIssuePosition(issue)
+      return prev_iid, cur_index, next_iid, pipeline.total_count
 
   def GetIssue(self, issue_id, use_cache=True):
     """Return the specified issue, TODO: iff the signed in user may view it."""
