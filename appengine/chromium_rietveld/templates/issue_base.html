@@ -48,19 +48,6 @@
     <tr valign="top">
 
       <td class="meta" width="20%">
-        {%block issue_actions%}
-          <div>
-            {%if issue.edit_allowed%}
-              <a class="novisit"
-                 href="{%url codereview.views.edit issue.key.id%}">
-                Edit Issue
-              </a>
-            {%else%}
-              <span class="disabled">Can't Edit</span>
-            {%endif%}
-            <br/>
-          </div>
-        {%endblock%}
         <div class="issue_details_sidebar">
           <div><b>Created:</b><br/>
             {{issue.created|timesince}} ago by {{issue.owner|show_user}}

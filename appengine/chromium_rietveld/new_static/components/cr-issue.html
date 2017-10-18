@@ -10,7 +10,6 @@ found in the LICENSE file. -->
 <link rel="import" href="../common/cr-view-handler.html">
 <link rel="import" href="../diff/cr-diff-cursor.html">
 <link rel="import" href="../linkify/cr-linkified-text.html">
-<link rel="import" href="cr-issue-edit-dialog.html">
 <link rel="import" href="cr-issue-messages.html">
 <link rel="import" href="cr-issue-meta.html">
 <link rel="import" href="cr-issue-patchsets.html">
@@ -32,13 +31,6 @@ found in the LICENSE file. -->
 
             <div class="issue-content">
                 <div class="issue-toolbar-container">
-                    <cr-toolbar class="issue-toolbar">
-                        <template if="{{ issue.editAllowed }}">
-                            <div class="ui-actions">
-                                <a is="cr-action" on-tap="{{ showEditDialog }}">Edit</a>
-                            </div>
-                        </template>
-                    </cr-toolbar>
                     <template if="{{ !hasBeenSent(issue) }}">
                         <div class="notice">
                             This issue has not been sent to reviewers.
@@ -126,18 +118,6 @@ found in the LICENSE file. -->
             },
             updateButterbar: function(event) {
                 this.butterbarMessage = event.detail.message;
-            },
-            showDialog: function(dialog) {
-                this.$.dialogs.appendChild(dialog);
-                dialog.addEventListener("close", function() {
-                    dialog.remove();
-                });
-                dialog.showModal();
-            },
-            showEditDialog: function() {
-                var dialog = document.createElement("cr-issue-edit-dialog");
-                dialog.issue = this.issue;
-                this.showDialog(dialog);
             },
             collapseAllMessages: function() {
                 this.issue.messages.forEach(function(message) {

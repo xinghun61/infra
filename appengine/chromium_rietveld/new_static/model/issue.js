@@ -38,17 +38,11 @@ function Issue(id)
 }
 
 Issue.DETAIL_URL = "/api/{1}?messages=true";
-Issue.EDIT_URL = "/{1}/edit";
 Issue.DELETE_DRAFTS_URL = "/{1}/delete_drafts";
 
 Issue.prototype.getDetailUrl = function()
 {
     return Issue.DETAIL_URL.assign(encodeURIComponent(this.id));
-};
-
-Issue.prototype.getEditUrl = function()
-{
-    return Issue.EDIT_URL.assign(encodeURIComponent(this.id));
 };
 
 Issue.prototype.getDiscardAllDraftsUrl = function()
@@ -182,27 +176,6 @@ Issue.prototype.updateScores = function() {
             reviewerEmails[email] = true;
             issue.reviewers.push(User.forMailingListEmail(email));
         }
-    });
-};
-
-Issue.prototype.edit = function(options)
-{
-    return sendFormData(this.getEditUrl(), {
-        subject: options.subject,
-        description: options.description,
-        reviewers: options.reviewers,
-        cc: options.cc,
-        closed: options.closed ? "on" : "",
-        private: options.private ? "on" : "",
-    }, {
-        sendXsrfToken: true,
-    }).then(function(xhr) {
-        var errorData = parseFormErrorData(xhr.response);
-        if (!errorData)
-            return;
-        var error = new Error(errorData.message);
-        error.fieldName = errorData.fieldName;
-        throw error;
     });
 };
 

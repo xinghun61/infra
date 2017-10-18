@@ -57,8 +57,6 @@ urlpatterns = patterns(
     (r'^(\d+)/(?:show)?$', 'show'),
 
     (r'^upload$', 'upload'),
-    (r'^(\d+)/edit$', 'edit'),
-    (r'^(\d+)/delete$', 'delete'),
     (r'^(\d+)/mail$', 'mailissue'),
     (r'^download/issue(\d+)_(\d+)\.diff', 'download'),
     (r'^download/issue(\d+)_(\d+)_(\d+)\.diff', 'download_patch'),
