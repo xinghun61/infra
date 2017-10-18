@@ -293,6 +293,15 @@ class TestDockerClient(unittest.TestCase):
     self.assertTrue(old_container.swarming_bot_killed)
 
   @mock.patch('docker.from_env')
+  def test_stop_no_containers(self, mock_from_env):
+    mock_from_env.return_value = self.fake_client
+
+    try:
+      containers.DockerClient().stop_old_containers([], 100)
+    except containers.FrozenEngineError:  # pragma: no cover
+      self.fail('FrozenEngineError thrown despite no running containers.')
+
+  @mock.patch('docker.from_env')
   def test_stop_frozen_containers(self, mock_from_env):
     def _raise_frozen_container(*args, **kwargs):
       raise containers.FrozenContainerError()

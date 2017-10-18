@@ -155,7 +155,7 @@ class DockerClient(object):
           container.kill_swarming_bot()
         except FrozenContainerError:
           frozen_containers += 1
-    if frozen_containers == len(running_containers):
+    if running_containers and frozen_containers == len(running_containers):
       logging.error('All containers frozen. Docker engine most likely hosed.')
       raise FrozenEngineError()
 
