@@ -1162,7 +1162,7 @@ function GetSelectedIssues() {
 function GetSelectedHotlists() {
   var selectedHotlistIDs = [];
   usersHotlists.forEach((hotlistId) => {
-    let checkbox = document.getElementById('cb_hotlist_' + hotlistId);
+    let checkbox = document.getElementById('cb_remaining_hotlist_' + hotlistId);
     if (checkbox && checkbox.checked) {
       selectedHotlistIDs.push(hotlistId);
     }
@@ -1231,7 +1231,7 @@ function updateHotlistsDialog(response) {
       true);
    updateHotlistRows(
       table,
-      'cb_hotlist_',
+      'cb_remaining_hotlist_',
       response['remainingHotlistIds'],
       response['remainingHotlistNames'],
       false);

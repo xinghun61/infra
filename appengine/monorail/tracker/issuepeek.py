@@ -177,7 +177,7 @@ class IssuePeek(servlet.Servlet):
             issue.project_name, urls.ISSUE_PEEK + '.do', id=issue.local_id),
         'previous_locations': previous_locations,
         # for template issue-meta-part shared by issuedetail servlet
-        'user_hotlists': [],
+        'user_remaining_hotlists': [],
         'user_issue_hotlists': [],
         'involved_users_issue_hotlists': [],
         'remaining_issue_hotlists': [],

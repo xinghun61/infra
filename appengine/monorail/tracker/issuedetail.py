@@ -334,7 +334,7 @@ class IssueDetail(issuepeek.IssuePeek):
      remaining_issue_hotlist_views) = _GetBinnedHotlistViews(
          visible_issue_hotlist_views, users_involved_in_issue)
 
-    user_hotlists = [hotlist for hotlist in
+    user_remaining_hotlists = [hotlist for hotlist in
                       self.services.features.GetHotlistsByUserID(
                           mr.cnxn, mr.auth.user_id) if
                       hotlist not in issue_hotlists]
@@ -405,7 +405,7 @@ class IssueDetail(issuepeek.IssuePeek):
         'spam_verdict_history': spam_verdict_history,
 
         # For adding issue to user's hotlists
-        'user_hotlists': user_hotlists,
+        'user_remaining_hotlists': user_remaining_hotlists,
         # For showing hotlists that contain this issue
         'user_issue_hotlists': user_issue_hotlist_views,
         'involved_users_issue_hotlists': involved_users_issue_hotlist_views,

@@ -88,13 +88,6 @@ class HotlistIssues(servlet.Servlet):
     allow_rerank = (not mr.group_by_spec and mr.sort_spec.startswith(
         'rank') and (owner_permissions or editor_permissions))
 
-    user_hotlists = self.services.features.GetHotlistsByUserID(
-        mr.cnxn, mr.auth.user_id)
-    try:
-      user_hotlists.remove(self.services.features.GetHotlist(
-          mr.cnxn, mr.hotlist_id))
-    except ValueError:
-      pass
     # Note: The HotlistView is created and returned in servlet.py
     page_data.update({'owner_permissions': ezt.boolean(owner_permissions),
                       'editor_permissions': ezt.boolean(editor_permissions),
@@ -107,12 +100,12 @@ class HotlistIssues(servlet.Servlet):
                           mr, '%d/csv' % mr.hotlist_id, num=100),
                       'is_hotlist': ezt.boolean(True),
                       'col_spec': mr.col_spec.lower(),
-                      'user_hotlists': user_hotlists,
                       'viewing_user_page': ezt.boolean(True),
                       'set_star_token': '', # needed for shared ezt templates.
                       # for update-issues-hotlists-dialog in
                       # issue-list-controls.
                       'user_issue_hotlists': [],
+                      'user_remaining_hotlists': []
                       })
     return page_data
   # TODO(jojwang): implement peek issue on hover, implement starring issues
