@@ -7,7 +7,9 @@ package system
 import (
 	"encoding/xml"
 	"fmt"
+	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 
 	"github.com/shirou/gopsutil/host"
@@ -51,7 +53,14 @@ func getPowerEdgeTemps(c context.Context) (temps, error) {
 	// The gopsutil pkg is unable to get temp readings for Dell servers.
 	// Instead, use the Dell utility omreport. It should be installed on all servers.
 	// Dump the report in xml for easier parsing.
-	cmd := exec.CommandContext(c, "omreport", "chassis", "temps", "-fmt", "xml")
+	omreport := "/opt/dell/srvadmin/bin/omreport"
+	if runtime.GOOS == "windows" {
+		omreport = `C:\Program Files\Dell\SysMgt\oma\bin\omreport.exe`
+	}
+	if _, err := os.Stat(omreport); os.IsNotExist(err) {
+		return temps{}, fmt.Errorf("omreport utility not found on host")
+	}
+	cmd := exec.CommandContext(c, omreport, "chassis", "temps", "-fmt", "xml")
 	out, err := cmd.Output()
 	if err != nil {
 		return temps{}, err
