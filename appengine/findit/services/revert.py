@@ -13,6 +13,7 @@ It provides fuctions to:
 from datetime import timedelta
 import logging
 import textwrap
+import urllib
 
 from google.appengine.ext import ndb
 
@@ -93,14 +94,25 @@ def _AddReviewers(revision, culprit_key, codereview, revert_change_id,
   """
   culprit_link = ('https://findit-for-me.appspot.com/waterfall/culprit?key=%s' %
                   culprit_key)
+  false_positive_bug_query = urllib.urlencode({
+      'status': 'Available',
+      'labels': 'Test-Findit-Wrong',
+      'components': 'Tools>Test>FindIt',
+      'summary': 'Wrongly blame %s' % revision,
+      'comment': 'Detail is %s' % culprit_link
+  })
   false_positive_bug_link = (
-      'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&'
-      'labels=Test-Findit-Wrong&components=Tools>Test>FindIt&summary=Wrongly '
-      'blame %s&comment=Detail is %s') % (revision, culprit_link)
-  auto_revert_bug_link = (
-      'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&'
-      '&components=Tools>Test>FindIt>Autorevert&summary=Auto Revert failed on '
-      '%s&comment=Detail is %s') % (revision, culprit_link)
+      'https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
+          false_positive_bug_query)
+
+  auto_revert_bug_query = urllib.urlencode({
+      'status': 'Available',
+      'components': 'Tools>Test>FindIt>Autorevert',
+      'summary': 'Auto Revert failed on %s' % revision,
+      'comment': 'Detail is %s' % culprit_link
+  })
+  auto_revert_bug_link = ('https://bugs.chromium.org/p/chromium/issues/entry?%s'
+                         ) % (auto_revert_bug_query)
 
   new_reviewers = rotations.current_sheriffs()
 

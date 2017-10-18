@@ -5,6 +5,7 @@
 from datetime import datetime
 import mock
 import textwrap
+import urllib
 
 from common import constants
 from common import rotations
@@ -105,17 +106,29 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
                                        buildbot.CreateBuildUrl('m', 'b', '1'))
     mock_revert.assert_called_once_with(reason, self.review_change_id, '20001')
 
+    culprit_link = (
+        'https://findit-for-me.appspot.com/waterfall/culprit?key=%s' %
+        (culprit.key.urlsafe()))
+    false_positive_bug_query = urllib.urlencode({
+        'status': 'Available',
+        'labels': 'Test-Findit-Wrong',
+        'components': 'Tools>Test>FindIt',
+        'summary': 'Wrongly blame %s' % revision,
+        'comment': 'Detail is %s' % culprit_link
+    })
     false_positive_bug_link = (
-        'https://bugs.chromium.org/p/chromium/issues/entry?'
-        'status=Available&labels=Test-Findit-Wrong&'
-        'components=Tools>Test>FindIt&summary=Wrongly blame %s&'
-        'comment=Detail is https://findit-for-me.appspot.com/waterfall/'
-        'culprit?key=%s') % (revision, culprit.key.urlsafe())
+        'https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
+            false_positive_bug_query)
+
+    auto_revert_bug_query = urllib.urlencode({
+        'status': 'Available',
+        'components': 'Tools>Test>FindIt>Autorevert',
+        'summary': 'Auto Revert failed on %s' % revision,
+        'comment': 'Detail is %s' % culprit_link
+    })
     auto_revert_bug_link = (
-        'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&'
-        '&components=Tools>Test>FindIt>Autorevert&summary=Auto Revert failed '
-        'on %s&comment=Detail is https://findit-for-me.appspot.com/waterfall/'
-        'culprit?key=%s') % (revision, culprit.key.urlsafe())
+        'https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
+            auto_revert_bug_query)
     message = textwrap.dedent("""
         Sheriffs, CL owner or CL reviewers:
         Please approve and submit this revert if it is correct.
@@ -444,17 +457,28 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_submission_status, status.ERROR)
+    culprit_link = ('https://findit-for-me.appspot.com/waterfall/culprit?key=%s'
+                    % culprit.key.urlsafe())
+    false_positive_bug_query = urllib.urlencode({
+        'status': 'Available',
+        'labels': 'Test-Findit-Wrong',
+        'components': 'Tools>Test>FindIt',
+        'summary': 'Wrongly blame %s' % revision,
+        'comment': 'Detail is %s' % culprit_link
+    })
     false_positive_bug_link = (
-        'https://bugs.chromium.org/p/chromium/issues/entry?'
-        'status=Available&labels=Test-Findit-Wrong&'
-        'components=Tools>Test>FindIt&summary=Wrongly blame %s&'
-        'comment=Detail is https://findit-for-me.appspot.com/waterfall/'
-        'culprit?key=%s') % (revision, culprit.key.urlsafe())
+        'https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
+            false_positive_bug_query)
+
+    auto_revert_bug_query = urllib.urlencode({
+        'status': 'Available',
+        'components': 'Tools>Test>FindIt>Autorevert',
+        'summary': 'Auto Revert failed on %s' % revision,
+        'comment': 'Detail is %s' % culprit_link
+    })
     auto_revert_bug_link = (
-        'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&'
-        '&components=Tools>Test>FindIt>Autorevert&summary=Auto Revert failed '
-        'on %s&comment=Detail is https://findit-for-me.appspot.com/waterfall/'
-        'culprit?key=%s') % (revision, culprit.key.urlsafe())
+        'https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
+            auto_revert_bug_query)
     message = textwrap.dedent("""
         Sheriffs, CL owner or CL reviewers:
         Please approve and submit this revert if it is correct.
@@ -537,11 +561,18 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
 
     mock_commit.assert_called_once_with(revert_change_id)
 
-    bug_link = ('https://bugs.chromium.org/p/chromium/issues/entry?'
-                'status=Available&labels=Test-Findit-Wrong&'
-                'components=Tools>Test>FindIt&summary=Wrongly blame %s&'
-                'comment=Detail is https://findit-for-me.appspot.com/waterfall/'
-                'culprit?key=%s') % (revision, culprit.key.urlsafe())
+    culprit_link = (
+        'https://findit-for-me.appspot.com/waterfall/culprit?key=%s' %
+        (culprit.key.urlsafe()))
+    false_positive_bug_query = urllib.urlencode({
+        'status': 'Available',
+        'labels': 'Test-Findit-Wrong',
+        'components': 'Tools>Test>FindIt',
+        'summary': 'Wrongly blame %s' % revision,
+        'comment': 'Detail is %s' % culprit_link
+    })
+    bug_link = ('https://bugs.chromium.org/p/chromium/issues/entry?%s') % (
+        false_positive_bug_query)
     message = textwrap.dedent("""
         Sheriffs, CL owner or CL reviewers:
         Please confirm this revert if it is correct.
