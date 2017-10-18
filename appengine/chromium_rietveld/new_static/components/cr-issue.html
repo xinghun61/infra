@@ -30,14 +30,6 @@ found in the LICENSE file. -->
             <cr-issue-meta issue="{{ issue }}"></cr-issue-meta>
 
             <div class="issue-content">
-                <div class="issue-toolbar-container">
-                    <template if="{{ !hasBeenSent(issue) }}">
-                        <div class="notice">
-                            This issue has not been sent to reviewers.
-                        </div>
-                    </template>
-                </div>
-
                 <template if="{{ issue.commit }}">
                     <h2>
                         Commit status

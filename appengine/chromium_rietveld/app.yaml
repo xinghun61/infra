@@ -56,7 +56,6 @@ includes:
 - gae_ts_mon  # handles /internal/cron/ts_mon/send
 
 inbound_services:
-- mail
 - xmpp_message
 - warmup
 

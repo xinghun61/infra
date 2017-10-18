@@ -44,17 +44,6 @@ class MockRequest(HttpRequest):
     self.issue = issue
 
 
-class TestUtilities(TestCase):
-  """Test utility functions."""
-
-  def test_AddHTMLTags(self):
-    body = '\n\ngoogle.com\n\nhttp://gmail.com\ngoogle.notalink'
-    self.assertEquals(
-        '<br/><br/><a href="http://google.com">google.com</a><br/><br/>' +
-        '<a href="http://gmail.com">http://gmail.com</a><br/>google.notalink',
-        views._add_HTML_tags(body))
-
-
 class TestSearch(TestCase):
 
   def setUp(self):
@@ -98,85 +87,6 @@ class TestSearch(TestCase):
              'application/json; charset=utf-8')
     payload = json.loads(response.content)
     self.assertEqual(len(payload['results']), 1)
-
-
-class TestModifierCount(TestCase):
-  """Test modifier counts for the latest patchset."""
-
-  def line_count(self, lines):
-    if lines == 1:
-      return ''
-    return ",%d", lines
-
-  def makePatch(self, add_lines, remove_lines):
-    patch = (
-      "Index: cc/layers/layer.cc\n"
-      "==============================="
-      "====================================\n"
-      "--- a/cc/layers/layer.cc\n"
-      "+++ b/cc/layers/layer.cc\n"
-      "@@ -905%s +904%s @@"
-      " void Layer::PushPropertiesTo(LayerImpl* layer) {\n") % (
-      (self.line_count(add_lines),
-       self.line_count(remove_lines)))
-    for _ in xrange(remove_lines):
-      patch += "-base::Passed(&original_request)));\n"
-    for _ in xrange(add_lines):
-      patch += "+base::Passed(&new_request)));\n"
-
-    return patch
-
-  def setUp(self):
-    super(TestModifierCount, self).setUp()
-    self.user = User('foo@example.com')
-    self.login('foo@example.com')
-
-  def test_empty_patch(self):
-    issue = models.Issue(subject="test with 0 lines")
-    issue.local_base = False
-    issue.put()
-    added, removed = views._get_modified_counts(issue)
-    self.assertEqual(0, added)
-    self.assertEqual(0, removed)
-
-  def test_add_patch(self):
-    issue = models.Issue(subject="test with 1 line removed")
-    issue.local_base = False
-    issue.put()
-    ps = models.PatchSet(parent=issue.key, issue_key=issue.key)
-    ps.data = self.makePatch(1, 0)
-    ps.put()
-    patches = engine.ParsePatchSet(ps)
-    ndb.put_multi(patches)
-    added, removed = views._get_modified_counts(issue)
-    self.assertEqual(1, added)
-    self.assertEqual(0, removed)
-
-  def test_remove_patch(self):
-    issue = models.Issue(subject="test with 1 line removed")
-    issue.local_base = False
-    issue.put()
-    ps = models.PatchSet(parent=issue.key, issue_key=issue.key)
-    ps.data = self.makePatch(0, 1)
-    ps.put()
-    patches = engine.ParsePatchSet(ps)
-    ndb.put_multi(patches)
-    added, removed = views._get_modified_counts(issue)
-    self.assertEqual(0, added)
-    self.assertEqual(1, removed)
-
-  def test_both_patch(self):
-    issue = models.Issue(subject="test with changes")
-    issue.local_base = False
-    issue.put()
-    ps = models.PatchSet(parent=issue.key, issue_key=issue.key)
-    ps.data = self.makePatch(5, 7)
-    ps.put()
-    patches = engine.ParsePatchSet(ps)
-    ndb.put_multi(patches)
-    added, removed = views._get_modified_counts(issue)
-    self.assertEqual(5, added)
-    self.assertEqual(7, removed)
 
 
 if __name__ == '__main__':

@@ -56,7 +56,6 @@ urlpatterns = patterns(
     (r'^starred$', 'starred'),
     (r'^(\d+)/(?:show)?$', 'show'),
 
-    (r'^(\d+)/mail$', 'mailissue'),
     (r'^download/issue(\d+)_(\d+)\.diff', 'download'),
     (r'^download/issue(\d+)_(\d+)_(\d+)\.diff', 'download_patch'),
     (r'^(\d+)/patch/(\d+)/(\d+)$', 'patch'),
@@ -104,7 +103,6 @@ urlpatterns = patterns(
     (r'^restricted/set-client-id-and-secret$', 'set_client_id_and_secret'),
     (r'^restricted/tasks/calculate_delta$', 'task_calculate_delta'),
     (r'^restricted/user/([^/]+)/block$', 'block_user'),
-    (r'^_ah/mail/(.*)', 'incoming_mail'),
     )
 
 
