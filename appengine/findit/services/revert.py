@@ -177,7 +177,7 @@ def _GetDailyNumberOfRevertedCulprits(limit):
       WfSuspectedCL.revert_created_time >= earliest_time).count(limit)
 
 
-def ShouldRevert(repo_name, revision, pipeline_id):
+def ShouldRevert(pipeline_input, pipeline_id):
   """Checks if the culprit should be reverted.
 
   The culprit should be reverted if:
@@ -190,7 +190,8 @@ def ShouldRevert(repo_name, revision, pipeline_id):
   if not bool(action_settings.get('auto_create_revert_compile')):
     return False
 
-  if not _CanRevert(repo_name, revision, pipeline_id):
+  if not _CanRevert(pipeline_input.cl_key.repo_name,
+                    pipeline_input.cl_key.revision, pipeline_id):
     # Either revert is done, skipped or handled by another pipeline.
     return False
 
@@ -214,18 +215,20 @@ def _IsCulpritARevert(cl_info):
   return bool(cl_info.revert_of)
 
 
-def RevertCulprit(repo_name, revision, build_id):
+def RevertCulprit(pipeline_input):
   """Creates a revert of a culprit and adds reviewers.
 
   Args:
-    repo_name (str): Name of the repo.
-    revision (str): revision of the culprit.
-    build_id (str): master_name/builder_name/build_number of the analysis that
-      triggers this revert.
+    pipeline_input (CreateRevertCLPipelineInput): Information needed to
+      create a revert.
 
   Returns:
     Status of this reverting.
   """
+  repo_name = pipeline_input.cl_key.repo_name
+  revision = pipeline_input.cl_key.revision
+  build_id = pipeline_input.build_id
+
   culprit = _UpdateCulprit(repo_name, revision)
   # 0. Gets information about this culprit.
   culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)

@@ -10,12 +10,8 @@ from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import BasePipeline
 from waterfall import buildbot
 from waterfall import build_util
-from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
-from waterfall.send_notification_to_irc_pipeline import (
-    SendNotificationToIrcPipeline)
-from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 
 
 def _AnyBuildSucceeded(master_name, builder_name, build_number):
@@ -50,34 +46,19 @@ class RevertAndNotifyCulpritPipeline(BasePipeline):
                    builder_name, build_number)
       return
 
-    # There is a try job result, checks if we can revert the culprit or send
-    # notification.
-    if try_job_type == failure_type.COMPILE:
-      # For compile, there should be only one culprit. Tries to revert it.
-      culprit = culprits.values()[0]
-      repo_name = culprit['repo_name']
-      revision = culprit['revision']
+    if try_job_type != failure_type.TEST:
+      # Compile failures are handled in separated pipelines.
+      return
 
-      force_notify = [repo_name, revision] in heuristic_cls
-      build_id = build_util.CreateBuildId(master_name, builder_name,
-                                          build_number)
-
-      revert_status = yield CreateRevertCLPipeline(repo_name, revision,
-                                                   build_id)
-      yield SubmitRevertCLPipeline(repo_name, revision, revert_status)
-      yield SendNotificationToIrcPipeline(repo_name, revision, revert_status)
+    # There is a try job result, checks if we can send notification.
+    # Checks if any of the culprits was also found by heuristic analysis.
+    monitoring.culprit_found.increment({
+        'type': 'test',
+        'action_taken': 'culprit_notified'
+    })
+    for culprit in culprits.itervalues():
+      force_notify = [culprit['repo_name'],
+                      culprit['revision']] in heuristic_cls
       yield SendNotificationForCulpritPipeline(
-          master_name, builder_name, build_number, repo_name, revision,
-          force_notify, revert_status)
-    else:
-      # Checks if any of the culprits was also found by heuristic analysis.
-      monitoring.culprit_found.increment({
-          'type': 'test',
-          'action_taken': 'culprit_notified'
-      })
-      for culprit in culprits.itervalues():
-        force_notify = [culprit['repo_name'],
-                        culprit['revision']] in heuristic_cls
-        yield SendNotificationForCulpritPipeline(
-            master_name, builder_name, build_number, culprit['repo_name'],
-            culprit['revision'], force_notify)
+          master_name, builder_name, build_number, culprit['repo_name'],
+          culprit['revision'], force_notify)

@@ -2,26 +2,21 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipelines import SynchronousPipeline
 from libs import analysis_status as status
 from model.wf_suspected_cl import WfSuspectedCL
+from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
 from services import revert
 
 
-class CreateRevertCLPipeline(BasePipeline):
+class CreateRevertCLPipeline(SynchronousPipeline):
+  input_type = CreateRevertCLPipelineInput
+  output_type = int
 
-  def __init__(self, repo_name, revision, _build_id):
-    # Passes in build_id to keep the same argument list as run(), but not
-    # actually uses it.
-    super(CreateRevertCLPipeline, self).__init__(repo_name, revision, _build_id)
-    self.repo_name = repo_name
-    self.revision = revision
+  def OnAbort(self, pipeline_input):
 
-  def _LogUnexpectedAborting(self, was_aborted):
-    if not was_aborted:  # pragma: no cover
-      return
-
-    culprit = WfSuspectedCL.Get(self.repo_name, self.revision)
+    culprit = WfSuspectedCL.Get(pipeline_input.cl_key.repo_name,
+                                pipeline_input.cl_key.revision)
 
     if culprit.revert_pipeline_id == self.pipeline_id:
       if culprit.revert_status and culprit.revert_status != status.COMPLETED:
@@ -29,11 +24,8 @@ class CreateRevertCLPipeline(BasePipeline):
       culprit.revert_pipeline_id = None
       culprit.put()
 
-  def finalized(self):  # pragma: no cover
-    self._LogUnexpectedAborting(self.was_aborted)
-
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, repo_name, revision, build_id):
-    if revert.ShouldRevert(repo_name, revision, self.pipeline_id):
-      return revert.RevertCulprit(repo_name, revision, build_id=build_id)
+  def RunImpl(self, pipeline_input):
+    if revert.ShouldRevert(pipeline_input, self.pipeline_id):
+      return revert.RevertCulprit(pipeline_input)
     return revert.SKIPPED

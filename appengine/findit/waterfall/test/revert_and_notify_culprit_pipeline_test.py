@@ -7,17 +7,12 @@ import mock
 from common.constants import DEFAULT_QUEUE
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
-from services import revert
 from waterfall import buildbot
 from waterfall import revert_and_notify_culprit_pipeline
-from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.revert_and_notify_culprit_pipeline import (
     RevertAndNotifyCulpritPipeline)
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
-from waterfall.send_notification_to_irc_pipeline import (
-    SendNotificationToIrcPipeline)
-from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from waterfall.test import wf_testcase
 
 
@@ -76,52 +71,6 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.start(queue_name=DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
-  @mock.patch.object(buildbot, 'GetBuildResult', return_value=buildbot.FAILURE)
-  @mock.patch.object(
-      buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
-  @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[124])
-  def testSendNotificationToConfirmRevert(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 124
-    repo_name = 'chromium'
-    build_id = 'm/b/124'
-    revision = 'r1'
-    culprits = {
-        'r1': {
-            'repo_name': repo_name,
-            'revision': revision,
-        }
-    }
-    heuristic_cls = [[repo_name, revision]]
-    try_job_type = failure_type.COMPILE
-
-    self.MockPipeline(
-        CreateRevertCLPipeline,
-        revert.CREATED_BY_SHERIFF,
-        expected_args=[repo_name, revision, build_id])
-    self.MockPipeline(
-        SubmitRevertCLPipeline,
-        True,
-        expected_args=[repo_name, revision, revert.CREATED_BY_SHERIFF])
-    self.MockPipeline(
-        SendNotificationToIrcPipeline,
-        None,
-        expected_args=[repo_name, revision, revert.CREATED_BY_SHERIFF])
-    self.MockPipeline(
-        SendNotificationForCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, repo_name, revision, True,
-            revert.CREATED_BY_SHERIFF
-        ])
-
-    pipeline = RevertAndNotifyCulpritPipeline(master_name, builder_name,
-                                              build_number, culprits,
-                                              heuristic_cls, try_job_type)
-    pipeline.start(queue_name=DEFAULT_QUEUE)
-    self.execute_queued_tasks()
-
   @mock.patch.object(buildbot, 'GetBuildResult', return_value=buildbot.SUCCESS)
   @mock.patch.object(
       buildbot, 'GetBuildDataFromMilo', return_value='{"data": "data"}')
@@ -142,6 +91,34 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     }
     heuristic_cls = [[repo_name, revision]]
     try_job_type = failure_type.TEST
+
+    pipeline = RevertAndNotifyCulpritPipeline(master_name, builder_name,
+                                              build_number, culprits,
+                                              heuristic_cls, try_job_type)
+    pipeline.start(queue_name=DEFAULT_QUEUE)
+    self.execute_queued_tasks()
+    mocked_pipeline.assert_not_called()
+
+  @mock.patch.object(
+      revert_and_notify_culprit_pipeline,
+      '_AnyBuildSucceeded',
+      return_value=False)
+  @mock.patch.object(revert_and_notify_culprit_pipeline,
+                     'SendNotificationForCulpritPipeline')
+  def testSendNotificationCompileFailure(self, mocked_pipeline, _):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 124
+    repo_name = 'chromium'
+    revision = 'r1'
+    culprits = {
+        'r1': {
+            'repo_name': repo_name,
+            'revision': revision,
+        }
+    }
+    heuristic_cls = [[repo_name, revision]]
+    try_job_type = failure_type.COMPILE
 
     pipeline = RevertAndNotifyCulpritPipeline(master_name, builder_name,
                                               build_number, culprits,

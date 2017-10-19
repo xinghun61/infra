@@ -8,6 +8,8 @@ from common import constants
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as wrapper_pipeline)
+from pipelines.pipeline_inputs_and_outputs import CLKey
+from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
 from services import ci_failure
 from services import revert
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
@@ -28,7 +30,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 124
     build_id = 'm/b/124'
-    repo_name = 'chromium'
+    repo_name = 'chromium/test'
     revision = 'r1'
     culprits = {
         'r1': {
@@ -38,10 +40,13 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     }
     heuristic_cls = [[repo_name, revision]]
 
-    self.MockPipeline(
-        CreateRevertCLPipeline,
-        revert.CREATED_BY_SHERIFF,
-        expected_args=[repo_name, revision, build_id])
+    self.MockSynchronousPipeline(CreateRevertCLPipeline,
+                                 CreateRevertCLPipelineInput(
+                                     cl_key=CLKey(
+                                         repo_name=repo_name.decode('utf-8'),
+                                         revision=revision.decode('utf-8')),
+                                     build_id=build_id.decode('utf-8')),
+                                 revert.CREATED_BY_SHERIFF)
     self.MockPipeline(
         SubmitRevertCLPipeline,
         True,

@@ -18,6 +18,8 @@ from libs import analysis_status as status
 from libs import time_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
+from pipelines.pipeline_inputs_and_outputs import CLKey
+from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
 from services import revert
 from waterfall import buildbot
 from waterfall import suspected_cl_util
@@ -90,7 +92,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     }
     culprit.put()
 
-    revert_status = revert.RevertCulprit(repo_name, revision, 'm/b/1')
+    revert_status = revert.RevertCulprit(
+        CreateRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            build_id='m/b/1'.decode('utf-8')))
 
     self.assertEquals(revert_status, revert.CREATED_BY_FINDIT)
 
@@ -156,7 +163,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
 
     WfSuspectedCL.Create(repo_name, revision, 123).put()
 
-    revert_status = revert.RevertCulprit(repo_name, revision, 'm/b/1')
+    revert_status = revert.RevertCulprit(
+        CreateRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            build_id='m/b/1'.decode('utf-8')))
 
     self.assertEquals(revert_status, revert.CREATED_BY_SHERIFF)
 
@@ -192,7 +204,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
 
     WfSuspectedCL.Create(repo_name, revision, 123).put()
 
-    revert_status = revert.RevertCulprit(repo_name, revision, 'm/b/1')
+    revert_status = revert.RevertCulprit(
+        CreateRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            build_id='m/b/1'.decode('utf-8')))
 
     self.assertEquals(revert_status, revert.ERROR)
 
@@ -230,7 +247,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.cr_notification_status = status.COMPLETED
     culprit.put()
 
-    revert_status = revert.RevertCulprit(repo_name, revision, 'm/b/1')
+    revert_status = revert.RevertCulprit(
+        CreateRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            build_id='m/b/1'.decode('utf-8')))
 
     self.assertEquals(revert_status, revert.CREATED_BY_FINDIT)
 
@@ -255,7 +277,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    revert_status = revert.RevertCulprit(repo_name, revision, 'm/b/1')
+    revert_status = revert.RevertCulprit(
+        CreateRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            build_id='m/b/1'.decode('utf-8')))
 
     self.assertEquals(revert_status, revert.SKIPPED)
 
@@ -280,7 +307,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    revert_status = revert.RevertCulprit(repo_name, revision, 'm/b/1')
+    revert_status = revert.RevertCulprit(
+        CreateRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            build_id='m/b/1'.decode('utf-8')))
 
     self.assertEquals(revert_status, revert.SKIPPED)
 
@@ -318,7 +350,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
 
-    self.assertFalse(revert.ShouldRevert(repo_name, revision, None))
+    pipeline_input = CreateRevertCLPipelineInput(
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
+        build_id='m/b/1'.decode('utf-8'))
+    self.assertFalse(revert.ShouldRevert(pipeline_input, None))
 
   def testShouldNotRevertIfRevertIsSkipped(self):
     repo_name = 'chromium'
@@ -326,7 +363,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_status = status.SKIPPED
     culprit.put()
-    self.assertFalse(revert.ShouldRevert(repo_name, revision, None))
+    pipeline_input = CreateRevertCLPipelineInput(
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
+        build_id='m/b/1'.decode('utf-8'))
+    self.assertFalse(revert.ShouldRevert(pipeline_input, None))
 
   @mock.patch.object(
       revert, '_GetDailyNumberOfRevertedCulprits', return_value=10)
@@ -337,14 +379,24 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    self.assertFalse(revert.ShouldRevert(repo_name, revision, None))
+    pipeline_input = CreateRevertCLPipelineInput(
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
+        build_id='m/b/1'.decode('utf-8'))
+    self.assertFalse(revert.ShouldRevert(pipeline_input, None))
 
   @mock.patch.object(revert, '_CanRevert', return_value=True)
   def testShouldRevert(self, _):
     repo_name = 'chromium'
     revision = 'rev1'
     pipeline_id = 'pipeline_id'
-    self.assertTrue(revert.ShouldRevert(repo_name, revision, pipeline_id))
+    pipeline_input = CreateRevertCLPipelineInput(
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
+        build_id='m/b/1'.decode('utf-8'))
+    self.assertTrue(revert.ShouldRevert(pipeline_input, pipeline_id))
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 02, 01, 0, 0, 0))

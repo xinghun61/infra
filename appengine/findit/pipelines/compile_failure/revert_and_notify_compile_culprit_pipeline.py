@@ -5,6 +5,8 @@
 import logging
 
 from gae_libs.pipeline_wrapper import BasePipeline
+from pipelines.pipeline_inputs_and_outputs import CLKey
+from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
 from services import ci_failure
 from waterfall import build_util
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
@@ -48,7 +50,10 @@ class RevertAndNotifyCompileCulpritPipeline(BasePipeline):
     force_notify = [repo_name, revision] in heuristic_cls
     build_id = build_util.CreateBuildId(master_name, builder_name, build_number)
 
-    revert_status = yield CreateRevertCLPipeline(repo_name, revision, build_id)
+    revert_status = yield CreateRevertCLPipeline(
+        CreateRevertCLPipelineInput(
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
+            build_id=build_id))
     yield SubmitRevertCLPipeline(repo_name, revision, revert_status)
     yield SendNotificationToIrcPipeline(repo_name, revision, revert_status)
     yield SendNotificationForCulpritPipeline(master_name, builder_name,
