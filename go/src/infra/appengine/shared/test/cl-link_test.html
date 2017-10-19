@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<title>clLink</title>
+<meta charset="utf-8">
+<link rel="import" href="/elements/cl-link.html">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+
+<test-fixture id="cl-link-test">
+  <template>
+    <cl-link></cl-link>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('cl-link', function() {
+    let element;
+    setup(function() {
+      element = fixture('cl-link-test');
+    });
+
+    test('clLink w/ everything', function(done) {
+      element.change = '6f1faebd';
+      element.ownerEmail = 'avi@chromium.org';
+
+      flush(function() {
+        assert.equal('avi', element._userName);
+        done();
+      });
+    });
+  });
+</script>
