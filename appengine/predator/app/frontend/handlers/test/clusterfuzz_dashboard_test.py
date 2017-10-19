@@ -57,11 +57,11 @@ class ClusterfuzzDashBoardTest(AppengineTestCase):
     analysis.crash_type = 'check'
     analysis.platform = 'win'
     analysis.commit_count_in_regression_range = 3
-    analysis.error_name = 'Failed to parse stacktrace'
     analysis.result = {
         'suspected_cls': [{'author': 'someone'}],
         'suspected_project': 'chromium',
         'suspected_components': ['Blink'],
+        'log': {'error': {'FailedToParseStacktrace': 'blabla...'}},
     }
     analysis.put()
 
@@ -73,7 +73,7 @@ class ClusterfuzzDashBoardTest(AppengineTestCase):
         'crash_type': 'check',
         'platform': 'win',
         'commits': 3,
-        'error_name': 'Failed to parse stacktrace',
+        'log': ['FailedToParseStacktrace'],
         'suspected_cls': [{'author': 'someone'}],
         'suspected_project': 'chromium',
         'suspected_components': ['Blink'],

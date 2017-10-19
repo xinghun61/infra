@@ -115,9 +115,6 @@ class CrashAnalysis(ndb.Model):
   # Triage note.
   note = ndb.StringProperty(indexed=False)
 
-  error_stack = ndb.StringProperty(indexed=False)
-  error_name = ndb.StringProperty(indexed=False)
-
   def Reset(self):
     self.pipeline_status_path = None
     self.status = analysis_status.PENDING
@@ -128,8 +125,6 @@ class CrashAnalysis(ndb.Model):
     self.found_suspects = None
     self.solution = None
     self.result = None
-    self.error_name = None
-    self.error_stack = None
     self.regression_range_triage_status = triage_status.UNTRIAGED
     self.suspected_cls_triage_status = triage_status.UNTRIAGED
     self.suspected_project_triage_status = triage_status.UNTRIAGED

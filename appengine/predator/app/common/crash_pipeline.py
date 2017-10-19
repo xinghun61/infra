@@ -8,7 +8,6 @@ import traceback
 
 from google.appengine.ext import ndb
 
-from analysis.exceptions import FailedToParseStacktrace
 from analysis.exceptions import PredatorError
 from analysis.type_enums import CrashClient
 from common import predator_for_chromecrash
@@ -35,21 +34,6 @@ CLIENT_ID_TO_CRASH_ANALYSIS = {
     CrashClient.CRACAS: CracasCrashAnalysis,
     CrashClient.CLUSTERFUZZ: ClusterfuzzAnalysis
 }
-
-
-def GetResultWhenAnalysisFailed(analysis, error_name):
-  analysis.error_name = error_name
-  analysis.error_stack = traceback.format_exc()
-  analysis.status = analysis_status.ERROR
-  result = {'found': False}
-  tags = {
-      'found_suspects': False,
-      'found_project': False,
-      'found_components': False,
-      'has_regression_range': bool(analysis.regression_range),
-      'solution': None,
-  }
-  return result, tags
 
 
 # TODO(http://crbug.com/659346): write complete coverage tests for this.
@@ -177,17 +161,14 @@ class CrashAnalysisPipeline(CrashBasePipeline):
     analysis.put()
 
     # Actually do the analysis.
-    try:
-      culprit = self._predator.FindCulprit(analysis.ToCrashReport())
-      result, tags = culprit.ToDicts()
+    success, culprit = self._predator.FindCulprit(analysis.ToCrashReport())
+    result, tags = culprit.ToDicts()
+    if success:
       analysis.status = analysis_status.COMPLETED
-      analysis.completed_time = time_util.GetUTCNow()
-    except FailedToParseStacktrace as error:
-      result, tags = GetResultWhenAnalysisFailed(analysis, error.name)
-    except Exception as error:
-      result, tags = GetResultWhenAnalysisFailed(analysis,
-                                                 error.__class__.__name__)
+    else:
+      analysis.status = analysis_status.ERROR
 
+    analysis.completed_time = time_util.GetUTCNow()
     # Update model's status to say we're done, and save the results.
     analysis.result = result
     for tag_name, tag_value in tags.iteritems():

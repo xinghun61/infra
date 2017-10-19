@@ -100,8 +100,6 @@ class PredatorForClusterfuzz(PredatorApp):
     if 'regression_range' in result:
       del result['regression_range']
 
-    result['error_message'] = analysis.error_name
-
     return {
         'crash_identifiers': analysis.identifiers,
         'client_id': self.client_id,
@@ -109,7 +107,7 @@ class PredatorForClusterfuzz(PredatorApp):
     }
 
   def MessageToTryBot(self, analysis):
-    """Gets messages to push to try bot topic."""
+    """Gets log to push to try bot topic."""
     regression_ranges = []
     dep_rolls = (analysis.dependency_rolls.itervalues()
                  if analysis.dependency_rolls else [])

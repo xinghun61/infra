@@ -6,7 +6,8 @@ from collections import namedtuple
 
 
 class Culprit(namedtuple('Culprit',
-    ['project', 'components', 'cls', 'regression_range', 'algorithm'])):
+    ['project', 'components', 'suspected_cls', 'regression_range', 'algorithm',
+     'log'])):
   """The result of successfully identifying the culprit of a crash report.
 
   That is, this is what ``Predator.FindCultprit`` returns. It encapsulates
@@ -15,11 +16,21 @@ class Culprit(namedtuple('Culprit',
   Args:
     project (str): the most-suspected project
     components (list of str): the suspected crbug components.
-    cls (list of ??): the suspected CLs.
+    suspected_cls (list of Suspects): the suspected suspected_cls.
     regression_range (tuple): a pair of the last-good and first-bad versions.
     algorithm (str): What algorithm was used to produce this object.
+    log (dict): Provide information to explain the results, the log is
+      usually warning or error log to explain why we didn't find valid
+      results.for example, if the crash doesn't have regression range,
+      the log will explain that there is no suspected cl due to lack of
+      regression_range.
   """
   __slots__ = ()
+
+  def __new__(cls, project, components, suspected_cls, regression_range,
+              algorithm, log=None):
+    return super(cls, Culprit).__new__(cls, project, components, suspected_cls,
+                                       regression_range, algorithm, log)
 
   @property
   def fields(self):
@@ -95,7 +106,7 @@ class Culprit(namedtuple('Culprit',
     result['found'] = (
         bool(self.project) or
         bool(self.components) or
-        bool(self.cls) or
+        bool(self.suspected_cls) or
         bool(self.regression_range))
     if self.regression_range:
       result['regression_range'] = self.regression_range
@@ -103,11 +114,13 @@ class Culprit(namedtuple('Culprit',
       result['suspected_project'] = self.project
     if self.components:
       result['suspected_components'] = self.components
-    if self.cls:
-      result['suspected_cls'] = [cl.ToDict() for cl in self.cls]
+    if self.suspected_cls:
+      result['suspected_cls'] = [cl.ToDict() for cl in self.suspected_cls]
+    if self.log:
+      result['log'] = self.log
 
     tags = {
-      'found_suspects': bool(self.cls),
+      'found_suspects': bool(self.suspected_cls),
       'has_regression_range': bool(self.regression_range),
       'found_project': bool(self.project),
       'found_components': bool(self.components),

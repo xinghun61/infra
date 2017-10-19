@@ -61,11 +61,14 @@ class ResultFeedbackTest(AppengineTestCase):
         'confidence': 1
     }
 
-    analysis.result = {'found': True,
-                       'suspected_cls': [suspected_cl],
-                       'suspected_components': ['Blink>API', 'Blink>DOM'],
-                       'suspected_project': 'chromium',
-                       'regression_range': ['53.0.2749.0', '53.0.2750.0']}
+    analysis.result = {
+        'found': True,
+        'suspected_cls': [suspected_cl],
+        'suspected_components': ['Blink>API', 'Blink>DOM'],
+        'suspected_project': 'chromium',
+        'regression_range': ['53.0.2749.0', '53.0.2750.0'],
+        'log': {'warning': {'NoRegressionRange': 'blabla...'}},
+    }
     analysis.found_suspects = True
     analysis.note = 'This is a note.'
     analysis.put()
@@ -106,7 +109,7 @@ class ResultFeedbackTest(AppengineTestCase):
         'request_time': time_util.FormatDatetime(analysis.requested_time),
         'analysis_completed': analysis.completed,
         'analysis_failed': analysis.failed,
-        'analysis_error_stack': analysis.error_stack,
+        'log': analysis.result.get('log'),
         'triage_history': result_feedback._GetTriageHistory(analysis),
         'analysis_correct': {
             'regression_range': analysis.regression_range_triage_status,

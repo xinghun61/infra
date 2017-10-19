@@ -9,7 +9,6 @@ import mock
 from google.appengine.ext import ndb
 
 from analysis.culprit import Culprit
-from analysis.exceptions import FailedToParseStacktrace
 from analysis.suspect import Suspect
 from analysis.type_enums import CrashClient
 from common import crash_pipeline
@@ -38,7 +37,7 @@ class CrashAnalysisPipelineTest(AppengineTestCase):
     analysis = FracasCrashAnalysis.Get(crash_identifiers)
     self.assertEqual(analysis_status.ERROR, analysis.status)
 
-  @mock.patch('common.predator_for_chromecrash.PredatorForFracas.FindCulprit')
+  @mock.patch('analysis.predator.Predator._FindCulprit')
   def testFindCulpritFails(self, mock_find_culprit):
     crash_identifiers = self.GetDummyChromeCrashData()['crash_identifiers']
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
@@ -46,19 +45,6 @@ class CrashAnalysisPipelineTest(AppengineTestCase):
     analysis.put()
 
     mock_find_culprit.side_effect = Exception()
-    pipeline = crash_pipeline.CrashAnalysisPipeline(
-        CrashClient.FRACAS,
-        crash_identifiers)
-    pipeline.run()
-
-    analysis = FracasCrashAnalysis.Get(crash_identifiers)
-    self.assertEqual(analysis_status.ERROR, analysis.status)
-    self.assertFalse(analysis.result['found'])
-    self.assertFalse(analysis.found_suspects)
-    self.assertFalse(analysis.found_project)
-    self.assertFalse(analysis.found_components)
-
-    mock_find_culprit.side_effect = FailedToParseStacktrace('failed!')
     pipeline = crash_pipeline.CrashAnalysisPipeline(
         CrashClient.FRACAS,
         crash_identifiers)
@@ -92,13 +78,13 @@ class CrashAnalysisPipelineTest(AppengineTestCase):
     dummy_culprit = Culprit(
         project = 'PROJECT',
         components = ['COMPONENT_1', 'CPOMPONENT_2'],
-        cls = [dummy_suspect],
+        suspected_cls = [dummy_suspect],
         # N.B., we must use a list here for the assertion to work
         # TODO(wrengr): fix that.
         regression_range = ['VERSION_0', 'VERSION_1'],
         algorithm = 'ALGORITHM',
     )
-    mock_find_culprit.return_value = dummy_culprit
+    mock_find_culprit.return_value = True, dummy_culprit
     pipeline = crash_pipeline.CrashAnalysisPipeline(CrashClient.FRACAS,
                                                     crash_identifiers)
     pipeline.start()

@@ -2,22 +2,31 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import traceback
+
 from analysis.culprit import Culprit
+from analysis.log import Log
 
 
 # TODO(http://crbug.com/659346): write coverage tests.
 class Predator(object): # pragma: no cover
   """The Main entry point into the Predator library."""
 
-  def __init__(self, cl_classifier, component_classifier, project_classifier):
-    self.cl_classifier = cl_classifier
+  def __init__(self, changelist_classifier, component_classifier,
+               project_classifier):
+    self.log = Log()
+    self.changelist_classifier = changelist_classifier
     self.component_classifier = component_classifier
     self.project_classifier = project_classifier
+    self._SetLog()
 
-  def FindCulprit(self, report):
-    """Given a CrashReport, return a Culprit."""
-    suspected_cls = self.cl_classifier(report)
-    assert suspected_cls is not None
+  def _SetLog(self):
+    """Makes sure that classifiers are using the same log as Predator."""
+    self.changelist_classifier.SetLog(self.log)
+
+  def _FindCulprit(self, report):
+    """Given a CrashReport, return suspected project, components and cls."""
+    suspected_cls = self.changelist_classifier(report, self.log)
 
     suspected_project = self.project_classifier.ClassifyCallStack(
         report.stacktrace.crash_stack) if report.stacktrace else ''
@@ -33,8 +42,34 @@ class Predator(object): # pragma: no cover
         suspected_components or
         self.component_classifier.ClassifyRepoUrl(report.root_repo_url))
 
-    return Culprit(project=suspected_project,
-                   components=suspected_components,
-                   cls=suspected_cls,
-                   regression_range=report.regression_range,
-                   algorithm='core_algorithm')
+    return suspected_project, suspected_components, suspected_cls
+
+  def FindCulprit(self, report):
+    """Finds the culprit causing the CrashReport.
+
+    Args:
+      report (CrashReport): Report contains all the information about the crash.
+
+    Returns:
+      A tuple - (success, culprit).
+      success (bool): Boolean to indicate if the analysis succeeded.
+      culprit (Culprit): The culprit result.
+    """
+    try:
+      suspected_project, suspected_components, suspected_cls = (
+          self._FindCulprit(report))
+      return True, Culprit(project=suspected_project,
+                           components=suspected_components,
+                           suspected_cls=suspected_cls,
+                           regression_range=report.regression_range,
+                           algorithm='core_algorithm',
+                           log=self.log.ToDict())
+    except Exception as error:
+      self.log.error(error.__class__.__name__, traceback.format_exc())
+
+    return False, Culprit(project='',
+                          components=[],
+                          suspected_cls=[],
+                          regression_range=report.regression_range,
+                          algorithm='core_algorithm',
+                          log=self.log.ToDict())

@@ -7,14 +7,3 @@ class PredatorError(Exception):
   """Base class for Predator-specific exceptions."""
 
   pass
-
-
-class FailedToParseStacktrace(PredatorError):  # pragma: no cover.
-  """Base class for Predator-specific exceptions."""
-
-  def __init__(self, message):
-    super(FailedToParseStacktrace, self).__init__(message)
-
-  @property
-  def name(self):
-    return 'Failed to parse stackrace'

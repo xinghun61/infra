@@ -194,6 +194,7 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
              'other': 'data'}
         ],
         'regression_range': ['rev0', 'rev3'],
+        'log': 'Failed to parse stacktrace',
         'other_data': 'data',
     }
 
@@ -208,7 +209,6 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
     processed_analysis_result = copy.deepcopy(analysis_result)
     processed_analysis_result['feedback_url'] = analysis.feedback_url
     del processed_analysis_result['regression_range']
-    processed_analysis_result['error_message'] = 'Failed to parse stacktrace'
 
     expected_processed_result = {
         'crash_identifiers': crash_identifiers,
@@ -222,6 +222,7 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
     """Tests ``ResultMessageToClient`` when there is no result."""
     analysis_result = {
         'found': False,
+        'log': 'Failed to parse stacktrace',
     }
     crash_identifiers = {'testcase_id': '123'}
     analysis = self._client.CreateAnalysis(crash_identifiers)
@@ -233,7 +234,6 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
 
     processed_analysis_result = copy.deepcopy(analysis_result)
     processed_analysis_result['feedback_url'] = analysis.feedback_url
-    processed_analysis_result['error_message'] = 'Failed to parse stacktrace'
 
     expected_processed_result = {
         'crash_identifiers': crash_identifiers,

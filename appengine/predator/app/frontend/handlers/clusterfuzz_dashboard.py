@@ -41,6 +41,10 @@ class ClusterfuzzDashBoard(DashBoard):
 
     crashes = []
     for crash in crash_analyses:
+      log_names = []
+      for log in crash.result.get('log', {}).itervalues():
+        log_names.extend(log.keys())
+
       display_data = {
           'signature': crash.signature,
           'testcase_id': crash.testcase_id,
@@ -49,7 +53,8 @@ class ClusterfuzzDashBoard(DashBoard):
           'crash_type': crash.crash_type,
           'platform': crash.platform,
           'commits': crash.commit_count_in_regression_range,
-          'error_name': crash.error_name or '',
+          # Just display names to keep dashboard clean.
+          'log': log_names,
           'suspected_cls': (crash.result.get('suspected_cls', [])
                             if crash.result else []),
           'suspected_project': (crash.result.get('suspected_project', '')

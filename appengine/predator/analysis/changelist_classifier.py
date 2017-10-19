@@ -4,8 +4,8 @@
 
 import logging
 
-from analysis import exceptions
 from analysis.linear.model import UnnormalizedLogLinearModel
+from analysis.log import Log
 from analysis.suspect import Suspect
 from analysis.suspect_filters import FilterIgnoredRevisions
 from analysis.suspect_filters import FilterLessLikelySuspects
@@ -13,7 +13,6 @@ from analysis.suspect_filters import FilterSuspectFromRobotAuthor
 
 # The ratio of the probabilities of 2 suspects.
 _PROBABILITY_RATIO = 0.5
-
 _ABSOLUTE_CONFIDENCE_SCORE = 50
 
 
@@ -46,16 +45,23 @@ class ChangelistClassifier(object):
     # scores, which need to use information got from features like
     # ``confidence``.
     self._after_ranking_filters = [FilterLessLikelySuspects(_PROBABILITY_RATIO)]
+    self.log = None
 
   def __call__(self, report):
     """Finds changelists suspected of being responsible for the crash report.
 
     Args:
       report (CrashReport): the report to be analyzed.
+      log (Log): log information we want to send back to clients.
 
     Returns:
       List of ``Suspect``s, sorted by probability from highest to lowest.
     """
+    if not report.regression_range:
+      self.Log('warning', 'NoRegressionRange',
+               'Can\'t find culprits due to unavailable regression range.')
+      return []
+
     suspects = self.GenerateSuspects(report)
     if not suspects:
       logging.warning('%s.__call__: Found no suspects for report: %s',
@@ -70,10 +76,23 @@ class ChangelistClassifier(object):
       return [suspect]
 
     if not report.stacktrace:
-      message = 'Failed to parse stacktrace. Cannot get culprit for this crash.'
-      raise exceptions.FailedToParseStacktrace(message)
+      self.Log(
+          'error', 'FailedToParseStacktrace',
+          'Can\'t find culprits because Predator failed to parse stacktrace.')
+      return []
 
     return self.FindSuspects(report, suspects)
+
+  def SetLog(self, log):
+    self.log = log
+
+  def Log(self, level, name, message):
+    """Logs into self.log if possible."""
+    if not self.log:
+      return
+
+    log_func = getattr(self.log, level)
+    log_func(name, message)
 
   def GenerateSuspects(self, report):
     """Generate all possible suspects for the reported crash.

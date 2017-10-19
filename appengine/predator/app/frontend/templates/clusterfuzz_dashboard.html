@@ -196,7 +196,13 @@
             <td>{{ crash.commits }}</td>
             <td>{{ crash.platform }}</td>
             <td class="truncated">{{ crash.job_type }}</td>
-            <td>{{ crash.error_name }}</td>
+            <td>
+            {% if crash.log %}
+              {% for log in crash.log %}
+                <li class="truncated">"{{log}}"</li>
+              {% endfor %}
+            {% endif %}
+            </td>
             <td>
             {% if crash.suspected_cls %}
               {% for suspected_cl in crash.suspected_cls %}

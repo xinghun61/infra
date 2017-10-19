@@ -322,8 +322,17 @@
   <div>
     <br><br>
     {% if analysis_failed %}
-    <span class="error">No result because of some error in analysis!<br></span>
-    <pre>{{ analysis_error_stack}}</pre>
+      <span class="error">No result because of some error in analysis!<br></span>
+      {% if log %}
+        {% for log_level, log_dict in log.iteritems() %}
+          {% if log_level == 'warning' or log_level == 'error' %}
+            {{log_level}}:<br>
+            {% for log_content in log_dict.itervalue() %}
+              {{ log_content }} <br>
+            {% endfor %}
+          {% endif %}
+        {% endfor %}
+      {% endif %}
     {% elif not analysis_completed %}
     <span class="error">Analysis is not finished...<br></span>
     {% else %}
