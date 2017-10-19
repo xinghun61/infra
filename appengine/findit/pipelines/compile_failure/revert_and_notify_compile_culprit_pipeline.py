@@ -8,6 +8,8 @@ from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipelines import CreateInputObjectInstance
 from pipelines.pipeline_inputs_and_outputs import CLKey
 from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
+from pipelines.pipeline_inputs_and_outputs import (
+    SendNotificationToIrcPipelineInput)
 from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
 from services import ci_failure
 from waterfall import build_util
@@ -48,20 +50,29 @@ class RevertAndNotifyCompileCulpritPipeline(BasePipeline):
     culprit = culprits.values()[0]
     repo_name = culprit['repo_name']
     revision = culprit['revision']
+    cl_key = CLKey(repo_name=repo_name, revision=revision)
 
     force_notify = [repo_name, revision] in heuristic_cls
     build_id = build_util.CreateBuildId(master_name, builder_name, build_number)
 
     revert_status = yield CreateRevertCLPipeline(
         CreateRevertCLPipelineInput(
-            cl_key=CLKey(repo_name=repo_name, revision=revision),
+            cl_key=cl_key,
             build_id=build_id))
+
     submit_revert_pipeline_input = CreateInputObjectInstance(
         SubmitRevertCLPipelineInput,
-        cl_key=CLKey(repo_name=repo_name, revision=revision),
+        cl_key=cl_key,
         revert_status=revert_status)
-    yield SubmitRevertCLPipeline(submit_revert_pipeline_input)
-    yield SendNotificationToIrcPipeline(repo_name, revision, revert_status)
+    submitted = yield SubmitRevertCLPipeline(submit_revert_pipeline_input)
+
+    send_notification_to_irc_input = CreateInputObjectInstance(
+        SendNotificationToIrcPipelineInput,
+        cl_key=cl_key,
+        revert_status=revert_status,
+        submitted=submitted)
+    yield SendNotificationToIrcPipeline(send_notification_to_irc_input)
+
     yield SendNotificationForCulpritPipeline(master_name, builder_name,
                                              build_number, repo_name, revision,
                                              force_notify, revert_status)

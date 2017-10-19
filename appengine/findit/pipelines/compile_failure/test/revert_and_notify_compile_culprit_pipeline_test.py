@@ -10,6 +10,8 @@ from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as wrapper_pipeline)
 from pipelines.pipeline_inputs_and_outputs import CLKey
 from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
+from pipelines.pipeline_inputs_and_outputs import (
+    SendNotificationToIrcPipelineInput)
 from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
 from services import ci_failure
 from services import revert
@@ -47,24 +49,28 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                                          repo_name=repo_name.decode('utf-8'),
                                          revision=revision.decode('utf-8')),
                                      build_id=build_id.decode('utf-8')),
-                                 revert.CREATED_BY_SHERIFF)
+                                 revert.CREATED_BY_FINDIT)
     self.MockSynchronousPipeline(SubmitRevertCLPipeline,
                                  SubmitRevertCLPipelineInput(
                                      cl_key=CLKey(
                                          repo_name=repo_name.decode('utf-8'),
                                          revision=revision.decode('utf-8')),
-                                     revert_status=revert.CREATED_BY_SHERIFF),
+                                     revert_status=revert.CREATED_BY_FINDIT),
                                  True)
-    self.MockPipeline(
-        SendNotificationToIrcPipeline,
-        None,
-        expected_args=[repo_name, revision, revert.CREATED_BY_SHERIFF])
+    self.MockSynchronousPipeline(SendNotificationToIrcPipeline,
+                                 SendNotificationToIrcPipelineInput(
+                                     cl_key=CLKey(
+                                         repo_name=repo_name.decode('utf-8'),
+                                         revision=revision.decode('utf-8')),
+                                     revert_status=revert.CREATED_BY_FINDIT,
+                                     submitted=True),
+                                 True)
     self.MockPipeline(
         SendNotificationForCulpritPipeline,
         None,
         expected_args=[
             master_name, builder_name, build_number, repo_name, revision, True,
-            revert.CREATED_BY_SHERIFF
+            revert.CREATED_BY_FINDIT
         ])
 
     pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(

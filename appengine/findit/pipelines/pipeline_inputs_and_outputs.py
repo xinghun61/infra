@@ -22,3 +22,10 @@ class SubmitRevertCLPipelineInput(StructuredObject):
   """Input for SubmitRevertCLPipeline."""
   cl_key = CLKey
   revert_status = int
+
+
+class SendNotificationToIrcPipelineInput(StructuredObject):
+  """Input for SendNotificationToIrcPipeline."""
+  cl_key = CLKey
+  revert_status = int
+  submitted = bool
