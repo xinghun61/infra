@@ -154,10 +154,6 @@ def _GetLogLocationFromBuildbucketBuild(buildbucket_build):
   # builds.
   result_details = json.loads(
       buildbucket_build.get('result_details_json', '{}'))
-  # TODO(robertocn): An upcoming change will make it unnecessary to retrieve
-  # run_id. crbug.com/718191
-  run_id = result_details.get('swarming', {}).get('task_result',
-                                                  {}).get('run_id')
   # First try to get it from properties,
   log_location = result_details.get('properties', {}).get('log_location')
 
@@ -169,10 +165,6 @@ def _GetLogLocationFromBuildbucketBuild(buildbucket_build):
   if log_location:
     # logdog://luci-logdog.appspot.com/chromium/...
     _logdog, _, host, project, path = log_location.split('/', 4)
-  # TODO(robertocn): Just like above the following 2 lines may become
-  # unnecessary soon. crbug.com/718191
-  if run_id and path:
-    path = path.replace('${swarming_run_id}', run_id)
   return host, project, path
 
 

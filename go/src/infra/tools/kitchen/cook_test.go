@@ -181,9 +181,6 @@ func TestCook(t *testing.T) {
 						"temp_dir":  filepath.Join(kitchenTempDir, "rt"),
 					},
 				}
-				if mode == "swarming" {
-					expectedInputProperties["swarming_run_id"] = "task"
-				}
 				So(actualRecipeInput, ShouldResemble, recipeInput{
 					Args: []string{
 						filepath.Join(checkoutPath, "recipes.py"),

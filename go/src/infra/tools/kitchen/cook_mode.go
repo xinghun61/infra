@@ -39,7 +39,7 @@ type cookMode interface {
 }
 
 // readSwarmingEnv reads relevent data out of the environment.
-func readSwarmingEnv(env environ.Env) (botID, runID string, err error) {
+func readSwarmingEnv(env environ.Env) (botID string, err error) {
 	var ok bool
 	botID, ok = env.Get("SWARMING_BOT_ID")
 	if !ok {
@@ -47,10 +47,6 @@ func readSwarmingEnv(env environ.Env) (botID, runID string, err error) {
 		return
 	}
 
-	if runID, ok = env.Get("SWARMING_TASK_ID"); !ok {
-		err = inputError("no Swarming run ID in $SWARMING_TASK_ID")
-		return
-	}
 	return
 }
 
@@ -60,12 +56,11 @@ func (m swarmingCookMode) needsIOKeepAlive() bool         { return false }
 func (m swarmingCookMode) alwaysForwardAnnotations() bool { return false }
 
 func (m swarmingCookMode) addProperties(props map[string]interface{}, env environ.Env) error {
-	botID, runID, err := readSwarmingEnv(env)
+	botID, err := readSwarmingEnv(env)
 	if err != nil {
 		return err
 	}
 	props[PropertyBotID] = botID
-	props["swarming_run_id"] = runID
 	return nil
 }
 func (m swarmingCookMode) shouldEmitLogDogLinks() bool { return false }
