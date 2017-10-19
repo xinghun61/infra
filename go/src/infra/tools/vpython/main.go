@@ -65,7 +65,6 @@ var defaultConfig = application.Config{
 	},
 	PruneThreshold:          7 * 24 * time.Hour, // One week.
 	MaxPrunesPerSweep:       3,
-	MaxScriptPathLen:        127, // Maximum POSIX shebang length.
 	DefaultVerificationTags: verificationScenarios,
 }
 
