@@ -454,7 +454,7 @@ class DetermineTruePassRatePipelineTest(wf_testcase.WaterfallTestCase):
                                           build_number, step_name, test_name)
     analysis.status = analysis_status.PENDING
     analysis.data_points = [
-        DataPoint.Create(build_number, 1, 'task_id', iterations=401)
+        DataPoint.Create(build_number, 1, ['task_id'], iterations=401)
     ]
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])

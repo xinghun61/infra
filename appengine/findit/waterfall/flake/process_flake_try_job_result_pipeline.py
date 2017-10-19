@@ -165,7 +165,8 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
     data_point.iterations = tries
     data_point.elapsed_seconds = int(
         (try_job_data.end_time - try_job_data.start_time).total_seconds())
-    data_point.task_id = _GetSwarmingTaskIdForTryJob(
-        try_job.flake_results[-1].get('report'), revision, step_name, test_name)
+    data_point.task_ids = _GetSwarmingTaskIdForTryJob(
+        try_job.flake_results[-1].get('report'), revision, step_name,
+        test_name) or []
     flake_analysis.data_points.append(data_point)
     flake_analysis.put()

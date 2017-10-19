@@ -271,7 +271,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_point = DataPoint()
     data_point.build_number = int(build_number)
     data_point.pass_rate = success_rate
-    data_point.task_id = '1'
+    data_point.task_ids = ['task_id']
     analysis.data_points.append(data_point)
     analysis.status = analysis_status.COMPLETED
     analysis.suspected_flake_build_number = 100
@@ -757,14 +757,14 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     expected_result = [{
         'commit_position': 2,
         'pass_rate': success_rate,
-        'task_id': None,
+        'task_ids': [],
         'build_number': build_number - 3,
         'git_hash': 'git_hash_2',
         'try_job_url': try_job_url
     }, {
         'commit_position': 5,
         'pass_rate': success_rate,
-        'task_id': None,
+        'task_ids': [],
         'build_number': build_number,
         'git_hash': 'git_hash_5',
         'lower_bound_commit_position': 2,

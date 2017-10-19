@@ -182,6 +182,11 @@ class MasterFlakeAnalysisTest(TestCase):
     self.assertEqual((master_name, builder_name),
                      MasterFlakeAnalysis.GetBuildConfigurationFromKey(key))
 
+  def testGetSwarmingTaskId(self):
+    task_ids = ['a', 'b', 'c']
+    data_point = DataPoint.Create(task_ids=task_ids)
+    self.assertEqual(data_point.GetSwarmingTaskId(), 'c')
+
   def testGetDataPointOfSuspectedBuildNoSuspectedFlakeBuildNumber(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     self.assertIsNone(analysis.GetDataPointOfSuspectedBuild())

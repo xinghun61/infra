@@ -72,6 +72,14 @@
     .triage-cell {
       text-align: left;
     }
+
+    #representative-swarming-task {
+      color: red;
+    }
+
+    #swarming-task {
+      margin-right: 5px;
+    }
   </style>
   <link rel="stylesheet" type="text/css" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.12.1/themes/smoothness/jquery-ui.css">
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
@@ -237,7 +245,7 @@
         var thisBuildCommitPosition = itemData[0];
         var passRate = itemData[1];
         var dataPoint = GetDataPointByCommitPosition(thisBuildCommitPosition);
-        var swarmingTaskId = dataPoint.task_id;
+        var swarmingTaskIds = dataPoint.task_ids;
         var buildNumber = dataPoint.build_number;
         var thisBuildGitHash = dataPoint.git_hash;
         var lowerBoundCommitPosition = dataPoint.lower_bound_commit_position;
@@ -256,9 +264,19 @@
 
         /*Temporarily disable showing swarming tasks for try jobs.
           TODO(crbug/767541): Re-enable showing swarming tasks for try jobs.*/
-        if (swarmingTaskId && !tryJobUrl) {
-          $('#swarming-task-link').attr('href', 'https://chromium-swarm.appspot.com/task?id=' + swarmingTaskId);
-          $('#swarming-task-link').text(swarmingTaskId);
+        if (swarmingTaskIds && !tryJobUrl) {
+          $('#swarming-task-container').html('');
+          $.each(swarmingTaskIds, function(index, value) {
+            var link = $('<a>',{
+                text: 'task ' + (index + 1),
+                href:'https://chromium-swarm.appspot.com/task?id=' + value,
+            }).appendTo('#swarming-task-container');
+            if (index == swarmingTaskIds.length - 1) {
+              link.attr('id', 'representative-swarming-task');
+            } else {
+              link.attr('id', 'swarming-task')
+            }
+          });
           $('#swarming-task-container').show();
         } else {
           $('#swarming-task-container').hide();
@@ -448,7 +466,7 @@
       <div id="data-point-tooltip" class="data-point-detail">
         <div>Pass Rate: <span id="pass-rate"></span>%</div>
         <div id="range-container">Range: <a id="range-link" target="_blank"></a></div>
-        <div id="swarming-task-container">Swarming: <a id="swarming-task-link" target="_blank"></a></div>
+        <div id="swarming-task-container">Swarming: </div>
         <div id="try-job-container">Try-Job: <a id="try-job-link" target="_blank">link</a></div>
         <div id="build-container">Build: <a id="build-link" target="_blank"></a></div>
       </div>

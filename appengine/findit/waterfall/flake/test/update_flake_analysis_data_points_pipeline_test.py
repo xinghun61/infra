@@ -237,7 +237,7 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
     expected_data_point = DataPoint.Create(
         pass_rate=0.5,
         build_number=build_number,
-        task_id=task_id,
+        task_ids=[task_id],
         commit_position=commit_position,
         git_hash=git_hash,
         previous_build_git_hash=previous_build_git_hash,

@@ -63,7 +63,7 @@ def _CreateDataPoint(flake_swarming_task):
   data_point = DataPoint()
   data_point.build_number = build_number
   data_point.pass_rate = _GetPassRate(flake_swarming_task)
-  data_point.task_id = flake_swarming_task.task_id
+  data_point.task_ids.append(flake_swarming_task.task_id)
   data_point.has_valid_artifact = flake_swarming_task.has_valid_artifact
   data_point.iterations = flake_swarming_task.tries
 

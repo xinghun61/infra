@@ -17,7 +17,7 @@ class GetTestLocationPipelineTest(wf_testcase.WaterfallTestCase):
   def testGetTestLocationPipelineNoTestLocations(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
-        DataPoint.Create(build_number=123, pass_rate=0.5, task_id='task_id')
+        DataPoint.Create(build_number=123, pass_rate=0.5, task_ids=['task_id'])
     ]
     analysis.suspected_flake_build_number = 123
     analysis.put()
@@ -41,7 +41,7 @@ class GetTestLocationPipelineTest(wf_testcase.WaterfallTestCase):
   def testGetTestLocationPipelineNoTestLocation(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [
-        DataPoint.Create(build_number=123, pass_rate=0.5, task_id='task_id')
+        DataPoint.Create(build_number=123, pass_rate=0.5, task_ids=['task_id'])
     ]
     analysis.suspected_flake_build_number = 123
     analysis.put()
@@ -64,7 +64,7 @@ class GetTestLocationPipelineTest(wf_testcase.WaterfallTestCase):
     }
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', test_name)
     analysis.data_points = [
-        DataPoint.Create(build_number=123, pass_rate=0.5, task_id='task_id')
+        DataPoint.Create(build_number=123, pass_rate=0.5, task_ids=['task_id'])
     ]
     analysis.suspected_flake_build_number = 123
     analysis.put()

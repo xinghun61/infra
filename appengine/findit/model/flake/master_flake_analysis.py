@@ -4,6 +4,7 @@
 
 import base64
 import logging
+import math
 
 from google.appengine.ext import ndb
 
@@ -26,7 +27,7 @@ class DataPoint(ndb.Model):
   pass_rate = ndb.FloatProperty(indexed=False)
 
   # The ID of the swarming task responsible for generating this data.
-  task_id = ndb.StringProperty(indexed=False)
+  task_ids = ndb.StringProperty(indexed=False, repeated=True)
 
   # The commit position of this data point.
   commit_position = ndb.IntegerProperty(indexed=False)
@@ -63,7 +64,7 @@ class DataPoint(ndb.Model):
   @staticmethod
   def Create(build_number=None,
              pass_rate=None,
-             task_id=None,
+             task_ids=None,
              commit_position=None,
              git_hash=None,
              previous_build_commit_position=None,
@@ -76,7 +77,7 @@ class DataPoint(ndb.Model):
     data_point = DataPoint()
     data_point.build_number = build_number
     data_point.pass_rate = pass_rate
-    data_point.task_id = task_id
+    data_point.task_ids = task_ids or []
     data_point.commit_position = commit_position
     data_point.git_hash = git_hash
     data_point.previous_build_commit_position = previous_build_commit_position
@@ -87,6 +88,14 @@ class DataPoint(ndb.Model):
     data_point.iterations = iterations
     data_point.elapsed_seconds = elapsed_seconds
     return data_point
+
+  def GetSwarmingTaskId(self):
+    """Returns the last element in the list.
+
+    Guaranteed to be within flake_constants.CONVERGENCE_PERCENT of the true pass
+    rate if the pass rate converged.
+    """
+    return self.task_ids[-1] if self.task_ids else None
 
   def GetCommitPosition(self, revision):
     """Gets the commit position of a revision within blame_list.

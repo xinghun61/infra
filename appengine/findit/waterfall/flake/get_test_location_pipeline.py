@@ -39,7 +39,7 @@ class GetTestLocationPipeline(BasePipeline):
                        'build being identified')
       return None
 
-    task_id = suspected_build_point.task_id
+    task_id = suspected_build_point.GetSwarmingTaskId()
     task_output = swarming_util.GetIsolatedOutputForTask(
         task_id, FinditHttpClient())
 

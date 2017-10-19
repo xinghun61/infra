@@ -148,7 +148,7 @@ def _GetCoordinatesData(analysis):
     return {
         'commit_position': point.commit_position,
         'pass_rate': point.pass_rate,
-        'task_id': point.task_id,
+        'task_ids': point.task_ids,
         'build_number': point.build_number,
         'git_hash': point.git_hash,
         'try_job_url': point.try_job_url
