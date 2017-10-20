@@ -59,6 +59,9 @@ class PredatorForClusterfuzz(PredatorApp):
         [TouchCrashedFileMetaFeature([min_distance_feature,
                                       top_frame_index_feature,
                                       touch_crashed_file_feature]),
+         # TODO(katesonia): Add options to ``TouchCrashedDirectory`` and
+         # ``TouchCrashedComponent`` features, once feature_options is added to
+         # crash_config.
          TouchCrashedDirectoryFeature(),
          TouchCrashedComponentFeature(self._component_classifier)])
 

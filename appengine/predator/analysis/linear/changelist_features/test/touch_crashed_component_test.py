@@ -111,3 +111,15 @@ class TouchCrashedComponentFeatureTest(AnalysisTestCase):
     suspect = Suspect(_DUMMY_CHANGELOG, 'src/')
     feature_value = self.feature(report)(suspect)
     self.assertEqual(0.0, feature_value.value)
+
+  def testCrashedGroupFactoryReturnsNoneWhenComponentIsBlacklisted(self):
+    """Tests that ``CrashGroupFactory`` returns None when comp blacklisted."""
+    components = [Component('bad_comp', 'bad_dir', '', 'team')]
+    # Only construct the classifier once, rather than making a new one every
+    # time we call a method on it.
+    classifier = ComponentClassifier(components, 3, _MOCK_REPO_TO_DEP_PATH)
+    feature = TouchCrashedComponentFeature(classifier,
+                                           options={'blacklist': ['bad_comp']})
+    frame = StackFrame(0, 'src/', 'func', 'bad_dir/f.cc',
+                       'src/bad_dir/f.cc', [2, 3], 'h://repo')
+    self.assertIsNone(feature.CrashedGroupFactory(frame))

@@ -20,8 +20,10 @@ class TouchCrashedComponentFeature(Feature):
   When a suspect touched crashed component, we return value 0. When the there is
   no directory match, we return 0.
   """
-  def __init__(self, component_classifier):
+  def __init__(self, component_classifier, options=None):
     self._component_classifier = component_classifier
+    blacklist = options.get('blacklist', []) if options else []
+    self._blacklist = [component.lower() for component in blacklist]
 
   @property
   def name(self):
@@ -30,7 +32,10 @@ class TouchCrashedComponentFeature(Feature):
   def CrashedGroupFactory(self, frame):
     """Factory function to create ``CrashedComponent``."""
     component = self._component_classifier.ClassifyStackFrame(frame)
-    return CrashedComponent(component) if component else None
+    if not component or component.lower() in self._blacklist:
+      return None
+
+    return CrashedComponent(component)
 
   def GetMatchFunction(self, dep_path):
     """Returns a function to match a crashed component with a touched file."""

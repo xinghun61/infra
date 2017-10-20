@@ -110,3 +110,9 @@ class TouchCrashedDirectoryFeatureTest(AnalysisTestCase):
     self.assertFalse(_IsTestFile('gtest_xml_unittest_result_printer.cc'))
     self.assertFalse(_IsTestFile('shortest.cc'))
 
+  def testCrashedGroupFactoryReturnsNoneWhenDirectoryIsBlacklisted(self):
+    """Tests that ``CrashGroupFactory`` returns None when dir blacklisted."""
+    feature = TouchCrashedDirectoryFeature(options={'blacklist': ['bad_dir']})
+    frame = StackFrame(0, 'src/', 'func', 'bad_dir/f.cc',
+                       'src/bad_dir/f.cc', [2, 3], 'h://repo')
+    self.assertIsNone(feature.CrashedGroupFactory(frame))

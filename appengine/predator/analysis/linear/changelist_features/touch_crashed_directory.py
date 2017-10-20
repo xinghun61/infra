@@ -22,13 +22,15 @@ class TouchCrashedDirectoryFeature(Feature):
   When a suspect touched crashed directory, we return the
   value 1. When the there is no directory match, we return value 0.
   """
-  def __init__(self, include_test_files=True):
+  def __init__(self, include_test_files=True, options=None):
     """
     Args:
       include_test_files (boolean): If False, it makes the feature ignore test
         files that the suspect touched (e.g. unittest, browsertest, perftest).
     """
     self._include_test_files = include_test_files
+    blacklist = options.get('blacklist', []) if options else []
+    self._blacklist = [directory.lower() for directory in blacklist]
 
   @property
   def name(self):
@@ -38,8 +40,10 @@ class TouchCrashedDirectoryFeature(Feature):
     """Factory function to create ``CrashedDirectory``."""
     # Since files in root directory are files like OWNERS, DEPS. Skip it.
     directory = os.path.dirname(frame.file_path)
-    return CrashedDirectory(
-        directory) if frame.file_path and directory else None
+    if not directory or directory.lower() in self._blacklist:
+      return None
+
+    return CrashedDirectory(directory)
 
   def Match(self, crashed_directory, touched_file):
     """Determines whether a touched_file matches this crashed directory or not.
