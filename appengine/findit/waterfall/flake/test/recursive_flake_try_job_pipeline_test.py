@@ -25,16 +25,16 @@ from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
-
+from services.flake_failure import flake_try_job_service
 from waterfall import swarming_util
 from waterfall.flake import confidence
 from waterfall.flake import flake_constants
 from waterfall.flake import recursive_flake_try_job_pipeline
+from waterfall.flake.get_test_location_pipeline import GetTestLocationPipeline
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     _GetNextCommitPositionAndRemainingSuspects)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     _GetNormalizedTryJobDataPoints)
-from waterfall.flake.get_test_location_pipeline import GetTestLocationPipeline
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     NextCommitPositionPipeline)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
@@ -112,7 +112,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_try_job_pipeline.ProcessFlakeTryJobResultPipeline,
         None,
         expected_args=[
-            revision, start_commit_position, try_job_result,
+            revision, start_commit_position,
             try_job.key.urlsafe(),
             analysis.key.urlsafe()
         ])
@@ -140,7 +140,11 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis.last_attempted_revision, revision)
     self.assertIsNone(analysis.last_attempted_swarming_task_id)
 
-  def testRecursiveFlakeTryJobPipelineUserRerunRange(self):
+  @mock.patch.object(flake_try_job_service, 'GetSwarmingTaskIdForTryJob')
+  @mock.patch.object(
+      recursive_flake_try_job_pipeline, '_NeedANewTryJob', return_value=False)
+  def testRecursiveFlakeTryJobPipelineUserRerunRangeReuseDataPoint(
+      self, _, mocked_get_swarming_task_id):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -153,6 +157,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     revision = 'r999'
     try_job_id = 'try_job_id'
     remaining_suggested_commits = []
+    mocked_get_swarming_task_id.return_value = try_job_id
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
@@ -163,7 +168,6 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
                                  test_name, revision)
-
     try_job_result = {
         revision: {
             step_name: {
@@ -181,30 +185,15 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
     report = {'report': {'result': try_job_result}}
     try_job.flake_results.append(report)
+    try_job.try_job_ids = [try_job_id]
     try_job.put()
 
-    self.MockPipeline(
-        recursive_flake_try_job_pipeline.ScheduleFlakeTryJobPipeline,
-        try_job_id,
-        expected_args=[
-            master_name, builder_name, step_name, test_name, revision,
-            analysis.key.urlsafe(), _DEFAULT_CACHE_NAME, None,
-            user_specified_iterations
-        ])
-    self.MockPipeline(
-        recursive_flake_try_job_pipeline.MonitorTryJobPipeline,
-        try_job_result,
-        expected_args=[
-            try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id
-        ])
-    self.MockPipeline(
-        recursive_flake_try_job_pipeline.ProcessFlakeTryJobResultPipeline,
-        None,
-        expected_args=[
-            revision, start_commit_position, try_job_result,
-            try_job.key.urlsafe(),
-            analysis.key.urlsafe()
-        ])
+    try_job_data = FlakeTryJobData.Create(try_job_id)
+    try_job_data.start_time = datetime(2017, 10, 17, 1, 0, 0)
+    try_job_data.end_time = datetime(2017, 10, 17, 2, 0, 0)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
     self.MockPipeline(
         recursive_flake_try_job_pipeline.NextCommitPositionPipeline,
         '',
@@ -223,10 +212,6 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         _DEFAULT_CACHE_NAME, None, False)
     pipeline_job.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
-
-    self.assertIsNotNone(
-        FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
-                        revision))
     self.assertIsNone(analysis.last_attempted_revision)
     self.assertIsNone(analysis.last_attempted_swarming_task_id)
 
@@ -291,7 +276,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_try_job_pipeline.ProcessFlakeTryJobResultPipeline,
         None,
         expected_args=[
-            revision, start_commit_position, try_job_result,
+            revision, start_commit_position,
             try_job.key.urlsafe(),
             analysis.key.urlsafe()
         ])
@@ -792,7 +777,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_try_job_pipeline._NeedANewTryJob(
             analysis, try_job, 200, False))
 
-  def testNeedANewTryJobWithExistingFlakyTryJob(self):
+  @mock.patch.object(
+      flake_try_job_service, 'IsTryJobResultValid', return_value=True)
+  def testNeedANewTryJobWithExistingFlakyTryJob(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.algorithm_parameters = {
         'try_job_rerun': {
@@ -821,7 +808,29 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_try_job_pipeline._NeedANewTryJob(
             analysis, try_job, 200, False))
 
-  def testNeedANewTryJobWithExistingStableTryJobInsufficientIterations(self):
+  @mock.patch.object(
+      flake_try_job_service, 'IsTryJobResultValid', return_value=False)
+  def testNeedANewTryJobWithInvalidExistingTryJob(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'a1b2c3d4')
+    try_job.flake_results = [{
+        'report': {
+            'result': {
+                'a1b2c3d4': {
+                    's': {
+                        'valid': False
+                    }
+                }
+            }
+        }
+    }]
+    self.assertTrue(
+        recursive_flake_try_job_pipeline._NeedANewTryJob(
+            analysis, try_job, 200, False))
+
+  @mock.patch.object(
+      flake_try_job_service, 'IsTryJobResultValid', return_value=True)
+  def testNeedANewTryJobWithExistingStableTryJobInsufficientIterations(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.algorithm_parameters = {
         'try_job_rerun': {
@@ -850,7 +859,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_try_job_pipeline._NeedANewTryJob(
             analysis, try_job, 200, False))
 
-  def testNeedANewTryJobWithExistingStableTryJobSufficientIterations(self):
+  @mock.patch.object(
+      flake_try_job_service, 'IsTryJobResultValid', return_value=True)
+  def testNeedANewTryJobWithExistingStableTryJobSufficientIterations(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.algorithm_parameters = {
         'try_job_rerun': {
@@ -879,7 +890,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_try_job_pipeline._NeedANewTryJob(
             analysis, try_job, 200, False))
 
-  def testNeedANewTryJobWithExistingTryJobNonexistentTest(self):
+  @mock.patch.object(
+      flake_try_job_service, 'IsTryJobResultValid', return_value=True)
+  def testNeedANewTryJobWithExistingTryJobNonexistentTest(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.algorithm_parameters = {
         'try_job_rerun': {
@@ -1100,7 +1113,6 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
                                  test_name, revision)
-
     try_job_result = {
         revision: {
             step_name: {
@@ -1135,7 +1147,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_try_job_pipeline.ProcessFlakeTryJobResultPipeline,
         None,
         expected_args=[
-            revision, start_commit_position, try_job_result,
+            revision, start_commit_position,
             try_job.key.urlsafe(),
             analysis.key.urlsafe()
         ])
@@ -1227,7 +1239,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         recursive_flake_try_job_pipeline.ProcessFlakeTryJobResultPipeline,
         None,
         expected_args=[
-            revision, start_commit_position, try_job_result,
+            revision, start_commit_position,
             try_job.key.urlsafe(),
             analysis.key.urlsafe()
         ])

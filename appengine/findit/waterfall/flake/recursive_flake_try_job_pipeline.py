@@ -7,8 +7,8 @@ import logging
 from google.appengine.ext import ndb
 
 from common import constants
-from common.findit_http_client import FinditHttpClient
 from common import monitoring
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
 from gae_libs import appengine_util
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
@@ -24,6 +24,7 @@ from pipelines.flake_failure.create_bug_for_flake_pipeline import (
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
 from gae_libs import pipelines
+from services.flake_failure import flake_try_job_service
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
@@ -112,12 +113,22 @@ def _NeedANewTryJob(analysis, try_job, required_iterations, rerun):
        for which there is no existing data.
     2. A data point exists for the revision, but it is stable and run against
        too few iterations.
+    3. The try job had some error.
+
+    TODO(crbug.com/775706): In some rare cases multiple analyses converge at
+    running a try job with the same configuration at nearly the same time, which
+    can cause a race condition for two analyses to update the same try job
+    entity. This is expected to be extremely rare, but should not be an issue
+    once try jobs are refactored to perform compile only.
 
   Args:
     analysis (MasterFlakeAnalysis): The flake analysis for which try jobs are
         analyzing.
     try_job (FlakeTryJob): A flake try job entity.
     rerun (bool): Whether or not to force a rerun regardless of the need to.
+
+  Returns:
+    A boolean whether or not a new try job is needed.
   """
   if rerun or not try_job.flake_results:
     # Either this is a redo from scratch or a brand new try job.
@@ -126,7 +137,15 @@ def _NeedANewTryJob(analysis, try_job, required_iterations, rerun):
   step_name = try_job.step_name
   test_name = try_job.test_name
   revision = try_job.git_hash
-  result = try_job.flake_results[-1]['report']['result'][revision][step_name]
+  latest_try_job_result = try_job.flake_results[-1]
+  result_at_revision = latest_try_job_result['report']['result'][revision]
+
+  if not flake_try_job_service.IsTryJobResultValid(result_at_revision,
+                                                   step_name):
+    # An error occurred in the swarming rerun of the try job.
+    return True
+
+  result = result_at_revision[step_name]
   pass_fail_counts = result.get('pass_fail_counts', {})
 
   if pass_fail_counts:
@@ -319,12 +338,12 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
               analysis.canonical_step_name, analysis.test_name, revision,
               analysis.key.urlsafe(), cache_name, dimensions, iterations)
 
-          try_job_result = yield MonitorTryJobPipeline(
-              try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
+          yield MonitorTryJobPipeline(try_job.key.urlsafe(),
+                                      failure_type.FLAKY_TEST, try_job_id)
 
-          yield ProcessFlakeTryJobResultPipeline(
-              revision, commit_position, try_job_result,
-              try_job.key.urlsafe(), urlsafe_flake_analysis_key)
+          yield ProcessFlakeTryJobResultPipeline(revision, commit_position,
+                                                 try_job.key.urlsafe(),
+                                                 urlsafe_flake_analysis_key)
 
           yield NextCommitPositionPipeline(
               urlsafe_flake_analysis_key,
@@ -366,14 +385,13 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
           pipeline_job._RetryWithDelay(queue_name=self.queue_name or
                                        constants.DEFAULT_QUEUE)
           countdown = retries * _BASE_COUNT_DOWN_SECONDS
-          logging.info('No available swarming bots, '
-                       'RecursiveFlakeTryJobPipeline on MasterFlakeAnalysis '
-                       '%s/%s/%s/%s/%s will be tried after %d seconds',
-                       analysis.master_name, analysis.builder_name,
-                       analysis.build_number, analysis.step_name,
-                       analysis.test_name, countdown)
-
+          analysis.LogInfo(
+              'No available swarming bots, RecursiveFlakeTryJobPipeline will '
+              'be tried again after %d seconds' % countdown)
     else:
+      # Another analysis already ran the try job, use its results directly.
+      flake_try_job_service.UpdateAnalysisDataPointsWithTryJobResult(
+          analysis, try_job, commit_position, revision)
       yield NextCommitPositionPipeline(
           urlsafe_flake_analysis_key,
           try_job.key.urlsafe(), remaining_suspected_commit_positions,

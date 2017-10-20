@@ -77,7 +77,8 @@ class DataPoint(ndb.Model):
     data_point = DataPoint()
     data_point.build_number = build_number
     data_point.pass_rate = pass_rate
-    data_point.task_ids = task_ids or []
+    task_ids = task_ids or []
+    data_point.task_ids = task_ids
     data_point.commit_position = commit_position
     data_point.git_hash = git_hash
     data_point.previous_build_commit_position = previous_build_commit_position
