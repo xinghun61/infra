@@ -68,11 +68,11 @@
         parameters['direction'] = 'next';
       }
 
-      return createUrl('dashboard', parameters);
+      return createUrl(window.location.pathname, parameters);
     }
 
     function getFilterUrl(client) {
-      return createUrl('dashboard', getParameters(client));
+      return createUrl(window.location.pathname, getParameters(client));
     }
 
     function loadUrl(url) {
