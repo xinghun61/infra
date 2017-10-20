@@ -1,0 +1,71 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-input/paper-input.html">
+
+<dom-module id="bug-input">
+  <template>
+    <paper-input
+      label="[[inputLabel]]"
+      value="{{_bug}}"
+      auto-validate
+      pattern="[[_bugPattern]]"
+      error-message="Please enter a bug id or bug url">
+    </paper-input>
+  </template>
+  <script>
+    'use strict';
+
+    /**
+     * `<bug-input>` is an input element for crbug urls and bug ids.
+     *
+     * `<bug-input>` does validation on the input and puts the final bug id in
+     * the bugId property. If the input is invalid, this will be expressed in
+     * the invalidBug property.
+     *
+     *
+     * @customElement
+     * @polymer
+     * @demo /demo/bug-input_demo.html
+     */
+    class BugInput extends Polymer.Element {
+      static get is() { return 'bug-input'; }
+
+      static get properties() {
+        return {
+          _bug: String,
+          /** The input label for the user inputting the bug with 'Bug # or URL' default. */
+          inputLabel: {
+            type: String,
+            value: 'Bug # or URL',
+          },
+          _bugPattern: {
+            type: String,
+            value: '([^0-9]*)?[0-9]{3,}([^0-9]*)?',
+          },
+          /** True if the given bug is an invalid id or url. */
+          invalidBug: {
+            type: Boolean,
+            notify: true,
+            computed: '_computeInvalidBug(bugId)',
+          },
+          /** The final bug id. */
+          bugId: {
+            type: String,
+            notify: true,
+            computed: '_computeBugId(_bug)',
+          },
+        }
+      }
+
+      _computeBugId(bug) {
+        let idRe = /[0-9]{3,}/;
+        return new RegExp(this._bugPattern).test(bug) ? idRe.exec(bug) : 'Unknown';
+      }
+
+      _computeInvalidBug(bugId) {
+        return bugId == 'Unknown';
+      }
+
+    }
+    customElements.define(BugInput.is, BugInput);
+  </script>
+<dom-module>

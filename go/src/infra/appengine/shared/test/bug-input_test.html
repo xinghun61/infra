@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<title>bugInputTest</title>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/bug-input.html">
+
+<test-fixture id="bug-input-test">
+  <template>
+    <bug-input></bug-input>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('bug-input', function() {
+    let element;
+    setup(function() {
+      element = fixture('bug-input-test');
+    });
+
+    test('computeBugId', function(done) {
+      // Test invalid bug input.
+      assert.equal('Unknown', element._computeBugId('not a valid bug input'));
+
+      // Test valid bug input.
+      assert.equal('13928', element._computeBugId('crbug.com/13928'));
+      assert.equal('13928', element._computeBugId('crbug.com/projectname/id=13928?c=123'));
+      assert.equal('13928', element._computeBugId('13928'));
+      done();
+    });
+
+    test('property changes are correct', function(done) {
+      element.shadowRoot.querySelector('paper-input').value = '1nvalid';
+      assert.equal(element._bug, '1nvalid');
+      assert.isTrue(element.invalidBug);
+      assert.equal('Unknown', element.bugId);
+
+      element.shadowRoot.querySelector('paper-input').value = 'crbug/192800';
+      assert.equal(element._bug, 'crbug/192800');
+      assert.isFalse(element.invalidBug);
+      assert.equal('192800', element.bugId);
+
+      done();
+    });
+  });
+</script>
