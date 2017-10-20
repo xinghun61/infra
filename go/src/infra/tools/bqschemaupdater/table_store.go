@@ -22,7 +22,7 @@ type bqTableStore struct {
 	c *bigquery.Client
 }
 
-func errNotFound(e error) bool {
+func isNotFound(e error) bool {
 	err, ok := e.(*googleapi.Error)
 	return ok && err.Code == http.StatusNotFound
 }
