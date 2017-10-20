@@ -163,13 +163,9 @@ func TestPrepareSrc(t *testing.T) {
 	}
 
 	Convey("Test PrepareSrc", t, func() {
-		s, err := bigquery.InferSchema(fakeEvent{})
-		if err != nil {
-			t.Fatal(err)
-		}
 		for _, tc := range tcs {
 			Convey(tc.desc, func() {
-				sss, _ := prepareSrc(s, tc.src)
+				sss, _ := prepareSrc(tc.src)
 				So(sss, ShouldHaveLength, tc.wantLen)
 			})
 		}

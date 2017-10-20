@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"infra/libs/bqschema/buildevent"
-	"infra/libs/bqschema/tabledef"
 	"infra/libs/eventupload"
 	"infra/libs/infraenv"
 	"infra/tools/kitchen/build"
@@ -32,13 +31,19 @@ import (
 	"golang.org/x/net/context"
 )
 
+const (
+	bqDatasetID   = "raw_events"
+	buildsTableID = "completed_builds_legacy"
+	stepsTableID  = "completed_step_legacy"
+)
+
 // monitoringEventSender is an interface for a concurrency-safe object that can
 // accept event structs.
 //
 // It is designed to match an eventupload.Uploader. However, we use an interface
 // here so we can capture output events for testing.
 type monitoringEventSender interface {
-	Put(context.Context, *tabledef.TableDef, interface{}) error
+	Put(context.Context, string, string, interface{}) error
 }
 
 type bigQueryMonitoringEventSender struct {
@@ -46,8 +51,8 @@ type bigQueryMonitoringEventSender struct {
 	count  int32
 }
 
-func (es *bigQueryMonitoringEventSender) Put(ctx context.Context, td *tabledef.TableDef, event interface{}) error {
-	up := eventupload.NewUploader(ctx, es.client, td)
+func (es *bigQueryMonitoringEventSender) Put(ctx context.Context, datasetID, tableID string, event interface{}) error {
+	up := eventupload.NewUploader(ctx, es.client, datasetID, tableID)
 	up.SkipInvalidRows = true
 	up.IgnoreUnknownValues = true
 	if err := up.Put(ctx, event); err != nil {
@@ -234,7 +239,7 @@ func (m *Monitoring) sendLegacyBuildCompletedEvent(ctx context.Context, es monit
 		}
 	}
 
-	return es.Put(ctx, buildevent.CompletedBuildsLegacyTable, &event)
+	return es.Put(ctx, bqDatasetID, buildsTableID, &event)
 }
 
 func (m *Monitoring) sendLegacyStepCompletedEvents(ctx context.Context, es monitoringEventSender, p *commonMonitoringParams) error {
@@ -258,7 +263,7 @@ func (m *Monitoring) sendLegacyStepCompletedEvents(ctx context.Context, es monit
 		events = append(events, event)
 	})
 
-	return es.Put(ctx, buildevent.CompletedStepLegacyTable, events)
+	return es.Put(ctx, bqDatasetID, stepsTableID, events)
 }
 
 func (m *Monitoring) makeLegacyStepCompletedEvent(ctx context.Context, p *commonMonitoringParams, st *milo.Step) (

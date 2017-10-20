@@ -12,8 +12,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"infra/libs/bqschema/tabledef"
-
 	"cloud.google.com/go/bigquery"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
@@ -40,7 +38,6 @@ type Uploader struct {
 	// provided for reference.
 	DatasetID string
 	TableID   string
-	s         bigquery.Schema
 	// UploadsMetricName is a string used to create a tsmon Counter metric
 	// for event upload attempts via Put, e.g.
 	// "/chrome/infra/commit_queue/events/count". If unset, no metric will
@@ -54,7 +51,7 @@ type Uploader struct {
 
 // NewUploader constructs a new Uploader struct.
 //
-// DatasetID and TableID are provided to the BigQuery client (via TableDef) to
+// DatasetID and TableID are provided to the BigQuery client to
 // gain access to a particular table.
 //
 // You may want to change the default configuration of the bigquery.Uploader.
@@ -62,12 +59,11 @@ type Uploader struct {
 //
 // Set UploadsMetricName on the resulting Uploader to use the default counter
 // metric.
-func NewUploader(ctx context.Context, c *bigquery.Client, td *tabledef.TableDef) *Uploader {
+func NewUploader(ctx context.Context, c *bigquery.Client, datasetID, tableID string) *Uploader {
 	return &Uploader{
-		DatasetID: td.DatasetId,
-		TableID:   td.TableId,
-		Uploader:  c.Dataset(td.DatasetId).Table(td.TableId).Uploader(),
-		s:         tabledef.BQSchema(td.Fields),
+		DatasetID: datasetID,
+		TableID:   tableID,
+		Uploader:  c.Dataset(datasetID).Table(tableID).Uploader(),
 	}
 }
 
@@ -116,7 +112,7 @@ func (u *Uploader) Put(ctx context.Context, src interface{}) error {
 		ctx, c = context.WithTimeout(ctx, time.Minute)
 		defer c()
 	}
-	sss, err := prepareSrc(u.s, src)
+	sss, err := prepareSrc(src)
 	if err != nil {
 		return err
 	}
@@ -157,7 +153,7 @@ func batch(rows []*bigquery.StructSaver, insertLimit int) [][]*bigquery.StructSa
 	return rowSets
 }
 
-func prepareSrc(s bigquery.Schema, src interface{}) ([]*bigquery.StructSaver, error) {
+func prepareSrc(src interface{}) ([]*bigquery.StructSaver, error) {
 
 	validateSingleValue := func(v reflect.Value) error {
 		switch v.Kind() {
@@ -195,14 +191,9 @@ func prepareSrc(s bigquery.Schema, src interface{}) ([]*bigquery.StructSaver, er
 
 	prepared := make([]*bigquery.StructSaver, len(srcs))
 	for i, src := range srcs {
-		// If no schema is supplied explicitly via TableDef, infer it from each
-		// individual element. This inference is cached based on the type.
-		schema := s
-		if len(schema) == 0 {
-			var err error
-			if schema, err = bigquery.InferSchema(src); err != nil {
-				return nil, errors.Annotate(err, "could not infer schema for element #%d (%T)", i, src).Err()
-			}
+		schema, err := bigquery.InferSchema(src)
+		if err != nil {
+			return nil, errors.Annotate(err, "could not infer schema for element #%d (%T)", i, src).Err()
 		}
 
 		prepared[i] = &bigquery.StructSaver{

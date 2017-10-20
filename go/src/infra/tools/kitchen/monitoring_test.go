@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"infra/libs/bqschema/buildevent"
-	"infra/libs/bqschema/tabledef"
 	"infra/tools/kitchen/build"
 
 	"go.chromium.org/luci/common/clock/testclock"
@@ -25,6 +24,8 @@ import (
 
 func TestMonitoring(t *testing.T) {
 	t.Parallel()
+	buildsTableKey := tableKey{datasetID: bqDatasetID, tableID: buildsTableID}
+	stepsTableKey := tableKey{datasetID: bqDatasetID, tableID: stepsTableID}
 
 	Convey(`A test BuildRunResult`, t, func() {
 		ctx := context.Background()
@@ -43,8 +44,8 @@ func TestMonitoring(t *testing.T) {
 			tc.Add(time.Hour)
 			m.endExecution(ctx, &build.BuildRunResult{})
 			So(m.sendReport(ctx, &tmes), ShouldBeNil)
-			So(tmes.events, ShouldResemble, map[*tabledef.TableDef][]interface{}{
-				buildevent.CompletedBuildsLegacyTable: {
+			So(tmes.events, ShouldResemble, localTable{
+				buildsTableKey: {
 					&buildevent.CompletedBuildsLegacy{
 						BuildStartedMsec:   1454501406000,
 						BuildFinishedMsec:  1454505006000,
@@ -55,7 +56,7 @@ func TestMonitoring(t *testing.T) {
 						Kitchen:            &buildevent.CompletedBuildsLegacy_Kitchen{},
 					},
 				},
-				buildevent.CompletedStepLegacyTable: {
+				stepsTableKey: {
 					[]*buildevent.CompletedStepLegacy(nil),
 				},
 			})
@@ -151,8 +152,8 @@ func TestMonitoring(t *testing.T) {
 			})
 
 			So(m.sendReport(ctx, &tmes), ShouldBeNil)
-			So(tmes.events, ShouldResemble, map[*tabledef.TableDef][]interface{}{
-				buildevent.CompletedBuildsLegacyTable: {
+			So(tmes.events, ShouldResemble, localTable{
+				buildsTableKey: {
 					&buildevent.CompletedBuildsLegacy{
 						Master:             "buildbot.master",
 						Builder:            "mybuilder",
@@ -187,7 +188,7 @@ func TestMonitoring(t *testing.T) {
 					},
 				},
 
-				buildevent.CompletedStepLegacyTable: {
+				stepsTableKey: {
 					[]*buildevent.CompletedStepLegacy{
 						{
 							Master:           "buildbot.master",
@@ -255,18 +256,26 @@ func TestMonitoring(t *testing.T) {
 	})
 }
 
-type testMonitoringEventSender struct {
-	sync.Mutex
-	events map[*tabledef.TableDef][]interface{}
+type tableKey struct {
+	datasetID, tableID string
 }
 
-func (es *testMonitoringEventSender) Put(ctx context.Context, td *tabledef.TableDef, event interface{}) error {
+type localTable map[tableKey][]interface{}
+
+type testMonitoringEventSender struct {
+	sync.Mutex
+	events localTable
+}
+
+func (es *testMonitoringEventSender) Put(ctx context.Context, dID, tID string, event interface{}) error {
 	es.Lock()
 	defer es.Unlock()
 
+	tk := tableKey{datasetID: dID, tableID: tID}
+
 	if es.events == nil {
-		es.events = make(map[*tabledef.TableDef][]interface{})
+		es.events = make(localTable)
 	}
-	es.events[td] = append(es.events[td], event)
+	es.events[tk] = append(es.events[tk], event)
 	return nil
 }

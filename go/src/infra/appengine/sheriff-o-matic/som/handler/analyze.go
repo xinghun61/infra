@@ -36,6 +36,9 @@ const (
 	// groupingPoolSize controls the number of goroutines used to creating
 	// groupings when post processing the generated alerts. Has not been tuned.
 	groupingPoolSize = 2
+
+	bqDatasetID = "events"
+	bqTableID   = "alerts"
 )
 
 var (
@@ -331,7 +334,7 @@ func putAlertsBigQuery(c context.Context, tree string, alertsSummary *messages.A
 	if err != nil {
 		return err
 	}
-	up := eventupload.NewUploader(c, client, model.SOMAlertsEventTable)
+	up := eventupload.NewUploader(c, client, bqDatasetID, bqTableID)
 	up.SkipInvalidRows = true
 	up.IgnoreUnknownValues = true
 

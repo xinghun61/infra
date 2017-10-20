@@ -28,6 +28,11 @@ import (
 	"golang.org/x/net/context"
 )
 
+const (
+	bqDatasetID = "events"
+	bqTableID   = "annotations"
+)
+
 // Tree is a tree which sheriff-o-matic receives and groups alerts for.
 type Tree struct {
 	Name           string   `gae:"$id" json:"name"`
@@ -308,7 +313,7 @@ func writeAnnotationEvent(c context.Context, evt *SOMAnnotationEvent) error {
 	if err != nil {
 		return err
 	}
-	up := eventupload.NewUploader(c, client, SOMAnnotationEventTable)
+	up := eventupload.NewUploader(c, client, bqDatasetID, bqTableID)
 	up.SkipInvalidRows = true
 	up.IgnoreUnknownValues = true
 

@@ -322,7 +322,7 @@ func sendEventToBigQuery(c context.Context, tre *model.TestResultEvent) error {
 	if err != nil {
 		return err
 	}
-	up := eventupload.NewUploader(c, client, model.TestResultEventTable)
+	up := eventupload.NewUploader(c, client, "raw_events", "test_results")
 	up.SkipInvalidRows = true
 	up.IgnoreUnknownValues = true
 	return up.Put(c, tre)
@@ -338,7 +338,7 @@ func sendEventsToBigQuery(c context.Context, tres []*TestResultEvent) error {
 	if err != nil {
 		return err
 	}
-	up := eventupload.NewUploader(c, client, TestResultEventTable)
+	up := eventupload.NewUploader(c, client, "flakiness", "test_results")
 	up.SkipInvalidRows = true
 	up.IgnoreUnknownValues = true
 	return up.Put(c, tres)
