@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 from . import gcloud as tpp_gcloud
+from . import gsutil as tpp_gsutil
 from . import git as tpp_git
 from . import python as tpp_python
 from . import ninja as tpp_ninja
@@ -18,6 +19,10 @@ class ThirdPartyPackagesTestApi(recipe_test_api.RecipeTestApi):
   @property
   def gcloud(self):
     return tpp_gcloud
+
+  @property
+  def gsutil(self):
+    return tpp_gsutil
 
   @property
   def git(self):

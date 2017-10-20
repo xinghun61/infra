@@ -34,6 +34,8 @@ def RunSteps(api, dry_run):
       api.third_party_packages.git.package()
     with api.step.nest('gcloud'):
       api.third_party_packages.gcloud.package()
+    with api.step.nest('gsutil'):
+      api.third_party_packages.gsutil.package()
     with api.step.nest('ninja'):
       api.third_party_packages.ninja.package()
     with api.step.nest('cmake'):
@@ -76,6 +78,10 @@ def GenTests(api):
           'platform': platform,
         },
         '1.2.3' + api.third_party_packages.gcloud.PACKAGE_VERSION_SUFFIX) +
+      cipd_search(
+        'gsutil',
+        api.third_party_packages.gsutil.PACKAGE_NAME,
+        '4.21' + api.third_party_packages.gsutil.PACKAGE_VERSION_SUFFIX) +
       api.step_data('ninja.refs',
         api.gitiles.make_refs_test_data('refs/tags/v1.7.2')) +
       cipd_search(
