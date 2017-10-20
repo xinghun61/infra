@@ -3,10 +3,7 @@
   'source_url': 'https://webrtc.googlesource.com/src',
   'status_url': 'https://webrtc-status.appspot.com',
   'allowed_lag': 3,
-  'error_recipients': (
-    'phoglund@google.com,'
-    'kjellander@google.com,'
-    'ehmaldonado@google.com'),
+  'error_recipients': 'webrtc-troopers-robots@google.com',
   'masters': {
     'chromium.webrtc.fyi': {
       'base_url': 'https://build.chromium.org/p/chromium.webrtc.fyi',
