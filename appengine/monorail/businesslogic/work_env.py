@@ -401,7 +401,17 @@ class WorkEnv(object):
     return issue
 
   # FUTURE: UpdateIssue()
-  # FUTURE: DeleteIssue()
+  # Change serices and helpers to create IssueDelta object that like a better
+  # amendments representation.  Then, make the only update operation be
+  # ApplyIssueDelta(self, issue_id, delta, comment).
+
+  def DeleteIssue(self, issue, delete):
+    """Mark or unmark the given issue as deleted."""
+    with self.mr.profiler.Phase('Marking issue %r deleted' % (issue.issue_id)):
+      self.services.issue.SoftDeleteIssue(
+          self.mr.cnxn, issue.project_id, issue.local_id, delete,
+          self.services.user)
+
   # FUTURE: GetIssuePermissionsForUser()
 
   # FUTURE: CreateComment()
@@ -415,7 +425,14 @@ class WorkEnv(object):
     return comments
 
   # FUTURE: UpdateComment()
-  # FUTURE: DeleteComment()
+
+  def DeleteComment(self, issue, comment, delete):
+    """Mark or unmark a comment as deleted by the current user."""
+    with self.mr.profiler.Phase(
+        'deleting issue %r comment %r' % (issue.issue_id, comment.id)):
+      self.services.issue.SoftDeleteComment(
+          self.mr.cnxn, issue, comment, self.mr.auth.user_id,
+          self.services.user, delete=delete)
 
   # FUTURE: StarIssue()
   # FUTURE: IsIssueStarred()

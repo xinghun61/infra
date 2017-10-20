@@ -87,20 +87,9 @@ class BanSpammerTask(jsonfeed.InternalTask):
     comments = self.services.issue.GetCommentsByUser(mr.cnxn, spammer_id)
 
     for comment in comments:
-      all_comments = self.services.issue.GetCommentsForIssue(mr.cnxn,
-        comment.issue_id)
-      sequence_num = -1
-      for c in all_comments:
-        if c.id == comment.id:
-          sequence_num = c.sequence
-      if sequence_num == 0:
-        # IssueComment 0 should already be counted as spam/ham in the previous
-        # step where we marked the whole issue as spam/ham.
-        continue
-
       self.services.spam.RecordManualCommentVerdict(mr.cnxn,
             self.services.issue, self.services.user, comment.id,
-            sequence_num, reporter_id, is_spammer)
+            reporter_id, is_spammer)
 
     self.response.body = json.dumps({
       'comments': len(comments),

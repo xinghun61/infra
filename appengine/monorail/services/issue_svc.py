@@ -1655,10 +1655,9 @@ class IssueService(object):
           cnxn, [issue], services.user, self, self._config_service)
 
     if is_spam:
-      sequence_num = len(self.GetCommentsForIssue(cnxn, issue.issue_id)) - 1
       # Soft-deletes have to have a user ID, so spam comments are
       # just "deleted" by the commenter.
-      self.SoftDeleteComment(cnxn, project_id, local_id, sequence_num,
+      self.SoftDeleteComment(cnxn, issue, comment_pb,
           reporter_id, services.user, is_spam=True)
     return amendments, comment_pb
 
@@ -2358,20 +2357,9 @@ class IssueService(object):
     return comment
 
   def SoftDeleteComment(
-      self, cnxn, project_id, local_id, sequence_num, deleted_by_user_id,
+      self, cnxn, issue, issue_comment, deleted_by_user_id,
       user_service, delete=True, reindex=True, is_spam=False):
     """Mark comment as un/deleted, which shows/hides it from average users."""
-    issue = self.GetIssueByLocalID(cnxn, project_id, local_id, use_cache=False)
-
-    all_comments = self.GetCommentsForIssue(cnxn, issue.issue_id)
-    try:
-      issue_comment = all_comments[sequence_num]
-    except IndexError:
-      logging.warning(
-          'Tried to (un)delete non-existent comment #%s in issue %s:%s',
-          sequence_num, project_id, local_id)
-      return
-
     # Update number of attachments
     attachments = 0
     if issue_comment.attachments:

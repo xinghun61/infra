@@ -13,6 +13,7 @@ from google.appengine.ext import testbed
 from businesslogic import work_env
 from framework import exceptions
 from proto import project_pb2
+from proto import tracker_pb2
 from services import issue_svc
 from services import project_svc
 from services import service_manager
@@ -298,7 +299,18 @@ class WorkEnvTest(unittest.TestCase):
         _actual = we.GetIssueByLocalID(789, 1)
 
   # FUTURE: UpdateIssue()
-  # FUTURE: DeleteIssue()
+
+  def testDeleteIssue(self):
+    """We can mark and unmark an issue as deleted."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    with self.work_env as we:
+      _actual = we.DeleteIssue(issue, True)
+    self.assertTrue(issue.deleted)
+    with self.work_env as we:
+      _actual = we.DeleteIssue(issue, False)
+    self.assertFalse(issue.deleted)
+
   # FUTURE: GetIssuePermissionsForUser()
 
   # FUTURE: CreateComment()
@@ -307,15 +319,34 @@ class WorkEnvTest(unittest.TestCase):
     """We can get an existing issue by project_id and local_id."""
     issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='more info', user_id=111L,
+        issue_id=issue.issue_id)
+    self.services.issue.TestAddComment(comment, 1)
 
     with self.work_env as we:
-      actual = we.GetIssueByLocalID(789, 1)
+      actual_comments = we.ListIssueComments(issue)
 
-    self.assertEqual(issue, actual)
-
+    self.assertEqual(2, len(actual_comments))
+    self.assertEqual('sum', actual_comments[0].content)
+    self.assertEqual('more info', actual_comments[1].content)
 
   # FUTURE: UpdateComment()
-  # FUTURE: DeleteComment()
+
+  def testDeleteComment_Normal(self):
+    """We can mark and unmark a comment as deleted."""
+    self.SignIn(user_id=111L)
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    comment = tracker_pb2.IssueComment(
+        project_id=789, content='soon to be deleted', user_id=111L,
+        issue_id=issue.issue_id)
+    self.services.issue.TestAddComment(comment, 1)
+    with self.work_env as we:
+      we.DeleteComment(issue, comment, True)
+      self.assertEqual(111L, comment.deleted_by)
+      we.DeleteComment(issue, comment, False)
+      self.assertEqual(None, comment.deleted_by)
 
   # FUTURE: StarIssue()
   # FUTURE: IsIssueStarred()

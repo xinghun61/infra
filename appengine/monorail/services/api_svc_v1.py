@@ -314,29 +314,27 @@ class MonorailApi(remote.Service):
     mar = self.mar_factory(request)
     action_name = 'delete' if delete else 'undelete'
 
-    issue = self._services.issue.GetIssueByLocalID(
-        mar.cnxn, mar.project_id, request.issueId)
-    all_comments = self._services.issue.GetCommentsForIssue(
-        mar.cnxn, issue.issue_id)
-    try:
-      issue_comment = all_comments[request.commentId]
-    except IndexError:
-      raise issue_svc.NoSuchIssueException(
-            'The issue %s:%d does not have comment %d.' %
-            (mar.project_name, request.issueId, request.commentId))
+    with work_env.WorkEnv(mar, self._services) as we:
+      issue = we.GetIssueByLocalID(
+          mar.project_id, request.issueId, use_cache=False)
+      all_comments = we.ListIssueComments(issue)
+      try:
+        issue_comment = all_comments[request.commentId]
+      except IndexError:
+        raise issue_svc.NoSuchIssueException(
+              'The issue %s:%d does not have comment %d.' %
+              (mar.project_name, request.issueId, request.commentId))
 
-    if not permissions.CanDelete(
-        mar.auth.user_id, mar.auth.effective_ids, mar.perms,
-        issue_comment.deleted_by, issue_comment.user_id, mar.project,
-        permissions.GetRestrictions(issue), mar.granted_perms):
-      raise permissions.PermissionException(
-            'User is not allowed to %s the comment %d of issue %s:%d' %
-            (action_name, request.commentId, mar.project_name,
-             request.issueId))
+      if not permissions.CanDelete(
+          mar.auth.user_id, mar.auth.effective_ids, mar.perms,
+          issue_comment.deleted_by, issue_comment.user_id, mar.project,
+          permissions.GetRestrictions(issue), mar.granted_perms):
+        raise permissions.PermissionException(
+              'User is not allowed to %s the comment %d of issue %s:%d' %
+              (action_name, request.commentId, mar.project_name,
+               request.issueId))
 
-    self._services.issue.SoftDeleteComment(
-        mar.cnxn, mar.project_id, request.issueId, request.commentId,
-        mar.auth.user_id, self._services.user, delete=delete)
+      we.DeleteComment(issue, issue_comment, delete=delete)
     return api_pb2_v1.IssuesCommentsDeleteResponse()
 
   def increment_request_limit(self, request, client_id, client_email):

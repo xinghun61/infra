@@ -66,7 +66,7 @@ class FlagSpamForm(servlet.Servlet):
       if perms.VerdictSpam:
         self.services.spam.RecordManualCommentVerdict(mr.cnxn,
             self.services.issue, self.services.user, comment_id,
-            int(post_data['sequence_num']), mr.auth.user_id, flagged_spam)
+            mr.auth.user_id, flagged_spam)
 
       self.services.spam.FlagComment(mr.cnxn, issue.issue_id, comment.id,
           comment.user_id, mr.auth.user_id, flagged_spam)

@@ -1551,24 +1551,13 @@ class IssueService(object):
     issue.deleted = deleted
 
   def SoftDeleteComment(
-      self, cnxn, project_id, local_id, sequence_num,
-      deleted_by_user_id, user_service, delete=True, reindex=True,
-      is_spam=False):
-    issue = self.GetIssueByLocalID(cnxn, project_id, local_id)
-    comments = self.GetCommentsForIssue(cnxn, issue.issue_id)
-    if not comments:
-      raise Exception(
-          'No comments for issue, project, seq (%s, %s, %s), cannot delete'
-          % (local_id, project_id, sequence_num))
-    if len(comments) < sequence_num:
-      raise Exception(
-          'Attempting to delete comment %s only %s comments created' %
-          (sequence_num, len(comments)))
-    comments[sequence_num].is_spam = is_spam
+      self, cnxn, issue, comment, deleted_by_user_id, user_service,
+      delete=True, reindex=True, is_spam=False):
+    comment.is_spam = is_spam
     if delete:
-      comments[sequence_num].deleted_by = deleted_by_user_id
+      comment.deleted_by = deleted_by_user_id
     else:
-      comments[sequence_num].reset('deleted_by')
+      comment.reset('deleted_by')
 
   def DeleteComponentReferences(self, _cnxn, component_id):
     for _, issue in self.issues_by_iid.iteritems():
@@ -1629,7 +1618,7 @@ class SpamService(object):
 
   def RecordManualCommentVerdict(
       self, cnxn, issue_service, user_service, comment_id,
-      sequnce_num, user_id, is_spam):
+      user_id, is_spam):
     self.manual_verdicts_by_comment_id[comment_id][user_id] = is_spam
 
   def RecordClassifierIssueVerdict(self, cnxn, issue, is_spam, confidence,

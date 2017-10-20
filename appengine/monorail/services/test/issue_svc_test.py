@@ -892,10 +892,8 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, 789, 1, use_cache=False).AndReturn(issue)
     self.services.issue.UpdateIssues(self.cnxn, [issue],
         just_derived=False, update_cols=None, commit=True, invalidate=True)
-    self.services.issue.GetCommentsForIssue(self.cnxn,
-        issue.issue_id).AndReturn([""])
     self.services.issue.SoftDeleteComment(self.cnxn,
-        issue.project_id, issue.local_id, 0, issue.reporter_id,
+        issue, mox.IsA(tracker_pb2.IssueComment), issue.reporter_id,
         self.services.user, is_spam=True)
     self.services.spam.ClassifyComment(
         'comment text', self.reporter, False).AndReturn(
@@ -1381,17 +1379,21 @@ class IssueServiceTest(unittest.TestCase):
     self.assertTrue(comment.is_spam)
 
   def testSoftDeleteComment(self):
+    """Deleting a comment with an attachment marks it and updates count."""
     issue_1, issue_2 = self.SetUpGetIssues()
     self.services.issue.issue_2lc = TestableIssueTwoLevelCache(
         [issue_1, issue_2])
     issue_1.attachment_count = 1
+    issue_1.assume_stale = False
+    comment = tracker_pb2.IssueComment(id=7890101)
+    comment.attachments = [tracker_pb2.Attachment()]
     self.services.issue.issue_id_2lc.CacheItem((789, 1), 78901)
-    self.SetUpGetComments([78901])
-    self.SetUpUpdateComment(79901, delta={'deleted_by': 222L, 'is_spam': False})
+    self.SetUpUpdateComment(
+        comment.id, delta={'deleted_by': 222L, 'is_spam': False})
     self.SetUpUpdateIssues(given_delta={'attachment_count': 0})
     self.mox.ReplayAll()
     self.services.issue.SoftDeleteComment(
-        self.cnxn, 789, 1, 0, 222L, self.services.user)
+        self.cnxn, issue_1, comment, 222L, self.services.user)
     self.mox.VerifyAll()
 
   ### Attachments

@@ -259,17 +259,16 @@ class SpamService(object):
     issue_service.UpdateIssues(cnxn, issues, update_cols=['is_spam'])
 
   def RecordManualCommentVerdict(self, cnxn, issue_service, user_service,
-        comment_id, sequence_num, user_id, is_spam):
+        comment_id, user_id, is_spam):
     # TODO(seanmccullough): Bulk comment verdicts? There's no UI for that.
     self.verdict_tbl.InsertRow(cnxn, ignore=True,
       user_id=user_id, comment_id=comment_id, is_spam=is_spam,
       reason=REASON_MANUAL)
     comment = issue_service.GetComment(cnxn, comment_id)
     comment.is_spam = is_spam
-    issue = issue_service.GetIssue(cnxn, comment.issue_id)
-    issue_service.SoftDeleteComment(cnxn, comment.project_id, issue.local_id,
-                                    sequence_num, user_id, user_service,
-                                    is_spam, True, is_spam)
+    issue = issue_service.GetIssue(cnxn, comment.issue_id, use_cache=False)
+    issue_service.SoftDeleteComment(
+        cnxn, issue, comment, user_id, user_service, is_spam, True, is_spam)
     if is_spam:
       self.comment_actions.increment({'type': 'manual'})
 

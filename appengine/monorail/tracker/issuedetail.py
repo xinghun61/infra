@@ -1268,28 +1268,26 @@ class IssueCommentDeletion(servlet.Servlet):
     delete = (post_data['mode'] == '1')
     hotlist_id = post_data.get('hotlist_id', None)
 
-    issue = self.services.issue.GetIssueByLocalID(
-        mr.cnxn, mr.project_id, local_id)
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+    with work_env.WorkEnv(mr, self.services) as we:
+      issue = we.GetIssueByLocalID(mr.project_id, local_id, use_cache=False)
+      config = we.GetProjectConfig(mr.project_id)
 
-    all_comments = self.services.issue.GetCommentsForIssue(
-        mr.cnxn, issue.issue_id)
-    logging.info('comments on %s are: %s', local_id, all_comments)
-    comment = all_comments[sequence_num]
+      all_comments = we.ListIssueComments(issue)
+      logging.info('comments on %s are: %s', local_id, all_comments)
+      comment = all_comments[sequence_num]
 
-    granted_perms = tracker_bizobj.GetGrantedPerms(
-        issue, mr.auth.effective_ids, config)
+      granted_perms = tracker_bizobj.GetGrantedPerms(
+          issue, mr.auth.effective_ids, config)
 
-    if ((comment.is_spam and mr.auth.user_id == comment.user_id) or
-        not permissions.CanDelete(
-        mr.auth.user_id, mr.auth.effective_ids, mr.perms,
-        comment.deleted_by, comment.user_id, mr.project,
-        permissions.GetRestrictions(issue), granted_perms=granted_perms)):
-      raise permissions.PermissionException('Cannot delete comment')
+      if ((comment.is_spam and mr.auth.user_id == comment.user_id) or
+          not permissions.CanDelete(
+          mr.auth.user_id, mr.auth.effective_ids, mr.perms,
+          comment.deleted_by, comment.user_id, mr.project,
+          permissions.GetRestrictions(issue), granted_perms=granted_perms)):
+        raise permissions.PermissionException('Cannot delete comment')
 
-    self.services.issue.SoftDeleteComment(
-        mr.cnxn, mr.project_id, local_id, sequence_num,
-        mr.auth.user_id, self.services.user, delete=delete)
+      we.DeleteComment(issue, comment, delete)
+
     kwargs = {'id': local_id}
     if hotlist_id:
       kwargs['hotlist_id'] = hotlist_id
@@ -1319,18 +1317,16 @@ class IssueDeleteForm(servlet.Servlet):
     delete = 'delete' in post_data
     logging.info('Marking issue %d as deleted: %r', local_id, delete)
 
-    issue = self.services.issue.GetIssueByLocalID(
-        mr.cnxn, mr.project_id, local_id)
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    granted_perms = tracker_bizobj.GetGrantedPerms(
-        issue, mr.auth.effective_ids, config)
-    permit_delete = self.CheckPerm(
-        mr, permissions.DELETE_ISSUE, art=issue, granted_perms=granted_perms)
-    if not permit_delete:
-      raise permissions.PermissionException('Cannot un/delete issue')
-
-    self.services.issue.SoftDeleteIssue(
-        mr.cnxn, mr.project_id, local_id, delete, self.services.user)
+    with work_env.WorkEnv(mr, self.services) as we:
+      issue = we.GetIssueByLocalID(mr.project_id, local_id)
+      config = we.GetProjectConfig(mr.project_id)
+      granted_perms = tracker_bizobj.GetGrantedPerms(
+          issue, mr.auth.effective_ids, config)
+      permit_delete = self.CheckPerm(
+          mr, permissions.DELETE_ISSUE, art=issue, granted_perms=granted_perms)
+      if not permit_delete:
+        raise permissions.PermissionException('Cannot un/delete issue')
+      we.DeleteIssue(issue, delete)
 
     return framework_helpers.FormatAbsoluteURL(
         mr, urls.ISSUE_DETAIL, id=local_id)
