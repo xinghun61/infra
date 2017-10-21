@@ -70,9 +70,7 @@ func parseFlags() (*flags, error) {
 	var f flags
 	flag.BoolVar(&f.dryRun, "dry-run", false, "Only performs non-mutating operations; logs what would happen otherwise")
 
-	flag.StringVar(&f.ProjectID, "project", infraenv.ChromeInfraEventsProject, "Cloud project that the table belongs to.")
-	flag.StringVar(&f.DataSetID, "dataset", "", "Dataset ID of the table")
-	flag.StringVar(&f.TableID, "table", "", "ID of the table")
+	table := flag.String("table", "", `Table name with format "<project id>.<dataset id>.<table id>"`)
 	flag.StringVar(&f.FriendlyName, "friendly-name", "", "Friendly name for the table")
 	flag.BoolVar(&f.PartitioningDisabled, "disable-partitioning", false, "Makes the table not time-partitioned")
 	flag.DurationVar(&f.PartitioningExpiration, "partition-expiration", 0, "Expiration for partitions. 0 for no expiration.")
@@ -87,17 +85,20 @@ func parseFlags() (*flags, error) {
 	switch {
 	case len(flag.Args()) > 0:
 		return nil, fmt.Errorf("unexpected arguments: %q", flag.Args())
-	case f.ProjectID == "":
-		return nil, fmt.Errorf("-project is required")
-	case f.DataSetID == "":
-		return nil, fmt.Errorf("-dataset is required")
-	case f.TableID == "":
+	case *table == "":
 		return nil, fmt.Errorf("-table is required")
 	case f.messageName == "":
 		return nil, fmt.Errorf("-message is required")
-	default:
-		return &f, nil
 	}
+	if parts := strings.Split(*table, "."); len(parts) == 3 {
+		f.ProjectID = parts[0]
+		f.DataSetID = parts[1]
+		f.TableID = parts[2]
+	} else {
+		return nil, fmt.Errorf("expected exactly 2 dots in table name %q", *table)
+	}
+
+	return &f, nil
 }
 
 func run(ctx context.Context) error {
