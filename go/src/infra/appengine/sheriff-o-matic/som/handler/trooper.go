@@ -55,7 +55,6 @@ func getTrooperAlerts(c context.Context) ([]byte, error) {
 	for _, t := range trees {
 		q := datastore.NewQuery("AlertJSON")
 		name := t.Name
-		name = "milo." + name
 
 		q = q.Ancestor(datastore.MakeKey(c, "Tree", name))
 		q = q.Eq("Resolved", false)

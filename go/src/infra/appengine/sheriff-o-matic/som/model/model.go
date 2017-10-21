@@ -39,14 +39,6 @@ type Tree struct {
 	GerritInstance string   `json:"gerrit_instance,omitempty"`
 }
 
-// AlertsJSON is the JSON blob of alerts for a tree.
-type AlertsJSON struct {
-	ID       int64          `gae:"$id" json:"-"`
-	Tree     *datastore.Key `gae:"$parent"`
-	Date     time.Time
-	Contents []byte `gae:",noindex"`
-}
-
 // AlertJSON is the JSON blob of an alert for a tree.
 type AlertJSON struct {
 	ID           string         `gae:"$id" json:"-"`

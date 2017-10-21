@@ -323,8 +323,7 @@ func storeAlertsSummary(c context.Context, a *analyzer.Analyzer, tree string, al
 	}
 	alertsSummary.Timestamp = messages.TimeToEpochTime(time.Now())
 
-	// TODO(seanmccullough): remove "milo." prefix.
-	return putAlertsDatastore(c, "milo."+tree, alertsSummary, true)
+	return putAlertsDatastore(c, tree, alertsSummary, true)
 }
 
 func putAlertsBigQuery(c context.Context, tree string, alertsSummary *messages.AlertsSummary) error {

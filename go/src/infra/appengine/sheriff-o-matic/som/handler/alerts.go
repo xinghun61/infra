@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"time"
 
 	"golang.org/x/net/context"
@@ -47,7 +46,7 @@ func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) {
 
 	tree := p.ByName("tree")
 
-	if tree == "trooper" || tree == "milo.trooper" {
+	if tree == "trooper" {
 		data, err := getTrooperAlerts(c)
 		if err != nil {
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
@@ -57,12 +56,6 @@ func GetAlerts(ctx *router.Context, unresolved bool, resolved bool) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Write(data)
 		return
-	}
-
-	// This should be removed at some point, once the cron analyzers are modified
-	// to write to tree and not milo.tree.
-	if !strings.HasPrefix(tree, "chromeos") && tree != "gardener" {
-		tree = "milo." + tree
 	}
 
 	var q *datastore.Query

@@ -64,16 +64,6 @@ func TestMain(t *testing.T) {
 		tok, err := xsrf.Token(c)
 		So(err, ShouldBeNil)
 		Convey("/api/v1", func() {
-			alertsIdx := datastore.IndexDefinition{
-				Kind:     "AlertsJSON",
-				Ancestor: true,
-				SortBy: []datastore.IndexColumn{
-					{
-						Property:   "Date",
-						Descending: true,
-					},
-				},
-			}
 			alertIdx := datastore.IndexDefinition{
 				Kind:     "AlertJSON",
 				Ancestor: true,
@@ -97,7 +87,7 @@ func TestMain(t *testing.T) {
 					},
 				},
 			}
-			indexes := []*datastore.IndexDefinition{&alertsIdx, &alertIdx, &revisionSummaryIdx}
+			indexes := []*datastore.IndexDefinition{&alertIdx, &revisionSummaryIdx}
 			datastore.GetTestable(c).AddIndexes(indexes...)
 
 			Convey("GetTrees", func() {
@@ -252,7 +242,7 @@ func TestMain(t *testing.T) {
 
 						datastore.Put(c, &model.AlertJSON{
 							ID:       "1",
-							Tree:     datastore.MakeKey(c, "Tree", "milo.chromium"),
+							Tree:     datastore.MakeKey(c, "Tree", "chromium"),
 							Date:     time.Unix(1, 0).UTC(),
 							Contents: asBytes,
 						})

@@ -529,7 +529,7 @@ func TestBuilderStepAlerts(t *testing.T) {
 				name:         "one build failure with findit",
 				master:       "fake.master",
 				builder:      "fake.builder",
-				tree:         "milo.chromium",
+				tree:         "chromium",
 				recentBuilds: []int64{0},
 				testData: analyzertest.NewBuilderFaker("fake.master", "fake.builder").
 					Build(0).Times(0, 1).IncludeChanges("http://test", "refs/heads/master@{#291569}").

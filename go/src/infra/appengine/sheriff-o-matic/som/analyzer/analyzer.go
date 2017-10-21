@@ -457,7 +457,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 	// time we would need to check multiple builds is for official builds, which
 	// right now are internal and not supported by findit.
 	finditResults := []*messages.FinditResult{}
-	if tree == "chromium" || tree == "milo.chromium" {
+	if tree == "chromium" {
 		finditResults, err = client.Findit(ctx, master, builderName, latestBuild, stepNames)
 		if err != nil {
 			logging.Errorf(ctx, "while getting findit results for build: %s", err)
@@ -504,7 +504,7 @@ func (a *Analyzer) builderStepAlerts(ctx context.Context, tree string, master *m
 						stepNames[i] = f.Step.Name
 					}
 
-					if tree == "chromium" || tree == "milo.chromium" {
+					if tree == "chromium" {
 						f, err := client.Findit(ctx, master, builderName, buildNum, stepNames)
 						if err != nil {
 							logging.Errorf(ctx, "while getting findit results for build: %s", err)
