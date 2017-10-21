@@ -7,15 +7,15 @@ import json
 import logging
 
 from google.appengine.api import taskqueue
-
+from google.appengine.ext import ndb
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
+import endpoints
 
 from components import auth
 from components import utils
 import gae_ts_mon
-import endpoints
 
 import acl
 import api_common
@@ -152,7 +152,13 @@ def buildbucket_api_method(
     ts_mon_time = lambda: utils.datetime_to_timestamp(utils.utcnow()) / 1e6
     fn = gae_ts_mon.instrument_endpoint(time_fn=ts_mon_time)(fn)
 
-    return fn
+    # ndb.toplevel must be the last one.
+    # We use it because codebase uses the following pattern:
+    #   results = [f.get_result() for f in futures]
+    # without ndb.Future.wait_all.
+    # If a future has an exception, get_result won't be called successive
+    # futures, and thus may be left running.
+    return ndb.toplevel(fn)
 
   return decorator
 

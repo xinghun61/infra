@@ -3,20 +3,16 @@
 # found in the LICENSE file.
 
 import json
-import hashlib
-import urllib
 
-from google.appengine.api import memcache
 from google.appengine.ext import ndb
 from protorpc import messages
 from protorpc import message_types
 from protorpc import remote
+import endpoints
 
 from components import auth
-from components import net
 from components import utils
 import gae_ts_mon
-import endpoints
 
 from . import swarming
 import acl
@@ -39,7 +35,9 @@ def swarmbucket_api_method(
 
     ts_mon_time = lambda: utils.datetime_to_timestamp(utils.utcnow()) / 1e6
     fn = gae_ts_mon.instrument_endpoint(time_fn=ts_mon_time)(fn)
-    return fn
+    # ndb.toplevel must be the last one.
+    # See also the comment in endpoint decorator in api.py
+    return ndb.toplevel(fn)
 
   return decorator
 
