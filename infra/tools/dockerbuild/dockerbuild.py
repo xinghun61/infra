@@ -11,6 +11,7 @@ import sys
 
 from . import cipd
 from . import dockcross
+from . import markdown
 from . import platform
 from . import runtime
 from . import source
@@ -77,7 +78,7 @@ def _main_wheel_build(args, system):
     seen = set()
     for plat in platforms:
       w = build.wheel(system, plat)
-      package = w.cipd_package
+      package = w.cipd_package()
       if package in seen:
         continue
       seen.add(package)
@@ -106,6 +107,23 @@ def _main_wheel_build(args, system):
 
       util.LOGGER.info('Uploading CIPD package for: %s', package)
       system.cipd.register_package(pkg_path, *package.tags)
+
+
+def _main_wheel_dump(args, system):
+  try:
+    md = markdown.Generator()
+    for build in wheel.SPECS.itervalues():
+      for plat in platform.ALL.itervalues():
+        if not build.supported(plat):
+          continue
+        w = build.wheel(system, plat)
+        if w.spec.universal:
+          plat = None
+        md.add_package(w, plat)
+
+    md.write(args.output)
+  finally:
+    args.output.close()
 
 
 def _main_run(args, system):
@@ -182,6 +200,14 @@ def add_argparse_options(parser):
   subparser.add_argument('--upload', action='store_true',
       help='Upload any missing CIPD packages.')
   subparser.set_defaults(func=_main_wheel_build)
+
+  # Subcommand: wheel-dump
+  subparser = subparsers.add_parser('wheel-dump',
+      help='Dumps a markdown-compatible set of generated wheels.')
+  subparser.add_argument('--output',
+      type=argparse.FileType('w'), default=markdown.DEFAULT_PATH,
+      help='Path to write the markdown file.')
+  subparser.set_defaults(func=_main_wheel_dump)
 
   # Subcommand: run
   subparser = subparsers.add_parser('run',

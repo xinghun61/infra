@@ -84,16 +84,17 @@ class Wheel(_Wheel):
   def path(self, system):
     return os.path.join(system.wheel_dir, self.filename)
 
-  @property
-  def cipd_package(self):
-    base_path = ('infra', 'python', 'wheels')
+  def cipd_package(self, templated=False):
+    base_path = ['infra', 'python', 'wheels']
     if self.spec.universal:
-      base_path += ('%s-%s' % (self.spec.name, self.pyversion_str),)
+      base_path += ['%s-%s' % (self.spec.name, self.pyversion_str)]
     else:
-      base_path += (
-          self.spec.name,
-          '%s_%s_%s' % (self.plat.cipd_platform, self.pyversion_str, self.abi),
-      )
+      base_path += [self.spec.name]
+      if not templated:
+        base_path += [
+          '%s_%s_%s' % (self.plat.cipd_platform, self.pyversion_str, self.abi)]
+      else:
+        base_path += ['${vpython_platform}']
 
     tags = [
       'version:%s' % (self.spec.version,),
@@ -166,10 +167,15 @@ class Builder(object):
         filename=plat_wheel.default_filename(),
     )
 
+  def supported(self, plat):
+    if self._only_plat and plat.name not in self._only_plat:
+      return False
+    if plat.name in self._skip_plat:
+      return False
+    return True
+
   def build(self, wheel, system, rebuild=False):
-    if self._only_plat and wheel.plat.name not in self._only_plat:
-      raise PlatformNotSupported()
-    if wheel.plat.name in self._skip_plat:
+    if not self.supported(wheel.plat):
       raise PlatformNotSupported()
 
     pkg_path = os.path.join(system.pkg_dir, '%s.pkg' % (wheel.filename,))
@@ -188,7 +194,7 @@ class Builder(object):
     util.LOGGER.info('Creating CIPD package: %r => %r', wheel_path, pkg_path)
     with system.temp_subdir('cipd_%s_%s' % wheel.spec.tuple) as tdir:
       shutil.copy(wheel_path, tdir)
-      system.cipd.create_package(wheel.cipd_package, tdir, pkg_path)
+      system.cipd.create_package(wheel.cipd_package(), tdir, pkg_path)
 
     return pkg_path
 
