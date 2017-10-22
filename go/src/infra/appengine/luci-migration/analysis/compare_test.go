@@ -19,14 +19,15 @@ import (
 	"testing"
 	"time"
 
-	"infra/appengine/luci-migration/bbutil"
+	"go.chromium.org/luci/buildbucket"
+
 	"infra/appengine/luci-migration/storage"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-const success = bbutil.ResultSuccess
-const failure = bbutil.ResultFailure
+const success = buildbucket.StatusSuccess
+const failure = buildbucket.StatusFailure
 
 func TestCompare(t *testing.T) {
 	t.Parallel()

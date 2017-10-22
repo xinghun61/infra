@@ -17,7 +17,6 @@ package analysis
 import (
 	"time"
 
-	"infra/appengine/luci-migration/bbutil"
 	"infra/appengine/luci-migration/storage"
 )
 
@@ -85,7 +84,7 @@ func compare(groups []*group, minCorrectnessGroups int, currentStatus storage.Mi
 			comp.AvgTimeDeltaGroups++
 		}
 		for _, b := range g.Buildbot {
-			if d := bbutil.RunDuration(b); d > 0 {
+			if d, finished := b.RunDuration(); finished {
 				avgBuildbotTimeSecs += d.Seconds()
 				buildbotBuilds++
 			}

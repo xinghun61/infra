@@ -215,7 +215,13 @@ func handleBuildbucketPubSub(c *router.Context) error {
 	}
 	bb.BasePath = fmt.Sprintf("https://%s/api/buildbucket/v1/", msg.Hostname)
 
-	return scheduling.HandleNotification(c.Context, &msg.Build, bb)
+	var b scheduling.Build
+	b.ParametersJSON = msg.Build.ParametersJson
+	b.Output.Properties = &scheduling.OutputProperties{}
+	if err := b.ParseMessage(&msg.Build); err != nil {
+		return err
+	}
+	return scheduling.HandleNotification(c.Context, &b, bb)
 }
 
 func init() {

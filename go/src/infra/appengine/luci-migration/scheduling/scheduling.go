@@ -36,12 +36,13 @@ import (
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/memcache"
-	"go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
+	"go.chromium.org/luci/buildbucket"
+	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
+	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/retry/transient"
 
-	"infra/appengine/luci-migration/bbutil"
 	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 )
@@ -51,13 +52,27 @@ const (
 	buildbotBuildIDTagKey = "luci_migration_buildbot_build_id"
 )
 
+// Build is buildbucket.Build plus
+// original ParametersJSON.
+type Build struct {
+	buildbucket.Build
+	ParametersJSON string // original ParametersJSON
+}
+
+// OutputProperties is used for parsing Build.Output.Properties.
+type OutputProperties struct {
+	GotRevision string `json:"got_revision"`
+}
+
 // HandleNotification retries builds on LUCI.
-func HandleNotification(c context.Context, build *buildbucket.ApiCommonBuildMessage, bbService *buildbucket.Service) error {
+func HandleNotification(c context.Context, build *Build, bbService *bbapi.Service) error {
 	switch {
-	case build.Status == bbutil.StatusCompleted && strings.HasPrefix(build.Bucket, "master."):
+	case build.Status.Completed() && strings.HasPrefix(build.Bucket, "master."):
 		return handleCompletedBuildbotBuild(c, build, bbService)
 
-	case build.Result == bbutil.ResultFailure && strings.HasPrefix(build.Bucket, "luci."):
+	case (build.Status == buildbucket.StatusFailure || build.Status == buildbucket.StatusError) &&
+		strings.HasPrefix(build.Bucket, "luci."):
+
 		// Note that result==FAILURE builds include infra-failed builds.
 		return handleFailedLUCIBuild(c, build, bbService)
 
@@ -68,16 +83,11 @@ func HandleNotification(c context.Context, build *buildbucket.ApiCommonBuildMess
 
 // handleCompletedBuildbot schedules a Buildbot build on LUCI if the build
 // is for a builder that we track. Honors builder's experiment percentage.
-func handleCompletedBuildbotBuild(c context.Context, build *buildbucket.ApiCommonBuildMessage, bbService *buildbucket.Service) error {
-	buildSet := bbutil.BuildSet(build)
-	if buildSet == "" {
-		return nil
-	}
-
+func handleCompletedBuildbotBuild(c context.Context, build *Build, bbService *bbapi.Service) error {
 	// Is it a builder that we care about?
 	builder := &storage.Builder{ID: storage.BuilderID{
 		Master:  strings.TrimPrefix(build.Bucket, "master."),
-		Builder: bbutil.Builder(build),
+		Builder: build.Builder,
 	}}
 	switch err := datastore.Get(c, builder); {
 	case err == datastore.ErrNoSuchEntity:
@@ -91,24 +101,20 @@ func handleCompletedBuildbotBuild(c context.Context, build *buildbucket.ApiCommo
 	}
 
 	// Should we experiment with this CL?
-	if !shouldExperiment(buildSet, builder.ExperimentPercentage) {
+	if !shouldExperiment(build.Tags.Get(buildbucket.TagBuildSet), builder.ExperimentPercentage) {
 		return nil
 	}
 
 	// This build should be scheduled on LUCI.
 
-	// Retrieve "got_revision"
-	revision, err := gotRevision(build)
-	switch {
-	case err != nil:
-		return err
-	case revision == "":
-		return errors.Reason("could not find got_revision in build %d", build.Id).Err()
+	revision := (build.Output.Properties).(*OutputProperties).GotRevision
+	if revision == "" {
+		return errors.Reason("could not find got_revision in build %d", build.ID).Err()
 	}
 
 	// Prepare new build request.
 
-	newParamsJSON, err := setProps(build.ParametersJson, map[string]interface{}{
+	newParamsJSON, err := setProps(build.ParametersJSON, map[string]interface{}{
 		"revision": revision,
 		// Mark the build as experimental, so it does not confuse users of Rietveld and Gerrit.
 		"category": "cq_experimental",
@@ -116,45 +122,31 @@ func handleCompletedBuildbotBuild(c context.Context, build *buildbucket.ApiCommo
 	if err != nil {
 		return err
 	}
-	newBuild := &buildbucket.ApiPutRequestMessage{
+	newTags := strpair.Map{}
+	newTags.Set(buildbotBuildIDTagKey, strconv.FormatInt(build.ID, 10))
+	newTags.Set(attemptTagKey, "0")
+	newTags[buildbucket.TagBuildSet] = build.Tags[buildbucket.TagBuildSet]
+	newBuild := &bbapi.ApiPutRequestMessage{
 		Bucket:            builder.LUCIBuildbucketBucket,
-		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.Id, 10),
+		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.ID, 10),
 		ParametersJson:    newParamsJSON,
-		Tags: []string{
-			bbutil.FormatTag(buildbotBuildIDTagKey, strconv.FormatInt(build.Id, 10)),
-			bbutil.FormatTag(attemptTagKey, "0"),
-			bbutil.FormatTag(bbutil.TagBuildSet, buildSet),
-		},
+		Tags:              newTags.Format(),
 	}
-	return withLock(c, build.Id, func() error {
+	return withLock(c, build.ID, func() error {
 		logging.Infof(
 			c,
 			"scheduling Buildbot build %d on LUCI for builder %q and buildset %q",
-			build.Id, &builder.ID, buildSet)
+			build.ID, &builder.ID, build.Tags.Get(buildbucket.TagBuildSet))
 		return schedule(c, newBuild, bbService)
 	})
 }
 
-func handleFailedLUCIBuild(c context.Context, build *buildbucket.ApiCommonBuildMessage, bbService *buildbucket.Service) error {
-	buildSet := ""
-	attempt := -1
-	buildbotBuildID := ""
-	for _, t := range build.Tags {
-		var err error
-		switch k, v := bbutil.ParseTag(t); k {
-		case attemptTagKey:
-			attempt, err = strconv.Atoi(v)
-		case buildbotBuildIDTagKey:
-			buildbotBuildID = v
-		case bbutil.TagBuildSet:
-			buildSet = v
-		}
-		if err != nil {
-			return errors.Annotate(err, "invalid tag %q", t).Err()
-		}
-	}
+func handleFailedLUCIBuild(c context.Context, build *Build, bbService *bbapi.Service) error {
+	attempt, attemptErr := strconv.Atoi(build.Tags.Get(attemptTagKey))
+	buildSet := build.Tags.Get(buildbucket.TagBuildSet)
+	buildbotBuildID := build.Tags.Get(buildbotBuildIDTagKey)
 	switch {
-	case attempt < 0 || buildSet == "":
+	case attemptErr != nil || buildSet == "" || buildbotBuildID == "":
 		return nil // we don't recognize this build
 
 	// Do at most 3 attempts.
@@ -166,12 +158,14 @@ func handleFailedLUCIBuild(c context.Context, build *buildbucket.ApiCommonBuildM
 	// Before retrying the build, see if there is a newer one already created.
 	// It may happen if a new Buildbot build completed.
 	req := bbService.Search()
+	req.Context(c)
 	req.Bucket(build.Bucket)
+	req.CreationTsLow(buildbucket.FormatTimestamp(build.CreationTime) + 1)
 	req.Tag(
-		bbutil.FormatTag(bbutil.TagBuildSet, buildSet),
-		bbutil.FormatTag("builder", bbutil.Builder(build)),
+		strpair.Format(buildbucket.TagBuildSet, buildSet),
+		strpair.Format(buildbucket.TagBuilder, build.Builder),
 	)
-	switch newerBuilds, err := bbutil.SearchAll(c, req, bbutil.ParseTimestamp(build.CreatedTs+1)); {
+	switch newerBuilds, err := req.Fetch(1, nil); {
 	case err != nil:
 		return errors.Annotate(err, "failed to search newer builds").Err()
 	case len(newerBuilds) > 0:
@@ -179,19 +173,19 @@ func handleFailedLUCIBuild(c context.Context, build *buildbucket.ApiCommonBuildM
 		return nil
 	}
 
-	newBuild := &buildbucket.ApiPutRequestMessage{
+	newTags := strpair.Map{}
+	newTags.Set(buildbotBuildIDTagKey, buildbotBuildID)
+	newTags.Set(attemptTagKey, strconv.Itoa(attempt+1))
+	newTags.Set(buildbucket.TagBuildSet, buildSet)
+	newBuild := &bbapi.ApiPutRequestMessage{
 		Bucket:            build.Bucket,
-		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.Id, 10),
-		ParametersJson:    build.ParametersJson,
-		Tags: []string{
-			bbutil.FormatTag(buildbotBuildIDTagKey, buildbotBuildID),
-			bbutil.FormatTag(attemptTagKey, strconv.Itoa(attempt+1)),
-			bbutil.FormatTag(bbutil.TagBuildSet, buildSet),
-		},
+		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.ID, 10),
+		ParametersJson:    build.ParametersJSON,
+		Tags:              newTags.Format(),
 	}
 
-	return withLock(c, build.Id, func() error {
-		logging.Infof(c, "retrying LUCI build %d", build.Id)
+	return withLock(c, build.ID, func() error {
+		logging.Infof(c, "retrying LUCI build %d", build.ID)
 		return schedule(c, newBuild, bbService)
 	})
 }
@@ -229,7 +223,7 @@ func withLock(c context.Context, buildID int64, f func() error) error {
 }
 
 // schedule creates a build and logs a successful result.
-func schedule(c context.Context, req *buildbucket.ApiPutRequestMessage, service *buildbucket.Service) error {
+func schedule(c context.Context, req *bbapi.ApiPutRequestMessage, service *bbapi.Service) error {
 	req.Tags = append(req.Tags, "user_agent:luci-migration")
 	res, err := service.Put(req).Context(c).Do()
 	if err == nil && res.Error != nil {
@@ -268,19 +262,6 @@ func shouldExperiment(buildSet string, percentage int) bool {
 		aByte := sha256.Sum256([]byte(buildSet))[0]
 		return int(aByte)*100 <= percentage*255
 	}
-}
-
-// gotRevision returns "got_revision" property value.
-func gotRevision(build *buildbucket.ApiCommonBuildMessage) (string, error) {
-	var resultDetails struct {
-		Properties struct {
-			GotRevision string `json:"got_revision"`
-		}
-	}
-	if err := json.Unmarshal([]byte(build.ResultDetailsJson), &resultDetails); err != nil {
-		return "", errors.Annotate(err, "could not parse buildbot build result details").Err()
-	}
-	return resultDetails.Properties.GotRevision, nil
 }
 
 func setProps(paramsJSON string, values map[string]interface{}) (string, error) {

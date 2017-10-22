@@ -24,25 +24,26 @@ import (
 
 	"golang.org/x/net/context"
 
-	"go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
+	"go.chromium.org/luci/buildbucket"
+	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/clock/testclock"
+	"go.chromium.org/luci/common/data/strpair"
 
-	"infra/appengine/luci-migration/bbutil"
-	"infra/appengine/luci-migration/bbutil/buildset"
 	"infra/appengine/luci-migration/storage"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func build(buildset string, duration time.Duration, result string) *buildbucket.ApiCommonBuildMessage {
-	return &buildbucket.ApiCommonBuildMessage{
-		Tags:        []string{bbutil.FormatTag(bbutil.TagBuildSet, buildset)},
-		Status:      bbutil.StatusCompleted,
+func buildMsg(buildset string, duration time.Duration, result string) *bbapi.ApiCommonBuildMessage {
+	return &bbapi.ApiCommonBuildMessage{
+		Tags:        []string{strpair.Format(buildbucket.TagBuildSet, buildset)},
+		Status:      "COMPLETED",
 		Result:      result,
-		CreatedTs:   bbutil.FormatTimestamp(testclock.TestRecentTimeUTC),
-		StartedTs:   bbutil.FormatTimestamp(testclock.TestRecentTimeUTC),
-		CompletedTs: bbutil.FormatTimestamp(testclock.TestRecentTimeUTC.Add(duration)),
+		CreatedBy:   "user:someone@example.com",
+		CreatedTs:   buildbucket.FormatTimestamp(testclock.TestRecentTimeUTC),
+		StartedTs:   buildbucket.FormatTimestamp(testclock.TestRecentTimeUTC),
+		CompletedTs: buildbucket.FormatTimestamp(testclock.TestRecentTimeUTC.Add(duration)),
 	}
 }
 
@@ -64,27 +65,22 @@ func TestAnalyze(t *testing.T) {
 
 		// Mock buildbucket server.
 		var buildSets []mockedBuildSet
-		buildSetPrefix := "set"
+		buildSetPrefix := "patch/gerrit/gerrit.example.com/1/"
 		bbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			res := &buildbucket.ApiSearchResponseMessage{}
+			res := &bbapi.ApiSearchResponseMessage{}
 			defer func() {
 				err := json.NewEncoder(w).Encode(res)
 				testCtx.So(err, ShouldBeNil)
 			}()
 
 			buildSetFmt := buildSetPrefix + "%d"
-			buildSet := ""
-			for _, t := range r.URL.Query()["tag"] {
-				if k, v := bbutil.ParseTag(t); k == bbutil.TagBuildSet {
-					buildSet = v
-					break
-				}
-			}
+			tags := strpair.ParseMap(r.URL.Query()["tag"])
+			buildSet := tags.Get(buildbucket.TagBuildSet)
 			if buildSet == "" {
 				for i := 0; i < len(buildSets); i++ {
 					buildSet := fmt.Sprintf(buildSetFmt, i)
 					// only buildset matters here, the rest is ignored
-					res.Builds = append(res.Builds, build(buildSet, time.Hour, success))
+					res.Builds = append(res.Builds, buildMsg(buildSet, time.Hour, bbapi.ResultSuccess))
 				}
 				return
 			}
@@ -102,14 +98,14 @@ func TestAnalyze(t *testing.T) {
 			}
 			// the order of res.Builds is newest to oldest.
 			for i := 0; i < spec.successes; i++ {
-				res.Builds = append(res.Builds, build(buildSet, time.Hour, bbutil.ResultSuccess))
+				res.Builds = append(res.Builds, buildMsg(buildSet, time.Hour, bbapi.ResultSuccess))
 			}
 			for i := 0; i < spec.failures; i++ {
-				res.Builds = append(res.Builds, build(buildSet, time.Hour, bbutil.ResultFailure))
+				res.Builds = append(res.Builds, buildMsg(buildSet, time.Hour, bbapi.ResultFailure))
 			}
 		}))
 		defer bbServer.Close()
-		bbService, err := buildbucket.New(&http.Client{})
+		bbService, err := bbapi.New(&http.Client{})
 		So(err, ShouldBeNil)
 		bbService.BasePath = bbServer.URL
 
@@ -117,7 +113,7 @@ func TestAnalyze(t *testing.T) {
 		tryjobs := &Tryjobs{
 			Buildbucket: bbService,
 			MaxBuildAge: time.Hour * 24 * 7,
-			patchSetAbsent: func(context.Context, *http.Client, *buildset.BuildSet) (bool, error) {
+			patchSetAbsent: func(context.Context, *http.Client, buildbucket.BuildSet) (bool, error) {
 				return psAbsent, nil
 			},
 		}
@@ -221,7 +217,7 @@ func TestAnalyze(t *testing.T) {
 				BuildbotBucket: "master.tryserver.chromium.linux",
 				LUCIBucket:     "luci.chromium.try",
 				MaxGroups:      DefaultMaxGroups,
-				patchSetAbsent: func(context.Context, *http.Client, *buildset.BuildSet) (bool, error) {
+				patchSetAbsent: func(context.Context, *http.Client, buildbucket.BuildSet) (bool, error) {
 					return false, nil
 				},
 			}
@@ -233,27 +229,30 @@ func TestAnalyze(t *testing.T) {
 				gmap[g.Key] = g
 			}
 
-			So(gmap["set0"], ShouldNotBeNil)
-			So(gmap["set0"].Buildbot, ShouldHaveLength, 3)
-			So(gmap["set0"].Buildbot.success(), ShouldBeFalse)
-			So(gmap["set0"].LUCI, ShouldHaveLength, 3)
-			So(gmap["set0"].LUCI.success(), ShouldBeFalse)
+			set0 := gmap[buildSetPrefix+"0"]
+			So(set0, ShouldNotBeNil)
+			So(set0.Buildbot, ShouldHaveLength, 3)
+			So(set0.Buildbot.success(), ShouldBeFalse)
+			So(set0.LUCI, ShouldHaveLength, 3)
+			So(set0.LUCI.success(), ShouldBeFalse)
 
-			So(gmap["set1"], ShouldNotBeNil)
-			So(gmap["set1"].Buildbot, ShouldHaveLength, 2)
-			So(gmap["set1"].Buildbot.success(), ShouldBeTrue)
-			So(gmap["set1"].LUCI, ShouldHaveLength, 3)
-			So(gmap["set1"].LUCI.success(), ShouldBeTrue)
+			set1 := gmap[buildSetPrefix+"1"]
+			So(set1, ShouldNotBeNil)
+			So(set1.Buildbot, ShouldHaveLength, 2)
+			So(set1.Buildbot.success(), ShouldBeTrue)
+			So(set1.LUCI, ShouldHaveLength, 3)
+			So(set1.LUCI.success(), ShouldBeTrue)
 			// order must be from oldest to newest
-			So(gmap["set1"].LUCI[0].Result, ShouldEqual, failure)
-			So(gmap["set1"].LUCI[1].Result, ShouldEqual, success)
-			So(gmap["set1"].LUCI[2].Result, ShouldEqual, success)
+			So(set1.LUCI[0].Status, ShouldEqual, buildbucket.StatusFailure)
+			So(set1.LUCI[1].Status, ShouldEqual, buildbucket.StatusSuccess)
+			So(set1.LUCI[2].Status, ShouldEqual, buildbucket.StatusSuccess)
 
-			So(gmap["set2"], ShouldNotBeNil)
-			So(gmap["set2"].Buildbot, ShouldHaveLength, 2)
-			So(gmap["set2"].Buildbot.success(), ShouldBeTrue)
-			So(gmap["set2"].LUCI, ShouldHaveLength, 1)
-			So(gmap["set2"].LUCI.success(), ShouldBeTrue)
+			set2 := gmap[buildSetPrefix+"2"]
+			So(set2, ShouldNotBeNil)
+			So(set2.Buildbot, ShouldHaveLength, 2)
+			So(set2.Buildbot.success(), ShouldBeTrue)
+			So(set2.LUCI, ShouldHaveLength, 1)
+			So(set2.LUCI.success(), ShouldBeTrue)
 		})
 	})
 }

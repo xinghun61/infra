@@ -17,9 +17,7 @@ package analysis
 import (
 	"time"
 
-	"go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
-
-	"infra/appengine/luci-migration/bbutil"
+	"go.chromium.org/luci/buildbucket"
 )
 
 // group is two sets of builds, for Buildbot and LUCI, that should have the same
@@ -42,13 +40,13 @@ func (g *group) trustworthy() bool {
 }
 
 // groupSide is a list of builds ordered from oldest to newest
-type groupSide []*buildbucket.ApiCommonBuildMessage
+type groupSide []*buildbucket.Build
 
 func (s groupSide) avgRunDuration() time.Duration {
 	avg := time.Duration(0)
 	count := 0
 	for _, b := range s {
-		if d := bbutil.RunDuration(b); d > 0 {
+		if d, ok := b.RunDuration(); ok {
 			avg += d
 			count++
 		}
@@ -64,13 +62,13 @@ func (s groupSide) Age() time.Duration {
 	if len(s) == 0 {
 		return 0
 	}
-	return time.Now().Sub(bbutil.ParseTimestamp(s[len(s)-1].CompletedTs))
+	return time.Now().Sub(s[len(s)-1].CompletionTime)
 }
 
 // success returns true if at least one build succeeded, otherwise false.
 func (s groupSide) success() bool {
 	for _, b := range s {
-		if b.Result == bbutil.ResultSuccess {
+		if b.Status == buildbucket.StatusSuccess {
 			return true
 		}
 	}
@@ -87,7 +85,7 @@ func (s groupSide) trustworthy() bool {
 	// consider this result too vulnerable to flakes.
 	failures := 0
 	for _, b := range s {
-		if b.Result == bbutil.ResultFailure {
+		if b.Status == buildbucket.StatusFailure {
 			failures++
 			if failures >= 3 {
 				return true

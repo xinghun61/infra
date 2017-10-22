@@ -24,10 +24,11 @@ import (
 
 	"go.chromium.org/gae/impl/memory"
 	"go.chromium.org/gae/service/datastore"
-	"go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
+	"go.chromium.org/luci/buildbucket"
+	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
+	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/retry/transient"
 
-	"infra/appengine/luci-migration/bbutil"
 	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 
@@ -41,15 +42,21 @@ func TestScheduling(t *testing.T) {
 		c := context.Background()
 		c = memory.Use(c)
 
+		buildSet := &buildbucket.GerritChange{
+			Host:     "gerrit.example.com",
+			Change:   1,
+			PatchSet: 1,
+		}
+
 		// Mock buildbucket server.
 		putResponseCode := 0
-		var actualPutRequest *buildbucket.ApiPutRequestMessage
-		var searchResults []*buildbucket.ApiCommonBuildMessage
+		var actualPutRequest *bbapi.ApiPutRequestMessage
+		var searchResults []*bbapi.ApiCommonBuildMessage
 		bbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			var res interface{}
 			switch r.URL.Path {
 			case "/builds":
-				actualPutRequest = &buildbucket.ApiPutRequestMessage{}
+				actualPutRequest = &bbapi.ApiPutRequestMessage{}
 				err := json.NewDecoder(r.Body).Decode(actualPutRequest)
 				testCtx.So(err, ShouldBeNil)
 
@@ -58,12 +65,12 @@ func TestScheduling(t *testing.T) {
 					return
 				}
 
-				res = &buildbucket.ApiBuildResponseMessage{
-					Build: &buildbucket.ApiCommonBuildMessage{Id: 123456789},
+				res = &bbapi.ApiBuildResponseMessage{
+					Build: &bbapi.ApiCommonBuildMessage{Id: 123456789},
 				}
 
 			case "/search":
-				res = &buildbucket.ApiSearchResponseMessage{Builds: searchResults}
+				res = &bbapi.ApiSearchResponseMessage{Builds: searchResults}
 
 			default:
 				panic("invalid path " + r.URL.Path)
@@ -73,7 +80,7 @@ func TestScheduling(t *testing.T) {
 			testCtx.So(err, ShouldBeNil)
 		}))
 		defer bbServer.Close()
-		bbService, err := buildbucket.New(&http.Client{})
+		bbService, err := bbapi.New(&http.Client{})
 		So(err, ShouldBeNil)
 		bbService.BasePath = bbServer.URL
 
@@ -96,23 +103,31 @@ func TestScheduling(t *testing.T) {
 				So(err, ShouldBeNil)
 			}
 
-			b := &buildbucket.ApiCommonBuildMessage{
-				Id:     54,
-				Bucket: "master.tryserver.chromium.linux",
-				Status: bbutil.StatusCompleted,
-				Tags: []string{
-					"builder:linux_chromium_rel_ng",
-					"buildset:patchsetX",
-					"master:tryserver.chromium.linux",
+			b := &Build{
+				Build: buildbucket.Build{
+					ID:        54,
+					Bucket:    "master.tryserver.chromium.linux",
+					Builder:   "linux_chromium_rel_ng",
+					Status:    buildbucket.StatusSuccess,
+					BuildSets: []buildbucket.BuildSet{buildSet},
+					Tags: strpair.Map{
+						buildbucket.TagBuildSet: []string{buildSet.String()},
+						"master":                []string{"tryserver.chromium.linux"},
+					},
+					Output: buildbucket.Output{
+						Properties: &OutputProperties{
+							GotRevision: "deadbeef",
+						},
+					},
 				},
-				ParametersJson:    `{"builder_name": "linux_chromium_rel_ng", "properties":{"revision": "HEAD"}}`,
-				ResultDetailsJson: `{"properties": {"got_revision": "deadbeef"}}`,
+				ParametersJSON: `{"builder_name": "linux_chromium_rel_ng", "properties":{"revision": "HEAD"}}`,
 			}
 
 			Convey("retries buildbot builds on LUCI", func() {
 				putBuilder(100)
 				err := HandleNotification(c, b, bbService)
 				So(err, ShouldBeNil)
+				So(actualPutRequest, ShouldNotBeNil)
 
 				var actualParams interface{}
 				err = json.Unmarshal([]byte(actualPutRequest.ParametersJson), &actualParams)
@@ -125,14 +140,14 @@ func TestScheduling(t *testing.T) {
 					},
 				})
 
-				So(actualPutRequest, ShouldResemble, &buildbucket.ApiPutRequestMessage{
+				So(actualPutRequest, ShouldResemble, &bbapi.ApiPutRequestMessage{
 					Bucket:            "luci.chromium.try",
 					ClientOperationId: "luci-migration-retry-54",
 					ParametersJson:    actualPutRequest.ParametersJson,
 					Tags: []string{
-						bbutil.FormatTag(buildbotBuildIDTagKey, "54"),
-						bbutil.FormatTag(attemptTagKey, "0"),
-						"buildset:patchsetX",
+						strpair.Format(buildbucket.TagBuildSet, buildSet.String()),
+						strpair.Format(attemptTagKey, "0"),
+						strpair.Format(buildbotBuildIDTagKey, "54"),
 						"user_agent:luci-migration",
 					},
 				})
@@ -147,62 +162,69 @@ func TestScheduling(t *testing.T) {
 		})
 
 		Convey("retries builds", func() {
-			luciMigrationBuildTags := []string{
-				bbutil.FormatTag(buildbotBuildIDTagKey, "53"),
-				bbutil.FormatTag(attemptTagKey, "0"),
-				"buildset:patchsetX",
-				"master:masterX",
-			}
+			luciMigrationBuildTags := strpair.Map{}
+			luciMigrationBuildTags.Set(buildbotBuildIDTagKey, "53")
+			luciMigrationBuildTags.Set(attemptTagKey, "0")
+			luciMigrationBuildTags.Set("buildset", buildSet.String())
+			luciMigrationBuildTags.Set("master", "masterX")
+
 			Convey("retries LUCI builds", func() {
-				b := &buildbucket.ApiCommonBuildMessage{
-					Id:     54,
-					Bucket: "luci.test.x",
-					Result: bbutil.ResultFailure,
-					Tags:   luciMigrationBuildTags,
+				b := &Build{
+					Build: buildbucket.Build{
+						ID:     54,
+						Bucket: "luci.test.x",
+						Status: buildbucket.StatusFailure,
+						Tags:   luciMigrationBuildTags,
+					},
 				}
 				err := HandleNotification(c, b, bbService)
 				So(err, ShouldBeNil)
 
-				So(actualPutRequest, ShouldResemble, &buildbucket.ApiPutRequestMessage{
+				So(actualPutRequest, ShouldResemble, &bbapi.ApiPutRequestMessage{
 					Bucket:            "luci.test.x",
 					ClientOperationId: "luci-migration-retry-54",
-					ParametersJson:    b.ParametersJson,
+					ParametersJson:    b.ParametersJSON,
 					Tags: []string{
-						bbutil.FormatTag(buildbotBuildIDTagKey, "53"),
-						bbutil.FormatTag(attemptTagKey, "1"),
-						"buildset:patchsetX",
+						strpair.Format(buildbucket.TagBuildSet, buildSet.String()),
+						strpair.Format(attemptTagKey, "1"),
+						strpair.Format(buildbotBuildIDTagKey, "53"),
 						"user_agent:luci-migration",
 					},
 				})
 			})
 
 			Convey("retries second time", func() {
-				b := &buildbucket.ApiCommonBuildMessage{
-					Id:     54,
-					Bucket: "luci.test.x",
-					Result: bbutil.ResultFailure,
-					Tags: []string{
-						bbutil.FormatTag(buildbotBuildIDTagKey, "53"),
-						bbutil.FormatTag(attemptTagKey, "0"),
-						bbutil.FormatTag(bbutil.TagBuildSet, "patch"),
+				b := &Build{
+					Build: buildbucket.Build{
+						ID:      54,
+						Bucket:  "luci.test.x",
+						Builder: "some",
+						Status:  buildbucket.StatusFailure,
+						Tags: strpair.Map{
+							buildbotBuildIDTagKey:   []string{"53"},
+							attemptTagKey:           []string{"0"},
+							buildbucket.TagBuildSet: []string{buildSet.String()},
+						},
 					},
 				}
 				err := HandleNotification(c, b, bbService)
 				So(err, ShouldBeNil)
 				So(actualPutRequest, ShouldNotBeNil) // did retry
-				So(bbutil.FormatTag(buildbotBuildIDTagKey, "53"), ShouldBeIn, actualPutRequest.Tags)
-				So(bbutil.FormatTag(attemptTagKey, "1"), ShouldBeIn, actualPutRequest.Tags)
+				So(strpair.Format(buildbotBuildIDTagKey, "53"), ShouldBeIn, actualPutRequest.Tags)
+				So(strpair.Format(attemptTagKey, "1"), ShouldBeIn, actualPutRequest.Tags)
 			})
 
 			Convey("does not retry if there is a newer one", func() {
-				b := &buildbucket.ApiCommonBuildMessage{
-					Id:     54,
-					Bucket: "luci.test.x",
-					Result: bbutil.ResultFailure,
-					Tags:   luciMigrationBuildTags,
+				b := &Build{
+					Build: buildbucket.Build{
+						ID:     54,
+						Bucket: "luci.test.x",
+						Status: buildbucket.StatusFailure,
+						Tags:   luciMigrationBuildTags,
+					},
 				}
-				searchResults = []*buildbucket.ApiCommonBuildMessage{{
-					CreatedTs: b.CreatedTs + 1, // 1 newer build
+				searchResults = []*bbapi.ApiCommonBuildMessage{{
+					CreatedTs: buildbucket.FormatTimestamp(b.CreationTime) + 1, // 1 newer Build
 				}}
 				err := HandleNotification(c, b, bbService)
 				So(err, ShouldBeNil)
@@ -210,14 +232,16 @@ func TestScheduling(t *testing.T) {
 			})
 
 			Convey("does not retry too many times", func() {
-				b := &buildbucket.ApiCommonBuildMessage{
-					Id:     54,
-					Bucket: "luci.test.x",
-					Result: bbutil.ResultFailure,
-					Tags: []string{
-						bbutil.FormatTag(buildbotBuildIDTagKey, "53"),
-						bbutil.FormatTag(attemptTagKey, "2"),
-						bbutil.FormatTag(bbutil.TagBuildSet, "patch"),
+				b := &Build{
+					Build: buildbucket.Build{
+						ID:        54,
+						Bucket:    "luci.test.x",
+						Status:    buildbucket.StatusFailure,
+						BuildSets: []buildbucket.BuildSet{buildSet},
+						Tags: strpair.Map{
+							buildbotBuildIDTagKey: []string{"53"},
+							attemptTagKey:         []string{"2"},
+						},
 					},
 				}
 				err := HandleNotification(c, b, bbService)
@@ -226,11 +250,13 @@ func TestScheduling(t *testing.T) {
 			})
 
 			Convey("does not retry unrecognized builds", func() {
-				b := &buildbucket.ApiCommonBuildMessage{
-					Id:     54,
-					Bucket: "luci.chromium.try",
-					Result: bbutil.ResultFailure,
-					// no attempt tag
+				b := &Build{
+					Build: buildbucket.Build{
+						ID:     54,
+						Bucket: "luci.chromium.try",
+						Status: buildbucket.StatusFailure,
+						// no attempt tag
+					},
 				}
 				err := HandleNotification(c, b, bbService)
 				So(err, ShouldBeNil)
@@ -238,11 +264,13 @@ func TestScheduling(t *testing.T) {
 			})
 
 			Convey("does not retry non-failed builds", func() {
-				b := &buildbucket.ApiCommonBuildMessage{
-					Id:     54,
-					Bucket: "luci.chromium.try",
-					Result: bbutil.ResultSuccess,
-					Tags:   luciMigrationBuildTags,
+				b := &Build{
+					Build: buildbucket.Build{
+						ID:     54,
+						Bucket: "luci.chromium.try",
+						Status: buildbucket.StatusSuccess,
+						Tags:   luciMigrationBuildTags,
+					},
 				}
 				err := HandleNotification(c, b, bbService)
 				So(err, ShouldBeNil)
@@ -250,11 +278,13 @@ func TestScheduling(t *testing.T) {
 			})
 
 			Convey("returns transient error on Buildbucket HTTP 500", func() {
-				b := &buildbucket.ApiCommonBuildMessage{
-					Id:     54,
-					Bucket: "luci.test.x",
-					Result: bbutil.ResultFailure,
-					Tags:   luciMigrationBuildTags,
+				b := &Build{
+					Build: buildbucket.Build{
+						ID:     54,
+						Bucket: "luci.test.x",
+						Status: buildbucket.StatusFailure,
+						Tags:   luciMigrationBuildTags,
+					},
 				}
 				putResponseCode = 500
 				err := HandleNotification(c, b, bbService)
@@ -263,11 +293,13 @@ func TestScheduling(t *testing.T) {
 			})
 
 			Convey("returns non-transient error on Buildbucket HTTP 403", func() {
-				b := &buildbucket.ApiCommonBuildMessage{
-					Id:     54,
-					Bucket: "luci.test.x",
-					Result: bbutil.ResultFailure,
-					Tags:   luciMigrationBuildTags,
+				b := &Build{
+					Build: buildbucket.Build{
+						ID:     54,
+						Bucket: "luci.test.x",
+						Status: buildbucket.StatusFailure,
+						Tags:   luciMigrationBuildTags,
+					},
 				}
 				putResponseCode = 403
 				err := HandleNotification(c, b, bbService)
@@ -276,11 +308,13 @@ func TestScheduling(t *testing.T) {
 			})
 
 			Convey("returns non-transient error on Buildbucket HTTP 404", func() {
-				b := &buildbucket.ApiCommonBuildMessage{
-					Id:     54,
-					Bucket: "luci.test.x",
-					Result: bbutil.ResultFailure,
-					Tags:   luciMigrationBuildTags,
+				b := &Build{
+					Build: buildbucket.Build{
+						ID:     54,
+						Bucket: "luci.test.x",
+						Status: buildbucket.StatusFailure,
+						Tags:   luciMigrationBuildTags,
+					},
 				}
 				putResponseCode = 404
 				err := HandleNotification(c, b, bbService)

@@ -24,14 +24,14 @@ import (
 
 	"golang.org/x/net/context"
 
-	"go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
+	"go.chromium.org/luci/buildbucket"
+	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 
-	"infra/appengine/luci-migration/bbutil"
-	"infra/appengine/luci-migration/bbutil/buildset"
 	"infra/appengine/luci-migration/storage"
 )
 
@@ -41,7 +41,7 @@ const DefaultMaxGroups = 100
 // Tryjobs compares LUCI and Buildbot tryjobs.
 type Tryjobs struct {
 	HTTP                 *http.Client
-	Buildbucket          *buildbucket.Service
+	Buildbucket          *bbapi.Service
 	MinTrustworthyGroups int // minimum number of build groups to analyze correctness
 
 	// MaxGroups is the maximum number of groups suitable for correctness
@@ -78,8 +78,8 @@ func (t *Tryjobs) Analyze(c context.Context, builder, buildbotBucket, luciBucket
 func (t *Tryjobs) logDiff(c context.Context, d *diff) {
 	timeRange := func(s groupSide) string {
 		const layout = "Jan 2 15:04:05.000000000"
-		oldest := bbutil.ParseTimestamp(s[0].CreatedTs).Format(layout)
-		newest := bbutil.ParseTimestamp(s[len(s)-1].CreatedTs).Format(layout)
+		oldest := s[0].CreationTime.Format(layout)
+		newest := s[len(s)-1].CreationTime.Format(layout)
 		return fmt.Sprintf("[%s..%s]", oldest, newest)
 	}
 
@@ -129,7 +129,7 @@ func (t *Tryjobs) analyze(c context.Context, builder, buildbotBucket, luciBucket
 
 type fetcher struct {
 	HTTP                       *http.Client
-	Buildbucket                *buildbucket.Service
+	Buildbucket                *bbapi.Service
 	MaxGroups                  int
 	Builder                    string
 	BuildbotBucket, LUCIBucket string
@@ -153,7 +153,7 @@ func (g *fetchGroup) locked(f func()) {
 	f()
 }
 
-type buildChan chan *buildbucket.ApiCommonBuildMessage
+type buildChan chan *buildbucket.Build
 
 // Fetch fetches Buildbot and LUCI builds, groups and joins them by patchset
 // until it collects f.MaxGroups of trustworthy groups.
@@ -205,18 +205,20 @@ func (f *fetcher) Fetch(c context.Context) ([]*group, error) {
 // Ignores builds for non-existing patchsets.
 func (f *fetcher) fetchLUCIBuilds(c context.Context, builds buildChan) error {
 	req := f.Buildbucket.Search()
+	req.Context(c)
 	req.Bucket(f.LUCIBucket)
-	req.Status(bbutil.StatusCompleted)
-	req.Tag(bbutil.FormatTag("builder", f.Builder))
+	req.Status(bbapi.StatusCompleted)
+	req.Tag(strpair.Format(buildbucket.TagBuilder, f.Builder))
+	req.CreationTsLow(buildbucket.FormatTimestamp(f.MinCreationDate))
 	if cap(builds) > 0 {
 		req.MaxBuilds(int64(cap(builds)))
 	}
 
-	foundBuilds := make(buildChan, cap(builds))
+	foundBuilds := make(chan *bbapi.ApiCommonBuildMessage, cap(builds))
 	var searchErr error
 	go func() {
 		defer close(foundBuilds)
-		searchErr = bbutil.Search(c, req, f.MinCreationDate, foundBuilds)
+		searchErr = req.Run(foundBuilds, 0, nil)
 	}()
 
 	// check that Rietveld patchsets still exist.
@@ -225,28 +227,37 @@ func (f *fetcher) fetchLUCIBuilds(c context.Context, builds buildChan) error {
 		psAbsent = patchSetAbsent // real one
 	}
 	absentCache := make(map[string]bool, f.MaxGroups*2)
-	for b := range foundBuilds {
-		bs := bbutil.BuildSet(b)
-		absent, ok := absentCache[bs]
-		if !ok {
-			// Serialize all requests to Rietveld b/c
-			// 1) This code is much simpler this way
-			// 2) We don't want to hammer Rietveld too much
-			// 3) The channel of builds is buffered, so underlying fetching
-			//    of LUCI builds and following fetching of Buildbot builds
-			//    won't be entirely blocked.
-			var err error
-			absent, err = psAbsent(c, f.HTTP, buildset.Parse(bs))
-			if err != nil {
-				return err
+
+outer:
+	for msg := range foundBuilds {
+		var b buildbucket.Build
+		if err := b.ParseMessage(msg); err != nil {
+			return errors.Annotate(err, "parsing build %d", msg.Id).Err()
+		}
+
+		for _, bs := range b.BuildSets {
+			bss := bs.String()
+			absent, ok := absentCache[bss]
+			if !ok {
+				// Serialize all requests to Rietveld b/c
+				// 1) This code is much simpler this way
+				// 2) We don't want to hammer Rietveld too much
+				// 3) The channel of builds is buffered, so underlying fetching
+				//    of LUCI builds and following fetching of Buildbot builds
+				//    won't be entirely blocked.
+				var err error
+				absent, err = psAbsent(c, f.HTTP, bs)
+				if err != nil {
+					return err
+				}
+				absentCache[bss] = absent
 			}
-			absentCache[bs] = absent
+			if absent {
+				logging.Debugf(c, "skipped build %d: patchset %s does not exist", b.ID, bs)
+				continue outer
+			}
 		}
-		if absent {
-			logging.Debugf(c, "skipped build %d: patchset %s does not exist", b.Id, bs)
-		} else {
-			builds <- b
-		}
+		builds <- &b
 	}
 
 	return searchErr
@@ -282,21 +293,30 @@ func (f *fetcher) fetchGroups(c context.Context, luciBuilds buildChan, cancel co
 				if c.Err() != nil {
 					return
 				}
-				buildSet := bbutil.BuildSet(b)
-				if buildSet == "" {
-					logging.Debugf(c, "skipped build %d: no buildset tag", b.Id)
-					continue
-				}
 
-				if _, alreadyProcessing := seen[buildSet]; alreadyProcessing {
+				switch {
+				case len(b.BuildSets) == 0:
+					logging.Debugf(c, "skipped build %d: no buildset tag", b.ID)
+					continue
+				case len(b.BuildSets) > 1:
+					logging.Debugf(c, "build %d has multiple buildsets; using first one", b.ID)
+				}
+				bs := b.BuildSets[0]
+				bss := bs.String()
+				if _, alreadyProcessing := seen[bss]; alreadyProcessing {
 					continue
 				}
 
 				g := &fetchGroup{}
 				g.err = make(chan error, 1)
-				g.Key = buildSet
-				g.KeyURL = buildset.Parse(buildSet).URL()
-				seen[buildSet] = g
+				g.Key = bss
+				type withURL interface {
+					URL() string
+				}
+				if urlable, ok := bs.(withURL); ok {
+					g.KeyURL = urlable.URL()
+				}
+				seen[bss] = g
 				groupC <- g
 
 				// start fetching builds for this group.
@@ -353,22 +373,29 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 	fetchSide := func(bucket string, side *groupSide, err *error) {
 		defer wg.Done()
 		req := f.Buildbucket.Search()
+		req.Context(c)
 		req.Bucket(bucket)
-		req.Status(bbutil.StatusCompleted)
+		req.Status(bbapi.StatusCompleted)
 		req.Tag(
-			bbutil.FormatTag("builder", f.Builder),
-			bbutil.FormatTag(bbutil.TagBuildSet, g.Key))
-		var builds []*buildbucket.ApiCommonBuildMessage
-		builds, *err = bbutil.SearchAll(c, req, f.MinCreationDate)
+			strpair.Format(buildbucket.TagBuilder, f.Builder),
+			strpair.Format(buildbucket.TagBuildSet, g.Key))
+		req.CreationTsLow(buildbucket.FormatTimestamp(f.MinCreationDate))
+		var msgs []*bbapi.ApiCommonBuildMessage
+		msgs, *err = req.Fetch(0, nil)
 		if *err != nil {
 			return
 		}
 
-		// Reverse order to make it oldest-to-newest.
-		for i := 0; i < len(builds)/2; i++ {
-			builds[i], builds[len(builds)-1-i] = builds[len(builds)-1-i], builds[i]
+		builds := make(groupSide, len(msgs))
+		for i, msg := range msgs {
+			// Reverse order to make it oldest-to-newest.
+			b := &buildbucket.Build{}
+			if *err = b.ParseMessage(msg); *err != nil {
+				return
+			}
+			builds[len(msgs)-i-1] = b
 		}
-		*side = groupSide(builds)
+		*side = builds
 	}
 
 	wg.Add(2)

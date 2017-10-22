@@ -16,28 +16,28 @@ package analysis
 
 import (
 	"fmt"
+	"io"
+	"io/ioutil"
 	"net/http"
 
 	"golang.org/x/net/context"
 	"golang.org/x/net/context/ctxhttp"
 
+	"go.chromium.org/luci/buildbucket"
 	"go.chromium.org/luci/common/retry"
 	"go.chromium.org/luci/common/retry/transient"
-
-	"infra/appengine/luci-migration/bbutil/buildset"
-	"io"
-	"io/ioutil"
 )
 
-type patchSetAbsenceChecker func(context.Context, *http.Client, *buildset.BuildSet) (bool, error)
+type patchSetAbsenceChecker func(context.Context, *http.Client, buildbucket.BuildSet) (bool, error)
 
 // patchsetAbsent returns true if the patchset referenced by bs does not exist.
 // Otherwise false.
-func patchSetAbsent(c context.Context, h *http.Client, bs *buildset.BuildSet) (bool, error) {
-	if bs == nil || bs.Rietveld == nil {
+func patchSetAbsent(c context.Context, h *http.Client, bs buildbucket.BuildSet) (bool, error) {
+	rietveld, ok := bs.(*buildbucket.RietveldChange)
+	if !ok {
 		return false, nil
 	}
-	url := fmt.Sprintf("https://%s/api/%d/%d", bs.Rietveld.Hostname, bs.Rietveld.Issue, bs.Rietveld.Patchset)
+	url := fmt.Sprintf("https://%s/api/%d/%d", rietveld.Host, rietveld.Issue, rietveld.PatchSet)
 	return is404(c, h, url)
 }
 

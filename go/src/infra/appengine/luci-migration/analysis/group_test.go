@@ -16,16 +16,29 @@ package analysis
 
 import (
 	"testing"
-
 	"time"
+
+	"go.chromium.org/luci/buildbucket"
+	"go.chromium.org/luci/common/clock/testclock"
+	"go.chromium.org/luci/common/data/strpair"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func side(duration time.Duration, results ...string) groupSide {
-	s := make(groupSide, len(results))
-	for i, r := range results {
-		s[i] = build("dummy", duration, r)
+func build(buildset string, duration time.Duration, status buildbucket.Status) *buildbucket.Build {
+	return &buildbucket.Build{
+		Tags:           strpair.Map{buildbucket.TagBuildSet: []string{buildset}},
+		Status:         status,
+		CreationTime:   testclock.TestRecentTimeUTC,
+		StartTime:      testclock.TestRecentTimeUTC,
+		CompletionTime: testclock.TestRecentTimeUTC.Add(duration),
+	}
+}
+
+func side(duration time.Duration, statuses ...buildbucket.Status) groupSide {
+	s := make(groupSide, len(statuses))
+	for i, st := range statuses {
+		s[i] = build("dummy", duration, st)
 	}
 	return s
 }
