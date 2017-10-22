@@ -112,7 +112,7 @@ def validate_build_set(bs):
     if not RE_BUILDSET_GERRIT_CL.match(bs):
       # TODO(nodir): turn into an exception when we verify that
       # cr-buildbucket.appspot.com users do not use invalid format
-      logging.error(
+      logging.warning(
           'does not match regex "%s"', RE_BUILDSET_GERRIT_CL.pattern)
 
 
