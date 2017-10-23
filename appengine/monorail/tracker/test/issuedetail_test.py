@@ -18,6 +18,7 @@ from framework import authdata
 from framework import framework_views
 from framework import permissions
 from framework import profiler
+from framework import sorting
 from framework import template_helpers
 from proto import project_pb2
 from proto import tracker_pb2
@@ -786,8 +787,10 @@ class FlipperTest(unittest.TestCase):
         config=fake.ConfigService(),
         issue=fake.IssueService(),
         user=fake.UserService(),
-        project=fake.ProjectService())
+        project=fake.ProjectService(),
+        cache_manager=fake.CacheManager())
     self.mr = testing_helpers.MakeMonorailRequest()
+    sorting.InitializeArtValues(self.services)
 
     self.services.project.TestAddProject('proj1', project_id=1)
     self.services.project.TestAddProject('proj2', project_id=2)
