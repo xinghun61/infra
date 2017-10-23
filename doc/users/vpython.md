@@ -290,7 +290,7 @@ Some Recommendations (see below for specifics):
       it gets copied elsewhere.
 * If your entire collection of scripts wants to share the same environment,
   use a single
-  [Common Specification](#common-specification) (`common.vpython`) at the root
+  [Common Specification](#common-specification) (`.vpython`) at the root
   of your script collection.
 
 If you are uncertain about which option is best for your script or project,
@@ -381,14 +381,14 @@ vpython foo.py
 
 If an individual or embedded specification cannot be found, `vpython` will probe
 walk filesystem towards root (or `.gclient` root) looking for a common
-specification file. This file must be named `common.vpython` and be located in
+specification file. This file must be named `.vpython` and be located in
 or above the directory of the invoked script.
 
 Comment characters are stripped from the beginning of each line.
 
 For example:
 
-* common.vpython
+* .vpython
   ```protobuf
   python: "2.7"
   wheel: <
@@ -413,7 +413,7 @@ For example:
   ```
 
 When this script is invoked by `vpython` will walk up from `tools/`, identify
-`common.vpython` in a parent directory, and automatically load it.
+`.vpython` in a parent directory, and automatically load it.
 
 ```bash
 vpython tools/foo.py
