@@ -114,7 +114,9 @@ func handleAnalyzeBuilder(c *router.Context) error {
 	if err != nil {
 		return errors.Annotate(err, "could not create buildbucket client").Err()
 	}
-	bb.BasePath = fmt.Sprintf("https://%s/api/buildbucket/v1/", cfg.BuildbucketHostname)
+
+	// use _ah because we use partial responses
+	bb.BasePath = fmt.Sprintf("https://%s/_ah/api/buildbucket/v1/", cfg.BuildbucketHostname)
 
 	// Run analysis.
 	logging.Infof(c.Context, "analyzing %q", &builder.ID)

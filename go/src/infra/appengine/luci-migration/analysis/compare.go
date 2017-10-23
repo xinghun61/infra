@@ -84,10 +84,8 @@ func compare(groups []*group, minCorrectnessGroups int, currentStatus storage.Mi
 			comp.AvgTimeDeltaGroups++
 		}
 		for _, b := range g.Buildbot {
-			if d, finished := b.RunDuration(); finished {
-				avgBuildbotTimeSecs += d.Seconds()
-				buildbotBuilds++
-			}
+			avgBuildbotTimeSecs += b.RunDuration.Seconds()
+			buildbotBuilds++
 		}
 	}
 

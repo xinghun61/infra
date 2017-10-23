@@ -20,25 +20,19 @@ import (
 
 	"go.chromium.org/luci/buildbucket"
 	"go.chromium.org/luci/common/clock/testclock"
-	"go.chromium.org/luci/common/data/strpair"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func build(buildset string, duration time.Duration, status buildbucket.Status) *buildbucket.Build {
-	return &buildbucket.Build{
-		Tags:           strpair.Map{buildbucket.TagBuildSet: []string{buildset}},
-		Status:         status,
-		CreationTime:   testclock.TestRecentTimeUTC,
-		StartTime:      testclock.TestRecentTimeUTC,
-		CompletionTime: testclock.TestRecentTimeUTC.Add(duration),
-	}
-}
-
 func side(duration time.Duration, statuses ...buildbucket.Status) groupSide {
 	s := make(groupSide, len(statuses))
 	for i, st := range statuses {
-		s[i] = build("dummy", duration, st)
+		s[i] = &build{
+			Status:         st,
+			CreationTime:   testclock.TestRecentTimeUTC,
+			CompletionTime: testclock.TestRecentTimeUTC.Add(duration),
+			RunDuration:    duration,
+		}
 	}
 	return s
 }
@@ -59,10 +53,15 @@ func TestGroup(t *testing.T) {
 			So(side(time.Hour, failure, failure).trustworthy(), ShouldBeFalse)
 		})
 		Convey("avgRunDuration", func() {
-			s := groupSide{
-				build("dummy", 10*time.Minute, success),
-				build("dummy", 20*time.Minute, success),
-				build("dummy", 30*time.Minute, success),
+			var s groupSide
+			for i := 1; i <= 3; i++ {
+				duration := time.Duration(i) * 10 * time.Minute
+				s = append(s, &build{
+					Status:         buildbucket.StatusSuccess,
+					CreationTime:   testclock.TestRecentTimeUTC,
+					CompletionTime: testclock.TestRecentTimeUTC.Add(duration),
+					RunDuration:    duration,
+				})
 			}
 			So(s.avgRunDuration(), ShouldEqual, 20*time.Minute)
 		})

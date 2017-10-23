@@ -39,17 +39,24 @@ func (g *group) trustworthy() bool {
 	return g.Buildbot.trustworthy() && g.LUCI.trustworthy()
 }
 
+// build contains minimal information needed for analysis.
+type build struct {
+	Status         buildbucket.Status
+	CreationTime   time.Time
+	CompletionTime time.Time
+	RunDuration    time.Duration
+	URL            string
+}
+
 // groupSide is a list of builds ordered from oldest to newest
-type groupSide []*buildbucket.Build
+type groupSide []*build
 
 func (s groupSide) avgRunDuration() time.Duration {
 	avg := time.Duration(0)
 	count := 0
 	for _, b := range s {
-		if d, ok := b.RunDuration(); ok {
-			avg += d
-			count++
-		}
+		avg += b.RunDuration
+		count++
 	}
 	if count == 0 {
 		return 0
