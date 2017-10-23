@@ -371,7 +371,7 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 			strpair.Format(buildbucket.TagBuilder, f.Builder),
 			strpair.Format(buildbucket.TagBuildSet, g.Key))
 		req.CreationTsLow(buildbucket.FormatTimestamp(f.MinCreationDate))
-		req.Fields("builds(status, created_ts, started_ts, completed_ts, url)")
+		req.Fields("builds(status, failure_reason, cancelation_reason, created_ts, started_ts, completed_ts, url)")
 		var msgs []*bbapi.ApiCommonBuildMessage
 		msgs, *err = req.Fetch(0, nil)
 		if *err != nil {
