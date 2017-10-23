@@ -27,6 +27,8 @@ was triggered via Gerrit or Rietveld.
 Recognized URLs:
 	https://<rietveld_host>/<issue>
 	https://<rietveld_host>/<issue>/#ps<patchset>
+	https://<gerrit_host>/c/<path/to/project>/+/<issue>/<patchset>
+	https://<gerrit_host>/c/<path/to/project>/+/<issue>/<patchset>
 	https://<gerrit_host>/c/<issue>
 	https://<gerrit_host>/c/<issue>/<patchset>
 	https://<gerrit_host>/#/c/<issue>

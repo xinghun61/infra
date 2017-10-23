@@ -211,11 +211,21 @@ func parseCrChangeListURL(clURL string) (cl, error) {
 			if len(toks) < 1 || toks[0] != "c" {
 				return nil, errors.Reason("bad format for (old) gerrit URL: %q", clURL).Err()
 			}
+			toks = toks[1:] // remove "c"
 		} else {
+			toks = toks[1:] // remove "c"
 			// https://<gerrit_host>/c/<issue>
 			// https://<gerrit_host>/c/<issue>/<patchset>
+			// https://<gerrit_host>/c/<project/path>/+/<issue>
+			// https://<gerrit_host>/c/<project/path>/+/<issue>/<patchset>
+			for i, tok := range toks {
+				if tok == "+" {
+					toks = toks[i+1:]
+					break
+				}
+			}
 		}
-		toks = toks[1:]
+		// toks should be [<issue>] or [<issue>, <patchset>] at this point
 		ret, err := parseGerrit(p, toks)
 		err = errors.Annotate(err, "bad format for gerrit URL: %q", clURL).Err()
 		return ret, err
