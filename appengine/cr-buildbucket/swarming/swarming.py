@@ -747,18 +747,22 @@ def _sync_build_in_memory(
     logging.info('Build %s result: %s', build.key.id(), build.result)
     build.clear_lease()
     build.complete_time = now
-    small_build_run_result = None
-    if build_run_result:
-      small_build_run_result = build_run_result.copy()
-      # Exclude annotations from the build run result because they may exceed
-      # Build entity size limit.
-      small_build_run_result.pop('annotations', None)
     build.result_details = {
       'swarming': {
         'task_result': task_result,
       },
-      'build_run_result': small_build_run_result,
     }
+    if build_run_result:
+      # Do not put entire annotation proto into build entity.
+      # It significantly increases egress which signficantly increases the risk
+      # of hitting daily AppEngine quota.
+      small_build_run_result = build_run_result.copy()
+      annotations = small_build_run_result.pop('annotations', {})
+      build.result_details['build_run_result'] = small_build_run_result
+      # TODO(nodir,iannucci): define a schema for UI in a proto
+      build.result_details['ui'] = {
+        'info': '\n'.join(annotations.get('text', [])),
+      }
     if errmsg:
       build.result_details['error'] = {'message': errmsg}
   return True
