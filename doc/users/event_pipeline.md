@@ -1,58 +1,57 @@
+# Overview
+
 Our event pipeline collects, stores, and aggregates event data from ChOps
 services. Event data can be any piece of information we want to collect for
 analysis or tracking. It is distinct from timeseries data, for which we use
 [tsmon](https://chrome-internal.googlesource.com/infra/infra_internal/+/master/doc/ts_mon.md).
 
-# Creating a new BigQuery table
+See [katthomas's 2017 Opstoberfest
+presentation](https://docs.google.com/a/google.com/presentation/d/11DoVXM5hrmSk9pgrj2vjQNd5ihr2_9dKtPYewPbLpjA/edit?usp=sharing)
+for an overview of the components of the pipeline, with pictures!
 
-Table definitions are stored in infra.git in a subdirectory of
-`go/src/infra/tools/bqschemaupdater` and added/updated with the
-[bqschemaupdater](../go/src/infra/tools/bqschemaupdater/README.md) tool.
+# Step 1: Create a BigQuery table
 
-Table IDs should be underscore delimited, e.g. `test_results`.
+## Table Organization
 
-bqschemaupdater takes a JSON version of the
-[TableDef
-proto](../../go/src/infra/libs/bqschema/tabledef/table_def.proto)
+Tables are commonly identified by `<project-id>.<dataset_id>.<table_id>`.
 
-You need to be authenticated in the chrome-infra-events project to be able to
-create a new table. To check your authentication status, ensure that you have
-the Cloud SDK [installed](https://cloud.google.com/sdk/docs/quickstarts), then
-run:
+BigQuery tables belong to datasets. Dataset IDs and table IDs should be
+underscore delimited, e.g. `test_results`.
 
-```
-gcloud info
-```
+For Google Cloud Projects, tables should be created in their own project, under
+the dataset "events."
 
-If you don't see: `Project: [chrome-infra-events]`, reach out to an
-[editor](https://pantheon.corp.google.com/iam-admin/iam/project?project=chrome-infra-events&organizationId=433637338589)
-to request access.
+Other projects can use the chrome-infra-events project id and create a dataset
+specific to the team, product, or service. For example, CQ events are store in
+`chrome-infra-events.cq.raw_events`.  In either case, table names are up to the
+owner's discretion.
 
-To create a new BigQuery table:
+Datasets can be created in the easy-to-use [console](bigquery.cloud.google.com).
 
-```
-cd go/src/infra/tools/bqschemaupdater  # In infra.git
-touch <dataset-subdirectory>/<table-id>.json
-# Reference tabledef/table_def.proto for message format
-go build
-./bqschemaupdater --dryrun <dataset-subdirectory>/<table-id>.json
-# Looks good? Create CL for review... Review... Commit...
-# Actually create the table
-./bqshemaupdater <dataset-subdirectory>/<table-id>.json
-```
+Rationale for per-project tables:
 
-## bqexport
+* Each project may ACL its tables as it sees fit, and apply its own quota
+constraints to stay within budget.
+* Different GCP instances of the same application code (say, staging vs
+production for a given AppEngine app) may keep separate ACLs and retention
+policies for their logs so they don’t write over each other.
 
-The [bqexport](../../go/src/infra/cmd/bqexport) tool is a Go generator utility
-that can generate Go structs from `bqschemaupdater`-compatible table
-definitions. Go structs. See [bqexport documentation](../../go/src/infra/cmd/bqexport)
-for more information.
+## Creating and updating tables
 
-# Sending events
+Tables are defined by schemas. Schemas are stored in .proto form. Therefore we
+have version control and can use the protoc tool to create language-specific
+instances. Use the [bqschemaupdater](../go/src/infra/tools/bqschemaupdater/README.md)
+to create new tables or modify existing tables in BigQuery. As of right now,
+this tool must be run manually.
+
+# Step 2: Send events to BigQuery
 
 Once you have a table, you can send events to it!
 
 ## Credentials
+
+The following applies to non-GCP projects. Events sent from GCP projects to
+tables owned by the same project should just work.
 
 You need to ensure the machines that will be running the code which sends events
 have proper credentials. At this point, you may need to enlist the help of a
@@ -75,9 +74,49 @@ internal.
    of passing the name of the credentials file to the service on start. [See
    CL.](https://chrome-internal-review.googlesource.com/c/405268/)
 
-## From Go
+## How to Choose a Library
 
-If you need to instrument a GAE app, talk to katthomas@.
+### TLDR
+
+Go: use
+[eventupload](https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/libs/eventupload)
+[example CL](https://chromium-review.googlesource.com/c/infra/infra/+/719962)
+
+Python: use
+[BigQueryHelper](https://cs.chromium.org/chromium/infra/infra/libs/bigquery/helper.py?q=Bigqueryhelper&sq=package:chromium&l=11)
+[example CL](https://chrome-internal-review.googlesource.com/c/infra/infra_internal/+/445955)
+
+
+### Options
+
+How you instrument your code to add event logging depends on your needs, and
+there are a couple of options.
+
+_We strongly advise against using the raw Google Cloud APIs for BigQuery because
+they have some rough edges and failure modes that our chrome infra libs address
+for you._
+
+If you don’t need transactional integrity, and prefer a simpler configuration,
+use the client library in [infra/libs/eventupload](https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/libs/eventupload).  This should be your default
+choice if you’re just starting out.
+
+If you need ~8ms latency on inserts, or transactional integrity with datastore
+operations, use
+[bqlog](https://cs.chromium.org/chromium/infra/go/src/go.chromium.org/luci/tokenserver/appengine/impl/utils/bqlog/bqlog.go) [TODO: update this link if/when bqlog moves out of
+tokenserver into a shared location].
+
+Design trade-offs for using infra/libs/eventupload instead of bqlog: lower
+accuracy and precision. Some events may be duplicated in logs (say, if an
+operation that logs events has to be retried due to datastore contention).
+Intermittent failures in other supporting infrastructure may also cause events
+to be lost.
+
+Design trade-offs for using bqlog instead of eventupload: You will have to
+enable task queues in your app if you haven’t already, and add a new cron task
+to your configuration. You will also not be able to use the bqschemaupdater
+(described below) tool to manage your logging schema code generation.
+
+### From Go: eventupload
 
 [eventuploader](https://godoc.org/chromium.googlesource.com/infra/infra.git/go/src/infra/libs/eventupload)
 takes care of some boilerplate and makes it easy to add monitoring for uploads.
@@ -91,23 +130,17 @@ With `eventuploader`, you can construct a synchronous `Uploader` or asynchronous
 [kitchen](../../go/src/infra/tools/kitchen/monitoring.go) is an example of a
 tool that uses eventuploader.
 
-## From Python
-
-### Dependencies
+### From Python: BigQueryHelper
 
 You will need the
 [google-cloud-bigquery](https://pypi.python.org/pypi/google-cloud-bigquery)
 library in your environment. infra.git/ENV has this dependency already, so you
 only need to add it if you are working outside that environment.
 
-### BigQueryHelper
-
 Check out the (../../infra/libs/bigquery/helper.py)[BigQueryHelper] class. It
 makes it easy to add insert IDs, which BigQuery uses to deduplicate rows in the
 streaming insert buffer. It is recommended that you use it. You'll still have to
 provide an authenticated instance of google.cloud.bigquery.client.Client.
-
-### Example
 
 See
 [this change](https://chrome-internal-review.googlesource.com/c/407748/)
@@ -116,7 +149,7 @@ BigQueryHelper.) The [API
 docs](https://googlecloudplatform.github.io/google-cloud-python/stable/bigquery-usage.html)
 can also be helpful.
 
-# Writing a Dataflow workflow
+# (Optional Step) Writing a Dataflow workflow
 
 ## Recommended Reading
 
@@ -153,3 +186,7 @@ example.
 The builder name should be `dataflow-workflow-[job name]` where job name is
 the name of the remotely executed job. This naming scheme sets up automated
 alerting for builder failures.
+
+# Step 3: Analyze/Track/Graph Events
+
+TODO

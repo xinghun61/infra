@@ -5,8 +5,23 @@ default. We can add support for different projects when needed in the future.
 
 # Usage
 
+schemas should be written in .proto format.
+
+To create or modify a new table, you need to be authenticated in the Google
+Cloud Project project to which that table will belong. To check your
+authentication status, ensure that you have the Cloud SDK
+[installed](https://cloud.google.com/sdk/docs/quickstarts), then run:
+
 ```
-bqschemaupdater [--project <project-id, chrome-infra-events by default>] <path to json schema file> [--help] [--dry-run]
+gcloud info
+```
+
+If you don't see the correct project id, reach out to an
+[editor](https://pantheon.corp.google.com/iam-admin/iam) of that project to
+request access.
+
+```
+bqschemaupdater --help
 ```
 
 # Standard Practices
@@ -20,10 +35,3 @@ The operations supported by this tool include:
 * Creating a new table
 * Adding NULLABLE or REPEATED columns to an existing table
 * Making REQUIRED fields NULLABLE in an existing table
-
-## Schema Generation
-
-The [bqexport](../../cmd/bqexport) tool is a Go generator utility
-that can generate `bqschemaupdater`-compatible table definitions from BigQuery
-Go structs. See [bqexport documentation](../../cmd/bqexport) for
-more information.
