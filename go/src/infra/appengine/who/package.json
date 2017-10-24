@@ -1,0 +1,7 @@
+{
+  "name": "who",
+  "description": "opstoberfest hackathon to learn redux",
+  "dependencies": {
+    "redux": "^3.7.2"
+  }
+}
