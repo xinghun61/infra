@@ -4,17 +4,14 @@
 
 import argparse
 import contextlib
-from datetime import datetime
-import fcntl
 import json
 import logging
 import logging.handlers
 import os
-import socket
 import subprocess
 import sys
-import time
 import threading
+import time
 
 from infra.libs.service_utils import daemon
 from infra.services.android_docker import containers
@@ -25,17 +22,15 @@ _REGISTRY_URL = 'gcr.io'
 
 # Location of file that will prevent this script from spawning new containers.
 # Useful when draining a host in order to debug failures. _BOT_SHUTDOWN_FILE
-# drains the entire bot while _DEVICE_SHUTDOWN_FILE drains only a specific
-# device.
+# drains all containers, but individual containers can also be drained using
+# container's shutdown file as returned by its descriptor class.
 _BOT_SHUTDOWN_FILE = '/b/shutdown.stamp'
-_DEVICE_SHUTDOWN_FILE = '/b/%(device_id)s.shutdown.stamp'
 
 # Time to wait for swarming bots to gracefully shutdown before triggering a
 # host reboot. It should be at least as long as the longest expected task
 # run time.
 _REBOOT_GRACE_PERIOD_MIN = 240
 
-_DEVICE_LOCK_FILE = '/var/lock/android_docker.%(device_id)s.lock'
 _USB_BUS_LOCK_FILE = '/var/lock/android_docker.usb_bus.lock'
 
 # Defined in
@@ -114,7 +109,7 @@ class FlockTimeoutError(Exception):
 
 
 @contextlib.contextmanager
-def flock(lock_file, retries=20, sleep_duration=3):
+def flock(lock_file, retries=20, sleep_duration=3):  # pragma: no cover
   logging.debug('Acquiring file lock on %s...', lock_file)
   i = 0
   while True:
@@ -136,31 +131,31 @@ def flock(lock_file, retries=20, sleep_duration=3):
         time.sleep(sleep_duration)
 
 
-def add_device(docker_client, device, args):
-  # pylint: disable=unused-argument
-  container = docker_client.get_container(device)
-  if container is not None and container.state == 'running':
-    container.add_device(device)
-  else:
-    logging.error('Unable to add device %s: no running container.', device)
+def add_device(docker_client, device, args):  # pylint: disable=unused-argument
+  desc = containers.AndroidContainerDescriptor(device)
+  try:
+    with flock(desc.lock_file):
+      docker_client.add_device(desc)
+  except FlockTimeoutError:
+    logging.error('Unable to acquire device lock on %s in time.', device)
 
 
-def launch(docker_client, android_devices, args):
+def launch_containers(
+    docker_client, container_descriptors, args):  # pragma: no cover
   draining_host = os.path.exists(_BOT_SHUTDOWN_FILE)
-  draining_devices = [
-      d for d in android_devices if os.path.exists(
-          _DEVICE_SHUTDOWN_FILE % {'device_id': d.serial})
+  draining_container_descriptors = [
+      cd for cd in container_descriptors if os.path.exists(cd.shutdown_file)
   ]
   if draining_host:
     logging.info(
         'In draining state due to existence of %s. No new containers will be '
         'created.', _BOT_SHUTDOWN_FILE)
-  elif draining_devices:
+  elif draining_container_descriptors:
     logging.info(
-        'Draining devices %s due to existence of files: %s. They will not be '
-        'granted new containers.', draining_devices,
-        [_DEVICE_SHUTDOWN_FILE % {'device_id': d.serial}
-            for d in draining_devices])
+        'Draining containers %s due to existence of files: %s. They will not '
+        'be restarted automatically.',
+        [cd.name for cd in draining_container_descriptors],
+        [cd.shutdown_file for cd in draining_container_descriptors])
 
   running_containers = docker_client.get_running_containers()
   # Reboot the host if needed. Will attempt to kill all running containers
@@ -199,17 +194,18 @@ def launch(docker_client, android_devices, args):
     # TODO(bpastene): Maybe enable auto cleanup with the -rm option?
     docker_client.delete_stopped_containers()
 
-    # Send SIGTERM to bots in containers that have been running for too long,
-    # or all of them regardless of uptime if draining. This stays outside the
-    # per-device flock below due to the fact that a container's device might
-    # go missing, so we need to examine *all* containers here.
+    # Send SIGTERM to bots in containers that have been running for too long, or
+    # all of them regardless of uptime if draining. For Android containers (see
+    # infra.services.android_swarm package), some containers may go missing due
+    # to associated devices missing, so we need to examine *all* containers here
+    # instead of doing that inside the per-container flock below.
     current_cipd_version = get_cipd_version()
     if draining_host:
       for c in running_containers:
         c.kill_swarming_bot()
     else:
-      for d in draining_devices:
-        c = docker_client.get_container(d)
+      for cd in draining_container_descriptors:
+        c = docker_client.get_container(cd)
         if c is not None:
           c.kill_swarming_bot()
       docker_client.stop_old_containers(
@@ -223,12 +219,12 @@ def launch(docker_client, android_devices, args):
                 'Container %s is out of date. Shutting it down.', c.name)
             c.kill_swarming_bot()
 
-    # Create a container for each device that doesn't already have one.
+    # Make sure all requested containers are running.
     if not draining_host:
-      def _create_container(d):
+      def _create_container(container_desc):
         try:
-          with flock(_DEVICE_LOCK_FILE % {'device_id': d.serial}):
-            c = docker_client.get_container(d)
+          with flock(container_desc.lock_file):
+            c = docker_client.get_container(container_desc)
             if c is None:
               labels = {}
               # Attach current cipd version to container's metadata so it can
@@ -236,8 +232,7 @@ def launch(docker_client, android_devices, args):
               if current_cipd_version is not None:
                 labels['cipd_version'] = current_cipd_version
               docker_client.create_container(
-                  d, image_url, args.swarming_server, labels)
-              add_device(docker_client, d, args)
+                  container_desc, image_url, args.swarming_server, labels)
             elif c.state == 'paused':
               # Occasionally a container gets stuck in the paused state. Since
               # the logic here is thread safe, this shouldn't happen, so
@@ -248,22 +243,76 @@ def launch(docker_client, android_devices, args):
             else:
               logging.debug('Nothing to do for container %s.', c.name)
         except FlockTimeoutError:
-          logging.error('Timed out while waiting for lock on device %s.', d)
+          logging.error(
+              'Timed out while waiting for lock on container %s.',
+              container_desc.name)
 
       threads = []
-      for d in android_devices:
-        if d.physical_port is None:
-          logging.warning(
-              'Unable to assign physical port num to %s. No container will be '
-              'created.', d.serial)
-        elif d not in draining_devices:
+      for cd in container_descriptors:
+        # TODO(sergiyb): Remove should_craete_container logic from this generic
+        # container management loop and move it outside of the launch_container
+        # function as it's specific to Android devices only.
+        if (cd.should_create_container() and
+            cd not in draining_container_descriptors):
           # Split this into threads so a blocking container doesn't block the
           # others (and also for speed!)
-          t = threading.Thread(target=_create_container, args=(d,))
+          t = threading.Thread(target=_create_container, args=(cd,))
           threads.append(t)
           t.start()
       for t in threads:
         t.join()
+
+
+def launch(docker_client, android_devices, args):
+  container_descriptors = map(
+      containers.AndroidContainerDescriptor, android_devices)
+  launch_containers(docker_client, container_descriptors, args)
+
+
+def add_launch_arguments(parser):
+  parser.add_argument(
+      '--max-container-uptime', type=int, default=60 * 4,
+      help='Max uptime of a container, in minutes.')
+  parser.add_argument(
+      '--max-host-uptime', type=int, default=60 * 24,
+      help='Max uptime of the host, in minutes.')
+  parser.add_argument(
+      '--image-name', default='swarm_docker:latest',
+      help='Name of docker image to launch from.')
+  parser.add_argument(
+      '--swarming-server', default='https://chromium-swarm.appspot.com',
+      help='URL of the swarming server to connect to.')
+  parser.add_argument(
+      '--registry-project', default='chromium-container-registry',
+      help='Name of gcloud project id for the container registry.')
+  parser.add_argument(
+      '--credentials-file',
+      default='/creds/service_accounts/'
+              'service-account-container_registry_puller.json',
+      help='Path to service account json file used to access the gcloud '
+           'container registry.')
+
+
+def configure_logging(log_filename, log_prefix, verbose):
+  logger = logging.getLogger()
+  logger.setLevel(logging.DEBUG if verbose else logging.WARNING)
+  log_fmt = logging.Formatter(
+      '%(asctime)s.%(msecs)03d %(levelname)s ' + log_prefix + ' %(message)s' ,
+      datefmt='%y%m%d %H:%M:%S')
+
+  file_handler = logging.handlers.RotatingFileHandler(
+      '/var/log/chrome-infra/%s' % log_filename,
+      maxBytes=10 * 1024 * 1024, backupCount=5)
+  file_handler.setFormatter(log_fmt)
+  logger.addHandler(file_handler)
+  stdout_handler = logging.StreamHandler(sys.stdout)
+  logger.addHandler(stdout_handler)
+
+  # Quiet some noisy modules.
+  cmd_helper_logger = logging.getLogger('devil.utils.cmd_helper')
+  cmd_helper_logger.setLevel(logging.ERROR)
+  urllib3_logger = logging.getLogger('requests.packages.urllib3.connectionpool')
+  urllib3_logger.setLevel(logging.WARNING)
 
 
 def main():
@@ -288,60 +337,22 @@ def main():
            'a kill signal to containers that exceed max uptime.'
   )
   launch_subparser.set_defaults(func=launch, name='launch')
-  launch_subparser.add_argument(
-      '--max-container-uptime', type=int, default=60 * 4,
-      help='Max uptime of a container, in minutes.')
-  launch_subparser.add_argument(
-      '--max-host-uptime', type=int, default=60 * 24,
-      help='Max uptime of the host, in minutes.')
-  launch_subparser.add_argument(
-      '--image-name', default='android_docker:latest',
-      help='Name of docker image to launch from.')
-  launch_subparser.add_argument(
-      '--swarming-server', default='https://chromium-swarm.appspot.com',
-      help='URL of the swarming server to connect to.')
-  launch_subparser.add_argument(
-      '--registry-project', default='chromium-container-registry',
-      help='Name of gcloud project id for the container registry.')
-  launch_subparser.add_argument(
-      '--credentials-file',
-      default='/creds/service_accounts/'
-              'service-account-container_registry_puller.json',
-      help='Path to service account json file used to access the gcloud '
-           'container registry.')
+  add_launch_arguments(launch_subparser)
   args = parser.parse_args()
-
-  log_prefix = '%d %s-%s' % (
-      os.getpid(), args.name, ','.join(args.devices) if args.devices else 'all')
-  logger = logging.getLogger()
-  logger.setLevel(logging.DEBUG if args.verbose else logging.WARNING)
-  log_fmt = logging.Formatter(
-      '%(asctime)s.%(msecs)03d %(levelname)s ' + log_prefix + ' %(message)s' ,
-      datefmt='%y%m%d %H:%M:%S')
 
   # Udev-triggered runs of this script run as root while the crons run as
   # non-root. Manually set umask to ensure the world can read/write to the log
   # files even if they're owned by root.
   os.umask(0o000)
-  file_handler = logging.handlers.RotatingFileHandler(
-      '/var/log/chrome-infra/android_containers.log',
-      maxBytes=10 * 1024 * 1024, backupCount=5)
-  file_handler.setFormatter(log_fmt)
-  logger.addHandler(file_handler)
-  stdout_handler = logging.StreamHandler(sys.stdout)
-  logger.addHandler(stdout_handler)
-
-  # Quiet some noisy modules.
-  cmd_helper_logger = logging.getLogger('devil.utils.cmd_helper')
-  cmd_helper_logger.setLevel(logging.ERROR)
-  urllib3_logger = logging.getLogger('requests.packages.urllib3.connectionpool')
-  urllib3_logger.setLevel(logging.WARNING)
+  log_prefix = '%d %s-%s' % (
+      os.getpid(), args.name, ','.join(args.devices) if args.devices else 'all')
+  configure_logging('android_containers.log', log_prefix, args.verbose)
 
   if not os.path.exists(_BOT_SHUTDOWN_FILE):
     logging.debug('Killing any host-side ADB processes.')
     kill_adb()
 
-  docker_client = containers.DockerClient()
+  docker_client = containers.AndroidDockerClient()
   if not docker_client.ping():
     logging.error('Docker engine unresponsive. Quitting early.')
     return 1
@@ -367,11 +378,7 @@ def main():
   # simultaneously.
   if args.devices:
     def _process_device(d):
-      try:
-        with flock(_DEVICE_LOCK_FILE % {'device_id': d.serial}):
-          args.func(docker_client, d, args)
-      except FlockTimeoutError:
-        logging.error('Unable to acquire device lock on %s in time.', d)
+      args.func(docker_client, d, args)
     threads = []
     for d in android_devices:
       t = threading.Thread(target=_process_device, args=(d,))
@@ -385,15 +392,18 @@ def main():
   return 0
 
 
-if __name__ == '__main__':
+def main_wrapper(main_func):
   if sys.platform != 'linux2':
     print 'Only supported on linux.'
     sys.exit(1)
   try:
-    sys.exit(main())
+    sys.exit(main_func())
   except containers.FrozenEngineError:
     logging.exception('Docker engine frozen, triggering host reboot.')
     reboot_host()
   except Exception as e:
     logging.exception('Exception:')
     raise e
+
+if __name__ == '__main__':
+  main_wrapper(main)

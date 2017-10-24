@@ -148,32 +148,35 @@ class FakeContainerList(object):
     raise docker.errors.NotFound('omg container missing')
 
 
-class TestGetNames(unittest.TestCase):
+class TestContainerDescriptor(unittest.TestCase):
   def setUp(self):
-    self.device = FakeDevice('serial123', 1)
+    self.desc = containers.ContainerDescriptor('7')
 
-  def test_container_name(self):
-    container_name = containers.get_container_name(self.device)
-    self.assertEqual(container_name, 'android_serial123')
-
-  @mock.patch('socket.gethostname')
-  def test_container_hostname_with_port(self, mock_gethostname):
-    mock_gethostname.return_value = 'build123-a4'
-    container_hostname = containers.get_container_hostname(self.device)
-    self.assertEqual(container_hostname, 'build123-a4--device1')
+  def test_name(self):
+    self.assertEquals(self.desc.name, '7')
 
   @mock.patch('socket.gethostname')
-  def test_container_hostname_with_serial(self, mock_gethostname):
+  def test_hostname(self, mock_gethostname):
     mock_gethostname.return_value = 'build123-a4'
-    self.device.physical_port = None
-    container_hostname = containers.get_container_hostname(self.device)
-    self.assertEqual(container_hostname, 'build123-a4--serial123')
+    self.assertEquals(self.desc.hostname, 'build123-a4--7')
+
+  def test_log_started_smoke(self):
+    self.desc.log_started()
+
+  def test_shutdown_file(self):
+    self.assertEqual(self.desc.shutdown_file, '/b/7.shutdown.stamp')
+
+  def test_lock_file(self):
+    self.assertEqual(self.desc.lock_file, '/var/lock/swarm_docker.7.lock')
+
+  def test_should_create_container(self):
+    self.assertTrue(self.desc.should_create_container())
 
 
 class TestDockerClient(unittest.TestCase):
   def setUp(self):
     self.fake_client = FakeClient()
-    self.container_names = ['android_serial1', 'android_serial2']
+    self.container_names = ['5', '6']
     self.fake_client.containers = FakeContainerList(
         [FakeContainerBackend(name) for name in self.container_names])
 
@@ -258,27 +261,25 @@ class TestDockerClient(unittest.TestCase):
 
   @mock.patch('docker.from_env')
   def test_get_paused_containers(self, mock_from_env):
-    self.fake_client.containers.get('android_serial1').pause()
+    self.fake_client.containers.get('5').pause()
     mock_from_env.return_value = self.fake_client
 
     paused_containers = containers.DockerClient().get_paused_containers()
     self.assertEqual(len(paused_containers), 1)
-    self.assertEqual(paused_containers[0].name, 'android_serial1')
+    self.assertEqual(paused_containers[0].name, '5')
 
   @mock.patch('docker.from_env')
   def test_get_container(self, mock_from_env):
     mock_from_env.return_value = self.fake_client
-    fake_device = FakeDevice('serial2', 2)
-
-    container = containers.DockerClient().get_container(fake_device)
-    self.assertEqual(container.name, 'android_serial2')
+    container = containers.DockerClient().get_container(
+        containers.ContainerDescriptor('5'))
+    self.assertEqual(container.name, '5')
 
   @mock.patch('docker.from_env')
   def test_get_missing_container(self, mock_from_env):
     mock_from_env.return_value = self.fake_client
-    fake_device = FakeDevice('missing_device', 1)
-
-    container = containers.DockerClient().get_container(fake_device)
+    container = containers.DockerClient().get_container(
+        containers.ContainerDescriptor('1'))
     self.assertEqual(container, None)
 
   @mock.patch('docker.from_env')
@@ -291,15 +292,6 @@ class TestDockerClient(unittest.TestCase):
         [young_container, old_container], 100)
     self.assertFalse(young_container.swarming_bot_killed)
     self.assertTrue(old_container.swarming_bot_killed)
-
-  @mock.patch('docker.from_env')
-  def test_stop_no_containers(self, mock_from_env):
-    mock_from_env.return_value = self.fake_client
-
-    try:
-      containers.DockerClient().stop_old_containers([], 100)
-    except containers.FrozenEngineError:  # pragma: no cover
-      self.fail('FrozenEngineError thrown despite no running containers.')
 
   @mock.patch('docker.from_env')
   def test_stop_frozen_containers(self, mock_from_env):
@@ -337,13 +329,12 @@ class TestDockerClient(unittest.TestCase):
         FakeContainer('android_serial1'),
         FakeContainer('android_serial2'),
     ]
-    device = FakeDevice('serial3', 3)
     self.fake_client.containers = FakeContainerList(running_containers)
     mock_from_env.return_value = self.fake_client
 
     container = containers.DockerClient().create_container(
-        device, 'image', 'swarm-url.com', {})
-    self.assertEquals(container.name, containers.get_container_name(device))
+        containers.ContainerDescriptor('1'), 'image', 'swarm-url.com', {})
+    self.assertEquals(container.name, '1')
     mock_chown.assert_called_with(mock_mkdir.call_args[0][0], 1, 2)
 
 
@@ -351,6 +342,10 @@ class TestContainer(unittest.TestCase):
   def setUp(self):
     self.container_backend = FakeContainerBackend('container1')
     self.container = containers.Container(self.container_backend)
+
+  def test_get_labels(self):
+    self.container_backend.attrs = {'Config': {'Labels': {'label1': 'val1'}}}
+    self.assertEquals(self.container.labels, {'label1': 'val1'})
 
   def test_get_state(self):
     self.container_backend.attrs = {'State': {'Status': 'running'}}
@@ -429,23 +424,115 @@ class TestContainer(unittest.TestCase):
     self.assertFalse(self.container_backend.was_stopped)
     self.assertFalse(self.container_backend.was_deleted)
 
-  @mock.patch('time.sleep')
+  def test_pause_unpause(self):
+    self.container.pause()
+    self.assertTrue(self.container_backend.is_paused)
+    self.container.unpause()
+    self.assertFalse(self.container_backend.is_paused)
+
+  def test_exec_run(self):
+    self.container_backend.exec_outputs = ['', '']
+    self.container.exec_run('ls')
+    self.container.exec_run('cd')
+    self.assertEquals(self.container_backend.exec_inputs, ['ls', 'cd'])
+
+  def test_attrs(self):
+    self.container_backend.attrs = {'Id': '123'}
+    self.assertEquals(self.container.attrs['Id'], '123')
+
+
+class TestAndroidContainerDescriptor(unittest.TestCase):
+  def setUp(self):
+    self.desc = containers.AndroidContainerDescriptor(
+        FakeDevice('serial123', 1))
+
+  def test_name(self):
+    self.assertEquals(self.desc.name, 'android_serial123')
+
+  @mock.patch('socket.gethostname')
+  def test_hostname_with_port(self, mock_gethostname):
+    mock_gethostname.return_value = 'build123-a4'
+    self.assertEquals(self.desc.hostname, 'build123-a4--device1')
+
+  @mock.patch('socket.gethostname')
+  def test_hostname_with_serial(self, mock_gethostname):
+    mock_gethostname.return_value = 'build123-a4'
+    self.desc.device.physical_port = None
+    self.assertEquals(self.desc.hostname, 'build123-a4--serial123')
+
+  def test_log_started_smoke(self):
+    containers.AndroidContainerDescriptor(
+        FakeDevice('serial123', 1)).log_started()
+
+  def test_shutdown_file(self):
+    self.assertEqual(self.desc.shutdown_file, '/b/serial123.shutdown.stamp')
+
+  def test_lock_file(self):
+    self.assertEqual(
+        self.desc.lock_file, '/var/lock/android_docker.serial123.lock')
+
+  def test_should_create_container(self):
+    self.assertTrue(self.desc.should_create_container())
+    self.desc.device.physical_port = None
+    self.assertFalse(self.desc.should_create_container())
+
+
+class TestAndroidDockerClient(unittest.TestCase):
+  @mock.patch.object(containers.DockerClient, 'create_container')
+  @mock.patch.object(containers.AndroidDockerClient, 'add_device')
+  def test_create_container(self, mock_add_device, mock_create_container):
+    fake_container = FakeContainer('android_serial3')
+    mock_create_container.return_value = fake_container
+    device = FakeDevice('serial3', 3)
+    desc = containers.AndroidContainerDescriptor(device)
+    client = containers.AndroidDockerClient()
+    client.create_container(desc, 'image', 'swarm-url.com', {})
+    mock_create_container.assert_called_once_with(
+        desc, 'image', 'swarm-url.com', {})
+    mock_add_device.assert_called_once_with(desc)
+
+  @mock.patch.object(containers, '_DOCKER_VOLUMES', {})
+  def test_get_volumes(self):
+    client = containers.AndroidDockerClient()
+    volumes = client._get_volumes('/b/android_serial3')
+    self.assertEquals(volumes.get('/opt/infra-android'),
+                      {'bind': '/opt/infra-android', 'mode': 'ro'})
+
+  def test_get_env(self):
+    env = containers.AndroidDockerClient()._get_env('')
+    self.assertEquals(env.get('ADB_LIBUSB'), '0')
+
+
+class TestAddDevice(unittest.TestCase):
+  def setUp(self):
+    self.container_backend = FakeContainerBackend('container1')
+    self.container_backend.attrs = {
+      'Id': 'abc123',
+      'State': {'Status': 'running'},
+    }
+    self.client = containers.AndroidDockerClient()
+    self.device = FakeDevice('serial1', 1)
+    self.desc = containers.AndroidContainerDescriptor(self.device)
+    mock.patch.object(
+        self.client, 'get_container',
+        return_value=containers.Container(self.container_backend)).start()
+    self.mock_sleep = mock.patch('time.sleep', return_value=None).start()
+    self.mock_path_exists = mock.patch(
+        'os.path.exists', return_value=True).start()
+
+  def tearDown(self):
+    mock.patch.stopall()
+
   @mock.patch('os.open')
   @mock.patch('os.write')
   @mock.patch('os.close')
-  @mock.patch('os.path.exists')
-  def test_add_device(self, mock_path_exists, mock_close, mock_write, mock_open,
-                      mock_sleep):
-    mock_sleep.return_value = None
-    mock_path_exists.return_value = True
-    self.container_backend.attrs = {'Id': 'abc123'}
+  def test_add_device(self, mock_close, mock_write, mock_open):
     self.container_backend.exec_outputs = ['', '']
-    device = FakeDevice('serial1', 1)
-    device.major = 111
-    device.minor = 9
-    device.bus = 1
-    device.dev_file_path = '/dev/bus/usb/001/123'
-    self.container.add_device(device)
+    self.device.major = 111
+    self.device.minor = 9
+    self.device.bus = 1
+    self.device.dev_file_path = '/dev/bus/usb/001/123'
+    self.client.add_device(self.desc)
 
     self.assertTrue('abc123' in mock_open.call_args[0][0])
     # Ensure the device's major and minor numbers were written to the
@@ -454,39 +541,25 @@ class TestContainer(unittest.TestCase):
     self.assertTrue(mock_close.called)
     self.assertFalse(self.container_backend.is_paused)
 
-  @mock.patch('time.sleep')
   @mock.patch('os.open')
-  @mock.patch('os.path.exists')
-  def test_add_device_missing_cgroup(self, mock_path_exists, mock_open,
-                                     mock_sleep):
-    mock_sleep.return_value = None
-    mock_path_exists.return_value = False
-    self.container_backend.attrs = {'Id': 'abc123'}
+  def test_add_device_missing_cgroup(self, mock_open):
+    self.mock_path_exists.return_value = False
     self.container_backend.exec_outputs = ['']
-    device = FakeDevice('serial1', 1)
-
-    self.container.add_device(device)
+    self.client.add_device(self.desc)
 
     self.assertFalse(mock_open.called)
     self.assertEquals(len(self.container_backend.exec_inputs), 1)
     self.assertFalse(self.container_backend.is_paused)
 
-  @mock.patch('time.sleep')
   @mock.patch('os.open')
   @mock.patch('os.write')
   @mock.patch('os.close')
-  @mock.patch('os.path.exists')
-  def test_add_device_os_open_error(self, mock_path_exists, mock_close,
-                                    mock_write, mock_open, mock_sleep):
-    mock_sleep.return_value = None
-    mock_path_exists.return_value = True
+  def test_add_device_os_open_error(self, mock_close, mock_write, mock_open):
     mock_open.side_effect = OSError('omg open error')
-    self.container_backend.attrs = {'Id': 'abc123'}
     self.container_backend.exec_outputs = ['']
-    device = FakeDevice('serial1', 1)
-    device.major = 111
-    device.minor = 9
-    self.container.add_device(device)
+    self.device.major = 111
+    self.device.minor = 9
+    self.client.add_device(self.desc)
 
     self.assertTrue('abc123' in mock_open.call_args[0][0])
     self.assertFalse(mock_write.called)
@@ -494,22 +567,16 @@ class TestContainer(unittest.TestCase):
     self.assertEquals(len(self.container_backend.exec_inputs), 1)
     self.assertFalse(self.container_backend.is_paused)
 
-  @mock.patch('time.sleep')
   @mock.patch('os.open')
   @mock.patch('os.write')
   @mock.patch('os.close')
-  @mock.patch('os.path.exists')
-  def test_add_device_os_write_error(self, mock_path_exists, mock_close,
-                                     mock_write, mock_open, mock_sleep):
-    mock_sleep.return_value = None
-    mock_path_exists.return_value = True
+  def test_add_device_os_write_error(self, mock_close,
+                                     mock_write, mock_open):
     mock_write.side_effect = OSError('omg write error')
-    self.container_backend.attrs = {'Id': 'abc123'}
     self.container_backend.exec_outputs = ['']
-    device = FakeDevice('serial1', 1)
-    device.major = 111
-    device.minor = 9
-    self.container.add_device(device)
+    self.device.major = 111
+    self.device.minor = 9
+    self.client.add_device(self.desc)
 
     self.assertTrue('abc123' in mock_open.call_args[0][0])
     self.assertEquals(mock_write.call_args[0][1], 'c 111:9 rwm')
@@ -517,28 +584,21 @@ class TestContainer(unittest.TestCase):
     self.assertEquals(len(self.container_backend.exec_inputs), 1)
     self.assertFalse(self.container_backend.is_paused)
 
-  @mock.patch('time.sleep')
   @mock.patch('os.open')
   @mock.patch('os.write')
   @mock.patch('os.close')
-  @mock.patch('os.path.exists')
-  def test_add_device_with_battor(self, mock_path_exists, mock_close,
-                                  mock_write, mock_open, mock_sleep):
-    mock_sleep.return_value = None
-    mock_path_exists.return_value = True
-    self.container_backend.attrs = {'Id': 'abc123'}
+  def test_add_device_with_battor(self, mock_close, mock_write, mock_open):
     self.container_backend.exec_outputs = ['', '', '']
-    device = FakeDevice('serial1', 1)
-    device.major = 111
-    device.minor = 9
-    device.bus = 1
-    device.dev_file_path = '/dev/bus/usb/001/123'
+    self.device.major = 111
+    self.device.minor = 9
+    self.device.bus = 1
+    self.device.dev_file_path = '/dev/bus/usb/001/123'
     battor = FakeBattor('/dev/ttyBattor', 'battorSerial1')
     battor.major = 189
     battor.minor = 0
     battor.syspath = '/devices/usb/1/2/3/pci123/'
-    device.battor = battor
-    self.container.add_device(device)
+    self.device.battor = battor
+    self.client.add_device(self.desc)
 
     self.assertTrue('abc123' in mock_open.call_args[0][0])
     # Ensure the device's major and minor numbers were written to the
@@ -565,3 +625,8 @@ class TestContainer(unittest.TestCase):
 
     self.assertTrue(mock_close.called)
     self.assertFalse(self.container_backend.is_paused)
+
+  def test_container_not_running(self):
+    self.container_backend.attrs['State']['Status'] = 'paused'
+    self.client.add_device(self.desc)
+    self.assertFalse(self.mock_sleep.called)
