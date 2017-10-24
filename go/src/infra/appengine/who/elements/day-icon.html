@@ -1,0 +1,73 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+
+<dom-module id="day-icon">
+  <template>
+    <style>
+      :host {
+        --activity-color: white;
+      }
+      div {
+        background-color: var(--activity-color);
+        height: 20px;
+        width: 20px;
+      }
+    </style>
+    <div>
+      <paper-tooltip>
+        CLs: [[clsCommitted]]<br/>
+        Bugs opened: [[bugsOpened]]<br/>
+        Bugs updated: [[bugsUpdated]]<br/>
+        Bugs closed: [[bugsClosed]]
+      </paper-tooltip>
+    </div>
+  </template>
+  <script>
+    'use strict';
+
+    class DayIcon extends Polymer.Element {
+      static get is() { return 'day-icon'; }
+
+      static get properties() {
+        return {
+          clsCommitted: {
+          type: Number,
+          value: 0,
+          },
+          bugsOpened:  {
+          type: Number,
+          value: 0,
+          },
+          bugsUpdated:  {
+          type: Number,
+          value: 0,
+          },
+          bugsClosed:  {
+          type: Number,
+          value: 0,
+          },
+        }
+      }
+
+      static get observers() {
+        return [
+          'computeActivityLevel(clsCommitted, bugsOpened, bugsUpdated, bugsClosed)'
+        ]
+      }
+
+      computeActivityLevel(cls, opened, updated, closed) {
+        let activityNum = (cls + opened + updated + closed);
+        let color;
+        if (activityNum >= 7) {
+          color = 'rgb(0, 128, 0)';
+        } else if (activityNUm >= 5) {
+          color = 'rgb(0, 255, 0)';
+        } else if (activityNUm >= 2) {
+          color = 'rgb(128, 255, 128)';
+        }
+        this.updateStyles({'--activity-color': color});
+      }
+    }
+    customElements.define(DayIcon.is, DayIcon);
+  </script>
+</dom-module>
