@@ -1,0 +1,19 @@
+{
+  "name": "who",
+  "version": "0.0.0",
+  "moduleType": [
+    "es6"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "polymer-redux": "^1.0.4",
+    "polymer": "Polymer/polymer#^1.2.0"
+  }
+}
