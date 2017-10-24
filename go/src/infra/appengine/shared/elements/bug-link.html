@@ -1,0 +1,78 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+
+<dom-module id="bug-link">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+      p {
+        display: inline;
+      }
+    </style>
+    <a href$="http://crbug/[[_bugId]]">Bug [[_bugId]]</a>
+    <template is="dom-if" if="[[status]]">
+      <p>([[status]])</p>
+    </template>
+
+    <template is="dom-if" if="[[pri]]">
+      <p>(Pri-[[pri]])</p>
+    </template>
+
+    <template is="dom-if" if="[[!short]]">
+      <p>[[description]]</p>
+    </template>
+
+  </template>
+  <script>
+    'use strict';
+
+    const bugIdRe = /[0-9]{3,}/;
+    const bugRe = /([^0-9]*)?[0-9]{3,}([^0-9]*)?/;
+
+    /**
+     * `<bug-link>` displays a link to a chromium bug.
+     *
+     * All properties except for `bug` are optional. Set short to true
+     * when the description should not be shown.
+     *
+     * @customElement
+     * @polymer
+     * @demo /demo/bug-link_demo.html
+     */
+    class BugLink extends Polymer.Element {
+      static get is() { return 'bug-link'; }
+
+      static get properties() {
+        return {
+          /** A bug id or bug url. Required. */
+          bug: String,
+          /** The bug id. */
+          _bugId: {
+            type: String,
+            computed: '_computeBugId(bug)',
+          },
+          /** The status of the bug, eg. 'Untriaged', 'Available'. Optional. */
+          status: String,
+          /** The priority number of the bug. Optional. */
+          pri: {
+            type: String,
+          },
+          /** The bug's description. Optional. */
+          description: String,
+          /** Set to true if you don't want the bug's description to be displayed. */
+          short: {
+            type: Boolean,
+            value: false,
+          }
+        }
+      }
+
+      _computeBugId(bug) {
+        return bugRe.test(bug) ? bugIdRe.exec(bug) : 'Unknown';
+      }
+
+    }
+    customElements.define(BugLink.is, BugLink);
+  </script>
+<dom-module>

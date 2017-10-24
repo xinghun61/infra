@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<title>bugLink</title>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/bower_components/iron-test-helpers/iron-test-helpers.html">
+<link rel="import" href="/elements/bug-link.html">
+
+<test-fixture id="bug-link-test">
+  <template>
+    <bug-link></bug-link>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('bug-link', function() {
+    let element;
+    setup(function() {
+      element = fixture('bug-link-test');
+    });
+
+    test('compute bugId', function(done) {
+      element.bug = 'crbug.com/id=1344928#somecomment=c1234';
+      assert.equal(1344928, element._bugId);
+
+      element.bug = 'crbug/1344928';
+      assert.equal(1344928, element._bugId);
+
+      element.bug = '1344928';
+      assert.equal(1344928, element._bugId);
+
+      element.bug = 'bad but link';
+      assert.equal('Unknown', element._bugId);
+
+      done();
+    });
+
+  });
+</script>
