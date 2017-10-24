@@ -265,6 +265,10 @@ class SwarmingTest(BaseTest):
         task_def['properties']['execution_timeout_secs'], '60')
 
   def test_create_task_async(self):
+    self.patch(
+        'components.auth.get_current_identity', autospec=True,
+        return_value=auth.Identity('user', 'john@example.com'))
+
     build = model.Build(
         id=1,
         bucket='bucket',
@@ -423,6 +427,14 @@ class SwarmingTest(BaseTest):
         build.url,
         ('https://milo.example.com/swarming/task/deadbeef?'
          'server=chromium-swarm.appspot.com'))
+
+    # Test delegation token params.
+    self.assertEqual(auth.delegate_async.mock_calls, [mock.call(
+        services=[u'https://chromium-swarm.appspot.com'],
+        audience=[auth.Identity('user', 'test@localhost')],
+        impersonate=auth.Identity('user', 'john@example.com'),
+        tags=['buildbucket:bucket:bucket'],
+    )])
 
   def test_create_task_async_for_non_swarming_bucket(self):
     self.bucket_cfg.ClearField('swarming')

@@ -551,6 +551,9 @@ def create_task_async(build):
       'tasks/new',
       method='POST',
       payload=task_def,
+      # Make Swarming know what bucket the task belong too. Swarming uses
+      # this to authorize access to pools assigned to specific buckets only.
+      delegation_tags=['buildbucket:bucket:%s' % build.bucket],
       # Higher timeout than normal because if the task creation request
       # fails, but the task is actually created, later we will receive a
       # notification that the task is completed, but we won't have a build
@@ -616,10 +619,8 @@ def cancel_task(hostname, task_id):
 # Update builds.
 
 
-def _load_task_result_async(
-    impersonated_identity, hostname, task_id):  # pragma: no cover
-  return _call_api_async(
-      impersonated_identity, hostname, 'task/%s/result' % task_id)
+def _load_task_result_async(hostname, task_id):  # pragma: no cover
+  return _call_api_async(None, hostname, 'task/%s/result' % task_id)
 
 
 @ndb.tasklet
@@ -888,7 +889,7 @@ class SubNotify(webapp2.RequestHandler):
     assert build.parameters
 
     # Update build.
-    result = _load_task_result_async(None, hostname, task_id).get_result()
+    result = _load_task_result_async(hostname, task_id).get_result()
     _sync_build_async(build_id, result, None).get_result()
 
   def stop(self, msg, *args, **kwargs):
@@ -925,7 +926,7 @@ class CronUpdateBuilds(webapp2.RequestHandler):
   @ndb.tasklet
   def update_build_async(self, build):
     result = yield _load_task_result_async(
-        None, build.swarming_hostname, build.swarming_task_id)
+        build.swarming_hostname, build.swarming_task_id)
     if not result:
       logging.error(
           'Task %s/%s referenced by build %s is not found',
@@ -961,7 +962,7 @@ def get_backend_routes():  # pragma: no cover
 @ndb.tasklet
 def _call_api_async(
     impersonated_identity, hostname, path, method='GET', payload=None,
-    deadline=None, max_attempts=None):
+    delegation_tags=None, deadline=None, max_attempts=None):
   """Calls Swarming API.
 
   If impersonated_identity is None, does not impersonate.
@@ -972,6 +973,7 @@ def _call_api_async(
         audience=[_self_identity()],
         services=['https://%s' % hostname],
         impersonate=impersonated_identity,
+        tags=delegation_tags,
     )
   url = 'https://%s/_ah/api/swarming/v1/%s' % (hostname, path)
   res = yield net.json_request_async(
