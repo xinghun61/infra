@@ -757,7 +757,7 @@ def _sync_build_in_memory(
       # It significantly increases egress which signficantly increases the risk
       # of hitting daily AppEngine quota.
       small_build_run_result = build_run_result.copy()
-      annotations = small_build_run_result.pop('annotations', {})
+      annotations = small_build_run_result.pop('annotations', {}) or {}
       build.result_details['build_run_result'] = small_build_run_result
       # TODO(nodir,iannucci): define a schema for UI in a proto
       build.result_details['ui'] = {
