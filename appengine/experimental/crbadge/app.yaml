@@ -1,0 +1,31 @@
+application: crbadge
+version: 1
+runtime: python27
+api_version: 1
+threadsafe: true
+module: default
+instance_class: F1
+automatic_scaling:
+  min_idle_instances: 1
+
+handlers:
+- url: /css
+  static_dir: static/css
+  secure: always
+
+- url: /images
+  static_dir: static/images
+  secure: always
+
+- url: /.*
+  script: app.app
+  secure: always
+
+- url: /admin/.*
+  script: app.app
+  secure: always
+  login: admin
+
+libraries:
+- name: jinja2
+  version: latest
