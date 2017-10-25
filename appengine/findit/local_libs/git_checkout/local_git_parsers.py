@@ -392,3 +392,30 @@ class GitDiffParser(GitParser):
            }
     """
     return output if output else None
+
+
+class GitCommitsParser(object):
+  """Returns the raw text output of 'git log --pretty=online <rev1>..<rev2>'.
+
+  For example:
+  The output is like:
+
+  578956728fd1653f71722be150e2a158a19fa04c (HEAD -> master) Move some ...
+  95bbc94d79f726cfecf15f47d8a487f6d42ac8ad Add a feature flag for the ...
+  463b55a16e6303c9efd32da390b5a8fcbc4d5c8a Disable system health smoke ...
+  3e84f37dbcbb8e2b2d5c5f7679f7f1164943ee39 Fix use-after-free introduced ...
+  897816e7079d70cf787a908f46c5b6897267370a Roll recipe dependencies (trivial).
+  5ccb4774cad17a028967e67b49a62a96d1f7af0f [CUPS] Fix a typo error of the ...
+  6274a2d207fc8383d1182204b2a900d80c3d3f0e [DevTools] Refactor ...
+  1f955b18617428d0a4e203f4dce6da87c5cb8de9 [sql] Test helpers to ease ...
+  aa5a980de21db0087e9132cfb9d708f9d2d08fb1 Roll src/third_party/skia/ ...
+  ...
+  """
+
+  def __call__(self, output):
+    commits = []
+    for line in output.splitlines():
+      if line:
+        commits.append(line.split()[0])
+
+    return commits

@@ -242,27 +242,32 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
                             script_util.GetCommandOutput, 'dummy')
 
   @mock.patch('local_libs.git_checkout.local_git_repository.LocalGitRepository.'
-              'GetChangeLogs')
-  def testGetCommitsBetweenRevisions(self, mock_get_changelogs):
+              '_GetFinalCommand')
+  @mock.patch('local_libs.script_util.GetCommandOutput')
+  def testGetCommitsBetweenRevisions(self, mock_get_commits_output,
+                                     mock_get_final_command):
     """Tests ``GetCommitsBetweenRevisions`` return number of commits."""
-    changelog1 =  change_log.ChangeLog(
-            change_log.Contributor('author2', 'author2@chromium.org',
-                                   datetime(2016, 6, 2, 10, 53, 3)),
-            change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
-                                   datetime(2016, 6, 2, 10, 54,
-                                            14)), 'rev1', None, 'Message 2',
-            [change_log.FileChangeInfo('add', None, 'b/c.py')],
-            'https://repo/path/+/rev2', None, None)
-    changelog2 =  change_log.ChangeLog(
-            change_log.Contributor('author2', 'author2@chromium.org',
-                                   datetime(2016, 6, 2, 10, 53, 3)),
-            change_log.Contributor('Commit bot', 'commit-bot@chromium.org',
-                                   datetime(2016, 6, 2, 10, 54,
-                                            14)), 'rev2', None, 'Message 2',
-            [change_log.FileChangeInfo('add', None, 'b/c.py')],
-            'https://repo/path/+/rev2', None, None)
-
-    mock_get_changelogs.return_value = [changelog1, changelog2]
+    output = textwrap.dedent("""
+        5789567 (HEAD -> master) Move some Document timers to frame-specific...
+        95bbc94 Add a feature flag for the security verbose
+        463b55a Disable system health smoke tests on Nexus5.
+        3e84f37 Fix use-after-free introduced by ...
+        """)
+    mock_get_commits_output.return_value = output
     repo = local_git_repository.LocalGitRepository(None)
     self.assertListEqual(repo.GetCommitsBetweenRevisions('old_rev', 'new_rev'),
-                         ['rev1', 'rev2'])
+                         ['5789567', '95bbc94', '463b55a', '3e84f37'])
+    self.assertTrue(mock_get_final_command.called)
+
+  def testGetRevisionRangeForGitCommand(self):
+    """Tests ``GetRevisionRangeForGitCommand`` function."""
+    self.assertEqual(
+        local_git_repository.GetRevisionRangeForGitCommand('start_rev', None),
+        'start_rev..HEAD')
+
+    self.assertEqual(
+        local_git_repository.GetRevisionRangeForGitCommand(None, 'end_rev'),
+        'end_rev')
+
+    self.assertEqual(
+        local_git_repository.GetRevisionRangeForGitCommand(None, None), 'HEAD')

@@ -226,6 +226,15 @@ class LocalGitParsersTest(unittest.TestCase):
   def testGitDiffParser(self):
     self.assertEqual('output', local_git_parsers.GitDiffParser()('output'))
 
+  def testGitCommitsParser(self):
+    output = textwrap.dedent("""
+        5789567 (HEAD -> master) Move some Document timers to frame-specific...
+        95bbc94 Add a feature flag for the security verbose
+        463b55a Disable system health smoke tests on Nexus5.
+        3e84f37 Fix use-after-free introduced by ...
+        """)
+    self.assertListEqual(local_git_parsers.GitCommitsParser()(output),
+                         ['5789567', '95bbc94', '463b55a', '3e84f37'])
 
 if __name__ == '__main__':
   unittest.main()

@@ -30,6 +30,22 @@ def ConvertRemoteCommitToLocal(revision):
   return 'HEAD' if revision == 'master' else revision
 
 
+def GetRevisionRangeForGitCommand(start_revision, end_revision):
+  """Get revision range for git command.
+
+  If start_revision is empty, that means the range starts from the beginning of
+  time, if the end_revision is empty, that means the range is till the lastest
+  commit.
+  """
+  if not end_revision:
+    end_revision = 'HEAD'
+
+  start_revision = ConvertRemoteCommitToLocal(start_revision)
+  end_revision = ConvertRemoteCommitToLocal(end_revision)
+  return end_revision if not start_revision else '%s..%s' % (
+      start_revision, end_revision)
+
+
 class LocalGitRepository(GitRepository):
   """Represents local checkout of git repository on chromium host.
 
@@ -55,6 +71,7 @@ class LocalGitRepository(GitRepository):
     self.changelogs_parser = local_git_parsers.GitChangeLogsParser()
     self.blame_parser = local_git_parsers.GitBlameParser()
     self.diff_parser = local_git_parsers.GitDiffParser()
+    self.commits_parser = local_git_parsers.GitCommitsParser()
 
   @classmethod
   def Factory(cls):  # pragma: no cover
@@ -127,11 +144,16 @@ class LocalGitRepository(GitRepository):
     return self.changelog_parser(output, self.repo_url)
 
   def GetChangeLogs(self, start_revision, end_revision):  # pylint: disable=W
-    """Returns change log list in (start_revision, end_revision]."""
-    command = ('git log --pretty=format:"%s" --raw --no-abbrev %s' %
-               (_CHANGELOGS_FORMAT_STRING,
-                '%s..%s' % (ConvertRemoteCommitToLocal(start_revision),
-                            ConvertRemoteCommitToLocal(end_revision))))
+    """Returns change log list in (start_revision, end_revision].
+
+    Note that, unlike GitilesRepository, LocalGitRepository does allow getting
+    changelogs from (None, None], which means from start of time to the current
+    time.
+    """
+    revision_range = GetRevisionRangeForGitCommand(start_revision, end_revision)
+    command = 'git log --pretty=format:"%s" --raw --no-abbrev %s' % (
+        _CHANGELOGS_FORMAT_STRING, revision_range),
+
     output = script_util.GetCommandOutput(self._GetFinalCommand(command, True))
     return self.changelogs_parser(output, self.repo_url)
 
@@ -161,15 +183,21 @@ class LocalGitRepository(GitRepository):
   def GetCommitsBetweenRevisions(self, start_revision, end_revision):
     """Gets a list of commit hashes between start_revision and end_revision.
 
+    Note that, unlike GitilesRepository, LocalGitRepository does allow getting
+    changelogs from (None, None], which means from start of time to the current
+    time.
+
     Args:
       start_revision: The oldest revision in the range.
       end_revision: The latest revision in the range.
-      n: The maximum number of revisions to request at a time.
 
     Returns:
       A list of commit hashes made since start_revision through and including
       end_revision in order from most-recent to least-recent. This includes
       end_revision, but not start_revision.
     """
-    changelogs = self.GetChangeLogs(start_revision, end_revision)
-    return [changelog.revision for changelog in changelogs or []]
+    revision_range = GetRevisionRangeForGitCommand(start_revision, end_revision)
+
+    command = 'git log --pretty=oneline %s' % revision_range
+    output = script_util.GetCommandOutput(self._GetFinalCommand(command))
+    return self.commits_parser(output)
