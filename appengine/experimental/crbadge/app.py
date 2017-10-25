@@ -5,6 +5,7 @@
 import json
 import logging
 import os
+import sys
 import webapp2
 
 from webapp2_extras import jinja2
@@ -98,16 +99,20 @@ class BadgePage(BaseHandler):
     if not badge_def:
       logging.info('badge def was %r', badge_def)
       self.abort(404)
-    awarded_count = UserData.query(UserData.badge_name == badge_name).count()
+    awarded_count = UserData.query(
+        UserData.badge_name == badge_name,
+        UserData.value >= badge_def.level_1 or 0).count()
     l1_count = UserData.query(
         UserData.badge_name == badge_name,
-        UserData.value > badge_def.level_1 or 0).count()
+        UserData.value >= badge_def.level_1 or 0,
+        UserData.value < badge_def.level_2 or sys.maxint).count()
     l2_count = UserData.query(
         UserData.badge_name == badge_name,
-        UserData.value > badge_def.level_2 or 0).count()
+        UserData.value >= badge_def.level_2 or 0,
+        UserData.value < badge_def.level_3 or sys.maxint).count()
     l3_count = UserData.query(
         UserData.badge_name == badge_name,
-        UserData.value > badge_def.level_3 or 0).count()
+        UserData.value >= badge_def.level_3 or 0).count()
     context = {
         'badge_def': badge_def,
         'awarded_count': awarded_count,
