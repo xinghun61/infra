@@ -2,8 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
 import logging
 import webapp2
+from webapp2_extras import jinja2
 
 
 class BaseHandler(webapp2.RequestHandler):
@@ -27,30 +29,43 @@ class BaseHandler(webapp2.RequestHandler):
 
   def render_response(self, _template, **context):
     # Renders a template and writes the result to the response.
+    context.update({
+        'app_version': os.environ.get('CURRENT_VERSION_ID'),
+        })
     rv = self.jinja2.render_template(_template, **context)
     self.response.write(rv)
 
 
 class UserPage(BaseHandler):
-  def get(self):
-    context = {'title': 'User Page' }
+  def get(self, viewed_user_email, *args):
+    if '@' not in viewed_user_email:
+      viewed_user_email += '@chromium.org'
+    badges = ['monday', 'tuesday', 'wednesday']
+    context = {
+        'title': 'User Page',
+        'viewed_user_email': viewed_user_email,
+        'badges': badges,
+        }
     self.render_response('user.html', **context)
 
 
 class MainPage(BaseHandler):
-  def get(self):
+  def get(self, foo, *args):
     # TODO: redirect to signed in user... what if not signed in?
     self.redirect('/hinoka@chromium.org')
 
 
 class BadgePage(BaseHandler):
-  def get(self):
-    context = {'title': 'Badge Details' }
+  def get(self, badge_id, *args):
+    context = {
+        'title': 'Badge Details',
+        'badge_id': badge_id,
+        }
     self.render_response('badge.html', **context)
 
 
 app = webapp2.WSGIApplication([
-    (r'/([a-z0-9]+@[.a-z]+)', UserPage),
+    (r'/([a-z0-9]+(@[.a-z]+)?)', UserPage),
     (r'/b/([a-z0-9]+)', BadgePage),
     ('/', MainPage),
 ])

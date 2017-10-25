@@ -1,0 +1,53 @@
+body {
+  padding: 0;
+  margin: 0;
+}
+
+h1 {
+  background-color: rgba(2,119,189,1);
+  box-shadow: 0 5px 5px -3px rgba(0,0,0,.26);
+  font-size: 2em;
+  color: white;
+  padding: .5em;
+  margin: 0 0 1em 0;
+}
+
+#badges {
+  margin: 1.5em;
+}
+
+.badge {
+  width: 80px;
+  height: 90px;
+  float: left;
+  background: #eec;
+  margin: .5em;
+  padding: .5em;
+}
+
+.icon {
+  position: relative;
+  text-align: center;
+  top: 5px;
+  left: 5px;
+  width: 60px;
+  height: 60px;
+  background: #efe;
+}
+
+.level {
+  position: absolute;
+  font-size: 80%;
+  bottom: -5px;
+  right: -5px;
+  background: #448;
+  color: white;
+  border-radius: 3px;
+  padding: 2px 5px;
+}
+
+.caption {
+  margin-top: 10px;
+  text-align: center;
+}
+

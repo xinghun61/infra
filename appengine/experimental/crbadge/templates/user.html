@@ -1,0 +1,20 @@
+<html>
+ <head>
+  <title>Chromium Badges for {{viewed_user_email}}</title>
+  <link type="text/css" rel="stylesheet" href="/css/style.css?version={{app_version}}">
+ </head>
+
+ <h1>Chromium Badges for {{viewed_user_email}}</h1>
+
+ <div id="badges">
+  {% for badge in badges %}
+   <div class="badge">
+     <div class="icon">
+       Icon
+       <div class="level">3</div>
+     </div>
+     <div class="caption" title="hover text here">{{badge}}</div>
+   </div>
+  {% endfor %}
+ </div>
+</html>
