@@ -1,0 +1,100 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+
+<dom-module id="day-details">
+  <template>
+    <style>
+    </style>
+
+    Details for [[day]]
+
+    <template is="dom-if" if="[[clLinks]]">
+      <table>
+        <tr>
+          <th>Time</th>
+          <th>CL</th>
+        </tr>
+        <template is="dom-repeat" for="[[clLinks]]">
+          <td>[[item.time]]</td>
+          <td>[[item.link]]</td>
+        </template>
+      </table>
+    </template>
+
+    <template is="dom-if" if="[[bugsOpened]]">
+      <table>
+        <tr>
+          <th>Time</th>
+          <th>Bugs Opened</th>
+        </tr>
+        <template is="dom-repeat" for="[[bugsOpened]]">
+          <td>[[item.time]]</td>
+          <td>[[item.link]]</td>
+        </template>
+      </table>
+    </template>
+
+    <template is="dom-if" if="[[bugsUpdated]]">
+      <table>
+        <tr>
+          <th>Time</th>
+          <th>Bugs Updated</th>
+        </tr>
+        <template is="dom-repeat" for="[[bugsUpdated]]">
+          <td>[[item.time]]</td>
+          <td>[[item.link]]</td>
+        </template>
+      </table>
+    </template>
+
+    <template is="dom-if" if="[[bugsClosed]]">
+      <table>
+        <tr>
+          <th>Time</th>
+          <th>Bugs Closed</th>
+        </tr>
+        <template is="dom-repeat" for="[[bugsClosed]]">
+          <td>[[item.time]]</td>
+          <td>[[item.link]]</td>
+        </template>
+      </table>
+    </template>
+
+
+  </template>
+  <script>
+    'use strict';
+
+    class DayDetails extends Polymer.Element {
+      static get is() { return 'day-details'; }
+
+
+      // TODO(jojwang): for now assuming these come in order
+      // if not, I will sort by time.
+      // TODO(jojwang): put all links on the same timeline, if time allows.
+      // For now, assuming these are all arrays of Object{time, link}.
+      static get properties() {
+        return {
+          clLinks: {
+            type: Array,
+            value: () => { return []; };
+          },
+          bugsOpened: {
+            type: Array,
+            value: () => { return []; };
+          },
+          bugsUpdated: {
+            type: Array,
+            value: () => { return []; };
+          },
+          bugsClosed: {
+            type: Array,
+            value: () => { return []; };
+          },
+          day: Date,
+        }
+      }
+    }
+    customElements.define(DayDetails.is, DayDetails);
+  </script>
+</dom-module>
