@@ -13,15 +13,17 @@
   {% endif %}
   {% for badge_view in badges %}
     {% if badge_view.show %}
-      <div class="badge" title="{{badge_view.badge_def.description}}">
-      <div class="shield">
-          <div class="icon">
-            <img src="/images/{{badge_view.badge_def.icon}}">
-            {% if badge_view.level %}<div class="level">{{badge_view.level}}</div>{% endif %}
+      <a href="/b/{{badge_view.badge_def.badge_name}}">
+        <div class="badge" title="{{badge_view.badge_def.description}}">
+          <div class="shield">
+            <div class="icon">
+              <img src="/images/{{badge_view.badge_def.icon}}">
+              {% if badge_view.level %}<div class="level">{{badge_view.level}}</div>{% endif %}
+            </div>
           </div>
-      </div>
-        <div class="caption">{{badge_view.badge_def.title}}</div>
-      </div>
+          <div class="caption">{{badge_view.badge_def.title}}</div>
+        </div>
+      </a>
     {% endif %}
   {% endfor %}
  </div>

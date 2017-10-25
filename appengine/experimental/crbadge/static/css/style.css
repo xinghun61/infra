@@ -13,6 +13,8 @@ h1 {
   margin: 0 0 1em 0;
 }
 
+/* Styles for the user page. */
+
 #badges {
   margin: 1.5em;
 }
@@ -21,7 +23,7 @@ h1 {
   width: 140px;
   height: 190px;
   float: left;
-  margin: .5em;
+  margin: .5em .8em;
 }
 
 .shield {
@@ -29,6 +31,7 @@ h1 {
   height: 150px;
   padding: .5em;
   background: #ddd;
+  box-shadow: 1px 1px 1px 1px rgba(0, 0, 0, .2);
   border-radius: 30px 30px 120px 120px;
 }
 
@@ -61,5 +64,44 @@ h1 {
 
 .caption {
   margin-top: 10px;
+  text-align: center;
+}
+
+
+.badge:hover .shield {
+  background: #cce;
+}
+
+.badge:hover .caption {
+  text-decoration: underline;
+}
+
+/* Styles for the badge details page. */
+
+#details {
+  margin: 1em 0 0 3em;
+}
+
+#sidebar {
+  vertical-align: top;
+  padding-right: 2em;
+  width: 140px;
+}
+
+#main {
+  margin-left: 2em;
+  padding-left: 2em;
+  border-left: 1px dotted rgba(2,119,189,1);
+}
+
+.level_doc th, .level_doc td {
+  padding: 4px 8px;
+}
+
+.level_doc th {
+  background: #eee;
+}
+
+.level_doc td {
   text-align: center;
 }

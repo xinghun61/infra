@@ -84,6 +84,8 @@ class BaseHandler(webapp2.RequestHandler):
 
 
 class UserPage(BaseHandler):
+  """Show all (non-hidden) chromium badges for the viewed user."""
+
   def get(self, viewed_user_email, *args):
     if '@' not in viewed_user_email:
       viewed_user_email += '@chromium.org'
@@ -91,7 +93,6 @@ class UserPage(BaseHandler):
       BadgeView(user_data, FAKE_BADGE_DEFS)
       for user_data in FAKE_USER_DATA]
     context = {
-        'title': 'User Page',
         'viewed_user_email': viewed_user_email,
         'badges': badge_views,
         }
@@ -99,18 +100,27 @@ class UserPage(BaseHandler):
 
 
 class MainPage(BaseHandler):
+  """The default page shows the signed in user their own badges."""
+
   def get(self, *args):
     # TODO: redirect to signed in user... what if not signed in?
     self.redirect('/hinoka@chromium.org')
 
 
 class BadgePage(BaseHandler):
+  """Display page description, level thresholds, and times awarded."""
+
   def get(self, badge_id, *args):
+    badge_def = FAKE_BADGE_DEFS.get(badge_id)
+    if not badge_def:
+      self.abort(404)
+    awarded_count = 123
     context = {
-        'title': 'Badge Details',
-        'badge_id': badge_id,
+        'badge_def': badge_def,
+        'awarded_count': awarded_count,
         }
     self.render_response('badge.html', **context)
+
 
 class Update(BaseHandler):
   """Update badge data.

@@ -1,0 +1,47 @@
+<html>
+ <head>
+  <title>Badge Details for {{badge_def.title}}</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
+  <link type="text/css" rel="stylesheet" href="/css/style.css?version={{app_version}}">
+ </head>
+
+ <h1>Badge Details for {{badge_def.title}}</h1>
+
+ <table id="details">
+  <tr>
+   <td id="sidebar">
+     <div class="shield">
+       <div class="icon">
+         <img src="/images/{{badge_def.icon}}">
+       </div>
+     </div>
+     <div class="caption">{{badge_def.title}}</div>
+   </td>
+
+   <td id="main">
+     <h2 style="margin-top: 0">Description</h2>
+     <p>{{badge_def.description}}</p>
+
+     <h2>Levels</h2>
+     {% if badge_def.show_number %}
+       <p>The number shown on the badge is a value calculated for each user.</p>
+     {% else %}
+       <table class="level_doc">
+         <tr><th>Level</th><th>Threshold</th></tr>
+         <tr><th>1</th><td>{{badge_def.level_1}}</td></tr>
+         {% if badge_def.level_2 %}
+           <tr><th>2</th><td>{{badge_def.level_2}}</td></tr>
+         {% endif %}
+         {% if badge_def.level_3 %}
+           <tr><th>3</th><td>{{badge_def.level_3}}</td></tr>
+         {% endif %}
+       </table>
+     {% endif %}
+
+     <h2>Rarity</h2>
+     <p>This badge has been awarded to {{awarded_count}} users.</p>
+   </td>
+  </tr> 
+ </table>
+
+</html>
