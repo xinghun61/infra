@@ -1,0 +1,81 @@
+<link rel="import" href="/elements/day-icon.html">
+
+<dom-module id="activity-table">
+  <template>
+    <style>
+    :host {
+      display: grid;
+      /* 8 columns = 7 days of the week + 1 column to label the week */
+      grid-template-columns: auto auto auto auto auto auto auto auto ;
+    }
+    </style>
+
+    <span><!-- empty column header for weekLabel column --></span>
+    <template is="dom-repeat" items="[[daysOfWeek]]">
+      <span>[[item]]</span>
+    </template>
+
+    <template is="dom-repeat" items="[[weeks]]">
+      <span>[[item.weekLabel]]</span>
+      <template is="dom-repeat" items="[[item.days]]">
+        <day-icon changes="[[item.Changes]]"
+                  bugs="[[item.Bugs]]"
+                  on-tap="onDaySelected_">
+        </day-icon>
+      </template>
+    </template>
+  </template>
+</dom-module>
+
+<script>
+'use strict';
+class ActivityTable extends ReduxMixin(Polymer.Element) {
+  static get is() {
+    return 'activity-table';
+  }
+
+  static get properties() {
+    return {
+      daysOfWeek: {
+        type: Array,
+        value() { return 'M T W R F S U'.split(' '); }
+      },
+      weeks: {
+        type: Array,
+        value() { return []; },
+      },
+    };
+  }
+
+  static get listeners() {
+    return {
+      'state-changed': 'onStateChanged_',
+    }
+  }
+
+  static get actions() {
+    return {
+      selectDay(day, activityTable) {
+        const detailKey = activityTable.getState().username + ' ' + activityTable.getState().day;
+        return reduxAjax({
+          path: '/_/detail',
+          body: {day},
+          requestType: DAY_DETAILS_REQUEST,
+          successType: DAY_DETAILS_RESPONSE_SUCCESS,
+          errorType: DAY_DETAILS_RESPONSE_ERROR,
+          dispatch: activityTable.dispatch.bind(activityTable),
+        });
+      },
+    };
+  }
+
+  onDaySelected_(event) {
+    console.log('onDaySelected_', event);
+    this.dispatch('selectDay', event.path[0].model.day, this);
+  }
+
+  onStateChanged_() {
+  }
+}
+customElements.define(ActivityTable.is, ActivityTable);
+</script>

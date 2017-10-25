@@ -134,8 +134,9 @@
        * in the detail{}.
        */
       _saveUser(e) {
-         this.push('selectedUsers', e.detail.selectedUser);
-         this.$.dropdown.close();
+        this.push('selectedUsers', e.detail.selectedUser);
+        this.$.dropdown.close();
+        this.dispatchEvent(new CustomEvent('selected-users-changed'));
       }
 
       /**
@@ -155,6 +156,7 @@
         if (index != -1) {
           this.splice('selectedUsers', index, 1);
         }
+        this.dispatchEvent(new CustomEvent('selected-users-changed'));
       }
 
     }

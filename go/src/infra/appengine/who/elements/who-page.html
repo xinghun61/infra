@@ -2,13 +2,14 @@
 <link rel="import" href="../../bower_components/app-route/app-route.html">
 
 <link rel="import" href="/elements/activity-table.html">
-<link rel="import" href="/elements/user-input.html">
 <link rel="import" href="/elements/day-details.html">
+<link rel="import" href="/elements/user-id.html">
+<link rel="import" href="/elements/user-input.html">
 
 <dom-module id="who-page">
   <template>
     <style>
-    #table, #details {
+    #table_spinner, #table, #details_spinner, #details {
       display: none;
     }
     </style>
@@ -22,16 +23,17 @@
     </app-route>
 
     <user-input id="user"></user-input>
+
+    <paper-spinner id="table_spinner" active></paper-spinner>
     <activity-table id="table"></activity-table>
+
+    <paper-spinner id="details_spinner" active></paper-spinner>
     <day-details id="details"></day-details>
   </template>
 </dom-module>
 
 <script>
-(function() {
-const store = Redux.createStore((state = {}, action) => state)
-const ReduxMixin = PolymerRedux(store)
-
+'use strict';
 class WhoPage extends ReduxMixin(Polymer.Element) {
   static get is() {
     return 'who-page';
@@ -44,9 +46,81 @@ class WhoPage extends ReduxMixin(Polymer.Element) {
         type: Object,
         value: () => {return {}; },
       },
+    };
+  }
+
+  static get listeners() {
+    return {
+      'state-changed': 'onStateChanged_',
+    };
+  }
+
+  static get actions() {
+    return {
+      selectUser(username, whoPage) {
+        if (whoPage.getState().activityTables[whoPage.getState().username]) {
+          return {
+            type: ACTIVITY_TABLE_RESPONSE_SUCCESS,
+          };
+        }
+        return reduxAjax({
+          path: '/_/history',
+          body: {username},
+          requestType: ACTIVITY_TABLE_REQUEST,
+          successType: ACTIVITY_TABLE_RESPONSE_SUCCESS,
+          errorType: ACTIVITY_TABLE_RESPONSE_ERROR,
+          dispatch: whoPage.dispatch.bind(whoPage),
+        });
+      },
+    };
+  }
+
+  ready() {
+    super.ready();
+    this.$.user.addEventListener(
+        'selected-users-changed', this.onSelectedUsersChanged_.bind(this));
+    this.$.user.suggestions = [
+      {userId: 'wylieb'},
+      {userId: 'zhangtiff'},
+      {userId: 'seanmccullough'},
+      {userId: 'jojwang'},
+      {userId: 'benjhayden'},
+    ];
+    // This should fire selected-users-changed, which will dispatch selectUser
+    // to load the dummy activities, then fire state-changed, listened by
+    // onStateChanged_, which should display the activity-table.
+    this.$.user.selectedUsers = [this.getState().username];
+  }
+
+  onSelectedUsersChanged_() {
+    this.dispatch('selectUser', this.$.user.selectedUsers[0], this);
+  }
+
+  onStateChanged_() {
+    this.$.user.selectedUsers = [this.getState().username];
+    this.$.table_spinner.style.display = this.getState().isFetchingActivityTable
+      ? 'block' : 'none';
+    this.$.details_spinner.style.display = this.getState().isFetchingDayDetail
+      ? 'block' : 'none';
+
+    // Update this.$.table when state.activityTables changes.
+    const activities =
+      this.getState().activityTables[this.getState().username];
+    console.log(activities);
+    this.$.table.style.display = activities ? 'block' : 'none';
+    if (activities) {
+      this.$.table.activities = activities;
+    }
+
+    const detailKey = this.getState().username + ' ' + this.getState().day;
+    const detail = this.getState().dayDetails[detailKey];
+    console.log(detail);
+    this.$.details.style.display = detail ? 'block' : 'none';
+    if (detail) {
+      this.$.details.bugs = detail.Bugs;
+      this.$.details.changes = detail.Changes;
     }
   }
 }
 customElements.define(WhoPage.is, WhoPage);
-})();
 </script>

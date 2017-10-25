@@ -75,19 +75,11 @@
       // For now, assuming these are all arrays of Object{time, link}.
       static get properties() {
         return {
-          clLinks: {
+          changes: {
             type: Array,
             value: () => { return []; }
           },
-          bugsOpened: {
-            type: Array,
-            value: () => { return []; }
-          },
-          bugsUpdated: {
-            type: Array,
-            value: () => { return []; }
-          },
-          bugsClosed: {
+          bugs: {
             type: Array,
             value: () => { return []; }
           },
