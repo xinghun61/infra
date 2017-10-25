@@ -76,15 +76,30 @@ function transformActivities(input) {
 
   for (var i = 0; i < input.length; i++) {
     var item = input[i];
-    var date = new Date(item.Day);
     var topOfWeek = new Date(item.Day);
     topOfWeek.setDate(topOfWeek.getDate() - topOfWeek.getDay());
 
     if ( !weeks.hasOwnProperty(topOfWeek.toString()) ) {
       weeks[topOfWeek.toString()] = [];
+      // Populate with dummy date so there is 7 items in each array.
+      for (var j = 0; j < 7; j++) {
+        var newDate = new Date(topOfWeek);
+        newDate.setDate(newDate.getDate() + j);
+        weeks[topOfWeek.toString()].push({'Day': newDate.toString(), 'Changes': 0, 'Bugs': 0});
+      }
     }
 
-    weeks[topOfWeek.toString()].push(item);
+    // Actually populate with the real data.
+    for (var j = 0; j < 7; j++) {
+      var dummyItem = weeks[topOfWeek.toString()][j];
+      var dummyDate = new Date(dummyItem.Day);
+      var itemDate = new Date(item.Day);
+      if (dummyDate.getTime() === itemDate.getTime()) {
+        weeks[topOfWeek.toString()][j] = item;
+      }
+    }
+
+    weeks[topOfWeek.toString()]
   }
 
   return weeks;
