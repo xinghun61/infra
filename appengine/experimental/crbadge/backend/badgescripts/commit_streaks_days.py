@@ -108,10 +108,10 @@ def _GenerateResults(results):
       'value': result.longest_days
     })
 
-  return {
+  return [{
     'badge_name': 'code-number_of_consecutive_days',
     'data': data
-  }
+  }]
 
 
 def _SaveLastCheckedRevision(git_repo, end_revision):
@@ -128,7 +128,8 @@ if __name__ == '__main__':
 
   existing_data = _GetExistingData()
 
-  start_revision = _GetStartRevision() or 'a5068f5fa11005232bc4383c54f6af230f9392fb'
+  start_revision = (
+      _GetStartRevision() or 'a5068f5fa11005232bc4383c54f6af230f9392fb')
   end_revision = 'HEAD'
 
   commits = git_repo.GetChangeLogs(start_revision, end_revision)

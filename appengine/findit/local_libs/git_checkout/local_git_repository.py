@@ -5,6 +5,7 @@
 import logging
 import os
 from urlparse import urlparse
+import StringIO
 import subprocess
 import threading
 
@@ -25,12 +26,24 @@ _CHANGELOGS_FORMAT_STRING = (
 CHECKOUT_ROOT_DIR = os.path.join(os.path.expanduser('~'), '.local_checkouts')
 
 
-def ConvertRemoteCommitToLocal(revision):
-  """Converts remote commit from gitile to local git checkout revision."""
-  return 'HEAD' if revision == 'master' else revision
+def ConvertRemoteCommitToLocal(revision, repo_path):
+ """Converts remote commit from gitile to local git checkout revision."""
+ if revision == 'master' or revision == 'HEAD':
+   temp_file_path = os.path.join(CHECKOUT_ROOT_DIR, '.tmp.parse_head')
+   with open(temp_file_path, 'wb') as f:
+     subprocess.check_call(
+               'cd %s && git rev-parse HEAD' %
+               repo_path,
+               stdout=f,
+               shell=True)
+
+   with open(temp_file_path) as f:
+     revision = f.read().strip()
+
+ return revision
 
 
-def GetRevisionRangeForGitCommand(start_revision, end_revision):
+def GetRevisionRangeForGitCommand(repo_path, start_revision, end_revision):
   """Get revision range for git command.
 
   If start_revision is empty, that means the range starts from the beginning of
@@ -40,8 +53,8 @@ def GetRevisionRangeForGitCommand(start_revision, end_revision):
   if not end_revision:
     end_revision = 'HEAD'
 
-  start_revision = ConvertRemoteCommitToLocal(start_revision)
-  end_revision = ConvertRemoteCommitToLocal(end_revision)
+  start_revision = ConvertRemoteCommitToLocal(start_revision, repo_path)
+  end_revision = ConvertRemoteCommitToLocal(end_revision, repo_path)
   return end_revision if not start_revision else '%s..%s' % (
       start_revision, end_revision)
 
@@ -139,7 +152,8 @@ class LocalGitRepository(GitRepository):
     """Returns the change log of the given revision."""
     command = ('git log --pretty=format:"%s" --max-count=1 --raw '
                '--no-abbrev %s' % (_CHANGELOG_FORMAT_STRING,
-                                   ConvertRemoteCommitToLocal(revision)))
+                                   ConvertRemoteCommitToLocal(
+                                       revision, self.real_repo_path)))
     output = script_util.GetCommandOutput(self._GetFinalCommand(command, True))
     return self.changelog_parser(output, self.repo_url)
 
@@ -150,7 +164,8 @@ class LocalGitRepository(GitRepository):
     changelogs from (None, None], which means from start of time to the current
     time.
     """
-    revision_range = GetRevisionRangeForGitCommand(start_revision, end_revision)
+    revision_range = GetRevisionRangeForGitCommand(
+        self.real_repo_path, start_revision, end_revision)
     command = 'git log --pretty=format:"%s" --raw --no-abbrev %s' % (
         _CHANGELOGS_FORMAT_STRING, revision_range)
 
@@ -160,7 +175,7 @@ class LocalGitRepository(GitRepository):
   def GetChangeDiff(self, revision, path=None):  # pylint: disable=W
     """Returns the diff of the given revision."""
     command = ('git log --format="" --max-count=1 %s' %
-               ConvertRemoteCommitToLocal(revision))
+               ConvertRemoteCommitToLocal(revision, self.real_repo_path))
     if path:
       command += ' -p %s' % path
     output = script_util.GetCommandOutput(self._GetFinalCommand(command))
@@ -169,14 +184,15 @@ class LocalGitRepository(GitRepository):
   def GetBlame(self, path, revision):
     """Returns blame of the file at ``path`` of the given revision."""
     command = 'git blame --incremental %s -- %s' % (
-        ConvertRemoteCommitToLocal(revision), path)
+        ConvertRemoteCommitToLocal(revision, self.real_repo_path), path)
     output = script_util.GetCommandOutput(self._GetFinalCommand(command))
     return self.blame_parser(output, path, revision)
 
   def GetSource(self, path, revision):
     """Returns source code of the file at ``path`` of the given revision."""
     # Check whether the requested file exist or not.
-    command = 'git show %s:%s' % (ConvertRemoteCommitToLocal(revision), path)
+    command = 'git show %s:%s' % (ConvertRemoteCommitToLocal(
+        revision, self.real_repo_path), path)
     output = script_util.GetCommandOutput(self._GetFinalCommand(command))
     return output
 
@@ -196,7 +212,8 @@ class LocalGitRepository(GitRepository):
       end_revision in order from most-recent to least-recent. This includes
       end_revision, but not start_revision.
     """
-    revision_range = GetRevisionRangeForGitCommand(start_revision, end_revision)
+    revision_range = GetRevisionRangeForGitCommand(
+        self.real_repo_path, start_revision, end_revision)
 
     command = 'git log --pretty=oneline %s' % revision_range
     output = script_util.GetCommandOutput(self._GetFinalCommand(command))
