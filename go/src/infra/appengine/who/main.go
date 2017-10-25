@@ -1,9 +1,120 @@
 package who
 
 import (
+	"fmt"
+	"html/template"
 	"net/http"
+
+	"golang.org/x/net/context"
+
+	"go.chromium.org/luci/appengine/gaeauth/server"
+	"go.chromium.org/luci/appengine/gaemiddleware/standard"
+	"go.chromium.org/luci/common/auth/identity"
+	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
+	"go.chromium.org/luci/server/router"
 )
 
+const (
+	authGroup = "chromium-who-access"
+)
+
+var (
+	mainPage         = template.Must(template.ParseFiles("./index.html"))
+	accessDeniedPage = template.Must(template.ParseFiles("./access-denied.html"))
+)
+
+func base(includeCookie bool) router.MiddlewareChain {
+	a := auth.Authenticator{
+		Methods: []auth.Method{
+			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
+			&server.InboundAppIDAuthMethod{},
+		},
+	}
+	if includeCookie {
+		a.Methods = append(a.Methods, server.CookieAuth)
+	}
+	return standard.Base().Extend(a.GetMiddleware())
+}
+
+var errStatus = func(c context.Context, w http.ResponseWriter, status int, msg string) {
+	logging.Errorf(c, "Status %d msg %s", status, msg)
+	w.WriteHeader(status)
+	w.Write([]byte(msg))
+}
+
+func requireGoogler(c *router.Context, next router.Handler) {
+	isGoogler, err := auth.IsMember(c.Context, authGroup)
+	switch {
+	case err != nil:
+		errStatus(c.Context, c.Writer, http.StatusInternalServerError, err.Error())
+	case !isGoogler:
+		errStatus(c.Context, c.Writer, http.StatusForbidden, "Access denied")
+	default:
+		next(c)
+	}
+}
+
+func indexPage(ctx *router.Context) {
+	c, w, r, _ := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+
+	user := auth.CurrentIdentity(c)
+
+	if user.Kind() == identity.Anonymous {
+		url, err := auth.LoginURL(c, "/")
+		if err != nil {
+			errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf(
+				"You must login. Additionally, an error was encountered while serving this request: %s", err.Error()))
+		} else {
+			http.Redirect(w, r, url, http.StatusFound)
+		}
+
+		return
+	}
+
+	isGoogler, err := auth.IsMember(c, authGroup)
+
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	logoutURL, err := auth.LogoutURL(c, "/")
+
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	data := map[string]string{
+		"User":      user.Email(),
+		"LogoutUrl": logoutURL,
+	}
+
+	if !isGoogler {
+		err = accessDeniedPage.Execute(w, data)
+		if err != nil {
+			logging.Errorf(c, "while rendering index: %s", err)
+		}
+		return
+	}
+
+	err = mainPage.Execute(w, data)
+	if err != nil {
+		logging.Errorf(c, "while rendering index: %s", err)
+	}
+}
+
 func init() {
-	http.Handle("/", http.FileServer(http.Dir("./")))
+	r := router.New()
+	basemw := base(true)
+	_ = basemw.Extend(requireGoogler)
+	standard.InstallHandlers(r)
+
+	r.GET("/", basemw, indexPage)
+
+	http.DefaultServeMux.Handle("/_ah/", r)
+	http.DefaultServeMux.Handle("/auth/", r)
+	http.DefaultServeMux.Handle("/admin/", r)
+	http.DefaultServeMux.Handle("/", r)
 }
