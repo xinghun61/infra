@@ -152,7 +152,7 @@ class LocalGitRepository(GitRepository):
     """
     revision_range = GetRevisionRangeForGitCommand(start_revision, end_revision)
     command = 'git log --pretty=format:"%s" --raw --no-abbrev %s' % (
-        _CHANGELOGS_FORMAT_STRING, revision_range),
+        _CHANGELOGS_FORMAT_STRING, revision_range)
 
     output = script_util.GetCommandOutput(self._GetFinalCommand(command, True))
     return self.changelogs_parser(output, self.repo_url)
