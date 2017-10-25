@@ -17,12 +17,12 @@ h1 {
 }
 
 .badge {
-  width: 80px;
-  height: 90px;
+  width: 130px;
+  height: 150px;
   float: left;
-  background: #eec;
   margin: .5em;
   padding: .5em;
+  background: #eee;
 }
 
 .icon {
@@ -30,24 +30,29 @@ h1 {
   text-align: center;
   top: 5px;
   left: 5px;
-  width: 60px;
-  height: 60px;
-  background: #efe;
+  width: 120px;
+  height: 120px;
+}
+
+
+.icon img {
+  width: 120px;
+  height: 120px;
 }
 
 .level {
   position: absolute;
-  font-size: 80%;
-  bottom: -5px;
-  right: -5px;
-  background: #448;
+  font-size: 120%;
+  bottom: -2px;
+  right: -2px;
+  background: #4a4;
   color: white;
-  border-radius: 3px;
-  padding: 2px 5px;
+  border: 1px solid white;
+  border-radius: 18px;
+  padding: 4px 10px;
 }
 
 .caption {
   margin-top: 10px;
   text-align: center;
 }
-

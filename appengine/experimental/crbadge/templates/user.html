@@ -7,14 +7,19 @@
  <h1>Chromium Badges for {{viewed_user_email}}</h1>
 
  <div id="badges">
-  {% for badge in badges %}
-   <div class="badge">
-     <div class="icon">
-       Icon
-       <div class="level">3</div>
-     </div>
-     <div class="caption" title="hover text here">{{badge}}</div>
-   </div>
+  {% if not badges %}
+    <p>Sorry, this user does not have any badges yet.</p>
+  {% endif %}
+  {% for badge_view in badges %}
+    {% if badge_view.show %}
+      <div class="badge" title="{{badge_view.badge_def.description}}">
+        <div class="icon">
+          <img src="/images/{{badge_view.badge_def.icon}}">
+          {% if badge_view.level %}<div class="level">{{badge_view.level}}</div>{% endif %}
+        </div>
+        <div class="caption">{{badge_view.badge_def.title}}</div>
+      </div>
+    {% endif %}
   {% endfor %}
  </div>
 </html>

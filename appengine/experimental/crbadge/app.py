@@ -1,4 +1,4 @@
-# Copyright (c) 2014 The Chromium Authors. All rights reserved.
+# Copyright (c) 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -9,6 +9,51 @@ import webapp2
 from webapp2_extras import jinja2
 
 from model import Badge, UserData
+
+
+FAKE_BADGE_DEFS = {
+  'lion': Badge(
+      badge_name='lion', level_1=1, level_2=2, level_3=3,
+      title='lion title',
+      description='lion desc', icon='lion-face_1f981.png'),
+  'shrug': Badge(
+      badge_name='shrug', level_1=1, level_2=2, level_3=3,
+      title='shrug title',
+      description='shrug desc', icon='shrug_1f937.png'),
+  'bottle': Badge(
+      badge_name='bottle', level_1=1, level_2=2, level_3=3,
+      title='bottle title',
+      description='bottle desc', icon='bottle-with-popping-cork_1f37e.png'),                      
+  }
+
+FAKE_USER_DATA = [
+  UserData(badge_name='lion', email='some email', value=1),
+  UserData(badge_name='shrug', email='some email', value=2),
+  UserData(badge_name='bottle', email='some email', value=3),
+]
+
+
+class BadgeView(object):
+
+  def __init__(self, user_data, badge_def_dict):
+    self.user_data = user_data
+    self.badge_def = badge_def_dict.get(user_data.badge_name)
+    if not self.badge_def:
+      self.show = False
+      return
+
+    if self.badge_def.show_number:
+      self.show = user_data.value > 0
+      self.level = user_data.value
+    else:
+      self.show = user_data.value >= self.badge_def.level_1
+      if user_data.value >= self.badge_def.level_3:
+        self.level = 3
+      elif user_data.value >= self.badge_def.level_2:
+        self.level = 2
+      else:
+        self.level = None  # Don't show level for 1
+
 
 class BaseHandler(webapp2.RequestHandler):
   """Provide a cached Jinja environment to each request."""
@@ -42,17 +87,19 @@ class UserPage(BaseHandler):
   def get(self, viewed_user_email, *args):
     if '@' not in viewed_user_email:
       viewed_user_email += '@chromium.org'
-    badges = ['monday', 'tuesday', 'wednesday']
+    badge_views = [
+      BadgeView(user_data, FAKE_BADGE_DEFS)
+      for user_data in FAKE_USER_DATA]
     context = {
         'title': 'User Page',
         'viewed_user_email': viewed_user_email,
-        'badges': badges,
+        'badges': badge_views,
         }
     self.render_response('user.html', **context)
 
 
 class MainPage(BaseHandler):
-  def get(self, foo, *args):
+  def get(self, *args):
     # TODO: redirect to signed in user... what if not signed in?
     self.redirect('/hinoka@chromium.org')
 
