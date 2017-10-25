@@ -8,58 +8,31 @@
 
     Details for [[day]]
 
-    <template is="dom-if" if="[[clLinks]]">
+    <template is="dom-if" if="[[bugs]]">
       <table>
         <tr>
           <th>Time</th>
-          <th>CL</th>
+          <th>Bug</th>
         </tr>
-        <template is="dom-repeat" for="[[clLinks]]">
+        <template is="dom-repeat" for="[[bugs]]">
           <td>[[item.time]]</td>
-          <td>[[item.link]]</td>
+          <td><a href="[[item.link]]">[[item.id]]</a></td>
         </template>
       </table>
     </template>
 
-    <template is="dom-if" if="[[bugsOpened]]">
+    <template is="dom-if" if="[[changes]]">
       <table>
         <tr>
           <th>Time</th>
-          <th>Bugs Opened</th>
+          <th>CLs</th>
         </tr>
-        <template is="dom-repeat" for="[[bugsOpened]]">
+        <template is="dom-repeat" for="[[changes]]">
           <td>[[item.time]]</td>
-          <td>[[item.link]]</td>
+          <td><a href="https://chromium-review.googlesource.com/[[item._number]]">[[item.subject]]</a></td>
         </template>
       </table>
     </template>
-
-    <template is="dom-if" if="[[bugsUpdated]]">
-      <table>
-        <tr>
-          <th>Time</th>
-          <th>Bugs Updated</th>
-        </tr>
-        <template is="dom-repeat" for="[[bugsUpdated]]">
-          <td>[[item.time]]</td>
-          <td>[[item.link]]</td>
-        </template>
-      </table>
-    </template>
-
-    <template is="dom-if" if="[[bugsClosed]]">
-      <table>
-        <tr>
-          <th>Time</th>
-          <th>Bugs Closed</th>
-        </tr>
-        <template is="dom-repeat" for="[[bugsClosed]]">
-          <td>[[item.time]]</td>
-          <td>[[item.link]]</td>
-        </template>
-      </table>
-    </template>
-
 
   </template>
   <script>

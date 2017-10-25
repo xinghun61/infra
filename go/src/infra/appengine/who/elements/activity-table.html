@@ -47,12 +47,6 @@ class ActivityTable extends ReduxMixin(Polymer.Element) {
     };
   }
 
-  static get listeners() {
-    return {
-      'state-changed': 'onStateChanged_',
-    }
-  }
-
   static get actions() {
     return {
       selectDay(day, activityTable) {
@@ -67,6 +61,11 @@ class ActivityTable extends ReduxMixin(Polymer.Element) {
         });
       },
     };
+  }
+
+  ready() {
+    super.ready();
+    this.addEventListener('state-changed', this.onStateChanged_.bind(this));
   }
 
   onDaySelected_(event) {

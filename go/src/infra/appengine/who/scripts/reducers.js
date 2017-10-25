@@ -93,7 +93,7 @@ function activityTableResponseError(state, action) {
   });
 }
 
-function dayDetailsRequest(state, error) {
+function dayDetailsRequest(state, action) {
   return Object.assign({}, state, {
     day: action.day,
     isFetchingDayDetail: true,

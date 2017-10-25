@@ -49,12 +49,6 @@ class WhoPage extends ReduxMixin(Polymer.Element) {
     };
   }
 
-  static get listeners() {
-    return {
-      'state-changed': 'onStateChanged_',
-    };
-  }
-
   static get actions() {
     return {
       selectUser(username, whoPage) {
@@ -77,6 +71,7 @@ class WhoPage extends ReduxMixin(Polymer.Element) {
 
   ready() {
     super.ready();
+    this.addEventListener('state-changed', this.onStateChanged_.bind(this));
     this.$.user.addEventListener(
         'selected-users-changed', this.onSelectedUsersChanged_.bind(this));
     this.$.user.suggestions = [
@@ -97,7 +92,10 @@ class WhoPage extends ReduxMixin(Polymer.Element) {
   }
 
   onStateChanged_() {
-    this.$.user.selectedUsers = [this.getState().username];
+    if (this.getState().username !== this.$.user.selectedUsers[0]) {
+      this.$.user.selectedUsers = [this.getState().username];
+    }
+
     this.$.table_spinner.style.display = this.getState().isFetchingActivityTable
       ? 'block' : 'none';
     this.$.details_spinner.style.display = this.getState().isFetchingDayDetail
@@ -117,6 +115,7 @@ class WhoPage extends ReduxMixin(Polymer.Element) {
     console.log(detail);
     this.$.details.style.display = detail ? 'block' : 'none';
     if (detail) {
+      this.$.details.day = this.getState().day;
       this.$.details.bugs = detail.Bugs;
       this.$.details.changes = detail.Changes;
     }
