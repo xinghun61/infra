@@ -13,6 +13,9 @@
     "tests"
   ],
   "dependencies": {
+    "iron-behaviors": "PolymerElements/iron-behaviors",
+    "iron-icons","PolymerElements/iron-icons",
+    "paper-input": "PolymerElements/paper-input",
     "paper-tooltip": "PolymerElements/paper-tooltip",
     "polymer-redux": "^1.0.4",
     "polymer": "Polymer/polymer#^2.0.0",
