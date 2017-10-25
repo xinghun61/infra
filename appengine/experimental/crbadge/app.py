@@ -2,12 +2,13 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import os
-import logging
 import json
+import logging
+import os
 import webapp2
-from webapp2_extras import jinja2
 
+from webapp2_extras import jinja2
+from google.appengine.ext import ndb
 from model import Badge, UserData, Settings
 
 
@@ -177,6 +178,8 @@ class Update(BaseHandler):
   @staticmethod
   def update_user_data(badge, b):
     data = badge.get('data', [])
+    # There might be a max batch size? We'll find out.
+    to_put = []
     for item in data:
       email = item['email']
       value = int(item['value'])  # JSON might turn it into a float.
@@ -187,7 +190,8 @@ class Update(BaseHandler):
       d = UserData(
           badge_name=b.badge_name, email=email, value=value,
           visible=True, id=uid)
-      d.put()
+      to_put.append(d)
+    ndb.put_multi(to_put)
 
 
 app = webapp2.WSGIApplication([
