@@ -1,0 +1,86 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+<link rel="import" href="../../bower_components/polymer/polymer-element.html">
+
+<dom-module id="crdx-header">
+  <template>
+    <style>
+      :root {
+        --header-color: #dce5f8;
+      }
+
+      #crdxHeader {
+        background: var(--header-color);
+        font-size: 1.6rem;
+        width: 100%;
+        height: 5rem;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 100;
+      }
+      #headerTitle {
+        font-size: 2.2rem;
+        display: flex;
+        align-items: center;
+      }
+      #headerTitle a {
+        color: #222;
+        text-decoration: none;
+      }
+      #headerTitle a:hover {
+        text-decoration: underline;
+      }
+      #headerTitle img {
+        height: 3.2rem;
+        width: 3.2rem;
+      }
+      #headerTitle small {
+        font-size: 1.6rem;
+      }
+      #headerTitleText {
+        display: flex;
+        align-items: baseline;
+      }
+      #headerTitleTextMain {
+        padding: 0 0.8rem;
+      }
+      .header-section {
+        padding: 0.5em 1.6rem;
+        display: flex;
+        align-items: center;
+      }
+    </style>
+    <div id="crdxHeader">
+      <div id="headerTitle" class="header-section">
+        <a href="/">
+          <img src$="[[logoUrl]]" alt$="[[appTitle]] Logo" title$="[[appTitle]] Logo" />
+        </a>
+        <span id="headerTitleText">
+          <a id="headerTitleTextMain" href="/">
+            [[appTitle]]
+          </a>
+          <template is="dom-if" if="[[currentPage]]">
+            <small>
+              &gt;
+              <a href$="[[currentPageRoute]]">
+                [[currentPage]]
+              </a>
+            </small>
+          </template>
+        </span>
+      </div>
+      <div class="header-section">
+        <template is="dom-if" if="[[user]]">
+          <span>
+            Logged in as [[user]]
+            <template is="dom-if" if="[[logoutUrl]]">
+              (<a href$="[[logoutUrl]]">Log Out</a>)
+            </template>
+          </span>
+        </template>
+      </div>
+    </div>
+  </template>
+  <script src="crdx-header.js"></script>
+</dom-module>

@@ -5,6 +5,8 @@
   <script src="/node_modules/redux/dist/redux.js"></script>
   <link rel="import" href="/bower_components/polymer-redux/polymer-redux.html">
   <script src="scripts/reducers.js"></script>
+
+  <link rel="import" href="/bower_components/polymer-redux/polymer-redux.html">
   <script>
   'use strict';
   (function() {
@@ -14,7 +16,9 @@
     window.ReduxMixin = PolymerRedux(store);
   })();
   </script>
+
   <link rel="import" href="/elements/who-page.html">
+
   <link rel="apple-touch-icon" sizes="180x180" href="images/apple-touch-icon.png">
   <link rel="icon" type="image/png" sizes="32x32" href="images/favicon-32x32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="images/favicon-16x16.png">
@@ -23,8 +27,27 @@
   <link rel="shortcut icon" href="favicon.ico">
   <meta name="msapplication-config" content="browserconfig.xml">
   <meta name="theme-color" content="#ffffff">
+
+  <style>
+    html {
+      height: 100%;
+      /* This fontsize is so that rems are similar to pixels. ie: 1.4rem = 14px */
+      font-size: 62.5%;
+    }
+
+    @media (max-width: 800px) {
+      html {
+        /* Responsively decrease the size of all rem units by a constant factor. */
+        font-size: 50%;
+      }
+    }
+
+    body {
+      font-size: 1.4rem;
+      font-family: 'Open Sans', sans-serif;
+      height: 100%;
+      margin: 0;
+    }
+  </style>
 </head>
-
-<a href="{{.LogoutUrl}}">log out</a>
-
-<who-page></who-page>
+<who-page user="{{.User}}" logout-url="{{.LogoutUrl}}"></who-page>

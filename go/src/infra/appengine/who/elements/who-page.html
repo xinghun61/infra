@@ -1,6 +1,8 @@
 <link rel="import" href="../../bower_components/app-route/app-location.html">
 <link rel="import" href="../../bower_components/app-route/app-route.html">
 
+<link rel="import" href="/elements/crdx-header/crdx-header.html">
+
 <link rel="import" href="/elements/activity-table.html">
 <link rel="import" href="/elements/day-details.html">
 <link rel="import" href="/elements/user-id.html">
@@ -9,6 +11,10 @@
 <dom-module id="who-page">
   <template>
     <style>
+    #container {
+      padding: 1em 1.6rem;
+    }
+
     #table_spinner, #table, #details_spinner, #details {
       display: none;
     }
@@ -22,13 +28,17 @@
     <app-route route="{{route}}" pattern="/:username/:date" data="{{_routeData}}">
     </app-route>
 
-    <user-input id="user"></user-input>
+    <crdx-header app-title="Chromium Who" user="[[user]]" logo-url="images/logo.png" logout-url="[[logoutUrl]]"></crdx-header>
 
-    <paper-spinner id="table_spinner" active></paper-spinner>
-    <activity-table id="table"></activity-table>
+    <div id="container">
+      <user-input id="user"></user-input>
 
-    <paper-spinner id="details_spinner" active></paper-spinner>
-    <day-details id="details"></day-details>
+      <paper-spinner id="table_spinner" active></paper-spinner>
+      <activity-table id="table"></activity-table>
+
+      <paper-spinner id="details_spinner" active></paper-spinner>
+      <day-details id="details"></day-details>
+    </div>
   </template>
 </dom-module>
 
@@ -46,6 +56,8 @@ class WhoPage extends ReduxMixin(Polymer.Element) {
         type: Object,
         value: () => {return {}; },
       },
+      user: String,
+      logoutUrl: String,
     };
   }
 
