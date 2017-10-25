@@ -6,11 +6,11 @@
     :host {
       display: grid;
       /* 8 columns = 7 days of the week + 1 column to label the week */
-      grid-template-columns: auto auto auto auto auto auto auto auto ;
+      grid-template-columns: auto auto auto auto auto auto auto auto;
     }
     </style>
 
-    <span><!-- empty column header for weekLabel column --></span>
+    <span>&nbsp;<!-- empty column header for weekLabel column --></span>
     <template is="dom-repeat" items="[[daysOfWeek]]">
       <span>[[item]]</span>
     </template>
@@ -20,6 +20,7 @@
       <template is="dom-repeat" items="[[item.days]]">
         <day-icon changes="[[item.Changes]]"
                   bugs="[[item.Bugs]]"
+                  day="[[item.Day]]"
                   on-tap="onDaySelected_">
         </day-icon>
       </template>
@@ -70,7 +71,7 @@ class ActivityTable extends ReduxMixin(Polymer.Element) {
 
   onDaySelected_(event) {
     console.log('onDaySelected_', event);
-    this.dispatch('selectDay', event.path[0].model.day, this);
+    this.dispatch('selectDay', event.path[2].day, this);
   }
 
   onStateChanged_() {

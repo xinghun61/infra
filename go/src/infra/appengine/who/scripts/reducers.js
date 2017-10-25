@@ -29,8 +29,10 @@ const DEFAULT_STATE = {
   dayDetails: {},
 };
 
+const USE_DUMMY_DATA = true;
+
 function reduxAjax({path, body, requestType, successType, errorType, dispatch}) {
-  if (false) {
+  if (!USE_DUMMY_DATA) {
     fetch(path, {
       method: 'POST',
       body: JSON.stringify(body),
@@ -102,7 +104,16 @@ function transformActivities(input) {
     weeks[topOfWeek.toString()]
   }
 
-  return weeks;
+  const ar = [];
+  for (const [topW, items] of Object.entries(weeks)) {
+    const topDate = new Date(topW);
+    ar.push({
+      weekLabel: 'Oct ' + topDate.getDate(),
+      days: items,
+    });
+  }
+
+  return ar.slice(0, 4);
 }
 
 function activityTableResponseSuccess(state, action) {
@@ -143,6 +154,7 @@ function dayDetailsResponseSuccess(state, action) {
   return Object.assign({}, state, {
     isFetchingDayDetail: false,
     dayDetailError: undefined,
+    day: USE_DUMMY_DATA ? '2017-10-18T00:00:00Z' : state.day,
     dayDetails: Object.assign(
       {}, state.dayDetails, dayDetails),
   });

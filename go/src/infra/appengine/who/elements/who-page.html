@@ -96,11 +96,11 @@ class WhoPage extends ReduxMixin(Polymer.Element) {
     // This should fire selected-users-changed, which will dispatch selectUser
     // to load the dummy activities, then fire state-changed, listened by
     // onStateChanged_, which should display the activity-table.
-    this.$.user.selectedUsers = [this.getState().username];
+    this.$.user.selectedUsers = [{userId: this.getState().username}];
   }
 
   onSelectedUsersChanged_() {
-    this.dispatch('selectUser', this.$.user.selectedUsers[0], this);
+    this.dispatch('selectUser', this.$.user.selectedUsers[0].userId, this);
   }
 
   onStateChanged_() {
@@ -119,7 +119,7 @@ class WhoPage extends ReduxMixin(Polymer.Element) {
     console.log(activities);
     this.$.table.style.display = activities ? 'block' : 'none';
     if (activities) {
-      this.$.table.activities = activities;
+      this.$.table.weeks = activities;
     }
 
     const detailKey = this.getState().username + ' ' + this.getState().day;

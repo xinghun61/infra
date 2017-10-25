@@ -15,10 +15,8 @@
     </style>
     <div>
       <paper-tooltip>
-        CLs: [[clsCommitted]]<br/>
-        Bugs opened: [[bugsOpened]]<br/>
-        Bugs updated: [[bugsUpdated]]<br/>
-        Bugs closed: [[bugsClosed]]
+        [[changes]] CLs<br/>
+        [[bugs]] bugs
       </paper-tooltip>
     </div>
   </template>
@@ -30,19 +28,11 @@
 
       static get properties() {
         return {
-          clsCommitted: {
+          changes: {
           type: Number,
           value: 0,
           },
-          bugsOpened:  {
-          type: Number,
-          value: 0,
-          },
-          bugsUpdated:  {
-          type: Number,
-          value: 0,
-          },
-          bugsClosed:  {
+          bugs:  {
           type: Number,
           value: 0,
           },
@@ -51,18 +41,18 @@
 
       static get observers() {
         return [
-          'computeActivityLevel(clsCommitted, bugsOpened, bugsUpdated, bugsClosed)'
+          'computeActivityLevel(changes, bugs)'
         ]
       }
 
-      computeActivityLevel(cls, opened, updated, closed) {
-        let activityNum = (cls + opened + updated + closed);
+      computeActivityLevel(cls, bugs) {
+        const activityNum = (cls + bugs);
         let color;
         if (activityNum >= 7) {
           color = 'rgb(0, 128, 0)';
-        } else if (activityNUm >= 5) {
+        } else if (activityNum >= 5) {
           color = 'rgb(0, 255, 0)';
-        } else if (activityNUm >= 2) {
+        } else if (activityNum >= 2) {
           color = 'rgb(128, 255, 128)';
         }
         this.updateStyles({'--activity-color': color});
