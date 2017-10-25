@@ -99,9 +99,21 @@ class BadgePage(BaseHandler):
       logging.info('badge def was %r', badge_def)
       self.abort(404)
     awarded_count = UserData.query(UserData.badge_name == badge_name).count()
+    l1_count = UserData.query(
+        UserData.badge_name == badge_name,
+        UserData.value > badge_def.level_1 or 0).count()
+    l2_count = UserData.query(
+        UserData.badge_name == badge_name,
+        UserData.value > badge_def.level_2 or 0).count()
+    l3_count = UserData.query(
+        UserData.badge_name == badge_name,
+        UserData.value > badge_def.level_3 or 0).count()
     context = {
         'badge_def': badge_def,
         'awarded_count': awarded_count,
+        'l1_count': l1_count,
+        'l2_count': l2_count,
+        'l3_count': l3_count
         }
     self.render_response('badge.html', **context)
 

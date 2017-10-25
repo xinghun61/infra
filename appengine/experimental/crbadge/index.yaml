@@ -1,0 +1,6 @@
+indexes:
+
+- kind: UserData
+  properties:
+  - name: badge_name
+  - name: value

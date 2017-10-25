@@ -27,13 +27,13 @@
        <p>The number shown on the badge is a value calculated for each user.</p>
      {% else %}
        <table class="level_doc">
-         <tr><th>Level</th><th>Threshold</th></tr>
-         <tr><th>1</th><td>{{badge_def.level_1}}</td></tr>
+         <tr><th>Level</th><th>Threshold</th><th>Count</th></tr>
+           <tr><th>1</th><td>{{badge_def.level_1}}</td><td>{{l1_count}}</td></tr>
          {% if badge_def.level_2 %}
-           <tr><th>2</th><td>{{badge_def.level_2}}</td></tr>
+           <tr><th>2</th><td>{{badge_def.level_2}}</td><td>{{l2_count}}</td></tr>
          {% endif %}
          {% if badge_def.level_3 %}
-           <tr><th>3</th><td>{{badge_def.level_3}}</td></tr>
+           <tr><th>3</th><td>{{badge_def.level_3}}</td><td>{{l3_count}}</tr>
          {% endif %}
        </table>
      {% endif %}
@@ -41,7 +41,7 @@
      <h2>Rarity</h2>
      <p>This badge has been awarded to {{awarded_count}} users.</p>
    </td>
-  </tr> 
+  </tr>
  </table>
 
 </html>
