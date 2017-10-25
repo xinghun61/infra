@@ -1,6 +1,7 @@
 body {
   padding: 0;
   margin: 0;
+  font-family: 'Roboto', sans-serif;
 }
 
 h1 {
@@ -17,12 +18,18 @@ h1 {
 }
 
 .badge {
-  width: 130px;
-  height: 150px;
+  width: 140px;
+  height: 190px;
   float: left;
   margin: .5em;
+}
+
+.shield {
+  width: 130px;
+  height: 150px;
   padding: .5em;
-  background: #eee;
+  background: #ddd;
+  border-radius: 30px 30px 120px 120px;
 }
 
 .icon {

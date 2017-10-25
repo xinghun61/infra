@@ -1,6 +1,7 @@
 <html>
  <head>
   <title>Chromium Badges for {{viewed_user_email}}</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet">
   <link type="text/css" rel="stylesheet" href="/css/style.css?version={{app_version}}">
  </head>
 
@@ -13,10 +14,12 @@
   {% for badge_view in badges %}
     {% if badge_view.show %}
       <div class="badge" title="{{badge_view.badge_def.description}}">
-        <div class="icon">
-          <img src="/images/{{badge_view.badge_def.icon}}">
-          {% if badge_view.level %}<div class="level">{{badge_view.level}}</div>{% endif %}
-        </div>
+      <div class="shield">
+          <div class="icon">
+            <img src="/images/{{badge_view.badge_def.icon}}">
+            {% if badge_view.level %}<div class="level">{{badge_view.level}}</div>{% endif %}
+          </div>
+      </div>
         <div class="caption">{{badge_view.badge_def.title}}</div>
       </div>
     {% endif %}
