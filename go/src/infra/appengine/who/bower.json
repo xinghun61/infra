@@ -19,6 +19,12 @@
     "paper-tooltip": "PolymerElements/paper-tooltip",
     "polymer-redux": "^1.0.4",
     "polymer": "Polymer/polymer#^2.0.0",
-    "polymer-starter-kit": "PolymerElements/polymer-starter-kit#^3.2.0"
+    "polymer-starter-kit": "PolymerElements/polymer-starter-kit#^3.2.0",
+    "paper-elements": "PolymerElements/paper-elements#^1.0.7"
+  },
+  "resolutions": {
+    "polymer": "^2.0.0",
+    "paper-icon-button": "^2.0.0",
+    "webcomponentsjs": "^v1.0.2"
   }
 }
