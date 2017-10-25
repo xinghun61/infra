@@ -48,18 +48,18 @@ _BADGE_TO_REPO_URL = {
 
 _BADGES = [
     'code-landed_in_chromium_browser',
-    'code-landed_in_angle',
-    'code-landed_in_arc',
-    'code-landed_in_breakpad',
-    'code-landed_in_catapult',
-    'code-landed_in_crashpad',
+    #'code-landed_in_angle',
+    #'code-landed_in_arc',
+    #'code-landed_in_breakpad',
+    #'code-landed_in_catapult',
+    #'code-landed_in_crashpad',
     'code-landed_in_infra',
-    'code-landed_in_libyuv',
-    'code-landed_in_media_router',
-    'code-landed_in_native_client',
+    #'code-landed_in_libyuv',
+    #'code-landed_in_media_router',
+    #'code-landed_in_native_client',
     'code-landed_in_skia',
     'code-landed_in_v8',
-    'code-landed_in_webm',
+    #'code-landed_in_webm',
     'code-number_of_tbrs',
     'code-number_of_tbrs_assigned',
 ]
@@ -130,10 +130,9 @@ def GetAuthorDataInRepo(func, state, repo_url=None, n=20):
   tasks = []
   number_of_cls = len(changelogs)
   if number_of_cls > n:
-    segment_length = number_of_cls % n
     segments = []
-    for index in xrange(0,  number_of_cls, segment_length):
-      segments.append(changelogs[index: (index + segment_length)])
+    for index in xrange(0,  number_of_cls, n):
+      segments.append(changelogs[index: (index + n)])
   else:
     segments = [changelogs]
 
