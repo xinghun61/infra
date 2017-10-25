@@ -17,14 +17,14 @@ handlers:
   static_dir: static/images
   secure: always
 
-- url: /.*
-  script: app.app
-  secure: always
-
 - url: /admin/.*
   script: app.app
   secure: always
   login: admin
+
+- url: /.*
+  script: app.app
+  secure: always
 
 libraries:
 - name: jinja2

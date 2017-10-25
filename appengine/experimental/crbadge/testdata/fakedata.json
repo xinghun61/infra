@@ -1,0 +1,19 @@
+[
+  {
+    "badge_name": "fakebadge",
+    "data": [
+      {
+        "email": "user@somewhere.com",
+        "value": 5
+      },
+      {
+        "email": "user2@somewhere.com",
+        "value": 50
+      },
+      {
+        "email": "user3@somewhere.com",
+        "value": 500
+      }
+    ]
+  }
+]

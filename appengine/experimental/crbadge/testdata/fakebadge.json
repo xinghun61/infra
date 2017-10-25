@@ -1,0 +1,12 @@
+[
+  {
+    "badge_name": "fakebadge",
+    "level_1": 1,
+    "level_2": 10,
+    "level_3": 100,
+    "show_number": false,
+    "title": "What a badge",
+    "description": "This is a description",
+    "icon": "/foobar"
+  }
+]

@@ -4,9 +4,11 @@
 
 import os
 import logging
+import json
 import webapp2
 from webapp2_extras import jinja2
 
+from model import Badge, UserData
 
 class BaseHandler(webapp2.RequestHandler):
   """Provide a cached Jinja environment to each request."""
@@ -63,10 +65,90 @@ class BadgePage(BaseHandler):
         }
     self.render_response('badge.html', **context)
 
+class Update(BaseHandler):
+  """Update badge data.
+
+  The expected format is:
+  [
+    {
+      "badge_name": <str>,
+      "level_1": <int>,     # Optional
+      "level_2": <int>,     # Optional
+      "level_3": <int>,     # Optional
+      "show_number": <bool>,  # Optional
+      "title": <str>,       # Optional
+      "description": <str>, # Optional
+      "icon": <str>,        # URI, Optional
+      "data": {
+        {
+          "email": <str>,
+          "value": <int>,
+        }
+      }
+    }
+  ]
+  """
+  def post(self):
+    data = self.request.POST.getone('data')
+    if not data:
+      self.response.set_status(400)
+      self.response.write('no data given')
+      return
+    o = json.loads(data)
+    for badge in o:
+      b = self.update_badge_entity(badge)
+      self.update_user_data(badge, b)
+
+  @staticmethod
+  def update_badge_entity(badge):
+    name = badge['badge_name']
+    level_1 = badge.get('level_1', None)
+    level_2 = badge.get('level_2', None)
+    level_3 = badge.get('level_3', None)
+    show_number = badge.get('show_number', None)
+    title = badge.get('title', None)
+    description = badge.get('description', None)
+    icon = badge.get('icon', None)
+    b = Badge.get_by_id(id=name)
+    if not b:
+      b = Badge(id=name, badge_name=name)
+    if level_1 is not None:
+      b.level_1 = level_1
+    if level_2 is not None:
+      b.level_2 = level_2
+    if level_3 is not None:
+      b.level_3 = level_3
+    if show_number is not None:
+      b.show_number = show_number
+    if title is not None:
+      b.title = title
+    if description is not None:
+      b.description = description
+    if b.icon is not None:
+      b.icon = icon
+    b.put()
+    return b
+
+  @staticmethod
+  def update_user_data(badge, b):
+    data = badge.get('data', [])
+    for item in data:
+      email = item['email']
+      value = int(item['value'])  # JSON might turn it into a float.
+      uid = '%s:%s' % (b.badge_name, email)
+      d = UserData.get_by_id(id=uid)
+      if d and not d.visible:
+        continue
+      d = UserData(
+          badge_name=b.badge_name, email=email, value=value,
+          visible=True, id=uid)
+      d.put()
+
 
 app = webapp2.WSGIApplication([
     (r'/([a-z0-9]+(@[.a-z]+)?)', UserPage),
     (r'/b/([a-z0-9]+)', BadgePage),
+    (r'/admin/update', Update),
     ('/', MainPage),
 ])
 
