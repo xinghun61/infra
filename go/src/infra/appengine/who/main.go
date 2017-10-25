@@ -1,9 +1,11 @@
 package who
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
+	"time"
 
 	"golang.org/x/net/context"
 
@@ -105,14 +107,91 @@ func indexPage(ctx *router.Context) {
 	}
 }
 
+// Bug is a dummy struct. Put whatever you want in here, I'll hook it up
+// to the actual api in a follow-up CL.
+type Bug struct {
+	ID, Title, Status string
+	LastUpdate        time.Time
+}
+
+// Change is a dummy struct. Put whatever you want in here, I'll hook it up
+// to the actual api in a follow-up CL.
+type Change struct {
+	ID, Title, Status string
+	LastUpdate        time.Time
+}
+
+// DayDetails is a list of activity for a user on a given day.
+type DayDetails struct {
+	Username string
+	Bugs     []Bug
+	Changes  []Change
+}
+
+// ActivityCounts contains counts for user activities on a given day.
+type ActivityCounts struct {
+	Changes, Bugs int
+	Day           time.Time
+}
+
+// ActivityHistory holds daily activity counts for a user over some data range.
+type ActivityHistory struct {
+	Activities []ActivityCounts
+}
+
+func historyHandler(ctx *router.Context) {
+	c, w, _, _ := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+	encoder := json.NewEncoder(w)
+
+	h := ActivityHistory{
+		Activities: []ActivityCounts{},
+	}
+
+	now := time.Now()
+	for i := 0; i < 28; i++ {
+		a := ActivityCounts{
+			Bugs:    i,
+			Changes: i,
+			Day:     now.Add(time.Duration(-i*24) * time.Hour),
+		}
+
+		h.Activities = append(h.Activities, a)
+	}
+
+	if err := encoder.Encode(h); err != nil {
+		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error json encoding: %v", err))
+	}
+}
+
+func detailHandler(ctx *router.Context) {
+	c, w, _, _ := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+	encoder := json.NewEncoder(w)
+
+	if err := encoder.Encode(DayDetails{
+		Bugs: []Bug{
+			{"1", "dummy bug", "Open", time.Now()},
+			{"2", "another dummy bug", "Open", time.Now()},
+		},
+		Changes: []Change{
+			{"1", "dummy change", "Open", time.Now()},
+			{"2", "another dummy change", "Open", time.Now()},
+		},
+	}); err != nil {
+		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error json encoding: %v", err))
+	}
+}
+
 func init() {
 	r := router.New()
 	basemw := base(true)
-	_ = basemw.Extend(requireGoogler)
+	protected := basemw.Extend(requireGoogler)
 	standard.InstallHandlers(r)
 
 	r.GET("/", basemw, indexPage)
+	r.GET("/_/history", protected, historyHandler)
+	r.GET("/_/detail", protected, detailHandler)
 
+	http.DefaultServeMux.Handle("/_/", r)
 	http.DefaultServeMux.Handle("/_ah/", r)
 	http.DefaultServeMux.Handle("/auth/", r)
 	http.DefaultServeMux.Handle("/admin/", r)
