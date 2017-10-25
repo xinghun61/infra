@@ -93,8 +93,10 @@ class BadgePage(BaseHandler):
   """Display page description, level thresholds, and times awarded."""
 
   def get(self, badge_name, *args):
+    logging.info('badge_name = %r', badge_name)
     badge_def = Badge.get_by_id(badge_name)
     if not badge_def:
+      logging.info('badge def was %r', badge_def)
       self.abort(404)
     awarded_count = UserData.query(UserData.badge_name == badge_name).count()
     context = {
@@ -196,8 +198,8 @@ class Update(BaseHandler):
 
 app = webapp2.WSGIApplication([
     (r'/system/update', Update),
-    (r'/b/([a-z0-9]+)', BadgePage),
-    (r'/([a-z0-9]+(@[.a-z]+)?)', UserPage),
+    (r'/b/([-_.A-Za-z0-9]+)', BadgePage),
+    (r'/([-_+A-Za-z0-9]+(@[.A-Za-z]+)?)', UserPage),
     ('/', MainPage),
 ])
 

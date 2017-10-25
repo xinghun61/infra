@@ -20,7 +20,7 @@ help:
 	@sed -n '/^[a-zA-Z0-9_.]*:/s/:.*//p' <Makefile
 
 test:
-	../../test.py test appengine/experimental/crbadge
+	../../../test.py test appengine/experimental/crbadge
 
 # Commands for running locally using dev_appserver.
 serve:
