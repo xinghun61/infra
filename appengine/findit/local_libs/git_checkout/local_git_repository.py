@@ -26,24 +26,25 @@ _CHANGELOGS_FORMAT_STRING = (
 CHECKOUT_ROOT_DIR = os.path.join(os.path.expanduser('~'), '.local_checkouts')
 
 
-def ConvertRemoteCommitToLocal(revision, repo_path):
- """Converts remote commit from gitile to local git checkout revision."""
- if revision == 'master' or revision == 'HEAD':
-   temp_file_path = os.path.join(CHECKOUT_ROOT_DIR, '.tmp.parse_head')
-   with open(temp_file_path, 'wb') as f:
-     subprocess.check_call(
-               'cd %s && git rev-parse HEAD' %
-               repo_path,
-               stdout=f,
-               shell=True)
+# TODO(katesonia) Cover test for this function later.
+def ConvertRemoteCommitToLocal(revision, repo_path):  # pragma: no cover.
+  """Converts remote commit from gitile to local git checkout revision."""
+  if revision == 'master' or revision == 'HEAD':
+    temp_file_path = os.path.join(CHECKOUT_ROOT_DIR, '.tmp.parse_head')
+    with open(temp_file_path, 'wb') as f:
+      subprocess.check_call(
+                'cd %s && git rev-parse HEAD' %
+                repo_path,
+                stdout=f,
+                shell=True)
 
-   with open(temp_file_path) as f:
-     revision = f.read().strip()
+    with open(temp_file_path) as f:
+      revision = f.read().strip()
 
- return revision
+  return revision
 
 
-def GetRevisionRangeForGitCommand(repo_path, start_revision, end_revision):
+def GetRevisionRangeForGitCommand(start_revision, end_revision, repo_path):
   """Get revision range for git command.
 
   If start_revision is empty, that means the range starts from the beginning of
@@ -153,7 +154,8 @@ class LocalGitRepository(GitRepository):
     command = ('git log --pretty=format:"%s" --max-count=1 --raw '
                '--no-abbrev %s' % (_CHANGELOG_FORMAT_STRING,
                                    ConvertRemoteCommitToLocal(
-                                       revision, self.real_repo_path)))
+                                       revision,
+                                       self.real_repo_path)))
     output = script_util.GetCommandOutput(self._GetFinalCommand(command, True))
     return self.changelog_parser(output, self.repo_url)
 
@@ -164,10 +166,10 @@ class LocalGitRepository(GitRepository):
     changelogs from (None, None], which means from start of time to the current
     time.
     """
-    revision_range = GetRevisionRangeForGitCommand(
-        self.real_repo_path, start_revision, end_revision)
-    command = 'git log --pretty=format:"%s" --raw --no-abbrev %s' % (
-        _CHANGELOGS_FORMAT_STRING, revision_range)
+    revision_range = GetRevisionRangeForGitCommand(start_revision, end_revision,
+                                                   self.real_repo_path)
+    command = 'git log %s --pretty=format:"%s" --raw --no-abbrev' % (
+        revision_range, _CHANGELOGS_FORMAT_STRING)
 
     output = script_util.GetCommandOutput(self._GetFinalCommand(command, True))
     return self.changelogs_parser(output, self.repo_url)
@@ -212,8 +214,8 @@ class LocalGitRepository(GitRepository):
       end_revision in order from most-recent to least-recent. This includes
       end_revision, but not start_revision.
     """
-    revision_range = GetRevisionRangeForGitCommand(
-        self.real_repo_path, start_revision, end_revision)
+    revision_range = GetRevisionRangeForGitCommand(start_revision, end_revision,
+                                                   self.real_repo_path)
 
     command = 'git log --pretty=oneline %s' % revision_range
     output = script_util.GetCommandOutput(self._GetFinalCommand(command))

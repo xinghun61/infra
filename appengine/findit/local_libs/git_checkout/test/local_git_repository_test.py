@@ -242,10 +242,13 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
                             script_util.GetCommandOutput, 'dummy')
 
   @mock.patch('local_libs.git_checkout.local_git_repository.LocalGitRepository.'
+              'real_repo_path')
+  @mock.patch('local_libs.git_checkout.local_git_repository.LocalGitRepository.'
               '_GetFinalCommand')
   @mock.patch('local_libs.script_util.GetCommandOutput')
   def testGetCommitsBetweenRevisions(self, mock_get_commits_output,
-                                     mock_get_final_command):
+                                     mock_get_final_command,
+                                     mock_repo_path):
     """Tests ``GetCommitsBetweenRevisions`` return number of commits."""
     output = textwrap.dedent("""
         5789567 (HEAD -> master) Move some Document timers to frame-specific...
@@ -254,20 +257,34 @@ class LocalGitRepositoryTest(testing.AppengineTestCase):
         3e84f37 Fix use-after-free introduced by ...
         """)
     mock_get_commits_output.return_value = output
+    mock_repo_path.return_value = 'repo_path'
     repo = local_git_repository.LocalGitRepository(None)
     self.assertListEqual(repo.GetCommitsBetweenRevisions('old_rev', 'new_rev'),
                          ['5789567', '95bbc94', '463b55a', '3e84f37'])
     self.assertTrue(mock_get_final_command.called)
 
-  def testGetRevisionRangeForGitCommand(self):
+  @mock.patch('local_libs.git_checkout.local_git_repository.'
+              'ConvertRemoteCommitToLocal')
+  def testGetRevisionRangeForGitCommand(self, convert_to_local_commit):
     """Tests ``GetRevisionRangeForGitCommand`` function."""
+
+    def Convert(commit, *_):
+      if commit == 'master' or commit == 'HEAD':
+        return 'HEAD_rev'
+
+      return commit
+
+    convert_to_local_commit.side_effect = Convert
     self.assertEqual(
-        local_git_repository.GetRevisionRangeForGitCommand('start_rev', None),
-        'start_rev..HEAD')
+        local_git_repository.GetRevisionRangeForGitCommand(
+            'start_rev', None, 'repo_path'),
+        'start_rev..HEAD_rev')
 
     self.assertEqual(
-        local_git_repository.GetRevisionRangeForGitCommand(None, 'end_rev'),
+        local_git_repository.GetRevisionRangeForGitCommand(
+            None, 'end_rev', 'repo_path'),
         'end_rev')
 
     self.assertEqual(
-        local_git_repository.GetRevisionRangeForGitCommand(None, None), 'HEAD')
+        local_git_repository.GetRevisionRangeForGitCommand(None, None, 'repo'),
+        'HEAD_rev')
