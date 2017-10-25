@@ -331,11 +331,16 @@ function TKR_highlightRow(el) {
  */
 function TKR_floatMetadata() {
   var el = $('meta-float');
-  var container = $('issuemeta');
 
-  window.addEventListener('scroll', function() {
+  if (window.CSS && window.CSS.supports &&
+      window.CSS.supports('position', 'sticky')) {
+    el.classList.add('sticky-top');
+  } else {
+    var container = $('issuemeta');
+    window.addEventListener('scroll', function() {
       TKR_floatVertically(el, container);
     }, false);
+  }
 }
 
 /**
