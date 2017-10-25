@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"html/template"
 	"net/http"
+	"sort"
+	"strings"
 	"time"
 
 	"golang.org/x/net/context"
+
+	"infra/monorail"
 
 	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
@@ -15,6 +19,8 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
+
+	gerrit "github.com/andygrunwald/go-gerrit"
 )
 
 const (
@@ -147,21 +153,90 @@ func historyHandler(ctx *router.Context) {
 		Activities: []ActivityCounts{},
 	}
 
-	now := time.Now()
-	for i := 0; i < 28; i++ {
-		a := ActivityCounts{
-			Bugs:    i,
-			Changes: i,
-			Day:     now.Add(time.Duration(-i*24) * time.Hour),
+	user := auth.CurrentIdentity(c)
+	email := getAlternateEmail(user.Email())
+	q := fmt.Sprintf("owner:%s OR owner:%s", user.Email(), email)
+	logging.Errorf(c, "query: %v", q)
+
+	bugs, err := getBugsFromMonorail(c, q, monorail.IssuesListRequest_OPEN)
+	if err != nil {
+		logging.Errorf(c, "error getting bugs: %v", err)
+		return
+	}
+
+	byDay := map[time.Time][]ActivityCounts{}
+
+	for _, bug := range bugs.Items {
+		updated, err := time.Parse("2006-01-02T15:04:05", bug.Updated)
+		if err != nil {
+			logging.Errorf(c, "error parsing time: %s %v", bug.Updated, err)
+			continue
+		}
+		day := updated.Truncate(24 * time.Hour)
+		if _, ok := byDay[day]; !ok {
+			byDay[day] = []ActivityCounts{}
+		}
+		byDay[day] = append(byDay[day], ActivityCounts{
+			Bugs: 1,
+		})
+	}
+
+	// Next, get changes.
+	client, err := getGerritClient(c)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	changeInfo, _, err := client.Changes.QueryChanges(&gerrit.QueryChangeOptions{
+		QueryOptions: gerrit.QueryOptions{
+			Query: []string{fmt.Sprintf("owner:%s", user.Email())},
+		},
+	})
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	for _, change := range *changeInfo {
+		updated, err := time.Parse("2006-01-02 15:04:05.000000000", change.Updated)
+		if err != nil {
+			logging.Errorf(c, "error parsing time: %s %v", change.Updated, err)
+			continue
+		}
+		day := updated.Truncate(24 * time.Hour)
+		if _, ok := byDay[day]; !ok {
+			byDay[day] = []ActivityCounts{}
+		}
+		byDay[day] = append(byDay[day], ActivityCounts{
+			Changes: 1,
+		})
+	}
+
+	// Next, reduce
+
+	for day, activityCounts := range byDay {
+		ac := ActivityCounts{Day: day}
+		for _, c := range activityCounts {
+			ac.Bugs = ac.Bugs + c.Bugs
+			ac.Changes = ac.Changes + c.Changes
 		}
 
-		h.Activities = append(h.Activities, a)
+		h.Activities = append(h.Activities, ac)
 	}
+
+	sort.Sort(byUpdated(h.Activities))
 
 	if err := encoder.Encode(h); err != nil {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error json encoding: %v", err))
 	}
 }
+
+type byUpdated []ActivityCounts
+
+func (a byUpdated) Len() int           { return len(a) }
+func (a byUpdated) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a byUpdated) Less(i, j int) bool { return a[i].Day.After(a[j].Day) }
 
 func detailHandler(ctx *router.Context) {
 	c, w, _, _ := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
@@ -179,6 +254,93 @@ func detailHandler(ctx *router.Context) {
 	}); err != nil {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error json encoding: %v", err))
 	}
+}
+
+// getAsSelfOAuthClient returns a client capable of making HTTP requests authenticated
+// with OAuth access token for userinfo.email scope.
+func getAsSelfOAuthClient(c context.Context) (*http.Client, error) {
+	// Note: "https://www.googleapis.com/auth/userinfo.email" is the default
+	// scope used by GetRPCTransport(AsSelf). Use auth.WithScopes(...) option to
+	// override.
+	t, err := auth.GetRPCTransport(c, auth.AsSelf)
+	if err != nil {
+		return nil, err
+	}
+	return &http.Client{Transport: t}, nil
+}
+
+// A bit of a hack to let us mock getBugsFromMonorail.
+var getBugsFromMonorail = func(c context.Context, q string,
+	can monorail.IssuesListRequest_CannedQuery) (*monorail.IssuesListResponse, error) {
+	// Get authenticated monorail client.
+	c, cancel := context.WithDeadline(c, time.Now().Add(time.Second*30))
+	defer cancel()
+
+	logging.Infof(c, "about to get mr client")
+	client, err := getAsSelfOAuthClient(c)
+
+	if err != nil {
+		panic("No OAuth client in context")
+	}
+
+	mr := monorail.NewEndpointsClient(client, "https://monorail-prod.appspot.com/_ah/api/monorail/v1/")
+	logging.Infof(c, "mr client: %v", mr)
+
+	// TODO(martiniss): make this look up request info based on Tree datastore
+	// object
+	req := &monorail.IssuesListRequest{
+		ProjectId: "chromium",
+		Q:         q,
+	}
+
+	req.Can = can
+
+	before := time.Now()
+
+	res, err := mr.IssuesList(c, req)
+	if err != nil {
+		logging.Errorf(c, "error getting issuelist: %v", err)
+		return nil, err
+	}
+
+	logging.Debugf(c, "Fetch to monorail took %v. Got %d bugs.", time.Now().Sub(before), res.TotalResults)
+	return res, nil
+}
+
+func getAlternateEmail(email string) string {
+	s := strings.Split(email, "@")
+	if len(s) != 2 {
+		return email
+	}
+
+	user, domain := s[0], s[1]
+	if domain == "chromium.org" {
+		return fmt.Sprintf("%s@google.com", user)
+	}
+	return fmt.Sprintf("%s@chromium.org", user)
+}
+
+func getGerritClient(c context.Context) (*gerrit.Client, error) {
+	// Use the default.
+	instanceURL := "https://chromium-review.googlesource.com"
+	logging.Infof(c, "using gerrit instance %q", instanceURL)
+
+	tr, err := auth.GetRPCTransport(c, auth.AsSelf,
+		auth.WithScopes("https://www.googleapis.com/auth/gerritcodereview"))
+	if err != nil {
+		return nil, err
+	}
+
+	httpc := &http.Client{Transport: tr}
+	client, err := gerrit.NewClient(instanceURL, httpc)
+	if err != nil {
+		return nil, err
+	}
+
+	// This is a workaround to force the client lib to prepend /a to paths.
+	client.Authentication.SetCookieAuth("not-used", "not-used")
+
+	return client, nil
 }
 
 func init() {
