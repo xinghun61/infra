@@ -87,7 +87,7 @@ function transformActivities(input) {
     weeks[topOfWeek.toString()].push(item);
   }
 
-  return week;
+  return weeks;
 }
 
 function activityTableResponseSuccess(state, action) {

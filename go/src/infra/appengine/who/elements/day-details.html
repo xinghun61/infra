@@ -14,9 +14,11 @@
           <th>Time</th>
           <th>Bug</th>
         </tr>
-        <template is="dom-repeat" for="[[bugs]]">
-          <td>[[item.time]]</td>
-          <td><a href="[[item.link]]">[[item.id]]</a></td>
+        <template is="dom-repeat" items="[[bugs]]">
+          <tr>
+          <td>[[formatDate_(item.updated)]]</td>
+          <td><a href="https://crbug.com/[[item.id]]">[[item.summary]]</a></td>
+          </tr>
         </template>
       </table>
     </template>
@@ -27,9 +29,11 @@
           <th>Time</th>
           <th>CLs</th>
         </tr>
-        <template is="dom-repeat" for="[[changes]]">
-          <td>[[item.time]]</td>
+        <template is="dom-repeat" items="[[changes]]">
+          <tr>
+          <td>[[formatDate_(item.updated)]]</td>
           <td><a href="https://chromium-review.googlesource.com/[[item._number]]">[[item.subject]]</a></td>
+          </tr>
         </template>
       </table>
     </template>
@@ -40,7 +44,6 @@
 
     class DayDetails extends Polymer.Element {
       static get is() { return 'day-details'; }
-
 
       // TODO(jojwang): for now assuming these come in order
       // if not, I will sort by time.
@@ -58,6 +61,14 @@
           },
           day: Date,
         }
+      }
+
+      formatDate_(dateString) {
+        const date = new Date(dateString);
+        const hour = date.getHours();
+        let min = date.getMinutes();
+        if (min < 10) min = '0' + min;
+        return `${hour}:${min}`;
       }
     }
     customElements.define(DayDetails.is, DayDetails);
