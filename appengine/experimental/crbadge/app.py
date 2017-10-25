@@ -11,28 +11,6 @@ from webapp2_extras import jinja2
 from model import Badge, UserData, Settings
 
 
-FAKE_BADGE_DEFS = {
-  'lion': Badge(
-      badge_name='lion', level_1=1, level_2=2, level_3=3,
-      title='lion title',
-      description='lion desc', icon='lion-face_1f981.png'),
-  'shrug': Badge(
-      badge_name='shrug', level_1=1, level_2=2, level_3=3,
-      title='shrug title',
-      description='shrug desc', icon='shrug_1f937.png'),
-  'bottle': Badge(
-      badge_name='bottle', level_1=1, level_2=2, level_3=3,
-      title='bottle title',
-      description='bottle desc', icon='bottle-with-popping-cork_1f37e.png'),                      
-  }
-
-FAKE_USER_DATA = [
-  UserData(badge_name='lion', email='some email', value=1),
-  UserData(badge_name='shrug', email='some email', value=2),
-  UserData(badge_name='bottle', email='some email', value=3),
-]
-
-
 class BadgeView(object):
 
   def __init__(self, user_data, badge_def_dict):
@@ -89,9 +67,12 @@ class UserPage(BaseHandler):
   def get(self, viewed_user_email, *args):
     if '@' not in viewed_user_email:
       viewed_user_email += '@chromium.org'
+    user_data_list = UserData.query(UserData.email == viewed_user_email).fetch()
+    badge_def_list = Badge.query().fetch()
+    badge_def_dict = {b.badge_name: b for b in badge_def_list}
     badge_views = [
-      BadgeView(user_data, FAKE_BADGE_DEFS)
-      for user_data in FAKE_USER_DATA]
+      BadgeView(ud, badge_def_dict)
+      for ud in user_data_list]
     context = {
         'viewed_user_email': viewed_user_email,
         'badges': badge_views,
@@ -110,11 +91,11 @@ class MainPage(BaseHandler):
 class BadgePage(BaseHandler):
   """Display page description, level thresholds, and times awarded."""
 
-  def get(self, badge_id, *args):
-    badge_def = FAKE_BADGE_DEFS.get(badge_id)
+  def get(self, badge_name, *args):
+    badge_def = Badge.get_by_id(badge_name)
     if not badge_def:
       self.abort(404)
-    awarded_count = 123
+    awarded_count = UserData.query(UserData.badge_name == badge_name).count()
     context = {
         'badge_def': badge_def,
         'awarded_count': awarded_count,
