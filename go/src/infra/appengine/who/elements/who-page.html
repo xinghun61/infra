@@ -1,3 +1,6 @@
+<link rel="import" href="../../bower_components/app-route/app-location.html">
+<link rel="import" href="../../bower_components/app-route/app-route.html">
+
 <link rel="import" href="/elements/activity-table.html">
 <link rel="import" href="/elements/user-input.html">
 <link rel="import" href="/elements/day-details.html">
@@ -9,6 +12,14 @@
       display: none;
     }
     </style>
+
+    <app-location route="{{route}}"></app-location>
+
+    <app-route route="{{route}}" pattern="/:username" data="{{_routeData}}">
+    </app-route>
+
+    <app-route route="{{route}}" pattern="/:username/:date" data="{{_routeData}}">
+    </app-route>
 
     <user-input id="user"></user-input>
     <activity-table id="table"></activity-table>
@@ -24,6 +35,16 @@ const ReduxMixin = PolymerRedux(store)
 class WhoPage extends ReduxMixin(Polymer.Element) {
   static get is() {
     return 'who-page';
+  }
+
+  static get properties() {
+    return {
+      route: Object,
+      _routeData: {
+        type: Object,
+        value: () => {return {}; },
+      },
+    }
   }
 }
 customElements.define(WhoPage.is, WhoPage);

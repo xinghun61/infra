@@ -405,13 +405,15 @@ func init() {
 	protected := basemw.Extend(requireGoogler)
 	standard.InstallHandlers(r)
 
-	r.GET("/", basemw, indexPage)
 	r.GET("/_/history/:user", protected, historyHandler)
 	r.GET("/_/detail/:user/:date", protected, detailHandler)
+
+	rootRouter := router.New()
+	rootRouter.GET("/*path", basemw, indexPage)
 
 	http.DefaultServeMux.Handle("/_/", r)
 	http.DefaultServeMux.Handle("/_ah/", r)
 	http.DefaultServeMux.Handle("/auth/", r)
 	http.DefaultServeMux.Handle("/admin/", r)
-	http.DefaultServeMux.Handle("/", r)
+	http.DefaultServeMux.Handle("/", rootRouter)
 }
