@@ -130,8 +130,9 @@ type Change struct {
 // DayDetails is a list of activity for a user on a given day.
 type DayDetails struct {
 	Username string
-	Bugs     []Bug
-	Changes  []Change
+	Day      time.Time
+	Bugs     []*monorail.Issue
+	Changes  []gerrit.ChangeInfo
 }
 
 // ActivityCounts contains counts for user activities on a given day.
@@ -146,16 +147,16 @@ type ActivityHistory struct {
 }
 
 func historyHandler(ctx *router.Context) {
-	c, w, _, _ := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+	c, w, _, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 	encoder := json.NewEncoder(w)
 
 	h := ActivityHistory{
 		Activities: []ActivityCounts{},
 	}
 
-	user := auth.CurrentIdentity(c)
-	email := getAlternateEmail(user.Email())
-	q := fmt.Sprintf("owner:%s OR owner:%s", user.Email(), email)
+	user := p.ByName("user") //auth.CurrentIdentity(c)
+	email := getAlternateEmail(user)
+	q := fmt.Sprintf("owner:%s OR owner:%s", user, email)
 	logging.Errorf(c, "query: %v", q)
 
 	bugs, err := getBugsFromMonorail(c, q, monorail.IssuesListRequest_OPEN)
@@ -190,7 +191,7 @@ func historyHandler(ctx *router.Context) {
 
 	changeInfo, _, err := client.Changes.QueryChanges(&gerrit.QueryChangeOptions{
 		QueryOptions: gerrit.QueryOptions{
-			Query: []string{fmt.Sprintf("owner:%s", user.Email())},
+			Query: []string{q},
 		},
 	})
 	if err != nil {
@@ -239,19 +240,74 @@ func (a byUpdated) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
 func (a byUpdated) Less(i, j int) bool { return a[i].Day.After(a[j].Day) }
 
 func detailHandler(ctx *router.Context) {
-	c, w, _, _ := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+	c, w, _, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 	encoder := json.NewEncoder(w)
 
-	if err := encoder.Encode(DayDetails{
-		Bugs: []Bug{
-			{"1", "dummy bug", "Open", time.Now()},
-			{"2", "another dummy bug", "Open", time.Now()},
+	//user := auth.CurrentIdentity(c)
+	date := p.ByName("date")
+	queryDay, err := time.Parse("2006-01-02", date)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	user := p.ByName("user")
+	email := getAlternateEmail(user)
+	q := fmt.Sprintf("owner:%s OR owner:%s", user, email)
+	logging.Errorf(c, "query: %v", q)
+
+	bugs, err := getBugsFromMonorail(c, q, monorail.IssuesListRequest_OPEN)
+	if err != nil {
+		logging.Errorf(c, "error getting bugs: %v", err)
+		return
+	}
+
+	details := DayDetails{}
+
+	for _, bug := range bugs.Items {
+		updated, err := time.Parse("2006-01-02T15:04:05", bug.Updated)
+		if err != nil {
+			logging.Errorf(c, "error parsing time: %s %v", bug.Updated, err)
+			continue
+		}
+		day := updated.Truncate(24 * time.Hour)
+		if day == queryDay {
+			details.Day = day
+			details.Bugs = append(details.Bugs, bug)
+		}
+	}
+
+	// Next, get changes.
+	client, err := getGerritClient(c)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	changeInfo, _, err := client.Changes.QueryChanges(&gerrit.QueryChangeOptions{
+		QueryOptions: gerrit.QueryOptions{
+			Query: []string{fmt.Sprintf("owner:%s", user)},
 		},
-		Changes: []Change{
-			{"1", "dummy change", "Open", time.Now()},
-			{"2", "another dummy change", "Open", time.Now()},
-		},
-	}); err != nil {
+	})
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	for _, change := range *changeInfo {
+		updated, err := time.Parse("2006-01-02 15:04:05.000000000", change.Updated)
+		if err != nil {
+			logging.Errorf(c, "error parsing time: %s %v", change.Updated, err)
+			continue
+		}
+		day := updated.Truncate(24 * time.Hour)
+		if day == queryDay {
+			details.Changes = append(details.Changes, change)
+			details.Day = day
+		}
+	}
+
+	if err := encoder.Encode(details); err != nil {
 		errStatus(c, w, http.StatusInternalServerError, fmt.Sprintf("error json encoding: %v", err))
 	}
 }
@@ -350,8 +406,8 @@ func init() {
 	standard.InstallHandlers(r)
 
 	r.GET("/", basemw, indexPage)
-	r.GET("/_/history", protected, historyHandler)
-	r.GET("/_/detail", protected, detailHandler)
+	r.GET("/_/history/:user", protected, historyHandler)
+	r.GET("/_/detail/:user/:date", protected, detailHandler)
 
 	http.DefaultServeMux.Handle("/_/", r)
 	http.DefaultServeMux.Handle("/_ah/", r)
