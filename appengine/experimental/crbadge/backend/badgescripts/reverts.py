@@ -9,6 +9,7 @@ def main():
       RevertStreakCounter(),
       RevertCounter(),
       ComboCounter(),
+      TimeOfDayCounter(),
   ]
   repo = git_repo.LocalGitRepository(
       repo_url='https://chromium.googlesource.com/chromium/src.git')
@@ -33,20 +34,16 @@ class RevertCounter(BaseCounter):
   def __init__(self):
     self.badge_names = {
         2: 'code-revert_x2',
-        3: 'code-revert_x3',
-        4: 'code-revert_x4_plus',
     }
     self.result = {}
 
   def __call__(self, revision):
       subject = revision.message.splitlines()[0]
       level = subject.count('Revert')
-      if level > 4:
-        level = 4
       if level > 1:
-        self.result.setdefault(level, {})
-        self.result[level].setdefault(revision.author.email, 0)
-        self.result[level][revision.author.email] += 1
+        self.result.setdefault(2, {})
+        self.result[2].setdefault(revision.author.email, 0)
+        self.result[2][revision.author.email] += 1
 
 class RevertStreakCounter(BaseCounter):
   def __init__(self):
@@ -86,9 +83,9 @@ class ComboCounter(BaseCounter):
     # Based on Killer Instinct combo names:
     # https://www.gamefaqs.com/xboxone/718565-killer-instinct/faqs/70214
     self.badge_names = {
-        3: 'code-triple_combo', 4: 'code-quad_combo', 5: 'code-solid_combo',
-        6: 'code-hyper_combo', 7: 'code-brutal_combo', 8: 'code-master_combo',
-        9: 'code-blaster_combo'
+        3: 'code-revert_x3', 4: 'code-revert_x4', 5: 'code-revert_x5',
+        6: 'code-revert_x6', 7: 'code-revert_x7', 8: 'code-revert_x8',
+        9: 'code-revert_x9'
     }
 
   def __call__(self, revision):
@@ -101,6 +98,22 @@ class ComboCounter(BaseCounter):
         self.result.setdefault(combo, {})
         self.result[combo].setdefault(revision.author.email, 0)
         self.result[combo][revision.author.email] += 1
+
+class TimeOfDayCounter(BaseCounter):
+  def __init__(self):
+    self.badge_names = {1: 'code-landed_time_am', 2: 'code-landed_time_pm'}
+    self.result = {}
+    self.hours = {}
+
+  def __call__(self, revision):
+    self.hours.setdefault(revision.author.email, {})
+    self.hours[revision.author.email][revision.committer.time.hour] = True
+
+  def ToDicts(self):
+    am_pm_result = dict([[author, len(author_hours.keys())]
+                        for author, author_hours in self.hours.iteritems()])
+    self.result = {1: am_pm_result, 2: am_pm_result}
+    return super(TimeOfDayCounter, self).ToDicts()
 
 if __name__ == '__main__':
   main()
