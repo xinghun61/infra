@@ -170,7 +170,7 @@ class Update(BaseHandler):
       b.title = title
     if description is not None:
       b.description = description
-    if b.icon is not None:
+    if icon is not None:
       b.icon = icon
     b.put()
     return b
