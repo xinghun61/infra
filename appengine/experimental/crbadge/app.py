@@ -8,7 +8,7 @@ import json
 import webapp2
 from webapp2_extras import jinja2
 
-from model import Badge, UserData
+from model import Badge, UserData, Settings
 
 
 FAKE_BADGE_DEFS = {
@@ -136,6 +136,12 @@ class Update(BaseHandler):
   ]
   """
   def post(self):
+    password = self.request.POST.getone('password')
+    settings = Settings.get_by_id('1')
+    if password != settings.password:
+      self.response.set_status(403)
+      self.response.write('invalid password')
+
     data = self.request.POST.getone('data')
     if not data:
       self.response.set_status(400)
@@ -143,6 +149,7 @@ class Update(BaseHandler):
       return
     o = json.loads(data)
     for badge in o:
+      logging.info('Updating %s' % badge)
       b = self.update_badge_entity(badge)
       self.update_user_data(badge, b)
 
@@ -193,9 +200,9 @@ class Update(BaseHandler):
 
 
 app = webapp2.WSGIApplication([
-    (r'/([a-z0-9]+(@[.a-z]+)?)', UserPage),
+    (r'/system/update', Update),
     (r'/b/([a-z0-9]+)', BadgePage),
-    (r'/admin/update', Update),
+    (r'/([a-z0-9]+(@[.a-z]+)?)', UserPage),
     ('/', MainPage),
 ])
 

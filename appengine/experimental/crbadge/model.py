@@ -18,3 +18,7 @@ class UserData(ndb.Model):
   email = ndb.StringProperty(required=True)
   value = ndb.IntegerProperty()
   visible = ndb.BooleanProperty()
+
+
+class Settings(ndb.Model):
+  password = ndb.StringProperty(required=True)
