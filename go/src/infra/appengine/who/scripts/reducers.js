@@ -71,12 +71,30 @@ function activityTableRequest(state, action) {
   });
 }
 
+function transformActivities(input) {
+  var weeks = {};
+
+  for (var i = 0; i < input.length; i++) {
+    var item = input[i];
+    var date = new Date(item.Day);
+    var topOfWeek = new Date(item.Day);
+    topOfWeek.setDate(topOfWeek.getDate() - topOfWeek.getDay());
+
+    if ( !weeks.hasOwnProperty(topOfWeek.toString()) ) {
+      weeks[topOfWeek.toString()] = [];
+    }
+
+    weeks[topOfWeek.toString()].push(item);
+  }
+
+  return week;
+}
+
 function activityTableResponseSuccess(state, action) {
   const activityTables = {};
   if (action.response) {
-    // TODO post-process action.response.Activities into the grid of weeks for
-    // activity-table
-    activityTables[action.response.Username] = action.response.Activities;
+    var weeklyActivities = transformActivities(action.response.Activities);
+    activityTables[action.response.Username] = weeklyActivities;
   }
   return Object.assign({}, state, {
     isFetchingActivityTable: false,
