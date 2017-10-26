@@ -486,6 +486,8 @@ class SomAlertView extends Polymer.mixinBehaviors(
 
     if (alertExtension.reason.test_names.length != groupExtension.reason.test_names.length) {
       console.error(alertExtension.reason.test_names + " is not equal to " + groupExtension.reason.test_names + " but they were merged together. This should never happen, because merging is done server side by looking at the reason data.");
+    } else {
+      return groupExtension.reason;
     }
   }
 

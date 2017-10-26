@@ -594,6 +594,54 @@
     });
   });
 
+  suite('merge reason', function() {
+    let group = {};
+    let alert = {};
+
+    test('trivial', function() {
+      let result = element._mergeReason(group, alert);
+      assert.deepEqual(result, undefined);
+    });
+
+    test('empty group', function() {
+      let reason = {
+        test_names: ['test'],
+      };
+      alert.reason = reason;
+
+      let result = element._mergeReason(group, alert);
+
+      assert.deepEqual(result, reason);
+    });
+
+    test('group has reason', function() {
+      let reason = {
+        test_names: ['test'],
+      };
+      group.reason = reason;
+      alert.reason = reason;
+
+      let result = element._mergeReason(group, alert);
+
+      assert.deepEqual(result, reason);
+    });
+
+    test('group has different reason', function(done) {
+      let reason = {
+        test_names: ['test'],
+      };
+      let otherReason = {
+        test_names: ['otherTest', 'test2'],
+      };
+      group.reason = reason;
+      alert.reason = otherReason;
+
+      try {
+        let result = element._mergeReason(group, alert);
+      } catch (e) { done(); }
+    });
+  })
+
   suite('merge regression ranges', function() {
     let group = {};
     let alert = {};
