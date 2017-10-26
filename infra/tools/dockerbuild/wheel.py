@@ -661,6 +661,10 @@ SPECS = {s.spec.tag: s for s in (
       packaged=['windows-x86', 'windows-x64'],
   ),
 
+  Packaged('pypiwin32', '219',
+      ['windows-x86', 'windows-x64'],
+  ),
+
   Packaged('scipy', '0.19.0',
       ['mac-x64', 'manylinux-x86', 'manylinux-x64'],
       arch_map={
