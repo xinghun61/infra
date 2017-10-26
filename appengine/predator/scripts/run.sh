@@ -7,6 +7,15 @@
 # This script is to ease running Predator locally, running its unit tests, and
 # deploying Predator to App Engine.
 
+set -e
+
+# TODO(katesonia): Remove this variable and unconditionally use predator-for-me
+# later.
+if [[ -z "${WITH_NEW_APP_ID}" ]]; then
+  PROD_APP_ID="google.com:findit-for-me"
+else
+  PROD_APP_ID="predator-for-me"
+fi
 THIS_SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE:-$0}" )" && pwd )"
 PREDATOR_DIR="${THIS_SCRIPT_DIR}/.."
 PREDATOR_APP_DIR="${THIS_SCRIPT_DIR}/../app"
@@ -44,8 +53,7 @@ print_usage() {
   echo "Supported commands:"
   echo "  test                 Run unittests"
   echo "  run                  Run Predator locally"
-  # TODO(katesonia): Switch to predator-for-me later.
-  echo "  deploy-prod          Deploy predator to google.com:findit-for-me for release"
+  echo "  deploy-prod          Deploy predator to $PROD_APP_ID for release"
   echo "  deploy-test-prod     Deploy predator to predator-for-me-test for test"
   echo "  deploy-staging       Deploy predator to predator-for-me-staging for test"
   exit 1
@@ -97,8 +105,7 @@ deploy_for_test() {
   local app_env=$1
   if [[ -z ${app_id_to_use} ]]; then
     if [[ "${app_env}" == "prod" ]]; then
-      # TODO(katesonia): Switch to predator-for-me later.
-      local app_id_to_use="google.com:findit-for-me"
+      local app_id_to_use="$PROD_APP_ID"
     else
       local app_id_to_use="predator-for-me-staging"
     fi
@@ -116,8 +123,7 @@ deploy_for_test() {
 }
 
 deploy_for_prod() {
-  # TODO(katesonia): Switch to predator-for-me later.
-  local app_id="google.com:findit-for-me"
+  local app_id="$PROD_APP_ID"
 
   # Sync to latest code.
   local update_log="${TMP_DIR}/update.log"
