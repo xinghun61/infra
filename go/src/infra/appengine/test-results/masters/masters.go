@@ -24,6 +24,10 @@ var Known = []*Master{
 		Identifier: "chromium.fyi",
 	},
 	{
+		Name:       "ChromiumGoma",
+		Identifier: "chromium.goma",
+	},
+	{
 		Name:       "ChromiumGPU",
 		Identifier: "chromium.gpu",
 	},
