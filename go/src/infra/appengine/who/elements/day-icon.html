@@ -5,15 +5,26 @@
   <template>
     <style>
       :host {
-        --activity-color: white;
+        --activity-color: #f2f2f2;
+        margin: 0.25em .8rem;
       }
       div {
+        margin: auto;
         background-color: var(--activity-color);
-        height: 20px;
-        width: 20px;
+        height: 24px;
+        width: 24px;
+        border: 2px solid #fff;
+        transition: border-color .5s;
+      }
+      div:hover {
+        cursor: pointer;
+        border: 2px solid #758A5C;
+      }
+      div.selected {
+        border: 2px solid #222;
       }
     </style>
-    <div>
+    <div class$="[[_computeClass(selected)]]">
       <paper-tooltip>
         [[changes]] CLs<br/>
         [[bugs]] bugs
@@ -29,12 +40,16 @@
       static get properties() {
         return {
           changes: {
-          type: Number,
-          value: 0,
+            type: Number,
+            value: 0,
           },
           bugs:  {
-          type: Number,
-          value: 0,
+            type: Number,
+            value: 0,
+          },
+          selected: {
+            type: Boolean,
+            value: false,
           },
         }
       }
@@ -49,13 +64,17 @@
         const activityNum = (cls + bugs);
         let color;
         if (activityNum >= 7) {
-          color = 'rgb(0, 128, 0)';
+          color = '#6eb814';
         } else if (activityNum >= 5) {
-          color = 'rgb(0, 255, 0)';
+          color = '#bce889';
         } else if (activityNum >= 2) {
-          color = 'rgb(128, 255, 128)';
+          color = '#e0f5c7';
         }
         this.updateStyles({'--activity-color': color});
+      }
+
+      _computeClass(selected) {
+        return selected ? 'selected' : '';
       }
     }
     customElements.define(DayIcon.is, DayIcon);

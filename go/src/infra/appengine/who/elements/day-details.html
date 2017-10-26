@@ -4,39 +4,65 @@
 <dom-module id="day-details">
   <template>
     <style>
+      #container {
+        display: block;
+        padding: 2em 0.8rem;
+        width: 90%;
+        margin: auto;
+        line-height: 160%;
+      }
+
+      h2 {
+        font-weight: normal;
+        text-align: left;
+        border-bottom: 1px solid #bbb;
+        margin: 0.25em 0;
+        box-sizing: border-box;
+        font-size: 1.8rem;
+        line-height: 160%;
+        padding: 0.5em 1.6rem 0.1em;
+      }
+
+      table {
+        margin: 1em 0.8rem;
+      }
+      td, th {
+        padding: 0.25em 0.8rem;
+      }
     </style>
+    <div id="container">
+      <h2>Test User's Activity on [[day]]</h2>
 
-    Details for [[day]]
-
-    <template is="dom-if" if="[[bugs]]">
-      <table>
-        <tr>
-          <th>Time</th>
-          <th>Bug</th>
-        </tr>
-        <template is="dom-repeat" items="[[bugs]]">
+      <template is="dom-if" if="[[bugs]]">
+        <table>
           <tr>
-          <td>[[formatDate_(item.updated)]]</td>
-          <td><a href="https://crbug.com/[[item.id]]">[[item.summary]]</a></td>
+            <th>Time</th>
+            <th>Bug</th>
           </tr>
-        </template>
-      </table>
-    </template>
+          <template is="dom-repeat" items="[[bugs]]">
+            <tr>
+            <td>[[formatDate_(item.updated)]]</td>
+            <td><a href="https://crbug.com/[[item.id]]">[[item.summary]]</a></td>
+            </tr>
+          </template>
+        </table>
+      </template>
 
-    <template is="dom-if" if="[[changes]]">
-      <table>
-        <tr>
-          <th>Time</th>
-          <th>CLs</th>
-        </tr>
-        <template is="dom-repeat" items="[[changes]]">
+      <template is="dom-if" if="[[changes]]">
+        <table>
           <tr>
-          <td>[[formatDate_(item.updated)]]</td>
-          <td><a href="https://chromium-review.googlesource.com/[[item._number]]">[[item.subject]]</a></td>
+            <th>Time</th>
+            <th>CLs</th>
           </tr>
-        </template>
-      </table>
-    </template>
+          <template is="dom-repeat" items="[[changes]]">
+            <tr>
+            <td>[[formatDate_(item.updated)]]</td>
+            <td><a href="https://chromium-review.googlesource.com/[[item._number]]">[[item.subject]]</a></td>
+            </tr>
+          </template>
+        </table>
+      </template>
+    </div>
 
   </template>
   <script>

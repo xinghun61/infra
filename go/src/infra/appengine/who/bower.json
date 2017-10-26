@@ -25,10 +25,5 @@
   },
   "resolutions": {
     "polymer": "^2.0.0",
-    "webcomponentsjs": "^v1.0.2",
-    "paper-tooltip": "2.0",
-    "iron-behaviors": "2.0",
-    "paper-item": "2.0",
-    "paper-input": "2.0"
   }
 }

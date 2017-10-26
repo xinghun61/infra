@@ -3,28 +3,36 @@
 <dom-module id="activity-table">
   <template>
     <style>
-    :host {
+    #container {
       display: grid;
       /* 8 columns = 7 days of the week + 1 column to label the week */
       grid-template-columns: auto auto auto auto auto auto auto auto;
+      grid-template-rows: auto;
+      margin: auto;
+      width: 90%;
+      text-align: center;
+      line-height: 150%;
     }
     </style>
 
-    <span>&nbsp;<!-- empty column header for weekLabel column --></span>
-    <template is="dom-repeat" items="[[daysOfWeek]]">
-      <span>[[item]]</span>
-    </template>
-
-    <template is="dom-repeat" items="[[weeks]]">
-      <span>[[item.weekLabel]]</span>
-      <template is="dom-repeat" items="[[item.days]]">
-        <day-icon changes="[[item.Changes]]"
-                  bugs="[[item.Bugs]]"
-                  day="[[item.Day]]"
-                  on-tap="onDaySelected_">
-        </day-icon>
+    <div id="container">
+      <span>&nbsp;<!-- empty column header for weekLabel column --></span>
+      <template is="dom-repeat" items="[[daysOfWeek]]">
+        <span>[[item]]</span>
       </template>
-    </template>
+
+      <template is="dom-repeat" items="[[weeks]]">
+        <span>[[item.weekLabel]]</span>
+        <template is="dom-repeat" items="[[item.days]]">
+          <day-icon changes="[[item.Changes]]"
+                    bugs="[[item.Bugs]]"
+                    day="[[item.Day]]"
+                    on-tap="_onDaySelected"
+                    selected="[[_computeIsSelected(_day, item.Day)]]">
+          </day-icon>
+        </template>
+      </template>
+    </div>
   </template>
 </dom-module>
 
@@ -39,12 +47,13 @@ class ActivityTable extends ReduxMixin(Polymer.Element) {
     return {
       daysOfWeek: {
         type: Array,
-        value() { return 'M T W R F S U'.split(' '); }
+        value() { return 'Mon Tue Wed Thu Fri Sat Sun'.split(' '); }
       },
       weeks: {
         type: Array,
         value() { return []; },
       },
+      _day: String,
     };
   }
 
@@ -69,12 +78,14 @@ class ActivityTable extends ReduxMixin(Polymer.Element) {
     this.addEventListener('state-changed', this.onStateChanged_.bind(this));
   }
 
-  onDaySelected_(event) {
-    console.log('onDaySelected_', event);
-    this.dispatch('selectDay', event.path[2].day, this);
+  _computeIsSelected(day, itemDay) {
+    return day == itemDay;
   }
 
-  onStateChanged_() {
+  _onDaySelected(event) {
+    console.log('_onDaySelected', event);
+    this._day = event.path[2].day;
+    this.dispatch('selectDay', this._day, this);
   }
 }
 customElements.define(ActivityTable.is, ActivityTable);
