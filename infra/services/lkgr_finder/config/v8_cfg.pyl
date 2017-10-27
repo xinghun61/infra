@@ -22,6 +22,8 @@
     'client.v8': {
       'base_url': 'https://build.chromium.org/p/client.v8',
       'builders': [
+        'V8 Fuchsia',
+        'V8 Fuchsia - debug',
         'V8 Linux - builder',
         'V8 Linux - debug builder',
         'V8 Linux - nosnap builder',
