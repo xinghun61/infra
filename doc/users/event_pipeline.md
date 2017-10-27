@@ -40,7 +40,8 @@ policies for their logs so they don’t write over each other.
 
 Tables are defined by schemas. Schemas are stored in .proto form. Therefore we
 have version control and can use the protoc tool to create language-specific
-instances. Use the [bqschemaupdater](../go/src/infra/tools/bqschemaupdater/README.md)
+instances. Use the
+[bqschemaupdater](https://chromium.googlesource.com/infra/luci/luci-go/+/master/tools/cmd/bqschemaupdater/README.md)
 to create new tables or modify existing tables in BigQuery. As of right now,
 this tool must be run manually.
 
