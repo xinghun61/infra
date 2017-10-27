@@ -1656,20 +1656,6 @@ def _get_diff_table_rows(request, patch, context, column_width, tab_spaces):
                                          context=context,
                                          colwidth=column_width,
                                          tabspaces=tab_spaces))
-  if rows and rows[-1] is None:
-    del rows[-1]
-    # Get rid of content, which may be bad
-    if content.is_uploaded and content.text != None:
-      # Don't delete uploaded content, otherwise get_content()
-      # will fetch it.
-      content.is_bad = True
-      content.text = None
-      content.put()
-    else:
-      content.key.delete()
-      request.patch.content_key = None
-      request.patch.put()
-
   return rows
 
 

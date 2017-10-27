@@ -1026,9 +1026,7 @@ class Patch(ndb.Model):
       self.content_key = None
 
     content = self.fetch_base()
-    content.put()
     self.content_key = content.key
-    self.put()
     return content
 
   def get_patched_content(self):
@@ -1057,9 +1055,7 @@ class Patch(ndb.Model):
       new_lines.extend(new)
     text = ''.join(new_lines)
     patched_content = Content(text=text, parent=self.key)
-    patched_content.put()
     self.patched_content_key = patched_content.key
-    self.put()
     return patched_content
 
   @property
