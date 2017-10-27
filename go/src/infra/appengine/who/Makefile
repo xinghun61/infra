@@ -29,10 +29,10 @@ test: build
 	go test --cover
 	xvfb-run -a $(WCT_PATH)
 
-deploy_prod: build getversion deploy_prod_run clean
+deploy_prod: getversion deploy_prod_run clean
 
 deploy_prod_run:
-	appcfg.py -A chromium-who -V ${VERS} update app.yaml
+	./gae.py upload
 
 devserver:
 	./gae.py devserver

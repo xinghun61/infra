@@ -36,7 +36,6 @@ skip_files:
 - ^(.*/)?.*\.py[co]$
 - ^(.*/)?.*/RCS/.*$
 - ^(.*/)?\..*$
-- ^node_modules$
 - ^bower_components/web-component-tester$
 - ^bower_components/accessibility-developer-tools$
 - ^bower_components/async$
