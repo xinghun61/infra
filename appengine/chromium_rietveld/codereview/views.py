@@ -76,7 +76,6 @@ from oauth2client import xsrfutil
 
 from codereview import auth_utils
 from codereview import buildbucket
-from codereview import dependency_utils
 from codereview import engine
 from codereview import library
 from codereview import models
@@ -851,8 +850,7 @@ def get_depends_on_patchset(request):
   response = {}
   if request.patchset.depends_on_patchset:
     # Verify that the depended upon issue is not closed.
-    tokens = dependency_utils.get_dependency_tokens(
-        request.patchset.depends_on_patchset)
+    tokens = request.patchset.depends_on_patchset.split(':')
     depends_on_issue = models.Issue.get_by_id(int(tokens[0]))
     if depends_on_issue and not depends_on_issue.closed:
       response = {
@@ -2012,146 +2010,6 @@ def _add_next_prev2(ps_left, ps_right, patch_right):
   patch_right.next = next_patch
   patch_right.prev_with_comment = last_patch_with_comment
   patch_right.next_with_comment = next_patch_with_comment
-
-
-def _get_affected_files(issue, full_diff=False):
-  """Helper to return a list of affected files from the latest patchset.
-
-  Args:
-    issue: Issue instance.
-    full_diff: If true, include the entire diff even if it exceeds 100 lines.
-
-  Returns:
-    2-tuple containing a list of affected files, and the diff contents if it
-    is less than 100 lines (otherwise the second item is an empty string).
-  """
-  files = []
-  modified_count = 0
-  diff = ''
-  patchsets = list(issue.patchsets)
-  if len(patchsets):
-    patchset = patchsets[-1]
-    for patch in patchset.patches:
-      file_str = ''
-      if patch.status:
-        file_str += patch.status + ' '
-      file_str += patch.filename
-      files.append(file_str)
-      # No point in loading patches if the patchset is too large for email.
-      if full_diff or modified_count < 100:
-        modified_count += patch.num_added + patch.num_removed
-
-    if full_diff or modified_count < 100:
-      diff = patchset.data
-
-  return files, diff
-
-
-def _get_draft_comments(request, issue, preview=False):
-  """Helper to return objects to put() and a list of draft comments.
-
-  If preview is True, the list of objects to put() is empty to avoid changes
-  to the datastore.
-
-  Args:
-    request: Django Request object.
-    issue: Issue instance.
-    preview: Preview flag (default: False).
-
-  Returns:
-    2-tuple (put_objects, comments).
-  """
-  comments = []
-  tbd = []
-  # XXX Should request all drafts for this issue once, now we can.
-  for patchset in issue.patchsets:
-    ps_comments = list(models.Comment.query(
-        models.Comment.author == request.user,
-        models.Comment.draft == True, ancestor=patchset.key))
-    if ps_comments:
-      patches = dict((p.key, p) for p in patchset.patches)
-      for p in patches.itervalues():
-        p.patchset_key = patchset.key
-      for c in ps_comments:
-        c.draft = False
-        # Get the patch key value without loading the patch entity.
-        # NOTE: Unlike the old version of this code, this is the
-        # recommended and documented way to do this!
-        pkey = c.patch_key
-        if pkey in patches:
-          patch = patches[pkey]
-          c.patch_key = patch.key
-      if not preview:
-        tbd.extend(ps_comments)
-        patchset.update_comment_count(len(ps_comments))
-        tbd.append(patchset)
-      ps_comments.sort(key=lambda c: (c.patch_key.get().filename, not c.left,
-                                      c.lineno, c.date))
-      comments += ps_comments
-
-  return tbd, comments
-
-
-def _patchlines2cache(patchlines, left):
-  """Helper that converts return value of ParsePatchToLines for caching.
-
-  Each line in patchlines is (old_line_no, new_line_no, line).  When
-  comment is on the left we store the old_line_no, otherwise
-  new_line_no.
-  """
-  if left:
-    it = ((old, line) for old, _, line in patchlines)
-  else:
-    it = ((new, line) for _, new, line in patchlines)
-  return dict(it)
-
-
-def _get_draft_details(request, comments):
-  """Helper to display comments with context in the email message."""
-  last_key = None
-  output = []
-  linecache = {}  # Maps (c.patch_key, c.left) to mapping (lineno, line)
-  modified_patches = []
-
-  for c in comments:
-    patch = c.patch_key.get()
-    if (patch.key, c.left) != last_key:
-      url = common.rewrite_url(request.build_absolute_uri(
-          reverse(diff, args=[request.issue.key.id(),
-                              patch.patchset_key.id(),
-                              patch.filename])),
-          request.issue.project)
-      output.append('\n%s\nFile %s (%s):' % (url, patch.filename,
-                                             c.left and "left" or "right"))
-      last_key = (patch.key, c.left)
-      if patch.no_base_file:
-        linecache[last_key] = _patchlines2cache(
-          patching.ParsePatchToLines(patch.lines), c.left)
-      else:
-        try:
-          if c.left:
-            old_lines = patch.get_content().text.splitlines(True)
-            linecache[last_key] = dict(enumerate(old_lines, 1))
-          else:
-            new_lines = patch.get_patched_content().text.splitlines(True)
-            linecache[last_key] = dict(enumerate(new_lines, 1))
-        except FetchError:
-          linecache[last_key] = _patchlines2cache(
-            patching.ParsePatchToLines(patch.lines), c.left)
-
-    context = linecache[last_key].get(c.lineno, '').strip()
-    url = common.rewrite_url(request.build_absolute_uri(
-      '%s#%scode%d' % (reverse(diff, args=[request.issue.key.id(),
-                                           patch.patchset_key.id(),
-                                           patch.filename]),
-                       c.left and "old" or "new",
-                       c.lineno)),
-      request.issue.project)
-    output.append('\n%s\n%s:%d: %s\n%s' % (url, patch.filename, c.lineno,
-                                           context, c.text.rstrip()))
-  if modified_patches:
-    ndb.put_multi(modified_patches)
-  return '\n'.join(output)
 
 
 @deco.login_required

@@ -404,14 +404,6 @@ class Issue(ndb.Model):
       finally:
         self.__class__.modified.auto_now = True
 
-  def mail_subject(self):
-    if self._original_subject is None:
-      self.calculate_updates_for()
-    if self._original_subject is not None:
-      return self._original_subject
-    return '%s (issue %d by %s)' % (
-      self.subject, self.key.id(), self.owner.email())
-
   def get_patchset_info(self, user, patchset_id):
     """Returns a list of patchsets for the issue, and calculates/caches data
     into the |patchset_id|'th one with a variety of non-standard attributes.
@@ -503,27 +495,6 @@ class Issue(ndb.Model):
     if landed:
       return datetime.datetime.now() - landed
     return None
-
-  def update_cq_status_url_if_any(self, url):
-    """Parses the cq_message for CQ status url and updates corresponding
-    patchset with it.
-    """
-    if not url:
-      return
-    issue_num, patchset_num = utils.parse_cq_status_url(url)
-    if self.key.id() != issue_num:
-      logging.error('CQ posted CQ Status URL %s to the wrong issue %s',
-                    url, self.key.id())
-      return
-    for patchset in self.patchsets:
-      if patchset.key.id() == patchset_num:
-        patchset.cq_status_url = url
-        patchset.put()
-        logging.info('saved cq_status_url %s to patchset %s', url, patchset.key)
-        return
-    logging.error('CQ posted CQ Status URL %s with unrecognized patchset %s',
-                  url, patchset_num)
-
 
 
 def _calculate_delta(patch, patchset_id, patchsets):
