@@ -44,7 +44,7 @@
 [else]
 
  <tr>
-  <td colspan="40" class="id">
+  <td colspan="40" class="id" style="cursor:default">
    <div style="padding: 3em; text-align: center">
     [if-any is_hotlist]
      This hotlist currently has no issues.<br>

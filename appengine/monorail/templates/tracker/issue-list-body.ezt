@@ -60,7 +60,7 @@
 [else]
 
  <tr>
-  <td colspan="40" class="id">
+  <td colspan="40" class="id" style="cursor:default">
    <div style="padding: 3em; text-align: center">
     [if-any project_has_any_issues]
        The search [if-any query] for<br>
@@ -70,7 +70,7 @@
 
      <table cellspacing="10" style="margin:auto">
        <tr>
-         <td class="tip" [is can "1"][else][if-any query]colspan="2"[end][end] style="padding:1em">
+         <td class="tip" [is can "1"][else][if-any query]colspan="2"[end][end] style="padding:1em; cursor:default">
            Type a new query in the search box above
          </td>
        </tr>
