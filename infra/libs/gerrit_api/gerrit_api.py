@@ -70,10 +70,12 @@ class Gerrit(object):
       AccessViolationException.
     timeout (float or tuple of floats): passed as is to requests library.
       None by default, which means block forever.
+    instrumentation_id (str): monitoring identifier for HTTP requests.
+      'gerrit' by default. See also `infra_libs.instrumented_requests library`.
   """
 
   def __init__(self, host, creds, throttle_delay_sec=0, read_only=False,
-               timeout=None):
+               timeout=None, instrumentation_id='gerrit'):
     self._auth_header = 'Basic %s' % (
         base64.b64encode('%s:%s' % creds[host]))
     self._url_base = 'https://%s/a' % host.rstrip('/')
@@ -91,7 +93,8 @@ class Gerrit(object):
         max_retries=retry_config))
     # Instrumentation hooks cache indexed by method.
     self._instrumentation_hooks = {
-      'response': instrumented_requests.instrumentation_hook('gerrit')
+      'response':
+        instrumented_requests.instrumentation_hook(instrumentation_id),
     }
 
   def _sleep(self, time_since_last_call):
