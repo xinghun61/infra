@@ -26,7 +26,7 @@ class Predator(object): # pragma: no cover
 
   def _FindCulprit(self, report):
     """Given a CrashReport, return suspected project, components and cls."""
-    suspected_cls = self.changelist_classifier(report, self.log)
+    suspected_cls = self.changelist_classifier(report)
 
     suspected_project = self.project_classifier.ClassifyCallStack(
         report.stacktrace.crash_stack) if report.stacktrace else ''
