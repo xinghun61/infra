@@ -398,6 +398,38 @@ def GetIsolatedDataForStep(master_name,
   return step_isolated_data
 
 
+def GetIsolatedShaForStep(master_name, builder_name, build_number, step_name,
+                          http_client):
+  """Gets the isolated sha of a master/builder/build/step to send to swarming.
+
+  Args:
+    master_name (str): The name of the main waterall master.
+    builder_name (str): The name of the main waterfall builder.
+    build_number (int): The build number to retrieve the isolated sha of.
+    step_name (str): The step name to retrieve the isolated sha of.
+
+  Returns:
+    (str): The isolated sha pointing to the compiled binaries at the requested
+        configuration.
+  """
+  data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
+                                     http_client, {'stepname': step_name})
+  if not data:
+    logging.error('Failed to get swarming task data for %s/%s/%s/%s',
+                  master_name, builder_name, build_number, step_name)
+    return None
+
+  # Each task should have the same sha, so only need to read from the first one.
+  tags = data[0]['tags']
+  sha = GetTagValue(tags, 'data')
+  if sha:
+    return sha
+
+  logging.error('Isolated sha not found for %s/%s/%s/%s', master_name,
+                builder_name, build_number, step_name)
+  return None
+
+
 def _FetchOutputJsonInfoFromIsolatedServer(isolated_data, http_client):
   """Sends POST request to isolated server and returns response content.
 

@@ -408,6 +408,50 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(result)
     self.assertEqual(expected_failed_steps, failed_steps)
 
+  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  def testGetIsolatedShaForStep(self, mocked_list_swarming_tasks_data):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    mocked_http_client = None
+    isolated_sha = 'a1b2c3d4'
+
+    mocked_list_swarming_tasks_data.return_value = [{
+        'tags': ['data:%s' % isolated_sha]
+    }]
+
+    self.assertEqual(isolated_sha,
+                     swarming_util.GetIsolatedShaForStep(
+                         master_name, builder_name, build_number, step_name,
+                         mocked_http_client))
+
+  @mock.patch.object(
+      swarming_util, 'ListSwarmingTasksDataByTags', return_value=None)
+  def testGetIsolatedShaForStepNoData(self, _):
+    mocked_http_client = None
+    self.assertIsNone(
+        swarming_util.GetIsolatedShaForStep('m', 'b', 123, 's',
+                                            mocked_http_client))
+
+  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  def testGetIsolatedShaForStepNoShaFound(self,
+                                          mocked_list_swarming_tasks_data):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    mocked_http_client = None
+
+    mocked_list_swarming_tasks_data.return_value = [{
+        'tags': ['some', 'random', 'tags']
+    }]
+
+    self.assertIsNone(
+        swarming_util.GetIsolatedShaForStep(master_name, builder_name,
+                                            build_number, step_name,
+                                            mocked_http_client))
+
   def testGetIsolatedDataForStep(self):
     master_name = 'm'
     builder_name = 'b'
