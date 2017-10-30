@@ -26,6 +26,7 @@ var queryEscape = flag.Bool(
 	false,
 	"escape the URL as a query string parameter")
 
+// Label creates the appropriate priority label.
 func (p Priority) Label() string {
 	if p == 0 {
 		return ""
@@ -33,6 +34,7 @@ func (p Priority) Label() string {
 	return "Pri-" + strings.TrimPrefix(p.String(), "P")
 }
 
+// Label creates the appropriate bug type label.
 func (t Type) Label() string {
 	if t == 0 {
 		return ""
@@ -70,6 +72,8 @@ func run() error {
 	template.Labels = append(template.Labels, template.Pri.Label(), template.Type.Label())
 
 	params := url.Values{}
+	// Display an appropriate default template in the form to avoid confusion.
+	params.Set("template", "Build Infrastructure")
 	params.Set("summary", template.Summary)
 	params.Set("comment", template.Description)
 	params.Set("cc", strings.Join(cleanStrings(template.Cc), ","))
