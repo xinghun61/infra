@@ -9,6 +9,9 @@ from analysis.stacktrace import Stacktrace
 
 PLATFORM_TO_NORMALIZED_PLATFORM = {'linux': 'unix'}
 
+# StringProperties in an AppEngine NDB are limited to 1500 characters.
+SIGNATURE_MAX_LENGTH = 1500
+
 
 class CrashData(object):
   """An abstract class representing crash data sent by clients.
@@ -52,7 +55,8 @@ class CrashData(object):
       }
     """
     self._crashed_version = None
-    self._signature = crash_data['signature']
+    # Truncate to the max acceptable length.
+    self._signature = crash_data['signature'][:SIGNATURE_MAX_LENGTH]
     self._platform = self.NormalizePlatform(crash_data['platform'])
     # The raw stacktrace can be a string, for fracas, it can also be a list
     # of strings or other json format for cracas.

@@ -4,7 +4,7 @@
 
 import logging
 
-from analysis.crash_data import CrashData
+from analysis.crash_data import CrashData, SIGNATURE_MAX_LENGTH
 from analysis.dependency_analyzer import DependencyAnalyzer
 from analysis.uma_sampling_profiler_parser import UMASamplingProfilerParser
 from decorators import cached_property
@@ -137,4 +137,4 @@ class UMASamplingProfilerData(CrashData):
   @property
   def signature(self):
     subtree_root = self.subtree_stacks[0]['frames'][self.subtree_root_depth]
-    return subtree_root['function_name']
+    return subtree_root['function_name'][:SIGNATURE_MAX_LENGTH]
