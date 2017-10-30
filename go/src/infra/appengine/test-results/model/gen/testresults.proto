@@ -1,0 +1,215 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+// This is an attempt to capture the requirements of the test-results json
+// format* in a formal protocol buffer definition.
+//
+// * http://www.chromium.org/developers/the-json-test-results-format
+
+syntax = "proto3";
+
+package gen;
+
+// ResultType represents the result of a test, either actual or expected.
+enum ResultType {
+  // SKIP means the test was not run.
+  SKIP = 0;
+
+  // PASS means the test ran as expected.
+  PASS = 1;
+
+  // FAIL means the test did not run as expected.
+  FAIL = 2;
+
+  // CRASH means the test runner crashed during the test.
+  CRASH = 3;
+
+  // TIMEOUT means the test hung (did not complete) and was aborted.
+  TIMEOUT = 4;
+
+  // MISSING is layout test specific. The test completed but we could not find
+  // an expected baseline to compare against.
+  MISSING = 5;
+
+  // LEAK is layout test specific. Memory leaks were detected during the test execution.
+  LEAK = 6;
+
+  // SLOW is layout test specific. The test is expected to take longer than normal to run.
+  SLOW = 7;
+
+  // TEXT is layout test specific, deprecated. The test is expected to produce
+  // a text-only failure (the image, if present, will match). Normally you will
+  // see "FAIL" instead.
+  TEXT = 8;
+
+  // AUDIO is layout test specific, deprecated. The test is expected to produce
+  // audio output that doesn't match the expected result. Normally you will see
+  // "FAIL" instead.
+  AUDIO = 9;
+
+  // IMAGE is layout test specific. The test produces image (and possibly text
+  // output). The image output doesn't match what we'd expect, but the text output,
+  // if present, does.
+  IMAGE = 10;
+
+  // IMAGE_TEXT is layout test specific, deprecated. The test produces image
+  // and text output, both of which fail to match what we expect. Normally you
+  // will see "FAIL" instead.
+  IMAGE_TEXT = 11;
+
+  // REBASELINE is layout test specific. The expected test result is out of date
+  // and will be ignored (any result other than a crash or timeout will be
+  // considered as passing). This test result should only ever show up on local
+  // test runs, not on bots (it is forbidden to check in a TestExpectations file
+  // with this expectation). This should never show up as an "actual" result.
+  REBASELINE = 12;
+
+  // NEEDS_REBASELINE is layout test specific. The expected test result is out
+  // of date and will be ignored (as above); the auto-rebaseline-bot will look
+  // for tests of this type and automatically update them. This should never
+  // show up as an "actual" result.
+  NEEDS_REBASELINE = 13;
+
+  // NEEDS_MANUAL_REBASELINE is layout test specific. The expected test result
+  // is out of date and will be ignored (as above). This result may be checked
+  // in to the TestExpectations file, but the auto-rebasline-bot will ignore
+  // these entries. This should never show up as an "actual" result.
+  NEEDS_MANUAL_REBASELINE = 14;
+}
+
+// TestResults encapsulates the results of a run of a set of tests.
+message TestResults {
+  // Interrupted is true if the test run was interrupted and terminated early
+  // (either via the runner bailing out or the user hitting ctrl-C, etc.)
+  // If true, this indicates that not all of the tests in the suite were run
+  // and the results are at best incomplete and possibly totally invalid.
+  bool interrupted = 1;
+
+  // FailuresByType is a workaround for the lack of support in proto3 for
+  // enum types as keys in maps.
+  message FailuresByType {
+    ResultType type = 1;
+    int64 count = 2;
+  }
+
+  // NumFailuresByType is a summary of the totals of each result type.
+  // If a test was run more than once, only the first invocation's result is
+  // included in the totals. Each key is one of the result types listed below.
+  // A missing result type is the same as being present and set to zero (0).
+  repeated FailuresByType num_failures_by_type = 2;
+
+  // PathDelimiter is the separator string to use in between components of a
+  // tests name; normally "." for GTest- and Python-based tests and "/" for
+  // layout tests; if not present, you should default to "/" for backwards-compatibility.
+  string path_delimiter = 3;
+
+  // SecondsSinceEpoch is the start time of the test run expressed as a
+  // floating-point offset in seconds from the UNIX epoch.
+  float seconds_since_epoch = 4;
+
+  // TestResults is the set of actual test results. Each directory or module
+  // component in the test name is a node in the trie, and the leaf contains
+  // the dict of per-test fields as described below.
+  //
+  // In the original JSON, this is a trie. Here, just flatten out as path strings.
+  // They *should* compress just fine in transit/at rest, but we should verify
+  // with measurements in the wild.
+  map<string, TestRun> Tests = 5;
+
+  // Begin fields not present in the original test-results JSON format.
+
+  // TODO: consider encapsulating these fields into a BuilderInvocation message
+  // used by other tables. Or replace them with a FK into a table that contains
+  // more detailed invocation information.
+
+  // BuildId is the build_id in chrome-infra-events:raw_events.completed_builds_legacy
+  string build_id = 6;
+}
+
+// TestRun represents the output results of one test run.
+message TestRun {
+  // Actual is an ordered list of the results the test actually produced.
+  // {"FAIL, "PASS"} means that a test was run twice, failed the first time,
+  // and then passed when it was retried. If a test produces multiple
+  // different results, then it was actually flaky during the run.
+  repeated ResultType actual =  1;
+
+  // Expected is an unordered list of the result types expected for the test,
+  // e.g. {"FAIL", "PASS"} means that a test is expected to either pass or fail.
+  // A test that contains multiple values is expected to be flaky.
+  repeated ResultType expected = 2;
+
+  // Bugs is a list of URLs to bug database entries associated with each test.
+  repeated string bugs = 3;
+
+  // IsUnexpected indicates that the failure was unexpected (a regression).
+  // If false, the failure was expected and will be ignored.
+  bool is_unexpected = 4;
+
+  // Time is the time it took in seconds to execute the first invocation of the test.
+  float time = 5;
+
+  // Times are the times in seconds of each invocation of the test.
+  repeated float times = 6;
+
+  // HasRepaintOverlay indicates that the test output contains the data needed
+  // to draw repaint overlays to help explain the results (only used in layout tests).
+  bool has_repaint_overlay = 7;
+
+  // IsMissingAudio indicates taht the test was supposed to have an audio
+  // baseline to compare against, and we didn't find one.
+  bool is_missing_audio = 8;
+
+  // IsMissingTest indicates that the test was supposed to have a text baseline
+  // to compare against, and we didn't find one.
+  bool is_missing_text = 9;
+
+  // IsMissingVideo indicates that the test was supposed to have an image
+  // baseline to compare against and we didn't find one.
+  bool is_missing_video = 10;
+
+  // IsTestHarnessTest indicates that the layout test was written using the
+  // w3c's test harness and we don't necessarily have any baselines to compare against.
+  bool is_testharness_test = 11;
+
+  // ReftestType may be one of "==" or "!=" to indicate that the test is a
+  // "reference test" and the results were expected to match the reference or
+  // not match the reference, respectively (only used in layout tests).
+  string reftest_type = 12;
+}
+
+// TestRuns is suitable for representing a row in a BigQuery table. Note
+// that while TestResults looks like a more obvious choice, the repeated
+// TestRun messages in .tests will often exceed the row size limit for BQ.
+// This message flattens TestRun.tests out into one row per test, which should
+// more easily fit within the BQ row size limit.
+message TestRuns {
+  // Path is the full joined path of the test.
+  string path = 1;
+
+  // TestType is derived from step name, by stripping anything but the first
+  // word (before the first space), but preserving '(with patch)' suffix if it
+  // was present in the original step name.
+  string test_type = 2;
+
+  // StepName is the name of the step that was running the tests. Test type
+  // above is a normalized version of this name.
+  string step_name = 3;
+
+  // Interrupted is true if the test run was interrupted and terminated early
+  // (either via the runner bailing out or the user hitting ctrl-C, etc.) If
+  // true, this indicates that not all of the tests in the suite were run and
+  // the results are at best incomplete and possibly totally invalid.
+  bool interrupted = 4;
+
+  // UsecSinceEpoch is The start time of the test run expressed as a number of
+  // microseconds from the UNIX epoch.
+  int64 usec_since_epoch = 5;
+
+  // Run is the result of the test run.
+  TestRun run = 6;
+
+  // BuildId is the build_id in chrome-infra-events:raw_events.completed_builds_legacy
+  string build_id = 7;
+}
