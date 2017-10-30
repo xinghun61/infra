@@ -76,6 +76,7 @@ class CallStackDetectorTest(AnalysisTestCase):
     self.assertTupleEqual(
         stack_detector('blabla: runtime error: blabla', flag_manager),
         StartOfCallStack(1, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+
     self.assertIsNone(stack_detector('dummy', flag_manager))
 
   def testMsanDetector(self):
@@ -153,3 +154,11 @@ class CallStackDetectorTest(AnalysisTestCase):
         stack_detector('(JAVA) CRASHED [EXC @ 0x508]'),
         StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.JAVA, {}))
     self.assertIsNone(stack_detector('dummy'))
+
+  def testGeneralSanitizerDetector(self):
+    """Tests that ``GeneralSanitizerDetector`` returns a StartOfCallStack."""
+    stack_detector = callstack_detectors.GeneralSanitizerDetector()
+    self.assertTupleEqual(
+        stack_detector('==28956==ERROR: UndefinedBehaviorSanitizer:'),
+        StartOfCallStack(2, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+    self.assertIsNone(stack_detector('blabla...'))

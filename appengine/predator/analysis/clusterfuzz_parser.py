@@ -44,21 +44,22 @@ CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS = {
 
 def GetCallStackDetectors(job_type, crash_type):
   """Returns a list ``CallStackDetector`` to detect callstacks."""
-  sanitizer_detectors = [
+  default_detectors = [
       callstack_detectors.AsanDetector(),
       callstack_detectors.MsanDetector(),
       callstack_detectors.SyzyasanDetector(),
       callstack_detectors.UbsanDetector(),
       callstack_detectors.LibFuzzerDetector(),
-      callstack_detectors.TsanDetector()]
+      callstack_detectors.TsanDetector(),
+      callstack_detectors.GeneralSanitizerDetector()]
 
   if ANDROID_JOB_TYPE_MARKER in job_type:
-    return [callstack_detectors.AndroidJobDetector()] + sanitizer_detectors
+    return [callstack_detectors.AndroidJobDetector()] + default_detectors
 
   if crash_type in CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS:
     return [CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS[crash_type]()]
 
-  return sanitizer_detectors
+  return default_detectors
 
 
 class ClusterfuzzParser(object):

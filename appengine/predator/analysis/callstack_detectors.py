@@ -258,3 +258,21 @@ class ChromeCrashStackDetector(CallStackDetector):
                               LanguageType.JAVA, {})
 
     return None
+
+
+class GeneralSanitizerDetector(CallStackDetector):
+  """A fallback detector which returns StartOfCallStack for general sanitizer.
+
+  ==28956==ERROR: UndefinedBehaviorSanitizer:
+  #0 0x9feb4e in func0  media/filters/source_buffer_range.cc:129:43
+  #1 0xa0e702 in func1 media/filters/source_buffer_range_by_pts.cc:710:5
+  #2 0xa0d72b in func2  media/filters/source_buffer_range_by_pts.cc:225:3
+  """
+  GENERAL_SANITIZER_REGEX = re.compile(r'.*(ERROR|WARNING): .*Sanitizer')
+
+  def __call__(self, line, flags=None):
+    if GeneralSanitizerDetector.GENERAL_SANITIZER_REGEX.match(line):
+      return StartOfCallStack(2, CallStackFormatType.DEFAULT,
+                              LanguageType.CPP, {})
+
+    return None
