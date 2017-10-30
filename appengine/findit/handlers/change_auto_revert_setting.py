@@ -20,33 +20,39 @@ class ChangeAutoRevertSetting(BaseHandler):
 
   @token.AddXSRFToken(action_id='config')
   def HandleGet(self):
-    auto_create_revert_compile_on = waterfall_config.GetActionSettings().get(
-        'auto_create_revert_compile', False)
+    action_configs = waterfall_config.GetActionSettings()
     return {
         'template': 'change_auto_revert_setting.html',
         'data': {
-            'auto_create_revert_compile_on': auto_create_revert_compile_on
+            'is_admin':
+                users.is_current_user_admin(),
+            'auto_commit_revert_compile_on':
+                action_configs.get('auto_commit_revert_compile', False),
         }
     }
 
   @token.VerifyXSRFToken(action_id='config')
   def HandlePost(self):
     user = users.get_current_user()
-    is_admin = users.IsCurrentUserAdmin()
+    is_admin = users.is_current_user_admin()
 
-    action_settings = copy.deepcopy(waterfall_config.GetActionSettings())
+    # Only admin could turn auto-commit back on again.
+    flag = self.request.get('auto_commit_revert_compile', '').lower()
+    auto_commit_revert_compile = flag == 'true'
+    if auto_commit_revert_compile and not is_admin:
+      return BaseHandler.CreateError('Only admin could turn auto-commit on.',
+                                     403)
 
-    auto_create_revert_compile = json.loads(
-        self.request.params.get('auto_create_revert_compile').lower())
-    action_settings['auto_create_revert_compile'] = auto_create_revert_compile
-
-    message = self.request.params.get('update_reason').strip()
+    message = self.request.get('update_reason', '').strip()
     if not message:
-      return BaseHandler.CreateError('Please enter the reason.', 501)
+      return BaseHandler.CreateError('Please enter the reason.', 400)
 
     updated = False
-    if auto_create_revert_compile != waterfall_config.GetActionSettings().get(
-        'auto_create_revert_compile'):
+    action_configs = waterfall_config.GetActionSettings()
+    if auto_commit_revert_compile != action_configs.get(
+        'auto_commit_revert_compile'):
+      action_settings = copy.deepcopy(action_configs)
+      action_settings['auto_commit_revert_compile'] = auto_commit_revert_compile
       updated = wf_config.FinditConfig.Get().Update(
           user,
           acl.IsPrivilegedUser(user.email(), is_admin),
@@ -56,6 +62,6 @@ class ChangeAutoRevertSetting(BaseHandler):
     if not updated:
       return BaseHandler.CreateError('Failed to update auto-revert setting. '
                                      'Please refresh the page and try again.',
-                                     501)
+                                     400)
 
     return self.CreateRedirect('/waterfall/change-auto-revert-setting')
