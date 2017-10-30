@@ -12,7 +12,6 @@ from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import build_util
 from waterfall import buildbot
 from waterfall.build_info import BuildInfo
-from waterfall.flake import recursive_flake_pipeline
 from waterfall.flake import regression_range_analysis_pipeline
 from waterfall.flake.next_build_number_pipeline import NextBuildNumberPipeline
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
@@ -33,8 +32,7 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
 
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(regression_range_analysis_pipeline, '_GetBuildInfo',
-                     _MockedGetBuildInfo)
+  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
   def testGetBoundedRangeForCommitPositionFromBuild(self):
     self.assertEqual(
         (1, 1),
@@ -133,76 +131,8 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
       self.assertEqual(expected_dict[build_number].ToDict(),
                        builds_to_commits[build_number].ToDict())
 
-  @mock.patch.object(build_util, 'GetBuildInfo')
-  def testGetBuildInfo(self, mocked_fn):
-    build_info = BuildInfo('m', 'b', 123)
-    build_info.commit_position = 100
-    mocked_fn.return_value = build_info
-
-    self.assertEqual(123,
-                     regression_range_analysis_pipeline._GetBuildInfo(
-                         'm', 'b', 123).build_number)
-
-  @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[10, 9])
-  def testGetLatestBuildNumber(self, _):
-    self.assertEqual(10,
-                     regression_range_analysis_pipeline._GetLatestBuildNumber(
-                         'm', 'b'))
-
-  @mock.patch.object(regression_range_analysis_pipeline, '_GetBuildInfo',
-                     _MockedGetBuildInfo)
-  @mock.patch.object(
-      regression_range_analysis_pipeline,
-      '_GetLatestBuildNumber',
-      return_value=11)
-  def testGetNearestBuild(self, _):
-    # Test exact match.
-    self.assertEqual(2,
-                     regression_range_analysis_pipeline._GetNearestBuild(
-                         'm', 'b', 2, 2, 30).build_number)
-
-    self.assertEqual(2,
-                     regression_range_analysis_pipeline._GetNearestBuild(
-                         'm', 'b', 1, 10, 30).build_number)
-
-    self.assertEqual(3,
-                     regression_range_analysis_pipeline._GetNearestBuild(
-                         'm', 'b', 0, 10, 35).build_number)
-
-    self.assertEqual(4,
-                     regression_range_analysis_pipeline._GetNearestBuild(
-                         'm', 'b', 1, 9, 45).build_number)
-
-    self.assertEqual(5,
-                     regression_range_analysis_pipeline._GetNearestBuild(
-                         'm', 'b', 0, 10, 60).build_number)
-
-    self.assertEqual(11,
-                     regression_range_analysis_pipeline._GetNearestBuild(
-                         'm', 'b', 0, None, 1000).build_number)
-
-    self.assertEqual(0,
-                     regression_range_analysis_pipeline._GetNearestBuild(
-                         'm', 'b', None, 6, 1).build_number)
-
-    self.assertEqual(1,
-                     regression_range_analysis_pipeline._GetNearestBuild(
-                         'm', 'b', None, 6, 12).build_number)
-
-    self.assertEqual(3,
-                     regression_range_analysis_pipeline._GetNearestBuild(
-                         'm', 'b', 1, None, 35).build_number)
-
-    self.assertEqual(4,
-                     regression_range_analysis_pipeline._GetNearestBuild(
-                         'm', 'b', 2, 6, 50).build_number)
-
-  @mock.patch.object(regression_range_analysis_pipeline, '_GetBuildInfo',
-                     _MockedGetBuildInfo)
-  @mock.patch.object(
-      regression_range_analysis_pipeline,
-      '_GetLatestBuildNumber',
-      return_value=6)
+  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
+  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=6)
   def testGetEarliestBuildNumberFromRelativeBuildNumber(self, _):
     data_point_1 = DataPoint()
     data_point_1.build_number = 1
@@ -236,9 +166,7 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
       '_GetBoundedRangeForCommitPosition',
       return_value=(3, 3))
   @mock.patch.object(
-      regression_range_analysis_pipeline,
-      '_GetBuildInfo',
-      return_value=BuildInfo('m', 'b', 3))
+      build_util, 'GetBuildInfo', return_value=BuildInfo('m', 'b', 3))
   def testGetEarliestBuildNumberExactMatch(self, *_):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     self.assertEqual(
@@ -251,13 +179,8 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
       '_GetBoundedRangeForCommitPosition',
       return_value=(None, None))
   @mock.patch.object(
-      regression_range_analysis_pipeline,
-      '_GetBuildInfo',
-      return_value=BuildInfo('m', 'b', 123))
-  @mock.patch.object(
-      regression_range_analysis_pipeline,
-      '_GetLatestBuildNumber',
-      return_value=123)
+      build_util, 'GetBuildInfo', return_value=BuildInfo('m', 'b', 123))
+  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=123)
   def testGetEarliestBuildNumberNoDataPoints(self, *_):
     self.assertEqual(
         123,

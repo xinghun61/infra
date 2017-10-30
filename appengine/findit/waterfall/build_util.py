@@ -1,6 +1,7 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+import logging
 
 from common import constants
 from common.findit_http_client import FinditHttpClient
@@ -81,3 +82,98 @@ def GetFailureType(build_info):
     return failure_type.COMPILE
   # TODO(http://crbug.com/602733): differentiate test steps from infra ones.
   return failure_type.TEST
+
+
+def GetLatestBuildNumber(master_name, builder_name):
+  """Attempts to get the latest build number on master_name/builder_name."""
+  recent_builds = buildbot.GetRecentCompletedBuilds(master_name, builder_name,
+                                                    FinditHttpClient())
+
+  if recent_builds is None:
+    # Likely a network error.
+    logging.error('Failed to detect latest build number on %s, %s', master_name,
+                  builder_name)
+    return None
+
+  if not recent_builds:
+    # In case the builder is new or was recently reset.
+    logging.warning('No recent builds found on %s %s', master_name,
+                    builder_name)
+    return None
+
+  return recent_builds[0]
+
+
+def GetEarliestContainingBuild(
+    master_name, builder_name, lower_bound_build_number,
+    upper_bound_build_number, requested_commit_position):
+  """Finds the earliest build that contains the requested commit position.
+
+    The lower/upper bounds represent a build number range to search. The upper
+    bound build number must have a commit position greater than the requested
+    commit in order to contain it, while the lower bound build number's commit
+    position must be smaller than the requested commit position. For example,
+    If the requested commit position is 200 and build numbers 1 and 3 are passed
+    in as the lower/upper bounds, then build 1's commit position must be under
+    200 and build 3's commit position must be at least 200.
+
+  Args:
+    master_name (str): The name of the master.
+    builder_name (str): The name of the builder.
+    lower_bound_build_number (int): The earliest build number to search.
+    upper_bound_build_number (int): The latest build number to search.
+    requested_commit_position (int): The specified commit_position to find the
+        containing build number.
+
+  Returns:
+    (BuildInfo): The earliest build that contains the requested commit position,
+        or None if not determined due to unexpected errors.
+  """
+  if lower_bound_build_number is None:
+    lower_bound_build_number = 0
+    earliest_build_info = GetBuildInfo(master_name, builder_name,
+                                       lower_bound_build_number)
+    if requested_commit_position <= earliest_build_info.commit_position:
+      # The requested commit position is before the earliest available build.
+      # Fallback to the earliest build. The calling code should compare the
+      # requested commit position to what is returned here and raise an alert
+      # accordingly.
+      return earliest_build_info
+
+  if upper_bound_build_number is None:
+    upper_bound_build_number = GetLatestBuildNumber(master_name, builder_name)
+
+    if upper_bound_build_number is None:
+      logging.error('Failed to detect latest build number')
+      return None
+
+    latest_build_info = GetBuildInfo(master_name, builder_name,
+                                     upper_bound_build_number)
+    if requested_commit_position >= latest_build_info.commit_position:
+      # If the requested commit is beyond what has actually been committed.
+      # Fallback to the latest build. The calling code should compare the
+      # requested commit position to what is returned here and raise an alert
+      # accordingly.
+      return latest_build_info
+
+  # Bisect the build number range and search for the earliest build whose
+  # commit position >= requested_commit_position.
+  upper_bound = upper_bound_build_number
+  lower_bound = lower_bound_build_number
+
+  while upper_bound - lower_bound > 1:
+    candidate_build_number = (upper_bound - lower_bound) / 2 + lower_bound
+    candidate_build = GetBuildInfo(master_name, builder_name,
+                                   candidate_build_number)
+
+    if candidate_build.commit_position == requested_commit_position:
+      # Exact match.
+      return candidate_build
+    if candidate_build.commit_position > requested_commit_position:
+      # Go left.
+      upper_bound = candidate_build_number
+    else:
+      # Go right.
+      lower_bound = candidate_build_number
+
+  return GetBuildInfo(master_name, builder_name, upper_bound)

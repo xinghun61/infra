@@ -14,6 +14,12 @@ from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
 
 
+def _MockedGetBuildInfo(master_name, builder_name, build_number):
+  build = BuildInfo(master_name, builder_name, build_number)
+  build.commit_position = (build_number + 1) * 10
+  return build
+
+
 class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
@@ -193,3 +199,65 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     build_info = BuildInfo('m', 'b', 123)
     build_info.failed_steps = ['abc_tests']
     self.assertEqual(failure_type.TEST, build_util.GetFailureType(build_info))
+
+  @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[10, 9])
+  def testGetLatestBuildNumber(self, _):
+    self.assertEqual(10, build_util.GetLatestBuildNumber('m', 'b'))
+
+  @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=None)
+  def testGetLatestBuildNumberNoNetwork(self, _):
+    self.assertIsNone(build_util.GetLatestBuildNumber('m', 'b'))
+
+  @mock.patch.object(buildbot, 'GetRecentCompletedBuilds', return_value=[])
+  def testGetLatestBuildNumberNoRecentCompletedBuilds(self, _):
+    self.assertIsNone(build_util.GetLatestBuildNumber('m', 'b'))
+
+  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
+  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=11)
+  def testGetEarliestContainingBuild(self, *_):
+    # Test exact match.
+    self.assertEqual(2,
+                     build_util.GetEarliestContainingBuild('m', 'b', 2, 2,
+                                                           30).build_number)
+
+    self.assertEqual(2,
+                     build_util.GetEarliestContainingBuild('m', 'b', 1, 10,
+                                                           30).build_number)
+
+    self.assertEqual(3,
+                     build_util.GetEarliestContainingBuild('m', 'b', 0, 10,
+                                                           35).build_number)
+
+    self.assertEqual(4,
+                     build_util.GetEarliestContainingBuild('m', 'b', 1, 9,
+                                                           45).build_number)
+
+    self.assertEqual(5,
+                     build_util.GetEarliestContainingBuild('m', 'b', 0, 10,
+                                                           60).build_number)
+
+    self.assertEqual(11,
+                     build_util.GetEarliestContainingBuild(
+                         'm', 'b', 0, None, 1000).build_number)
+
+    self.assertEqual(0,
+                     build_util.GetEarliestContainingBuild(
+                         'm', 'b', None, 6, 1).build_number)
+
+    self.assertEqual(1,
+                     build_util.GetEarliestContainingBuild(
+                         'm', 'b', None, 6, 12).build_number)
+
+    self.assertEqual(3,
+                     build_util.GetEarliestContainingBuild(
+                         'm', 'b', 1, None, 35).build_number)
+
+    self.assertEqual(4,
+                     build_util.GetEarliestContainingBuild('m', 'b', 2, 6,
+                                                           50).build_number)
+
+  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
+  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=None)
+  def testGetEarliestContainingBuildNoLatestBuild(self, *_):
+    self.assertIsNone(
+        build_util.GetEarliestContainingBuild('m', 'b', None, None, 50))

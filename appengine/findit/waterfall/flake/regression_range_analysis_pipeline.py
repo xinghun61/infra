@@ -55,17 +55,6 @@ def _BuildNumbersToCommitPositionsDict(data_points):
   return build_numbers_to_positions
 
 
-def _GetBuildInfo(master_name, builder_name, build_number):
-  build_info = build_util.GetBuildInfo(master_name, builder_name, build_number)
-
-  if not build_info:  # pragma: no cover
-    # Network error.
-    raise pipeline.Retry('Failed to get build info for %s/%s' % (master_name,
-                                                                 builder_name))
-
-  return build_info
-
-
 def _GetBoundedRangeForCommitPosition(commit_position,
                                       builds_to_commit_positions):
   """Gets the range (lower_bound, upper_bound] that contains commit_position.
@@ -134,94 +123,13 @@ def _GetBoundedRangeForCommitPosition(commit_position,
 
 def _GetBoundedRangeFromBuild(commit_position, master_name, builder_name,
                               build_number):
-  build_info = _GetBuildInfo(master_name, builder_name, build_number)
+  build_info = build_util.GetBuildInfo(master_name, builder_name, build_number)
   if build_info.commit_position == commit_position:
     return build_number, build_number
   elif build_info.commit_position > commit_position:
     return None, build_number
   else:
     return build_number, None
-
-
-def _GetLatestBuildNumber(master_name, builder_name):
-  """Attempts to get the latest build number on master_name/builder_name."""
-  recent_builds = buildbot.GetRecentCompletedBuilds(master_name, builder_name,
-                                                    FinditHttpClient())
-
-  if recent_builds is None:  # pragma: no cover
-    # Likely a network error.
-    raise pipeline.Retry('Failed to detect latest build number on %s, %s' %
-                         (master_name, builder_name))
-
-  return recent_builds[0]
-
-
-def _GetNearestBuild(master_name, builder_name, lower_bound_build_number,
-                     upper_bound_build_number, requested_commit_position):
-  """Finds the nearest build that contains the requested commit position.
-
-    The lower/upper bounds represent a build number range to search. The upper
-    bound build number must have a commit position greater than the requested
-    commit in order to contain it, while the lower bound build number's commit
-    position must be smaller than the requested commit position. For example,
-    If the requested commit position is 200 and build numbers 1 and 3 are passed
-    in as the lower/upper bounds, then build 1's commit position must be under
-    200 and build 3's commit position must be at least 200.
-
-  Args:
-    master_name (str): The name of the master.
-    builder_name (str): The name of the builder.
-    lower_bound_build_number (int): The earliest build number to search.
-    upper_bound_build_number (int): The latest build number to search.
-    requested_commit_position (int): The specified commit_position to find the
-        containing build number.
-
-  Returns:
-    (BuildInfo): The earliest build that contains the requested commit position.
-  """
-  if lower_bound_build_number is None:
-    lower_bound_build_number = 0
-    earliest_build_info = _GetBuildInfo(master_name, builder_name,
-                                        lower_bound_build_number)
-    if requested_commit_position <= earliest_build_info.commit_position:
-      # User requested something before what there are build numbers for.
-      # Fallback to the earliest build. The calling code should compare the
-      # requested commit position to what is returned here and alert the user
-      # accordingly.
-      return earliest_build_info
-
-  if upper_bound_build_number is None:
-    upper_bound_build_number = _GetLatestBuildNumber(master_name, builder_name)
-    latest_build_info = _GetBuildInfo(master_name, builder_name,
-                                      upper_bound_build_number)
-    if requested_commit_position >= latest_build_info.commit_position:
-      # User requested something beyond what has been committed or there is a
-      # build available for. Fallback to the latest build. The calling code
-      # should compare the requested commit position to what is returned here
-      # and alert the user accordingly.
-      return latest_build_info
-
-  # Bisect the build number range and search for the earliest build whose
-  # commit position >= requested_commit_position.
-  upper_bound = upper_bound_build_number
-  lower_bound = lower_bound_build_number
-
-  while upper_bound - lower_bound > 1:
-    candidate_build_number = (upper_bound - lower_bound) / 2 + lower_bound
-    candidate_build = _GetBuildInfo(master_name, builder_name,
-                                    candidate_build_number)
-
-    if candidate_build.commit_position == requested_commit_position:
-      # Exact match.
-      return candidate_build
-    if candidate_build.commit_position > requested_commit_position:
-      # Go left.
-      upper_bound = candidate_build_number
-    else:
-      # Go right.
-      lower_bound = candidate_build_number
-
-  return _GetBuildInfo(master_name, builder_name, upper_bound)
 
 
 def _GetEarliestContainingBuildNumber(commit_position, master_flake_analysis):
@@ -260,8 +168,9 @@ def _GetEarliestContainingBuildNumber(commit_position, master_flake_analysis):
   if lower_bound is not None and lower_bound == upper_bound:
     return lower_bound
 
-  return _GetNearestBuild(master_name, builder_name, lower_bound, upper_bound,
-                          commit_position).build_number
+  return build_util.GetEarliestContainingBuild(master_name, builder_name,
+                                               lower_bound, upper_bound,
+                                               commit_position).build_number
 
 
 def _RemoveStablePointsWithinRange(analysis, lower_bound_build_number,
