@@ -1,18 +1,11 @@
 .PHONY: test
 WCT_PATH = ./node_modules/web-component-tester/bin/wct
-VULCANIZE_PATH = ./node_modules/vulcanize/bin/vulcanize
 
 default: help
 
 help:
 	@echo "Available commands:"
 	@sed -n '/^[a-zA-Z0-9_]*:/s/:.*//p' <Makefile
-
-build: deps
-	$(VULCANIZE_PATH) elements/who-page.html -o elements/who-page.vulcanized.html --inline-scripts
-
-clean:
-	rm elements/who-page.vulcanized.html
 
 deps:
 	bower install
@@ -29,7 +22,7 @@ test: build
 	go test --cover
 	xvfb-run -a $(WCT_PATH)
 
-deploy_prod: getversion deploy_prod_run clean
+deploy_prod: getversion deploy_prod_run
 
 deploy_prod_run:
 	./gae.py upload
