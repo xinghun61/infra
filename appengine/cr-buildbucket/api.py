@@ -96,16 +96,27 @@ class BucketMessage(messages.Message):
 
 
 def put_request_message_to_build_request(request):
-  return service.BuildRequest(
-      bucket=request.bucket,
-      tags=request.tags,
-      parameters=parse_json_object(request.parameters_json, 'parameters_json'),
-      lease_expiration_date=parse_datetime(request.lease_expiration_ts),
-      client_operation_id=request.client_operation_id,
-      pubsub_callback=pubsub_callback_from_message(request.pubsub_callback),
-      canary_preference=(
-          request.canary_preference or model.CanaryPreference.AUTO),
-  )
+  return put_request_messages_to_build_requests([request])[0]
+
+
+def put_request_messages_to_build_requests(requests):
+  buckets = set(r.bucket for r in requests if r.bucket)
+  bucket_keys = [ndb.Key(config.Bucket, b) for b in buckets]
+  bucket_entities = dict(zip(buckets, ndb.get_multi(bucket_keys)))
+  return [
+    service.BuildRequest(
+        project=(bucket_entities[r.bucket].project_id
+                 if bucket_entities[r.bucket] else None),
+        bucket=r.bucket,
+        tags=r.tags,
+        parameters=parse_json_object(r.parameters_json, 'parameters_json'),
+        lease_expiration_date=parse_datetime(r.lease_expiration_ts),
+        client_operation_id=r.client_operation_id,
+        pubsub_callback=pubsub_callback_from_message(r.pubsub_callback),
+        canary_preference=(r.canary_preference or model.CanaryPreference.AUTO),
+    )
+    for r in requests
+  ]
 
 
 def build_to_response_message(build, include_lease_key=False):
@@ -236,10 +247,9 @@ class BuildBucketApi(remote.Service):
   @auth.public
   def put_batch(self, request):
     """Creates builds."""
-    results = service.add_many_async([
-      put_request_message_to_build_request(r)
-      for r in request.builds
-    ]).get_result()
+    results = service.add_many_async(
+        put_request_messages_to_build_requests(request.builds)
+    ).get_result()
 
     res = self.PutBatchResponseMessage()
     for req, (build, ex) in zip(request.builds, results):

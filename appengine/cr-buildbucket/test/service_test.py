@@ -49,6 +49,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.patch('components.utils.utcnow', side_effect=lambda: self.now)
 
     self.chromium_bucket = project_config_pb2.Bucket(name='chromium')
+    self.chromium_project_id = 'test'
     self.chromium_swarming = project_config_pb2.Swarming(
         hostname='chromium-swarm.appspot.com',
         builders=[
@@ -71,6 +72,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build = model.Build(
         id=model.create_build_id(self.now),
         bucket='chromium',
+        project=self.chromium_project_id,
         create_time=self.now,
         tags=[self.INDEXED_TAG],
         parameters={
@@ -129,7 +131,13 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   #################################### ADD #####################################
 
   def add(self, bucket, **request_fields):
-    return service.add(service.BuildRequest(bucket, **request_fields))
+    return service.add(
+        service.BuildRequest(
+            self.chromium_project_id,
+            bucket,
+            **request_fields
+        )
+    )
 
   def test_add(self):
     params = {'buildername': 'linux_rel'}
@@ -208,10 +216,12 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     with self.assertRaises(errors.InvalidInputError):
       service.add_many_async([
         service.BuildRequest(
+            project=self.chromium_project_id,
             bucket=self.chromium_bucket.name,
             parameters={'builder_name': 'infra', 'i': 0},
         ),
         service.BuildRequest(
+            project=self.chromium_project_id,
             bucket=self.chromium_bucket.name,
             parameters={'builder_name': 'infra', 'i': 1},
         )
@@ -289,6 +299,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_add_builder_tag(self):
     build = service.add(service.BuildRequest(
+        project=self.chromium_project_id,
         bucket='chromium',
         parameters={'builder_name': 'foo'}
     ))
@@ -296,6 +307,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_add_builder_tag_multi(self):
     build = service.add(service.BuildRequest(
+        project=self.chromium_project_id,
         bucket='chromium',
         parameters={'builder_name': 'foo'},
         tags=['builder:foo', 'builder:foo'],
@@ -305,12 +317,14 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_add_builder_tag_different(self):
     with self.assertRaises(errors.InvalidInputError):
       service.add(service.BuildRequest(
+          project=self.chromium_project_id,
           bucket='chromium',
           tags=['builder:foo', 'builder:bar'],
       ))
 
   def test_add_builder_tag_coincide(self):
     build = service.add(service.BuildRequest(
+        project=self.chromium_project_id,
         bucket='chromium',
         parameters={'builder_name': 'foo'},
         tags=['builder:foo'],
@@ -320,6 +334,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_add_builder_tag_conflict(self):
     with self.assertRaises(errors.InvalidInputError):
       service.add(service.BuildRequest(
+          project=self.chromium_project_id,
           bucket='chromium',
           parameters={'builder_name': 'foo'},
           tags=['builder:bar'],
@@ -372,8 +387,16 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_add_many(self):
     self.mock_cannot(acl.Action.ADD_BUILD, bucket='forbidden')
     results = service.add_many_async([
-      service.BuildRequest(bucket='chromium', tags=['buildset:a']),
-      service.BuildRequest(bucket='chromium', tags=['buildset:a']),
+      service.BuildRequest(
+          project=self.chromium_project_id,
+          bucket='chromium',
+          tags=['buildset:a'],
+      ),
+      service.BuildRequest(
+          project=self.chromium_project_id,
+          bucket='chromium',
+          tags=['buildset:a'],
+      ),
     ]).get_result()
     self.assertEqual(len(results), 2)
     self.assertIsNotNone(results[0][0])
@@ -392,8 +415,16 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_add_many_invalid_input(self):
     results = service.add_many_async([
-      service.BuildRequest(bucket='chromium', tags=['buildset:a']),
-      service.BuildRequest(bucket='chromium', tags=['buildset:a', 'x']),
+      service.BuildRequest(
+          project=self.chromium_project_id,
+          bucket='chromium',
+          tags=['buildset:a'],
+      ),
+      service.BuildRequest(
+          project=self.chromium_project_id,
+          bucket='chromium',
+          tags=['buildset:a', 'x'],
+      ),
     ]).get_result()
     self.assertEqual(len(results), 2)
     self.assertIsNotNone(results[0][0])
@@ -413,8 +444,16 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.mock_cannot(acl.Action.ADD_BUILD, bucket='forbidden')
     with self.assertRaises(auth.AuthorizationError):
       service.add_many_async([
-        service.BuildRequest(bucket='chromium', tags=['buildset:a']),
-        service.BuildRequest(bucket='forbidden', tags=['buildset:a']),
+        service.BuildRequest(
+            project=self.chromium_project_id,
+            bucket='chromium',
+            tags=['buildset:a'],
+        ),
+        service.BuildRequest(
+            project='forbidden',
+            bucket='forbidden',
+            tags=['buildset:a'],
+        ),
       ]).get_result()
 
     index = model.TagIndex.get_by_id('buildset:a')
@@ -422,11 +461,13 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_add_many_with_client_op_id(self):
     req1 = service.BuildRequest(
+        project=self.chromium_project_id,
         bucket='chromium',
         tags=['buildset:a'],
         client_operation_id='0',
     )
     req2 = service.BuildRequest(
+        project=self.chromium_project_id,
         bucket='chromium',
         tags=['buildset:a'],
     )
@@ -440,7 +481,11 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
   def test_add_too_many_to_index(self):
     service.add_many_async([
-      service.BuildRequest(bucket='chromium', tags=['buildset:a'])
+      service.BuildRequest(
+          project=self.chromium_project_id,
+          bucket='chromium',
+          tags=['buildset:a'],
+      )
       for _ in xrange(2000)
     ]).get_result()
     index = model.TagIndex.get_by_id('buildset:a')
@@ -450,7 +495,11 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
 
     # One more for coverage.
     service.add_many_async([
-      service.BuildRequest(bucket='chromium', tags=['buildset:a'])
+      service.BuildRequest(
+          project=self.chromium_project_id,
+          bucket='chromium',
+          tags=['buildset:a'],
+      )
     ]).get_result()
 
   ################################### RETRY ####################################

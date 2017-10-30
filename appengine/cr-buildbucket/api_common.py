@@ -35,6 +35,7 @@ class BuildMessage(messages.Message):
   retry_of = messages.IntegerField(19)
   canary_preference = messages.EnumField(model.CanaryPreference, 21)
   canary = messages.BooleanField(22)
+  project = messages.StringField(23)
 
 
 def datetime_to_timestamp_safe(value):
@@ -71,6 +72,7 @@ def build_to_message(build, include_lease_key=False):
     retry_of=build.retry_of,
     canary_preference=build.canary_preference,
     canary=build.canary,
+    project=build.project,
     # when changing this function, make sure build_to_dict would still work
   )
   if build.lease_expiration_date is not None:

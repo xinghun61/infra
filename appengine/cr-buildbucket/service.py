@@ -167,7 +167,7 @@ def validate_tags(tags, mode, builder=None):
 
 
 _BuildRequestBase = collections.namedtuple('_BuildRequestBase', [
-  'bucket', 'tags', 'parameters', 'lease_expiration_date',
+  'project', 'bucket', 'tags', 'parameters', 'lease_expiration_date',
   'client_operation_id', 'pubsub_callback', 'retry_of', 'canary_preference',
 ])
 
@@ -176,12 +176,15 @@ class BuildRequest(_BuildRequestBase):
   """A request to add a new build. Immutable."""
 
   def __new__(
-      cls, bucket, tags=None, parameters=None, lease_expiration_date=None,
-      client_operation_id=None, pubsub_callback=None, retry_of=None,
+      cls, project, bucket, tags=None, parameters=None,
+      lease_expiration_date=None, client_operation_id=None,
+      pubsub_callback=None, retry_of=None,
       canary_preference=model.CanaryPreference.AUTO):
     """Creates an BuildRequest. Does not perform validation.
 
     Args:
+      project (str): project ID for the destination bucket. Required, but may
+        be None.
       bucket (str): destination bucket. Required.
       tags (model.Tags): build tags.
       parameters (dict): arbitrary build parameters. Cannot be changed after
@@ -197,7 +200,7 @@ class BuildRequest(_BuildRequestBase):
         the build infrastructure should be used.
     """
     self = super(BuildRequest, cls).__new__(
-        cls, bucket, tags, parameters, lease_expiration_date,
+        cls, project, bucket, tags, parameters, lease_expiration_date,
         client_operation_id, pubsub_callback, retry_of, canary_preference)
     return self
 
@@ -224,13 +227,13 @@ class BuildRequest(_BuildRequestBase):
           self.client_operation_id, basestring):  # pragma: no cover
         raise errors.InvalidInputError('client_operation_id must be string')
       if '/' in self.client_operation_id:  # pragma: no cover
-        raise errors.InvalidInpuutError(
+        raise errors.InvalidInputError(
             'client_operation_id must not contain /')
 
     # Normalize.
     normalized_tags = sorted(set(self.tags or []))
     return BuildRequest(
-        self.bucket, normalized_tags, self.parameters,
+        self.project, self.bucket, normalized_tags, self.parameters,
         self.lease_expiration_date, self.client_operation_id,
         self.pubsub_callback, self.retry_of, self.canary_preference)
 
@@ -247,6 +250,7 @@ class BuildRequest(_BuildRequestBase):
     build = model.Build(
         id=build_id,
         bucket=self.bucket,
+        project=self.project,
         initial_tags=self.tags,
         tags=self.tags,
         parameters=self.parameters,
@@ -521,6 +525,7 @@ def retry(
   if not build:
     raise errors.BuildNotFoundError('Build %s not found' % build_id)
   return add(BuildRequest(
+      build.project,
       build.bucket,
       tags=build.initial_tags if build.initial_tags is not None else build.tags,
       parameters=build.parameters,

@@ -31,6 +31,7 @@ import service
 
 class ApiTests(object):
   test_build = None
+  test_bucket = None
   future_ts = None
   future_date = None
 
@@ -51,6 +52,15 @@ class ApiTests(object):
         'buildername': 'linux_rel',
       },
     )
+    self.test_bucket = config.Bucket(
+        id='chromium',
+        entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+        project_id='test',
+        revision='aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        config_content='something',
+        config_content_binary='something',
+    )
+    self.test_bucket.put()
 
   def expect_error(self, method_name, req, error_reason):
     res = self.call_api(method_name, req).json_body
@@ -97,6 +107,7 @@ class ApiTests(object):
     resp = self.call_api('put', req).json_body
     add.assert_called_once_with(service.BuildRequest(
       bucket=self.test_build.bucket,
+      project=self.test_bucket.project_id,
       tags=req['tags'],
       client_operation_id='42',
       pubsub_callback=model.PubSubCallback(
@@ -130,6 +141,7 @@ class ApiTests(object):
     resp = self.call_api('put', req).json_body
     add.assert_called_once_with(service.BuildRequest(
         bucket=self.test_build.bucket,
+        project=self.test_bucket.project_id,
         lease_expiration_date=self.future_date,
         tags=[],
     ))
@@ -194,6 +206,14 @@ class ApiTests(object):
     self.test_build.tags = ['owner:ivan']
 
     build2 = model.Build(id=2, bucket='v8')
+    config.Bucket(
+        id='v8',
+        entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+        project_id=self.test_bucket.project_id,
+        revision="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        config_content="something",
+        config_content_binary="something",
+    ).put()
 
     add_many_async.return_value = future([
       (self.test_build, None),
@@ -221,16 +241,19 @@ class ApiTests(object):
     add_many_async.assert_called_once_with([
       service.BuildRequest(
           bucket=self.test_build.bucket,
+          project=self.test_bucket.project_id,
           tags=self.test_build.tags,
           client_operation_id='0',
       ),
       service.BuildRequest(
           bucket=build2.bucket,
+          project=self.test_bucket.project_id,
           tags=[],
           client_operation_id='1',
       ),
       service.BuildRequest(
           bucket='bad name',
+          project=None,
           tags=[],
           client_operation_id='2',
       ),
