@@ -811,7 +811,6 @@ class FlipperTest(unittest.TestCase):
                                 (3L, 30, 111L, ts, '')]
     self.hotlist = fake.Hotlist('name', 123, self.hotlist_item_fields)
 
-  @unittest.skip('flaky')
   def testAssignFlipperValues_Normal(self):
     hotlist_flipper = issuedetail._HotlistFlipper(
         self.mr, self.services, self.issue2, self.hotlist)
@@ -824,7 +823,6 @@ class FlipperTest(unittest.TestCase):
     self.assertTrue('/project2/' in hotlist_flipper.next_url)
     self.assertTrue('/project1/' in hotlist_flipper.prev_url)
 
-  @unittest.skip('flaky')
   def testAssignFlipperValues_First(self):
     hotlist_flipper = issuedetail._HotlistFlipper(
         self.mr, self.services, self.issue1, self.hotlist)
@@ -837,7 +835,6 @@ class FlipperTest(unittest.TestCase):
     self.assertTrue('/project1/' in hotlist_flipper.next_url)
     self.assertEqual(hotlist_flipper.prev_url, '')
 
-  @unittest.skip('flaky')
   def testAssignFlipperValues_Last(self):
     hotlist_flipper = issuedetail._HotlistFlipper(
         self.mr, self.services, self.issue3, self.hotlist)
@@ -850,7 +847,6 @@ class FlipperTest(unittest.TestCase):
     self.assertTrue('/project1/' in hotlist_flipper.prev_url)
     self.assertEqual(hotlist_flipper.next_url, '')
 
-  @unittest.skip('flaky')
   def testAssignFlipperValues_NoShow(self):
     one_issue_hotlist = fake.Hotlist(
         'name1', 122, [self.hotlist_item_fields[0]])
