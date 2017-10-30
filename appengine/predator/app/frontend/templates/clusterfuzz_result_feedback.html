@@ -327,8 +327,8 @@
         {% for log_level, log_dict in log.iteritems() %}
           {% if log_level == 'warning' or log_level == 'error' %}
             {{log_level}}:<br>
-            {% for log_msg in log_dict.itervalue() %}
-              {{ log_msg }} <br>
+            {% for log_msg in log_dict.itervalues() %}
+              <pre>{{ log_msg }}</pre> <br>
             {% endfor %}
           {% endif %}
         {% endfor %}
