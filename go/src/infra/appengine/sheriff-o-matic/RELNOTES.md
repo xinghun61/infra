@@ -1,3 +1,27 @@
+# Release Notes sheriff-o-matic 2017-10-31
+
+- 4 commits, 2 bugs affected since d65cf28 (2017-10-18T17:49:42Z)
+- 4 Authors:
+  - zhangtiff@google.com
+  - nodir@google.com
+  - martiniss@chromium.org
+  - katthomas@google.com
+
+## Changes in this release
+
+- [Roll infra/go/src/go.chromium.org/luci/ fbb8a7b77..4d42df061 (14 commits)](https://chromium-review.googlesource.com/744722) (nodir@google.com)
+- [SOM: Fix reason merging](https://chromium-review.googlesource.com/730882) (martiniss@chromium.org)
+- [[eventupload] remove TableDef references](https://chromium-review.googlesource.com/729153) (katthomas@google.com)
+- [SoM: Removed unused code.](https://chromium-review.googlesource.com/729327) (zhangtiff@google.com)
+
+
+## Bugs updated, by author
+- katthomas@google.com:
+  -  [https://crbug.com/775262](https://crbug.com/775262)
+
+- martiniss@chromium.org:
+  -  [https://crbug.com/723875](https://crbug.com/723875)
+
 # Release Notes sheriff-o-matic 2017-10-18
 
 - 2 commits, 0 bugs affected since daed6f1 (2017-10-11T19:51:00Z)
