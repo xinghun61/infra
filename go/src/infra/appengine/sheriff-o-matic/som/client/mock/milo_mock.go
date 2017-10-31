@@ -5,12 +5,12 @@
 package mock
 
 import (
-	reflect "reflect"
-
+	context "context"
 	gomock "github.com/golang/mock/gomock"
+	empty "github.com/golang/protobuf/ptypes/empty"
 	proto "go.chromium.org/luci/milo/api/proto"
-	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
+	reflect "reflect"
 )
 
 // MockBuildbotClient is a mock of BuildbotClient interface
@@ -88,6 +88,42 @@ func (m *MockBuildbotClient) GetCompressedMasterJSON(arg0 context.Context, arg1 
 func (mr *MockBuildbotClientMockRecorder) GetCompressedMasterJSON(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
 	varargs := append([]interface{}{arg0, arg1}, arg2...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCompressedMasterJSON", reflect.TypeOf((*MockBuildbotClient)(nil).GetCompressedMasterJSON), varargs...)
+}
+
+// GetEmulationOptions mocks base method
+func (m *MockBuildbotClient) GetEmulationOptions(arg0 context.Context, arg1 *proto.GetEmulationOptionsRequest, arg2 ...grpc.CallOption) (*proto.GetEmulationOptionsResponse, error) {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetEmulationOptions", varargs...)
+	ret0, _ := ret[0].(*proto.GetEmulationOptionsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetEmulationOptions indicates an expected call of GetEmulationOptions
+func (mr *MockBuildbotClientMockRecorder) GetEmulationOptions(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetEmulationOptions", reflect.TypeOf((*MockBuildbotClient)(nil).GetEmulationOptions), varargs...)
+}
+
+// SetEmulationOptions mocks base method
+func (m *MockBuildbotClient) SetEmulationOptions(arg0 context.Context, arg1 *proto.SetEmulationOptionsRequest, arg2 ...grpc.CallOption) (*empty.Empty, error) {
+	varargs := []interface{}{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "SetEmulationOptions", varargs...)
+	ret0, _ := ret[0].(*empty.Empty)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SetEmulationOptions indicates an expected call of SetEmulationOptions
+func (mr *MockBuildbotClientMockRecorder) SetEmulationOptions(arg0, arg1 interface{}, arg2 ...interface{}) *gomock.Call {
+	varargs := append([]interface{}{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEmulationOptions", reflect.TypeOf((*MockBuildbotClient)(nil).SetEmulationOptions), varargs...)
 }
 
 // MockBuildInfoClient is a mock of BuildInfoClient interface

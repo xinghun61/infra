@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"golang.org/x/net/context"
 
 	"infra/monorail"
@@ -145,5 +146,11 @@ func (*buildbotMock) GetBuildbotBuildJSON(context.Context, *milo.BuildbotBuildRe
 	panic("not implemented")
 }
 func (*buildbotMock) GetBuildbotBuildsJSON(context.Context, *milo.BuildbotBuildsRequest) (*milo.BuildbotBuildsJSON, error) {
+	panic("not implemented")
+}
+func (*buildbotMock) GetEmulationOptions(context.Context, *milo.GetEmulationOptionsRequest) (*milo.GetEmulationOptionsResponse, error) {
+	panic("not implemented")
+}
+func (*buildbotMock) SetEmulationOptions(context.Context, *milo.SetEmulationOptionsRequest) (*empty.Empty, error) {
 	panic("not implemented")
 }
