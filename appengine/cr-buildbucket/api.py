@@ -32,10 +32,12 @@ class ErrorReason(messages.Enum):
   INVALID_INPUT = 4
   INVALID_BUILD_STATE = 5
   BUILD_IS_COMPLETED = 6
+  BUILDER_NOT_FOUND = 7
 
 
 ERROR_REASON_MAP = {
   errors.BuildNotFoundError: ErrorReason.BUILD_NOT_FOUND,
+  errors.BuilderNotFoundError: ErrorReason.BUILDER_NOT_FOUND,
   errors.LeaseExpiredError: ErrorReason.LEASE_EXPIRED,
   errors.InvalidInputError: ErrorReason.INVALID_INPUT,
   errors.BuildIsCompletedError: ErrorReason.BUILD_IS_COMPLETED,
@@ -49,10 +51,8 @@ class ErrorMessage(messages.Message):
 
 def exception_to_error_message(ex):
   assert isinstance(ex, errors.Error)
-  return ErrorMessage(
-      reason=ERROR_REASON_MAP[type(ex)],
-      message=ex.message,
-  )
+  assert type(ex) in ERROR_REASON_MAP
+  return ErrorMessage(reason=ERROR_REASON_MAP[type(ex)], message=ex.message)
 
 
 class PubSubCallbackMessage(messages.Message):
@@ -121,7 +121,7 @@ def put_request_messages_to_build_requests(requests):
 
 def build_to_response_message(build, include_lease_key=False):
   return BuildResponseMessage(
-    build=api_common.build_to_message(build, include_lease_key))
+      build=api_common.build_to_message(build, include_lease_key))
 
 
 def id_resource_container(body_message_class=message_types.VoidMessage):
@@ -471,9 +471,6 @@ class BuildBucketApi(remote.Service):
         msg.lease_expiration_ts = utils.datetime_to_timestamp(
             build.lease_expiration_date)
       else:
-        if type(ex) not in ERROR_REASON_MAP:
-          logging.error(ex.message, exc_info=ex)
-          raise endpoints.InternalServerErrorException(ex.message)
         msg.error = exception_to_error_message(ex)
 
       return msg

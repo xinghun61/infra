@@ -11,7 +11,15 @@ class Error(Exception):
   pass
 
 
-class BuildNotFoundError(Error):
+class NotFoundError(Error):
+  pass
+
+
+class BuildNotFoundError(NotFoundError):
+  pass
+
+
+class BuilderNotFoundError(NotFoundError):
   pass
 
 

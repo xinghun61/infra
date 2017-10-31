@@ -226,20 +226,27 @@ func withLock(c context.Context, buildID int64, f func() error) error {
 func schedule(c context.Context, req *bbapi.ApiPutRequestMessage, service *bbapi.Service) error {
 	req.Tags = append(req.Tags, "user_agent:luci-migration")
 	res, err := service.Put(req).Context(c).Do()
+	transientFailure := true
 	if err == nil && res.Error != nil {
 		err = errors.New(res.Error.Message)
+		// A LUCI builder may be not defined for a buildbot builder yet.
+		// Skip such builds. When the LUCI builder is defined, builds will
+		// start flowing.
+		transientFailure = res.Error.Reason != "BUILDER_NOT_FOUND"
 	}
 	if err != nil {
-		if err, ok := err.(*googleapi.Error); ok && (err.Code == http.StatusForbidden || err.Code == http.StatusNotFound) {
+		if apierr, ok := err.(*googleapi.Error); ok && (apierr.Code == http.StatusForbidden || apierr.Code == http.StatusNotFound) {
 			// Retries won't help. Return a non-transient error.
 			// The bucket should be configured first, it is OK to skip some
 			// builds.
-			return errors.Annotate(err, "not allowed to schedule builds in bucket %q", req.Bucket).Err()
+			transientFailure = false
 		}
 
-		return errors.Annotate(err, "could not schedule a build").
-			Tag(transient.Tag). // Cause a retry by returning a transient error
-			Err()
+		ann := errors.Annotate(err, "could not schedule a build")
+		if transientFailure {
+			ann.Tag(transient.Tag) // Cause a retry by returning a transient error
+		}
+		return ann.Err()
 	}
 
 	resJSON, err := json.MarshalIndent(res, "", "  ")

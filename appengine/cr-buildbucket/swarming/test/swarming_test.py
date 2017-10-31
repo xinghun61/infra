@@ -474,7 +474,7 @@ class SwarmingTest(BaseTest):
     with self.assertRaises(errors.InvalidInputError):
       swarming.create_task_async(build).get_result()
 
-    with self.assertRaises(errors.InvalidInputError):
+    with self.assertRaises(errors.BuilderNotFoundError):
       build.parameters = {
         'builder_name': 'non-existent builder',
       }

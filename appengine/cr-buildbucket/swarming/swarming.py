@@ -509,8 +509,8 @@ def prepare_task_def_async(build, settings, fake_build=False):
       builder_cfg = b
       break
   if not builder_cfg:
-    raise errors.InvalidInputError(
-        'Builder %r is not defined in bucket %r' % (builder_name, build.bucket))
+    raise errors.BuilderNotFoundError(
+        'Builder %r is not found in bucket %r' % (builder_name, build.bucket))
 
   build_number = None
   if builder_cfg.build_numbers:  # pragma: no branch
