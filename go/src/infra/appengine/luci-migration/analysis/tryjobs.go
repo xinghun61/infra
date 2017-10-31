@@ -88,7 +88,7 @@ func (t *Tryjobs) logDiff(c context.Context, d *diff) {
 	logGroups := func(category string, groups []*group) {
 		logging.Infof(c, "%d %s groups", len(groups), category)
 		for _, g := range groups {
-			logging.Errorf(
+			logging.Infof(
 				c,
 				"  group %q, buildbot %s, LUCI %s",
 				g.Key, timeRange(g.Buildbot), timeRange(g.LUCI))
@@ -344,7 +344,7 @@ loop:
 			result = append(result, &g.group)
 			if g.trustworthy() {
 				trustworthyGroups++
-				if trustworthyGroups > f.MaxGroups {
+				if trustworthyGroups >= f.MaxGroups {
 					break loop
 				}
 			}
@@ -371,7 +371,7 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 			strpair.Format(buildbucket.TagBuilder, f.Builder),
 			strpair.Format(buildbucket.TagBuildSet, g.Key))
 		req.CreationTsLow(buildbucket.FormatTimestamp(f.MinCreationDate))
-		req.Fields("builds(status, failure_reason, cancelation_reason, created_ts, started_ts, completed_ts, url)")
+		req.Fields("builds(status, result, failure_reason, cancelation_reason, created_ts, started_ts, completed_ts, url)")
 		var msgs []*bbapi.ApiCommonBuildMessage
 		msgs, *err = req.Fetch(0, nil)
 		if *err != nil {
@@ -386,7 +386,7 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 				return
 			}
 			dur, _ := b.RunDuration()
-			builds[len(msgs)-i-1] = &build{
+			builds[len(msgs)-1-i] = &build{
 				Status:         b.Status,
 				CreationTime:   b.CreationTime,
 				CompletionTime: b.CompletionTime,
