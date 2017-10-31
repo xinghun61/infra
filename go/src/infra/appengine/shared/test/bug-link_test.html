@@ -37,5 +37,18 @@
       done();
     });
 
+    test('compute bugName', function(done) {
+      element.bug = 'crbug/1234';
+      assert.equal('chromium', element._bugProject);
+
+      element.bug = 'https://bugs.chromium.org/p/monorail/issues/detail?id=1543';
+      assert.equal('monorail', element._bugProject);
+
+      element.bug = 'gerrit:10384';
+      assert.equal('gerrit', element._bugProject);
+
+      done();
+    });
+
   });
 </script>

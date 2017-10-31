@@ -10,7 +10,8 @@
         display: inline;
       }
     </style>
-    <a href$="http://crbug/[[_bugId]]">Bug [[_bugId]]</a>
+    <a href$="http://bugs.chromium.org/p/[[_bugProject]]/issues/detail?id=[[_bugId]]">
+      [[_bugProject]]:[[_bugId]]</a>
     <template is="dom-if" if="[[status]]">
       <p>([[status]])</p>
     </template>
@@ -29,6 +30,9 @@
 
     const bugIdRe = /[0-9]{3,}/;
     const bugRe = /([^0-9]*)?[0-9]{3,}([^0-9]*)?/;
+    const bugProjectUrlRe = /(\/p\/[a-z0-9][-a-z0-9]*[a-z0-9]\/)/i;
+    const bugProjectPairRe = /([a-z0-9][-a-z0-9]*[a-z0-9]:)/i;
+    const bugProjectNameRe = /[a-z0-9][-a-z0-9]*[a-z0-9]/i;
 
     /**
      * `<bug-link>` displays a link to a chromium bug.
@@ -45,12 +49,17 @@
 
       static get properties() {
         return {
-          /** A bug id or bug url. Required. */
+          /** A bug id, bug url, or a bug in the form of 'projectName:bugId' . Required. */
           bug: String,
           /** The bug id. */
           _bugId: {
             type: String,
             computed: '_computeBugId(bug)',
+          },
+          /** The bug's project name. */
+          _bugProject: {
+            type: String,
+            computed: '_computeBugProject(bug)',
           },
           /** The status of the bug, eg. 'Untriaged', 'Available'. Optional. */
           status: String,
@@ -70,6 +79,12 @@
 
       _computeBugId(bug) {
         return bugRe.test(bug) ? bugIdRe.exec(bug) : 'Unknown';
+      }
+
+      _computeBugProject(bug) {
+        let cleanBug = bug.replace(/http(s?):/i, "");
+        let projectSection = bugProjectUrlRe.exec(cleanBug) || bugProjectPairRe.exec(cleanBug);
+        return projectSection ? bugProjectNameRe.exec(projectSection)[0] : 'chromium';
       }
 
     }
