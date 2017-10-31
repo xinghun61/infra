@@ -36,11 +36,27 @@
       assert.equal(element._bug, '1nvalid');
       assert.isTrue(element.invalidBug);
       assert.equal('Unknown', element.bugId);
+      assert.equal('chromium', element.bugProject);
 
       element.shadowRoot.querySelector('paper-input').value = 'crbug/192800';
       assert.equal(element._bug, 'crbug/192800');
       assert.isFalse(element.invalidBug);
       assert.equal('192800', element.bugId);
+      assert.equal('chromium', element.bugProject);
+
+      element.shadowRoot.querySelector('paper-input').value = 'monorail:192800';
+      assert.equal(element._bug, 'monorail:192800');
+      assert.isFalse(element.invalidBug);
+      assert.equal('192800', element.bugId);
+      assert.equal('monorail', element.bugProject);
+
+      element.shadowRoot.querySelector('paper-input').value =
+         'https://bugs.chromium.org/p/gerrit/issues/detail?id=1543';
+      assert.equal(element._bug,
+          'https://bugs.chromium.org/p/gerrit/issues/detail?id=1543');
+      assert.isFalse(element.invalidBug);
+      assert.equal('1543', element.bugId);
+      assert.equal('gerrit', element.bugProject);
 
       done();
     });
