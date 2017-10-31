@@ -138,11 +138,14 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
             auto_revert_bug_query)
     message = textwrap.dedent("""
         Sheriffs, CL owner or CL reviewers:
-        Please approve and submit this revert if it is correct.
+        Please submit this revert if it is correct.
         If it is a false positive, please abandon and report it
         at %s.
         If failed to submit the revert, please abandon it and report the failure
-        at %s.""") % (false_positive_bug_link, auto_revert_bug_link)
+        at %s.
+
+        For more information about Findit auto-revert: %s.""") % (
+        false_positive_bug_link, auto_revert_bug_link, revert._MANUAL_LINK)
     mock_add.assert_called_once_with('54321', ['a@b.com'], message)
 
   @mock.patch.object(
@@ -533,11 +536,14 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
             auto_revert_bug_query)
     message = textwrap.dedent("""
         Sheriffs, CL owner or CL reviewers:
-        Please approve and submit this revert if it is correct.
+        Please submit this revert if it is correct.
         If it is a false positive, please abandon and report it
         at %s.
         If failed to submit the revert, please abandon it and report the failure
-        at %s.""") % (false_positive_bug_link, auto_revert_bug_link)
+        at %s.
+
+        For more information about Findit auto-revert: %s.""") % (
+        false_positive_bug_link, auto_revert_bug_link, revert._MANUAL_LINK)
     mock_add.assert_called_once_with('54321', ['a@b.com'], message)
 
   @mock.patch.object(
@@ -629,7 +635,10 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
         Sheriffs, CL owner or CL reviewers:
         Please confirm this revert if it is correct.
         If it is a false positive, please revert and report it
-        at %s.""") % bug_link
+        at %s.
+
+        For more information about Findit auto-revert: %s.""") % (
+        bug_link, revert._MANUAL_LINK)
     mock_add.assert_called_once_with(revert_change_id, ['a@b.com'], message)
 
   def testUpdateCulprit(self):

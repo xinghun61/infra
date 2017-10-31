@@ -42,6 +42,8 @@ _DEFAULT_AUTO_REVERT_DAILY_THRESHOLD = 10
 _DEFAULT_AUTO_COMMIT_DAILY_THRESHOLD = 4
 _DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS = 24
 
+_MANUAL_LINK = 'https://goo.gl/NPQkv6'
+
 
 @ndb.transactional
 def _UpdateCulprit(repo_name,
@@ -121,11 +123,14 @@ def _AddReviewers(revision, culprit_key, codereview, revert_change_id,
     # This should only be used when auto_commit is disabled.
     message = textwrap.dedent("""
         Sheriffs, CL owner or CL reviewers:
-        Please approve and submit this revert if it is correct.
+        Please submit this revert if it is correct.
         If it is a false positive, please abandon and report it
         at %s.
         If failed to submit the revert, please abandon it and report the failure
-        at %s.""") % (false_positive_bug_link, auto_revert_bug_link)
+        at %s.
+
+        For more information about Findit auto-revert: %s.""") % (
+        false_positive_bug_link, auto_revert_bug_link, _MANUAL_LINK)
   else:
     # Findit submits the revert successfully. Add sheriffs to confirm the
     # revert is correct.
@@ -133,7 +138,10 @@ def _AddReviewers(revision, culprit_key, codereview, revert_change_id,
         Sheriffs, CL owner or CL reviewers:
         Please confirm this revert if it is correct.
         If it is a false positive, please revert and report it
-        at %s.""") % false_positive_bug_link
+        at %s.
+
+        For more information about Findit auto-revert: %s.""") % (
+        false_positive_bug_link, _MANUAL_LINK)
 
   # Original CL owner and reviewers are already reviewers when creating the
   # revert, add sheriffs or Findit members to reviewers as well.
