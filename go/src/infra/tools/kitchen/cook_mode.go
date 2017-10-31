@@ -36,6 +36,7 @@ type cookMode interface {
 	addLogDogGlobalTags(tags map[string]string, props map[string]interface{}, env environ.Env) error
 
 	allowCustomGitAuth() bool
+	allowDevShell() bool
 }
 
 // readSwarmingEnv reads relevent data out of the environment.
@@ -85,6 +86,7 @@ func (m swarmingCookMode) addLogDogGlobalTags(tags map[string]string, props map[
 }
 
 func (m swarmingCookMode) allowCustomGitAuth() bool { return true }
+func (m swarmingCookMode) allowDevShell() bool      { return true }
 
 type buildBotCookMode struct{}
 
@@ -122,3 +124,4 @@ func (m buildBotCookMode) addLogDogGlobalTags(tags map[string]string, props map[
 }
 
 func (m buildBotCookMode) allowCustomGitAuth() bool { return false }
+func (m buildBotCookMode) allowDevShell() bool      { return false }

@@ -5,6 +5,7 @@ import argparse
 import json
 import os
 import shutil
+import socket
 import sys
 
 
@@ -41,6 +42,7 @@ def main():
   assert get_current_account() == 'recipe_acc', get_current_account()
   if os.environ.get('SWARMING_TASK_ID'):
     assert get_git_email() == 'recipe@example.com', get_git_email()
+    assert get_devshell_email() == 'recipe@example.com', get_devshell_email()
 
   with open(args.properties_file) as f:
     properties = json.load(f)
@@ -73,6 +75,28 @@ def get_git_email():
     if line.startswith('email = '):
       return line[len('email = '):]
   return None
+
+
+def get_devshell_email():
+  port = int(os.environ['DEVSHELL_CLIENT_PORT'])
+  sock = socket.socket()
+  sock.connect(('localhost', port))
+
+  data = '[]'
+  sock.sendall('%s\n%s' % (len(data), data))
+
+  header = sock.recv(6).decode()
+  assert '\n' in header
+  len_str, json_str = header.split('\n', 1)
+  to_read = int(len_str) - len(json_str)
+  if to_read > 0:
+    json_str += sock.recv(to_read)
+
+  pbl = json.loads(json_str)
+  assert isinstance(pbl, list)
+
+  pbl_len = len(pbl)
+  return pbl[0] if pbl_len > 0 else None
 
 
 if __name__ == '__main__':

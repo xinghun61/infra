@@ -5,6 +5,8 @@
 package main
 
 import (
+	"fmt"
+	"net"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -13,6 +15,7 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/auth"
+	"go.chromium.org/luci/common/devshell"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/system/environ"
@@ -76,6 +79,9 @@ type AuthContext struct {
 	// binary is in PATH.
 	EnableGitAuth bool
 
+	// EnableDevShell enables DevShell server instance used for authentication
+	EnableDevShell bool
+
 	// KnownGerritHosts is list of Gerrit hosts to force git authentication for.
 	//
 	// By default public hosts are accessed anonymously, and the anonymous access
@@ -85,10 +91,12 @@ type AuthContext struct {
 
 	ctx       context.Context  // stores modified LUCI_CONTEXT
 	exported  lucictx.Exported // exported LUCI_CONTEXT on disk
+	srv       *devshell.Server // DevShell server instance
 	anonymous bool             // true if not associated with any account
 	email     string           // an account email or "" for anonymous
 
-	gitHome string // custom HOME for git or "" if not using git auth
+	gitHome      string       // custom HOME for git or "" if not using git auth
+	devShellAddr *net.TCPAddr // address local DevShell instance is listening on
 }
 
 // Launch launches this auth context. It must be called before any other method.
@@ -107,7 +115,8 @@ func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
 	}
 
 	// Figure out what email is associated with this account (if any).
-	ac.email, err = ac.Authenticator([]string{auth.OAuthScopeEmail}).GetEmail()
+	authenticator := ac.Authenticator([]string{auth.OAuthScopeEmail})
+	ac.email, err = authenticator.GetEmail()
 	switch {
 	case err == auth.ErrLoginRequired:
 		// This context is not associated with any account. This happens when
@@ -128,6 +137,22 @@ func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
 		}
 	}
 
+	if ac.EnableDevShell && !ac.anonymous {
+		source, err := authenticator.TokenSource()
+		if err != nil {
+			return errors.Annotate(err, "failed to get token source for %q account", ac.ID).Err()
+		}
+		ac.srv = &devshell.Server{
+			Source: source,
+			Email:  ac.email,
+		}
+		addr, err := ac.srv.Start(ctx)
+		if err != nil {
+			return errors.Annotate(err, "failed to start the DevShell server").Err()
+		}
+		ac.devShellAddr = addr
+	}
+
 	return nil
 }
 
@@ -142,6 +167,12 @@ func (ac *AuthContext) Close() {
 		}
 	}
 
+	if ac.srv != nil {
+		if err := ac.srv.Stop(ac.ctx); err != nil {
+			logging.Errorf(ac.ctx, "Failed to stop DevShell server for %q account: %s", ac.ID, err)
+		}
+	}
+
 	if ac.exported != nil {
 		if err := ac.exported.Close(); err != nil {
 			logging.Errorf(ac.ctx, "Failed to delete exported LUCI_CONTEXT for %q account - %s", ac.ID, err)
@@ -150,9 +181,11 @@ func (ac *AuthContext) Close() {
 
 	ac.ctx = nil
 	ac.exported = nil
+	ac.srv = nil
 	ac.anonymous = false
 	ac.email = ""
 	ac.gitHome = ""
+	ac.devShellAddr = nil
 }
 
 // Authenticator returns an authenticator that can be used by Kitchen itself.
@@ -176,6 +209,12 @@ func (ac *AuthContext) ExportIntoEnv(env environ.Env) environ.Env {
 		env.Set("GIT_TERMINAL_PROMPT", "0")           // no interactive prompts
 		env.Set("GIT_CONFIG_NOSYSTEM", "1")           // no $(prefix)/etc/gitconfig
 		env.Set("INFRA_GIT_WRAPPER_HOME", ac.gitHome) // tell gitwrapper about the new HOME
+	}
+	if ac.EnableDevShell {
+		env.Set("BOTO_CONFIG", "") // disable any hardcoded tokens in gsutil
+		if ac.devShellAddr != nil {
+			env.Set(devshell.EnvKey, fmt.Sprintf("%d", ac.devShellAddr.Port)) // pass the DevShell port
+		}
 	}
 	return env
 }

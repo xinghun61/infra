@@ -76,7 +76,8 @@ type cookRun struct {
 // It is consumed exclusively by Kitchen and not even passed along to the recipe
 // engine.
 type kitchenProperties struct {
-	GitAuth bool `json:"git_auth"`
+	GitAuth  bool `json:"git_auth"`
+	DevShell bool `json:"devshell"`
 }
 
 // normalizeFlags validates and normalizes flags.
@@ -487,7 +488,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 
 	// Create systemAuth and recipeAuth authentication contexts, since we are
 	// about to start making authenticated requests now.
-	if err := c.setupAuth(ctx, c.kitchenProps.GitAuth); err != nil {
+	if err := c.setupAuth(ctx, c.kitchenProps.GitAuth, c.kitchenProps.DevShell); err != nil {
 		return fail(errors.Annotate(err, "failed to setup auth").Err())
 	}
 	defer c.recipeAuth.Close()
@@ -577,12 +578,18 @@ func (c *cookRun) reportProperties(ctx context.Context, realm string, props inte
 
 // setupAuth prepares systemAuth and recipeAuth contexts based on incoming
 // environment and command line flags.
-func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth bool) error {
+func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth bool, enableDevShell bool) error {
 	// Don't mess with git authentication in Buildbot mode, it won't work without
 	// proper LUCI_CONTEXT environment.
 	if enableGitAuth && !c.mode.allowCustomGitAuth() {
 		log.Warningf(ctx, "Git authentication is not supported in the current mode")
 		enableGitAuth = false
+	}
+
+	// The same for DevShell, don't use it in Buildbot mode.
+	if enableDevShell && !c.mode.allowDevShell() {
+		log.Warningf(ctx, "DevShell authentication is not supported in the current mode")
+		enableDevShell = false
 	}
 
 	// If we are explicitly given a system account JSON key, use it for Kitchen.
@@ -598,6 +605,7 @@ func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth bool) error {
 	systemAuth := &AuthContext{
 		ID:               "system",
 		EnableGitAuth:    enableGitAuth,
+		EnableDevShell:   enableDevShell,
 		KnownGerritHosts: c.KnownGerritHost,
 	}
 	switch {
@@ -632,6 +640,7 @@ func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth bool) error {
 		ID:               "task",
 		LocalAuth:        lucictx.GetLocalAuth(ctx),
 		EnableGitAuth:    enableGitAuth,
+		EnableDevShell:   enableDevShell,
 		KnownGerritHosts: c.KnownGerritHost,
 	}
 

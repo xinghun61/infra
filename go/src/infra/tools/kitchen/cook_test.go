@@ -124,6 +124,7 @@ func TestCook(t *testing.T) {
 					},
 					"$kitchen": map[string]interface{}{
 						"git_auth": true,
+						"devshell": true,
 					},
 				})
 				So(err, ShouldBeNil)
@@ -160,7 +161,8 @@ func TestCook(t *testing.T) {
 
 				// Check parsed kitchen own properties.
 				So(cook.kitchenProps, ShouldResemble, &kitchenProperties{
-					GitAuth: true,
+					GitAuth:  true,
+					DevShell: true,
 				})
 
 				// Check recipes.py input.
