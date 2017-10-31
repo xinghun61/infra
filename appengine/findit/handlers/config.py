@@ -263,6 +263,7 @@ def _ValidateCheckFlakeSettings(settings):
       and isinstance(
           settings.get('minimum_confidence_score_to_run_tryjobs'),
           (float, int)) and
+      isinstance(settings.get('create_monorail_bug'), bool) and
       isinstance(settings.get('update_monorail_bug'), bool) and
       isinstance(settings.get('minimum_confidence_to_update_cr'), (float, int)))
 

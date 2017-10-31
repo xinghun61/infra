@@ -154,6 +154,7 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
         'max_stable_in_a_row': 0,
     },
     'minimum_confidence_score_to_run_tryjobs': 0.6,
+    'create_monorail_bug': True,
     'update_monorail_bug': False
 }
 

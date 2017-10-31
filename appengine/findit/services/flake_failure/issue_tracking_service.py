@@ -8,7 +8,7 @@ import urllib
 import logging
 
 from google.appengine.api import app_identity
-
+from gae_libs import appengine_util
 from libs import time_util
 from monorail_api import IssueTrackerAPI
 from monorail_api import Issue
@@ -16,15 +16,25 @@ from monorail_api import Issue
 from waterfall.flake import flake_constants
 
 
+def IsBugFilingEnabledForAnalysis(analysis):
+  """Returns true if bug filing is enabled, false otherwise"""
+  return analysis.algorithm_parameters.get('create_monorail_bug', False)
+
+
 def ShouldFileBugForAnalysis(analysis):
   """Returns true if a bug should be filed for this analysis.
 
   Ths requirements for a bug to be filed.
+    - The bug creation feature if enabled.
     - The pipeline hasn't been attempted before (see above).
     - The analysis has sufficient confidence (1.0).
     - The analysis doesn't already have a bug associated with it.
     - A bug isn't open for the same test.
   """
+  if not IsBugFilingEnabledForAnalysis(analysis):
+    analysis.LogInfo('Bug creation feature disabled.')
+    return False
+
   if _HasPreviousAttempt(analysis):
     analysis.LogWarning(
         'There has already been an attempt at filing a bug, aborting.')
@@ -38,8 +48,7 @@ def ShouldFileBugForAnalysis(analysis):
 
   # Check if there's already a bug attached to this issue.
   if BugAlreadyExistsForId(analysis.bug_id):
-    analysis.LogInfo(
-        'Bug with id %d already exists.' % analysis.bug_id)
+    analysis.LogInfo('Bug with id %d already exists.' % analysis.bug_id)
     return False
 
   if BugAlreadyExistsForLabel(analysis.test_name):
@@ -77,7 +86,8 @@ def BugAlreadyExistsForId(bug_id):
   if bug_id is None:
     return False
 
-  issue_tracker_api = IssueTrackerAPI('chromium', use_staging=True)
+  issue_tracker_api = IssueTrackerAPI(
+      'chromium', use_staging=appengine_util.IsStaging())
   issue = TraverseMergedIssues(bug_id, issue_tracker_api)
 
   if issue is None:
@@ -90,7 +100,8 @@ def BugAlreadyExistsForLabel(test_name):
   """Returns True if the bug with the given label exists on monorail."""
   assert test_name
 
-  issue_tracker_api = IssueTrackerAPI('chromium', use_staging=True)
+  issue_tracker_api = IssueTrackerAPI(
+      'chromium', use_staging=appengine_util.IsStaging())
   issues = issue_tracker_api.getIssues('label:%s' % test_name)
   if issues is None:
     return False
@@ -118,10 +129,12 @@ def CreateBugForTest(test_name, subject, description):
       'description': description,
       'projectId': 'chromium',
       'labels': [test_name, 'Test-Findit-Analyzed', 'Sheriff-Chromium'],
-      'state': 'open'
+      'state': 'open',
+      'components': ['Tests>Flaky']
   })
 
-  issue_tracker_api = IssueTrackerAPI('chromium', use_staging=True)
+  issue_tracker_api = IssueTrackerAPI(
+      'chromium', use_staging=appengine_util.IsStaging())
   issue_tracker_api.create(issue)
   return issue.id
 

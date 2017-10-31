@@ -1,9 +1,10 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-
+import copy
 import mock
 import datetime
+
 from monorail_api import Issue
 from waterfall.test import wf_testcase
 from libs import time_util
@@ -11,10 +12,15 @@ from libs import time_util
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from services.flake_failure import issue_tracking_service
 from waterfall.flake import flake_constants
+from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
 
 class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
+  @mock.patch.object(
+      issue_tracking_service,
+      'IsBugFilingEnabledForAnalysis',
+      return_value=True)
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
   @mock.patch.object(
@@ -27,7 +33,7 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
   def testShouldFileBugForAnalysis(self, label_exists_fn, id_exists_fn,
                                    sufficient_confidence_fn,
-                                   previous_attempt_fn):
+                                   previous_attempt_fn, feature_enabled_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -43,7 +49,42 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(id_exists_fn.called)
     self.assertTrue(sufficient_confidence_fn.called)
     self.assertTrue(previous_attempt_fn.called)
+    self.assertTrue(feature_enabled_fn.called)
 
+  @mock.patch.object(
+      issue_tracking_service, '_HasPreviousAttempt', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service,
+      '_HasSufficientConfidenceInCulprit',
+      return_value=True)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service,
+      'IsBugFilingEnabledForAnalysis',
+      return_value=False)
+  def testShouldFileBugForAnalysisWhenFeatureDisabled(self, feature_enabled_fn,
+                                                      *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.bug_id = 1
+    analysis.Save()
+
+    self.assertFalse(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
+    self.assertTrue(feature_enabled_fn.called)
+
+  @mock.patch.object(
+      issue_tracking_service,
+      'IsBugFilingEnabledForAnalysis',
+      return_value=True)
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
   @mock.patch.object(
@@ -70,6 +111,10 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(id_exists_fn.called)
 
   @mock.patch.object(
+      issue_tracking_service,
+      'IsBugFilingEnabledForAnalysis',
+      return_value=True)
+  @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
   @mock.patch.object(
       issue_tracking_service,
@@ -93,6 +138,10 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
     self.assertTrue(label_exists_fn.called)
 
+  @mock.patch.object(
+      issue_tracking_service,
+      'IsBugFilingEnabledForAnalysis',
+      return_value=True)
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
   @mock.patch.object(
@@ -120,6 +169,10 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(confidence_fn.called)
 
   @mock.patch.object(
+      issue_tracking_service,
+      'IsBugFilingEnabledForAnalysis',
+      return_value=True)
+  @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
@@ -143,6 +196,25 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
     self.assertTrue(attempt_fn.called)
+
+  def testIsBugFilingEnabledForAnalysis(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.Save()
+
+    self.assertTrue(
+        issue_tracking_service.IsBugFilingEnabledForAnalysis(analysis))
+
+    analysis.algorithm_parameters['create_monorail_bug'] = False
+    self.assertFalse(
+        issue_tracking_service.IsBugFilingEnabledForAnalysis(analysis))
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime.datetime(2017, 1, 3))

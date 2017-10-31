@@ -141,7 +141,8 @@ class FinditConfig(VersionedConfig):
   #         'max_flake_in_a_row': 4,
   #         'max_stable_in_a_row': 0,
   #         'iterations_to_rerun': 100
-  #     }
+  #     },
+  #     'create_monorail_bug': True,
   #     'update_monorail_bug': False,
   #     'minimum_confidence_score_to_run_tryjobs': 0.6
   # }

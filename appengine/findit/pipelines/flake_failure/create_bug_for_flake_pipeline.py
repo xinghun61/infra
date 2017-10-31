@@ -76,3 +76,11 @@ class CreateBugForFlakePipeline(GeneratorPipeline):
     assert flake_analysis_request
     flake_analysis_request.Update(
         bug_reported_by=triggering_sources.FINDIT_PIPELINE, bug_id=bug_id)
+
+    # TODO(crbug.com/780110): Use customized field for querying for duplicates.
+
+    # TODO(crbug.com/780111): Limit the number of bugs filed per day.
+
+    # TODO(crbug.com/780112): Check if a test is disabled before filing.
+
+    # TODO(crbug.com/780113): Verify test is still flaky in recent build.
