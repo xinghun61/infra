@@ -72,10 +72,13 @@ _MOCK_REPO_TO_DEP_PATH = {
     'https://chromium.v8.git': 'src/v8',
 }
 
-_MOCK_FEATURES_CONFIG = {
+_MOCK_FEATURE_OPTIONS = {
     'TouchCrashedComponent': {
         'blacklist': ['Internals>Core'],
     },
+    'TouchCrashedDirectory': {
+        'blacklist': ['base'],
+    }
 }
 
 _MOCK_CONFIG = {
@@ -86,7 +89,7 @@ _MOCK_CONFIG = {
     'component_classifier': _MOCK_COMPONENT_CONFIG,
     'project_classifier': _MOCK_PROJECT_CONFIG,
     'repo_to_dep_path': _MOCK_REPO_TO_DEP_PATH,
-    'feature_options': _MOCK_FEATURES_CONFIG,
+    'feature_options': _MOCK_FEATURE_OPTIONS,
 }
 
 
@@ -340,7 +343,28 @@ class CrashConfigTest(TestCase):
   def testValidateFeatureOptions(self):
     """Tests ``_ValidateFeatureOptions`` function."""
     self.assertFalse(crash_config._ValidateFeatureOptions(None))
-    self.assertTrue(crash_config._ValidateFeatureOptions({}))
+    self.assertFalse(crash_config._ValidateFeatureOptions({}))
+    self.assertFalse(crash_config._ValidateFeatureOptions({
+        'TouchCrashedDirectory': []
+    }))
+    self.assertFalse(crash_config._ValidateFeatureOptions({
+        'TouchCrashedDirectory': {}
+    }))
+
+    self.assertFalse(crash_config._ValidateFeatureOptions({
+        'TouchCrashedDirectory': {'blacklist': []}
+    }))
+
+    self.assertFalse(crash_config._ValidateFeatureOptions({
+        'TouchCrashedDirectory': {'blacklist': []},
+        'TouchCrashedComponent': []
+    }))
+
+    self.assertFalse(crash_config._ValidateFeatureOptions({
+        'TouchCrashedDirectory': {'blacklist': []},
+        'TouchCrashedComponent': {}
+    }))
+    self.assertTrue(crash_config._ValidateFeatureOptions(_MOCK_FEATURE_OPTIONS))
 
   def testConfigurationDictIsValid(self):
     """Tests ``_ConfigurationDictIsValid`` function."""

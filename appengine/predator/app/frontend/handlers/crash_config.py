@@ -321,6 +321,22 @@ def _ValidateFeatureOptions(feature_options):
   if not isinstance(feature_options, dict):
     return False
 
+  touch_crashed_directory_options = feature_options.get('TouchCrashedDirectory')
+  if not isinstance(touch_crashed_directory_options, dict):
+    return False
+
+  directory_blacklist = touch_crashed_directory_options.get('blacklist')
+  if not isinstance(directory_blacklist, list):
+    return False
+
+  touch_crashed_component_options = feature_options.get('TouchCrashedComponent')
+  if not isinstance(touch_crashed_component_options, dict):
+    return False
+
+  component_blacklist = touch_crashed_component_options.get('blacklist')
+  if not isinstance(component_blacklist, list):
+    return False
+
   return True
 
 

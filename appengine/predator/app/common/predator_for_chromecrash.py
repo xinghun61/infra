@@ -74,8 +74,11 @@ class PredatorForChromeCrash(PredatorApp):  # pylint: disable=W0223
                                       top_frame_index_feature,
                                       touch_crashed_file_feature,
                                       file_path_idf_feature]),
-         TouchCrashedDirectoryFeature(),
-         TouchCrashedComponentFeature(self._component_classifier),
+         TouchCrashedDirectoryFeature(options=config.feature_options[
+             'TouchCrashedDirectory']),
+         TouchCrashedComponentFeature(
+             self._component_classifier,
+             options=config.feature_options['TouchCrashedComponent']),
          NumberOfTouchedFilesFeature()])
 
     self._predator = Predator(ChangelistClassifier(get_repository,

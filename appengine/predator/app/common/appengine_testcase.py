@@ -80,6 +80,14 @@ DEFAULT_CONFIG_DATA = {
             'others': '-2',
         },
         'top_n': 4
+    },
+    'feature_options': {
+        'TouchCrashedComponent': {
+            'blacklist': ['Internals>Core'],
+        },
+        'TouchCrashedDirectory': {
+            'blacklist': ['base'],
+        }
     }
 }
 
