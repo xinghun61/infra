@@ -9,6 +9,7 @@ import datetime
 import logging
 import time
 
+from businesslogic import work_env
 from framework import exceptions
 from framework import framework_constants
 from framework import framework_helpers
@@ -187,6 +188,8 @@ def convert_issue(cls, issue, mar, services):
         fieldValue=val,
         derived=fv.derived)
     field_values_list.append(new_fv)
+  with work_env.WorkEnv(mar, services) as we:
+    starred = we.IsIssueStarred(issue)
   resp = cls(
       kind='monorail#issue',
       id=issue.local_id,
@@ -194,8 +197,7 @@ def convert_issue(cls, issue, mar, services):
       summary=issue.summary,
       projectId=issue_project.project_name,
       stars=issue.star_count,
-      starred=services.issue_star.IsItemStarredBy(
-          mar.cnxn, issue.issue_id, mar.auth.user_id),
+      starred=starred,
       status=issue.status,
       state=(api_pb2_v1.IssueState.open if
              tracker_helpers.MeansOpenInProject(

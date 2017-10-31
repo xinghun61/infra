@@ -134,61 +134,58 @@ class IssueDetail(issuepeek.IssuePeek):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
-    with mr.profiler.Phase('getting project issue config'):
-      config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-
-    if mr.local_id is None:
-      return self._GetMissingIssuePageData(mr, issue_not_specified=True)
     with work_env.WorkEnv(mr, self.services) as we:
+      config = we.GetProjectConfig(mr.project_id)
+
+      if mr.local_id is None:
+        return self._GetMissingIssuePageData(mr, issue_not_specified=True)
       try:
         issue = we.GetIssueByLocalID(
             mr.project_id, mr.local_id, use_cache=False)
       except issue_svc.NoSuchIssueException:
         issue = None
 
-    # Show explanation of skipped issue local IDs or deleted issues.
-    if issue is None or issue.deleted:
-      missing = mr.local_id <= self.services.issue.GetHighestLocalID(
-          mr.cnxn, mr.project_id)
-      if missing or (issue and issue.deleted):
-        moved_to_ref = self.services.issue.GetCurrentLocationOfMovedIssue(
-            mr.cnxn, mr.project_id, mr.local_id)
-        moved_to_project_id, moved_to_id = moved_to_ref
-        if moved_to_project_id is not None:
-          moved_to_project = self.services.project.GetProject(
-              mr.cnxn, moved_to_project_id)
-          moved_to_project_name = moved_to_project.project_name
-        else:
-          moved_to_project_name = None
+      # Show explanation of skipped issue local IDs or deleted issues.
+      if issue is None or issue.deleted:
+        missing = mr.local_id <= self.services.issue.GetHighestLocalID(
+            mr.cnxn, mr.project_id)
+        if missing or (issue and issue.deleted):
+          moved_to_ref = self.services.issue.GetCurrentLocationOfMovedIssue(
+              mr.cnxn, mr.project_id, mr.local_id)
+          moved_to_project_id, moved_to_id = moved_to_ref
+          if moved_to_project_id is not None:
+            moved_to_project = we.GetProject(moved_to_project_id)
+            moved_to_project_name = moved_to_project.project_name
+          else:
+            moved_to_project_name = None
 
-        if issue:
-          granted_perms = tracker_bizobj.GetGrantedPerms(
-              issue, mr.auth.effective_ids, config)
+          if issue:
+            granted_perms = tracker_bizobj.GetGrantedPerms(
+                issue, mr.auth.effective_ids, config)
+          else:
+            granted_perms = None
+          page_perms = self.MakePagePerms(
+              mr, issue,
+              permissions.DELETE_ISSUE, permissions.CREATE_ISSUE,
+              granted_perms=granted_perms)
+          return self._GetMissingIssuePageData(
+              mr,
+              issue_deleted=ezt.boolean(issue is not None),
+              issue_missing=ezt.boolean(issue is None and missing),
+              moved_to_project_name=moved_to_project_name,
+              moved_to_id=moved_to_id,
+              local_id=mr.local_id,
+              page_perms=page_perms,
+              delete_form_token=xsrf.GenerateToken(
+                  mr.auth.user_id, '/p/%s%s.do' % (
+                      mr.project_name, urls.ISSUE_DELETE_JSON)))
         else:
-          granted_perms = None
-        page_perms = self.MakePagePerms(
-            mr, issue,
-            permissions.DELETE_ISSUE, permissions.CREATE_ISSUE,
-            granted_perms=granted_perms)
-        return self._GetMissingIssuePageData(
-            mr,
-            issue_deleted=ezt.boolean(issue is not None),
-            issue_missing=ezt.boolean(issue is None and missing),
-            moved_to_project_name=moved_to_project_name,
-            moved_to_id=moved_to_id,
-            local_id=mr.local_id,
-            page_perms=page_perms,
-            delete_form_token=xsrf.GenerateToken(
-                mr.auth.user_id, '/p/%s%s.do' % (
-                    mr.project_name, urls.ISSUE_DELETE_JSON)))
-      else:
-        # Issue is not "missing," moved, or deleted, it is just non-existent.
-        return self._GetMissingIssuePageData(mr, issue_not_created=True)
+          # Issue is not "missing," moved, or deleted, it is just non-existent.
+          return self._GetMissingIssuePageData(mr, issue_not_created=True)
 
-    star_cnxn = sql.MonorailConnection()
-    star_promise = framework_helpers.Promise(
-        self.services.issue_star.IsItemStarredBy, star_cnxn,
-        issue.issue_id, mr.auth.user_id)
+      star_cnxn = sql.MonorailConnection()
+      star_promise = framework_helpers.Promise(
+          we.IsIssueStarred, issue, cnxn=star_cnxn)
 
     granted_perms = tracker_bizobj.GetGrantedPerms(
         issue, mr.auth.effective_ids, config)
@@ -1095,13 +1092,10 @@ class SetStarForm(jsonfeed.JsonFeed):
     Returns:
       Dict of values used by EZT for rendering the page.
     """
-    # Because we will modify issues, load from DB rather than cache.
-    issue = self.services.issue.GetIssueByLocalID(
-        mr.cnxn, mr.project_id, mr.local_id, use_cache=False)
-    config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-    self.services.issue_star.SetStar(
-        mr.cnxn, self.services, config, issue.issue_id, mr.auth.user_id,
-        mr.starred)
+    with work_env.WorkEnv(mr, self.services) as we:
+      # Because we will modify issues, load from DB rather than cache.
+      issue = we.GetIssueByLocalID(mr.project_id, mr.local_id, use_cache=False)
+      we.StarIssue(issue, mr.starred)
 
     return {
         'starred': bool(mr.starred),

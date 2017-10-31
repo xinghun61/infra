@@ -434,9 +434,30 @@ class WorkEnv(object):
           self.mr.cnxn, issue, comment, self.mr.auth.user_id,
           self.services.user, delete=delete)
 
-  # FUTURE: StarIssue()
-  # FUTURE: IsIssueStarred()
-  # FUTURE: ListStarredIssues()
+  def StarIssue(self, viewable_issue, starred):
+    """Set or clear a star on the given issue for the signed in user."""
+    if not self.mr.auth.user_id:
+      raise exceptions.InputException('Anon cannot star issues')
+
+    with self.mr.profiler.Phase('starring issue %r' % viewable_issue.issue_id):
+      config = self.services.config.GetProjectConfig(
+          self.mr.cnxn, viewable_issue.project_id)
+      self.services.issue_star.SetStar(
+          self.mr.cnxn, self.services, config, viewable_issue.issue_id,
+          self.mr.auth.user_id, starred)
+
+  def IsIssueStarred(self, viewable_issue, cnxn=None):
+    """Return True if the given issue is starred by the signed in user."""
+    with self.mr.profiler.Phase('checking star %r' % viewable_issue.issue_id):
+      return self.services.issue_star.IsItemStarredBy(
+          cnxn or self.mr.cnxn, viewable_issue.issue_id, self.mr.auth.user_id)
+
+  def ListStarredIssueIDs(self):
+    """Return a list of the issue IDs that the current issue has starred."""
+    with self.mr.profiler.Phase('getting stars %r' % self.mr.auth.user_id):
+      return self.services.issue_star.LookupStarredItemIDs(
+          self.mr.cnxn, self.mr.auth.user_id)
+
 
   ### User methods
 

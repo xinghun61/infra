@@ -75,16 +75,14 @@ class IssuePeek(servlet.Servlet):
       issue = we.GetIssueByLocalID(
           mr.project_id, mr.local_id, use_cache=False)
 
-    # We give no explanation of missing issues on the peek page.
-    if issue.deleted:
-      self.abort(404, 'issue not found')
+      # We give no explanation of missing issues on the peek page.
+      if issue.deleted:
+        self.abort(404, 'issue not found')
 
-    star_cnxn = sql.MonorailConnection()
-    star_promise = framework_helpers.Promise(
-        self.services.issue_star.IsItemStarredBy, star_cnxn,
-        issue.issue_id, mr.auth.user_id)
+      star_cnxn = sql.MonorailConnection()
+      star_promise = framework_helpers.Promise(
+          we.IsIssueStarred, issue, cnxn=star_cnxn)
 
-    with work_env.WorkEnv(mr, self.services) as we:
       config = we.GetProjectConfig(mr.project_id)
       comments = we.GetCommentsForIssue(mr.cnxn, issue.issue_id)
 

@@ -588,10 +588,15 @@ class IssueStarService(AbstractStarService):
 
   # pylint: disable=arguments-differ
   def SetStar(
-      self, cnxn, _service, _config, issue_id, starrer_user_id,
+      self, cnxn, services, _config, issue_id, starrer_user_id,
       starred):
     super(IssueStarService, self).SetStar(
         cnxn, issue_id, starrer_user_id, starred)
+    try:
+      issue = services.issue.GetIssue(cnxn, issue_id)
+      issue.star_count += (1 if starred else -1)
+    except issue_svc.NoSuchIssueException:
+      pass
 
   # pylint: disable=arguments-differ
   def SetStarsBatch(

@@ -55,32 +55,27 @@ class IssueList(servlet.Servlet):
     """
     search_error_message = ''
 
-    # Check if the user's query is just the ID of an existing issue.
-    # TODO(jrobbins): consider implementing this for cross-project search.
-    if mr.project and tracker_constants.JUMP_RE.match(mr.query):
-      local_id = int(mr.query)
-      try:
-        _issue = self.services.issue.GetIssueByLocalID(
-            mr.cnxn, mr.project_id, local_id)  # does it exist?
-        url = framework_helpers.FormatAbsoluteURL(
-            mr, urls.ISSUE_DETAIL, id=local_id)
-        self.redirect(url, abort=True)  # Jump to specified issue.
-      except issue_svc.NoSuchIssueException:
-        pass  # The user is searching for a number that is not an issue ID.
-
-    with mr.profiler.Phase('finishing config work'):
-      if mr.project_id:
-        config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
-      else:
-        config = tracker_bizobj.MakeDefaultProjectIssueConfig(None)
-
     with work_env.WorkEnv(mr, self.services) as we:
-      pipeline = we.ListIssues()
+      # Check if the user's query is just the ID of an existing issue.
+      # TODO(jrobbins): consider implementing this for cross-project search.
+      if mr.project and tracker_constants.JUMP_RE.match(mr.query):
+        local_id = int(mr.query)
+        try:
+          we.GetIssueByLocalID(mr.project_id, local_id)  # does it exist?
+          url = framework_helpers.FormatAbsoluteURL(
+              mr, urls.ISSUE_DETAIL, id=local_id)
+          self.redirect(url, abort=True)  # Jump to specified issue.
+        except issue_svc.NoSuchIssueException:
+          pass  # The user is searching for a number that is not an issue ID.
 
-    # Perform promises that require authentication information.
-    with mr.profiler.Phase('getting stars'):
-      starred_iid_set = _GetStarredIssues(
-          mr.cnxn, mr.auth.user_id, self.services)
+      with mr.profiler.Phase('finishing config work'):
+        if mr.project_id:
+          config = we.GetProjectConfig(mr.project_id)
+        else:
+          config = tracker_bizobj.MakeDefaultProjectIssueConfig(None)
+
+      pipeline = we.ListIssues()
+      starred_iid_set = set(we.ListStarredIssueIDs())
 
     with mr.profiler.Phase('computing col_spec'):
       mr.ComputeColSpec(config)
@@ -314,13 +309,6 @@ def _MakeTableData(
         art.project_name, urls.ISSUE_DETAIL, id=art.local_id)
 
   return table_data
-
-
-def _GetStarredIssues(cnxn, logged_in_user_id, services):
-  """Get the set of issues that the logged in user has starred."""
-  starred_iids = services.issue_star.LookupStarredItemIDs(
-      cnxn, logged_in_user_id)
-  return set(starred_iids)
 
 
 def _ShouldPreviewOnHover(user):

@@ -351,7 +351,7 @@ class IssueBulkEditTest(unittest.TestCase):
     merge_into_issue.project_name = 'proj'
     merge_into_issue.cc_ids = [113L, 120L]
     self.services.issue_star.SetStar(
-        mr.cnxn, None, None, merge_into_issue.issue_id, 120L, True)
+        mr.cnxn, self.services, None, merge_into_issue.issue_id, 120L, True)
 
     # Add project_name, CCs and starrers to the source issues.
     # Issue 1
@@ -360,16 +360,16 @@ class IssueBulkEditTest(unittest.TestCase):
     issue_1.project_name = 'proj'
     issue_1.cc_ids = [113L, 114L]
     self.services.issue_star.SetStar(
-        mr.cnxn, None, None, issue_1.issue_id, 113L, True)
+        mr.cnxn, self.services, None, issue_1.issue_id, 113L, True)
     # Issue 2
     issue_2 = self.services.issue.GetIssueByLocalID(
         mr.cnxn, self.project.project_id, local_id_2)
     issue_2.project_name = 'proj'
     issue_2.cc_ids = [113L, 115L, 118L]
     self.services.issue_star.SetStar(
-        mr.cnxn, None, None, issue_2.issue_id, 114L, True)
+        mr.cnxn, self.services, None, issue_2.issue_id, 114L, True)
     self.services.issue_star.SetStar(
-        mr.cnxn, None, None, issue_2.issue_id, 115L, True)
+        mr.cnxn, self.services, None, issue_2.issue_id, 115L, True)
 
     self.servlet.ProcessFormData(mr, post_data)
 

@@ -348,9 +348,85 @@ class WorkEnvTest(unittest.TestCase):
       we.DeleteComment(issue, comment, False)
       self.assertEqual(None, comment.deleted_by)
 
-  # FUTURE: StarIssue()
-  # FUTURE: IsIssueStarred()
-  # FUTURE: ListStarredIssues()
+  def testStarIssue_Normal(self):
+    """We can star and unstar issues."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    self.SignIn(user_id=111L)
+
+    with self.work_env as we:
+      we.StarIssue(issue, True)
+      self.assertEqual(1, issue.star_count)
+      we.StarIssue(issue, False)
+      self.assertEqual(0, issue.star_count)
+
+  def testStarIssue_Anon(self):
+    """A signed out user cannot star or unstar issues."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    # Don't sign in.
+
+    with self.assertRaises(exceptions.InputException):
+      with self.work_env as we:
+        we.StarIssue(issue, True)
+
+  def testIsIssueStarred_Normal(self):
+    """We can check if the current user starred an issue or not."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    self.SignIn(user_id=111L)
+
+    with self.work_env as we:
+      self.assertFalse(we.IsIssueStarred(issue))
+      we.StarIssue(issue, True)
+      self.assertTrue(we.IsIssueStarred(issue))
+      we.StarIssue(issue, False)
+      self.assertFalse(we.IsIssueStarred(issue))
+
+  def testIsIssueStarred_Anon(self):
+    """A signed out user has never starred anything."""
+    issue = fake.MakeTestIssue(789, 1, 'sum', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue)
+    # Don't sign in.
+
+    with self.work_env as we:
+      self.assertFalse(we.IsIssueStarred(issue))
+
+  def testListStarredIssueIDs_Anon(self):
+    """A signed out users has no starred issues."""
+    # Don't sign in.
+    with self.work_env as we:
+      self.assertEqual([], we.ListStarredIssueIDs())
+
+  def testListStarredIssueIDs_Normal(self):
+    """We can get the list of issues starred by a user."""
+    issue1 = fake.MakeTestIssue(789, 1, 'sum1', 'New', 111L, issue_id=78901)
+    self.services.issue.TestAddIssue(issue1)
+    issue2 = fake.MakeTestIssue(789, 2, 'sum2', 'New', 111L, issue_id=78902)
+    self.services.issue.TestAddIssue(issue2)
+
+    self.SignIn(user_id=111L)
+    with self.work_env as we:
+      # User has not starred anything yet.
+      self.assertEqual([], we.ListStarredIssueIDs())
+
+      # Now, star a couple of issues.
+      we.StarIssue(issue1, True)
+      we.StarIssue(issue2, True)
+      self.assertItemsEqual(
+          [issue1.issue_id, issue2.issue_id],
+          we.ListStarredIssueIDs())
+
+    # Check that there is no cross-talk between users.
+    self.SignIn(user_id=222L)
+    with self.work_env as we:
+      # User has not starred anything yet.
+      self.assertEqual([], we.ListStarredIssueIDs())
+
+      # Now, star an issue as that other user.
+      we.StarIssue(issue1, True)
+      self.assertEqual([issue1.issue_id], we.ListStarredIssueIDs())
+
 
   # FUTURE: GetUser()
   # FUTURE: UpdateUser()

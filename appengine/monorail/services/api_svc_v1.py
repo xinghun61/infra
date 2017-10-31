@@ -704,10 +704,7 @@ class MonorailApi(remote.Service):
               request.blockedOn, mar, self._services),
           blocking=api_pb2_v1_helpers.convert_issueref_pbs(
               request.blocking, mar, self._services))
-
-      self._services.issue_star.SetStar(
-          mar.cnxn, self._services, mar.config, new_issue.issue_id,
-          mar.auth.user_id, True)
+      we.StarIssue(new_issue, True)
 
       if request.sendEmail:
         notify.PrepareAndSendIssueChangeNotification(

@@ -295,8 +295,7 @@ class IssueEntry(servlet.Servlet):
               blocking=parsed.blocking.iids, attachments=parsed.attachments)
 
           if has_star:
-            self.services.issue_star.SetStar(
-              mr.cnxn, self.services, config, issue.issue_id, reporter_id, True)
+            we.StarIssue(issue, True)
 
           if hotlist_pbs:
             hotlist_ids = {hotlist.hotlist_id for hotlist in hotlist_pbs}

@@ -11,6 +11,7 @@ import unittest
 
 from framework import framework_constants
 from framework import permissions
+from framework import profiler
 from services import api_pb2_v1_helpers
 from services import service_manager
 from proto import api_pb2_v1
@@ -209,6 +210,7 @@ class ApiV1HelpersTest(unittest.TestCase):
     mar.project_id = 12345
     mar.auth.effective_ids = {111L}
     mar.perms = permissions.EMPTY_PERMISSIONSET
+    mar.profiler = profiler.Profiler()
 
     now = 1472067725
     now_dt = datetime.datetime.fromtimestamp(now)
