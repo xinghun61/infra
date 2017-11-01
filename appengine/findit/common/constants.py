@@ -57,11 +57,18 @@ HTML_TEMPLATE_DIR = os.path.realpath(
 DEFAULT_SERVICE_ACCOUNT = 'findit-for-me@appspot.gserviceaccount.com'
 
 # TODO(chanli@): Move emails to config or other locations and avoid hard coding.
-# List of emails of auto rollers.
-AUTO_ROLLER_EMAILS = [  # yapf: disable
-    'skia-deps-roller@chromium.org',
+# List of accounts like DEPS rollers that auto-commit code.
+AUTO_COMMIT_ACCOUNTS = [  # yapf: disable
+    'angle-deps-roller@chromium.org',
+    'blink-w3c-test-autoroller@chromium.org',
     'catapult-deps-roller@chromium.org',
+    'chrome-release-bot@chromium.org',
+    'chromeos-commit-bot@chromium.org',
+    'depot-tools-roller@chromium.org',
+    'ios-autoroll@chromium.org',
     'pdfium-deps-roller@chromium.org',
+    'src-internal-roller@chromium.org',
+    'skia-deps-roller@chromium.org',
     'v8-autoroll@chromium.org',
-    'ios-autoroll@chromium.org'
+    'webrtc-autoroll@chromium.org',
 ]

@@ -388,9 +388,9 @@ def _GetDailyNumberOfCommits(limit):
       WfSuspectedCL.revert_committed_time >= earliest_time).count(limit)
 
 
-def _CulpritIsDEPSAutoRoll(culprit_info):
+def _CulpritWasAutoCommitted(culprit_info):
   author_email = culprit_info['author']['email']
-  return author_email in constants.AUTO_ROLLER_EMAILS
+  return author_email in constants.AUTO_COMMIT_ACCOUNTS
 
 
 def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
@@ -433,7 +433,7 @@ def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
 
   # Checks if the culprit is an DEPS autoroll by checking the author's email.
   # If it is, bail out of auto commit for now.
-  if _CulpritIsDEPSAutoRoll(culprit_info):
+  if _CulpritWasAutoCommitted(culprit_info):
     return False
 
   culprit_change_id = culprit_info['review_change_id']
