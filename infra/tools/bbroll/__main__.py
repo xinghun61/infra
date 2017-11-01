@@ -337,7 +337,7 @@ def roll_canary(args):
 
   # Read changes.
   changes = pin.get_changes(cur_rev, new_rev)
-  if not changes:
+  if changes is None:
     print 'no changes detected between %s and %s' % (cur_rev, new_rev)
     return 1
 
