@@ -16,6 +16,7 @@ class TestGit(unittest.TestCase):
 
   @classmethod
   def setUpClass(cls):
+    cls._orig_environ = os.environ.copy()
     cls._cipd_package = os.environ['GIT_TEST_CIPD_PACKAGE']
     cls._is_windows = os.name == 'nt'
     cls._exe_suffix = '.exe' if cls._is_windows else ''
@@ -37,6 +38,14 @@ class TestGit(unittest.TestCase):
   def setUp(self):
     self.workdir = tempfile.mkdtemp(dir=self.tdir) 
 
+    # Clear PATH so we don't pick up other Git instances when doing relative
+    # path tests.
+    os.environ = self._orig_environ.copy()
+    os.environ['PATH'] = ''
+
+  def tearDown(self):
+    os.environ = self._orig_environ
+
   def test_version_from_relpath(self):
     rv = subprocess.call(['git', 'version'],
         cwd=self.bin_dir, shell=self._is_windows)
@@ -57,12 +66,11 @@ class TestGit(unittest.TestCase):
     self.assertEqual(rv, 0)
 
   def test_clone_from_indirect_path(self):
-    env = os.environ.copy()
     dst = os.path.join(self.workdir, 'repo')
-    env['PATH'] = '%s%s%s' % (self.bin_dir, os.pathsep, env.get('PATH', ''))
+    os.environ['PATH'] = self.bin_dir
 
     rv = subprocess.call(['git', 'clone', self.HTTPS_REPO_URL, dst],
-                         cwd=self.tdir, env=env, shell=self._is_windows)
+                         cwd=self.tdir, shell=self._is_windows)
     self.assertEqual(rv, 0)
 
   def _setup_test_repo(self, git, path):
