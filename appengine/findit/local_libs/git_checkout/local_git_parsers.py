@@ -329,7 +329,14 @@ class GitChangeLogsParser(GitParser):
         if not changelog_str:
           continue
 
-        change_log = git_changelog_parser(changelog_str, repo_url)
+        try:
+          change_log = git_changelog_parser(changelog_str, repo_url)
+        except Exception:  # pragma: no cover
+          # Skip those mal-formatted changelogs.
+          # TODO(katesonia): Investigate those mal-formatted changelog strings,
+          # for example in infra repo, and fix git_changelog_parser for them.
+          change_log = None
+
         if change_log:
           changelogs.append(change_log)
         changelog_str = ''
