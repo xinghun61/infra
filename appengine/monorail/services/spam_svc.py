@@ -11,7 +11,6 @@ import httplib2
 import logging
 import settings
 import sys
-import settings
 
 from collections import defaultdict
 from features import filterrules_helpers
@@ -32,6 +31,7 @@ REASON_MANUAL = 'manual'
 REASON_THRESHOLD = 'threshold'
 REASON_CLASSIFIER = 'classifier'
 REASON_FAIL_OPEN = 'fail_open'
+SPAM_CLASS_LABEL = '1'
 
 SPAMREPORT_ISSUE_COLS = ['issue_id', 'reported_user_id', 'user_id']
 MANUALVERDICT_ISSUE_COLS = ['user_id', 'issue_id', 'is_spam', 'reason',
@@ -54,9 +54,9 @@ class SpamService(object):
       'monorail/spam_svc/comment',
       'Count of things that happen to comments.',
       [ts_mon.StringField('type')])
-  prediction_api_failures = ts_mon.CounterMetric(
-      'mononrail/spam_svc/prediction_api_failure',
-      'Failures calling the prediction API',
+  ml_engine_failures = ts_mon.CounterMetric(
+      'monorail/spam_svc/ml_engine_failure',
+      'Failures calling the ML Engine API',
       None)
 
   def __init__(self):
@@ -64,14 +64,14 @@ class SpamService(object):
     self.verdict_tbl = sql.SQLTableManager(SPAMVERDICT_TABLE_NAME)
     self.issue_tbl = sql.SQLTableManager(ISSUE_TABLE)
 
-    self.prediction_service = None
+    self.ml_engine = None
     try:
       credentials = GoogleCredentials.get_application_default()
-      self.prediction_service = build('prediction', 'v1.6',
-                                      http=httplib2.Http(),
-                                      credentials=credentials)
+      self.ml_engine = build('ml', 'v1',
+                             http=httplib2.Http(),
+                             credentials=credentials)
     except (Oauth2ClientError, ApiClientError):
-      logging.error("Error getting GoogleCredentials: %s" % sys.exc_info()[0])
+      logging.error("Error setting up ML Engine API: %s" % sys.exc_info()[0])
 
   def LookupIssueFlaggers(self, cnxn, issue_id):
     """Returns users who've reported the issue or its comments as spam.
@@ -281,11 +281,37 @@ class SpamService(object):
     if is_spam:
       self.comment_actions.increment({'type': 'classifier'})
 
-  def _predict(self, body):
-    return self.prediction_service.trainedmodels().predict(
-        project=settings.classifier_project_id,
-        id=settings.classifier_model_id,
-        body=body).execute()
+  def _predict(self, instance):
+    """Requests a prediction from the ML Engine API.
+
+    Sample API response:
+      {'predictions': [{
+        'classes': ['0', '1'],
+        'scores': [0.4986788034439087, 0.5013211965560913]
+      }]}
+
+    This hits the default model.
+
+    Returns:
+      A floating point number representing the confidence
+      the instance is spam.
+    """
+    model_name = 'projects/%s/models/spam' % settings.classifier_project_id
+    body = {'instances': [instance]}
+    request = self.ml_engine.projects().predict(name=model_name, body=body)
+    response = request.execute()
+    logging.info('ML Engine API response: %r' % response)
+    prediction = response['predictions'][0]
+
+    # Ensure the class confidence we return is for the spam, not the ham label.
+    # The spam label, '1', is usually at index 1 but I'm not sure of any
+    # guarantees around label order.
+    if prediction['classes'][1] == SPAM_CLASS_LABEL:
+      return prediction['scores'][1]
+    elif prediction['classes'][0] == SPAM_CLASS_LABEL:
+      return prediction['scores'][0]
+    else:
+      raise Exception('No predicted classes found.')
 
   def _IsExempt(self, author, is_project_member):
     """Return True if the user is exempt from spam checking."""
@@ -314,42 +340,11 @@ class SpamService(object):
       is_project_member: True if reporter is a member of issue's project.
 
     Returns a JSON dict of classifier prediction results from
-    the Cloud Prediction API.
+    the ML Engine API.
     """
-    # Fail-safe: not spam.
-    result = {'outputLabel': 'ham',
-              'outputMulti': [{'label':'ham', 'score': '1.0'}],
-              'failed_open': False}
-
-    if self._IsExempt(reporter, is_project_member):
-      return result
-
-    if not self.prediction_service:
-      logging.error("prediction_service not initialized.")
-      return result
-
-    features = spam_helpers.GenerateFeatures(issue.summary,
-        firstComment.content, settings.spam_feature_hashes)
-
-    remaining_retries = 3
-    while remaining_retries > 0:
-      try:
-        result = self._predict(
-             {
-               'input': {
-                 'csvInstance': features,
-               }
-             }
-           )
-        result['failed_open'] = False
-        return result
-      except Exception as ex:
-        remaining_retries = remaining_retries - 1
-        self.prediction_api_failures.increment()
-        logging.error('Error calling prediction API: %s' % ex)
-
-      result['failed_open'] = True
-    return result
+    instance = spam_helpers.GenerateFeaturesRaw(issue.summary,
+      firstComment.content, settings.spam_feature_hashes)
+    return self._classify(instance, reporter, is_project_member)
 
   def ClassifyComment(self, comment_content, commenter, is_project_member=True):
     """Classify a comment as either spam or ham.
@@ -359,41 +354,37 @@ class SpamService(object):
       commenter: User PB for the user who authored the comment.
 
     Returns a JSON dict of classifier prediction results from
-    the Cloud Prediction API.
+    the ML Engine API.
     """
+    instance = spam_helpers.GenerateFeaturesRaw('', comment_content,
+      settings.spam_feature_hashes)
+    return self._classify(instance, commenter, is_project_member)
+
+
+  def _classify(self, instance, author, is_project_member):
     # Fail-safe: not spam.
-    result = {'outputLabel': 'ham',
-              'outputMulti': [{'label':'ham', 'score': '1.0'}],
+    result = {'confidence_is_spam': 0.0,
               'failed_open': False}
 
-    if self._IsExempt(commenter, is_project_member):
+    if self._IsExempt(author, is_project_member):
       return result
 
-    if not self.prediction_service:
-      logging.error("prediction_service not initialized.")
-      self.prediction_api_failures.increment()
+    if not self.ml_engine:
+      logging.error("ML Engine not initialized.")
+      self.ml_engine_failures.increment()
       result['failed_open'] = True
       return result
-
-    features = spam_helpers.GenerateFeatures('', comment_content,
-        settings.spam_feature_hashes)
 
     remaining_retries = 3
     while remaining_retries > 0:
       try:
-        result = self._predict(
-             {
-               'input': {
-                 'csvInstance': features,
-               }
-             }
-           )
+        result['confidence_is_spam'] = self._predict(instance)
         result['failed_open'] = False
         return result
       except Exception as ex:
         remaining_retries = remaining_retries - 1
-        self.prediction_api_failures.increment()
-        logging.error('Error calling prediction API: %s' % ex)
+        self.ml_engine_failures.increment()
+        logging.error('Error calling ML Engine API: %s' % ex)
 
       result['failed_open'] = True
     return result

@@ -520,22 +520,15 @@ class IssueService(object):
     is_project_member = framework_bizobj.UserIsInProject(project, effective_ids)
     classification = services.spam.ClassifyIssue(
         issue, comment, reporter, is_project_member)
-    label = classification['outputLabel']
-    logging.info('issue/comment classification: %s' % classification)
-    score = 0
-    for output in classification['outputMulti']:
-      if output['label'] == label:
-        score = float(output['score'])
 
-    self.spam_labels.increment({'type': label})
-
-    if label == 'spam' and score > settings.classifier_spam_thresh:
-      # Must be negative so as not to use up actual local_ids.
-      # This can be fixed later if a human declares it to be ham.
+    if classification['confidence_is_spam'] > settings.classifier_spam_thresh:
       issue.is_spam = True
-      logging.info('classified new issue as spam')
+      predicted_label = 'spam'
     else:
-      logging.info('classified new issue as ham')
+      predicted_label = 'ham'
+
+    logging.info('classified new issue as %s' % predicted_label)
+    self.spam_labels.increment({'type': predicted_label})
 
     issue.local_id = self.AllocateNextLocalID(cnxn, project_id)
     issue_id = self.InsertIssue(cnxn, issue)
@@ -543,8 +536,17 @@ class IssueService(object):
     self.InsertComment(cnxn, comment)
 
     issue.issue_id = issue_id
+
+    # ClassifyIssue only returns confidence_is_spam, but
+    # RecordClassifierIssueVerdict records confidence of
+    # ham or spam. Therefore if ham, invert score.
+    confidence = classification['confidence_is_spam']
+    if not issue.is_spam:
+      confidence = 1.0 - confidence
+
     services.spam.RecordClassifierIssueVerdict(
-      cnxn, issue, label=='spam', score, classification['failed_open'])
+      cnxn, issue, predicted_label=='spam',
+      confidence, classification['failed_open'])
 
     if permissions.HasRestrictions(issue, 'view'):
       self._config_service.InvalidateMemcache(
@@ -1588,18 +1590,13 @@ class IssueService(object):
     is_project_member = framework_bizobj.UserIsInProject(project, effective_ids)
     classification = services.spam.ClassifyComment(
         comment, author, is_project_member)
-    label = classification['outputLabel']
-    logging.info('comment classification: %s' % classification)
-    score = 0
-    is_spam = False
-    for output in classification['outputMulti']:
-      if output['label'] == label:
-        score = float(output['score'])
-    if label == 'spam' and score > settings.classifier_spam_thresh:
-       logging.info('classified comment as spam: %s' % comment)
-       is_spam = True
+
+    if classification['confidence_is_spam'] > settings.classifier_spam_thresh:
+      logging.info('classified comment as spam: %s' % comment)
+      is_spam = True
     else:
       logging.info('classified comment as ham')
+      is_spam = False
 
     if amendments or (comment and comment.strip()) or attachments:
       logging.info('amendments = %r', amendments)
@@ -1608,8 +1605,17 @@ class IssueService(object):
           amendments=amendments, attachments=attachments,
           inbound_message=inbound_message, is_spam=is_spam,
           is_description=is_description, kept_attachments=kept_attachments)
+
+      # ClassifyComment only returns confidence_is_spam, but
+      # RecordClassifierCommentVerdict records confidence of
+      # ham or spam. Therefore if ham, invert score.
+      confidence = classification['confidence_is_spam']
+      if not is_spam:
+        confidence = 1.0 - confidence
+
       services.spam.RecordClassifierCommentVerdict(
-          cnxn, comment_pb, is_spam, score, classification['failed_open'])
+          cnxn, comment_pb, is_spam, confidence,
+          classification['failed_open'])
     else:
       comment_pb = None
 
