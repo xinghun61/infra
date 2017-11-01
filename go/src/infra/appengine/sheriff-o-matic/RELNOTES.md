@@ -1,3 +1,23 @@
+# Release Notes sheriff-o-matic 2017-11-01
+
+- 2 commits, 2 bugs affected since 36bb94e (2017-10-31T22:02:06Z)
+- 2 Authors:
+  - martiniss@chromium.org
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Move annotation key into POST body.](https://chromium-review.googlesource.com/749688) (seanmccullough@chromium.org)
+- [SOM: Split alerts by test](https://chromium-review.googlesource.com/671157) (martiniss@chromium.org)
+
+
+## Bugs updated, by author
+- martiniss@chromium.org:
+  -  [https://crbug.com/780297](https://crbug.com/780297)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/775266](https://crbug.com/775266)
+
 # Release Notes sheriff-o-matic 2017-10-31
 
 - 4 commits, 2 bugs affected since d65cf28 (2017-10-18T17:49:42Z)
