@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"os"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -18,8 +19,8 @@ import (
 	"go.chromium.org/luci/common/logging/gologger"
 )
 
-// DefaultCipdPackage is a package prefix for all the xcode packages.
-const DefaultCipdPackage = "infra_internal/ios/xcode"
+// DefaultCipdPackagePrefix is a package prefix for all the xcode packages.
+const DefaultCipdPackagePrefix = "infra_internal/ios/xcode"
 
 // KindType is the type for enum values for the -kind argument.
 type KindType string
@@ -55,7 +56,7 @@ func (t *KindType) Set(v string) error {
 
 type commonFlags struct {
 	subcommands.CommandRunBase
-	cipdPackage string
+	cipdPackagePrefix string
 }
 
 type installRun struct {
@@ -86,12 +87,24 @@ func (c *installRun) Run(a subcommands.Application, args []string, env subcomman
 }
 
 func (c *uploadRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
-	// TODO(sergeyberezin): implement this.
+	ctx := cli.GetContext(a, c, env)
+	if c.xcodePath == "" {
+		errors.Log(ctx, errors.Reason("path to Xcode.app is not specified (-xcode-path)").Err())
+		return 1
+	}
+	// Strip the trailing /.
+	for strings.HasSuffix(c.cipdPackagePrefix, "/") {
+		c.cipdPackagePrefix = c.cipdPackagePrefix[:len(c.cipdPackagePrefix)-1]
+	}
+	if err := packageXcode(ctx, c.xcodePath, c.cipdPackagePrefix); err != nil {
+		errors.Log(ctx, err)
+		return 1
+	}
 	return 0
 }
 
 func commonFlagVars(c *commonFlags) {
-	c.Flags.StringVar(&c.cipdPackage, "cipd-package", DefaultCipdPackage, "CIPD package prefix.")
+	c.Flags.StringVar(&c.cipdPackagePrefix, "cipd-package-prefix", DefaultCipdPackagePrefix, "CIPD package prefix.")
 }
 
 func installFlagVars(c *installRun) {
@@ -104,7 +117,7 @@ func installFlagVars(c *installRun) {
 
 func uploadFlagVars(c *uploadRun) {
 	commonFlagVars(&c.commonFlags)
-	c.Flags.StringVar(&c.xcodePath, "xcode-path", "", "Path to install Xcode.app. (required)")
+	c.Flags.StringVar(&c.xcodePath, "xcode-path", "", "Path to Xcode.app to be uploaded. (required)")
 }
 
 var (
@@ -140,7 +153,7 @@ func main() {
 			goLoggerCfg.Format = "[%{level:.1s} %{time:2006-01-02 15:04:05}] %{message}"
 			ctx = goLoggerCfg.Use(ctx)
 
-			ctx = (&logging.Config{Level: logging.Info}).Set(ctx)
+			ctx = (&logging.Config{Level: logging.Debug}).Set(ctx)
 			return ctx
 		},
 		Commands: []*subcommands.Command{
