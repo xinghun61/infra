@@ -1,0 +1,66 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/paper-tooltip/paper-tooltip.html">
+<script src="/bower_components/moment/min/moment.min.js"></script>
+<script src="/bower_components/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
+
+<dom-module id="crdx-timestamp">
+  <template>
+    <style>
+    </style>
+    <template is="dom-if" if="[[!short]]">
+      [[_fmtDate]] ([[_computeRelativeTime(date)]])
+    </template>
+    <template is="dom-if" if="[[short]]">
+      [[_computeRelativeTime(date)]]
+      <paper-tooltip>[[_fmtDate]]</paper-tooltip>
+    </template>
+  </template>
+  <script>
+    'use strict';
+
+    /**
+     * `<crdx-timestamp>` displays a formatted time string in PDT and the relative time.
+     *
+     * This element shows a time in a human readable form.
+     *
+     * @customElement
+     * @polymer
+     * @demo /demo/crdx-timestamp_demo.html
+     */
+    class CrdxTimestamp extends Polymer.Element {
+      static get is() { return 'crdx-timestamp'; }
+
+      static get properties() {
+        return {
+          /** The javascript Date object, which is stored in UTC, to be processed. */
+          date: Object,
+          /** When true, a shorter version of the date will be displayed. */
+          short: {
+            type: Boolean,
+            value: false,
+          },
+          /** The format of the date. */
+          dateFormat: {
+            type: String,
+            value: "ddd D MMM 'YY, h:mm a z",
+          },
+          /** The formatted date. */
+          _fmtDate: {
+            type: String,
+            computed: '_computeDisplayedTime(date, dateFormat)',
+          },
+        }
+      }
+
+      _computeDisplayedTime(date, format) {
+        return moment(date).tz('America/Los_Angeles').format(format);
+      }
+
+      _computeRelativeTime(date) {
+        return moment(date).fromNow();
+      }
+
+    }
+    customElements.define(CrdxTimestamp.is, CrdxTimestamp);
+  </script>
+<dom-module>

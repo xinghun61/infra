@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<title>CrdxTimestamp</title>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/crdx-timestamp.html">
+
+<test-fixture id="crdx-timestamp-test">
+  <template>
+    <crdx-timestamp></crdx-timestamp>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('crdx-timestamp', function() {
+    let element;
+    setup(function() {
+      element = fixture('crdx-timestamp-test');
+      element.date = new Date();
+    });
+
+    test('changes propogated', function(done) {
+      let formattingStub = sinon.stub(element, '_computeDisplayedTime');
+      element.dateFormat = "ddd D MMM 'YY, h:mm a [LSKJFLSKDJFLKSDFJ]";
+
+      element.date = new Date();
+      sinon.assert.calledTwice(formattingStub);
+      done();
+    });
+
+  });
+</script>
