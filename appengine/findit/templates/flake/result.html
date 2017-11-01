@@ -265,7 +265,7 @@
         /*Temporarily disable showing swarming tasks for try jobs.
           TODO(crbug/767541): Re-enable showing swarming tasks for try jobs.*/
         if (swarmingTaskIds && !tryJobUrl) {
-          $('#swarming-task-container').html('');
+          $('#swarming-task-container').html('Swarming run:');
           $.each(swarmingTaskIds, function(index, value) {
             var link = $('<a>',{
                 text: 'task ' + (index + 1),

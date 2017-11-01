@@ -42,61 +42,89 @@ def _GetPassRate(flake_swarming_task):
   return flake_constants.PASS_RATE_TEST_NOT_FOUND
 
 
-def _CreateDataPoint(flake_swarming_task):
-  """Creates a DataPoint object with the fields from a flake swarming task.
+def _UpdateAnalysisDataPointsWithSwarmingTask(flake_swarming_task,
+                                              flake_analysis):
+  """Creates or updates a DataPoint in MasterFlakeAnalysis.
 
   Args:
     flake_swarming_task (FlakeSwarmingTask): A completed flake swarming task
         from which to craft a DataPoint.
-
-  Returns:
-    DataPoint: A data point populated with the results of flake_swarming_task.
+    flake_analysis (MasterFlakeAnalysis): The analysis to add the data point to.
   """
-  master_name = flake_swarming_task.master_name
-  builder_name = flake_swarming_task.builder_name
-  build_number = flake_swarming_task.build_number
 
   assert flake_swarming_task.completed_time
   assert flake_swarming_task.started_time
   assert flake_swarming_task.tries is not None
+  assert flake_swarming_task.task_id
 
-  data_point = DataPoint()
-  data_point.build_number = build_number
-  data_point.pass_rate = _GetPassRate(flake_swarming_task)
-  data_point.task_ids.append(flake_swarming_task.task_id)
-  data_point.has_valid_artifact = flake_swarming_task.has_valid_artifact
-  data_point.iterations = flake_swarming_task.tries
+  existing_data_point = flake_analysis.FindMatchingDataPointWithBuildNumber(
+      flake_swarming_task.build_number)
 
-  data_point.elapsed_seconds = int(
-      (flake_swarming_task.completed_time -
-       flake_swarming_task.started_time).total_seconds())
+  if existing_data_point:
+    old_iterations = existing_data_point.iterations
+    incoming_iterations = flake_swarming_task.tries
+    old_pass_rate = existing_data_point.pass_rate
+    incoming_pass_rate = _GetPassRate(flake_swarming_task)
+    old_elapsed_seconds = existing_data_point.elapsed_seconds
+    incoming_elapsed_seconds = int(
+        (flake_swarming_task.completed_time -
+         flake_swarming_task.started_time).total_seconds())
 
-  # Include git information about each build that was run.
-  build_info = build_util.GetBuildInfo(master_name, builder_name, build_number)
-
-  if not build_info:
-    raise pipeline.Retry('Failed to get build info for %s/%s/%s' %
-                         (master_name, builder_name, build_number))
-
-  data_point.commit_position = build_info.commit_position
-  data_point.git_hash = build_info.chromium_revision
-
-  if build_number > 0:
-    previous_build_info = build_util.GetBuildInfo(master_name, builder_name,
-                                                  build_number - 1)
-    if not previous_build_info:
-      raise pipeline.Retry('Failed to get build info for %s/%s/%s' %
-                           (master_name, builder_name, build_number - 1))
-
-    data_point.previous_build_commit_position = (
-        previous_build_info.commit_position)
-    data_point.previous_build_git_hash = previous_build_info.chromium_revision
-    data_point.blame_list = _GetCommitsBetweenRevisions(
-        previous_build_info.chromium_revision, build_info.chromium_revision)
+    existing_data_point.task_ids.append(flake_swarming_task.task_id)
+    existing_data_point.pass_rate = (old_pass_rate * old_iterations +
+                                     incoming_pass_rate * incoming_iterations
+                                    ) / (old_iterations + incoming_iterations)
+    existing_data_point.iterations = old_iterations * incoming_iterations
+    existing_data_point.elapsed_seconds = (
+        old_elapsed_seconds + incoming_elapsed_seconds)
   else:
-    data_point.blame_list = build_info.blame_list
+    master_name = flake_swarming_task.master_name
+    builder_name = flake_swarming_task.builder_name
+    build_number = flake_swarming_task.build_number
 
-  return data_point
+    # Include git information about each build that was run.
+    build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                         build_number)
+
+    if not build_info:
+      raise pipeline.Retry('Failed to get build info for %s/%s/%s' %
+                           (master_name, builder_name, build_number))
+
+    commit_position = build_info.commit_position
+    git_hash = build_info.chromium_revision
+
+    if build_number > 0:
+      previous_build_info = build_util.GetBuildInfo(master_name, builder_name,
+                                                    build_number - 1)
+      if not previous_build_info:
+        raise pipeline.Retry('Failed to get build info for %s/%s/%s' %
+                             (master_name, builder_name, build_number - 1))
+
+      previous_build_commit_position = previous_build_info.commit_position
+      previous_build_git_hash = previous_build_info.chromium_revision
+      blame_list = _GetCommitsBetweenRevisions(
+          previous_build_info.chromium_revision, build_info.chromium_revision)
+    else:
+      previous_build_commit_position = None
+      previous_build_git_hash = None
+      blame_list = build_info.blame_list
+
+    data_point = DataPoint.Create(
+        build_number=build_number,
+        pass_rate=_GetPassRate(flake_swarming_task),
+        task_ids=[flake_swarming_task.task_id],
+        commit_position=commit_position,
+        git_hash=git_hash,
+        previous_build_commit_position=previous_build_commit_position,
+        previous_build_git_hash=previous_build_git_hash,
+        blame_list=blame_list,
+        has_valid_artifact=flake_swarming_task.has_valid_artifact,
+        iterations=flake_swarming_task.tries,
+        elapsed_seconds=int((flake_swarming_task.completed_time -
+                             flake_swarming_task.started_time).total_seconds()))
+    flake_analysis.data_points.append(data_point)
+
+  flake_analysis.put()
 
 
 class UpdateFlakeAnalysisDataPointsPipeline(BasePipeline):
@@ -135,8 +163,8 @@ class UpdateFlakeAnalysisDataPointsPipeline(BasePipeline):
         'Updating MasterFlakeAnalysis swarming task data %s/%s/%s/%s/%s',
         master_name, builder_name, master_build_number, step_name, test_name)
 
-    data_point = _CreateDataPoint(flake_swarming_task)
-    flake_analysis.AppendOrMergeDataPoint(data_point)
+    _UpdateAnalysisDataPointsWithSwarmingTask(flake_swarming_task,
+                                              flake_analysis)
 
     results = flake_swarming_task.GetFlakeSwarmingTaskData()
     flake_analysis.swarming_rerun_results.append(results)
