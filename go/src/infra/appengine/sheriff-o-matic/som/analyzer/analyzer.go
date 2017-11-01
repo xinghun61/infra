@@ -743,67 +743,69 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 	rs := make(chan res, len(filteredFailures))
 	reasons := a.reasonFinder(ctx, filteredFailures)
 
+	wg := sync.WaitGroup{}
 	scannedFailures := []*messages.BuildStep{}
 	for i, failure := range filteredFailures {
-		if len(failure.Step.Results) > 0 {
-			// Check results to see if it's an array of [4]
-			// That's a purple failure, which should go to infra/trooper.
-			// TODO(martiniss): move this logic into package step
-			r, _ := failure.Step.Result()
-			if r == messages.ResultInfraFailure {
-				logging.Debugf(ctx, "INFRA FAILURE: %s/%s/%s", failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name)
-				bf := messages.BuildFailure{
-					Builders: []messages.AlertedBuilder{
-						{
-							Name:          failure.Build.BuilderName,
-							URL:           client.BuilderURL(failure.Master, failure.Build.BuilderName).String(),
-							StartTime:     failure.Build.Times[0],
-							FirstFailure:  failure.Build.Number,
-							LatestFailure: failure.Build.Number,
-							Master:        failure.Build.Master,
-						},
-					},
-					TreeCloser:  a.Gatekeeper.WouldCloseTree(ctx, failure.Master, failure.Build.BuilderName, failure.Step.Name),
-					Reason:      &messages.Reason{Raw: reasons[i]},
-					StepAtFault: failure,
-				}
-
-				alr := messages.Alert{
-					Title:     fmt.Sprintf("%s failing on %s/%s", failure.Step.Name, failure.Master.Name(), failure.Build.BuilderName),
-					Body:      "infrastructure failure",
-					Type:      messages.AlertInfraFailure,
-					StartTime: failure.Build.Times[0],
-					Time:      failure.Build.Times[0],
-					Severity:  messages.InfraFailure,
-					Key:       alertKey(failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name, fmt.Sprintf("%v", failure.Step.Results[0])),
-					Extension: bf,
-				}
-
-				scannedFailures = append(scannedFailures, failure)
-				rs <- res{
-					f:   failure,
-					a:   &alr,
-					err: nil,
-				}
-				continue
-			}
-		}
 		scannedFailures = append(scannedFailures, failure)
 		i := i
-		f := failure
+		failure := failure
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
+			if len(failure.Step.Results) > 0 {
+				// Check results to see if it's an array of [4]
+				// That's a purple failure, which should go to infra/trooper.
+				// TODO(martiniss): move this logic into package step
+				r, _ := failure.Step.Result()
+				if r == messages.ResultInfraFailure {
+					logging.Debugf(ctx, "INFRA FAILURE: %s/%s/%s", failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name)
+					bf := messages.BuildFailure{
+						Builders: []messages.AlertedBuilder{
+							{
+								Name:          failure.Build.BuilderName,
+								URL:           client.BuilderURL(failure.Master, failure.Build.BuilderName).String(),
+								StartTime:     failure.Build.Times[0],
+								FirstFailure:  failure.Build.Number,
+								LatestFailure: failure.Build.Number,
+								Master:        failure.Build.Master,
+							},
+						},
+						TreeCloser:  a.Gatekeeper.WouldCloseTree(ctx, failure.Master, failure.Build.BuilderName, failure.Step.Name),
+						Reason:      &messages.Reason{Raw: reasons[i]},
+						StepAtFault: failure,
+					}
+
+					alr := messages.Alert{
+						Title:     fmt.Sprintf("%s failing on %s/%s", failure.Step.Name, failure.Master.Name(), failure.Build.BuilderName),
+						Body:      "infrastructure failure",
+						Type:      messages.AlertInfraFailure,
+						StartTime: failure.Build.Times[0],
+						Time:      failure.Build.Times[0],
+						Severity:  messages.InfraFailure,
+						Key:       alertKey(failure.Master.Name(), failure.Build.BuilderName, failure.Step.Name, fmt.Sprintf("%v", failure.Step.Results[0])),
+						Extension: bf,
+					}
+
+					rs <- res{
+						f:   failure,
+						a:   &alr,
+						err: nil,
+					}
+					return
+				}
+			}
 			expvars.Add("StepFailures", 1)
 			defer expvars.Add("StepFailures", -1)
 
 			alr := messages.Alert{
 				Body:      "",
-				Time:      f.Build.Times[0],
-				StartTime: f.Build.Times[0],
+				Time:      failure.Build.Times[0],
+				StartTime: failure.Build.Times[0],
 				Severity:  messages.NewFailure,
 			}
 
 			allowedSet := stringset.NewFromSlice(allowedLinkHosts...)
-			for name, href := range f.Step.Links {
+			for name, href := range failure.Step.Links {
 				URL, err := url.Parse(href)
 				if err != nil {
 					logging.Warningf(ctx, "Failed to parse step link %s: %s", href, err)
@@ -820,11 +822,11 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 				})
 			}
 
-			regRanges := a.regrangeFinder(f.Build)
+			regRanges := a.regrangeFinder(failure.Build)
 			// Read Findit results and add information to the revisions that Findit suspects.
 			if len(finditResults) != 0 {
 				finditSuspectedCLs := map[string][]*messages.SuspectCL{}
-				saveFinditResultInMap(finditResults, f.Step.Name, finditSuspectedCLs)
+				saveFinditResultInMap(finditResults, failure.Step.Name, finditSuspectedCLs)
 
 				// Add Findit results to regression ranges.
 				// There are only the first and last revisions in regRange.Revisions,
@@ -849,7 +851,7 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 				}
 			}
 
-			for _, change := range f.Build.SourceStamp.Changes {
+			for _, change := range failure.Build.SourceStamp.Changes {
 				branch, pos, err := change.CommitPosition()
 				if err != nil {
 					logging.Errorf(ctx, "while getting commit position for %v: %s", change, err)
@@ -874,48 +876,114 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 			bf := messages.BuildFailure{
 				Builders: []messages.AlertedBuilder{
 					{
-						Name:          f.Build.BuilderName,
-						URL:           client.BuilderURL(f.Master, f.Build.BuilderName).String(),
-						StartTime:     f.Build.Times[0],
-						FirstFailure:  f.Build.Number,
-						LatestFailure: f.Build.Number,
-						Master:        f.Build.Master,
+						Name:          failure.Build.BuilderName,
+						URL:           client.BuilderURL(failure.Master, failure.Build.BuilderName).String(),
+						StartTime:     failure.Build.Times[0],
+						FirstFailure:  failure.Build.Number,
+						LatestFailure: failure.Build.Number,
+						Master:        failure.Build.Master,
 						Count:         1,
 					},
 				},
-				TreeCloser:       a.Gatekeeper.WouldCloseTree(ctx, f.Master, f.Build.BuilderName, f.Step.Name),
+				TreeCloser:       a.Gatekeeper.WouldCloseTree(ctx, failure.Master, failure.Build.BuilderName, failure.Step.Name),
 				RegressionRanges: regRanges,
-				StepAtFault:      f,
+				StepAtFault:      failure,
 			}
 
 			if bf.TreeCloser {
 				alr.Severity = messages.TreeCloser
 			}
 			bf.Reason = &messages.Reason{Raw: reasons[i]}
+			tr, ok := reasons[i].(*step.TestFailure)
+			if ok && len(tr.Tests) > 0 {
+				for _, test := range tr.Tests {
+					alr := alr
 
-			alr.Title = reasons[i].Title([]*messages.BuildStep{f})
-			reasonSeverity := reasons[i].Severity()
-			if reasonSeverity != messages.NoSeverity {
-				alr.Severity = reasonSeverity
-			}
+					alr.Type = messages.AlertBuildFailure
+					alr.Key = alertKey(failure.Master.Name(), failure.Build.BuilderName, step.GetTestSuite(failure), test.TestName)
 
-			alr.Type = messages.AlertBuildFailure
-			alr.Key = alertKey(f.Master.Name(), f.Build.BuilderName, step.GetTestSuite(f), "")
-			alr.Extension = bf
+					// Re-set this, because otherwise we run into issues where this is copied
+					// between alerts, and the Count field gets set incorrectly.
+					bf.Builders = []messages.AlertedBuilder{
+						{
+							Name:          failure.Build.BuilderName,
+							URL:           client.BuilderURL(failure.Master, failure.Build.BuilderName).String(),
+							StartTime:     failure.Build.Times[0],
+							FirstFailure:  failure.Build.Number,
+							LatestFailure: failure.Build.Number,
+							Master:        failure.Build.Master,
+							Count:         1,
+						},
+					}
+					bf.Reason = &messages.Reason{
+						Raw: &step.TestFailure{
+							TestNames: []string{test.TestName},
+							StepName:  tr.StepName,
+							Tests:     []step.TestWithResult{test},
+						},
+					}
+					alr.Title = bf.Reason.Title([]*messages.BuildStep{failure})
+					alr.Extension = bf
+					rs <- res{
+						f:   failure,
+						a:   &alr,
+						err: nil,
+					}
 
-			rs <- res{
-				f:   f,
-				a:   &alr,
-				err: nil,
+				}
+			} else {
+				alr.Title = reasons[i].Title([]*messages.BuildStep{failure})
+				reasonSeverity := reasons[i].Severity()
+				if reasonSeverity != messages.NoSeverity {
+					alr.Severity = reasonSeverity
+				}
+
+				alr.Type = messages.AlertBuildFailure
+				alr.Key = alertKey(failure.Master.Name(), failure.Build.BuilderName, step.GetTestSuite(failure), "")
+				alr.Extension = bf
+
+				rs <- res{
+					f:   failure,
+					a:   &alr,
+					err: nil,
+				}
 			}
 		}()
 	}
 
-	for range filteredFailures {
-		r := <-rs
+	doneProcessing := make(chan bool)
+	go func() {
+		wg.Wait()
+		close(rs)
+		doneProcessing <- true
+	}()
+
+	// This is a 2 phase result collection process. In this phase, we collect
+	// results from the channel, until we receive a value from the t channel.
+	// When we receieve a value from that, all the alerts have been created,
+	// and the rs channel is closed, so we just read everything left over from
+	// that.
+	//
+	// We can't start out doing that because it's possible that there will be
+	// more alerts than the number of failed steps, since we can potentially
+	// split up steps into multiple alerts. So, we read some of the alerts
+	// out of the channel, until all the alerts have been created.
+Loop:
+	for {
+		select {
+		case r := <-rs:
+			if r.a != nil {
+				ret = append(ret, *r.a)
+			}
+		case <-doneProcessing:
+			break Loop
+		}
+	}
+	for r := range rs {
 		if r.a != nil {
 			ret = append(ret, *r.a)
 		}
+
 	}
 
 	return ret, nil

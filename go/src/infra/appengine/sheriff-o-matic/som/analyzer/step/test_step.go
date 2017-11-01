@@ -24,42 +24,72 @@ var maxFailedTests = 40
 // Text to put in test names indicating results were snipped.
 const tooManyFailuresText = "...... too many results, data snipped...."
 
-type testFailure struct {
+// TestFailure is a failure of a single test suite. May include multiple test cases.
+// Can also include information about failure causes, including findit information.
+type TestFailure struct {
 	// Could be more detailed about test failures. For instance, we could
 	// indicate expected vs. actual result.
 	//FIXME: Merge TestNames and Tests.
 	TestNames []string `json:"test_names"`
 	//FIXME: Rename to TestSuite (needs to be synchronized with SOM)
 	StepName string           `json:"step"`
-	Tests    []testWithResult `json:"tests"`
+	Tests    []TestWithResult `json:"tests"`
 	// For test-results in SoM
 	AlertTestResults []messages.AlertTestResults `json:"alert_test_results"`
 }
 
-func (t *testFailure) Signature() string {
-	return strings.Join(append([]string{t.StepName}, t.TestNames...), ",")
+// Signature implements the ReasonRaw interface
+func (t *TestFailure) Signature() string {
+	if len(t.TestNames) == 0 {
+		return t.StepName
+	}
+	return strings.Join(t.TestNames, ",")
 }
 
-func (t *testFailure) Kind() string {
+// testTrunc returns the test name, potentially truncated.
+func (t *TestFailure) testTrunc() string {
+	if len(t.TestNames) > 1 {
+		return strings.Join(t.TestNames, ",")
+	}
+
+	split := strings.Split(t.TestNames[0], "/")
+	// If the test name has a URL in it with https:, don't split it up and truncate.
+	// If we did try that, the test name would be basically nonsense. Just show the full
+	// thing, even if it's a bit large.
+	if len(split) > 2 && !(contains(split, "https:") || contains(split, "http:")) {
+		split = []string{split[0], "...", split[len(split)-1]}
+	}
+	return strings.Join(split, "/")
+}
+
+// Kind implements the ReasonRaw interface
+func (t *TestFailure) Kind() string {
 	return "test"
 }
 
-func (t *testFailure) Severity() messages.Severity {
+// Severity implements the ReasonRaw interface
+func (t *TestFailure) Severity() messages.Severity {
 	return messages.NoSeverity
 }
 
-func (t *testFailure) Title(bses []*messages.BuildStep) string {
+// Title implements the ReasonRaw interface
+func (t *TestFailure) Title(bses []*messages.BuildStep) string {
 	f := bses[0]
-	if len(bses) == 1 {
-		return fmt.Sprintf("%s failing on %s/%s", GetTestSuite(f), f.Master.Name(), f.Build.BuilderName)
+	name := GetTestSuite(f)
+	if len(t.TestNames) > 0 {
+		name = t.testTrunc() + " in " + name
 	}
 
-	return fmt.Sprintf("%s failing on multiple builders", GetTestSuite(f))
+	if len(bses) == 1 {
+		return fmt.Sprintf("%s failing on %s/%s", name, f.Master.Name(), f.Build.BuilderName)
+	}
+
+	return fmt.Sprintf("%s failing on multiple builders", name)
 }
 
-// testWithResult stores the information provided by Findit for a specific test,
+// TestWithResult stores the information provided by Findit for a specific test,
 // for example if the test is flaky or is there a culprit for the test failure.
-type testWithResult struct {
+type TestWithResult struct {
 	TestName     string                     `json:"test_name"`
 	IsFlaky      bool                       `json:"is_flaky"`
 	SuspectedCLs []messages.SuspectCL       `json:"suspected_cls"`
@@ -79,9 +109,9 @@ func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep) ([]messa
 		if rslt == nil {
 			continue
 		}
-		failure, ok := rslt.(*testFailure)
+		failure, ok := rslt.(*TestFailure)
 		if !ok {
-			logging.Errorf(ctx, "couldn't cast to *testFailure: %+v", rslt)
+			logging.Errorf(ctx, "couldn't cast to *TestFailure: %+v", rslt)
 			continue
 		}
 		for t, r := range failure.Tests {
@@ -104,7 +134,7 @@ func testFailureAnalyzer(ctx context.Context, fs []*messages.BuildStep) ([]messa
 }
 
 // tests is a slice of tests with Findit results.
-type tests []testWithResult
+type tests []TestWithResult
 
 func (slice tests) Len() int {
 	return len(slice)
@@ -134,7 +164,7 @@ func testAnalyzeFailure(ctx context.Context, f *messages.BuildStep) (messages.Re
 		sort.Strings(sortedNames)
 		sortedTests := tests(testsWithFinditResults)
 		sort.Sort(sortedTests)
-		return &testFailure{
+		return &TestFailure{
 			TestNames: sortedNames,
 			StepName:  suiteName,
 			Tests:     testsWithFinditResults,
@@ -249,8 +279,8 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 }
 
 // Read Findit results and get suspected cls or check if flaky for each test.
-func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failedTests []string) ([]testWithResult, error) {
-	TestsWithFinditResults := []testWithResult{}
+func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failedTests []string) ([]TestWithResult, error) {
+	TestsWithFinditResults := []TestWithResult{}
 
 	if failedTests == nil || len(failedTests) == 0 {
 		return nil, nil
@@ -271,14 +301,14 @@ func getFinditResultsForTests(ctx context.Context, f *messages.BuildStep, failed
 		finditResultsMap[result.TestName] = result
 	}
 	for _, test := range failedTests {
-		testResult := testWithResult{
+		testResult := TestWithResult{
 			TestName:     test,
 			IsFlaky:      false,
 			SuspectedCLs: nil,
 		}
 		result, ok := finditResultsMap[test]
 		if ok {
-			testResult = testWithResult{
+			testResult = TestWithResult{
 				TestName:     test,
 				IsFlaky:      result.IsFlakyTest,
 				SuspectedCLs: result.SuspectedCLs,
@@ -347,4 +377,14 @@ func traverseResults(parent string, testResults map[string]interface{}) ([]strin
 		}
 	}
 	return ret, nil
+}
+
+func contains(haystack []string, needle string) bool {
+	for _, itm := range haystack {
+		if itm == needle {
+			return true
+		}
+	}
+
+	return false
 }
