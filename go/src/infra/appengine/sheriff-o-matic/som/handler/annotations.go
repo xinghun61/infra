@@ -186,11 +186,9 @@ type postRequest struct {
 func PostAnnotationsHandler(ctx *router.Context) {
 	c, w, r, p := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
 
-	annKey := p.ByName("annKey")
 	action := p.ByName("action")
-
-	if !(action == "add" || action == "remove") {
-		errStatus(c, w, http.StatusNotFound, "Invalid action")
+	if action != "add" && action != "remove" {
+		errStatus(c, w, http.StatusBadRequest, "unrecognized annotation action")
 		return
 	}
 
@@ -206,15 +204,23 @@ func PostAnnotationsHandler(ctx *router.Context) {
 		return
 	}
 
+	// Extract the annotation key from the otherwise unparsed body.
+	rawJSON := struct{ Key string }{}
+	if err := json.Unmarshal([]byte(*req.Data), &rawJSON); err != nil {
+		errStatus(c, w, http.StatusBadRequest, fmt.Sprintf("while decoding request: %s", err))
+	}
+
+	key := rawJSON.Key
+
 	annotation := &model.Annotation{
-		KeyDigest: fmt.Sprintf("%x", sha1.Sum([]byte(annKey))),
-		Key:       annKey,
+		KeyDigest: fmt.Sprintf("%x", sha1.Sum([]byte(key))),
+		Key:       key,
 	}
 
 	err = datastore.Get(c, annotation)
 	if action == "remove" && err != nil {
-		logging.Errorf(c, "while getting %s: %s", annKey, err)
-		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("Annotation %s not found", annKey))
+		logging.Errorf(c, "while getting %s: %s", key, err)
+		errStatus(c, w, http.StatusNotFound, fmt.Sprintf("Annotation %s not found", key))
 		return
 	}
 

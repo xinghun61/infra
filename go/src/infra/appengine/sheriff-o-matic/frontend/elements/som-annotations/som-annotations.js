@@ -126,10 +126,9 @@ class SomAnnotations extends Polymer.mixinBehaviors(
   // Returns a promise of the POST request to the server to carry out the
   // annotation change.
   sendAnnotation(key, type, change) {
+    change.key = key;
     return this
-        .postJSON('/api/v1/annotations/' + encodeURIComponent(key) + '/' +
-                      type,
-                  change)
+        .postJSON('/api/v1/annotations/' + type, change)
         .then(jsonParsePromise)
         .then(this._postResponse.bind(this));
   }

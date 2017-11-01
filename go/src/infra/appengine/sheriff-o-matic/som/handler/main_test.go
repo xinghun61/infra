@@ -1011,10 +1011,10 @@ func TestMain(t *testing.T) {
 							Context: c,
 							Writer:  w,
 							Request: makePostRequest(""),
-							Params:  makeParams("annKey", "foobar", "action", "lolwut"),
+							Params:  makeParams("action", "lolwut"),
 						})
 
-						So(w.Code, ShouldEqual, 404)
+						So(w.Code, ShouldEqual, 400)
 					})
 
 					Convey("invalid json", func() {
@@ -1064,14 +1064,14 @@ func TestMain(t *testing.T) {
 						}
 						change := map[string]interface{}{}
 						Convey("snoozeTime", func() {
-							change["snoozeTime"] = 123123
 							PostAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
 								Request: makePostRequest(makeChange(map[string]interface{}{
 									"snoozeTime": 123123,
+									"key":        "foobar",
 								}, tok)),
-								Params: makeParams("annKey", "foobar", "action", "add"),
+								Params: makeParams("action", "add"),
 							})
 
 							So(w.Code, ShouldEqual, 200)
@@ -1082,11 +1082,12 @@ func TestMain(t *testing.T) {
 
 						Convey("bugs", func() {
 							change["bugs"] = []string{"123123"}
+							change["key"] = "foobar"
 							PostAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
 								Request: makePostRequest(makeChange(change, tok)),
-								Params:  makeParams("annKey", "foobar", "action", "add"),
+								Params:  makeParams("action", "add"),
 							})
 
 							So(w.Code, ShouldEqual, 200)
@@ -1097,12 +1098,13 @@ func TestMain(t *testing.T) {
 
 						Convey("bad change", func() {
 							change["bugs"] = []string{"ooops"}
+							change["key"] = "foobar"
 							w = httptest.NewRecorder()
 							PostAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
 								Request: makePostRequest(makeChange(change, tok)),
-								Params:  makeParams("annKey", "foobar", "action", "add"),
+								Params:  makeParams("action", "add"),
 							})
 
 							So(w.Code, ShouldEqual, 400)
@@ -1116,8 +1118,8 @@ func TestMain(t *testing.T) {
 							PostAnnotationsHandler(&router.Context{
 								Context: c,
 								Writer:  w,
-								Request: makePostRequest(makeChange(nil, tok)),
-								Params:  makeParams("annKey", "foobar", "action", "remove"),
+								Request: makePostRequest(makeChange(map[string]interface{}{"key": "foobar"}, tok)),
+								Params:  makeParams("action", "remove"),
 							})
 
 							So(w.Code, ShouldEqual, 404)
@@ -1133,9 +1135,10 @@ func TestMain(t *testing.T) {
 								Context: c,
 								Writer:  w,
 								Request: makePostRequest(makeChange(map[string]interface{}{
+									"key":        "foobar",
 									"snoozeTime": true,
 								}, tok)),
-								Params: makeParams("annKey", "foobar", "action", "remove"),
+								Params: makeParams("action", "remove"),
 							})
 
 							So(w.Code, ShouldEqual, 200)

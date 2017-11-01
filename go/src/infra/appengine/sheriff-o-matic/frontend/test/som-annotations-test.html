@@ -63,21 +63,22 @@
 
       window.fetch.returns(Promise.resolve(res));
       element.xsrfToken = 'xr';
-      let promise = element.sendAnnotation("bestkey", "type", {
-        foo: "bar"
+      let promise = element.sendAnnotation('bestkey', 'type', {
+        foo: 'bar'
       });
       flush(() => {
         assert.equal(window.fetch.callCount, 1);
         let args = window.fetch.firstCall.args;
-        assert.equal(args[0], '/api/v1/annotations/bestkey/type');
+        assert.equal(args[0], '/api/v1/annotations/type');
         let parsed = args[1];
         assert.isDefined(parsed.body);
         parsed.body = JSON.parse(parsed.body);
         assert.deepEqual(parsed, {
           body: {
-            xsrf_token: "xr",
+            xsrf_token: 'xr',
             data: {
-              foo: "bar"
+              key: 'bestkey'
+              foo: 'bar'
             }
           },
           method: 'POST',
