@@ -7,9 +7,10 @@ If the patches don't land, you can manually apply them by running the `git am`
 command:
 
 ```sh
-export TAG=refs/tags/v2.14.1
+export TAG=refs/tags/v2.15.0  # or whatever the current version is.
 export TPP_PATCHES=/path/to/this/dir
 git clone https://chromium.googlesource.com/external/github.com/git/git
+cd git
 git fetch origin $TAG
 git checkout -b patch FETCH_HEAD
 git am --reject $TPP_PATCHES/*.patch
@@ -20,7 +21,7 @@ git add ...
 git am --continue
 
 # Finally, regenerate the patch set:
-git format-patch refs/tags/v2.14.1 -o $TPP_PATCHES/
+git format-patch $TAG -o $TPP_PATCHES/
 ```
 
 ## Dry Runs

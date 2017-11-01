@@ -1,4 +1,4 @@
-From 56cf28abbc11665c3ba9cef3d7b2087335e3b276 Mon Sep 17 00:00:00 2001
+From b137f1ff7179aabb8c9fea225a0e17c1ab8ad629 Mon Sep 17 00:00:00 2001
 From: Dan Jacques <dnj@chromium.org>
 Date: Wed, 14 Jun 2017 08:36:47 -0700
 Subject: [PATCH 2/2] Infra-specific extensions.
@@ -9,10 +9,10 @@ Subject: [PATCH 2/2] Infra-specific extensions.
  2 files changed, 15 insertions(+)
 
 diff --git a/Makefile b/Makefile
-index daaf34dd4..717d5fe95 100644
+index ccfd5d55d..89a2737f3 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -1668,6 +1668,12 @@ ifdef NO_INSTALL_HARDLINKS
+@@ -1693,6 +1693,12 @@ ifdef NO_INSTALL_HARDLINKS
  	export NO_INSTALL_HARDLINKS
  endif
  
@@ -26,10 +26,10 @@ index daaf34dd4..717d5fe95 100644
  #
  
 diff --git a/exec_cmd.c b/exec_cmd.c
-index a7416bc45..6a9bc45ec 100644
+index f745fcbf9..a7484ad7e 100644
 --- a/exec_cmd.c
 +++ b/exec_cmd.c
-@@ -148,6 +148,15 @@ void git_set_exec_path(const char *exec_path)
+@@ -161,6 +161,15 @@ void git_set_exec_path(const char *exec_path)
  	 * Propagate this setting to external programs.
  	 */
  	setenv(EXEC_PATH_ENVIRONMENT, exec_path, 1);
@@ -46,5 +46,5 @@ index a7416bc45..6a9bc45ec 100644
  
  
 -- 
-2.13.1.chromium10
+2.14.1.chromium11
 
