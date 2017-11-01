@@ -64,7 +64,7 @@ def _get_recipe_dep(api, recipes_cfg_path, project):
 
 
 def _checkout_project(
-    api, workdir, project, url, patch, revision=None):
+    api, workdir, project, url, patch, revision=None, name=None):
   api.file.ensure_directory('%s checkout' % project, workdir)
 
   gclient_config = api.gclient.make_config()
@@ -77,7 +77,7 @@ def _checkout_project(
 
   with api.context(cwd=workdir):
     return api.bot_update.ensure_checkout(
-        gclient_config=gclient_config, patch=patch)
+        gclient_config=gclient_config, patch=patch, manifest_name=name)
 
 
 def RunSteps(
@@ -97,10 +97,11 @@ def RunSteps(
 
   upstream_checkout_step = _checkout_project(
       api, upstream_workdir, upstream_project,
-      project_data[upstream_project]['repo_url'], patch=False)
+      project_data[upstream_project]['repo_url'], patch=False, name="upstream")
   downstream_checkout_step = _checkout_project(
       api, downstream_workdir, downstream_project,
-      project_data[downstream_project]['repo_url'], patch=False)
+      project_data[downstream_project]['repo_url'], patch=False,
+      name="downstream")
 
   upstream_checkout = upstream_workdir.join(
       upstream_checkout_step.json.output['root'])
@@ -118,7 +119,7 @@ def RunSteps(
 
     engine_checkout_step = _checkout_project(
         api, engine_workdir, 'recipe_engine',
-        engine_url, revision=engine_revision, patch=False)
+        engine_url, revision=engine_revision, patch=False, name="engine")
     engine_checkout = engine_workdir.join(
         engine_checkout_step.json.output['root'])
 
@@ -151,14 +152,14 @@ def RunSteps(
   _checkout_project(
        api, upstream_workdir, upstream_project,
        project_data[upstream_project]['repo_url'], patch=True,
-       revision=upstream_revision)
+       revision=upstream_revision, name="upstream_patched")
 
   downstream_revision = downstream_checkout_step.json.output[
       'manifest'][downstream_project]['revision']
   _checkout_project(
        api, downstream_workdir, downstream_project,
        project_data[downstream_project]['repo_url'], patch=False,
-       revision=downstream_revision)
+       revision=downstream_revision, name="downstream_patched")
 
   # Since we patched upstream repo (potentially including recipes.cfg),
   # make sure to keep our recipe engine checkout in sync.
@@ -168,7 +169,8 @@ def RunSteps(
         'recipe_engine')
     _checkout_project(
         api, engine_workdir, 'recipe_engine',
-        engine_url, revision=engine_revision, patch=False)
+        engine_url, revision=engine_revision, patch=False,
+        name="engine_patched")
 
   try:
     patched_downstream_test = api.python('test (with patch)',
