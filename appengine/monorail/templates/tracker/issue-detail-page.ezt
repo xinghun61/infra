@@ -88,7 +88,7 @@
       <div id="spam_banner">
         This issue has been classified as spam.
         Please <a
-        href="/p/monorail/issues/entry?template=spam+classification&labels=proj-[projectname]&comment=Please check [currentPageURLEncoded]"
+        href="/p/monorail/issues/entry?template=spam+classification&owner=jeffcarp@chromium.org&labels=proj-[projectname],spam-fp&comment=Please check [currentPageURLEncoded]"
         >report incorrect spam classification</a>.
       </div>
     [end][end]
