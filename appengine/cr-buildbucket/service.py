@@ -1581,13 +1581,15 @@ def longest_pending_time(bucket, builder):
 def _add_to_tag_index_async(tag, new_entries):
   """Adds index entries to the tag index.
 
-  new_entries must not have duplicates.
+  new_entries must be a list of model.TagIndexEntry and not have duplicates.
   """
   if not new_entries:  # pragma: no cover
     return
   new_entries.sort(key=lambda e: e.build_id, reverse=True)
   for i in xrange(len(new_entries) - 1):
     assert new_entries[i].build_id != new_entries[i+1].build_id, 'Duplicate!'
+
+  logging.debug('adding %d entries to tag index %s', len(new_entries), tag)
 
   @ndb.transactional_tasklet
   def txn_async():
@@ -1605,8 +1607,8 @@ def _add_to_tag_index_async(tag, new_entries):
       # Build ids are monotonically decreasing, so most probably new entries
       # will be added to the end.
       fast_path = (
-        not idx.entries or
-        idx.entries[-1].build_id > new_entries[0].build_id)
+          not idx.entries or
+          idx.entries[-1].build_id > new_entries[0].build_id)
       idx.entries.extend(new_entries)
       if not fast_path:
         # Atypical case
