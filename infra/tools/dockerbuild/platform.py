@@ -6,15 +6,34 @@ import collections
 
 
 class Platform(collections.namedtuple('Platform', (
-    'name', # The name of the platform.
-    'manylinux_name', # If the platform is "manylinux', the "manylinux" Docker
-                      # image build name (e.g., "cp27-cp27mu").
-    'wheel_abi', # The Python wheel ABI.
-    'wheel_plat', # Tuple of Python wheel platforms. Must have at least one.
-    'dockcross_base', # The "dockcross" base image (can be None).
-    'openssl_target', # The OpenSSL "Configure" script build target.
-    'packaged', # Do Python wheels get packaged on PyPi for this platform?
-    'cipd_platform', # The name of the CIPD platform to use.
+    # The name of the platform.
+    'name',
+
+    # If the platform is "manylinux', the "manylinux" Docker image build name
+    # (e.g., "cp27-cp27mu").
+    'manylinux_name',
+
+    # The Python wheel ABI.
+    'wheel_abi',
+
+    # Tuple of Python wheel platforms. Must have at least one.
+    #
+    # This is used for local wheel naming. Wheels are named universally within
+    # CIPD packages. Changing this will not impact CIPD package contents, but
+    # will affect the locally generated intermediate wheel names.
+    'wheel_plat',
+
+    # The "dockcross" base image (can be None).
+    'dockcross_base',
+
+    # The OpenSSL "Configure" script build target.
+    'openssl_target',
+
+    # Do Python wheels get packaged on PyPi for this platform?
+    'packaged',
+
+    # The name of the CIPD platform to use.
+    'cipd_platform',
     ))):
 
   @property
@@ -33,23 +52,11 @@ ALL = {p.name: p for p in (
         name='linux-armv6',
         manylinux_name=None,
         wheel_abi='cp27mu',
-        wheel_plat=('linux_armv6l',),
+        wheel_plat=(
+          'linux_armv6l', 'linux_armv7l', 'linux_armv8l', 'linux_armv9l'),
         dockcross_base='linux-armv6',
         openssl_target='linux-armv4',
         packaged=False,
-        cipd_platform='linux-armv6l',
-    ),
-
-    Platform(
-        name='linux-armv7',
-        manylinux_name=None,
-        wheel_abi='cp27mu',
-        wheel_plat=('linux_armv7l',),
-        dockcross_base='linux-armv7',
-        openssl_target='linux-armv4',
-        packaged=False,
-
-        # NOTE: CIPD categorizes all 32-bit ARM as "armv6l".
         cipd_platform='linux-armv6l',
     ),
 
@@ -150,7 +157,7 @@ ALL = {p.name: p for p in (
         name='mac-x64',
         manylinux_name=None,
         wheel_abi='cp27m',
-        wheel_plat=('macosx_10_10_intel',),
+        wheel_plat=('macosx_10_6_intel',),
         dockcross_base=None,
         openssl_target='darwin64-x86_64-cc',
         packaged=True,

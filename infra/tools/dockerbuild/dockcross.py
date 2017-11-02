@@ -30,7 +30,7 @@ class DockerImage(collections.namedtuple('DockerImage', (
 
 
 def _docker_image_exists(system, identifier):
-  rc, _, = system.docker(['image', 'inspect', identifier])
+  rc, _, = system.docker(['inspect', identifier])
   return rc == 0
 
 
