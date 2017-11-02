@@ -92,12 +92,6 @@ urlpatterns = patterns(
     (r'^get-access-token$', 'get_access_token'),
     (r'^oauth2callback$', 'oauth2callback'),
     # Restricted access.
-    (r'^restricted/cron/update_yesterday_stats$',
-        'cron_update_yesterday_stats'),
-    (r'^restricted/tasks/refresh_all_stats_score$',
-        'task_refresh_all_stats_score'),
-    (r'^restricted/tasks/update_stats$', 'task_update_stats'),
-    (r'^restricted/update_stats$', 'update_stats'),
     (r'^restricted/set-client-id-and-secret$', 'set_client_id_and_secret'),
     (r'^restricted/tasks/calculate_delta$', 'task_calculate_delta'),
     (r'^restricted/user/([^/]+)/block$', 'block_user'),
