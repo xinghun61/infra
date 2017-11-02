@@ -25,6 +25,24 @@ class _ObjectB(structured_object.StructuredObject):
   a = _ObjectA
 
 
+class _DictOfObjectA(structured_object.TypedDict):
+  value_type = _ObjectA
+
+
+class _DictOfInt(structured_object.TypedDict):
+  # This is just for testing purpose. In practice we should use dict directly.
+  value_type = int
+
+
+class _ListOfObjectA(structured_object.TypedList):
+  element_type = _ObjectA
+
+
+class _ListOfStr(structured_object.TypedList):
+  # This is just for testing purpose. In practice we should use list directly.
+  element_type = str
+
+
 class _Future(object):
   pass
 
@@ -151,3 +169,76 @@ class SerilizableObjectTest(unittest.TestCase):
   def testAccessingPrivateAttribute(self):
     obj_a = _ObjectA()
     self.assertEqual(10, obj_a._private_attribute)
+
+  def testTypedDict(self):
+    d = _DictOfObjectA()
+    obj_a = _ObjectA()
+    obj_a.v = 3
+    d['a'] = obj_a
+    self.assertEqual(obj_a, d['a'])
+
+  def testTypedDictWithPrimitiveTypes(self):
+    d = _DictOfInt()
+    d['a'] = 1
+    self.assertEqual(1, d['a'])
+
+  def testTypedDictOtherType(self):
+    with self.assertRaises(Exception):
+      d = _DictOfObjectA()
+      d[1] = 'a'
+
+  def testTypedDictDel(self):
+    d = _DictOfObjectA()
+    obj_a = _ObjectA()
+    obj_a.v = 3
+    d['a'] = obj_a
+    del d['a']
+    self.assertIsNone(d.get('a'))
+
+  def testTypedDictIter(self):
+    d = _DictOfObjectA()
+    obj_a = _ObjectA()
+    obj_a.v = 3
+    d['a'] = obj_a
+    for value in d.values():
+      self.assertTrue(isinstance(value, _ObjectA))
+
+  def testTypedDictLen(self):
+    d = _DictOfObjectA()
+    self.assertEqual(0, len(d))
+
+  def testTypedList(self):
+    l = _ListOfObjectA()
+    obj_a = _ObjectA()
+    obj_a.v = 3
+    l.append(obj_a)
+    obj_a2 = _ObjectA()
+    obj_a2.v = 1
+    l[0] = obj_a2
+    self.assertEqual(1, l[0].v)
+
+  def testTypedListWithPrimitiveTypes(self):
+    l = _ListOfStr()
+    l.append('str1')
+    l[0] = 'str2'
+    self.assertEqual('str2', l[0])
+
+  def testTypedListDel(self):
+    l = _ListOfObjectA()
+    obj_a = _ObjectA()
+    obj_a.v = 3
+    l.extend([obj_a])
+    del l[0]
+    self.assertEquals(0, len(l))
+
+  def testTypedListInsert(self):
+    l = _ListOfObjectA()
+    obj_a = _ObjectA()
+    obj_a.v = 3
+    l.insert(0, obj_a)
+    self.assertEqual(l[0], obj_a)
+
+  def testTypedListInsertOtherType(self):
+    with self.assertRaises(Exception):
+      l = _ListOfObjectA()
+      l.insert(0, 'b')

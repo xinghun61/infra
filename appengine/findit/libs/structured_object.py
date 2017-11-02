@@ -94,6 +94,8 @@ Examples:
   assert isinstance(obj_c.v2, Future2), 'this should pass'
 """
 
+from collections import MutableMapping
+from collections import MutableSequence
 import logging
 import types
 
@@ -246,3 +248,59 @@ class StructuredObject(object):
           value = defined_attributes[name].FromDict(value)
         setattr(instance, name, value)
     return instance
+
+
+def _CheckType(class_name, item_type, value):
+  if not isinstance(value, item_type):
+    raise Exception('%s only accepts type %s as values, but got %s.' %
+                    (class_name, item_type.__name__, type(value).__name__))
+
+
+class TypedDict(MutableMapping):
+  """A dict-like object can only accept specific type of values."""
+  value_type = None
+
+  def __init__(self):
+    self._dict = {}
+
+  def __getitem__(self, key):
+    return self._dict[key]
+
+  def __setitem__(self, key, value):
+    _CheckType(self.__class__.__name__, self.value_type, value)
+    self._dict[key] = value
+
+  def __delitem__(self, key):
+    del self._dict[key]
+
+  def __iter__(self):
+    return iter(self._dict)
+
+  def __len__(self):
+    return len(self._dict)
+
+
+class TypedList(MutableSequence):
+  """A list-like object can only accept specific type of elements."""
+
+  element_type = None
+
+  def __init__(self):
+    self._list = []
+
+  def __getitem__(self, index):
+    return self._list[index]
+
+  def __setitem__(self, index, value):
+    _CheckType(self.__class__.__name__, self.element_type, value)
+    self._list[index] = value
+
+  def __delitem__(self, index):
+    del self._list[index]
+
+  def __len__(self):
+    return len(self._list)
+
+  def insert(self, index, value):
+    _CheckType(self.__class__.__name__, self.element_type, value)
+    self._list.insert(index, value)
