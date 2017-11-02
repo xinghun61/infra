@@ -13,6 +13,8 @@ from libs import analysis_status as status
 from libs import time_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
+from pipelines.pipeline_inputs_and_outputs import CLKey
+from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
 from services import revert as revert_util
 from waterfall import suspected_cl_util
 from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
@@ -72,8 +74,13 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
     revert_status = revert_util.CREATED_BY_FINDIT
-    pipeline = SubmitRevertCLPipeline(repo_name, revision, revert_status)
-    committed = pipeline.run(repo_name, revision, revert_status)
+    pipeline_input = SubmitRevertCLPipelineInput(
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
+        revert_status=revert_status)
+    pipeline = SubmitRevertCLPipeline(pipeline_input)
+    committed = pipeline.run(pipeline_input)
 
     self.assertTrue(committed)
 
@@ -89,8 +96,12 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_submission_status = status.RUNNING
     culprit.put()
     revert_status = revert_util.CREATED_BY_FINDIT
-    SubmitRevertCLPipeline(repo_name, revision,
-                           revert_status)._LogUnexpectedAborting(True)
+    pipeline_input = SubmitRevertCLPipelineInput(
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
+        revert_status=revert_status)
+    SubmitRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEquals(culprit.revert_submission_status, status.ERROR)
 
@@ -101,8 +112,12 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = revert_util.CREATED_BY_FINDIT
-    SubmitRevertCLPipeline(repo_name, revision,
-                           revert_status)._LogUnexpectedAborting(True)
+    pipeline_input = SubmitRevertCLPipelineInput(
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
+        revert_status=revert_status)
+    SubmitRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertIsNone(culprit.revert_submission_status)
 
@@ -114,8 +129,13 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = revert_util.CREATED_BY_FINDIT
-    pipeline = SubmitRevertCLPipeline(repo_name, revision, revert_status)
+    pipeline_input = SubmitRevertCLPipelineInput(
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
+        revert_status=revert_status)
+    pipeline = SubmitRevertCLPipeline(pipeline_input)
     pipeline.start_test()
-    pipeline._LogUnexpectedAborting(True)
+    pipeline.OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.submit_revert_pipeline_id, 'pipeline_id')

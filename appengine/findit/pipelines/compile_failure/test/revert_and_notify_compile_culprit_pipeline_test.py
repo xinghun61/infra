@@ -10,6 +10,7 @@ from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as wrapper_pipeline)
 from pipelines.pipeline_inputs_and_outputs import CLKey
 from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
+from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
 from services import ci_failure
 from services import revert
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
@@ -47,10 +48,13 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                                          revision=revision.decode('utf-8')),
                                      build_id=build_id.decode('utf-8')),
                                  revert.CREATED_BY_SHERIFF)
-    self.MockPipeline(
-        SubmitRevertCLPipeline,
-        True,
-        expected_args=[repo_name, revision, revert.CREATED_BY_SHERIFF])
+    self.MockSynchronousPipeline(SubmitRevertCLPipeline,
+                                 SubmitRevertCLPipelineInput(
+                                     cl_key=CLKey(
+                                         repo_name=repo_name.decode('utf-8'),
+                                         revision=revision.decode('utf-8')),
+                                     revert_status=revert.CREATED_BY_SHERIFF),
+                                 True)
     self.MockPipeline(
         SendNotificationToIrcPipeline,
         None,

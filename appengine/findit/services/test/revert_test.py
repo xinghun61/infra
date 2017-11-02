@@ -20,6 +20,7 @@ from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from pipelines.pipeline_inputs_and_outputs import CLKey
 from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
+from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
 from services import revert
 from waterfall import buildbot
 from waterfall import suspected_cl_util
@@ -175,7 +176,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEquals(revert_status, revert.CREATED_BY_SHERIFF)
 
-    committed = revert.CommitRevert(repo_name, revision, revert_status, None)
+    committed = revert.CommitRevert(
+        SubmitRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            revert_status=revert_status), None)
     self.assertFalse(committed)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
@@ -216,7 +222,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertEquals(revert_status, revert.ERROR)
 
-    committed = revert.CommitRevert(repo_name, revision, revert_status, None)
+    committed = revert.CommitRevert(
+        SubmitRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            revert_status=revert_status), None)
     self.assertFalse(committed)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
@@ -416,8 +427,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(repo_name, revision, revert_status,
-                                    'pipeline_id')
+    committed = revert.CommitRevert(
+        SubmitRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            revert_status=revert_status), 'pipeline_id')
 
     self.assertFalse(committed)
 
@@ -432,8 +447,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(repo_name, revision, revert_status,
-                                    'pipeline_id')
+    committed = revert.CommitRevert(
+        SubmitRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            revert_status=revert_status), 'pipeline_id')
 
     self.assertFalse(committed)
 
@@ -443,8 +462,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     revision = 'rev1'
 
     revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(repo_name, revision, revert_status,
-                                    'pipeline_id')
+    committed = revert.CommitRevert(
+        SubmitRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            revert_status=revert_status), 'pipeline_id')
 
     self.assertFalse(committed)
 
@@ -468,8 +491,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(repo_name, revision, revert_status,
-                                    'pipeline_id')
+    committed = revert.CommitRevert(
+        SubmitRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            revert_status=revert_status), 'pipeline_id')
     self.assertFalse(committed)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
@@ -504,8 +531,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(repo_name, revision, revert_status,
-                                    'pipeline_id')
+    committed = revert.CommitRevert(
+        SubmitRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            revert_status=revert_status), 'pipeline_id')
 
     self.assertFalse(committed)
     mock_commit.assert_called_once_with(revert_change_id)
@@ -573,8 +604,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(repo_name, revision, revert_status,
-                                    'pipeline_id')
+    committed = revert.CommitRevert(
+        SubmitRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            revert_status=revert_status), 'pipeline_id')
 
     self.assertFalse(committed)
 
@@ -609,8 +644,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
     revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(repo_name, revision, revert_status,
-                                    'pipeline_id')
+    committed = revert.CommitRevert(
+        SubmitRevertCLPipelineInput(
+            cl_key=CLKey(
+                repo_name=repo_name.decode('utf-8'),
+                revision=revision.decode('utf-8')),
+            revert_status=revert_status), 'pipeline_id')
 
     self.assertTrue(committed)
 

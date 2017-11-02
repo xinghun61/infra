@@ -2,24 +2,20 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipelines import SynchronousPipeline
 from libs import analysis_status as status
 from model.wf_suspected_cl import WfSuspectedCL
+from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
 from services import revert
 
 
-class SubmitRevertCLPipeline(BasePipeline):
+class SubmitRevertCLPipeline(SynchronousPipeline):
+  input_type = SubmitRevertCLPipelineInput
+  output_type = bool
 
-  def __init__(self, repo_name, revision, _):
-    super(SubmitRevertCLPipeline, self).__init__(repo_name, revision, _)
-    self.repo_name = repo_name
-    self.revision = revision
-
-  def _LogUnexpectedAborting(self, was_aborted):
-    if not was_aborted:  # pragma: no cover
-      return
-
-    culprit = WfSuspectedCL.Get(self.repo_name, self.revision)
+  def OnAbort(self, pipeline_input):
+    culprit = WfSuspectedCL.Get(pipeline_input.cl_key.repo_name,
+                                pipeline_input.cl_key.revision)
 
     if culprit.submit_revert_pipeline_id == self.pipeline_id:
       if (culprit.revert_submission_status and
@@ -28,10 +24,6 @@ class SubmitRevertCLPipeline(BasePipeline):
       culprit.submit_revert_pipeline_id = None
       culprit.put()
 
-  def finalized(self):  # pragma: no cover
-    self._LogUnexpectedAborting(self.was_aborted)
-
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, repo_name, revision, revert_status):
-    return revert.CommitRevert(repo_name, revision, revert_status,
-                               self.pipeline_id)
+  def RunImpl(self, pipeline_input):
+    return revert.CommitRevert(pipeline_input, self.pipeline_id)

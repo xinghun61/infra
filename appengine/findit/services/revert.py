@@ -459,10 +459,13 @@ def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
   return True
 
 
-def CommitRevert(repo_name, revision, revert_status, pipeline_id):
+def CommitRevert(pipeline_input, pipeline_id):
   # Note that we don't know which was the final action taken by the pipeline
   # before this point. That is why this is where we increment the appropriate
   # metrics.
+  repo_name = pipeline_input.cl_key.repo_name
+  revision = pipeline_input.cl_key.revision
+  revert_status = pipeline_input.revert_status
   if not _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):
     if revert_status == CREATED_BY_FINDIT:
       monitoring.culprit_found.increment({
