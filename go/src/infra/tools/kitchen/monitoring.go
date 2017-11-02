@@ -92,7 +92,7 @@ func (m *Monitoring) endExecution(ctx context.Context, result *build.BuildRunRes
 // monitoring.
 func (m *Monitoring) SendBuildCompletedReport(ctx context.Context, auth *AuthContext) error {
 	// Set up BigQuery client authentication.
-	ts, err := auth.Authenticator([]string{bigquery.Scope}).TokenSource()
+	ts, err := auth.Authenticator().TokenSource()
 	if err != nil {
 		return errors.Annotate(err, "could not get token source").Err()
 	}

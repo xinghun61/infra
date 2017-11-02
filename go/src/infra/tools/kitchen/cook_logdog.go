@@ -135,7 +135,7 @@ func (c *cookRun) runWithLogdogButler(ctx context.Context, eng *recipeEngine, en
 	var o output.Output
 	if flags.FilePath == "" {
 		ocfg := out.Config{
-			Auth:    c.systemAuth.Authenticator(out.Scopes()),
+			Auth:    c.systemAuth.Authenticator(),
 			Host:    flags.AnnotationURL.Host,
 			Project: flags.AnnotationURL.Project,
 			Prefix:  prefix,

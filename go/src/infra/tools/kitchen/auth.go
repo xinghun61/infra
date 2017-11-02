@@ -24,6 +24,24 @@ import (
 	"infra/libs/infraenv"
 )
 
+// OAuthScopes defines OAuth scopes used by Kitchen itself.
+//
+// This is superset of all scopes we might need. It is more efficient to create
+// a single token with all the scopes than make a bunch of smaller-scoped
+// tokens. We trust Google APIs enough to send widely-scoped tokens to them.
+//
+// Note that kitchen subprocesses (git, recipes engine, etc) are still free to
+// request whatever scopes they need (though LUCI_CONTEXT protocol). The scopes
+// here are only for parts of Kitchen (LogDog client, BigQuery export, Devshell
+// proxy, etc).
+//
+// See https://developers.google.com/identity/protocols/googlescopes for list of
+// available scopes.
+var OAuthScopes = []string{
+	"https://www.googleapis.com/auth/cloud-platform",
+	"https://www.googleapis.com/auth/userinfo.email",
+}
+
 // AuthContext represents some single service account to use for calls.
 //
 // Such context can be used by Kitchen itself or by subprocesses launched by
@@ -89,11 +107,12 @@ type AuthContext struct {
 	// be able to force authenticated access to them.
 	KnownGerritHosts []string
 
-	ctx       context.Context  // stores modified LUCI_CONTEXT
-	exported  lucictx.Exported // exported LUCI_CONTEXT on disk
-	srv       *devshell.Server // DevShell server instance
-	anonymous bool             // true if not associated with any account
-	email     string           // an account email or "" for anonymous
+	ctx           context.Context     // stores modified LUCI_CONTEXT
+	exported      lucictx.Exported    // exported LUCI_CONTEXT on disk
+	authenticator *auth.Authenticator // used by Kitchen itself
+	srv           *devshell.Server    // DevShell server instance
+	anonymous     bool                // true if not associated with any account
+	email         string              // an account email or "" for anonymous
 
 	gitHome      string       // custom HOME for git or "" if not using git auth
 	devShellAddr *net.TCPAddr // address local DevShell instance is listening on
@@ -114,9 +133,16 @@ func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
 		return errors.Annotate(err, "failed to export LUCI_CONTEXT for %q account", ac.ID).Err()
 	}
 
+	// Construct authentication with default set of scopes to be used through out
+	// Kitchen. Note: ServiceAccountJSONPath (if given) takes precedence over
+	// ambient LUCI_CONTEXT authentication carried through ac.ctx.
+	authOpts := infraenv.DefaultAuthOptions()
+	authOpts.Scopes = OAuthScopes
+	authOpts.ServiceAccountJSONPath = ac.ServiceAccountJSONPath
+	ac.authenticator = auth.NewAuthenticator(ac.ctx, auth.SilentLogin, authOpts)
+
 	// Figure out what email is associated with this account (if any).
-	authenticator := ac.Authenticator([]string{auth.OAuthScopeEmail})
-	ac.email, err = authenticator.GetEmail()
+	ac.email, err = ac.authenticator.GetEmail()
 	switch {
 	case err == auth.ErrLoginRequired:
 		// This context is not associated with any account. This happens when
@@ -138,7 +164,7 @@ func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
 	}
 
 	if ac.EnableDevShell && !ac.anonymous {
-		source, err := authenticator.TokenSource()
+		source, err := ac.authenticator.TokenSource()
 		if err != nil {
 			return errors.Annotate(err, "failed to get token source for %q account", ac.ID).Err()
 		}
@@ -181,6 +207,7 @@ func (ac *AuthContext) Close() {
 
 	ac.ctx = nil
 	ac.exported = nil
+	ac.authenticator = nil
 	ac.srv = nil
 	ac.anonymous = false
 	ac.email = ""
@@ -189,13 +216,10 @@ func (ac *AuthContext) Close() {
 }
 
 // Authenticator returns an authenticator that can be used by Kitchen itself.
-func (ac *AuthContext) Authenticator(scopes []string) *auth.Authenticator {
-	// Note: ServiceAccountJSONPath (if given) takes precedence over ambient
-	// LUCI_CONTEXT authentication carried through ac.ctx.
-	authOpts := infraenv.DefaultAuthOptions()
-	authOpts.Scopes = scopes
-	authOpts.ServiceAccountJSONPath = ac.ServiceAccountJSONPath
-	return auth.NewAuthenticator(ac.ctx, auth.SilentLogin, authOpts)
+//
+// It uses the default set of scopes, see OAuthScopes.
+func (ac *AuthContext) Authenticator() *auth.Authenticator {
+	return ac.authenticator
 }
 
 // ExportIntoEnv exports details of this context into the environment, so it can
