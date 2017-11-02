@@ -1,16 +1,4 @@
 cron:
-- description: Update the default builder list
-  url: /restricted/update_default_builders
-  schedule: every 1 hours
-
-- description: Delete old pending jobs
-  url: /restricted/delete_old_pending_jobs
-  schedule: every 12 hours
-
-- description: Update the list of available CQs
-  url: /restricted/update_cq_list
-  schedule: every 10 minutes
-
 - description: Send ts_mon metrics
   url: /internal/cron/ts_mon/send
   schedule: every 1 minutes
