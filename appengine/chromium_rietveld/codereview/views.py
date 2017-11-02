@@ -18,47 +18,33 @@
 # "acccount", "patch", and "patchset".
 # pylint: disable=W0621
 
-import binascii
-import calendar
 import cgi
 import datetime
 import itertools
 import json
 import logging
-import md5
 import os
-import random
 import re
 import tarfile
 import tempfile
 import time
 import urllib
 from cStringIO import StringIO
-from functools import partial
 from xml.etree import ElementTree
 
-from google.appengine.api import app_identity
-from google.appengine.api import mail
 from google.appengine.api import memcache
-from google.appengine.api import taskqueue
-from google.appengine.api import urlfetch
 from google.appengine.api import users
 from google.appengine.datastore import datastore_query
 from google.appengine.ext import db
 from google.appengine.ext import ndb
-from google.appengine.runtime import DeadlineExceededError
-from google.appengine.runtime import apiproxy_errors
 
 from django import forms
 # Import settings as django_settings to avoid name conflict with settings().
 from django.conf import settings as django_settings
-from django.http import HttpResponse, HttpResponseRedirect, HttpResponseNotFound
-from django.http import HttpResponseBadRequest
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import render_to_response
 import django.template
 from django.template import RequestContext
-from django.utils import encoding
-from django.utils.html import strip_tags
 from django.utils.html import urlize
 from django.utils.safestring import mark_safe
 from django.core.urlresolvers import reverse
@@ -82,8 +68,6 @@ from codereview import models
 from codereview import models_chromium
 from codereview import net
 from codereview import patching
-from codereview import utils
-from codereview import common
 from codereview.exceptions import FetchError
 from codereview.responses import HttpTextResponse, HttpHtmlResponse, respond
 import codereview.decorators as deco

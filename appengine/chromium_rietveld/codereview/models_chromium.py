@@ -39,11 +39,6 @@ class UrlMap(ndb.Model):
     return models.is_privileged_user(user)
 
 
-class Key(ndb.Model):
-  """Hash to be able to push data from a server."""
-  hash = ndb.StringProperty()
-
-
 def to_dict(self):
   """Converts an ndb.Model instance into a dict.
 

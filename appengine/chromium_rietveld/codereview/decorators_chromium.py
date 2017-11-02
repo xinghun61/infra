@@ -16,14 +16,8 @@
 
 import functools
 import mimetypes
-import sha
-
-from google.appengine.api import memcache
-
-from django.http import HttpResponseForbidden
 
 from . import decorators as deco
-from . import models_chromium
 from . import responses
 
 
@@ -55,27 +49,3 @@ def binary_required(func):
     return func(request, *args, **kwds)
 
   return binary_wrapper
-
-
-def key_required(func):
-  """Decorator that insists that you are using a specific key."""
-
-  @functools.wraps(func)
-  @deco.require_methods('POST')
-  def key_wrapper(request, *args, **kwds):
-    key = request.POST.get('password')
-    if request.user or not key:
-      return HttpResponseForbidden('You must be admin in for this function')
-    value = memcache.get('key_required')
-    if not value:
-      obj = models_chromium.Key.query().get()
-      if not obj:
-        # Create a dummy value so it can be edited from the datastore admin.
-        obj = models_chromium.Key(hash='invalid hash')
-        obj.put()
-      value = obj.hash
-      memcache.add('key_required', value, 60)
-    if sha.new(key).hexdigest() != value:
-      return HttpResponseForbidden('You must be admin in for this function')
-    return func(request, *args, **kwds)
-  return key_wrapper

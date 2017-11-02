@@ -94,7 +94,5 @@ urlpatterns = patterns(
 urlpatterns += patterns(
     'codereview.views_chromium',
     (r'^(\d+)/binary/(\d+)/(\d+)/(\d+)$', 'download_binary'),
-    (r'^conversions$', 'conversions'),
-    (r'^status_listener$', 'status_listener'),
     (r'^get_pending_try_patchsets$', 'get_pending_try_patchsets'),
     )
