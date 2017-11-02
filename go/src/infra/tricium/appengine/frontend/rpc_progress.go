@@ -22,14 +22,7 @@ import (
 
 // Progress implements Tricium.Progress.
 func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest) (*tricium.ProgressResponse, error) {
-	if req.RunId == "" && (req.Consumer == tricium.Consumer_NONE) {
-		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
-	}
-	runID, err := strconv.ParseInt(req.RunId, 10, 64)
-	if err != nil {
-		logging.WithError(err).Errorf(c, "failed to parse run ID: %s", req.RunId)
-		return nil, grpc.Errorf(codes.InvalidArgument, "invalid run ID")
-	}
+	var runID int64
 	if req.Consumer == tricium.Consumer_GERRIT {
 		gd := req.GetGerritDetails()
 		if gd == nil {
@@ -53,10 +46,20 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 			}
 			if err := ds.Get(c, g); err != nil {
 				logging.WithError(err).Errorf(c, "failed to get GerritChangeToRunID entity: %v", err)
-				return nil, grpc.Errorf(codes.Internal, "failed to find run ID for Gerrit change")
+				return nil, grpc.Errorf(codes.InvalidArgument, "failed to find run ID for Gerrit change")
 			}
 			runID = g.RunID
 		}
+	} else {
+		if req.RunId == "" {
+			return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
+		}
+		r, err := strconv.ParseInt(req.RunId, 10, 64)
+		if err != nil {
+			logging.WithError(err).Errorf(c, "failed to parse run ID: %s", req.RunId)
+			return nil, grpc.Errorf(codes.InvalidArgument, "invalid run ID")
+		}
+		runID = r
 	}
 	runState, analyzerProgress, err := progress(c, runID)
 	if err != nil {
