@@ -2270,32 +2270,6 @@ def xsrf_token(request):
   return HttpTextResponse(models.Account.current_user_account.get_xsrf_token())
 
 
-@deco.task_queue_required('deltacalculation')
-@deco.require_methods('POST')
-def task_calculate_delta(request):
-  """/restricted/tasks/calculate_delta - Calculate deltas for a patchset.
-
-  This URL is called by taskqueue to calculate deltas behind the
-  scenes. Returning a HttpResponse with any 2xx status means that the
-  task was finished successfully. Raising an exception means that the
-  taskqueue will retry to run the task.
-  """
-  ps_key = request.POST.get('key')
-  if not ps_key:
-    logging.error('No patchset key given.')
-    return HttpResponse()
-  try:
-    patchset = ndb.Key(urlsafe=ps_key).get()
-  except (db.KindError, db.BadKeyError) as err:
-    logging.error('Invalid PatchSet key %r: %s' % (ps_key, err))
-    return HttpResponse()
-  if patchset is None:  # e.g. PatchSet was deleted inbetween
-    logging.error('Missing PatchSet key %r' % ps_key)
-    return HttpResponse()
-  patchset.calculate_deltas()
-  return HttpResponse()
-
-
 def _build_state_value(django_request, user):
   """Composes the value for the 'state' parameter.
 

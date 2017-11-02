@@ -85,7 +85,6 @@ urlpatterns = patterns(
     (r'^oauth2callback$', 'oauth2callback'),
     # Restricted access.
     (r'^restricted/set-client-id-and-secret$', 'set_client_id_and_secret'),
-    (r'^restricted/tasks/calculate_delta$', 'task_calculate_delta'),
     (r'^restricted/user/([^/]+)/block$', 'block_user'),
     )
 

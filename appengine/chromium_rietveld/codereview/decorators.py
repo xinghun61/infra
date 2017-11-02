@@ -221,28 +221,6 @@ def require_methods(*methods):
   return decorator
 
 
-def task_queue_required(name):
-  """Returns a function decorator for a task queue named |name|."""
-
-  def decorate_task_queue(func):
-
-    @functools.wraps(func)
-    @require_methods('POST')
-    def task_queue_wrapper(request, *args, **kwargs):
-      def format_header(head):
-        return ('http_' + head).replace('-', '_').upper()
-
-      actual = request.META.get(format_header('X-AppEngine-QueueName'))
-      if actual != name:
-        logging.error('Task queue name doesn\'t match; %s != %s', actual, name)
-        return HttpTextResponse('Can only be run as a task queue.', status=403)
-      return func(request, *args, **kwargs)
-
-    return task_queue_wrapper
-
-  return decorate_task_queue
-
-
 def upload_required(func):
   """Decorator for POST requests from the upload.py script.
 
