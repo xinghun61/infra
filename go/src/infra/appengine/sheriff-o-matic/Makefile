@@ -40,15 +40,15 @@ deploy_prod: build getversion
 	rm frontend/elements/som-app/som-app.vulcanized.html
 
 bqtools:
-	go install infra/tools/bqschemaupdater
+	go install go.chromium.org/luci/tools/cmd/bqschemaupdater
 
 update_bq_staging: bqtools
-	bqschemaupdater -project sheriff-o-matic-staging som/model/som_alerts.pb.txt
-	bqschemaupdater -project sheriff-o-matic-staging som/model/annotations.pb.txt
+	bqschemaupdater -proto-dir ./som/model/gen -table sheriff-o-matic-staging.events.alerts -message gen.SOMAlertsEvent
+	bqschemaupdater -proto-dir ./som/model/gen -table sheriff-o-matic-staging.events.annotations -message gen.SOMAnnotationEvent
 
 update_bq_prod: bqtools
-	bqschemaupdater -project sheriff-o-matic som/model/som_alerts.pb.txt
-	bqschemaupdater -project sheriff-o-matic som/model/annotations.pb.txt
+	bqschemaupdater -proto-dir ./som/model/gen -table sheriff-o-matic.events.alerts -message gen.SOMAlertsEvent
+	bqschemaupdater -proto-dir ./som/model/gen -table sheriff-o-matic.events.annotations -message gen.SOMAnnotationEvent
 
 deploy_staging: build getversion
 	gcloud app deploy --no-promote --no-stop-previous-version frontend/app.yaml backend/app.yaml dispatch.yaml cron.yaml frontend/queue.yaml --project sheriff-o-matic-staging --version $(VERS)

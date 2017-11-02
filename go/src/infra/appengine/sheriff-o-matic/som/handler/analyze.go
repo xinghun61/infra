@@ -9,12 +9,14 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/golang/protobuf/ptypes"
 	"golang.org/x/net/context"
 	"google.golang.org/appengine"
 
 	"infra/appengine/sheriff-o-matic/som/analyzer"
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/model"
+	"infra/appengine/sheriff-o-matic/som/model/gen"
 	"infra/libs/eventupload"
 	"infra/monitoring/messages"
 
@@ -338,22 +340,28 @@ func putAlertsBigQuery(c context.Context, tree string, alertsSummary *messages.A
 	up.SkipInvalidRows = true
 	up.IgnoreUnknownValues = true
 
-	row := model.SOMAlertsEvent{
-		Timestamp: alertsSummary.Timestamp.Time(),
-		Tree:      tree,
-		RequestID: appengine.RequestID(c),
+	ts, err := ptypes.TimestampProto(alertsSummary.Timestamp.Time())
+	if err != nil {
+		return err
 	}
+
+	row := gen.SOMAlertsEvent{
+		Timestamp: ts,
+		Tree:      tree,
+		RequestId: appengine.RequestID(c),
+	}
+
 	for _, a := range alertsSummary.Alerts {
-		alertEvt := &model.SOMAlertsEvent_Alerts{
+		alertEvt := &gen.SOMAlertsEvent_Alert{
 			Key:   a.Key,
 			Title: a.Title,
 			Body:  a.Body,
-			Type:  string(a.Type),
+			Type:  alertEventType(a.Type),
 		}
 
 		if bf, ok := a.Extension.(messages.BuildFailure); ok {
 			for _, builder := range bf.Builders {
-				newBF := &model.SOMAlertsEvent_BuildFailures{
+				newBF := &gen.SOMAlertsEvent_Alert_BuildbotFailure{
 					Master:        builder.Master,
 					Builder:       builder.Name,
 					Step:          bf.StepAtFault.Step.Name,
@@ -361,11 +369,29 @@ func putAlertsBigQuery(c context.Context, tree string, alertsSummary *messages.A
 					LatestFailure: builder.LatestFailure,
 					LatestPassing: builder.LatestPassing,
 				}
-				alertEvt.BuildFailures = append(alertEvt.BuildFailures, newBF)
+				alertEvt.BuildbotFailures = append(alertEvt.BuildbotFailures, newBF)
 			}
 		}
 
 		row.Alerts = append(row.Alerts, alertEvt)
 	}
 	return up.Put(c, row)
+}
+
+var (
+	alertToEventType = map[messages.AlertType]gen.SOMAlertsEvent_Alert_AlertType{
+		messages.AlertStaleMaster:    gen.SOMAlertsEvent_Alert_STALE_MASTER,
+		messages.AlertHungBuilder:    gen.SOMAlertsEvent_Alert_HUNG_BUILDER,
+		messages.AlertOfflineBuilder: gen.SOMAlertsEvent_Alert_OFFLINE_BUILDER,
+		messages.AlertIdleBuilder:    gen.SOMAlertsEvent_Alert_IDLE_BUILDER,
+		messages.AlertInfraFailure:   gen.SOMAlertsEvent_Alert_INFRA_FAILURE,
+		messages.AlertBuildFailure:   gen.SOMAlertsEvent_Alert_BUILD_FAILURE,
+	}
+)
+
+func alertEventType(t messages.AlertType) gen.SOMAlertsEvent_Alert_AlertType {
+	if val, ok := alertToEventType[t]; ok {
+		return val
+	}
+	panic("unknown alert type: " + string(t))
 }

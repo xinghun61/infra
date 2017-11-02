@@ -14,9 +14,12 @@ import (
 	"strings"
 	"time"
 
+	"infra/appengine/sheriff-o-matic/som/model/gen"
 	"infra/libs/eventupload"
 
 	"cloud.google.com/go/bigquery"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"google.golang.org/appengine"
 
 	"go.chromium.org/gae/service/datastore"
@@ -201,15 +204,26 @@ func (a *Annotation) Add(c context.Context, r io.Reader) (bool, error) {
 		a.ModificationTime = clock.Now(c)
 	}
 
-	evt := createAnnotationEvent(c, a, "add")
+	evt := createAnnotationEvent(c, a, gen.SOMAnnotationEvent_ADD)
+	evt.User = user.Email()
 	evt.Bugs = change.Bugs
-	evt.SnoozeTime = time.Unix(int64(a.SnoozeTime/1000), 0)
+	if ts, err := intToTimestamp(a.SnoozeTime); err != nil {
+		evt.SnoozeTime = ts
+	} else {
+		logging.Errorf(c, "error getting timestamp proto: %v", err)
+	}
+
 	evt.GroupId = change.GroupID
-	for _, c := range change.Comments {
-		evt.Comments = append(evt.Comments, &SOMAnnotationEvent_Comments{
-			Text: c,
-			User: user.Email(),
-			Time: commentTime,
+
+	var ct *timestamp.Timestamp
+	if ct, err = ptypes.TimestampProto(commentTime); err != nil {
+		logging.Errorf(c, "error getting timestamp proto: %v", err)
+	}
+
+	for _, text := range change.Comments {
+		evt.Comments = append(evt.Comments, &gen.SOMAnnotationEvent_Comment{
+			Text: text,
+			Time: ct,
 		})
 	}
 
@@ -219,6 +233,15 @@ func (a *Annotation) Add(c context.Context, r io.Reader) (bool, error) {
 	}
 
 	return needRefresh, nil
+}
+
+func intToTimestamp(s int) (*timestamp.Timestamp, error) {
+	if s == 0 {
+		return nil, fmt.Errorf("Cannot convert 0 to timestamp.Timestamp")
+	}
+
+	ret, err := ptypes.TimestampProto(time.Unix(int64(s/1000), 0))
+	return ret, err
 }
 
 // Remove removes some data to an annotation. Returns if a refreshe of annotation
@@ -267,16 +290,26 @@ func (a *Annotation) Remove(c context.Context, r io.Reader) (bool, error) {
 		a.ModificationTime = clock.Now(c)
 	}
 
-	evt := createAnnotationEvent(c, a, "remove")
+	user := auth.CurrentIdentity(c)
+	evt := createAnnotationEvent(c, a, gen.SOMAnnotationEvent_DELETE)
+	evt.User = user.Email()
 	evt.Bugs = change.Bugs
-	evt.SnoozeTime = time.Unix(int64(a.SnoozeTime), 0)
+	if ts, err := intToTimestamp(a.SnoozeTime); err == nil {
+		evt.SnoozeTime = ts
+	} else {
+		logging.Errorf(c, "error getting timestamp proto: %v", err)
+	}
+
 	evt.GroupId = a.GroupID
-	for _, c := range deletedComments {
-		evt.Comments = append(evt.Comments, &SOMAnnotationEvent_Comments{
-			Text: c.Text,
-			User: c.User,
-			Time: c.Time,
-		})
+	for _, comment := range deletedComments {
+		if ct, err := ptypes.TimestampProto(comment.Time); err == nil {
+			evt.Comments = append(evt.Comments, &gen.SOMAnnotationEvent_Comment{
+				Text: comment.Text,
+				Time: ct,
+			})
+		} else {
+			logging.Errorf(c, "error getting timestamp proto: %v", err)
+		}
 	}
 
 	if err := writeAnnotationEvent(c, evt); err != nil {
@@ -287,28 +320,35 @@ func (a *Annotation) Remove(c context.Context, r io.Reader) (bool, error) {
 	return false, nil
 }
 
-func createAnnotationEvent(ctx context.Context, a *Annotation, operation string) *SOMAnnotationEvent {
-	evt := &SOMAnnotationEvent{
-		Timestamp:        a.ModificationTime,
-		AlertKeyDigest:   a.KeyDigest,
-		AlertKey:         a.Key,
-		RequestId:        appengine.RequestID(ctx),
-		Operation:        operation,
-		ModificationTime: a.ModificationTime,
+func createAnnotationEvent(ctx context.Context, a *Annotation, operation gen.SOMAnnotationEvent_OperationType) *gen.SOMAnnotationEvent {
+
+	evt := &gen.SOMAnnotationEvent{
+		AlertKeyDigest: a.KeyDigest,
+		AlertKey:       a.Key,
+		RequestId:      appengine.RequestID(ctx),
+		Operation:      operation,
+	}
+
+	if mt, err := ptypes.TimestampProto(a.ModificationTime); err == nil {
+		evt.Timestamp = mt
+		evt.ModificationTime = mt
 	}
 
 	for _, c := range a.Comments {
-		evt.Comments = append(evt.Comments, &SOMAnnotationEvent_Comments{
-			Text: c.Text,
-			User: c.User,
-			Time: c.Time,
-		})
+		if ct, err := ptypes.TimestampProto(c.Time); err == nil {
+			evt.Comments = append(evt.Comments, &gen.SOMAnnotationEvent_Comment{
+				Text: c.Text,
+				Time: ct,
+			})
+		} else {
+			logging.Errorf(ctx, "error getting timestamp proto: %v", err)
+		}
 	}
 
 	return evt
 }
 
-func writeAnnotationEvent(c context.Context, evt *SOMAnnotationEvent) error {
+func writeAnnotationEvent(c context.Context, evt *gen.SOMAnnotationEvent) error {
 	client, err := bigquery.NewClient(c, info.AppID(c))
 	if err != nil {
 		return err
