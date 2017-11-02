@@ -96,16 +96,6 @@ indexes:
   - name: blocked
   - name: lower_nickname
 
-- kind: AccountStatsDay
-  properties:
-  - name: name
-  - name: score
-
-- kind: AccountStatsMulti
-  properties:
-  - name: name
-  - name: score
-
 - kind: Comment
   properties:
   - name: draft

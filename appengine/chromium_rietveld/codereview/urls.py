@@ -39,14 +39,6 @@ urlpatterns = patterns(
     (r'^user/([^/]+)$', 'show_user'),
     (r'^api/user_inbox/([^/]+)$', 'api_user_inbox'),
 
-    (r'^leaderboard/?$', RedirectView.as_view(url='/leaderboard/30')),
-    (r'^leaderboard_json/(.+)$', 'leaderboard_json'),
-    (r'^leaderboard/(.+)$', 'leaderboard'),
-    (r'^user/(?P<user>[^/]+)/stats/?$',
-     RedirectView.as_view(url='/user/%(user)s/stats/30')),
-    (r'^user/([^/]+)/stats/([^/]+)$', 'show_user_stats'),
-    (r'^user/([^/]+)/stats_json/([^/]+)$', 'show_user_stats_json'),
-
     # TODO(ojan): all/mine/starred/show are not useful. Remove them once
     # we remove the deprecated UI.
     (r'^all$', 'view_all'),
