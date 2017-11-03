@@ -92,9 +92,9 @@ func GetFromSwarmingTask(ctx context.Context, authOpts auth.Options, host, taskI
 		// don't wan't these or some random person/service will get notified :
 		//PubsubTopic:    req.PubsubTopic,
 		//PubsubUserdata: req.PubsubUserdata,
-		Tags: req.Tags,
-		User: req.User,
-		//ServiceAccount: req.ServiceAccount,
+		Tags:           req.Tags,
+		User:           req.User,
+		ServiceAccount: req.ServiceAccount,
 	}
 
 	jd, err := JobDefinitionFromNewTaskRequest(newTask)
