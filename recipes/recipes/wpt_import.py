@@ -53,6 +53,7 @@ def RunSteps(api):
   with new_branch('update_wpt'):
     script = blink_dir.join('Tools', 'Scripts', 'wpt-import')
     args = [
+      '--auto-update',
       '--auth-refresh-token-json',
       '/creds/refresh_tokens/blink-w3c-test-autoroller',
       '--credentials-json',
