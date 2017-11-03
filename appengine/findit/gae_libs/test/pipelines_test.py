@@ -152,7 +152,7 @@ class PipelinesTest(TestCase):
   def testModuleCreateInputObjectInstanceWithFuture(self):
     future = pipelines.pipeline.PipelineFuture([1])
     input_obj = pipelines.CreateInputObjectInstance(_SimpleInfo, param=future)
-    input_obj_dict = input_obj.ToDict()
+    input_obj_dict = input_obj.ToSerializable()
     self.assertTrue('param' in input_obj_dict)
     self.assertEqual(input_obj_dict['param'], future)
 
@@ -287,7 +287,7 @@ class PipelinesTest(TestCase):
     self.assertFalse(p.was_aborted)
     self.assertListEqual([1], p.outputs.default.value)
 
-  def testSerializeableObjectAsSynchronousPipelineOutput(self):
+  def testToSerializableableObjectAsSynchronousPipelineOutput(self):
     p = _SynchronousPipelineWithSimpleInfoAsOutputType(1)
     p.start()
     self.execute_queued_tasks()

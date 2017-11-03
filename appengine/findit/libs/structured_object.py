@@ -46,11 +46,11 @@ Examples:
   or just simply:
       obj_a = MyObjectA(a=3, b='a string')
 
-2. Serialize an object and deserialize:
+2. ToSerializable an object and deserialize:
   obj_a = MyObjectA(a=3, b='a string')
-  data = obj_a.ToDict()
+  data = obj_a.ToSerializable()
   assert data == {'a': 3, 'b': 'a string'}
-  obj_a_copy = MyObjectA.FromDict(data)
+  obj_a_copy = MyObjectA.FromSerializable(data)
   assert obj_a.a == obj_a_copy.a
   assert obj_a.b == obj_a_copy.b
 
@@ -59,7 +59,7 @@ Examples:
     v = dict
     o = MyObjectA
 
-  obj_b = MyObjectB.FromDict(
+  obj_b = MyObjectB.FromSerializable(
       {'v': {'key': 'value'}, 'o': {'a': 3, 'b': 'a string'}})
   # obj_b = MyObjectB(v={'key': 'value'}, o=obj_a)
   assert obj_b.v == {'key': 'value'}
@@ -100,7 +100,20 @@ import logging
 import types
 
 
-class StructuredObject(object):
+class BaseSerializableObject(object):
+  """This is the base class of StructuredObject, TypedDict and TypedList."""
+
+  def ToSerializable(self):
+    """Returns a dict or a list which all items are serialized."""
+    raise NotImplementedError
+
+  @classmethod
+  def FromSerializable(cls, data):
+    """Deserialized given data and returns an instance of this class."""
+    raise NotImplementedError
+
+
+class StructuredObject(BaseSerializableObject):
 
   def __init__(self, type_validation_func=None, **kwargs):
     """Constructor.
@@ -182,7 +195,7 @@ class StructuredObject(object):
       setattr(cls, '_dynamic_definitions', d)
     return cls._dynamic_definitions
 
-  def ToDict(self):
+  def ToSerializable(self):
     """Returns a dict into which all defined attributes are serialized."""
     data = {}
     defined_attributes = self._GetDefinedAttributes()
@@ -190,20 +203,21 @@ class StructuredObject(object):
       assert name in self._data, '%s.%s is not set' % (self.__class__.__name__,
                                                        name)
       value = self._data[name]
-      if (value is not None and issubclass(value_type, StructuredObject) and
+      if (value is not None and
+          issubclass(value_type, BaseSerializableObject) and
           not (self._type_validation_func and
                self._type_validation_func(name, value))):
         # Only encode the value if its defined type is StructuredObject AND
         # The customized type validation function doesn't accept its value.
         # If the validation function accepts the value, keep the value as is for
         # the caller code to do some customized processing later.
-        value = value.ToDict()
+        value = value.ToSerializable()
       data[name] = value
     return data
 
   def __repr__(self):
     """Returns a string that represents this class instance."""
-    return '%s(%r)' % (self.__class__.__name__, self.ToDict())
+    return '%s(%r)' % (self.__class__.__name__, self.ToSerializable())
 
   def __eq__(self, other):
     """Returns True if this object is equal to the given one."""
@@ -219,7 +233,7 @@ class StructuredObject(object):
     return not self == other
 
   @classmethod
-  def FromDict(cls, data):
+  def FromSerializable(cls, data):
     """Deserializes the given data and returns an instance of this class.
 
     Args:
@@ -244,8 +258,10 @@ class StructuredObject(object):
                         cls.__name__, name, data)
       else:
         value = data[name]
-        if issubclass(value_type, StructuredObject):
-          value = defined_attributes[name].FromDict(value)
+
+        if issubclass(value_type, BaseSerializableObject):
+          value = value_type.FromSerializable(value)
+
         setattr(instance, name, value)
     return instance
 
@@ -256,9 +272,9 @@ def _CheckType(class_name, item_type, value):
                     (class_name, item_type.__name__, type(value).__name__))
 
 
-class TypedDict(MutableMapping):
+class TypedDict(MutableMapping, BaseSerializableObject):
   """A dict-like object can only accept specific type of values."""
-  value_type = None
+  _value_type = type(None)
 
   def __init__(self):
     self._dict = {}
@@ -267,7 +283,7 @@ class TypedDict(MutableMapping):
     return self._dict[key]
 
   def __setitem__(self, key, value):
-    _CheckType(self.__class__.__name__, self.value_type, value)
+    _CheckType(self.__class__.__name__, self._value_type, value)
     self._dict[key] = value
 
   def __delitem__(self, key):
@@ -279,11 +295,34 @@ class TypedDict(MutableMapping):
   def __len__(self):
     return len(self._dict)
 
+  def ToSerializable(self):
+    result = {}
+    if issubclass(self._value_type, BaseSerializableObject):
+      # Serialize sub objects as well.
+      for key, value in self._dict.iteritems():
+        result[key] = value.ToSerializable()
+    else:
+      result.update(self._dict)
 
-class TypedList(MutableSequence):
+    return result
+
+  @classmethod
+  def FromSerializable(cls, data):
+    instance = cls()
+
+    if issubclass(instance._value_type, BaseSerializableObject):
+      for key, value in data.iteritems():
+        instance._dict[key] = instance._value_type.FromSerializable(value)
+    else:
+      instance._dict.update(data)
+
+    return instance
+
+
+class TypedList(MutableSequence, BaseSerializableObject):
   """A list-like object can only accept specific type of elements."""
 
-  element_type = None
+  _element_type = type(None)
 
   def __init__(self):
     self._list = []
@@ -292,7 +331,7 @@ class TypedList(MutableSequence):
     return self._list[index]
 
   def __setitem__(self, index, value):
-    _CheckType(self.__class__.__name__, self.element_type, value)
+    _CheckType(self.__class__.__name__, self._element_type, value)
     self._list[index] = value
 
   def __delitem__(self, index):
@@ -302,5 +341,28 @@ class TypedList(MutableSequence):
     return len(self._list)
 
   def insert(self, index, value):
-    _CheckType(self.__class__.__name__, self.element_type, value)
+    _CheckType(self.__class__.__name__, self._element_type, value)
     self._list.insert(index, value)
+
+  def ToSerializable(self):
+    result = []
+    if issubclass(self._element_type, BaseSerializableObject):
+      # Serialize sub objects as well.
+      for element in self._list:
+        result.append(element.ToSerializable())
+    else:
+      result.extend(self._list)
+
+    return result
+
+  @classmethod
+  def FromSerializable(cls, data):
+    instance = cls()
+
+    if issubclass(instance._element_type, BaseSerializableObject):
+      for value in data:
+        instance._list.append(instance._element_type.FromSerializable(value))
+    else:
+      instance._list.extend(data)
+
+    return instance

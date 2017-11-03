@@ -166,7 +166,7 @@ def _ConvertInputObjectToPipelineParameters(input_type, args, kwargs):
   if not issubclass(input_type, StructuredObject):
     return args, kwargs
 
-  return [_ENCODED_PARAMETER_FLAG], args[0].ToDict()
+  return [_ENCODED_PARAMETER_FLAG], args[0].ToSerializable()
 
 
 def _ConvertPipelineParametersToInputObject(input_type, args, kwargs):
@@ -174,7 +174,7 @@ def _ConvertPipelineParametersToInputObject(input_type, args, kwargs):
   assert len(args) == 1, (
       'Expected 1 positional argument, but got %d' % len(args))
   if isinstance(args[0], basestring) and args[0] == _ENCODED_PARAMETER_FLAG:
-    return input_type.FromDict(kwargs)
+    return input_type.FromSerializable(kwargs)
   assert len(kwargs) == 0, 'Only 1 positional argument if not serialized'
   return args[0]
 
@@ -182,7 +182,7 @@ def _ConvertPipelineParametersToInputObject(input_type, args, kwargs):
 def _ConvertToPipelineOutput(output):
   """Converts the given output to a Json for pipeline."""
   if isinstance(output, StructuredObject):
-    return output.ToDict()
+    return output.ToSerializable()
   else:
     return output
 

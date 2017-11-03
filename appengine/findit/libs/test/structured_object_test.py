@@ -26,21 +26,28 @@ class _ObjectB(structured_object.StructuredObject):
 
 
 class _DictOfObjectA(structured_object.TypedDict):
-  value_type = _ObjectA
+  _value_type = _ObjectA
 
 
 class _DictOfInt(structured_object.TypedDict):
   # This is just for testing purpose. In practice we should use dict directly.
-  value_type = int
+  _value_type = int
 
 
 class _ListOfObjectA(structured_object.TypedList):
-  element_type = _ObjectA
+  _element_type = _ObjectA
 
 
 class _ListOfStr(structured_object.TypedList):
   # This is just for testing purpose. In practice we should use list directly.
-  element_type = str
+  _element_type = str
+
+
+class _ObjectC(structured_object.StructuredObject):
+  da = _DictOfObjectA
+  la = _ListOfObjectA
+  d = _DictOfInt
+  l = _ListOfStr
 
 
 class _Future(object):
@@ -60,36 +67,36 @@ class SerilizableObjectTest(unittest.TestCase):
     attributes = _ObjectA._GetDefinedAttributes()
     self.assertTrue(attributes is cached_attributes)
 
-  def testToDict(self):
+  def testToSerializable(self):
     obj_a = _ObjectA()
     obj_a.v = 1
     obj_b = _ObjectB()
     obj_b.v = {'key': 'value'}
     obj_b.a = obj_a
-    data = obj_b.ToDict()
+    data = obj_b.ToSerializable()
     expected_data = {'a': {'v': 1}, 'v': {'key': 'value'}}
     self.assertDictEqual(expected_data, data)
 
-  def testToDictForNoneValue(self):
+  def testToSerializableForNoneValue(self):
     obj_a = _ObjectA(v=None)
-    self.assertDictEqual({'v': None}, obj_a.ToDict())
+    self.assertDictEqual({'v': None}, obj_a.ToSerializable())
 
-  def testFromDict(self):
+  def testFromSerializable(self):
     data = {'a': {'v': 1}, 'v': {'key': 'value'}}
-    obj_b = _ObjectB.FromDict(data)
+    obj_b = _ObjectB.FromSerializable(data)
     self.assertDictEqual({'key': 'value'}, obj_b.v)
     self.assertEqual(1, obj_b.a.v)
 
-  def testFromDictAssertionOnList(self):
+  def testFromSerializableAssertionOnList(self):
     with self.assertRaises(AssertionError):
-      _ObjectA.FromDict(['v'])
+      _ObjectA.FromSerializable(['v'])
 
-  def testFromDictAssertionOnUndefinedAttribute(self):
+  def testFromSerializableAssertionOnUndefinedAttribute(self):
     with self.assertRaises(AssertionError):
-      _ObjectA.FromDict({'undefined': 1})
+      _ObjectA.FromSerializable({'undefined': 1})
 
-  def testFromDictAssertionOnMissingAttributeValue(self):
-    obj_a = _ObjectA.FromDict({})
+  def testFromSerializableAssertionOnMissingAttributeValue(self):
+    obj_a = _ObjectA.FromSerializable({})
     self.assertIsNone(obj_a.v)
 
   def testNotEqualForDifferentObjectType(self):
@@ -103,7 +110,7 @@ class SerilizableObjectTest(unittest.TestCase):
 
   def testEqualForSameValues(self):
     data = {'a': {'v': 1}, 'v': {'key': 'value'}}
-    obj_b1 = _ObjectB.FromDict(data)
+    obj_b1 = _ObjectB.FromSerializable(data)
     obj_b2 = _ObjectB(v={'key': 'value'}, a=_ObjectA(v=1))
     self.assertEqual(obj_b1, obj_b2)
 
@@ -139,11 +146,11 @@ class SerilizableObjectTest(unittest.TestCase):
     f = _Future()
     obj_a = _ObjectA(
         type_validation_func=lambda _, x: isinstance(x, _Future), v=f)
-    d = obj_a.ToDict()
+    d = obj_a.ToSerializable()
     self.assertTrue(d['v'] is f)
 
     obj_a.v = 10
-    d = obj_a.ToDict()
+    d = obj_a.ToSerializable()
     self.assertEqual(10, d['v'])
 
     with self.assertRaises(AssertionError):
@@ -155,12 +162,12 @@ class SerilizableObjectTest(unittest.TestCase):
         type_validation_func=lambda _, x: isinstance(x, _Future),
         v={'a': 'b'},
         a=f)
-    d = obj_b.ToDict()
+    d = obj_b.ToSerializable()
     self.assertDictEqual({'a': 'b'}, d['v'])
     self.assertTrue(d['a'] is f)
 
     obj_b.a = _ObjectA(v=1)
-    d = obj_b.ToDict()
+    d = obj_b.ToSerializable()
     self.assertDictEqual({'v': 1}, d['a'])
 
     with self.assertRaises(AssertionError):
@@ -242,3 +249,69 @@ class SerilizableObjectTest(unittest.TestCase):
     with self.assertRaises(Exception):
       l = _ListOfObjectA()
       l.insert(0, 'b')
+
+  def testComplexTypesToSerializable(self):
+    obj_a1 = _ObjectA()
+    obj_a1.v = 1
+    obj_a2 = _ObjectA()
+    obj_a2.v = 2
+
+    obj_c = _ObjectC()
+    obj_c.da = _DictOfObjectA()
+    obj_c.da['a1'] = obj_a1
+    obj_c.da['a2'] = obj_a2
+    obj_c.la = _ListOfObjectA()
+    obj_c.la.append(obj_a2)
+    obj_c.la.insert(0, obj_a1)
+    obj_c.d = _DictOfInt()
+    obj_c.d['a1'] = 1
+    obj_c.d['a2'] = 2
+    obj_c.l = _ListOfStr()
+    obj_c.l.extend(['a', 'b'])
+
+    expected_dict = {
+        'da': {
+            'a1': {
+                'v': 1
+            },
+            'a2': {
+                'v': 2
+            }
+        },
+        'la': [{
+            'v': 1
+        }, {
+            'v': 2
+        }],
+        'd': {
+            'a1': 1,
+            'a2': 2
+        },
+        'l': ['a', 'b']
+    }
+    self.assertEqual(expected_dict, obj_c.ToSerializable())
+
+  def testComplexTypesFromSerializable(self):
+    data_dict = {
+        'da': {
+            'a1': {
+                'v': 1
+            },
+            'a2': {
+                'v': 2
+            }
+        },
+        'la': [{
+            'v': 1
+        }, {
+            'v': 2
+        }],
+        'd': {
+            'a1': 1,
+            'a2': 2
+        },
+        'l': ['a', 'b']
+    }
+
+    obj_c = _ObjectC.FromSerializable(data_dict)
+    self.assertEqual(data_dict, obj_c.ToSerializable())
