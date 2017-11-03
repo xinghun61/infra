@@ -272,8 +272,8 @@ if 'APPLICATION_ID' not in os.environ:
   os.environ['APPLICATION_ID'] = 'testing-app'
 
 if dev_mode:
-  # This is monorail-staging.  There is no local stub for Cloud Prediction.
-  classifier_project_id = '52759169022'
+  # There is no local stub for ML Engine.
+  classifier_project_id = 'monorail-staging'
 else:
   classifier_project_id = app_identity.get_application_id()
 

@@ -287,7 +287,7 @@ class SpamService(object):
     Sample API response:
       {'predictions': [{
         'classes': ['0', '1'],
-        'scores': [0.4986788034439087, 0.5013211965560913]
+        'probabilities': [0.4986788034439087, 0.5013211965560913]
       }]}
 
     This hits the default model.
@@ -307,9 +307,9 @@ class SpamService(object):
     # The spam label, '1', is usually at index 1 but I'm not sure of any
     # guarantees around label order.
     if prediction['classes'][1] == SPAM_CLASS_LABEL:
-      return prediction['scores'][1]
+      return prediction['probabilities'][1]
     elif prediction['classes'][0] == SPAM_CLASS_LABEL:
-      return prediction['scores'][0]
+      return prediction['probabilities'][0]
     else:
       raise Exception('No predicted classes found.')
 
