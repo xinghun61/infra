@@ -3,10 +3,10 @@ package: infra/luci-py
 description: contents of luci-py
 builders:
   - infra-continuous-precise-64
-root: ../../
+root: ../../luci
 
 data:
-  - dir: "luci"
+  - dir: .
     exclude:
       - .*\.pyc
       - \.git/.*
