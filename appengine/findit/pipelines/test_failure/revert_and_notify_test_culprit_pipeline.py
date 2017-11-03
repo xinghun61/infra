@@ -4,7 +4,12 @@
 
 import logging
 
+from common import monitoring
 from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipelines import CreateInputObjectInstance
+from pipelines.pipeline_inputs_and_outputs import CLKey
+from pipelines.pipeline_inputs_and_outputs import (
+    SendNotificationForCulpritPipelineInput)
 from services import ci_failure
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
@@ -26,13 +31,22 @@ class RevertAndNotifyTestCulpritPipeline(BasePipeline):
                    builder_name, build_number)
       return
 
-    # There is a try job result, checks if we can send notification.
+    monitoring.culprit_found.increment({
+        'type': 'test',
+        'action_taken': 'culprit_notified'
+    })
 
+    # There is a try job result, checks if we can send notification.
     for culprit in culprits.itervalues():
       # Checks if any of the culprits was also found by heuristic analysis,
       # if so send notification right away.
       force_notify = [culprit['repo_name'],
                       culprit['revision']] in heuristic_cls
+      send_notification_to_culprit_input = CreateInputObjectInstance(
+        SendNotificationForCulpritPipelineInput,
+        cl_key=CLKey(repo_name=culprit['repo_name'],
+                     revision=culprit['revision']),
+        force_notify=force_notify,
+        revert_status=None)
       yield SendNotificationForCulpritPipeline(
-          master_name, builder_name, build_number, culprit['repo_name'],
-          culprit['revision'], force_notify)
+          send_notification_to_culprit_input)

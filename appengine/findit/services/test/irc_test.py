@@ -12,7 +12,7 @@ from pipelines.pipeline_inputs_and_outputs import CLKey
 from pipelines.pipeline_inputs_and_outputs import (
     SendNotificationToIrcPipelineInput)
 from services import irc
-from services import revert
+from services import gerrit
 from waterfall.test import wf_testcase
 
 
@@ -39,30 +39,29 @@ class IrcTest(wf_testcase.WaterfallTestCase):
   def testNoNeedToSendNotification(self, mocked_irc):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = revert.CREATED_BY_SHERIFF
+    revert_status = gerrit.CREATED_BY_SHERIFF
     submitted = False
     pipeline_input = SendNotificationToIrcPipelineInput(
-        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
-                     revision=revision.decode('utf-8')),
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
         revert_status=revert_status,
-        submitted=submitted
-    )
+        submitted=submitted)
     self.assertFalse(irc.SendMessageToIrc(pipeline_input))
     mocked_irc.assert_not_called()
-
 
   @mock.patch.object(irc, 'IRCClient')
   def testSendNotificationNoCulprit(self, mocked_irc):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = revert.CREATED_BY_FINDIT
+    revert_status = gerrit.CREATED_BY_FINDIT
     submitted = False
     pipeline_input = SendNotificationToIrcPipelineInput(
-        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
-                     revision=revision.decode('utf-8')),
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
         revert_status=revert_status,
-        submitted=submitted
-    )
+        submitted=submitted)
     self.assertFalse(irc.SendMessageToIrc(pipeline_input))
 
     mocked_irc.assert_not_called()
@@ -71,17 +70,17 @@ class IrcTest(wf_testcase.WaterfallTestCase):
   def testSendNotificationNoRevert(self, mocked_irc):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = revert.CREATED_BY_FINDIT
+    revert_status = gerrit.CREATED_BY_FINDIT
     submitted = False
 
     WfSuspectedCL.Create(repo_name, revision, 1).put()
 
     pipeline_input = SendNotificationToIrcPipelineInput(
-        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
-                     revision=revision.decode('utf-8')),
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
         revert_status=revert_status,
-        submitted=submitted
-    )
+        submitted=submitted)
     self.assertFalse(irc.SendMessageToIrc(pipeline_input))
 
     mocked_irc.assert_not_called()
@@ -89,7 +88,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
   def testSendNotification(self):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = revert.CREATED_BY_FINDIT
+    revert_status = gerrit.CREATED_BY_FINDIT
     submitted = False
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
@@ -100,11 +99,11 @@ class IrcTest(wf_testcase.WaterfallTestCase):
     self.mock(irc, 'IRCClient', MockedIRCClient)
 
     pipeline_input = SendNotificationToIrcPipelineInput(
-        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
-                     revision=revision.decode('utf-8')),
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
         revert_status=revert_status,
-        submitted=submitted
-    )
+        submitted=submitted)
     self.assertTrue(irc.SendMessageToIrc(pipeline_input))
 
   @mock.patch.object(irc, '_GenerateMessage', return_value='exception')
@@ -112,7 +111,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
   def testSendNotificationException(self, mocked_logging, _):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = revert.CREATED_BY_FINDIT
+    revert_status = gerrit.CREATED_BY_FINDIT
     submitted = False
 
     culprit = WfSuspectedCL.Create(repo_name, revision, 1)
@@ -123,11 +122,11 @@ class IrcTest(wf_testcase.WaterfallTestCase):
     self.mock(irc, 'IRCClient', MockedIRCClient)
 
     pipeline_input = SendNotificationToIrcPipelineInput(
-        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
-                     revision=revision.decode('utf-8')),
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
         revert_status=revert_status,
-        submitted=submitted
-    )
+        submitted=submitted)
     self.assertFalse(irc.SendMessageToIrc(pipeline_input))
 
     expected_message = 'Sending message to IRC failed with An exception.'

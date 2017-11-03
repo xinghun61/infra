@@ -17,10 +17,10 @@ from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
+    RevertAndNotifyTestCulpritPipeline)
 from waterfall import suspected_cl_util
 from waterfall import swarming_util
-from waterfall.revert_and_notify_culprit_pipeline import (
-    RevertAndNotifyCulpritPipeline)
 
 GIT_REPO = CachedGitilesRepository(
     FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
@@ -339,6 +339,5 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     UpdateSuspectedCLs()
     if not culprits:
       return
-    yield RevertAndNotifyCulpritPipeline(master_name, builder_name,
-                                         build_number, culprits, heuristic_cls,
-                                         try_job_type)
+    yield RevertAndNotifyTestCulpritPipeline(
+        master_name, builder_name, build_number, culprits, heuristic_cls)

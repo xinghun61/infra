@@ -12,9 +12,11 @@ from pipelines.pipeline_inputs_and_outputs import CLKey
 from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
 from pipelines.pipeline_inputs_and_outputs import (
     SendNotificationToIrcPipelineInput)
+from pipelines.pipeline_inputs_and_outputs import (
+    SendNotificationForCulpritPipelineInput)
 from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
 from services import ci_failure
-from services import revert
+from services import gerrit
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
@@ -49,29 +51,29 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                                          repo_name=repo_name.decode('utf-8'),
                                          revision=revision.decode('utf-8')),
                                      build_id=build_id.decode('utf-8')),
-                                 revert.CREATED_BY_FINDIT)
+                                 gerrit.CREATED_BY_FINDIT)
     self.MockSynchronousPipeline(SubmitRevertCLPipeline,
                                  SubmitRevertCLPipelineInput(
                                      cl_key=CLKey(
                                          repo_name=repo_name.decode('utf-8'),
                                          revision=revision.decode('utf-8')),
-                                     revert_status=revert.CREATED_BY_FINDIT),
+                                     revert_status=gerrit.CREATED_BY_FINDIT),
                                  True)
     self.MockSynchronousPipeline(SendNotificationToIrcPipeline,
                                  SendNotificationToIrcPipelineInput(
                                      cl_key=CLKey(
                                          repo_name=repo_name.decode('utf-8'),
                                          revision=revision.decode('utf-8')),
-                                     revert_status=revert.CREATED_BY_FINDIT,
-                                     submitted=True),
+                                     revert_status=gerrit.CREATED_BY_FINDIT,
+                                     submitted=True), True)
+    self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
+                                 SendNotificationForCulpritPipelineInput(
+                                     cl_key=CLKey(
+                                         repo_name=repo_name.decode('utf-8'),
+                                         revision=revision.decode('utf-8')),
+                                     force_notify=True,
+                                     revert_status=gerrit.CREATED_BY_FINDIT),
                                  True)
-    self.MockPipeline(
-        SendNotificationForCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, repo_name, revision, True,
-            revert.CREATED_BY_FINDIT
-        ])
 
     pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
         master_name, builder_name, build_number, culprits, heuristic_cls)

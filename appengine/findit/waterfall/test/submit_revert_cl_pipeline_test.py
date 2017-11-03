@@ -15,7 +15,7 @@ from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from pipelines.pipeline_inputs_and_outputs import CLKey
 from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
-from services import revert as revert_util
+from services import gerrit
 from waterfall import suspected_cl_util
 from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from waterfall.test import wf_testcase
@@ -51,7 +51,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
       time_util, 'GetUTCNow', return_value=datetime(2017, 2, 1, 5, 0, 0))
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
-  @mock.patch.object(revert_util, '_AddReviewers', return_value=True)
+  @mock.patch.object(gerrit, '_AddReviewers', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'SubmitRevert')
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
   def testSubmitRevertSucceed(self, mock_fn, mock_commit, *_):
@@ -73,7 +73,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_cl = revert
     culprit.revert_status = status.COMPLETED
     culprit.put()
-    revert_status = revert_util.CREATED_BY_FINDIT
+    revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLPipelineInput(
         cl_key=CLKey(
             repo_name=repo_name.decode('utf-8'),
@@ -95,7 +95,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_submission_status = status.RUNNING
     culprit.put()
-    revert_status = revert_util.CREATED_BY_FINDIT
+    revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLPipelineInput(
         cl_key=CLKey(
             repo_name=repo_name.decode('utf-8'),
@@ -111,7 +111,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    revert_status = revert_util.CREATED_BY_FINDIT
+    revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLPipelineInput(
         cl_key=CLKey(
             repo_name=repo_name.decode('utf-8'),
@@ -128,7 +128,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.submit_revert_pipeline_id = 'pipeline_id'
     culprit.put()
 
-    revert_status = revert_util.CREATED_BY_FINDIT
+    revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLPipelineInput(
         cl_key=CLKey(
             repo_name=repo_name.decode('utf-8'),

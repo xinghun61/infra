@@ -6,6 +6,9 @@ import mock
 
 from common import constants
 from gae_libs.pipeline_wrapper import pipeline_handlers
+from pipelines.pipeline_inputs_and_outputs import CLKey
+from pipelines.pipeline_inputs_and_outputs import (
+    SendNotificationForCulpritPipelineInput)
 from pipelines.test_failure import revert_and_notify_test_culprit_pipeline
 from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
     RevertAndNotifyTestCulpritPipeline)
@@ -33,12 +36,14 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     }
     heuristic_cls = [[repo_name, revision]]
 
-    self.MockPipeline(
-        SendNotificationForCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, repo_name, revision, True
-        ])
+    self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
+                                 SendNotificationForCulpritPipelineInput(
+                                     cl_key=CLKey(
+                                         repo_name=repo_name.decode('utf-8'),
+                                         revision=revision.decode('utf-8')),
+                                     force_notify=True,
+                                     revert_status=None),
+                                 True)
 
     pipeline = RevertAndNotifyTestCulpritPipeline(master_name, builder_name,
                                                   build_number, culprits,

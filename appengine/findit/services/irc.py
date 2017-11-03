@@ -12,7 +12,7 @@ import textwrap
 
 from libs.irc_client import IRCClient
 from model.wf_suspected_cl import WfSuspectedCL
-from services import revert
+from services import gerrit
 
 _IRC_HOST = 'irc.freenode.net'
 _IRC_CHANNEL = '#chromium'
@@ -20,8 +20,8 @@ _IRC_NICK = 'Findit'
 _IRC_DISC = 'CulpritFinder'
 
 
-def _GenerateMessage(
-      revert_cl_url, commit_position, revision, culprit_key, submitted):
+def _GenerateMessage(revert_cl_url, commit_position, revision, culprit_key,
+                     submitted):
   action = 'submitted' if submitted else 'created'
   return textwrap.dedent("""
       Findit (https://goo.gl/kROfz5) has %s a revert (%s) for CL %s,
@@ -37,7 +37,7 @@ def SendMessageToIrc(pipeline_input):
   revert_status = pipeline_input.revert_status
   submitted = pipeline_input.submitted
 
-  if revert_status != revert.CREATED_BY_FINDIT:
+  if revert_status != gerrit.CREATED_BY_FINDIT:
     # No need to send notification to irc if Findit doesn't create revert.
     return False
 

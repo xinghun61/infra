@@ -6,7 +6,7 @@ from gae_libs.pipelines import SynchronousPipeline
 from libs import analysis_status as status
 from model.wf_suspected_cl import WfSuspectedCL
 from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
-from services import revert
+from services import gerrit
 
 
 class SubmitRevertCLPipeline(SynchronousPipeline):
@@ -26,4 +26,4 @@ class SubmitRevertCLPipeline(SynchronousPipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def RunImpl(self, pipeline_input):
-    return revert.CommitRevert(pipeline_input, self.pipeline_id)
+    return gerrit.CommitRevert(pipeline_input, self.pipeline_id)

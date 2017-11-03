@@ -7,7 +7,7 @@ import mock
 from pipelines.pipeline_inputs_and_outputs import CLKey
 from pipelines.pipeline_inputs_and_outputs import (
     SendNotificationToIrcPipelineInput)
-from services import revert
+from services import gerrit
 from services import irc
 from waterfall.send_notification_to_irc_pipeline import (
     SendNotificationToIrcPipeline)
@@ -20,13 +20,13 @@ class SendNotificationToIrcPipelineTest(wf_testcase.WaterfallTestCase):
   def testSendNotification(self, _):
     repo_name = 'chromium'
     revision = 'rev'
-    revert_status = revert.CREATED_BY_FINDIT
+    revert_status = gerrit.CREATED_BY_FINDIT
     submitted = True
     pipeline_input = SendNotificationToIrcPipelineInput(
-        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
-                     revision=revision.decode('utf-8')),
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
         revert_status=revert_status,
-        submitted=submitted
-    )
+        submitted=submitted)
     pipeline = SendNotificationToIrcPipeline(pipeline_input)
     self.assertTrue(pipeline.run(pipeline_input))

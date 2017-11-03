@@ -20,8 +20,10 @@ from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
 from pipelines.pipeline_inputs_and_outputs import CLKey
 from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
+from pipelines.pipeline_inputs_and_outputs import (
+    SendNotificationForCulpritPipelineInput)
 from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
-from services import revert
+from services import gerrit
 from waterfall import buildbot
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
@@ -30,10 +32,10 @@ from waterfall.test import wf_testcase
 _CODEREVIEW = Gerrit('chromium-review.googlesource.com')
 
 
-class RevertUtilTest(wf_testcase.WaterfallTestCase):
+class GerritTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
-    super(RevertUtilTest, self).setUp()
+    super(GerritTest, self).setUp()
     self.culprit_commit_position = 123
     self.culprit_code_review_url = (
         'https://chromium-review.googlesource.com/12345')
@@ -64,7 +66,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(_CODEREVIEW, 'AddReviewers', return_value=True)
   @mock.patch.object(_CODEREVIEW, 'CreateRevert')
   @mock.patch.object(_CODEREVIEW, 'GetClDetails')
-  def testRevertCLSucceed(self, mock_fn, mock_revert, mock_add, *_):
+  def testRevertCLSucceed(self, mock_fn, mock_gerrit, mock_add, *_):
     repo_name = 'chromium'
     revision = 'rev1'
     commit_position = 123
@@ -74,7 +76,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
         Commit('20001', 'rev1', datetime(2017, 2, 1, 0, 0, 0)))
     cl_info.owner_email = 'abc@chromium.org'
     mock_fn.return_value = cl_info
-    mock_revert.return_value = '54321'
+    mock_gerrit.return_value = '54321'
 
     culprit = WfSuspectedCL.Create(repo_name, revision, commit_position)
     culprit.builds = {
@@ -93,14 +95,14 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     }
     culprit.put()
 
-    revert_status = revert.RevertCulprit(
+    revert_status = gerrit.RevertCulprit(
         CreateRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
                 revision=revision.decode('utf-8')),
             build_id='m/b/1'.decode('utf-8')))
 
-    self.assertEquals(revert_status, revert.CREATED_BY_FINDIT)
+    self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.COMPLETED)
@@ -112,7 +114,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
         https://findit-for-me.appspot.com/waterfall/culprit?key=%s\n
         Sample Failed Build: %s""") % (commit_position, culprit.key.urlsafe(),
                                        buildbot.CreateBuildUrl('m', 'b', '1'))
-    mock_revert.assert_called_once_with(reason, self.review_change_id, '20001')
+    mock_gerrit.assert_called_once_with(reason, self.review_change_id, '20001')
 
     culprit_link = (
         'https://findit-for-me.appspot.com/waterfall/culprit?key=%s' %
@@ -146,7 +148,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
         at %s.
 
         For more information about Findit auto-revert: %s.""") % (
-        false_positive_bug_link, auto_revert_bug_link, revert._MANUAL_LINK)
+        false_positive_bug_link, auto_revert_bug_link, gerrit._MANUAL_LINK)
     mock_add.assert_called_once_with('54321', ['a@b.com'], message)
 
   @mock.patch.object(
@@ -167,16 +169,16 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
 
     WfSuspectedCL.Create(repo_name, revision, 123).put()
 
-    revert_status = revert.RevertCulprit(
+    revert_status = gerrit.RevertCulprit(
         CreateRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
                 revision=revision.decode('utf-8')),
             build_id='m/b/1'.decode('utf-8')))
 
-    self.assertEquals(revert_status, revert.CREATED_BY_SHERIFF)
+    self.assertEquals(revert_status, gerrit.CREATED_BY_SHERIFF)
 
-    committed = revert.CommitRevert(
+    committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
@@ -213,16 +215,16 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
 
     WfSuspectedCL.Create(repo_name, revision, 123).put()
 
-    revert_status = revert.RevertCulprit(
+    revert_status = gerrit.RevertCulprit(
         CreateRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
                 revision=revision.decode('utf-8')),
             build_id='m/b/1'.decode('utf-8')))
 
-    self.assertEquals(revert_status, revert.ERROR)
+    self.assertEquals(revert_status, gerrit.ERROR)
 
-    committed = revert.CommitRevert(
+    committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
@@ -261,14 +263,14 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.cr_notification_status = status.COMPLETED
     culprit.put()
 
-    revert_status = revert.RevertCulprit(
+    revert_status = gerrit.RevertCulprit(
         CreateRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
                 revision=revision.decode('utf-8')),
             build_id='m/b/1'.decode('utf-8')))
 
-    self.assertEquals(revert_status, revert.CREATED_BY_FINDIT)
+    self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.COMPLETED)
@@ -291,19 +293,19 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    revert_status = revert.RevertCulprit(
+    revert_status = gerrit.RevertCulprit(
         CreateRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
                 revision=revision.decode('utf-8')),
             build_id='m/b/1'.decode('utf-8')))
 
-    self.assertEquals(revert_status, revert.SKIPPED)
+    self.assertEquals(revert_status, gerrit.SKIPPED)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.SKIPPED)
     self.assertIsNone(culprit.revert_cl)
-    self.assertEqual(culprit.skip_revert_reason, revert.CULPRIT_IS_A_REVERT)
+    self.assertEqual(culprit.skip_revert_reason, gerrit.CULPRIT_IS_A_REVERT)
 
   @mock.patch.object(
       codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
@@ -321,19 +323,19 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    revert_status = revert.RevertCulprit(
+    revert_status = gerrit.RevertCulprit(
         CreateRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
                 revision=revision.decode('utf-8')),
             build_id='m/b/1'.decode('utf-8')))
 
-    self.assertEquals(revert_status, revert.SKIPPED)
+    self.assertEquals(revert_status, gerrit.SKIPPED)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.SKIPPED)
     self.assertIsNone(culprit.revert_cl)
-    self.assertEqual(culprit.skip_revert_reason, revert.AUTO_REVERT_OFF)
+    self.assertEqual(culprit.skip_revert_reason, gerrit.AUTO_REVERT_OFF)
 
   def testRevertHasCompleted(self):
     repo_name = 'chromium'
@@ -345,7 +347,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
 
-    self.assertFalse(revert._CanRevert(repo_name, revision, pipeline_id))
+    self.assertFalse(gerrit._CanRevert(repo_name, revision, pipeline_id))
 
   def testRevertACulpritIsBeingReverted(self):
     repo_name = 'chromium'
@@ -357,7 +359,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.revert_pipeline_id = 'pipeline_id'
     culprit.put()
 
-    self.assertFalse(revert._CanRevert(repo_name, revision, pipeline_id))
+    self.assertFalse(gerrit._CanRevert(repo_name, revision, pipeline_id))
 
   @mock.patch.object(waterfall_config, 'GetActionSettings', return_value={})
   def testRevertTurnedOff(self, _):
@@ -369,7 +371,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
             repo_name=repo_name.decode('utf-8'),
             revision=revision.decode('utf-8')),
         build_id='m/b/1'.decode('utf-8'))
-    self.assertFalse(revert.ShouldRevert(pipeline_input, None))
+    self.assertFalse(gerrit.ShouldRevert(pipeline_input, None))
 
   def testShouldNotRevertIfRevertIsSkipped(self):
     repo_name = 'chromium'
@@ -382,10 +384,10 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
             repo_name=repo_name.decode('utf-8'),
             revision=revision.decode('utf-8')),
         build_id='m/b/1'.decode('utf-8'))
-    self.assertFalse(revert.ShouldRevert(pipeline_input, None))
+    self.assertFalse(gerrit.ShouldRevert(pipeline_input, None))
 
   @mock.patch.object(
-      revert, '_GetDailyNumberOfRevertedCulprits', return_value=10)
+      gerrit, '_GetDailyNumberOfRevertedCulprits', return_value=10)
   def testAutoRevertExceedsLimit(self, _):
     repo_name = 'chromium'
     revision = 'rev1'
@@ -398,9 +400,9 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
             repo_name=repo_name.decode('utf-8'),
             revision=revision.decode('utf-8')),
         build_id='m/b/1'.decode('utf-8'))
-    self.assertFalse(revert.ShouldRevert(pipeline_input, None))
+    self.assertFalse(gerrit.ShouldRevert(pipeline_input, None))
 
-  @mock.patch.object(revert, '_CanRevert', return_value=True)
+  @mock.patch.object(gerrit, '_CanRevert', return_value=True)
   def testShouldRevert(self, _):
     repo_name = 'chromium'
     revision = 'rev1'
@@ -410,12 +412,12 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
             repo_name=repo_name.decode('utf-8'),
             revision=revision.decode('utf-8')),
         build_id='m/b/1'.decode('utf-8'))
-    self.assertTrue(revert.ShouldRevert(pipeline_input, pipeline_id))
+    self.assertTrue(gerrit.ShouldRevert(pipeline_input, pipeline_id))
 
   @mock.patch.object(
       time_util, 'GetUTCNow', return_value=datetime(2017, 02, 01, 0, 0, 0))
   def testGetDailyNumberOfRevertedCulprits(self, _):
-    self.assertEqual(0, revert._GetDailyNumberOfRevertedCulprits(10))
+    self.assertEqual(0, gerrit._GetDailyNumberOfRevertedCulprits(10))
 
   def testRevertHasCommitted(self):
     repo_name = 'chromium'
@@ -426,8 +428,8 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.revert_submission_status = status.COMPLETED
     culprit.put()
 
-    revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(
+    revert_status = gerrit.CREATED_BY_FINDIT
+    committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
@@ -436,7 +438,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(committed)
 
-  @mock.patch.object(revert, '_GetDailyNumberOfCommits', return_value=4)
+  @mock.patch.object(gerrit, '_GetDailyNumberOfCommits', return_value=4)
   def testCommitExceedsLimit(self, _):
     repo_name = 'chromium'
     revision = 'rev1'
@@ -446,8 +448,8 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
 
-    revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(
+    revert_status = gerrit.CREATED_BY_FINDIT
+    committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
@@ -461,8 +463,8 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
 
-    revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(
+    revert_status = gerrit.CREATED_BY_FINDIT
+    committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
@@ -490,8 +492,8 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
 
-    revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(
+    revert_status = gerrit.CREATED_BY_FINDIT
+    committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
@@ -530,8 +532,8 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
 
-    revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(
+    revert_status = gerrit.CREATED_BY_FINDIT
+    committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
@@ -574,7 +576,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
         at %s.
 
         For more information about Findit auto-revert: %s.""") % (
-        false_positive_bug_link, auto_revert_bug_link, revert._MANUAL_LINK)
+        false_positive_bug_link, auto_revert_bug_link, gerrit._MANUAL_LINK)
     mock_add.assert_called_once_with('54321', ['a@b.com'], message)
 
   @mock.patch.object(
@@ -603,8 +605,8 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
 
-    revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(
+    revert_status = gerrit.CREATED_BY_FINDIT
+    committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
@@ -643,8 +645,8 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.revert_cl = revert_for_culprit
     culprit.revert_status = status.COMPLETED
     culprit.put()
-    revert_status = revert.CREATED_BY_FINDIT
-    committed = revert.CommitRevert(
+    revert_status = gerrit.CREATED_BY_FINDIT
+    committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
@@ -677,7 +679,7 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
         at %s.
 
         For more information about Findit auto-revert: %s.""") % (
-        bug_link, revert._MANUAL_LINK)
+        bug_link, gerrit._MANUAL_LINK)
     mock_add.assert_called_once_with(revert_change_id, ['a@b.com'], message)
 
   def testUpdateCulprit(self):
@@ -688,15 +690,15 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.submit_revert_pipeline_id = 'some_id'
     culprit.put()
 
-    culprit = revert._UpdateCulprit(repo_name, revision)
+    culprit = gerrit._UpdateCulprit(repo_name, revision)
     self.assertEqual(culprit.submit_revert_pipeline_id, 'some_id')
 
-  @mock.patch.object(revert, '_CanCommitRevert', return_value=True)
+  @mock.patch.object(gerrit, '_CanCommitRevert', return_value=True)
   @mock.patch.object(suspected_cl_util, 'GetCulpritInfo')
   def testShouldNotCommitRevertForAutoRoll(self, mock_info, _):
     repo_name = 'chromium'
     revision = 'rev1'
-    revert_status = revert.CREATED_BY_FINDIT
+    revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_id = 'pipeline_id'
     mock_info.return_value = {
         'commit_position': self.culprit_commit_position,
@@ -713,5 +715,150 @@ class RevertUtilTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     self.assertFalse(
-        revert._ShouldCommitRevert(repo_name, revision, revert_status,
+        gerrit._ShouldCommitRevert(repo_name, revision, revert_status,
                                    pipeline_id))
+
+  @mock.patch.object(waterfall_config, 'GetActionSettings',
+                     return_value={'cr_notification_build_threshold': 2})
+  def testShouldNotSendNotificationForSingleFailedBuild(self, _):
+    culprit = WfSuspectedCL.Create('chromium', 'r1', 1)
+    culprit.builds['m/b1/1'] = {}
+    culprit.put()
+
+    self.assertFalse(
+        gerrit._ShouldSendNotification(
+            'chromium', 'r1', False, None))
+    self.assertFalse(culprit.cr_notification_processed)
+
+  @mock.patch.object(waterfall_config, 'GetActionSettings',
+                     return_value={'cr_notification_build_threshold': 2})
+  def testShouldNotSendNotificationForSameFailedBuild(self, _):
+    culprit = WfSuspectedCL.Create('chromium', 'r2', 1)
+    culprit.builds['m/b2/2'] = {}
+    culprit.put()
+    self.assertTrue(
+        gerrit._ShouldSendNotification(
+            'chromium', 'r2', True, gerrit.CREATED_BY_SHERIFF))
+    self.assertFalse(
+        gerrit._ShouldSendNotification(
+            'chromium', 'r2', True, gerrit.CREATED_BY_SHERIFF))
+    culprit = WfSuspectedCL.Get('chromium', 'r2')
+    self.assertEqual(status.RUNNING, culprit.cr_notification_status)
+
+  @mock.patch.object(waterfall_config, 'GetActionSettings',
+                     return_value={'cr_notification_build_threshold': 2})
+  def testShouldSendNotificationForSecondFailedBuild(self, _):
+    culprit = WfSuspectedCL.Create('chromium', 'r3', 1)
+    culprit.builds['m/b31/31'] = {}
+    culprit.put()
+    self.assertFalse(
+        gerrit._ShouldSendNotification(
+            'chromium', 'r3', False, None))
+    culprit = WfSuspectedCL.Get('chromium', 'r3')
+    culprit.builds['m/b32/32'] = {}
+    culprit.put()
+    self.assertTrue(
+        gerrit._ShouldSendNotification(
+            'chromium', 'r3', False, None))
+    culprit = WfSuspectedCL.Get('chromium', 'r3')
+    self.assertEqual(status.RUNNING, culprit.cr_notification_status)
+
+  @mock.patch.object(waterfall_config, 'GetActionSettings',
+                     return_value={'cr_notification_build_threshold': 2})
+  def testShouldNotSendNotificationIfRevertedByFindit(self, _):
+    culprit = WfSuspectedCL.Create('chromium', 'r1', 1)
+    culprit.builds['m/b1/1'] = {}
+    culprit.put()
+
+    self.assertFalse(
+      gerrit._ShouldSendNotification(
+        'chromium', 'r1', True, gerrit.CREATED_BY_FINDIT))
+    self.assertFalse(culprit.cr_notification_processed)
+
+  @mock.patch.object(gerrit, '_ShouldSendNotification', return_value=False)
+  def testShouldNotSendNotificationForCulprit(self, _):
+    repo_name = 'chromium'
+    revision = 'rev1'
+    force_notify = True
+    revert_status = gerrit.CREATED_BY_SHERIFF
+
+    pipeline_input = SendNotificationForCulpritPipelineInput(
+        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
+                     revision=revision.decode('utf-8')),
+        force_notify=force_notify,
+        revert_status=revert_status)
+    self.assertFalse(gerrit.SendNotificationForCulprit(pipeline_input))
+
+  @mock.patch.object(gerrit, '_ShouldSendNotification', return_value=True)
+  @mock.patch.object(
+      codereview_util, 'GetCodeReviewForReview', return_value=None)
+  def testSendNotificationForCulpritNoCodeReview(self, *_):
+    repo_name = 'chromium'
+    revision = 'rev1'
+    force_notify = True
+    revert_status = gerrit.CREATED_BY_SHERIFF
+
+    pipeline_input = SendNotificationForCulpritPipelineInput(
+        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
+                     revision=revision.decode('utf-8')),
+        force_notify=force_notify,
+        revert_status=revert_status)
+
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    culprit.put()
+
+    self.assertFalse(gerrit.SendNotificationForCulprit(pipeline_input))
+
+  @mock.patch.object(gerrit, '_ShouldSendNotification', return_value=True)
+  @mock.patch.object(
+      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  @mock.patch.object(_CODEREVIEW, 'PostMessage', return_value=True)
+  def testSendNotificationForCulpritConfirm(self, mock_post, *_):
+    repo_name = 'chromium'
+    revision = 'rev1'
+    force_notify = True
+    revert_status = gerrit.CREATED_BY_SHERIFF
+
+    pipeline_input = SendNotificationForCulpritPipelineInput(
+        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
+                     revision=revision.decode('utf-8')),
+        force_notify=force_notify,
+        revert_status=revert_status)
+
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    culprit.put()
+
+    self.assertTrue(gerrit.SendNotificationForCulprit(pipeline_input))
+    message = textwrap.dedent("""
+    Findit (https://goo.gl/kROfz5) %s this CL at revision %s as the culprit for
+    failures in the build cycles as shown on:
+    https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
+        'confirmed', self.culprit_commit_position, culprit.key.urlsafe())
+    mock_post.assert_called_once_with(self.review_change_id, message, False)
+
+  @mock.patch.object(gerrit, '_ShouldSendNotification', return_value=True)
+  @mock.patch.object(
+      codereview_util, 'GetCodeReviewForReview', return_value=_CODEREVIEW)
+  @mock.patch.object(_CODEREVIEW, 'PostMessage', return_value=True)
+  def testSendNotificationForCulprit(self, mock_post, *_):
+    repo_name = 'chromium'
+    revision = 'rev1'
+    force_notify = True
+    revert_status = None
+
+    pipeline_input = SendNotificationForCulpritPipelineInput(
+        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
+                     revision=revision.decode('utf-8')),
+        force_notify=force_notify,
+        revert_status=revert_status)
+
+    culprit = WfSuspectedCL.Create(repo_name, revision, 123)
+    culprit.put()
+
+    self.assertTrue(gerrit.SendNotificationForCulprit(pipeline_input))
+    message = textwrap.dedent("""
+    Findit (https://goo.gl/kROfz5) %s this CL at revision %s as the culprit for
+    failures in the build cycles as shown on:
+    https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
+        'identified', self.culprit_commit_position, culprit.key.urlsafe())
+    mock_post.assert_called_once_with(self.review_change_id, message, True)

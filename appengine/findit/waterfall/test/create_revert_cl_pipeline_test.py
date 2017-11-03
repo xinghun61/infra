@@ -14,7 +14,7 @@ from infra_api_clients.codereview.rietveld import Rietveld
 from libs import analysis_status as status
 from libs import time_util
 from model.wf_suspected_cl import WfSuspectedCL
-from services import revert
+from services import gerrit
 from pipelines.pipeline_inputs_and_outputs import CLKey
 from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
 from waterfall import buildbot
@@ -80,7 +80,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = CreateRevertCLPipeline(pipeline_input)
     revert_status = pipeline.run(pipeline_input)
 
-    self.assertEquals(revert_status, revert.CREATED_BY_FINDIT)
+    self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
 
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEqual(culprit.revert_status, status.COMPLETED)
@@ -108,7 +108,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = CreateRevertCLPipeline(pipeline_input)
     revert_status = pipeline.run(pipeline_input)
 
-    self.assertEqual(revert.SKIPPED, revert_status)
+    self.assertEqual(gerrit.SKIPPED, revert_status)
 
   def testLogUnexpectedAborting(self):
     repo_name = 'chromium'

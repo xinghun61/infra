@@ -1,13 +1,14 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-"""This module is for auto-revert operations.
+"""This module is for gerrit_related operations.
 
 It provides fuctions to:
   * Use rules to check if a CL can be auto reverted
   * Auto create a revert CL
   * Use rules to check if a revert can be auto submitted
   * Auto submit reverts that are created by Findit
+  * Send notifications to codereview
 """
 
 from datetime import timedelta
@@ -24,6 +25,7 @@ from infra_api_clients.codereview import codereview_util
 from libs import analysis_status as status
 from libs import time_util
 from model.base_suspected_cl import RevertCL
+from model.wf_config import FinditConfig
 from model.wf_suspected_cl import WfSuspectedCL
 from waterfall import buildbot
 from waterfall import suspected_cl_util
@@ -511,3 +513,96 @@ def CommitRevert(pipeline_input, pipeline_id):
         'action_taken': 'commit_error'
     })
   return committed
+
+
+###################### Functions to send notification. ######################
+@ndb.transactional
+def _ShouldSendNotification(repo_name, revision, force_notify, revert_status):
+  """Returns True if a notification for the culprit should be sent.
+
+  Send notification only when:
+    1. The culprit is not reverted.
+    2. It was not processed yet.
+    3. The culprit is for multiple failures in different builds to avoid false
+      positive due to flakiness.
+
+  Any new criteria for deciding when to notify should be implemented within this
+  function.
+
+  Args:
+    repo_name, revision (str): Uniquely identify the revision to notify about.
+    force_notify (bool): If we should skip the fail number threshold check.
+    revert_status (int): Status of revert if exists.
+
+  Returns:
+    A boolean indicating whether we should send the notification.
+
+  """
+  if revert_status == CREATED_BY_FINDIT:
+    # Already notified when revert, bail out.
+    return False
+
+  if revert_status == CREATED_BY_SHERIFF:
+    force_notify = True
+
+  # TODO (chanli): Add check for if confidence for the culprit is
+  # over threshold.
+  culprit = WfSuspectedCL.Get(repo_name, revision)
+  assert culprit
+
+  if culprit.cr_notification_processed:
+    return False
+
+  action_settings = waterfall_config.GetActionSettings()
+  # Set some impossible default values to prevent notification by default.
+  build_num_threshold = action_settings.get('cr_notification_build_threshold',
+                                              100000)
+  if force_notify or len(culprit.builds) >= build_num_threshold:
+    culprit.cr_notification_status = status.RUNNING
+    culprit.put()
+    return True
+  return False
+
+
+def SendNotificationForCulprit(pipeline_input):
+  repo_name = pipeline_input.cl_key.repo_name
+  revision = pipeline_input.cl_key.revision
+  force_notify = pipeline_input.force_notify
+  revert_status = pipeline_input.revert_status
+
+  if not _ShouldSendNotification(
+      repo_name, revision, force_notify, revert_status):
+    return False
+
+  culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
+  commit_position = culprit_info['commit_position']
+  review_server_host = culprit_info['review_server_host']
+  review_change_id = culprit_info['review_change_id']
+
+  code_review_settings = FinditConfig().Get().code_review_settings
+  codereview = codereview_util.GetCodeReviewForReview(review_server_host,
+                                                      code_review_settings)
+  culprit = WfSuspectedCL.Get(repo_name, revision)
+
+  sent = False
+  if codereview and review_change_id:
+    # Occasionally, a commit was not uploaded for code-review.
+    action = 'identified'
+    should_email = True
+    if revert_status == CREATED_BY_SHERIFF:
+      action = 'confirmed'
+      should_email = False
+
+    message = textwrap.dedent("""
+    Findit (https://goo.gl/kROfz5) %s this CL at revision %s as the culprit for
+    failures in the build cycles as shown on:
+    https://findit-for-me.appspot.com/waterfall/culprit?key=%s""") % (
+        action, commit_position or revision, culprit.key.urlsafe())
+    sent = codereview.PostMessage(review_change_id, message, should_email)
+  else:
+    logging.error('No code-review url for %s/%s', repo_name, revision)
+
+  suspected_cl_util.UpdateCulpritNotificationStatus(culprit.key.urlsafe(),
+                                                    status.COMPLETED
+                                                    if sent else status.ERROR)
+  return sent

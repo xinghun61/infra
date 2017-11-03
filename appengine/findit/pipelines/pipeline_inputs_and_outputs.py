@@ -29,3 +29,9 @@ class SendNotificationToIrcPipelineInput(StructuredObject):
   cl_key = CLKey
   revert_status = int
   submitted = bool
+
+
+class SendNotificationForCulpritPipelineInput(StructuredObject):
+  cl_key = CLKey
+  force_notify = bool
+  revert_status = int

@@ -12,12 +12,12 @@ from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
+    RevertAndNotifyTestCulpritPipeline)
 from waterfall import build_util
 from waterfall import identify_try_job_culprit_pipeline
 from waterfall.identify_try_job_culprit_pipeline import (
     IdentifyTryJobCulpritPipeline)
-from waterfall.revert_and_notify_culprit_pipeline import (
-    RevertAndNotifyCulpritPipeline)
 from waterfall.test import wf_testcase
 
 
@@ -437,12 +437,10 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     self.MockPipeline(
-        RevertAndNotifyCulpritPipeline,
+        RevertAndNotifyTestCulpritPipeline,
         None,
         expected_args=[
-            master_name, builder_name, build_number, None, [],
-            failure_type.COMPILE
-        ])
+            master_name, builder_name, build_number, None, []])
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.COMPILE,
                                              '1', None)
@@ -517,13 +515,12 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     }]
 
     self.MockPipeline(
-        RevertAndNotifyCulpritPipeline,
+        RevertAndNotifyTestCulpritPipeline,
         None,
         expected_args=[
             master_name, builder_name, build_number, {
                 expected_culprit: expected_suspected_cl
-            }, [], failure_type.COMPILE
-        ])
+            }, []])
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.COMPILE,
                                              '1', compile_result)
@@ -563,12 +560,10 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     self.MockPipeline(
-        RevertAndNotifyCulpritPipeline,
+        RevertAndNotifyTestCulpritPipeline,
         None,
         expected_args=[
-            master_name, builder_name, build_number, {}, [],
-            failure_type.COMPILE
-        ])
+            master_name, builder_name, build_number, {}, []])
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.COMPILE,
                                              '1', compile_result)
@@ -617,12 +612,10 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     self.MockPipeline(
-        RevertAndNotifyCulpritPipeline,
+        RevertAndNotifyTestCulpritPipeline,
         None,
         expected_args=[
-            master_name, builder_name, build_number, {}, [],
-            failure_type.COMPILE
-        ])
+            master_name, builder_name, build_number, {}, []])
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.COMPILE,
                                              '1', compile_result)
@@ -657,11 +650,10 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     self.MockPipeline(
-        RevertAndNotifyCulpritPipeline,
+        RevertAndNotifyTestCulpritPipeline,
         None,
         expected_args=[
-            master_name, builder_name, build_number, None, [], failure_type.TEST
-        ])
+            master_name, builder_name, build_number, None, []])
     pipeline = IdentifyTryJobCulpritPipeline(
         master_name, builder_name, build_number, failure_type.TEST, '1', None)
     pipeline.start()
@@ -699,12 +691,11 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     self.MockPipeline(
-        RevertAndNotifyCulpritPipeline,
+        RevertAndNotifyTestCulpritPipeline,
         None,
         expected_args=[
             master_name, builder_name, build_number, None,
-            [['chromium', 'rev1']], failure_type.TEST
-        ])
+            [['chromium', 'rev1']]])
     pipeline = IdentifyTryJobCulpritPipeline(
         master_name, builder_name, build_number, failure_type.TEST, '1', None)
     pipeline.start()
@@ -750,11 +741,10 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     self.MockPipeline(
-        RevertAndNotifyCulpritPipeline,
+        RevertAndNotifyTestCulpritPipeline,
         None,
         expected_args=[
-            master_name, builder_name, build_number, {}, [], failure_type.TEST
-        ])
+            master_name, builder_name, build_number, {}, []])
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.TEST,
                                              '1', test_result)
@@ -816,13 +806,12 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     }]
 
     self.MockPipeline(
-        RevertAndNotifyCulpritPipeline,
+        RevertAndNotifyTestCulpritPipeline,
         None,
         expected_args=[
             master_name, builder_name, build_number, {
                 'rev3': expected_suspected_cl
-            }, [], failure_type.TEST
-        ])
+            }, []])
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.TEST,
                                              '1', test_result)
@@ -986,12 +975,10 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     }
 
     self.MockPipeline(
-        RevertAndNotifyCulpritPipeline,
+        RevertAndNotifyTestCulpritPipeline,
         None,
         expected_args=[
-            master_name, builder_name, build_number, expected_culprits, [],
-            failure_type.TEST
-        ])
+            master_name, builder_name, build_number, expected_culprits, []])
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.TEST,
                                              '1', test_result)
@@ -1094,13 +1081,12 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         compile_results=[compile_result])
 
     self.MockPipeline(
-        RevertAndNotifyCulpritPipeline,
+        RevertAndNotifyTestCulpritPipeline,
         None,
         expected_args=[
             master_name, builder_name, build_number, {
                 revision: heuristic_suspected_cl
-            }, [[repo_name, revision]], failure_type.COMPILE
-        ])
+            }, [[repo_name, revision]]])
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.COMPILE,
                                              '1', compile_result)
@@ -1166,11 +1152,10 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     WfTryJob.Create(master_name, builder_name, build_number).put()
 
     self.MockPipeline(
-        RevertAndNotifyCulpritPipeline,
+        RevertAndNotifyTestCulpritPipeline,
         None,
         expected_args=[
-            master_name, builder_name, build_number, None, [], failure_type.TEST
-        ])
+            master_name, builder_name, build_number, None, []])
     pipeline = IdentifyTryJobCulpritPipeline(
         master_name, builder_name, build_number, failure_type.TEST, None, None)
     pipeline.start()

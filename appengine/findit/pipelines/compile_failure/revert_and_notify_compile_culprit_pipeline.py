@@ -10,6 +10,8 @@ from pipelines.pipeline_inputs_and_outputs import CLKey
 from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
 from pipelines.pipeline_inputs_and_outputs import (
     SendNotificationToIrcPipelineInput)
+from pipelines.pipeline_inputs_and_outputs import (
+    SendNotificationForCulpritPipelineInput)
 from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
 from services import ci_failure
 from waterfall import build_util
@@ -73,6 +75,9 @@ class RevertAndNotifyCompileCulpritPipeline(BasePipeline):
         submitted=submitted)
     yield SendNotificationToIrcPipeline(send_notification_to_irc_input)
 
-    yield SendNotificationForCulpritPipeline(master_name, builder_name,
-                                             build_number, repo_name, revision,
-                                             force_notify, revert_status)
+    send_notification_to_culprit_input = CreateInputObjectInstance(
+        SendNotificationForCulpritPipelineInput,
+        cl_key=cl_key,
+        force_notify=force_notify,
+        revert_status=revert_status)
+    yield SendNotificationForCulpritPipeline(send_notification_to_culprit_input)
