@@ -78,7 +78,7 @@ func parsePowerEdgeTemps(out []byte) (temps, error) {
 		sensor := p.ProbeLocation
 		// omreport reports temps in tenths of a degree.
 		temp := p.ProbeReading / 10.0
-		if sensor == "System Board Inlet Temp" {
+		if sensor == "System Board Inlet Temp" || sensor == "System Board Ambient Temp" {
 			t.Ambient = &temp
 		} else if strings.HasPrefix(sensor, "CPU") {
 			t.CPUs = append(t.CPUs, cpuTemp{Core: sensor, Temperature: temp})
@@ -126,5 +126,6 @@ func getTemps(c context.Context, model string) (temps, error) {
 	} else if strings.HasPrefix(model, "MacBook") {
 		return getMacBookTemps(c)
 	}
-	return temps{}, fmt.Errorf("Unable to get temps for hardware model: %s", model)
+	// Temperature reporting is best-effort, so don't bother reporting an error on unknown models.
+	return temps{}, nil
 }

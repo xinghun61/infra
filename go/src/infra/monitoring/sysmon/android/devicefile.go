@@ -6,7 +6,6 @@ package android
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"time"
 
@@ -125,16 +124,14 @@ func loadFile(c context.Context, path string) (deviceStatusFile, status, float64
 	}
 
 	if ret.Version != fileVersion && ret.Version != previousFileVersion {
-		return deviceStatusFile{}, invalidVersion, 0, fmt.Errorf(
-			"android device file %s is version %d, not %d", path, ret.Version, fileVersion)
+		return deviceStatusFile{}, invalidVersion, 0, nil
 	}
 
 	ts := time.Unix(0, int64(ret.Timestamp*float64(time.Second)))
 	now := clock.Now(c)
 	staleness := now.Sub(ts)
 	if staleness >= maxStaleness {
-		return deviceStatusFile{}, staleFile, staleness.Seconds(), fmt.Errorf(
-			"android device file %s is %s stale, max %s", path, staleness, maxStaleness)
+		return deviceStatusFile{}, staleFile, staleness.Seconds(), nil
 	}
 
 	return ret, good, staleness.Seconds(), nil

@@ -195,7 +195,7 @@ func TestLoadFile(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			_, status, _, err := loadFile(ctx, fileName)
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
 			So(status, ShouldEqual, "invalid_version")
 		})
 
@@ -224,7 +224,7 @@ func TestLoadFile(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			_, status, staleness, err := loadFile(ctx, fileName)
-			So(err, ShouldNotBeNil)
+			So(err, ShouldBeNil)
 			So(staleness, ShouldEqual, 161)
 			So(status, ShouldEqual, "stale_file")
 		})

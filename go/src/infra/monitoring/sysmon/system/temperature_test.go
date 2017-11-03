@@ -53,7 +53,7 @@ func TestTemps(t *testing.T) {
 		So(len(t.CPUs), ShouldEqual, 0)
 	})
 
-	Convey("ParsePowerEdgeTemps", t, func() {
+	Convey("ParsePowerEdgeTemps_windows", t, func() {
 		// Below string was pulled from the omreport of a R720 on Win7.
 		out := []byte(`
 		<?xml version="1.0" encoding="UTF-8"?>
@@ -156,6 +156,46 @@ func TestTemps(t *testing.T) {
 		So(t.CPUs, ShouldContain, cpuTemp{Core: "CPU2 Temp", Temperature: 80.0})
 	})
 
+	Convey("ParsePowerEdgeTemps_ubuntu", t, func() {
+		// Below string was pulled from the omreport of a R220 on Ubuntu Trusty.
+		out := []byte(`
+                <?xml version="1.0" encoding="UTF-8"?>
+                <OMA cli="true">
+                        <Chassis oid="2" status="2" name="2" objtype="17" index="0" display="Main System Chassis">
+                                <TemperatureProbeList poid="2" count="1">
+                                        <TemperatureProbe oid="134217730" status="2" poid="2" pobjtype="17" index="0">
+                                                <SubType>5</SubType>
+                                                <ProbeReading>275</ProbeReading>
+                                                <ProbeThresholds>
+                                                        <UNRThreshold>-2147483648</UNRThreshold>
+                                                        <UCThreshold>470</UCThreshold>
+                                                        <UNCThreshold>420</UNCThreshold>
+                                                        <LNCThreshold>80</LNCThreshold>
+                                                        <LCThreshold>30</LCThreshold>
+                                                        <LNRThreshold>-2147483648</LNRThreshold>
+                                                </ProbeThresholds>
+                                                <ProbeStatus>2</ProbeStatus>
+                                                <Capabilities>
+                                                        <ProbeUNCDefSetEnabled>true</ProbeUNCDefSetEnabled>
+                                                        <ProbeLNCDefSetEnabled>true</ProbeLNCDefSetEnabled>
+                                                        <ProbeUNCSetEnabled>true</ProbeUNCSetEnabled>
+                                                        <ProbeLNCSetEnabled>true</ProbeLNCSetEnabled>
+                                                </Capabilities>
+                                                <ProbeLocation>System Board Ambient Temp</ProbeLocation>
+                                        </TemperatureProbe>
+                                </TemperatureProbeList>
+                                <ObjStatus>2</ObjStatus>
+                        </Chassis>
+                        <SMStatus>0</SMStatus>
+                        <OMACMDNEW>0</OMACMDNEW>
+                </OMA>
+                `)
+		t, err := parsePowerEdgeTemps(out)
+		So(err, ShouldBeNil)
+		So(*t.Ambient, ShouldEqual, 27.5)
+		So(t.Battery, ShouldBeNil)
+		So(len(t.CPUs), ShouldEqual, 0)
+	})
 	Convey("ParsePowerEdgeTempsBrokenXML", t, func() {
 		out := []byte("this isn't xml")
 		t, err := parsePowerEdgeTemps(out)
