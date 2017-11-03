@@ -17,9 +17,13 @@ from waterfall.flake.process_flake_try_job_result_pipeline import (
 class ProcessFlakeTryJobResultPipelineTest(TestCase):
 
   @mock.patch.object(
-      flake_try_job_service, 'IsTryJobResultValid', return_value=True)
+      flake_try_job_service, 'IsTryJobResultAtRevisionValid', return_value=True)
+  @mock.patch.object(
+      flake_try_job_service,
+      'IsTryJobResultAtRevisionValidForStep',
+      return_value=True)
   @mock.patch.object(flake_try_job_service, 'GetSwarmingTaskIdForTryJob')
-  def testProcessFlakeTryJobResultPipeline(self, mocked_get_swarming_task, _):
+  def testProcessFlakeTryJobResultPipeline(self, mocked_get_swarming_task, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -80,8 +84,12 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     self.assertEqual([swarming_task_id], resulting_data_point.task_ids)
 
   @mock.patch.object(
-      flake_try_job_service, 'IsTryJobResultValid', return_value=False)
-  def testProcessFlakeTryJobResultPipelineInvalidResult(self, _):
+      flake_try_job_service, 'IsTryJobResultAtRevisionValid', return_value=True)
+  @mock.patch.object(
+      flake_try_job_service,
+      'IsTryJobResultAtRevisionValidForStep',
+      return_value=False)
+  def testProcessFlakeTryJobResultPipelineInvalidResult(self, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -115,6 +123,50 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     try_job.flake_results = [{
         'url': url,
         'report': try_job_result,
+        'try_job_id': try_job_id
+    }]
+    try_job.try_job_ids = [try_job_id]
+    try_job.put()
+
+    try_job_data = FlakeTryJobData.Create(try_job_id)
+    try_job_data.start_time = datetime(2017, 10, 13, 13, 0, 0)
+    try_job_data.end_time = datetime(2017, 10, 13, 14, 0, 0)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
+    ProcessFlakeTryJobResultPipeline().run(revision, commit_position,
+                                           try_job.key.urlsafe(),
+                                           analysis.key.urlsafe())
+
+    self.assertEqual(expected_error, try_job.error)
+    self.assertEqual([], analysis.data_points)
+
+  @mock.patch.object(
+      flake_try_job_service,
+      'IsTryJobResultAtRevisionValid',
+      return_value=False)
+  def testProcessFlakeTryJobResultPipelineNoReport(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    revision = 'r4'
+    commit_position = 4
+    try_job_id = 'try_job_id'
+    url = 'url'
+    expected_error = {
+        'message': 'Try job does not contain the necessary information',
+        'reason': 'Try job does not contain the necessary information',
+    }
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.Save()
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, revision)
+    try_job.flake_results = [{
+        'url': url,
+        'report': None,
         'try_job_id': try_job_id
     }]
     try_job.try_job_ids = [try_job_id]

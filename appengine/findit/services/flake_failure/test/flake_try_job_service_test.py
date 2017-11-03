@@ -21,6 +21,28 @@ class FlakeTryJobServiceTest(TestCase):
         flake_try_job_service.GetSwarmingTaskIdForTryJob(
             None, None, None, None))
 
+  def testIsTryJobResultAtRevisionValid(self):
+    self.assertFalse(
+        flake_try_job_service.IsTryJobResultAtRevisionValid({}, 'r'))
+    self.assertFalse(
+        flake_try_job_service.IsTryJobResultAtRevisionValid({
+            'report': {}
+        }, 'r'))
+    self.assertFalse(
+        flake_try_job_service.IsTryJobResultAtRevisionValid({
+            'report': {
+                'result': {}
+            }
+        }, 'r'))
+    self.assertTrue(
+        flake_try_job_service.IsTryJobResultAtRevisionValid({
+            'report': {
+                'result': {
+                    'r': {}
+                }
+            }
+        }, 'r'))
+
   @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
   def testGetSwarmingTaskIdForTryJobNotFoundTaskWithResult(self, mock_fn):
     output_json = {'per_iteration_data': [{}, {}]}
@@ -134,21 +156,21 @@ class FlakeTryJobServiceTest(TestCase):
         flake_try_job_service.GetSwarmingTaskIdForTryJob(
             report, revision, step_name, test_name), 'task1')
 
-  def testIsTryJobResultValid(self):
+  def testIsTryJobResultAtRevisionValidForStep(self):
     self.assertTrue(
-        flake_try_job_service.IsTryJobResultValid({
+        flake_try_job_service.IsTryJobResultAtRevisionValidForStep({
             'browser_tests': {
                 'valid': True
             }
         }, 'browser_tests'))
     self.assertFalse(
-        flake_try_job_service.IsTryJobResultValid({
+        flake_try_job_service.IsTryJobResultAtRevisionValidForStep({
             'browser_tests': {
                 'valid': False
             }
         }, 'browser_tests'))
     self.assertFalse(
-        flake_try_job_service.IsTryJobResultValid({
+        flake_try_job_service.IsTryJobResultAtRevisionValidForStep({
             'some_tests': {
                 'valid': True
             }

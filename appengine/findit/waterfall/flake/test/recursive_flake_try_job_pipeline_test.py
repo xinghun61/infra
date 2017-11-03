@@ -778,7 +778,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis, try_job, 200, False))
 
   @mock.patch.object(
-      flake_try_job_service, 'IsTryJobResultValid', return_value=True)
+      flake_try_job_service,
+      'IsTryJobResultAtRevisionValidForStep',
+      return_value=True)
   def testNeedANewTryJobWithExistingFlakyTryJob(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.algorithm_parameters = {
@@ -809,7 +811,21 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis, try_job, 200, False))
 
   @mock.patch.object(
-      flake_try_job_service, 'IsTryJobResultValid', return_value=False)
+      flake_try_job_service,
+      'IsTryJobResultAtRevisionValid',
+      return_value=False)
+  def testNeedANewTryJobWithInvalidExistingTryJobNoReport(self, _):
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'a1b2c3d4')
+    try_job.flake_results = [{'report': None}]
+    self.assertTrue(
+        recursive_flake_try_job_pipeline._NeedANewTryJob(
+            analysis, try_job, 200, False))
+
+  @mock.patch.object(
+      flake_try_job_service,
+      'IsTryJobResultAtRevisionValidForStep',
+      return_value=False)
   def testNeedANewTryJobWithInvalidExistingTryJob(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'a1b2c3d4')
@@ -829,7 +845,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis, try_job, 200, False))
 
   @mock.patch.object(
-      flake_try_job_service, 'IsTryJobResultValid', return_value=True)
+      flake_try_job_service,
+      'IsTryJobResultAtRevisionValidForStep',
+      return_value=True)
   def testNeedANewTryJobWithExistingStableTryJobInsufficientIterations(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.algorithm_parameters = {
@@ -860,7 +878,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis, try_job, 200, False))
 
   @mock.patch.object(
-      flake_try_job_service, 'IsTryJobResultValid', return_value=True)
+      flake_try_job_service,
+      'IsTryJobResultAtRevisionValidForStep',
+      return_value=True)
   def testNeedANewTryJobWithExistingStableTryJobSufficientIterations(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.algorithm_parameters = {
@@ -891,7 +911,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis, try_job, 200, False))
 
   @mock.patch.object(
-      flake_try_job_service, 'IsTryJobResultValid', return_value=True)
+      flake_try_job_service,
+      'IsTryJobResultAtRevisionValidForStep',
+      return_value=True)
   def testNeedANewTryJobWithExistingTryJobNonexistentTest(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.algorithm_parameters = {

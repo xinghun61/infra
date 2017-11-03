@@ -111,9 +111,9 @@ def _NeedANewTryJob(analysis, try_job, required_iterations, rerun):
     A try job needs to be run if:
     1. It is to generate a data point on a build configuration and revision
        for which there is no existing data.
-    2. A data point exists for the revision, but it is stable and run against
-       too few iterations.
-    3. The try job had some error.
+    2. The proposed try job had an error or is unusable (missing data).
+    4. A data point exists for the revision, but it is stable and run against
+       too few iterations (in case of manual rerun).
 
     TODO(crbug.com/775706): In some rare cases multiple analyses converge at
     running a try job with the same configuration at nearly the same time, which
@@ -138,10 +138,16 @@ def _NeedANewTryJob(analysis, try_job, required_iterations, rerun):
   test_name = try_job.test_name
   revision = try_job.git_hash
   latest_try_job_result = try_job.flake_results[-1]
+
+  if not flake_try_job_service.IsTryJobResultAtRevisionValid(
+      latest_try_job_result, revision):
+    # Old try job's results can't be used due to missing information.
+    return True
+
   result_at_revision = latest_try_job_result['report']['result'][revision]
 
-  if not flake_try_job_service.IsTryJobResultValid(result_at_revision,
-                                                   step_name):
+  if not flake_try_job_service.IsTryJobResultAtRevisionValidForStep(
+      result_at_revision, step_name):
     # An error occurred in the swarming rerun of the try job.
     return True
 

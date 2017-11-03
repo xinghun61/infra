@@ -35,6 +35,17 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
     assert try_job_id
 
     try_job_result = try_job.flake_results[-1]
+
+    if not flake_try_job_service.IsTryJobResultAtRevisionValid(
+        try_job_result, revision):
+      try_job.status = analysis_status.ERROR
+      try_job.error = {
+          'message': 'Try job does not contain the necessary information',
+          'reason': 'Try job does not contain the necessary information',
+      }
+      try_job.put()
+      return
+
     result = try_job_result['report']['result'][revision]
 
     if isinstance(result, basestring):
@@ -49,7 +60,8 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
 
     step_name = flake_analysis.canonical_step_name
 
-    if not flake_try_job_service.IsTryJobResultValid(result, step_name):
+    if not flake_try_job_service.IsTryJobResultAtRevisionValidForStep(
+        result, step_name):
       try_job.status = analysis_status.ERROR
       try_job.error = {
           'message': 'Try job results are not valid',

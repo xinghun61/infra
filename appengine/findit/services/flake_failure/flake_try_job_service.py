@@ -94,7 +94,24 @@ def GetSwarmingTaskIdForTryJob(report, revision, step_name, test_name):
   return None
 
 
-def IsTryJobResultValid(result_at_revision, step_name):
+def IsTryJobResultAtRevisionValid(result, revision):
+  """Determines whether a try job's results are sufficient to be used.
+
+  Args:
+    result (dict): A dict expected to be in the format
+        {
+            'report': {
+                'result': {
+                    'revision': (dict)
+                }
+            }
+        }
+    revision (str): The revision to ensure is in the result dict.
+  """
+  return revision in result.get('report', {}).get('result', {})
+
+
+def IsTryJobResultAtRevisionValidForStep(result_at_revision, step_name):
   """Checks if a flake try job result is valid.
 
   Args:
@@ -160,7 +177,7 @@ def UpdateAnalysisDataPointsWithTryJobResult(analysis, try_job, commit_position,
   assert try_job_result
 
   result_at_revision = try_job_result['report']['result'][revision]
-  assert IsTryJobResultValid(result_at_revision, step_name)
+  assert IsTryJobResultAtRevisionValidForStep(result_at_revision, step_name)
 
   pass_fail_counts = result_at_revision[step_name].get('pass_fail_counts', {})
   pass_rate, tries = _GetPassRateAndTries(pass_fail_counts, test_name)
