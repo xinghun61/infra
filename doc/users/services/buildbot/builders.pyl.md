@@ -279,6 +279,12 @@ builder directly, rather than specifying a bot_pool. The value may be
 a single string representing either a single bot, or a wildcarded list
 of bots, or a list of either of those two things.
 
+### subdir
+
+This is an *optional* field that may be used alongside `bot` or `bots` to
+configure a builder inline instead of via a `bot_pool`. See the per-pool
+`subdir` entry for additional restrictions.
+
 ### bot_pool
 
 This is an *optional* field. If specified, it must be a string that
@@ -479,6 +485,13 @@ one for each VM (do not specify the domain, just the basename), or a
 string that can specify a range of hostnames, expanded as the bash shell
 would expand them. So, for example, `vm{1..3}-m1` would expand to `vm1-m1`,
 `vm2-m1`, `vm3-m1`.
+
+### subdir
+
+This is an *optional* string field specifying a name extension of a host
+running multiple bots in separate processes. The bot's name will be
+constructed as hostname#subdir. The same host can be specified multiple
+times, using different subdir entries.
 
 ### bits
 
