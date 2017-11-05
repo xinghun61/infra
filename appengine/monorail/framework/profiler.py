@@ -88,7 +88,10 @@ class _Phase(object):
     """Record the time between the start and end of this (sub)phase."""
     self.elapsed_seconds = time.time() - self.start
     self.ms = str(int(self.elapsed_seconds * 1000))
-    categorized = sum(sub.elapsed_seconds for sub in self.subphases)
+    for sub in self.subphases:
+      if sub.elapsed_seconds is None:
+        logging.warn('issue3182: subphase is %r', sub)
+    categorized = sum(sub.elapsed_seconds or 0.0 for sub in self.subphases)
     self.uncategorized_ms = int((self.elapsed_seconds - categorized) * 1000)
     return self.parent
 
