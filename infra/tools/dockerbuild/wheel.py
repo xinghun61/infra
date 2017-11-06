@@ -760,7 +760,7 @@ SPECS = {s.spec.tag: s for s in (
   ),
 
   BuildOpenCVWheel('opencv_python', '2.4.13.2', '1.11.3',
-      skip_plat=['windows-x86', 'windows-x64', 'mac-x64']),
+      only_plat=['manylinux-x86', 'manylinux-x64']),
 
   BuildOpenCVWheel('opencv_python', '3.2.0.7', '1.12.1',
       packaged=[
@@ -779,6 +779,9 @@ SPECS = {s.spec.tag: s for s in (
           'macosx_10_10_x86_64',
         ]),
       },
+      only_plat=[
+        'mac-64', 'manylinux-x86', 'manylinux-x64', 'windows-x86',
+        'windows-x64'],
   ),
 
   BuildCryptographyWheel('cryptography',
