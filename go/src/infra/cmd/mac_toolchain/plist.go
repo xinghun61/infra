@@ -66,3 +66,29 @@ func getXcodeLicenseInfo(licenseInfoFile string) (licenseID string, licenseType 
 	}
 	return licenseInfo.LicenseID, licenseInfo.LicenseType, nil
 }
+
+type xcodeAcceptedLicenses struct {
+	IDELastGMLicenseAgreedTo   string `plist:"IDELastGMLicenseAgreedTo"`
+	IDELastBetaLicenseAgreedTo string `plist:"IDELastBetaLicenseAgreedTo"`
+}
+
+func getXcodeAcceptedLicense(plistFile, licenseType string) (licenseID string, err error) {
+	var acceptedLicenses xcodeAcceptedLicenses
+	r, err := os.Open(plistFile)
+	if err != nil {
+		err = errors.Annotate(err, "failed to open %s", plistFile).Err()
+		return
+	}
+	defer r.Close()
+	decoder := plist.NewDecoder(r)
+	if err = decoder.Decode(&acceptedLicenses); err != nil {
+		err = errors.Annotate(err, "failed to decode %s", plistFile).Err()
+		return
+	}
+	if licenseType == "GM" {
+		licenseID = acceptedLicenses.IDELastGMLicenseAgreedTo
+	} else {
+		licenseID = acceptedLicenses.IDELastBetaLicenseAgreedTo
+	}
+	return
+}

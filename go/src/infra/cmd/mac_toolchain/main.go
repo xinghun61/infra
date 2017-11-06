@@ -22,26 +22,25 @@ import (
 // DefaultCipdPackagePrefix is a package prefix for all the xcode packages.
 const DefaultCipdPackagePrefix = "infra_internal/ios/xcode"
 
+// AcceptedLicensesFile keeps record of the accepted Xcode licenses.
+const AcceptedLicensesFile = "/Library/Preferences/com.apple.dt.Xcode.plist"
+
 // KindType is the type for enum values for the -kind argument.
 type KindType string
 
 var _ flag.Value = (*KindType)(nil)
 
 const (
-	macKind     = KindType("mac")
-	iosKind     = KindType("ios")
-	iosTestKind = KindType("iostest")
-	allKind     = KindType("all")
+	macKind = KindType("mac")
+	iosKind = KindType("ios")
 	// DefaultKind is the default value for the -kind flag.
-	DefaultKind = allKind
+	DefaultKind = macKind
 )
 
 // KindTypeEnum is the corresponding Enum type for the -kind argument.
 var KindTypeEnum = flagenum.Enum{
-	"mac":     macKind,
-	"ios":     iosKind,
-	"iostest": iosTestKind,
-	"all":     allKind,
+	"mac": macKind,
+	"ios": iosKind,
 }
 
 // String implements flag.Value
@@ -81,8 +80,12 @@ func (c *installRun) Run(a subcommands.Application, args []string, env subcomman
 		errors.Log(ctx, errors.Reason("no output folder specified (-output-dir)").Err())
 		return 1
 	}
-	logging.Infof(ctx, "About to install Xcode %s in %s", c.xcodeVersion, c.outputDir)
-	// TODO(sergeyberezin): implement this.
+	logging.Infof(ctx, "About to install Xcode %s in %s for %s", c.xcodeVersion, c.outputDir, c.kind.String())
+
+	if err := installXcode(ctx, c.xcodeVersion, c.outputDir, AcceptedLicensesFile, c.cipdPackagePrefix, c.kind); err != nil {
+		errors.Log(ctx, err)
+		return 1
+	}
 	return 0
 }
 
@@ -110,7 +113,7 @@ func commonFlagVars(c *commonFlags) {
 func installFlagVars(c *installRun) {
 	commonFlagVars(&c.commonFlags)
 	c.Flags.StringVar(&c.xcodeVersion, "xcode-version", "", "Xcode version code. (required)")
-	c.Flags.StringVar(&c.outputDir, "output-dir", "", "Path where to install Xcode.app (required).")
+	c.Flags.StringVar(&c.outputDir, "output-dir", "", "Path where to install contents of Xcode.app (required).")
 	c.Flags.Var(&c.kind, "kind", "Installation kind: "+KindTypeEnum.Choices()+". (default: \""+string(DefaultKind)+"\")")
 	c.kind = DefaultKind
 }
@@ -124,7 +127,12 @@ var (
 	cmdInstall = &subcommands.Command{
 		UsageLine: "install <options>",
 		ShortDesc: "Installs Xcode.",
-		LongDesc:  "Installs the requested parts of Xcode toolchain.",
+		LongDesc: `Installs the requested parts of Xcode toolchain.
+
+Note: the "Xcode.app" part of the path is not created.
+Instead, "Contents" folder is placed directly in the folder specified
+by the -output-dir. If you want an actual app that Finder can launch, specify
+-output-dir "<path>/Xcode.app".`,
 		CommandRun: func() subcommands.CommandRun {
 			c := &installRun{}
 			installFlagVars(c)
@@ -154,6 +162,7 @@ func main() {
 			ctx = goLoggerCfg.Use(ctx)
 
 			ctx = (&logging.Config{Level: logging.Debug}).Set(ctx)
+			ctx = useRealExec(ctx)
 			return ctx
 		},
 		Commands: []*subcommands.Command{

@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -141,13 +140,10 @@ func createUploader(ctx context.Context, xcodeVersion, buildVersion string) func
 			"-ref", "latest",
 			"-verification-timeout", "60m",
 		}
-		cmd := exec.CommandContext(ctx, "cipd", args...)
-		cmd.Stdout = os.Stdout
-		cmd.Stderr = os.Stderr
 
 		logging.Infof(ctx, "Creating a CIPD package %s", p.Name)
 		logging.Debugf(ctx, "Running cipd %s", strings.Join(args, " "))
-		if err := cmd.Run(); err != nil {
+		if err := RunCommand(ctx, "cipd", args...); err != nil {
 			return errors.Annotate(err, "creating a CIPD package failed.").Err()
 		}
 		return nil
