@@ -147,8 +147,13 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         If failed to submit the revert, please abandon it and report the failure
         at %s.
 
-        For more information about Findit auto-revert: %s.""") % (
-        false_positive_bug_link, auto_revert_bug_link, gerrit._MANUAL_LINK)
+        For more information about Findit auto-revert: %s.
+
+        Sheriffs, it'll be much appreciated if you could take several minutes
+        to fill out this survey: %s.""") % (false_positive_bug_link,
+                                            auto_revert_bug_link,
+                                            gerrit._MANUAL_LINK,
+                                            gerrit._SURVEY_LINK)
     mock_add.assert_called_once_with('54321', ['a@b.com'], message)
 
   @mock.patch.object(
@@ -575,8 +580,13 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         If failed to submit the revert, please abandon it and report the failure
         at %s.
 
-        For more information about Findit auto-revert: %s.""") % (
-        false_positive_bug_link, auto_revert_bug_link, gerrit._MANUAL_LINK)
+        For more information about Findit auto-revert: %s.
+
+        Sheriffs, it'll be much appreciated if you could take several minutes
+        to fill out this survey: %s.""") % (false_positive_bug_link,
+                                            auto_revert_bug_link,
+                                            gerrit._MANUAL_LINK,
+                                            gerrit._SURVEY_LINK)
     mock_add.assert_called_once_with('54321', ['a@b.com'], message)
 
   @mock.patch.object(
@@ -678,8 +688,11 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         If it is a false positive, please revert and report it
         at %s.
 
-        For more information about Findit auto-revert: %s.""") % (
-        bug_link, gerrit._MANUAL_LINK)
+        For more information about Findit auto-revert: %s.
+
+        Sheriffs, it'll be much appreciated if you could take several minutes
+        to fill out this survey: %s.""") % (bug_link, gerrit._MANUAL_LINK,
+                                            gerrit._SURVEY_LINK)
     mock_add.assert_called_once_with(revert_change_id, ['a@b.com'], message)
 
   def testUpdateCulprit(self):
@@ -718,61 +731,66 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         gerrit._ShouldCommitRevert(repo_name, revision, revert_status,
                                    pipeline_id))
 
-  @mock.patch.object(waterfall_config, 'GetActionSettings',
-                     return_value={'cr_notification_build_threshold': 2})
+  @mock.patch.object(
+      waterfall_config,
+      'GetActionSettings',
+      return_value={'cr_notification_build_threshold': 2})
   def testShouldNotSendNotificationForSingleFailedBuild(self, _):
     culprit = WfSuspectedCL.Create('chromium', 'r1', 1)
     culprit.builds['m/b1/1'] = {}
     culprit.put()
 
     self.assertFalse(
-        gerrit._ShouldSendNotification(
-            'chromium', 'r1', False, None))
+        gerrit._ShouldSendNotification('chromium', 'r1', False, None))
     self.assertFalse(culprit.cr_notification_processed)
 
-  @mock.patch.object(waterfall_config, 'GetActionSettings',
-                     return_value={'cr_notification_build_threshold': 2})
+  @mock.patch.object(
+      waterfall_config,
+      'GetActionSettings',
+      return_value={'cr_notification_build_threshold': 2})
   def testShouldNotSendNotificationForSameFailedBuild(self, _):
     culprit = WfSuspectedCL.Create('chromium', 'r2', 1)
     culprit.builds['m/b2/2'] = {}
     culprit.put()
     self.assertTrue(
-        gerrit._ShouldSendNotification(
-            'chromium', 'r2', True, gerrit.CREATED_BY_SHERIFF))
+        gerrit._ShouldSendNotification('chromium', 'r2', True,
+                                       gerrit.CREATED_BY_SHERIFF))
     self.assertFalse(
-        gerrit._ShouldSendNotification(
-            'chromium', 'r2', True, gerrit.CREATED_BY_SHERIFF))
+        gerrit._ShouldSendNotification('chromium', 'r2', True,
+                                       gerrit.CREATED_BY_SHERIFF))
     culprit = WfSuspectedCL.Get('chromium', 'r2')
     self.assertEqual(status.RUNNING, culprit.cr_notification_status)
 
-  @mock.patch.object(waterfall_config, 'GetActionSettings',
-                     return_value={'cr_notification_build_threshold': 2})
+  @mock.patch.object(
+      waterfall_config,
+      'GetActionSettings',
+      return_value={'cr_notification_build_threshold': 2})
   def testShouldSendNotificationForSecondFailedBuild(self, _):
     culprit = WfSuspectedCL.Create('chromium', 'r3', 1)
     culprit.builds['m/b31/31'] = {}
     culprit.put()
     self.assertFalse(
-        gerrit._ShouldSendNotification(
-            'chromium', 'r3', False, None))
+        gerrit._ShouldSendNotification('chromium', 'r3', False, None))
     culprit = WfSuspectedCL.Get('chromium', 'r3')
     culprit.builds['m/b32/32'] = {}
     culprit.put()
     self.assertTrue(
-        gerrit._ShouldSendNotification(
-            'chromium', 'r3', False, None))
+        gerrit._ShouldSendNotification('chromium', 'r3', False, None))
     culprit = WfSuspectedCL.Get('chromium', 'r3')
     self.assertEqual(status.RUNNING, culprit.cr_notification_status)
 
-  @mock.patch.object(waterfall_config, 'GetActionSettings',
-                     return_value={'cr_notification_build_threshold': 2})
+  @mock.patch.object(
+      waterfall_config,
+      'GetActionSettings',
+      return_value={'cr_notification_build_threshold': 2})
   def testShouldNotSendNotificationIfRevertedByFindit(self, _):
     culprit = WfSuspectedCL.Create('chromium', 'r1', 1)
     culprit.builds['m/b1/1'] = {}
     culprit.put()
 
     self.assertFalse(
-      gerrit._ShouldSendNotification(
-        'chromium', 'r1', True, gerrit.CREATED_BY_FINDIT))
+        gerrit._ShouldSendNotification('chromium', 'r1', True,
+                                       gerrit.CREATED_BY_FINDIT))
     self.assertFalse(culprit.cr_notification_processed)
 
   @mock.patch.object(gerrit, '_ShouldSendNotification', return_value=False)
@@ -783,8 +801,9 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_SHERIFF
 
     pipeline_input = SendNotificationForCulpritPipelineInput(
-        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
-                     revision=revision.decode('utf-8')),
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
         force_notify=force_notify,
         revert_status=revert_status)
     self.assertFalse(gerrit.SendNotificationForCulprit(pipeline_input))
@@ -799,8 +818,9 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_SHERIFF
 
     pipeline_input = SendNotificationForCulpritPipelineInput(
-        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
-                     revision=revision.decode('utf-8')),
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
         force_notify=force_notify,
         revert_status=revert_status)
 
@@ -820,8 +840,9 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_SHERIFF
 
     pipeline_input = SendNotificationForCulpritPipelineInput(
-        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
-                     revision=revision.decode('utf-8')),
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
         force_notify=force_notify,
         revert_status=revert_status)
 
@@ -847,8 +868,9 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = None
 
     pipeline_input = SendNotificationForCulpritPipelineInput(
-        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
-                     revision=revision.decode('utf-8')),
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
         force_notify=force_notify,
         revert_status=revert_status)
 

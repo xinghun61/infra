@@ -45,6 +45,7 @@ _DEFAULT_AUTO_COMMIT_DAILY_THRESHOLD = 4
 _DEFAULT_CULPRIT_COMMIT_LIMIT_HOURS = 24
 
 _MANUAL_LINK = 'https://goo.gl/NPQkv6'
+_SURVEY_LINK = 'https://goo.gl/forms/iPQbwFyo98N9tJ7o1'
 
 
 @ndb.transactional
@@ -131,8 +132,12 @@ def _AddReviewers(revision, culprit_key, codereview, revert_change_id,
         If failed to submit the revert, please abandon it and report the failure
         at %s.
 
-        For more information about Findit auto-revert: %s.""") % (
-        false_positive_bug_link, auto_revert_bug_link, _MANUAL_LINK)
+        For more information about Findit auto-revert: %s.
+
+        Sheriffs, it'll be much appreciated if you could take several minutes
+        to fill out this survey: %s.""") % (false_positive_bug_link,
+                                            auto_revert_bug_link, _MANUAL_LINK,
+                                            _SURVEY_LINK)
   else:
     # Findit submits the revert successfully. Add sheriffs to confirm the
     # revert is correct.
@@ -142,8 +147,11 @@ def _AddReviewers(revision, culprit_key, codereview, revert_change_id,
         If it is a false positive, please revert and report it
         at %s.
 
-        For more information about Findit auto-revert: %s.""") % (
-        false_positive_bug_link, _MANUAL_LINK)
+        For more information about Findit auto-revert: %s.
+
+        Sheriffs, it'll be much appreciated if you could take several minutes
+        to fill out this survey: %s.""") % (false_positive_bug_link,
+                                            _MANUAL_LINK, _SURVEY_LINK)
 
   # Original CL owner and reviewers are already reviewers when creating the
   # revert, add sheriffs or Findit members to reviewers as well.
@@ -556,7 +564,7 @@ def _ShouldSendNotification(repo_name, revision, force_notify, revert_status):
   action_settings = waterfall_config.GetActionSettings()
   # Set some impossible default values to prevent notification by default.
   build_num_threshold = action_settings.get('cr_notification_build_threshold',
-                                              100000)
+                                            100000)
   if force_notify or len(culprit.builds) >= build_num_threshold:
     culprit.cr_notification_status = status.RUNNING
     culprit.put()
@@ -570,8 +578,8 @@ def SendNotificationForCulprit(pipeline_input):
   force_notify = pipeline_input.force_notify
   revert_status = pipeline_input.revert_status
 
-  if not _ShouldSendNotification(
-      repo_name, revision, force_notify, revert_status):
+  if not _ShouldSendNotification(repo_name, revision, force_notify,
+                                 revert_status):
     return False
 
   culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)
