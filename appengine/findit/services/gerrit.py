@@ -525,7 +525,8 @@ def CommitRevert(pipeline_input, pipeline_id):
 
 ###################### Functions to send notification. ######################
 @ndb.transactional
-def _ShouldSendNotification(repo_name, revision, force_notify, revert_status):
+def _ShouldSendNotification(repo_name, revision, force_notify, revert_status,
+                            build_num_threshold):
   """Returns True if a notification for the culprit should be sent.
 
   Send notification only when:
@@ -541,6 +542,9 @@ def _ShouldSendNotification(repo_name, revision, force_notify, revert_status):
     repo_name, revision (str): Uniquely identify the revision to notify about.
     force_notify (bool): If we should skip the fail number threshold check.
     revert_status (int): Status of revert if exists.
+    build_num_threshold (int): Threshold for the number of builds the culprit is
+      responsible for. A notification should be sent when number of builds
+      exceeds the threshold.
 
   Returns:
     A boolean indicating whether we should send the notification.
@@ -561,10 +565,6 @@ def _ShouldSendNotification(repo_name, revision, force_notify, revert_status):
   if culprit.cr_notification_processed:
     return False
 
-  action_settings = waterfall_config.GetActionSettings()
-  # Set some impossible default values to prevent notification by default.
-  build_num_threshold = action_settings.get('cr_notification_build_threshold',
-                                            100000)
   if force_notify or len(culprit.builds) >= build_num_threshold:
     culprit.cr_notification_status = status.RUNNING
     culprit.put()
@@ -578,8 +578,12 @@ def SendNotificationForCulprit(pipeline_input):
   force_notify = pipeline_input.force_notify
   revert_status = pipeline_input.revert_status
 
+  action_settings = waterfall_config.GetActionSettings()
+  # Set some impossible default values to prevent notification by default.
+  build_num_threshold = action_settings.get('cr_notification_build_threshold',
+                                            100000)
   if not _ShouldSendNotification(repo_name, revision, force_notify,
-                                 revert_status):
+                                 revert_status, build_num_threshold):
     return False
 
   culprit_info = suspected_cl_util.GetCulpritInfo(repo_name, revision)

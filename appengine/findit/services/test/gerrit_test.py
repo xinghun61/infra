@@ -731,66 +731,50 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         gerrit._ShouldCommitRevert(repo_name, revision, revert_status,
                                    pipeline_id))
 
-  @mock.patch.object(
-      waterfall_config,
-      'GetActionSettings',
-      return_value={'cr_notification_build_threshold': 2})
-  def testShouldNotSendNotificationForSingleFailedBuild(self, _):
+  def testShouldNotSendNotificationForSingleFailedBuild(self):
     culprit = WfSuspectedCL.Create('chromium', 'r1', 1)
     culprit.builds['m/b1/1'] = {}
     culprit.put()
 
     self.assertFalse(
-        gerrit._ShouldSendNotification('chromium', 'r1', False, None))
+        gerrit._ShouldSendNotification('chromium', 'r1', False, None, 2))
     self.assertFalse(culprit.cr_notification_processed)
 
-  @mock.patch.object(
-      waterfall_config,
-      'GetActionSettings',
-      return_value={'cr_notification_build_threshold': 2})
-  def testShouldNotSendNotificationForSameFailedBuild(self, _):
+  def testShouldNotSendNotificationForSameFailedBuild(self):
     culprit = WfSuspectedCL.Create('chromium', 'r2', 1)
     culprit.builds['m/b2/2'] = {}
     culprit.put()
     self.assertTrue(
         gerrit._ShouldSendNotification('chromium', 'r2', True,
-                                       gerrit.CREATED_BY_SHERIFF))
+                                       gerrit.CREATED_BY_SHERIFF, 2))
     self.assertFalse(
         gerrit._ShouldSendNotification('chromium', 'r2', True,
-                                       gerrit.CREATED_BY_SHERIFF))
+                                       gerrit.CREATED_BY_SHERIFF, 2))
     culprit = WfSuspectedCL.Get('chromium', 'r2')
     self.assertEqual(status.RUNNING, culprit.cr_notification_status)
 
-  @mock.patch.object(
-      waterfall_config,
-      'GetActionSettings',
-      return_value={'cr_notification_build_threshold': 2})
-  def testShouldSendNotificationForSecondFailedBuild(self, _):
+  def testShouldSendNotificationForSecondFailedBuild(self):
     culprit = WfSuspectedCL.Create('chromium', 'r3', 1)
     culprit.builds['m/b31/31'] = {}
     culprit.put()
     self.assertFalse(
-        gerrit._ShouldSendNotification('chromium', 'r3', False, None))
+        gerrit._ShouldSendNotification('chromium', 'r3', False, None, 2))
     culprit = WfSuspectedCL.Get('chromium', 'r3')
     culprit.builds['m/b32/32'] = {}
     culprit.put()
     self.assertTrue(
-        gerrit._ShouldSendNotification('chromium', 'r3', False, None))
+        gerrit._ShouldSendNotification('chromium', 'r3', False, None, 2))
     culprit = WfSuspectedCL.Get('chromium', 'r3')
     self.assertEqual(status.RUNNING, culprit.cr_notification_status)
 
-  @mock.patch.object(
-      waterfall_config,
-      'GetActionSettings',
-      return_value={'cr_notification_build_threshold': 2})
-  def testShouldNotSendNotificationIfRevertedByFindit(self, _):
+  def testShouldNotSendNotificationIfRevertedByFindit(self):
     culprit = WfSuspectedCL.Create('chromium', 'r1', 1)
     culprit.builds['m/b1/1'] = {}
     culprit.put()
 
     self.assertFalse(
         gerrit._ShouldSendNotification('chromium', 'r1', True,
-                                       gerrit.CREATED_BY_FINDIT))
+                                       gerrit.CREATED_BY_FINDIT, 2))
     self.assertFalse(culprit.cr_notification_processed)
 
   @mock.patch.object(gerrit, '_ShouldSendNotification', return_value=False)
