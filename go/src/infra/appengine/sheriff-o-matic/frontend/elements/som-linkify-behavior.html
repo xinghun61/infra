@@ -9,7 +9,9 @@
           u.pathname = u.pathname.replace('/builders/', '/');
           u.pathname = u.pathname.replace('/builds/', '/');
         }
-        u.protocol = 'https:';
+        if (u.hostname !== 'go') {
+          u.protocol = 'https:';
+        }
         return u.toString();
       },
 
@@ -19,7 +21,9 @@
           u.hostname = 'uberchromegw.corp.google.com';
           u.pathname = u.pathname.replace('/p/', '/i/');
         }
-        u.protocol = 'https:';
+        if (u.hostname !== 'go') {
+          u.protocol = 'https:';
+        }
         return u.toString();
       },
 
