@@ -42,3 +42,30 @@ class TriggerFlakeAnalysesPipelineTest(wf_testcase.WaterfallTestCase):
       pipeline = TriggerFlakeAnalysesPipeline()
       pipeline.run(master_name, builder_name, build_number)
       mocked_ScheduleAnalysisForFlake.assert_called_once()
+
+  def testTriggerFlakeAnalysesPipelineScheduledReturnsFalse(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 2
+    step_name = 'a_tests'
+    test_name = 'Unittest1.Subtest1'
+
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.failure_result_map = {
+        step_name: {
+            test_name: '%s/%s/%s' % (master_name, builder_name, build_number)
+        }
+    }
+    analysis.put()
+
+    swarming_task = WfSwarmingTask.Create(master_name, builder_name,
+                                          build_number, step_name)
+    swarming_task.tests_statuses = {test_name: {'SUCCESS': 1}}
+    swarming_task.put()
+
+    with mock.patch.object(
+        flake_analysis_service, 'ScheduleAnalysisForFlake',
+        return_value=False) as mocked_ScheduleAnalysisForFlake:
+      pipeline = TriggerFlakeAnalysesPipeline()
+      pipeline.run(master_name, builder_name, build_number)
+      mocked_ScheduleAnalysisForFlake.assert_called_once()
