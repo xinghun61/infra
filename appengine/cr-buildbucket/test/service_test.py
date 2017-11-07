@@ -282,16 +282,13 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
       'patch/gerrit/chromium-review.googlesource.com/123/456'
     )
 
-    service.validate_build_set(
-        'patch/gerrit/chromium-review.googlesource.com/aa/bb'
-    )
-
     bad = [
       ('commit/gitiles/chromium.googlesource.com/a/chromium/src/+/'
        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
       ('commit/gitiles/chromium.googlesource.com/chromium/src.git/+/'
        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'),
       'commit/gitiles/chromium.googlesource.com/chromium/src.git/+/aaaaaaaa',
+      'patch/gerrit/chromium-review.googlesource.com/aa/bb',
     ]
     for bs in bad:
       with self.assertRaises(errors.InvalidInputError):

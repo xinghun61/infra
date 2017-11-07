@@ -110,10 +110,8 @@ def validate_build_set(bs):
 
   elif bs.startswith('patch/gerrit/'):
     if not RE_BUILDSET_GERRIT_CL.match(bs):
-      # TODO(nodir): turn into an exception when we verify that
-      # cr-buildbucket.appspot.com users do not use invalid format
-      logging.warning(
-          'does not match regex "%s"', RE_BUILDSET_GERRIT_CL.pattern)
+      raise errors.InvalidInputError(
+          'does not match regex "%s"' % RE_BUILDSET_GERRIT_CL.pattern)
 
 
 def validate_tags(tags, mode, builder=None):
