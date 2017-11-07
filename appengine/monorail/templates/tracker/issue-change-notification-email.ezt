@@ -1,16 +1,36 @@
-[is comment.sequence "0"]Status: [is issue.status.name ""]----[else][issue.status.name][end]
-Owner: [is issue.owner.username ""]----[else][issue.owner.display_name][end][if-any issue.cc]
-CC: [for issue.cc][issue.cc.display_name][if-index issue.cc last] [else], [end] [end][end][if-any issue.labels]
-Labels:[for issue.labels] [issue.labels.name][end][end][if-any issue.components]
-Components:[for issue.components] [issue.components.path][end][end][if-any issue.blocked_on]
-BlockedOn:[for issue.blocked_on] [if-any issue.blocked_on.visible][issue.blocked_on.display_name][end][end][end]
-[else][if-any comment.amendments]Updates:
-[for comment.amendments]	[comment.amendments.field_name]: [format "raw"][comment.amendments.newvalue][end]
-[end][end][end]
-[is comment.sequence "0"]New issue [issue.local_id][else]Comment #[comment.sequence] on issue [issue.local_id][end] by [comment.creator.display_name]: [format "raw"][summary][end]
+[is comment.sequence "0"][#
+  ]Status: [is issue.status.name ""]----[else][issue.status.name][end]
+[#]Owner: [is issue.owner.username ""]----[else][issue.owner.display_name][end][#
+  ][if-any issue.cc]
+[#  ]CC: [for issue.cc][issue.cc.display_name][if-index issue.cc last] [else], [end][end][#
+  ][end][#
+  ][if-any issue.labels]
+[#  ]Labels:[for issue.labels] [issue.labels.name][end][#
+  ][end][#
+  ][if-any issue.components]
+[#  ]Components:[for issue.components] [issue.components.path][end][#
+  ][end][#
+  ][if-any issue.blocked_on]
+[#  ]BlockedOn:[for issue.blocked_on] [if-any issue.blocked_on.visible][issue.blocked_on.display_name][end][end][#
+  ][end][#
+  ][for issue.fields][if-any issue.fields.display][if-any issue.fields.values]
+[#  ][issue.fields.field_name]:[for issue.fields.values] [issue.fields.values.val][end][end][#
+  ][end][end]
+[else][if-any comment.amendments][#
+  ]Updates:
+[#][for comment.amendments]	[comment.amendments.field_name]: [format "raw"][comment.amendments.newvalue][end]
+[#][end][#
+  ][end][end]
+[is comment.sequence "0"]New issue [issue.local_id][#
+  ][else]Comment #[comment.sequence] on issue [issue.local_id][end][#
+  ] by [comment.creator.display_name]: [format "raw"][summary][#
+][end]
 [detail_url]
 
-[if-any comment.content][for comment.text_runs][include "render-plain-text.ezt" comment.text_runs][end][else](No comment was entered for this change.)[end]
+[if-any comment.content][#
+  ][for comment.text_runs][include "render-plain-text.ezt" comment.text_runs][end][#
+][else](No comment was entered for this change.)[#
+][end]
 [if-any comment.attachments]
 Attachments:
 [for comment.attachments]	[comment.attachments.filename]  [comment.attachments.filesizestr]

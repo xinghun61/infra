@@ -1149,6 +1149,55 @@ class IssueServiceTest(unittest.TestCase):
 
   ### Comments
 
+  def testConsolidateAmendments_Empty(self):
+    amendments = []
+    actual = self.services.issue._ConsolidateAmendments(amendments)
+    self.assertEqual([], actual)
+
+  def testConsolidateAmendments_NoOp(self):
+    amendments = [
+      tracker_pb2.Amendment(field=tracker_pb2.FieldID('STATUS'),
+                            oldvalue='New', newvalue='Accepted'),
+      tracker_pb2.Amendment(field=tracker_pb2.FieldID('SUMMARY'),
+                            oldvalue='old sum', newvalue='new sum')]
+    actual = self.services.issue._ConsolidateAmendments(amendments)
+    amendments.sort(key=lambda a: a.field)
+    actual.sort(key=lambda a: a.field)
+    self.assertEqual(amendments, actual)
+
+  def testConsolidateAmendments_StandardFields(self):
+    amendments = [
+      tracker_pb2.Amendment(field=tracker_pb2.FieldID('STATUS'),
+                            oldvalue='New'),
+      tracker_pb2.Amendment(field=tracker_pb2.FieldID('STATUS'),
+                            newvalue='Accepted'),
+      tracker_pb2.Amendment(field=tracker_pb2.FieldID('SUMMARY'),
+                            oldvalue='old sum'),
+      tracker_pb2.Amendment(field=tracker_pb2.FieldID('SUMMARY'),
+                            newvalue='new sum')]
+    actual = self.services.issue._ConsolidateAmendments(amendments)
+
+    expected = [
+      tracker_pb2.Amendment(field=tracker_pb2.FieldID('STATUS'),
+                            oldvalue='New', newvalue='Accepted'),
+      tracker_pb2.Amendment(field=tracker_pb2.FieldID('SUMMARY'),
+                            oldvalue='old sum', newvalue='new sum')]
+    expected.sort(key=lambda a: a.field)
+    actual.sort(key=lambda a: a.field)
+    self.assertEqual(expected, actual)
+
+  def testConsolidateAmendments_CustomFields(self):
+    amendments = [
+      tracker_pb2.Amendment(field=tracker_pb2.FieldID('CUSTOM'),
+                            custom_field_name='a', oldvalue='old a'),
+      tracker_pb2.Amendment(field=tracker_pb2.FieldID('CUSTOM'),
+                            custom_field_name='b', oldvalue='old b')]
+    actual = self.services.issue._ConsolidateAmendments(amendments)
+
+    amendments.sort(key=lambda a: a.custom_field_name)
+    actual.sort(key=lambda a: a.custom_field_name)
+    self.assertEqual(amendments, actual)
+
   def testDeserializeComments_Empty(self):
     comments = self.services.issue._DeserializeComments([], [], [], [])
     self.assertEqual([], comments)

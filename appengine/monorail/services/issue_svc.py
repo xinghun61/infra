@@ -1994,8 +1994,9 @@ class IssueService(object):
     result = []
 
     for amendment in amendments:
-      fields_dict.setdefault(amendment.field, []).append(amendment)
-    for field, amendments in fields_dict.iteritems():
+      key = amendment.field, amendment.custom_field_name
+      fields_dict.setdefault(key, []).append(amendment)
+    for (field, _custom_name), amendments in fields_dict.iteritems():
       new_amendment = tracker_pb2.Amendment()
       new_amendment.field = field
       for amendment in amendments:
