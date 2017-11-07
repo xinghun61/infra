@@ -48,6 +48,7 @@
         'V8 Win32 - nosnap - shared',
         'V8 Win64',
         'V8 Win64 - debug',
+        'V8 Win64 - msvc',
         'V8 Mac',
         'V8 Mac - debug',
         'V8 Mac64',
