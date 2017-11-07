@@ -18,6 +18,8 @@ from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
+      issue_tracking_service, 'UnderDailyLimit', return_value=True)
+  @mock.patch.object(
       issue_tracking_service,
       'IsBugFilingEnabledForAnalysis',
       return_value=True)
@@ -31,9 +33,9 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
       issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
-  def testShouldFileBugForAnalysis(self, label_exists_fn, id_exists_fn,
-                                   sufficient_confidence_fn,
-                                   previous_attempt_fn, feature_enabled_fn):
+  def testShouldFileBugForAnalysis(
+      self, label_exists_fn, id_exists_fn, sufficient_confidence_fn,
+      previous_attempt_fn, feature_enabled_fn, under_limit_fn):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -50,7 +52,10 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(sufficient_confidence_fn.called)
     self.assertTrue(previous_attempt_fn.called)
     self.assertTrue(feature_enabled_fn.called)
+    self.assertTrue(under_limit_fn.called)
 
+  @mock.patch.object(
+      issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
       issue_tracking_service, '_HasPreviousAttempt', return_value=False)
   @mock.patch.object(
@@ -82,6 +87,8 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(feature_enabled_fn.called)
 
   @mock.patch.object(
+      issue_tracking_service, 'UnderDailyLimit', return_value=True)
+  @mock.patch.object(
       issue_tracking_service,
       'IsBugFilingEnabledForAnalysis',
       return_value=True)
@@ -111,6 +118,8 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(id_exists_fn.called)
 
   @mock.patch.object(
+      issue_tracking_service, 'UnderDailyLimit', return_value=True)
+  @mock.patch.object(
       issue_tracking_service,
       'IsBugFilingEnabledForAnalysis',
       return_value=True)
@@ -138,6 +147,8 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
     self.assertTrue(label_exists_fn.called)
 
+  @mock.patch.object(
+      issue_tracking_service, 'UnderDailyLimit', return_value=True)
   @mock.patch.object(
       issue_tracking_service,
       'IsBugFilingEnabledForAnalysis',
@@ -169,6 +180,8 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(confidence_fn.called)
 
   @mock.patch.object(
+      issue_tracking_service, 'UnderDailyLimit', return_value=True)
+  @mock.patch.object(
       issue_tracking_service,
       'IsBugFilingEnabledForAnalysis',
       return_value=True)
@@ -196,6 +209,37 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
     self.assertFalse(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
     self.assertTrue(attempt_fn.called)
+
+  @mock.patch.object(
+      issue_tracking_service,
+      'IsBugFilingEnabledForAnalysis',
+      return_value=True)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForId', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'BugAlreadyExistsForLabel', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service,
+      '_HasSufficientConfidenceInCulprit',
+      return_value=True)
+  @mock.patch.object(
+      issue_tracking_service, '_HasPreviousAttempt', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'UnderDailyLimit', return_value=False)
+  def testShouldFileBugForAnalysisWhenOverLimit(self, daily_limit_fn, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.confidence_in_culprit = 0.5
+    analysis.Save()
+
+    self.assertFalse(issue_tracking_service.ShouldFileBugForAnalysis(analysis))
+    self.assertTrue(daily_limit_fn.called)
 
   def testIsBugFilingEnabledForAnalysis(self):
     master_name = 'm'
@@ -428,3 +472,102 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     analysis.put()
     self.assertFalse(
         issue_tracking_service._HasSufficientConfidenceInCulprit(analysis))
+
+  @mock.patch.object(
+      time_util,
+      'GetMostRecentUTCMidnight',
+      return_value=datetime.datetime(2017, 1, 2))
+  def testUnderDailyLimit(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.bug_id = 1234
+    analysis.has_attempted_filing = True
+    analysis.request_time = datetime.datetime(2017, 1, 1, 1)
+    analysis.Save()
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number + 1, step_name, test_name)
+    analysis.bug_id = 12345
+    analysis.has_attempted_filing = True
+    analysis.request_time = datetime.datetime(2017, 1, 1, 1)
+    analysis.Save()
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number + 2, step_name, test_name)
+    analysis.bug_id = 1234
+    analysis.has_attempted_filing = True
+    analysis.request_time = datetime.datetime(2017, 1, 1, 1)
+    analysis.Save()
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number + 3, step_name, test_name)
+    analysis.bug_id = 1234
+    analysis.has_attempted_filing = True
+    analysis.request_time = datetime.datetime(2017, 1, 2, 1)
+    analysis.Save()
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number + 4, step_name, test_name)
+    analysis.bug_id = 12345
+    analysis.has_attempted_filing = False
+    analysis.request_time = datetime.datetime(2017, 1, 2, 1)
+    analysis.Save()
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number + 5, step_name, test_name)
+    analysis.bug_id = None
+    analysis.has_attempted_filing = True
+    analysis.request_time = datetime.datetime(2017, 1, 2, 1)
+    analysis.Save()
+
+    analysis = MasterFlakeAnalysis.Create(
+        master_name, builder_name, build_number + 6, step_name, test_name)
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.Save()
+
+    self.assertTrue(issue_tracking_service.UnderDailyLimit(analysis))
+
+  @mock.patch.object(
+      time_util,
+      'GetMostRecentUTCMidnight',
+      return_value=datetime.datetime(2017, 1, 1))
+  def testUnderDailyLimitIfOver(self, _):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.bug_id = 1234
+    analysis.has_attempted_filing = True
+    analysis.request_time = datetime.datetime(2017, 1, 1, 1)
+    analysis.put()
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.bug_id = 12345
+    analysis.has_attempted_filing = True
+    analysis.request_time = datetime.datetime(2017, 1, 1, 1)
+    analysis.put()
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.bug_id = 1234
+    analysis.has_attempted_filing = True
+    analysis.request_time = datetime.datetime(2017, 1, 1, 1)
+    analysis.put()
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.put()
+
+    self.assertFalse(issue_tracking_service.UnderDailyLimit(analysis))

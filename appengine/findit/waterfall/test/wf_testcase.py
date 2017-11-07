@@ -155,6 +155,7 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
     },
     'minimum_confidence_score_to_run_tryjobs': 0.6,
     'create_monorail_bug': True,
+    'flake_bugs_allowed_per_day': 2,
     'update_monorail_bug': False
 }
 

@@ -13,12 +13,33 @@ from libs import time_util
 from monorail_api import IssueTrackerAPI
 from monorail_api import Issue
 
+from model.flake import master_flake_analysis
 from waterfall.flake import flake_constants
 
 
 def IsBugFilingEnabledForAnalysis(analysis):
   """Returns true if bug filing is enabled, false otherwise"""
   return analysis.algorithm_parameters.get('create_monorail_bug', False)
+
+
+def UnderDailyLimit(analysis):
+  daily_bug_limit = analysis.algorithm_parameters.get(
+      'flake_bugs_allowed_per_day',
+      flake_constants.DEFAULT_FLAKE_BUGS_ALLOWED_PER_DAY)
+  query = master_flake_analysis.MasterFlakeAnalysis.query(
+      master_flake_analysis.MasterFlakeAnalysis.request_time >
+      time_util.GetMostRecentUTCMidnight())
+  bugs_filed_today = 0
+
+  more = True
+  cursor = None
+  while more:
+    results, cursor, more = query.fetch_page(100, start_cursor=cursor)
+    for result in results:
+      if result.has_attempted_filing and result.bug_id:
+        bugs_filed_today += 1
+
+  return bugs_filed_today < daily_bug_limit
 
 
 def ShouldFileBugForAnalysis(analysis):
@@ -44,6 +65,10 @@ def ShouldFileBugForAnalysis(analysis):
     analysis.LogInfo(
         'Analysis has confidence=%d which isn\'t high enough to file a bug.' %
         analysis.confidence_in_culprit)
+    return False
+
+  if not UnderDailyLimit(analysis):
+    analysis.LogInfo('Reached bug filing limit for the day.')
     return False
 
   # Check if there's already a bug attached to this issue.

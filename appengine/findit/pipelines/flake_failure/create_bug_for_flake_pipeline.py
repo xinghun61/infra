@@ -51,9 +51,6 @@ class CreateBugForFlakePipeline(GeneratorPipeline):
     if not issue_tracking_service.ShouldFileBugForAnalysis(analysis):
       return
 
-    # TODO(crbug.com/773526): Make sure the test is enabled and flaky on recent
-    # build.
-
     subject = SUBJECT_TEMPLATE % analysis.test_name
 
     analysis_link = ('https://findit-for-me.appspot.com/waterfall/flake?key=%s'
