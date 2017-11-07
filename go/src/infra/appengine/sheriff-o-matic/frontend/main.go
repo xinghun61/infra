@@ -206,6 +206,7 @@ func init() {
 	r.POST("/api/v1/resolve/:tree", protected, handler.ResolveAlertHandler)
 	r.GET("/api/v1/annotations/", protected, handler.GetAnnotationsHandler)
 	r.POST("/api/v1/annotations/:action", protected, handler.PostAnnotationsHandler)
+	r.POST("/api/v1/filebug/", protected, handler.FileBugHandler)
 	r.GET("/api/v1/bugqueue/:label", protected, handler.GetBugQueueHandler)
 	r.GET("/api/v1/bugqueue/:label/uncached/", protected, handler.GetUncachedBugsHandler)
 	r.GET("/api/v1/revrange/:start/:end", basemw, handler.GetRevRangeHandler)

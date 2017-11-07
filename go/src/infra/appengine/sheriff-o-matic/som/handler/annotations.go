@@ -318,3 +318,59 @@ func flushOldAnnotations(c context.Context) (int, error) {
 
 	return len(results), nil
 }
+
+// FileBugHandler files a new bug in monorail.
+func FileBugHandler(ctx *router.Context) {
+	c, w, r := ctx.Context, ctx.Writer, ctx.Request
+
+	req := &postRequest{}
+	err := json.NewDecoder(r.Body).Decode(req)
+	if err != nil {
+		errStatus(c, w, http.StatusBadRequest, fmt.Sprintf("while decoding request: %s", err))
+		return
+	}
+
+	if err := xsrf.Check(c, req.XSRFToken); err != nil {
+		errStatus(c, w, http.StatusForbidden, err.Error())
+		return
+	}
+
+	rawJSON := struct {
+		Summary     string
+		Description string
+		Cc          []string
+		Priority    string
+		Labels      []string
+	}{}
+	if err := json.Unmarshal([]byte(*req.Data), &rawJSON); err != nil {
+		errStatus(c, w, http.StatusBadRequest, fmt.Sprintf("while decoding request: %s", err))
+	}
+
+	ccList := make([]*monorail.AtomPerson, len(rawJSON.Cc))
+	for i, cc := range rawJSON.Cc {
+		ccList[i] = &monorail.AtomPerson{cc}
+	}
+	fileBugReq := &monorail.InsertIssueRequest{
+		ProjectId: "chromium",
+		Issue: &monorail.Issue{
+			Cc:          ccList,
+			Summary:     rawJSON.Summary,
+			Description: rawJSON.Description,
+			Status:      "Available",
+			Labels:      rawJSON.Labels,
+		},
+	}
+
+	// TODO(jojwang): Send request to monorail and json.Marshal the
+	// response.
+	// Remove this when sending the request is implemented.
+	out, _ := json.Marshal(fileBugReq)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	logging.Infof(c, "%v", out)
+	w.Header().Set("Content-Type", "applications/json")
+	w.Write(out)
+}

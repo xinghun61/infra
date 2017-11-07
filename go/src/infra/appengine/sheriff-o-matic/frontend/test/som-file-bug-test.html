@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<title>SomFileBug</title>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/som-annotations/som-file-bug.html">
+
+<test-fixture id="som-file-bug-test">
+  <template>
+    <som-file-bug></som-file-bug>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('som-file-bug', function() {
+    let element;
+    setup(function() {
+      element = fixture('som-file-bug-test');
+
+    });
+
+    test('helper functions', function(done) {
+      let ccList = ['gatsby@google.com', 'eli@chromium.org'];
+      let ccString = 'gatsby@google.com, eli@chromium.org';
+      assert.deepEqual(element._stringToArray(ccString), ccList);
+
+      done();
+    });
+
+    // TODO(jojwang): test sending requests.
+
+  });
+</script>
