@@ -1,3 +1,15 @@
+# Release Notes sheriff-o-matic 2017-11-07
+
+- 2 commits, 0 bugs affected since baa8249 (2017-11-01T23:22:20Z)
+- 2 Authors:
+  - davidriley@chromium.org
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Don't rewrite go links to https.](https://chromium-review.googlesource.com/756190) (davidriley@chromium.org)
+- [[som] convert logging from txt proto tabledefs to plain protos](https://chromium-review.googlesource.com/747129) (seanmccullough@chromium.org)
+
 # Release Notes sheriff-o-matic 2017-11-01
 
 - 2 commits, 2 bugs affected since 36bb94e (2017-10-31T22:02:06Z)
