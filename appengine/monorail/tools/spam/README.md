@@ -1,13 +1,11 @@
 # Monorail Spam Classifier
 
-Monorail checks user content for spam using the methods `services.spam.ClassifyIssue`
-and `services.spam.ClassifyComment` in [services/issue_svc.py](../../services/issue_svc.py).
+Monorail runs each new issue and comment through a spam classifier model running in ML Engine.
 
-The classifier used in production is based on
-[Cloud Prediction API](https://cloud.google.com/prediction/docs/) which is
-deprecated. It is managed with ['spam.py'](spam.py).
+In order to train a new model locally or in the cloud, follow the instructions below.
 
-A replacement classifier using ML Engine is being built. See below for details.
+> Note: you must be logged into the correct GCP project with `gcloud`
+> in order to run the below commands.
 
 ## Trainer
 
@@ -18,11 +16,8 @@ The trainer is a Python module that does the following:
 
 ML Engine uses the high-level
 [`learn_runner`](https://www.tensorflow.org/api_docs/python/tf/contrib/learn/learn_runner/run)
-API (see [`trainer/task.py`](trainer/task.py) which allows it to train, evaluate,
+API (see [`trainer/task.py`](trainer/task.py)) which allows it to train, evaluate,
 and predict against a model saved in GCS.
-
-Note: you must be logged into the `monorail-staging` project with `gcloud`
-in order to run any of the below commands.
 
 ### Run locally
 
@@ -105,9 +100,7 @@ gsutil ls -r gs://monorail-staging-mlengine/$JOB_NAME
 # Look for a directory that matches the below structure and assign it.
 # It should have the structure $GCS_OUTPUT_LOCATION/export/Servo/$TIMESTAMP/.
 MODEL_BINARIES=gs://monorail-staging-mlengine/spam_trainer_1507059720/export/Servo/1507060043/
-```
 
-```sh
 VERSION=v_$TIMESTAMP
 gcloud ml-engine versions create $VERSION \
     --model spam \
