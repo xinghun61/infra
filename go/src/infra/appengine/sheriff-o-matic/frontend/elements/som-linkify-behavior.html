@@ -2,8 +2,8 @@
     LinkifyBehavior = {
       _miloify: function(url) {
         let u = new URL(url);
-        if (u.hostname.includes('chromium.org')) {
-          u.hostname = 'luci-milo.appspot.com';
+        if (u.hostname.includes('build.chromium.org')) {
+          u.hostname = 'ci.chromium.org';
           u.pathname = u.pathname.replace('/p/', '/buildbot/');
           u.pathname = u.pathname.replace('/i/', '/buildbot/');
           u.pathname = u.pathname.replace('/builders/', '/');
@@ -17,7 +17,7 @@
 
       _uberify: function(url) {
         let u = new URL(url);
-        if (u.hostname.includes('chromium.org')) {
+        if (u.hostname.includes('build.chromium.org')) {
           u.hostname = 'uberchromegw.corp.google.com';
           u.pathname = u.pathname.replace('/p/', '/i/');
         }
