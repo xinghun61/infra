@@ -60,7 +60,7 @@ def StoreResults(crash, client_id, app_id, id_to_culprits, lock, config,
     try:
       predator = PredatorForClientID(client_id, LocalGitRepository, config)
       crash.ReInitialize(predator)
-      culprit = predator.FindCulprit(crash.ToCrashReport())
+      _, culprit = predator.FindCulprit(crash.ToCrashReport())
       with lock:
         id_to_culprits[crash_id] = culprit
         if verbose:
