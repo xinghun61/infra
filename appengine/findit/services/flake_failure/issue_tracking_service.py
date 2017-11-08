@@ -24,10 +24,9 @@ def IsBugFilingEnabledForAnalysis(analysis):
 
 def UnderDailyLimit(analysis):
   daily_bug_limit = analysis.algorithm_parameters.get(
-      'flake_bugs_allowed_per_day',
-      flake_constants.DEFAULT_FLAKE_BUGS_ALLOWED_PER_DAY)
+      'new_flake_bugs_per_day', flake_constants.DEFAULT_NEW_FLAKE_BUGS_PER_DAY)
   query = master_flake_analysis.MasterFlakeAnalysis.query(
-      master_flake_analysis.MasterFlakeAnalysis.request_time >
+      master_flake_analysis.MasterFlakeAnalysis.request_time >=
       time_util.GetMostRecentUTCMidnight())
   bugs_filed_today = 0
 

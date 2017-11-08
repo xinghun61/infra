@@ -27,7 +27,7 @@ DEFAULT_ITERATIONS_TO_RUN_AFTER_TIMEOUT = 10
 DEFAULT_LOWER_FLAKE_THRESHOLD = 0.02
 
 # Number of bugs for flaky tests allowed to be filed per day.
-DEFAULT_FLAKE_BUGS_ALLOWED_PER_DAY = 2
+DEFAULT_NEW_FLAKE_BUGS_PER_DAY = 2
 
 # Max build numbers to look back during a build-level analysis.
 DEFAULT_MAX_BUILD_NUMBERS = 500

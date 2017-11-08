@@ -143,7 +143,7 @@ class FinditConfig(VersionedConfig):
   #         'iterations_to_rerun': 100
   #     },
   #     'create_monorail_bug': True,
-  #     'flake_bugs_allowed_per_day': 2,
+  #     'new_flake_bugs_per_day': 2,
   #     'update_monorail_bug': False,
   #     'minimum_confidence_score_to_run_tryjobs': 0.6
   # }
