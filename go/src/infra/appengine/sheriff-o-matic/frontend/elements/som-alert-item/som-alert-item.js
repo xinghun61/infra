@@ -15,6 +15,12 @@ class SomAlertItem extends Polymer.mixinBehaviors(
    */
 
   /**
+   * Fired when an alert requests that the file bug dialog be shown.
+   *
+   * @event file-bug
+   */
+
+  /**
    * Fired when an alert requests that the snooze dialog be shown.
    *
    * @event snooze
@@ -205,6 +211,10 @@ class SomAlertItem extends Polymer.mixinBehaviors(
 
   _linkBug(evt) {
     this.fire('link-bug');
+  }
+
+  _fileBug(evt) {
+    this.fire('file-bug');
   }
 
   _formatTimestamp(timestamp) {

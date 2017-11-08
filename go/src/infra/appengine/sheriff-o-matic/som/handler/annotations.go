@@ -16,6 +16,7 @@ import (
 
 	"google.golang.org/appengine"
 
+	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/model"
 	"infra/monorail"
 
@@ -361,10 +362,15 @@ func FileBugHandler(ctx *router.Context) {
 		},
 	}
 
-	// TODO(jojwang): Send request to monorail and json.Marshal the
-	// response.
-	// Remove this when sending the request is implemented.
-	out, _ := json.Marshal(fileBugReq)
+	mr := client.GetMonorail(c)
+
+	res, err := mr.InsertIssue(c, fileBugReq)
+	if err != nil {
+		logging.Errorf(c, "error inserting new Issue: %v", err)
+		errStatus(c, w, http.StatusBadRequest, err.Error())
+		return
+	}
+	out, err := json.Marshal(res)
 	if err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		return

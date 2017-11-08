@@ -1016,6 +1016,11 @@ class SomAlertView extends Polymer.mixinBehaviors(
     this.$.annotations.handleLinkBug([target.get('alert')]);
   }
 
+  _handleFileBug(evt) {
+    let target = evt.composedPath()[0];
+    this.$.annotations.handleFileBug([target.get('alert')]);
+  }
+
   _handleLinkBugBulk(evt) {
     this.$.annotations.handleLinkBug(this._checkedAlerts,
                                      this._uncheckAll.bind(this));

@@ -261,8 +261,13 @@
           <div class="alert-controls-buttons">
             <button id="linkBug" on-tap="_linkBug" alt="Link a bug"
               title="Link a bug to this alert to mark causes and followup.">
+              <iron-icon class="link-bug-icon" icon="link"></iron-icon>
+              Link Bug
+            </button>
+            <button id="fileBug" on-tap="_fileBug" alt="File a bug"
+              title="File a new bug and link to this alert to mark causes and followup.">
               <iron-icon class="file-bug-icon" icon="bug-report"></iron-icon>
-              Link/File Bug
+              File Bug
             </button>
             <template is="dom-if" if="[[!annotation.snoozed]]">
               <button id="snooze" on-tap="_snooze"

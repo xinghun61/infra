@@ -59,6 +59,7 @@ class SomAnnotations extends Polymer.mixinBehaviors(
         type: Number,
         computed: '_computeDefaultSnoozeTime(tree.name)',
       },
+      _fileBugErrorMessage: String,
       _fileBugModel: Object,
       _fileBugCallback: Function,
       _fileBugLabels: {
@@ -216,6 +217,40 @@ class SomAnnotations extends Polymer.mixinBehaviors(
     this.$.bugDialog.open();
   }
 
+  handleFileBug(alerts, callback) {
+    this._fileBugCallback = callback;
+    this._fileBugModel = alerts;
+
+    let bugSummary = 'Bug filed from Sheriff-o-Matic';
+    let trooperBug = false;
+
+    if (alerts) {
+      trooperBug = alerts.some((alert) => {
+        return this.isTrooperAlertType(alert.type);
+      });
+      if (alerts.length > 1) {
+        bugSummary = `${alerts[0].title} and ${alerts.length - 1} other alerts`;
+      } else if (alerts.length > 0) {
+        bugSummary = alerts[0].title;
+      }
+    }
+
+    let labels = ['Filed-Via-SoM'];
+    if (trooperBug) {
+      labels.push('infra-troopers');
+      // TODO(jojwang): addd component: infra
+    } else {
+      labels.push('sheriff-chromium');
+    }
+
+    this.$.summary.value = bugSummary;
+    this.$.description.value = this._commentForBug(this._fileBugModel);
+    // TODO(jojwang): get logged-in user's email to add to cc list
+    this.$.labels.value = this._arrayToString(labels);
+
+    this.$.fileBugDialog.open();
+  }
+
   handleRemoveBug(alert, detail) {
     this.$.removeBugDialog.open();
     this._removeBugModel = Object.assign({alert: alert}, detail);
@@ -246,6 +281,65 @@ class SomAnnotations extends Polymer.mixinBehaviors(
   }
 
   ////////////////////// Bugs ///////////////////////////
+
+  _fileBug() {
+    let error = false;
+    if (this.$.summary.value == "") {
+      error = true;
+      this.$.summary.invalid = true;
+    }
+    if (this.$.description.value == "") {
+      error = true;
+      this.$.description.invalid = true;
+    }
+    if (error) {
+      this._fileBugErrorMessage = 'Please fill in summary and description fields.'
+      return
+    } else {
+      let labels = this._stringToArray(this.$.labels.value);
+      if(this.$.priority.selectedItemLabel) {
+        labels.push(this.$.priority.selectedItemLabel);
+      }
+
+      let bugData = {
+        Summary: this.$.summary.value,
+        Description: this.$.description.value,
+        Cc: this._stringToArray(this.$.cc.value),
+        Labels: labels,
+      }
+
+      return this
+          .postJSON('/api/v1/filebug/', bugData)
+          .then(jsonParsePromise)
+          .catch((error) => {
+            this._fileBugErrorMessage = 'Error trying to create new issue: ' + error;
+          })
+          .then(this._fileBugResponse.bind(this));
+    }
+  }
+
+  _fileBugResponse(response) {
+    if (response.issue && response.issue.id) {
+      this.bugId = response.issue.id;
+    } else {
+       this._statusMessage = 'Error, no issue or issue id found: ' + response;
+    }
+    this.$.fileBugDialog.close();
+    return response;
+  }
+
+  _arrayToString(arr) {
+    return arr.join(", ");
+  }
+
+  _stringToArray(str) {
+    if (str && str != "") {
+      return str.split(",").map(item => {
+        return item.trim();
+      })
+    }
+    return [];
+  }
 
   _commentForBug(alerts) {
     return alerts.reduce((comment, alert) => {
