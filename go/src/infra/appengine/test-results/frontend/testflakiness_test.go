@@ -459,25 +459,25 @@ func TestFlakinessData(t *testing.T) {
 
 		So(data.FlakyBuilds, ShouldResemble, []FlakyBuild{
 			{
-				"https://luci-milo.appspot.com/buildbot/master1/builder1/1",
+				"https://ci.chromium.org/buildbot/master1/builder1/1",
 				"https://luci-logdog.appspot.com/v/?s=chromium%2Fbb%2Fmaster1%2Fbuilder1%2F1%2F%2B%2Frecipes%2Fsteps%2Fstep1%2F0%2Fstdout",
 			},
 			{
-				"https://luci-milo.appspot.com/buildbot/master2/builder2/2",
+				"https://ci.chromium.org/buildbot/master2/builder2/2",
 				"https://luci-logdog.appspot.com/v/?s=chromium%2Fbb%2Fmaster2%2Fbuilder2%2F2%2F%2B%2Frecipes%2Fsteps%2Fstep2%2F0%2Fstdout",
 			},
 		})
 		So(data.CQFlakyBuilds, ShouldResemble, []CQFlakyBuild{
 			{
-				"https://luci-milo.appspot.com/buildbot/master3/builder3/3",
+				"https://ci.chromium.org/buildbot/master3/builder3/3",
 				"https://luci-logdog.appspot.com/v/?s=chromium%2Fbb%2Fmaster3%2Fbuilder3%2F3%2F%2B%2Frecipes%2Fsteps%2Fstep3%2F0%2Fstdout",
-				"https://luci-milo.appspot.com/buildbot/master3/builder3/4",
+				"https://ci.chromium.org/buildbot/master3/builder3/4",
 				"https://luci-logdog.appspot.com/v/?s=chromium%2Fbb%2Fmaster3%2Fbuilder3%2F4%2F%2B%2Frecipes%2Fsteps%2Fstep3%2F0%2Fstdout",
 			},
 			{
-				"https://luci-milo.appspot.com/buildbot/master4/builder4/5",
+				"https://ci.chromium.org/buildbot/master4/builder4/5",
 				"https://luci-logdog.appspot.com/v/?s=chromium%2Fbb%2Fmaster4%2Fbuilder4%2F5%2F%2B%2Frecipes%2Fsteps%2Fstep4%2F0%2Fstdout",
-				"https://luci-milo.appspot.com/buildbot/master4/builder4/6",
+				"https://ci.chromium.org/buildbot/master4/builder4/6",
 				"https://luci-logdog.appspot.com/v/?s=chromium%2Fbb%2Fmaster4%2Fbuilder4%2F6%2F%2B%2Frecipes%2Fsteps%2Fstep4%2F0%2Fstdout",
 			},
 		})

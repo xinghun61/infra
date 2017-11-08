@@ -305,7 +305,7 @@ func getFlakinessList(ctx context.Context, bq *bigquery.Service, group Group) ([
 
 func getBuildURL(s testFlakinessService, master, builder string, buildNumber uint64) string {
 	return fmt.Sprintf(
-		"https://luci-milo.appspot.com/buildbot/%s/%s/%d",
+		"https://ci.chromium.org/buildbot/%s/%s/%d",
 		strings.TrimPrefix(master, "master."), builder, buildNumber)
 }
 
@@ -555,7 +555,7 @@ func (p prodTestFlakinessService) GetBuildInfoClient(ctx context.Context) (milo_
 
 	options := prpc.DefaultOptions()
 	return milo_api.NewBuildInfoPRPCClient(&prpc.Client{
-		Host:    "luci-milo.appspot.com",
+		Host:    "ci.chromium.org",
 		C:       &http.Client{Transport: authTransport},
 		Options: options,
 	}), nil
