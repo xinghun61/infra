@@ -17,8 +17,6 @@ import (
 
 	"golang.org/x/net/context"
 
-	"google.golang.org/appengine"
-
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/gae/service/taskqueue"
@@ -29,20 +27,7 @@ import (
 
 	"infra/appengine/test-results/masters"
 	"infra/appengine/test-results/model"
-	"infra/libs/eventupload"
-	"infra/libs/infraenv"
-
-	"cloud.google.com/go/bigquery"
 )
-
-// requestKey is used as a context key to embed the http.Request object into the
-// context.
-var requestKey = "http.request"
-
-type uploadHandler struct {
-	// If nil, send to BigQuery
-	sendEvent func(c context.Context, tre *model.TestResultEvent) error
-}
 
 func requestOK(ctx *router.Context) bool {
 	c, w, r := ctx.Context, ctx.Writer, ctx.Request
@@ -69,37 +54,6 @@ func requestOK(ctx *router.Context) bool {
 		return false
 	}
 	return true
-}
-
-// Serve handles upload requests.
-func (h *uploadHandler) Serve(ctx *router.Context) {
-	c, w, r := ctx.Context, ctx.Writer, ctx.Request
-	c = context.WithValue(c, &requestKey, r)
-
-	if !requestOK(ctx) {
-		return
-	}
-
-	fileheaders := r.MultipartForm.File["file"]
-
-	for _, fh := range fileheaders {
-		if err := h.doFileUpload(c, fh); err != nil {
-			msg := logging.WithError(err)
-			code := http.StatusInternalServerError
-			if se, ok := err.(statusError); ok {
-				code = se.code
-			}
-			if code >= http.StatusInternalServerError {
-				msg.Errorf(c, "uploadHandler")
-			} else {
-				msg.Warningf(c, "uploadHandler")
-			}
-			http.Error(w, err.Error(), code)
-			return
-		}
-	}
-
-	io.WriteString(w, "OK")
 }
 
 type statusError struct {
@@ -211,7 +165,55 @@ func withParsedUploadForm(ctx *router.Context, next router.Handler) {
 	next(ctx)
 }
 
-func (h *uploadHandler) doFileUpload(c context.Context, fh *multipart.FileHeader) error {
+// uploadHandler is the HTTP handler for upload
+// requests.
+func uploadHandler(ctx *router.Context) {
+	// Only bots should upload test results. Check IP address against a whitelist.
+	c, w, r := ctx.Context, ctx.Writer, ctx.Request
+	whitelisted, err := auth.GetState(c).DB().IsInWhitelist(
+		c, auth.GetState(c).PeerIP(), "bots")
+	if err != nil {
+		logging.WithError(err).Errorf(c, "uploadHandler: check IP whitelist")
+		http.Error(w, "Failed IP whitelist check", http.StatusInternalServerError)
+		return
+	}
+
+	if !whitelisted {
+		logging.WithError(err).Errorf(
+			c, "Uploading IP %s is not whitelisted", auth.GetState(c).PeerIP())
+		http.Error(w, "IP is not whitelisted", http.StatusUnauthorized)
+		return
+	}
+
+	if r.TLS == nil {
+		logging.Errorf(c, "uploadHandler: only allow HTTPS")
+		http.Error(w, "Only HTTPS requests are allowed", http.StatusUnauthorized)
+		return
+	}
+
+	fileheaders := r.MultipartForm.File["file"]
+
+	for _, fh := range fileheaders {
+		if err := doFileUpload(c, fh); err != nil {
+			msg := logging.WithError(err)
+			code := http.StatusInternalServerError
+			if se, ok := err.(statusError); ok {
+				code = se.code
+			}
+			if code >= http.StatusInternalServerError {
+				msg.Errorf(c, "uploadHandler")
+			} else {
+				msg.Warningf(c, "uploadHandler")
+			}
+			http.Error(w, err.Error(), code)
+			return
+		}
+	}
+
+	io.WriteString(w, "OK")
+}
+
+func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 	file, err := fh.Open()
 	if err != nil {
 		logging.WithError(err).Errorf(c, "doFileUpload: file open")
@@ -231,7 +233,7 @@ func (h *uploadHandler) doFileUpload(c context.Context, fh *multipart.FileHeader
 		return updateIncremental(c, &incr)
 
 	case "full_results.json":
-		return h.updateFullResults(c, r)
+		return updateFullResults(c, r)
 
 	case "failing_results.json":
 		r, err = model.CleanJSON(r)
@@ -314,105 +316,6 @@ func uploadTestFile(c context.Context, data io.Reader, filename string) error {
 	return datastore.Put(c, &tf)
 }
 
-func sendEventToBigQuery(c context.Context, tre *model.TestResultEvent) error {
-	if tre.MasterName == "" || tre.BuilderName == "" || tre.TestType == "" || tre.Version == 0 || tre.UsecSinceEpoch == 0 {
-		return errors.Reason("TestResultEvent is missing required field").Err()
-	}
-	client, err := bigquery.NewClient(c, infraenv.ChromeInfraEventsProject)
-	if err != nil {
-		return err
-	}
-	up := eventupload.NewUploader(c, client, "raw_events", "test_results")
-	up.SkipInvalidRows = true
-	up.IgnoreUnknownValues = true
-	return up.Put(c, tre)
-}
-
-func sendEventsToBigQuery(c context.Context, tres []*TestResultEvent) error {
-	for _, tre := range tres {
-		if tre.MasterName == "" || tre.BuilderName == "" || tre.TestType == "" || tre.Version == 0 || tre.UsecSinceEpoch == 0 {
-			return errors.Reason("TestResultEvent is missing required field").Err()
-		}
-	}
-	client, err := bigquery.NewClient(c, infraenv.ChromeInfraEventsProject)
-	if err != nil {
-		return err
-	}
-	up := eventupload.NewUploader(c, client, "flakiness", "test_results")
-	up.SkipInvalidRows = true
-	up.IgnoreUnknownValues = true
-	return up.Put(c, tres)
-}
-
-func createTestResultEvent(c context.Context, f *model.FullResult, p *UploadParams) (*model.TestResultEvent, error) {
-	var i bool
-	if f.Interrupted != nil {
-		i = *(f.Interrupted)
-	}
-
-	if f.PathDelim == nil {
-		return nil, errors.Reason("FullResult must have PathDelim to flatten Tests").Err()
-	}
-	s := *(f.PathDelim)
-
-	var tests []*model.TestResultEvent_Tests
-	for name, ftl := range f.Tests.Flatten(s) {
-		tests = append(tests, &model.TestResultEvent_Tests{
-			TestName: name,
-			Actual:   ftl.Actual,
-			Expected: ftl.Expected,
-			Bugs:     ftl.Bugs,
-		})
-	}
-
-	return &model.TestResultEvent{
-		MasterName:     p.Master,
-		BuilderName:    p.Builder,
-		BuildNumber:    int64(f.BuildNumber),
-		TestType:       p.TestType,
-		StepName:       p.StepName,
-		Interrupted:    i,
-		Version:        int64(f.Version),
-		UsecSinceEpoch: int64(f.SecondsEpoch) * 1000000,
-		Tests:          tests,
-	}, nil
-}
-
-func createTestResultEvents(c context.Context, f *model.FullResult, p *UploadParams) ([]*TestResultEvent, error) {
-	var i bool
-	if f.Interrupted != nil {
-		i = *(f.Interrupted)
-	}
-
-	if f.PathDelim == nil {
-		return nil, errors.Reason("FullResult must have PathDelim to flatten Tests").Err()
-	}
-	s := *(f.PathDelim)
-
-	var tres []*TestResultEvent
-	for name, ftl := range f.Tests.Flatten(s) {
-		test := TestResultEvent_Test{
-			TestName: name,
-			Actual:   ftl.Actual,
-			Expected: ftl.Expected,
-			Bugs:     ftl.Bugs,
-		}
-		tres = append(tres, &TestResultEvent{
-			MasterName:     p.Master,
-			BuilderName:    p.Builder,
-			BuildNumber:    int64(f.BuildNumber),
-			TestType:       p.TestType,
-			StepName:       p.StepName,
-			Interrupted:    i,
-			Version:        int64(f.Version),
-			UsecSinceEpoch: int64(f.SecondsEpoch) * 1000000,
-			Test:           &test,
-		})
-	}
-
-	return tres, nil
-}
-
 func createTestResUploadTask(c context.Context, f *model.FullResult, p *UploadParams) {
 	payload, err := json.Marshal(struct {
 		Master      string       `json:"master"`
@@ -452,7 +355,7 @@ func createTestResUploadTask(c context.Context, f *model.FullResult, p *UploadPa
 //
 // The supplied data should unmarshal into model.FullResult.
 // Otherwise, an error is returned.
-func (h *uploadHandler) updateFullResults(c context.Context, data io.Reader) error {
+func updateFullResults(c context.Context, data io.Reader) error {
 	buf := &bytes.Buffer{}
 	tee := io.TeeReader(data, buf)
 	dec := json.NewDecoder(tee)
@@ -511,48 +414,10 @@ func (h *uploadHandler) updateFullResults(c context.Context, data io.Reader) err
 	go func() {
 		defer wg.Done()
 		createTestResUploadTask(c, &f, p)
-		tre, err := createTestResultEvent(c, &f, p)
-		if err != nil {
-			logging.WithError(err).Errorf(c, "could not create TestResultEvent")
-			return
-		}
-		tres, err := createTestResultEvents(c, &f, p)
-		if err != nil {
-			logging.WithError(err).Errorf(c, "could not create TestResultEvents")
-			return
-		}
-		eventErrs := []error{}
-		if h.sendEvent == nil {
-			req, ok := c.Value(&requestKey).(*http.Request)
-			if !ok {
-				panic("No http.request found in context")
-			}
-			eventErrs = append(eventErrs, sendEventToBigQuery(appengine.WithContext(c, req), tre))
-			eventErrs = append(eventErrs, sendEventsToBigQuery(appengine.WithContext(c, req), tres))
-		} else {
-			eventErrs = append(eventErrs, h.sendEvent(c, tre))
-		}
-		for _, err := range eventErrs {
-			if err != nil {
-				if pme, ok := err.(bigquery.PutMultiError); ok {
-					logPutMultiError(c, pme)
-				} else {
-					logging.WithError(err).Errorf(c, "error sending event")
-				}
-			}
-		}
 	}()
 
 	wg.Wait()
 	return nil
-}
-
-func logPutMultiError(c context.Context, pme bigquery.PutMultiError) {
-	for _, rie := range pme {
-		for _, e := range rie.Errors {
-			logging.WithError(e).Errorf(c, "error sending event to BigQuery")
-		}
-	}
 }
 
 func createEmptyAggregateTestFileEntity(p model.TestFileParams) *model.TestFile {

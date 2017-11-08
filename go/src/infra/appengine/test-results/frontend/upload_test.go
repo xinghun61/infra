@@ -39,14 +39,6 @@ func (db AlwaysInWhitelistAuthDB) IsInWhitelist(c context.Context, ip net.IP, wh
 	return true, nil
 }
 
-func createTestUploadHandler() *uploadHandler {
-	return &uploadHandler{
-		sendEvent: func(c context.Context, tre *model.TestResultEvent) error {
-			return nil
-		},
-	}
-}
-
 func createTestUploadRequest(serverURL string, master string, data []byte) *http.Request {
 	var buf bytes.Buffer
 	multi := multipart.NewWriter(&buf)
@@ -99,8 +91,7 @@ func TestUploadAndGetHandlers(t *testing.T) {
 	r := router.New()
 	mw := router.NewMiddlewareChain(withTestingContext)
 	r.GET("/testfile", mw.Extend(templatesMiddleware()), getHandler)
-	uh := createTestUploadHandler()
-	r.POST("/testfile/upload", mw.Extend(withParsedUploadForm), (uh).Serve)
+	r.POST("/testfile/upload", mw.Extend(withParsedUploadForm), uploadHandler)
 	srv := httptest.NewTLSServer(r)
 
 	// Create a client that ignores bad certificates. This is needed to generate
@@ -378,73 +369,14 @@ func TestUses409ResponseCodeForBuildNumberConflict(t *testing.T) {
 		data = bytes.TrimSpace(data)
 		So(err, ShouldBeNil)
 
-		uh := createTestUploadHandler()
-		So(uh.updateFullResults(ctx, bytes.NewReader(data)), ShouldBeNil)
+		So(updateFullResults(ctx, bytes.NewReader(data)), ShouldBeNil)
 
 		// Ensure that the file is saved in datastore. See http://crbug.com/648817.
 		datastore.GetTestable(ctx).CatchupIndexes()
 
-		err = uh.updateFullResults(ctx, bytes.NewReader(data))
+		err = updateFullResults(ctx, bytes.NewReader(data))
 		se, ok := err.(statusError)
 		So(ok, ShouldBeTrue)
 		So(se.code, ShouldEqual, 409)
-	})
-}
-
-func TestCreateTestResultEvent(t *testing.T) {
-	t.Parallel()
-
-	Convey("Test CreateTestResultEvent", t, func() {
-		pd := ":"
-		i := true
-		c := context.Background()
-		f := &model.FullResult{
-			Interrupted:  &i,
-			PathDelim:    &pd,
-			BuildNumber:  model.Number(1),
-			Version:      2,
-			SecondsEpoch: 3,
-			Tests: model.FullTest{
-				"test_test": &model.FullTestLeaf{
-					Actual:   []string{"PASS"},
-					Expected: []string{"FAIL"},
-					Bugs:     []string{"crbug.com/700"},
-				},
-			},
-		}
-		p := &UploadParams{
-			Master:   "test_master",
-			Builder:  "test_builder",
-			TestType: "test_type",
-			StepName: "test_step",
-		}
-		Convey("Return error if FullResult does not have PathDelim", func() {
-			f.PathDelim = nil
-			_, err := createTestResultEvent(c, f, p)
-			So(err, ShouldNotBeNil)
-		})
-		Convey("Return populated TestResultEvent", func() {
-			tre, err := createTestResultEvent(c, f, p)
-			want := &model.TestResultEvent{
-				MasterName:     "test_master",
-				BuilderName:    "test_builder",
-				BuildNumber:    1,
-				TestType:       "test_type",
-				StepName:       "test_step",
-				Interrupted:    true,
-				Version:        2,
-				UsecSinceEpoch: 3000000,
-				Tests: []*model.TestResultEvent_Tests{
-					{
-						TestName: "test_test",
-						Actual:   []string{"PASS"},
-						Expected: []string{"FAIL"},
-						Bugs:     []string{"crbug.com/700"},
-					},
-				},
-			}
-			So(tre, ShouldResemble, want)
-			So(err, ShouldBeNil)
-		})
 	})
 }
