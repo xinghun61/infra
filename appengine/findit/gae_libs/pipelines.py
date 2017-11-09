@@ -279,11 +279,11 @@ class GeneratorPipeline(BasePipeline):
     self._LogStatusPath()
     arg = _ConvertPipelineParametersToInputObject(self.input_type, args, kwargs)
     pipeline_iter = self.RunImpl(arg)
-    if type(pipeline_iter) != types.GeneratorType:
+    if pipeline_iter and type(pipeline_iter) != types.GeneratorType:
       raise pipeline.Abort(
           '%s did not spawn other pipelines' % self.__class__.__name__)
     next_future = None
-    while True:
+    while pipeline_iter:
       try:
         sub_pipeline = pipeline_iter.send(next_future)
         next_future = yield sub_pipeline

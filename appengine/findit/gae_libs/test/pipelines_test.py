@@ -55,7 +55,13 @@ class _SynchronousPipelineWithComplexInfoAsInputType(
     return arg.a + arg.b.param
 
 
-class _GeneratorPipelineNotSpawnOtherPipelines(pipelines.GeneratorPipeline):
+class _GeneratorPipelineDoesNotSpawnPipeline(pipelines.GeneratorPipeline):
+  input_type = int
+
+  def RunImpl(self, arg):
+    return
+
+class _GeneratorPipelineReturnsNonFuture(pipelines.GeneratorPipeline):
   input_type = int
   output_type = list
 
@@ -295,8 +301,15 @@ class PipelinesTest(TestCase):
     self.assertFalse(p.was_aborted)
     self.assertDictEqual({'param': 1}, p.outputs.default.value)
 
-  def testGeneratorPipelineShouldSpawnOtherPipelines(self):
-    p = _GeneratorPipelineNotSpawnOtherPipelines(1)
+  def testGeneratorPipelineWithNoSubpipelines(self):
+    p = _GeneratorPipelineDoesNotSpawnPipeline(1)
+    p.start()
+    self.execute_queued_tasks()
+    p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
+    self.assertFalse(p.was_aborted)
+
+  def testGeneratorPipelineReturnsNonFutureValue(self):
+    p = _GeneratorPipelineReturnsNonFuture(1)
     p.start()
     self.execute_queued_tasks()
     p = pipelines.pipeline.Pipeline.from_id(p.pipeline_id)
