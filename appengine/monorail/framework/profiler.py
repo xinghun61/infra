@@ -18,6 +18,7 @@ to explore performance interactively.
 """
 
 import logging
+import threading
 import time
 
 from contextlib import contextmanager
@@ -39,15 +40,20 @@ class Profiler(object):
     self.top_phase = _Phase('overall profile', -1, None)
     self.current_phase = self.top_phase
     self.next_color = 0
+    self.original_thread_id = threading.current_thread().ident
 
   def StartPhase(self, name='unspecified phase'):
     """Begin a (sub)phase by pushing a new phase onto a stack."""
+    if self.original_thread_id != threading.current_thread().ident:
+      return  # We only profile the main thread.
     color = self._COLORS[self.next_color % len(self._COLORS)]
     self.next_color += 1
     self.current_phase = _Phase(name, color, self.current_phase)
 
   def EndPhase(self):
     """End a (sub)phase by poping the phase stack."""
+    if self.original_thread_id != threading.current_thread().ident:
+      return  # We only profile the main thread.
     self.current_phase = self.current_phase.End()
 
   @contextmanager
@@ -90,7 +96,7 @@ class _Phase(object):
     self.ms = str(int(self.elapsed_seconds * 1000))
     for sub in self.subphases:
       if sub.elapsed_seconds is None:
-        logging.warn('issue3182: subphase is %r', sub)
+        logging.warn('issue3182: subphase is %r', sub and sub.name)
     categorized = sum(sub.elapsed_seconds or 0.0 for sub in self.subphases)
     self.uncategorized_ms = int((self.elapsed_seconds - categorized) * 1000)
     return self.parent
