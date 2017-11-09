@@ -1,0 +1,25 @@
+{
+  "name": "chopsui-gallery",
+  "version": "0.0.1",
+  "moduleType": [
+    "es6"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "chops-ui": "chops-ui#*"
+  },
+  "devDependencies": {
+      "iron-demo-helpers": "PolymerElements/iron-demo-helpers",
+      "iron-component-page": "^3.0.1"
+  },
+  "resolutions": {
+    "polymer": "^2.0.0"
+  }
+}

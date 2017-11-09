@@ -1,6 +1,28 @@
 {
   "name": "chops-ui",
   "version": "0.0.1",
+  "description": "Common elements for ChOps FEs",
+  "authors": [
+    "ChOps CRDX Team"
+  ],
+  "keywords": [
+    "chopsui",
+  ],
+  "main": [
+    "bug-input.html",
+    "bug-link.html",
+    "cl-link.html",
+    "crdx-timestamp.html",
+    "tree-status.html",
+    "user-id.html",
+    "user-input.html",
+    "user-login.html",
+    "users-dropdown.html"
+  ]
+  "repository": {
+    "type": "git",
+    "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui.git"
+  }
   "moduleType": [
     "es6"
   ],
