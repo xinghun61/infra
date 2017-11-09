@@ -167,7 +167,7 @@ Because the script is called `test.py`, we edit a file called
 `test.py.vpython` in the same directory as `test.py`:
 
 ```protobuf
-python: "2.7"
+python_version: "2.7"
 wheel: <
   name: "infra/python/wheels/psutil/${vpython_platform}"
   version: "version:5.2.2"
@@ -306,7 +306,7 @@ directory alongside it and be named `foo.py.vpython`.
 
 * foo.py.vpython
   ```protobuf
-  python: "2.7"
+  python_version: "2.7"
   wheel: <
     name: "infra/python/wheels/coverage/${vpython_platform}"
     version: "version:4.3.4"
@@ -390,7 +390,7 @@ For example:
 
 * .vpython
   ```protobuf
-  python: "2.7"
+  python_version: "2.7"
   wheel: <
     name: "infra/python/wheels/coverage/${vpython_platform}"
     version: "version:4.3.4"
