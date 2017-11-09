@@ -100,7 +100,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
                 revision=revision.decode('utf-8')),
-            build_id='m/b/1'.decode('utf-8')))
+            build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
 
@@ -179,7 +179,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
                 revision=revision.decode('utf-8')),
-            build_id='m/b/1'.decode('utf-8')))
+            build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.CREATED_BY_SHERIFF)
 
@@ -225,7 +225,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
                 revision=revision.decode('utf-8')),
-            build_id='m/b/1'.decode('utf-8')))
+            build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.ERROR)
 
@@ -273,7 +273,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
                 revision=revision.decode('utf-8')),
-            build_id='m/b/1'.decode('utf-8')))
+            build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
 
@@ -303,7 +303,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
                 revision=revision.decode('utf-8')),
-            build_id='m/b/1'.decode('utf-8')))
+            build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.SKIPPED)
 
@@ -333,7 +333,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
             cl_key=CLKey(
                 repo_name=repo_name.decode('utf-8'),
                 revision=revision.decode('utf-8')),
-            build_id='m/b/1'.decode('utf-8')))
+            build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.SKIPPED)
 
@@ -375,7 +375,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         cl_key=CLKey(
             repo_name=repo_name.decode('utf-8'),
             revision=revision.decode('utf-8')),
-        build_id='m/b/1'.decode('utf-8'))
+        build_id=u'm/b/1')
     self.assertFalse(gerrit.ShouldRevert(pipeline_input, None))
 
   def testShouldNotRevertIfRevertIsSkipped(self):
@@ -388,7 +388,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         cl_key=CLKey(
             repo_name=repo_name.decode('utf-8'),
             revision=revision.decode('utf-8')),
-        build_id='m/b/1'.decode('utf-8'))
+        build_id=u'm/b/1')
     self.assertFalse(gerrit.ShouldRevert(pipeline_input, None))
 
   @mock.patch.object(
@@ -404,7 +404,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         cl_key=CLKey(
             repo_name=repo_name.decode('utf-8'),
             revision=revision.decode('utf-8')),
-        build_id='m/b/1'.decode('utf-8'))
+        build_id=u'm/b/1')
     self.assertFalse(gerrit.ShouldRevert(pipeline_input, None))
 
   @mock.patch.object(gerrit, '_CanRevert', return_value=True)
@@ -416,7 +416,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
         cl_key=CLKey(
             repo_name=repo_name.decode('utf-8'),
             revision=revision.decode('utf-8')),
-        build_id='m/b/1'.decode('utf-8'))
+        build_id=u'm/b/1')
     self.assertTrue(gerrit.ShouldRevert(pipeline_input, pipeline_id))
 
   @mock.patch.object(

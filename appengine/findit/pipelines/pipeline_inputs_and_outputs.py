@@ -4,6 +4,15 @@
 """This module is to save structured pipeline inputs and outputs."""
 
 from libs.structured_object import StructuredObject
+from libs.structured_object import TypedDict
+from libs.structured_object import TypedList
+
+
+class BuildKey(StructuredObject):
+  """Key to a build, an analysis or a try job."""
+  master_name = unicode
+  builder_name = unicode
+  build_number = int
 
 
 class CLKey(StructuredObject):
@@ -35,3 +44,19 @@ class SendNotificationForCulpritPipelineInput(StructuredObject):
   cl_key = CLKey
   force_notify = bool
   revert_status = int
+
+
+class DictOfCLKeys(TypedDict):
+  _value_type = CLKey
+
+
+class ListOfCLKeys(TypedList):
+  _element_type = CLKey
+
+
+class RevertAndNotifyCulpritPipelineInput(StructuredObject):
+  """Input for RevertAndNotifyCompileCulpritPipeline and
+     RevertAndNotifyTestCulpritPipeline."""
+  build_key = BuildKey
+  culprits = DictOfCLKeys
+  heuristic_cls = ListOfCLKeys

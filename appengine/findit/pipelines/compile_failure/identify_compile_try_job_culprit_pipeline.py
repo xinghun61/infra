@@ -7,8 +7,11 @@ from model.wf_analysis import WfAnalysis
 from model.wf_try_job_data import WfTryJobData
 from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as revert_pipeline)
+from pipelines.pipeline_inputs_and_outputs import BuildKey
+from pipelines.pipeline_inputs_and_outputs import (
+    RevertAndNotifyCulpritPipelineInput)
 from services import build_failure_analysis
-from services import try_job
+from services import git
 from services.compile_failure import compile_try_job
 
 
@@ -27,7 +30,7 @@ class IdentifyCompileTryJobCulpritPipeline(BasePipeline):
       failed_revision = compile_try_job.GetFailedRevisionFromCompileResult(
           result)
       failed_revisions = [failed_revision] if failed_revision else []
-      culprits = try_job.GetCulpritInfo(failed_revisions)
+      culprits = git.GetCLInfo(failed_revisions)
 
       # In theory there are 2 cases where compile failure could be flaky:
       # 1. All revisions passed in the try job (try job will not run at good
@@ -71,4 +74,10 @@ class IdentifyCompileTryJobCulpritPipeline(BasePipeline):
       return
 
     yield revert_pipeline.RevertAndNotifyCompileCulpritPipeline(
-        master_name, builder_name, build_number, culprits, heuristic_cls)
+        RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name,
+                builder_name=builder_name,
+                build_number=build_number),
+            culprits=git.GetCLKeysFromCLInfo(culprits),
+            heuristic_cls=heuristic_cls))

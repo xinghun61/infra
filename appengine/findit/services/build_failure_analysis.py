@@ -26,6 +26,8 @@ from libs.gitiles.diff import ChangeType
 from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
+from pipelines.pipeline_inputs_and_outputs import CLKey
+from pipelines.pipeline_inputs_and_outputs import ListOfCLKeys
 from services import deps
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
@@ -920,6 +922,10 @@ def SaveSuspectedCLs(suspected_cls, master_name, builder_name, build_number,
 
 def GetHeuristicSuspectedCLs(analysis):
   """Gets revisions of suspected cls found by heuristic approach."""
+  suspects = ListOfCLKeys()
   if analysis and analysis.suspected_cls:
-    return [[cl['repo_name'], cl['revision']] for cl in analysis.suspected_cls]
-  return []
+    suspects.extend([
+        CLKey(repo_name=cl['repo_name'], revision=cl['revision'])
+        for cl in analysis.suspected_cls
+    ])
+  return suspects

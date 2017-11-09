@@ -462,37 +462,3 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         analysis, flaky_failures)
     self.assertEqual(expected_result, result)
     self.assertTrue(flaky)
-
-  def _MockGetChangeLog(self, revision):
-
-    class MockedChangeLog(object):
-
-      def __init__(self, commit_position, code_review_url):
-        self.commit_position = commit_position
-        self.code_review_url = code_review_url
-        self.change_id = str(commit_position)
-
-    mock_change_logs = {}
-    mock_change_logs['rev1'] = None
-    mock_change_logs['rev2'] = MockedChangeLog(123, 'url')
-    return mock_change_logs.get(revision)
-
-  def testGetCulpritInfo(self):
-    failed_revisions = ['rev1', 'rev2']
-
-    self.mock(CachedGitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
-
-    expected_culprits = {
-        'rev1': {
-            'revision': 'rev1',
-            'repo_name': 'chromium'
-        },
-        'rev2': {
-            'revision': 'rev2',
-            'repo_name': 'chromium',
-            'commit_position': 123,
-            'url': 'url'
-        }
-    }
-    self.assertEqual(expected_culprits,
-                     try_job_util.GetCulpritInfo(failed_revisions))

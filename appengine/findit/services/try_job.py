@@ -18,8 +18,6 @@ import logging
 
 from google.appengine.ext import ndb
 
-from common.findit_http_client import FinditHttpClient
-from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
 from model import result_status
@@ -266,26 +264,3 @@ def GetUpdatedAnalysisResult(analysis, flaky_failures):
                                                  flaky_failures)
 
   return analysis_result, all_flaky
-
-
-def GetCulpritInfo(failed_revisions):
-  """Gets commit_positions and review urls for revisions."""
-
-  git_repo = CachedGitilesRepository(
-      FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
-  culprits = {}
-  # TODO(crbug/767759): remove hard-coded 'chromium' when DEPS file parsing is
-  # supported.
-  for failed_revision in failed_revisions:
-    culprits[failed_revision] = {
-        'revision': failed_revision,
-        'repo_name': 'chromium'
-    }
-    change_log = git_repo.GetChangeLog(failed_revision)
-    if change_log:
-      culprits[failed_revision]['commit_position'] = (
-          change_log.commit_position)
-      culprits[failed_revision]['url'] = (change_log.code_review_url or
-                                          change_log.commit_url)
-
-  return culprits

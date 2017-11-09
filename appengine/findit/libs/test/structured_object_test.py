@@ -315,3 +315,45 @@ class SerilizableObjectTest(unittest.TestCase):
 
     obj_c = _ObjectC.FromSerializable(data_dict)
     self.assertEqual(data_dict, obj_c.ToSerializable())
+
+  def testBaseSerializableObjectEqual(self):
+    data_dict = {
+        'da': {
+            'a1': {
+                'v': 1
+            },
+            'a2': {
+                'v': 2
+            }
+        },
+        'la': [{
+            'v': 1
+        }, {
+            'v': 2
+        }],
+        'd': {
+            'a1': 1,
+            'a2': 2
+        },
+        'l': ['a', 'b']
+    }
+
+    obj_c1 = _ObjectC.FromSerializable(data_dict)
+    obj_c2 = _ObjectC.FromSerializable(data_dict)
+    self.assertEqual(obj_c1, obj_c2)
+
+  def testBaseSerializableObjectNotEqual(self):
+    obj_a1 = _ObjectA()
+    obj_a1.v = 1
+    obj_a2 = _ObjectA()
+    obj_a2.v = 2
+
+    da = _DictOfObjectA()
+    da['a1'] = obj_a1
+    da['a2'] = obj_a2
+
+    la = _ListOfObjectA()
+    la.append(obj_a1)
+    la.append(obj_a2)
+
+    self.assertTrue(da != la)

@@ -4,10 +4,10 @@
 
 import logging
 
-from gae_libs.pipeline_wrapper import BasePipeline
-from gae_libs.pipelines import CreateInputObjectInstance
-from pipelines.pipeline_inputs_and_outputs import CLKey
+from gae_libs.pipelines import GeneratorPipeline
 from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
+from pipelines.pipeline_inputs_and_outputs import (
+    RevertAndNotifyCulpritPipelineInput)
 from pipelines.pipeline_inputs_and_outputs import (
     SendNotificationToIrcPipelineInput)
 from pipelines.pipeline_inputs_and_outputs import (
@@ -25,12 +25,17 @@ from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 _BYPASS_MASTER_NAME = 'chromium.sandbox'
 
 
-class RevertAndNotifyCompileCulpritPipeline(BasePipeline):
+class RevertAndNotifyCompileCulpritPipeline(GeneratorPipeline):
   """A wrapper pipeline to revert culprit and send notification."""
+  input_type = RevertAndNotifyCulpritPipelineInput
+  output_type = bool
 
-  # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, culprits,
-          heuristic_cls):
+  def RunImpl(self, pipeline_input):
+    master_name = pipeline_input.build_key.master_name
+    builder_name = pipeline_input.build_key.builder_name
+    build_number = pipeline_input.build_key.build_number
+    culprits = pipeline_input.culprits
+    heuristic_cls = pipeline_input.heuristic_cls
 
     if master_name == _BYPASS_MASTER_NAME:
       # This is a hack to prevent Findit taking any actions on
@@ -50,34 +55,29 @@ class RevertAndNotifyCompileCulpritPipeline(BasePipeline):
     # There is a try job result, checks if we can revert the culprit or send
     # notification.
     culprit = culprits.values()[0]
-    repo_name = culprit['repo_name']
-    revision = culprit['revision']
-    cl_key = CLKey(repo_name=repo_name, revision=revision)
 
-    force_notify = [repo_name, revision] in heuristic_cls
+    force_notify = culprit in heuristic_cls
     build_id = build_util.CreateBuildId(master_name, builder_name, build_number)
 
     revert_status = yield CreateRevertCLPipeline(
-        CreateRevertCLPipelineInput(
-            cl_key=cl_key,
-            build_id=build_id))
+        CreateRevertCLPipelineInput(cl_key=culprit, build_id=build_id))
 
-    submit_revert_pipeline_input = CreateInputObjectInstance(
+    submit_revert_pipeline_input = self.CreateInputObjectInstance(
         SubmitRevertCLPipelineInput,
-        cl_key=cl_key,
+        cl_key=culprit,
         revert_status=revert_status)
     submitted = yield SubmitRevertCLPipeline(submit_revert_pipeline_input)
 
-    send_notification_to_irc_input = CreateInputObjectInstance(
+    send_notification_to_irc_input = self.CreateInputObjectInstance(
         SendNotificationToIrcPipelineInput,
-        cl_key=cl_key,
+        cl_key=culprit,
         revert_status=revert_status,
         submitted=submitted)
     yield SendNotificationToIrcPipeline(send_notification_to_irc_input)
 
-    send_notification_to_culprit_input = CreateInputObjectInstance(
+    send_notification_to_culprit_input = self.CreateInputObjectInstance(
         SendNotificationForCulpritPipelineInput,
-        cl_key=cl_key,
+        cl_key=culprit,
         force_notify=force_notify,
         revert_status=revert_status)
     yield SendNotificationForCulpritPipeline(send_notification_to_culprit_input)

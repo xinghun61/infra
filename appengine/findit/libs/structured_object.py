@@ -112,6 +112,11 @@ class BaseSerializableObject(object):
     """Deserialized given data and returns an instance of this class."""
     raise NotImplementedError
 
+  def __eq__(self, other):
+    if not isinstance(other, self.__class__):
+      return False
+    return self.ToSerializable() == other.ToSerializable()
+
 
 class StructuredObject(BaseSerializableObject):
 
