@@ -18,7 +18,6 @@ DEPS = [
   'recipe_engine/platform',
   'recipe_engine/properties',
   'recipe_engine/python',
-  'recipe_engine/runtime',
   'recipe_engine/step',
 ]
 
@@ -58,12 +57,6 @@ def RunSteps(api, presubmit, GOARCH):
       co.go_env_step('go', 'build', 'go.chromium.org/luci/...')
       co.go_env_step('go', 'test', 'go.chromium.org/luci/...')
 
-  # TODO(tandrii): remove this.
-  if (api.runtime.is_luci and
-      api.properties.get('buildername') == 'luci-go-precise32'):
-    # We need actual step to ensure gatekeeper picks this up.
-    api.python.inline('simulated failure', 'import sys; sys.exit(1);')
-
 
 def GenTests(api):
   yield (
@@ -99,15 +92,4 @@ def GenTests(api):
         buildername='Luci-go 32-on-64 Tests',
         GOARCH='386',
     )
-  )
-
-  yield (
-    api.test('temp_failure_on_precise32') +
-    api.platform('linux', 32)+
-    api.properties.tryserver(
-        path_config='generic',
-        buildername='luci-go-precise32',
-    ) +
-    api.runtime(is_luci=True, is_experimental=False) +
-    api.step_data('simulated failure', retcode=1)
   )
