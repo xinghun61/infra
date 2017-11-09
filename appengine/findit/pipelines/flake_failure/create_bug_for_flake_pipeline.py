@@ -6,7 +6,9 @@ import logging
 import datetime
 
 from google.appengine.ext import ndb
-from gae_libs.pipelines import GeneratorPipeline
+from gae_libs import pipelines
+from gae_libs.pipelines import pipeline
+
 from libs import time_util
 from libs.structured_object import StructuredObject
 
@@ -16,12 +18,20 @@ from model.flake.flake_culprit import FlakeCulprit
 
 from services.flake_failure import issue_tracking_service
 
+from waterfall import build_util
 from waterfall.flake import flake_constants
 from waterfall.flake import triggering_sources
+from waterfall.flake.analyze_flake_for_build_number_pipeline import (
+    AnalyzeFlakeForBuildNumberPipeline)
+from waterfall.flake.lookback_algorithm import IsFullyStable
 
-SUBJECT_TEMPLATE = '%s is Flaky'
-BODY_TEMPLATE = ('Findit has detected a flake at test %s. Track this'
-                 'analysis here:\n%s')
+_SUBJECT_TEMPLATE = '%s is Flaky'
+_BODY_TEMPLATE = ('Findit has detected a flake at test %s. Track this'
+                  'analysis here:\n%s')
+
+# TODO(crbug.com/783335): Allow these values to be configurable.
+_ITERATIONS_TO_CONFIRM_FLAKE = 30  # 30 iterations.
+_ITERATIONS_TO_CONFIRM_FLAKE_TIMEOUT = 60 * 60  # One hour.
 
 
 class CreateBugForFlakePipelineInputObject(StructuredObject):
@@ -29,7 +39,7 @@ class CreateBugForFlakePipelineInputObject(StructuredObject):
   test_location = dict
 
 
-class CreateBugForFlakePipeline(GeneratorPipeline):
+class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
 
   input_type = CreateBugForFlakePipelineInputObject
 
@@ -46,16 +56,55 @@ class CreateBugForFlakePipeline(GeneratorPipeline):
     analysis = ndb.Key(urlsafe=input_object.analysis_urlsafe_key).get()
     assert analysis
 
-    analysis.LogInfo('RunImpl being called for CreateBugForFlakePipeline')
-
     if not issue_tracking_service.ShouldFileBugForAnalysis(analysis):
       return
 
-    subject = SUBJECT_TEMPLATE % analysis.test_name
+    most_recent_build_number = build_util.GetLatestBuildNumber(
+        analysis.master_name, analysis.builder_name)
+    if not most_recent_build_number:
+      return
 
+    analysis_pipeline = yield AnalyzeFlakeForBuildNumberPipeline(
+        input_object.analysis_urlsafe_key, most_recent_build_number,
+        _ITERATIONS_TO_CONFIRM_FLAKE, _ITERATIONS_TO_CONFIRM_FLAKE_TIMEOUT,
+        True)
+    with pipeline.After(analysis_pipeline):
+      next_input_object = pipelines.CreateInputObjectInstance(
+          _CreateBugIfStillFlakyInputObject,
+          analysis_urlsafe_key=input_object.analysis_urlsafe_key,
+          most_recent_build_number=most_recent_build_number)
+      yield _CreateBugIfStillFlaky(next_input_object)
+
+    # TODO(crbug.com/780110): Use customized field for querying for duplicates.
+
+    # TODO(crbug.com/780112): Check if a test is disabled before filing.
+
+
+class _CreateBugIfStillFlakyInputObject(StructuredObject):
+  analysis_urlsafe_key = unicode
+  most_recent_build_number = int
+
+
+class _CreateBugIfStillFlaky(pipelines.GeneratorPipeline):
+  input_type = _CreateBugIfStillFlakyInputObject
+
+  def RunImpl(self, input_object):
+    analysis = ndb.Key(urlsafe=input_object.analysis_urlsafe_key).get()
+    assert analysis
+
+    data_point = analysis.FindMatchingDataPointWithBuildNumber(
+        input_object.most_recent_build_number)
+
+    # If we're out of bounds of the lower or upper flake threshold, this test
+    # is stable (either passing or failing consistently).
+    if not data_point or IsFullyStable(data_point.pass_rate):
+      analysis.LogInfo('Bug not filed because test is stable in latest build.')
+      return
+
+    subject = _SUBJECT_TEMPLATE % analysis.test_name
     analysis_link = ('https://findit-for-me.appspot.com/waterfall/flake?key=%s'
                      % input_object.analysis_urlsafe_key)
-    body = BODY_TEMPLATE % (analysis.test_name, analysis_link)
+    body = _BODY_TEMPLATE % (analysis.test_name, analysis_link)
 
     # Log our attempt in analysis so we don't retry perpetually.
     analysis.Update(has_attempted_filing=True)
@@ -73,11 +122,3 @@ class CreateBugForFlakePipeline(GeneratorPipeline):
     assert flake_analysis_request
     flake_analysis_request.Update(
         bug_reported_by=triggering_sources.FINDIT_PIPELINE, bug_id=bug_id)
-
-    # TODO(crbug.com/780110): Use customized field for querying for duplicates.
-
-    # TODO(crbug.com/780111): Limit the number of bugs filed per day.
-
-    # TODO(crbug.com/780112): Check if a test is disabled before filing.
-
-    # TODO(crbug.com/780113): Verify test is still flaky in recent build.
