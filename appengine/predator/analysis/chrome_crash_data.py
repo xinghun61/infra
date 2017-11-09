@@ -179,3 +179,7 @@ class CracasCrashData(ChromeCrashData):
   @property
   def raw_stacktrace(self):
     return json.dumps(self._raw_stacktrace)
+
+  @property
+  def redo(self):
+    return True

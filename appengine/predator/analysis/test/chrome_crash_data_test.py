@@ -169,3 +169,10 @@ class CracasCrashDataTest(AnalysisTestCase):
 
     self.assertEqual(crash_data.raw_stacktrace,
                      json.dumps(stacktrace_list))
+
+  def testAlwaysRedo(self):
+    """Tests that Cracas always redo analysis."""
+    crash_data = CracasCrashData(
+        self.GetDummyChromeCrashData(),
+        ChromeDependencyFetcher(self.GetMockRepoFactory()))
+    self.assertTrue(crash_data.redo)
