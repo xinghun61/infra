@@ -170,6 +170,15 @@
       </div>
     </paper-dialog>
 
+    <paper-dialog id="bugFiledDialog" with-backdrop>
+      <div>Successfully linked new bug <a href$="https://crbug.com/[[_filedBugId]]">Bug [[_filedBugId]]</a> to alert.</div>
+      <div class="buttons">
+        <button dialog-dismiss>
+          Close
+        </button>
+      </div>
+    </paper-dialog>
+
     <paper-dialog id="removeBugDialog" with-backdrop>
       <h2>Unlinking bug from alert</h2>
       <div>

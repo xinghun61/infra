@@ -73,6 +73,7 @@ class SomAnnotations extends Polymer.mixinBehaviors(
         type: Boolean,
         value: false,
       },
+      _filedBugId: String,
       _groupErrorMessage: String,
       _groupModel: Object,
       _removeBugErrorMessage: String,
@@ -320,11 +321,26 @@ class SomAnnotations extends Polymer.mixinBehaviors(
 
   _fileBugResponse(response) {
     if (response.issue && response.issue.id) {
-      this.bugId = response.issue.id;
+      this._filedBugId = response.issue.id.toString();
     } else {
-       this._statusMessage = 'Error, no issue or issue id found: ' + response;
+       this._fileBugErrorMessage = 'Error, no issue or issue id found: ' + response;
     }
-    this.$.fileBugDialog.close();
+    let data = {bugs: [this._filedBugId]};
+    let promises = this._fileBugModel.map((alert) => {
+      return this.sendAnnotation(alert.key, 'add', data);
+    });
+    Promise.all(promises).then(
+        (response) => {
+          this._fileBugErrorMessage = '';
+          this.$.fileBugDialog.close();
+          this.$.bugFiledDialog.open();
+
+          if (this._fileBugCallback) {
+            this._fileBugCallback();
+          }
+        }, (error) => {
+          this._fileBugErrorMessage = error;
+        });
     return response;
   }
 
