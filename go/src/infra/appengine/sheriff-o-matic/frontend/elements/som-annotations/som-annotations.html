@@ -99,6 +99,11 @@
         margin: 1em 4px;
         background-color: #eee;
       }
+      .linkText {
+        color: blue;
+        text-decoration: underline;
+        cursor: pointer;
+      }
       .sub-alert {
         display: block;
         font-size: 0.8em;
@@ -128,14 +133,9 @@
           min
         </div>
       </label>
-      <div>
-        <a hidden$="[[_filedBug]]" id="fileBugLink" target="_blank" on-tap="_fileBugClicked">
+      <div class="linkText" on-click="_fileBugClicked">
           File bug
-        </a>
      </div>
-      <div hidden$="[[!_filedBug]]" id="bugReminder">
-        Remember to enter the new bug number above!
-      </div>
       <div class="error">[[_bugErrorMessage]]</div>
       <div class="buttons">
         <button dialog-dismiss>

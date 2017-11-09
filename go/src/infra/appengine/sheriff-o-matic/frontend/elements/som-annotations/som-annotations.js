@@ -206,11 +206,6 @@ class SomAnnotations extends Polymer.mixinBehaviors(
       extras = '&template=Build%20Infrastructure';
     }
 
-    this.$.fileBugLink.href =
-        'https://bugs.chromium.org/p/chromium/issues/entry?status=Available&labels=' +
-        this._fileBugLabels.join(',') + '&summary=' + bugSummary +
-        '&comment=' + encodeURIComponent(this._commentForBug(this._fileBugModel)) + extras;
-    this._filedBug = false;
     this._bugErrorMessage = '';
 
     let autosnoozeTime = parseInt(this.$.autosnoozeTime.value, 10);
@@ -392,7 +387,8 @@ class SomAnnotations extends Polymer.mixinBehaviors(
   }
 
   _fileBugClicked() {
-    this._filedBug = true;
+    this.$.bugDialog.close();
+    this.handleFileBug(this._fileBugModel, this._fileBugCallBack);
   }
 
   _removeBug() {
