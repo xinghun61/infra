@@ -21,7 +21,7 @@ func TestInstallXcode(t *testing.T) {
 
 		Convey("for accepted license, mac", func() {
 			err := installXcode(ctx, "testVersion", "testdata/Xcode-old.app",
-				"testdata/acceptedLicenses.plist", "test/prefix", macKind)
+				"testdata/acceptedLicenses.plist", "test/prefix", macKind, "")
 			So(err, ShouldBeNil)
 			So(len(s.Calls), ShouldEqual, 1)
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
@@ -31,10 +31,23 @@ func TestInstallXcode(t *testing.T) {
 			So(s.Calls[0].ConsumedStdin, ShouldEqual, "test/prefix/mac testVersion\n")
 		})
 
+		Convey("with a service account", func() {
+			err := installXcode(ctx, "testVersion", "testdata/Xcode-old.app",
+				"testdata/acceptedLicenses.plist", "test/prefix", macKind, "test/service-account.json")
+			So(err, ShouldBeNil)
+			So(len(s.Calls), ShouldEqual, 1)
+			So(s.Calls[0].Executable, ShouldEqual, "cipd")
+			So(s.Calls[0].Args, ShouldResemble, []string{
+				"ensure", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
+				"-service-account-json", "test/service-account.json",
+			})
+			So(s.Calls[0].ConsumedStdin, ShouldEqual, "test/prefix/mac testVersion\n")
+		})
+
 		Convey("for new license, ios", func() {
 			s.ReturnOutput = []string{"", "old/xcode/path"}
 			err := installXcode(ctx, "testVersion", "testdata/Xcode-new.app",
-				"testdata/acceptedLicenses.plist", "test/prefix", iosKind)
+				"testdata/acceptedLicenses.plist", "test/prefix", iosKind, "")
 			So(err, ShouldBeNil)
 			So(len(s.Calls), ShouldEqual, 6)
 

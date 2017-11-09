@@ -130,7 +130,7 @@ func uploadCipdPackages(packages Packages, uploadFn func(PackageSpec) error) err
 	return nil
 }
 
-func createUploader(ctx context.Context, xcodeVersion, buildVersion string) func(PackageSpec) error {
+func createUploader(ctx context.Context, xcodeVersion, buildVersion, serviceAccountJSON string) func(PackageSpec) error {
 	uploader := func(p PackageSpec) error {
 		args := []string{
 			"create", "-pkg-def", p.YamlPath,
@@ -139,6 +139,9 @@ func createUploader(ctx context.Context, xcodeVersion, buildVersion string) func
 			"-ref", strings.ToLower(buildVersion), // Refs must match [a-z0-9_-]*
 			"-ref", "latest",
 			"-verification-timeout", "60m",
+		}
+		if serviceAccountJSON != "" {
+			args = append(args, "-service-account-json", serviceAccountJSON)
 		}
 
 		logging.Infof(ctx, "Creating a CIPD package %s", p.Name)
@@ -151,7 +154,7 @@ func createUploader(ctx context.Context, xcodeVersion, buildVersion string) func
 	return uploader
 }
 
-func packageXcode(ctx context.Context, xcodeAppPath string, cipdPackagePrefix string) error {
+func packageXcode(ctx context.Context, xcodeAppPath string, cipdPackagePrefix, serviceAccountJSON string) error {
 	xcodeVersion, buildVersion, err := getXcodeVersion(filepath.Join(xcodeAppPath, "Contents", "version.plist"))
 	if err != nil {
 		return errors.Annotate(err, "this doesn't look like a valid Xcode.app folder: %s", xcodeAppPath).Err()
@@ -163,7 +166,7 @@ func packageXcode(ctx context.Context, xcodeAppPath string, cipdPackagePrefix st
 		return err
 	}
 
-	uploadFn := createUploader(ctx, xcodeVersion, buildVersion)
+	uploadFn := createUploader(ctx, xcodeVersion, buildVersion, serviceAccountJSON)
 
 	if err = uploadCipdPackages(packages, uploadFn); err != nil {
 		return err

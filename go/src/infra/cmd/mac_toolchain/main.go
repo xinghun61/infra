@@ -55,7 +55,8 @@ func (t *KindType) Set(v string) error {
 
 type commonFlags struct {
 	subcommands.CommandRunBase
-	cipdPackagePrefix string
+	cipdPackagePrefix  string
+	serviceAccountJSON string
 }
 
 type installRun struct {
@@ -82,7 +83,7 @@ func (c *installRun) Run(a subcommands.Application, args []string, env subcomman
 	}
 	logging.Infof(ctx, "About to install Xcode %s in %s for %s", c.xcodeVersion, c.outputDir, c.kind.String())
 
-	if err := installXcode(ctx, c.xcodeVersion, c.outputDir, AcceptedLicensesFile, c.cipdPackagePrefix, c.kind); err != nil {
+	if err := installXcode(ctx, c.xcodeVersion, c.outputDir, AcceptedLicensesFile, c.cipdPackagePrefix, c.kind, c.serviceAccountJSON); err != nil {
 		errors.Log(ctx, err)
 		return 1
 	}
@@ -99,7 +100,7 @@ func (c *uploadRun) Run(a subcommands.Application, args []string, env subcommand
 	for strings.HasSuffix(c.cipdPackagePrefix, "/") {
 		c.cipdPackagePrefix = c.cipdPackagePrefix[:len(c.cipdPackagePrefix)-1]
 	}
-	if err := packageXcode(ctx, c.xcodePath, c.cipdPackagePrefix); err != nil {
+	if err := packageXcode(ctx, c.xcodePath, c.cipdPackagePrefix, c.serviceAccountJSON); err != nil {
 		errors.Log(ctx, err)
 		return 1
 	}
@@ -108,6 +109,7 @@ func (c *uploadRun) Run(a subcommands.Application, args []string, env subcommand
 
 func commonFlagVars(c *commonFlags) {
 	c.Flags.StringVar(&c.cipdPackagePrefix, "cipd-package-prefix", DefaultCipdPackagePrefix, "CIPD package prefix.")
+	c.Flags.StringVar(&c.serviceAccountJSON, "service-account-json", "", "Service account to use for authentication.")
 }
 
 func installFlagVars(c *installRun) {

@@ -14,10 +14,13 @@ import (
 	"go.chromium.org/luci/common/errors"
 )
 
-func installPackages(ctx context.Context, xcodeVersion, xcodeAppPath, cipdPackagePrefix string, kind KindType) error {
+func installPackages(ctx context.Context, xcodeVersion, xcodeAppPath, cipdPackagePrefix string, kind KindType, serviceAccountJSON string) error {
 	cipdArgs := []string{
 		"ensure", "-ensure-file", "-",
 		"-root", xcodeAppPath,
+	}
+	if serviceAccountJSON != "" {
+		cipdArgs = append(cipdArgs, "-service-account-json", serviceAccountJSON)
 	}
 	ensureSpec := cipdPackagePrefix + "/mac " + xcodeVersion + "\n"
 	if kind == iosKind {
@@ -87,20 +90,13 @@ func finalizeInstall(ctx context.Context, xcodeAppPath string) error {
 	return nil
 }
 
-// Plan:
-// - Install the required set of CIPD packages in the <outputDir>/Xcode.app
-// - Check the build type (GM or Beta) and license ID of the installed Xcode,
-//   compared with the system's accepted license in
-//   /Library/Preferences/com.apple.dt.Xcode.plist
-// - If needed, accept the license and install the packages (xcodebuild -runFirstLaunch)
-
 func installXcode(ctx context.Context,
 	xcodeVersion, xcodeAppPath, acceptedLicensesFile, cipdPackagePrefix string,
-	kind KindType) error {
+	kind KindType, serviceAccountJSON string) error {
 	if err := os.MkdirAll(xcodeAppPath, 0700); err != nil {
 		return errors.Annotate(err, "failed to create a folder %s", xcodeAppPath).Err()
 	}
-	if err := installPackages(ctx, xcodeVersion, xcodeAppPath, cipdPackagePrefix, kind); err != nil {
+	if err := installPackages(ctx, xcodeVersion, xcodeAppPath, cipdPackagePrefix, kind, serviceAccountJSON); err != nil {
 		return err
 	}
 	if needToAcceptLicense(ctx, xcodeAppPath, acceptedLicensesFile) {
