@@ -205,8 +205,7 @@ class BaseHandler(webapp2.RequestHandler):
     # too many existing testcases.
     if (not appengine_util.IsInUnitTestEnvironment() and
         not self.request.get('concise') == '1'):
-      data['user_info'] = auth_util.GetUserInfo(self.request.referer or
-                                                self.request.url or '/')
+      data['user_info'] = auth_util.GetUserInfo(self.request.url)
       # If not yet, generate one xsrf token for the login user.
       if not data.get('xsrf_token') and data.get('user_info', {}).get('email'):
         data['xsrf_token'] = token.GenerateAuthToken('site',
