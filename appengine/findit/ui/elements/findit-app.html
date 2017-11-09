@@ -47,13 +47,13 @@
       <app-header slot="header" fixed>
         <app-toolbar>
           <paper-menu>
-            <paper-item>
-              <a href="https://sites.google.com/a/chromium.org/cr-culprit-finder/findit/"><img src="/images/findit.png" style="width: 40px; height: 40px"/>Findit</a>
-            </paper-item>
-            <paper-item><a href="/">Home</a></paper-item>
+            <paper-item><a href="/"><img src="/images/findit.png" style="width: 40px; height: 40px"/>Home</a></paper-item>
             <paper-item><a href="/waterfall/list-failures">Failures</a></paper-item>
             <paper-item><a href="/waterfall/list-flakes">Flakes</a></paper-item>
-            <paper-item><a href="/waterfall/change-auto-revert-setting">Auto Revert Setting</a></paper-item>
+            <paper-item><a href="/waterfall/change-auto-revert-setting">AutoRevert</a></paper-item>
+            <paper-item>
+              <a href="https://sites.google.com/a/chromium.org/cr-culprit-finder/findit/">SitePage</a>
+            </paper-item>
             <template is="dom-if" if="[[userInfo.is_admin]]">
               <paper-menu-button style="height: 18px">
                 <paper-icon-button icon="menu" slot="dropdown-trigger"></paper-icon-button>
