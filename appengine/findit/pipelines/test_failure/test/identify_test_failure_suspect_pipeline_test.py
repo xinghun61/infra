@@ -12,15 +12,16 @@ from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from pipelines.test_failure.identify_test_failure_suspect_pipeline import (
     IdentifyTestFailureSuspectPipeline)
-from services import build_failure_analysis
+from services import deps
+from services import git
 from services.test_failure import test_failure_analysis
 
 
 class IdentifyTestFailureSuspectPipelineTest(testing.AppengineTestCase):
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(build_failure_analysis, 'PullChangeLogs', return_value={})
-  @mock.patch.object(build_failure_analysis, 'ExtractDepsInfo', return_value={})
+  @mock.patch.object(git, 'PullChangeLogs', return_value={})
+  @mock.patch.object(deps, 'ExtractDepsInfo', return_value={})
   @mock.patch.object(
       test_failure_analysis,
       'AnalyzeTestFailure',

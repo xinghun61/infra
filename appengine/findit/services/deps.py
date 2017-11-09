@@ -11,6 +11,10 @@ It provides functions to:
 
 import logging
 
+from common.findit_http_client import FinditHttpClient
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from libs.deps import chrome_dependency_fetcher
+
 
 def GetOSPlatformName(master_name, builder_name):
   """Returns the OS platform name based on the master and builder."""
@@ -125,3 +129,46 @@ def DetectDependencyRolls(change_logs, os_platform, dep_fetcher):
       deps_rolls[revision] = roll
 
   return deps_rolls
+
+
+def ExtractDepsInfo(failure_info, change_logs):
+  """
+  Args:
+    failure_info (dict): Information about all build failures.
+    change_logs (dict): Result of PullChangeLogs().
+
+  Returns:
+    A dict with the following form:
+    {
+      'deps': {
+        'path/to/dependency': {
+          'revision': 'git_hash',
+          'repo_url': 'https://url/to/dependency/repo.git',
+        },
+        ...
+      },
+      'deps_rolls': {
+        'git_revision': [
+          {
+            'path': 'src/path/to/dependency',
+            'repo_url': 'https://url/to/dependency/repo.git',
+            'new_revision': 'git_hash1',
+            'old_revision': 'git_hash2',
+          },
+          ...
+        ],
+        ...
+      }
+    }
+  """
+  chromium_revision = failure_info['chromium_revision']
+  os_platform = GetOSPlatformName(failure_info['master_name'],
+                                  failure_info['builder_name'])
+
+  dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
+      CachedGitilesRepository.Factory(FinditHttpClient()))
+
+  return {
+      'deps': GetDependencies(chromium_revision, os_platform, dep_fetcher),
+      'deps_rolls': DetectDependencyRolls(change_logs, os_platform, dep_fetcher)
+  }

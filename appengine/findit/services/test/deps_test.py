@@ -153,3 +153,74 @@ class DepsTest(testing.AppengineTestCase):
     self.assertEqual({
         'rev2': rev2_roll
     }, deps.DetectDependencyRolls(change_logs, os_platform, _DEP_FETCHER))
+
+  def testExtractDEPSInfo(self):
+
+    def MockGetDependency(_, revision, os_platform):
+      self.assertEqual('unix', os_platform)
+      if revision == 'rev2':
+        return {
+            'src': Dependency('src', 'https://url_src', 'rev2', 'DEPS'),
+            'src/dep1': Dependency('src/dep1', 'https://url_dep1', '9', 'DEPS'),
+        }
+      else:
+        self.assertEqual('rev2^', revision)
+        return {
+            'src': Dependency('src', 'https://url_src', 'rev2^', 'DEPS'),
+            'src/dep1': Dependency('src/dep1', 'https://url_dep1', '7', 'DEPS'),
+        }
+
+    failure_info = {
+        'master_name': 'chromium.linux',
+        'builder_name': 'Linux Tests',
+        'build_number': 123,
+        'chromium_revision': 'rev2',
+        'failed': True,
+    }
+    change_logs = {
+        'rev2': {
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'DEPS',
+                    'new_path': 'DEPS'
+                },
+            ]
+        },
+        'rev1': {
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/file.cc',
+                    'new_path': 'a/file.cc'
+                },
+            ]
+        },
+    }
+    expected_deps_info = {
+        'deps': {
+            'src': {
+                'repo_url': 'https://url_src',
+                'revision': 'rev2',
+            },
+            'src/dep1': {
+                'repo_url': 'https://url_dep1',
+                'revision': '9',
+            },
+        },
+        'deps_rolls': {
+            'rev2': [
+                {
+                    'path': 'src/dep1',
+                    'repo_url': 'https://url_dep1',
+                    'old_revision': '7',
+                    'new_revision': '9',
+                },
+            ]
+        }
+    }
+
+    self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
+              'GetDependency', MockGetDependency)
+    deps_info = deps.ExtractDepsInfo(failure_info, change_logs)
+    self.assertEqual(expected_deps_info, deps_info)

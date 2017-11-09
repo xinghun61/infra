@@ -4,6 +4,8 @@
 
 from gae_libs.pipeline_wrapper import BasePipeline
 from services import build_failure_analysis
+from services import deps
+from services import git
 from services.test_failure import test_failure_analysis
 
 
@@ -26,9 +28,8 @@ class IdentifyTestFailureSuspectPipeline(BasePipeline):
     builder_name = failure_info['builder_name']
     build_number = failure_info['build_number']
 
-    change_logs = build_failure_analysis.PullChangeLogs(failure_info)
-    deps_info = build_failure_analysis.ExtractDepsInfo(failure_info,
-                                                       change_logs)
+    change_logs = git.PullChangeLogs(failure_info)
+    deps_info = deps.ExtractDepsInfo(failure_info, change_logs)
 
     analysis_result, suspected_cls = (test_failure_analysis.AnalyzeTestFailure(
         failure_info, change_logs, deps_info, signals))

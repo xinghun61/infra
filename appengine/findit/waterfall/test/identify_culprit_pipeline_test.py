@@ -10,7 +10,8 @@ from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
-from services import build_failure_analysis
+from services import deps
+from services import git
 from services.compile_failure import compile_failure_analysis
 from services.test_failure import test_failure_analysis
 from waterfall import identify_culprit_pipeline
@@ -19,8 +20,8 @@ from waterfall import identify_culprit_pipeline
 class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(build_failure_analysis, 'PullChangeLogs', return_value={})
-  @mock.patch.object(build_failure_analysis, 'ExtractDepsInfo', return_value={})
+  @mock.patch.object(git, 'PullChangeLogs', return_value={})
+  @mock.patch.object(deps, 'ExtractDepsInfo', return_value={})
   @mock.patch.object(
       compile_failure_analysis,
       'AnalyzeCompileFailure',
@@ -61,8 +62,8 @@ class IdentifyCulpritPipelineTest(testing.AppengineTestCase):
     self.assertIsNone(analysis.result_status)
     self.assertEqual(expected_suspected_cls, analysis.suspected_cls)
 
-  @mock.patch.object(build_failure_analysis, 'PullChangeLogs', return_value={})
-  @mock.patch.object(build_failure_analysis, 'ExtractDepsInfo', return_value={})
+  @mock.patch.object(git, 'PullChangeLogs', return_value={})
+  @mock.patch.object(deps, 'ExtractDepsInfo', return_value={})
   @mock.patch.object(
       test_failure_analysis,
       'AnalyzeTestFailure',

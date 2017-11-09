@@ -5,6 +5,8 @@
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import BasePipeline
 from services import build_failure_analysis
+from services import deps
+from services import git
 from services.compile_failure import compile_failure_analysis
 from services.test_failure import test_failure_analysis
 
@@ -27,9 +29,8 @@ class IdentifyCulpritPipeline(BasePipeline):
     builder_name = failure_info['builder_name']
     build_number = failure_info['build_number']
 
-    change_logs = build_failure_analysis.PullChangeLogs(failure_info)
-    deps_info = build_failure_analysis.ExtractDepsInfo(failure_info,
-                                                       change_logs)
+    change_logs = git.PullChangeLogs(failure_info)
+    deps_info = deps.ExtractDepsInfo(failure_info, change_logs)
 
     if failure_info['failure_type'] == failure_type.COMPILE:
       analysis_result, suspected_cls = (

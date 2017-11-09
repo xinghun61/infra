@@ -1,17 +1,14 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
-# found in the LICENSE file.
+# found in the LICENSE files.
 """Provides functions to analyze build failures.
 
 It has functions to:
-  * Pull change logs for CLs.
-  * Get DEPS info for CLs.
   * Provide common logic to help analyze build failures.
 """
 
 from collections import defaultdict
 import os
-import re
 
 from google.appengine.ext import ndb
 
@@ -21,53 +18,17 @@ from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
-from libs.deps import chrome_dependency_fetcher
 from libs.gitiles.diff import ChangeType
 from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from pipelines.pipeline_inputs_and_outputs import CLKey
 from pipelines.pipeline_inputs_and_outputs import ListOfCLKeys
-from services import deps
+from services import files
+from services import git
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
-
-
-def _IsSameFile(changed_src_file_path, file_path_in_log):
-  """Guesses if the two files are the same.
-
-  Args:
-    changed_src_file_path (str): Full path of a file committed to git repo.
-    file_path_in_log (str): Path of a file appearing in a failure log. It might
-        not be a full path.
-
-  Returns:
-    True if the two files are likely the same, otherwise False. Eg.:
-      True: (chrome/test/base/chrome_process_util.h, base/chrome_process_util.h)
-      True: (a/b/x.cc, a/b/x.cc)
-      False: (c/x.cc, a/b/c/x.cc)
-  """
-  changed_src_file_path_lower = changed_src_file_path.lower()
-  file_path_in_log_lower = file_path_in_log.lower()
-
-  if changed_src_file_path_lower == file_path_in_log_lower:
-    return True
-  return changed_src_file_path_lower.endswith('/%s' % file_path_in_log_lower)
-
-
-def _GetGitBlame(repo_info, touched_file_path):
-  """Gets git blames of touched_file.
-
-  Args:
-    repo_info (dict): The repo_url and revision for the build cycle.
-    touched_file_path (str): Full path of a file in change_log.
-  """
-  if repo_info:
-    repo_url = repo_info['repo_url']
-    git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url)
-    revision = repo_info['revision']
-    return git_repo.GetBlame(touched_file_path, revision)
 
 
 def _GetChangedLinesForChromiumRepo(repo_info, touched_file, line_numbers,
@@ -84,8 +45,9 @@ def _GetChangedLinesForChromiumRepo(repo_info, touched_file, line_numbers,
     A list of lines which are mentioned in log and changed in cl.
   """
   changed_line_numbers = []
-  if line_numbers:
-    blame = _GetGitBlame(repo_info, touched_file['new_path'])
+  if line_numbers and repo_info:
+    blame = git.GetGitBlame(repo_info['repo_url'], repo_info['revision'],
+                            touched_file['new_path'])
     if blame:
       for line_number in line_numbers:
         for region in blame:
@@ -95,170 +57,6 @@ def _GetChangedLinesForChromiumRepo(repo_info, touched_file, line_numbers,
               changed_line_numbers.append(line_number)
 
   return changed_line_numbers
-
-
-def _NormalizeObjectFilePath(file_path):
-  """Normalize the file path to an c/c++ object file.
-
-  During compile, a/b/c/file.cc in TARGET will be compiled into object file
-  obj/a/b/c/TARGET.file.o, thus 'obj/' and TARGET need to be removed from path.
-
-  Args:
-    file_path (str): A path to an object file (.o or .obj) after compile.
-  Returns:
-    A normalized file path.
-  """
-  if file_path.startswith('obj/'):
-    file_path = file_path[4:]
-  file_dir = os.path.dirname(file_path)
-  file_name = os.path.basename(file_path)
-  parts = file_name.split('.', 1)
-  if len(parts) == 2 and (parts[1].endswith('.o') or parts[1].endswith('.obj')):
-    object_file = parts[1]
-    name = os.path.splitext(object_file)[0]
-    # Special case for file.cc.obj and similar cases.
-    if name not in ['c', 'cc', 'cpp', 'm', 'mm']:
-      file_name = parts[1]
-
-  if file_dir:
-    return '%s/%s' % (file_dir, file_name)
-  else:
-    return file_name
-
-
-_COMMON_SUFFIXES = [
-    'impl',
-    'browser_tests',
-    'browser_test',
-    'browsertest',
-    'browsertests',
-    'unittests',
-    'unittest',
-    'tests',
-    'test',
-    'gcc',
-    'msvc',
-    'arm',
-    'arm64',
-    'mips',
-    'portable',
-    'x86',
-    'android',
-    'ios',
-    'linux',
-    'mac',
-    'ozone',
-    'posix',
-    'win',
-    'aura',
-    'x',
-    'x11',
-]
-
-_COMMON_TEST_SUFFIXES = [
-    'browser_tests',
-    'browser_test',
-    'browsertest',
-    'browsertests',
-    'unittests',
-    'unittest',
-    'tests',
-    'test',
-]
-
-_COMMON_SUFFIX_PATTERNS = [
-    re.compile('.*(_%s)$' % suffix) for suffix in _COMMON_SUFFIXES
-]
-
-_COMMON_TEST_SUFFIX_PATTERNS = [
-    re.compile('.*(_%s)$' % suffix) for suffix in _COMMON_TEST_SUFFIXES
-]
-
-_RELATED_FILETYPES = [['h', 'hh'
-                       'c', 'cc', 'cpp', 'm', 'mm', 'o', 'obj'], ['py', 'pyc'],
-                      ['gyp', 'gypi']]
-
-
-def _AreBothFilesTestRelated(changed_src_file_path, file_in_log_path):
-  """Tests if both file names contain test-related suffixes."""
-  changed_file_name = os.path.splitext(
-      os.path.basename(changed_src_file_path))[0]
-  file_in_log_name = os.path.splitext(os.path.basename(file_in_log_path))[0]
-
-  is_changed_file_test_related = False
-  is_file_in_log_test_related = False
-
-  for test_suffix_patten in _COMMON_TEST_SUFFIX_PATTERNS:
-    if test_suffix_patten.match(changed_file_name):
-      is_changed_file_test_related = True
-    if test_suffix_patten.match(file_in_log_name):
-      is_file_in_log_test_related = True
-
-  return is_changed_file_test_related and is_file_in_log_test_related
-
-
-def _StripExtensionAndCommonSuffix(file_path):
-  """Strips extension and common suffixes from file name to guess relation.
-
-  Examples:
-    file_impl.cc, file_unittest.cc, file_impl_mac.h -> file
-  """
-  file_dir = os.path.dirname(file_path)
-  file_name = os.path.splitext(os.path.basename(file_path))[0]
-  while True:
-    match = None
-    for suffix_patten in _COMMON_SUFFIX_PATTERNS:
-      match = suffix_patten.match(file_name)
-      if match:
-        file_name = file_name[:-len(match.group(1))]
-        break
-
-    if not match:
-      break
-
-  return os.path.join(file_dir, file_name).replace(os.sep, '/')
-
-
-def _GetRelatedExtensionsList(extension):
-  for related_filetype_list in _RELATED_FILETYPES:
-    if extension in related_filetype_list:
-      return related_filetype_list
-  return []
-
-
-def _IsRelated(changed_src_file_path, file_path):
-  """Checks if two files are related.
-
-  Example of related files:
-    1. file.h <-> file_impl.cc
-    2. file_impl.cc <-> file_unittest.cc
-    3. file_win.cc <-> file_mac.cc
-    4. x.h <-> x.cc
-
-  Example of not related files:
-    1. a_tests.py <-> a_browsertests.py
-    2. a.isolate <-> a.cc
-    3. a.py <-> a.cpp
-  """
-  changed_src_file_extension = os.path.splitext(changed_src_file_path)[1][1:]
-  file_path_extension = os.path.splitext(file_path)[1][1:]
-
-  if file_path_extension not in _GetRelatedExtensionsList(
-      changed_src_file_extension):
-    return False
-
-  if file_path.endswith('.o') or file_path.endswith('.obj'):
-    file_path = _NormalizeObjectFilePath(file_path)
-
-  if _AreBothFilesTestRelated(changed_src_file_path, file_path):
-    return False
-
-  if _IsSameFile(
-      _StripExtensionAndCommonSuffix(changed_src_file_path),
-      _StripExtensionAndCommonSuffix(file_path)):
-    return True
-
-  return False
 
 
 class _Justification(object):
@@ -401,14 +199,14 @@ def _CheckFile(touched_file,
 
     score = 0
     changed_line_numbers = None
-    if _IsSameFile(changed_src_file_path, file_path_in_log):
+    if files.IsSameFile(changed_src_file_path, file_path_in_log):
       changed_line_numbers = _GetChangedLinesForChromiumRepo(
           repo_info, touched_file, line_numbers, suspected_revision)
       if changed_line_numbers:
         score = 4
       else:
         score = 2
-    elif _IsRelated(changed_src_file_path, file_path_in_log):
+    elif files.IsRelated(changed_src_file_path, file_path_in_log):
       score = 1
 
     if score:
@@ -422,9 +220,9 @@ def _CheckFile(touched_file,
     file_name = os.path.basename(changed_src_file_path)
 
     score = 0
-    if _IsSameFile(changed_src_file_path, file_path_in_log):
+    if files.IsSameFile(changed_src_file_path, file_path_in_log):
       score = 5
-    elif _IsRelated(changed_src_file_path, file_path_in_log):
+    elif files.IsRelated(changed_src_file_path, file_path_in_log):
       score = 1
 
     if score:
@@ -441,9 +239,9 @@ def _CheckFile(touched_file,
     file_name = os.path.basename(changed_src_file_path)
 
     score = 0
-    if _IsSameFile(changed_src_file_path, file_path_in_log):
+    if files.IsSameFile(changed_src_file_path, file_path_in_log):
       score = 5
-    elif _IsRelated(changed_src_file_path, file_path_in_log):
+    elif files.IsRelated(changed_src_file_path, file_path_in_log):
       score = 1
 
     if score:
@@ -454,14 +252,6 @@ def _CheckFile(touched_file,
           score,
           file_name_occurrences.get(file_name),
           check_dependencies=check_dependencies)
-
-
-def _StripChromiumRootDirectory(file_path):
-  # Strip src/ from file path to make all files relative to the chromium root
-  # directory.
-  if file_path.startswith('src/'):
-    file_path = file_path[4:]
-  return file_path
 
 
 def _GetChangeTypeAndCulpritCommit(file_path_in_log, roll_repo,
@@ -487,12 +277,12 @@ def _GetChangeTypeAndCulpritCommit(file_path_in_log, roll_repo,
       else:
         changed_src_file_path = file_change_info.new_path
 
-      if _IsSameFile(changed_src_file_path, file_path_in_log):
+      if files.IsSameFile(changed_src_file_path, file_path_in_log):
         # Found the file and the commit that modified it.
-        # TODO(lijeffrey): It is possible multiple commits modified the file.
+        # TODO(lijeffrey): It is possible multiple commits modified the files.
         return file_change_info.change_type, commit
 
-      # TODO(lijeffrey): It is possible _IsRelated(changed_src_file_path,
+      # TODO(lijeffrey): It is possible files.IsRelated(changed_src_file_path,
       # file_path_in_log) may also provide useful information, but how is not
       # yet determined.
 
@@ -579,7 +369,7 @@ def _CheckFileInDependencyRolls(file_path_in_log,
       continue
 
     change_action = None
-    dep_path = _StripChromiumRootDirectory(roll['path'])
+    dep_path = files.StripChromiumRootDirectory(roll['path'])
     if not file_path_in_log.startswith(dep_path + '/'):
       continue
 
@@ -650,7 +440,7 @@ def CheckFiles(failure_signal, change_log, deps_info, check_dependencies=False):
 
   if not check_dependencies:
     for file_path_in_log, line_numbers in failure_signal.files.iteritems():
-      file_path_in_log = _StripChromiumRootDirectory(file_path_in_log)
+      file_path_in_log = files.StripChromiumRootDirectory(file_path_in_log)
 
       for touched_file in change_log['touched_files']:
         _CheckFile(touched_file, file_path_in_log, justification,
@@ -662,7 +452,7 @@ def CheckFiles(failure_signal, change_log, deps_info, check_dependencies=False):
   else:
     for failed_edge in failure_signal.failed_edges:
       for dependency in failed_edge.get('dependencies'):
-        dependency = _StripChromiumRootDirectory(dependency)
+        dependency = files.StripChromiumRootDirectory(dependency)
         for touched_file in change_log['touched_files']:
           _CheckFile(touched_file, dependency, justification,
                      file_name_occurrences, None, repo_info,
@@ -770,79 +560,6 @@ def AnalyzeOneCL(build_number,
 
   return (CreateCLInfoDict(justification_dict, build_number, change_log),
           max(justification_dict['hints'].values()))
-
-
-def PullChangeLogs(failure_info):
-  """Pulls change logs for CLs.
-
-  Args:
-    failure_info (dict): Output of pipeline DetectFirstFailurePipeline.run().
-
-  Returns:
-    A dict with the following form:
-    {
-      'git_hash_revision1': common.change_log.ChangeLog.ToDict(),
-      ...
-    }
-  """
-  git_repo = CachedGitilesRepository(
-      FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
-
-  change_logs = {}
-  for build in failure_info.get('builds', {}).values():
-    for revision in build['blame_list']:
-      change_log = git_repo.GetChangeLog(revision)
-      if not change_log:
-        raise Exception('Failed to get change log for %s' % revision)
-
-      change_logs[revision] = change_log.ToDict()
-
-  return change_logs
-
-
-def ExtractDepsInfo(failure_info, change_logs):
-  """
-  Args:
-    failure_info (dict): Information about all build failures.
-    change_logs (dict): Result of PullChangeLogs().
-
-  Returns:
-    A dict with the following form:
-    {
-      'deps': {
-        'path/to/dependency': {
-          'revision': 'git_hash',
-          'repo_url': 'https://url/to/dependency/repo.git',
-        },
-        ...
-      },
-      'deps_rolls': {
-        'git_revision': [
-          {
-            'path': 'src/path/to/dependency',
-            'repo_url': 'https://url/to/dependency/repo.git',
-            'new_revision': 'git_hash1',
-            'old_revision': 'git_hash2',
-          },
-          ...
-        ],
-        ...
-      }
-    }
-  """
-  chromium_revision = failure_info['chromium_revision']
-  os_platform = deps.GetOSPlatformName(failure_info['master_name'],
-                                       failure_info['builder_name'])
-
-  dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
-      CachedGitilesRepository.Factory(FinditHttpClient()))
-
-  return {
-      'deps':
-          deps.GetDependencies(chromium_revision, os_platform, dep_fetcher),
-      'deps_rolls':
-          deps.DetectDependencyRolls(change_logs, os_platform, dep_fetcher)
-  }
 
 
 def GetResultAnalysisStatus(analysis_result):
