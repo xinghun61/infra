@@ -119,7 +119,11 @@ func MiddlewareForRPC() router.MiddlewareChain {
 func NewRPCServer() *prpc.Server {
 	// TODO(vadimsh): Enable monitoring interceptor.
 	// UnaryServerInterceptor: grpcmon.NewUnaryServerInterceptor(nil),
-	return &prpc.Server{}
+	return &prpc.Server{
+		AccessControl: func(c context.Context, origin string) bool {
+			return true
+		},
+	}
 }
 
 // prepareTemplates returns templates.Bundle used by all UI handlers.
