@@ -199,7 +199,7 @@ class RecomputeAllDerivedFieldsTest(unittest.TestCase):
     for test_issue in test_issues:
       filterrules_helpers.ApplyGivenRules(
           self.cnxn, self.services, test_issue, self.config,
-          [], []).AndReturn(True)
+          [], []).AndReturn((True, {}))
     self.mox.ReplayAll()
 
     filterrules_helpers.RecomputeAllDerivedFieldsNow(

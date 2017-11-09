@@ -102,7 +102,9 @@ def RecomputeAllDerivedFieldsNow(
   predicate_asts = ParsePredicateASTs(rules, config, None)
   modified_issues = []
   for issue in issues:
-    if ApplyGivenRules(cnxn, services, issue, config, rules, predicate_asts):
+    any_change, _traces = ApplyGivenRules(
+        cnxn, services, issue, config, rules, predicate_asts)
+    if any_change:
       modified_issues.append(issue)
 
   services.issue.UpdateIssues(cnxn, modified_issues, just_derived=True)
@@ -136,7 +138,10 @@ def ApplyFilterRules(cnxn, services, issue, config):
     config: The project's issue tracker config PB.
 
   Returns:
-    True if any derived_* field of the issue was changed.
+    A pair (any_changes, traces) where any_changes is true if any changes
+    were made to the issue derived fields, and traces is a dictionary
+    {(field_id, new_value): explanation_str} of traces that
+    explain which rule generated each derived value.
 
   SIDE-EFFECT: update the derived_* fields of the Issue PB.
   """
@@ -156,9 +161,10 @@ def ApplyGivenRules(cnxn, services, issue, config, rules, predicate_asts):
     rules: list of FilterRule PBs.
 
   Returns:
-    A dictionary {(field_id, new_value): explanation_str} of traces that
+    A pair (any_changes, traces) where any_changes is true if any changes
+    were made to the issue derived fields, and traces is a dictionary
+    {(field_id, new_value): explanation_str} of traces that
     explain which rule generated each derived value.
-
 
   SIDE-EFFECT: update the derived_* fields of the Issue PB.
   """
@@ -166,6 +172,12 @@ def ApplyGivenRules(cnxn, services, issue, config, rules, predicate_asts):
    derived_labels, derived_notify_addrs, traces,
    new_warnings, new_errors) = _ComputeDerivedFields(
        cnxn, services, issue, config, rules, predicate_asts)
+
+  any_change = (derived_owner_id != issue.derived_owner_id or
+                derived_status != issue.derived_status or
+                derived_cc_ids != issue.derived_cc_ids or
+                derived_labels != issue.derived_labels or
+                derived_notify_addrs != issue.derived_notify_addrs)
 
   # Remember any derived values.
   issue.derived_owner_id = derived_owner_id
@@ -176,7 +188,7 @@ def ApplyGivenRules(cnxn, services, issue, config, rules, predicate_asts):
   issue.derived_warnings = new_warnings
   issue.derived_errors = new_errors
 
-  return traces
+  return any_change, traces
 
 
 def _ComputeDerivedFields(cnxn, services, issue, config, rules, predicate_asts):

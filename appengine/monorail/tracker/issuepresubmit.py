@@ -78,7 +78,7 @@ class IssuePresubmitJSON(jsonfeed.JsonFeed):
           mr, existing_issue, parsed, config, component_ids)
 
     with mr.profiler.Phase('applying rules'):
-      traces = filterrules_helpers.ApplyFilterRules(
+      _any_change, traces = filterrules_helpers.ApplyFilterRules(
           mr.cnxn, self.services, proposed_issue, config)
       logging.info('proposed_issue is now: %r', proposed_issue)
       logging.info('traces are: %r', traces)
