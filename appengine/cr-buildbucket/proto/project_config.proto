@@ -8,6 +8,8 @@ syntax = "proto2";
 
 package buildbucket;
 
+import "google/protobuf/wrappers.proto";
+
 // A single access control rule.
 message Acl {
   enum Role {
@@ -212,6 +214,30 @@ message Builder {
   // use Swarming bot's account (if available). Passed directly to Swarming.
   // Subject to Swarming's ACLs.
   optional string service_account = 12;
+  // If true, each builder will get extra dimension "builder:<builder name>"
+  // added. Default is false.
+  //
+  // For example, this config
+  //
+  //   builder {
+  //     name: "linux-compiler"
+  //     dimension: "builder:linux-compiler"
+  //   }
+  //
+  // is equivalent to this:
+  //
+  //   builders {
+  //     name: "linux-compiler"
+  //     auto_builder_dimension { value: true }
+  //   }
+  //
+  // We've considered providing interpolation like this
+  //   builder_defaults {
+  //     dimensions: "builder:${BUILDER}"
+  //   }
+  // (see also http://docs.buildbot.net/0.8.9/manual/cfg-properties.html#interpolate)
+  // but are currently against complicating config with this.
+  optional google.protobuf.BoolValue auto_builder_dimension = 13;
 }
 
 // Configuration of buildbucket-swarming integration for one bucket.

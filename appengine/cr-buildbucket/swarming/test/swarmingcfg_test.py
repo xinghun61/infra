@@ -698,6 +698,31 @@ class ProjectCfgTest(testing.AppengineTestCase):
             name: "foo"
           }
         ''')
+    # with auto_builder_dimension and mixins and defaults.
+    test('''
+          builder_mixins {
+            name: "mixme"
+            dimensions: "pool:mixed"
+          }
+          buckets {
+            name: "bucket"
+            swarming {
+              builder_defaults {
+                auto_builder_dimension {value: true}
+                dimensions: "pool:dedicated"
+              }
+              builders {
+                name: "ng-1000"
+                mixins: "mixme"
+              }
+            }
+          }
+      ''',
+      '''
+          name: "ng-1000"
+          dimensions: "pool:mixed"
+          auto_builder_dimension { value: true }
+      ''')
 
 
 class ServiceCfgTest(testing.AppengineTestCase):

@@ -414,9 +414,16 @@ def _create_task_def_async(
   swarming_tags.sort()
 
   task_properties = task.setdefault('properties', {})
+
+  dimensions = list(builder_cfg.dimensions)
+  if (builder_cfg.HasField('auto_builder_dimension') and
+      builder_cfg.auto_builder_dimension.value and
+      all(not dim.startswith('builder:') for dim in dimensions)):
+    dimensions.append('builder:' + builder_cfg.name)
+
   task_properties['dimensions'] = _to_swarming_dimensions(
       swarmingcfg_module.merge_dimensions(
-          builder_cfg.dimensions,
+          dimensions,
           task_properties.get('dimensions', []),
       ))
 
@@ -443,7 +450,7 @@ def _to_swarming_dimensions(dims):
   return [
     {'key': key, 'value': value}
     for key, value in
-    (s.split(':', 1) for s in dims)
+    (s.split(':', 1) for s in sorted(dims))
   ]
 
 

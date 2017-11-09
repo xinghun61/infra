@@ -264,6 +264,42 @@ class SwarmingTest(BaseTest):
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], '60')
 
+  def test_auto_builder_dimension(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.auto_builder_dimension.value = True
+
+    build = model.Build(
+        id=1,
+        bucket='bucket',
+        create_time=utils.utcnow(),
+        created_by=auth.Identity('user', 'john@example.com'),
+        parameters={
+          'builder_name': 'linux_chromium_rel_ng',
+        },
+        tags=['builder:linux_chromium_rel_ng'],
+        canary_preference=model.CanaryPreference.AUTO,
+    )
+
+    task_def = swarming.prepare_task_def_async(
+        build, self.settings).get_result()
+    self.assertEqual(task_def['properties']['dimensions'], sorted([
+      {'key': 'builder', 'value': 'linux_chromium_rel_ng'},
+      {'key': 'cores', 'value': '8'},
+      {'key': 'os', 'value': 'Ubuntu'},
+      {'key': 'pool', 'value': 'Chrome'},
+    ]))
+
+    # But don't override if "builder" dimension is already set.
+    builder_cfg.dimensions.append('builder:custom')
+    task_def = swarming.prepare_task_def_async(
+        build, self.settings).get_result()
+    self.assertEqual(task_def['properties']['dimensions'], sorted([
+      {'key': 'builder', 'value': 'custom'},
+      {'key': 'cores', 'value': '8'},
+      {'key': 'os', 'value': 'Ubuntu'},
+      {'key': 'pool', 'value': 'Chrome'},
+    ]))
+
   def test_create_task_async(self):
     self.patch(
         'components.auth.get_current_identity', autospec=True,
