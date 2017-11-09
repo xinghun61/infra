@@ -18,7 +18,7 @@ import (
 )
 
 func TestUpdateExpectations(t *testing.T) {
-	Convey("Update empty", t, func() {
+	Convey("Update with empty expectation returns error", t, func() {
 		fs := &FileSet{
 			Files: []*File{
 				{
@@ -29,10 +29,10 @@ func TestUpdateExpectations(t *testing.T) {
 		}
 
 		err := fs.UpdateExpectation(&ExpectationStatement{})
-		So(err, ShouldBeNil)
+		So(err, ShouldNotBeNil)
 	})
 
-	Convey("Update basic, single file", t, func() {
+	Convey("Update basic, single file, existing test", t, func() {
 		fs := &FileSet{
 			Files: []*File{
 				{
@@ -65,6 +65,77 @@ func TestUpdateExpectations(t *testing.T) {
 		So(len(cl), ShouldEqual, 1)
 
 		So(cl["/some/path"], ShouldEqual, "/third_party/test_name [ PASS FAIL ]")
+	})
+
+	Convey("Update basic, single file, new test", t, func() {
+		fs := &FileSet{
+			Files: []*File{
+				{
+					Path: defaultExpectationsFile,
+					Expectations: []*ExpectationStatement{
+						{
+							TestName:     "/third_party/test_name",
+							Expectations: []string{"PASS"},
+							Original:     "/third_party/test_name [ PASS ]",
+						},
+					},
+				},
+			},
+		}
+
+		cl := fs.ToCL()
+		So(cl, ShouldNotBeNil)
+		So(len(cl), ShouldEqual, 0)
+
+		err := fs.UpdateExpectation(&ExpectationStatement{
+			TestName:     "/third_party/new_test_name",
+			Expectations: []string{"PASS", "FAIL"},
+			Dirty:        true,
+		})
+		So(err, ShouldBeNil)
+
+		cl = fs.ToCL()
+		So(cl, ShouldNotBeNil)
+		So(len(cl), ShouldEqual, 1)
+		So(cl[defaultExpectationsFile], ShouldEqual, "/third_party/test_name [ PASS ]\n/third_party/new_test_name [ PASS FAIL ]")
+	})
+
+	Convey("Update basic, multiple files, new test", t, func() {
+		fs := &FileSet{
+			Files: []*File{
+				{
+					Path: "/some/path",
+					Expectations: []*ExpectationStatement{
+						{
+							TestName:     "/third_party/test_name",
+							Expectations: []string{"PASS"},
+							Original:     "/third_party/test_name [ PASS ]",
+						},
+					},
+				},
+				{
+					Path:         defaultExpectationsFile,
+					Expectations: []*ExpectationStatement{},
+				},
+			},
+		}
+
+		cl := fs.ToCL()
+		So(cl, ShouldNotBeNil)
+		So(len(cl), ShouldEqual, 0)
+
+		err := fs.UpdateExpectation(&ExpectationStatement{
+			TestName:     "/third_party/new_test_name",
+			Expectations: []string{"PASS", "FAIL"},
+			Dirty:        true,
+		})
+		So(err, ShouldBeNil)
+
+		cl = fs.ToCL()
+		So(cl, ShouldNotBeNil)
+		So(len(cl), ShouldEqual, 1)
+
+		So(cl[defaultExpectationsFile], ShouldEqual, "/third_party/new_test_name [ PASS FAIL ]")
 	})
 
 	Convey("Update basic, multiple files and tests", t, func() {

@@ -7,4 +7,7 @@ queue:
 
 - name: changetestexpectations
   rate: 5/s
+  retry_parameters:
+    task_retry_limit: 0
+    task_age_limit: 1h
 

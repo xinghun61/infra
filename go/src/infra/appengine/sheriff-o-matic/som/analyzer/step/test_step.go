@@ -266,7 +266,7 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 			return "", nil, err
 		}
 
-		failedTests = append(failedTests, ue...)
+		failedTests = append(failedTests, ue[testName]...)
 	}
 
 	if len(failedTests) > maxFailedTests {
@@ -352,8 +352,9 @@ func getExpectationsForTest(ctx context.Context, testName string, config *te.Bui
 
 // testResults json is an arbitrarily deep tree, whose nodes are the actual
 // test results, so we recurse to find them.
-func traverseResults(parent string, testResults map[string]interface{}) ([]string, error) {
-	ret := []string{}
+// TODO: return the *actual* results for each test, not just the names of the failing ones.
+func traverseResults(parent string, testResults map[string]interface{}) (map[string][]string, error) {
+	ret := map[string][]string{}
 	for testName, testResults := range testResults {
 		res, ok := testResults.(map[string]interface{})
 		if !ok {
@@ -368,12 +369,15 @@ func traverseResults(parent string, testResults map[string]interface{}) ([]strin
 			if err != nil {
 				return ret, err
 			}
-			ret = append(ret, childRes...)
+			for name, results := range childRes {
+				ret[name] = append(ret[name], results...)
+			}
 			continue
 		}
 
+		// TODO: something about when the test suddenly starts passing unexpectedly?
 		if ue, ok := res["is_unexpected"]; ok && ue.(bool) && res["actual"] != "PASS" {
-			ret = append(ret, fmt.Sprintf("%s/%s", parent, testName))
+			ret[testName] = append(ret[testName], fmt.Sprintf("%s/%s", parent, testName))
 		}
 	}
 	return ret, nil

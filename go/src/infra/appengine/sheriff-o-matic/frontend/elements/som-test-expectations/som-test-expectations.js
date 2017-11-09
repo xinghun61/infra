@@ -37,6 +37,14 @@ class SomTestExpectations extends Polymer.Element {
         type: String,
         value: '',
       },
+      _requestedModifiers: {
+        type: Array,
+        value: [],
+      },
+      _reqeustedExpectations: {
+        type: Array,
+        value: [],
+      }
     };
   }
 
@@ -61,6 +69,10 @@ class SomTestExpectations extends Polymer.Element {
     if (testName && this._testExpectationsJson) {
       this._openEditor(testName);
     }
+
+    let url = new URL(window.location.href);
+    this._requestedModifiers = url.searchParams.getAll('modifiers');
+    this._requestedExpectations = url.searchParams.getAll('expectations');
   }
 
   _testExpectationsJsonChanged(json) {
@@ -91,9 +103,8 @@ class SomTestExpectations extends Polymer.Element {
   _onCreateChangeCL(evt) {
     let expectation = this._testExpectationsJson.find((t) => {
       return t.TestName == this.$.editExpectationForm.expectation.TestName;
-    }, this);
+    }, this) || {};
     Object.assign(expectation, evt.detail.newValue);
-
     let formData = {
       TestName: expectation.TestName,
       Expectations: expectation.Expectations,
@@ -149,13 +160,11 @@ class SomTestExpectations extends Polymer.Element {
             this._cancelPollingTask();
           } else if (attempt < MAX_ATTEMPTS) {
             let delay = attempt * attempt;
-            this._statusMessage =
-                `Working... Checking again in ${delay} seconds.`;
+            this._countdown(delay);
             this.$.progress.hidden = false;
             attempt += 1;
-            this._pollingTask = this.async(
-                this._pollCLStatus.bind(this, attempt),
-                delay * 1000);
+            this._pollingTask = Polymer.Async.timeOut.after(delay * 1000).run(
+                this._pollCLStatus.bind(this, attempt));
           } else {
             this._statusMessage = 'Too many CL status fetch attempts. Giving up.';
           }
@@ -167,6 +176,16 @@ class SomTestExpectations extends Polymer.Element {
       this._statusMessage = 'Error trying to fetch cl status: ' + error;
     });
   }
+
+  _countdown(delay) {
+    if (delay > 0) {
+      this._statusMessage =
+        `Working... Checking again in ${delay} seconds.`;
+      // Cancel existing _countdownTask?
+      this._countdownTask = Polymer.Async.timeOut.after(1000).run(
+         this._countdown.bind(this, delay - 1));
+    }
+   }
 
   _onCancelChangeCL(evt) {
     this.editedTestName = '';
@@ -184,14 +203,42 @@ class SomTestExpectations extends Polymer.Element {
     }
     let expectation = this._testExpectationsJson.find((t) => {
       return t.TestName == testName;
-    });
+    }) || {};
+
+    if (!expectation.TestName) { // We are creating a new expectation.
+      expectation.TestName = testName;
+    }
+
+    // Union the existing modifiers with the additional requested modifiers.
+    let mods = new Set(expectation.Modifiers);
+    for (let m of this._requestedModifiers) {
+      mods.add(m);
+    }
+    expectation.Modifiers = [];
+    for (let m of mods.values()) {
+      expectation.Modifiers.push(m);
+    }
+
+    // Union the existing results with the additional requested results.
+    let exps = new Set(expectation.Expectations);
+    for (let m of this._requestedExpectations) {
+      exps.add(m);
+    }
+    expectation.Expectations = [];
+    for (let e of exps.values()) {
+      expectation.Expectations.push(e);
+    }
+
     this.$.editExpectationForm.set('expectation', expectation);
     this.$.editDialog.toggle();
   }
 
   _cancelPollingTask(evt) {
     if (this._pollingTask) {
-      this.cancelAsync(this._pollingTask);
+      Polymer.Async.timeOut.cancel(this._pollingTask);
+    }
+    if (this._countdownTask) {
+      Polymer.Async.timeOut.cancel(this._countdownTask);
     }
   }
 }

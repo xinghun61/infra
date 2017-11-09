@@ -113,7 +113,6 @@ func LayoutTestExpectationChangeWorker(ctx *router.Context) {
 	}
 
 	writeUpdate := func(changeID string, err error) {
-		logging.Errorf(c, "writeUpdate: %v %v", changeID, err)
 		if err := writeQueuedUpdate(c, int64(updateID), changeID, err); err != nil {
 			logging.Errorf(c, "getting from datastore: %v", err.Error())
 			errStatus(c, w, http.StatusInternalServerError, err.Error())
@@ -141,7 +140,7 @@ func LayoutTestExpectationChangeWorker(ctx *router.Context) {
 		Bugs:         newExp.Bugs,
 	}
 
-	logging.Infof(c, "new expectation: %+v", stmt)
+	logging.Infof(c, "new expectation: %+v", *stmt)
 
 	if err := fs.UpdateExpectation(stmt); err != nil {
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
@@ -173,13 +172,6 @@ func LayoutTestExpectationChangeWorker(ctx *router.Context) {
 		Reviewer: reviewer,
 	}); err != nil {
 		logging.Errorf(c, "creating CL: %v", err.Error())
-		errStatus(c, w, http.StatusInternalServerError, err.Error())
-		writeUpdate(changeID, err)
-		return
-	}
-
-	if _, err := client.Changes.PublishDraftChange(changeID, "NONE"); err != nil {
-		logging.Errorf(c, "publishing change: %v", err.Error())
 		errStatus(c, w, http.StatusInternalServerError, err.Error())
 		writeUpdate(changeID, err)
 		return

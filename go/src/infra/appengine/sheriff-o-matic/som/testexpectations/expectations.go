@@ -10,6 +10,10 @@ import (
 	"infra/appengine/sheriff-o-matic/som/client"
 )
 
+const (
+	defaultExpectationsFile = "third_party/WebKit/LayoutTests/TestExpectations"
+)
+
 var (
 	// LayoutTestExpectations is a map of expectation file locations, relative to repo+branch.
 	LayoutTestExpectations = map[string]string{
@@ -167,6 +171,7 @@ func LoadAll(c context.Context) (*FileSet, error) {
 		go func() {
 			r := resp{}
 
+			// TODO: get blamelist for authors of each line too.
 			URL := fmt.Sprintf("https://chromium.googlesource.com/chromium/src/+/master/%s?format=TEXT", path)
 			b, err := client.GetGitilesCached(c, URL)
 			if err != nil {
@@ -223,11 +228,24 @@ func (fs *FileSet) UpdateExpectation(es *ExpectationStatement) error {
 				exp.Modifiers = es.Modifiers
 				exp.Bugs = es.Bugs
 				exp.Dirty = true
+				return nil
 			}
 		}
 	}
 
-	return nil
+	// Add a new expectation line to one of the test expectation files since
+	// we didn't find a matching line in any of the existing files.
+	for _, file := range fs.Files {
+		// By default, use the default TestExpectations file.
+		if file.Path == defaultExpectationsFile {
+			es.LineNumber = 0 // be smarter about picking this.
+			es.Dirty = true
+			file.Expectations = append(file.Expectations, es)
+			return nil
+		}
+	}
+
+	return fmt.Errorf("could not find a place to add this change: %+v", *es)
 }
 
 type byOverrides []*ExpectationStatement
