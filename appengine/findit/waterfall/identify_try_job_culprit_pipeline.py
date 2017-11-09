@@ -17,8 +17,13 @@ from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from pipelines.pipeline_inputs_and_outputs import BuildKey
+from pipelines.pipeline_inputs_and_outputs import (
+    RevertAndNotifyCulpritPipelineInput)
 from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
     RevertAndNotifyTestCulpritPipeline)
+from services import build_failure_analysis
+from services import git
 from waterfall import suspected_cl_util
 from waterfall import swarming_util
 
@@ -103,13 +108,6 @@ def _GetFailedRevisionFromCompileResult(compile_result):
           if compile_result else None)
 
 
-def _GetHeuristicSuspectedCLs(analysis):
-  """Gets revisions of suspected cls found by heuristic approach."""
-  if analysis and analysis.suspected_cls:
-    return [[cl['repo_name'], cl['revision']] for cl in analysis.suspected_cls]
-  return []
-
-
 def _GetTestFailureCausedByCL(result):
   if not result:
     return None
@@ -168,26 +166,7 @@ def _GetUpdatedAnalysisResult(analysis, flaky_failures):
 
 
 class IdentifyTryJobCulpritPipeline(BasePipeline):
-  """A pipeline to identify culprit CL info based on try job compile results."""
-
-  def _GetCulpritInfo(self, failed_revisions):
-    """Gets commit_positions and review urls for revisions."""
-    culprits = {}
-    # TODO(lijeffrey): remove hard-coded 'chromium' when DEPS file parsing is
-    # supported.
-    for failed_revision in failed_revisions:
-      culprits[failed_revision] = {
-          'revision': failed_revision,
-          'repo_name': 'chromium'
-      }
-      change_log = GIT_REPO.GetChangeLog(failed_revision)
-      if change_log:
-        culprits[failed_revision]['commit_position'] = (
-            change_log.commit_position)
-        culprits[failed_revision]['url'] = (change_log.code_review_url or
-                                            change_log.commit_url)
-
-    return culprits
+  """A pipeline to identify culprit CL info based on try job results."""
 
   def _FindCulpritForEachTestFailure(self, result):
     culprit_map = defaultdict(dict)
@@ -240,7 +219,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
       if try_job_type == failure_type.COMPILE:
         failed_revision = _GetFailedRevisionFromCompileResult(result)
         failed_revisions = [failed_revision] if failed_revision else []
-        culprits = self._GetCulpritInfo(failed_revisions)
+        culprits = git.GetCLInfo(failed_revisions)
 
         if not culprits and _CompileFailureIsFlaky(result):
           flaky_failures = {'compile': []}
@@ -251,7 +230,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
       else:  # try_job_type is 'test'.
         culprit_map, failed_revisions = self._FindCulpritForEachTestFailure(
             result)
-        culprits = self._GetCulpritInfo(failed_revisions)
+        culprits = git.GetCLInfo(failed_revisions)
 
         if not culprits:
           flaky_failures = _GetFlakyTestsFromTryJob(result)
@@ -328,7 +307,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     # Saves cls found by heuristic approach for later use.
     # This part must be before UpdateWfAnalysisWithTryJobResult().
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    heuristic_cls = _GetHeuristicSuspectedCLs(analysis)
+    heuristic_cls = build_failure_analysis.GetHeuristicSuspectedCLs(analysis)
 
     # Add try-job results to WfAnalysis.
     UpdateWfAnalysisWithTryJobResult()
@@ -340,4 +319,10 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     if not culprits:
       return
     yield RevertAndNotifyTestCulpritPipeline(
-        master_name, builder_name, build_number, culprits, heuristic_cls)
+        RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name,
+                builder_name=builder_name,
+                build_number=build_number),
+            culprits=git.GetCLKeysFromCLInfo(culprits),
+            heuristic_cls=heuristic_cls))

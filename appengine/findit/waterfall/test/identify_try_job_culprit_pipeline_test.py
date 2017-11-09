@@ -12,6 +12,12 @@ from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from pipelines.pipeline_inputs_and_outputs import BuildKey
+from pipelines.pipeline_inputs_and_outputs import CLKey
+from pipelines.pipeline_inputs_and_outputs import DictOfCLKeys
+from pipelines.pipeline_inputs_and_outputs import ListOfCLKeys
+from pipelines.pipeline_inputs_and_outputs import (
+    RevertAndNotifyCulpritPipelineInput)
 from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
     RevertAndNotifyTestCulpritPipeline)
 from waterfall import build_util
@@ -436,11 +442,17 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    self.MockPipeline(
-        RevertAndNotifyTestCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, None, []])
+    self.MockGeneratorPipeline(
+        pipeline_class=RevertAndNotifyTestCulpritPipeline,
+        expected_input=RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name.decode('utf-8'),
+                builder_name=builder_name.decode('utf-8'),
+                build_number=build_number),
+            culprits=DictOfCLKeys(),
+            heuristic_cls=ListOfCLKeys()),
+        mocked_output=False)
+
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.COMPILE,
                                              '1', None)
@@ -514,13 +526,20 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         'top_score': None
     }]
 
-    self.MockPipeline(
-        RevertAndNotifyTestCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, {
-                expected_culprit: expected_suspected_cl
-            }, []])
+    culprits = DictOfCLKeys()
+    culprits[expected_culprit] = CLKey(
+        repo_name=u'chromium', revision=expected_culprit.decode('utf-8'))
+    self.MockGeneratorPipeline(
+        pipeline_class=RevertAndNotifyTestCulpritPipeline,
+        expected_input=RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name.decode('utf-8'),
+                builder_name=builder_name.decode('utf-8'),
+                build_number=build_number),
+            culprits=culprits,
+            heuristic_cls=ListOfCLKeys()),
+        mocked_output=False)
+
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.COMPILE,
                                              '1', compile_result)
@@ -559,11 +578,17 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    self.MockPipeline(
-        RevertAndNotifyTestCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, {}, []])
+    self.MockGeneratorPipeline(
+        pipeline_class=RevertAndNotifyTestCulpritPipeline,
+        expected_input=RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name.decode('utf-8'),
+                builder_name=builder_name.decode('utf-8'),
+                build_number=build_number),
+            culprits=DictOfCLKeys(),
+            heuristic_cls=ListOfCLKeys()),
+        mocked_output=False)
+
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.COMPILE,
                                              '1', compile_result)
@@ -611,11 +636,17 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     }
     analysis.put()
 
-    self.MockPipeline(
-        RevertAndNotifyTestCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, {}, []])
+    self.MockGeneratorPipeline(
+        pipeline_class=RevertAndNotifyTestCulpritPipeline,
+        expected_input=RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name.decode('utf-8'),
+                builder_name=builder_name.decode('utf-8'),
+                build_number=build_number),
+            culprits=DictOfCLKeys(),
+            heuristic_cls=ListOfCLKeys()),
+        mocked_output=False)
+
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.COMPILE,
                                              '1', compile_result)
@@ -649,11 +680,17 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    self.MockPipeline(
-        RevertAndNotifyTestCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, None, []])
+    self.MockGeneratorPipeline(
+        pipeline_class=RevertAndNotifyTestCulpritPipeline,
+        expected_input=RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name.decode('utf-8'),
+                builder_name=builder_name.decode('utf-8'),
+                build_number=build_number),
+            culprits=DictOfCLKeys(),
+            heuristic_cls=ListOfCLKeys()),
+        mocked_output=False)
+
     pipeline = IdentifyTryJobCulpritPipeline(
         master_name, builder_name, build_number, failure_type.TEST, '1', None)
     pipeline.start()
@@ -690,12 +727,19 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.suspected_cls = [suspected_cl]
     analysis.put()
 
-    self.MockPipeline(
-        RevertAndNotifyTestCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, None,
-            [['chromium', 'rev1']]])
+    heuristic_cls = ListOfCLKeys()
+    heuristic_cls.append(CLKey(repo_name=u'chromium', revision=u'rev1'))
+    self.MockGeneratorPipeline(
+        pipeline_class=RevertAndNotifyTestCulpritPipeline,
+        expected_input=RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name.decode('utf-8'),
+                builder_name=builder_name.decode('utf-8'),
+                build_number=build_number),
+            culprits=DictOfCLKeys(),
+            heuristic_cls=heuristic_cls),
+        mocked_output=False)
+
     pipeline = IdentifyTryJobCulpritPipeline(
         master_name, builder_name, build_number, failure_type.TEST, '1', None)
     pipeline.start()
@@ -740,11 +784,17 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    self.MockPipeline(
-        RevertAndNotifyTestCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, {}, []])
+    self.MockGeneratorPipeline(
+        pipeline_class=RevertAndNotifyTestCulpritPipeline,
+        expected_input=RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name.decode('utf-8'),
+                builder_name=builder_name.decode('utf-8'),
+                build_number=build_number),
+            culprits=DictOfCLKeys(),
+            heuristic_cls=ListOfCLKeys()),
+        mocked_output=False)
+
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.TEST,
                                              '1', test_result)
@@ -794,8 +844,6 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    expected_suspected_cl = {'revision': 'rev3', 'repo_name': 'chromium'}
-
     expected_analysis_suspected_cls = [{
         'revision': 'rev3',
         'repo_name': 'chromium',
@@ -805,13 +853,19 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         'top_score': None
     }]
 
-    self.MockPipeline(
-        RevertAndNotifyTestCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, {
-                'rev3': expected_suspected_cl
-            }, []])
+    culprits = DictOfCLKeys()
+    culprits['rev3'] = CLKey(repo_name=u'chromium', revision=u'rev3')
+    self.MockGeneratorPipeline(
+        pipeline_class=RevertAndNotifyTestCulpritPipeline,
+        expected_input=RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name.decode('utf-8'),
+                builder_name=builder_name.decode('utf-8'),
+                build_number=build_number),
+            culprits=culprits,
+            heuristic_cls=ListOfCLKeys()),
+        mocked_output=False)
+
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.TEST,
                                              '1', test_result)
@@ -969,16 +1023,20 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    expected_culprits = {
-        'rev1': a_test1_suspected_cl,
-        'rev2': a_test2_suspected_cl
-    }
+    culprits = DictOfCLKeys()
+    culprits['rev1'] = CLKey(repo_name=u'chromium', revision=u'rev1')
+    culprits['rev2'] = CLKey(repo_name=u'chromium', revision=u'rev2')
+    self.MockGeneratorPipeline(
+        pipeline_class=RevertAndNotifyTestCulpritPipeline,
+        expected_input=RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name.decode('utf-8'),
+                builder_name=builder_name.decode('utf-8'),
+                build_number=build_number),
+            culprits=culprits,
+            heuristic_cls=ListOfCLKeys()),
+        mocked_output=False)
 
-    self.MockPipeline(
-        RevertAndNotifyTestCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, expected_culprits, []])
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.TEST,
                                              '1', test_result)
@@ -1080,13 +1138,22 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         try_job_status=analysis_status.RUNNING,
         compile_results=[compile_result])
 
-    self.MockPipeline(
-        RevertAndNotifyTestCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, {
-                revision: heuristic_suspected_cl
-            }, [[repo_name, revision]]])
+    cl_key = CLKey(repo_name=u'chromium', revision=revision.decode('utf-8'))
+    culprits = DictOfCLKeys()
+    culprits[revision] = cl_key
+    heuristic_cls = ListOfCLKeys()
+    heuristic_cls.append(cl_key)
+    self.MockGeneratorPipeline(
+        pipeline_class=RevertAndNotifyTestCulpritPipeline,
+        expected_input=RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name.decode('utf-8'),
+                builder_name=builder_name.decode('utf-8'),
+                build_number=build_number),
+            culprits=culprits,
+            heuristic_cls=heuristic_cls),
+        mocked_output=False)
+
     pipeline = IdentifyTryJobCulpritPipeline(master_name, builder_name,
                                              build_number, failure_type.COMPILE,
                                              '1', compile_result)
@@ -1151,11 +1218,16 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     WfTryJob.Create(master_name, builder_name, build_number).put()
 
-    self.MockPipeline(
-        RevertAndNotifyTestCulpritPipeline,
-        None,
-        expected_args=[
-            master_name, builder_name, build_number, None, []])
+    self.MockGeneratorPipeline(
+        pipeline_class=RevertAndNotifyTestCulpritPipeline,
+        expected_input=RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name.decode('utf-8'),
+                builder_name=builder_name.decode('utf-8'),
+                build_number=build_number),
+            culprits=DictOfCLKeys(),
+            heuristic_cls=ListOfCLKeys()),
+        mocked_output=False)
     pipeline = IdentifyTryJobCulpritPipeline(
         master_name, builder_name, build_number, failure_type.TEST, None, None)
     pipeline.start()

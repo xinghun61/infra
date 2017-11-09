@@ -6,7 +6,12 @@ import mock
 
 from common import constants
 from gae_libs.pipeline_wrapper import pipeline_handlers
+from pipelines.pipeline_inputs_and_outputs import BuildKey
 from pipelines.pipeline_inputs_and_outputs import CLKey
+from pipelines.pipeline_inputs_and_outputs import DictOfCLKeys
+from pipelines.pipeline_inputs_and_outputs import ListOfCLKeys
+from pipelines.pipeline_inputs_and_outputs import (
+    RevertAndNotifyCulpritPipelineInput)
 from pipelines.pipeline_inputs_and_outputs import (
     SendNotificationForCulpritPipelineInput)
 from pipelines.test_failure import revert_and_notify_test_culprit_pipeline
@@ -22,32 +27,39 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   @mock.patch.object(ci_failure, 'AnyNewBuildSucceeded', return_value=False)
-  def testSendNotificationForTestCulprit(self, _):
+  @mock.patch.object(revert_and_notify_test_culprit_pipeline,
+                     'CreateInputObjectInstance')
+  def testSendNotificationForTestCulprit(self, mock_input, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
     repo_name = 'chromium'
     revision = 'r1'
-    culprits = {
-        'r1': {
-            'repo_name': repo_name,
-            'revision': revision,
-        }
-    }
-    heuristic_cls = [[repo_name, revision]]
+    cl_key = CLKey(
+        repo_name=repo_name.decode('utf=8'), revision=revision.decode('utf-8'))
+    culprits = DictOfCLKeys()
+    culprits['r1'] = cl_key
+    heuristic_cls = ListOfCLKeys()
+    heuristic_cls.append(cl_key)
 
+    input_object = SendNotificationForCulpritPipelineInput(
+        cl_key=CLKey(
+            repo_name=repo_name.decode('utf-8'),
+            revision=revision.decode('utf-8')),
+        force_notify=True,
+        revert_status=None)
+    mock_input.return_value = input_object
     self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
-                                 SendNotificationForCulpritPipelineInput(
-                                     cl_key=CLKey(
-                                         repo_name=repo_name.decode('utf-8'),
-                                         revision=revision.decode('utf-8')),
-                                     force_notify=True,
-                                     revert_status=None),
-                                 True)
+                                 input_object, True)
 
-    pipeline = RevertAndNotifyTestCulpritPipeline(master_name, builder_name,
-                                                  build_number, culprits,
-                                                  heuristic_cls)
+    pipeline = RevertAndNotifyTestCulpritPipeline(
+        RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name.decode('utf-8'),
+                builder_name=builder_name.decode('utf-8'),
+                build_number=build_number),
+            culprits=culprits,
+            heuristic_cls=heuristic_cls))
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -60,17 +72,21 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 124
     repo_name = 'chromium'
     revision = 'r1'
-    culprits = {
-        'r1': {
-            'repo_name': repo_name,
-            'revision': revision,
-        }
-    }
-    heuristic_cls = [[repo_name, revision]]
+    cl_key = CLKey(
+        repo_name=repo_name.decode('utf=8'), revision=revision.decode('utf-8'))
+    culprits = DictOfCLKeys()
+    culprits['r1'] = cl_key
+    heuristic_cls = ListOfCLKeys()
+    heuristic_cls.append(cl_key)
 
-    pipeline = RevertAndNotifyTestCulpritPipeline(master_name, builder_name,
-                                                  build_number, culprits,
-                                                  heuristic_cls)
+    pipeline = RevertAndNotifyTestCulpritPipeline(
+        RevertAndNotifyCulpritPipelineInput(
+            build_key=BuildKey(
+                master_name=master_name.decode('utf-8'),
+                builder_name=builder_name.decode('utf-8'),
+                build_number=build_number),
+            culprits=culprits,
+            heuristic_cls=heuristic_cls))
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     mocked_pipeline.assert_not_called()
