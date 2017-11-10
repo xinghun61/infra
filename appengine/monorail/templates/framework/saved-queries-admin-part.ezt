@@ -52,7 +52,11 @@
    </tr>
    [end]
 
-   [define can]2[end]
+   [is arg0 "user"]
+     [define can]1[end][# All blank lines for user queries default to "All Issues" scope.]
+   [else]
+     [define can]2[end][# All blank lines for project queries default to "Open issues" scope.]
+   [end]
    [for new_query_indexes]
    <tr id="newquery[new_query_indexes]" [if-index new_query_indexes first][else]style="display:none"[end]>
     <td style="text-align:right" width="20">[new_query_indexes].</td>
