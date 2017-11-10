@@ -18,11 +18,11 @@
     "user-input.html",
     "user-login.html",
     "users-dropdown.html"
-  ]
+  ],
   "repository": {
     "type": "git",
     "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui.git"
-  }
+  },
   "moduleType": [
     "es6"
   ],
