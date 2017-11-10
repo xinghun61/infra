@@ -6,7 +6,7 @@
     "ChOps CRDX Team"
   ],
   "keywords": [
-    "chopsui",
+    "chopsui"
   ],
   "main": [
     "bug-input.html",
@@ -35,21 +35,20 @@
     "tests"
   ],
   "dependencies": {
-      "iron-behaviors": "PolymerElements/iron-behaviors",
-      "iron-dropdown": "PolymerElements/iron-dropdown",
+      "iron-behaviors": "PolymerElements/iron-behaviors#~2.0",
+      "iron-dropdown": "PolymerElements/iron-dropdown#~2.0",
+      "iron-icons": "^2.0.0",
       "moment": "2.17.1",
       "moment-timezone": "^0.5.10",
-      "paper-item": "PolymerElements/paper-item",
-      "paper-input": "PolymerElements/paper-input",
-      "paper-tooltip": "PolymerElements/paper-tooltip",
+      "paper-item": "PolymerElements/paper-item#~2.0",
+      "paper-input": "PolymerElements/paper-input#~2.0",
+      "paper-tooltip": "PolymerElements/paper-tooltip#~2.0",
       "polymer": "Polymer/polymer#^2.0.0",
       "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.1"
   },
   "devDependencies": {
-      "iron-demo-helpers": "PolymerElements/iron-demo-helpers",
       "iron-test-helpers": "PolymerElements/iron-test-helpers",
-      "web-component-tester": "web-component-tester#6.0.0",
-      "iron-component-page": "^3.0.1"
+      "web-component-tester": "web-component-tester#6.0.0"
   },
   "resolutions": {
     "polymer": "^2.0.0"
