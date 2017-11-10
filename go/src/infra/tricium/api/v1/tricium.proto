@@ -127,13 +127,16 @@ message AnalyzerProgress {
   // of the worker, else it is the aggregated state of all workers for the analyzer.
   State state = 3;
 
-  // The Swarming task ID running the analyzer worker.
-  string swarming_task_id = 4;
+  // URL to the swarming server running tasks for the workers of the analyzer.
+  string swarming_url = 4;
+
+  // The ID of the swarming task triggered for the analyzer worker.
+  string swarming_task_id = 5;
 
   // Number of comments.
   //
   // For analyzers that are done and produce comments.
-  int32 num_comments = 5;
+  int32 num_comments = 6;
 }
 
 message ResultsRequest {

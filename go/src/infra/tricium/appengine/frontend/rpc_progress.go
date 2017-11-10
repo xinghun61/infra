@@ -115,7 +115,8 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Analyze
 			NumComments: int32(wr.NumComments),
 		}
 		if len(wr.SwarmingTaskID) > 0 {
-			p.SwarmingTaskId = fmt.Sprintf("%s/task?id=%s", run.SwarmingServerURL, wr.SwarmingTaskID)
+			p.SwarmingUrl = run.SwarmingServerURL
+			p.SwarmingTaskId = wr.SwarmingTaskID
 		}
 		res = append(res, p)
 	}
