@@ -281,8 +281,7 @@ def _buildbucket_property(build):
 
 @ndb.tasklet
 def _create_task_def_async(
-    project_id, swarming_cfg, builder_cfg, build, build_number, settings,
-    fake_build):
+    swarming_cfg, builder_cfg, build, build_number, settings, fake_build):
   """Creates a swarming task definition for the |build|.
 
   Supports build properties that are supported by Buildbot-Buildbucket
@@ -295,6 +294,7 @@ def _create_task_def_async(
     errors.InvalidInputError if build.parameters are invalid.
   """
   assert build.key and build.key.id(), build.key
+  assert build.url, 'build.url should have been initialized'
   params = build.parameters or {}
   validate_build_parameters(builder_cfg.name, params)
   swarming_param = params.get(PARAM_SWARMING) or {}
@@ -330,10 +330,11 @@ def _create_task_def_async(
         hashlib.sha256('%s:%s' % (build.bucket, builder_cfg.name)).hexdigest()),
     'build_id': build.key.id(),
     'build_result_filename': BUILD_RUN_RESULT_FILENAME,
+    'build_url': build.url,
     'builder': builder_cfg.name,
     'cache_dir': CACHE_DIR,
     'hostname': app_identity.get_default_version_hostname(),
-    'project': project_id,
+    'project': build.project,
     'swarming_hostname': build.swarming_hostname,
   }
 
@@ -490,7 +491,7 @@ def prepare_task_def_async(build, settings, fake_build=False):
   If configured, generates a build number and updates the build.
   Creates a swarming task definition.
 
-  Sets build.swarming_hostname and build.canary attributes.
+  Sets build attributes: swarming_hostname, canary and url.
   May add "build_address" tag.
 
   Returns a task_def dict.
@@ -505,6 +506,7 @@ def prepare_task_def_async(build, settings, fake_build=False):
   if not isinstance(builder_name, basestring):
     raise errors.InvalidInputError('Invalid builder name %r' % builder_name)
   project_id, bucket_cfg = yield config.get_bucket_async(build.bucket)
+  assert project_id == build.project, '%r != %r' % (project_id, build.project)
 
   if not config.is_swarming_config(bucket_cfg):
     raise errors.InvalidInputError(
@@ -528,9 +530,11 @@ def prepare_task_def_async(build, settings, fake_build=False):
       build_number = yield sequence.generate_async(seq_name, 1)
     build.tags.append('build_address:%s/%d' % (seq_name, build_number))
 
+  build.url = _generate_build_url(settings.milo_hostname, build, build_number)
+
   task_def = yield _create_task_def_async(
-      project_id, bucket_cfg.swarming, builder_cfg, build, build_number,
-      settings, fake_build)
+      bucket_cfg.swarming, builder_cfg, build, build_number, settings,
+      fake_build)
   raise ndb.Return(task_def)
 
 
@@ -600,15 +604,24 @@ def create_task_async(build):
   build.leasee = _self_identity()
   build.never_leased = False
 
-  if settings.milo_hostname:
-    build.url = (
-        'https://%s/swarming/task/%s?server=%s' %
-        (settings.milo_hostname, build.swarming_task_id,
-         build.swarming_hostname))
-  else:
-    build.url = (
+
+def _generate_build_url(milo_hostname, build, build_number):
+  if not milo_hostname:
+    return (
         'https://%s/task?id=%s' %
         (build.swarming_hostname, build.swarming_task_id))
+  if build_number is not None:
+    return (
+        'https://%s/p/%s/builders/%s/%s/%d' %
+        (milo_hostname,
+        build.project,
+        build.bucket,
+        build.parameters[BUILDER_PARAMETER],
+        build_number))
+
+  return (
+      'https://%s/p/%s/builds/b%d' %
+      (milo_hostname, build.project, build.key.id()))
 
 
 def cancel_task_async(hostname, task_id):
