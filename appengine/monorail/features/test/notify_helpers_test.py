@@ -216,14 +216,50 @@ class MakeEmailWorkItemTest(unittest.TestCase):
                                       self.expected_html_footer)})
     self.assertEquals(expected_html_body, email_task['html_body'])
 
-  def testAddHTMLTags_EmailInQuotes(self):
-    """Test adding html tags in email body"""
-    body = 'test quote &quot;test@example.com&quot;.'
-    body_with_tags = notify_helpers._AddHTMLTags(body)
-    body_expected = ('test quote <a href="mailto:&quot;test@example.com'
-                     '&quot;">&quot;test@example.com&quot;</a>.')
+  def doTestAddHTMLTags(self, escaped_body, expected):
+    actual = notify_helpers._AddHTMLTags(escaped_body)
+    self.assertEqual(expected, actual)
 
-    self.assertEqual(body_expected, body_with_tags)
+  def testAddHTMLTags_Email(self):
+    """An email address produces <a href="mailto:...">...</a>."""
+    self.doTestAddHTMLTags(
+      'test test@example.com.',
+      ('test <a href="mailto:test@example.com">'
+       'test@example.com</a>.'))
+
+  def testAddHTMLTags_EmailInQuotes(self):
+    """Quoted "test@example.com" produces "<a href="...">...</a>"."""
+    self.doTestAddHTMLTags(
+      'test &quot;test@example.com&quot;.',
+      ('test &quot;<a href="mailto:test@example.com">'
+       'test@example.com</a>&quot;.'))
+
+  def testAddHTMLTags_EmailInAngles(self):
+    """Bracketed <test@example.com> produces &lt;<a href="...">...</a>&gt;."""
+    self.doTestAddHTMLTags(
+      'test &lt;test@example.com&gt;.',
+      ('test &lt;<a href="mailto:test@example.com">'
+       'test@example.com</a>&gt;.'))
+
+  def testAddHTMLTags_Website(self):
+    """A website URL produces <a href="http:...">...</a>."""
+    self.doTestAddHTMLTags(
+      'test http://www.example.com.',
+      ('test <a href="http://www.example.com">'
+       'http://www.example.com</a>.'))
+
+  def testAddHTMLTags_WebsiteInQuotes(self):
+    """For some reason, urlize() does not autolink quoted "www.example.com"."""
+    self.doTestAddHTMLTags(
+      'test &quot;http://www.example.com&quot;.',
+      ('test &quot;http://www.example.com&quot;.'))
+
+  def testAddHTMLTags_WebsiteInAngles(self):
+    """Bracketed <www.example.com> produces &lt;<a href="...">...</a>&gt;."""
+    self.doTestAddHTMLTags(
+      'test &lt;http://www.example.com&gt;.',
+      ('test &lt;<a href="http://www.example.com">'
+       'http://www.example.com</a>&gt;.'))
 
   def testReplyInvitation(self):
     """We include a footer about replying that is appropriate for that user."""

@@ -249,14 +249,18 @@ def _AddHTMLTags(body):
   # The above step converts
   #   '&lt;link.com&gt;' into '&lt;<a href="link.com&gt">link.com&gt</a>;' and
   #   '&lt;x@y.com&gt;' into '&lt;<a href="mailto:x@y.com&gt">x@y.com&gt</a>;'
+  #   And, a newer version of urlize seems to use "&amp;gt" instead of "&gt".
   # The below regex fixes this specific problem. See
   # https://bugs.chromium.org/p/monorail/issues/detail?id=1007 for more details.
-  body = re.sub(r'&lt;<a href="(|mailto:)(.*?)&gt">(.*?)&gt</a>;',
-                r'&lt;<a href="\1\2">\3</a>&gt;', body)
+  body = re.sub(r'<a href="(|mailto:)(.*?)&(?:amp;)?gt">(.*?)&gt</a>;',
+                r'<a href="\1\2">\3</a>&gt;', body)
 
-  # Fix incorrectly split &quot; by urlize
-  body = re.sub(r'<a href="(.*?)&quot">(.*?)&quot</a>;',
-                r'<a href="\1&quot;">\2&quot;</a>', body)
+  # Fix incorrectly split leading and trailing &quot; by urlize, and put any
+  # surrounding &quot; entities outside the <a> tag.
+  body = re.sub(r'<a href="(|mailto:)&(?:amp;)?quot;(.*?)">&quot;',
+                r'&quot;<a href="\1\2">', body)
+  body = re.sub(r'<a href="(.*?)&(?:amp;)?quot">(.*?)&quot</a>;',
+                r'<a href="\1">\2</a>&quot;', body)
 
   # Convert all "\n"s into "<br/>"s.
   body = body.replace('\r\n', '<br/>')
