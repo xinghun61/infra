@@ -30,7 +30,7 @@ BOT_SHUTDOWN_FILE = '/b/shutdown.stamp'
 _REBOOT_GRACE_PERIOD_MIN = 240
 
 # Defined in
-# https://chromium.googlesource.com/infra/infra/+/master/build/packages/android_docker.yaml
+# https://chromium.googlesource.com/infra/infra/+/master/build/packages/swarm_docker.yaml
 _CIPD_VERSION_FILE = os.path.abspath(os.path.join(
     os.path.dirname(__file__), '..', '..', '..', 'CIPD_VERSION.json'))
 
@@ -56,7 +56,7 @@ def get_host_uptime():
 
 
 def reboot_host():
-  # Docker'ed android hosts should have /sbin/reboot as password-less sudo.
+  # Docker'ed hosts should have /sbin/reboot as password-less sudo.
   cmd = ['sudo', '-n', '/sbin/reboot']
   try:
     subprocess.check_call(cmd)
@@ -200,9 +200,10 @@ def launch_containers(
 
       threads = []
       for cd in container_descriptors:
-        # TODO(sergiyb): Remove should_craete_container logic from this generic
+        # TODO(sergiyb): Remove should_create_container logic from this generic
         # container management loop and move it outside of the launch_container
-        # function as it's specific to Android devices only.
+        # function as it's specific to Android devices only and thus should only
+        # be in the android_docker package.
         if (cd.should_create_container() and
             cd not in draining_container_descriptors):
           # Split this into threads so a blocking container doesn't block the

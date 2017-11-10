@@ -54,15 +54,14 @@ Deploying the script
 The script and its dependencies are deployed as a CIPD package via puppet. The
 package (infra/swarm_docker/$platform) is continously built on this
 [bot](https://build.chromium.org/p/chromium.infra/builders/infra-continuous-precise-64).
-Puppet deploys it to the relevant bots at
-[these
-revisions](https://chrome-internal.googlesource.com/infra/puppet/+/78f1ba25470edf4256e5862d7b9c3eb1fba9dcad/puppetm/etc/puppet/hieradata/cipd.yaml#???).
-The canary pin affects bots on
-[chromium-swarm-dev](https://chromium-swarm-dev.appspot.com),
-which the android testers on the
-[chromium.swarm](https://build.chromium.org/p/chromium.swarm/builders)
-waterfall run tests against. If the canary has been updated, the bots look fine,
-and the tests haven't regressed, you can proceed to update the stable pin.
+Puppet deploys it to the relevant bots at [these revisions](https://chrome-internal.googlesource.com/infra/puppet/+/78f1ba25470edf4256e5862d7b9c3eb1fba9dcad/puppetm/etc/puppet/hieradata/cipd.yaml#???).
+The canary pin, which tracks latest version in the repository, affects a single
+bot on [chromium-swarm-dev](https://chromium-swarm-dev.appspot.com), which is
+not used by any builders, but can be used for manual testing before updating
+stable pin. Please trigger a build on this bot by manually editing a normal
+swarmbucket request sent to a multibot and making it execute on
+[chromium-swarm-dev](https://chromium-swarm-dev.appspot.com). If the build looks
+fine, you can proceed to update the stable pin.
 
 The call site of the script is also defined in
 [puppet](https://chrome-internal.googlesource.com/infra/puppet/+/78f1ba25470edf4256e5862d7b9c3eb1fba9dcad/puppetm/etc/puppet/modules/chrome_infra/templates/setup/docker/swarm/swarm_docker_cron.sh.erb).
