@@ -466,7 +466,7 @@ class Gerrit(object):
       if len(message) > max_message:
         message = message[:max_message-len(tail)] + tail # pragma: no cover
       logging.info('change_id: %s; comment: %s' % (change_id, message.strip()))
-    payload = {}
+    payload = {'drafts': 'KEEP'}
     for var, attr in [(message, 'message'), (notify, 'notify'),
                      (labels, 'labels'), (tag, 'tag'),
                      (on_behalf_of, 'on_behalf_of'),

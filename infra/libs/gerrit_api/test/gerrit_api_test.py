@@ -27,6 +27,7 @@ HEADERS_WITH_CONTENT_TYPE = HEADERS.copy()
 HEADERS_WITH_CONTENT_TYPE['Content-Type'] = 'application/json;charset=UTF-8'
 
 TEST_PAYLOAD = {
+    'drafts': 'KEEP',
     'labels': {
         'Code-Review': 1,
     },
@@ -38,6 +39,7 @@ TEST_PAYLOAD = {
 }
 
 TEST_PAYLOAD_LABELS_ONLY = {
+    'drafts': 'KEEP',
     'labels': {
         'Code-Review': 1,
     },
