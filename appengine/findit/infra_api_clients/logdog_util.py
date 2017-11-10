@@ -9,6 +9,7 @@ import logging
 import json
 import os
 import sys
+import time
 
 from common import rpc_util
 
@@ -43,47 +44,59 @@ def _ProcessStringForLogDog(base_string):
   return ''.join(new_string_list)
 
 
-def _GetLogForPath(host, project, path, http_client):
-  base_error_log = 'Error when fetch log: %s'
+def _GetLogForPath(host, project, path, http_client, retry_delay=5):
   data = {'project': project, 'path': path}
 
-  # Retry 7 times to allow for logdog's up to 180 second propagation delay.
-  # Exponential backoff starts at 1.5 seconds, reaches 96 seconds for the 7th
-  # retry, for an accumulated total of 190.5 seconds of waiting time.
-  # Should be enough for our purposes.
-  response_json = rpc_util.DownloadJsonData(
-      _LOGDOG_GET_ENDPOINT % host, data, http_client, max_retries=7)
-  if not response_json:
-    logging.error(base_error_log % 'cannot get json log.')
-    return None
+  tries = 0
+  error_message = ''
 
-  # Gets data for log. Data format as below:
-  # {
-  #    'logs': [
-  #        {
-  #            'text': {
-  #                'lines': [
-  #                   {
-  #                       'value': 'line'
-  #                   }
-  #                ]
-  #            }
-  #        }
-  #     ]
-  # }
-  logs = json.loads(response_json).get('logs')
-  if not logs or not isinstance(logs, list):
-    logging.error(base_error_log % 'Wrong format - "logs"')
-    return None
+  # It seems possible to get empty log or log with wrong format.
+  # So also retry for several times even on 200s if the log cannot be used.
+  while tries < 5:
+    # Retry 7 times to allow for logdog's up to 180 second propagation delay.
+    # Exponential backoff starts at 1.5 seconds, reaches 96 seconds for the 7th
+    # retry, for an accumulated total of 190.5 seconds of waiting time.
+    # Should be enough for our purposes.
+    response_json = rpc_util.DownloadJsonData(
+        _LOGDOG_GET_ENDPOINT % host, data, http_client, max_retries=7)
+    if response_json is None:
+      # If response is None, it means after 7 retries, Findit still failed to
+      # get response. Seems no need to keep retrying at this case.
+      error_message = 'cannot get json log.'
+      break
+    else:
+      # Gets data for log. Data format as below:
+      # {
+      #    'logs': [
+      #        {
+      #            'text': {
+      #                'lines': [
+      #                   {
+      #                       'value': 'line'
+      #                   }
+      #                ]
+      #            }
+      #        }
+      #     ]
+      # }
+      logs = json.loads(response_json).get('logs')
+      if not logs or not isinstance(logs, list):
+        error_message = 'Wrong format - %s' % response_json
+      else:
+        sio = cStringIO.StringIO()
+        for log in logs:
+          for line in log.get('text', {}).get('lines', []):
+            sio.write('%s\n' % line.get('value', '').encode('utf-8'))
+        data = sio.getvalue()
+        sio.close()
 
-  sio = cStringIO.StringIO()
-  for log in logs:
-    for line in log.get('text', {}).get('lines', []):
-      sio.write('%s\n' % line.get('value', '').encode('utf-8'))
-  data = sio.getvalue()
-  sio.close()
+        return data
+    tries += 1
+    time.sleep(tries * retry_delay)
 
-  return data
+  # Only logs error when the log was failed to get at last.
+  logging.error('Error when fetch log: %s' % error_message)
+  return None
 
 
 def _GetAnnotationsProtoForPath(host, project, path, http_client):

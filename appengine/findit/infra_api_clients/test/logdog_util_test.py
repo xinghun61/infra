@@ -4,6 +4,7 @@
 
 import base64
 import json
+import logging
 import mock
 import os
 import sys
@@ -98,10 +99,24 @@ class LogDogUtilTest(unittest.TestCase):
       rpc_util, 'DownloadJsonData', return_value=json.dumps({
           'a': 'a'
       }))
-  def testGetStepMetadataFromLogDogNoJson(self, _):
-    step_metadata = logdog_util._GetLogForPath('host', 'project', 'path',
-                                               self.http_client)
+  @mock.patch.object(logging, 'error')
+  def testGetStepMetadataFromLogDogNoJson(self, mock_logging, _):
+    step_metadata = logdog_util._GetLogForPath(
+        'host', 'project', 'path', self.http_client, retry_delay=0)
     self.assertIsNone(step_metadata)
+    mock_logging.assert_called_once_with('Error when fetch log: Wrong format'
+                                         ' - {"a": "a"}')
+
+  @mock.patch.object(rpc_util, 'DownloadJsonData')
+  def testGetStepMetadataFromLogDogRetry(self, mock_rpc):
+    mal_formatted_response = json.dumps({'a': 'a'})
+    mock_rpc.side_effect = [
+        mal_formatted_response, mal_formatted_response, _SAMPLE_GET_RESPONSE
+    ]
+    step_metadata = logdog_util._GetLogForPath(
+        'host', 'project', 'path', self.http_client, retry_delay=0)
+    self.assertEqual(
+        json.loads(step_metadata), wf_testcase.SAMPLE_STEP_METADATA)
 
   def testProcessAnnotationsToGetStreamForStepMetadata(self):
     step_proto = _CreateProtobufMessage(self.step_name, self.stdout_stream,
