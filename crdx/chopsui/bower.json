@@ -9,14 +9,6 @@
     "chopsui"
   ],
   "main": [
-    "bug-input.html",
-    "bug-link.html",
-    "cl-link.html",
-    "crdx-timestamp.html",
-    "tree-status.html",
-    "user-id.html",
-    "user-input.html",
-    "user-login.html",
     "users-dropdown.html"
   ],
   "repository": {
