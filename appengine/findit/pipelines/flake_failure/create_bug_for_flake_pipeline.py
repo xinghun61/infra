@@ -9,16 +9,15 @@ from google.appengine.ext import ndb
 from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
 
+from common.findit_http_client import FinditHttpClient
 from libs import time_util
 from libs.structured_object import StructuredObject
-
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.flake_culprit import FlakeCulprit
-
 from services.flake_failure import issue_tracking_service
-
 from waterfall import build_util
+from waterfall import swarming_util
 from waterfall.flake import flake_constants
 from waterfall.flake import triggering_sources
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
@@ -62,6 +61,19 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
     most_recent_build_number = build_util.GetLatestBuildNumber(
         analysis.master_name, analysis.builder_name)
     if not most_recent_build_number:
+      analysis.LogInfo('Bug not failed because latest build number not found.')
+      return
+
+    tasks = swarming_util.ListSwarmingTasksDataByTags(
+        analysis.master_name, analysis.builder_name, most_recent_build_number,
+        FinditHttpClient(), {'stepname': analysis.step_name})
+    if not tasks:
+      analysis.LogInfo('Bug not filed because no recent runs found.')
+      return
+
+    task = tasks[0]
+    if not swarming_util.IsTestEnabled(analysis.test_name, task['task_id']):
+      analysis.LogInfo('Bug not filed because test was fixed or disabled.')
       return
 
     analysis_pipeline = yield AnalyzeFlakeForBuildNumberPipeline(
@@ -76,8 +88,6 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
       yield _CreateBugIfStillFlaky(next_input_object)
 
     # TODO(crbug.com/780110): Use customized field for querying for duplicates.
-
-    # TODO(crbug.com/780112): Check if a test is disabled before filing.
 
 
 class _CreateBugIfStillFlakyInputObject(StructuredObject):

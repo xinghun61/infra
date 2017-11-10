@@ -244,6 +244,14 @@ def ListSwarmingTasksDataByTags(master_name,
     build_number(int): Value of the buildnumber tag.
     http_client(RetryHttpClient): The http client to send HTTPs requests.
     additional_tag_filters(dict): More tag filters to be added.
+
+  Returns:
+    ([{
+      'swarming_task_id': ...,
+      'completed_ts': ...,
+      'started_ts': ...,
+      ...
+    }, ...])
   """
   base_url = ('https://%s/_ah/api/swarming/v1/tasks/'
               'list?tags=%s&tags=%s&tags=%s') % (
@@ -944,3 +952,16 @@ def GetETAToStartAnalysis(manually_triggered):
 
   # Convert back to UTC.
   return time_util.ConvertPSTToUTC(eta)
+
+
+def IsTestEnabled(test_name, task_id):
+  """Returns True if the test is enabled, False otherwise."""
+  # Get the isolated outputs from the test that was just run.
+  isolate_output = GetIsolatedOutputForTask(task_id, FinditHttpClient())
+  isolate_output = isolate_output if isolate_output else {}
+  all_tests = isolate_output.get('all_tests', [])
+  disabled_tests = isolate_output.get('disabled_tests', [])
+
+  # Check if the analysis' test is disabled in the current build.
+  # If the disabled tests array is empty, we assume the test is enabled.
+  return test_name in all_tests and test_name not in disabled_tests

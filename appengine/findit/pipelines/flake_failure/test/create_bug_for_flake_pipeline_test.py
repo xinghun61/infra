@@ -16,7 +16,7 @@ from pipelines.flake_failure.create_bug_for_flake_pipeline import (
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
 from services.flake_failure import issue_tracking_service
-
+from waterfall import swarming_util
 from waterfall import build_util
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
     AnalyzeFlakeForBuildNumberPipeline)
@@ -27,19 +27,27 @@ from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 class CreateBugForFlakePipelineTest(WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
+  @mock.patch.object(swarming_util, 'IsTestEnabled', return_value=True)
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
+  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
-  def testCreateBugForFlakePipeline(self, should_file_fn, _):
+  def testCreateBugForFlakePipeline(self, should_file_fn, list_swarming_fn, *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
     step_name = 's'
     test_name = 't'
 
+    list_swarming_fn.return_value = [{'task_id': 'id'}]
+
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
+    analysis.data_points = [
+        DataPoint.Create(build_number=100, task_ids=['task_id'])
+    ]
+    analysis.suspected_flake_build_number = 100
     analysis.Save()
 
     # Create a flake analysis request with no bug.
@@ -72,25 +80,112 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(should_file_fn.called)
 
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
+  @mock.patch.object(swarming_util, 'IsTestEnabled', return_value=False)
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
-  @mock.patch.object(
-      issue_tracking_service, 'CreateBugForTest',
-      return_value=123)  # 123 is the bug_number.
-  def testCreateBugForFlakePipelineEndToEnd(self, create_bug_fn, should_file_fn,
-                                            _):
+  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  def testCreateBugForFlakePipelineWhenNoTasksReturned(self, list_swarming_fn,
+                                                       *_):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
     step_name = 's'
     test_name = 't'
 
+    list_swarming_fn.return_value = []
+
+    # Create a flake analysis with no bug.
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.data_points = [
+        DataPoint.Create(build_number=100, task_ids=['task_id'])
+    ]
+    analysis.suspected_flake_build_number = 100
+    analysis.Save()
+
+    # Create a flake analysis request with no bug.
+    request = FlakeAnalysisRequest.Create(test_name, False, None)
+    request.Save()
+
+    create_bug_input = CreateInputObjectInstance(
+        CreateBugForFlakePipelineInputObject,
+        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        test_location={'file': '/foo/bar',
+                       'line': '1'})
+    pipeline_job = CreateBugForFlakePipeline(create_bug_input)
+    pipeline_job.start()
+
+    self.execute_queued_tasks()
+    self.assertTrue(list_swarming_fn.called)
+
+  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
+  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  @mock.patch.object(swarming_util, 'IsTestEnabled', return_value=False)
+  @mock.patch.object(
+      issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
+  def testCreateBugForFlakePipelineIfTestDisabled(
+      self, should_file_fn, test_enabled_fn, list_swarming_fn, _):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    list_swarming_fn.return_value = [{'task_id': 'task_id'}]
+
+    # Create a flake analysis with no bug.
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.data_points = [
+        DataPoint.Create(build_number=100, task_ids=['task_id'])
+    ]
+    analysis.suspected_flake_build_number = 100
+    analysis.Save()
+
+    # Create a flake analysis request with no bug.
+    request = FlakeAnalysisRequest.Create(test_name, False, None)
+    request.Save()
+
+    create_bug_input = CreateInputObjectInstance(
+        CreateBugForFlakePipelineInputObject,
+        analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
+        test_location={'file': '/foo/bar',
+                       'line': '1'})
+    pipeline_job = CreateBugForFlakePipeline(create_bug_input)
+    pipeline_job.start()
+
+    self.execute_queued_tasks()
+    self.assertTrue(should_file_fn.called)
+    self.assertTrue(test_enabled_fn.called)
+
+  @mock.patch.object(swarming_util, 'IsTestEnabled', return_value=True)
+  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=200)
+  @mock.patch.object(
+      issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
+  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  @mock.patch.object(
+      issue_tracking_service, 'CreateBugForTest',
+      return_value=123)  # 123 is the bug_number.
+  def testCreateBugForFlakePipelineEndToEnd(
+      self, create_bug_fn, list_swarming_fn, should_file_fn, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    list_swarming_fn.return_value = [{'task_id': 'id'}]
+
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])
-    analysis.data_points = [DataPoint.Create(build_number=200, pass_rate=.5)]
+    analysis.data_points = [
+        DataPoint.Create(build_number=200, pass_rate=.5),
+        DataPoint.Create(build_number=100, pass_rate=.5, task_ids=['task_id'])
+    ]
+    analysis.suspected_flake_build_number = 100
     analysis.Save()
 
     # Create a flake analysis request with no bug.
@@ -147,11 +242,12 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.assertTrue(should_file_fn.called)
     self.assertFalse(analysis.has_attempted_filing)
 
+  @mock.patch.object(swarming_util, 'IsTestEnabled', return_value=True)
+  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=None)
   @mock.patch.object(
       issue_tracking_service, 'ShouldFileBugForAnalysis', return_value=True)
-  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=None)
   def testCreateBugForFlakePipelineWhenFailToGetLatestBuild(
-      self, should_file_fn, lastest_build_fn):
+      self, should_file_fn, latest_build_fn, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -161,6 +257,10 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     # Create a flake analysis with no bug.
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
+    analysis.data_points = [
+        DataPoint.Create(build_number=100, pass_rate=.5, task_ids=['task_id'])
+    ]
+    analysis.suspected_flake_build_number = 100
     analysis.Save()
 
     # Create a flake analysis request with no bug.
@@ -177,7 +277,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     self.execute_queued_tasks()
 
     self.assertTrue(should_file_fn.called)
-    self.assertTrue(lastest_build_fn.called)
+    self.assertTrue(latest_build_fn.called)
     self.assertFalse(analysis.has_attempted_filing)
 
   @mock.patch.object(
