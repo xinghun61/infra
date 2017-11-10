@@ -69,7 +69,7 @@ class IRCClientTest(testing.AppengineTestCase):
         mock.call('QUIT\r\n')
     ])
 
-  def testIRCClientTestTimeout(self):
+  def testIRCClientTestConnectTimeout(self):
     channel = '#chromium'
     nick = 'findittest'
     # After a number of retries, the exception must be let through.
@@ -79,6 +79,17 @@ class IRCClientTest(testing.AppengineTestCase):
         # Unreachable by design, as we are testing the context manager's
         # __enter__ method.
         pass  # pragma: no cover
+
+  def testIRCClientTestMessageTimeout(self):
+    channel = '#chromium'
+    nick = 'findittest'
+    message = 'Foo bar baz\n\n'
+    other_nick = 'someone'
+    with self.assertRaises(IOError):
+      with IRCClient('irc.freenode.net', channel, nick, 'CulpritFinder') as i:
+        # The connection must have been successful, message sending should not.
+        self.mock_socket_obj.sendall.side_effect = IOError('misc error')
+        i.SendMessage(message, other_nick, retry_delay=0)
 
   def testIRCClientTestLongIntro(self):
     channel = '#chromium'

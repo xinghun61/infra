@@ -5,6 +5,7 @@
 import logging
 import re
 import socket
+import time
 
 # This is the maximum size of an IRC message.
 BUFFER_SIZE = 512
@@ -71,18 +72,39 @@ class IRCClient(object):
         if join_message_regex.match(message.strip()):
           return
 
-  def SendMessage(self, message, receiver=None):
+  def SendMessage(self, message, receiver=None, retries=3, retry_delay=5):
     """Sends a message to the joined channel, or specific user.
 
     Args:
       message(str): A short message (suported length depends on host).
       receiver(str): Nick of receiver. None if the target is the channel.
+      retries(int) (optional): How may times to retry sending the message if an
+        unexpected socket exception or timeout happens. Default 3.
+      retry_delay(float) (optional): How many seconds to sleep between the first
+        and second attempts at sending the message. This will be doubled for
+        each attempt. Default 5 sec.
     """
     assert self._joined, 'Not joined yet!'
-    receiver = receiver or self._channel_name
-    self._irc.sendall('PRIVMSG {receiver} :{message}\r\n'.format(
-        receiver=receiver, message=message))
-    logging.info('Message sent to %s: %s', receiver, message)
+    # Even with retries == 0, we still need to go into the loop once.
+    tries_left = max(retries + 1, 1)  # Force a positive retry counter.
+    while tries_left > 0:  # pragma: no branch.
+      try:
+        receiver = receiver or self._channel_name
+        self._irc.sendall('PRIVMSG {receiver} :{message}\r\n'.format(
+            receiver=receiver, message=message))
+        logging.info('Message sent to %s: %s', receiver, message)
+        return
+      except (socket.timeout, IOError) as e:
+        if tries_left:
+          logging.warning('Failed to send messsage due to %s, '
+                          'retrying after %s seconds', e, retry_delay)
+          time.sleep(retry_delay)
+          tries_left -= 1
+          retry_delay *= 2
+        else:
+          logging.exception(
+              'Exceeded %d retries sending irc message. Giving up', retries)
+          raise
 
   def Disconnect(self):
     """Leaves the channel if needed, then closes connection to server."""
@@ -99,7 +121,7 @@ class IRCClient(object):
       try:
         self.Connect()
         return self
-      except socket.timeout:
+      except (socket.timeout, IOError):
         logging.debug(
             'Did not get irc join confirmation message, connecting again.')
         self._retries_left -= 1
