@@ -120,7 +120,6 @@ class MasterFlakeAnalysisTest(TestCase):
 
   def testReset(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
-    analysis.swarming_rerun_results = [{}]
     analysis.status = analysis_status.RUNNING
     analysis.correct_regression_range = True
     analysis.correct_culprit = False
@@ -132,7 +131,6 @@ class MasterFlakeAnalysisTest(TestCase):
     analysis.try_job_status = analysis_status.COMPLETED
     analysis.Reset()
 
-    self.assertEqual([], analysis.swarming_rerun_results)
     self.assertEqual(analysis_status.PENDING, analysis.status)
     self.assertIsNone(analysis.correct_regression_range)
     self.assertIsNone(analysis.correct_culprit)

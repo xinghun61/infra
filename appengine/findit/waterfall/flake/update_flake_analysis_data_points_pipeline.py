@@ -165,7 +165,3 @@ class UpdateFlakeAnalysisDataPointsPipeline(BasePipeline):
 
     _UpdateAnalysisDataPointsWithSwarmingTask(flake_swarming_task,
                                               flake_analysis)
-
-    results = flake_swarming_task.GetFlakeSwarmingTaskData()
-    flake_analysis.swarming_rerun_results.append(results)
-    flake_analysis.put()

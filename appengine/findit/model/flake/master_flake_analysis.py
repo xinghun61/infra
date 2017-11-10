@@ -263,7 +263,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     self.original_step_name = None
     self.original_test_name = None
     self.bug_id = None
-    self.swarming_rerun_results = []
     self.error = None
     self.correct_regression_range = None
     self.correct_culprit = None
@@ -435,15 +434,6 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
 
   # A bit to track if a bug filing has been attempted.
   has_attempted_filing = ndb.BooleanProperty(default=False)
-
-  # A list of dicts containing information about each swarming rerun's results
-  # that were involved in this analysis. The contents of this list will be used
-  # for metrics, such as the number of cache hits this analysis benefited from,
-  # the number of swarming tasks that were needed end-to-end to find the
-  # regressed build number (if any), etc. See FlakeSwarmingTaskData for exact
-  # fields.
-  swarming_rerun_results = ndb.LocalStructuredProperty(
-      FlakeSwarmingTaskData, repeated=True, compressed=True)
 
   # Error code and message, if any.
   error = ndb.JsonProperty(indexed=False)

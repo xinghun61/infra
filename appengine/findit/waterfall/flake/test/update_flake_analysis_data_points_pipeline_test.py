@@ -345,7 +345,6 @@ class UpdateFlakeAnalysisDataPointsPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(len(analysis.data_points), 1)
     self.assertIn(expected_data_point, analysis.data_points)
-    self.assertIsNotNone(analysis.swarming_rerun_results)
 
   def testUpdateFlakeAnalysisDataPointsPipelineWithFailedSwarmingTask(self):
     master_name = 'm'
