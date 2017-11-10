@@ -17,6 +17,7 @@
   * [build_conda_cipd_pkg](#recipes-build_conda_cipd_pkg) &mdash; Recipe to build CIPD package with sealed Conda environment.
   * [build_gsutil_cipd_pkg](#recipes-build_gsutil_cipd_pkg)
   * [depot_tools_builder](#recipes-depot_tools_builder) &mdash; Recipe to build windows depot_tools bootstrap zipfile.
+  * [docker_image_builder](#recipes-docker_image_builder)
   * [gerrit_cq_test](#recipes-gerrit_cq_test)
   * [gerrit_hello_world](#recipes-gerrit_hello_world) &mdash; Pushes a trivial CL to Gerrit to verify git authentication works on LUCI.
   * [git_hash_metric](#recipes-git_hash_metric)
@@ -244,6 +245,11 @@ To build a new package for all platforms:
 Recipe to build windows depot_tools bootstrap zipfile.
 
 &mdash; **def [RunSteps](/recipes/recipes/depot_tools_builder.py#32)(api, revision):**
+### *recipes* / [docker\_image\_builder](/recipes/recipes/docker_image_builder.py)
+
+[DEPS](/recipes/recipes/docker_image_builder.py#6): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
+
+&mdash; **def [RunSteps](/recipes/recipes/docker_image_builder.py#24)(api):**
 ### *recipes* / [gerrit\_cq\_test](/recipes/recipes/gerrit_cq_test.py)
 
 [DEPS](/recipes/recipes/gerrit_cq_test.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/step][recipe_engine/recipe_modules/step]
