@@ -26,7 +26,6 @@ import (
 	"go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/clock"
-	"go.chromium.org/luci/common/data/rand/mathrand"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
@@ -53,7 +52,6 @@ func cronAnalyzeBuilders(c *router.Context) error {
 		values := url.Values{}
 		values.Set("builder", b.ID.String())
 		tasks[i] = taskqueue.NewPOSTTask("/internal/task/analyze-builder/"+common.PathEscape(b.ID.String()), values)
-		tasks[i].Delay = time.Duration(mathrand.Int(c.Context)%30) * time.Minute
 		tasks[i].RetryCount = 2
 	}
 	if err := taskqueue.Add(c.Context, "analyze-builders", tasks...); err != nil {
