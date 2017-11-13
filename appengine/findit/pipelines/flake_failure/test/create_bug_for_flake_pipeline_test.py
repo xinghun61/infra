@@ -7,6 +7,7 @@ import mock
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from gae_libs.pipelines import CreateInputObjectInstance
 
+from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -412,3 +413,37 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
 
     self.assertTrue(create_bug_fn.called)
     self.assertTrue(analysis.has_attempted_filing)
+
+  def testGenerateSubjectAndBodyForBug(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+
+    culprit = FlakeCulprit.Create('git', 'rev', 1)
+    culprit.put()
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.data_points = [
+        DataPoint.Create(
+            build_number=200,
+            pass_rate=.5,
+            git_hash='hash',
+            previous_build_git_hash='prev_hash')
+    ]
+    analysis.suspected_flake_build_number = 200
+    analysis.culprit_urlsafe_key = culprit.key.urlsafe()
+    analysis.confidence_in_culprit = .5
+    analysis.put()
+
+    subject, body = create_bug_for_flake_pipeline._GenerateSubjectAndBodyForBug(
+        analysis)
+    self.assertEqual('t is Flaky', subject)
+    self.assertTrue('(50.0% confidence)' in body)
+    self.assertTrue(
+        'Regression range: https://crrev.com/prev_hash..hash?pretty=fuller' in
+        body)
+    self.assertTrue(
+        'If this result was incorrect, apply the label Findit-Incorrect-Result'
+        in body)

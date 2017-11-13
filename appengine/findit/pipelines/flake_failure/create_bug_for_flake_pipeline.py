@@ -24,9 +24,14 @@ from waterfall.flake.analyze_flake_for_build_number_pipeline import (
     AnalyzeFlakeForBuildNumberPipeline)
 from waterfall.flake.lookback_algorithm import IsFullyStable
 
-_SUBJECT_TEMPLATE = '%s is Flaky'
-_BODY_TEMPLATE = ('Findit has detected a flake at test %s. Track this'
-                  'analysis here:\n%s')
+_SUBJECT_TEMPLATE = '{} is Flaky'
+_BODY_TEMPLATE = ('Findit has detected a flake at test {}.\n'
+                  'Culprit ({} confidence): {}\n'
+                  'Regression range: {}\n'
+                  'Analysis: {}\n\n'
+                  'If this result was incorrect, apply the label '
+                  'Findit-Incorrect-Result, mark the bug as Untriaged and the '
+                  'component Tools>Test>Findit>Flakiness.')
 
 # TODO(crbug.com/783335): Allow these values to be configurable.
 _ITERATIONS_TO_CONFIRM_FLAKE = 30  # 30 iterations.
@@ -90,6 +95,36 @@ class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):
     # TODO(crbug.com/780110): Use customized field for querying for duplicates.
 
 
+def _GenerateSubjectAndBodyForBug(analysis):
+  culprit_url = 'None'
+  culprit_confidence = 'None'
+  if analysis.culprit_urlsafe_key:
+    culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
+    assert culprit
+
+    culprit_url = culprit.url
+    culprit_confidence = "{0:0.1f}%".format(
+        analysis.confidence_in_culprit * 100)
+
+  # Find the regression range of the suspected data point.
+  suspected_data_point = analysis.GetDataPointOfSuspectedBuild()
+
+  regression_range_url = 'None'
+  if suspected_data_point:
+    lower_git_hash = suspected_data_point.previous_build_git_hash
+    upper_git_hash = suspected_data_point.git_hash
+
+    regression_range_url = ('https://crrev.com/%s..%s?pretty=fuller' %
+                            (lower_git_hash, upper_git_hash))
+
+  subject = _SUBJECT_TEMPLATE.format(analysis.test_name)
+  analysis_link = ('https://findit-for-me.appspot.com/waterfall/flake?key=%s' %
+                   analysis.key.urlsafe())
+  body = _BODY_TEMPLATE.format(analysis.test_name, culprit_confidence,
+                               culprit_url, regression_range_url, analysis_link)
+  return subject, body
+
+
 class _CreateBugIfStillFlakyInputObject(StructuredObject):
   analysis_urlsafe_key = unicode
   most_recent_build_number = int
@@ -111,10 +146,7 @@ class _CreateBugIfStillFlaky(pipelines.GeneratorPipeline):
       analysis.LogInfo('Bug not filed because test is stable in latest build.')
       return
 
-    subject = _SUBJECT_TEMPLATE % analysis.test_name
-    analysis_link = ('https://findit-for-me.appspot.com/waterfall/flake?key=%s'
-                     % input_object.analysis_urlsafe_key)
-    body = _BODY_TEMPLATE % (analysis.test_name, analysis_link)
+    subject, body = _GenerateSubjectAndBodyForBug(analysis)
 
     # Log our attempt in analysis so we don't retry perpetually.
     analysis.Update(has_attempted_filing=True)
