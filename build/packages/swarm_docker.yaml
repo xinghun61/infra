@@ -1,5 +1,5 @@
-package: infra/android_docker/${platform}
-description: Virtual environment + android docker python code with dependencies.
+package: infra/swarm_docker/${platform}
+description: Virtual environment + swarm docker python code with dependencies.
 root: ../../
 builders:
   - infra-continuous-precise-64
@@ -20,7 +20,7 @@ data:
       - pip-selfcheck.json
 
   # Main infra code. Relevent docker codes is located in
-  # infra/services/android_docker, but throw everything under infra/ in to keep
+  # infra/services/swarm_docker, but throw everything under infra/ in to keep
   # run.py happy about python imports.
   - dir: "infra"
     exclude:
