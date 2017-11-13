@@ -13,7 +13,6 @@
   * [wct](#recipe_modules-wct)
 
 **[Recipes](#Recipes)**
-  * [android_docker_image_builder](#recipes-android_docker_image_builder)
   * [build_conda_cipd_pkg](#recipes-build_conda_cipd_pkg) &mdash; Recipe to build CIPD package with sealed Conda environment.
   * [build_gsutil_cipd_pkg](#recipes-build_gsutil_cipd_pkg)
   * [depot_tools_builder](#recipes-depot_tools_builder) &mdash; Recipe to build windows depot_tools bootstrap zipfile.
@@ -211,11 +210,6 @@ WCTApi provides support for running Web Component Tests
 &mdash; **def [run](/recipes/recipe_modules/wct/api.py#26)(self, root):**
 ## Recipes
 
-### *recipes* / [android\_docker\_image\_builder](/recipes/recipes/android_docker_image_builder.py)
-
-[DEPS](/recipes/recipes/android_docker_image_builder.py#6): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step], [recipe\_engine/time][recipe_engine/recipe_modules/time]
-
-&mdash; **def [RunSteps](/recipes/recipes/android_docker_image_builder.py#23)(api):**
 ### *recipes* / [build\_conda\_cipd\_pkg](/recipes/recipes/build_conda_cipd_pkg.py)
 
 [DEPS](/recipes/recipes/build_conda_cipd_pkg.py#20): [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [conda](#recipe_modules-conda), [recipe\_engine/file][recipe_engine/recipe_modules/file], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/properties][recipe_engine/recipe_modules/properties]
