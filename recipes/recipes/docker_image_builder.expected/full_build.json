@@ -161,8 +161,8 @@
     "cmd": [
       "/usr/bin/docker",
       "tag",
-      "android_devices:latest",
-      "gcr.io/chromium-container-registry/android_devices:2012-05-14-12-53"
+      "android_docker:latest",
+      "gcr.io/chromium-container-registry/android_docker:2012-05-14-12-53"
     ],
     "name": "Tag image"
   },
@@ -170,12 +170,12 @@
     "cmd": [
       "/usr/bin/docker",
       "push",
-      "gcr.io/chromium-container-registry/android_devices:2012-05-14-12-53"
+      "gcr.io/chromium-container-registry/android_docker:2012-05-14-12-53"
     ],
     "name": "Push image",
     "stdout": "/path/to/tmp/",
     "~followup_annotations": [
-      "@@@STEP_TEXT@image = android_devices:1-2-3: digest: sha256:deadbeef size:123@@@"
+      "@@@STEP_TEXT@image = android_docker:1-2-3: digest: sha256:deadbeef size:123@@@"
     ]
   },
   {

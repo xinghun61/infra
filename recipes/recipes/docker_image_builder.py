@@ -71,7 +71,8 @@ def RunSteps(api):
   # Run the build script. It assign a name to the resulting image and tags it
   # with 'latest'.
   container_name = api.properties['container_name']
-  build_script = api.path['checkout'].join('docker', container_name, 'build.sh')
+  dir_name = api.properties.get('dir_name', container_name)
+  build_script = api.path['checkout'].join('docker', dir_name, 'build.sh')
   api.step('Build image', ['/bin/bash', build_script])
 
   # Read service account creds.
@@ -118,7 +119,8 @@ def RunSteps(api):
 def GenTests(api):
   yield (
       api.test('full_build') +
-      api.properties(container_name='android_devices')
+      api.properties(
+        container_name='android_docker', dir_name='android_devices')
   )
 
   yield (
