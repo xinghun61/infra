@@ -60,7 +60,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
         ],
         expected_kwargs={})
     self.MockPipeline(
-        analyze_build_failure_pipeline.StartTryJobOnDemandPipeline,
+        analyze_build_failure_pipeline.StartTestTryJobPipeline,
         'try_job_result',
         expected_args=[
             master_name, builder_name, build_number, 'failure_info', 'signals',
@@ -127,7 +127,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertNotEqual(analysis_status.ERROR, analysis.status)
 
   @mock.patch(
-      'waterfall.analyze_build_failure_pipeline.StartTryJobOnDemandPipeline')
+      'waterfall.analyze_build_failure_pipeline.StartTestTryJobPipeline')
   def testAnalyzeBuildFailurePipelineStartTryJob(self, mocked_pipeline):
     master_name = 'm'
     builder_name = 'b'

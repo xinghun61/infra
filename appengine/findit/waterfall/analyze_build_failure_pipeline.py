@@ -11,6 +11,8 @@ from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
 from libs import time_util
 from model.wf_analysis import WfAnalysis
+from pipelines.test_failure.start_test_try_job_pipeline import (
+    StartTestTryJobPipeline)
 from waterfall.detect_first_failure_pipeline import DetectFirstFailurePipeline
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline
 from waterfall.flake.trigger_flake_analyses_pipeline import (
@@ -18,8 +20,6 @@ from waterfall.flake.trigger_flake_analyses_pipeline import (
 from waterfall.identify_culprit_pipeline import IdentifyCulpritPipeline
 from waterfall.process_swarming_tasks_result_pipeline import (
     ProcessSwarmingTasksResultPipeline)
-from waterfall.start_try_job_on_demand_pipeline import (
-    StartTryJobOnDemandPipeline)
 from waterfall.trigger_swarming_tasks_pipeline import (
     TriggerSwarmingTasksPipeline)
 
@@ -81,7 +81,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     if not run_try_job:
       return
 
-    try_job_pipeline = StartTryJobOnDemandPipeline(
+    try_job_pipeline = StartTestTryJobPipeline(
         self.master_name, self.builder_name, self.build_number, failure_info,
         signals, None, self.build_completed, self.force)
     try_job_pipeline.target = appengine_util.GetTargetNameForModule(
@@ -130,7 +130,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
                                                build_completed)
 
       # Checks if first time failures happen and starts a try job if yes.
-      yield StartTryJobOnDemandPipeline(master_name, builder_name, build_number,
+      yield StartTestTryJobPipeline(master_name, builder_name, build_number,
                                         failure_info, signals, heuristic_result,
                                         build_completed, force)
 
