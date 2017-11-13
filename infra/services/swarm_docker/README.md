@@ -6,7 +6,7 @@ mode every 5 minutes via cron.
 
 It's intended to be run in conjucture with the swarm_docker container image.
 More information on the image can be found
-[here](https://chromium.googlesource.com/infra/infra/+/master/docker/swarm/README.md).
+[here](https://chromium.googlesource.com/infra/infra/+/master/docker/swarm_docker/README.md).
 
 
 Launching the containers

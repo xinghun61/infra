@@ -8,7 +8,7 @@ The `build.sh` script will create a local image named `swarm_docker` tagged
 with the date and time of creation. The image itself is simply an Ubuntu
 flavor (xenial as of writing this) with a number of packages and utilities
 installed. When launched as a container, this image is configured to run the
-[start_swarm_bot.sh](https://chromium.googlesource.com/infra/infra/+/master/docker/swarm/start_swarm_bot.sh)
+[start_swarm_bot.sh](https://chromium.googlesource.com/infra/infra/+/master/docker/swarm_docker/start_swarm_bot.sh)
 script here which fetches and runs the bot code of the swarming server pointed
 to by the `$SWARM_URL` env var. Note that running the image locally on a
 developer workstation is unsupported.
@@ -30,10 +30,10 @@ running outside of it. Nor can it run many of the utilities in `/sbin/` since
 the hardware layer of the machine is not available to the container. However,
 because a swarming bot uses the `/sbin/shutdown` executable to reboot, this
 file is replaced with our own bash script here
-([shutdown.sh](https://chromium.googlesource.com/infra/infra/+/master/docker/swarm/shutdown.sh))
+([shutdown.sh](https://chromium.googlesource.com/infra/infra/+/master/docker/swarm_docker/shutdown.sh))
 that simply sends SIGUSR1 to `init` (pid 1). For a container, `init` is whatever
 command the container was configured to run (as opposed to actual `/sbin/init`).
-In our case, this is [start_swarm_bot.sh](https://chromium.googlesource.com/infra/infra/+/master/docker/swarm/start_swarm_bot.sh),
+In our case, this is [start_swarm_bot.sh](https://chromium.googlesource.com/infra/infra/+/master/docker/swarm_docker/start_swarm_bot.sh),
 which conveniently traps SIGUSR1 at the very beginning and exits upon catching
 it. Consequently, running `/sbin/shutdown` from within a container will cause
 the container to immediately shutdown.
