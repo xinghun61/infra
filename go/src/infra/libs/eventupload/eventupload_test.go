@@ -10,9 +10,9 @@ import (
 	"time"
 
 	"cloud.google.com/go/bigquery"
-	"golang.org/x/net/context"
-
+	"github.com/golang/protobuf/ptypes"
 	"go.chromium.org/luci/common/tsmon"
+	"golang.org/x/net/context"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -113,60 +113,73 @@ func TestUpload(t *testing.T) {
 	})
 }
 
-func TestPrepareSrc(t *testing.T) {
+func TestSave(t *testing.T) {
+	Convey("TestSave", t, func() {
+		ts, err := ptypes.TimestampProto(time.Time{})
+		if err != nil {
+			t.Fatal("could not convert time to timestamp")
+		}
+		r := &Row{
+			Message: &TestMessage{
+				Name:      "testname",
+				Timestamp: ts,
+				Nested: &NestedTestMessage{
+					Name: "nestedname",
+				},
+				RepeatedNested: []*NestedTestMessage{
+					{Name: "repeated_one"},
+					{Name: "repeated_two"},
+				},
+			},
+			InsertID: "testid",
+		}
+		row, id, err := r.Save()
+		So(row["name"], ShouldEqual, "testname")
+		So(row["timestamp"].(time.Time), ShouldResemble, time.Time{})
+		So(row["nested"].(map[string]bigquery.Value)["name"], ShouldEqual, "nestedname")
+		So(row["repeated_nested"].([]interface{})[0].(map[string]bigquery.Value)["name"], ShouldEqual, "repeated_one")
+		So(id, ShouldEqual, "testid")
+		So(err, ShouldBeNil)
+	})
+}
+
+func TestRowsFromSrc(t *testing.T) {
 	t.Parallel()
 
-	notStruct := 0
 	tcs := []struct {
 		desc    string
 		src     interface{}
 		wantLen int
 	}{
 		{
-			desc:    "prepareSrc accepts structs",
-			src:     fakeEvent{},
+			desc:    "accepts pointers to structs which implement proto.Message",
+			src:     &TestMessage{},
 			wantLen: 1,
 		},
+		// TODO: when proto transition is complete, change to does not accept
 		{
-			desc:    "prepareSrc accepts pointers to structs",
+			desc:    "accepts structs",
+			src:     TestMessage{},
+			wantLen: 1,
+		},
+		// TODO: when proto transition is complete, change to does not accept
+		{
+			desc:    "accepts pointers to structs which do not implement proto.Message",
 			src:     &fakeEvent{},
 			wantLen: 1,
 		},
 		{
-			desc:    "prepareSrc accepts slices of structs",
-			src:     []fakeEvent{{}, {}},
+			desc:    "accepts slices of structs which implement proto.Message",
+			src:     []*TestMessage{{}, {}},
 			wantLen: 2,
-		},
-		{
-			desc: "prepareSrc accepts slices of pointers to structs",
-			src: []*fakeEvent{
-				{},
-				{},
-			},
-			wantLen: 2,
-		},
-		{
-			desc:    "prepareSrc does not accept pointers to non-struct types",
-			src:     &notStruct,
-			wantLen: 0,
-		},
-		{
-			desc:    "prepareSrc does not accept slices of non-struct or non-pointer types",
-			src:     []string{"not a struct or pointer"},
-			wantLen: 0,
-		},
-		{
-			desc:    "prepareSrc does not accept slices of non-struct or non-pointer types (2)",
-			src:     []*int{&notStruct},
-			wantLen: 0,
 		},
 	}
 
-	Convey("Test PrepareSrc", t, func() {
+	Convey("test rowsFromSrc()", t, func() {
 		for _, tc := range tcs {
 			Convey(tc.desc, func() {
-				sss, _ := prepareSrc(tc.src)
-				So(sss, ShouldHaveLength, tc.wantLen)
+				r, _ := rowsFromSrc(tc.src)
+				So(r, ShouldHaveLength, tc.wantLen)
 			})
 		}
 	})
@@ -215,21 +228,22 @@ func TestBatch(t *testing.T) {
 
 	Convey("Test batch", t, func() {
 		rowLimit := 2
-		sss := make([]*bigquery.StructSaver, 3)
+		// TODO: when proto transition is complete, use *Rows, not ValueSavers
+		rows := make([]bigquery.ValueSaver, 3)
 		for i := 0; i < 3; i++ {
-			sss[i] = &bigquery.StructSaver{}
+			rows[i] = &Row{}
 		}
 
-		want := [][]*bigquery.StructSaver{
+		want := [][]bigquery.ValueSaver{
 			{
-				&bigquery.StructSaver{},
-				&bigquery.StructSaver{},
+				&Row{},
+				&Row{},
 			},
 			{
-				&bigquery.StructSaver{},
+				&Row{},
 			},
 		}
-		rowSets := batch(sss, rowLimit)
+		rowSets := batch(rows, rowLimit)
 		So(rowSets, ShouldResemble, want)
 	})
 }

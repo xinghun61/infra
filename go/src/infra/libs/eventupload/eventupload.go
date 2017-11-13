@@ -6,13 +6,19 @@
 package eventupload
 
 import (
+	"fmt"
 	"math"
 	"reflect"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
 	"cloud.google.com/go/bigquery"
+	"github.com/golang/protobuf/proto"
+	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/timestamp"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/tsmon/field"
@@ -22,6 +28,16 @@ import (
 
 // ID is the global InsertIDGenerator
 var ID InsertIDGenerator
+
+// reflect.FieldByName is O(N) in the number of fields. To avoid using it in
+// mapFromMessage below, cache the field info for constant lookup.
+type fieldInfo struct {
+	structIndex       []int
+	*proto.Properties // embedded
+}
+
+var bqFields = map[reflect.Type][]fieldInfo{}
+var bqFieldsLock = sync.RWMutex{}
 
 const insertLimit = 10000
 
@@ -47,6 +63,102 @@ type Uploader struct {
 	// contains a field "status" set to either "success" or "failure."
 	uploads        metric.Counter
 	initMetricOnce sync.Once
+}
+
+// Row implements bigquery.ValueSaver
+type Row struct {
+	proto.Message // embedded
+
+	// InsertID is unique per insert operation to handle deduplication.
+	InsertID string
+}
+
+// Save is used by bigquery.Uploader.Put when inserting values into a table.
+func (r *Row) Save() (map[string]bigquery.Value, string, error) {
+	m, err := mapFromMessage(r.Message, nil)
+	return m, r.InsertID, err
+}
+
+func mapFromMessage(m proto.Message, path []string) (map[string]bigquery.Value, error) {
+	rowMap := map[string]bigquery.Value{}
+	// GetProperties expects a Type with Kind Struct, not Ptr
+	s := reflect.Indirect(reflect.ValueOf(m))
+	t := s.Type()
+	infos, err := getFieldInfos(t)
+	if err != nil {
+		return nil, errors.Annotate(err, "could not populate bqFields for type %v", t).Err()
+	}
+	path = append(path, "")
+	for _, fi := range infos {
+		var (
+			value interface{}
+			err   error
+		)
+		path[len(path)-1] = fi.Name
+		if fi.Repeated {
+			f := s.FieldByIndex(fi.structIndex)
+			elems := make([]interface{}, f.Len())
+			vPath := append(path, "")
+			for i := 0; i < len(elems); i++ {
+				vPath[len(vPath)-1] = strconv.Itoa(i)
+				elems[i], err = getValue(f.Index(i).Interface(), vPath)
+				if err != nil {
+					return nil, err
+				}
+			}
+			value = elems
+		} else {
+			value, err = getValue(s.FieldByIndex(fi.structIndex).Interface(), path)
+			if err != nil {
+				return nil, err
+			}
+		}
+		rowMap[fi.OrigName] = bigquery.Value(value)
+	}
+	return rowMap, nil
+}
+
+func getFieldInfos(t reflect.Type) ([]fieldInfo, error) {
+	bqFieldsLock.RLock()
+	f := bqFields[t]
+	bqFieldsLock.RUnlock()
+	if f != nil {
+		return f, nil
+	}
+	bqFieldsLock.Lock()
+	defer bqFieldsLock.Unlock()
+	if f := bqFields[t]; f != nil {
+		return f, nil
+	}
+	props := proto.GetProperties(t).Prop
+	bqFields[t] = make([]fieldInfo, len(props))
+	for i, p := range props {
+		if p.OrigName == "" {
+			return nil, fmt.Errorf("OrigName is empty: %q", p.Name)
+		}
+		field, ok := t.FieldByName(p.Name)
+		if !ok {
+			return nil, fmt.Errorf("field not found for name: %q", p.Name)
+		}
+		bqFields[t][i] = fieldInfo{field.Index, p}
+	}
+	return bqFields[t], nil
+}
+
+func getValue(value interface{}, path []string) (interface{}, error) {
+	var err error
+	if tspb, ok := value.(*timestamp.Timestamp); ok {
+		value, err = ptypes.Timestamp(tspb)
+		if err != nil {
+			return nil, fmt.Errorf("tried to write an invalid timestamp for [%+v] for field %s", tspb, strings.Join(path, "."))
+		}
+	} else if nested, ok := value.(proto.Message); ok {
+		value, err = mapFromMessage(nested, path)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return value, nil
 }
 
 // NewUploader constructs a new Uploader struct.
@@ -112,11 +224,11 @@ func (u *Uploader) Put(ctx context.Context, src interface{}) error {
 		ctx, c = context.WithTimeout(ctx, time.Minute)
 		defer c()
 	}
-	sss, err := prepareSrc(src)
+	rows, err := rowsFromSrc(src)
 	if err != nil {
 		return err
 	}
-	for _, rowSet := range batch(sss, insertLimit) {
+	for _, rowSet := range batch(rows, insertLimit) {
 		var failed int
 		err = u.Uploader.Put(ctx, rowSet)
 		if err != nil {
@@ -139,9 +251,10 @@ func (u *Uploader) Put(ctx context.Context, src interface{}) error {
 	return nil
 }
 
-func batch(rows []*bigquery.StructSaver, insertLimit int) [][]*bigquery.StructSaver {
+// TODO: when proto transition is complete, deal in *Rows, not bigquery.ValueSaver
+func batch(rows []bigquery.ValueSaver, insertLimit int) [][]bigquery.ValueSaver {
 	rowSetsLen := int(math.Ceil(float64(len(rows) / insertLimit)))
-	rowSets := make([][]*bigquery.StructSaver, 0, rowSetsLen)
+	rowSets := make([][]bigquery.ValueSaver, 0, rowSetsLen)
 	for len(rows) > 0 {
 		batch := rows
 		if len(batch) > insertLimit {
@@ -153,8 +266,17 @@ func batch(rows []*bigquery.StructSaver, insertLimit int) [][]*bigquery.StructSa
 	return rowSets
 }
 
-func prepareSrc(src interface{}) ([]*bigquery.StructSaver, error) {
-
+// rowsFromSrc accepts pointers to structs which implement proto.Message,
+// and slices of this type. It does all necessary conversion and validation to
+// return a slice of Row pointers. Row implements bigquery.ValueSaver and can be
+// used with bigquery.Uploader.Put().
+//
+// rowsFromSrc also handles the following: structs which do not implement
+// proto.Message, pointers to such structs, and slices of such values. This is
+// to maintain backwards compatability during the proto transition.
+// TODO: when proto transition is complete, deal in *Rows and proto.Messages.
+func rowsFromSrc(src interface{}) ([]bigquery.ValueSaver, error) {
+	// TODO: when proto transition is complete, remove
 	validateSingleValue := func(v reflect.Value) error {
 		switch v.Kind() {
 		case reflect.Struct:
@@ -170,39 +292,48 @@ func prepareSrc(src interface{}) ([]*bigquery.StructSaver, error) {
 		}
 	}
 
-	var srcs []interface{}
-
-	srcV := reflect.ValueOf(src)
-	if srcV.Kind() == reflect.Slice {
-		srcs = make([]interface{}, srcV.Len())
-		for i := 0; i < len(srcs); i++ {
-			itemV := srcV.Index(i)
-			if err := validateSingleValue(itemV); err != nil {
-				return nil, err
-			}
-			srcs[i] = itemV.Interface()
+	vsFromVal := func(v reflect.Value) (bigquery.ValueSaver, error) {
+		if m, ok := v.Interface().(proto.Message); ok {
+			return &Row{
+				Message:  m,
+				InsertID: ID.Generate(),
+			}, nil
 		}
-	} else {
-		if err := validateSingleValue(srcV); err != nil {
+		// TODO: when proto transition is complete, remove
+		err := validateSingleValue(v)
+		if err != nil {
 			return nil, err
 		}
-		srcs = []interface{}{src}
-	}
-
-	prepared := make([]*bigquery.StructSaver, len(srcs))
-	for i, src := range srcs {
-		schema, err := bigquery.InferSchema(src)
+		s, err := bigquery.InferSchema(v)
 		if err != nil {
-			return nil, errors.Annotate(err, "could not infer schema for element #%d (%T)", i, src).Err()
+			return nil, errors.Annotate(err, "could not infer schema for (%T)", v).Err()
 		}
-
-		prepared[i] = &bigquery.StructSaver{
-			Schema:   schema,
+		return &bigquery.StructSaver{
+			Schema:   s,
 			InsertID: ID.Generate(),
-			Struct:   src,
-		}
+			Struct:   v,
+		}, nil
 	}
-	return prepared, nil
+
+	var vs []bigquery.ValueSaver
+	srcV := reflect.ValueOf(src)
+	if srcV.Kind() == reflect.Slice {
+		vs = make([]bigquery.ValueSaver, srcV.Len())
+		for i := 0; i < len(vs); i++ {
+			v, err := vsFromVal(srcV.Index(i))
+			if err != nil {
+				return nil, err
+			}
+			vs[i] = v
+		}
+	} else {
+		v, err := vsFromVal(srcV)
+		if err != nil {
+			return nil, err
+		}
+		vs = []bigquery.ValueSaver{v}
+	}
+	return vs, nil
 }
 
 // BatchUploader contains the necessary data for asynchronously sending batches
