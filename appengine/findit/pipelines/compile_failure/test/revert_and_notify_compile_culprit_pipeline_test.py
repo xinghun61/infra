@@ -42,48 +42,41 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     build_id = 'm/b/124'
     repo_name = 'chromium/test'
     revision = 'r1'
-    cl_key = CLKey(
-        repo_name=repo_name.decode('utf=8'), revision=revision.decode('utf-8'))
+    cl_key = CLKey(repo_name=repo_name, revision=revision)
     culprits = DictOfCLKeys()
     culprits['r1'] = cl_key
     heuristic_cls = ListOfCLKeys()
     heuristic_cls.append(cl_key)
 
-    self.MockSynchronousPipeline(CreateRevertCLPipeline,
-                                 CreateRevertCLPipelineInput(
-                                     cl_key=CLKey(
-                                         repo_name=repo_name.decode('utf-8'),
-                                         revision=revision.decode('utf-8')),
-                                     build_id=build_id.decode('utf-8')),
-                                 gerrit.CREATED_BY_FINDIT)
-    self.MockSynchronousPipeline(SubmitRevertCLPipeline,
-                                 SubmitRevertCLPipelineInput(
-                                     cl_key=CLKey(
-                                         repo_name=repo_name.decode('utf-8'),
-                                         revision=revision.decode('utf-8')),
-                                     revert_status=gerrit.CREATED_BY_FINDIT),
-                                 True)
+    self.MockSynchronousPipeline(
+        CreateRevertCLPipeline,
+        CreateRevertCLPipelineInput(
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
+            build_id=build_id), gerrit.CREATED_BY_FINDIT)
+    self.MockSynchronousPipeline(
+        SubmitRevertCLPipeline,
+        SubmitRevertCLPipelineInput(
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
+            revert_status=gerrit.CREATED_BY_FINDIT), True)
     self.MockSynchronousPipeline(SendNotificationToIrcPipeline,
                                  SendNotificationToIrcPipelineInput(
                                      cl_key=CLKey(
-                                         repo_name=repo_name.decode('utf-8'),
-                                         revision=revision.decode('utf-8')),
+                                         repo_name=repo_name,
+                                         revision=revision),
                                      revert_status=gerrit.CREATED_BY_FINDIT,
                                      submitted=True), True)
-    self.MockSynchronousPipeline(SendNotificationForCulpritPipeline,
-                                 SendNotificationForCulpritPipelineInput(
-                                     cl_key=CLKey(
-                                         repo_name=repo_name.decode('utf-8'),
-                                         revision=revision.decode('utf-8')),
-                                     force_notify=True,
-                                     revert_status=gerrit.CREATED_BY_FINDIT),
-                                 True)
+    self.MockSynchronousPipeline(
+        SendNotificationForCulpritPipeline,
+        SendNotificationForCulpritPipelineInput(
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
+            force_notify=True,
+            revert_status=gerrit.CREATED_BY_FINDIT), True)
 
     pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
         RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
             heuristic_cls=heuristic_cls))
@@ -98,8 +91,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 124
     repo_name = 'chromium'
     revision = 'r1'
-    cl_key = CLKey(
-        repo_name=repo_name.decode('utf=8'), revision=revision.decode('utf-8'))
+    cl_key = CLKey(repo_name=repo_name, revision=revision)
     culprits = DictOfCLKeys()
     culprits['r1'] = cl_key
     heuristic_cls = ListOfCLKeys()
@@ -108,8 +100,8 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
         RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
             heuristic_cls=heuristic_cls))
@@ -122,8 +114,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'r1'
     culprits = DictOfCLKeys()
-    culprits['r1'] = CLKey(
-        repo_name=repo_name.decode('utf=8'), revision=revision.decode('utf-8'))
+    culprits['r1'] = CLKey(repo_name=repo_name, revision=revision)
     pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
         RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(

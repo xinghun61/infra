@@ -75,9 +75,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
     revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status)
     pipeline = SubmitRevertCLPipeline(pipeline_input)
     committed = pipeline.run(pipeline_input)
@@ -97,9 +95,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
     revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status)
     SubmitRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
@@ -113,9 +109,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status)
     SubmitRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
@@ -130,9 +124,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.CREATED_BY_FINDIT
     pipeline_input = SubmitRevertCLPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status)
     pipeline = SubmitRevertCLPipeline(pipeline_input)
     pipeline.start_test()

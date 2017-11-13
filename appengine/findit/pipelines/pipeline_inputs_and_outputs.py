@@ -10,21 +10,24 @@ from libs.structured_object import TypedList
 
 class BuildKey(StructuredObject):
   """Key to a build, an analysis or a try job."""
-  master_name = unicode
-  builder_name = unicode
+
+  # Use basestring to make the attribute to accept value of both type
+  # str and unicode.
+  master_name = basestring
+  builder_name = basestring
   build_number = int
 
 
 class CLKey(StructuredObject):
   """Key to a CL."""
-  repo_name = unicode
-  revision = unicode
+  repo_name = basestring
+  revision = basestring
 
 
 class CreateRevertCLPipelineInput(StructuredObject):
   """Input for CreateRevertCLPipeline."""
   cl_key = CLKey
-  build_id = unicode
+  build_id = basestring
 
 
 class SubmitRevertCLPipelineInput(StructuredObject):

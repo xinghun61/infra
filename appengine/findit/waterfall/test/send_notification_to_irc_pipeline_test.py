@@ -23,9 +23,7 @@ class SendNotificationToIrcPipelineTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     submitted = True
     pipeline_input = SendNotificationToIrcPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status,
         submitted=submitted)
     pipeline = SendNotificationToIrcPipeline(pipeline_input)

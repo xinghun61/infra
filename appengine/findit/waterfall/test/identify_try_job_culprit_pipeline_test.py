@@ -446,8 +446,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         pipeline_class=RevertAndNotifyTestCulpritPipeline,
         expected_input=RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=DictOfCLKeys(),
             heuristic_cls=ListOfCLKeys()),
@@ -528,13 +528,13 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     culprits = DictOfCLKeys()
     culprits[expected_culprit] = CLKey(
-        repo_name=u'chromium', revision=expected_culprit.decode('utf-8'))
+        repo_name=u'chromium', revision=expected_culprit)
     self.MockGeneratorPipeline(
         pipeline_class=RevertAndNotifyTestCulpritPipeline,
         expected_input=RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
             heuristic_cls=ListOfCLKeys()),
@@ -582,8 +582,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         pipeline_class=RevertAndNotifyTestCulpritPipeline,
         expected_input=RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=DictOfCLKeys(),
             heuristic_cls=ListOfCLKeys()),
@@ -640,8 +640,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         pipeline_class=RevertAndNotifyTestCulpritPipeline,
         expected_input=RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=DictOfCLKeys(),
             heuristic_cls=ListOfCLKeys()),
@@ -684,8 +684,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         pipeline_class=RevertAndNotifyTestCulpritPipeline,
         expected_input=RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=DictOfCLKeys(),
             heuristic_cls=ListOfCLKeys()),
@@ -733,8 +733,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         pipeline_class=RevertAndNotifyTestCulpritPipeline,
         expected_input=RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=DictOfCLKeys(),
             heuristic_cls=heuristic_cls),
@@ -788,8 +788,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         pipeline_class=RevertAndNotifyTestCulpritPipeline,
         expected_input=RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=DictOfCLKeys(),
             heuristic_cls=ListOfCLKeys()),
@@ -859,8 +859,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         pipeline_class=RevertAndNotifyTestCulpritPipeline,
         expected_input=RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
             heuristic_cls=ListOfCLKeys()),
@@ -1030,8 +1030,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         pipeline_class=RevertAndNotifyTestCulpritPipeline,
         expected_input=RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
             heuristic_cls=ListOfCLKeys()),
@@ -1138,7 +1138,7 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         try_job_status=analysis_status.RUNNING,
         compile_results=[compile_result])
 
-    cl_key = CLKey(repo_name=u'chromium', revision=revision.decode('utf-8'))
+    cl_key = CLKey(repo_name=u'chromium', revision=revision)
     culprits = DictOfCLKeys()
     culprits[revision] = cl_key
     heuristic_cls = ListOfCLKeys()
@@ -1147,8 +1147,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         pipeline_class=RevertAndNotifyTestCulpritPipeline,
         expected_input=RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
             heuristic_cls=heuristic_cls),
@@ -1222,8 +1222,8 @@ class IdentifyTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         pipeline_class=RevertAndNotifyTestCulpritPipeline,
         expected_input=RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=DictOfCLKeys(),
             heuristic_cls=ListOfCLKeys()),

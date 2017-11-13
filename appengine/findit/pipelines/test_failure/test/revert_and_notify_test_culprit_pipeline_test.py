@@ -35,17 +35,14 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 124
     repo_name = 'chromium'
     revision = 'r1'
-    cl_key = CLKey(
-        repo_name=repo_name.decode('utf=8'), revision=revision.decode('utf-8'))
+    cl_key = CLKey(repo_name=repo_name, revision=revision)
     culprits = DictOfCLKeys()
     culprits['r1'] = cl_key
     heuristic_cls = ListOfCLKeys()
     heuristic_cls.append(cl_key)
 
     input_object = SendNotificationForCulpritPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         force_notify=True,
         revert_status=None)
     mock_input.return_value = input_object
@@ -55,8 +52,8 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = RevertAndNotifyTestCulpritPipeline(
         RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
             heuristic_cls=heuristic_cls))
@@ -72,8 +69,7 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 124
     repo_name = 'chromium'
     revision = 'r1'
-    cl_key = CLKey(
-        repo_name=repo_name.decode('utf=8'), revision=revision.decode('utf-8'))
+    cl_key = CLKey(repo_name=repo_name.decode('utf=8'), revision=revision)
     culprits = DictOfCLKeys()
     culprits['r1'] = cl_key
     heuristic_cls = ListOfCLKeys()
@@ -82,8 +78,8 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline = RevertAndNotifyTestCulpritPipeline(
         RevertAndNotifyCulpritPipelineInput(
             build_key=BuildKey(
-                master_name=master_name.decode('utf-8'),
-                builder_name=builder_name.decode('utf-8'),
+                master_name=master_name,
+                builder_name=builder_name,
                 build_number=build_number),
             culprits=culprits,
             heuristic_cls=heuristic_cls))

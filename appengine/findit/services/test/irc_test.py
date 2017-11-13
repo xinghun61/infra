@@ -17,6 +17,7 @@ from waterfall.test import wf_testcase
 
 
 class MockedIRCClient(object):
+
   def __init__(self, *_):
     pass
 
@@ -42,9 +43,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_SHERIFF
     submitted = False
     pipeline_input = SendNotificationToIrcPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status,
         submitted=submitted)
     self.assertFalse(irc.SendMessageToIrc(pipeline_input))
@@ -57,9 +56,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     submitted = False
     pipeline_input = SendNotificationToIrcPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status,
         submitted=submitted)
     self.assertFalse(irc.SendMessageToIrc(pipeline_input))
@@ -76,9 +73,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
     WfSuspectedCL.Create(repo_name, revision, 1).put()
 
     pipeline_input = SendNotificationToIrcPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status,
         submitted=submitted)
     self.assertFalse(irc.SendMessageToIrc(pipeline_input))
@@ -99,9 +94,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
     self.mock(irc, 'IRCClient', MockedIRCClient)
 
     pipeline_input = SendNotificationToIrcPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status,
         submitted=submitted)
     self.assertTrue(irc.SendMessageToIrc(pipeline_input))
@@ -122,9 +115,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
     self.mock(irc, 'IRCClient', MockedIRCClient)
 
     pipeline_input = SendNotificationToIrcPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status,
         submitted=submitted)
     self.assertFalse(irc.SendMessageToIrc(pipeline_input))

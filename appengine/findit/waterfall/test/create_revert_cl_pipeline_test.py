@@ -73,10 +73,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = CreateRevertCLPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
-        build_id=build_id.decode('utf-8'))
+        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
     pipeline = CreateRevertCLPipeline(pipeline_input)
     revert_status = pipeline.run(pipeline_input)
 
@@ -101,10 +98,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     build_id = 'm/b/123'
 
     pipeline_input = CreateRevertCLPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
-        build_id=build_id.decode('utf-8'))
+        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
     pipeline = CreateRevertCLPipeline(pipeline_input)
     revert_status = pipeline.run(pipeline_input)
 
@@ -120,10 +114,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = CreateRevertCLPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
-        build_id=build_id.decode('utf-8'))
+        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
     CreateRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertEquals(culprit.revert_status, status.ERROR)
@@ -136,10 +127,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = CreateRevertCLPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
-        build_id=build_id.decode('utf-8'))
+        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
     CreateRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
     self.assertIsNone(culprit.revert_status)
@@ -154,10 +142,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = CreateRevertCLPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
-        build_id=build_id.decode('utf-8'))
+        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
     pipeline = CreateRevertCLPipeline(pipeline_input)
     pipeline.start()
     pipeline.OnAbort(pipeline_input)

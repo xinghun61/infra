@@ -20,8 +20,7 @@ class SendNotificationForCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
     pipeline_input = SendNotificationForCulpritPipelineInput(
-        cl_key=CLKey(repo_name=repo_name.decode('utf-8'),
-                     revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         force_notify=True,
         revert_status=gerrit.CREATED_BY_SHERIFF)
 

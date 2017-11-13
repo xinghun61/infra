@@ -97,9 +97,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.RevertCulprit(
         CreateRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
@@ -176,18 +174,14 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.RevertCulprit(
         CreateRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.CREATED_BY_SHERIFF)
 
     committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), None)
     self.assertFalse(committed)
 
@@ -222,18 +216,14 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.RevertCulprit(
         CreateRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.ERROR)
 
     committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), None)
     self.assertFalse(committed)
 
@@ -270,9 +260,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.RevertCulprit(
         CreateRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.CREATED_BY_FINDIT)
@@ -300,9 +288,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.RevertCulprit(
         CreateRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.SKIPPED)
@@ -330,9 +316,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.RevertCulprit(
         CreateRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.SKIPPED)
@@ -372,10 +356,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revision = 'rev1'
 
     pipeline_input = CreateRevertCLPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
-        build_id=u'm/b/1')
+        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=u'm/b/1')
     self.assertFalse(gerrit.ShouldRevert(pipeline_input, None))
 
   def testShouldNotRevertIfRevertIsSkipped(self):
@@ -385,10 +366,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.SKIPPED
     culprit.put()
     pipeline_input = CreateRevertCLPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
-        build_id=u'm/b/1')
+        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=u'm/b/1')
     self.assertFalse(gerrit.ShouldRevert(pipeline_input, None))
 
   @mock.patch.object(
@@ -401,10 +379,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     pipeline_input = CreateRevertCLPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
-        build_id=u'm/b/1')
+        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=u'm/b/1')
     self.assertFalse(gerrit.ShouldRevert(pipeline_input, None))
 
   @mock.patch.object(gerrit, '_CanRevert', return_value=True)
@@ -413,10 +388,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revision = 'rev1'
     pipeline_id = 'pipeline_id'
     pipeline_input = CreateRevertCLPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
-        build_id=u'm/b/1')
+        cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=u'm/b/1')
     self.assertTrue(gerrit.ShouldRevert(pipeline_input, pipeline_id))
 
   @mock.patch.object(
@@ -436,9 +408,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
 
     self.assertFalse(committed)
@@ -456,9 +426,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
 
     self.assertFalse(committed)
@@ -471,9 +439,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
 
     self.assertFalse(committed)
@@ -500,9 +466,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
     self.assertFalse(committed)
 
@@ -540,9 +504,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
 
     self.assertFalse(committed)
@@ -618,9 +580,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
 
     self.assertFalse(committed)
@@ -658,9 +618,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
         SubmitRevertCLPipelineInput(
-            cl_key=CLKey(
-                repo_name=repo_name.decode('utf-8'),
-                revision=revision.decode('utf-8')),
+            cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
 
     self.assertTrue(committed)
@@ -785,9 +743,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_SHERIFF
 
     pipeline_input = SendNotificationForCulpritPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         force_notify=force_notify,
         revert_status=revert_status)
     self.assertFalse(gerrit.SendNotificationForCulprit(pipeline_input))
@@ -802,9 +758,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_SHERIFF
 
     pipeline_input = SendNotificationForCulpritPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         force_notify=force_notify,
         revert_status=revert_status)
 
@@ -824,9 +778,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = gerrit.CREATED_BY_SHERIFF
 
     pipeline_input = SendNotificationForCulpritPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         force_notify=force_notify,
         revert_status=revert_status)
 
@@ -852,9 +804,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     revert_status = None
 
     pipeline_input = SendNotificationForCulpritPipelineInput(
-        cl_key=CLKey(
-            repo_name=repo_name.decode('utf-8'),
-            revision=revision.decode('utf-8')),
+        cl_key=CLKey(repo_name=repo_name, revision=revision),
         force_notify=force_notify,
         revert_status=revert_status)
 
