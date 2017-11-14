@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import mock
-
 from common import constants
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
@@ -40,8 +38,7 @@ class RerunTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'build_id',
         expected_args=[
             master_name, builder_name, build_number, good_revision,
-            bad_revision, failure_type.TEST, suspected_revisions, None, None,
-            tests
+            bad_revision, suspected_revisions, None, None, tests
         ],
         expected_kwargs={'force_buildbot': True})
 
@@ -78,8 +75,7 @@ class RerunTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'build_id',
         expected_args=[
             master_name, builder_name, build_number, good_revision,
-            bad_revision, failure_type.COMPILE, compile_targets,
-            suspected_revisions, None, None
+            bad_revision, compile_targets, suspected_revisions, None, None
         ],
         expected_kwargs={'force_buildbot': True})
 

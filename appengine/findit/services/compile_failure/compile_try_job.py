@@ -21,7 +21,7 @@ from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
-from services import try_job
+from services import try_job as try_job_service
 from services.compile_failure import compile_failure_analysis
 from waterfall import build_util
 from waterfall import suspected_cl_util
@@ -38,7 +38,7 @@ def _GetOutputNodes(signals):
 
 
 def _GetMatchingCompileFailureGroups(output_nodes):
-  groups = try_job.GetMatchingFailureGroups(failure_type.COMPILE)
+  groups = try_job_service.GetMatchingFailureGroups(failure_type.COMPILE)
   # Output nodes should already be unique and sorted.
   return [group for group in groups if group.output_nodes == output_nodes]
 
@@ -57,7 +57,7 @@ def _IsCompileFailureUniqueAcrossPlatforms(
     return True
   groups = _GetMatchingCompileFailureGroups(output_nodes)
 
-  return try_job.IsBuildFailureUniqueAcrossPlatforms(
+  return try_job_service.IsBuildFailureUniqueAcrossPlatforms(
       master_name,
       builder_name,
       build_number,
@@ -94,7 +94,7 @@ def NeedANewCompileTryJob(master_name,
   """Decides if a new compile try job is needed.
 
   A new compile try job is needed if:
-  1. It passed preliminary checks in try_job.NeedANewWaterfallTryJob,
+  1. It passed preliminary checks in try_job_service.NeedANewWaterfallTryJob,
   2. It's for a compile failure,
   3. It's a first failure,
   4. There is no other running or completed try job.
@@ -103,7 +103,7 @@ def NeedANewCompileTryJob(master_name,
     A bool to indicate if a new try job is needed.
     A key to the entity of the try job.
   """
-  need_new_try_job = try_job.NeedANewWaterfallTryJob(
+  need_new_try_job = try_job_service.NeedANewWaterfallTryJob(
       master_name, builder_name, build_number, force_try_job)
 
   if not need_new_try_job:
@@ -132,7 +132,7 @@ def NeedANewCompileTryJob(master_name,
         failure_info['builds'][str(build_number)]['blame_list'], signals,
         heuristic_result)
 
-  try_job_was_created, try_job_key = try_job.ReviveOrCreateTryJobEntity(
+  try_job_was_created, try_job_key = try_job_service.ReviveOrCreateTryJobEntity(
       master_name, builder_name, build_number, force_try_job)
   need_new_try_job = need_new_try_job and try_job_was_created
   return need_new_try_job, try_job_key
@@ -186,8 +186,9 @@ def GetParametersToScheduleCompileTryJob(master_name, builder_name,
   parameters = {}
   parameters['bad_revision'] = failure_info['builds'][str(build_number)][
       'chromium_revision']
-  parameters['suspected_revisions'] = try_job.GetSuspectsFromHeuristicResult(
-      heuristic_result)
+  parameters[
+      'suspected_revisions'] = try_job_service.GetSuspectsFromHeuristicResult(
+          heuristic_result)
   parameters['good_revision'] = _GetGoodRevisionCompile(
       master_name, builder_name, build_number, failure_info)
 
@@ -293,7 +294,7 @@ def UpdateWfAnalysisWithTryJobResult(master_name, builder_name, build_number,
   # Update analysis result and suspected CLs with results of this try job if
   # culprits were found or failures are flaky.
   updated_result = _GetUpdatedAnalysisResult(analysis, flaky_compile)
-  updated_result_status = try_job.GetResultAnalysisStatus(
+  updated_result_status = try_job_service.GetResultAnalysisStatus(
       analysis, result) if not flaky_compile else result_status.FLAKY
   updated_suspected_cls = compile_failure_analysis.GetUpdatedSuspectedCLs(
       analysis, culprits)
@@ -320,3 +321,15 @@ def UpdateSuspectedCLs(master_name, builder_name, build_number, culprits):
                                         analysis_approach_type.TRY_JOB,
                                         master_name, builder_name, build_number,
                                         failure_type.COMPILE, failures, None)
+
+
+def GetBuildProperties(master_name, builder_name, build_number, good_revision,
+                       bad_revision, suspected_revisions):
+  properties = try_job_service.GetBuildProperties(
+      master_name, builder_name, build_number, good_revision, bad_revision,
+      failure_type.COMPILE, suspected_revisions)
+
+  # Adds target_buildername to properties.
+  properties['target_buildername'] = builder_name
+
+  return properties

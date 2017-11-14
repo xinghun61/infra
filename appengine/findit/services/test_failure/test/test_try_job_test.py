@@ -10,7 +10,8 @@ from model.wf_analysis import WfAnalysis
 from model.wf_failure_group import WfFailureGroup
 from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
-from services import try_job as try_job_util
+from model.wf_try_job_data import WfTryJobData
+from services import try_job as try_job_service
 from services.test_failure import test_try_job
 from waterfall import swarming_util
 from waterfall.test import wf_testcase
@@ -309,7 +310,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testBailOutForTestTryJob(self, mock_fn):
     master_name = 'master2'
     builder_name = 'builder2'
@@ -334,7 +335,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(need_try_job)
     self.assertEqual(expected_try_job_key, try_job_key)
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNotNeedANewTestTryJobIfNotFirstTimeFailure(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -381,7 +382,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(need_try_job)
     self.assertEqual(expected_key, try_job_key)
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNotNeedANewTestTryJobIfNoNewFailure(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -418,7 +419,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(need_try_job)
     self.assertEqual(expected_try_job_key, try_job_key)
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNeedANewTestTryJobIfTestFailureSwarming(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -501,7 +502,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(need_try_job)
     self.assertIsNotNone(try_job_key)
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNotNeedANewTestTryJobForOtherType(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -532,7 +533,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(need_try_job)
 
   @mock.patch.object(
-      try_job_util, 'NeedANewWaterfallTryJob', return_value=False)
+      try_job_service, 'NeedANewWaterfallTryJob', return_value=False)
   def testNotNeedANewTestTryJob(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -544,7 +545,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(need_try_job)
     self.assertIsNone(try_job_key)
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNotNeedANewTryJobIfNoNewFailure(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -581,7 +582,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(need_try_job)
     self.assertEqual(expected_try_job_key, try_job_key)
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNeedANewTryJobIfTestFailureSwarming(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -961,3 +962,28 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({},
                      test_try_job.GetReliableTests(master_name, builder_name,
                                                    build_number, failure_info))
+
+  def testGetBuildPropertiesForTestFailure(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+
+    expected_properties = {
+        'recipe':
+            'findit/chromium/test',
+        'good_revision':
+            1,
+        'bad_revision':
+            2,
+        'target_mastername':
+            master_name,
+        'target_testername':
+            'b',
+        'suspected_revisions': [],
+        'referenced_build_url': ('https://ci.chromium.org/buildbot/%s/%s/%s') %
+                                (master_name, builder_name, build_number)
+    }
+    properties = test_try_job.GetBuildProperties(master_name, builder_name,
+                                                 build_number, 1, 2, None)
+
+    self.assertEqual(properties, expected_properties)

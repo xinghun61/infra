@@ -7,11 +7,10 @@ import mock
 from google.appengine.ext import ndb
 
 from common.waterfall import buildbucket_client
-from common.waterfall import failure_type
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_build import WfBuild
-from waterfall import schedule_try_job_pipeline
+from services import try_job as try_job_service
 from waterfall.flake.schedule_flake_try_job_pipeline import (
     ScheduleFlakeTryJobPipeline)
 from waterfall.test import wf_testcase
@@ -28,53 +27,7 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.mock_select.stop()
     super(ScheduleFlakeTryJobPipelineTest, self).tearDown()
 
-  def testGetBuildProperties(self):
-    self.UpdateUnitTestConfigSettings(
-        config_property='check_flake_settings',
-        override_data={'iterations_to_rerun': 100})
-    master_name = 'm'
-    builder_name = 'b'
-    step_name = 's'
-    test_name = 't'
-    git_hash = 'a1b2c3d4'
-    iterations = 200
-
-    expected_properties = {
-        'recipe': 'findit/chromium/flake',
-        'target_mastername': master_name,
-        'target_testername': builder_name,
-        'test_revision': git_hash,
-        'test_repeat_count': 200,
-        'tests': {
-            step_name: [test_name]
-        }
-    }
-
-    try_job_pipeline = ScheduleFlakeTryJobPipeline()
-    properties = try_job_pipeline._GetBuildProperties(
-        master_name, builder_name, step_name, test_name, git_hash, iterations)
-
-    self.assertEqual(properties, expected_properties)
-
-  def testCreateTryJobData(self):
-    master_name = 'm'
-    builder_name = 'b'
-    step_name = 's'
-    test_name = 't'
-    git_hash = 'a1b2c3d4'
-    build_id = 'build_id'
-    analysis_key = ndb.Key('key', 1)
-
-    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
-                                 test_name, git_hash)
-    ScheduleFlakeTryJobPipeline()._CreateTryJobData(build_id, try_job.key,
-                                                    analysis_key.urlsafe())
-
-    try_job_data = FlakeTryJobData.Get(build_id)
-
-    self.assertEqual(try_job_data.try_job_key, try_job.key)
-
-  @mock.patch.object(schedule_try_job_pipeline, 'buildbucket_client')
+  @mock.patch.object(try_job_service, 'buildbucket_client')
   def testScheduleFlakeTryJob(self, mock_module):
     master_name = 'm'
     builder_name = 'b'
@@ -120,33 +73,3 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(build_id in try_job.try_job_ids)
     self.assertEqual(try_job_data.try_job_key, try_job.key)
     self.assertEqual(analysis_key, try_job_data.analysis_key)
-
-  @mock.patch.object(schedule_try_job_pipeline, 'buildbucket_client')
-  def testTriggerTryJob(self, mock_module):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    build = WfBuild.Create(master_name, builder_name, build_number)
-    build.data = {
-        'properties': {
-            'parent_mastername': 'pm',
-            'parent_buildername': 'pb'
-        }
-    }
-    build.put()
-    response = {
-        'build': {
-            'id': '1',
-            'url': 'url',
-            'status': 'SCHEDULED',
-        }
-    }
-    results = [(None, buildbucket_client.BuildbucketBuild(response['build']))]
-    mock_module.TriggerTryJobs.return_value = results
-
-    build_id = ScheduleFlakeTryJobPipeline()._TriggerTryJob(
-        master_name, builder_name, {}, [],
-        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
-        None, None)
-
-    self.assertEqual(build_id, '1')

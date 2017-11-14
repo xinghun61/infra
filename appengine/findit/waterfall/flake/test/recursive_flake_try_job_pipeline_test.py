@@ -25,7 +25,7 @@ from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
-from services.flake_failure import flake_try_job_service
+from services.flake_failure import flake_try_job
 from waterfall import swarming_util
 from waterfall.flake import confidence
 from waterfall.flake import flake_constants
@@ -140,7 +140,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis.last_attempted_revision, revision)
     self.assertIsNone(analysis.last_attempted_swarming_task_id)
 
-  @mock.patch.object(flake_try_job_service, 'GetSwarmingTaskIdForTryJob')
+  @mock.patch.object(flake_try_job, 'GetSwarmingTaskIdForTryJob')
   @mock.patch.object(
       recursive_flake_try_job_pipeline, '_NeedANewTryJob', return_value=False)
   def testRecursiveFlakeTryJobPipelineUserRerunRangeReuseDataPoint(
@@ -778,9 +778,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis, try_job, 200, False))
 
   @mock.patch.object(
-      flake_try_job_service,
-      'IsTryJobResultAtRevisionValidForStep',
-      return_value=True)
+      flake_try_job, 'IsTryJobResultAtRevisionValidForStep', return_value=True)
   def testNeedANewTryJobWithExistingFlakyTryJob(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.algorithm_parameters = {
@@ -811,9 +809,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis, try_job, 200, False))
 
   @mock.patch.object(
-      flake_try_job_service,
-      'IsTryJobResultAtRevisionValid',
-      return_value=False)
+      flake_try_job, 'IsTryJobResultAtRevisionValid', return_value=False)
   def testNeedANewTryJobWithInvalidExistingTryJobNoReport(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'a1b2c3d4')
@@ -823,9 +819,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis, try_job, 200, False))
 
   @mock.patch.object(
-      flake_try_job_service,
-      'IsTryJobResultAtRevisionValidForStep',
-      return_value=False)
+      flake_try_job, 'IsTryJobResultAtRevisionValidForStep', return_value=False)
   def testNeedANewTryJobWithInvalidExistingTryJob(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     try_job = FlakeTryJob.Create('m', 'b', 's', 't', 'a1b2c3d4')
@@ -845,9 +839,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis, try_job, 200, False))
 
   @mock.patch.object(
-      flake_try_job_service,
-      'IsTryJobResultAtRevisionValidForStep',
-      return_value=True)
+      flake_try_job, 'IsTryJobResultAtRevisionValidForStep', return_value=True)
   def testNeedANewTryJobWithExistingStableTryJobInsufficientIterations(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.algorithm_parameters = {
@@ -878,9 +870,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis, try_job, 200, False))
 
   @mock.patch.object(
-      flake_try_job_service,
-      'IsTryJobResultAtRevisionValidForStep',
-      return_value=True)
+      flake_try_job, 'IsTryJobResultAtRevisionValidForStep', return_value=True)
   def testNeedANewTryJobWithExistingStableTryJobSufficientIterations(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.algorithm_parameters = {
@@ -911,9 +901,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis, try_job, 200, False))
 
   @mock.patch.object(
-      flake_try_job_service,
-      'IsTryJobResultAtRevisionValidForStep',
-      return_value=True)
+      flake_try_job, 'IsTryJobResultAtRevisionValidForStep', return_value=True)
   def testNeedANewTryJobWithExistingTryJobNonexistentTest(self, _):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.algorithm_parameters = {

@@ -6,7 +6,7 @@ from google.appengine.ext import ndb
 
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
-from services.flake_failure import flake_try_job_service
+from services.flake_failure import flake_try_job
 
 
 class ProcessFlakeTryJobResultPipeline(BasePipeline):
@@ -36,8 +36,8 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
 
     try_job_result = try_job.flake_results[-1]
 
-    if not flake_try_job_service.IsTryJobResultAtRevisionValid(
-        try_job_result, revision):
+    if not flake_try_job.IsTryJobResultAtRevisionValid(try_job_result,
+                                                       revision):
       try_job.status = analysis_status.ERROR
       try_job.error = {
           'message': 'Try job does not contain the necessary information',
@@ -60,7 +60,7 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
 
     step_name = flake_analysis.canonical_step_name
 
-    if not flake_try_job_service.IsTryJobResultAtRevisionValidForStep(
+    if not flake_try_job.IsTryJobResultAtRevisionValidForStep(
         result, step_name):
       try_job.status = analysis_status.ERROR
       try_job.error = {
@@ -73,5 +73,5 @@ class ProcessFlakeTryJobResultPipeline(BasePipeline):
     try_job.status = analysis_status.COMPLETED
     try_job.put()
 
-    flake_try_job_service.UpdateAnalysisDataPointsWithTryJobResult(
+    flake_try_job.UpdateAnalysisDataPointsWithTryJobResult(
         flake_analysis, try_job, commit_position, revision)

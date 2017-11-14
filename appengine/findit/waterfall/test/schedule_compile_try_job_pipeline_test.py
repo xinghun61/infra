@@ -9,7 +9,7 @@ from common.waterfall import failure_type
 from model.wf_build import WfBuild
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
-from waterfall import schedule_try_job_pipeline
+from services import try_job as try_job_service
 from waterfall.schedule_compile_try_job_pipeline import (
     ScheduleCompileTryJobPipeline)
 from waterfall.test import wf_testcase
@@ -26,33 +26,7 @@ class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.mock_select.stop()
     super(ScheduleCompileTryJobPipelineTest, self).tearDown()
 
-  def testGetBuildPropertiesWithCompileTargets(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-
-    expected_properties = {
-        'recipe':
-            'findit/chromium/compile',
-        'good_revision':
-            1,
-        'bad_revision':
-            2,
-        'target_mastername':
-            master_name,
-        'target_buildername':
-            'b',
-        'referenced_build_url': ('https://ci.chromium.org/buildbot/%s/%s/%s') %
-                                (master_name, builder_name, build_number)
-    }
-    try_job_pipeline = ScheduleCompileTryJobPipeline()
-    properties = try_job_pipeline._GetBuildProperties(
-        master_name, builder_name, build_number, 1, 2, failure_type.COMPILE,
-        None)
-
-    self.assertEqual(properties, expected_properties)
-
-  @mock.patch.object(schedule_try_job_pipeline, 'buildbucket_client')
+  @mock.patch.object(try_job_service, 'buildbucket_client')
   def testSuccessfullyScheduleNewTryJobForCompileWithSuspectedRevisions(
       self, mock_module):
     master_name = 'm'
@@ -84,9 +58,9 @@ class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     WfTryJob.Create(master_name, builder_name, build_number).put()
 
     try_job_pipeline = ScheduleCompileTryJobPipeline()
-    try_job_id = try_job_pipeline.run(
-        master_name, builder_name, build_number, good_revision, bad_revision,
-        failure_type.COMPILE, None, ['r5'], None, None)
+    try_job_id = try_job_pipeline.run(master_name, builder_name, build_number,
+                                      good_revision, bad_revision, None, ['r5'],
+                                      None, None)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     try_job_data = WfTryJobData.Get(build_id)

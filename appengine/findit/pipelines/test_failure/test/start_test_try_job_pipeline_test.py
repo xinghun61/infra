@@ -86,7 +86,7 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'try_job_id',
         expected_args=[
             master_name, builder_name, build_number, good_revision,
-            bad_revision, try_job_type, [], 'cache_name', [], {}
+            bad_revision, [], 'cache_name', [], {}
         ],
         expected_kwargs={})
     self.MockPipeline(
@@ -98,13 +98,13 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         start_test_try_job_pipeline.IdentifyTryJobCulpritPipeline,
         'final_result',
         expected_args=[
-            master_name, builder_name, build_number, try_job_type,
-            'try_job_id', 'try_job_result'
+            master_name, builder_name, build_number, try_job_type, 'try_job_id',
+            'try_job_result'
         ],
         expected_kwargs={})
 
-    pipeline = StartTestTryJobPipeline(
-        'm', 'b', 1, failure_info, {}, True, False)
+    pipeline = StartTestTryJobPipeline('m', 'b', 1, failure_info, {}, True,
+                                       False)
     pipeline.start()
     self.execute_queued_tasks()
 

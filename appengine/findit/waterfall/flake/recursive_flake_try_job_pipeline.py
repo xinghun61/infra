@@ -24,7 +24,7 @@ from pipelines.flake_failure.create_bug_for_flake_pipeline import (
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
 from gae_libs import pipelines
-from services.flake_failure import flake_try_job_service
+from services.flake_failure import flake_try_job
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
@@ -139,14 +139,14 @@ def _NeedANewTryJob(analysis, try_job, required_iterations, rerun):
   revision = try_job.git_hash
   latest_try_job_result = try_job.flake_results[-1]
 
-  if not flake_try_job_service.IsTryJobResultAtRevisionValid(
-      latest_try_job_result, revision):
+  if not flake_try_job.IsTryJobResultAtRevisionValid(latest_try_job_result,
+                                                     revision):
     # Old try job's results can't be used due to missing information.
     return True
 
   result_at_revision = latest_try_job_result['report']['result'][revision]
 
-  if not flake_try_job_service.IsTryJobResultAtRevisionValidForStep(
+  if not flake_try_job.IsTryJobResultAtRevisionValidForStep(
       result_at_revision, step_name):
     # An error occurred in the swarming rerun of the try job.
     return True
@@ -396,7 +396,7 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
               'be tried again after %d seconds' % countdown)
     else:
       # Another analysis already ran the try job, use its results directly.
-      flake_try_job_service.UpdateAnalysisDataPointsWithTryJobResult(
+      flake_try_job.UpdateAnalysisDataPointsWithTryJobResult(
           analysis, try_job, commit_position, revision)
       yield NextCommitPositionPipeline(
           urlsafe_flake_analysis_key,

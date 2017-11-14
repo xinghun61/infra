@@ -2,11 +2,18 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from google.appengine.ext import ndb
+
 from common.findit_http_client import FinditHttpClient
+from libs import time_util
+from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from waterfall import swarming_util
+from waterfall import waterfall_config
 from waterfall.flake import flake_constants
+
+_DEFAULT_ITERATIONS_TO_RERUN = 100
 
 
 def _GetPassRateAndTries(pass_fail_counts, test_name):
@@ -199,3 +206,38 @@ def UpdateAnalysisDataPointsWithTryJobResult(analysis, try_job, commit_position,
 
   analysis.data_points.append(data_point)
   analysis.put()
+
+
+def GetBuildProperties(master_name, builder_name, canonical_step_name,
+                       test_name, git_hash, iterations_to_rerun):
+  iterations = iterations_to_rerun or _DEFAULT_ITERATIONS_TO_RERUN
+
+  return {
+      'recipe': 'findit/chromium/flake',
+      'target_mastername': master_name,
+      'target_testername': builder_name,
+      'test_revision': git_hash,
+      'test_repeat_count': iterations,
+      'tests': {
+          canonical_step_name: [test_name]
+      }
+  }
+
+
+@ndb.transactional
+def CreateTryJobData(build_id, try_job_key, urlsafe_analysis_key):
+  try_job_data = FlakeTryJobData.Create(build_id)
+  try_job_data.created_time = time_util.GetUTCNow()
+  try_job_data.try_job_key = try_job_key
+  try_job_data.analysis_key = ndb.Key(urlsafe=urlsafe_analysis_key)
+  try_job_data.put()
+
+
+def UpdateTryJob(master_name, builder_name, canonical_step_name, test_name,
+                 git_hash, build_id):
+  try_job = FlakeTryJob.Get(master_name, builder_name, canonical_step_name,
+                            test_name, git_hash)
+  try_job.flake_results.append({'try_job_id': build_id})
+  try_job.try_job_ids.append(build_id)
+  try_job.put()
+  return try_job

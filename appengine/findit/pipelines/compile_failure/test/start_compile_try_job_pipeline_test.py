@@ -70,7 +70,7 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'try_job_id',
         expected_args=[
             master_name, builder_name, build_number, good_revision,
-            bad_revision, try_job_type, [], [], 'cache_name', []
+            bad_revision, [], [], 'cache_name', []
         ],
         expected_kwargs={})
     self.MockPipeline(

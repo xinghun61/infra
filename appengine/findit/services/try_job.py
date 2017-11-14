@@ -10,6 +10,8 @@ It provides functions to:
   * Get matching failure group.
   * Get suspects from heuristic results.
   * Preliminary check to decide if a new try job is needed.
+  * Get trybot for try jobs.
+  * Trigger a try job.
 """
 
 import copy
@@ -18,6 +20,10 @@ import logging
 
 from google.appengine.ext import ndb
 
+from common.findit_http_client import FinditHttpClient
+from common.waterfall import buildbucket_client
+from common.waterfall import failure_type
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from libs import time_util
 from model import result_status
@@ -25,7 +31,10 @@ from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_failure_group import WfFailureGroup
 from model.wf_try_job import WfTryJob
+from model.wf_try_job_data import WfTryJobData
 from services import gtest
+from services import monitoring
+from waterfall import buildbot
 from waterfall import swarming_util
 from waterfall import waterfall_config
 
@@ -264,3 +273,69 @@ def GetUpdatedAnalysisResult(analysis, flaky_failures):
                                                  flaky_failures)
 
   return analysis_result, all_flaky
+
+
+def GetBuildProperties(master_name, builder_name, build_number, good_revision,
+                       bad_revision, try_job_type, suspected_revisions):
+  properties = {
+      'recipe':
+          'findit/chromium/%s' %
+          (failure_type.GetDescriptionForFailureType(try_job_type)),
+      'good_revision':
+          good_revision,
+      'bad_revision':
+          bad_revision,
+      'target_mastername':
+          master_name,
+      'referenced_build_url':
+          buildbot.CreateBuildUrl(master_name, builder_name, build_number),
+      'suspected_revisions':
+          suspected_revisions or [],
+  }
+
+  return properties
+
+
+def TriggerTryJob(master_name, builder_name, tryserver_mastername,
+                  tryserver_buildername, properties, additional_parameters,
+                  try_job_type, cache_name, dimensions, pipeline_id):
+
+  try_job = buildbucket_client.TryJob(
+      tryserver_mastername, tryserver_buildername, None, properties, [],
+      additional_parameters, cache_name, dimensions)
+  # This is a no-op if the tryjob is not on swarmbucket.
+  swarming_util.AssignWarmCacheHost(try_job, cache_name, FinditHttpClient())
+  error, build = buildbucket_client.TriggerTryJobs([try_job], pipeline_id)[0]
+
+  monitoring.OnTryJobTriggered(try_job_type, master_name, builder_name)
+
+  if error:
+    return None, error
+
+  return build.id, None
+
+
+@ndb.transactional
+def CreateTryJobData(build_id, try_job_key, has_compile_targets,
+                     has_heuristic_results, try_job_type):
+  try_job_data = WfTryJobData.Create(build_id)
+  try_job_data.created_time = time_util.GetUTCNow()
+  try_job_data.has_compile_targets = has_compile_targets
+  try_job_data.has_heuristic_results = has_heuristic_results
+  try_job_data.try_job_key = try_job_key
+  try_job_data.try_job_type = failure_type.GetDescriptionForFailureType(
+      try_job_type)
+  try_job_data.put()
+
+
+def UpdateTryJob(master_name, builder_name, build_number, build_id,
+                 try_job_type):
+  try_job = WfTryJob.Get(master_name, builder_name, build_number)
+
+  if try_job_type == failure_type.COMPILE:
+    try_job.compile_results.append({'try_job_id': build_id})
+  else:
+    try_job.test_results.append({'try_job_id': build_id})
+  try_job.try_job_ids.append(build_id)
+  try_job.put()
+  return try_job

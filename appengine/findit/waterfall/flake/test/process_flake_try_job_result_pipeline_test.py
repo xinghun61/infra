@@ -9,7 +9,7 @@ from gae_libs.testcase import TestCase
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from services.flake_failure import flake_try_job_service
+from services.flake_failure import flake_try_job
 from waterfall.flake.process_flake_try_job_result_pipeline import (
     ProcessFlakeTryJobResultPipeline)
 
@@ -17,12 +17,10 @@ from waterfall.flake.process_flake_try_job_result_pipeline import (
 class ProcessFlakeTryJobResultPipelineTest(TestCase):
 
   @mock.patch.object(
-      flake_try_job_service, 'IsTryJobResultAtRevisionValid', return_value=True)
+      flake_try_job, 'IsTryJobResultAtRevisionValid', return_value=True)
   @mock.patch.object(
-      flake_try_job_service,
-      'IsTryJobResultAtRevisionValidForStep',
-      return_value=True)
-  @mock.patch.object(flake_try_job_service, 'GetSwarmingTaskIdForTryJob')
+      flake_try_job, 'IsTryJobResultAtRevisionValidForStep', return_value=True)
+  @mock.patch.object(flake_try_job, 'GetSwarmingTaskIdForTryJob')
   def testProcessFlakeTryJobResultPipeline(self, mocked_get_swarming_task, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -84,11 +82,9 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     self.assertEqual([swarming_task_id], resulting_data_point.task_ids)
 
   @mock.patch.object(
-      flake_try_job_service, 'IsTryJobResultAtRevisionValid', return_value=True)
+      flake_try_job, 'IsTryJobResultAtRevisionValid', return_value=True)
   @mock.patch.object(
-      flake_try_job_service,
-      'IsTryJobResultAtRevisionValidForStep',
-      return_value=False)
+      flake_try_job, 'IsTryJobResultAtRevisionValidForStep', return_value=False)
   def testProcessFlakeTryJobResultPipelineInvalidResult(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -142,9 +138,7 @@ class ProcessFlakeTryJobResultPipelineTest(TestCase):
     self.assertEqual([], analysis.data_points)
 
   @mock.patch.object(
-      flake_try_job_service,
-      'IsTryJobResultAtRevisionValid',
-      return_value=False)
+      flake_try_job, 'IsTryJobResultAtRevisionValid', return_value=False)
   def testProcessFlakeTryJobResultPipelineNoReport(self, _):
     master_name = 'm'
     builder_name = 'b'

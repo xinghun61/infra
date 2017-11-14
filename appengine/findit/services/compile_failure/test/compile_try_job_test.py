@@ -11,7 +11,8 @@ from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_failure_group import WfFailureGroup
 from model.wf_try_job import WfTryJob
-from services import try_job as try_job_util
+from model.wf_try_job_data import WfTryJobData
+from services import try_job as try_job_service
 from services.compile_failure import compile_failure_analysis
 from services.compile_failure import compile_try_job
 from waterfall import suspected_cl_util
@@ -305,7 +306,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNotNeedANewCompileTryJobIfNotFirstTimeFailure(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -352,7 +353,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(need_try_job)
     self.assertEqual(expected_key, try_job_key)
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNotNeedANewCompileTryJobIfOneWithResultExists(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -393,7 +394,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(need_try_job)
     self.assertEqual(try_job_key, try_job.key)
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNeedANewCompileTryJobIfExistingOneHasError(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -433,7 +434,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(need_try_job)
     self.assertEqual(try_job.key, try_job_key)
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNeedANewTryJobIfExistingOneHasError(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -473,7 +474,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(need_try_job)
     self.assertEqual(try_job.key, try_job_key)
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNeedANewTestTryJob(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -514,7 +515,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertTrue(need_try_job)
     self.assertIsNotNone(try_job_key)
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNeedANewCompileTryJob(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -556,7 +557,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(try_job_key)
 
   @mock.patch.object(
-      try_job_util, 'NeedANewWaterfallTryJob', return_value=False)
+      try_job_service, 'NeedANewWaterfallTryJob', return_value=False)
   def testNotNeedANewCompileTryJob(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -568,7 +569,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(need_try_job)
     self.assertIsNone(try_job_key)
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNotNeedANewCompileTryJobForOtherType(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -599,7 +600,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(need_try_job)
     self.assertIsNone(try_job_key)
 
-  @mock.patch.object(try_job_util, '_ShouldBailOutForOutdatedBuild')
+  @mock.patch.object(try_job_service, '_ShouldBailOutForOutdatedBuild')
   def testNotNeedANewCompileTryJobForCompileTypeNoFailureInfo(self, mock_fn):
     master_name = 'm'
     builder_name = 'b'
@@ -874,7 +875,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     mock_fn.assert_not_called()
 
   @mock.patch.object(
-      try_job_util,
+      try_job_service,
       'GetResultAnalysisStatus',
       return_value=result_status.FOUND_UNTRIAGED)
   @mock.patch.object(
@@ -898,7 +899,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertEqual(result_status.FOUND_UNTRIAGED, analysis.result_status)
 
-  @mock.patch.object(try_job_util, 'GetResultAnalysisStatus', return_value=None)
+  @mock.patch.object(
+      try_job_service, 'GetResultAnalysisStatus', return_value=None)
   @mock.patch.object(
       compile_failure_analysis, 'GetUpdatedSuspectedCLs', return_value=None)
   def testNoNeedToUpdateWfAnalysisWithTryJobResult(self, *_):
@@ -955,3 +957,28 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(expected_result,
                      compile_try_job._GetUpdatedAnalysisResult(analysis, True))
+
+  def testGetBuildPropertiesWithCompileTargets(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+
+    expected_properties = {
+        'recipe':
+            'findit/chromium/compile',
+        'good_revision':
+            1,
+        'bad_revision':
+            2,
+        'target_mastername':
+            master_name,
+        'target_buildername':
+            'b',
+        'suspected_revisions': [],
+        'referenced_build_url': ('https://ci.chromium.org/buildbot/%s/%s/%s') %
+                                (master_name, builder_name, build_number)
+    }
+    properties = compile_try_job.GetBuildProperties(master_name, builder_name,
+                                                    build_number, 1, 2, None)
+
+    self.assertEqual(properties, expected_properties)

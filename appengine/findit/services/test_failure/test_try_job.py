@@ -11,10 +11,15 @@ It provides functions to:
 
 import logging
 
+from google.appengine.ext import ndb
+
 from common.waterfall import failure_type
+from libs import time_util
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
-from services import try_job
+from model.wf_try_job import WfTryJob
+from model.wf_try_job_data import WfTryJobData
+from services import try_job as try_job_service
 from services.test_failure import ci_test_failure
 from waterfall import build_util
 from waterfall import swarming_util
@@ -81,7 +86,7 @@ def _GetStepsAndTests(failed_steps):
 
 
 def _GetMatchingTestFailureGroups(failed_steps_and_tests):
-  groups = try_job.GetMatchingFailureGroups(failure_type.TEST)
+  groups = try_job_service.GetMatchingFailureGroups(failure_type.TEST)
   return [
       group for group in groups
       if group.failed_steps_and_tests == failed_steps_and_tests
@@ -102,7 +107,7 @@ def _IsTestFailureUniqueAcrossPlatforms(master_name, builder_name, build_number,
     return True
   groups = _GetMatchingTestFailureGroups(failed_steps_and_tests)
 
-  return try_job.IsBuildFailureUniqueAcrossPlatforms(
+  return try_job_service.IsBuildFailureUniqueAcrossPlatforms(
       master_name,
       builder_name,
       build_number,
@@ -148,7 +153,7 @@ def NeedANewTestTryJob(master_name,
   """Decides if a new test try job is needed.
 
   A new test try job is needed if:
-  1. It passed preliminary checks in try_job.NeedANewWaterfallTryJob,
+  1. It passed preliminary checks in try_job_service.NeedANewWaterfallTryJob,
   2. It's for a test failure,
   3. It contains some first failed steps/tests,
   4. There is no other running or completed try job.
@@ -157,7 +162,7 @@ def NeedANewTestTryJob(master_name,
     A bool to indicate if a new try job is needed.
     A key to the entity of the try job.
   """
-  need_new_try_job = try_job.NeedANewWaterfallTryJob(
+  need_new_try_job = try_job_service.NeedANewWaterfallTryJob(
       master_name, builder_name, build_number, force_try_job)
 
   if not need_new_try_job:
@@ -186,7 +191,7 @@ def NeedANewTestTryJob(master_name,
         failure_info['builds'][str(build_number)]['blame_list'],
         failure_info['failed_steps'], heuristic_result)
 
-  try_job_was_created, try_job_key = try_job.ReviveOrCreateTryJobEntity(
+  try_job_was_created, try_job_key = try_job_service.ReviveOrCreateTryJobEntity(
       master_name, builder_name, build_number, force_try_job)
   need_new_try_job = need_new_try_job and try_job_was_created
   return need_new_try_job, try_job_key
@@ -217,8 +222,9 @@ def GetParametersToScheduleTestTryJob(master_name, builder_name, build_number,
   parameters = {}
   parameters['bad_revision'] = failure_info['builds'][str(build_number)][
       'chromium_revision']
-  parameters['suspected_revisions'] = try_job.GetSuspectsFromHeuristicResult(
-      heuristic_result)
+  parameters[
+      'suspected_revisions'] = try_job_service.GetSuspectsFromHeuristicResult(
+          heuristic_result)
   parameters['good_revision'] = _GetGoodRevisionTest(master_name, builder_name,
                                                      build_number, failure_info)
 
@@ -226,7 +232,7 @@ def GetParametersToScheduleTestTryJob(master_name, builder_name, build_number,
                                                 build_number, failure_info)
 
   parent_mastername = failure_info.get('parent_mastername') or master_name
-  parent_buildername = failure_info.get('parent_buildername') or (builder_name)
+  parent_buildername = failure_info.get('parent_buildername') or builder_name
   parameters['dimensions'] = waterfall_config.GetTrybotDimensions(
       parent_mastername, parent_buildername)
   parameters['cache_name'] = swarming_util.GetCacheName(parent_mastername,
@@ -255,3 +261,13 @@ def GetReliableTests(master_name, builder_name, build_number, failure_info):
     task_results[task.canonical_step_name or step_name] = task.reliable_tests
 
   return task_results
+
+
+def GetBuildProperties(master_name, builder_name, build_number, good_revision,
+                       bad_revision, suspected_revisions):
+  properties = try_job_service.GetBuildProperties(
+      master_name, builder_name, build_number, good_revision, bad_revision,
+      failure_type.TEST, suspected_revisions)
+  properties['target_testername'] = builder_name
+
+  return properties

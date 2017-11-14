@@ -9,8 +9,9 @@ from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from services.flake_failure import flake_try_job_service
+from services.flake_failure import flake_try_job
 from waterfall import swarming_util
+from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
 
@@ -18,24 +19,22 @@ class FlakeTryJobServiceTest(TestCase):
 
   def testGetSwarmingTaskIdForTryJobNoReport(self):
     self.assertIsNone(
-        flake_try_job_service.GetSwarmingTaskIdForTryJob(
-            None, None, None, None))
+        flake_try_job.GetSwarmingTaskIdForTryJob(None, None, None, None))
 
   def testIsTryJobResultAtRevisionValid(self):
+    self.assertFalse(flake_try_job.IsTryJobResultAtRevisionValid({}, 'r'))
     self.assertFalse(
-        flake_try_job_service.IsTryJobResultAtRevisionValid({}, 'r'))
-    self.assertFalse(
-        flake_try_job_service.IsTryJobResultAtRevisionValid({
+        flake_try_job.IsTryJobResultAtRevisionValid({
             'report': {}
         }, 'r'))
     self.assertFalse(
-        flake_try_job_service.IsTryJobResultAtRevisionValid({
+        flake_try_job.IsTryJobResultAtRevisionValid({
             'report': {
                 'result': {}
             }
         }, 'r'))
     self.assertTrue(
-        flake_try_job_service.IsTryJobResultAtRevisionValid({
+        flake_try_job.IsTryJobResultAtRevisionValid({
             'report': {
                 'result': {
                     'r': {}
@@ -72,8 +71,8 @@ class FlakeTryJobServiceTest(TestCase):
     }
 
     self.assertIsNone(
-        flake_try_job_service.GetSwarmingTaskIdForTryJob(
-            report, revision, step_name, test_name))
+        flake_try_job.GetSwarmingTaskIdForTryJob(report, revision, step_name,
+                                                 test_name))
 
   @mock.patch.object(
       swarming_util, 'GetIsolatedOutputForTask', return_value=None)
@@ -102,8 +101,8 @@ class FlakeTryJobServiceTest(TestCase):
     }
 
     self.assertIsNone(
-        flake_try_job_service.GetSwarmingTaskIdForTryJob(
-            report, revision, step_name, test_name))
+        flake_try_job.GetSwarmingTaskIdForTryJob(report, revision, step_name,
+                                                 test_name))
 
   def testGetSwarmingTaskIdForTryJobOnlyOneTask(self):
     revision = 'r0'
@@ -130,8 +129,8 @@ class FlakeTryJobServiceTest(TestCase):
     }
 
     self.assertEquals(
-        flake_try_job_service.GetSwarmingTaskIdForTryJob(
-            report, revision, step_name, test_name), 'task1')
+        flake_try_job.GetSwarmingTaskIdForTryJob(report, revision, step_name,
+                                                 test_name), 'task1')
 
   def testGetSwarmingTaskIdForTryJobTestNotExist(self):
     revision = 'r0'
@@ -153,24 +152,24 @@ class FlakeTryJobServiceTest(TestCase):
     }
 
     self.assertEquals(
-        flake_try_job_service.GetSwarmingTaskIdForTryJob(
-            report, revision, step_name, test_name), 'task1')
+        flake_try_job.GetSwarmingTaskIdForTryJob(report, revision, step_name,
+                                                 test_name), 'task1')
 
   def testIsTryJobResultAtRevisionValidForStep(self):
     self.assertTrue(
-        flake_try_job_service.IsTryJobResultAtRevisionValidForStep({
+        flake_try_job.IsTryJobResultAtRevisionValidForStep({
             'browser_tests': {
                 'valid': True
             }
         }, 'browser_tests'))
     self.assertFalse(
-        flake_try_job_service.IsTryJobResultAtRevisionValidForStep({
+        flake_try_job.IsTryJobResultAtRevisionValidForStep({
             'browser_tests': {
                 'valid': False
             }
         }, 'browser_tests'))
     self.assertFalse(
-        flake_try_job_service.IsTryJobResultAtRevisionValidForStep({
+        flake_try_job.IsTryJobResultAtRevisionValidForStep({
             'some_tests': {
                 'valid': True
             }
@@ -205,21 +204,21 @@ class FlakeTryJobServiceTest(TestCase):
         }
     }
 
-    task_id = flake_try_job_service.GetSwarmingTaskIdForTryJob(
-        report, revision, step_name, test_name)
+    task_id = flake_try_job.GetSwarmingTaskIdForTryJob(report, revision,
+                                                       step_name, test_name)
 
     self.assertEquals('task2', task_id)
 
   def testGetPassFailCounts(self):
     self.assertEquals((0.9, 10),
-                      flake_try_job_service._GetPassRateAndTries({
+                      flake_try_job._GetPassRateAndTries({
                           't': {
                               'pass_count': 9,
                               'fail_count': 1,
                           }
                       }, 't'))
     self.assertEquals((flake_constants.PASS_RATE_TEST_NOT_FOUND, 0),
-                      flake_try_job_service._GetPassRateAndTries({}, 't'))
+                      flake_try_job._GetPassRateAndTries({}, 't'))
 
   def testUpdateDataPointsWithExistingDataPoint(self):
     commit_position = 1000
@@ -234,12 +233,12 @@ class FlakeTryJobServiceTest(TestCase):
     try_job = FlakeTryJob.Create('m', 'b', 's', 't', revision)
     try_job.put()
 
-    flake_try_job_service.UpdateAnalysisDataPointsWithTryJobResult(
+    flake_try_job.UpdateAnalysisDataPointsWithTryJobResult(
         analysis, try_job, commit_position, revision)
 
     self.assertEqual(existing_data_points, analysis.data_points)
 
-  @mock.patch.object(flake_try_job_service, 'GetSwarmingTaskIdForTryJob')
+  @mock.patch.object(flake_try_job, 'GetSwarmingTaskIdForTryJob')
   def testUpdateAnalysisDataPointsWithTryJobResults(
       self, mocked_get_swarming_task_id):
     master_name = 'm'
@@ -287,7 +286,7 @@ class FlakeTryJobServiceTest(TestCase):
     try_job_data.try_job_key = try_job.key
     try_job_data.put()
 
-    flake_try_job_service.UpdateAnalysisDataPointsWithTryJobResult(
+    flake_try_job.UpdateAnalysisDataPointsWithTryJobResult(
         analysis, try_job, commit_position, revision)
 
     expected_data_points = [
@@ -301,3 +300,44 @@ class FlakeTryJobServiceTest(TestCase):
     ]
 
     self.assertEqual(expected_data_points, analysis.data_points)
+
+  def testGetBuildProperties(self):
+    master_name = 'm'
+    builder_name = 'b'
+    step_name = 's'
+    test_name = 't'
+    git_hash = 'a1b2c3d4'
+    iterations = 200
+
+    expected_properties = {
+        'recipe': 'findit/chromium/flake',
+        'target_mastername': master_name,
+        'target_testername': builder_name,
+        'test_revision': git_hash,
+        'test_repeat_count': 200,
+        'tests': {
+            step_name: [test_name]
+        }
+    }
+
+    properties = flake_try_job.GetBuildProperties(
+        master_name, builder_name, step_name, test_name, git_hash, iterations)
+
+    self.assertEqual(properties, expected_properties)
+
+  def testCreateTryJobData(self):
+    try_job = FlakeTryJob.Create('m', 'b', 's1', 't1', 'hash')
+    try_job.put()
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's1', 't1')
+    analysis.put()
+    build_id = 'build_id'
+    flake_try_job.CreateTryJobData(build_id, try_job.key,
+                                   analysis.key.urlsafe())
+    try_job_data = FlakeTryJobData.Get(build_id)
+    self.assertIsNotNone(try_job_data)
+
+  def testUpdateTryJob(self):
+    FlakeTryJob.Create('m', 'b', 's1', 't1', 'hash').put()
+    build_id = 'build_id'
+    try_job = flake_try_job.UpdateTryJob('m', 'b', 's1', 't1', 'hash', build_id)
+    self.assertEqual(try_job.try_job_ids[0], build_id)

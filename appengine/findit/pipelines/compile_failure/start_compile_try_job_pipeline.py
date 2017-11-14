@@ -21,7 +21,6 @@ class StartCompileTryJobPipeline(BasePipeline):
     if not build_completed:  # Only start try-jobs for completed builds.
       return
 
-    try_job_type = failure_type.COMPILE
     need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
         master_name, builder_name, build_number, failure_info, signals,
         heuristic_result, force_try_job)
@@ -37,12 +36,12 @@ class StartCompileTryJobPipeline(BasePipeline):
 
     try_job_id = yield ScheduleCompileTryJobPipeline(
         master_name, builder_name, build_number, parameters['good_revision'],
-        parameters['bad_revision'], try_job_type, parameters['compile_targets'],
+        parameters['bad_revision'], parameters['compile_targets'],
         parameters['suspected_revisions'], parameters['cache_name'],
         parameters['dimensions'])
 
-    try_job_result = yield MonitorTryJobPipeline(try_job_key.urlsafe(),
-                                                 try_job_type, try_job_id)
+    try_job_result = yield MonitorTryJobPipeline(
+        try_job_key.urlsafe(), failure_type.COMPILE, try_job_id)
 
     yield culprit_pipeline.IdentifyCompileTryJobCulpritPipeline(
         master_name, builder_name, build_number, try_job_id, try_job_result)

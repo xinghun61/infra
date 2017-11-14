@@ -2,50 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from google.appengine.ext import ndb
-
+from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipeline_wrapper import pipeline
 from common.waterfall import failure_type
-from libs import time_util
-from model.flake.flake_try_job import FlakeTryJob
-from model.flake.flake_try_job_data import FlakeTryJobData
+from services import try_job as try_job_service
+from services.flake_failure import flake_try_job
 from waterfall import waterfall_config
-from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
-
-_DEFAULT_ITERATIONS_TO_RERUN = 100
 
 
-class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
+class ScheduleFlakeTryJobPipeline(BasePipeline):
   """A pipeline for scheduling a new flake try job for a flaky test."""
-
-  # Arguments number differs from overridden method - pylint: disable=W0221
-  def _GetBuildProperties(self, master_name, builder_name, canonical_step_name,
-                          test_name, git_hash, iterations_to_rerun):
-    iterations = iterations_to_rerun or _DEFAULT_ITERATIONS_TO_RERUN
-
-    return {
-        'recipe': 'findit/chromium/flake',
-        'target_mastername': master_name,
-        'target_testername': builder_name,
-        'test_revision': git_hash,
-        'test_repeat_count': iterations,
-        'tests': {
-            canonical_step_name: [test_name]
-        }
-    }
-
-  def _GetTrybot(self, master_name, builder_name, force_buildbot=False):
-    """Overrides the base method to get a dedicated flake trybot instead."""
-    try_master, try_builder = waterfall_config.GetFlakeTrybot(
-        master_name, builder_name, force_buildbot=force_buildbot)
-    return try_master, try_builder
-
-  @ndb.transactional
-  def _CreateTryJobData(self, build_id, try_job_key, urlsafe_analysis_key):
-    try_job_data = FlakeTryJobData.Create(build_id)
-    try_job_data.created_time = time_util.GetUTCNow()
-    try_job_data.try_job_key = try_job_key
-    try_job_data.analysis_key = ndb.Key(urlsafe=urlsafe_analysis_key)
-    try_job_data.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self,
@@ -78,22 +44,28 @@ class ScheduleFlakeTryJobPipeline(ScheduleTryJobPipeline):
     Returns:
       build_id (str): Id of the triggered try job.
     """
-    properties = self._GetBuildProperties(master_name, builder_name,
-                                          canonical_step_name, test_name,
-                                          git_hash, iterations_to_rerun)
-    build_id = self._TriggerTryJob(
-        master_name, builder_name, properties, {},
+    properties = flake_try_job.GetBuildProperties(
+        master_name, builder_name, canonical_step_name, test_name, git_hash,
+        iterations_to_rerun)
+    tryserver_mastername, tryserver_buildername = (
+        waterfall_config.GetFlakeTrybot(
+            master_name, builder_name, force_buildbot=False))
+    build_id, error = try_job_service.TriggerTryJob(
+        master_name, builder_name, tryserver_mastername, tryserver_buildername,
+        properties, {},
         failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
-        cache_name, dimensions)
+        cache_name, dimensions, self.pipeline_id)
 
-    try_job = FlakeTryJob.Get(master_name, builder_name, canonical_step_name,
-                              test_name, git_hash)
-    try_job.flake_results.append({'try_job_id': build_id})
-    try_job.try_job_ids.append(build_id)
-    try_job.put()
+    if error:  # pragma: no cover
+      raise pipeline.Retry('Error "%s" occurred. Reason: "%s"' % (error.message,
+                                                                  error.reason))
+
+    try_job = flake_try_job.UpdateTryJob(master_name, builder_name,
+                                         canonical_step_name, test_name,
+                                         git_hash, build_id)
 
     # Create a corresponding Flake entity to capture as much metadata as early
     # as possible.
-    self._CreateTryJobData(build_id, try_job.key, urlsafe_analysis_key)
+    flake_try_job.CreateTryJobData(build_id, try_job.key, urlsafe_analysis_key)
 
     return build_id

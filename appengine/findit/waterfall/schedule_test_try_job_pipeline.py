@@ -2,38 +2,18 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from collections import defaultdict
 import logging
 
+from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipeline_wrapper import pipeline
 from common.waterfall import failure_type
-from libs import time_util
-from model.wf_try_job import WfTryJob
-from model.wf_try_job_data import WfTryJobData
-from waterfall.schedule_try_job_pipeline import ScheduleTryJobPipeline
+from services import try_job as try_job_service
+from services.test_failure import test_try_job
+from waterfall import waterfall_config
 
 
-class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
+class ScheduleTestTryJobPipeline(BasePipeline):
   """A pipeline for scheduling a new try job for failed test build."""
-
-  def _GetBuildProperties(self, master_name, builder_name, build_number,
-                          good_revision, bad_revision, try_job_type,
-                          suspected_revisions):
-    properties = super(ScheduleTestTryJobPipeline, self)._GetBuildProperties(
-        master_name, builder_name, build_number, good_revision, bad_revision,
-        try_job_type, suspected_revisions)
-    properties['target_testername'] = builder_name
-
-    return properties
-
-  def _CreateTryJobData(self, build_id, try_job_key, has_heuristic_results):
-    try_job_data = WfTryJobData.Create(build_id)
-    try_job_data.created_time = time_util.GetUTCNow()
-    try_job_data.has_compile_targets = False
-    try_job_data.has_heuristic_results = has_heuristic_results
-    try_job_data.try_job_key = try_job_key
-    try_job_data.try_job_type = failure_type.GetDescriptionForFailureType(
-        failure_type.TEST)
-    try_job_data.put()
 
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self,
@@ -42,7 +22,6 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
           build_number,
           good_revision,
           bad_revision,
-          try_job_type,
           suspected_revisions,
           cache_name,
           dimensions,
@@ -55,7 +34,6 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
       build_number (int): the build number of a build.
       good_revision (str): the revision of the last passed build.
       bad__revision (str): the revision of the first failed build.
-      try_job_type (int): type of the try job: TEST in this case.
       suspected_revisions (list): a list of suspected revisions from heuristic.
       cache_name (str): A string to identify separate directories for different
           waterfall bots on the trybots.
@@ -69,9 +47,9 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
       build_id (str): id of the triggered try job.
     """
 
-    properties = self._GetBuildProperties(
+    properties = test_try_job.GetBuildProperties(
         master_name, builder_name, build_number, good_revision, bad_revision,
-        try_job_type, suspected_revisions)
+        suspected_revisions)
 
     if not targeted_tests:  # pragma: no cover
       logging.info('All tests are flaky, no try job will be triggered.')
@@ -79,18 +57,26 @@ class ScheduleTestTryJobPipeline(ScheduleTryJobPipeline):
 
     additional_parameters = {'tests': targeted_tests}
 
-    build_id = self._TriggerTryJob(
-        master_name, builder_name, properties, additional_parameters,
-        failure_type.GetDescriptionForFailureType(failure_type.TEST),
-        cache_name, dimensions, force_buildbot)
+    tryserver_mastername, tryserver_buildername = (
+        waterfall_config.GetWaterfallTrybot(master_name, builder_name,
+                                            force_buildbot))
 
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    try_job.test_results.append({'try_job_id': build_id})
-    try_job.try_job_ids.append(build_id)
-    try_job.put()
+    build_id, error = try_job_service.TriggerTryJob(
+        master_name, builder_name, tryserver_mastername, tryserver_buildername,
+        properties, additional_parameters,
+        failure_type.GetDescriptionForFailureType(failure_type.TEST),
+        cache_name, dimensions, self.pipeline_id)
+
+    if error:  # pragma: no cover
+      raise pipeline.Retry('Error "%s" occurred. Reason: "%s"' % (error.message,
+                                                                  error.reason))
+    try_job = try_job_service.UpdateTryJob(
+        master_name, builder_name, build_number, build_id, failure_type.TEST)
 
     # Create a corresponding WfTryJobData entity to capture as much metadata as
     # early as possible.
-    self._CreateTryJobData(build_id, try_job.key, bool(suspected_revisions))
+    try_job_service.CreateTryJobData(build_id, try_job.key, False,
+                                     bool(suspected_revisions),
+                                     failure_type.TEST)
 
     return build_id

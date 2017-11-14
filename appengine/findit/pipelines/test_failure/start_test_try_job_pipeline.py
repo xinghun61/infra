@@ -38,9 +38,9 @@ class StartTestTryJobPipeline(BasePipeline):
 
     try_job_id = yield ScheduleTestTryJobPipeline(
         master_name, builder_name, build_number, parameters['good_revision'],
-        parameters['bad_revision'], try_job_type,
-        parameters['suspected_revisions'], parameters['cache_name'],
-        parameters['dimensions'], parameters['task_results'])
+        parameters['bad_revision'], parameters['suspected_revisions'],
+        parameters['cache_name'], parameters['dimensions'],
+        parameters['task_results'])
 
     try_job_result = yield MonitorTryJobPipeline(try_job_key.urlsafe(),
                                                  try_job_type, try_job_id)
