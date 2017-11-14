@@ -126,5 +126,7 @@ func (c *cmdLaunch) Run(a subcommands.Application, args []string, env subcommand
 
 	logging.Infof(ctx, "Launched swarming task: https://%s/task?id=%s",
 		jd.SwarmingHostname, req.TaskId)
+	logging.Infof(ctx, "Luci UI: https://ci.chromium.org/swarming/task/%s?server=%s",
+		req.TaskId, jd.SwarmingHostname)
 	return 0
 }
