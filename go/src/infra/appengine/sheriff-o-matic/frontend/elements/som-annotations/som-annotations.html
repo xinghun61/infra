@@ -15,6 +15,8 @@
 
 <link rel="import" href="../../elements/som-marked-element/som-marked-element.html">
 
+<link rel="import" href="../../elements/som-annotations/som-file-bug.html">
+
 <script src="../../bower_components/moment/min/moment.min.js"></script>
 <script src="../../bower_components/moment-timezone/builds/moment-timezone-with-data.min.js"></script>
 
@@ -147,37 +149,7 @@
       </div>
     </paper-dialog>
 
-    <paper-dialog id="fileBugDialog" with-backdrop>
-      <h2>File a new bug</h2>
-      <div class="error">[[_fileBugErrorMessage]]</div>
-      <paper-input id="summary" label="Summary"></paper-input>
-      <paper-textarea id="description" always-float-label label="Description"></paper-textarea>
-      <paper-input id="cc" label="CC (seperate by commas)"></paper-input>
-      <paper-dropdown-menu id="priority" label="Select priority">
-        <paper-listbox slot="dropdown-content" selected="2">
-          <paper-item label="Pri-0">0 = Emergency</paper-item>
-          <paper-item label="Pri-1">1 = Need (for target milestone)</paper-item>
-          <paper-item label="Pri-2">2 = Want (for target milstone)</paper-item>
-          <paper-item label="Pri-3">3 = Not time critical</paper-item>
-        </paper-listbox>
-      </paper-dropdown-menu>
-      <paper-input id="labels" label="Labels (separate by commas)"></paper-input>
-      <div class="buttons">
-        <button dialog-dismiss>
-          Close
-        </button>
-        <button class="emphasized"  on-tap="_fileBug">File Bug</button>
-      </div>
-    </paper-dialog>
-
-    <paper-dialog id="bugFiledDialog" with-backdrop>
-      <div>Successfully linked new bug <a href$="https://crbug.com/[[_filedBugId]]">Bug [[_filedBugId]]</a> to alert.</div>
-      <div class="buttons">
-        <button dialog-dismiss>
-          Close
-        </button>
-      </div>
-    </paper-dialog>
+    <som-file-bug id="fileBug" on-success="_linkNewBug"></som-file-bug>
 
     <paper-dialog id="removeBugDialog" with-backdrop>
       <h2>Unlinking bug from alert</h2>

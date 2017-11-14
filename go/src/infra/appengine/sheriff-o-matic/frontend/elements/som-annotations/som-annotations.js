@@ -73,7 +73,6 @@ class SomAnnotations extends Polymer.mixinBehaviors(
         type: Boolean,
         value: false,
       },
-      _filedBugId: String,
       _groupErrorMessage: String,
       _groupModel: Object,
       _removeBugErrorMessage: String,
@@ -234,17 +233,15 @@ class SomAnnotations extends Polymer.mixinBehaviors(
     let labels = ['Filed-Via-SoM'];
     if (trooperBug) {
       labels.push('infra-troopers');
-      // TODO(jojwang): addd component: infra
     } else {
       labels.push('sheriff-chromium');
     }
 
-    this.$.summary.value = bugSummary;
-    this.$.description.value = this._commentForBug(this._fileBugModel);
-    // TODO(jojwang): get logged-in user's email to add to cc list
-    this.$.labels.value = this._arrayToString(labels);
+    this.$.fileBug.summary = bugSummary;
+    this.$.fileBug.description = this._commentForBug(this._fileBugModel);
+    this.$.fileBug.labels = labels;
 
-    this.$.fileBugDialog.open();
+    this.$.fileBug.open();
   }
 
   handleRemoveBug(alert, detail) {
@@ -278,78 +275,22 @@ class SomAnnotations extends Polymer.mixinBehaviors(
 
   ////////////////////// Bugs ///////////////////////////
 
-  _fileBug() {
-    let error = false;
-    if (this.$.summary.value == "") {
-      error = true;
-      this.$.summary.invalid = true;
-    }
-    if (this.$.description.value == "") {
-      error = true;
-      this.$.description.invalid = true;
-    }
-    if (error) {
-      this._fileBugErrorMessage = 'Please fill in summary and description fields.'
-      return
-    } else {
-      let labels = this._stringToArray(this.$.labels.value);
-      if(this.$.priority.selectedItemLabel) {
-        labels.push(this.$.priority.selectedItemLabel);
-      }
-
-      let bugData = {
-        Summary: this.$.summary.value,
-        Description: this.$.description.value,
-        Cc: this._stringToArray(this.$.cc.value),
-        Labels: labels,
-      }
-
-      return this
-          .postJSON('/api/v1/filebug/', bugData)
-          .then(jsonParsePromise)
-          .catch((error) => {
-            this._fileBugErrorMessage = 'Error trying to create new issue: ' + error;
-          })
-          .then(this._fileBugResponse.bind(this));
-    }
-  }
-
-  _fileBugResponse(response) {
-    if (response.issue && response.issue.id) {
-      this._filedBugId = response.issue.id.toString();
-    } else {
-       this._fileBugErrorMessage = 'Error, no issue or issue id found: ' + response;
-    }
-    let data = {bugs: [this._filedBugId]};
+  _linkNewBug() {
+    let data = {bugs: [this.$.fileBug.filedBugId]};
     let promises = this._fileBugModel.map((alert) => {
       return this.sendAnnotation(alert.key, 'add', data);
-    });
+    })
     Promise.all(promises).then(
         (response) => {
-          this._fileBugErrorMessage = '';
-          this.$.fileBugDialog.close();
-          this.$.bugFiledDialog.open();
+	  this.$.fileBug.showBugFiledDialog();
 
           if (this._fileBugCallback) {
             this._fileBugCallback();
           }
         }, (error) => {
-          this._fileBugErrorMessage = error;
+          this.$.fileBug.fileBugErrorMessage = error;
         });
     return response;
-  }
-
-  _arrayToString(arr) {
-    return arr.join(", ");
-  }
-
-  _stringToArray(str) {
-    if (str && str != "") {
-      return str.split(",").map(item => {
-        return item.trim();
-      })
-    }
-    return [];
   }
 
   _commentForBug(alerts) {

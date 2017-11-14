@@ -1,0 +1,50 @@
+<link rel="import" href="../../bower_components/polymer/polymer.html">
+
+<link rel="import" href="../../elements/som-input-styles.html">
+<link rel="import" href="../../elements/som-utility-styles.html">
+
+<dom-module id="som-file-bug">
+  <template>
+    <style include="som-input-styles som-utility-styles">
+      .buttons {
+        margin-top: 1em;
+      }
+      .buttons button {
+        font-size: 1.1em;
+      }
+    </style>
+    <paper-dialog id="fileBugDialog" with-backdrop>
+      <h2>File a new bug</h2>
+      <div class="error">[[fileBugErrorMessage]]</div>
+      <paper-input id="summary" label="Summary" value="[[summary]]"></paper-input>
+      <paper-textarea id="description" always-float-label label="Description" value="[[description]]"></paper-textarea>
+      <paper-input id="cc" label="CC (seperate by commas)" value="[[_arrayToSTring(cc)]]"></paper-input>
+      <paper-dropdown-menu id="priority" label="Select priority">
+        <paper-listbox slot="dropdown-content" selected="2">
+          <paper-item label="Pri-0">0 = Emergency</paper-item>
+          <paper-item label="Pri-1">1 = Need (for target milestone)</paper-item>
+          <paper-item label="Pri-2">2 = Want (for target milstone)</paper-item>
+          <paper-item label="Pri-3">3 = Not time critical</paper-item>
+        </paper-listbox>
+      </paper-dropdown-menu>
+      <paper-input id="labels" label="Labels (separate by commas)" value="[[_arrayToString(labels)]]"></paper-input>
+      <div class="buttons">
+        <button dialog-dismiss>
+          Close
+        </button>
+        <button class="emphasized"  on-tap="_fileBug">File Bug</button>
+      </div>
+    </paper-dialog>
+
+
+    <paper-dialog id="bugFiledDialog" with-backdrop>
+      <div>Successfully linked new bug <a href$="https://crbug.com/[[filedBugId]]"> Bug [[filedBugId]]</a> to alert.</div>
+      <div class="buttons">
+        <button dialog-dismiss>
+          Close
+        </button>
+      </div>
+    </paper-dialog>
+  </template>
+  <script src="som-file-bug.js"></script>
+<dom-module>
