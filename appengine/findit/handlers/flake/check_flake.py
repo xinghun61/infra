@@ -360,7 +360,8 @@ class CheckFlake(BaseHandler):
     if not analysis:
       return self.CreateError('Analysis of flake is not found.', 404)
 
-    if analysis.status != analysis_status.RUNNING:
+    if (analysis.status != analysis_status.RUNNING and
+        analysis.try_job_status != analysis_status.RUNNING):
       return self.CreateError('Can\'t cancel an analysis that\'s complete', 400)
 
     if not analysis.root_pipeline_id:
