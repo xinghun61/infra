@@ -13,14 +13,8 @@ import tensorflow as tf
 # Must be identical to settings.spam_feature_hashes.
 SPAM_FEATURE_HASHES = 500
 
-# Important: we assume this list mirrors the output of GenerateFeatures.
+# Important: we assume this list mirrors the output of GenerateFeaturesRaw.
 INPUT_COLUMNS = [
-  tf.feature_column.numeric_column(key='num_urls'),
-  tf.feature_column.numeric_column(key='num_duplicate_urls'),
-  tf.feature_column.numeric_column(key='uncompressed_summary_len'),
-  tf.feature_column.numeric_column(key='compressed_summary_len'),
-  tf.feature_column.numeric_column(key='uncompressed_description_len'),
-  tf.feature_column.numeric_column(key='compressed_description_len'),
   tf.feature_column.numeric_column(key='word_hashes',
     shape=(SPAM_FEATURE_HASHES,)),
 ]
@@ -35,7 +29,6 @@ def build_estimator(config):
   Returns:
     A LinearClassifier
   """
-  # TODO(jeffcarp): Experiment with other estimators
   return tf.contrib.learn.DNNClassifier(
     config=config,
     feature_columns=INPUT_COLUMNS,

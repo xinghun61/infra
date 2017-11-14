@@ -320,6 +320,9 @@ alert_service_account = 'chrome-trooper-alerts@google.com'
 # Comments. This should be the same value that the model was trained with.
 spam_feature_hashes = 500
 
+# The name of the spam model in ML Engine.
+spam_model_name = 'spam_only_words'
+
 ratelimiting_enabled = False
 
 # Enable cost-based rate limiting. This only applies if

@@ -32,6 +32,8 @@ credentials = GoogleCredentials.get_application_default()
 # This must be identical with settings.spam_feature_hashes.
 SPAM_FEATURE_HASHES = 500
 
+MODEL_NAME = 'spam_only_words'
+
 
 def Predict(args):
   ml = googleapiclient.discovery.build('ml', 'v1', credentials=credentials)
@@ -42,9 +44,9 @@ def Predict(args):
     SPAM_FEATURE_HASHES)
 
   project_ID = 'projects/%s' % args.project
-  model_name = '%s/models/spam' % project_ID
-  request = ml.projects().predict(name=model_name, body={
-    'instances': [instance]
+  full_model_name = '%s/models/%s' % (project_ID, MODEL_NAME)
+  request = ml.projects().predict(name=full_model_name, body={
+    'instances': [{'inputs': instance['word_hashes']}]
   })
 
   try:
@@ -58,7 +60,8 @@ def Predict(args):
 def LocalPredict(_):
   print('This will write /tmp/instances.json.')
   print('Then you can call:')
-  print('gcloud ml-engine local predict --json-instances /tmp/instances.json')
+  print(('gcloud ml-engine local predict --json-instances /tmp/instances.json'
+    ' --model-dir {model_dir}'))
 
   summary = raw_input('Summary: ')
   description = raw_input('Description: ')
@@ -66,7 +69,7 @@ def LocalPredict(_):
     SPAM_FEATURE_HASHES)
 
   with open('/tmp/instances.json', 'w') as f:
-      json.dump(instance, f)
+    json.dump({'inputs': instance['word_hashes']}, f)
 
 
 def main():

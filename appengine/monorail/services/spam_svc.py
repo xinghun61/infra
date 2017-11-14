@@ -287,7 +287,7 @@ class SpamService(object):
     Sample API response:
       {'predictions': [{
         'classes': ['0', '1'],
-        'probabilities': [0.4986788034439087, 0.5013211965560913]
+        'scores': [0.4986788034439087, 0.5013211965560913]
       }]}
 
     This hits the default model.
@@ -296,8 +296,9 @@ class SpamService(object):
       A floating point number representing the confidence
       the instance is spam.
     """
-    model_name = 'projects/%s/models/spam' % settings.classifier_project_id
-    body = {'instances': [instance]}
+    model_name = 'projects/%s/models/%s' % (
+      settings.classifier_project_id, settings.spam_model_name)
+    body = {'instances': [{"inputs": instance["word_hashes"]}]}
     request = self.ml_engine.projects().predict(name=model_name, body=body)
     response = request.execute()
     logging.info('ML Engine API response: %r' % response)
@@ -307,9 +308,9 @@ class SpamService(object):
     # The spam label, '1', is usually at index 1 but I'm not sure of any
     # guarantees around label order.
     if prediction['classes'][1] == SPAM_CLASS_LABEL:
-      return prediction['probabilities'][1]
+      return prediction['scores'][1]
     elif prediction['classes'][0] == SPAM_CLASS_LABEL:
-      return prediction['probabilities'][0]
+      return prediction['scores'][0]
     else:
       raise Exception('No predicted classes found.')
 

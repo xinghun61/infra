@@ -103,7 +103,7 @@ MODEL_BINARIES=gs://monorail-staging-mlengine/spam_trainer_1507059720/export/Ser
 
 VERSION=v_$TIMESTAMP
 gcloud ml-engine versions create $VERSION \
-    --model spam \
+    --model spam_only_words \
     --origin $MODEL_BINARIES \
     --runtime-version 1.2
 ```
@@ -111,12 +111,12 @@ gcloud ml-engine versions create $VERSION \
 To promote to production, set that model as default.
 
 ```sh
-gcloud ml-engine versions set-default $VERSION --model spam
+gcloud ml-engine versions set-default $VERSION --model spam_only_words
 ```
 
 ## Submit a prediction
 
-Use the script [`test_prediction.py`](test_prediction.py) to make predictions
+Use the script [`spam.py`](spam.py) to make predictions
 from the command line. It will prompt for a subject and content.
 
 ```sh
