@@ -46,14 +46,16 @@ grab the image name in the step-text of the "Push image" step on the
 [image-building bot](https://uberchromegw.corp.google.com/i/internal.infra.cron/builders/swarm-docker-image-builder).
 It should look like swarm_docker:$date. (The bot runs once a day, but you can
 manually trigger a build if you don't want to wait.) To deploy, update the
-image pins in puppet for [canary bots](https://chrome-internal.googlesource.com/infra/puppet/+/78f1ba25470edf4256e5862d7b9c3eb1fba9dcad/puppetm/opt/puppet/conf/nodes.yaml),
-followed by [stable bots](https://chrome-internal.googlesource.com/infra/puppet/+/78f1ba25470edf4256e5862d7b9c3eb1fba9dcad/puppetm/opt/puppet/conf/nodes.yaml).
+image pins in puppet for [canary bots](https://chrome-internal.googlesource.com/infra/puppet/+/a7d607c2363eaf8eabc0deac8de544de3ada96f8/puppetm/opt/puppet/conf/nodes.yaml#780),
+followed by [stable bots](https://chrome-internal.googlesource.com/infra/puppet/+/a7d607c2363eaf8eabc0deac8de544de3ada96f8/puppetm/opt/puppet/conf/nodes.yaml#1013).
 The canary pin affects bots on [chromium-swarm-dev](https://chromium-swarm-dev.appspot.com),
-which the android testers on the [chromium.swarm](https://build.chromium.org/p/chromium.swarm/builders)
-waterfall run tests against. If the canary has been updated, the bots look fine,
-and the tests haven't regressed, you can proceed to update the stable pin.
-(Note that it may take several hours for the image pin update to propagate. It's
-advised to wait at least a day to update stable after updating canary.)
+which is not used by any builders, but can be used for manual testing before
+updating stable pin. Please trigger a build on this bot by manually editing a
+normal swarmbucket request sent to a multibot and making it execute on
+[chromium-swarm-dev](https://chromium-swarm-dev.appspot.com). If the build looks
+fine, you can proceed to update the stable pin. (Note that it may take several
+hours for the image pin update to propagate. It's advised to wait at least a day
+to update stable after updating canary.)
 
 Launching the containers
 ------------------------
@@ -63,4 +65,4 @@ which ensures that a configured number of containers is running. It will
 gracefully tear down containers that are too old or reboot the host. Called
 every 5 minutes via cron.
 
-More information can be found [here](https://chromium-review.googlesource.com/c/infra/infra/+/728025/5/infra/services/swarm_docker/README.md).
+More information can be found [here](https://chromium.googlesource.com/infra/infra/+/master/infra/services/swarm_docker/README.md).
