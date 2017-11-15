@@ -1,0 +1,30 @@
+package: infra/tools/luci/vpython-native/${platform}
+description: >
+  vpython is a VirtualEnv Python bootstrap tool.
+
+  This version includes vpython named as 'python' to allow for transparent
+  replacement of the system python. This makes an especially good pairing
+  with the chromium hermetic python bundle.
+builders:
+  - infra-continuous-mac-10.9-64
+  - infra-continuous-precise-32
+  - infra-continuous-precise-64
+  - infra-continuous-win-32
+  - infra-continuous-win-64
+supports_cross_compilation: true
+go_packages:
+  - infra/tools/vpython
+root: ../../go/bin
+copies:
+  - src: vpython${exe_suffix}
+    dst: python${exe_suffix}
+    generate_bat_shim: true
+posix_symlinks:
+  - src: python
+    dst: python2
+  - src: python
+    dst: python2.7
+    # TODO(iannucci): maybe add python3 aliases once vpython respects argv[0]
+    # to select real interpreter.
+data:
+  - version_file: .versions/python${exe_suffix}.cipd_version

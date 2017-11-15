@@ -20,6 +20,7 @@ import hashlib
 import json
 import os
 import platform
+import shutil
 import socket
 import subprocess
 import sys
@@ -117,19 +118,43 @@ class PackageDef(collections.namedtuple(
     pkg_def = copy.deepcopy(self.pkg_def)
     gen_files = []
 
+    bat_files = [
+      d['file'] for d in pkg_def['data'] if d.get('generate_bat_shim')
+    ]
+
+    for cp in pkg_def.get('copies', ()):
+      dst = os.path.join(self.pkg_root, render_path(cp['dst'], pkg_vars))
+      shutil.copy(os.path.join(self.pkg_root, render_path(cp['src'], pkg_vars)),
+                  dst)
+      pkg_def['data'].append({
+        'file': os.path.relpath(dst, self.pkg_root).replace(os.sep, '/')
+      })
+      if cp.get('generate_bat_shim'):
+        bat_files.append(cp['dst'])
+      gen_files.append(dst)
+
+    if not is_targeting_windows(pkg_vars):
+      for sym in pkg_def.get('posix_symlinks', ()):
+        dst = os.path.join(self.pkg_root, render_path(sym['dst'], pkg_vars))
+        os.symlink(
+            os.path.join(self.pkg_root, render_path(sym['src'], pkg_vars)),
+            dst)
+        pkg_def['data'].append({
+          'file': os.path.relpath(dst, self.pkg_root).replace(os.sep, '/')
+        })
+        gen_files.append(dst)
+
     # Generate *.bat shims when targeting Windows.
     if is_targeting_windows(pkg_vars):
-      for d in pkg_def['data'][:]:
-        if d.get('generate_bat_shim'):
-          # Generate actual *.bat.
-          bat_abs = generate_bat_shim(
-              self.pkg_root, render_path(d.get('file'), pkg_vars))
-          # Make it part of the package definition (use slash paths there).
-          pkg_def['data'].append({
-            'file': os.path.relpath(bat_abs, self.pkg_root).replace(os.sep, '/')
-          })
-          # Stage it for cleanup.
-          gen_files.append(bat_abs)
+      for f in bat_files:
+        # Generate actual *.bat.
+        bat_abs = generate_bat_shim(self.pkg_root, render_path(f, pkg_vars))
+        # Make it part of the package definition (use slash paths there).
+        pkg_def['data'].append({
+          'file': os.path.relpath(bat_abs, self.pkg_root).replace(os.sep, '/')
+        })
+        # Stage it for cleanup.
+        gen_files.append(bat_abs)
 
     # Keep generated yaml in the same directory to avoid rewriting paths.
     out_path = os.path.join(

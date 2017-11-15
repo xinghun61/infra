@@ -47,6 +47,23 @@ go_packages:
 # file itself.
 root: ../..
 
+# Copies apply after the build, but before creating the package. `dst` files
+# will automatically be added as data 'file' entries.
+#
+# generate_bat_shim works as it does for data 'file' entries below, and is
+# optional.
+copies:
+  - src: some_built_file
+    dst: some_other_file
+    generate_bat_shim: true
+
+# Symlinks apply after the build, but before creating the package. `dst` links
+# are automatically be added as data 'file' entries. These will only run when
+# targetting posix platforms (mac, linux), and are otherwise ignored.
+posix_symlinks:
+  - src: some_file
+    dst: some_link_name
+
 data:
   # 'dir' section adds a subdirectory of 'root' to the package. In this case
   # it will scan directory <yaml_path>/../../a/b/c and put files into a/b/c
