@@ -707,6 +707,7 @@ class Servlet(webapp2.RequestHandler):
         'app_version': app_version,
         'viewing_user_page': ezt.boolean(False),
 
+        'is_member': ezt.boolean(False),
         }
 
     if mr.project:

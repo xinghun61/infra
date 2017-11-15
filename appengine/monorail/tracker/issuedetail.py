@@ -335,6 +335,10 @@ class IssueDetail(issuepeek.IssuePeek):
                       self.services.features.GetHotlistsByUserID(
                           mr.cnxn, mr.auth.user_id) if
                       hotlist not in issue_hotlists]
+
+    is_member = framework_bizobj.UserIsInProject(
+        mr.project, mr.auth.effective_ids)
+
     return {
         'issue_tab_mode': 'issueDetail',
         'issue': issue_view,
@@ -406,7 +410,9 @@ class IssueDetail(issuepeek.IssuePeek):
         # For showing hotlists that contain this issue
         'user_issue_hotlists': user_issue_hotlist_views,
         'involved_users_issue_hotlists': involved_users_issue_hotlist_views,
-        'remaining_issue_hotlists': remaining_issue_hotlist_views
+        'remaining_issue_hotlists': remaining_issue_hotlist_views,
+
+        'is_member': ezt.boolean(is_member),
     }
 
   def GatherHelpData(self, mr, page_data):

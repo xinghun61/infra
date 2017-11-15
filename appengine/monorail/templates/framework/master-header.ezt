@@ -35,6 +35,7 @@
          null
        [end],
      'projectName': '[format "js"][projectname][end]',
+     'is_member': '[format "js"][is_member][end]',
    };
   </script>
 

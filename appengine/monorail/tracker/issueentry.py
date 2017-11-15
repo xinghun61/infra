@@ -179,6 +179,7 @@ class IssueEntry(servlet.Servlet):
         'config': config_view,
 
         'restrict_to_known': ezt.boolean(restrict_to_known),
+        'is_member': ezt.boolean(is_member),
         }
 
     return page_data

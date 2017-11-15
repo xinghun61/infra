@@ -375,10 +375,10 @@ runOnLoad(function() {
 
   window.allowSubmit = true;
   $("issue_update_form").addEventListener("submit", function(event) {
-     if (!_checkPlusOne()) {
+     if (!CS_env.is_member && !_checkPlusOne()) {
        event.preventDefault();
        return;
-     }  
+     }
      [# User cannot remove restricted labels if they cannot see them.]
      [if-any page_perms.EditIssue]
      if (!_checkUnrestrict([if-any prevent_restriction_removal]true[else]false[end])) {
