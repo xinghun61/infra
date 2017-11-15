@@ -22,9 +22,14 @@ handlers:
   secure: always
   login: admin
 
+- url: /system/update
+  script: app.app
+  secure: always
+
 - url: /.*
   script: app.app
   secure: always
+  login: admin
 
 libraries:
 - name: jinja2
