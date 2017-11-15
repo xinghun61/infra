@@ -1093,8 +1093,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         self.assertFalse(
             recursive_flake_try_job_pipeline._CanStartTryJob(try_job, False, 0))
 
-  @mock.patch.object(recursive_flake_try_job_pipeline,
-                     '_BASE_COUNT_DOWN_SECONDS', 0)
+  @mock.patch.object(flake_constants, 'BASE_COUNT_DOWN_SECONDS', 0)
   @mock.patch.object(recursive_flake_try_job_pipeline, '_CanStartTryJob')
   def testTryLaterIfNoAvailableBots(self, mock_fn):
     mock_fn.side_effect = [False, True]
@@ -1184,8 +1183,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(analysis.last_attempted_revision, revision)
     self.assertIsNone(analysis.last_attempted_swarming_task_id)
 
-  @mock.patch.object(recursive_flake_try_job_pipeline,
-                     '_BASE_COUNT_DOWN_SECONDS', 0)
+  @mock.patch.object(flake_constants, 'BASE_COUNT_DOWN_SECONDS', 0)
   @mock.patch.object(recursive_flake_try_job_pipeline, '_CanStartTryJob')
   def testOffPeakHours(self, mock_fn):
     mock_fn.side_effect = [False, True]

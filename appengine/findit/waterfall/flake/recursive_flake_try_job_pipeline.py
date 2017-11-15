@@ -19,6 +19,7 @@ from libs import time_util
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
+from pipelines.delay_pipeline import DelayPipeline
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
@@ -43,9 +44,6 @@ from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
 _GIT_REPO = CachedGitilesRepository(
     FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
-
-_MAX_RETRY_TIMES = 5
-_BASE_COUNT_DOWN_SECONDS = 2 * 60
 
 
 @ndb.transactional
@@ -188,7 +186,7 @@ def _CanStartTryJob(try_job, rerun, retries):
   try_master, try_builder = waterfall_config.GetWaterfallTrybot(
       try_job.master_name, try_job.builder_name)
   if (try_master.startswith('luci.') and not rerun and
-      retries < _MAX_RETRY_TIMES):
+      retries < flake_constants.MAX_RETRY_TIMES):
     dimensions = waterfall_config.GetTrybotDimensions(try_master, try_builder)
     bot_counts = swarming_util.GetSwarmingBotCounts(dimensions,
                                                     FinditHttpClient())
@@ -359,41 +357,34 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
               cache_name, dimensions, rerun)
       else:
         retries += 1
-
-        pipeline_job = RecursiveFlakeTryJobPipeline(
-            urlsafe_flake_analysis_key,
-            remaining_suspected_commit_positions,
-            commit_position,
-            revision,
-            lower_bound_commit_position,
-            upper_bound_commit_position,
-            user_specified_iterations,
-            cache_name,
-            dimensions,
-            rerun,
-            retries=retries)
-
-        # Disable attribute 'target' defined outside __init__ pylint warning,
-        # because pipeline generates its own __init__ based on run function.
-        pipeline_job.target = (  # pylint: disable=W0201
-            appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
-
-        # Delay or start off peak.
-        if retries > _MAX_RETRY_TIMES:
-          pipeline_job._StartOffPSTPeakHours(queue_name=self.queue_name or
-                                             constants.DEFAULT_QUEUE)
-          logging.info('Retries exceed max count, RecursiveFlakeTryJobPipeline '
-                       'on MasterFlakeAnalysis %s/%s/%s/%s/%s will start off '
-                       'peak hours', analysis.master_name,
-                       analysis.builder_name, analysis.build_number,
-                       analysis.step_name, analysis.test_name)
-        else:
-          pipeline_job._RetryWithDelay(queue_name=self.queue_name or
-                                       constants.DEFAULT_QUEUE)
-          countdown = retries * _BASE_COUNT_DOWN_SECONDS
+        if retries > flake_constants.MAX_RETRY_TIMES:
           analysis.LogInfo(
-              'No available swarming bots, RecursiveFlakeTryJobPipeline will '
-              'be tried again after %d seconds' % countdown)
+              'Retries exceeded max of %d attempts, '
+              'RecursiveFlakeTryJobPipeline will start off peak PST hours' %
+              flake_constants.MAX_RETRY_TIMES)
+          delay_delta = swarming_util.GetETAToStartAnalysis(
+              rerun) - time_util.GetUTCNow()
+          delay_seconds = int(delay_delta.total_seconds())
+        else:
+          delay_seconds = retries * flake_constants.BASE_COUNT_DOWN_SECONDS
+          analysis.LogInfo(
+              'No available swarming bots, RecursiveFlakeTryJobPipeline '
+              'will be tried after %d seconds' % delay_seconds)
+
+        delay = yield DelayPipeline(delay_seconds)
+        with pipeline.After(delay):
+          yield RecursiveFlakeTryJobPipeline(
+              urlsafe_flake_analysis_key,
+              remaining_suspected_commit_positions,
+              commit_position,
+              revision,
+              lower_bound_commit_position,
+              upper_bound_commit_position,
+              user_specified_iterations,
+              cache_name,
+              dimensions,
+              rerun,
+              retries=retries)
     else:
       # Another analysis already ran the try job, use its results directly.
       flake_try_job.UpdateAnalysisDataPointsWithTryJobResult(
@@ -404,16 +395,6 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
           commit_position, lower_bound_commit_position,
           upper_bound_commit_position, user_specified_iterations, cache_name,
           dimensions, rerun)
-
-  def _StartOffPSTPeakHours(self, *args, **kwargs):
-    """Starts the pipeline off PST peak hours if not triggered manually."""
-    kwargs['eta'] = swarming_util.GetETAToStartAnalysis(False)
-    self.start(*args, **kwargs)
-
-  def _RetryWithDelay(self, *args, **kwargs):
-    """Trys to start the pipeline later."""
-    kwargs['countdown'] = kwargs.get('retries', 1) * _BASE_COUNT_DOWN_SECONDS
-    self.start(*args, **kwargs)
 
 
 def _NormalizeDataPoints(data_points):
@@ -644,12 +625,7 @@ class NextCommitPositionPipeline(BasePipeline):
 
     assert next_revision is not None
 
-    pipeline_job = RecursiveFlakeTryJobPipeline(
+    yield RecursiveFlakeTryJobPipeline(
         urlsafe_flake_analysis_key, remaining_suspects, next_commit_position,
         next_revision, lower_bound_commit_position, upper_bound_commit_position,
         user_specified_iterations, cache_name, dimensions, rerun)
-    # Disable attribute 'target' defined outside __init__ pylint warning,
-    # because pipeline generates its own __init__ based on run function.
-    pipeline_job.target = (  # pylint: disable=W0201
-        appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND))
-    pipeline_job.start()
