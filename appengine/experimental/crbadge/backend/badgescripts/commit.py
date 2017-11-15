@@ -150,6 +150,10 @@ class State(object):
     self.author_data = author_data
 
 
+def ShardList(data, segment):
+  return [data[index: (index + seg)] for i in xrange(0, len(data), segment)]
+
+
 def GetAuthorDataInRepo(func, state, repo_url=None, n=20):
   """Run func to update author_data based on current revision, author_data."""
   repo_url = repo_url or _CHROMIUM_SRC
@@ -163,15 +167,7 @@ def GetAuthorDataInRepo(func, state, repo_url=None, n=20):
     return
 
   tasks = []
-  number_of_cls = len(changelogs)
-  if number_of_cls > n:
-    segments = []
-    for index in xrange(0,  number_of_cls, n):
-      segments.append(changelogs[index: (index + n)])
-  else:
-    segments = [changelogs]
-
-  for segment in segments:
+  for segment in ShardList(changelogs, len(changelogs)/n):
     tasks.append({'function': func,
                   'args': [segment, state.author_data, lock]})
 
