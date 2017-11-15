@@ -1,1 +1,64 @@
 This is an AppEngine app to display badges for software development achievements.
+
+# Overview
+This is split into the frontend and backend.  The backend can do all sorts
+of computations, and then the data is uploaded to the appengine datastore
+via a JSON endpoint.  The frontend grabs data from the datastore to
+render.
+
+# Backend
+/backend/badgescripts - A collection of scripts to do various computations.
+
+# Upload interface
+/testdata/upload.py - A script to upload a json file into appengine.
+/testdata/*.json - A collection of example json demonstrating the schema for uploding.
+
+# Defining badges
+Upload a json file with the following attributes:
+
+```
+[
+  {
+    "badge_name": "fakebadge", # Name of the badge, referenced by URL
+    "level_1": 1,  # Threshold for what a lv1 badge is.  (Greater or equal)
+    "level_2": 10,  # Threshold for what a lv1 badge is.  (Greater or equal)
+    "level_3": 100,  # Threshold for what a lv1 badge is.  (Greater or equal)
+    "show_number": false,  # If true, the level will be ignored and the value will be shown instead.
+    "title": "What a badge",  # The title to display on the user page.
+    "description": "This is a description",  # The long description to be displayed on the badge page.
+    "icon": "/foobar"  # The icon to display on the user and badge page.
+  }
+]
+```
+
+# Uploading data.
+All uploaded data is centered around badges.  When new data is uploaded, it
+overwrites old data.  There is no programatic way to delete old data.
+The format is as follows
+```
+[
+  {
+    "badge_name": "fakebadge",  # Name of the badge to uplad the data to.
+    "data": [
+      {
+        "email": "user@somewhere.com",
+        "value": 5
+      },
+      {
+        "email": "user2@somewhere.com",
+        "value": 50
+      },
+      {
+        "email": "user3@somewhere.com",
+        "value": 500
+      }
+    ]
+  }
+]
+```
+
+# Frontend
+The frontend is a standard classic AppEngine app.
+/app.yaml - Entry point.
+/app.py - Where all the endpoints are.
+/model.py - Where the datastore models are.
