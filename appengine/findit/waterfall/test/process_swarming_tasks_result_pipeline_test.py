@@ -2,12 +2,9 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import mock
-
 from common import constants
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import pipeline_handlers
-from waterfall import process_swarming_tasks_result_pipeline
 from waterfall.process_swarming_task_result_pipeline import (
     ProcessSwarmingTaskResultPipeline)
 from waterfall.process_swarming_tasks_result_pipeline import (
@@ -25,6 +22,7 @@ class ProcessSwarmingTasksResultPipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
     step_name = 'a on platform'
+
     failure_info = {
         'parent_mastername': None,
         'parent_buildername': None,

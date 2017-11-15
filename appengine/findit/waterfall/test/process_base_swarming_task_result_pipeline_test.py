@@ -13,6 +13,7 @@ from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
+from services import gtest
 from waterfall import swarming_util
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
@@ -27,6 +28,11 @@ from waterfall.trigger_base_swarming_task_pipeline import NO_TASK_EXCEPTION
 _ISOLATED_SERVER = 'https://isolateserver.appspot.com'
 _ISOLATED_STORAGE_URL = 'isolateserver.storage.googleapis.com'
 _SAMPLE_FAILURE_LOG = {
+    'all_tests': [
+        'TestSuite1.test1',
+        'TestSuite1.test2',
+        'TestSuite1.test3',
+    ],
     'per_iteration_data': [{
         'TestSuite1.test1': [{
             'status': 'SUCCESS',
@@ -345,29 +351,6 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
         'message': 'outputs_ref is None'
     })
 
-  @mock.patch.object(
-      swarming_util,
-      'GetSwarmingTaskFailureLog',
-      return_value=({
-          'per_iteration_data': []
-      }, None))
-  def testMonitorSwarmingTaskWhereNoPerIterationData(self, _):
-    task = WfSwarmingTask.Create(self.master_name, self.builder_name,
-                                 self.build_number, self.step_name)
-    task.task_id = 'task_id5'
-    task.put()
-
-    pipeline = ProcessSwarmingTaskResultPipeline()
-    pipeline.start_test()
-    pipeline.run(self.master_name, self.builder_name, self.build_number,
-                 self.step_name)
-
-    self.assertEqual(analysis_status.ERROR, task.status)
-    self.assertEqual(task.error, {
-        'code': swarming_util.NO_PER_ITERATION_DATA,
-        'message': 'per_iteration_data is empty or missing'
-    })
-
   def testMonitorSwarmingTaskNotCompletedWithExitCode(self):
     task = WfSwarmingTask.Create(self.master_name, self.builder_name,
                                  self.build_number, self.step_name)
@@ -535,7 +518,8 @@ class ProcessBaseSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
       swarming_util,
       'GetSwarmingTaskFailureLog',
       return_value=(_SAMPLE_FAILURE_LOG, None))
-  def testProcessSwarmingTaskResultPipelineIdempotency(self, _):
+  @mock.patch.object(gtest, 'CheckGtestOutputIsValid', return_value=None)
+  def testProcessSwarmingTaskResultPipelineIdempotency(self, *_):
     # End to end test.
     task = WfSwarmingTask.Create(self.master_name, self.builder_name,
                                  self.build_number, self.step_name)

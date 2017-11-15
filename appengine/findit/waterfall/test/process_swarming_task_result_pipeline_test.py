@@ -108,7 +108,6 @@ class ProcessSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('abc_tests', task.canonical_step_name)
 
   def testProcessSwarmingTaskResultPipelineTaskNotRunning(self):
-
     task = WfSwarmingTask.Create(self.master_name, self.builder_name,
                                  self.build_number, self.step_name)
     task.task_id = 'task_id2'

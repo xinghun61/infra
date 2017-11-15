@@ -98,3 +98,35 @@ class GtestTest(wf_testcase.WaterfallTestCase):
         'a_tests',
         gtest.RemovePlatformFromStepName('a_tests on Other-Platform'))
     self.assertEqual('a_tests', gtest.RemovePlatformFromStepName('a_tests'))
+
+  def testCheckGtestOutputIsValidNoPerIterationData(self):
+    gtest_result = {'blabla': 'blabla'}
+    expected_error = {
+        'code': gtest.RESULTS_INVALID,
+        'message': 'per_iteration_data is empty or missing',
+    }
+    self.assertEqual(expected_error,
+                     gtest.CheckGtestOutputIsValid(gtest_result))
+
+  def testCheckGtestOutputIsValidNoTests(self):
+    gtest_result = {'per_iteration_data': [{}]}
+    expected_error = {
+        'code': gtest.RESULTS_INVALID,
+        'message': 'all_tests is empty or missing'
+    }
+    self.assertEqual(expected_error,
+                     gtest.CheckGtestOutputIsValid(gtest_result))
+
+  def testCheckGtestOutputIsValidNoError(self):
+    gtest_result = {'per_iteration_data': [{}, {}], 'all_tests': ['t']}
+    self.assertIsNone(gtest.CheckGtestOutputIsValid(gtest_result))
+
+  def testDoesTestExist(self):
+    existing_test_name = 'test'
+    nonexistent_test_name = 'nonexistent_test'
+    gtest_result = {
+        'per_iteration_data': [{}, {}],
+        'all_tests': [existing_test_name]
+    }
+    self.assertTrue(gtest.DoesTestExist(gtest_result, existing_test_name))
+    self.assertFalse(gtest.DoesTestExist(gtest_result, nonexistent_test_name))

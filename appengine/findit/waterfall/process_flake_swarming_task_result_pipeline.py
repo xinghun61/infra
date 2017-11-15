@@ -2,7 +2,10 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
+from services import gtest
+from waterfall import swarming_util
 from waterfall.process_base_swarming_task_result_pipeline import (
     ProcessBaseSwarmingTaskResultPipeline)
 
@@ -49,6 +52,17 @@ class ProcessFlakeSwarmingTaskResultPipeline(
 
     flake_swarming_task.tries = tries
     flake_swarming_task.successes = successes
+    flake_swarming_task.put()
+
+    if tries == 0 and gtest.DoesTestExist(output_json, test_name):
+      # The test exists, but something went wrong preventing even a single test
+      # result from being processed.
+      flake_swarming_task.error = {
+          'code': swarming_util.UNKNOWN,
+          'message': 'Test exists but results indeterminate'
+      }
+      flake_swarming_task.status = analysis_status.ERROR
+
     flake_swarming_task.put()
 
     return tests_statuses

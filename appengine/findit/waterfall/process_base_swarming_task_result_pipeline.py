@@ -15,6 +15,7 @@ from common.findit_http_client import FinditHttpClient
 from gae_libs import appengine_util
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
+from services import gtest
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.trigger_base_swarming_task_pipeline import NO_TASK
@@ -236,22 +237,17 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         output_json, error = swarming_util.GetSwarmingTaskFailureLog(
             outputs_ref, self.HTTP_CLIENT)
 
-        if error or not output_json:
-          task.status = analysis_status.ERROR
-          task.error = error or {
+        if not output_json:
+          error = error or {
               'code': swarming_util.NO_OUTPUT_JSON,
-              'message': 'output_json is None',
+              'message': 'No swarming task failure log'
           }
-          task.put()
-          check_task_completion()
-          return
 
-        if not output_json.get('per_iteration_data'):
+        error = error or gtest.CheckGtestOutputIsValid(output_json)
+
+        if error:
           task.status = analysis_status.ERROR
-          task.error = {
-              'code': swarming_util.NO_PER_ITERATION_DATA,
-              'message': 'per_iteration_data is empty or missing'
-          }
+          task.error = error
           task.put()
           check_task_completion()
           return
@@ -270,7 +266,7 @@ class ProcessBaseSwarmingTaskResultPipeline(BasePipeline):
         task.error = {'code': code, 'message': message}
         task.put()
 
-        logging.error('Swarming task stopped with status: %s' % task_state)
+        logging.error('Swarming task stopped with status: %s', task_state)
 
       tags = data.get('tags', {})
       priority_str = swarming_util.GetTagValue(tags, 'priority')

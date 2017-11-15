@@ -38,6 +38,8 @@ STATE_COMPLETED = 'COMPLETED'
 STATES_NOT_RUNNING = ('BOT_DIED', 'CANCELED', 'COMPLETED', 'EXPIRED',
                       'TIMED_OUT')
 
+# TODO(crbug.com/785463): Use enum for error codes.
+
 # Swarming task stopped error codes.
 BOT_DIED = 30
 CANCELED = 40
@@ -58,9 +60,6 @@ URLFETCH_CONNECTION_CLOSED_ERROR = 120
 
 # Outputs_ref is None.
 NO_TASK_OUTPUTS = 300
-
-# Per iteration data is None or empty.
-NO_PER_ITERATION_DATA = 310
 
 # Unable to retrieve output json.
 NO_OUTPUT_JSON = 320

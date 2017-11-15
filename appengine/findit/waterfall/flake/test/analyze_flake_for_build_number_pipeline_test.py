@@ -2,25 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
 import copy
 import mock
 
 from common import constants
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from libs import analysis_status
-from libs import time_util
 from model.flake.flake_swarming_task import FlakeSwarmingTask
-from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from model.wf_swarming_task import WfSwarmingTask
 
-from waterfall.flake import confidence
-from waterfall import swarming_util
-from waterfall.flake import flake_constants
 from waterfall.flake import flake_analysis_util
-from waterfall.flake import lookback_algorithm
-from waterfall.flake import analyze_flake_for_build_number_pipeline
 
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
     AnalyzeFlakeForBuildNumberPipeline)
@@ -28,7 +19,6 @@ from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
     SaveLastAttemptedSwarmingTaskIdPipeline)
 from waterfall.flake.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsPipeline)
-from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
 from waterfall.trigger_flake_swarming_task_pipeline import (

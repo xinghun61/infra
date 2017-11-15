@@ -18,6 +18,10 @@ INVALID_FAILURE_LOG = 'invalid'
 FLAKY_FAILURE_LOG = 'flaky'
 WRONG_FORMAT_LOG = 'not_in_gtest_result_format'
 
+# Invalid gtest result error codes.
+# TODO(crbug.com/785463): Use enum for error codes.
+RESULTS_INVALID = 10
+
 
 def RemoveAllPrefixes(test):
   """Removes prefixes from test names.
@@ -118,3 +122,62 @@ def RemovePlatformFromStepName(step_name):
     Step name without platform or the string ' on '. Example: 'net_unittests'.
   """
   return step_name.split(_STEP_NAME_SEPARATOR)[0]
+
+
+def CheckGtestOutputIsValid(gtest_result):
+  """Determines if the output of a gtest result is usable.
+
+    1. per_iteration_data must exist and be non-empty.
+    2. all_tests must exist and be non-empty.
+
+    This function should check to ensure gtest_result contains all necessary
+    information in order to determine a test's pass rate, or return an error
+    indicating the data in gtest_result is unusable.
+
+  Args:
+    gtest_result (dict): The  gtest's output, at a minimum expected to contain:
+        {
+            'per_iteration_data': [(dict)],
+            'all_tests': [(str)],
+            ...
+        }
+
+  Returns:
+    (dict): None if no error, or a dict in the format:
+        {
+            'code': (int),
+            'message': (str),
+        }
+  """
+  error = {
+      'code': RESULTS_INVALID,
+  }
+  # The failure log must contain the field 'per_iteration_data' containing each
+  # test iteration's outcome.
+  if not gtest_result.get('per_iteration_data'):
+    error['message'] = 'per_iteration_data is empty or missing'
+    return error
+
+  # The failure log must contain the field 'all_tests'.
+  if not gtest_result.get('all_tests'):
+    error['message'] = 'all_tests is empty or missing'
+    return error
+
+  return None
+
+
+def DoesTestExist(gtest_result, test_name):
+  """Determines whether test_name is in gtest_result's 'all_tests' field.
+
+  Args:
+    gtest_result (dict): A gtest's json output expected to be in the format:
+        {
+            'all_tests': [(str)],
+            ...,
+        }
+    test_name (str): The name of the test to check.
+
+  Returns:
+    True if the test exists according to gtest_result, False otherwise.
+  """
+  return test_name in gtest_result.get('all_tests', [])

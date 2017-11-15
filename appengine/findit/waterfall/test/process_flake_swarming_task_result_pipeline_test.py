@@ -5,7 +5,6 @@
 import datetime
 import mock
 
-from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
@@ -55,6 +54,27 @@ class ProcessFlakeSwarmingTaskResultPipelineTest(wf_testcase.WaterfallTestCase):
         ProcessFlakeSwarmingTaskResultPipeline._CheckTestsRunStatuses(
             self.pipeline, base_test._SAMPLE_FAILURE_LOG, *call_params))
     self.assertEqual(base_test._EXPECTED_TESTS_STATUS, tests_statuses)
+
+  def testCheckTestsRunStatusesTestExistsNoRunData(self):
+    failure_log = {'per_iteration_data': [{}], 'all_tests': [self.test_name]}
+    analysis = MasterFlakeAnalysis.Create(self.master_name, self.builder_name,
+                                          self.build_number, self.step_name,
+                                          self.test_name)
+    analysis.Save()
+
+    task = FlakeSwarmingTask.Create(self.master_name, self.builder_name,
+                                    self.build_number, self.step_name,
+                                    self.test_name)
+    task.put()
+
+    call_params = ProcessFlakeSwarmingTaskResultPipeline._GetArgs(
+        self.pipeline, self.master_name, self.builder_name, self.build_number,
+        self.step_name, self.build_number, self.test_name, self.version_number)
+
+    ProcessFlakeSwarmingTaskResultPipeline._CheckTestsRunStatuses(
+        self.pipeline, failure_log, *call_params)
+
+    self.assertEqual(analysis_status.ERROR, task.status)
 
   @mock.patch.object(
       swarming_util,

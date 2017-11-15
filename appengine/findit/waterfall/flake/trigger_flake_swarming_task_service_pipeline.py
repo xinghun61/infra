@@ -2,8 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging
-
 from common.findit_http_client import FinditHttpClient
 from common import constants
 from gae_libs import appengine_util

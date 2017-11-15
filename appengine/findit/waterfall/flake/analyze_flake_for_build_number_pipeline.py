@@ -2,21 +2,14 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-import logging
-
 from google.appengine.ext import ndb
 
 from gae_libs.pipeline_wrapper import BasePipeline
 from gae_libs.pipeline_wrapper import pipeline
-from libs import analysis_status
-from model.flake.flake_swarming_task import FlakeSwarmingTask
-from waterfall.flake import flake_analysis_util
-from waterfall.flake import flake_constants
 from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
     SaveLastAttemptedSwarmingTaskIdPipeline)
 from waterfall.flake.update_flake_analysis_data_points_pipeline import (
     UpdateFlakeAnalysisDataPointsPipeline)
-from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
 from waterfall.trigger_flake_swarming_task_pipeline import (
