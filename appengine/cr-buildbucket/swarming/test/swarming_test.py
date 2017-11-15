@@ -672,6 +672,7 @@ class SwarmingTest(BaseTest):
     build = mkBuild(
         parameters={'builder_name': 'linux_chromium_rel_ng'},
         tags=['builder:linux_chromium_rel_ng'],
+        canary_preference=model.CanaryPreference.AUTO,
     )
     swarming.create_task_async(build).get_result()
 
@@ -1474,7 +1475,7 @@ def mkBuild(**kwargs):
       bucket='luci.chromium.try',
       create_time=utils.utcnow(),
       created_by=auth.Identity('user', 'john@example.com'),
-      canary_preference=model.CanaryPreference.AUTO,
+      canary_preference=model.CanaryPreference.PROD,
   )
   args.update(kwargs)
   return model.Build(**args)

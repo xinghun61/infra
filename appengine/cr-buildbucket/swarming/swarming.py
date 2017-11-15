@@ -340,7 +340,8 @@ def _create_task_def_async(
   assert isinstance(build.canary_preference, model.CanaryPreference)
   if build.canary_preference == model.CanaryPreference.AUTO:
     canary_percentage = DEFAULT_CANARY_TEMPLATE_PERCENTAGE
-    if swarming_cfg.HasField('task_template_canary_percentage'):
+    if swarming_cfg.HasField(  # pragma: no branch
+          'task_template_canary_percentage'):
       canary_percentage = swarming_cfg.task_template_canary_percentage.value
     build.canary = should_use_canary_template(canary_percentage)
   else:
