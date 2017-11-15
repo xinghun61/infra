@@ -111,6 +111,9 @@ def NormalizeEmail(email):
 def GetRevertedRevision(message):
   """Parse message to get the reverted revision if there is one."""
   lines = message.strip().splitlines()
+  if not lines:
+    return None
+
   if not lines[0].lower().startswith('revert'):
     return None
 

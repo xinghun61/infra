@@ -119,6 +119,9 @@ class CodeReviewUtilTest(testing.AppengineTestCase):
     self.assertEqual('c9cc182781484f9010f062859cda048afefefefe',
                      reverted_revision)
 
+  def testGetRevertedRevisionEmptyMessage(self):
+    self.assertIsNone(commit_util.GetRevertedRevision(''))
+
   def testGetRevertedRevisionRevertOfRevert(self):
     message = (
         'Revert of Revert\n\nReason for revert:\nRevert of revert\n\n'

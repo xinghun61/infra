@@ -99,6 +99,7 @@ class LocalGitParsersTest(unittest.TestCase):
         --Message end--
 
         :100644 100644 25f95f c766f1 M      src/a/b.py
+        :100644 100644 25aa5f c777f1 X      src/a/c.py
         """)
 
     message = ('Revert commit messages...\n'

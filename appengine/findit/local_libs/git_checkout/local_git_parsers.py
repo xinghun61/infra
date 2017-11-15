@@ -248,11 +248,13 @@ class GitChangeLogParser(GitParser):
         # :100644 100644 df565d 6593e M modules/audio_coding/BUILD.gn
         # For rename, copy, the pattern is like:
         # :100644 100644 3f2e 20a5 R078 path1 path2
-        info['touched_files'].append(
-            GetFileChangeInfo(
-                GetChangeType(match.group(5)),
-                match.group(6), None
-                if len(match.groups()) < 7 else match.group(7)))
+        change_type = GetChangeType(match.group(5)) if match else None
+        if change_type:
+          info['touched_files'].append(
+              GetFileChangeInfo(
+                  change_type,
+                  match.group(6), None
+                  if len(match.groups()) < 7 else match.group(7)))
 
     # If commit is not parsed, the changelog will be {'author': {}, 'committer':
     # {}, 'message': ''}, return None instead.
