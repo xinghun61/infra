@@ -39,8 +39,9 @@ class PredatorForClusterfuzz(PredatorApp):
   def _ClientID(cls):
     return CrashClient.CLUSTERFUZZ
 
-  def __init__(self, get_repository, config):
-    super(PredatorForClusterfuzz, self).__init__(get_repository, config)
+  def __init__(self, get_repository, config, log=None):
+    super(PredatorForClusterfuzz, self).__init__(
+        get_repository, config, log=log)
     meta_weight = MetaWeight({
         'TouchCrashedFileMeta': MetaWeight({
             'MinDistance': Weight(1.),
@@ -69,7 +70,8 @@ class PredatorForClusterfuzz(PredatorApp):
                                                    meta_feature,
                                                    meta_weight),
                               self._component_classifier,
-                              self._project_classifier)
+                              self._project_classifier,
+                              log=self._log)
 
   def _Predator(self):  # pragma: no cover
     return self._predator

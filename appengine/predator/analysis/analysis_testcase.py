@@ -41,7 +41,16 @@ DUMMY_CHANGELOG = ChangeLog.FromDict({
 })
 
 
-class AnalysisTestCase(BaseTestCase):  #pragma: no cover.
+class MockLog(object):  # pragma: no cover
+
+  def __init__(self):
+    self.logs = []
+
+  def Log(self, name, message, level):
+    self.logs.append({'name': name, 'message': message, 'level': level})
+
+
+class AnalysisTestCase(BaseTestCase):  # pragma: no cover.
 
   def _VerifyTwoStackFramesEqual(self, frame1, frame2):
     self.assertIsNotNone(frame1, "the first frame is unexpectedly missing")
@@ -142,3 +151,6 @@ class AnalysisTestCase(BaseTestCase):  #pragma: no cover.
     if client_id is not None: # pragma: no cover
       crash_data['client_id'] = client_id
     return crash_data
+
+  def GetMockLog(self):
+    return MockLog()

@@ -38,3 +38,9 @@ class CrashType(object):
   STACK_OVERFLOW = 'Stack-overflow'
   FLOATING_POINT_EXCEPTION = 'Floating-point-exception'
   NULL_DEREFERENCE = 'Null-dereference'
+
+
+class LogLevel(object):
+  INFO = 'info'
+  WARNING = 'warning'
+  ERROR = 'error'
