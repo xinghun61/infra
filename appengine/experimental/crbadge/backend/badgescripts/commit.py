@@ -10,6 +10,7 @@ import os
 import re
 import threading
 
+from libs.gitiles.diff import ChangeType
 from local_libs import script_util
 from local_libs.git_checkout.local_git_repository import LocalGitRepository
 
@@ -31,7 +32,7 @@ _BADGE_TO_REPO_URL = {
     'code-landed_in_crashpad':
         'https://chromium.googlesource.com/crashpad',
     'code-landed_in_infra':
-        'https://chromium.googlesource.com/infra',
+        'https://chromium.googlesource.com/infra/infra',
     'code-landed_in_libyuv':
         'https://chromium.googlesource.com/libyuv/libyuv',
     'code-landed_in_media_router':
@@ -53,15 +54,18 @@ _BADGES = [
     #'code-landed_in_breakpad',
     #'code-landed_in_catapult',
     #'code-landed_in_crashpad',
-    'code-landed_in_infra',
+    #'code-landed_in_infra',
     #'code-landed_in_libyuv',
     #'code-landed_in_media_router',
-    #'code-landed_in_native_client',
-    'code-landed_in_skia',
-    'code-landed_in_v8',
-    #'code-landed_in_webm',
-    'code-number_of_tbrs',
-    'code-number_of_tbrs_assigned',
+    ##'code-landed_in_native_client',
+    #'code-landed_in_skia',
+    #'code-landed_in_v8',
+    ##'code-landed_in_webm',
+    #'code-number_of_tbrs',
+    #'code-number_of_tbrs_assigned',
+    #'code-number_of_files_added',
+    #'code-number_of_files_touched',
+    #'code-number_of_files_removed',
 ]
 
 _STATE_STORAGE_PATH = os.path.join(os.path.dirname(os.path.realpath(__file__)),
@@ -80,6 +84,15 @@ def GetFunctionAndRepoUrlForBadge(badge):
 
   if badge == 'code-number_of_tbrs_assigned':
     return NumberOfTBRAsigned, repo_url
+
+  if badge == 'code-number_of_files_added':
+    return NumberOfFilesAdded, repo_url
+
+  if badge == 'code-number_of_files_touched':
+    return NumberOfFilesModified, repo_url
+
+  if badge == 'code-number_of_files_removed':
+    return NumberOfFilesDeleted, repo_url
 
 
 def CommitLandedInRepo(changelogs, author_data, lock):
@@ -105,7 +118,29 @@ def NumberOfTBRAsigned(changelogs, author_data, lock):
       tbr_assigneds = match.group(1).split(',')
       with lock:
         for tbr_assigned in tbr_assigneds:
-          author_data[tbr_assigned] += 1
+          if tbr_assigned:
+            author_data[tbr_assigned] += 1
+
+
+def NumberOfFilesAdded(changelogs, author_data, lock):
+  for changelog in changelogs:
+    for touched_file in changelog.touched_files:
+      if touched_file.change_type == ChangeType.ADD:
+        author_data[changelog.author.email] += 1
+
+
+def NumberOfFilesModified(changelogs, author_data, lock):
+  for changelog in changelogs:
+    for touched_file in changelog.touched_files:
+      if touched_file.change_type == ChangeType.MODIFY:
+        author_data[changelog.author.email] += 1
+
+
+def NumberOfFilesDeleted(changelogs, author_data, lock):
+  for changelog in changelogs:
+    for touched_file in changelog.touched_files:
+      if touched_file.change_type == ChangeType.DELETE:
+        author_data[changelog.author.email] += 1
 
 
 class State(object):
@@ -186,5 +221,10 @@ def ComputeCommitBadge(badge):
 
 
 if __name__ == '__main__':
-  badge_infos = [ComputeCommitBadge(badge) for badge in _BADGES]
+  badge_infos = []
+  for badge in _BADGES:
+    badge_info = ComputeCommitBadge(badge)
+    #badge_info['data'] = badge_info['data'][:700]
+    badge_infos.append(badge_info)
+
   print json.dumps(badge_infos, indent=2, sort_keys=True)
