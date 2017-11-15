@@ -49,7 +49,7 @@ class RevertStreakCounter(BaseCounter):
   def __init__(self):
     self.result = {}
     self.badge_names = {
-        2: 'code-revert_consecutive_x2',
+        2: 'code-revert_consecutive',
         3: 'code-revert_consecutive_x3',
         4: 'code-revert_consecutive_x4_plus',
     }
