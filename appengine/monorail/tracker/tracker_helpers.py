@@ -117,7 +117,7 @@ def ParseIssueRequest(cnxn, post_data, services, errors, default_project_name):
   comment = post_data.get('comment', '')
   is_description = bool(post_data.get('description', ''))
   status = post_data.get('status', '')
-  template_name = post_data.get('template_name', '')
+  template_name = urllib.unquote_plus(post_data.get('template_name', ''))
   component_str = post_data.get('components', '')
   label_strs = post_data.getall('label')
 
