@@ -62,3 +62,8 @@ The frontend is a standard classic AppEngine app.
 /app.yaml - Entry point.
 /app.py - Where all the endpoints are.
 /model.py - Where the datastore models are.
+
+# Assets
+Most assets are stored in these locations:
+* https://drive.google.com/corp/drive/folders/1DhXlTSvcmhdXZR53zTha0St8hzu0Lg_G
+* http://storage.cloud.google.com/chromium-crbadge
