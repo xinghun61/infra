@@ -241,11 +241,11 @@ func (m *Data_Results) GetComments() []*Data_Comment {
 // Results.Comment, results as comments.
 //
 // Similar content as that needed to provide robot comments in Gerrit,
-// go/robot-comments-in-gerrit.
+// https://gerrit-review.googlesource.com/Documentation/config-robot-comments.html
 type Data_Comment struct {
 	// Category of the result, encoded as a path with the analyzer name as the
-	// root, annotated with the platform, followed by an arbitrary number of
-	// subcategories, e.g., ‘ClangTidy_${platform}/llvm-header-guard’.
+	// root, followed by an arbitrary number of subcategories, e.g.,
+	// 'ClangTidy/llvm-header-guard’.
 	Category string `protobuf:"bytes,1,opt,name=category" json:"category,omitempty"`
 	// Comment message.  This should be a short message suitable as a code
 	// review comment.
