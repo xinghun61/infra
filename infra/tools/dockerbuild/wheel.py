@@ -825,6 +825,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('Django', '1.9'),
   Universal('enum34', '1.1.6', pyversions=['py2', 'py3']),
   Universal('funcsigs', '1.0.2'),
+  Universal('google-cloud', '0.30.0'),
   UniversalSource('google_compute_engine', '2.6.2',
                   pypi_name='google-compute-engine'),
   Universal('google_api_python_client', '1.6.2'),
