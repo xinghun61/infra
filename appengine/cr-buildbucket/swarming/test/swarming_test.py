@@ -1392,6 +1392,77 @@ class CronUpdateTest(BaseTest):
     self.assertIsNotNone(build.complete_time)
 
 
+class TestApplyIfTags(BaseTest):
+  def test_no_replacement(self):
+    obj = {
+      'tags': [
+        'something',
+        'other_thing',
+      ],
+      'some key': ['value', {'other_key': 100}],
+      'some other key': {
+        'a': 'b',
+        'b': 'c',
+      },
+    }
+    self.assertEqual(swarming.apply_if_tags(obj), obj)
+
+  def test_drop_if_tag(self):
+    obj = {
+      'tags': [
+        'something',
+        'other_thing',
+      ],
+      'some key': ['value', {
+        'other_key': 100,
+        '#if-tag': 'something',
+      }],
+      'some other key': {
+        'a': 'b',
+        'b': 'c',
+      },
+    }
+    self.assertEqual(swarming.apply_if_tags(obj), {
+      'tags': [
+        'something',
+        'other_thing',
+      ],
+      'some key': ['value', {
+        'other_key': 100,
+      }],
+      'some other key': {
+        'a': 'b',
+        'b': 'c',
+      },
+    })
+
+  def test_drop_clause(self):
+    obj = {
+      'tags': [
+        'something',
+        'other_thing',
+      ],
+      'some key': ['value', {
+        'other_key': 100,
+        '#if-tag': 'something',
+      }],
+      'some other key': {
+        'a': 'b',
+        'b': 'c',
+        '#if-tag': 'nope',
+      },
+    }
+    self.assertEqual(swarming.apply_if_tags(obj), {
+      'tags': [
+        'something',
+        'other_thing',
+      ],
+      'some key': ['value', {
+        'other_key': 100,
+      }],
+    })
+
+
 def b64json(data):
   return base64.b64encode(json.dumps(data))
 

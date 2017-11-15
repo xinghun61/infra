@@ -279,6 +279,43 @@ def _buildbucket_property(build):
   }
 
 
+def apply_if_tags(task):
+  """Filters a task based on '#if-tag's on JSON objects.
+
+  JSON objects containing a property '#if-tag' will be checked to see if the
+  given value is one of the task's swarming tags. If the tag is present in the
+  swarming tags of the task, the object is included and the '#if-tag' property
+  is dropped.
+
+  If the JSON object does not contain '#if-tag', it will be unconditionally
+  included.
+
+  It is not possible to filter the entire (top-level) task :).
+
+  This returns a copy of the task.
+  """
+  tags = set(task.get('tags', ()))
+  tag_string = '#if-tag'
+
+  def keep(obj):
+    if isinstance(obj, dict) and tag_string in obj:
+      return obj[tag_string] in tags
+    return True
+
+  def walk(obj):
+    if isinstance(obj, dict):
+      return {
+        k: walk(v)
+        for k, v in obj.iteritems()
+        if k != tag_string and keep(v)
+      }
+    if isinstance(obj, list):
+      return [walk(i) for i in obj if keep(i)]
+    return obj
+
+  return walk(task)
+
+
 @ndb.tasklet
 def _create_task_def_async(
     swarming_cfg, builder_cfg, build, build_number, settings, fake_build):
@@ -388,6 +425,8 @@ def _create_task_def_async(
   task_template_params = {
     k: v or '' for k, v in task_template_params.iteritems()}
   task = format_obj(task_template, task_template_params)
+
+  task = apply_if_tags(task)
 
   if builder_cfg.priority > 0:  # pragma: no branch
     # Swarming accepts priority as a string
