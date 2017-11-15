@@ -98,7 +98,7 @@ CREATE TABLE FieldDef (
 
   field_name VARCHAR(80) BINARY NOT NULL,
   -- TODO(jrobbins): more types
-  field_type ENUM ('enum_type', 'int_type', 'str_type', 'user_type', 'date_type') NOT NULL,
+  field_type ENUM ('enum_type', 'int_type', 'str_type', 'user_type', 'date_type', 'url_type') NOT NULL,
   applicable_type VARCHAR(80),   -- No value means: offered for all issue types
   applicable_predicate TEXT,   -- No value means: TRUE
   is_required BOOLEAN,  -- true means required if applicable

@@ -180,7 +180,7 @@ def MakeFieldDef(
 
 
 def MakeFieldValue(
-    field_id, int_value, str_value, user_id, date_value, derived):
+    field_id, int_value, str_value, user_id, date_value, url_value, derived):
   """Make a FieldValue based on the given information."""
   fv = tracker_pb2.FieldValue(field_id=field_id, derived=derived)
   if int_value is not None:
@@ -191,6 +191,8 @@ def MakeFieldValue(
     fv.user_id = user_id
   elif date_value is not None:
     fv.date_value = date_value
+  elif url_value is not None:
+    fv.url_value = url_value
   else:
     raise ValueError('Unexpected field value')
   return fv

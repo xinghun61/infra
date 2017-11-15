@@ -171,7 +171,7 @@ class IssueDateActionTaskTest(unittest.TestCase):
     issue = fake.MakeTestIssue(789, 1, 'summary', 'New', 111L, issue_id=78901)
     self.services.issue.TestAddIssue(issue)
     issue.field_values = [
-        tracker_bizobj.MakeFieldValue(123, None, None, None, now, False)]
+        tracker_bizobj.MakeFieldValue(123, None, None, None, now, None, False)]
     self.assertEqual(1, len(self.services.issue.GetCommentsForIssue(
         mr.cnxn, 78901)))
     self.SetUpEnqueueOutboundEmailTask(1)
@@ -187,9 +187,9 @@ class IssueDateActionTaskTest(unittest.TestCase):
 
   def SetUpFieldValues(self, issue, now):
     issue.field_values = [
-        tracker_bizobj.MakeFieldValue(123, None, None, None, now, False),
-        tracker_bizobj.MakeFieldValue(124, None, None, None, now, False),
-        tracker_bizobj.MakeFieldValue(125, None, None, None, now, False),
+        tracker_bizobj.MakeFieldValue(123, None, None, None, now, None, False),
+        tracker_bizobj.MakeFieldValue(124, None, None, None, now, None, False),
+        tracker_bizobj.MakeFieldValue(125, None, None, None, now, None, False),
         ]
 
   def testHandleRequest_IssueHasTwoArriveDates(self):

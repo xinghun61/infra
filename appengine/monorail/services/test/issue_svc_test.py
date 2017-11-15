@@ -721,19 +721,24 @@ class IssueServiceTest(unittest.TestCase):
         local_id=1, issue_id=78901, owner_id=111L, summary='sum', status='New',
         project_id=789)
     issue_shard = issue.issue_id % settings.num_logical_shards
-    fv1 = tracker_bizobj.MakeFieldValue(345, 679, '', 0L, None, False)
+    fv1 = tracker_bizobj.MakeFieldValue(345, 679, '', 0L, None, None, False)
     issue.field_values.append(fv1)
-    fv2 = tracker_bizobj.MakeFieldValue(346, 0, 'Blue', 0L, None, True)
+    fv2 = tracker_bizobj.MakeFieldValue(346, 0, 'Blue', 0L, None, None, True)
     issue.field_values.append(fv2)
-    fv3 = tracker_bizobj.MakeFieldValue(347, 0, '', 0L, 1234567890, True)
+    fv3 = tracker_bizobj.MakeFieldValue(347, 0, '', 0L, 1234567890, None, True)
     issue.field_values.append(fv3)
+    fv4 = tracker_bizobj.MakeFieldValue(
+        348, 0, '', 0L, None, 'www.google.com', True)
+    issue.field_values.append(fv4)
     self.SetUpUpdateIssuesFields(issue2fieldvalue_rows=[
         (issue.issue_id, fv1.field_id, fv1.int_value, fv1.str_value,
-         None, fv1.date_value, fv1.derived, issue_shard),
+         None, fv1.date_value, fv1.url_value, fv1.derived, issue_shard),
         (issue.issue_id, fv2.field_id, fv2.int_value, fv2.str_value,
-         None, fv2.date_value, fv2.derived, issue_shard),
+         None, fv2.date_value, fv2.url_value, fv2.derived, issue_shard),
         (issue.issue_id, fv3.field_id, fv3.int_value, fv3.str_value,
-         None, fv3.date_value, fv2.derived, issue_shard),
+         None, fv3.date_value, fv3.url_value, fv3.derived, issue_shard),
+        (issue.issue_id, fv4.field_id, fv4.int_value, fv4.str_value,
+         None, fv4.date_value, fv4.url_value, fv4.derived, issue_shard),
         ])
     self.mox.ReplayAll()
     self.services.issue._UpdateIssuesFields(self.cnxn, [issue], commit=False)

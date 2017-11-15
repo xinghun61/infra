@@ -1116,3 +1116,12 @@ CREATE TABLE LinkedAccount (
   KEY (parent_email),
   UNIQUE KEY (child_email)
 ) ENGINE=INNODB;
+
+================================================================
+2017-11-14: Add field_type ENUM url_type to FieldDef.
+
+ALTER TABLE FieldDef MODIFY field_type ENUM (
+  'enum_type', 'int_type', 'str_type', 'user_type', 'date_type', 'url_type') NOT NULL;
+
+ALTER TABLE Issue2FieldValue ADD COLUMN url_value VARCHAR(1024);
+ALTER TABLE Issue2FieldValue ADD INDEX (field_id, url_value);

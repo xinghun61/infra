@@ -21,6 +21,7 @@ class FieldValue(messages.Message):
   str_value = messages.StringField(3)
   user_id = messages.IntegerField(4)
   date_value = messages.IntegerField(6)
+  url_value = messages.StringField(7)
 
   derived = messages.BooleanField(5, default=False)
 
@@ -259,6 +260,7 @@ class FieldTypes(messages.Enum):
   USER_TYPE = 4
   DATE_TYPE = 5
   BOOL_TYPE = 6
+  URL_TYPE = 7
   # TODO(jrobbins): more types, see tracker.sql for all TODOs.
 
 

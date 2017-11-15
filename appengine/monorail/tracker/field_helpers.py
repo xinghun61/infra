@@ -137,13 +137,13 @@ def _ParseOneFieldValue(cnxn, user_service, fd, val_str):
   if fd.field_type == tracker_pb2.FieldTypes.INT_TYPE:
     try:
       return tracker_bizobj.MakeFieldValue(
-          fd.field_id, int(val_str), None, None, None, False)
+          fd.field_id, int(val_str), None, None, None, None, False)
     except ValueError:
       return None  # TODO(jrobbins): should bounce
 
   elif fd.field_type == tracker_pb2.FieldTypes.STR_TYPE:
     return tracker_bizobj.MakeFieldValue(
-        fd.field_id, None, val_str, None, None, False)
+        fd.field_id, None, val_str, None, None, None, False)
 
   elif fd.field_type == tracker_pb2.FieldTypes.USER_TYPE:
     if val_str:
@@ -153,7 +153,7 @@ def _ParseOneFieldValue(cnxn, user_service, fd, val_str):
         # Set to invalid user ID to display error during the validation step.
         user_id = INVALID_USER_ID
       return tracker_bizobj.MakeFieldValue(
-          fd.field_id, None, None, user_id, None, False)
+          fd.field_id, None, None, user_id, None, None, False)
     else:
       return None
 
@@ -161,9 +161,16 @@ def _ParseOneFieldValue(cnxn, user_service, fd, val_str):
     try:
       timestamp = timestr.DateWidgetStrToTimestamp(val_str)
       return tracker_bizobj.MakeFieldValue(
-          fd.field_id, None, None, None, timestamp, False)
+          fd.field_id, None, None, None, timestamp, None, False)
     except ValueError:
       return None  # TODO(jrobbins): should bounce
+
+  if fd.field_type == tracker_pb2.FieldTypes.URL_TYPE:
+    try:
+      return tracker_bizobj.MakeFieldValue(
+          fd.field_id, None, None, None, None, val_str, False)
+    except ValueError:
+      return None # TODO(jojwang): should bounce
 
   else:
     logging.error('Cant parse field with unexpected type %r', fd.field_type)
@@ -226,6 +233,10 @@ def _ValidateOneCustomField(mr, services, field_def, field_val):
 
   elif field_def.field_type == tracker_pb2.FieldTypes.DATE_TYPE:
     # TODO(jrobbins): date validation
+    pass
+
+  elif field_def.field_type == tracker_pb2.FieldTypes.URL_TYPE:
+    # TODO(jojwang): url validation, this blocks feature launch.
     pass
 
   return None
