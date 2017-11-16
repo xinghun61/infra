@@ -33,8 +33,6 @@ type TriciumServer struct{}
 // Server instance to use within this module/package.
 var server = &TriciumServer{}
 
-const repo = "https://chromium-review.googlesource.com/playground/gerrit-tricium"
-
 // Analyze processes one Analyze request to Tricium.
 //
 // Launches a workflow customized to the project and listed paths. The run ID
