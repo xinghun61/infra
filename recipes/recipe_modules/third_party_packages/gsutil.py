@@ -63,10 +63,10 @@ class GsutilApi(util.ModuleShim):
     # Get the latest version of "gsutil". We do this by checking the VERSION
     # file in the gsutil Git repository on GitHub.
     resp = self.m.url.get_text(VERSION_URL, step_name='version',
-        default_test_data='4.21')
+        default_test_data='4.21\n')
     resp.raise_on_error()
 
-    version = resp.output
+    version = resp.output.strip()
     assert version is not None
 
     url = DOWNLOAD_TEMPLATE % version
