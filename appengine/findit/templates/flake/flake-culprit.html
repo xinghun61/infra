@@ -27,6 +27,7 @@
           <th>Builder</th>
           <th>Step</th>
           <th>Test</th>
+          <th>Confidence</th>
         </thead>
         <tbody>
         {% for analysis in analyses %}
@@ -39,6 +40,11 @@
               <a href="https://findit-for-me.appspot.com/waterfall/flake?key={{ analysis.key }}" target="_blank">
                 {{ analysis.test_name }}
               </a>
+            </td>
+            <td>
+              {% if analysis.confidence_in_culprit %}
+                {{ '%0.1f%%' % (analysis.confidence_in_culprit * 100) }}
+              {% endif %}
             </td>
           </tr>
         {% endfor %}

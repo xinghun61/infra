@@ -4,7 +4,8 @@
 
 from google.appengine.ext import ndb
 
-from gae_libs.handlers.base_handler import BaseHandler, Permission
+from gae_libs.handlers.base_handler import BaseHandler
+from gae_libs.handlers.base_handler import Permission
 from libs import time_util
 
 
@@ -20,11 +21,12 @@ def _ConvertAnalysisToDict(analysis_urlsafe_key):
   analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
   assert analysis
   return {
-      'master_name': analysis.master_name,
       'builder_name': analysis.builder_name,
+      'confidence_in_culprit': analysis.confidence_in_culprit,
+      'key': analysis_urlsafe_key,
+      'master_name': analysis.master_name,
       'step_name': analysis.step_name,
       'test_name': analysis.test_name,
-      'key': analysis_urlsafe_key,
   }
 
 

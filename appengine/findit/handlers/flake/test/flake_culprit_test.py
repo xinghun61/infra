@@ -29,6 +29,7 @@ class FlakeCulpritTest(testing.AppengineTestCase):
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
+    analysis.confidence_in_culprit = 0.9
     analysis.put()
     expected_result = {
         'master_name': master_name,
@@ -36,6 +37,7 @@ class FlakeCulpritTest(testing.AppengineTestCase):
         'step_name': step_name,
         'test_name': test_name,
         'key': analysis.key.urlsafe(),
+        'confidence_in_culprit': 0.9,
     }
 
     self.assertEqual(
@@ -44,8 +46,10 @@ class FlakeCulpritTest(testing.AppengineTestCase):
 
   def testGetFlakeAnalysesAsDicts(self):
     analysis1 = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't1')
+    analysis1.confidence_in_culprit = 0.3
     analysis1.put()
     analysis2 = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't2')
+    analysis2.confidence_in_culprit = 0.8
     analysis2.put()
     culprit = FlakeCulprit.Create('repo', 'revision', 1000)
     culprit.flake_analysis_urlsafe_keys = [
@@ -59,12 +63,14 @@ class FlakeCulpritTest(testing.AppengineTestCase):
         'step_name': 's',
         'test_name': 't1',
         'key': analysis1.key.urlsafe(),
+        'confidence_in_culprit': 0.3,
     }, {
         'master_name': 'm',
         'builder_name': 'b',
         'step_name': 's',
         'test_name': 't2',
         'key': analysis2.key.urlsafe(),
+        'confidence_in_culprit': 0.8,
     }]
 
     self.assertEqual(expected_result,
@@ -72,6 +78,7 @@ class FlakeCulpritTest(testing.AppengineTestCase):
 
   def testGetCulpritSuccess(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.confidence_in_culprit = 0.7
     analysis.put()
     culprit = FlakeCulprit.Create('chromium', 'r1', 1000)
     culprit.flake_analysis_urlsafe_keys.append(analysis.key.urlsafe())
@@ -95,7 +102,8 @@ class FlakeCulpritTest(testing.AppengineTestCase):
             'builder_name': 'b',
             'step_name': 's',
             'test_name': 't',
-            'key': analysis.key.urlsafe()
+            'key': analysis.key.urlsafe(),
+            'confidence_in_culprit': 0.7,
         }],
         'key':
             culprit.key.urlsafe(),
