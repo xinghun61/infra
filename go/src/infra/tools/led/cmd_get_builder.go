@@ -20,6 +20,7 @@ import (
 	"go.chromium.org/luci/common/auth"
 	"go.chromium.org/luci/common/cli"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/flag/stringlistflag"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/retry/transient"
 )
@@ -39,6 +40,8 @@ func getBuilderCmd(authOpts auth.Options) *subcommands.Command {
 			ret.logCfg.AddFlags(&ret.Flags)
 			ret.authFlags.Register(&ret.Flags, authOpts)
 
+			ret.Flags.Var(&ret.tags, "t",
+				"(repeatable) set tags for this build. Buildbucket expects these to be `key:value`.")
 			ret.Flags.StringVar(&ret.bbHost, "B", bbHostDefault,
 				"The buildbucket hostname to grab the definition from.")
 
@@ -53,6 +56,7 @@ type cmdGetBuilder struct {
 	logCfg    logging.Config
 	authFlags authcli.Flags
 
+	tags   stringlistflag.Flag
 	bbHost string
 }
 
@@ -107,6 +111,7 @@ func (c *cmdGetBuilder) grabBuilderDefinition(ctx context.Context, bucket, build
 		BuildRequest: &swarmbucket.ApiPutRequestMessage{
 			Bucket:         bucket,
 			ParametersJson: string(data),
+			Tags:           c.tags,
 		},
 	}
 	answer, err := sbucket.GetTaskDef(args).Context(ctx).Do()
