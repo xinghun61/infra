@@ -38,9 +38,12 @@ MODEL_NAME = 'spam_only_words'
 def Predict(args):
   ml = googleapiclient.discovery.build('ml', 'v1', credentials=credentials)
 
-  summary = raw_input('Summary: ')
-  description = raw_input('Description: ')
-  instance = spam_helpers.GenerateFeaturesRaw(summary, description,
+  with open(args.summary) as f:
+    summary = f.read()
+  with open(args.content) as f:
+    content = f.read()
+
+  instance = spam_helpers.GenerateFeaturesRaw(summary, content,
     SPAM_FEATURE_HASHES)
 
   project_ID = 'projects/%s' % args.project
@@ -82,8 +85,10 @@ def main():
   parser.add_argument('--project', '-p', default='monorail-staging')
   subparsers = parser.add_subparsers(dest='command')
 
-  subparsers.add_parser('predict',
+  predict = subparsers.add_parser('predict',
     help='Submit a prediction to the default model in ML Engine.')
+  predict.add_argument('--summary', help='A file containing the summary.')
+  predict.add_argument('--content', help='A file containing the content.')
 
   subparsers.add_parser('local-predict',
     help='Create an instance on the local filesystem to use in prediction.')
