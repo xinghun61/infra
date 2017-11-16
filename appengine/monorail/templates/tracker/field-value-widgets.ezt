@@ -43,4 +43,12 @@
   [end]
 [end]
 
+[is fields.field_def.type_name "URL_TYPE"]
+  [if-any arg0]
+    [include "field-value-multi-url.ezt" arg1]
+  [else]
+    [include "field-value-single-url.ezt" arg1]
+  [end]
+[end]
+
 [# TODO(jrobbins): more field types. ]

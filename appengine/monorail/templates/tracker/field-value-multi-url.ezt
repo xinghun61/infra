@@ -1,0 +1,25 @@
+[if-any fields.values]
+  [for fields.values]
+    <input type="text" name="custom_[fields.field_id]" value="[fields.values.val]"
+    [if-index fields.values first]
+      [if-any fields.field_def.is_required_bool]required="required"[end]
+    [end]
+    style="width: 12em" class="multivalued customfield">
+    [if-index fields.values first][else]
+      <u class="removeMultiFieldValueWidget">X</u>
+    [end]
+    [if-index fields.values last]
+      <u class="addMultiFieldValueWidget" data-field-id="[fields.field_id]" data-field-type="url">Add a value</u>
+    [end]
+  [end]
+[else]
+  <input name="custom_[fields.field_id]" value=""
+         [if-any fields.field_def.is_required_bool]required="required"[end]
+         style="width: 12em" class="multivalued customfield">
+  <u class="addMultiFieldValueWidget" data-field-id="[fields.field_id]" data-field-type="url">Add a value</u>
+[end]
+
+[for fields.derived_values]
+  <input disabled="disabled" value="[fields.derived_values.val]"
+         style="font-style:italic" style="width: 12em" class="multivalued">
+[end]

@@ -22,6 +22,9 @@ from tracker import tracker_bizobj
 
 INVALID_USER_ID = -1
 
+_GO_LINK_RE = re.compile(r'^(go/[A-Z0-9]{1,})', re.IGNORECASE)
+_URL_RE = re.compile(r'^(http|www.).*', re.IGNORECASE)
+
 ParsedFieldDef = collections.namedtuple(
     'ParsedFieldDef',
     'field_name, field_type_str, min_value, max_value, regex, '
@@ -236,11 +239,13 @@ def _ValidateOneCustomField(mr, services, field_def, field_val):
     pass
 
   elif field_def.field_type == tracker_pb2.FieldTypes.URL_TYPE:
-    # TODO(jojwang): url validation, this blocks feature launch.
-    pass
+    if field_val.url_value:
+      # TODO(jojwang): improve url validate
+      if not (_GO_LINK_RE.match(field_val.url_value)
+              or _URL_RE.match(field_val.url_value)):
+        return 'Value must be a valid url'
 
   return None
-
 
 def ValidateCustomFields(mr, services, field_values, config, errors):
   """Validate each of the given fields and report problems in errors object."""

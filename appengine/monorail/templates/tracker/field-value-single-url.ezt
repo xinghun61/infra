@@ -1,0 +1,25 @@
+[# Even though this field definition says it is single-valued, the issue might have
+   multiple values if the field definition was previously multi-valued.  In such a situation
+   values other than the first value are shown read-only and must be explicitly removed
+   before the comment can be submitted. ]
+
+[# If the field has no explicit values, then show an empty form element.]
+[if-any fields.values][else]
+  <input name="custom_[fields.field_id]" id="[arg0]_custom_[fields.field_id]" value=""
+         class="multivalued customfield" style="width: 12em">
+[end]
+
+[for fields.values]
+  [if-index fields.values first]
+    <input name="custom_[fields.field_id]" value="[fields.values.val]"
+           class="multivalued customfield"
+           [if-any fields.field_def.is_required_bool]required="required"[end]
+           style="width: 12em"><br>
+  [else]
+    <span>
+      <input disabled="disabled" value="[fields.values.val]"
+             class="multivalued" style="width: 12em">
+      <a href="#" class="removeMultiFieldValueWidget">X</a>
+    </span>
+  [end]
+[end]

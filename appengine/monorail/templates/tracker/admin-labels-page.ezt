@@ -80,6 +80,7 @@
       [is field_defs.type_name "USER_TYPE"][define pretty_type_name]User[end][end]
       [is field_defs.type_name "STR_TYPE"][define pretty_type_name]String[end][end]
       [is field_defs.type_name "DATE_TYPE"][define pretty_type_name]Date[end][end]
+      [is field_defs.type_name "URL_TYPE"][define pretty_type_name]Url[end][end]
       <tr data-url="[detail_url]">
         <td class="id" style="white-space:nowrap">
           <a href="[detail_url]">[field_defs.field_name]</a></td>

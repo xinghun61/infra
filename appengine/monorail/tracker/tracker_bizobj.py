@@ -240,6 +240,8 @@ def GetFieldValue(fv, users_by_id):
       return fv.user_id
   elif fv.date_value is not None:
     return timestr.TimestampToDateWidgetStr(fv.date_value)
+  elif fv.url_value is not None:
+    return fv.url_value
   else:
     return None
 

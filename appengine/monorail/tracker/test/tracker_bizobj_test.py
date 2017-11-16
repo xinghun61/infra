@@ -229,11 +229,13 @@ class BizobjTest(unittest.TestCase):
 
     class MockFieldValue(object):
       def __init__(
-          self, int_value=None, str_value=None, user_id=None, date_value=None):
+          self, int_value=None, str_value=None, user_id=None,
+          date_value=None, url_value=None):
         self.int_value = int_value
         self.str_value = str_value
         self.user_id = user_id
         self.date_value = date_value
+        self.url_value = url_value
 
     # Test user types.
     # Use user_id from the field_value and get user from users_by_id.

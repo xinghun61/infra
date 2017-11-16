@@ -659,6 +659,11 @@ class TableCellCustomDate(TableCellCustom):
   """TableCell subclass specifically for showing custom date fields."""
   pass
 
+
+class TableCellCustomUrl(TableCellCustom):
+  """TableCell subclass specifically for showing custom url fields.."""
+  pass
+
 class TableCellCustomBool(TableCellCustom):
   """TableCell subclass specifically for showing custom int fields."""
   pass
@@ -671,6 +676,7 @@ _CUSTOM_FIELD_CELL_FACTORIES = {
     tracker_pb2.FieldTypes.USER_TYPE: TableCellCustomUser,
     tracker_pb2.FieldTypes.DATE_TYPE: TableCellCustomDate,
     tracker_pb2.FieldTypes.BOOL_TYPE: TableCellCustomBool,
+    tracker_pb2.FieldTypes.URL_TYPE: TableCellCustomUrl,
 }
 
 

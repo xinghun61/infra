@@ -1575,7 +1575,7 @@ function TKR_addMultiFieldValueWidget(
     el, field_id, field_type, opt_validate_1, opt_validate_2) {
   var widget = document.createElement('INPUT');
   widget.name = 'custom_' + field_id;
-  if (field_type == 'str') {
+  if (field_type == 'str' || field_type =='url') {
     widget.size = 90;
   }
   if (field_type == 'user') {

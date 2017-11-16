@@ -313,7 +313,26 @@ class FieldHelpersTest(unittest.TestCase):
     pass  # TODO(jrobbins): write this test. @@@
 
   def testValidateOneCustomField_UrlType(self):
-    pass # TODO(jojwang): write this test. This blocks feature launch.
+    fd = tracker_bizobj.MakeFieldDef(
+        123, 789, 'CPU', tracker_pb2.FieldTypes.URL_TYPE, None,
+        '', False, False, False, None, None, '', False, '', '',
+        tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
+
+    fv = tracker_bizobj.MakeFieldValue(
+        123, None, None, None, None, 'www.google.com', False)
+    msg = field_helpers._ValidateOneCustomField(
+        self.mr, self.services, fd, fv)
+    self.assertIsNone(msg)
+
+    fv.url_value = 'go/puppies'
+    msg = field_helpers._ValidateOneCustomField(
+        self.mr, self.services, fd, fv)
+    self.assertIsNone(msg)
+
+    fv.url_value = 'puppies'
+    msg = field_helpers._ValidateOneCustomField(
+        self.mr, self.services, fd, fv)
+    self.assertEqual('Value must be a valid url', msg)
 
   def testValidateOneCustomField_OtherType(self):
     # There are currently no validation options for date-type custom fields.
