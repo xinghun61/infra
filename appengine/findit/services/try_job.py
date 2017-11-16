@@ -275,22 +275,22 @@ def GetUpdatedAnalysisResult(analysis, flaky_failures):
   return analysis_result, all_flaky
 
 
-def GetBuildProperties(master_name, builder_name, build_number, good_revision,
-                       bad_revision, try_job_type, suspected_revisions):
+def GetBuildProperties(pipeline_input, try_job_type):
+  master_name, builder_name, build_number = pipeline_input.build_key.GetParts()
   properties = {
       'recipe':
           'findit/chromium/%s' %
           (failure_type.GetDescriptionForFailureType(try_job_type)),
       'good_revision':
-          good_revision,
+          pipeline_input.good_revision,
       'bad_revision':
-          bad_revision,
+          pipeline_input.bad_revision,
       'target_mastername':
           master_name,
       'referenced_build_url':
           buildbot.CreateBuildUrl(master_name, builder_name, build_number),
       'suspected_revisions':
-          suspected_revisions or [],
+          pipeline_input.suspected_revisions or [],
   }
 
   return properties
@@ -298,14 +298,15 @@ def GetBuildProperties(master_name, builder_name, build_number, good_revision,
 
 def TriggerTryJob(master_name, builder_name, tryserver_mastername,
                   tryserver_buildername, properties, additional_parameters,
-                  try_job_type, cache_name, dimensions, pipeline_id):
+                  try_job_type, cache_name, dimensions, notification_id):
 
   try_job = buildbucket_client.TryJob(
       tryserver_mastername, tryserver_buildername, None, properties, [],
       additional_parameters, cache_name, dimensions)
   # This is a no-op if the tryjob is not on swarmbucket.
   swarming_util.AssignWarmCacheHost(try_job, cache_name, FinditHttpClient())
-  error, build = buildbucket_client.TriggerTryJobs([try_job], pipeline_id)[0]
+  error, build = buildbucket_client.TriggerTryJobs([try_job],
+                                                   notification_id)[0]
 
   monitoring.OnTryJobTriggered(try_job_type, master_name, builder_name)
 
@@ -339,3 +340,24 @@ def UpdateTryJob(master_name, builder_name, build_number, build_id,
   try_job.try_job_ids.append(build_id)
   try_job.put()
   return try_job
+
+
+def PrepareParametersToScheduleTryJob(master_name,
+                                      builder_name,
+                                      build_number,
+                                      failure_info,
+                                      heuristic_result,
+                                      force_buildbot=False):
+  parameters = {}
+
+  parameters['build_key'] = {
+      'master_name': master_name,
+      'builder_name': builder_name,
+      'build_number': build_number
+  }
+  parameters['bad_revision'] = failure_info['builds'][str(build_number)][
+      'chromium_revision']
+  parameters['suspected_revisions'] = GetSuspectsFromHeuristicResult(
+      heuristic_result)
+  parameters['force_buildbot'] = force_buildbot
+  return parameters

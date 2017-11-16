@@ -13,6 +13,7 @@ from pipelines.compile_failure import start_compile_try_job_pipeline
 from pipelines.compile_failure.start_compile_try_job_pipeline import (
     StartCompileTryJobPipeline)
 from services.compile_failure import compile_try_job
+from services.parameters import ScheduleCompileTryJobParameters
 from waterfall.test import wf_testcase
 
 
@@ -56,7 +57,12 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job.put()
 
     mock_fn.return_value = True, try_job.key
-    mock_parameter.return_value = {
+    parameters = {
+        'build_key': {
+            'master_name': master_name,
+            'builder_name': builder_name,
+            'build_number': build_number
+        },
         'good_revision': good_revision,
         'bad_revision': bad_revision,
         'compile_targets': [],
@@ -65,14 +71,12 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'dimensions': []
     }
 
-    self.MockPipeline(
+    pipeline_input = ScheduleCompileTryJobParameters.FromSerializable(
+        parameters)
+    mock_parameter.return_value = pipeline_input
+    self.MockSynchronousPipeline(
         start_compile_try_job_pipeline.ScheduleCompileTryJobPipeline,
-        'try_job_id',
-        expected_args=[
-            master_name, builder_name, build_number, good_revision,
-            bad_revision, [], [], 'cache_name', []
-        ],
-        expected_kwargs={})
+        pipeline_input, 'try_job_id')
     self.MockPipeline(
         start_compile_try_job_pipeline.MonitorTryJobPipeline,
         'try_job_result',
@@ -104,14 +108,15 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mock_pipeline.assert_not_called()
 
   @mock.patch.object(
-      compile_try_job,
-      'GetParametersToScheduleCompileTryJob',
-      return_value={'good_revision': None})
-  @mock.patch.object(
       compile_try_job, 'NeedANewCompileTryJob', return_value=(True, None))
+  @mock.patch.object(compile_try_job, 'GetParametersToScheduleCompileTryJob')
   @mock.patch.object(start_compile_try_job_pipeline,
                      'ScheduleCompileTryJobPipeline')
-  def testNoCompileTryJobBecauseNoGoodRevision(self, mock_pipeline, *_):
+  def testNoCompileTryJobBecauseNoGoodRevision(self, mock_pipeline,
+                                               mock_parameter, _):
+
+    mock_parameter.return_value = ScheduleCompileTryJobParameters(
+        good_revision=None)
     failure_info = {'failure_type': failure_type.COMPILE}
     pipeline = StartCompileTryJobPipeline()
     result = pipeline.run('m', 'b', 1, failure_info, {}, {}, True, False)

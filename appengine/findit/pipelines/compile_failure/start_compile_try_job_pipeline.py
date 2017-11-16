@@ -7,9 +7,9 @@ from gae_libs.pipeline_wrapper import BasePipeline
 from services.compile_failure import compile_try_job
 from pipelines.compile_failure import (identify_compile_try_job_culprit_pipeline
                                        as culprit_pipeline)
-from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
-from waterfall.schedule_compile_try_job_pipeline import (
+from pipelines.compile_failure.schedule_compile_try_job_pipeline import (
     ScheduleCompileTryJobPipeline)
+from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
 
 class StartCompileTryJobPipeline(BasePipeline):
@@ -30,15 +30,11 @@ class StartCompileTryJobPipeline(BasePipeline):
     parameters = compile_try_job.GetParametersToScheduleCompileTryJob(
         master_name, builder_name, build_number, failure_info, signals,
         heuristic_result)
-    if not parameters['good_revision']:
+    if not parameters.good_revision:
       # No last_pass in saved in failure_info.
       return
 
-    try_job_id = yield ScheduleCompileTryJobPipeline(
-        master_name, builder_name, build_number, parameters['good_revision'],
-        parameters['bad_revision'], parameters['compile_targets'],
-        parameters['suspected_revisions'], parameters['cache_name'],
-        parameters['dimensions'])
+    try_job_id = yield ScheduleCompileTryJobPipeline(parameters)
 
     try_job_result = yield MonitorTryJobPipeline(
         try_job_key.urlsafe(), failure_type.COMPILE, try_job_id)

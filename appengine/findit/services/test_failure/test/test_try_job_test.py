@@ -4,6 +4,7 @@
 
 import mock
 
+from common import exceptions
 from common.waterfall import failure_type
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
@@ -12,8 +13,11 @@ from model.wf_swarming_task import WfSwarmingTask
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from services import try_job as try_job_service
+from services.parameters import BuildKey
+from services.parameters import ScheduleTestTryJobParameters
 from services.test_failure import test_try_job
 from waterfall import swarming_util
+from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
 
@@ -830,14 +834,18 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    expected_parameters = {
-        'bad_revision': 'rev2',
-        'suspected_revisions': [],
-        'good_revision': 'rev1',
-        'task_results': {},
-        'dimensions': ['os:Mac-10.9', 'cpu:x86-64', 'pool:Chrome.Findit'],
-        'cache_name': 'cache'
-    }
+    expected_parameters = ScheduleTestTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        good_revision='rev1',
+        bad_revision='rev2',
+        suspected_revisions=[],
+        force_buildbot=False,
+        dimensions=['os:Mac-10.9', 'cpu:x86-64', 'pool:Chrome.Findit'],
+        cache_name='cache',
+        targeted_tests={})
     self.assertEqual(expected_parameters,
                      test_try_job.GetParametersToScheduleTestTryJob(
                          master_name, builder_name, build_number, failure_info,
@@ -968,13 +976,23 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
 
+    pipeline_input = ScheduleTestTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        good_revision='1',
+        bad_revision='2',
+        suspected_revisions=[],
+        force_buildbot=False)
+
     expected_properties = {
         'recipe':
             'findit/chromium/test',
         'good_revision':
-            1,
+            '1',
         'bad_revision':
-            2,
+            '2',
         'target_mastername':
             master_name,
         'target_testername':
@@ -983,7 +1001,87 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'referenced_build_url': ('https://ci.chromium.org/buildbot/%s/%s/%s') %
                                 (master_name, builder_name, build_number)
     }
-    properties = test_try_job.GetBuildProperties(master_name, builder_name,
-                                                 build_number, 1, 2, None)
+    properties = test_try_job.GetBuildProperties(pipeline_input)
 
     self.assertEqual(properties, expected_properties)
+
+  @mock.patch.object(
+      waterfall_config, 'GetWaterfallTrybot', return_value=('m', 'b'))
+  @mock.patch.object(test_try_job, 'GetBuildProperties', return_value={})
+  @mock.patch.object(try_job_service, 'TriggerTryJob', return_value=('1', None))
+  def testSuccessfullyScheduleNewTryJobForTest(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    good_revision = 'rev1'
+    bad_revision = 'rev2'
+    targeted_tests = {'a': ['test1', 'test2']}
+    build_id = '1'
+    WfTryJob.Create(master_name, builder_name, build_number).put()
+
+    parameters = ScheduleTestTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        bad_revision=bad_revision,
+        good_revision=good_revision,
+        suspected_revisions=[],
+        targeted_tests=targeted_tests,
+        dimensions=[],
+        cache_name=None,
+        force_buildbot=False)
+
+    try_job_id = test_try_job.ScheduleTestTryJob(parameters, 'pipeline')
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(try_job_id, build_id)
+    self.assertEqual(try_job.test_results[-1]['try_job_id'], build_id)
+
+    try_job_data = WfTryJobData.Get(try_job_id)
+    self.assertIsNotNone(try_job_data)
+    self.assertEqual(try_job_data.master_name, master_name)
+    self.assertEqual(try_job_data.builder_name, builder_name)
+    self.assertEqual(try_job_data.build_number, build_number)
+    self.assertEqual(
+        try_job_data.try_job_type,
+        failure_type.GetDescriptionForFailureType(failure_type.TEST))
+    self.assertFalse(try_job_data.has_compile_targets)
+    self.assertFalse(try_job_data.has_heuristic_results)
+
+  class MockedError(object):
+
+    def __init__(self, message, reason):
+      self.message = message
+      self.reason = reason
+
+  @mock.patch.object(
+      waterfall_config, 'GetWaterfallTrybot', return_value=('m', 'b'))
+  @mock.patch.object(test_try_job, 'GetBuildProperties', return_value={})
+  @mock.patch.object(
+      try_job_service,
+      'TriggerTryJob',
+      return_value=(None, MockedError('message', 'reason')))
+  def testScheduleTestTryJobRaise(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    good_revision = 'rev1'
+    bad_revision = 'rev2'
+    targeted_tests = {'a': ['test1', 'test2']}
+
+    parameters = ScheduleTestTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        bad_revision=bad_revision,
+        good_revision=good_revision,
+        suspected_revisions=[],
+        targeted_tests=targeted_tests,
+        dimensions=[],
+        cache_name=None,
+        force_buildbot=False)
+
+    with self.assertRaises(exceptions.RetryException):
+      test_try_job.ScheduleTestTryJob(parameters, 'pipeline')

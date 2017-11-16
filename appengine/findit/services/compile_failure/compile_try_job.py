@@ -15,6 +15,7 @@ import logging
 from google.appengine.ext import ndb
 
 from common import constants
+from common import exceptions
 from common.waterfall import failure_type
 from libs import analysis_status
 from model import analysis_approach_type
@@ -23,6 +24,7 @@ from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from services import try_job as try_job_service
 from services.compile_failure import compile_failure_analysis
+from services.parameters import ScheduleCompileTryJobParameters
 from waterfall import build_util
 from waterfall import suspected_cl_util
 from waterfall import swarming_util
@@ -180,15 +182,17 @@ def _GetGoodRevisionCompile(master_name, builder_name, build_number,
   return failure_info['builds'][str(last_pass)]['chromium_revision']
 
 
-def GetParametersToScheduleCompileTryJob(master_name, builder_name,
-                                         build_number, failure_info, signals,
-                                         heuristic_result):
-  parameters = {}
-  parameters['bad_revision'] = failure_info['builds'][str(build_number)][
-      'chromium_revision']
-  parameters[
-      'suspected_revisions'] = try_job_service.GetSuspectsFromHeuristicResult(
-          heuristic_result)
+def GetParametersToScheduleCompileTryJob(master_name,
+                                         builder_name,
+                                         build_number,
+                                         failure_info,
+                                         signals,
+                                         heuristic_result,
+                                         force_buildbot=False):
+  parameters = try_job_service.PrepareParametersToScheduleTryJob(
+      master_name, builder_name, build_number, failure_info, heuristic_result,
+      force_buildbot)
+
   parameters['good_revision'] = _GetGoodRevisionCompile(
       master_name, builder_name, build_number, failure_info)
 
@@ -198,7 +202,8 @@ def GetParametersToScheduleCompileTryJob(master_name, builder_name,
       master_name, builder_name)
   parameters['cache_name'] = swarming_util.GetCacheName(master_name,
                                                         builder_name)
-  return parameters
+
+  return ScheduleCompileTryJobParameters.FromSerializable(parameters)
 
 
 def GetFailedRevisionFromCompileResult(compile_result):
@@ -323,13 +328,42 @@ def UpdateSuspectedCLs(master_name, builder_name, build_number, culprits):
                                         failure_type.COMPILE, failures, None)
 
 
-def GetBuildProperties(master_name, builder_name, build_number, good_revision,
-                       bad_revision, suspected_revisions):
-  properties = try_job_service.GetBuildProperties(
-      master_name, builder_name, build_number, good_revision, bad_revision,
-      failure_type.COMPILE, suspected_revisions)
-
-  # Adds target_buildername to properties.
-  properties['target_buildername'] = builder_name
+def GetBuildProperties(pipeline_input):
+  properties = try_job_service.GetBuildProperties(pipeline_input,
+                                                  failure_type.COMPILE)
+  properties['target_buildername'] = pipeline_input.build_key.builder_name
 
   return properties
+
+
+def ScheduleCompileTryJob(parameters, notification_id):
+  master_name, builder_name, build_number = (parameters.build_key.GetParts())
+  properties = GetBuildProperties(parameters)
+  additional_parameters = {'compile_targets': parameters.compile_targets}
+  tryserver_mastername, tryserver_buildername = (
+      waterfall_config.GetWaterfallTrybot(master_name, builder_name,
+                                          parameters.force_buildbot))
+
+  build_id, error = try_job_service.TriggerTryJob(
+      master_name, builder_name, tryserver_mastername, tryserver_buildername,
+      properties, additional_parameters,
+      failure_type.GetDescriptionForFailureType(failure_type.COMPILE),
+      parameters.cache_name, parameters.dimensions, notification_id)
+
+  if error:
+    raise exceptions.RetryException(error.reason, error.message)
+  try_job = WfTryJob.Get(master_name, builder_name, build_number)
+  try_job.compile_results.append({'try_job_id': build_id})
+  try_job.try_job_ids.append(build_id)
+  try_job.put()
+  try_job = try_job_service.UpdateTryJob(
+      master_name, builder_name, build_number, build_id, failure_type.COMPILE)
+
+  # Create a corresponding WfTryJobData entity to capture as much metadata as
+  # early as possible.
+  try_job_service.CreateTryJobData(build_id, try_job.key,
+                                   bool(parameters.compile_targets),
+                                   bool(parameters.suspected_revisions),
+                                   failure_type.COMPILE)
+
+  return build_id

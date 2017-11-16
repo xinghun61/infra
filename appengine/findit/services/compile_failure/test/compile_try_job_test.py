@@ -4,6 +4,7 @@
 
 import mock
 
+from common import exceptions
 from common.waterfall import failure_type
 from libs import analysis_status
 from model import analysis_approach_type
@@ -15,8 +16,11 @@ from model.wf_try_job_data import WfTryJobData
 from services import try_job as try_job_service
 from services.compile_failure import compile_failure_analysis
 from services.compile_failure import compile_try_job
+from services.parameters import BuildKey
+from services.parameters import ScheduleCompileTryJobParameters
 from waterfall import suspected_cl_util
 from waterfall import swarming_util
+from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
 
@@ -750,8 +754,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(swarming_util, 'GetCacheName', return_value='cache')
   def testGetParametersToScheduleTestTryJob(self, *_):
-    master_name = 'm'
-    builder_name = 'b'
+    master_name = u'm'
+    builder_name = u'b'
     build_number = 1
     failure_info = {
         'failed_steps': {
@@ -770,18 +774,43 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    expected_parameters = {
-        'bad_revision': 'rev2',
+    good_revision = 'rev1'
+    bad_revision = 'rev2'
+    cache_name = 'cache'
+    dimensions = ['os:Mac-10.9', 'cpu:x86-64', 'pool:Chrome.Findit']
+
+    expected_parameters_dict = {
+        'build_key': {
+            'master_name': master_name,
+            'builder_name': builder_name,
+            'build_number': build_number
+        },
+        'bad_revision': bad_revision,
         'suspected_revisions': [],
-        'good_revision': 'rev1',
+        'good_revision': good_revision,
         'compile_targets': [],
-        'dimensions': ['os:Mac-10.9', 'cpu:x86-64', 'pool:Chrome.Findit'],
-        'cache_name': 'cache'
+        'dimensions': dimensions,
+        'cache_name': 'cache',
+        'force_buildbot': False,
     }
-    self.assertEqual(expected_parameters,
-                     compile_try_job.GetParametersToScheduleCompileTryJob(
-                         master_name, builder_name, build_number, failure_info,
-                         None, None))
+
+    expected_parameter = ScheduleCompileTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        good_revision=good_revision,
+        bad_revision=bad_revision,
+        suspected_revisions=[],
+        cache_name=cache_name,
+        dimensions=dimensions,
+        compile_targets=[],
+        force_buildbot=False)
+
+    parameter = compile_try_job.GetParametersToScheduleCompileTryJob(
+        master_name, builder_name, build_number, failure_info, None, None)
+    self.assertEqual(expected_parameter, parameter)
+    self.assertEqual(expected_parameters_dict, parameter.ToSerializable())
 
   def testGetFailedRevisionFromCompileResult(self):
     culprit = '1234567'
@@ -959,17 +988,28 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
                      compile_try_job._GetUpdatedAnalysisResult(analysis, True))
 
   def testGetBuildPropertiesWithCompileTargets(self):
-    master_name = 'm'
-    builder_name = 'b'
+    master_name = u'm'
+    builder_name = u'b'
     build_number = 1
+
+    pipeline_input = ScheduleCompileTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        good_revision='1',
+        bad_revision='2',
+        suspected_revisions=[],
+        compile_targets=[],
+        force_buildbot=False)
 
     expected_properties = {
         'recipe':
             'findit/chromium/compile',
         'good_revision':
-            1,
+            '1',
         'bad_revision':
-            2,
+            '2',
         'target_mastername':
             master_name,
         'target_buildername':
@@ -978,7 +1018,89 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         'referenced_build_url': ('https://ci.chromium.org/buildbot/%s/%s/%s') %
                                 (master_name, builder_name, build_number)
     }
-    properties = compile_try_job.GetBuildProperties(master_name, builder_name,
-                                                    build_number, 1, 2, None)
+    properties = compile_try_job.GetBuildProperties(pipeline_input)
 
     self.assertEqual(properties, expected_properties)
+
+  @mock.patch.object(
+      waterfall_config, 'GetWaterfallTrybot', return_value=('m', 'b'))
+  @mock.patch.object(compile_try_job, 'GetBuildProperties', return_value={})
+  @mock.patch.object(try_job_service, 'TriggerTryJob', return_value=('1', None))
+  def testSuccessfullyScheduleNewTryJobForCompileWithSuspectedRevisions(
+      self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    good_revision = 'rev1'
+    bad_revision = 'rev2'
+    build_id = '1'
+
+    WfTryJob.Create(master_name, builder_name, build_number).put()
+
+    parameters = ScheduleCompileTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        good_revision=good_revision,
+        bad_revision=bad_revision,
+        suspected_revisions=['r5'],
+        cache_name=None,
+        dimensions=[],
+        force_buildbot=False,
+        compile_targets=[])
+    try_job_id = compile_try_job.ScheduleCompileTryJob(parameters, 'pipeline')
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    try_job_data = WfTryJobData.Get(build_id)
+
+    expected_try_job_id = '1'
+    self.assertEqual(expected_try_job_id, try_job_id)
+    self.assertEqual(expected_try_job_id,
+                     try_job.compile_results[-1]['try_job_id'])
+    self.assertTrue(expected_try_job_id in try_job.try_job_ids)
+    self.assertIsNotNone(try_job_data)
+    self.assertEqual(try_job_data.master_name, master_name)
+    self.assertEqual(try_job_data.builder_name, builder_name)
+    self.assertEqual(try_job_data.build_number, build_number)
+    self.assertEqual(
+        try_job_data.try_job_type,
+        failure_type.GetDescriptionForFailureType(failure_type.COMPILE))
+    self.assertFalse(try_job_data.has_compile_targets)
+    self.assertTrue(try_job_data.has_heuristic_results)
+
+  class MockedError(object):
+
+    def __init__(self, message, reason):
+      self.message = message
+      self.reason = reason
+
+  @mock.patch.object(
+      waterfall_config, 'GetWaterfallTrybot', return_value=('m', 'b'))
+  @mock.patch.object(compile_try_job, 'GetBuildProperties', return_value={})
+  @mock.patch.object(
+      try_job_service,
+      'TriggerTryJob',
+      return_value=(None, MockedError('message', 'reason')))
+  def testScheduleTestTryJobRaise(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    good_revision = 'rev1'
+    bad_revision = 'rev2'
+
+    parameters = ScheduleCompileTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        good_revision=good_revision,
+        bad_revision=bad_revision,
+        suspected_revisions=['r5'],
+        cache_name=None,
+        dimensions=[],
+        force_buildbot=False,
+        compile_targets=[])
+
+    with self.assertRaises(exceptions.RetryException):
+      compile_try_job.ScheduleCompileTryJob(parameters, 'pipeline')

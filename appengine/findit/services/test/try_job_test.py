@@ -18,7 +18,8 @@ from model.wf_failure_group import WfFailureGroup
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from services import try_job as try_job_service
-from waterfall import waterfall_config
+from services.parameters import BuildKey
+from services.parameters import ScheduleCompileTryJobParameters
 from waterfall.test import wf_testcase
 
 _GIT_REPO = CachedGitilesRepository(
@@ -471,22 +472,30 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
 
+    pipeline_input = ScheduleCompileTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        good_revision='1',
+        bad_revision='2',
+        suspected_revisions=['rev'])
+
     expected_properties = {
         'recipe':
             'findit/chromium/compile',
         'good_revision':
-            1,
+            '1',
         'bad_revision':
-            2,
+            '2',
         'target_mastername':
             master_name,
         'referenced_build_url': ('https://ci.chromium.org/buildbot/%s/%s/%s') %
                                 (master_name, builder_name, build_number),
         'suspected_revisions': ['rev']
     }
-    properties = try_job_service.GetBuildProperties(
-        master_name, builder_name, build_number, 1, 2, failure_type.COMPILE,
-        ['rev'])
+    properties = try_job_service.GetBuildProperties(pipeline_input,
+                                                    failure_type.COMPILE)
 
     self.assertEqual(properties, expected_properties)
 
@@ -578,3 +587,25 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
                                            failure_type.COMPILE)
     self.assertEqual(try_job.try_job_ids[0], build_id)
     self.assertIsNotNone(try_job.compile_results)
+
+  def testPrepareParametersToScheduleTryJob(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+
+    failure_info = {'builds': {'1': {'chromium_revision': 'rev2'}}}
+    expected_parameters = {
+        'build_key': {
+            'master_name': master_name,
+            'builder_name': builder_name,
+            'build_number': build_number
+        },
+        'bad_revision': 'rev2',
+        'suspected_revisions': [],
+        'force_buildbot': False
+    }
+
+    self.assertEqual(expected_parameters,
+                     try_job_service.PrepareParametersToScheduleTryJob(
+                         master_name, builder_name, build_number, failure_info,
+                         {}))

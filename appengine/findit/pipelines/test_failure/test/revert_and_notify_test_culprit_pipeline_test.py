@@ -67,7 +67,7 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 124
     repo_name = 'chromium'
     revision = 'r1'
-    cl_key = CLKey(repo_name=repo_name.decode('utf=8'), revision=revision)
+    cl_key = CLKey(repo_name=repo_name, revision=revision)
     culprits = DictOfCLKeys()
     culprits['r1'] = cl_key
     heuristic_cls = ListOfCLKeys()

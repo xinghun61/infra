@@ -5,11 +5,14 @@
 from common.waterfall import failure_type
 from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
-from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
-from waterfall.schedule_compile_try_job_pipeline import (
+from pipelines.compile_failure.schedule_compile_try_job_pipeline import (
     ScheduleCompileTryJobPipeline)
-from waterfall.schedule_test_try_job_pipeline import (
+from pipelines.test_failure.schedule_test_try_job_pipeline import (
     ScheduleTestTryJobPipeline)
+from services.parameters import BuildKey
+from services.parameters import ScheduleCompileTryJobParameters
+from services.parameters import ScheduleTestTryJobParameters
+from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
 
 class RerunTryJobPipeline(BasePipeline):
@@ -19,29 +22,34 @@ class RerunTryJobPipeline(BasePipeline):
   def run(self, master_name, builder_name, build_number, try_job_type,
           properties, additional_parameters, urlsafe_try_job_key):
     if try_job_type == failure_type.TEST:
-      rerun = yield ScheduleTestTryJobPipeline(
-          master_name,
-          builder_name,
-          build_number,
-          properties['good_revision'],
-          properties['bad_revision'],
-          properties.get('suspected_revisions'),
-          None,
-          None,
-          additional_parameters.get('tests'),
+      pipeline_input = ScheduleTestTryJobParameters(
+          build_key=BuildKey(
+              master_name=master_name,
+              builder_name=builder_name,
+              build_number=build_number),
+          good_revision=properties['good_revision'],
+          bad_revision=properties['bad_revision'],
+          suspected_revisions=properties.get('suspected_revisions'),
+          targeted_tests=additional_parameters.get('tests'),
+          cache_name=None,
+          dimensions=[],
           force_buildbot=True)
+      rerun = yield ScheduleTestTryJobPipeline(pipeline_input)
+
     elif try_job_type == failure_type.COMPILE:
-      rerun = yield ScheduleCompileTryJobPipeline(
-          master_name,
-          builder_name,
-          build_number,
-          properties['good_revision'],
-          properties['bad_revision'],
-          additional_parameters.get('compile_targets'),
-          properties.get('suspected_revisions'),
-          None,
-          None,
+      pipeline_input = ScheduleCompileTryJobParameters(
+          build_key=BuildKey(
+              master_name=master_name,
+              builder_name=builder_name,
+              build_number=build_number),
+          good_revision=properties['good_revision'],
+          bad_revision=properties['bad_revision'],
+          compile_targets=additional_parameters.get('compile_targets'),
+          suspected_revisions=properties.get('suspected_revisions'),
+          cache_name=None,
+          dimensions=[],
           force_buildbot=True)
+      rerun = yield ScheduleCompileTryJobPipeline(pipeline_input)
     else:
       raise pipeline.Abort(
           'Unsupported tryjob type %s' %

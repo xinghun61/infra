@@ -11,15 +11,12 @@ It provides functions to:
 
 import logging
 
-from google.appengine.ext import ndb
-
+from common import exceptions
 from common.waterfall import failure_type
-from libs import time_util
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
-from model.wf_try_job import WfTryJob
-from model.wf_try_job_data import WfTryJobData
 from services import try_job as try_job_service
+from services.parameters import ScheduleTestTryJobParameters
 from services.test_failure import ci_test_failure
 from waterfall import build_util
 from waterfall import swarming_util
@@ -217,19 +214,21 @@ def _GetGoodRevisionTest(master_name, builder_name, build_number, failure_info):
   return failure_info['builds'][str(last_pass)]['chromium_revision']
 
 
-def GetParametersToScheduleTestTryJob(master_name, builder_name, build_number,
-                                      failure_info, heuristic_result):
-  parameters = {}
-  parameters['bad_revision'] = failure_info['builds'][str(build_number)][
-      'chromium_revision']
-  parameters[
-      'suspected_revisions'] = try_job_service.GetSuspectsFromHeuristicResult(
-          heuristic_result)
+def GetParametersToScheduleTestTryJob(master_name,
+                                      builder_name,
+                                      build_number,
+                                      failure_info,
+                                      heuristic_result,
+                                      force_buildbot=False):
+  parameters = try_job_service.PrepareParametersToScheduleTryJob(
+      master_name, builder_name, build_number, failure_info, heuristic_result,
+      force_buildbot)
+
   parameters['good_revision'] = _GetGoodRevisionTest(master_name, builder_name,
                                                      build_number, failure_info)
 
-  parameters['task_results'] = GetReliableTests(master_name, builder_name,
-                                                build_number, failure_info)
+  parameters['targeted_tests'] = GetReliableTests(master_name, builder_name,
+                                                  build_number, failure_info)
 
   parent_mastername = failure_info.get('parent_mastername') or master_name
   parent_buildername = failure_info.get('parent_buildername') or builder_name
@@ -237,7 +236,8 @@ def GetParametersToScheduleTestTryJob(master_name, builder_name, build_number,
       parent_mastername, parent_buildername)
   parameters['cache_name'] = swarming_util.GetCacheName(parent_mastername,
                                                         parent_buildername)
-  return parameters
+
+  return ScheduleTestTryJobParameters.FromSerializable(parameters)
 
 
 # TODO(chanli@): move this function to swarming task related module.
@@ -263,11 +263,39 @@ def GetReliableTests(master_name, builder_name, build_number, failure_info):
   return task_results
 
 
-def GetBuildProperties(master_name, builder_name, build_number, good_revision,
-                       bad_revision, suspected_revisions):
-  properties = try_job_service.GetBuildProperties(
-      master_name, builder_name, build_number, good_revision, bad_revision,
-      failure_type.TEST, suspected_revisions)
-  properties['target_testername'] = builder_name
+def GetBuildProperties(pipeline_input):
+  properties = try_job_service.GetBuildProperties(pipeline_input,
+                                                  failure_type.TEST)
+  properties['target_testername'] = pipeline_input.build_key.builder_name
 
   return properties
+
+
+def ScheduleTestTryJob(parameters, notification_id):
+  master_name, builder_name, build_number = (parameters.build_key.GetParts())
+
+  properties = GetBuildProperties(parameters)
+  additional_parameters = {'tests': parameters.targeted_tests}
+
+  tryserver_mastername, tryserver_buildername = (
+      waterfall_config.GetWaterfallTrybot(master_name, builder_name,
+                                          parameters.force_buildbot))
+
+  build_id, error = try_job_service.TriggerTryJob(
+      master_name, builder_name, tryserver_mastername, tryserver_buildername,
+      properties, additional_parameters,
+      failure_type.GetDescriptionForFailureType(failure_type.TEST),
+      parameters.cache_name, parameters.dimensions, notification_id)
+
+  if error:
+    raise exceptions.RetryException(error.reason, error.message)
+  try_job = try_job_service.UpdateTryJob(
+      master_name, builder_name, build_number, build_id, failure_type.TEST)
+
+  # Create a corresponding WfTryJobData entity to capture as much metadata as
+  # early as possible.
+  try_job_service.CreateTryJobData(build_id, try_job.key, False,
+                                   bool(parameters.suspected_revisions),
+                                   failure_type.TEST)
+
+  return build_id

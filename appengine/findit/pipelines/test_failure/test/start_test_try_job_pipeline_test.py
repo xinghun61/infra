@@ -10,6 +10,8 @@ from model.wf_try_job import WfTryJob
 from pipelines.test_failure import start_test_try_job_pipeline
 from pipelines.test_failure.start_test_try_job_pipeline import (
     StartTestTryJobPipeline)
+from services.parameters import BuildKey
+from services.parameters import ScheduleTestTryJobParameters
 from services.test_failure import test_try_job
 from waterfall.test import wf_testcase
 
@@ -72,23 +74,23 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.put()
     mock_fn.return_value = (True, try_job.key)
-    mock_parameter.return_value = {
-        'good_revision': good_revision,
-        'bad_revision': bad_revision,
-        'suspected_revisions': [],
-        'cache_name': 'cache_name',
-        'dimensions': [],
-        'task_results': {}
-    }
+    parameters = ScheduleTestTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        bad_revision=bad_revision,
+        good_revision=good_revision,
+        suspected_revisions=[],
+        targeted_tests={'step': ['test']},
+        dimensions=[],
+        cache_name=None,
+        force_buildbot=False)
+    mock_parameter.return_value = parameters
 
-    self.MockPipeline(
-        start_test_try_job_pipeline.ScheduleTestTryJobPipeline,
-        'try_job_id',
-        expected_args=[
-            master_name, builder_name, build_number, good_revision,
-            bad_revision, [], 'cache_name', [], {}
-        ],
-        expected_kwargs={})
+    self.MockSynchronousPipeline(
+        start_test_try_job_pipeline.ScheduleTestTryJobPipeline, parameters,
+        'try_job_id')
     self.MockPipeline(
         start_test_try_job_pipeline.MonitorTryJobPipeline,
         'try_job_result',
@@ -119,14 +121,28 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mock_pipeline.assert_not_called()
 
   @mock.patch.object(
-      test_try_job,
-      'GetParametersToScheduleTestTryJob',
-      return_value={'good_revision': None})
+      test_try_job, 'NeedANewTestTryJob', return_value=(True, None))
+  @mock.patch.object(test_try_job, 'GetParametersToScheduleTestTryJob')
+  @mock.patch.object(start_test_try_job_pipeline, 'ScheduleTestTryJobPipeline')
+  def testNoTestTryJobBecauseNoGoodRevision(self, mock_pipeline, mock_parameter,
+                                            _):
+    failure_info = {'failure_type': failure_type.TEST}
+    mock_parameter.return_value = ScheduleTestTryJobParameters(
+        good_revision=None)
+    pipeline = StartTestTryJobPipeline()
+    result = pipeline.run('m', 'b', 1, failure_info, {}, True, False)
+    self.assertEqual(list(result), [])
+    mock_pipeline.assert_not_called()
+
   @mock.patch.object(
       test_try_job, 'NeedANewTestTryJob', return_value=(True, None))
+  @mock.patch.object(test_try_job, 'GetParametersToScheduleTestTryJob')
   @mock.patch.object(start_test_try_job_pipeline, 'ScheduleTestTryJobPipeline')
-  def testNoTestTryJobBecauseNoGoodRevision(self, mock_pipeline, *_):
+  def testNoTestTryJobBecauseNoTargetedTests(self, mock_pipeline,
+                                             mock_parameter, _):
     failure_info = {'failure_type': failure_type.TEST}
+    mock_parameter.return_value = ScheduleTestTryJobParameters(
+        targeted_tests={}, good_revision='rev1')
     pipeline = StartTestTryJobPipeline()
     result = pipeline.run('m', 'b', 1, failure_info, {}, True, False)
     self.assertEqual(list(result), [])

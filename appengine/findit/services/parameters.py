@@ -17,6 +17,9 @@ class BuildKey(StructuredObject):
   builder_name = basestring
   build_number = int
 
+  def GetParts(self):
+    return self.master_name, self.builder_name, self.build_number
+
 
 class CLKey(StructuredObject):
   """Key to a CL."""
@@ -63,3 +66,25 @@ class CulpritActionParameters(StructuredObject):
   build_key = BuildKey
   culprits = DictOfCLKeys
   heuristic_cls = ListOfCLKeys
+
+
+class ScheduleTryJobParameters(StructuredObject):
+  """Shared parameters of ScheduleCompileTryJobPipeline and
+      ScheduleTestTryJobPipeline."""
+  build_key = BuildKey
+  good_revision = basestring
+  bad_revision = basestring
+  suspected_revisions = list
+  cache_name = basestring
+  dimensions = list
+  force_buildbot = bool
+
+
+class ScheduleCompileTryJobParameters(ScheduleTryJobParameters):
+  """Input for ScheduleTryJobParameters."""
+  compile_targets = list
+
+
+class ScheduleTestTryJobParameters(ScheduleTryJobParameters):
+  """Input for ScheduleTestTryJobPipeline."""
+  targeted_tests = dict

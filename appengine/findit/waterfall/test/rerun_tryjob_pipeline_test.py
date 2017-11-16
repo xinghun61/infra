@@ -5,12 +5,15 @@
 from common import constants
 from common.waterfall import failure_type
 from gae_libs.pipelines import pipeline_handlers
+from pipelines.compile_failure.schedule_compile_try_job_pipeline import (
+    ScheduleCompileTryJobPipeline)
+from pipelines.test_failure.schedule_test_try_job_pipeline import (
+    ScheduleTestTryJobPipeline)
+from services.parameters import BuildKey
+from services.parameters import ScheduleCompileTryJobParameters
+from services.parameters import ScheduleTestTryJobParameters
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.rerun_tryjob_pipeline import RerunTryJobPipeline
-from waterfall.schedule_compile_try_job_pipeline import (
-    ScheduleCompileTryJobPipeline)
-from waterfall.schedule_test_try_job_pipeline import (
-    ScheduleTestTryJobPipeline)
 from waterfall.test import wf_testcase
 
 
@@ -20,11 +23,11 @@ class RerunTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   def testRerunTestTryjob(self):
     master_name = 'm'
     builder_name = 'b'
-    build_number = '1'
+    build_number = 1
     good_revision = 'good'
     bad_revision = 'bad'
     suspected_revisions = ['suspected1', 'suspected2']
-    tests = ['dummy_test']
+    tests = {'step': ['dummy_test']}
     properties = {
         'good_revision': good_revision,
         'bad_revision': bad_revision,
@@ -33,14 +36,21 @@ class RerunTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     additional_parameters = {'tests': tests}
     urlsafe_try_job_key = 'MockUrlSafeTryJobKey123'
 
-    self.MockPipeline(
-        ScheduleTestTryJobPipeline,
-        'build_id',
-        expected_args=[
-            master_name, builder_name, build_number, good_revision,
-            bad_revision, suspected_revisions, None, None, tests
-        ],
-        expected_kwargs={'force_buildbot': True})
+    pipeline_input = ScheduleTestTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        good_revision=good_revision,
+        bad_revision=bad_revision,
+        suspected_revisions=suspected_revisions,
+        targeted_tests=tests,
+        cache_name=None,
+        dimensions=[],
+        force_buildbot=True)
+
+    self.MockSynchronousPipeline(ScheduleTestTryJobPipeline, pipeline_input,
+                                 'build_id')
 
     self.MockPipeline(
         MonitorTryJobPipeline,
@@ -55,9 +65,9 @@ class RerunTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
   def testRerunCompileTryjob(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = '1'
+    master_name = u'm'
+    builder_name = u'b'
+    build_number = 1
     good_revision = 'good'
     bad_revision = 'bad'
     suspected_revisions = ['suspected1', 'suspected2']
@@ -70,14 +80,20 @@ class RerunTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     additional_parameters = {'compile_targets': compile_targets}
     urlsafe_try_job_key = 'MockUrlSafeTryJobKey123'
 
-    self.MockPipeline(
-        ScheduleCompileTryJobPipeline,
-        'build_id',
-        expected_args=[
-            master_name, builder_name, build_number, good_revision,
-            bad_revision, compile_targets, suspected_revisions, None, None
-        ],
-        expected_kwargs={'force_buildbot': True})
+    pipeline_input = ScheduleCompileTryJobParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        good_revision=good_revision,
+        bad_revision=bad_revision,
+        compile_targets=compile_targets,
+        suspected_revisions=suspected_revisions,
+        cache_name=None,
+        dimensions=[],
+        force_buildbot=True)
+    self.MockSynchronousPipeline(ScheduleCompileTryJobPipeline, pipeline_input,
+                                 'build_id')
 
     self.MockPipeline(
         MonitorTryJobPipeline,

@@ -2,14 +2,16 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
+
 from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import BasePipeline
 from services.test_failure import test_try_job
+from pipelines.test_failure.schedule_test_try_job_pipeline import (
+    ScheduleTestTryJobPipeline)
 from waterfall.identify_try_job_culprit_pipeline import (
     IdentifyTryJobCulpritPipeline)
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
-from waterfall.schedule_test_try_job_pipeline import (
-    ScheduleTestTryJobPipeline)
 
 
 class StartTestTryJobPipeline(BasePipeline):
@@ -32,15 +34,15 @@ class StartTestTryJobPipeline(BasePipeline):
 
     parameters = test_try_job.GetParametersToScheduleTestTryJob(
         master_name, builder_name, build_number, failure_info, heuristic_result)
-    if not parameters['good_revision']:
+    if not parameters.good_revision:
       # No last_pass in saved in failure_info.
       return
 
-    try_job_id = yield ScheduleTestTryJobPipeline(
-        master_name, builder_name, build_number, parameters['good_revision'],
-        parameters['bad_revision'], parameters['suspected_revisions'],
-        parameters['cache_name'], parameters['dimensions'],
-        parameters['task_results'])
+    if not parameters.targeted_tests:
+      logging.info('All tests are flaky, no try job will be triggered.')
+      return
+
+    try_job_id = yield ScheduleTestTryJobPipeline(parameters)
 
     try_job_result = yield MonitorTryJobPipeline(try_job_key.urlsafe(),
                                                  try_job_type, try_job_id)
