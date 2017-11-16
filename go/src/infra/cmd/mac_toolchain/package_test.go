@@ -37,6 +37,7 @@ func TestMakePackages(t *testing.T) {
 				{File: path("A/a")},
 				{File: path("C/c")},
 				{File: path("C/c2")},
+				{File: path("symlink")},
 			})
 			So(packages["mac"].Package, ShouldEqual, "test/prefix/mac")
 			So(packages["ios"].Data, ShouldResemble, []cipd.PackageChunkDef{
@@ -54,6 +55,7 @@ func TestMakePackages(t *testing.T) {
 				{VersionFile: ".xcode_versions/mac.cipd_version"},
 				{File: path("A/B/b")},
 				{File: path("A/a")},
+				{File: path("symlink")},
 			})
 			So(packages["ios"].Package, ShouldEqual, "test/exclusions/ios")
 			So(packages["ios"].Data, ShouldResemble, []cipd.PackageChunkDef{

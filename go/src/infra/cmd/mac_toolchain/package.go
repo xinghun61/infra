@@ -84,7 +84,7 @@ func makePackages(xcodeAppPath string, cipdPackagePrefix string, excludeAll, exc
 		if err != nil {
 			return err
 		}
-		if info.Mode().IsRegular() {
+		if !info.Mode().IsDir() {
 			if !strings.HasPrefix(path, absXcodeAppPath+string(os.PathSeparator)) {
 				return errors.Reason("file is not in the source folder: %s", path).Err()
 			}
