@@ -7,19 +7,16 @@ import logging
 from common import monitoring
 from gae_libs.pipelines import GeneratorPipeline
 from gae_libs.pipelines import CreateInputObjectInstance
-from pipelines.pipeline_inputs_and_outputs import CLKey
-from pipelines.pipeline_inputs_and_outputs import (
-    RevertAndNotifyCulpritPipelineInput)
-from pipelines.pipeline_inputs_and_outputs import (
-    SendNotificationForCulpritPipelineInput)
 from services import ci_failure
+from services.parameters import CulpritActionParameters
+from services.parameters import SendNotificationForCulpritParameters
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 
 
 class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
   """A wrapper pipeline to send notification about test failure culprits."""
-  input_type = RevertAndNotifyCulpritPipelineInput
+  input_type = CulpritActionParameters
   output_type = bool
 
   def RunImpl(self, pipeline_input):
@@ -50,7 +47,7 @@ class RevertAndNotifyTestCulpritPipeline(GeneratorPipeline):
       # if so send notification right away.
       force_notify = culprit in heuristic_cls
       send_notification_to_culprit_input = CreateInputObjectInstance(
-          SendNotificationForCulpritPipelineInput,
+          SendNotificationForCulpritParameters,
           cl_key=culprit,
           force_notify=force_notify,
           revert_status=None)

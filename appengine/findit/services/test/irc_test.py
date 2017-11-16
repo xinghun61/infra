@@ -8,11 +8,10 @@ import textwrap
 
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
-from pipelines.pipeline_inputs_and_outputs import CLKey
-from pipelines.pipeline_inputs_and_outputs import (
-    SendNotificationToIrcPipelineInput)
 from services import irc
 from services import gerrit
+from services.parameters import CLKey
+from services.parameters import SendNotificationToIrcParameters
 from waterfall.test import wf_testcase
 
 
@@ -42,7 +41,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
     revision = 'rev'
     revert_status = gerrit.CREATED_BY_SHERIFF
     submitted = False
-    pipeline_input = SendNotificationToIrcPipelineInput(
+    pipeline_input = SendNotificationToIrcParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status,
         submitted=submitted)
@@ -55,7 +54,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
     revision = 'rev'
     revert_status = gerrit.CREATED_BY_FINDIT
     submitted = False
-    pipeline_input = SendNotificationToIrcPipelineInput(
+    pipeline_input = SendNotificationToIrcParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status,
         submitted=submitted)
@@ -72,7 +71,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
 
     WfSuspectedCL.Create(repo_name, revision, 1).put()
 
-    pipeline_input = SendNotificationToIrcPipelineInput(
+    pipeline_input = SendNotificationToIrcParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status,
         submitted=submitted)
@@ -93,7 +92,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
 
     self.mock(irc, 'IRCClient', MockedIRCClient)
 
-    pipeline_input = SendNotificationToIrcPipelineInput(
+    pipeline_input = SendNotificationToIrcParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status,
         submitted=submitted)
@@ -114,7 +113,7 @@ class IrcTest(wf_testcase.WaterfallTestCase):
 
     self.mock(irc, 'IRCClient', MockedIRCClient)
 
-    pipeline_input = SendNotificationToIrcPipelineInput(
+    pipeline_input = SendNotificationToIrcParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status,
         submitted=submitted)

@@ -15,8 +15,8 @@ from libs import analysis_status as status
 from libs import time_util
 from model.wf_suspected_cl import WfSuspectedCL
 from services import gerrit
-from pipelines.pipeline_inputs_and_outputs import CLKey
-from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
+from services.parameters import CLKey
+from services.parameters import CreateRevertCLParameters
 from waterfall import buildbot
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
@@ -72,7 +72,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.builds = {'m/b/1': {'status': None}}
     culprit.put()
 
-    pipeline_input = CreateRevertCLPipelineInput(
+    pipeline_input = CreateRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
     pipeline = CreateRevertCLPipeline(pipeline_input)
     revert_status = pipeline.run(pipeline_input)
@@ -97,7 +97,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     revision = 'rev1'
     build_id = 'm/b/123'
 
-    pipeline_input = CreateRevertCLPipelineInput(
+    pipeline_input = CreateRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
     pipeline = CreateRevertCLPipeline(pipeline_input)
     revert_status = pipeline.run(pipeline_input)
@@ -113,7 +113,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.RUNNING
     culprit.put()
 
-    pipeline_input = CreateRevertCLPipelineInput(
+    pipeline_input = CreateRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
     CreateRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
@@ -126,7 +126,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    pipeline_input = CreateRevertCLPipelineInput(
+    pipeline_input = CreateRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
     CreateRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
     culprit = WfSuspectedCL.Get(repo_name, revision)
@@ -141,7 +141,7 @@ class CreateRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_pipeline_id = 'pipeline_id'
     culprit.put()
 
-    pipeline_input = CreateRevertCLPipelineInput(
+    pipeline_input = CreateRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=build_id)
     pipeline = CreateRevertCLPipeline(pipeline_input)
     pipeline.start()

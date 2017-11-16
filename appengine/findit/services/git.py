@@ -11,8 +11,8 @@ It has functions to:
 
 from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from pipelines.pipeline_inputs_and_outputs import CLKey
-from pipelines.pipeline_inputs_and_outputs import DictOfCLKeys
+from services.parameters import CLKey
+from services.parameters import DictOfCLKeys
 
 
 def GetGitBlame(repo_url, revision, touched_file_path):
@@ -25,6 +25,7 @@ def GetGitBlame(repo_url, revision, touched_file_path):
   """
   git_repo = CachedGitilesRepository(FinditHttpClient(), repo_url)
   return git_repo.GetBlame(touched_file_path, revision)
+
 
 def PullChangeLogs(failure_info):
   """Pulls change logs for CLs.

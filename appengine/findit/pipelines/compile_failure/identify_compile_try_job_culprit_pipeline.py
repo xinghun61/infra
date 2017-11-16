@@ -7,12 +7,11 @@ from model.wf_analysis import WfAnalysis
 from model.wf_try_job_data import WfTryJobData
 from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as revert_pipeline)
-from pipelines.pipeline_inputs_and_outputs import BuildKey
-from pipelines.pipeline_inputs_and_outputs import (
-    RevertAndNotifyCulpritPipelineInput)
 from services import build_failure_analysis
 from services import git
 from services.compile_failure import compile_try_job
+from services.parameters import BuildKey
+from services.parameters import CulpritActionParameters
 
 
 class IdentifyCompileTryJobCulpritPipeline(BasePipeline):
@@ -74,7 +73,7 @@ class IdentifyCompileTryJobCulpritPipeline(BasePipeline):
       return
 
     yield revert_pipeline.RevertAndNotifyCompileCulpritPipeline(
-        RevertAndNotifyCulpritPipelineInput(
+        CulpritActionParameters(
             build_key=BuildKey(
                 master_name=master_name,
                 builder_name=builder_name,

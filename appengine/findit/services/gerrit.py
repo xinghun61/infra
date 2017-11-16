@@ -237,7 +237,7 @@ def RevertCulprit(pipeline_input):
   """Creates a revert of a culprit and adds reviewers.
 
   Args:
-    pipeline_input (CreateRevertCLPipelineInput): Information needed to
+    pipeline_input (CreateRevertCLParameters): Information needed to
       create a revert.
 
   Returns:

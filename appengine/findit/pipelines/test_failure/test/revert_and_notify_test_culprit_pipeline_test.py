@@ -6,18 +6,16 @@ import mock
 
 from common import constants
 from gae_libs.pipeline_wrapper import pipeline_handlers
-from pipelines.pipeline_inputs_and_outputs import BuildKey
-from pipelines.pipeline_inputs_and_outputs import CLKey
-from pipelines.pipeline_inputs_and_outputs import DictOfCLKeys
-from pipelines.pipeline_inputs_and_outputs import ListOfCLKeys
-from pipelines.pipeline_inputs_and_outputs import (
-    RevertAndNotifyCulpritPipelineInput)
-from pipelines.pipeline_inputs_and_outputs import (
-    SendNotificationForCulpritPipelineInput)
 from pipelines.test_failure import revert_and_notify_test_culprit_pipeline
 from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
     RevertAndNotifyTestCulpritPipeline)
 from services import ci_failure
+from services.parameters import BuildKey
+from services.parameters import CLKey
+from services.parameters import CulpritActionParameters
+from services.parameters import DictOfCLKeys
+from services.parameters import ListOfCLKeys
+from services.parameters import SendNotificationForCulpritParameters
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
 from waterfall.test import wf_testcase
@@ -41,7 +39,7 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     heuristic_cls = ListOfCLKeys()
     heuristic_cls.append(cl_key)
 
-    input_object = SendNotificationForCulpritPipelineInput(
+    input_object = SendNotificationForCulpritParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         force_notify=True,
         revert_status=None)
@@ -50,7 +48,7 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                                  input_object, True)
 
     pipeline = RevertAndNotifyTestCulpritPipeline(
-        RevertAndNotifyCulpritPipelineInput(
+        CulpritActionParameters(
             build_key=BuildKey(
                 master_name=master_name,
                 builder_name=builder_name,
@@ -76,7 +74,7 @@ class RevertAndNotifyTestCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     heuristic_cls.append(cl_key)
 
     pipeline = RevertAndNotifyTestCulpritPipeline(
-        RevertAndNotifyCulpritPipelineInput(
+        CulpritActionParameters(
             build_key=BuildKey(
                 master_name=master_name,
                 builder_name=builder_name,

@@ -1,11 +1,11 @@
 # Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
-"""This module is to save structured pipeline inputs and outputs."""
+"""This module is to save structured objects which can serve as:
+    * pipeline inputs and outputs
+    * Parameters for service functions."""
 
-from libs.structured_object import StructuredObject
-from libs.structured_object import TypedDict
-from libs.structured_object import TypedList
+from libs.structured_object import StructuredObject, TypedDict, TypedList
 
 
 class BuildKey(StructuredObject):
@@ -24,31 +24,6 @@ class CLKey(StructuredObject):
   revision = basestring
 
 
-class CreateRevertCLPipelineInput(StructuredObject):
-  """Input for CreateRevertCLPipeline."""
-  cl_key = CLKey
-  build_id = basestring
-
-
-class SubmitRevertCLPipelineInput(StructuredObject):
-  """Input for SubmitRevertCLPipeline."""
-  cl_key = CLKey
-  revert_status = int
-
-
-class SendNotificationToIrcPipelineInput(StructuredObject):
-  """Input for SendNotificationToIrcPipeline."""
-  cl_key = CLKey
-  revert_status = int
-  submitted = bool
-
-
-class SendNotificationForCulpritPipelineInput(StructuredObject):
-  cl_key = CLKey
-  force_notify = bool
-  revert_status = int
-
-
 class DictOfCLKeys(TypedDict):
   _value_type = CLKey
 
@@ -57,7 +32,32 @@ class ListOfCLKeys(TypedList):
   _element_type = CLKey
 
 
-class RevertAndNotifyCulpritPipelineInput(StructuredObject):
+class CreateRevertCLParameters(StructuredObject):
+  """Input for CreateRevertCLPipeline."""
+  cl_key = CLKey
+  build_id = basestring
+
+
+class SubmitRevertCLParameters(StructuredObject):
+  """Input for SubmitRevertCLPipeline."""
+  cl_key = CLKey
+  revert_status = int
+
+
+class SendNotificationToIrcParameters(StructuredObject):
+  """Input for SendNotificationToIrcPipeline."""
+  cl_key = CLKey
+  revert_status = int
+  submitted = bool
+
+
+class SendNotificationForCulpritParameters(StructuredObject):
+  cl_key = CLKey
+  force_notify = bool
+  revert_status = int
+
+
+class CulpritActionParameters(StructuredObject):
   """Input for RevertAndNotifyCompileCulpritPipeline and
      RevertAndNotifyTestCulpritPipeline."""
   build_key = BuildKey

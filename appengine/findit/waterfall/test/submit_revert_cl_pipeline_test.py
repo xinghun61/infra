@@ -13,9 +13,9 @@ from libs import analysis_status as status
 from libs import time_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
-from pipelines.pipeline_inputs_and_outputs import CLKey
-from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
 from services import gerrit
+from services.parameters import CLKey
+from services.parameters import SubmitRevertCLParameters
 from waterfall import suspected_cl_util
 from waterfall.submit_revert_cl_pipeline import SubmitRevertCLPipeline
 from waterfall.test import wf_testcase
@@ -74,7 +74,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_status = status.COMPLETED
     culprit.put()
     revert_status = gerrit.CREATED_BY_FINDIT
-    pipeline_input = SubmitRevertCLPipelineInput(
+    pipeline_input = SubmitRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status)
     pipeline = SubmitRevertCLPipeline(pipeline_input)
@@ -94,7 +94,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.revert_submission_status = status.RUNNING
     culprit.put()
     revert_status = gerrit.CREATED_BY_FINDIT
-    pipeline_input = SubmitRevertCLPipelineInput(
+    pipeline_input = SubmitRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status)
     SubmitRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
@@ -108,7 +108,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = gerrit.CREATED_BY_FINDIT
-    pipeline_input = SubmitRevertCLPipelineInput(
+    pipeline_input = SubmitRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status)
     SubmitRevertCLPipeline(pipeline_input).OnAbort(pipeline_input)
@@ -123,7 +123,7 @@ class SubmitRevertCLPipelineTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = gerrit.CREATED_BY_FINDIT
-    pipeline_input = SubmitRevertCLPipelineInput(
+    pipeline_input = SubmitRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         revert_status=revert_status)
     pipeline = SubmitRevertCLPipeline(pipeline_input)

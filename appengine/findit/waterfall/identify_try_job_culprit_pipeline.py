@@ -17,13 +17,12 @@ from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
-from pipelines.pipeline_inputs_and_outputs import BuildKey
-from pipelines.pipeline_inputs_and_outputs import (
-    RevertAndNotifyCulpritPipelineInput)
 from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
     RevertAndNotifyTestCulpritPipeline)
 from services import build_failure_analysis
 from services import git
+from services.parameters import BuildKey
+from services.parameters import CulpritActionParameters
 from waterfall import suspected_cl_util
 from waterfall import swarming_util
 
@@ -319,7 +318,7 @@ class IdentifyTryJobCulpritPipeline(BasePipeline):
     if not culprits:
       return
     yield RevertAndNotifyTestCulpritPipeline(
-        RevertAndNotifyCulpritPipelineInput(
+        CulpritActionParameters(
             build_key=BuildKey(
                 master_name=master_name,
                 builder_name=builder_name,

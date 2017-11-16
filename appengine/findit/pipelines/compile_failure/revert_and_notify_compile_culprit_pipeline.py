@@ -5,15 +5,12 @@
 import logging
 
 from gae_libs.pipelines import GeneratorPipeline
-from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
-from pipelines.pipeline_inputs_and_outputs import (
-    RevertAndNotifyCulpritPipelineInput)
-from pipelines.pipeline_inputs_and_outputs import (
-    SendNotificationToIrcPipelineInput)
-from pipelines.pipeline_inputs_and_outputs import (
-    SendNotificationForCulpritPipelineInput)
-from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
 from services import ci_failure
+from services.parameters import CreateRevertCLParameters
+from services.parameters import CulpritActionParameters
+from services.parameters import SendNotificationToIrcParameters
+from services.parameters import SendNotificationForCulpritParameters
+from services.parameters import SubmitRevertCLParameters
 from waterfall import build_util
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.send_notification_for_culprit_pipeline import (
@@ -27,7 +24,7 @@ _BYPASS_MASTER_NAME = 'chromium.sandbox'
 
 class RevertAndNotifyCompileCulpritPipeline(GeneratorPipeline):
   """A wrapper pipeline to revert culprit and send notification."""
-  input_type = RevertAndNotifyCulpritPipelineInput
+  input_type = CulpritActionParameters
   output_type = bool
 
   def RunImpl(self, pipeline_input):
@@ -60,23 +57,21 @@ class RevertAndNotifyCompileCulpritPipeline(GeneratorPipeline):
     build_id = build_util.CreateBuildId(master_name, builder_name, build_number)
 
     revert_status = yield CreateRevertCLPipeline(
-        CreateRevertCLPipelineInput(cl_key=culprit, build_id=build_id))
+        CreateRevertCLParameters(cl_key=culprit, build_id=build_id))
 
     submit_revert_pipeline_input = self.CreateInputObjectInstance(
-        SubmitRevertCLPipelineInput,
-        cl_key=culprit,
-        revert_status=revert_status)
+        SubmitRevertCLParameters, cl_key=culprit, revert_status=revert_status)
     submitted = yield SubmitRevertCLPipeline(submit_revert_pipeline_input)
 
     send_notification_to_irc_input = self.CreateInputObjectInstance(
-        SendNotificationToIrcPipelineInput,
+        SendNotificationToIrcParameters,
         cl_key=culprit,
         revert_status=revert_status,
         submitted=submitted)
     yield SendNotificationToIrcPipeline(send_notification_to_irc_input)
 
     send_notification_to_culprit_input = self.CreateInputObjectInstance(
-        SendNotificationForCulpritPipelineInput,
+        SendNotificationForCulpritParameters,
         cl_key=culprit,
         force_notify=force_notify,
         revert_status=revert_status)

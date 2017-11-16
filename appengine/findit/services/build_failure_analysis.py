@@ -22,10 +22,10 @@ from libs.gitiles.diff import ChangeType
 from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
-from pipelines.pipeline_inputs_and_outputs import CLKey
-from pipelines.pipeline_inputs_and_outputs import ListOfCLKeys
 from services import files
 from services import git
+from services.parameters import CLKey
+from services.parameters import ListOfCLKeys
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal

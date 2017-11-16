@@ -3,13 +3,12 @@
 # found in the LICENSE file.
 
 from gae_libs.pipelines import SynchronousPipeline
-from pipelines.pipeline_inputs_and_outputs import (
-    SendNotificationForCulpritPipelineInput)
 from services import gerrit
+from services.parameters import SendNotificationForCulpritParameters
 
 
 class SendNotificationForCulpritPipeline(SynchronousPipeline):
-  input_type = SendNotificationForCulpritPipelineInput
+  input_type = SendNotificationForCulpritParameters
   output_type = bool
 
   def RunImpl(self, pipeline_input):

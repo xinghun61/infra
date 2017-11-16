@@ -15,12 +15,11 @@ from pipelines.compile_failure import (identify_compile_try_job_culprit_pipeline
                                        as culprit_pipeline)
 from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as revert_pipeline)
-from pipelines.pipeline_inputs_and_outputs import BuildKey
-from pipelines.pipeline_inputs_and_outputs import CLKey
-from pipelines.pipeline_inputs_and_outputs import DictOfCLKeys
-from pipelines.pipeline_inputs_and_outputs import ListOfCLKeys
-from pipelines.pipeline_inputs_and_outputs import (
-    RevertAndNotifyCulpritPipelineInput)
+from services.parameters import BuildKey
+from services.parameters import CLKey
+from services.parameters import CulpritActionParameters
+from services.parameters import DictOfCLKeys
+from services.parameters import ListOfCLKeys
 from waterfall.test import wf_testcase
 
 
@@ -154,7 +153,7 @@ class IdentifyCompileTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         repo_name=u'chromium', revision=expected_culprit)
     self.MockGeneratorPipeline(
         pipeline_class=revert_pipeline.RevertAndNotifyCompileCulpritPipeline,
-        expected_input=RevertAndNotifyCulpritPipelineInput(
+        expected_input=CulpritActionParameters(
             build_key=BuildKey(
                 master_name=master_name,
                 builder_name=builder_name,
@@ -201,7 +200,7 @@ class IdentifyCompileTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.MockGeneratorPipeline(
         pipeline_class=revert_pipeline.RevertAndNotifyCompileCulpritPipeline,
-        expected_input=RevertAndNotifyCulpritPipelineInput(
+        expected_input=CulpritActionParameters(
             build_key=BuildKey(
                 master_name=master_name,
                 builder_name=builder_name,
@@ -257,7 +256,7 @@ class IdentifyCompileTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.MockGeneratorPipeline(
         pipeline_class=revert_pipeline.RevertAndNotifyCompileCulpritPipeline,
-        expected_input=RevertAndNotifyCulpritPipelineInput(
+        expected_input=CulpritActionParameters(
             build_key=BuildKey(
                 master_name=master_name,
                 builder_name=builder_name,

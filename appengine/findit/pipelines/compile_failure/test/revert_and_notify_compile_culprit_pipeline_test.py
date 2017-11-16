@@ -8,20 +8,17 @@ from common import constants
 from gae_libs.pipeline_wrapper import pipeline_handlers
 from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as wrapper_pipeline)
-from pipelines.pipeline_inputs_and_outputs import BuildKey
-from pipelines.pipeline_inputs_and_outputs import CLKey
-from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
-from pipelines.pipeline_inputs_and_outputs import DictOfCLKeys
-from pipelines.pipeline_inputs_and_outputs import ListOfCLKeys
-from pipelines.pipeline_inputs_and_outputs import (
-    RevertAndNotifyCulpritPipelineInput)
-from pipelines.pipeline_inputs_and_outputs import (
-    SendNotificationToIrcPipelineInput)
-from pipelines.pipeline_inputs_and_outputs import (
-    SendNotificationForCulpritPipelineInput)
-from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
 from services import ci_failure
 from services import gerrit
+from services.parameters import BuildKey
+from services.parameters import CLKey
+from services.parameters import CreateRevertCLParameters
+from services.parameters import CulpritActionParameters
+from services.parameters import DictOfCLKeys
+from services.parameters import ListOfCLKeys
+from services.parameters import SendNotificationToIrcParameters
+from services.parameters import SendNotificationForCulpritParameters
+from services.parameters import SubmitRevertCLParameters
 from waterfall.create_revert_cl_pipeline import CreateRevertCLPipeline
 from waterfall.send_notification_for_culprit_pipeline import (
     SendNotificationForCulpritPipeline)
@@ -50,16 +47,16 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.MockSynchronousPipeline(
         CreateRevertCLPipeline,
-        CreateRevertCLPipelineInput(
+        CreateRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             build_id=build_id), gerrit.CREATED_BY_FINDIT)
     self.MockSynchronousPipeline(
         SubmitRevertCLPipeline,
-        SubmitRevertCLPipelineInput(
+        SubmitRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=gerrit.CREATED_BY_FINDIT), True)
     self.MockSynchronousPipeline(SendNotificationToIrcPipeline,
-                                 SendNotificationToIrcPipelineInput(
+                                 SendNotificationToIrcParameters(
                                      cl_key=CLKey(
                                          repo_name=repo_name,
                                          revision=revision),
@@ -67,13 +64,13 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                                      submitted=True), True)
     self.MockSynchronousPipeline(
         SendNotificationForCulpritPipeline,
-        SendNotificationForCulpritPipelineInput(
+        SendNotificationForCulpritParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             force_notify=True,
             revert_status=gerrit.CREATED_BY_FINDIT), True)
 
     pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
-        RevertAndNotifyCulpritPipelineInput(
+        CulpritActionParameters(
             build_key=BuildKey(
                 master_name=master_name,
                 builder_name=builder_name,
@@ -98,7 +95,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     heuristic_cls.append(cl_key)
 
     pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
-        RevertAndNotifyCulpritPipelineInput(
+        CulpritActionParameters(
             build_key=BuildKey(
                 master_name=master_name,
                 builder_name=builder_name,
@@ -116,7 +113,7 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     culprits = DictOfCLKeys()
     culprits['r1'] = CLKey(repo_name=repo_name, revision=revision)
     pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
-        RevertAndNotifyCulpritPipelineInput(
+        CulpritActionParameters(
             build_key=BuildKey(
                 master_name=wrapper_pipeline._BYPASS_MASTER_NAME.decode(
                     'utf-8'),

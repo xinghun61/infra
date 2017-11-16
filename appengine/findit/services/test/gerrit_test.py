@@ -18,12 +18,11 @@ from libs import analysis_status as status
 from libs import time_util
 from model.base_suspected_cl import RevertCL
 from model.wf_suspected_cl import WfSuspectedCL
-from pipelines.pipeline_inputs_and_outputs import CLKey
-from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
-from pipelines.pipeline_inputs_and_outputs import (
-    SendNotificationForCulpritPipelineInput)
-from pipelines.pipeline_inputs_and_outputs import SubmitRevertCLPipelineInput
 from services import gerrit
+from services.parameters import CLKey
+from services.parameters import CreateRevertCLParameters
+from services.parameters import SendNotificationForCulpritParameters
+from services.parameters import SubmitRevertCLParameters
 from waterfall import buildbot
 from waterfall import suspected_cl_util
 from waterfall import waterfall_config
@@ -96,7 +95,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = gerrit.RevertCulprit(
-        CreateRevertCLPipelineInput(
+        CreateRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             build_id=u'm/b/1'))
 
@@ -173,14 +172,14 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     WfSuspectedCL.Create(repo_name, revision, 123).put()
 
     revert_status = gerrit.RevertCulprit(
-        CreateRevertCLPipelineInput(
+        CreateRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.CREATED_BY_SHERIFF)
 
     committed = gerrit.CommitRevert(
-        SubmitRevertCLPipelineInput(
+        SubmitRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), None)
     self.assertFalse(committed)
@@ -215,14 +214,14 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     WfSuspectedCL.Create(repo_name, revision, 123).put()
 
     revert_status = gerrit.RevertCulprit(
-        CreateRevertCLPipelineInput(
+        CreateRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             build_id=u'm/b/1'))
 
     self.assertEquals(revert_status, gerrit.ERROR)
 
     committed = gerrit.CommitRevert(
-        SubmitRevertCLPipelineInput(
+        SubmitRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), None)
     self.assertFalse(committed)
@@ -259,7 +258,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = gerrit.RevertCulprit(
-        CreateRevertCLPipelineInput(
+        CreateRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             build_id=u'm/b/1'))
 
@@ -287,7 +286,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = gerrit.RevertCulprit(
-        CreateRevertCLPipelineInput(
+        CreateRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             build_id=u'm/b/1'))
 
@@ -315,7 +314,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.put()
 
     revert_status = gerrit.RevertCulprit(
-        CreateRevertCLPipelineInput(
+        CreateRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             build_id=u'm/b/1'))
 
@@ -355,7 +354,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
 
-    pipeline_input = CreateRevertCLPipelineInput(
+    pipeline_input = CreateRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=u'm/b/1')
     self.assertFalse(gerrit.ShouldRevert(pipeline_input, None))
 
@@ -365,7 +364,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.revert_status = status.SKIPPED
     culprit.put()
-    pipeline_input = CreateRevertCLPipelineInput(
+    pipeline_input = CreateRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=u'm/b/1')
     self.assertFalse(gerrit.ShouldRevert(pipeline_input, None))
 
@@ -378,7 +377,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit = WfSuspectedCL.Create(repo_name, revision, 123)
     culprit.put()
 
-    pipeline_input = CreateRevertCLPipelineInput(
+    pipeline_input = CreateRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=u'm/b/1')
     self.assertFalse(gerrit.ShouldRevert(pipeline_input, None))
 
@@ -387,7 +386,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     repo_name = 'chromium'
     revision = 'rev1'
     pipeline_id = 'pipeline_id'
-    pipeline_input = CreateRevertCLPipelineInput(
+    pipeline_input = CreateRevertCLParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision), build_id=u'm/b/1')
     self.assertTrue(gerrit.ShouldRevert(pipeline_input, pipeline_id))
 
@@ -407,7 +406,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
-        SubmitRevertCLPipelineInput(
+        SubmitRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
 
@@ -425,7 +424,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
-        SubmitRevertCLPipelineInput(
+        SubmitRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
 
@@ -438,7 +437,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
-        SubmitRevertCLPipelineInput(
+        SubmitRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
 
@@ -465,7 +464,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
-        SubmitRevertCLPipelineInput(
+        SubmitRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
     self.assertFalse(committed)
@@ -503,7 +502,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
-        SubmitRevertCLPipelineInput(
+        SubmitRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
 
@@ -579,7 +578,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
 
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
-        SubmitRevertCLPipelineInput(
+        SubmitRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
 
@@ -617,7 +616,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     culprit.put()
     revert_status = gerrit.CREATED_BY_FINDIT
     committed = gerrit.CommitRevert(
-        SubmitRevertCLPipelineInput(
+        SubmitRevertCLParameters(
             cl_key=CLKey(repo_name=repo_name, revision=revision),
             revert_status=revert_status), 'pipeline_id')
 
@@ -742,7 +741,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     force_notify = True
     revert_status = gerrit.CREATED_BY_SHERIFF
 
-    pipeline_input = SendNotificationForCulpritPipelineInput(
+    pipeline_input = SendNotificationForCulpritParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         force_notify=force_notify,
         revert_status=revert_status)
@@ -757,7 +756,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     force_notify = True
     revert_status = gerrit.CREATED_BY_SHERIFF
 
-    pipeline_input = SendNotificationForCulpritPipelineInput(
+    pipeline_input = SendNotificationForCulpritParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         force_notify=force_notify,
         revert_status=revert_status)
@@ -777,7 +776,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     force_notify = True
     revert_status = gerrit.CREATED_BY_SHERIFF
 
-    pipeline_input = SendNotificationForCulpritPipelineInput(
+    pipeline_input = SendNotificationForCulpritParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         force_notify=force_notify,
         revert_status=revert_status)
@@ -803,7 +802,7 @@ class GerritTest(wf_testcase.WaterfallTestCase):
     force_notify = True
     revert_status = None
 
-    pipeline_input = SendNotificationForCulpritPipelineInput(
+    pipeline_input = SendNotificationForCulpritParameters(
         cl_key=CLKey(repo_name=repo_name, revision=revision),
         force_notify=force_notify,
         revert_status=revert_status)

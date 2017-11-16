@@ -5,12 +5,12 @@
 from gae_libs.pipelines import SynchronousPipeline
 from libs import analysis_status as status
 from model.wf_suspected_cl import WfSuspectedCL
-from pipelines.pipeline_inputs_and_outputs import CreateRevertCLPipelineInput
 from services import gerrit
+from services.parameters import CreateRevertCLParameters
 
 
 class CreateRevertCLPipeline(SynchronousPipeline):
-  input_type = CreateRevertCLPipelineInput
+  input_type = CreateRevertCLParameters
   output_type = int
 
   def OnAbort(self, pipeline_input):
