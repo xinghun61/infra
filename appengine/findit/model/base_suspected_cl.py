@@ -128,4 +128,5 @@ class BaseSuspectedCL(ndb.Model):
     result_dict['cr_notified'] = self.cr_notified
     result_dict['revert_cl_url'] = self.revert_cl_url
     result_dict['project_name'] = self.repo_name
+    result_dict['key'] = self.key.urlsafe()
     return result_dict

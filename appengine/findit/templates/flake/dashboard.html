@@ -242,7 +242,9 @@
           </td>
           <td>
             {% if analysis.culprit %}
-              {{ analysis.culprit.cr_notified }}
+              <a href="https://findit-for-me.appspot.com/waterfall/flake/flake-culprit?key={{ analysis.culprit.key }}" target="_blank">
+                {{ analysis.culprit.cr_notified }}
+              </a>
             {% endif %}
           </td>
           <td>
