@@ -427,8 +427,6 @@ def _create_task_def_async(
     k: v or '' for k, v in task_template_params.iteritems()}
   task = format_obj(task_template, task_template_params)
 
-  task = apply_if_tags(task)
-
   if builder_cfg.priority > 0:  # pragma: no branch
     # Swarming accepts priority as a string
     task['priority'] = str(builder_cfg.priority)
@@ -453,6 +451,8 @@ def _create_task_def_async(
   _extend_unique(swarming_tags, builder_cfg.swarming_tags)
   _extend_unique(swarming_tags, build.tags)
   swarming_tags.sort()
+
+  task = apply_if_tags(task)
 
   task_properties = task.setdefault('properties', {})
 
