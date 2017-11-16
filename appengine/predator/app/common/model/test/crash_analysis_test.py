@@ -18,7 +18,6 @@ from common.model import crash_analysis
 from common.model import triage_status
 from common.model.crash_analysis import CrashAnalysis
 from common.model.fracas_crash_analysis import FracasCrashAnalysis
-from common.model.log import Log
 from libs import analysis_status
 
 
@@ -233,12 +232,3 @@ class CrashAnalysisTest(AppengineTestCase):
     analysis.put()
 
     self.assertEqual(CrashAnalysis.Get(identifiers).stack_trace, big_stacktrace)
-
-  def testLogProperty(self):
-    """Tests ``log`` property."""
-    ids = {'id': '123'}
-    log = Log.Create(ids)
-    log.Log('DummyInfo', 'This is a dummy info.', 'info')
-    analysis = CrashAnalysis.Create(ids)
-    analysis.identifiers = ids
-    self.assertEqual(log, analysis.log)

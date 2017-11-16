@@ -4,9 +4,8 @@
 
 import traceback
 
-from analysis import log_util
 from analysis.culprit import Culprit
-from analysis.type_enums import LogLevel
+from analysis.log import Log
 
 
 # TODO(http://crbug.com/659346): write coverage tests.
@@ -14,8 +13,8 @@ class Predator(object): # pragma: no cover
   """The Main entry point into the Predator library."""
 
   def __init__(self, changelist_classifier, component_classifier,
-               project_classifier, log=None):
-    self._log = log
+               project_classifier):
+    self.log = Log()
     self.changelist_classifier = changelist_classifier
     self.component_classifier = component_classifier
     self.project_classifier = project_classifier
@@ -23,7 +22,7 @@ class Predator(object): # pragma: no cover
 
   def _SetLog(self):
     """Makes sure that classifiers are using the same log as Predator."""
-    self.changelist_classifier.SetLog(self._log)
+    self.changelist_classifier.SetLog(self.log)
 
   def _FindCulprit(self, report):
     """Given a CrashReport, return suspected project, components and cls."""
@@ -63,13 +62,14 @@ class Predator(object): # pragma: no cover
                            components=suspected_components,
                            suspected_cls=suspected_cls,
                            regression_range=report.regression_range,
-                           algorithm='core_algorithm')
+                           algorithm='core_algorithm',
+                           log=self.log.ToDict())
     except Exception as error:
-      log_util.Log(self._log, error.__class__.__name__,
-                   traceback.format_exc(), LogLevel.ERROR)
+      self.log.error(error.__class__.__name__, traceback.format_exc())
 
     return False, Culprit(project='',
                           components=[],
                           suspected_cls=[],
                           regression_range=report.regression_range,
-                          algorithm='core_algorithm')
+                          algorithm='core_algorithm',
+                          log=self.log.ToDict())

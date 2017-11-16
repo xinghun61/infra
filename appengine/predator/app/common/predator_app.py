@@ -8,7 +8,7 @@ import logging
 
 from google.appengine.ext import ndb
 
-from analysis import log_util
+from analysis import exceptions
 from analysis.component import Component
 from analysis.component_classifier import ComponentClassifier
 from analysis.project import Project
@@ -26,10 +26,9 @@ from libs import time_util
 # buggy way coverage is computed). Need to add a bunch of new unittests
 # to get coverage back up.
 
-
 class PredatorApp(object):
 
-  def __init__(self, get_repository, config, log=None):
+  def __init__(self, get_repository, config):
     """
     Args:
       get_repository (callable): a function from DEP urls to ``Repository``
@@ -41,7 +40,6 @@ class PredatorApp(object):
         for ``GitilesRepository``).
       config (ndb.CrashConfig): Config for clients and project and component
         classifiers.
-      log (Log): log instance to store useful logs to datastore for users.
     """
     self._get_repository = get_repository
 
@@ -64,7 +62,6 @@ class PredatorApp(object):
         config.repo_to_dep_path)
 
     self._config = config
-    self._log = log
 
   # This is a class method because it should be the same for all
   # instances of this class. We can in fact call class methods on
@@ -194,10 +191,8 @@ class PredatorApp(object):
     """
     # Check policy and modify the raw_crash_data as needed.
     if not self._CheckPolicy(crash_data):
-      log_util.LogInfo(
-          self._log, 'NotSupported',
-          'The analysis of %s is not supported, task will not be '
-          'scheduled.' % str(crash_data.identifiers))
+      logging.info('The analysis of %s is not supported, task will not be '
+                   'scheduled.', str(crash_data.identifiers))
       return False
 
     model = self.GetAnalysis(crash_data.identifiers)
