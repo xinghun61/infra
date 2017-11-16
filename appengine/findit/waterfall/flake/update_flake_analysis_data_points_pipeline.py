@@ -8,8 +8,8 @@ from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
-from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint

@@ -14,7 +14,7 @@ from libs.gitiles.change_log import ChangeLog
 
 from common import constants
 from common.waterfall import failure_type
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob

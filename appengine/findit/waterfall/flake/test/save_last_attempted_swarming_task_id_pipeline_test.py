@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 from common import constants
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 
 from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (

@@ -4,8 +4,9 @@
 
 import logging
 
-from gae_libs.pipeline_wrapper import BasePipeline
 from google.appengine.ext import ndb
+
+from gae_libs.pipeline_wrapper import BasePipeline
 from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants

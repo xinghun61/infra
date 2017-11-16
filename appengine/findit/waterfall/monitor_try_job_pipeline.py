@@ -19,8 +19,8 @@ from common.waterfall import try_job_error
 from common.waterfall.buildbucket_client import BuildbucketBuild
 from gae_libs import appengine_util
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
-from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
 from libs import time_util
 from model.flake.flake_try_job_data import FlakeTryJobData

@@ -4,7 +4,7 @@
 import copy
 import mock
 
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from gae_libs.pipelines import CreateInputObjectInstance
 
 from model.flake.flake_culprit import FlakeCulprit

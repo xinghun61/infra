@@ -5,7 +5,7 @@
 import mock
 
 from common import constants
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from pipelines.test_failure import revert_and_notify_test_culprit_pipeline
 from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
     RevertAndNotifyTestCulpritPipeline)

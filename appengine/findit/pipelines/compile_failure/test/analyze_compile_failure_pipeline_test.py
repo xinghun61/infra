@@ -5,7 +5,7 @@
 import mock
 
 from common import constants
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from pipelines.compile_failure import analyze_compile_failure_pipeline
@@ -20,12 +20,12 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   def _SetupAnalysis(self,
-             master_name,
-             builder_name,
-             build_number,
-             status=analysis_status.PENDING,
-             signals=None,
-             failure_info=None):
+                     master_name,
+                     builder_name,
+                     build_number,
+                     status=analysis_status.PENDING,
+                     signals=None,
+                     failure_info=None):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = status
     analysis.failure_info = failure_info
@@ -148,8 +148,8 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, None, False, False)
     root_pipeline._HandleUnexpectedAborting(True)
 
-    mocked_pipeline.assert_called_once_with(
-        master_name, builder_name, build_number, failure_info, {},
-        None, False, False)
+    mocked_pipeline.assert_called_once_with(master_name, builder_name,
+                                            build_number, failure_info, {},
+                                            None, False, False)
     mocked_pipeline.assert_has_calls(
         [mock.call().start(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)])

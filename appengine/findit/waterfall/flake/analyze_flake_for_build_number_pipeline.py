@@ -4,8 +4,8 @@
 
 from google.appengine.ext import ndb
 
+from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
-from gae_libs.pipeline_wrapper import pipeline
 from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
     SaveLastAttemptedSwarmingTaskIdPipeline)
 from waterfall.flake.update_flake_analysis_data_points_pipeline import (

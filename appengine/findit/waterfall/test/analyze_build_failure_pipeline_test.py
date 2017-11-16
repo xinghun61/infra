@@ -5,7 +5,7 @@
 import mock
 
 from common import constants
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from waterfall import analyze_build_failure_pipeline

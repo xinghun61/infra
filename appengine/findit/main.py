@@ -8,8 +8,8 @@ import webapp2
 import gae_ts_mon
 
 from findit_api import FindItApi
-from gae_libs.pipeline_wrapper import pipeline_handlers
-from gae_libs.pipeline_wrapper import pipeline_status_ui
+from gae_libs.pipelines import pipeline_handlers
+from gae_libs.pipelines import pipeline_status_ui
 from handlers import auto_revert_metrics
 from handlers import build_failure
 from handlers import calculate_confidence_scores
@@ -118,8 +118,7 @@ gae_ts_mon.initialize(waterfall_frontend_web_application)
 waterfall_backend_web_pages_handler_mappings = [
     ('/waterfall/cron/calculate-confidence-scores',
      calculate_confidence_scores.CalculateConfidenceScores),
-    ('/waterfall/cron/check-reverted-cls',
-     check_reverted_cls.CheckRevertedCLs),
+    ('/waterfall/cron/check-reverted-cls', check_reverted_cls.CheckRevertedCLs),
     ('/waterfall/cron/collect-tree-closures',
      collect_tree_closures.CollectTreeClosures),
     ('/waterfall/cron/obscure-emails', obscure_emails.ObscureEmails),

@@ -4,7 +4,7 @@
 
 from common import constants
 from common.waterfall import failure_type
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.rerun_tryjob_pipeline import RerunTryJobPipeline
 from waterfall.schedule_compile_try_job_pipeline import (

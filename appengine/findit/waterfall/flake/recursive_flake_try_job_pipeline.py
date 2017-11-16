@@ -6,14 +6,12 @@ import logging
 
 from google.appengine.ext import ndb
 
-from common import constants
 from common import monitoring
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
-from gae_libs import appengine_util
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
-from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
 from libs import time_util
 from model.flake.flake_culprit import FlakeCulprit

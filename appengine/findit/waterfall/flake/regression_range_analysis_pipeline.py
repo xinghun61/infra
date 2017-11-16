@@ -8,7 +8,6 @@ from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
 from gae_libs.pipeline_wrapper import BasePipeline
-from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
 from waterfall import build_util
 from waterfall import buildbot

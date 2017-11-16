@@ -6,7 +6,7 @@ import mock
 
 from google.appengine.ext import ndb
 
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from infra_api_clients.codereview import codereview_util
 from infra_api_clients.codereview import codereview
 from libs import analysis_status

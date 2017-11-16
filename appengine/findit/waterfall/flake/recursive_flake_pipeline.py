@@ -6,8 +6,8 @@ import logging
 
 from google.appengine.ext import ndb
 
+from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
-from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
 from libs import time_util
 from pipelines.delay_pipeline import DelayPipeline

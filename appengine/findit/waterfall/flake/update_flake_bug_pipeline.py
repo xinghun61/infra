@@ -7,6 +7,7 @@ import logging
 from google.appengine.api import app_identity
 from google.appengine.ext import ndb
 from monorail_api import IssueTrackerAPI
+
 from gae_libs.pipeline_wrapper import BasePipeline
 
 from services.flake_failure import issue_tracking_service
@@ -45,33 +46,28 @@ _FINDIT_ANALYZED_LABEL_TEXT = 'Test-Findit-Analyzed'
 def _GenerateComment(analysis):
   """Generates a comment based on the analysis result."""
   if analysis.failed:
-    return _ERROR_COMMENT_TEMPLATE % (
-        analysis.original_master_name,
-        analysis.original_builder_name,
-        analysis.key.urlsafe(),)
+    return _ERROR_COMMENT_TEMPLATE % (analysis.original_master_name,
+                                      analysis.original_builder_name,
+                                      analysis.key.urlsafe(),)
   elif analysis.culprit_urlsafe_key is not None:
     culprit = ndb.Key(urlsafe=analysis.culprit_urlsafe_key).get()
     assert culprit
     assert analysis.confidence_in_culprit is not None
-    return _CULPRIT_COMMENT_TEMPLATE % (
-        culprit.commit_position,
-        analysis.confidence_in_culprit * 100,
-        analysis.original_master_name,
-        analysis.original_builder_name,
-        analysis.key.urlsafe(),)
+    return _CULPRIT_COMMENT_TEMPLATE % (culprit.commit_position,
+                                        analysis.confidence_in_culprit * 100,
+                                        analysis.original_master_name,
+                                        analysis.original_builder_name,
+                                        analysis.key.urlsafe(),)
   elif (analysis.suspected_flake_build_number and
         analysis.confidence_in_suspected_build > 0.6):
     return _BUILD_HIGH_CONFIDENCE_COMMENT_TEMPLATE % (
-        analysis.suspected_flake_build_number,
-        analysis.original_master_name,
+        analysis.suspected_flake_build_number, analysis.original_master_name,
         analysis.original_builder_name,
-        analysis.confidence_in_suspected_build * 100,
-        analysis.key.urlsafe(),)
+        analysis.confidence_in_suspected_build * 100, analysis.key.urlsafe(),)
   else:
-    return _LOW_FLAKINESS_COMMENT_TEMPLATE % (
-        analysis.original_master_name,
-        analysis.original_builder_name,
-        analysis.key.urlsafe(),)
+    return _LOW_FLAKINESS_COMMENT_TEMPLATE % (analysis.original_master_name,
+                                              analysis.original_builder_name,
+                                              analysis.key.urlsafe(),)
 
 
 def _LogBugNotUpdated(reason):

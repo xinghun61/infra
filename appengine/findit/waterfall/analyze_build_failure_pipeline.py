@@ -6,8 +6,8 @@ import logging
 
 from common import constants
 from gae_libs import appengine_util
+from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
-from gae_libs.pipeline_wrapper import pipeline
 from libs import analysis_status
 from libs import time_util
 from model.wf_analysis import WfAnalysis
@@ -131,8 +131,8 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
 
       # Checks if first time failures happen and starts a try job if yes.
       yield StartTestTryJobPipeline(master_name, builder_name, build_number,
-                                        failure_info, signals, heuristic_result,
-                                        build_completed, force)
+                                    failure_info, signals, heuristic_result,
+                                    build_completed, force)
 
       # Trigger flake analysis on flaky tests, if any.
       yield TriggerFlakeAnalysesPipeline(master_name, builder_name,

@@ -4,8 +4,8 @@
 
 import logging
 
+from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
-from gae_libs.pipeline_wrapper import pipeline
 from common.waterfall import failure_type
 from services import try_job as try_job_service
 from services.test_failure import test_try_job

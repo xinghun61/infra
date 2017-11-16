@@ -5,7 +5,7 @@
 import mock
 
 from common.waterfall import failure_type
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from model.wf_try_job import WfTryJob
 from pipelines.test_failure import start_test_try_job_pipeline
 from pipelines.test_failure.start_test_try_job_pipeline import (

@@ -4,7 +4,7 @@
 
 from common import constants
 from common.waterfall import failure_type
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from waterfall.process_swarming_task_result_pipeline import (
     ProcessSwarmingTaskResultPipeline)
 from waterfall.process_swarming_tasks_result_pipeline import (

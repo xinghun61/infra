@@ -4,7 +4,7 @@
 
 import mock
 
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from libs.gitiles.gitiles_repository import GitilesRepository
 from model import result_status

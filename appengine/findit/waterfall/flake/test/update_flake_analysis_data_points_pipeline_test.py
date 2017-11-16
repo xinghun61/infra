@@ -6,8 +6,8 @@ import mock
 
 from common import constants
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from gae_libs.pipeline_wrapper import pipeline
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline
+from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint

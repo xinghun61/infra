@@ -3,8 +3,8 @@
 # found in the LICENSE file.
 
 from common.waterfall import failure_type
+from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
-from gae_libs.pipeline_wrapper import pipeline
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.schedule_compile_try_job_pipeline import (
     ScheduleCompileTryJobPipeline)

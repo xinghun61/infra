@@ -5,7 +5,7 @@
 import mock
 
 from common.waterfall import failure_type
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from services.compile_failure import extract_compile_signal
 from services.test_failure import extract_test_signal
 from waterfall.extract_signal_pipeline import ExtractSignalPipeline

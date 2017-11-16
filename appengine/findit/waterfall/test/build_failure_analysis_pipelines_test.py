@@ -9,7 +9,7 @@ from common import constants
 from common.waterfall import failure_type
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from pipelines.compile_failure import analyze_compile_failure_pipeline
 from services import ci_failure
 from waterfall import build_failure_analysis_pipelines

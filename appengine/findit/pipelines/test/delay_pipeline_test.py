@@ -3,7 +3,7 @@
 # found in the LICENSE file.
 
 from gae_libs import pipelines
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from pipelines.delay_pipeline import DelayPipeline
 from waterfall.test import wf_testcase
 

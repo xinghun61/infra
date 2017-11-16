@@ -2,9 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from gae_libs.pipeline_wrapper import BasePipeline
-
 from common.waterfall import failure_type
+from gae_libs.pipeline_wrapper import BasePipeline
 from services.test_failure import ci_test_failure
 from waterfall.process_swarming_task_result_pipeline import (
     ProcessSwarmingTaskResultPipeline)

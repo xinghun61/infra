@@ -8,7 +8,7 @@ import mock
 
 from common import acl
 from common import constants
-from gae_libs.pipeline_wrapper import pipeline_handlers
+from gae_libs.pipelines import pipeline_handlers
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from waterfall import buildbot
 from waterfall import swarming_util
