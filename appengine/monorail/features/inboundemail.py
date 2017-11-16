@@ -175,11 +175,8 @@ class InboundEmail(webapp2.RequestHandler):
 
     # If the email is an alert, switch to the alert handling path.
     if is_alert:
-        trooper_email = _GetTrooperEmail()
-        trooper_email = self.services.user.LookupParentEmail(cnxn,
-            trooper_email)
         self.ProcessAlert(cnxn, project, project_addr, from_addr, author_addr,
-            author_id, subject, body, incident_id, owner_email=trooper_email)
+            author_id, subject, body, incident_id)
         return None
 
     # This email is a response to an email about a comment.
@@ -351,19 +348,6 @@ class InboundEmail(webapp2.RequestHandler):
     uia.Parse(cnxn, project.project_name, author_id, lines, self.services,
               strip_quoted_lines=True)
     uia.Run(cnxn, self.services, allow_edit=allow_edit)
-
-
-def _GetTrooperEmail():
-  # TODO(zhangtiff): Replace this with a Stubby call to Oncallator.
-  trooper_url = 'https://build.chromium.org/p/chromium/current_trooper.txt'
-
-  # Trooper response format: primary_trooper,secondary_trooper
-  resp = urllib.urlopen(trooper_url)
-
-  if resp.getcode() == 200:
-    return resp.read().split(',')[0] + '@google.com'
-
-  return None
 
 
 def _MakeErrorMessageReplyTask(
