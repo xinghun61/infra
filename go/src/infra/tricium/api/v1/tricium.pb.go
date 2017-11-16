@@ -36,7 +36,7 @@ const (
 	// Failure is for a workflow, analyzer, or worker that completed with failure.
 	//
 	// Failure of workflows and analyzers, is aggregated from underlying analyzers and workers,
-	// where any occurence of failure means failure is aggregated.
+	// where any occurrence of failure means failure is aggregated.
 	State_FAILURE State = 3
 	// Canceled is for user canceled workflows, analyzers, and workers.
 	// NB! Not supported yet.
@@ -447,7 +447,7 @@ type GerritConsumerDetails struct {
 	//
 	// This value should be a fully qualified ID on the form "<project>~<branch>~<Change-Id>",
 	// where <Change-Id> is a SHA and not a lecacy change ID number.
-	// Note that refs/heads can be ommitted from the branch.
+	// Note that refs/heads can be omitted from the branch.
 	//
 	// Example: "myProject~master~I8473b95934b5732ac55d26311a706c9c2bde9940"
 	//
