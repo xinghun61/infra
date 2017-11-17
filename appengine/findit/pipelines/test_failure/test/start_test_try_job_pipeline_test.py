@@ -97,10 +97,10 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         expected_args=[try_job.key.urlsafe(), try_job_type, 'try_job_id'],
         expected_kwargs={})
     self.MockPipeline(
-        start_test_try_job_pipeline.IdentifyTryJobCulpritPipeline,
+        start_test_try_job_pipeline.IdentifyTestTryJobCulpritPipeline,
         'final_result',
         expected_args=[
-            master_name, builder_name, build_number, try_job_type, 'try_job_id',
+            master_name, builder_name, build_number, 'try_job_id',
             'try_job_result'
         ],
         expected_kwargs={})

@@ -23,7 +23,6 @@ from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from services import try_job as try_job_service
-from services.compile_failure import compile_failure_analysis
 from services.parameters import ScheduleCompileTryJobParameters
 from waterfall import build_util
 from waterfall import suspected_cl_util
@@ -257,20 +256,11 @@ def CompileFailureIsFlaky(result):
 @ndb.transactional
 def UpdateTryJobResult(master_name, builder_name, build_number, result,
                        try_job_id, culprits):
-  try_job_result = WfTryJob.Get(master_name, builder_name, build_number)
-  if culprits:
-    updated = False
-    for result_to_update in try_job_result.compile_results:
-      if try_job_id == result_to_update['try_job_id']:
-        result_to_update.update(result)
-        updated = True
-        break
-
-    if not updated:  # pragma: no cover
-      try_job_result.compile_results.append(result)
-
-  try_job_result.status = analysis_status.COMPLETED
-  try_job_result.put()
+  try_job = WfTryJob.Get(master_name, builder_name, build_number)
+  try_job_service.UpdateTryJobResultWithCulprit(try_job.compile_results, result,
+                                                try_job_id, culprits)
+  try_job.status = analysis_status.COMPLETED
+  try_job.put()
 
 
 def _GetUpdatedAnalysisResult(analysis, flaky_compile):
@@ -288,6 +278,32 @@ def _GetUpdatedAnalysisResult(analysis, flaky_compile):
   return analysis_result
 
 
+def _GetUpdatedSuspectedCLs(analysis, culprits):
+  """Returns a list of combined suspected CLs from heuristic and try job.
+
+  Args:
+    analysis: The WfAnalysis entity corresponding to the try job.
+    culprits: A dict of suspected CLs found by the try job.
+
+  Returns:
+    A combined list of suspected CLs from those already in analysis and those
+    found by this try job.
+  """
+  suspected_cls = analysis.suspected_cls[:] if analysis.suspected_cls else []
+  suspected_cl_revisions = [cl['revision'] for cl in suspected_cls]
+
+  for revision, try_job_suspected_cl in culprits.iteritems():
+    if revision not in suspected_cl_revisions:
+      suspected_cl_copy = copy.deepcopy(try_job_suspected_cl)
+      suspected_cl_revisions.append(revision)
+      failures = {'compile': []}
+      suspected_cl_copy['failures'] = failures
+      suspected_cl_copy['top_score'] = None
+      suspected_cls.append(suspected_cl_copy)
+
+  return suspected_cls
+
+
 @ndb.transactional
 def UpdateWfAnalysisWithTryJobResult(master_name, builder_name, build_number,
                                      result, culprits, flaky_compile):
@@ -301,15 +317,9 @@ def UpdateWfAnalysisWithTryJobResult(master_name, builder_name, build_number,
   updated_result = _GetUpdatedAnalysisResult(analysis, flaky_compile)
   updated_result_status = try_job_service.GetResultAnalysisStatus(
       analysis, result) if not flaky_compile else result_status.FLAKY
-  updated_suspected_cls = compile_failure_analysis.GetUpdatedSuspectedCLs(
-      analysis, culprits)
-  if (analysis.result_status != updated_result_status or
-      analysis.suspected_cls != updated_suspected_cls or
-      analysis.result != updated_result):
-    analysis.result_status = updated_result_status
-    analysis.suspected_cls = updated_suspected_cls
-    analysis.result = updated_result
-    analysis.put()
+  updated_suspected_cls = _GetUpdatedSuspectedCLs(analysis, culprits)
+  analysis.UpdateWithTryJobResult(updated_result_status, updated_suspected_cls,
+                                  updated_result)
 
 
 def UpdateSuspectedCLs(master_name, builder_name, build_number, culprits):

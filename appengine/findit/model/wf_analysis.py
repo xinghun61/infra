@@ -184,3 +184,13 @@ class WfAnalysis(BaseBuildModel):
   failure_info = ndb.JsonProperty(indexed=False)
   # Signals, result of ExtractSignalPipeline.
   signals = ndb.JsonProperty(indexed=False)
+
+  def UpdateWithTryJobResult(self, updated_result_status, updated_suspected_cls,
+                             updated_result):
+    if (self.result_status != updated_result_status or
+        self.suspected_cls != updated_suspected_cls or
+        self.result != updated_result):
+      self.result_status = updated_result_status
+      self.suspected_cls = updated_suspected_cls
+      self.result = updated_result
+      self.put()

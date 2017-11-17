@@ -9,16 +9,28 @@ It provides functions to:
   * Get parameters for starting a new test try job.
 """
 
+from collections import defaultdict
+import copy
 import logging
+
+from google.appengine.ext import ndb
 
 from common import exceptions
 from common.waterfall import failure_type
+from libs import analysis_status
+from model import analysis_approach_type
+from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
+from model.wf_try_job import WfTryJob
+from model.wf_try_job_data import WfTryJobData
+from services import build_failure_analysis
+from services import git
 from services import try_job as try_job_service
 from services.parameters import ScheduleTestTryJobParameters
 from services.test_failure import ci_test_failure
 from waterfall import build_util
+from waterfall import suspected_cl_util
 from waterfall import swarming_util
 from waterfall import waterfall_config
 
@@ -269,6 +281,197 @@ def GetBuildProperties(pipeline_input):
   properties['target_testername'] = pipeline_input.build_key.builder_name
 
   return properties
+
+
+def _GetResultAnalysisStatus(analysis, result, all_flaked=False):
+  """Returns the analysis status based on existing status and try job result.
+
+  Args:
+    analysis: The WfAnalysis entity corresponding to this try job.
+    result: A result dict containing the result of this try job.
+    all_flaked: A flag indicates if all failures are flaky.
+
+  Returns:
+    A result_status code.
+  """
+  if all_flaked:
+    return result_status.FLAKY
+
+  return try_job_service.GetResultAnalysisStatus(analysis, result)
+
+
+def _GetTestFailureCausedByCL(result):
+  if not result:
+    return None
+
+  failures = {}
+  for step_name, step_result in result.iteritems():
+    if step_result['status'] == 'failed':
+      failures[step_name] = step_result['failures']
+
+  return failures
+
+
+def _GetUpdatedSuspectedCLs(analysis, result, culprits):
+  """Returns a list of suspected CLs.
+
+  Args:
+    analysis: The WfAnalysis entity corresponding to this try job.
+    result: A result dict containing the result of this try job.
+    culprits: A list of suspected CLs found by the try job.
+
+  Returns:
+    A combined list of suspected CLs from those already in analysis and those
+    found by this try job.
+  """
+  suspected_cls = analysis.suspected_cls[:] if analysis.suspected_cls else []
+  suspected_cl_revisions = [cl['revision'] for cl in suspected_cls]
+
+  for revision, try_job_suspected_cl in culprits.iteritems():
+    suspected_cl_copy = copy.deepcopy(try_job_suspected_cl)
+    if revision not in suspected_cl_revisions:
+      suspected_cl_revisions.append(revision)
+      failures = _GetTestFailureCausedByCL(
+          result.get('report', {}).get('result', {}).get(revision))
+      suspected_cl_copy['failures'] = failures
+      suspected_cl_copy['top_score'] = None
+      suspected_cls.append(suspected_cl_copy)
+
+  return suspected_cls
+
+
+def _GetUpdatedAnalysisResult(analysis, flaky_failures):
+  if not analysis or not analysis.result or not analysis.result.get('failures'):
+    return [], False
+
+  analysis_result = copy.deepcopy(analysis.result)
+  all_flaky = swarming_util.UpdateAnalysisResult(analysis_result,
+                                                 flaky_failures)
+
+  return analysis_result, all_flaky
+
+
+def FindCulpritForEachTestFailure(result):
+  culprit_map = defaultdict(dict)
+  failed_revisions = set()
+
+  # Recipe should return culprits with the format as:
+  # 'culprits': {
+  #     'step1': {
+  #         'test1': 'rev1',
+  #         'test2': 'rev2',
+  #         ...
+  #     },
+  #     ...
+  # }
+  if result['report'].get('culprits'):
+    for step_name, tests in result['report']['culprits'].iteritems():
+      culprit_map[step_name]['tests'] = {}
+      for test_name, revision in tests.iteritems():
+        culprit_map[step_name]['tests'][test_name] = {'revision': revision}
+        failed_revisions.add(revision)
+  return culprit_map, list(failed_revisions)
+
+
+def UpdateCulpritMapWithCulpritInfo(culprit_map, culprits):
+  """Fills in commit_position and review url for each failed rev in map."""
+  for step_culprit in culprit_map.values():
+    for test_culprit in step_culprit.get('tests', {}).values():
+      test_revision = test_culprit['revision']
+      test_culprit.update(culprits[test_revision])
+
+
+def GetCulpritDataForTest(culprit_map):
+  """Gets culprit revision for each failure for try job metadata."""
+  culprit_data = {}
+  for step, step_culprit in culprit_map.iteritems():
+    culprit_data[step] = {}
+    for test, test_culprit in step_culprit['tests'].iteritems():
+      culprit_data[step][test] = test_culprit['revision']
+  return culprit_data
+
+
+@ndb.transactional
+def UpdateTryJobResult(master_name, builder_name, build_number, result,
+                       try_job_id, culprits):
+  try_job = WfTryJob.Get(master_name, builder_name, build_number)
+  try_job_service.UpdateTryJobResultWithCulprit(try_job.test_results, result,
+                                                try_job_id, culprits)
+  try_job.status = analysis_status.COMPLETED
+  try_job.put()
+
+
+@ndb.transactional
+def UpdateWfAnalysisWithTryJobResult(master_name, builder_name, build_number,
+                                     result, culprits, flaky_failures):
+  if not culprits and not flaky_failures:
+    return
+
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+  # Update analysis result and suspected CLs with results of this try job if
+  # culprits were found or failures are flaky.
+  updated_result, all_flaked = _GetUpdatedAnalysisResult(
+      analysis, flaky_failures)
+  updated_result_status = _GetResultAnalysisStatus(analysis, result, all_flaked)
+  updated_suspected_cls = _GetUpdatedSuspectedCLs(analysis, result, culprits)
+  analysis.UpdateWithTryJobResult(updated_result_status, updated_suspected_cls,
+                                  updated_result)
+
+
+def UpdateSuspectedCLs(master_name, builder_name, build_number, culprits,
+                       result):
+  if not culprits:
+    return
+
+  # Creates or updates each suspected_cl.
+  for culprit in culprits.values():
+    revision = culprit['revision']
+    failures = _GetTestFailureCausedByCL(
+        result.get('report', {}).get('result', {}).get(revision))
+
+    suspected_cl_util.UpdateSuspectedCL(culprit['repo_name'], revision,
+                                        culprit.get('commit_position'),
+                                        analysis_approach_type.TRY_JOB,
+                                        master_name, builder_name, build_number,
+                                        failure_type.TEST, failures, None)
+
+
+def IdentifyTestTryJobCulprits(master_name, builder_name, build_number,
+                               try_job_id, result):
+  culprits = None
+  flaky_failures = {}
+  if try_job_id and result and result.get('report'):
+    culprit_map, failed_revisions = FindCulpritForEachTestFailure(result)
+    culprits = git.GetCLInfo(failed_revisions)
+
+    if not culprits:
+      flaky_failures = result.get('report', {}).get('flakes')
+    if culprits:
+      try_job_data = WfTryJobData.Get(try_job_id)
+      UpdateCulpritMapWithCulpritInfo(culprit_map, culprits)
+      try_job_data.culprits = GetCulpritDataForTest(culprit_map)
+      try_job_data.put()
+      result['culprit'] = culprit_map
+
+  # Store try-job results.
+  UpdateTryJobResult(master_name, builder_name, build_number, result,
+                     try_job_id, culprits)
+
+  # Saves cls found by heuristic approach for later use.
+  # This part must be before UpdateWfAnalysisWithTryJobResult().
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+  heuristic_cls = build_failure_analysis.GetHeuristicSuspectedCLs(analysis)
+
+  # Add try-job results to WfAnalysis.
+  UpdateWfAnalysisWithTryJobResult(master_name, builder_name, build_number,
+                                   result, culprits, flaky_failures)
+
+  # TODO (chanli): Update suspected_cl for builds in the same group with
+  # current build.
+  # Updates suspected_cl.
+  UpdateSuspectedCLs(master_name, builder_name, build_number, culprits, result)
+
+  return culprits, heuristic_cls
 
 
 def ScheduleTestTryJob(parameters, notification_id):

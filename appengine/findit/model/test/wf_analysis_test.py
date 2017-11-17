@@ -4,15 +4,14 @@
 
 from datetime import datetime
 
-import unittest
-
 from common.waterfall import failure_type
+from gae_libs.testcase import TestCase
 from libs import analysis_status
 from model import result_status
 from model.wf_analysis import WfAnalysis
 
 
-class WfAnalysisTest(unittest.TestCase):
+class WfAnalysisTest(TestCase):
 
   def testWfAnalysisStatusIsCompleted(self):
     for status in (analysis_status.COMPLETED, analysis_status.ERROR):
@@ -159,3 +158,24 @@ class WfAnalysisTest(unittest.TestCase):
       analysis = WfAnalysis.Create('m', 'b', 123)
       analysis.result_status = status
       self.assertFalse(analysis.is_duplicate)
+
+  def testUpdateWfAnalysisWithTryJobResult(self):
+    master_name = 'm1'
+    builder_name = 'b'
+    build_number = 1
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.put()
+    analysis.UpdateWithTryJobResult(result_status.FOUND_CORRECT, None, None)
+    self.assertEqual(analysis.result_status, result_status.FOUND_CORRECT)
+
+  def testUpdateWfAnalysisWithTryJobResultNoUpdate(self):
+    master_name = 'm1'
+    builder_name = 'b'
+    build_number = 1
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.result_status = result_status.FOUND_CORRECT
+    analysis.suspected_cls = None
+    analysis.result = None
+    analysis.put()
+    analysis.UpdateWithTryJobResult(result_status.FOUND_CORRECT, None, None)
+    self.assertEqual(analysis.result_status, result_status.FOUND_CORRECT)

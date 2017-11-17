@@ -588,6 +588,39 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job.try_job_ids[0], build_id)
     self.assertIsNotNone(try_job.compile_results)
 
+  def testUpdateTryJobResultWithCulpritAppendNewResult(self):
+    try_job_result = [{'try_job_id': '111'}]
+    try_job_service.UpdateTryJobResultWithCulprit(
+        try_job_result, {'try_job_id': '123'}, '123', ['rev1'])
+    self.assertEqual([{
+        'try_job_id': '111'
+    }, {
+        'try_job_id': '123'
+    }], try_job_result)
+
+  def testUpdateTryJobResultWithCulprit(self):
+    try_job_result = [{'try_job_id': '111'}, {'try_job_id': '123'}]
+    new_result = {'try_job_id': '123', 'url': 'url'}
+
+    expected_updated_result = [{
+        'try_job_id': '111'
+    }, {
+        'try_job_id': '123',
+        'url': 'url'
+    }]
+    try_job_service.UpdateTryJobResultWithCulprit(try_job_result, new_result,
+                                                  '123', ['rev1'])
+    self.assertEqual(expected_updated_result, try_job_result)
+
+  def testUpdateTryJobResultNoCulprit(self):
+    try_job_result = [{'try_job_id': '111'}, {'try_job_id': '123'}]
+    new_result = [{'try_job_id': '123', 'url': 'url'}]
+
+    expected_updated_result = [{'try_job_id': '111'}, {'try_job_id': '123'}]
+    try_job_service.UpdateTryJobResultWithCulprit(try_job_result, new_result,
+                                                  '123', [])
+    self.assertEqual(expected_updated_result, try_job_result)
+
   def testPrepareParametersToScheduleTryJob(self):
     master_name = 'm'
     builder_name = 'b'
