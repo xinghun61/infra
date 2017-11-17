@@ -30,8 +30,8 @@
     'chromium.chromiumos': {
       'base_url': 'https://build.chromium.org/p/chromium.chromiumos',
       'builders': [
-        'Linux ChromiumOS Builder',
-        'Linux ChromiumOS Builder (dbg)',
+        'linux-chromeos-rel',  # builder_tester: crbug.com/786293
+        'linux-chromeos-dbg',  # builder_tester: crbug.com/786293
       ],
     },  # chromium.chromiumos
     'chromium.android': {
