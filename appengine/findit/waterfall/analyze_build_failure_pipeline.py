@@ -71,19 +71,18 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
     # This will only run try job but not flake analysis.
     # TODO (chanli): Also run flake analysis when heuristic analysis or
     # try job analysis aborts.
-    self._ContinueTryJobPipeline(run_try_job, analysis.failure_info,
-                                 analysis.signals)
+    self._ContinueTryJobPipeline(run_try_job, analysis.failure_info)
 
   def finalized(self):
     self._HandleUnexpectedAborting(self.was_aborted)
 
-  def _ContinueTryJobPipeline(self, run_try_job, failure_info, signals):
+  def _ContinueTryJobPipeline(self, run_try_job, failure_info):
     if not run_try_job:
       return
 
     try_job_pipeline = StartTestTryJobPipeline(
         self.master_name, self.builder_name, self.build_number, failure_info,
-        signals, None, self.build_completed, self.force)
+        None, self.build_completed, self.force)
     try_job_pipeline.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)
     try_job_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
@@ -131,7 +130,7 @@ class AnalyzeBuildFailurePipeline(BasePipeline):
 
       # Checks if first time failures happen and starts a try job if yes.
       yield StartTestTryJobPipeline(master_name, builder_name, build_number,
-                                    failure_info, signals, heuristic_result,
+                                    failure_info, heuristic_result,
                                     build_completed, force)
 
       # Trigger flake analysis on flaky tests, if any.

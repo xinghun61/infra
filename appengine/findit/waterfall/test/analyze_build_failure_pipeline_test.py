@@ -63,7 +63,7 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
         analyze_build_failure_pipeline.StartTestTryJobPipeline,
         'try_job_result',
         expected_args=[
-            master_name, builder_name, build_number, 'failure_info', 'signals',
+            master_name, builder_name, build_number, 'failure_info',
             'heuristic_result', False, False
         ],
         expected_kwargs={})
