@@ -25,3 +25,9 @@ class MonitoringTest(wf_testcase.WaterfallTestCase):
         'builder_name': builder_name
     }
     mock_mo.assert_is_called_once_with(parameters)
+
+  @mock.patch.object(mo.culprit_found, 'increment')
+  def testOnActionOnTestCulprits(self, mock_mo):
+    monitoring.OnActionOnTestCulprits()
+    parameters = {'type': 'test', 'action_taken': 'culprit_notified'}
+    mock_mo.assert_is_called_once_with(parameters)

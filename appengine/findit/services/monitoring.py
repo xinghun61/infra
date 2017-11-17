@@ -18,3 +18,11 @@ def OnTryJobTriggered(try_job_type, master_name, builder_name):
       'master_name': master_name,
       'builder_name': builder_name,
   })
+
+
+def OnActionOnTestCulprits():
+  """Records when Findit sends notifications to culprits for a test failure."""
+  monitoring.culprit_found.increment({
+      'type': 'test',
+      'action_taken': 'culprit_notified'
+  })

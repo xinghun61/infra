@@ -10,6 +10,7 @@ from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as wrapper_pipeline)
 from services import ci_failure
 from services import gerrit
+from services.compile_failure import compile_culprit_action
 from services.parameters import BuildKey
 from services.parameters import CLKey
 from services.parameters import CreateRevertCLParameters
@@ -31,7 +32,8 @@ from waterfall.test import wf_testcase
 class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  @mock.patch.object(ci_failure, 'AnyNewBuildSucceeded', return_value=False)
+  @mock.patch.object(
+      compile_culprit_action, 'ShouldTakeActionsOnCulprit', return_value=True)
   def testSendNotificationToConfirmRevert(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -80,7 +82,8 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
-  @mock.patch.object(ci_failure, 'AnyNewBuildSucceeded', return_value=True)
+  @mock.patch.object(
+      compile_culprit_action, 'ShouldTakeActionsOnCulprit', return_value=False)
   @mock.patch.object(wrapper_pipeline, 'SendNotificationForCulpritPipeline')
   def testSendNotificationLatestBuildPassed(self, mocked_pipeline, _):
     master_name = 'm'
@@ -105,22 +108,3 @@ class RevertAndNotifyCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
     mocked_pipeline.assert_not_called()
-
-  @mock.patch.object(ci_failure, 'AnyNewBuildSucceeded')
-  def testFinditNotTakeActionsOnFakeMaster(self, mock_fn):
-    repo_name = 'chromium'
-    revision = 'r1'
-    culprits = DictOfCLKeys()
-    culprits['r1'] = CLKey(repo_name=repo_name, revision=revision)
-    pipeline = wrapper_pipeline.RevertAndNotifyCompileCulpritPipeline(
-        CulpritActionParameters(
-            build_key=BuildKey(
-                master_name=wrapper_pipeline._BYPASS_MASTER_NAME.decode(
-                    'utf-8'),
-                builder_name=u'b',
-                build_number=123),
-            culprits=culprits,
-            heuristic_cls=ListOfCLKeys()))
-    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
-    self.execute_queued_tasks()
-    mock_fn.assert_not_called()
