@@ -34,6 +34,7 @@ import urllib
 import urlparse
 
 import settings
+from features import autolink_constants
 from framework import template_helpers
 from framework import validate
 from proto import project_pb2
@@ -47,52 +48,6 @@ _MAX_TOTAL_LENGTH = 50 * 1024  # 50KB
 _SKIP_AUTOLINKING = 'skip autolinking'
 
 _CLOSING_TAG_RE = re.compile('</[a-z0-9]+>$', re.IGNORECASE)
-
-# We linkify http, https, ftp, and mailto schemes only.
-_LINKIFY_SCHEMES = r'https?://|ftp://|mailto:'
-
-# This regex matches shorthand URLs that we know are valid.
-# Example: go/monorail
-# The scheme is optional, and if it is missing we add it to the link.
-IS_A_SHORT_LINK_RE = re.compile(
-    r'(?<![-/._])\b(%s)?'     # Scheme is optional for short links.
-    r'(%s)'        # The list of know shorthand links from settings.py
-    r'/([^\s<]+)'  # Allow anything, checked with validation code.
-    % (_LINKIFY_SCHEMES, '|'.join(settings.autolink_shorthand_hosts)),
-    re.UNICODE)
-IS_A_NUMERIC_SHORT_LINK_RE = re.compile(
-    r'(?<![-/._])\b(%s)?'     # Scheme is optional for short links.
-    r'(%s)'        # The list of know shorthand links from settings.py
-    r'/([0-9]+)'  # Allow digits only for these domains.
-    % (_LINKIFY_SCHEMES, '|'.join(settings.autolink_numeric_shorthand_hosts)),
-    re.UNICODE)
-
-# This regex matches fully-formed URLs, starting with a scheme.
-# Example: http://chromium.org or mailto:user@example.com
-# We link to the specified URL without adding anything.
-# Also count a start-tag '<' as a url delimeter, since the autolinker
-# is sometimes run against html fragments.
-_IS_A_LINK_RE = re.compile(
-    r'\b(%s)'    # Scheme must be a whole word.
-    r'([^\s<]+)' # Allow anything, checked with validation code.
-    % _LINKIFY_SCHEMES, re.UNICODE)
-
-# This regex matches text that looks like a URL despite lacking a scheme.
-# Example: crrev.com
-# Since the scheme is not specified, we prepend "http://".
-IS_IMPLIED_LINK_RE = re.compile(
-    r'(?<![-/._])\b[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b'  # Domain.
-    r'(/[^\s<]*)?',  # Allow anything, check with validation code.
-    re.UNICODE)
-
-# This regex matches text that looks like an email address.
-# Example: user@example.com
-# These get linked to the user profile page if it exists, otherwise
-# they become a mailto:.
-_IS_IMPLIED_EMAIL_RE = re.compile(
-    r'\b[a-z]((-|\.)?[a-z0-9])+@'  # Username@
-    r'[a-z]((-|\.)?[a-z0-9])+\.(com|net|org|edu)\b',  # Domain
-    re.UNICODE)
 
 # These are allowed in links, but if any of closing delimiters appear
 # at the end of the link, and the opening one is not part of the link,
@@ -632,13 +587,13 @@ def RegisterAutolink(services):
       '02-linkify-full-urls',
       lambda request, mr: None,
       lambda mr, match: None,
-      {_IS_A_LINK_RE: Linkify})
+      {autolink_constants.IS_A_LINK_RE: Linkify})
 
   services.autolink.RegisterComponent(
       '03-linkify-user-profiles-or-mailto',
       CurryGetReferencedUsers(services),
       lambda _mr, match: [match.group(0)],
-      {_IS_IMPLIED_EMAIL_RE: LinkifyEmail})
+      {autolink_constants.IS_IMPLIED_EMAIL_RE: LinkifyEmail})
 
   services.autolink.RegisterComponent(
       '04-tracker-regular',
@@ -650,9 +605,9 @@ def RegisterAutolink(services):
       '05-linkify-shorthand',
       lambda request, mr: None,
       lambda mr, match: None,
-      {IS_A_SHORT_LINK_RE: Linkify,
-       IS_A_NUMERIC_SHORT_LINK_RE: Linkify,
-       IS_IMPLIED_LINK_RE: Linkify,
+      {autolink_constants.IS_A_SHORT_LINK_RE: Linkify,
+       autolink_constants.IS_A_NUMERIC_SHORT_LINK_RE: Linkify,
+       autolink_constants.IS_IMPLIED_LINK_RE: Linkify,
        })
 
   services.autolink.RegisterComponent(

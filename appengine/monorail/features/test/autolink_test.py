@@ -9,6 +9,7 @@ import re
 import unittest
 
 from features import autolink
+from features import autolink_constants
 from framework import template_helpers
 from proto import tracker_pb2
 from testing import fake
@@ -154,7 +155,8 @@ class EmailAutolinkTest(unittest.TestCase):
   def setUp(self):
     self.user_1 = 'fake user'  # Note: no User fields are accessed.
 
-  def DoLinkify(self, content, filter_re=autolink._IS_IMPLIED_EMAIL_RE):
+  def DoLinkify(
+      self, content, filter_re=autolink_constants.IS_IMPLIED_EMAIL_RE):
     """Calls the LinkifyEmail method and returns the result.
 
     Args:
@@ -193,7 +195,7 @@ class EmailAutolinkTest(unittest.TestCase):
 
 class URLAutolinkTest(unittest.TestCase):
 
-  def DoLinkify(self, content, filter_re=autolink._IS_A_LINK_RE):
+  def DoLinkify(self, content, filter_re=autolink_constants.IS_A_LINK_RE):
     """Calls the linkify method and returns the result.
 
     Args:
@@ -252,62 +254,69 @@ class URLAutolinkTest(unittest.TestCase):
   def testLinkify_ShortLink(self):
     """Test that shortlinks are linked."""
     test = 'http://go/monorail'
-    result = self.DoLinkify('%s' % test, filter_re=autolink.IS_A_SHORT_LINK_RE)
+    result = self.DoLinkify(
+        '%s' % test, filter_re=autolink_constants.IS_A_SHORT_LINK_RE)
     self.assertEqual(test, result[0].href)
     self.assertEqual(test, result[0].content)
 
     test = 'go/monorail'
-    result = self.DoLinkify('%s' % test, filter_re=autolink.IS_A_SHORT_LINK_RE)
+    result = self.DoLinkify(
+        '%s' % test, filter_re=autolink_constants.IS_A_SHORT_LINK_RE)
     self.assertEqual('http://' + test, result[0].href)
     self.assertEqual(test, result[0].content)
 
     test = 'b/12345'
     result = self.DoLinkify(
-      '%s' % test, filter_re=autolink.IS_A_NUMERIC_SHORT_LINK_RE)
+      '%s' % test, filter_re=autolink_constants.IS_A_NUMERIC_SHORT_LINK_RE)
     self.assertEqual('http://' + test, result[0].href)
     self.assertEqual(test, result[0].content)
 
     test = 'http://b/12345'
     result = self.DoLinkify(
-      '%s' % test, filter_re=autolink.IS_A_NUMERIC_SHORT_LINK_RE)
+      '%s' % test, filter_re=autolink_constants.IS_A_NUMERIC_SHORT_LINK_RE)
     self.assertEqual(test, result[0].href)
     self.assertEqual(test, result[0].content)
 
     test = '/b/12345'
-    result = self.DoLinkify('%s' % test, filter_re=autolink.IS_A_SHORT_LINK_RE)
+    result = self.DoLinkify(
+        '%s' % test, filter_re=autolink_constants.IS_A_SHORT_LINK_RE)
     self.assertIsNone(result)
 
     test = '/b/12345'
     result = self.DoLinkify(
-      '%s' % test, filter_re=autolink.IS_A_NUMERIC_SHORT_LINK_RE)
+      '%s' % test, filter_re=autolink_constants.IS_A_NUMERIC_SHORT_LINK_RE)
     self.assertIsNone(result)
 
     test = 'b/secondFileInDiff'
     result = self.DoLinkify(
-      '%s' % test, filter_re=autolink.IS_A_NUMERIC_SHORT_LINK_RE)
+      '%s' % test, filter_re=autolink_constants.IS_A_NUMERIC_SHORT_LINK_RE)
     self.assertIsNone(result)
 
   def testLinkify_ImpliedLink(self):
     """Test that text with .com, .org, .net, and .edu are linked."""
     test = 'google.org'
-    result = self.DoLinkify('%s' % test, filter_re=autolink.IS_IMPLIED_LINK_RE)
+    result = self.DoLinkify(
+        '%s' % test, filter_re=autolink_constants.IS_IMPLIED_LINK_RE)
     self.assertEqual('http://' + test, result[0].href)
     self.assertEqual(test, result[0].content)
 
     test = 'code.google.com/p/chromium'
-    result = self.DoLinkify('%s' % test, filter_re=autolink.IS_IMPLIED_LINK_RE)
+    result = self.DoLinkify(
+        '%s' % test, filter_re=autolink_constants.IS_IMPLIED_LINK_RE)
     self.assertEqual('http://' + test, result[0].href)
     self.assertEqual(test, result[0].content)
 
     # This is not a domain, it is a directory or something.
     test = 'build.out/p/chromium'
-    result = self.DoLinkify('%s' % test, filter_re=autolink.IS_IMPLIED_LINK_RE)
+    result = self.DoLinkify(
+        '%s' % test, filter_re=autolink_constants.IS_IMPLIED_LINK_RE)
     self.assertEqual(None, result)
 
     # We do not link the NNTP scheme, and the domain name part of it will not
     # be linked as an HTTP link because it is preceeded by "/".
     test = 'nntp://news.google.com'
-    result = self.DoLinkify('%s' % test, filter_re=autolink.IS_IMPLIED_LINK_RE)
+    result = self.DoLinkify(
+        '%s' % test, filter_re=autolink_constants.IS_IMPLIED_LINK_RE)
     self.assertIsNone(result)
 
   def testLinkify_Context(self):

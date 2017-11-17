@@ -9,7 +9,7 @@ import collections
 import logging
 import re
 
-from features import autolink
+from features import autolink_constants
 from framework import authdata
 from framework import framework_bizobj
 from framework import framework_constants
@@ -240,9 +240,12 @@ def _ValidateOneCustomField(mr, services, field_def, field_val):
   elif field_def.field_type == tracker_pb2.FieldTypes.URL_TYPE:
     if field_val.url_value:
       if not (validate.IsValidURL(field_val.url_value)
-              or autolink.IS_A_SHORT_LINK_RE.match(field_val.url_value)
-              or autolink.IS_A_NUMERIC_SHORT_LINK_RE.match(field_val.url_value)
-              or autolink.IS_IMPLIED_LINK_RE.match(field_val.url_value)):
+              or autolink_constants.IS_A_SHORT_LINK_RE.match(
+                  field_val.url_value)
+              or autolink_constants.IS_A_NUMERIC_SHORT_LINK_RE.match(
+                  field_val.url_value)
+              or autolink_constants.IS_IMPLIED_LINK_RE.match(
+                  field_val.url_value)):
         return 'Value must be a valid url'
 
   return None
