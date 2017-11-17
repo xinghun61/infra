@@ -12,7 +12,7 @@ from services.parameters import ScheduleCompileTryJobParameters
 class ScheduleCompileTryJobPipeline(SynchronousPipeline):
   """A pipeline for scheduling a new try job for failed compile build."""
   input_type = ScheduleCompileTryJobParameters
-  output_type = str
+  output_type = basestring
 
   def RunImpl(self, pipeline_input):
     try:

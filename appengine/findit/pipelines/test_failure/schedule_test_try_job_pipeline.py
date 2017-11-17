@@ -12,7 +12,7 @@ from services.test_failure import test_try_job
 class ScheduleTestTryJobPipeline(SynchronousPipeline):
   """A pipeline for scheduling a new try job for failed test build."""
   input_type = ScheduleTestTryJobParameters
-  output_type = str
+  output_type = basestring
 
   def RunImpl(self, pipeline_input):
     try:

@@ -61,6 +61,7 @@ class _GeneratorPipelineDoesNotSpawnPipeline(pipelines.GeneratorPipeline):
   def RunImpl(self, arg):
     return
 
+
 class _GeneratorPipelineReturnsNonFuture(pipelines.GeneratorPipeline):
   input_type = int
   output_type = list
@@ -271,9 +272,12 @@ class PipelinesTest(TestCase):
 
   def testOutputTypeNotSupported(self):
 
+    class UnsupportedType(object):
+      pass
+
     class OutputTypeNotSupportedPipeline(BasePipeline):
       input_type = int
-      output_type = basestring
+      output_type = UnsupportedType
 
     with self.assertRaises(AssertionError):
       OutputTypeNotSupportedPipeline(1)

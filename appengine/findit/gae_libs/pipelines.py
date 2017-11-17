@@ -101,7 +101,7 @@ from pipeline import status_ui as pipeline_status_ui
 from libs.structured_object import StructuredObject
 
 _UNDEFINED_TYPE = object()
-_SUPPORTED_TYPES = (type(None), int, float, long, str, list, dict,
+_SUPPORTED_TYPES = (type(None), int, float, long, basestring, list, dict,
                     StructuredObject)
 _SUPPORTED_TYPE_NAMES = ', '.join([t.__name__ for t in _SUPPORTED_TYPES])
 
