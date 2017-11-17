@@ -127,6 +127,11 @@
     'version': '3.1.1',
     'implicit': True,  # Required by grpcio
   },
+  'google_api_core': {
+    'build': '0',
+    'gs': '83ab231ee8327d189b2cca9cea2adb4a9147b27c.tar.gz',
+    'version': '0.1.1'
+   },
   'google_api_python_client': {
     'version': '1.4.2',
     'build': '0',
@@ -155,13 +160,18 @@
   },
   'google_cloud_bigquery': {
     'build': '0',
-    'gs': 'f4ce6bee14b8291886b7f0c8d7fdf92c17ef658b.tar.gz',
-    'version': '0.24.0'
+    'gs': 'ac648d5063ae7ed6e09597bb087d59be45be0eab.tar.gz',
+    'version': '0.28.0'
   },
   'google_cloud_core': {
     'build': '0',
     'gs': '8c6401edab67c15dd52beda9ccce2294d478b3c7.tar.gz',
     'version': '0.24.1'
+  },
+  'google_resumable_media': {
+    'build': '0',
+    'gs': '9392d9a50b346966dd28efc8ed320150b537556a.tar.gz',
+    'version': '0.3.1'
   },
   'grpcio': {
     'build': '0',
