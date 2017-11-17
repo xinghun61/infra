@@ -329,6 +329,11 @@ class FieldHelpersTest(unittest.TestCase):
         self.mr, self.services, fd, fv)
     self.assertIsNone(msg)
 
+    fv.url_value = 'go/213'
+    msg = field_helpers._ValidateOneCustomField(
+        self.mr, self.services, fd, fv)
+    self.assertIsNone(msg)
+
     fv.url_value = 'puppies'
     msg = field_helpers._ValidateOneCustomField(
         self.mr, self.services, fd, fv)

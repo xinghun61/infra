@@ -9,11 +9,13 @@ import collections
 import logging
 import re
 
+from features import autolink
 from framework import authdata
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import permissions
 from framework import timestr
+from framework import validate
 from proto import tracker_pb2
 from services import config_svc
 from services import user_svc
@@ -21,9 +23,6 @@ from tracker import tracker_bizobj
 
 
 INVALID_USER_ID = -1
-
-_GO_LINK_RE = re.compile(r'^(go/[A-Z0-9]{1,})', re.IGNORECASE)
-_URL_RE = re.compile(r'^(http|www.).*', re.IGNORECASE)
 
 ParsedFieldDef = collections.namedtuple(
     'ParsedFieldDef',
@@ -240,9 +239,10 @@ def _ValidateOneCustomField(mr, services, field_def, field_val):
 
   elif field_def.field_type == tracker_pb2.FieldTypes.URL_TYPE:
     if field_val.url_value:
-      # TODO(jojwang): improve url validate
-      if not (_GO_LINK_RE.match(field_val.url_value)
-              or _URL_RE.match(field_val.url_value)):
+      if not (validate.IsValidURL(field_val.url_value)
+              or autolink.IS_A_SHORT_LINK_RE.match(field_val.url_value)
+              or autolink.IS_A_NUMERIC_SHORT_LINK_RE.match(field_val.url_value)
+              or autolink.IS_IMPLIED_LINK_RE.match(field_val.url_value)):
         return 'Value must be a valid url'
 
   return None
