@@ -25,9 +25,6 @@
         'Linux Builder',
         'Linux Builder (dbg)',
         'Linux Builder (dbg)(32)',
-        'Android Builder (dbg)',
-        'Android Builder',
-        'Android Clang Builder (dbg)',
       ],
     },  # chromium.linux
     'chromium.chromiumos': {
@@ -37,5 +34,9 @@
         'Linux ChromiumOS Builder (dbg)',
       ],
     },  # chromium.chromiumos
+    'chromium.android': {
+      'Android arm Builder (dbg)',
+      'Android ASAN (dbg)',
+    },  # chromium.android
   },
 }
