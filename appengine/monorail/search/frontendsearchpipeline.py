@@ -506,6 +506,7 @@ def _StartBackendSearch(
         the search limit of any shard was reached.
     nonviewable_iids: dict {shard_id: set(iid)} of restricted issues in the
         projects being searched that the signed in user cannot view.
+    error_responses: shard_iids of shards that encountered errors.
     services: connections to backends.
 
   Returns:

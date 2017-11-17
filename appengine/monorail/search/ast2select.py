@@ -402,6 +402,9 @@ def _ProcessCustomFieldCond(cond, alias, user_alias):
                 alias=alias, user_alias=user_alias, email_cond=email_cond_str),
             email_cond_args))
         cond_str, cond_args = '', []
+    elif field_type == tracker_pb2.FieldTypes.URL_TYPE:
+      cond_str, cond_args = _Compare(
+          alias, op, field_type, 'url_value', cond.str_values)
     if field_type == tracker_pb2.FieldTypes.DATE_TYPE:
       cond_str, cond_args = _Compare(
           alias, op, field_type, 'date_value', cond.int_values)
