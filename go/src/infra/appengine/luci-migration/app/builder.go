@@ -15,10 +15,12 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -38,6 +40,7 @@ import (
 
 const (
 	experimentPercentageFormValueName = "experimentPercentage"
+	luciIsProdFormValueName           = "luciIsProd"
 	changeBuilderSettingsGroup        = "luci-migration-writers"
 )
 
@@ -81,6 +84,15 @@ func handleBuilderPage(c *router.Context) error {
 	if err != nil {
 		return err
 	}
+
+	if strings.ToLower(c.Request.FormValue("format")) == "json" {
+		c.Writer.Header().Add("Content-Type", "application/json")
+		return json.NewEncoder(c.Writer).Encode(map[string]interface{}{
+			"luci_is_prod": viewModel.Builder.LUCIIsProd,
+			"bucket":       viewModel.Builder.LUCIBuildbucketBucket,
+		})
+	}
+
 	templates.MustRender(c.Context, c.Writer, "pages/builder.html", templates.Args{"Model": viewModel})
 	return nil
 }
@@ -151,6 +163,17 @@ func handleBuilderPagePost(c *router.Context) error {
 		return nil
 	}
 
+	var luciIsProd bool
+	switch v := c.Request.FormValue(luciIsProdFormValueName); v {
+	case "":
+	case "on":
+		luciIsProd = true
+	default:
+		msg := fmt.Sprintf("invalid %s %q", luciIsProdFormValueName, v)
+		http.Error(c.Writer, msg, http.StatusBadRequest)
+		return nil
+	}
+
 	notFound := false
 	err = datastore.RunInTransaction(c.Context, func(c context.Context) error {
 		builder := &storage.Builder{ID: id}
@@ -163,6 +186,7 @@ func handleBuilderPagePost(c *router.Context) error {
 			return err
 		default:
 			builder.ExperimentPercentage = percentage
+			builder.LUCIIsProd = luciIsProd
 			return datastore.Put(c, builder)
 		}
 	}, nil)
@@ -178,8 +202,8 @@ func handleBuilderPagePost(c *router.Context) error {
 	default:
 		logging.Infof(
 			c.Context,
-			"updated experiment percentage of %q to %d%% by %q",
-			&id, percentage, auth.CurrentIdentity(c.Context))
+			"updated experiment percentage/prod of %q to %d%%/%t by %q",
+			&id, percentage, luciIsProd, auth.CurrentIdentity(c.Context))
 		http.Redirect(c.Writer, c.Request, c.Request.URL.String(), http.StatusFound)
 		return nil
 	}
