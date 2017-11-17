@@ -470,7 +470,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.assertEqual(0, issue1.merged_into)
 
   def testIssuesCommentsInsert_Amendments_NoPerms(self):
-    """Insert comments with amendments."""
+    """Can't insert comments using account that lacks permissions."""
 
     project1 = self.services.project.TestAddProject(
         'test-project', owner_ids=[], project_id=12345)
@@ -487,6 +487,22 @@ class MonorailApiTest(testing.EndpointsTestCase):
 
     project1.contributor_ids = [1]  # Does not grant edit perm.
     with self.call_should_fail(403):
+      self.call_api('issues_comments_insert', self.request)
+
+  def testIssuesCommentsInsert_Amendments_BadOwner(self):
+    """Can't set owner to someone who is not a project member."""
+
+    _project1 = self.services.project.TestAddProject(
+        'test-project', owner_ids=[1], project_id=12345)
+
+    issue1 = fake.MakeTestIssue(
+        12345, 1, 'Issue 1', 'New', 2, project_name='test-project')
+    self.services.issue.TestAddIssue(issue1)
+
+    self.request['updates'] = {
+        'owner': 'user@example.com',
+        }
+    with self.call_should_fail(400):
       self.call_api('issues_comments_insert', self.request)
 
   def testIssuesCommentsInsert_MergeInto(self):
@@ -519,7 +535,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
       'cnxn', issue2.issue_id)
     self.assertEqual(2, len(issue2_comments))  # description and merge
 
-  def testIssuesCommentInsert_CustomFields(self):
+  def testIssuesCommentsInsert_CustomFields(self):
     """Update custom field values."""
     self.services.project.TestAddProject(
         'test-project', owner_ids=[1],
@@ -539,7 +555,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     resp = self.call_api('issues_comments_insert', self.request).json_body
     self.assertEqual('Updated', resp['updates']['status'])
 
-  def testIssuesCommentInsert_IsDescription(self):
+  def testIssuesCommentsInsert_IsDescription(self):
     """Add a new issue description."""
     self.services.project.TestAddProject(
         'test-project', owner_ids=[1], project_id=12345)
@@ -557,7 +573,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     self.assertTrue(comments[1].is_description)
     self.assertEqual('new desc', comments[1].content)
 
-  def testIssuesCommentInsert_MoveToProject_NoPermsSrc(self):
+  def testIssuesCommentsInsert_MoveToProject_NoPermsSrc(self):
     """Don't move issue when user has no perms to edit issue."""
     self.services.project.TestAddProject(
         'test-project', owner_ids=[], project_id=12345)
@@ -575,7 +591,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     with self.call_should_fail(403):
       self.call_api('issues_comments_insert', self.request)
 
-  def testIssuesCommentInsert_MoveToProject_NoPermsDest(self):
+  def testIssuesCommentsInsert_MoveToProject_NoPermsDest(self):
     """Don't move issue to a different project where user has no perms."""
     self.services.project.TestAddProject(
         'test-project', owner_ids=[1], project_id=12345)
@@ -593,7 +609,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     with self.call_should_fail(400):
       self.call_api('issues_comments_insert', self.request)
 
-  def testIssuesCommentInsert_MoveToProject_NoSuchProject(self):
+  def testIssuesCommentsInsert_MoveToProject_NoSuchProject(self):
     """Don't move issue to a different project that does not exist."""
     project1 = self.services.project.TestAddProject(
         'test-project', owner_ids=[2], project_id=12345)
@@ -609,7 +625,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     with self.call_should_fail(400):
       self.call_api('issues_comments_insert', self.request)
 
-  def testIssuesCommentInsert_MoveToProject_SameProject(self):
+  def testIssuesCommentsInsert_MoveToProject_SameProject(self):
     """Don't move issue to the project it is already in."""
     self.services.project.TestAddProject(
         'test-project', owner_ids=[1], project_id=12345)
@@ -624,7 +640,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     with self.call_should_fail(400):
       self.call_api('issues_comments_insert', self.request)
 
-  def testIssuesCommentInsert_MoveToProject_Restricted(self):
+  def testIssuesCommentsInsert_MoveToProject_Restricted(self):
     """Don't move restricted issue to a different project."""
     self.services.project.TestAddProject(
         'test-project', owner_ids=[1], project_id=12345)
@@ -643,7 +659,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
     with self.call_should_fail(400):
       self.call_api('issues_comments_insert', self.request)
 
-  def testIssuesCommentInsert_MoveToProject_Normal(self):
+  def testIssuesCommentsInsert_MoveToProject_Normal(self):
     """Move issue."""
     self.services.project.TestAddProject(
         'test-project', owner_ids=[1, 2],

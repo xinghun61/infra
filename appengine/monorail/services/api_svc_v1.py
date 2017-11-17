@@ -410,8 +410,13 @@ class MonorailApi(remote.Service):
         if request.updates.owner == framework_constants.NO_USER_NAME:
           updates_dict['owner'] = framework_constants.NO_USER_SPECIFIED
         else:
-          updates_dict['owner'] = self._services.user.LookupUserID(
+          new_owner_id = self._services.user.LookupUserID(
               mar.cnxn, request.updates.owner)
+          valid, msg = tracker_helpers.IsValidIssueOwner(
+              mar.cnxn, mar.project, new_owner_id, self._services)
+          if not valid:
+            raise endpoints.BadRequestException(msg)
+          updates_dict['owner'] = new_owner_id
       updates_dict['cc_add'], updates_dict['cc_remove'] = (
           api_pb2_v1_helpers.split_remove_add(request.updates.cc))
       updates_dict['cc_add'] = self._services.user.LookupUserIDs(
