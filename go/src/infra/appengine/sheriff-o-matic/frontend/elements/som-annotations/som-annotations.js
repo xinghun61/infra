@@ -257,16 +257,6 @@ class SomAnnotations extends Polymer.mixinBehaviors(
     this.$.snoozeDialog.open();
   }
 
-  handleGroup(alert, targets, resolveAlerts) {
-    this._groupModel = {
-        alert: alert,
-        targets: targets,
-        resolveAlerts: resolveAlerts,
-    };
-    this._groupErrorMessage = '';
-    this.$.groupDialog.open();
-  }
-
   handleUngroup(alert) {
     this._ungroupModel = alert;
     this._ungroupErrorMessage = '';
@@ -555,7 +545,6 @@ class SomAnnotations extends Polymer.mixinBehaviors(
       this.sendAnnotation(alerts[i].key, 'add', {group_id: groupID})
           .then(
               (response) => {
-                this.$.groupDialog.close();
                 alerts[i].checked = false;
               },
               (error) => {

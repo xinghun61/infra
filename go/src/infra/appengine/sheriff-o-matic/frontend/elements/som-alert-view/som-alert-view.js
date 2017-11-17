@@ -1041,14 +1041,6 @@ class SomAlertView extends Polymer.mixinBehaviors(
                                     this._uncheckAll.bind(this));
   }
 
-  _handleGroup(evt) {
-    let target = evt.composedPath()[0];
-    let alert = target.get('alert');
-    this.$.annotations.handleGroup(
-        alert, this._computeGroupTargets(alert, this._alerts),
-        (alert, resolved) => {this._resolveAlerts(alert, resolved);});
-  }
-
   _handleGroupBulk(evt) {
     this.$.annotations.group(this._checkedAlerts);
     // Uncheck all alerts after a group... Otherwise, the checking behavior

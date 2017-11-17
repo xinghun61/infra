@@ -250,10 +250,6 @@ class SomAlertItem extends Polymer.mixinBehaviors(
     evt.preventDefault();
   }
 
-  _group(evt) {
-    this.fire('group');
-  }
-
   _ungroup(evt) {
     this.fire('ungroup');
   }

@@ -283,11 +283,6 @@
                 Unsnooze
               </button>
             </template>
-            <button id="group" on-tap="_group" alt="Group"
-              title="Group multiple alerts together to show that they are related.">
-              <iron-icon class="group-icon" icon="editor:merge-type"></iron-icon>
-              Group
-            </button>
             <template is="dom-if" if="[[_hasUngroup]]">
               <button id="ungroup" on-tap="_ungroup" alt="Ungroup"
                 title="Ungroup this group to split it up into separate alerts.">

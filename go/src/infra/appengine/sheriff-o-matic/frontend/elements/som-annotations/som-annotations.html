@@ -26,7 +26,7 @@
       #bugDialog, #removeBugDialog, #snoozeDialog {
         width: 300px;
       }
-      #commentsDialog, #groupDialog, #ungroupDialog {
+      #commentsDialog, #ungroupDialog {
         width: 80%;
         min-width: 300px;
         max-width: 600px;
@@ -217,49 +217,6 @@
         </button>
         <button disabled$="[[_commentInFlight]]" on-tap="_addComment" class="emphasized">
           Comment
-        </button>
-      </div>
-    </paper-dialog>
-
-    <paper-dialog id="groupDialog" with-backdrop>
-      <iron-a11y-keys keys="enter" on-keys-pressed="_group"></iron-a11y-keys>
-      <h2>Group</h2>
-      <div id="groupList">
-        <label class="checkbox group-row">
-          <input type="checkbox" on-change="_checkAll" data-checkbox-selector=".group-checkbox" />
-          Check/Uncheck All
-        </label>
-        <template is="dom-repeat" items="[[_groupModel.targets]]" as="target">
-          <label class="checkbox group-row">
-            <input type="checkbox" class="group-checkbox" checked="{{target.checked::change}}" />
-            <div>
-              <span id="resolvedTitle" hidden="[[!target.resolved]]">Resolved:&nbsp;</span>
-              [[target.title]]
-              <template is="dom-if" if="[[_haveSubAlerts(target)]]">
-                <span>
-                  <template is="dom-repeat" items="[[target.alerts]]" as="subAlert">
-                    <span class="sub-alert">[[subAlert.title]]</span>
-                  </template>
-                </span>
-              </template>
-              <template is="dom-if" if="[[!_haveSubAlerts(target) && !haveStages(target)]]">
-                <span>
-                  <template is="dom-repeat" items="[[target.extension.stages]]" as="stage">
-                    <span class="stage">[[stage.name]] [[stage.status]]</span>
-                  </template>
-                </span>
-              </template>
-            </div>
-          </label>
-        </template>
-      </div>
-      <div class="error">[[_groupErrorMessage]]</div>
-      <div class="buttons">
-        <button dialog-dismiss>
-          Close
-        </button>
-        <button on-tap="_group" class="emphasized">
-          Group
         </button>
       </div>
     </paper-dialog>
