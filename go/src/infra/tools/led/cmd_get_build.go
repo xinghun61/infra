@@ -26,7 +26,10 @@ func getBuildCmd(authOpts auth.Options) *subcommands.Command {
 	return &subcommands.Command{
 		UsageLine: "get-build <buildbucket_build_id>",
 		ShortDesc: "obtain a JobDefinition from a buildbucket build",
-		LongDesc:  `Obtains the build's definition from buildbucket and produces a JobDefinition.`,
+		LongDesc: `Obtains the build's definition from buildbucket and produces a JobDefinition.
+
+buildbucket_build_id can be specified with "b" prefix like b8962624445013664976,
+which is useful when copying it from ci.chromium.org URL.`,
 
 		CommandRun: func() subcommands.CommandRun {
 			ret := &cmdGetBuild{}
@@ -67,7 +70,12 @@ func (c *cmdGetBuild) validateFlags(ctx context.Context, args []string) (authOpt
 		return
 	}
 
-	if c.buildID, err = strconv.ParseInt(args[0], 10, 64); err != nil {
+	buildIdStr := args[0]
+	if strings.HasPrefix(buildIdStr, "b") {
+		// Milo URL structure prefixes buildbucket builds id with "b".
+		buildIdStr = args[0][1:]
+	}
+	if c.buildID, err = strconv.ParseInt(buildIdStr, 10, 64); err != nil {
 		err = errors.Annotate(err, "bad <buildbucket_build_id>").Err()
 		return
 	}
@@ -91,6 +99,9 @@ func (c *cmdGetBuild) grabBuildDefinition(ctx context.Context, authOpts auth.Opt
 	answer, err := bbucket.Get(c.buildID).Do()
 	if err != nil {
 		return transient.Tag.Apply(err)
+	}
+	if answer.Error != nil {
+		return errors.New(answer.Error.Reason)
 	}
 	logging.Infof(ctx, "getting build definition: done")
 
