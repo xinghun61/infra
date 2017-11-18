@@ -35,8 +35,11 @@
       ],
     },  # chromium.chromiumos
     'chromium.android': {
-      'Android arm Builder (dbg)',
-      'Android ASAN (dbg)',
+      'base_url': 'https://build.chromium.org/p/chromium.android',
+      'builders': [
+        'Android arm Builder (dbg)',
+        'Android ASAN (dbg)',
+      ],
     },  # chromium.android
   },
 }
