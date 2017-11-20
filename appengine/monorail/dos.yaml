@@ -123,3 +123,5 @@ blacklist:
     description: hitting the same 404 URL several times a minute
   - subnet: 171.4.232.116
     description: someone trying to fuzz our server 2017-08-29
+  - subnet: 103.19.39.2
+    description: someone hitting /p/chromium issue list every 5 seconds 2017-11-20
