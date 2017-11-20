@@ -46,7 +46,6 @@
         'Linux (more configs)',
         'Linux Asan',
         'Linux MSan',
-        'Linux Memcheck',
         'Linux Tsan v2',
         'Linux UBSan vptr',
         'Linux UBSan',
