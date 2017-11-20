@@ -106,16 +106,9 @@ func handleCompletedBuildbotBuild(c context.Context, build *Build, bbService *bb
 	}
 
 	// This build should be scheduled on LUCI.
-
-	revision := (build.Output.Properties).(*OutputProperties).GotRevision
-	if revision == "" {
-		return errors.Reason("could not find got_revision in build %d", build.ID).Err()
-	}
-
 	// Prepare new build request.
-
 	newParamsJSON, err := setProps(build.ParametersJSON, map[string]interface{}{
-		"revision": revision,
+		"revision": (build.Output.Properties).(*OutputProperties).GotRevision,
 		// Mark the build as experimental, so it does not confuse users of Rietveld and Gerrit.
 		"category": "cq_experimental",
 	})
