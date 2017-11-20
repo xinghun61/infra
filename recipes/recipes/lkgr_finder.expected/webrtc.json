@@ -141,10 +141,34 @@
       "--read-from-file",
       "97ab2f7d6e7bab812309e05884bdeeaef11962f7",
       "--write-to-file",
+      "/path/to/tmp/",
+      "--html",
       "/path/to/tmp/"
     ],
     "cwd": "[BUILDER_CACHE]/WebRTC_lkgr_finder/infra",
     "name": "calculate webrtc lkgr"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gsutil]/resources/gsutil_smart_retry.py",
+      "--",
+      "RECIPE_PACKAGE_REPO[depot_tools]/gsutil.py",
+      "----",
+      "-h",
+      "Content-Type:text/html",
+      "cp",
+      "-a",
+      "public-read",
+      "<html>lkgr</html>",
+      "gs://chromium-webrtc/lkgr-status/webrtc-lkgr-status.html"
+    ],
+    "infra_step": true,
+    "name": "gsutil upload",
+    "~followup_annotations": [
+      "@@@STEP_LINK@webrtc-lkgr-status.html@https://storage.cloud.google.com/chromium-webrtc/lkgr-status/webrtc-lkgr-status.html@@@"
+    ]
   },
   {
     "cmd": [

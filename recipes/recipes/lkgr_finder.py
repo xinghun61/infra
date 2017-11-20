@@ -39,6 +39,7 @@ BUILDERS = freeze({
   },
   'WebRTC lkgr finder': {
     'project': 'webrtc',
+    'lkgr_status_gs_path': 'chromium-webrtc/lkgr-status',
     'repo': 'https://webrtc.googlesource.com/src',
     'ref': 'refs/heads/lkgr',
     'gclient_config': 'webrtc',
@@ -104,6 +105,7 @@ def RunSteps(api, buildername):
       '%s-lkgr-status.html' % botconfig['project'],
       args=['-a', 'public-read'],
       metadata={'Content-Type': 'text/html'},
+      link_name='%s-lkgr-status.html' % botconfig['project'],
     )
 
   new_lkgr = step_result.raw_io.output_texts['lkgr_hash']

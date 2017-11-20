@@ -168,7 +168,7 @@
     "infra_step": true,
     "name": "gsutil upload",
     "~followup_annotations": [
-      "@@@STEP_LINK@gsutil.upload@https://storage.cloud.google.com/chromium-v8/lkgr-status/v8-lkgr-status.html@@@"
+      "@@@STEP_LINK@v8-lkgr-status.html@https://storage.cloud.google.com/chromium-v8/lkgr-status/v8-lkgr-status.html@@@"
     ]
   },
   {
