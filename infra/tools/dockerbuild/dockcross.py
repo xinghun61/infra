@@ -4,10 +4,12 @@
 
 import collections
 import contextlib
+import itertools
 import os
 import shutil
 import stat
 import string
+import sys
 import tempfile
 
 from . import source
@@ -270,6 +272,9 @@ class Image(collections.namedtuple('_Image', (
     ))):
 
   def exists(self):
+    if not self.docker_image:
+      # Native platform.
+      return True
     return _docker_image_exists(self.system, self.identifier)
 
   @property
@@ -279,32 +284,66 @@ class Image(collections.namedtuple('_Image', (
   def run(self, work_dir, cmd, cwd=None, **kwargs):
     assert len(cmd) >= 1, len(cmd)
     cmd = list(cmd)
-    for i, arg in enumerate(cmd):
-      if arg.startswith(work_dir):
-        cmd[i] = self.workrel(work_dir, arg)
 
-    run_args = []
-    if cwd:
-      run_args.append('-w=%s' % (self.workrel(work_dir, cwd),))
+    # Replace (system) paths that include the work directory with (dockcross)
+    # paths within the work directory.
+    args = []
+    if self.docker_image:
+      # Build arguments to run within "dockcross" image.
+      for i, arg in enumerate(cmd):
+        if arg.startswith(work_dir):
+          cmd[i] = self.workrel(work_dir, arg)
+          continue
 
-    args = [
-        self.bin,
-    ]
-    if run_args:
-      args += ['-a', ' '.join(run_args)]
+        # ...=/path/to/thing
+        parts = arg.split('=', 1)
+        if len(parts) == 2:
+          if parts[1].startswith(work_dir):
+            parts[1] = self.workrel(work_dir, parts[1])
+            cmd[i] = '='.join(parts)
+            continue
+
+      # Dockcross execution
+      run_args = []
+      if cwd:
+        # Change working directory that the image uses.
+        run_args.append('-w=%s' % (self.workrel(work_dir, cwd),))
+
+      # Run the process within the working directory.
+      cwd = work_dir
+
+      args += [self.bin]
+      if run_args:
+        args += ['-a', ' '.join(run_args)]
+    else:
+      # Build arguments to run natively.
+      if cmd[0] == 'python':
+        # Use current Python interpreter if requested.
+        cmd[0] = sys.executable
+
     args += cmd
-    return self.system.run(args, cwd=work_dir, **kwargs)
+    return self.system.run(args, cwd=cwd, **kwargs)
 
   def check_run(self, work_dir, cmd, **kwargs):
     kwargs.setdefault('retcodes', [0])
     return self.run(work_dir, cmd, **kwargs)
 
   def workrel(self, work_dir, *path):
-    rel = os.path.relpath(os.path.join(*path), work_dir)
-    return self.workpath(*rel.split(os.sep))
+    path = os.path.relpath(os.path.join(*path), work_dir).split(os.sep)
+    if self.docker_image:
+      # Non-native, using "dockcross" work directory.
+      work_dir = '/work'
 
-  def workpath(self, *path):
-    return os.path.join('/work', '/'.join(path))
+    full_path = [work_dir] + list(path)
+    return os.path.join(*full_path)
+
+
+def NativeImage(system, plat):
+  return Image(
+      system=system,
+      platform=plat,
+      bin=None,
+      docker_image=None)
 
 
 # Sources used for Builder Docker image construction.

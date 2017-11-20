@@ -356,16 +356,10 @@ def _build_package(system, wheel):
     _stage_wheel_for_package(system, tdir, wheel)
 
 
-def _build_source(system, wheel, src, universal=False):
+def _build_source(system, wheel, src):
   dx = system.dockcross_image(wheel.plat)
   with system.temp_subdir('%s_%s' % wheel.spec.tuple) as tdir:
     build_dir = system.repo.ensure(src, tdir)
-
-    bdist_wheel_opts = []
-    if universal:
-      bdist_wheel_opts.append('--universal')
-    else:
-      bdist_wheel_opts.append('--plat-name=%s' % (wheel.primary_platform,))
 
     cmd = [
       'python', '-m', 'pip', 'wheel',
@@ -373,8 +367,6 @@ def _build_source(system, wheel, src, universal=False):
       '--only-binary=:all:',
       '--wheel-dir', tdir,
     ]
-    for opt in bdist_wheel_opts:
-      cmd += ['--build-option=%s' % (opt,)]
     cmd.append('.')
 
     check_run(
@@ -403,7 +395,7 @@ def _build_cryptography(system, wheel, src, openssl_src):
     #
     # "Configure" must be run in the directory in which it builds, so we
     # `cd` into "openssl_dir" using dockcross "run_args".
-    prefix = dx.workpath('prefix')
+    prefix = dx.workrel(tdir, tdir, 'prefix')
     check_run_script(
         system,
         dx,
@@ -681,7 +673,7 @@ def UniversalSource(name, pypi_version, pyversions=None, pypi_name=None,
   )
 
   def build_fn(system, wheel):
-    return _build_source(system, wheel, pypi_src, universal=True)
+    return _build_source(system, wheel, pypi_src)
 
   return Builder(spec, build_fn, **kwargs)
 
@@ -723,6 +715,11 @@ SPECS = {s.spec.tag: s for s in (
         ]),
       },
       skip_plat=('linux-arm64',),
+  ),
+
+  BuildWheel('psutil', '1.2.1',
+      packaged=[],
+      only_plat=platform.ALL_LINUX + ['mac-x64'],
   ),
 
   BuildWheel('psutil', '5.2.2',

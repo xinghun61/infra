@@ -14,6 +14,7 @@ from distutils.spawn import find_executable
 
 from . import cipd
 from . import dockcross
+from . import platform
 from . import source
 from . import util
 
@@ -113,8 +114,16 @@ class System(object):
       if dx is not None:
         return dx
 
-    builder = dockcross.Builder(self)
-    dx = builder.build(plat, rebuild=rebuild)
+    if plat.dockcross_base:
+      builder = dockcross.Builder(self)
+      dx = builder.build(plat, rebuild=rebuild)
+    else:
+      # No "dockcross" image associated with this platform. We can return a
+      # native image if the target platform is the current platform.
+      native_platform = platform.NativePlatform()
+      if plat == native_platform:
+        util.LOGGER.info('Using native platform for [%s].', plat.name)
+        dx = dockcross.NativeImage(self, plat)
 
     self._dockcross_images[plat.name] = dx
     return dx

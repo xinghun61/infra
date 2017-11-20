@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import collections
+import sys
 
 
 class Platform(collections.namedtuple('Platform', (
@@ -188,7 +189,17 @@ ALL = {p.name: p for p in (
 
 )}
 NAMES = sorted(ALL.keys())
-PACKAGED = set(p for p in ALL.itervalues() if p.packaged)
+PACKAGED = [p for p in ALL.itervalues() if p.packaged]
+ALL_LINUX = [p.name for p in ALL.itervalues() if 'linux' in p.name]
+
+
+def NativePlatform():
+  # Identify our native platform.
+  if sys.platform == 'darwin':
+    return ALL['mac-x64']
+  else:
+    raise ValueError('Cannot identify native image for %r.' % (sys.platform,))
+
 
 # Represents the "universal package" platform.
 UNIVERSAL = Platform(
