@@ -380,6 +380,11 @@
     'rev': '1e780a49412cdbb273e9421974cb91845c124f3f',
     'implicit': True,  # Required by google_api_python_client
   },
+  'urllib3': {
+    'build': '0',
+    'gs': '02c623c3bdceda4ef5bffdafdda472d2d9e34ef1.tar.gz',
+    'version': '1.22'
+  },
   'waitress': {
     'version': '0.8.10dev',
     'build': '0',
