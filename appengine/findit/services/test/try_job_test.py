@@ -21,6 +21,7 @@ from services import try_job as try_job_service
 from services.parameters import BuildKey
 from services.parameters import ScheduleCompileTryJobParameters
 from waterfall.test import wf_testcase
+from waterfall import waterfall_config
 
 _GIT_REPO = CachedGitilesRepository(
     FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
@@ -527,6 +528,41 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
         None, None, 'pipeline_id')
 
+    self.assertEqual(build_id, '1')
+    self.assertIsNone(error)
+
+  @mock.patch.object(try_job_service, 'buildbucket_client')
+  @mock.patch.object(waterfall_config, 'GetWaterfallTrybot')
+  def testTriggerTryJobSwarming(self, mock_waterfall, mock_client):
+    master_name = 'm'
+    builder_name = 'findit_variable'
+    build_number = 1
+    build = WfBuild.Create(master_name, builder_name, build_number)
+    build.data = {
+        'properties': {
+            'parent_mastername': 'pm',
+            'parent_buildername': 'pb'
+        }
+    }
+    build.put()
+    response = {
+        'build': {
+            'id': '1',
+            'url': 'url',
+            'status': 'SCHEDULED',
+        }
+    }
+    results = [(None, buildbucket_client.BuildbucketBuild(response['build']))]
+    mock_client.TriggerTryJobs.return_value = results
+    mock_waterfall.return_value = ('legacy_try_master', 'ignored_bot_name')
+
+    build_id, error = try_job_service.TriggerTryJob(
+        master_name, builder_name, master_name, builder_name, {}, [],
+        failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
+        None, None, 'pipeline_id')
+
+    self.assertEqual('legacy_try_master',
+                     mock_client.TryJob.call_args[0][3]['mastername'])
     self.assertEqual(build_id, '1')
     self.assertIsNone(error)
 

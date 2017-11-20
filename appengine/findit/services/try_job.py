@@ -299,6 +299,21 @@ def TriggerTryJob(master_name, builder_name, tryserver_mastername,
                   tryserver_buildername, properties, additional_parameters,
                   try_job_type, cache_name, dimensions, notification_id):
 
+  # Certain parts of the recipe depend on the 'mastername' property being set
+  # to values like `tryserver.chromium.linux` etc., these values should
+  # eventually be derived from the target mastername, but in order to stabilize
+  # the trybots during the migration to luci-lite, we instead use the names of
+  # the buildbot trybot masters. (As is the practice in other vitual trybot
+  # builders, see for example
+  # https://chromium.googlesource.com/chromium/src.git/+/infra/config/cr-buildbucket.cfg#139
+
+  # TODO(crbug.com/787096): Remove these two lines once we have a better way of
+  # telling the recipe how to configure the builder.
+  if tryserver_buildername == 'findit_variable':
+    # Get the matching buildbot try master.
+    properties['mastername'] = waterfall_config.GetWaterfallTrybot(
+        master_name, builder_name, force_buildbot=True)[0]
+
   try_job = buildbucket_client.TryJob(
       tryserver_mastername, tryserver_buildername, None, properties, [],
       additional_parameters, cache_name, dimensions)
