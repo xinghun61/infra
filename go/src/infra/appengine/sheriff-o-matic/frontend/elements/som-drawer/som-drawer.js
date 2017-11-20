@@ -222,8 +222,15 @@ class SomDrawer extends Polymer.Element {
   }
 
   toggleMenu(e) {
-    let target = e.target;
-    let collapseId = target.getAttribute('data-toggle-target');
+    let path = Polymer.dom(e).path;
+    let target = null;
+    let collapseId = null;
+
+    for (let i = 0; i < path.length && !collapseId; i++) {
+      target = path[i];
+      collapseId = target.getAttribute('data-toggle-target');
+    }
+
     let collapse = this.$[collapseId];
     collapse.opened = !collapse.opened;
 
