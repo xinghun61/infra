@@ -861,9 +861,8 @@ class IssueServiceTest(unittest.TestCase):
         is_description=False, is_spam=False, kept_attachments=None)
     self.services.issue.UpdateIssues(self.cnxn, [issue],
         just_derived=False, update_cols=None, commit=True, invalidate=True)
-    self.services.spam.ClassifyComment(
-        'comment text', self.reporter, False).AndReturn(
-        self.classifierResult(0.0))
+    self.services.spam.ham_classification().AndReturn(
+        {'confidence_is_spam': 0.0, 'failed_open': False})
     self.services.spam.RecordClassifierCommentVerdict(self.cnxn,
        None, False, 1.0, False)
     self.services.issue._UpdateIssuesModified(
@@ -876,49 +875,6 @@ class IssueServiceTest(unittest.TestCase):
        issue.field_values, issue.component_ids, [],
        [], [], [], issue.merged_into, comment='comment text',
        timestamp=self.now, kept_attachments=None)
-    self.mox.VerifyAll()
-
-  def testApplyIssueComment_spam(self):
-    settings.classifier_spam_thresh = 0.5
-
-    issue = fake.MakeTestIssue(
-        project_id=789, local_id=1, owner_id=111L, summary='sum',
-        status='Live', issue_id=78901)
-
-    self.mox.StubOutWithMock(self.services.issue, "GetIssueByLocalID")
-    self.mox.StubOutWithMock(self.services.issue, "UpdateIssues")
-    self.mox.StubOutWithMock(self.services.issue, "GetCommentsForIssue")
-    self.mox.StubOutWithMock(self.services.issue, "CreateIssueComment")
-    self.mox.StubOutWithMock(self.services.issue, "SoftDeleteComment")
-    self.mox.StubOutWithMock(self.services.issue, "_UpdateIssuesModified")
-
-    self.services.issue.GetIssueByLocalID(
-        self.cnxn, 789, 1, use_cache=False).AndReturn(issue)
-    self.services.issue.UpdateIssues(self.cnxn, [issue],
-        just_derived=False, update_cols=None, commit=True, invalidate=True)
-    self.services.issue.SoftDeleteComment(self.cnxn,
-        issue, mox.IsA(tracker_pb2.IssueComment), issue.reporter_id,
-        self.services.user, is_spam=True)
-    self.services.spam.ClassifyComment(
-        'comment text', self.reporter, False).AndReturn(
-        self.classifierResult(1.0))
-    self.services.spam.RecordClassifierCommentVerdict(self.cnxn,
-        mox.IsA(tracker_pb2.IssueComment), True, 1.0, False)
-    self.services.issue.CreateIssueComment(self.cnxn, issue,
-        issue.reporter_id, 'comment text',
-        amendments=[], attachments=None, inbound_message=None, is_spam=True,
-        is_description=False,
-        kept_attachments=None).AndReturn(tracker_pb2.IssueComment())
-    self.services.issue._UpdateIssuesModified(
-        self.cnxn, set(), modified_timestamp=self.now)
-
-    self.mox.ReplayAll()
-    self.services.issue.ApplyIssueComment(self.cnxn, self.services,
-       issue.reporter_id, issue.project_id, issue.local_id, issue.summary,
-       issue.status, issue.owner_id, issue.cc_ids, issue.labels,
-       issue.field_values, issue.component_ids, [],
-       [], [], [], issue.merged_into, comment='comment text',
-       timestamp=self.now)
     self.mox.VerifyAll()
 
   def testApplyIssueComment_blockedon(self):
@@ -948,9 +904,8 @@ class IssueServiceTest(unittest.TestCase):
         self.cnxn, 789, 1, use_cache=False).AndReturn(issue)
     self.services.issue.UpdateIssues(self.cnxn, [issue],
         just_derived=False, update_cols=None, commit=True, invalidate=True)
-    self.services.spam.ClassifyComment(
-        'comment text', self.reporter, False).AndReturn(
-        self.classifierResult(0.0))
+    self.services.spam.ham_classification().AndReturn(
+        {'confidence_is_spam': 0.0, 'failed_open': False})
     self.services.spam.RecordClassifierCommentVerdict(self.cnxn,
         mox.IsA(tracker_pb2.IssueComment), False, 1.0, False)
     self.services.issue.CreateIssueComment(self.cnxn, issue,

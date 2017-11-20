@@ -1586,12 +1586,10 @@ class IssueService(object):
     # restriction label, owner, cc, or user-type custom field.
     self._config_service.InvalidateMemcache([issue], key_prefix='nonviewable:')
 
-    author = services.user.GetUser(cnxn, reporter_id)
-    project = services.project.GetProject(cnxn, project_id)
-    effective_ids = services.usergroup.LookupMemberships(cnxn, reporter_id)
-    is_project_member = framework_bizobj.UserIsInProject(project, effective_ids)
-    classification = services.spam.ClassifyComment(
-        comment, author, is_project_member)
+    # TODO(jeffcarp): Temporarily disabling comment classification due to higher
+    # than expected number of false positives. See https://crbug/monorail/2727.
+    logging.info('[spam] Skipping classification for comment.')
+    classification = services.spam.ham_classification()
 
     if classification['confidence_is_spam'] > settings.classifier_spam_thresh:
       logging.info('classified comment as spam: %s' % comment)

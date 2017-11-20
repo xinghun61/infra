@@ -376,3 +376,8 @@ class SpamServiceTest(unittest.TestCase):
     commenter.ignore_action_limits = True
     res = self.spam_service.ClassifyComment('this is spam', commenter, False)
     self.assertEqual(0.0, res['confidence_is_spam'])
+
+  def test_ham_classification(self):
+    actual = self.spam_service.ham_classification()
+    self.assertEqual(actual['confidence_is_spam'], 0.0)
+    self.assertEqual(actual['failed_open'], False)

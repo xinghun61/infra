@@ -364,8 +364,7 @@ class SpamService(object):
 
   def _classify(self, instance, author, is_project_member):
     # Fail-safe: not spam.
-    result = {'confidence_is_spam': 0.0,
-              'failed_open': False}
+    result = self.ham_classification()
 
     if self._IsExempt(author, is_project_member):
       return result
@@ -389,6 +388,10 @@ class SpamService(object):
 
       result['failed_open'] = True
     return result
+
+  def ham_classification(self):
+    return {'confidence_is_spam': 0.0,
+            'failed_open': False}
 
   def GetIssueClassifierQueue(
       self, cnxn, _issue_service, project_id, offset=0, limit=10):
