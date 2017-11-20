@@ -837,6 +837,10 @@ class Servlet(webapp2.RequestHandler):
       # Don't count a user's actions within their own projects...
       return
 
+    if mr.auth.user_pb.ignore_action_limits:
+      # Don't count actions by whitelisted users, which helps reduce DB writes.
+      return
+
     for action_type in action_counts:
       actionlimit.CountAction(
           mr.auth.user_pb, action_type, delta=action_counts[action_type])

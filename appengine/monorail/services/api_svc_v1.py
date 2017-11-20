@@ -342,10 +342,12 @@ class MonorailApi(remote.Service):
     and increment request count in DB and ts_mon.
     """
     mar = self.mar_factory(request)
-    # soft_limit == hard_limit for api_request, so this function either
-    # returns False if under limit, or raise ExcessiveActivityException
-    if not actionlimit.NeedCaptcha(
-        mar.auth.user_pb, actionlimit.API_REQUEST, skip_lifetime_check=True):
+    # soft_limit == hard_limit for api_request, so NeedCaptcha() either
+    # returns False if under limit, or raise ExcessiveActivityException.
+    # Don't count actions by whitelisted users, which helps reduce DB writes.
+    if (not mar.auth.user_pb.ignore_action_limits and
+        not actionlimit.NeedCaptcha(
+          mar.auth.user_pb, actionlimit.API_REQUEST, skip_lifetime_check=True)):
       actionlimit.CountAction(
           mar.auth.user_pb, actionlimit.API_REQUEST, delta=1)
       self._services.user.UpdateUser(
