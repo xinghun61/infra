@@ -93,7 +93,7 @@ class ResultFeedback(BaseHandler):
         'request_time': time_util.FormatDatetime(analysis.requested_time),
         'analysis_completed': analysis.completed,
         'analysis_failed': analysis.failed,
-        'log': analysis.result.get('log'),
+        'log': analysis.result.get('log') if analysis.result else None,
         'triage_history': _GetTriageHistory(analysis),
         'analysis_correct': {
             'regression_range': analysis.regression_range_triage_status,
