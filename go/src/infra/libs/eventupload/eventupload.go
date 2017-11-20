@@ -83,6 +83,10 @@ func mapFromMessage(m proto.Message, path []string) (map[string]bigquery.Value, 
 	rowMap := map[string]bigquery.Value{}
 	// GetProperties expects a Type with Kind Struct, not Ptr
 	s := reflect.Indirect(reflect.ValueOf(m))
+	if !s.IsValid() {
+		return nil, fmt.Errorf("invalid indirected value of %v", m)
+	}
+
 	t := s.Type()
 	infos, err := getFieldInfos(t)
 	if err != nil {

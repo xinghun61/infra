@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"golang.org/x/net/context"
+	"google.golang.org/appengine"
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
@@ -84,6 +85,8 @@ type UploadParams struct {
 	Builder          string
 	TestType         string
 	StepName         string
+	// TODO: Have test results uploaders add this from build properties.
+	BuildID string
 }
 
 type contextKey int
@@ -192,7 +195,9 @@ func uploadHandler(ctx *router.Context) {
 	}
 
 	fileheaders := r.MultipartForm.File["file"]
-
+	if !info.IsDevAppServer(c) {
+		c = appengine.WithContext(c, r)
+	}
 	for _, fh := range fileheaders {
 		if err := doFileUpload(c, fh); err != nil {
 			msg := logging.WithError(err)
@@ -414,6 +419,9 @@ func updateFullResults(c context.Context, data io.Reader) error {
 	go func() {
 		defer wg.Done()
 		createTestResUploadTask(c, &f, p)
+		if !info.IsDevAppServer(c) {
+			logTestResultEvents(c, &f, p)
+		}
 	}()
 
 	wg.Wait()

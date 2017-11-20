@@ -9,7 +9,11 @@
 
 syntax = "proto3";
 
-package gen;
+package testresults.events;
+
+option go_package = "gen";
+
+import "google/protobuf/timestamp.proto";
 
 // ResultType represents the result of a test, either actual or expected.
 enum ResultType {
@@ -76,6 +80,9 @@ enum ResultType {
   // in to the TestExpectations file, but the auto-rebasline-bot will ignore
   // these entries. This should never show up as an "actual" result.
   NEEDS_MANUAL_REBASELINE = 14;
+
+	// UNKNOWN is an unrecognized or unknown test result type.
+	UNKNOWN = 15;
 }
 
 // TestResults encapsulates the results of a run of a set of tests.
@@ -177,14 +184,17 @@ message TestRun {
   // "reference test" and the results were expected to match the reference or
   // not match the reference, respectively (only used in layout tests).
   string reftest_type = 12;
+
+	// Name is the name of the test or test suite.
+	string name = 13;
 }
 
-// TestRuns is suitable for representing a row in a BigQuery table. Note
+// TestResultEvent is suitable for representing a row in a BigQuery table. Note
 // that while TestResults looks like a more obvious choice, the repeated
 // TestRun messages in .tests will often exceed the row size limit for BQ.
 // This message flattens TestRun.tests out into one row per test, which should
 // more easily fit within the BQ row size limit.
-message TestRuns {
+message TestResultEvent {
   // Path is the full joined path of the test.
   string path = 1;
 
@@ -203,13 +213,33 @@ message TestRuns {
   // the results are at best incomplete and possibly totally invalid.
   bool interrupted = 4;
 
-  // UsecSinceEpoch is The start time of the test run expressed as a number of
+  // StartTime is The start time of the test run expressed as a number of
   // microseconds from the UNIX epoch.
-  int64 usec_since_epoch = 5;
+  google.protobuf.Timestamp start_time = 5;
 
   // Run is the result of the test run.
   TestRun run = 6;
 
+	repeated TestRun runs = 7;
+
   // BuildId is the build_id in chrome-infra-events:raw_events.completed_builds_legacy
-  string build_id = 7;
+  string build_id = 8;
+
+	message BuildbotInfo {
+		string master_name = 1;
+		string builder_name = 2;
+		int64 build_number = 3;
+	}
+
+	BuildbotInfo buildbot_info = 9;
+
+  google.protobuf.Timestamp write_time = 10;
+}
+
+message WriteLatency {
+	string master = 1;
+	string builder = 2;
+	int64 build_number = 3;
+	int64 write_latency = 4;
+	string table_name = 5;
 }
