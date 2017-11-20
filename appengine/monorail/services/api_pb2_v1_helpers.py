@@ -21,6 +21,7 @@ from proto import tracker_pb2
 from services import issue_svc
 from services import project_svc
 from services import user_svc
+from tracker import field_helpers
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 
@@ -470,6 +471,8 @@ def convert_field_values(field_values, mar, services):
         new_fv.str_value = fv.fieldValue
       elif field_def.field_type == tracker_pb2.FieldTypes.INT_TYPE:
         new_fv.int_value = int(fv.fieldValue)
+      elif field_def.field_type == tracker_pb2.FieldTypes.URL_TYPE:
+        new_fv.url_value = field_helpers.formatUrlFieldValue(fv.fieldValue)
       else:
         logging.warning(
             'Unsupported field value type %s', field_def.field_type)

@@ -226,7 +226,7 @@ class FieldHelpersTest(unittest.TestCase):
     fv = field_helpers._ParseOneFieldValue(
         self.mr.cnxn, self.services.user, fd, 'www.google.com')
     self.assertEqual(fv.field_id, 123)
-    self.assertEqual(fv.url_value, 'www.google.com')
+    self.assertEqual(fv.url_value, 'http://www.google.com')
 
   def testParseFieldValues_Empty(self):
     field_val_strs = {}
@@ -261,7 +261,7 @@ class FieldHelpersTest(unittest.TestCase):
     fv3 = tracker_bizobj.MakeFieldValue(
         124, None, None, None, 1234483200, None, False)
     fv4 = tracker_bizobj.MakeFieldValue(
-        125, None, None, None, None, 'www.google.com', False)
+        125, None, None, None, None, 'http://www.google.com', False)
     self.assertEqual([fv1, fv2, fv3, fv4], field_values)
 
   def testValidateOneCustomField_IntType(self):
@@ -389,3 +389,9 @@ class FieldHelpersTest(unittest.TestCase):
     custom_field_error = self.errors.custom_fields[0]
     self.assertEqual(123, custom_field_error.field_id)
     self.assertEqual('Value must be <= 999', custom_field_error.message)
+
+  def testFormatUrlFieldValue(self):
+    self.assertEqual('http://www.google.com',
+                     field_helpers.FormatUrlFieldValue('www.google.com'))
+    self.assertEqual('https://www.bing.com',
+                     field_helpers.FormatUrlFieldValue('https://www.bing.com'))

@@ -168,6 +168,7 @@ def _ParseOneFieldValue(cnxn, user_service, fd, val_str):
       return None  # TODO(jrobbins): should bounce
 
   if fd.field_type == tracker_pb2.FieldTypes.URL_TYPE:
+    val_str = FormatUrlFieldValue(val_str)
     try:
       return tracker_bizobj.MakeFieldValue(
           fd.field_id, None, None, None, None, val_str, False)
@@ -250,6 +251,7 @@ def _ValidateOneCustomField(mr, services, field_def, field_val):
 
   return None
 
+
 def ValidateCustomFields(mr, services, field_values, config, errors):
   """Validate each of the given fields and report problems in errors object."""
   for fv in field_values:
@@ -258,3 +260,10 @@ def ValidateCustomFields(mr, services, field_values, config, errors):
       err_msg = _ValidateOneCustomField(mr, services, fd, fv)
       if err_msg:
         errors.SetCustomFieldError(fv.field_id, err_msg)
+
+
+def FormatUrlFieldValue(url_str):
+  """Check for and add 'https://' to a url string"""
+  if not url_str.startswith('http'):
+    return 'http://' + url_str
+  return url_str
