@@ -49,8 +49,8 @@ runOnLoad(function() {
 <div id="footer">
   <a href="https://bugs.chromium.org/p/monorail/adminIntro" title="Monorail [app_version]">About Monorail</a>
   <a href="https://bugs.chromium.org/p/monorail/issues/entry" target="_blank">Feedback on Monorail</a>
-  <a href="http://www.google.com/policies/terms/">Terms</a>
-  <a href="http://www.google.com/policies/privacy/">Privacy</a>
+  <a href="https://www.google.com/policies/terms/">Terms</a>
+  <a href="https://www.google.com/policies/privacy/">Privacy</a>
 </div>
 
   [include "debug.ezt"]
