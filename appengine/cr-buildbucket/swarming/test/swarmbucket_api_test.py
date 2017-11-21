@@ -184,6 +184,10 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
                 'tags': [],
               },
             },
+            '$recipe_engine/runtime': {
+              'is_experimental': False,
+              'is_luci': True,
+            },
             'buildername': 'linux_chromium_rel_ng',
             'buildnumber': 0,
           }, sort_keys=True),

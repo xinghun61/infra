@@ -317,6 +317,39 @@ def apply_if_tags(task):
 
 
 @ndb.tasklet
+def _make_runtime_properties(builder_cfg, build_properties):
+  """Creates the $recipe_engine/runtime JSON object.
+
+  The value of 'is_experimental' depends on on the migration status of the
+  builder (see 'luci_migration_host' in the project config).
+
+  Returns:
+    A dict with 'is_experimental' and 'is_luci' booleans.
+  """
+  ret = {'is_experimental': False, 'is_luci': True}
+  master = build_properties.get('mastername')
+  migration_host = builder_cfg.luci_migration_host
+  if migration_host and master:
+    try:
+
+      url = 'https://%s/masters/%s/builders/%s/' % (
+          migration_host, master, builder_cfg.name)
+
+      obj = yield net.json_request_async(url, params={'format': 'json'})
+      ret['is_experimental'] = not bool(obj.get('luci_is_prod'))
+    except net.NotFoundError:
+      ret['is_experimental'] = True
+      logging.warning(
+          'missing migration status for %r/%r', master, builder_cfg.name)
+    except net.Error:
+      ret['is_experimental'] = True
+      logging.exception(
+          'failed to get migration status for %r/%r', master, builder_cfg.name)
+
+  raise ndb.Return(ret)
+
+
+@ndb.tasklet
 def _create_task_def_async(
     swarming_cfg, builder_cfg, build, build_number, settings, fake_build):
   """Creates a swarming task definition for the |build|.
@@ -414,6 +447,12 @@ def _create_task_def_async(
     # Properties specified in build parameters must override any values derived
     # by swarmbucket.
     build_properties.update(build.parameters.get(PARAM_PROPERTIES) or {})
+
+    # If the user already specified $recipe_engine/runtime, then don't attempt
+    # to fill it in.
+    if '$recipe_engine/runtime' not in build_properties:  # pragma: no branch
+      build_properties['$recipe_engine/runtime'] = (
+          yield _make_runtime_properties(builder_cfg, build_properties))
 
     task_template_params.update({
       'repository': builder_cfg.recipe.repository,

@@ -34,17 +34,17 @@ see [kitchen].
 The template may contain parameters of form `${name}` in string literals.
 They will be expanded during task scheduling. Known parameters:
 
-* bucket: value of `build.bucket`.
-* builder: value of `builder_name` build parameter.
-* builder_hash: sha256 hex digest of the bucket and builder.
-* cache_dir: location of the recipe cache directory relative to task rundir.
-* repository: repository URL of the recipe.
-* revision: revision of the recipe.
-* recipe: name of the recipe.
-* properties_json: a JSON string containing build properties.
-* project: LUCI project id that the bucket is defined at, e.g. "chromium".
-* swarming_hostname: swarming instance hostname, e.g. "chromium.appspot.com"
-  configured in a bucket.
+  * bucket: value of `build.bucket`.
+  * builder: value of `builder_name` build parameter.
+  * builder_hash: sha256 hex digest of the bucket and builder.
+  * cache_dir: location of the recipe cache directory relative to task rundir.
+  * repository: repository URL of the recipe.
+  * revision: revision of the recipe.
+  * recipe: name of the recipe.
+  * properties_json: a JSON string containing build properties.
+  * project: LUCI project id that the bucket is defined at, e.g. "chromium".
+  * swarming_hostname: swarming instance hostname, e.g. "chromium.appspot.com"
+    configured in a bucket.
 
 Example: [swarming_task_template.json].
 
@@ -112,10 +112,10 @@ Real world configuration example:
 A buildbucket build can have `"swarming"` parameter, which is a JSON object with
 optional properties:
 
-* `"override_builder_cfg"`: can override builder configuration defined on the
-  server.
-  For example, it can override a dimensions or a recipe ref.
-  See also a section about it below.
+  * `"override_builder_cfg"`: can override builder configuration defined on the
+    server.
+    For example, it can override a dimensions or a recipe ref.
+    See also a section about it below.
 
 #### Override configuration dynamically
 
@@ -139,23 +139,34 @@ of the message.
 
 A swarming task created by buildbucket has extra tags:
 
-* `buildbucket_hostname:<hostname>`
-* `buildbucket_bucket:<bucket>`
-* `buildbucket_build_id:<id>`
-* `buildbucket_template_revision:<template commit hash>`
-* `recipe_repository:<repo url>`
-* `recipe_revision:<revision>`
-* `recipe_name:<name>`
-* all tags in `swarming_tags` of builder config.
-* all tags in build creation request.
+  * `buildbucket_hostname:<hostname>`
+  * `buildbucket_bucket:<bucket>`
+  * `buildbucket_build_id:<id>`
+  * `buildbucket_template_revision:<template commit hash>`
+  * `recipe_repository:<repo url>`
+  * `recipe_revision:<revision>`
+  * `recipe_name:<name>`
+  * all tags in `swarming_tags` of builder config.
+  * all tags in build creation request.
 
 A buildbucket build associated with a swarming task has extra tags:
 
-* `swarming_hostname:<hostname>`
-* `swarming_task_id:<task_id>`
-* `swarming_tag:<tag>` for each swarming task tag, even if it was derived from
-  a buildbucket build tag.
-* `swarming_dimension:<dimension>` for each dimension.
+  * `swarming_hostname:<hostname>`
+  * `swarming_task_id:<task_id>`
+  * `swarming_tag:<tag>` for each swarming task tag, even if it was derived from
+    a buildbucket build tag.
+  * `swarming_dimension:<dimension>` for each dimension.
+
+## Properties
+
+A swarming task created by buildbucket has extra recipe properties:
+
+  * `"$recipe_engine/runtime"["is_luci"]` is always `true`
+  * `"$recipe_engine/runtime"["is_experimental"]` is `false` unless:
+    * The builder has `luci_migration_host` set to a migration app; *AND*
+    * The build has a "mastername" property; *AND*
+    * The migration app says that LUCI is not Prod for this master+builder
+      combination.
 
 ## Life of a swarmbucket build
 

@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 
 import base64
+import collections
 import contextlib
 import datetime
 import json
@@ -12,6 +13,7 @@ from components import utils
 utils.fix_protobuf_package()
 
 from google import protobuf
+from google.appengine.ext import ndb
 
 from components import auth
 from components import net
@@ -52,7 +54,12 @@ class SwarmingTest(BaseTest):
     super(SwarmingTest, self).setUp()
 
     self.json_response = None
+    self.net_err_response = None
     def json_request_async(*_, **__):
+      if self.net_err_response is not None:
+        f = ndb.Future()
+        f.set_exception(self.net_err_response)
+        return f
       if self.json_response is not None:
         return future(self.json_response)
       self.fail('unexpected outbound request')  # pragma: no cover
@@ -285,6 +292,57 @@ class SwarmingTest(BaseTest):
       {'key': 'pool', 'value': 'Chrome'},
     ]))
 
+  def test_is_experimental_unset(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    mrp = swarming._make_runtime_properties
+
+    # if no luci_migration_host is set, we bail early
+    self.assertEqual(mrp(builder_cfg, {'mastername': 'Nope'}).get_result(),
+                     {'is_experimental': False, 'is_luci': True})
+
+  def test_is_experimental_no_mastername(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.luci_migration_host = 'example.com'
+    mrp = swarming._make_runtime_properties
+
+    # No mastername skips lookup, even if there's a migration host.
+    self.assertEqual(mrp(builder_cfg, {}).get_result(),
+                     {'is_experimental': False, 'is_luci': True})
+
+  def test_is_experimental_error(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.luci_migration_host = 'example.com'
+    mrp = swarming._make_runtime_properties
+
+    # 404 results in an experimental build.
+    self.net_err_response = net.NotFoundError('nope', 404, "can't find it")
+    self.assertEqual(mrp(builder_cfg, {'mastername': 'M'}).get_result(),
+                     {'is_experimental': True, 'is_luci': True})
+
+    # 500 also results in an experimental build.
+    self.net_err_response = net.Error('BOOM', 500, "IT'S BAD")
+    self.assertEqual(mrp(builder_cfg, {'mastername': 'M'}).get_result(),
+                     {'is_experimental': True, 'is_luci': True})
+
+    # Bad json results in experimental build too.
+    self.net_err_response = None
+    self.json_response = {'poop': True}
+    self.assertEqual(mrp(builder_cfg, {'mastername': 'M'}).get_result(),
+                     {'is_experimental': True, 'is_luci': True})
+
+  def test_is_experimental_works(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.luci_migration_host = 'example.com'
+    mrp = swarming._make_runtime_properties
+
+    self.json_response = {'luci_is_prod': True, 'bucket': 'B'}
+    self.assertEqual(mrp(builder_cfg, {'mastername': 'M'}).get_result(),
+                     {'is_experimental': False, 'is_luci': True})
+
+    self.json_response = {'luci_is_prod': False, 'bucket': 'B'}
+    self.assertEqual(mrp(builder_cfg, {'mastername': 'M'}).get_result(),
+                     {'is_experimental': True, 'is_luci': True})
+
   def test_create_task_async(self):
     self.patch(
         'components.auth.get_current_identity', autospec=True,
@@ -380,6 +438,10 @@ class SwarmingTest(BaseTest):
             'predefined-property': 'x',
             'predefined-property-bool': True,
             'repository': 'https://chromium.googlesource.com/chromium/src',
+            '$recipe_engine/runtime': {
+              'is_experimental': False,
+              'is_luci': True,
+            },
           }, sort_keys=True),
           '-logdog-project', 'chromium',
         ],
@@ -563,6 +625,10 @@ class SwarmingTest(BaseTest):
                 'id': '1',
                 'tags': [],
               },
+            },
+            '$recipe_engine/runtime': {
+              'is_experimental': False,
+              'is_luci': True,
             },
             'build_id': 'buildbucket/cr-buildbucket.appspot.com/1',
             'buildername': 'linux_chromium_rel_ng',
