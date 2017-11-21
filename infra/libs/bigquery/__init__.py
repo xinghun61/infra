@@ -4,3 +4,5 @@
 
 from infra.libs.bigquery.helper import BigQueryHelper
 from infra.libs.bigquery.helper import BigQueryInsertError
+from infra.libs.bigquery.helper import message_to_dict
+from infra.libs.bigquery.helper import UnsupportedTypeError

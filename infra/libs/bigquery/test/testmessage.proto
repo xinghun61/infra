@@ -1,0 +1,18 @@
+// Copyright 2017 The Chromium Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style license that can be
+// found in the LICENSE file.
+
+syntax = "proto3";
+
+package bigquery;
+
+import "google/protobuf/timestamp.proto";
+
+message TestMessage {
+    string name = 1;
+    repeated NestedMessage nesteds = 4;
+}
+
+message NestedMessage {
+    repeated google.protobuf.Timestamp timestamps = 1;
+}
