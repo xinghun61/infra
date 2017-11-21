@@ -221,12 +221,19 @@ enum Consumer {
 
 // Gerrit consumer details to be provided if a Gerrit consumer is specified.
 message GerritConsumerDetails {
-  // Gerrit project name.
+  // Gerrit host.
   //
-  // This value is assume to not include '##'.
+  // This value must not include protocol and is assumed to not include '##'.
   //
   // This field is required.
-  string project = 1;
+  string host = 1;
+
+  // Gerrit project name.
+  //
+  // This value is assumed to not include '##'.
+  //
+  // This field is required.
+  string project = 2;
 
   // Gerrit change ID.
   //
@@ -237,7 +244,7 @@ message GerritConsumerDetails {
   // Example: "myProject~master~I8473b95934b5732ac55d26311a706c9c2bde9940"
   //
   // This field is required.
-  string change = 2;
+  string change = 3;
 
   // Gerrit change revision.
   //
@@ -248,6 +255,5 @@ message GerritConsumerDetails {
   // Example: "refs/changes/97/97/1"
   //
   // This field is required.
-  string revision = 6;
-
+  string revision = 4;
 }

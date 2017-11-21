@@ -69,6 +69,11 @@ func validateAnalyzeRequest(c context.Context, req *tricium.AnalyzeRequest) erro
 			logging.Errorf(c, msg)
 			return grpc.Errorf(codes.InvalidArgument, msg)
 		}
+		if gd.Host == "" {
+			msg := "missing 'host' field in GerritConsumerDetails message"
+			logging.Errorf(c, msg)
+			return grpc.Errorf(codes.InvalidArgument, msg)
+		}
 		if gd.Project == "" {
 			msg := "missing 'project' field in GerritConsumerDetails message"
 			logging.Errorf(c, msg)
@@ -148,6 +153,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 			return "", fmt.Errorf("missing Gerrit details for project, project: %s", req.Project)
 		}
 		request.GerritHost = gd.Host
+		request.GerritProject = req.GerritDetails.Project
 		request.GerritChange = req.GerritDetails.Change
 		request.GerritRevision = req.GerritDetails.Revision
 	}
@@ -197,7 +203,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 					return nil
 				}
 				g := &GerritChangeToRunID{
-					ID:    gerritMappingID(request.Project, request.GerritChange),
+					ID:    gerritMappingID(request.GerritHost, request.GerritProject, request.GerritChange),
 					RunID: request.ID,
 				}
 				if err := ds.Put(c, g); err != nil {

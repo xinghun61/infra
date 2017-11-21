@@ -66,7 +66,8 @@ type AnalyzeRequest struct {
 	ID int64 `gae:"$id"`
 	// Time when the corresponding request was received, time recorded in the reporter.
 	Received time.Time
-	// The project of the request.
+	// The Tricium project of the request.
+	// This is the project name listed in the Tricium service config.
 	Project string
 	// File paths listed in the request.
 	Paths []string `gae:",noindex"`
@@ -77,8 +78,10 @@ type AnalyzeRequest struct {
 	// Consumer of progress updates and results.
 	Consumer tricium.Consumer
 	// Gerrit details for when the Gerrit reporter is selected.
-	GerritHost     string `gae:",noindex"`
-	GerritChange   string `gae:",noindex"`
+	GerritHost    string `gae:",noindex"`
+	GerritProject string `gae:",noindex"`
+	GerritChange  string `gae:",noindex"`
+	// Note that Gerrit revision is another name for Gerrit patch set.
 	GerritRevision string `gae:",noindex"`
 }
 

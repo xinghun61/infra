@@ -14,6 +14,23 @@ import (
 	"infra/tricium/api/v1"
 )
 
+func TestHostWithProtocol(t *testing.T) {
+	Convey("Test Environment", t, func() {
+		hostWithHTTPS := "https://chromium-review.googlesource.com"
+		hostWithHTTP := "http://chromium-review.googlesource.com"
+		host := "chromium-review.googlesource.com"
+		Convey("No transform of https", func() {
+			So(hostWithProtocol(hostWithHTTPS), ShouldEqual, hostWithHTTPS)
+		})
+		Convey("Transform of http", func() {
+			So(hostWithProtocol(hostWithHTTP), ShouldEqual, hostWithHTTPS)
+		})
+		Convey("Adds https when no protocol", func() {
+			So(hostWithProtocol(host), ShouldEqual, hostWithHTTPS)
+		})
+	})
+}
+
 func TestComposeChangesQueryURL(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		instance := "https://chromium-review.googlesource.com"

@@ -357,6 +357,8 @@ func (m *GitRepoDetails) GetRef() string {
 // Gerrit details for a project.
 type GerritDetails struct {
 	// The Gerrit host to connect to.
+	//
+	// Value must not include protocol.
 	Host string `protobuf:"bytes,1,opt,name=host" json:"host,omitempty"`
 	// Gerrit project name.
 	Project string `protobuf:"bytes,2,opt,name=project" json:"project,omitempty"`

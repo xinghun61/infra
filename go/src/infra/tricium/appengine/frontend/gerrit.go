@@ -20,6 +20,6 @@ type GerritChangeToRunID struct {
 	RunID int64
 }
 
-func gerritMappingID(project, changeID string) string {
-	return fmt.Sprintf("%s##%s", project, changeID)
+func gerritMappingID(host, project, changeID string) string {
+	return fmt.Sprintf("%s##%s##%s", host, project, changeID)
 }

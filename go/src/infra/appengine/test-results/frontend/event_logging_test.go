@@ -87,7 +87,7 @@ func TestCreateEvent(t *testing.T) {
 		So(zeroTS, ShouldNotBeNil)
 
 		expected := []*gen.TestResultEvent{
-			&gen.TestResultEvent{
+			{
 				Path:     "path",
 				TestType: p.TestType,
 				StepName: p.StepName,

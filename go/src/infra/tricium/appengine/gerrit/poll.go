@@ -32,7 +32,7 @@ const timeStampLayout = "2006-01-02 15:04:05.000000000"
 // Project tracks the last poll of a Gerrit project.
 //
 // Mutable entity.
-// LUCI datastore ID (=string on the form instance:project) field.
+// LUCI datastore ID (=string on the form host:project) field.
 type Project struct {
 	ID       string `gae:"$id"`
 	Instance string
@@ -88,30 +88,30 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 
 // pollProject polls for changes for one Gerrit project.
 //
-// Each poll to a Gerrit instance and project is logged with a timestamp and
+// Each poll to a Gerrit host and project is logged with a timestamp and
 // last seen revisions (within the same second).
 // The timestamp of the most recent change in the last poll is used in the next poll,
 // (as the value of 'after' in the query string). If no previous poll has been logged,
 // then a time corresponding to zero is used (time.Time{}).
-func pollProject(c context.Context, triciumProject, instance, gerritProject string, gerrit API) error {
-	// Get last poll data for the given instance/project.
-	p := &Project{ID: gerritProjectID(instance, gerritProject)}
+func pollProject(c context.Context, triciumProject, gerritHost, gerritProject string, gerrit API) error {
+	// Get last poll data for the given host/project.
+	p := &Project{ID: gerritProjectID(gerritHost, gerritProject)}
 	if err := ds.Get(c, p); err != nil {
 		if err != ds.ErrNoSuchEntity {
 			return fmt.Errorf("failed to get Project entity: %v", err)
 		}
 		logging.Infof(c, "Found no previous entry for id:%s", p.ID)
 		err = nil
-		p.Instance = instance
+		p.Instance = gerritHost
 		p.Project = gerritProject
 	}
 
 	// If no previous poll, store current time and return.
 	if p.LastPoll.IsZero() {
 		logging.Infof(c, "No previous poll for %s/%s. Storing current timestamp and stopping.",
-			instance, gerritProject)
-		p.ID = gerritProjectID(instance, gerritProject)
-		p.Instance = instance
+			gerritHost, gerritProject)
+		p.ID = gerritProjectID(gerritHost, gerritProject)
+		p.Instance = gerritHost
 		p.Project = gerritProject
 		p.LastPoll = clock.Now(c).UTC()
 		logging.Debugf(c, "Storing project data: %+v", p)
@@ -217,7 +217,7 @@ func pollProject(c context.Context, triciumProject, instance, gerritProject stri
 	//
 	// Running after the transaction because each seen change will result in one
 	// enqueued task and there is a limit on the number of action in a transaction.
-	return enqueueAnalyzeRequests(c, triciumProject, diff)
+	return enqueueAnalyzeRequests(c, triciumProject, gerritHost, gerritProject, diff)
 }
 
 // extractUpdates extracts change updates.
@@ -293,7 +293,7 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 }
 
 // enqueueAnalyzeRequests enqueues Analyze requests for the provided Gerrit changes.
-func enqueueAnalyzeRequests(ctx context.Context, project string, changes []gr.ChangeInfo) error {
+func enqueueAnalyzeRequests(ctx context.Context, triciumProject, gerritHost, gerritProject string, changes []gr.ChangeInfo) error {
 	logging.Debugf(ctx, "Enqueue Analyze requests for %d changes", len(changes))
 	if len(changes) == 0 {
 		return nil
@@ -309,14 +309,14 @@ func enqueueAnalyzeRequests(ctx context.Context, project string, changes []gr.Ch
 		// Sorting files to account for random enumeration in go maps.
 		// This is to get consistent behavior for the same input.
 		sort.Strings(paths)
-		// TODO(emso): Mapping between Gerrit project name and that used in Tricium?
 		req := &tricium.AnalyzeRequest{
-			Project:  project,
+			Project:  triciumProject,
 			GitRef:   c.Revisions[c.CurrentRevision].Ref,
 			Paths:    paths,
 			Consumer: tricium.Consumer_GERRIT,
 			GerritDetails: &tricium.GerritConsumerDetails{
-				Project:  project,
+				Host:     gerritHost,
+				Project:  gerritProject,
 				Change:   c.ID,
 				Revision: c.CurrentRevision,
 			},
@@ -337,7 +337,7 @@ func enqueueAnalyzeRequests(ctx context.Context, project string, changes []gr.Ch
 }
 
 // gerritProjectID constructs the ID used to store information about
-// a Gerrit instance and project.
-func gerritProjectID(instance, project string) string {
-	return fmt.Sprintf("%s:%s", instance, project)
+// a Gerrit host and project.
+func gerritProjectID(host, project string) string {
+	return fmt.Sprintf("%s:%s", host, project)
 }

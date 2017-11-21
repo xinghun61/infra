@@ -23,6 +23,7 @@ import (
 )
 
 const (
+	host           = "chromium-review.googlesource.com"
 	project        = "playground/gerrit-tricium"
 	okACLUser      = "user:ok@example.com"
 	changeIDFooter = "I17e97e23ecf2890bf6b72ffd1d7a3167ed1b0a11"
@@ -99,6 +100,22 @@ func TestAnalyze(t *testing.T) {
 			})
 		})
 
+		Convey("Fails invalid request", func() {
+			err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
+				Project:  project,
+				GitRef:   gitRef,
+				Paths:    paths,
+				Consumer: tricium.Consumer_GERRIT,
+				GerritDetails: &tricium.GerritConsumerDetails{
+					// Host field is missing.
+					Project:  project,
+					Change:   fmt.Sprintf("%s~master~%s", project, changeIDFooter),
+					Revision: revision,
+				},
+			})
+			So(err, ShouldNotBeNil)
+		})
+
 		Convey("Validates valid request", func() {
 			err := validateAnalyzeRequest(ctx, &tricium.AnalyzeRequest{
 				Project:  project,
@@ -106,6 +123,7 @@ func TestAnalyze(t *testing.T) {
 				Paths:    paths,
 				Consumer: tricium.Consumer_GERRIT,
 				GerritDetails: &tricium.GerritConsumerDetails{
+					Host:     host,
 					Project:  project,
 					Change:   fmt.Sprintf("%s~master~%s", project, changeIDFooter),
 					Revision: revision,

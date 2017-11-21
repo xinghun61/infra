@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.chromium.org/luci/common/logging"
@@ -163,8 +164,7 @@ func createRobotComment(runID int64, comment tricium.Data_Comment) *robotComment
 
 // composeChangesQueryURL composes the URL used to query Gerrit for updated changes.
 //
-// The provided GerritProject object provides Gerrit instance, project, and timestamp
-// of last poll.
+// The provided GerritProject object provides Gerrit host, project, and timestamp of last poll.
 // The offset is used to handle paging and should be incremented during a poll to get
 // all results.
 func composeChangesQueryURL(host, project string, lastTimestamp time.Time, offset int) string {
@@ -174,7 +174,7 @@ func composeChangesQueryURL(host, project string, lastTimestamp time.Time, offse
 	v.Add("o", "CURRENT_REVISION")
 	v.Add("o", "CURRENT_FILES")
 	v.Add("q", fmt.Sprintf("project:%s after:\"%s\"", project, ts))
-	return fmt.Sprintf("%s/a/changes/?%s", host, v.Encode())
+	return fmt.Sprintf("%s/a/changes/?%s", hostWithProtocol(host), v.Encode())
 }
 
 func (gerritServer) setReview(c context.Context, host, change, revision string, r *reviewInput) error {
@@ -183,7 +183,7 @@ func (gerritServer) setReview(c context.Context, host, change, revision string, 
 		return fmt.Errorf("failed to marshal ReviewInput: %v", err)
 	}
 	logging.Debugf(c, "[gerrit] JSON body: %s", data)
-	url := fmt.Sprintf("%s/a/changes/%s/revisions/%s/review", host, change, revision)
+	url := fmt.Sprintf("%s/a/changes/%s/revisions/%s/review", hostWithProtocol(host), change, revision)
 	logging.Infof(c, "Using Gerrit Set Review URL: %s", url)
 	req, err := http.NewRequest("POST", url, bytes.NewReader(data))
 	if err != nil {
@@ -208,6 +208,21 @@ func (gerritServer) setReview(c context.Context, host, change, revision string, 
 		return fmt.Errorf("failed to connect to Gerrit, code: %d, %v", resp.StatusCode, err)
 	}
 	return nil
+}
+
+// Returns the provided host with the https protocol prefix added.
+//
+// If the provided host has a http:// prefix, it is updated.
+//
+// TODO(emso): Remove this function when there is no occurrence of hosts with protocols in the Tricium config.
+func hostWithProtocol(host string) string {
+	// If host already has the right protocol, return.
+	if strings.HasPrefix(host, "https://") {
+		return host
+	}
+	// If wrong protocol, strip.
+	host = strings.TrimPrefix(host, "http://")
+	return fmt.Sprintf("https://%s", host)
 }
 
 // mockRestAPI mocks the GerritAPI interface for testing.

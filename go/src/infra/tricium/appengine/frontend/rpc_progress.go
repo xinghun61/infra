@@ -28,6 +28,9 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 		if gd == nil {
 			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit details")
 		}
+		if gd.Host == "" {
+			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit host")
+		}
 		if gd.Project == "" {
 			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit project")
 		}
@@ -39,10 +42,8 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 		}
 		// If Gerrit consumer and no run ID, lookup the run ID with the provided Gerrit change details.
 		if req.RunId == "" {
-			// TODO(emso): mapping between Gerrit project and Tricium project. They may be different.
-			// Possibly add the Tricium project name for a gerrit project in the Tricium plugin config.
 			g := &GerritChangeToRunID{
-				ID: gerritMappingID(gd.Project, gd.Change),
+				ID: gerritMappingID(gd.Host, gd.Project, gd.Change),
 			}
 			if err := ds.Get(c, g); err != nil {
 				logging.WithError(err).Errorf(c, "failed to get GerritChangeToRunID entity: %v", err)
