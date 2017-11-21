@@ -146,8 +146,6 @@ base_page.bootstrap()
 # http://code.google.com/appengine/docs/python/runtime.html#App_Caching for more
 # info.
 application = webapp2.WSGIApplication(
-  [('/', MainAction),
-   ('/p/(.*)/' + ONE_BOX_URL, OneBoxAction),
-   ('/p/(.*)', PageAction),
+  [('/.*', MainAction),
    ('/tasks/fetch_pages', FetchPagesAction)])
 gae_ts_mon.initialize(application)
