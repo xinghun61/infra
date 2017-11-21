@@ -480,23 +480,22 @@ class CheckFlake(BaseHandler):
     culprit = _GetCulpritInfo(analysis)
     build_level_number, revision_level_number = _GetNumbersOfDataPointGroups(
         analysis.data_points)
+    regression_range_confidence = suspected_flake.get('confidence', 0)
+    culprit_confidence = culprit.get('confidence', 0)
+
+    def AsPercentString(val):
+      """0-1 as a percent, rounded and returned as a string"""
+      return "{0:d}".format(int(round(val * 100.0))) if val else ''
+
+    regression_range_confidence = AsPercentString(regression_range_confidence)
+    culprit_confidence = AsPercentString(culprit_confidence)
 
     data = {
         'key':
             analysis.key.urlsafe(),
-        'master_name':
-            analysis.master_name,
-        'builder_name':
-            analysis.builder_name,
         'build_number':
             analysis.build_number,
-        'step_name':
-            analysis.step_name,
-        'test_name':
-            analysis.test_name,
         'pass_rates': [],
-        'analysis_status':
-            analysis.status_description,
         'try_job_status':
             analysis_status.STATUS_TO_DESCRIPTION.get(analysis.try_job_status),
         'last_attempted_swarming_task':
@@ -528,7 +527,36 @@ class CheckFlake(BaseHandler):
         'show_heuristic_results':
             self._ShowDebugInfo(),
         'pipeline_status_path':
-            analysis.pipeline_status_path
+            analysis.pipeline_status_path,
+
+        # new ui stuff
+        'master_name':
+            analysis.master_name,
+        'builder_name':
+            analysis.builder_name,
+        'step_name':
+            analysis.step_name,
+        'test_name':
+            analysis.test_name,
+        'analysis_status':
+            analysis.status_description,
+        'regression_range_upper':
+            suspected_flake.get('git_hash', '') or '',
+        'regression_range_lower':
+            suspected_flake.get('lower_bound_git_hash', '') or '',
+        'regression_range_confidence':
+            regression_range_confidence,
+        'culprit_analysis_status': (
+            analysis_status.STATUS_TO_DESCRIPTION.get(analysis.try_job_status)
+            or ''),
+        'culprit_url':
+            culprit.get('url', ''),
+        'culprit_text':
+            culprit.get('commit_position', '') or culprit.get('revision', ''),
+        'culprit_confidence':
+            culprit_confidence,
+        'bug_id':
+            str(analysis.bug_id) if analysis.bug_id else ''
     }
 
     if (auth_util.IsCurrentUserAdmin() and analysis.completed and

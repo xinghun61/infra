@@ -246,7 +246,8 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
           'build_number': 100,
           'commit_position': 12345,
           'git_hash': 'git_hash_1',
-          'triage_result': 0
+          'triage_result': 0,
+          'confidence': .5
       })
   @mock.patch.object(
       check_flake,
@@ -275,12 +276,14 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     analysis.data_points.append(data_point)
     analysis.status = analysis_status.COMPLETED
     analysis.suspected_flake_build_number = 100
+    analysis.confidence_in_suspected_build = .5
     analysis.request_time = datetime.datetime(2016, 10, 01, 12, 10, 00)
     analysis.start_time = datetime.datetime(2016, 10, 01, 12, 10, 05)
     analysis.end_time = datetime.datetime(2016, 10, 01, 13, 10, 00)
     analysis.algorithm_parameters = {'iterations_to_rerun': 100}
     analysis.pipeline_status_path = 'pipelinestatus'
     analysis.suspect_urlsafe_keys.append(suspect.key.urlsafe())
+    analysis.try_job_status = analysis_status.RUNNING
     analysis.Save()
 
     self.mock_current_user(user_email='test@example.com', is_admin=False)
@@ -323,6 +326,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'duration':
             '00:59:55',
         'suspected_flake': {
+            'confidence': 0.5,
             'build_number': 100,
             'commit_position': culprit_commit_position,
             'git_hash': culprit_git_hash,
@@ -339,7 +343,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             False,
         'culprit': {},
         'try_job_status':
-            None,
+            'Running',
         'last_attempted_swarming_task': {
             'task_id': None,
             'build_number': None
@@ -351,6 +355,22 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             False,
         'show_heuristic_results':
             False,
+        'bug_id':
+            '',
+        'culprit_analysis_status':
+            'Running',
+        'culprit_confidence':
+            '',
+        'culprit_text':
+            '',
+        'culprit_url':
+            '',
+        'regression_range_confidence':
+            '50',
+        'regression_range_lower':
+            '',
+        'regression_range_upper':
+            'git_hash_1',
     }
 
     self.assertEquals(200, response.status_int)
@@ -531,6 +551,22 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             False,
         'show_heuristic_results':
             False,
+        'bug_id':
+            '',
+        'culprit_analysis_status':
+            '',
+        'culprit_confidence':
+            '',
+        'culprit_text':
+            '',
+        'culprit_url':
+            '',
+        'regression_range_confidence':
+            '',
+        'regression_range_lower':
+            '',
+        'regression_range_upper':
+            'a_git_hash',
     }
 
     self.assertEqual(200, response.status_int)

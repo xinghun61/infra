@@ -1,0 +1,103 @@
+<!--
+  For usage and examples see ui/elements/components/expandable-card-demo.html.
+  If you want the card to start expanded, then set show-more on the element.
+-->
+
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="/bower_components/iron-collapse/iron-collapse.html">
+<link rel="import" href="/bower_components/iron-icons/iron-icons.html">
+<link rel="import" href="/bower_components/paper-button/paper-button.html">
+<link rel="import" href="/bower_components/paper-card/paper-card.html">
+<link rel="import" href="/bower_components/paper-icon-button/paper-icon-button.html">
+
+<dom-module id="expandable-card">
+  <template>
+    <style>
+      :host {
+        display: inline-flex;
+        width: 100%;
+        overflow: hidden;
+      }
+
+      paper-card {
+        background-color: #fafafa;
+      }
+
+      paper-button {
+        display: inline-block;
+        width: 100%;
+
+        text-transform: none;
+        text-align: left;
+
+        margin: 0px;
+        padding: 0 5px;
+      }
+
+      #card {
+        width: 100%;
+      }
+
+      #header {
+        background-color: #f1f1f1;
+      }
+
+      #header::slotted(*) {
+        float: left;
+      }
+
+      #header paper-icon-button {
+        float: right;
+      }
+
+      #content {
+        clear: both;
+      }
+    </style>
+    <paper-card id="card">
+      <paper-button id="header" on-tap="toggleShowMore">
+        <!-- Header content will be displayed always. -->
+        <slot name="expandable-card-header"></slot>
+
+        <!-- Button to expand and show more. -->
+        <template is="dom-if" if="[[!showMore]]">
+          <paper-icon-button icon="add"></paper-icon-button>
+        </template>
+
+        <!-- Button to collapse and show less. -->
+        <template is="dom-if" if="[[showMore]]">
+          <paper-icon-button icon="remove"></paper-icon-button>
+        </template>
+      </paper-button>
+
+      <div id="content">
+        <iron-collapse id="collapse" on-touch="toggleShowMore" opened=[[showMore]]>
+          <!-- Content is the stuff that'll be hidden -->
+          <slot name="expandable-card-content"></slot>
+        </iron-collapse>
+      </div>
+
+    </paper-card>
+  </template>
+  <script>
+    (function () {
+      'use strict';
+
+      Polymer({
+        is: 'expandable-card',
+        properties: {
+          showMore: {
+            type: Boolean,
+            value: false
+          },
+        },
+
+        // Event handlers.
+        toggleShowMore: function () {
+          this.showMore = !this.showMore;
+          this.$.collapse.opened = this.showMore;
+        },
+      });
+    })();
+  </script>
+</dom-module>

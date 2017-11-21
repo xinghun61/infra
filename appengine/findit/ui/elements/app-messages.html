@@ -5,17 +5,19 @@
 <dom-module id="app-messages">
   <template>
     <style>
-       paper-dialog, paper-button {
-         background-color: #1F78B4;
-         color: #fff;
-       }
-       .message-container {
-         min-width: 500px;
-         max-width: 800px;
-         min-height: 100px;
-         max-height: 300px;
-         overflow-y: auto;
-       }
+      paper-dialog,
+      paper-button {
+        background-color: #1F78B4;
+        color: #fff;
+      }
+
+      .message-container {
+        min-width: 500px;
+        max-width: 800px;
+        min-height: 100px;
+        max-height: 300px;
+        overflow-y: auto;
+      }
     </style>
 
     <paper-dialog id="dialog" class="">
@@ -23,42 +25,42 @@
       <div class="message-container">
         <template is="dom-if" if="[[_isPredefinedMessage(_message, 100)]]">
           <div>
-            Please log in with your @google.com account first to schedule an analysis or give feedback on the analysis result. <br>
-            If already logged in, please try refreshing the page for a new XSRF token which expires in one hour.
+            Please log in with your @google.com account first to schedule an analysis or give feedback on the analysis result.
+            <br> If already logged in, please try refreshing the page for a new XSRF token which expires in one hour.
             <br>
-            <br>
-            Meanwhile, all previous analyses are public and searchable.
+            <br> Meanwhile, all previous analyses are public and searchable.
             <br>
           </div>
         </template>
         <template is="dom-if" if="[[_isPredefinedMessage(_message, 200)]]">
           <div>
-            The total score is a sum of scores for all hints.<br>
-            Rules to set a score to an hint:
+            The total score is a sum of scores for all hints.
+            <br> Rules to set a score to an hint:
             <ul>
               <li>5: The CL added or deleted a file that appears in the failure log.</li>
               <li>4: The CL modified a line of a file and that line appears in the failure log.</li>
               <li>2: The CL modified a file that appears in the failure log.</li>
-              <li>1: The CL modified a file that is related to another file
-                     appearing in the failure log. (eg: file.h was changed and
-                     file_unittest.cc or file_impl.cc appeared in the log.)</li>
-              <li>1: The CL rolled a dependency within src/DEPS and a file of that
-                     dependency appears in the failure log. (eg: third_party/dep
-                     was changed in src/DEPS and third_party/dep/f.cpp appeared
-                     in the log.)</li>
+              <li>1: The CL modified a file that is related to another file appearing in the failure log. (eg: file.h was changed
+                and file_unittest.cc or file_impl.cc appeared in the log.)</li>
+              <li>1: The CL rolled a dependency within src/DEPS and a file of that dependency appears in the failure log. (eg:
+                third_party/dep was changed in src/DEPS and third_party/dep/f.cpp appeared in the log.)</li>
             </ul>
             (More rules will be added when implemented.)
           </div>
         </template>
         <template is="dom-if" if="[[_isPredefinedMessage(_message, 300)]]">
           <div>
-            Want to analyze a specific range?<br>
+            Want to analyze a specific range?
+            <br>
             <ul>
               <li>Choose a commit position range and enter it into the Lower bound/Upper bound text fields</li>
-              <li>To specify a single point, enter a commit position in either lower/upper bound, or enter the same commit position for both</li>
-              <li>Optional: specify the number of iterations to rerun swarming. Findit tasks have a maximum of three hours to complete, so please use values below 800 to ensure the task completes successfully
-              <li>Press Analyze range</li>
-              <li>If the lower bound is found to be stable and upper bound flaky, Findit will attempt to identify the culprit CL that caused the flakiness</li>
+              <li>To specify a single point, enter a commit position in either lower/upper bound, or enter the same commit position
+                for both</li>
+              <li>Optional: specify the number of iterations to rerun swarming. Findit tasks have a maximum of three hours to
+                complete, so please use values below 800 to ensure the task completes successfully
+                <li>Press Analyze range</li>
+                <li>If the lower bound is found to be stable and upper bound flaky, Findit will attempt to identify the culprit
+                  CL that caused the flakiness</li>
             </ul>
           </div>
         </template>
@@ -80,8 +82,10 @@
               <li>Running: A suspected build number has been identified and try jobs analysis is running</li>
               <li>Completed: Try job analysis is complete</li>
               <li>Error: The analysis was halted due to an unexpected error</li>
-              <li>Skipped: Try jobs will not be triggered either due to no suspected build being identified, insufficient confidence in the suspected build, or build-level analysis ending in error</li>
-              <li>(Blank): Try job analysis has not yet begun, since analysis at the build level is still in progress or ended in error</li>
+              <li>Skipped: Try jobs will not be triggered either due to no suspected build being identified, insufficient confidence
+                in the suspected build, or build-level analysis ending in error</li>
+              <li>(Blank): Try job analysis has not yet begun, since analysis at the build level is still in progress or ended
+                in error</li>
             </ul>
           </div>
         </template>
@@ -103,48 +107,48 @@
   </template>
 
   <script>
-   (function() {
-     'use strict';
+    (function () {
+      'use strict';
 
-     var messageTitles = {
-       100: 'No Permission',
-       200: 'Score Explanation',
-       300: 'Choose a range or point to analyze',
-       400: 'Analysis Status',
-     };
+      var messageTitles = {
+        100: 'No Permission',
+        200: 'Score Explanation',
+        300: 'Choose a range or point to analyze',
+        400: 'Analysis Status',
+      };
 
-     Polymer({
-       is: 'app-messages',
+      Polymer({
+        is: 'app-messages',
 
-       created: function() {
-         document.addEventListener('message', function(e) {
-           console.log('Received one message event.');
-           console.log(e);
-           this.$.dialog.close();
-           this._message = e.detail;
-           this.$.dialog.open();
-         }.bind(this));
-       },
+        created: function () {
+          document.addEventListener('message', function (e) {
+            console.log('Received one message event.');
+            console.log(e);
+            this.$.dialog.close();
+            this._message = e.detail;
+            this.$.dialog.open();
+          }.bind(this));
+        },
 
-       properties: {
-         _message: {
-           type: Object,
-           value:undefined,
-         },
-       },
+        properties: {
+          _message: {
+            type: Object,
+            value: undefined,
+          },
+        },
 
-       _getMessageTitile: function(message) {
-         return message.title || messageTitles[message.messageId] || 'Message';
-       },
+        _getMessageTitile: function (message) {
+          return message.title || messageTitles[message.messageId] || 'Message';
+        },
 
-       _isPredefinedMessage: function(message, id) {
-         return Boolean(message && messageTitles[message.messageId] && message.messageId == id);
-       },
+        _isPredefinedMessage: function (message, id) {
+          return Boolean(message && messageTitles[message.messageId] && message.messageId == id);
+        },
 
-       _isCustomizedMessage: function(message) {
-         return Boolean(message && (!message.messageId || !messageTitles[message.messageId]));
-       },
-     });
-   })();
+        _isCustomizedMessage: function (message) {
+          return Boolean(message && (!message.messageId || !messageTitles[message.messageId]));
+        },
+      });
+    })();
   </script>
 </dom-module>

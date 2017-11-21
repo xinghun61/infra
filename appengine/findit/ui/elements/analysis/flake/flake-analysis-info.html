@@ -1,0 +1,231 @@
+<link rel="import" href="/bower_components/polymer/polymer.html">
+<link rel="import" href="./../../components/expandable-card.html">
+
+<dom-module id="flake-analysis-info">
+  <template>
+    <style>
+      :host {
+        display: inline-block;
+        width: 100%;
+      }
+
+      #header {
+        display: inline-block;
+        padding-top: 10px;
+        padding-bottom: 10px;
+
+        font-size: 16px;
+        font-weight: bold;
+        text-align: left;
+
+        color: black;
+      }
+
+      td {
+        padding: 0 10px;
+      }
+
+      tr:nth-child(odd) {
+        background-color: #f2f2f2;
+      }
+
+      .title {
+        font-size: 16px;
+        font-weight: bold;
+        color: black;
+        text-align: left;
+      }
+
+      .description {
+        font-weight: 500;
+        text-align: right;
+      }
+
+      .data {
+        color: darkslategrey;
+      }
+
+      .pending {
+        background-color: gray;
+      }
+
+      .completed {
+        background-color: green;
+      }
+
+      .running {
+        background-color: blue;
+      }
+
+      .error {
+        background-color: red;
+      }
+    </style>
+    <!-- End style. -->
+    <expandable-card>
+      <div id="header" slot="expandable-card-header" inner-h-t-m-l="[[_header]]"></div>
+      <div slot="expandable-card-content">
+        <table>
+          <tr>
+            <td class="description">Regression analysis</td>
+            <td class="data">
+              <span class$="[[_regressionRangeStatus]]">&nbsp;&nbsp;&nbsp;</span>
+              <template is="dom-if" if="[[!isAnalysisComplete(_regressionRangeStatus)]]">
+                <span>[[_regressionRangeStatus]]</span>
+              </template>
+
+              <template is="dom-if" if="[[isAnalysisComplete(_regressionRangeStatus)]]">
+                <a href$="[[_regressionRangeUrl]]">[[_regressionRangeText]]</a>
+                (Confidence [[regressionRangeConfidence]]%)
+              </template>
+            </td>
+          </tr>
+
+          <tr>
+            <td class="description">Culprit analysis</td>
+            <td class="data">
+              <span class$="[[_culpritAnalysisStatus]]">&nbsp;&nbsp;&nbsp;</span>
+              <template is="dom-if" if="[[!isAnalysisComplete(_culpritAnalysisStatus)]]">
+                <span>
+                  [[_culpritAnalysisStatus]]
+                </span>
+              </template>
+              <template is="dom-if" if="[[isAnalysisComplete(_culpritAnalysisStatus)]]">
+                <template is="dom-if" if="[[isCulpritFound(_culpritAnalysisStatus, culpritUrl)]]">
+                  <a href$="[[culpritUrl]]">[[culpritText]]</a>
+                  (Confidence [[culpritConfidence]]%)
+                </template>
+                <template is="dom-if" if="[[!isCulpritFound(_culpritAnalysisStatus, culpritUrl)]]">
+                  No culprit found.
+                </template>
+              </template>
+              <!-- End isAnalysisComplete -->
+            </td>
+          </tr>
+
+          <template is="dom-if" if="[[bugId]]">
+            <tr>
+              <td class="description">Bug</td>
+              <td class="data">
+                <a href$="https://crbug.com/[[bugId]]">[[bugId]]</a>
+              </td>
+            </tr>
+          </template>
+        </table>
+      </div>
+    </expandable-card>
+  </template>
+
+  <script>
+    (function () {
+      'use strict';
+      // TODO (crbug.com/786630): Support showing hueristic results.
+      Polymer({
+        is: 'flake-analysis-info',
+
+        properties: {
+          regressionRangeAnalysisStatus: String,
+          regressionRangeConfidence: String,
+          regressionRangeUpper: String,
+          regressionRangeLower: String,
+
+          culpritAnalysisStatus: String,
+          culpritUrl: String,
+          culpritText: String,
+          culpritConfidence: String,
+
+          bugId: String,
+
+          _header: {
+            type: String,
+            computed: 'computeHeader(regressionRangeAnalysisStatus, culpritAnalysisStatus, culpritUrl, culpritText, bugId)'
+          },
+
+          _regressionRangeStatus: {
+            type: String,
+            computed: 'computeRegressionRangeStatus(regressionRangeAnalysisStatus)'
+          },
+
+          _regressionRangeUrl: {
+            type: String,
+            computed: 'computeRegressionRangeUrl(regressionRangeLower, regressionRangeUpper)'
+          },
+
+          _regressionRangeText: {
+            type: String,
+            computed: 'computeRegressionRangeText(regressionRangeLower, regressionRangeUpper)'
+          },
+
+          _culpritAnalysisStatus: {
+            type: String,
+            computed: 'computeCulpritAnalysisStatus(culpritAnalysisStatus)'
+          },
+        },
+
+        // Computed properties.
+        computeHeader: function (regressionRangeAnalysisStatus, culpritAnalysisStatus, culpritUrl, culpritText, bugId) {
+          var status = "";
+          var extraInfo = "";
+
+          // Regression is finished, but culprit isn't done.
+          if (regressionRangeAnalysisStatus.toLowerCase() === "completed" &&
+            culpritAnalysisStatus.toLowerCase() !== "running" &&
+            culpritAnalysisStatus.toLowerCase() !== "pending") {
+            status = "Analysis complete.";
+            // Regression is complete, and culprit analysis is running or pending.
+          } else {
+            status = "Analysis running.";
+          }
+
+          // Add extra information
+          if (culpritUrl) {
+            extraInfo += " Culprit: <a href='" + culpritUrl + "'>" + culpritText + "</a>. ";
+          }
+
+          if (bugId) {
+            extraInfo += " Bug: <a href='https://crbug.com/" + bugId + "'>" + bugId + "</a>. ";
+          }
+
+          if (extraInfo) {
+            status = status + " " + extraInfo;
+          }
+
+          return status;
+        },
+
+        computeRegressionRangeStatus: function (regressionRangeAnalysisStatus) {
+          return regressionRangeAnalysisStatus.toLowerCase();
+        },
+
+        computeRegressionRangeUrl: function (regressionRangeLower, regressionRangeUpper) {
+          if (!regressionRangeLower || !regressionRangeUpper)
+            return 'None';
+          return "https://crrev.com/" + regressionRangeLower + ".." + regressionRangeUpper + "?pretty=fuller";
+        },
+
+        // TODO(crbug.com/786484): Use commit position here as it's more readable.
+        computeRegressionRangeText: function (regressionRangeLower, regressionRangeUpper) {
+          if (!regressionRangeLower || !regressionRangeUpper)
+            return 'None';
+          return regressionRangeLower.substring(0, 5) +
+            '...' +
+            regressionRangeUpper.substring(0, 5);
+        },
+
+        computeCulpritAnalysisStatus: function (culpritAnalysisStatus) {
+          return culpritAnalysisStatus.toLowerCase();
+        },
+
+        // Computed bindings
+        isAnalysisComplete: function (status) {
+          return status == 'completed';
+        },
+
+        isCulpritFound: function (status, culpritUrl) {
+          return status == 'completed' && culpritUrl;
+        },
+
+      });
+    })();
+  </script>
+</dom-module>
