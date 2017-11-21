@@ -135,8 +135,7 @@ class FetchPagesAction(base_page.BasePage):
 class MainAction(base_page.BasePage):
 
   def get(self):
-    args = self.request.query_string
-    self.redirect('/p/chromium/console' + '?' + args)
+    self.redirect('https://ci.chromium.org/p/chromium/g/main/console')
 
 
 # Call initial bootstrap for the app module.
