@@ -236,10 +236,13 @@ def parse_cq_data(json_data):
 
     # At the moment, much of the parsing logic assumes this is a Chromium
     # tryjob.
-    if fields.get('project') != 'chromium':
+    project = fields.get('project')
+    if project != 'chromium/chromium/src':
+      logging.info('project not chromium: %s', project)
       continue
 
     job_states = fields.get('jobs', {})
+
     for job in itertools.chain.from_iterable(job_states.values()):
       try:
         master = job['master']
@@ -263,13 +266,31 @@ def parse_cq_data(json_data):
         parsing_errors.increment_by(1)
         continue
 
+      issue = -1
+      patchset = -1
+      time_started = 0
+
       try:
         buildnumber = get_int_value(build_properties, 'buildnumber')
-        issue = get_int_value(build_properties, 'issue')
-        patchset = get_int_value(build_properties, 'patchset')
-        attempt_start_ts = get_int_value(build_properties, 'attempt_start_ts')
-        time_started = datetime.datetime.utcfromtimestamp(
-            attempt_start_ts / 1000000)
+        if 'patch_issue' in build_properties:
+          issue = get_int_value(build_properties, 'patch_issue')
+        else: # pragma: no cover
+          logging.warning('no issue')
+
+        if 'patch_set' in build_properties:
+          patchset = get_int_value(build_properties, 'patch_set')
+        else: # pragma: no cover
+          logging.warning('no patchset')
+
+        if 'attempt_start_ts' in build_properties:
+          attempt_start_ts = get_int_value(build_properties, 'attempt_start_ts')
+          time_started = datetime.datetime.utcfromtimestamp(
+              attempt_start_ts / 1000000)
+        else: # pragma: no cover
+          logging.warning('no attempt_start_ts')
+          continue
+
+
       except (ValueError, KeyError):
         logging.warning('Failed to parse build properties', exc_info=True)
         parsing_errors.increment_by(1)

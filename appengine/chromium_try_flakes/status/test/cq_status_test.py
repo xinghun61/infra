@@ -22,9 +22,9 @@ from time_functions.testing import mock_datetime_utc
 
 
 # Test results below capture various variants in which results may be processed.
-# Special attention should be paid to the 'issue' and 'patchset' fields as code
-# is expected to correctly process results from different issues and patchsets
-# independently of each other.
+# Special attention should be paid to the 'patch_issue' and 'patch_set' fields
+# as code is expected to correctly process results from different issues and
+# patchsets independently of each other.
 TEST_CQ_STATUS_RESPONSE = json.dumps({
   'more': False,
   'cursor': '',
@@ -33,7 +33,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
     {
       'fields': {
         'verifier': 'try job',
-        'project': 'chromium',
+        'project': 'chromium/chromium/src',
       }
     },
     # Ignored because verifier field is missing.
@@ -54,7 +54,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
       'fields': {
         'action': 'verifier_trigger',
         'verifier': 'try job',
-        'project': 'chromium',
+        'project': 'chromium/chromium/src',
       }
     },
     # Ignored because verifier field is not 'try job'.
@@ -62,7 +62,7 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
       'fields': {
         'action': 'verifier_jobs_update',
         'verifier': 'experimental try job',
-        'project': 'chromium',
+        'project': 'chromium/chromium/src',
       }
     },
     # Ignored because project field is not 'chromium'.
@@ -77,15 +77,15 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
       'fields': {
         'action': 'verifier_jobs_update',
         'verifier': 'try job',
-        'project': 'chromium',
+        'project': 'chromium/chromium/src',
         'jobs': {
           'JOB_PENDING': [
             # Ignored because the job is still pending.
             {
               'build_properties': {
                 'buildnumber': 100,
-                'issue': 987654321,
-                'patchset': 1,
+                'patch_issue': 987654321,
+                'patch_set': 1,
                 'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
@@ -100,8 +100,8 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
               'result': 0,  # SUCCESS
               'build_properties': {
                 'buildnumber': 101,
-                'issue': 123456789,
-                'patchset': 20001,
+                'patch_issue': 123456789,
+                'patch_set': 20001,
                 'attempt_start_ts': 1446221292000000,
               },
             },
@@ -125,8 +125,8 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             {
               'build_properties': {
                 'buildnumber': 101,
-                'issue': 123456789,
-                'patchset': 20001,
+                'patch_issue': 123456789,
+                'patch_set': 20001,
                 'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
@@ -138,8 +138,8 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             {
               'build_properties': {
                 'buildnumber': 102,
-                'issue': 123456789,
-                'patchset': 20001,
+                'patch_issue': 123456789,
+                'patch_set': 20001,
                 'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
@@ -151,8 +151,8 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             {
               'build_properties': {
                 'buildnumber': 103,
-                'issue': 100200300,
-                'patchset': 1,
+                'patch_issue': 100200300,
+                'patch_set': 1,
                 'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
@@ -163,8 +163,8 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             {
               'build_properties': {
                 'buildnumber': 104,
-                'issue': 100200300,
-                'patchset': 1,
+                'patch_issue': 100200300,
+                'patch_set': 1,
                 'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
@@ -177,8 +177,8 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             {
               'build_properties': {
                 'buildnumber': 105,
-                'issue': 987654321,
-                'patchset': 20001,
+                'patch_issue': 987654321,
+                'patch_set': 20001,
                 'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
@@ -189,8 +189,8 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             {
               'build_properties': {
                 'buildnumber': 106,
-                'issue': 123456789,
-                'patchset': 20001,
+                'patch_issue': 123456789,
+                'patch_set': 20001,
                 'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
@@ -202,8 +202,8 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             {
               'build_properties': {
                 'buildnumber': 106,
-                'issue': 123456789,
-                'patchset': 20001,
+                'patch_issue': 123456789,
+                'patch_set': 20001,
                 'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
@@ -215,8 +215,8 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             {
               'build_properties': {
                 'buildnumber': 107,
-                'issue': 100300200,
-                'patchset': 20001,
+                'patch_issue': 100300200,
+                'patch_set': 20001,
                 'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
@@ -228,8 +228,8 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
               'build_properties': {
                 # Build properties may be lists, but only first value is taken.
                 'buildnumber': [108, 300, 500],
-                'issue': [100300200, -1, -2],
-                'patchset': [20001, 0],
+                'patch_issue': [100300200, -1, -2],
+                'patch_set': [20001, 0],
                 'attempt_start_ts': [1446221292000000, 0],
               },
               'master': 'tryserver.test',
@@ -240,8 +240,8 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             # Ignored because buildnumber is missing.
             {
               'build_properties': {
-                'issue': 100300200,
-                'patchset': 20001,
+                'patch_issue': 100300200,
+                'patch_set': 20001,
                 'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
@@ -253,8 +253,8 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             {
               'build_properties': {
                 'buildnumber': 'abc',
-                'issue': 100300200,
-                'patchset': 20001,
+                'patch_issue': 100300200,
+                'patch_set': 20001,
                 'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
@@ -272,14 +272,14 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
       'fields': {
         'action': 'verifier_jobs_update',
         'verifier': 'try job',
-        'project': 'chromium',
+        'project': 'chromium/chromium/src',
         'jobs': {
           'JOB_FAILED': [
             {
               'build_properties': {
                 'buildnumber': 109,
-                'issue': 123456789,
-                'patchset': 20001,
+                'patch_issue': 123456789,
+                'patch_set': 20001,
                 'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
@@ -292,8 +292,8 @@ TEST_CQ_STATUS_RESPONSE = json.dumps({
             {
               'build_properties': {
                 'buildnumber': 110,
-                'issue': 987654321,
-                'patchset': 20001,
+                'patch_issue': 987654321,
+                'patch_set': 20001,
                 'attempt_start_ts': 1446221292000000,
               },
               'master': 'tryserver.test',
