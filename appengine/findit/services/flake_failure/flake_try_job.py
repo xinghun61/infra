@@ -4,11 +4,18 @@
 
 from google.appengine.ext import ndb
 
+from common import exceptions
 from common.findit_http_client import FinditHttpClient
+from common.waterfall import failure_type
+
 from libs import time_util
+
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
+
+from services import try_job as try_job_service
+
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
@@ -208,19 +215,26 @@ def UpdateAnalysisDataPointsWithTryJobResult(analysis, try_job, commit_position,
   analysis.put()
 
 
-def GetBuildProperties(master_name, builder_name, canonical_step_name,
-                       test_name, git_hash, iterations_to_rerun):
+def GetBuildProperties(master_name,
+                       builder_name,
+                       canonical_step_name,
+                       test_name,
+                       git_hash,
+                       iterations_to_rerun,
+                       skip_tests=False):
+  # TODO(crbug.com/786518): Remove iterations_to_rerun and skip_tests.
   iterations = iterations_to_rerun or _DEFAULT_ITERATIONS_TO_RERUN
 
   return {
       'recipe': 'findit/chromium/flake',
+      'skip_tests': skip_tests,
       'target_mastername': master_name,
       'target_testername': builder_name,
       'test_revision': git_hash,
       'test_repeat_count': iterations,
       'tests': {
           canonical_step_name: [test_name]
-      }
+      },
   }
 
 
@@ -241,3 +255,45 @@ def UpdateTryJob(master_name, builder_name, canonical_step_name, test_name,
   try_job.try_job_ids.append(build_id)
   try_job.put()
   return try_job
+
+
+def ScheduleFlakeTryJob(parameters, pipeline_id):
+  """Schedules a flake try job to compile and isolate."""
+  analysis = ndb.Key(urlsafe=parameters.analysis_urlsafe_key).get()
+  assert analysis
+
+  master_name = analysis.master_name
+  builder_name = analysis.builder_name
+  step_name = analysis.canonical_step_name
+  test_name = analysis.test_name
+
+  # TODO(crbug.com/786518): Remove iterations_to_rerun and skip_tests.
+  properties = GetBuildProperties(
+      master_name,
+      builder_name,
+      step_name,
+      test_name,
+      parameters.revision,
+      0,
+      skip_tests=True)
+
+  tryserver_mastername, tryserver_buildername = (
+      waterfall_config.GetFlakeTrybot(master_name, builder_name))
+
+  build_id, error = try_job_service.TriggerTryJob(
+      master_name, builder_name, tryserver_mastername, tryserver_buildername,
+      properties, {},
+      failure_type.GetDescriptionForFailureType(failure_type.FLAKY_TEST),
+      parameters.flake_cache_name, parameters.dimensions, pipeline_id)
+
+  if error:
+    raise exceptions.RetryException(error.message, error.reason)
+
+  try_job = UpdateTryJob(master_name, builder_name, step_name, test_name,
+                         parameters.revision, build_id)
+
+  # Create a corresponding FlakeTryJobData entity to capture as much metadata as
+  # early as possible.
+  CreateTryJobData(build_id, try_job.key, parameters.analysis_urlsafe_key)
+
+  return build_id

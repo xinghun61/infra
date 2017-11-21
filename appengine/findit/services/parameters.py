@@ -88,3 +88,11 @@ class ScheduleCompileTryJobParameters(ScheduleTryJobParameters):
 class ScheduleTestTryJobParameters(ScheduleTryJobParameters):
   """Input for ScheduleTestTryJobPipeline."""
   targeted_tests = dict
+
+
+class RunFlakeTryJobParameters(StructuredObject):
+  """Input for RunFlakeTryJobPipeline to compile and isolate only."""
+  analysis_urlsafe_key = basestring
+  revision = basestring
+  flake_cache_name = basestring
+  dimensions = list

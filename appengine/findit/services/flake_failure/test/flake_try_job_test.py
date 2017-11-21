@@ -4,12 +4,18 @@
 from datetime import datetime
 import mock
 
+from common import exceptions
 from gae_libs.testcase import TestCase
+
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+
+from services import try_job as try_job_service
 from services.flake_failure import flake_try_job
+from services.parameters import RunFlakeTryJobParameters
+
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
@@ -311,13 +317,14 @@ class FlakeTryJobServiceTest(TestCase):
 
     expected_properties = {
         'recipe': 'findit/chromium/flake',
+        'skip_tests': False,
         'target_mastername': master_name,
         'target_testername': builder_name,
         'test_revision': git_hash,
         'test_repeat_count': 200,
         'tests': {
             step_name: [test_name]
-        }
+        },
     }
 
     properties = flake_try_job.GetBuildProperties(
@@ -341,3 +348,83 @@ class FlakeTryJobServiceTest(TestCase):
     build_id = 'build_id'
     try_job = flake_try_job.UpdateTryJob('m', 'b', 's1', 't1', 'hash', build_id)
     self.assertEqual(try_job.try_job_ids[0], build_id)
+
+  @mock.patch.object(
+      waterfall_config, 'GetFlakeTrybot', return_value=('m', 'b'))
+  @mock.patch.object(flake_try_job, 'GetBuildProperties', return_value={})
+  @mock.patch.object(
+      try_job_service, 'TriggerTryJob', return_value=('id', None))
+  def testScheduleFlakeTryJobSuccess(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    revision = 'r1000'
+    build_id = 'id'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.Save()
+
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, revision)
+    try_job.put()
+
+    parameters = RunFlakeTryJobParameters(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        revision=revision,
+        flake_cache_name=None,
+        dimensions=[])
+    try_job_id = flake_try_job.ScheduleFlakeTryJob(parameters, 'pipeline')
+
+    try_job = FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
+                              revision)
+    try_job_data = FlakeTryJobData.Get(build_id)
+
+    expected_try_job_id = 'id'
+    self.assertEqual(expected_try_job_id, try_job_id)
+    self.assertEqual(expected_try_job_id,
+                     try_job.flake_results[-1]['try_job_id'])
+    self.assertTrue(expected_try_job_id in try_job.try_job_ids)
+    self.assertIsNotNone(try_job_data)
+    self.assertEqual(try_job_data.master_name, master_name)
+    self.assertEqual(try_job_data.builder_name, builder_name)
+
+  class MockedError(object):
+
+    def __init__(self, message, reason):
+      self.message = message
+      self.reason = reason
+
+  @mock.patch.object(
+      waterfall_config, 'GetFlakeTrybot', return_value=('m', 'b'))
+  @mock.patch.object(flake_try_job, 'GetBuildProperties', return_value={})
+  @mock.patch.object(
+      try_job_service,
+      'TriggerTryJob',
+      return_value=(None, MockedError('message', 'reason')))
+  def testScheduleTestTryJobRaise(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 123
+    step_name = 's'
+    test_name = 't'
+    revision = 'r1000'
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.Save()
+
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, revision)
+    try_job.put()
+
+    parameters = RunFlakeTryJobParameters(
+        analysis_urlsafe_key=analysis.key.urlsafe(),
+        revision=revision,
+        flake_cache_name=None,
+        dimensions=[])
+
+    with self.assertRaises(exceptions.RetryException):
+      flake_try_job.ScheduleFlakeTryJob(parameters, 'pipeline')
