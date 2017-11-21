@@ -42,9 +42,9 @@ OS Version: %s
 URLs (if applicable) :
 Other browsers tested:
   Add OK or FAIL after other browsers where you have tested this issue:
-     Safari 5:
-  Firefox 4.x:
-     IE 7/8/9:
+     Safari:
+    Firefox:
+    IE/Edge:
 
 What steps will reproduce the problem?
 1.
