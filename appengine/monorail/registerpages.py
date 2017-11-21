@@ -103,7 +103,7 @@ from api import api_service
 class ServletRegistry(object):
 
   _PROJECT_NAME_REGEX = r'[a-z0-9][-a-z0-9]*[a-z0-9]'
-  _USERNAME_REGEX = r'[-+\w=.%]+(@([a-z0-9]+\.)*[a-z0-9]+)?'
+  _USERNAME_REGEX = r'[-+\w=.%]+(@([-a-z0-9]+\.)*[a-z0-9]+)?'
   _HOTLIST_ID_NAME_REGEX = r'\d+|[a-zA-Z][-0-9a-zA-Z\.]*'
 
   def __init__(self):
