@@ -480,6 +480,7 @@ CELL_TYPE_ATTR = 'attr'
 CELL_TYPE_UNFILTERABLE = 'unfilterable'
 CELL_TYPE_NOTE = 'note'
 CELL_TYPE_PROJECT = 'project'
+CELL_TYPE_URL = 'url'
 
 
 class TableCell(object):
@@ -616,6 +617,7 @@ class TableCellCustom(TableCell):
   def __init__(self, art, col=None, users_by_id=None, config=None, **_kw):
     explicit_values = []
     derived_values = []
+    cell_type = CELL_TYPE_ATTR
     for fv in art.field_values:
       # TODO(jrobbins): for cross-project search this could be a list.
       fd = tracker_bizobj.FindFieldDefByID(fv.field_id, config)
@@ -625,60 +627,21 @@ class TableCellCustom(TableCell):
         logging.warn('Issue ID %r has undefined field value %r',
                      art.issue_id, fv)
       elif fd.field_name.lower() == col:
+        if fd.field_type == tracker_pb2.FieldTypes.URL_TYPE:
+          cell_type = CELL_TYPE_URL
+        if fd.field_type == tracker_pb2.FieldTypes.STR_TYPE:
+          self.NOWRAP = ezt.boolean(False)
         val = tracker_bizobj.GetFieldValue(fv, users_by_id)
         if fv.derived:
           derived_values.append(val)
         else:
           explicit_values.append(val)
 
-    TableCell.__init__(self, CELL_TYPE_ATTR, explicit_values,
+    TableCell.__init__(self, cell_type, explicit_values,
                        derived_values=derived_values)
 
   def ExtractValue(self, fv, _users_by_id):
     return 'field-id-%d-not-implemented-yet' % fv.field_id
-
-# TODO(jrobbins): eliminate these subclasses and just use TableCellCustom
-# for all custom fields, but have word wrap for strings.
-
-class TableCellCustomInt(TableCellCustom):
-  """TableCell subclass specifically for showing custom int fields."""
-  pass
-
-
-class TableCellCustomStr(TableCellCustom):
-  """TableCell subclass specifically for showing custom str fields."""
-  NOWRAP = ezt.boolean(False)
-
-
-class TableCellCustomUser(TableCellCustom):
-  """TableCell subclass specifically for showing custom user fields."""
-  pass
-
-
-class TableCellCustomDate(TableCellCustom):
-  """TableCell subclass specifically for showing custom date fields."""
-  pass
-
-
-class TableCellCustomUrl(TableCellCustom):
-  """TableCell subclass specifically for showing custom url fields.."""
-  pass
-
-class TableCellCustomBool(TableCellCustom):
-  """TableCell subclass specifically for showing custom int fields."""
-  pass
-
-
-_CUSTOM_FIELD_CELL_FACTORIES = {
-    tracker_pb2.FieldTypes.ENUM_TYPE: TableCellKeyLabels,
-    tracker_pb2.FieldTypes.INT_TYPE: TableCellCustomInt,
-    tracker_pb2.FieldTypes.STR_TYPE: TableCellCustomStr,
-    tracker_pb2.FieldTypes.USER_TYPE: TableCellCustomUser,
-    tracker_pb2.FieldTypes.DATE_TYPE: TableCellCustomDate,
-    tracker_pb2.FieldTypes.BOOL_TYPE: TableCellCustomBool,
-    tracker_pb2.FieldTypes.URL_TYPE: TableCellCustomUrl,
-}
-
 
 def ChooseCellFactory(col, cell_factories, config):
   """Return the CellFactory to use for the given column."""
@@ -690,6 +653,6 @@ def ChooseCellFactory(col, cell_factories, config):
 
   fd = tracker_bizobj.FindFieldDef(col, config)
   if fd:
-    return _CUSTOM_FIELD_CELL_FACTORIES[fd.field_type]
+    return TableCellCustom
 
   return TableCellKeyLabels

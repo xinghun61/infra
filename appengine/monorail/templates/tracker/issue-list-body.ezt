@@ -52,6 +52,17 @@
          [if-any table_data.cells.align]align="[table_data.cells.align]"[end]
          >[include "../framework/artifact-list-cell-values.ezt"]</td>
      [end]
+
+     [is table_data.cells.type "url"]
+       <td class="url col_[table_data.cells.col_index]" [if-any table_data.cells.align]align="[table_data.cells.align]"[end]>
+         [if-any table_data.cells.values]
+           [for table_data.cells.values]
+             <a href="[table_data.cells.values.item]" target="_blank" rel="nofollow">[table_data.cells.values.item]</a>
+           [end]
+         [end]
+       </td>
+     [end]
+
     [end]
    <td>&nbsp;</td>
   </tr>

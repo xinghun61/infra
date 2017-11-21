@@ -75,7 +75,7 @@ function createWidgets(tableRow, readOnly, userLoggedIn) {
  * @param {boolean} isCrossProject are issues in the table from more than one project.
 */
 function createIDCell(td, tableRow, isCrossProject) {
-  td.className += ' id';
+  td.classList.add('id');
   var aLink = document.createElement('a');
   aLink.setAttribute('href', tableRow['issueCleanURL']);
   var aLinkContent = (isCrossProject ? (tableRow['projectName'] + ':') : '' ) + tableRow['localID'];
@@ -84,7 +84,7 @@ function createIDCell(td, tableRow, isCrossProject) {
 }
 
 function createProjectCell(td, tableRow) {
-  td.className += ' project';
+  td.classList.add('project');
   var aLink = document.createElement('a');
   aLink.setAttribute('href', tableRow['projectURL']);
   aLink.textContent = tableRow['projectName'];
@@ -141,6 +141,18 @@ function createAttrAndUnfiltCell(td, cell) {
   fillValues(td, cell['values']);
 }
 
+function createUrlCell(td, cell) {
+  td.classList.add('url');
+  cell.values.forEach(value => {
+    let aLink = document.createElement('a');
+    aLink.href = value['item'];
+    aLink.target = '_blank';
+    aLink.rel = 'nofollow';
+    aLink.textContent = value['item'];
+    aLink.style.display = 'block'
+    td.appendChild(aLink);
+  });
+}
 
 /**
  * Helper function to fill a td element with a cell's non-column labels.
@@ -221,6 +233,8 @@ function renderHotlistRow(tableRow, pageSettings) {
       }
     } else if (cell['type'] == 'project') {
       createProjectCell(td, tableRow)
+    } else if (cell['type'] == 'url') {
+      createUrlCell(td, cell);
     } else{
       createAttrAndUnfiltCell(td, cell);
     }

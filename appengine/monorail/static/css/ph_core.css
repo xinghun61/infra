@@ -509,9 +509,13 @@ img {
 .results td { cursor: pointer }
 .results td { padding: 4px; }
 .results td a { color: #000; text-decoration: none; }
-.results td.id a, .results td.project a { color: #0000cc; text-decoration: underline; white-space: nowrap; }
-.results td.id a:visited, .results td.project a:visited  { color: purple; text-decoration: underline; }
-.results td.id a:hover, .results td.project a:hover { color: red; text-decoration: underline; }
+.results td.id a,
+.results td.project a,
+.results td.url a { color: #0000cc; text-decoration: underline; white-space: nowrap; }
+.results td.id a:visited,
+.results td.project a:visited,
+.results td.url a:visited { color: purple; text-decoration: underline; }
+.results td.id a:hover, .results td.project a:hover, .results td.url a:hover { color: red; text-decoration: underline; }
 table.results .hoverTarget:hover { color: #009; background-color: #f8f8ff; }
 table.results .hoverTarget:hover a { color: #009; }
 .results .label { font-size: 80% }

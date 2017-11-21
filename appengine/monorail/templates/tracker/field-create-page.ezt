@@ -37,8 +37,7 @@
         <option value="str_type" [is initial_type "str_type"]selected="selected"[end]>String</option>
         <option value="user_type" [is initial_type "user_type"]selected="selected"[end]>User</option>
         <option value="date_type" [is initial_type "date_type"]selected="selected"[end]>Date</option>
-        <!-- TODO(jojwang) uncomment to make feature visible
-	     option value="url_type" [is initial_type "url_type"]selected="selected"[end]>URL</option> -->
+        <option value="url_type" [is initial_type "url_type"]selected="selected"[end]>URL</option>
       </select>
     </td>
   </tr>
