@@ -21,7 +21,6 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   syntax='proto2',
   serialized_pb=_b('\n\x14service_config.proto\x12\x0b\x62uildbucket\">\n\x0bSettingsCfg\x12/\n\x08swarming\x18\x01 \x01(\x0b\x32\x1d.buildbucket.SwarmingSettings\"t\n\x10SwarmingSettings\x12\x18\n\x10\x64\x65\x66\x61ult_hostname\x18\x01 \x01(\t\x12\x15\n\rmilo_hostname\x18\x02 \x01(\t\x12/\n\'default_task_template_canary_percentage\x18\x03 \x01(\x05')
 )
-_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 
 
@@ -104,6 +103,7 @@ _SWARMINGSETTINGS = _descriptor.Descriptor(
 _SETTINGSCFG.fields_by_name['swarming'].message_type = _SWARMINGSETTINGS
 DESCRIPTOR.message_types_by_name['SettingsCfg'] = _SETTINGSCFG
 DESCRIPTOR.message_types_by_name['SwarmingSettings'] = _SWARMINGSETTINGS
+_sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 SettingsCfg = _reflection.GeneratedProtocolMessageType('SettingsCfg', (_message.Message,), dict(
   DESCRIPTOR = _SETTINGSCFG,

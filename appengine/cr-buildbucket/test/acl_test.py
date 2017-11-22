@@ -61,8 +61,29 @@ class AclTest(testing.AppengineTestCase):
 
   @mock.patch('components.auth.is_admin', autospec=True)
   @mock.patch('components.auth.is_group_member', autospec=True)
+  def test_get_role(self, is_group_member, is_admin):
+    is_group_member.side_effect = lambda g, _=None: g == 'a-writers'
+    is_admin.return_value = False
+
+    get_role = (
+      lambda *args: acl.get_role_async(*args).get_result())
+
+    self.assertEqual(get_role('a'), Acl.WRITER)
+    self.assertEqual(get_role('b'), None)
+    self.assertEqual(get_role('c'), Acl.READER)
+    self.assertEqual(get_role('non.existing'), None)
+
+    is_group_member.side_effect = None
+    is_group_member.return_value = False
+    self.assertEqual(get_role('a'), None)
+
+    is_admin.return_value = True
+    self.assertEqual(get_role('a'), Acl.WRITER)
+
+  @mock.patch('components.auth.is_admin', autospec=True)
+  @mock.patch('components.auth.is_group_member', autospec=True)
   def test_has_any_of_roles(self, is_group_member, is_admin):
-    is_group_member.side_effect = lambda g, i=None: g == 'a-readers'
+    is_group_member.side_effect = lambda g, _=None: g == 'a-readers'
     is_admin.return_value = False
 
     has_any_of_roles = (
@@ -87,7 +108,7 @@ class AclTest(testing.AppengineTestCase):
   @mock.patch('components.auth.is_admin', autospec=True)
   @mock.patch('components.auth.is_group_member', autospec=True)
   def test_get_available_buckets(self, is_group_member, is_admin):
-    is_group_member.side_effect = lambda g, i=None: g in ('xxx', 'yyy')
+    is_group_member.side_effect = lambda g, _=None: g in ('xxx', 'yyy')
     is_admin.return_value = False
 
     config.get_buckets_async.return_value = future([

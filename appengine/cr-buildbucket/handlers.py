@@ -18,12 +18,13 @@ from components import utils
 
 import webapp2
 
+from swarming import swarmbucket_api
+import access
 import api
 import config
 import events
 import model
 import service
-from swarming import swarmbucket_api
 
 
 README_MD = (
@@ -333,6 +334,7 @@ def get_frontend_routes():  # pragma: no cover
   ]
   routes += endpoints_webapp2.api_routes(api.BuildBucketApi)
   routes += endpoints_webapp2.api_routes(swarmbucket_api.SwarmbucketApi)
+  routes += access.create_routes()
   return routes
 
 

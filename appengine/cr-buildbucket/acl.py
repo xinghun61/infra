@@ -50,6 +50,21 @@ class Action(messages.Enum):
 
 _action_dict = Action.to_dict()
 
+ACTION_DESCRIPTIONS = {
+  Action.ADD_BUILD: 'Schedule a build.',
+  Action.VIEW_BUILD: 'Get information about a build.',
+  Action.LEASE_BUILD: 'Lease a build for execution.',
+  Action.CANCEL_BUILD:
+    'Cancel an existing build. Does not require a lease key.',
+  Action.RESET_BUILD: 'Unlease and reset state of an existing build.',
+  Action.SEARCH_BUILDS: 'Search for builds or get a list of scheduled builds.',
+  Action.READ_ACL: 'View bucket ACLs.',
+  Action.WRITE_ACL: 'Change bucket ACLs.',
+  Action.DELETE_SCHEDULED_BUILDS: 'Delete all scheduled builds from a bucket.',
+  Action.ACCESS_BUCKET: 'Know about a bucket\'s existence and read its info.',
+  Action.PAUSE_BUCKET: 'Pause builds for a given bucket.',
+  Action.SET_NEXT_NUMBER: 'Set the number for the next build in a builder.',
+}
 READER_ROLE_ACTIONS = [
   Action.ACCESS_BUCKET,
   Action.VIEW_BUILD,
@@ -66,6 +81,13 @@ WRITER_ROLE_ACTIONS = SCHEDULER_ROLE_ACTIONS + [
   Action.PAUSE_BUCKET,
   Action.SET_NEXT_NUMBER,
 ]
+ROLE_DESCRIPTIONS = {
+  project_config_pb2.Acl.READER:
+    'Can do read-only operations, such as search for builds.',
+  project_config_pb2.Acl.SCHEDULER:
+    'Same as READER + can schedule and cancel builds.',
+  project_config_pb2.Acl.WRITER: 'Can do all write operations.',
+}
 ACTIONS_FOR_ROLE = {
   project_config_pb2.Acl.READER: set(READER_ROLE_ACTIONS),
   project_config_pb2.Acl.SCHEDULER: set(SCHEDULER_ROLE_ACTIONS),
@@ -112,9 +134,32 @@ can_set_next_number = can_fn(Action.SET_NEXT_NUMBER)
 
 
 @ndb.tasklet
+def get_role_async(bucket):
+  """Returns the roles available for the current identity in |bucket|."""
+  errors.validate_bucket_name(bucket)
+
+  if auth.is_admin():
+    raise ndb.Return(project_config_pb2.Acl.WRITER)
+
+  _, bucket_cfg = yield config.get_bucket_async(bucket)
+  identity_str = auth.get_current_identity().to_bytes()
+  # Roles are just numbers, and the higher the number goes the more permissions
+  # the identity has. We exploit this here to get the single maximally
+  # permissive role for the current identity.
+  role = None
+  if bucket_cfg:
+    for rule in bucket_cfg.acls:
+      if rule.role <= role:
+        continue
+      if (rule.identity == identity_str or
+          (rule.group and auth.is_group_member(rule.group))):
+        role = rule.role
+  raise ndb.Return(role)
+
+
+@ndb.tasklet
 def has_any_of_roles_async(bucket, roles):
   """True if current identity has any of |roles| in |bucket|."""
-  assert bucket
   assert roles
   errors.validate_bucket_name(bucket)
   roles = set(roles)
