@@ -15,6 +15,7 @@ from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from model.wf_swarming_task import WfSwarmingTask
 from pipelines.delay_pipeline import DelayPipeline
+from waterfall import build_util
 from waterfall import swarming_util
 from waterfall.flake import flake_constants
 from waterfall.flake import recursive_flake_pipeline
@@ -42,6 +43,8 @@ class MOCK_INFO(object):
 class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
+  @mock.patch.object(
+      build_util, 'FindValidBuildNumberForStepNearby', return_value=100)
   @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
   def testRecursiveFlakePipeline(self, *_):
     master_name = 'm'
@@ -83,6 +86,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
+  @mock.patch.object(
+      build_util, 'FindValidBuildNumberForStepNearby', return_value=90)
   @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
   def testRecursiveFlakePipelineWithUserInput(self, *_):
     master_name = 'm'
@@ -139,6 +144,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
+  @mock.patch.object(
+      build_util, 'FindValidBuildNumberForStepNearby', return_value=51)
   @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
   def testRecursiveFlakePipelineWithUpperLowerBounds(self, *_):
     master_name = 'm'
@@ -194,6 +201,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
+  @mock.patch.object(
+      build_util, 'FindValidBuildNumberForStepNearby', return_value=51)
   @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
   def testRecursiveFlakePipelineWithForceFlag(self, *_):
     master_name = 'm'
@@ -249,6 +258,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
+  @mock.patch.object(
+      build_util, 'FindValidBuildNumberForStepNearby', return_value=100)
   @mock.patch.object(flake_constants, 'BASE_COUNT_DOWN_SECONDS', 0)
   @mock.patch.object(swarming_util, 'BotsAvailableForTask')
   def testTryLaterIfNoAvailableBots(self, mock_fn, *_):
@@ -302,6 +313,37 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
+
+  @mock.patch.object(
+      build_util, 'FindValidBuildNumberForStepNearby', return_value=None)
+  @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
+  def testRecursiveFlakePipelineIfNoValidBuildsNearby(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 100
+    step_name = 's'
+    test_name = 't'
+    queue_name = constants.DEFAULT_QUEUE
+
+    analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
+                                          build_number, step_name, test_name)
+    analysis.status = analysis_status.PENDING
+    analysis.algorithm_parameters = copy.deepcopy(
+        DEFAULT_CONFIG_DATA['check_flake_settings'])
+    analysis.put()
+
+    pipeline_job = RecursiveFlakePipeline(
+        analysis.key.urlsafe(),
+        build_number,
+        None,
+        None,
+        None,
+        use_nearby_neighbor=False)
+    pipeline_job.start(queue_name=queue_name)
+    self.execute_queued_tasks()
+    self.assertEqual(analysis.status, analysis_status.ERROR)
+    self.assertEqual('Failed to find a valid build number around 100.',
+                     analysis.error['message'])
 
   @mock.patch.object(RecursiveFlakePipeline, 'was_aborted', return_value=True)
   def testRecursiveFlakePipelineAborted(self, *_):
@@ -419,6 +461,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
+  @mock.patch.object(
+      build_util, 'FindValidBuildNumberForStepNearby', return_value=100)
   @mock.patch.object(time_util, 'GetUTCNow', return_value=datetime(1, 1, 1))
   @mock.patch.object(
       swarming_util, 'GetETAToStartAnalysis', return_value=datetime(1, 1, 1))
@@ -476,6 +520,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
 
+  @mock.patch.object(
+      build_util, 'FindValidBuildNumberForStepNearby', return_value=100)
   @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
   def testRecursiveFlakePipelineWithStringBuildNumber(self, *_):
     master_name = 'm'

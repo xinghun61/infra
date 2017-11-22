@@ -10,6 +10,7 @@ from common.waterfall import failure_type
 from model.wf_build import WfBuild
 from waterfall import build_util
 from waterfall import buildbot
+from waterfall import swarming_util
 from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
 
@@ -261,3 +262,36 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
   def testGetEarliestContainingBuildNoLatestBuild(self, *_):
     self.assertIsNone(
         build_util.GetEarliestContainingBuild('m', 'b', None, None, 50))
+
+  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  def testFindValidBuildNumberForStepNearby(self, mock_list_fn):
+    # pylint: disable=unused-argument
+    def ListFnImpl(master, builder, build_number, http, step):
+      if build_number == 8:
+        return ['foo']
+      return []
+
+    mock_list_fn.side_effect = ListFnImpl
+    self.assertEqual(8,
+                     build_util.FindValidBuildNumberForStepNearby(
+                         'm', 'b', 's', 5))
+
+  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  def testFindValidBuildNumberForStepNearbyWithExcluded(self, mock_list_fn):
+    # pylint: disable=unused-argument
+    def ListFnImpl(master, builder, build_number, http, step):
+      if build_number == 8 or build_number == 6:
+        return ['foo']
+      return []
+
+    mock_list_fn.side_effect = ListFnImpl
+    self.assertEqual(8,
+                     build_util.FindValidBuildNumberForStepNearby(
+                         'm', 'b', 's', 5, [6]))
+
+  @mock.patch.object(
+      swarming_util, 'ListSwarmingTasksDataByTags', return_value=[])
+  def testFindValidBuildNumberForStepNearbyWhenNoneValid(self, _):
+    self.assertEqual(None,
+                     build_util.FindValidBuildNumberForStepNearby(
+                         'm', 'b', 's', 5))

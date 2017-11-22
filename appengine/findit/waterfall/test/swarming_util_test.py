@@ -1619,25 +1619,19 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   def testIsTestEnabledWhenDisabled(self, isolate_fn):
     test_name = 'test'
     isolate_fn.return_value = {
-      'all_tests': ['a_test', 'test'],
-      'disabled_tests': [test_name]
+        'all_tests': ['a_test', 'test'],
+        'disabled_tests': [test_name]
     }
     self.assertFalse(swarming_util.IsTestEnabled(test_name, 1))
 
   @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
   def testIsTestEnabledWhenNotInAllTests(self, isolate_fn):
     test_name = 'test'
-    isolate_fn.return_value = {
-      'all_tests': [],
-      'disabled_tests': [test_name]
-    }
+    isolate_fn.return_value = {'all_tests': [], 'disabled_tests': [test_name]}
     self.assertFalse(swarming_util.IsTestEnabled(test_name, 1))
 
   @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
   def testIsTestEnabledWhenEnabled(self, isolate_fn):
     test_name = 'test'
-    isolate_fn.return_value = {
-      'all_tests': ['test'],
-      'disabled_tests': []
-    }
+    isolate_fn.return_value = {'all_tests': ['test'], 'disabled_tests': []}
     self.assertTrue(swarming_util.IsTestEnabled(test_name, 1))

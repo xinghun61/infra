@@ -9,6 +9,7 @@ from common.waterfall import failure_type
 from libs import time_util
 from model.wf_build import WfBuild
 from waterfall import buildbot
+from waterfall import swarming_util
 
 HTTP_CLIENT_LOGGING_ERRORS = FinditHttpClient()
 HTTP_CLIENT_NO_404_ERROR = FinditHttpClient(no_error_logging_statuses=[404])
@@ -177,3 +178,43 @@ def GetEarliestContainingBuild(
       lower_bound = candidate_build_number
 
   return GetBuildInfo(master_name, builder_name, upper_bound)
+
+
+def FindValidBuildNumberForStepNearby(master_name,
+                                      builder_name,
+                                      step_name,
+                                      build_number,
+                                      exclude_list=None,
+                                      search_distance=3):
+  """Finds a valid nearby build number for a step.
+
+  Looks around the given build number for builds that have a reference task
+  on swarming. We use this reference swarming task to create a task request,
+  and it's required to run the test. If no reference swarming task can be
+  found, it's likely that the build failed and the artifact doesn't exist.
+
+  Args:
+    master_name (str): Name of the master for this test.
+    builder_name (str): Name of the builder for this test.
+    step_name (str): Name of the builder for this test.
+    build_number (int): Build number to look around.
+    exclude_list (lst): Build numbers to exclude from the search.
+    search_distance (int): Distance to search on either side of the build.
+
+  Returns:
+    (int) Valid nearby build if any, else None."""
+  builds_to_look_at = [build_number]
+  for x in range(1, search_distance + 1):
+    builds_to_look_at.append(build_number + x)
+    builds_to_look_at.append(build_number - x)
+
+  http_client = FinditHttpClient()
+  for build in builds_to_look_at:
+    if exclude_list and build in exclude_list:
+      continue
+    swarming_task_items = swarming_util.ListSwarmingTasksDataByTags(
+        master_name, builder_name, build, http_client, {'stepname': step_name})
+    if swarming_task_items:
+      return build
+
+  return None

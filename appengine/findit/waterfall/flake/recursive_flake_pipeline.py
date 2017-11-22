@@ -11,6 +11,7 @@ from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
 from libs import time_util
 from pipelines.delay_pipeline import DelayPipeline
+from waterfall import build_util
 from waterfall import swarming_util
 from waterfall.flake import flake_constants
 from waterfall.flake.determine_true_pass_rate_pipeline import (
@@ -180,6 +181,9 @@ class RecursiveFlakePipeline(BasePipeline):
     Returns:
       A dict of lists for reliable/flaky tests.
     """
+    analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
+    assert analysis
+
     # If the preferred_run_build_number is None, that means that the build-level
     # flake analysis is complete, we should clean up and start the next pipeline
     if preferred_run_build_number is None:
@@ -189,22 +193,14 @@ class RecursiveFlakePipeline(BasePipeline):
       return
     if previous_build_number is None:
       previous_build_number = preferred_run_build_number
+      analysis.Update(
+          start_time=time_util.GetUTCNow(), status=analysis_status.RUNNING)
 
     # Don't trust incoming variables to be ints because they're coming
     # from FlakeAnalysisRequest which intakes from http. Cast and assert
     # on current/previous build numbers to fail fast.
     preferred_run_build_number = int(preferred_run_build_number)
     previous_build_number = int(previous_build_number)
-
-    analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
-    assert analysis
-    algorithm_settings = analysis.algorithm_parameters.get('swarming_rerun')
-    analysis.Update(
-        start_time=time_util.GetUTCNow(), status=analysis_status.RUNNING)
-    logging.info('%s/%s/%s/%s/%s Running with analysis algorithm settings %s',
-                 analysis.master_name, analysis.builder_name,
-                 analysis.build_number, analysis.step_name, analysis.test_name,
-                 algorithm_settings)
 
     # Check for bot availability. If force is specified or we've already retried
     # past the max amount, continue regardless of bot availability.
@@ -221,11 +217,35 @@ class RecursiveFlakePipeline(BasePipeline):
       # Reset attempts before running build.
       analysis.Update(swarming_task_attempts_for_build=0)
       with pipeline.InOrder():
+        completed_builds = [
+            data_point.build_number for data_point in analysis.data_points
+        ]
+
+        # Get a build number with a valid artifact around this build number.
+        # TODO(crbug.com/787925): Handle regression range corner case.
+        valid_build_number = build_util.FindValidBuildNumberForStepNearby(
+            analysis.master_name,
+            analysis.builder_name,
+            analysis.step_name,
+            preferred_run_build_number,
+            exclude_list=completed_builds)
+
+        # We couldn't find a valid build number nearby, so set error and exit.
+        # TODO(crbug.com/787931): Compile instead of error here when it's commit
+        # position only.
+        if not valid_build_number:
+          error_msg = 'Failed to find a valid build number around {}.'.format(
+              preferred_run_build_number)
+          analysis.Update(
+              status=analysis_status.ERROR,
+              error={'error': error_msg,
+                     'message': error_msg})
+          return
         yield DetermineTruePassRatePipeline(analysis_urlsafe_key,
-                                            preferred_run_build_number, force)
+                                            valid_build_number, force)
 
         next_build_number = yield NextBuildNumberPipeline(
-            analysis.key.urlsafe(), preferred_run_build_number,
+            analysis.key.urlsafe(), valid_build_number,
             lower_bound_build_number, upper_bound_build_number,
             user_specified_iterations)
 
@@ -238,7 +258,7 @@ class RecursiveFlakePipeline(BasePipeline):
             step_metadata=step_metadata,
             manually_triggered=manually_triggered,
             use_nearby_neighbor=use_nearby_neighbor,
-            previous_build_number=preferred_run_build_number,
+            previous_build_number=valid_build_number,
             retries=retries,
             force=force)
     else:  # Can't start analysis, reschedule.
