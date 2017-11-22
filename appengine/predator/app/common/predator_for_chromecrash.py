@@ -7,6 +7,7 @@ import logging
 from google.appengine.ext import ndb
 
 from analysis import detect_regression_range
+from analysis import log_util
 from analysis.changelist_classifier import ChangelistClassifier
 from analysis.chrome_crash_data import CracasCrashData
 from analysis.chrome_crash_data import FracasCrashData
@@ -51,8 +52,9 @@ class PredatorForChromeCrash(PredatorApp):  # pylint: disable=W0223
           cls.__name__)
     raise NotImplementedError()
 
-  def __init__(self, get_repository, config):
-    super(PredatorForChromeCrash, self).__init__(get_repository, config)
+  def __init__(self, get_repository, config, log=None):
+    super(PredatorForChromeCrash, self).__init__(
+        get_repository, config, log=log)
     meta_weight = MetaWeight({
         'TouchCrashedFileMeta': MetaWeight({
             'MinDistance': Weight(2.),
@@ -85,7 +87,8 @@ class PredatorForChromeCrash(PredatorApp):  # pylint: disable=W0223
                                                    meta_feature,
                                                    meta_weight),
                               self._component_classifier,
-                              self._project_classifier)
+                              self._project_classifier,
+                              log=self._log)
 
   def _Predator(self):  # pragma: no cover
     return self._predator
@@ -98,8 +101,10 @@ class PredatorForChromeCrash(PredatorApp):  # pylint: disable=W0223
     if crash_data.platform not in self.client_config[
         'supported_platform_list_by_channel'].get(crash_data.channel, []):
       # Bail out if either the channel or platform is not supported yet.
-      logging.info('Analysis of channel %s, platform %s is not supported.',
-                   crash_data.channel, crash_data.platform)
+      log_util.LogInfo(
+          self._log, 'NotSupported',
+          'Analysis of channel %s, platform %s is not supported.' %
+          (crash_data.channel, crash_data.platform))
       return False
 
     return True

@@ -8,8 +8,10 @@ import traceback
 
 from google.appengine.ext import ndb
 
+from analysis import log_util
 from analysis.exceptions import PredatorError
 from analysis.type_enums import CrashClient
+from analysis.type_enums import LogLevel
 from common import predator_for_chromecrash
 from common import predator_for_clusterfuzz
 from common import predator_for_uma_sampling_profiler
@@ -19,6 +21,7 @@ from common.model.cracas_crash_analysis import CracasCrashAnalysis
 from common.model.crash_analysis import CrashAnalysis
 from common.model.crash_config import CrashConfig
 from common.model.fracas_crash_analysis import FracasCrashAnalysis
+from common.model.log import Log
 from gae_libs import appengine_util
 from gae_libs import pubsub_util
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
@@ -37,7 +40,8 @@ CLIENT_ID_TO_CRASH_ANALYSIS = {
 
 
 # TODO(http://crbug.com/659346): write complete coverage tests for this.
-def PredatorForClientID(client_id, get_repository, config): # pragma: no cover
+def PredatorForClientID(client_id, get_repository, config,
+                        log=None): # pragma: no cover
   """Construct a ``PredatorApp`` from a client id string specifying the class.
 
   We cannot pass PredatorApp objects to the various methods in
@@ -68,7 +72,7 @@ def PredatorForClientID(client_id, get_repository, config): # pragma: no cover
     raise ValueError('PredatorForClientID: '
         'unknown or unsupported client %s' % client_id)
 
-  return cls(get_repository, config)
+  return cls(get_repository, config, log=log)
 
 
 # Some notes about the classes below, for people who are not familiar
@@ -110,7 +114,7 @@ class CrashBasePipeline(BasePipeline):
     self._predator = PredatorForClientID(
         client_id,
         CachedGitilesRepository.Factory(HttpClientAppengine()),
-        CrashConfig.Get())
+        CrashConfig.Get(), log=self.log)
 
   @property
   def client_id(self): # pragma: no cover
@@ -118,6 +122,11 @@ class CrashBasePipeline(BasePipeline):
 
   def run(self, *args, **kwargs):
     raise NotImplementedError()
+
+  @property
+  def log(self):
+    return (Log.Get(self._crash_identifiers) or
+            Log.Create(self._crash_identifiers))
 
 
 class CrashAnalysisPipeline(CrashBasePipeline):
@@ -133,7 +142,8 @@ class CrashAnalysisPipeline(CrashBasePipeline):
   # ``was_aborted`` can't be altered directly.
   def _PutAbortedError(self):
     """Update the ndb.Model to indicate that this pipeline was aborted."""
-    logging.error('Aborted analysis for %s', repr(self._crash_identifiers))
+    log_util.LogError(self.log, 'PipelineAborted',
+                      'Aborted analysis for %s' % repr(self._crash_identifiers))
     analysis = self._predator.GetAnalysis(self._crash_identifiers)
     analysis.status = analysis_status.ERROR
     analysis.put()

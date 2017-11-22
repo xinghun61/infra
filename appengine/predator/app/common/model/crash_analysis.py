@@ -12,6 +12,7 @@ from google.appengine.ext import ndb
 from analysis.constants import CHROMIUM_REPO_URL
 from analysis.constants import CHROMIUM_ROOT_PATH
 from analysis.crash_report import CrashReport
+from common.model.log import Log
 from common.model import triage_status
 from gae_libs import appengine_util
 from libs import analysis_status
@@ -183,6 +184,10 @@ class CrashAnalysis(ndb.Model):
         stack_trace_file_path, 'w', content_type='text/plain',
         retry_params=gcs.RetryParams(backoff_factor=_BACKOFF_FACTOR)) as f:
       f.write(str(raw_stacktrace))
+
+  @property
+  def log(self):
+    return Log.Get(self.identifiers)
 
   @classmethod
   def _CreateKey(cls, crash_identifiers):

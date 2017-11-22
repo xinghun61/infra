@@ -11,8 +11,7 @@ class CulpritTest(AnalysisTestCase):
   def testFieldsProperty(self):
     culprit = Culprit('', ['Blink>DOM'], [], None, 'core_algorithm')
     self.assertEqual(culprit.fields, ('project', 'components', 'suspected_cls',
-                                      'regression_range', 'algorithm',
-                                      'log'))
+                                      'regression_range', 'algorithm'))
   def testToDictsDroppingEmptyFields(self):
     culprit = Culprit('', [], [], [], 'core_algorithm')
     self.assertTupleEqual(culprit.ToDicts(),
@@ -26,14 +25,13 @@ class CulpritTest(AnalysisTestCase):
   def testToDicts(self):
     cl = self.GetDummyChangeLog()
     culprit = Culprit('proj', ['comp'], [cl], ['50.0.1234.1', '50.0.1234.2'],
-                      'core_algorithm', {'error': {'exception': 'Oops'}})
+                      'core_algorithm')
     self.assertTupleEqual(culprit.ToDicts(),
                           ({'found': True,
                             'regression_range': ['50.0.1234.1', '50.0.1234.2'],
                             'suspected_project': 'proj',
                             'suspected_components': ['comp'],
-                            'suspected_cls': [cl.ToDict()],
-                            'log':{'error': {'exception': 'Oops'}}},
+                            'suspected_cls': [cl.ToDict()]},
                            {'found_suspects': True,
                             'found_project': True,
                             'found_components': True,

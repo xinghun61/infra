@@ -21,7 +21,6 @@ from analysis.linear.feature import MetaFeatureValue
 from analysis.linear.feature import WrapperMetaFeature
 from analysis.linear.weight import Weight
 from analysis.linear.weight import MetaWeight
-from analysis.log import Log
 from analysis.suspect import Suspect
 from analysis.stacktrace import CallStack
 from analysis.stacktrace import StackFrame
@@ -200,35 +199,29 @@ class ChangelistClassifierTest(AppengineTestCase):
     mock_generate_suspects.return_value = [suspect, suspect]
     report = CrashReport(None, None, None, None, (None, None), None, None)
     self.changelist_classifier(report)
-    self.assertIsNone(self.changelist_classifier.log)
+    self.assertIsNone(self.changelist_classifier._log)
 
-    self.changelist_classifier.SetLog(Log())
+    self.changelist_classifier.SetLog(self.GetMockLog())
     self.changelist_classifier(report)
-    self.assertEqual(self.changelist_classifier.log.ToDict(),
-                     {
-                         'error': {
-                             'FailedToParseStacktrace':
-                             'Can\'t find culprits because Predator failed to '
-                             'parse stacktrace.'
-                         }
-                     })
+    self.assertEqual(self.changelist_classifier._log.logs,
+                     [{'level': 'error',
+                       'name': 'FailedToParseStacktrace',
+                       'message': ('Can\'t find culprits because Predator '
+                                   'failed to parse stacktrace.')}])
 
   def testLogNoRegressionRangeMessage(self):
     """Tests that ``__call__`` log messages if regression range is None."""
     report = CrashReport(None, None, None, None, None, None, None)
     self.changelist_classifier(report)
-    self.assertIsNone(self.changelist_classifier.log)
+    self.assertIsNone(self.changelist_classifier._log)
 
-    self.changelist_classifier.SetLog(Log())
+    self.changelist_classifier.SetLog(self.GetMockLog())
     self.changelist_classifier(report)
-    self.assertEqual(self.changelist_classifier.log.ToDict(),
-                     {
-                         'warning': {
-                             'NoRegressionRange':
-                             'Can\'t find culprits due to unavailable '
-                             'regression range.'
-                         }
-                     })
+    self.assertEqual(self.changelist_classifier._log.logs,
+                     [{'level': 'warning',
+                       'name': 'NoRegressionRange',
+                       'message': ('Can\'t find culprits due to unavailable '
+                                   'regression range.')}])
 
   @mock.patch('libs.gitiles.gitiles_repository.GitilesRepository.GetChangeLogs')
   def testGenerateSuspectsFilterReverted(self, mock_get_change_logs):
