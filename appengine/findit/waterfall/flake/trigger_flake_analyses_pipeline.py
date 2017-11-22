@@ -6,9 +6,11 @@ import logging
 
 from gae_libs.pipeline_wrapper import BasePipeline
 from libs import time_util
+
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
 from model.wf_analysis import WfAnalysis
 from model.wf_swarming_task import WfSwarmingTask
+from waterfall import waterfall_config
 from waterfall.flake import flake_analysis_service
 from waterfall.flake import triggering_sources
 
@@ -26,6 +28,9 @@ class TriggerFlakeAnalysesPipeline(BasePipeline):
       build_number (str): The build number.
     """
 
+    flake_settings = waterfall_config.GetCheckFlakeSettings()
+    throttled = flake_settings.get('throttle_flake_analyses', True)
+
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
 
     if not analysis or not analysis.failure_result_map:  # pragma: no cover
@@ -42,23 +47,20 @@ class TriggerFlakeAnalysesPipeline(BasePipeline):
       if not flaky_tests:  # pragma: no cover
         continue
 
-      # Trigger a master flake analysis on each detected flaky test.
-      # TODO lijeffrey): rerun all tests once typical load is determined to be
-      # within reasonable limits. For experimentation with automatic flakiness
-      # checking, only run 1 test per anaysis to avoid excessive load on the
-      # swarming server in case there are too many flaky tests per analysis for
-      # now.
-      logging.info('Running flake analysis on 1 test out of %d',
-                   len(flaky_tests))
-      test_name = flaky_tests[0]
-      request = FlakeAnalysisRequest.Create(test_name, False, None)
-      request.AddBuildStep(master_name, builder_name, build_number, step,
-                           time_util.GetUTCNow())
-      scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
-          request, 'findit-for-me@appspot.gserviceaccount.com', False,
-          triggering_sources.FINDIT_PIPELINE)
+      logging.info('%s/%s/%s/%s has %s flaky tests.', master_name, builder_name,
+                   build_number, step, len(flaky_tests))
 
-      if scheduled:  # pragma: no branch
-        logging.info('%s/%s/%s has %s flaky tests.', master_name, builder_name,
-                     build_number, len(flaky_tests))
-        logging.info('A flake analysis has been triggered for %s', test_name)
+      for test_name in flaky_tests:
+        request = FlakeAnalysisRequest.Create(test_name, False, None)
+        request.AddBuildStep(master_name, builder_name, build_number, step,
+                             time_util.GetUTCNow())
+        scheduled = flake_analysis_service.ScheduleAnalysisForFlake(
+            request, 'findit-for-me@appspot.gserviceaccount.com', False,
+            triggering_sources.FINDIT_PIPELINE)
+        if scheduled:
+          logging.info('A flake analysis has been triggered for %s/%s', step,
+                       test_name)
+          if throttled:
+            logging.info('Throttling is enabled, skipping %d tests.',
+                         len(flaky_tests) - 1)
+            break  # If we're thottled, stop after the first.

@@ -13,6 +13,7 @@ from libs import time_util
 from pipelines.delay_pipeline import DelayPipeline
 from waterfall import build_util
 from waterfall import swarming_util
+from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 from waterfall.flake.determine_true_pass_rate_pipeline import (
     DetermineTruePassRatePipeline)
@@ -44,6 +45,10 @@ def _CanStartAnalysis(step_metadata, retries, force):
   if force or retries > flake_constants.MAX_RETRY_TIMES:
     return True
   return swarming_util.BotsAvailableForTask(step_metadata)
+
+
+def _ShouldContinueAnalysis(build_number):
+  return build_number is not None
 
 
 class RecursiveFlakePipeline(BasePipeline):
@@ -186,11 +191,13 @@ class RecursiveFlakePipeline(BasePipeline):
 
     # If the preferred_run_build_number is None, that means that the build-level
     # flake analysis is complete, we should clean up and start the next pipeline
-    if preferred_run_build_number is None:
+    if not _ShouldContinueAnalysis(preferred_run_build_number):
       yield FinishBuildAnalysisPipeline(
           analysis_urlsafe_key, lower_bound_build_number,
           upper_bound_build_number, user_specified_iterations, force)
       return
+
+    # First iteration.
     if previous_build_number is None:
       previous_build_number = preferred_run_build_number
       analysis.Update(
@@ -202,11 +209,16 @@ class RecursiveFlakePipeline(BasePipeline):
     preferred_run_build_number = int(preferred_run_build_number)
     previous_build_number = int(previous_build_number)
 
+    # Reset attempts before running build.
+    analysis.Update(swarming_task_attempts_for_build=0)
+
+    # If flake analyzer is throttled, then check if there are bots available.
+    flake_settings = waterfall_config.GetCheckFlakeSettings()
+    throttled = flake_settings.get('throttle_flake_analyses', True)
+
     # Check for bot availability. If force is specified or we've already retried
     # past the max amount, continue regardless of bot availability.
-    can_start_analysis = _CanStartAnalysis(step_metadata, retries, force)
-
-    if can_start_analysis:
+    if not throttled or _CanStartAnalysis(step_metadata, retries, force):
       # Bots are available or pipeline starts off peak hours,
       # trigger the task.
       logging.info(('%s/%s/%s/%s/%s Bots are avialable to analyze build %s'),
@@ -214,8 +226,6 @@ class RecursiveFlakePipeline(BasePipeline):
                    analysis.build_number, analysis.step_name,
                    analysis.test_name, preferred_run_build_number)
 
-      # Reset attempts before running build.
-      analysis.Update(swarming_task_attempts_for_build=0)
       with pipeline.InOrder():
         completed_builds = [
             data_point.build_number for data_point in analysis.data_points

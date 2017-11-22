@@ -141,6 +141,7 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
     'update_monorail_bug': True,
     'minimum_confidence_score_to_run_tryjobs': 0.6,
     'minimum_confidence_to_update_cr': 0.5,
+    'throttle_flake_analyses': True,
 }
 
 _MOCK_CODE_REVIEW_SETTINGS = {

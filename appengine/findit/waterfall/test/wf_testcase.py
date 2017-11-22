@@ -173,7 +173,8 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
     'minimum_confidence_score_to_run_tryjobs': 0.6,
     'create_monorail_bug': True,
     'new_flake_bugs_per_day': 2,
-    'update_monorail_bug': False
+    'update_monorail_bug': False,
+    'throttle_flake_analyses': False,
 }
 
 _DEFAULT_CODE_REVIEW_SETTINGS = {
