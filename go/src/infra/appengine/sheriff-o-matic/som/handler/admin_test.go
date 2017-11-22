@@ -20,10 +20,10 @@ func TestRenderSettingsPage(t *testing.T) {
 
 	Convey("render settings", t, func() {
 		c := gaetesting.TestingContext()
-		s := SettingsUIPage{}
+		s := SettingsPage{}
 
 		Convey("Title", func() {
-			title, err := SettingsUIPage.Title(s, c)
+			title, err := SettingsPage.Title(s, c)
 			So(err, ShouldBeNil)
 			So(title, ShouldEqual, "Admin SOM settings")
 		})
@@ -42,13 +42,13 @@ func TestRenderSettingsPage(t *testing.T) {
 		datastore.GetTestable(c).CatchupIndexes()
 
 		Convey("Fields", func() {
-			fields, err := SettingsUIPage.Fields(s, c)
+			fields, err := SettingsPage.Fields(s, c)
 			So(err, ShouldBeNil)
 			So(len(fields), ShouldEqual, 6)
 		})
 
 		Convey("ReadSettings", func() {
-			settings, err := SettingsUIPage.ReadSettings(s, c)
+			settings, err := SettingsPage.ReadSettings(s, c)
 			So(err, ShouldBeNil)
 			So(len(settings), ShouldEqual, 6)
 			So(settings["Trees"], ShouldEqual, "oak:Great Oaakk")

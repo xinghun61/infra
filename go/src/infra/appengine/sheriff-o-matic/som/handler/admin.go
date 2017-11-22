@@ -13,32 +13,32 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/datastore"
-	"go.chromium.org/luci/server/settings"
+	"go.chromium.org/luci/server/portal"
 )
 
-// SettingsUIPage is the SoM admin settings page.
-type SettingsUIPage struct {
-	settings.BaseUIPage
+// SettingsPage is the SoM admin settings page.
+type SettingsPage struct {
+	portal.BasePage
 }
 
 // Title returns the settings page title.
-func (SettingsUIPage) Title(c context.Context) (string, error) {
+func (SettingsPage) Title(c context.Context) (string, error) {
 	return "Admin SOM settings", nil
 }
 
 // Fields returns a list of settings fields.
-func (SettingsUIPage) Fields(c context.Context) ([]settings.UIField, error) {
-	fields := []settings.UIField{
+func (SettingsPage) Fields(c context.Context) ([]portal.Field, error) {
+	fields := []portal.Field{
 		{
 			ID:    "Trees",
 			Title: "Trees in SOM",
-			Type:  settings.UIFieldText,
+			Type:  portal.FieldText,
 			Help:  "Trees listed in SOM. Comma separated values. treeA,treeB",
 		},
 		{
 			ID:    "BugQueueLabels",
 			Title: "Bug Queue Labels",
-			Type:  settings.UIFieldText,
+			Type:  portal.FieldText,
 			Help:  "Bug queue label for each tree. treeA:queueA,treeB:queueB",
 		},
 	}
@@ -49,28 +49,28 @@ func (SettingsUIPage) Fields(c context.Context) ([]settings.UIField, error) {
 
 	// Add settings fields for specific trees
 	for _, t := range trees {
-		fields = append(fields, settings.UIField{
+		fields = append(fields, portal.Field{
 			ID:    fmt.Sprintf("AlertStreams-%s", t.Name),
 			Title: fmt.Sprintf("%s Alert Streams", t.DisplayName),
-			Type:  settings.UIFieldText,
+			Type:  portal.FieldText,
 			Help:  "Alert streams for this tree. Defaults to tree name if blank. streamA,streamB",
 		})
-		fields = append(fields, settings.UIField{
+		fields = append(fields, portal.Field{
 			ID:    fmt.Sprintf("HelpLink-%s", t.Name),
 			Title: fmt.Sprintf("%s Help Link", t.DisplayName),
-			Type:  settings.UIFieldText,
+			Type:  portal.FieldText,
 			Help:  "A link to help documentation for this tree. ie. a playbook",
 		})
-		fields = append(fields, settings.UIField{
+		fields = append(fields, portal.Field{
 			ID:    fmt.Sprintf("GerritProject-%s", t.Name),
 			Title: fmt.Sprintf("%s Gerrit Project", t.DisplayName),
-			Type:  settings.UIFieldText,
+			Type:  portal.FieldText,
 			Help:  "The Gerrit project for this tree.",
 		})
-		fields = append(fields, settings.UIField{
+		fields = append(fields, portal.Field{
 			ID:    fmt.Sprintf("GerritInstance-%s", t.Name),
 			Title: fmt.Sprintf("%s Gerrit Instance", t.DisplayName),
-			Type:  settings.UIFieldText,
+			Type:  portal.FieldText,
 			Help:  "The Gerrit instance for this tree.",
 		})
 	}
@@ -79,7 +79,7 @@ func (SettingsUIPage) Fields(c context.Context) ([]settings.UIField, error) {
 }
 
 // ReadSettings converts query paramters and POST body into settings values.
-func (SettingsUIPage) ReadSettings(c context.Context) (map[string]string, error) {
+func (SettingsPage) ReadSettings(c context.Context) (map[string]string, error) {
 	q := datastore.NewQuery("Tree")
 	results := []*model.Tree{}
 	datastore.GetAll(c, q, &results)
@@ -222,7 +222,7 @@ func writeAllValues(c context.Context, values map[string]string) error {
 }
 
 // WriteSettings persists the settings values.
-func (SettingsUIPage) WriteSettings(c context.Context, values map[string]string, who, why string) error {
+func (SettingsPage) WriteSettings(c context.Context, values map[string]string, who, why string) error {
 	// Putting the write logic in a function outside of WriteSettings makes unit testing easier.
 	return writeAllValues(c, values)
 }

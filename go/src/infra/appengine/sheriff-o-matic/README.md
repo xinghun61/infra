@@ -122,9 +122,9 @@ Once you have a server running locally, you'll want to add at least one
 tree configuration to the datastore. Make sure you are logged in locally
 as an admin user (admin checkbox on fake devserver login page).
 
-Navigate to [localhost:8080/admin/settings](http://localhost:8080/admin/settings)
+Navigate to [localhost:8080/admin/portal](http://localhost:8080/admin/portal)
 and fill out the tree(s) you wish to test with locally. For consistency, you
-may just want to copy the [settings from prod](http://sheriff-o-matic.appspot.com/admin/settings).
+may just want to copy the [settings from prod](http://sheriff-o-matic.appspot.com/admin/portal).
 
 If you don't have access to prod or staging, you can manually enter this for
 "Trees in SOM" to get started with a reasonable default:

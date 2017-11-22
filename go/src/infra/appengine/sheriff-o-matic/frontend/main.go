@@ -24,8 +24,8 @@ import (
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/xsrf"
+	"go.chromium.org/luci/server/portal"
 	"go.chromium.org/luci/server/router"
-	"go.chromium.org/luci/server/settings"
 )
 
 const (
@@ -185,7 +185,7 @@ func getXSRFToken(ctx *router.Context) {
 //// Routes.
 func init() {
 
-	settings.RegisterUIPage(settingsKey, handler.SettingsUIPage{})
+	portal.RegisterPage(settingsKey, handler.SettingsPage{})
 
 	r := router.New()
 	basemw := base(true)
