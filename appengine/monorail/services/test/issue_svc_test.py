@@ -832,11 +832,10 @@ class IssueServiceTest(unittest.TestCase):
         modified_timestamp=self.now, invalidate=True)
 
     self.mox.ReplayAll()
+    delta = tracker_pb2.IssueDelta(merged_into=target_issue.issue_id)
     self.services.issue.DeltaUpdateIssue(
         self.cnxn, self.services, commenter_id, issue.project_id, config,
-        issue, issue.status, issue.owner_id,
-        [], [], [], [], [], [], [], [], [],
-        merged_into=target_issue.issue_id, comment='comment text',
+        issue, delta, comment='comment text',
         index_now=False, timestamp=self.now)
     self.mox.VerifyAll()
 

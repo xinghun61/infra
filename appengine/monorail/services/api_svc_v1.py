@@ -42,6 +42,7 @@ from framework import sql
 from project import project_helpers
 from proto import api_pb2_v1
 from proto import project_pb2
+from proto import tracker_pb2
 from search import frontendsearchpipeline
 from services import api_pb2_v1_helpers
 from services import client_config_svc
@@ -390,6 +391,7 @@ class MonorailApi(remote.Service):
           (request.projectId, request.issueId))
 
     updates_dict = {}
+    move_to_project = None
     if request.updates:
       if not permissions.CanEditIssue(
           mar.auth.effective_ids, mar.perms, mar.project, issue,
@@ -403,7 +405,6 @@ class MonorailApi(remote.Service):
             self._services, mar, issue, True, move_to, mar.errors)
         if mar.errors.AnyErrors():
           raise endpoints.BadRequestException(mar.errors.move_to)
-        updates_dict['move_to_project'] = move_to_project
 
       updates_dict['summary'] = request.updates.summary
       updates_dict['status'] = request.updates.status
@@ -482,36 +483,43 @@ class MonorailApi(remote.Service):
       raise endpoints.BadRequestException(
           'Invalid field values: %s' % mar.errors.custom_fields)
 
+    updates_dict['labels_add'] = (
+        updates_dict.get('labels_add', []) +
+        updates_dict.get('fields_labels_add', []))
+    updates_dict['labels_remove'] = (
+        updates_dict.get('labels_remove', []) +
+        updates_dict.get('fields_labels_remove', []))
+
+    # TODO(jrobbins): Stop using updates_dict in the first place.
+    delta = tracker_bizobj.MakeIssueDelta(
+        updates_dict.get('status'),
+        updates_dict.get('owner'),
+        updates_dict.get('cc_add', []),
+        updates_dict.get('cc_remove', []),
+        updates_dict.get('components_add', []),
+        updates_dict.get('components_remove', []),
+        (updates_dict.get('labels_add', []) +
+         updates_dict.get('fields_labels_add', [])),
+        (updates_dict.get('labels_remove', []) +
+         updates_dict.get('fields_labels_remove', [])),
+        updates_dict.get('field_vals_add', []),
+        updates_dict.get('field_vals_remove', []),
+        updates_dict.get('fields_clear', []),
+        updates_dict.get('blocked_on_add', []),
+        updates_dict.get('blocked_on_remove', []),
+        updates_dict.get('blocking_add', []),
+        updates_dict.get('blocking_remove', []),
+        updates_dict.get('merged_into'),
+        updates_dict.get('summary'))
     _, comment = self._services.issue.DeltaUpdateIssue(
         cnxn=mar.cnxn, services=self._services,
         reporter_id=mar.auth.user_id,
         project_id=mar.project_id, config=mar.config, issue=issue,
-        status=updates_dict.get('status'), owner_id=updates_dict.get('owner'),
-        cc_add=updates_dict.get('cc_add', []),
-        cc_remove=updates_dict.get('cc_remove', []),
-        comp_ids_add=updates_dict.get('components_add', []),
-        comp_ids_remove=updates_dict.get('components_remove', []),
-        labels_add=(updates_dict.get('labels_add', []) +
-                    updates_dict.get('fields_labels_add', [])),
-        labels_remove=(updates_dict.get('labels_remove', []) +
-                       updates_dict.get('fields_labels_remove', [])),
-        field_vals_add=updates_dict.get('field_vals_add', []),
-        field_vals_remove=updates_dict.get('field_vals_remove', []),
-        fields_clear=updates_dict.get('fields_clear', []),
-        blocked_on_add=updates_dict.get('blocked_on_add', []),
-        blocked_on_remove=updates_dict.get('blocked_on_remove', []),
-        blocking_add=updates_dict.get('blocking_add', []),
-        blocking_remove=updates_dict.get('blocking_remove', []),
-        merged_into=updates_dict.get('merged_into'),
-        index_now=False,
-        comment=request.content,
-        is_description=updates_dict.get('is_description'),
-        summary=updates_dict.get('summary'),
-    )
+        delta=delta, index_now=False, comment=request.content,
+        is_description=updates_dict.get('is_description'))
 
     move_comment = None
-    if 'move_to_project' in updates_dict:
-      move_to_project = updates_dict['move_to_project']
+    if move_to_project:
       old_text_ref = 'issue %s:%s' % (issue.project_name, issue.local_id)
       tracker_fulltext.UnindexIssues([issue.issue_id])
       moved_back_iids = self._services.issue.MoveIssues(

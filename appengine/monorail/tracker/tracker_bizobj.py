@@ -647,6 +647,32 @@ def UsersInvolvedInIssues(issues):
   return result
 
 
+def MakeIssueDelta(
+    status, owner_id, cc_ids_add, cc_ids_remove, comp_ids_add, comp_ids_remove,
+    labels_add, labels_remove, field_vals_add, field_vals_remove, fields_clear,
+    blocked_on_add, blocked_on_remove, blocking_add, blocking_remove,
+    merged_into, summary):
+  """Construct an IssueDelta object with the given fields, iff non-None."""
+  delta = tracker_pb2.IssueDelta(
+      cc_ids_add=cc_ids_add, cc_ids_remove=cc_ids_remove,
+      comp_ids_add=comp_ids_add, comp_ids_remove=comp_ids_remove,
+      labels_add=labels_add, labels_remove=labels_remove,
+      field_vals_add=field_vals_add, field_vals_remove=field_vals_remove,
+      fields_clear=fields_clear,
+      blocked_on_add=blocked_on_add, blocked_on_remove=blocked_on_remove,
+      blocking_add=blocking_add, blocking_remove=blocking_remove)
+  if status is not None:
+    delta.status = status
+  if owner_id is not None:
+    delta.owner_id = owner_id
+  if merged_into is not None:
+    delta.merged_into = merged_into
+  if summary is not None:
+    delta.summary = summary
+
+  return delta
+
+
 def MakeAmendment(
     field, new_value, added_ids, removed_ids, custom_field_name=None,
     old_value=None):

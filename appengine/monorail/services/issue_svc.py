@@ -1046,11 +1046,7 @@ class IssueService(object):
 
   def DeltaUpdateIssue(
       self, cnxn, services, reporter_id, project_id,
-      config, issue, status, owner_id, cc_add, cc_remove, comp_ids_add,
-      comp_ids_remove, labels_add, labels_remove, field_vals_add,
-      field_vals_remove, fields_clear, blocked_on_add=None,
-      blocked_on_remove=None, blocking_add=None, blocking_remove=None,
-      merged_into=None, index_now=False, comment=None, summary=None,
+      config, issue, delta, index_now=False, comment=None,
       iids_to_invalidate=None, rules=None, predicate_asts=None,
       is_description=False, timestamp=None):
     """Update the issue in the database and return a set of update tuples.
@@ -1062,27 +1058,10 @@ class IssueService(object):
       project_id: int ID for the current project.
       config: ProjectIssueConfig PB for this project.
       issue: Issue PB of issue to update.
-      status: new issue status string, if a change is desired.
-      owner_id: user ID of the new issue owner, if a change is desired.
-      cc_add: list of user IDs of users to add to CC list.
-      cc_remove: list of user IDs of users to remove from CC list.
-      comp_ids_add: list of component IDs to add to the issue.
-      comp_ids_remove: list of component IDs to remove from the issue.
-      labels_add: list of issue label strings to add.
-      labels_remove: list of issue label strings to remove.
-      field_vals_add: dict of FieldValue PBs to add.
-      field_vals_remove: list of FieldValue PBs to remove.
-      fields_clear: list of custom field IDs to clear.
-      blocked_on_add: list of IIDs that this issue is now blocked on.
-      blocked_on_remove: list of IIDs that this issue is no longer blocked on.
-      blocking_add: list of IIDs that this issue is blocking.
-      blocking_remove: list of IIDs that this issue is no longer blocking.
-      merged_into: IID of issue that this issue was merged into, 0 to clear,
-          or None for no change.
+      delta: IssueDelta object of fields to update.
       index_now: True if the issue should be updated in the full text index.
       comment: This should be the content of the comment
           corresponding to this change.
-      summary: new issue summary, currently only used by GData API.
       rules: optional list of preloaded FilterRule PBs for this project.
       predicate_asts: optional list of QueryASTs for the rules.  If rules are
           provided, then predicate_asts should also be provided.
@@ -1099,14 +1078,6 @@ class IssueService(object):
     old_effective_status = tracker_bizobj.GetStatus(issue)
     old_components = set(issue.component_ids)
 
-    # Make all user input safe to echo out again later.
-    status = framework_bizobj.CanonicalizeLabel(status)
-    labels_add = [framework_bizobj.CanonicalizeLabel(l) for l in labels_add]
-    labels_add = [l for l in labels_add if l]
-    labels_remove = [framework_bizobj.CanonicalizeLabel(l)
-                     for l in labels_remove]
-    labels_remove = [l for l in labels_remove if l]
-
     logging.info(
         'Bulk edit to project_id %s issue.local_id %s, comment %r',
         project_id, issue.local_id, comment)
@@ -1119,18 +1090,21 @@ class IssueService(object):
 
     # Store each updated value in the issue PB, and compute Update PBs
     amendments = []
-    if status is not None and status != issue.status:
+    if (delta.status is not None and
+        delta.status != issue.status):
+      status = framework_bizobj.CanonicalizeLabel(delta.status)
       amendments.append(tracker_bizobj.MakeStatusAmendment(
           status, issue.status))
       issue.status = status
-    if owner_id is not None and owner_id != issue.owner_id:
+    if (delta.owner_id is not None and
+        delta.owner_id != issue.owner_id):
       amendments.append(tracker_bizobj.MakeOwnerAmendment(
-          owner_id, issue.owner_id))
-      issue.owner_id = owner_id
+          delta.owner_id, issue.owner_id))
+      issue.owner_id = delta.owner_id
 
     # compute the set of cc'd users added and removed
-    cc_add = [cc for cc in cc_add if cc not in issue.cc_ids]
-    cc_remove = [cc for cc in cc_remove if cc in issue.cc_ids]
+    cc_add = [cc for cc in delta.cc_ids_add if cc not in issue.cc_ids]
+    cc_remove = [cc for cc in delta.cc_ids_remove if cc in issue.cc_ids]
     if cc_add or cc_remove:
       cc_ids = [cc for cc in list(issue.cc_ids) + cc_add
                 if cc not in cc_remove]
@@ -1138,8 +1112,10 @@ class IssueService(object):
       amendments.append(tracker_bizobj.MakeCcAmendment(cc_add, cc_remove))
 
     # compute the set of components added and removed
-    comp_ids_add = [c for c in comp_ids_add if c not in issue.component_ids]
-    comp_ids_remove = [c for c in comp_ids_remove if c in issue.component_ids]
+    comp_ids_add = [
+        c for c in delta.comp_ids_add if c not in issue.component_ids]
+    comp_ids_remove = [
+        c for c in delta.comp_ids_remove if c in issue.component_ids]
     if comp_ids_add or comp_ids_remove:
       comp_ids = [cid for cid in list(issue.component_ids) + comp_ids_add
                   if cid not in comp_ids_remove]
@@ -1148,6 +1124,13 @@ class IssueService(object):
           comp_ids_add, comp_ids_remove, config))
 
     # compute the set of labels added and removed
+    labels_add = [framework_bizobj.CanonicalizeLabel(l)
+                  for l in delta.labels_add]
+    labels_add = [l for l in labels_add if l]
+    labels_remove = [framework_bizobj.CanonicalizeLabel(l)
+                     for l in delta.labels_remove]
+    labels_remove = [l for l in labels_remove if l]
+
     (labels, update_labels_add,
      update_labels_remove) = framework_bizobj.MergeLabels(
          issue.labels, labels_add, labels_remove,
@@ -1161,7 +1144,7 @@ class IssueService(object):
     # compute the set of custom fields added and removed
     (field_vals, update_fields_add,
      update_fields_remove) = tracker_bizobj.MergeFields(
-         issue.field_values, field_vals_add, field_vals_remove,
+         issue.field_values, delta.field_vals_add, delta.field_vals_remove,
          config.field_defs)
 
     if update_fields_add or update_fields_remove:
@@ -1183,8 +1166,8 @@ class IssueService(object):
               old_values=[tracker_bizobj.GetFieldValue(fv, {})
                           for fv in removed_values_this_field]))
 
-    if fields_clear:
-      field_clear_set = set(fields_clear)
+    if delta.fields_clear:
+      field_clear_set = set(delta.fields_clear)
       revised_fields = []
       for fd in config.field_defs:
         if fd.field_id not in field_clear_set:
@@ -1202,13 +1185,13 @@ class IssueService(object):
 
       issue.field_values = revised_fields
 
-    if blocked_on_add or blocked_on_remove:
+    if delta.blocked_on_add or delta.blocked_on_remove:
       old_blocked_on = issue.blocked_on_iids
-      blocked_on_add = [iid for iid in blocked_on_add
+      blocked_on_add = [iid for iid in delta.blocked_on_add
                         if iid not in old_blocked_on]
       add_refs = [(ref_issue.project_name, ref_issue.local_id)
-                  for ref_issue in self.GetIssues(cnxn, blocked_on_add)]
-      blocked_on_rm = [iid for iid in blocked_on_remove
+                  for ref_issue in self.GetIssues(cnxn, delta.blocked_on_add)]
+      blocked_on_rm = [iid for iid in delta.blocked_on_remove
                        if iid in old_blocked_on]
       remove_refs = [
           (ref_issue.project_name, ref_issue.local_id)
@@ -1216,18 +1199,18 @@ class IssueService(object):
       amendments.append(tracker_bizobj.MakeBlockedOnAmendment(
           add_refs, remove_refs, default_project_name=issue.project_name))
       blocked_on = [iid for iid in old_blocked_on + blocked_on_add
-                    if iid not in blocked_on_remove]
+                    if iid not in delta.blocked_on_remove]
       issue.blocked_on_iids, issue.blocked_on_ranks = self.SortBlockedOn(
           cnxn, issue, blocked_on)
-      iids_to_invalidate.update(blocked_on_add + blocked_on_remove)
+      iids_to_invalidate.update(blocked_on_add + blocked_on_rm)
 
-    if blocking_add or blocking_remove:
+    if delta.blocking_add or delta.blocking_remove:
       old_blocking = issue.blocking_iids
-      blocking_add = [iid for iid in blocking_add
+      blocking_add = [iid for iid in delta.blocking_add
                       if iid not in old_blocking]
       add_refs = [(ref_issue.project_name, ref_issue.local_id)
                   for ref_issue in self.GetIssues(cnxn, blocking_add)]
-      blocking_remove = [iid for iid in blocking_remove
+      blocking_remove = [iid for iid in delta.blocking_remove
                          if iid in old_blocking]
       remove_refs = [
           (ref_issue.project_name, ref_issue.local_id)
@@ -1239,10 +1222,11 @@ class IssueService(object):
       issue.blocking_iids = blocking_refs
       iids_to_invalidate.update(blocking_add + blocking_remove)
 
-    if merged_into is not None and merged_into != issue.merged_into:
+    if (delta.merged_into is not None and
+        delta.merged_into != issue.merged_into):
       merged_remove = issue.merged_into
-      merged_add = merged_into
-      issue.merged_into = merged_into
+      merged_add = delta.merged_into
+      issue.merged_into = delta.merged_into
       try:
         remove_issue = self.GetIssue(cnxn, merged_remove)
         remove_ref = remove_issue.project_name, remove_issue.local_id
@@ -1260,10 +1244,10 @@ class IssueService(object):
       amendments.append(tracker_bizobj.MakeMergedIntoAmendment(
           add_ref, remove_ref, default_project_name=issue.project_name))
 
-    if summary and summary != issue.summary:
+    if delta.summary and delta.summary != issue.summary:
       amendments.append(tracker_bizobj.MakeSummaryAmendment(
-          summary, issue.summary))
-      issue.summary = summary
+          delta.summary, issue.summary))
+      issue.summary = delta.summary
 
     # If this was a no-op with no comment, bail out and don't save,
     # invalidate, or re-index anything.

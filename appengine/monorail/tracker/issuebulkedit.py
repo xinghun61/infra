@@ -325,15 +325,14 @@ class IssueBulkEdit(servlet.Servlet):
           merge_into_iid = (
               merge_into_issue.issue_id if merge_into_issue else None)
 
+          delta = tracker_bizobj.MakeIssueDelta(
+            status, owner_id, cc_ids, cc_ids_remove, comp_ids, comp_ids_remove,
+            parsed.labels, parsed.labels_remove, field_vals, field_vals_remove,
+            parsed.fields.fields_clear, blocked_on_add, blocked_on_remove,
+            blocking_add, blocking_remove, merge_into_iid, None)
           amendments, _ = self.services.issue.DeltaUpdateIssue(
               mr.cnxn, self.services, mr.auth.user_id, mr.project_id, config,
-              issue, status, owner_id, cc_ids, cc_ids_remove, comp_ids,
-              comp_ids_remove, parsed.labels, parsed.labels_remove, field_vals,
-              field_vals_remove, parsed.fields.fields_clear,
-              blocked_on_add=blocked_on_add,
-              blocked_on_remove=blocked_on_remove,
-              blocking_add=blocking_add, blocking_remove=blocking_remove,
-              merged_into=merge_into_iid, comment=parsed.comment,
+              issue, delta, comment=parsed.comment,
               iids_to_invalidate=iids_to_invalidate, rules=rules,
               predicate_asts=predicate_asts)
 

@@ -758,6 +758,46 @@ class BizobjTest(unittest.TestCase):
         set([0L, 111L, 222L, 333L, 444L, 555L]),
         tracker_bizobj.UsersInvolvedInIssues([issue1, issue2]))
 
+  def testMakeIssueDelta_AllSpecified(self):
+    added_fv = tracker_bizobj.MakeFieldValue(
+      1, None, 'added str', None, None, None, False)
+    removed_fv = tracker_bizobj.MakeFieldValue(
+      1, None, 'removed str', None, None, None, False)
+    actual = tracker_bizobj.MakeIssueDelta(
+      'New', 111L, [222L], [333L], [1], [2],
+      ['AddedLabel'], ['RemovedLabel'], [added_fv], [removed_fv],
+      [3], [78901], [78902], [78903], [78904], 78905,
+      'New summary')
+    self.assertEqual('New', actual.status)
+    self.assertEqual(111L, actual.owner_id)
+    self.assertEqual([222L], actual.cc_ids_add)
+    self.assertEqual([333L], actual.cc_ids_remove)
+    self.assertEqual([1], actual.comp_ids_add)
+    self.assertEqual([2], actual.comp_ids_remove)
+    self.assertEqual(['AddedLabel'], actual.labels_add)
+    self.assertEqual(['RemovedLabel'], actual.labels_remove)
+    self.assertEqual([added_fv], actual.field_vals_add)
+    self.assertEqual([removed_fv], actual.field_vals_remove)
+    self.assertEqual([3], actual.fields_clear)
+    self.assertEqual([78901], actual.blocked_on_add)
+    self.assertEqual([78902], actual.blocked_on_remove)
+    self.assertEqual([78903], actual.blocking_add)
+    self.assertEqual([78904], actual.blocking_remove)
+    self.assertEqual(78905, actual.merged_into)
+    self.assertEqual('New summary', actual.summary)
+
+  def testMakeIssueDelta_WithNones(self):
+    """None for status, owner_id, or summary does not set a value."""
+    actual = tracker_bizobj.MakeIssueDelta(
+      None, None, [], [], [], [],
+      [], [], [], [],
+      [], [], [], [], [], None,
+      None)
+    self.assertIsNone(actual.status)
+    self.assertIsNone(actual.owner_id)
+    self.assertIsNone(actual.merged_into)
+    self.assertIsNone(actual.summary)
+
   def testMakeAmendment(self):
     amendment = tracker_bizobj.MakeAmendment(
         tracker_pb2.FieldID.STATUS, 'new', [111L], [222L])

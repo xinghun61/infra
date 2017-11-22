@@ -401,9 +401,8 @@ class WorkEnv(object):
     return issue
 
   # FUTURE: UpdateIssue()
-  # Change serices and helpers to create IssueDelta object that like a better
-  # amendments representation.  Then, make the only update operation be
-  # ApplyIssueDelta(self, issue_id, delta, comment).
+  def UpdateIssue(self, issue, delta, comment):
+    pass
 
   def DeleteIssue(self, issue, delete):
     """Mark or unmark the given issue as deleted."""

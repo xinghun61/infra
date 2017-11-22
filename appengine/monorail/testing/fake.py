@@ -1449,25 +1449,24 @@ class IssueService(object):
   # pylint: disable=unused-argument
   def DeltaUpdateIssue(
       self, cnxn, services, reporter_id, project_id,
-      config, issue, status, owner_id, cc_add, cc_remove, comp_ids_add,
-      comp_ids_remove, labels_add, labels_remove, field_vals_add,
-      field_vals_remove, fields_clear, blocked_on_add=None,
-      blocked_on_remove=None, blocking_add=None, blocking_remove=None,
-      merged_into=None, index_now=False, comment=None, summary=None,
+      config, issue, delta, index_now=False, comment=None,
       iids_to_invalidate=None, rules=None, predicate_asts=None,
       is_description=False, timestamp=None):
     # Return a bogus amendments list if any of the fields changed
     amendments = []
     comment_pb = tracker_pb2.IssueComment()
-    if (status or owner_id or cc_add or cc_remove or labels_add or
-        labels_remove or field_vals_add or field_vals_remove or fields_clear or
-        blocked_on_add or blocked_on_remove or blocking_add or
-        blocking_remove or merged_into or summary):
+    if (delta.status is not None or delta.owner_id is not None or
+        delta.cc_ids_add or delta.cc_ids_remove or
+        delta.labels_add or delta.labels_remove or
+        delta.field_vals_add or delta.field_vals_remove or delta.fields_clear or
+        delta.blocked_on_add or delta.blocked_on_remove or
+        delta.blocking_add or delta.blocking_remove or
+        delta.merged_into is not None or delta.summary is not None):
       amendments.append(tracker_bizobj.MakeStatusAmendment(
           'Updated', issue.status))
 
-    if merged_into is not None:
-      issue.merged_into = merged_into
+    if delta.merged_into is not None:
+      issue.merged_into = delta.merged_into
 
     if not amendments and (not comment or not comment.strip()):
       return [], None

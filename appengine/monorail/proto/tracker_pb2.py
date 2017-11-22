@@ -156,6 +156,27 @@ class FieldID(messages.Enum):
   ERROR = 13
 
 
+class IssueDelta(messages.Message):
+  """In-memory representation of requested changes to an issue."""
+  status = messages.StringField(1)
+  owner_id = messages.IntegerField(2)
+  cc_ids_add = messages.IntegerField(3, repeated=True)
+  cc_ids_remove = messages.IntegerField(4, repeated=True)
+  comp_ids_add = messages.IntegerField(5, repeated=True)
+  comp_ids_remove = messages.IntegerField(6, repeated=True)
+  labels_add = messages.StringField(7, repeated=True)
+  labels_remove = messages.StringField(8, repeated=True)
+  field_vals_add = messages.MessageField(FieldValue, 9, repeated=True)
+  field_vals_remove = messages.MessageField(FieldValue, 10, repeated=True)
+  fields_clear = messages.IntegerField(11, repeated=True)
+  blocked_on_add = messages.IntegerField(12, repeated=True)
+  blocked_on_remove = messages.IntegerField(13, repeated=True)
+  blocking_add = messages.IntegerField(14, repeated=True)
+  blocking_remove = messages.IntegerField(15, repeated=True)
+  merged_into = messages.IntegerField(16)
+  summary = messages.StringField(17)
+
+
 class Amendment(messages.Message):
   """Holds info about one issue field change."""
   field = messages.EnumField(FieldID, 11, required=True)
