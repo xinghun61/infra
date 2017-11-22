@@ -112,6 +112,7 @@ class FinditConfig(VersionedConfig):
   #     'culprit_commit_limit_hours': 24,
   #     'auto_commit_daily_threshold': 4,
   #     'auto_revert_daily_threshold': 10,
+  #     'rotations_url': 'rotations_url',
   # }
   action_settings = ndb.JsonProperty(indexed=False, default={})
 

@@ -89,14 +89,24 @@ _MOCK_DOWNLOAD_BUILD_DATA_SETTINGS = {
 }
 
 _MOCK_ACTION_SETTINGS = {
-    'cr_notification_build_threshold': 2,
-    'cr_notification_latency_limit_minutes': 1000,
-    'cr_notification_should_notify_flake_culprit': True,
-    'auto_create_revert_compile': True,
-    'auto_commit_revert_compile': False,
-    'culprit_commit_limit_hours': 24,
-    'auto_commit_daily_threshold': 4,
-    'auto_revert_daily_threshold': 10,
+    'cr_notification_build_threshold':
+        2,
+    'cr_notification_latency_limit_minutes':
+        1000,
+    'cr_notification_should_notify_flake_culprit':
+        True,
+    'auto_create_revert_compile':
+        True,
+    'auto_commit_revert_compile':
+        False,
+    'culprit_commit_limit_hours':
+        24,
+    'auto_commit_daily_threshold':
+        4,
+    'auto_revert_daily_threshold':
+        10,
+    'rotations_url': (
+        'https://build.chromium.org/deprecated/chromium/all_rotations.js'),
 }
 
 _MOCK_CHECK_FLAKE_SETTINGS = {
@@ -1140,7 +1150,7 @@ class ConfigTest(testing.AppengineTestCase):
             'auto_commit_daily_threshold': 4,
             'auto_revert_daily_threshold': '10',  # Should be int.
         }))
-    self.assertTrue(
+    self.assertFalse(
         config._ValidateActionSettings({
             'cr_notification_build_threshold': 2,
             'cr_notification_latency_limit_minutes': 1000,
@@ -1150,6 +1160,28 @@ class ConfigTest(testing.AppengineTestCase):
             'culprit_commit_limit_hours': 24,
             'auto_commit_daily_threshold': 4,
             'auto_revert_daily_threshold': 10,
+            'rotations_url': 123,  # Should be str.
+        }))
+    self.assertTrue(
+        config._ValidateActionSettings({
+            'cr_notification_build_threshold':
+                2,
+            'cr_notification_latency_limit_minutes':
+                1000,
+            'cr_notification_should_notify_flake_culprit':
+                True,
+            'auto_create_revert_compile':
+                True,
+            'auto_commit_revert_compile':
+                False,
+            'culprit_commit_limit_hours':
+                24,
+            'auto_commit_daily_threshold':
+                4,
+            'auto_revert_daily_threshold':
+                10,
+            'rotations_url': ('https://build.chromium.org/deprecated/chromium'
+                              '/all_rotations.js')
         }))
 
   def testValidateFlakeAnalyzerTryJobRerunSettings(self):

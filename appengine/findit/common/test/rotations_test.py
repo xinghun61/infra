@@ -43,7 +43,7 @@ class RotationsTest(testing.AppengineTestCase):
   def setUp(self):
     super(RotationsTest, self).setUp()
     self.http_client = DummyHttpClient()
-    self.http_patcher = mock.patch('common.rotations.HTTP_CLIENT',
+    self.http_patcher = mock.patch('common.rotations._HTTP_CLIENT',
                                    self.http_client)
     self.date_patcher = mock.patch('libs.time_util.GetPSTNow',
                                    lambda: datetime.datetime(2017, 1, 1))
@@ -68,7 +68,7 @@ class RotationsTest(testing.AppengineTestCase):
         ],
         'rotations': ['dummy1', 'dummy2']
     })
-    self.http_client.SetResponse(rotations.ROTATIONS_URL, (200, response))
+    self.http_client.SetResponse(rotations._ROTATIONS_URL, (200, response))
     self.assertIn('ham@google.com', rotations.current_sheriffs('dummy1'))
     self.assertIn('beef@google.com', rotations.current_sheriffs('dummy1'))
 
@@ -86,7 +86,7 @@ class RotationsTest(testing.AppengineTestCase):
         ],
         'rotations': ['dummy1', 'dummy2']
     })
-    self.http_client.SetResponse(rotations.ROTATIONS_URL, (200, response))
+    self.http_client.SetResponse(rotations._ROTATIONS_URL, (200, response))
     self.assertFalse(rotations.current_sheriffs('dummy2'))
 
   def testCurrentSheriffsBadRotationName(self):
@@ -103,7 +103,7 @@ class RotationsTest(testing.AppengineTestCase):
         ],
         'rotations': ['dummy1', 'dummy2']
     })
-    self.http_client.SetResponse(rotations.ROTATIONS_URL, (200, response))
+    self.http_client.SetResponse(rotations._ROTATIONS_URL, (200, response))
     self.assertFalse(rotations.current_sheriffs('memegen-rotation'))
 
   def testCurrentSheriffsMissingDate(self):
@@ -116,11 +116,11 @@ class RotationsTest(testing.AppengineTestCase):
         ],
         'rotations': ['dummy1', 'dummy2']
     })
-    self.http_client.SetResponse(rotations.ROTATIONS_URL, (200, response))
+    self.http_client.SetResponse(rotations._ROTATIONS_URL, (200, response))
     with self.assertRaises(Exception):
       rotations.current_sheriffs('dummy2')
 
   def testCurrentSheriffsBadHttp(self):
-    self.http_client.SetResponse(rotations.ROTATIONS_URL, (403, 'forbidden'))
+    self.http_client.SetResponse(rotations._ROTATIONS_URL, (403, 'forbidden'))
     with self.assertRaises(Exception):
       rotations.current_sheriffs('dummy2')

@@ -221,7 +221,8 @@ def _ValidateActionSettings(settings):
       isinstance(settings.get('auto_commit_daily_threshold'), int) and
       isinstance(settings.get('auto_revert_daily_threshold'), int) and
       isinstance(
-          settings.get('cr_notification_should_notify_flake_culprit'), bool))
+          settings.get('cr_notification_should_notify_flake_culprit'), bool) and
+      isinstance(settings.get('rotations_url'), basestring))
 
 
 def _ValidateFlakeAnalyzerSwarmingRerunSettings(settings):
