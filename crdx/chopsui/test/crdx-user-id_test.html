@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <title>userIdTest</title>
 <meta charset="utf-8">
-<link rel="import" href="../user-id.html">
+<link rel="import" href="../crdx-user-id.html">
 <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
 <script src="../../web-component-tester/browser.js"></script>
 
-<test-fixture id="user-id-test">
+<test-fixture id="crdx-user-id-test">
   <template>
-    <user-id></user-id>
+    <crdx-user-id></crdx-user-id>
   </template>
 </test-fixture>
 
 <script>
   'use strict';
 
-  suite('user-id', function() {
+  suite('crdx-user-id', function() {
     var element;
     setup(function() {
-      element = fixture('user-id-test');
+      element = fixture('crdx-user-id-test');
     });
 
     test('userId w/out link', function(done) {

@@ -1,6 +1,6 @@
 <link rel="import" href="../../polymer/polymer.html">
 <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
-<link rel="import" href="../tree-status.html">
+<link rel="import" href="../crdx-tree-status.html">
 
 <demo-snippet>
   <template>
@@ -29,10 +29,10 @@
       errorTree.statusErrorJson = {error: 'Failure!'};
       errorTree.statusUrl = 'https://infra-status.appspot.com/';
     </script>
-    <tree-status id="closed-tree"> </tree-status>
+    <crdx-tree-status id="closed-tree"> </crdx-tree-status>
     <br>
-    <tree-status id="open-tree"></tree-status>
+    <crdx-tree-status id="open-tree"></crdx-tree-status>
     <br>
-    <tree-status id="error-tree"></tree-status>
+    <crdx-tree-status id="error-tree"></crdx-tree-status>
   </template>
 </demo-snippet>

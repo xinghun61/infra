@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <title>userInput</title>
 <meta charset="utf-8">
-<link rel="import" href="../user-input.html">
+<link rel="import" href="../crdx-user-input.html">
 <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
 <script src="../../web-component-tester/browser.js"></script>
 <script src="../../iron-test-helpers/mock-interactions.js"></script>
 
-<test-fixture id="user-input-test">
+<test-fixture id="crdx-user-input-test">
   <template>
-    <user-input></user-input>
+    <crdx-user-input></crdx-user-input>
   </template>
 </test-fixture>
 
 <script>
   'use strict';
 
-  suite('user-input', function() {
+  suite('crdx-user-input', function() {
     let element;
     setup(function() {
-      element = fixture('user-input-test');
+      element = fixture('crdx-user-input-test');
       element.suggestions = ['user1', 'user2', 'user3', 'user4'];
     });
 
@@ -109,7 +109,7 @@
       element.selectedUsers = [{userId: 'user1'}]
 
       flush(function() {
-        element.shadowRoot.querySelector('user-id').dispatchEvent(
+        element.shadowRoot.querySelector('crdx-user-id').dispatchEvent(
           new CustomEvent('remove-user', {detail: {removedUser: {userId:'user1'}}}));
         sinon.assert.calledOnce(removeStub);
 

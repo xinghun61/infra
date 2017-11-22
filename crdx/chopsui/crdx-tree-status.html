@@ -1,6 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
 
-<dom-module id="tree-status">
+<dom-module id="crdx-tree-status">
   <template>
     <style>
       .closed {
@@ -36,7 +36,7 @@
   <script>
     'use strict';
     /**
-     * `<tree-status>` is an element used for displaying the tree status
+     * `<crdx-tree-status>` is an element used for displaying the tree status
      * available via the statusUrl.
      *
      * Provide a statusUrl like 'https://infra-status.appspot.com/' or
@@ -44,10 +44,10 @@
      *
      * @customElement
      * @polymer
-     * @demo /demo/tree-status_demo.html
+     * @demo /demo/crdx-tree-status_demo.html
      */
-    class TreeStatus extends Polymer.Element {
-      static get is() { return 'tree-status'; }
+    class CrdxTreeStatus extends Polymer.Element {
+      static get is() { return 'crdx-tree-status'; }
 
       static get properties() {
         return {
@@ -72,7 +72,7 @@
           },
           /**
            * The tree status data json. This can be taken directly from the
-           * 'current?format=json' page and passed directly to <tree-status>
+           * 'current?format=json' page and passed directly to <crdx-tree-status>
            *
            * @type Object{username, generatl_status, date, message}
            */
@@ -138,6 +138,6 @@
       }
 
     }
-    customElements.define(TreeStatus.is, TreeStatus);
+    customElements.define(CrdxTreeStatus.is, CrdxTreeStatus);
   </script>
 </dom-module>

@@ -4,21 +4,21 @@
 <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
 <script src="../../web-component-tester/browser.js"></script>
 <link rel="import" href="../../iron-test-helpers/iron-test-helpers.html">
-<link rel="import" href="../bug-link.html">
+<link rel="import" href="../crdx-bug-link.html">
 
-<test-fixture id="bug-link-test">
+<test-fixture id="crdx-bug-link-test">
   <template>
-    <bug-link></bug-link>
+    <crdx-bug-link></crdx-bug-link>
   </template>
 </test-fixture>
 
 <script>
   'use strict';
 
-  suite('bug-link', function() {
+  suite('crdx-bug-link', function() {
     let element;
     setup(function() {
-      element = fixture('bug-link-test');
+      element = fixture('crdx-bug-link-test');
     });
 
     test('compute bugId', function(done) {

@@ -1,6 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
 
-<dom-module id="cl-link">
+<dom-module id="crdx-cl-link">
   <template>
     <style>
       * {
@@ -17,17 +17,17 @@
     'use strict';
 
     /**
-     * `<cl-link>` displays basic information of a cl with a
+     * `<crdx-cl-link>` displays basic information of a cl with a
      * link to the full details of the change
      *
      * Provide the change number, owner email, and description.
      *
      * @customElement
      * @polymer
-     * @demo /demo/cl-link_demo.html
+     * @demo /demo/crdx-cl-link_demo.html
      */
-    class ClLink extends Polymer.Element {
-      static get is() { return 'cl-link'; }
+    class CrdxClLink extends Polymer.Element {
+      static get is() { return 'crdx-cl-link'; }
 
       static get properties() {
         return {
@@ -50,6 +50,6 @@
       }
 
     }
-    customElements.define(ClLink.is, ClLink);
+    customElements.define(CrdxClLink.is, CrdxClLink);
   </script>
 <dom-module>

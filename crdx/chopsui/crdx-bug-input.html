@@ -1,7 +1,7 @@
 <link rel="import" href="../polymer/polymer.html">
 <link rel="import" href="../paper-input/paper-input.html">
 
-<dom-module id="bug-input">
+<dom-module id="crdx-bug-input">
   <template>
     <paper-input
       label="[[inputLabel]]"
@@ -21,19 +21,19 @@
     const bugProjectNameRe = /[a-z0-9][-a-z0-9]*[a-z0-9]/i;
 
     /**
-     * `<bug-input>` is an input element for crbug urls and bug ids.
+     * `<crdx-bug-input>` is an input element for crbug urls and bug ids.
      *
-     * `<bug-input>` does validation on the input and puts the final bug id in
+     * `<crdx-bug-input>` does validation on the input and puts the final bug id in
      * the bugId property. If the input is invalid, this will be expressed in
      * the invalidBug property.
      *
      *
      * @customElement
      * @polymer
-     * @demo /demo/bug-input_demo.html
+     * @demo /demo/crdx-bug-input_demo.html
      */
-    class BugInput extends Polymer.Element {
-      static get is() { return 'bug-input'; }
+    class CrdxBugInput extends Polymer.Element {
+      static get is() { return 'crdx-bug-input'; }
 
       static get properties() {
         return {
@@ -79,6 +79,6 @@
       }
 
     }
-    customElements.define(BugInput.is, BugInput);
+    customElements.define(CrdxBugInput.is, CrdxBugInput);
   </script>
 <dom-module>

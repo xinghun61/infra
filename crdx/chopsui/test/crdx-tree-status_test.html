@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <title>treeStatusTest</title>
 <meta charset="utf-8">
-<link rel="import" href="../tree-status.html">
+<link rel="import" href="../crdx-tree-status.html">
 <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
 <script src="../../web-component-tester/browser.js"></script>
 
-<test-fixture id="tree-status-test">
+<test-fixture id="crdx-tree-status-test">
   <template>
-    <tree-status></tree-status>
+    <crdx-tree-status></crdx-tree-status>
   </template>
 </test-fixture>
 
 <script>
   'use strict';
 
-  suite('tree-status', function() {
+  suite('crdx-tree-status', function() {
     var element;
     setup(function() {
-      element = fixture('tree-status-test');
+      element = fixture('crdx-tree-status-test');
       element.statusUrl = 'https://infra-status.appspot.com/';
     });
 

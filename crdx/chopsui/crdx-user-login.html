@@ -1,6 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
 
-<dom-module id="user-login">
+<dom-module id="crdx-user-login">
   <template>
     <style>
       * {
@@ -22,7 +22,7 @@
     'use strict';
 
     /**
-     * `user-login` shows the login/logout links and current user, if provided.
+     * `crdx-user-login` shows the login/logout links and current user, if provided.
      *
      * When the user is logged in provide, at least, the user and logoutURL properties.
      * When there is no user logged in provide, at least the loginURL property.
@@ -31,10 +31,10 @@
      *
      * @customElement
      * @polymer
-     * @demo /demo/user-login_demo.html
+     * @demo /demo/crdx-user-login_demo.html
      */
-    class UserLogin extends Polymer.Element {
-      static get is() { return 'user-login'; }
+    class CrdxUserLogin extends Polymer.Element {
+      static get is() { return 'crdx-user-login'; }
 
       static get properties() {
         return {
@@ -54,6 +54,6 @@
         }
       }
     }
-    customElements.define(UserLogin.is, UserLogin);
+    customElements.define(CrdxUserLogin.is, CrdxUserLogin);
   </script>
 <dom-module>

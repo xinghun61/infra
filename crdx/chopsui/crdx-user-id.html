@@ -2,7 +2,7 @@
 <link rel="import" href="../paper-tooltip/paper-tooltip.html">
 <link rel="import" href="../iron-icons/iron-icons.html">
 
-<dom-module id="user-id">
+<dom-module id="crdx-user-id">
   <template>
     <style>
       a {
@@ -42,7 +42,7 @@
     'use strict';
 
     /**
-    * `<user-id>` is an element used for displaying users.
+    * `<crdx-user-id>` is an element used for displaying users.
     *
     * The only required attribute is userId. If the profile-link is provided
     * the userId text will be displayed as a link. If an email and/or fullName
@@ -51,10 +51,10 @@
     *
     * @customElement
     * @polymer
-    * @demo /demo/user-id_demo.html
+    * @demo /demo/crdx-user-id_demo.html
     */
-    class UserId extends Polymer.Element {
-      static get is() { return 'user-id'; }
+    class CrdxUserId extends Polymer.Element {
+      static get is() { return 'crdx-user-id'; }
 
       static get properties() {
         return {
@@ -120,6 +120,6 @@
        */
 
     }
-    customElements.define(UserId.is, UserId);
+    customElements.define(CrdxUserId.is, CrdxUserId);
   </script>
   <dom-module>

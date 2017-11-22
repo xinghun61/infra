@@ -1,13 +1,14 @@
 {
   "name": "chops-ui",
-  "description": "Common elements for ChOps FEs",
+  "description": "Common elements for ChOps Frontends",
   "authors": [
     "ChOps CRDX Team"
   ],
   "keywords": [
-    "chopsui"
+    "chopsui",
+    "chops-ui"
   ],
-  "main": "users-dropdown.html",
+  "main": "crdx-user-dropdown.html",
   "repository": {
     "type": "git",
     "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui.git"

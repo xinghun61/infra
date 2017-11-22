@@ -1,35 +1,35 @@
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="users-dropdown.html">
-<link rel="import" href="user-id.html">
+<link rel="import" href="crdx-user-dopdown.html">
+<link rel="import" href="crdx-user-id.html">
 <link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../iron-behaviors/iron-control-state.html">
 
-<dom-module id="user-input">
+<dom-module id="crdx-user-input">
   <template>
     <style>
     </style>
     <paper-input id="input" value="{{inputValue}}">
       <template is="dom-repeat" items="[[selectedUsers]]">
-        <user-id
+        <crdx-user-id
           slot="prefix"
-          user-id="[[item.userId]]"
+          crdx-user-id="[[item.userId]]"
           email="[[item.email]]"
           profile-link="[[item.profileLink]]"
           full-name="[[item.fullName]]"
           on-remove-user="_removeUser"
           removeable>
-        </user-id>
+        </crdx-user-id>
       </template>
     </paper-input>
-    <users-dropdown id="dropdown" on-user-selected="_saveUser" suggestions="[[suggestions]]">
-    </users-dropdown>
+    <crdx-user-dopdown id="dropdown" on-user-selected="_saveUser" suggestions="[[suggestions]]">
+    </crdx-user-dopdown>
   </template>
   <script>
     'use strict';
 
     /**
      *
-     * `<user-input>` as an input element for choosing users with
+     * `<crdx-user-input>` as an input element for choosing users with
      * dropdown suggestions and autocomplete.
      *
      * It is up to the developer using this element to provide and update
@@ -39,12 +39,12 @@
      *
      * customElement
      * @polymer
-     * @demo /demo/user-input_demo.html
+     * @demo /demo/crdx-user-input_demo.html
      *
      */
-    class UserInput extends Polymer.mixinBehaviors(
+    class CrdxUserInput extends Polymer.mixinBehaviors(
         [Polymer.IronControlState], Polymer.Element) {
-      static get is() { return 'user-input'; }
+      static get is() { return 'crdx-user-input'; }
 
       static get properties() {
         return {
@@ -158,6 +158,6 @@
       }
 
     }
-    customElements.define(UserInput.is, UserInput);
+    customElements.define(CrdxUserInput.is, CrdxUserInput);
   </script>
 </dom-moduel>
