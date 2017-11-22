@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import mock
 
 from common import exceptions
@@ -26,7 +27,7 @@ from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
 
-class TryJobUtilTest(wf_testcase.WaterfallTestCase):
+class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
   def _MockGetChangeLog(self, revision):
 
@@ -43,7 +44,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     return mock_change_logs.get(revision)
 
   def setUp(self):
-    super(TryJobUtilTest, self).setUp()
+    super(TestTryJobTest, self).setUp()
 
     self.mock(CachedGitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
 
@@ -72,9 +73,10 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
   def testNoFailedSteps(self):
     self.assertEqual([], test_try_job._GetStepsAndTests({}))
 
-  def testDoNotGroupUnknownBuildFailure(self):
+  @mock.patch.object(logging, 'info')
+  def testDoNotGroupUnknownBuildFailure(self, mock_logging):
     master_name = 'm1'
-    builder_name = 'b'
+    builder_name = 'bt'
     build_number = 1
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
@@ -85,13 +87,14 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         test_try_job._IsTestFailureUniqueAcrossPlatforms(
             master_name, builder_name, build_number, failure_type.UNKNOWN, None,
             None, None))
-    self.assertIsNone(
-        WfFailureGroup.Get(master_name, builder_name, build_number))
+    mock_logging.assert_called_once_with(
+        'Expected test failure but get unknown failure.')
 
-  def disabled_testDoNotGroupInfraBuildFailure(self):
+  @mock.patch.object(logging, 'info')
+  def testDoNotGroupInfraBuildFailure(self, mock_logging):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bt'
+    build_number = 2
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with INFRA failure.
@@ -101,13 +104,13 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         test_try_job._IsTestFailureUniqueAcrossPlatforms(
             master_name, builder_name, build_number, failure_type.INFRA, None,
             None, None))
-    self.assertIsNone(
-        WfFailureGroup.Get(master_name, builder_name, build_number))
+    mock_logging.assert_called_once_with(
+        'Expected test failure but get infra failure.')
 
-  def disabled_testDoNotGroupTestWithNoSteps(self):
+  def testDoNotGroupTestWithNoSteps(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bt'
+    build_number = 3
 
     blame_list = ['a']
 
@@ -121,13 +124,11 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         test_try_job._IsTestFailureUniqueAcrossPlatforms(
             master_name, builder_name, build_number, failure_type.TEST,
             blame_list, failed_steps, None))
-    self.assertIsNone(
-        WfFailureGroup.Get(master_name, builder_name, build_number))
 
   def testGroupTestsWithRelatedStepsWithHeuristicResult(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bt'
+    build_number = 4
     master_name_2 = 'm2'
 
     blame_list = ['a']
@@ -169,10 +170,10 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
-  def disabled_testGroupTestsWithRelatedStepsWithoutHeuristicResult(self):
+  def testGroupTestsWithRelatedStepsWithoutHeuristicResult(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bt'
+    build_number = 5
     master_name_2 = 'm2'
 
     blame_list = ['a']
@@ -207,8 +208,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def testDoNotGroupTestsWithDisjointBlameLists(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bt'
+    build_number = 6
     master_name_2 = 'm2'
 
     blame_list_1 = ['a']
@@ -243,8 +244,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def testDoNotGroupTestsWithDifferentHeuristicResults(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bt'
+    build_number = 7
     master_name_2 = 'm2'
 
     blame_list = ['a']
@@ -296,8 +297,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def testDoNotGroupTestsWithDifferentSteps(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bt'
+    build_number = 8
     master_name_2 = 'm2'
 
     blame_list = ['a']

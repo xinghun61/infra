@@ -27,7 +27,7 @@ _GIT_REPO = CachedGitilesRepository(
     FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
 
 
-class TryJobUtilTest(wf_testcase.WaterfallTestCase):
+class TryJobTest(wf_testcase.WaterfallTestCase):
 
   def testShouldBailOutIfBuildHasNoStartTime(self):
     build = WfBuild.Create('m', 'b', 1)

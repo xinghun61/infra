@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import mock
 
 from common import exceptions
@@ -23,11 +24,12 @@ from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
 
-class TryJobUtilTest(wf_testcase.WaterfallTestCase):
+class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
-  def testDoNotGroupUnknownBuildFailure(self):
+  @mock.patch.object(logging, 'info')
+  def testDoNotGroupUnknownBuildFailure(self, mock_logging):
     master_name = 'm1'
-    builder_name = 'b'
+    builder_name = 'bc'
     build_number = 1
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
@@ -38,13 +40,14 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         compile_try_job._IsCompileFailureUniqueAcrossPlatforms(
             master_name, builder_name, build_number, failure_type.UNKNOWN, None,
             None, None))
-    self.assertIsNone(
-        WfFailureGroup.Get(master_name, builder_name, build_number))
+    mock_logging.assert_called_once_with(
+        'Expected compile failure but get %s failure.', 'unknown')
 
-  def testDoNotGroupInfraBuildFailure(self):
+  @mock.patch.object(logging, 'info')
+  def testDoNotGroupInfraBuildFailure(self, mock_logging):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bc'
+    build_number = 2
 
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     # Run pipeline with INFRA failure.
@@ -54,13 +57,13 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
         compile_try_job._IsCompileFailureUniqueAcrossPlatforms(
             master_name, builder_name, build_number, failure_type.INFRA, None,
             None, None))
-    self.assertIsNone(
-        WfFailureGroup.Get(master_name, builder_name, build_number))
+    mock_logging.assert_called_once_with(
+        'Expected compile failure but get %s failure.', 'infra')
 
   def testDoNotGroupCompileWithNoOutputNodes(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bc'
+    build_number = 3
 
     blame_list = ['a']
 
@@ -79,8 +82,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def testAnalysisFailureGroupKeySet(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bc'
+    build_number = 4
 
     blame_list = ['a']
 
@@ -100,8 +103,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def testSecondAnalysisFailureGroupKeySet(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bc'
+    build_number = 5
     master_name_2 = 'm2'
 
     blame_list = ['a']
@@ -130,8 +133,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def testGroupCompilesWithRelatedFailuresWithHeuristicResult(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bc'
+    build_number = 6
     master_name_2 = 'm2'
 
     blame_list = ['a']
@@ -169,8 +172,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def testGroupCompilesWithRelatedFailuresWithoutHeuristicResult(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bc'
+    build_number = 7
     master_name_2 = 'm2'
 
     blame_list = ['a']
@@ -199,8 +202,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def testDoNotGroupCompilesWithDisjointBlameLists(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bc'
+    build_number = 8
     master_name_2 = 'm2'
 
     blame_list_1 = ['a']
@@ -231,8 +234,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def testDoNotGroupCompilesWithDifferentHeuristicResults(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bc'
+    build_number = 9
     master_name_2 = 'm2'
 
     blame_list = ['a']
@@ -279,8 +282,8 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
 
   def testDoNotGroupCompilesWithDifferentOutputNodes(self):
     master_name = 'm1'
-    builder_name = 'b'
-    build_number = 1
+    builder_name = 'bc'
+    build_number = 10
     master_name_2 = 'm2'
 
     blame_list = ['a']
