@@ -15,10 +15,10 @@ from waterfall import swarming_util
 from waterfall.test import wf_testcase
 
 
-class CITestFailureServicesTest(wf_testcase.WaterfallTestCase):
+class CITestFailureTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
-    super(CITestFailureServicesTest, self).setUp()
+    super(CITestFailureTest, self).setUp()
 
     with self.mock_urlfetch() as urlfetch:
       self.mocked_urlfetch = urlfetch
@@ -223,7 +223,7 @@ class CITestFailureServicesTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, failed_steps, builds)
     self.assertEqual({}, failed_steps)
 
-  def disabled_testUpdateFirstFailureOnTestLevelThenUpdateStepLevel(self):
+  def testUpdateFirstFailureOnTestLevelThenUpdateStepLevel(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 224
