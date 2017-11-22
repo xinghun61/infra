@@ -8,14 +8,12 @@ Now only keys 'vars', 'deps', and 'deps_os' are taken care of.
 TODO: support strict mode, 'target_os', 'target_os_only', 'use_relative_paths',
       both forms of recursion, both forms of hooks, 'allowed_hosts', etc.
 """
-
 from collections import OrderedDict
 
 from libs.deps import dependency
 
 # All supported OSes in DEPS file.
 DEPS_OS_CHOICES = ('win', 'ios', 'mac', 'unix', 'android')
-SRC_INTERNAL_DEP_PATH = 'src-internal'
 
 
 class DEPSLoader(object):
@@ -43,8 +41,7 @@ class VarImpl(object):
     return self._local_scope['vars'][var_name]
 
 
-def ParseDEPSContent(deps_content, keys=('deps', 'deps_os'),
-                     include_src_internal=False):
+def ParseDEPSContent(deps_content, keys=('deps', 'deps_os')):
   """Returns dependencies by parsing the content of chromium DEPS file.
 
   Args:
@@ -53,9 +50,6 @@ def ParseDEPSContent(deps_content, keys=('deps', 'deps_os'),
     keys (iterable): optional, an iterable (list, tuple) of keys whose values
         needed to be returned in the order as the given keys. Each key is a str.
         Default keys are 'deps' and 'deps_os'.
-    include_src_internal (bool): Whether or not we should include the src
-        internal dependencies. Note, only internal checkout can include src
-        internal dependencies.
 
   Returns:
     A list of values corresponding to and in the order as the given keys.
@@ -120,11 +114,9 @@ def ParseDEPSContent(deps_content, keys=('deps', 'deps_os'),
   key_to_deps = OrderedDict([(key, local_scope.get(key)) for key in keys])
   if 'deps' in key_to_deps:
     deps = key_to_deps['deps']
-    if SRC_INTERNAL_DEP_PATH in deps:
-      if include_src_internal:
-        deps[SRC_INTERNAL_DEP_PATH] = deps[SRC_INTERNAL_DEP_PATH]['url']
-      else:
-        del deps[SRC_INTERNAL_DEP_PATH]
+    for dep_path, dep_content in deps.iteritems():
+      if isinstance(dep_content, dict):
+        deps[dep_path] = dep_content['url']
 
   return key_to_deps.values()
 
@@ -134,6 +126,7 @@ def MergeWithOsDeps(deps, deps_os, target_os_list):
   information from deps_os (the deps_os section of the DEPS file) that matches
   the list of target os."""
   os_deps = {}
+  deps_os = deps_os or {}
 
   def IsAllNoneForPath(path):
     # Check if the dependency identified by the given path is explicitly

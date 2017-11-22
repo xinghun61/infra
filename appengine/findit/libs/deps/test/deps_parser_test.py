@@ -68,60 +68,16 @@ class DepsParserTest(unittest.TestCase):
             }
             deps = {
               'depA': Var('cr_repo') + '/a.git' + '@' + Var('a'),
+              'src-internal': {
+                  'url': 'https://cr-internal_repo@1234',
+                  'condition': 'checkout_src_internal',
+              },
             }"""),
         keys=['deps'])
-    expected_deps = {'depA': 'https://cr.repo/a.git@1'}
-    self.assertEqual(1, len(result))
-    self.assertEqual(expected_deps, result[0])
-
-  def testParseDepsForNonSrcInternalCheckOut(self):
-    """Tests deleting 'src-internal' dep for non-src-internal checkout."""
-    result = deps_parser.ParseDEPSContent('', keys=['deps'])
-    self.assertEqual(1, len(result))
-    self.assertEqual({}, result[0])
-
-    result = deps_parser.ParseDEPSContent(
-        textwrap.dedent("""
-            vars = {
-              'cr_repo': 'https://cr.repo',
-              'a': '1',
-            }
-            deps = {
-              'depA': Var('cr_repo') + '/a.git' + '@' + Var('a'),
-              'src-internal': {
-                  'url': 'https://cr-internal_repo@1234',
-                  'condition': 'checkout_src_internal',
-              },
-            }"""),
-        keys=['deps'], include_src_internal=False)
-    expected_deps = {'depA': 'https://cr.repo/a.git@1'}
-    self.assertEqual(1, len(result))
-    self.assertEqual(expected_deps, result[0])
-
-  def testParseDepsForSrcInternalCheckOut(self):
-    """Tests getting 'src' of 'src-internal' dep for src-internal checkout."""
-    result = deps_parser.ParseDEPSContent('', keys=['deps'])
-    self.assertEqual(1, len(result))
-    self.assertEqual({}, result[0])
-
-    result = deps_parser.ParseDEPSContent(
-        textwrap.dedent("""
-            vars = {
-              'cr_repo': 'https://cr.repo',
-              'a': '1',
-            }
-            deps = {
-              'depA': Var('cr_repo') + '/a.git' + '@' + Var('a'),
-              'src-internal': {
-                  'url': 'https://cr-internal_repo@1234',
-                  'condition': 'checkout_src_internal',
-              },
-            }"""),
-        keys=['deps'], include_src_internal=True)
     expected_deps = {'depA': 'https://cr.repo/a.git@1',
                      'src-internal': 'https://cr-internal_repo@1234'}
     self.assertEqual(1, len(result))
-    self.assertDictEqual(expected_deps, result[0])
+    self.assertEqual(expected_deps, result[0])
 
   def testParseDepsOs(self):
     result = deps_parser.ParseDEPSContent('', keys=['deps_os'])
@@ -373,7 +329,7 @@ class DepsParserTest(unittest.TestCase):
       self.assertEqual(deps, orig_deps)
       self.assertEqual(deps_os, orig_deps_os)
 
-  def testUpdateDependencyTree(self):
+  def testUpdateDependencyTreeOldFormat(self):
     root_dep_path = 'src/'
     root_dep_repo_url = 'https://src.git'
     root_dep_revision = '1234src'
@@ -496,4 +452,92 @@ class DepsParserTest(unittest.TestCase):
 
     _Test(['unix'], expected_deps_tree_json_unix)
     _Test(['win'], expected_deps_tree_json_win)
+    _Test(['all', 'win'], expected_deps_tree_json_all)
+
+  def testUpdateDependencyTreeNewFormat(self):
+    root_dep_path = 'src/'
+    root_dep_repo_url = 'https://src.git'
+    root_dep_revision = '1234src'
+    root_dep_deps_file = 'DEPS'
+
+    class DummyDEPSLoader(deps_parser.DEPSLoader):
+
+      def __init__(self, test):
+        self.test = test
+
+      def Load(self, repo_url, revision, deps_file):
+        self.test.assertEqual(root_dep_repo_url, repo_url)
+        self.test.assertEqual(root_dep_revision, revision)
+        self.test.assertEqual(root_dep_deps_file, deps_file)
+
+        return textwrap.dedent("""
+            deps = {
+              'src/a/': 'https://a.git@1234a',
+              'src/b': {
+                'url': 'https://b.git',
+                'condition': 'checkout_win',
+              },
+              'src/c': {
+                'condition': 'checkout_unix',
+                'url': 'https://c.git@1234c',
+              },
+              'src/d': {
+                'url': 'https://d.git@1234d',
+                'condition': 'checkout_mac',
+              },
+              'src/not_needed': {
+                'url': None,
+                'condition': 'src_internal',
+              },
+            }""")
+
+    expected_deps_tree_json_all = {
+        'path': root_dep_path,
+        'repo_url': root_dep_repo_url,
+        'revision': root_dep_revision,
+        'deps_file': root_dep_deps_file,
+        'children': {
+            'src/a': {
+                'path': 'src/a',
+                'repo_url': 'https://a.git',
+                'revision': '1234a',
+                'deps_file': root_dep_deps_file,
+                'children': {}
+            },
+            'src/b': {
+                'path': 'src/b',
+                'repo_url': 'https://b.git',
+                'revision': None,
+                'deps_file': root_dep_deps_file,
+                'children': {}
+            },
+            'src/c': {
+                'path': 'src/c',
+                'repo_url': 'https://c.git',
+                'revision': '1234c',
+                'deps_file': root_dep_deps_file,
+                'children': {}
+            },
+            'src/d': {
+                'path': 'src/d',
+                'repo_url': 'https://d.git',
+                'revision': '1234d',
+                'deps_file': root_dep_deps_file,
+                'children': {}
+            },
+        }
+    }
+
+    def _Test(target_os_list, expected_deps_tree_json):
+      root_dep = dependency.Dependency(
+          root_dep_path,
+          root_dep_repo_url,
+          root_dep_revision,
+          deps_file=root_dep_deps_file)
+
+      deps_parser.UpdateDependencyTree(root_dep, target_os_list,
+                                       DummyDEPSLoader(self))
+
+      self.assertEqual(expected_deps_tree_json, root_dep.ToDict())
+
     _Test(['all', 'win'], expected_deps_tree_json_all)
