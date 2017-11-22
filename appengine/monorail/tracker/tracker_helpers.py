@@ -121,6 +121,10 @@ def ParseIssueRequest(cnxn, post_data, services, errors, default_project_name):
   component_str = post_data.get('components', '')
   label_strs = post_data.getall('label')
 
+  if is_description:
+    tmpl_txt = post_data.get('tmpl_txt', '')
+    comment = MarkupDescriptionOnInput(comment, tmpl_txt)
+
   comp_paths, comp_paths_remove = _ClassifyPlusMinusItems(
       re.split('[,;\s]+', component_str))
   parsed_components = ParsedComponents(
@@ -143,6 +147,45 @@ def ParseIssueRequest(cnxn, post_data, services, errors, default_project_name):
       attachments, kept_attachments, parsed_blocked_on, parsed_blocking,
       parsed_hotlists)
   return parsed_issue
+
+
+def MarkupDescriptionOnInput(content, tmpl_text):
+  """Return HTML for the content of an issue description or comment.
+
+  Args:
+    content: the text sumbitted by the user, any user-entered markup
+             has already been escaped.
+    tmpl_text: the initial text that was put into the textarea.
+
+  Returns:
+    The description content text with template lines highlighted.
+  """
+  tmpl_lines = tmpl_text.split('\n')
+  print(tmpl_lines)
+  tmpl_lines = [pl.strip() for pl in tmpl_lines if pl.strip()]
+
+  entered_lines = content.split('\n')
+  marked_lines = [_MarkupDescriptionLineOnInput(line, tmpl_lines)
+                  for line in entered_lines]
+  return '\n'.join(marked_lines)
+
+
+def _MarkupDescriptionLineOnInput(line, tmpl_lines):
+  """Markup one line of an issue description that was just entered.
+
+  Args:
+    line: string containing one line of the user-entered comment.
+    tmpl_lines: list of strings for the text of the template lines.
+
+  Returns:
+    The same user-entered line, or that line highlighted to
+    indicate that it came from the issue template.
+  """
+  for tmpl_line in tmpl_lines:
+    if line.startswith(tmpl_line):
+      return '<b>' + tmpl_line + '</b>' + line[len(tmpl_line):]
+
+  return line
 
 
 def _ClassifyPlusMinusItems(add_remove_list):

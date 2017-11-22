@@ -4,6 +4,9 @@
   <div id="hidden-fields" style="display: none;">
     [include "issue-hidden-fields.ezt"]
     <input type="hidden" name="description" value="Yes">
+    <input type="hidden" name="tmpl_txt"
+        value="[for descriptions.text_runs][is descriptions.text_runs.tag "b"][descriptions.text_runs.content]
+        [end][end]">
     <input type="hidden" name="status" value="[initial_status]">
     <input type="hidden" name="owner" value="[is initial_owner "----"][else][initial_owner][end]">
     <input type="hidden" name="cc" value="[initial_cc]">

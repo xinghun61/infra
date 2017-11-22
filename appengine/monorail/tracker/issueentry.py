@@ -285,7 +285,7 @@ class IssueEntry(servlet.Servlet):
           for wkp in config.templates:
             if wkp.name == parsed.template_name:
               template_content = wkp.content
-          marked_comment = _MarkupDescriptionOnInput(
+          marked_comment = tracker_helpers.MarkupDescriptionOnInput(
               parsed.comment, template_content)
           has_star = 'star' in post_data and post_data['star'] == '1'
 
@@ -350,44 +350,6 @@ def _MatchesTemplate(content, config):
       if len('\n'.join(diff)) == 0:
         return True
     return False
-
-
-def _MarkupDescriptionOnInput(content, tmpl_text):
-  """Return HTML for the content of an issue description or comment.
-
-  Args:
-    content: the text sumbitted by the user, any user-entered markup
-             has already been escaped.
-    tmpl_text: the initial text that was put into the textarea.
-
-  Returns:
-    The description content text with template lines highlighted.
-  """
-  tmpl_lines = tmpl_text.split('\n')
-  tmpl_lines = [pl.strip() for pl in tmpl_lines if pl.strip()]
-
-  entered_lines = content.split('\n')
-  marked_lines = [_MarkupDescriptionLineOnInput(line, tmpl_lines)
-                  for line in entered_lines]
-  return '\n'.join(marked_lines)
-
-
-def _MarkupDescriptionLineOnInput(line, tmpl_lines):
-  """Markup one line of an issue description that was just entered.
-
-  Args:
-    line: string containing one line of the user-entered comment.
-    tmpl_lines: list of strings for the text of the template lines.
-
-  Returns:
-    The same user-entered line, or that line highlighted to
-    indicate that it came from the issue template.
-  """
-  for tmpl_line in tmpl_lines:
-    if line.startswith(tmpl_line):
-      return '<b>' + tmpl_line + '</b>' + line[len(tmpl_line):]
-
-  return line
 
 
 def _DiscardUnusedTemplateLabelPrefixes(labels):
