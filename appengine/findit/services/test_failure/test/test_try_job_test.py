@@ -88,7 +88,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
-  def testDoNotGroupInfraBuildFailure(self):
+  def disabled_testDoNotGroupInfraBuildFailure(self):
     master_name = 'm1'
     builder_name = 'b'
     build_number = 1
@@ -104,7 +104,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(
         WfFailureGroup.Get(master_name, builder_name, build_number))
 
-  def testDoNotGroupTestWithNoSteps(self):
+  def disabled_testDoNotGroupTestWithNoSteps(self):
     master_name = 'm1'
     builder_name = 'b'
     build_number = 1
@@ -169,7 +169,7 @@ class TryJobUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(
         WfFailureGroup.Get(master_name_2, builder_name, build_number))
 
-  def testGroupTestsWithRelatedStepsWithoutHeuristicResult(self):
+  def disabled_testGroupTestsWithRelatedStepsWithoutHeuristicResult(self):
     master_name = 'm1'
     builder_name = 'b'
     build_number = 1

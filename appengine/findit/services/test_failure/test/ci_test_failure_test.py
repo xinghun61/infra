@@ -223,7 +223,7 @@ class CITestFailureServicesTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, failed_steps, builds)
     self.assertEqual({}, failed_steps)
 
-  def testUpdateFirstFailureOnTestLevelThenUpdateStepLevel(self):
+  def disabled_testUpdateFirstFailureOnTestLevelThenUpdateStepLevel(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 224

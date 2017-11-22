@@ -52,7 +52,8 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.mock(waterfall_config, 'MasterIsSupported', MockMasterIsSupported)
 
   @mock.patch.object(
-      findit_api.acl, 'ValidateOauthUserForNewAnalysis',
+      findit_api.acl,
+      'ValidateOauthUserForNewAnalysis',
       side_effect=exceptions.UnauthorizedException)
   def testValidateOauthUserForAuthorizedUser(self, _):
     with self.assertRaises(findit_api.endpoints.UnauthorizedException):
@@ -514,16 +515,14 @@ class FinditApiTest(testing.EndpointsTestCase):
             False,
         'first_known_failed_build_number':
             3,
-        'suspected_cls': [
-            {
-                'repo_name': 'chromium',
-                'revision': 'r3',
-                'commit_position': 3,
-                'analysis_approach': 'TRY_JOB',
-                'revert_cl_url': 'revert_cl_url',
-                'revert_committed': True
-            },
-        ],
+        'suspected_cls': [{
+            'repo_name': 'chromium',
+            'revision': 'r3',
+            'commit_position': 3,
+            'analysis_approach': 'TRY_JOB',
+            'revert_cl_url': 'revert_cl_url',
+            'revert_committed': True
+        },],
         'analysis_approach':
             'TRY_JOB',
         'is_flaky_test':
@@ -608,14 +607,12 @@ class FinditApiTest(testing.EndpointsTestCase):
             False,
         'first_known_failed_build_number':
             3,
-        'suspected_cls': [
-            {
-                'repo_name': 'chromium',
-                'revision': 'git_hash2',
-                'commit_position': 288,
-                'analysis_approach': 'HEURISTIC'
-            },
-        ],
+        'suspected_cls': [{
+            'repo_name': 'chromium',
+            'revision': 'git_hash2',
+            'commit_position': 288,
+            'analysis_approach': 'HEURISTIC'
+        },],
         'analysis_approach':
             'HEURISTIC',
         'is_flaky_test':
@@ -1136,20 +1133,19 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(1, len(self.taskqueue_requests))
 
     expected_payload_json = {
-        'builds': [
-            {
-                'master_name': master_name,
-                'builder_name': builder_name,
-                'build_number': build_number,
-                'failed_steps': [],
-            },
-        ]
+        'builds': [{
+            'master_name': master_name,
+            'builder_name': builder_name,
+            'build_number': build_number,
+            'failed_steps': [],
+        },]
     }
     self.assertEqual(expected_payload_json,
                      json.loads(self.taskqueue_requests[0].get('payload')))
 
   @mock.patch.object(
-      findit_api, '_ValidateOauthUser',
+      findit_api,
+      '_ValidateOauthUser',
       side_effect=findit_api.endpoints.UnauthorizedException())
   @mock.patch.object(findit_api, '_AsyncProcessFlakeReport', return_value=None)
   def testUnauthorizedRequestToAnalyzeFlake(self, mocked_func, _):
@@ -1297,7 +1293,8 @@ class FinditApiTest(testing.EndpointsTestCase):
     self.assertEqual(expected_results, response.json_body['results'])
 
   @mock.patch.object(
-      findit_api, '_ValidateOauthUser',
+      findit_api,
+      '_ValidateOauthUser',
       side_effect=findit_api.endpoints.UnauthorizedException('Unauthorized.'))
   @mock.patch.object(findit_api, '_AsyncProcessFailureAnalysisRequests')
   def testUserNotAuthorized(self, mocked_func, _):
@@ -1324,7 +1321,8 @@ class FinditApiTest(testing.EndpointsTestCase):
     mocked_func.assert_not_called()
 
   @mock.patch.object(
-      findit_api, '_ValidateOauthUser',
+      findit_api,
+      '_ValidateOauthUser',
       side_effect=findit_api.endpoints.UnauthorizedException('Unauthorized.'))
   def testUnauthorizedRequestFlakeSwarmingTaskData(self, _):
     flake_request = {
@@ -1571,8 +1569,8 @@ class FinditApiTest(testing.EndpointsTestCase):
       findit_api, '_ValidateOauthUser', return_value=('email', False))
   @mock.patch.object(findit_api, '_AsyncProcessFlakeSwarmingTaskRequest')
   @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
-  def testTriggerNewFlakeSwarmingTaskException(self, mocked_waterfall_step,
-                                               mocked_request, _):
+  def disabled_testTriggerNewFlakeSwarmingTaskException(
+      self, mocked_waterfall_step, mocked_request, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
@@ -1604,7 +1602,7 @@ class FinditApiTest(testing.EndpointsTestCase):
   @mock.patch.object(
       findit_api, '_ValidateOauthUser', return_value=('email', False))
   @mock.patch.object(step_mapper, 'FindMatchingWaterfallStep')
-  def testTriggerNewFlakeSwarmingTask(self, mocked_fn, _):
+  def disabled_testTriggerNewFlakeSwarmingTask(self, mocked_fn, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
