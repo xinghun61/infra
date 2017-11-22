@@ -15,6 +15,8 @@ from common import rpc_util
 from infra_api_clients import logdog_util
 from waterfall.build_info import BuildInfo
 
+# TODO(crbug.com/787676): Use an api rather than parse urls to get the relavant
+# data out of a build/tryjob url.
 _HOST_NAME_PATTERN = (
     r'https?://(?:build\.chromium\.org/p|\w+\.\w+\.google\.com/i)')
 
@@ -26,10 +28,14 @@ _MILO_MASTER_URL_PATTERN = re.compile(
 _CI_MASTER_URL_PATTERN = re.compile(
     r'^https?://ci\.chromium\.org/buildbot/([^/]+)(?:/.*)?$')
 
+_CI_LONG_MASTER_URL_PATTERN = re.compile(
+    r'^https?://ci\.chromium\.org/p/chromium/([^/]+)(?:/.*)?$')
+
 _MASTER_URL_PATTERNS = [  # yapf: disable
     _MASTER_URL_PATTERN,
     _MILO_MASTER_URL_PATTERN,
-    _CI_MASTER_URL_PATTERN
+    _CI_MASTER_URL_PATTERN,
+    _CI_LONG_MASTER_URL_PATTERN,
 ]
 
 _MILO_SWARMING_TASK_URL_PATTERN = re.compile(
@@ -40,7 +46,7 @@ _CI_SWARMING_TASK_URL_PATTERN = re.compile(
 
 _SWARMING_TASK_URL_PATTERNS = [  # yapf: disable
     _MILO_SWARMING_TASK_URL_PATTERN,
-    _CI_SWARMING_TASK_URL_PATTERN
+    _CI_SWARMING_TASK_URL_PATTERN,
 ]
 
 _BUILD_URL_PATTERN = re.compile(
@@ -54,10 +60,14 @@ _CI_BUILD_URL_PATTERN = re.compile(
     r'^https?://ci\.chromium\.org/buildbot/([^/]+)/([^/]+)/(\d+)'
     '(?:/.*)?$')
 
+_CI_BUILD_LONG_URL_PATTERN = re.compile(
+    r'^https?://ci\.chromium\.org/p/chromium/builders/([^/]+)/([^/]+)/(\d+)')
+
 _BUILD_URL_PATTERNS = [  # yapf: disable
     _BUILD_URL_PATTERN,
     _MILO_BUILD_URL_PATTERN,
-    _CI_BUILD_URL_PATTERN
+    _CI_BUILD_URL_PATTERN,
+    _CI_BUILD_LONG_URL_PATTERN,
 ]
 
 _MILO_BUILDINFO_ENDPOINT = ('https://luci-milo.appspot.com/'
