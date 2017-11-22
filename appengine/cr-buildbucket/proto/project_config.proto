@@ -249,7 +249,7 @@ message Builder {
   // If this option IS SET, then the value of 'is_experimental' is controlled by
   // the given host's record for the mastername/buildername pair. If the build
   // has no "mastername" property, then this setting has no effect.
-  optional string luci_migration_host = 14;
+  optional google.protobuf.StringValue luci_migration_host = 14;
 }
 
 // Configuration of buildbucket-swarming integration for one bucket.

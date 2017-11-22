@@ -328,7 +328,7 @@ def _make_runtime_properties(builder_cfg, build_properties):
   """
   ret = {'is_experimental': False, 'is_luci': True}
   master = build_properties.get('mastername')
-  migration_host = builder_cfg.luci_migration_host
+  migration_host = builder_cfg.luci_migration_host.value
   if migration_host and master:
     try:
 

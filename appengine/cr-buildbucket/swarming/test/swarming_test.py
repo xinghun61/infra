@@ -302,7 +302,7 @@ class SwarmingTest(BaseTest):
 
   def test_is_experimental_no_mastername(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
-    builder_cfg.luci_migration_host = 'example.com'
+    builder_cfg.luci_migration_host.value = 'example.com'
     mrp = swarming._make_runtime_properties
 
     # No mastername skips lookup, even if there's a migration host.
@@ -311,7 +311,7 @@ class SwarmingTest(BaseTest):
 
   def test_is_experimental_error(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
-    builder_cfg.luci_migration_host = 'example.com'
+    builder_cfg.luci_migration_host.value = 'example.com'
     mrp = swarming._make_runtime_properties
 
     # 404 results in an experimental build.
@@ -332,7 +332,7 @@ class SwarmingTest(BaseTest):
 
   def test_is_experimental_works(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
-    builder_cfg.luci_migration_host = 'example.com'
+    builder_cfg.luci_migration_host.value = 'example.com'
     mrp = swarming._make_runtime_properties
 
     self.json_response = {'luci_is_prod': True, 'bucket': 'B'}
