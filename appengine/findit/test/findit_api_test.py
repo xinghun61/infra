@@ -97,7 +97,7 @@ class FinditApiTest(testing.EndpointsTestCase):
 
   @mock.patch.object(
       findit_api, '_ValidateOauthUser', return_value=('email', False))
-  def testNothingIsReturnedWhenNoAnalysisWasRun(self, _):
+  def disabled_testNothingIsReturnedWhenNoAnalysisWasRun(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 5
