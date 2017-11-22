@@ -74,6 +74,13 @@ _DEFAULT_TRY_BOT_MAPPING = {
             'flake_trybot': 'trybot2_flake',
             'not_run_tests': False,
         },
+        'builder5': {
+            'use_swarmbucket': True,
+            'mastername': 'tryserver2',
+            'waterfall_trybot': 'trybot2',
+            'flake_trybot': 'trybot2_flake',
+            'not_run_tests': False,
+        },
     },
     'm': {
         'b': {

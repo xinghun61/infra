@@ -177,6 +177,8 @@ class MastersTest(wf_testcase.WaterfallTestCase):
                      waterfall_config.GetWaterfallTrybot('master1', 'builder1'))
     self.assertEqual(('swarming_tryserver2', 'swarming_trybot2'),
                      waterfall_config.GetWaterfallTrybot('master2', 'builder4'))
+    self.assertEqual(('luci.chromium.try', 'findit_variable'),
+                     waterfall_config.GetWaterfallTrybot('master2', 'builder5'))
     self.assertEqual(('tryserver2', 'trybot2'),
                      waterfall_config.GetWaterfallTrybot(
                          'master2', 'builder4', force_buildbot=True))
@@ -188,6 +190,13 @@ class MastersTest(wf_testcase.WaterfallTestCase):
                      waterfall_config.GetFlakeTrybot('master1', 'builder1'))
     self.assertEqual((None, None),
                      waterfall_config.GetFlakeTrybot('master3', 'builder3'))
+    self.assertEqual(('swarming_tryserver2', 'swarming_trybot2'),
+                     waterfall_config.GetFlakeTrybot('master2', 'builder4'))
+    self.assertEqual(('luci.chromium.try', 'findit_variable'),
+                     waterfall_config.GetFlakeTrybot('master2', 'builder5'))
+    self.assertEqual(('tryserver2', 'trybot2_flake'),
+                     waterfall_config.GetFlakeTrybot(
+                         'master2', 'builder4', force_buildbot=True))
 
   def testGetTryJobSettings(self):
     self.assertEqual({
