@@ -1,3 +1,40 @@
+# Release Notes sheriff-o-matic 2017-11-21
+
+- 9 commits, 6 bugs affected since 52887aa (2017-11-08T00:07:03Z)
+- 4 Authors:
+  - jojwang@google.com
+  - seanmccullough@chromium.org
+  - estaab@google.com
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [SoM: Make +/- buttons in menu sections toggleable.](https://chromium-review.googlesource.com/780446) (zhangtiff@google.com)
+- [SoM: Remove per-alert group button.](https://chromium-review.googlesource.com/776396) (zhangtiff@google.com)
+- [Refactor fileBugDialog into separate element.](https://chromium-review.googlesource.com/767850) (jojwang@google.com)
+- [Link fileBugDialog to bugDialog](https://chromium-review.googlesource.com/761319) (jojwang@google.com)
+- [[som] TA/DA: allow adding expectations for tests that don't already](https://chromium-review.googlesource.com/761198) (seanmccullough@chromium.org)
+- [Link new issue to alerts](https://chromium-review.googlesource.com/760674) (jojwang@google.com)
+- [Add inline bug filing](https://chromium-review.googlesource.com/758725) (jojwang@google.com)
+- [[som] Change milo links to point to vanity URL and use public name.](https://chromium-review.googlesource.com/757896) (estaab@google.com)
+- [Add file bug handler and som-file-bug element](https://chromium-review.googlesource.com/754285) (jojwang@google.com)
+
+
+## Bugs updated, by author
+- estaab@google.com:
+  -  [https://crbug.com/765854](https://crbug.com/765854)
+
+- jojwang@google.com:
+  -  [https://crbug.com/534071](https://crbug.com/534071)
+  -  [https://crbug.com/782883](https://crbug.com/782883)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/622359](https://crbug.com/622359)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/785556](https://crbug.com/785556)
+  -  [https://crbug.com/787094](https://crbug.com/787094)
+
 # Release Notes sheriff-o-matic 2017-11-07
 
 - 2 commits, 0 bugs affected since baa8249 (2017-11-01T23:22:20Z)
