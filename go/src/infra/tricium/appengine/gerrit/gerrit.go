@@ -142,6 +142,7 @@ func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revis
 // line comments, and comments with character ranges.
 func createRobotComment(runID int64, comment tricium.Data_Comment) *robotCommentInput {
 	roco := &robotCommentInput{
+		ID:         comment.Id,
 		Message:    comment.Message,
 		RobotID:    comment.Category,
 		RobotRunID: strconv.FormatInt(runID, 10),

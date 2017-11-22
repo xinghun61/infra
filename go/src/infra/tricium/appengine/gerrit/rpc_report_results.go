@@ -50,8 +50,20 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 			requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 			runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
 			analyzerKey := ds.NewKey(c, "AnalyzerRun", req.Analyzer, 0, runKey)
-			if err := ds.GetAll(c, ds.NewQuery("Comment").Ancestor(analyzerKey), &comments); err != nil {
+			var comms []*track.Comment
+			if err := ds.GetAll(c, ds.NewQuery("Comment").Ancestor(analyzerKey), &comms); err != nil {
 				return fmt.Errorf("failed to retrieve comments: %v", err)
+			}
+			// Only include selected comments.
+			for _, comment := range comms {
+				commentKey := ds.KeyForObj(c, comment)
+				cr := &track.CommentSelection{ID: 1, Parent: commentKey}
+				if err := ds.Get(c, cr); err != nil {
+					return fmt.Errorf("failed to get CommentSelection: %v", err)
+				}
+				if cr.Included {
+					comments = append(comments, comment)
+				}
 			}
 			return nil
 		},

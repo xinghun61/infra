@@ -223,6 +223,12 @@ type WorkerRunResult struct {
 type Comment struct {
 	ID     int64   `gae:"$id"`
 	Parent *ds.Key `gae:"$parent"`
+	// Comment UUID.
+	//
+	// This is the external ID for the comment and the ID used in any external
+	// communication about the comment by the service. For instance,
+	// this is the ID used to report feedback for a comment.
+	UUID string
 	// Comment encoded as JSON.
 	//
 	// The comment must be an encoded tricium.Data_Comment JSON message

@@ -51,8 +51,10 @@ func TestComposeChangesQueryURL(t *testing.T) {
 func TestCreateRobotComment(t *testing.T) {
 	Convey("Test Enviroinment", t, func() {
 		runID := int64(1234567)
+		uuid := "7ae6f43d-22e9-4350-ace4-1fee9014509a"
 		Convey("File comment has no position info", func() {
 			roco := createRobotComment(runID, tricium.Data_Comment{
+				Id:       uuid,
 				Path:     "README.md",
 				Message:  "Message",
 				Category: "Hello",
@@ -63,6 +65,7 @@ func TestCreateRobotComment(t *testing.T) {
 		Convey("Line comment has no range info", func() {
 			line := int32(10)
 			roco := createRobotComment(runID, tricium.Data_Comment{
+				Id:        uuid,
 				Path:      "README.md",
 				Message:   "Message",
 				Category:  "Hello",
@@ -77,6 +80,7 @@ func TestCreateRobotComment(t *testing.T) {
 			startChar := int32(2)
 			endChar := int32(18)
 			roco := createRobotComment(runID, tricium.Data_Comment{
+				Id:        uuid,
 				Path:      "README.md",
 				Message:   "Message",
 				Category:  "Hello",

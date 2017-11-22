@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/google/uuid"
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/common/logging"
@@ -320,12 +321,18 @@ func collectComments(c context.Context, t tricium.Data_Type, isolator common.Iso
 			return comments, fmt.Errorf("failed to unmarshal results data: %v", err)
 		}
 		for _, comment := range results.Comments {
+			uuid, err := uuid.NewRandom()
+			if err != nil {
+				return comments, fmt.Errorf("failed to generated UUID for comment: %v", err)
+			}
+			comment.Id = uuid.String()
 			j, err := json.Marshal(comment)
 			if err != nil {
 				return comments, fmt.Errorf("failed to marshal comment data: %v", err)
 			}
 			comments = append(comments, &track.Comment{
 				Parent:    workerKey,
+				UUID:      uuid.String(),
 				Comment:   j,
 				Category:  comment.Category,
 				Platforms: results.Platforms,

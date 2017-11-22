@@ -63,8 +63,15 @@ func TestReportResultsRequest(t *testing.T) {
 				Parent:  workerKey,
 				Comment: json2,
 			},
+			{
+				Parent:  workerKey,
+				Comment: json2,
+			},
 		}
 		So(ds.Put(ctx, results), ShouldBeNil)
+		So(ds.Put(ctx, &track.CommentSelection{ID: 1, Parent: ds.KeyForObj(ctx, results[0]), Included: true}), ShouldBeNil)
+		So(ds.Put(ctx, &track.CommentSelection{ID: 1, Parent: ds.KeyForObj(ctx, results[1]), Included: true}), ShouldBeNil)
+		So(ds.Put(ctx, &track.CommentSelection{ID: 1, Parent: ds.KeyForObj(ctx, results[2]), Included: false}), ShouldBeNil)
 
 		Convey("Report results request", func() {
 			mock := &mockRestAPI{}
@@ -73,7 +80,7 @@ func TestReportResultsRequest(t *testing.T) {
 				Analyzer: analyzerName,
 			}, mock)
 			So(err, ShouldBeNil)
-			So(len(mock.LastComments), ShouldEqual, len(results))
+			So(len(mock.LastComments), ShouldEqual, len(results)-1) // only include the two selected comments
 		})
 	})
 }
