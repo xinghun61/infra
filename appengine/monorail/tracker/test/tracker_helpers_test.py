@@ -135,6 +135,23 @@ class HelpersTest(unittest.TestCase):
     self.assertEqual({}, parsed.fields.vals_remove)
     self.assertEqual([], parsed.fields.fields_clear)
 
+  def testMarkupDescriptionOnInput(self):
+    content = 'What?\nthat\nWhy?\nidk\nWhere?\n'
+    tmpl_txt = 'What?\nWhy?\nWhere?\nWhen?'
+    desc = '<b>What?</b>\nthat\n<b>Why?</b>\nidk\n<b>Where?</b>\n'
+    self.assertEqual(tracker_helpers.MarkupDescriptionOnInput(
+        content, tmpl_txt), desc)
+
+  def testMarkupDescriptionLineOnInput(self):
+    line = 'What happened??'
+    tmpl_lines = ['What happened??','Why?']
+    self.assertEqual(tracker_helpers._MarkupDescriptionLineOnInput(
+        line, tmpl_lines), '<b>What happened??</b>')
+
+    line = 'Something terrible!!!'
+    self.assertEqual(tracker_helpers._MarkupDescriptionLineOnInput(
+        line, tmpl_lines), 'Something terrible!!!')
+
   def testClassifyPlusMinusItems(self):
     add, remove = tracker_helpers._ClassifyPlusMinusItems([])
     self.assertEquals([], add)
@@ -177,7 +194,16 @@ class HelpersTest(unittest.TestCase):
     self.assertItemsEqual(['a'], remove)
 
   def testParseIssueRequestFields(self):
-    pass  # TODO(jrobbins): Write this test.
+    parsed_fields = tracker_helpers._ParseIssueRequestFields(fake.PostData({
+        'custom_1': ['https://hello.com'],
+        'custom_12': ['https://blah.com'],
+        'custom_14': ['https://remove.com'],
+        'op_custom_14': ['remove'],
+        'op_custom_12': ['clear'],
+        'ignore': 'no matter',}))
+    self.assertEquals(parsed_fields, tracker_helpers.ParsedFields(
+        {1:['https://hello.com'], 12: ['https://blah.com']},
+        {14: ['https://remove.com']}, [12]))
 
   def testParseIssueRequestAttachments(self):
     file1 = testing_helpers.Blank(
