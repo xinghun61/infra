@@ -152,38 +152,6 @@ class _FlakeAnalysis(messages.Message):
   queued = messages.BooleanField(1, required=True)
 
 
-class _FlakeSwarmingTaskRequest(messages.Message):
-  master_name = messages.StringField(1, required=True)
-  builder_name = messages.StringField(2, required=True)
-  build_number = messages.IntegerField(3, required=True)
-  step_name = messages.StringField(4, required=True)
-  test_name = messages.StringField(5, required=True)
-  total_reruns = messages.IntegerField(6, required=False, default=100)
-
-
-class _FlakeSwarmingTaskResponse(messages.Message):
-  # Whether or not the task has been queued due to unavailable bots.
-  queued = messages.BooleanField(1, required=False)
-  # The swarming task id triggered, or '' if queued.
-  task_id = messages.StringField(2, required=False)
-  #  Whether or not the task is completed.
-  completed = messages.BooleanField(3, required=False)
-  # Number of reruns the task performed.
-  total_reruns = messages.IntegerField(4, required=False)
-  # The number of times the test passed.
-  pass_count = messages.IntegerField(5, required=False)
-  # The number of times the test failed.
-  fail_count = messages.IntegerField(6, required=False)
-  # Whether or not an error was encountered/detected.
-  error = messages.BooleanField(7, required=False)
-  # The number of seconds this task is set to timeout.
-  timeout_seconds = messages.IntegerField(8, required=False)
-  # Whether or not the requested swarming task is supported/can be performed.
-  supported = messages.BooleanField(9, required=False)
-  # The original triggering source of the task.
-  triggering_source = messages.StringField(10, required=False)
-
-
 @Cached(
     PickledMemCache(),  # Since the return values are < 1MB.
     expire_time=ANALYSIS_CACHE_TIME)
@@ -206,19 +174,6 @@ def _AsyncProcessFlakeReport(flake_analysis_request, user_email, is_admin):
   payload = pickle.dumps((flake_analysis_request, user_email, is_admin))
   taskqueue.add(
       url=constants.WATERFALL_PROCESS_FLAKE_ANALYSIS_REQUEST_URL,
-      payload=payload,
-      target=target,
-      queue_name=constants.WATERFALL_FLAKE_ANALYSIS_REQUEST_QUEUE)
-
-
-def _AsyncProcessFlakeSwarmingTaskRequest(master_name, builder_name,
-                                          build_number, step_name, test_name,
-                                          iterations_to_rerun):
-  target = appengine_util.GetTargetNameForModule(constants.WATERFALL_BACKEND)
-  payload = pickle.dumps((master_name, builder_name, build_number, step_name,
-                          test_name, iterations_to_rerun))
-  taskqueue.add(
-      url=constants.WATERFALL_PROCESS_FLAKE_SWARMING_TASK_REQUEST_URL,
       payload=payload,
       target=target,
       queue_name=constants.WATERFALL_FLAKE_ANALYSIS_REQUEST_QUEUE)
@@ -644,75 +599,6 @@ class FindItApi(remote.Service):
             results, build, step_name, heuristic_analysis.failure_type, failure,
             confidences, reference_build_key, swarming_task, try_job)
 
-  def _GetFlakeSwarmingTaskResponse(self, request):
-    """Gets results of an existing flake swarming task.
-
-    Args:
-      request (_FlakeSwarmingTaskDataRequest): A request message containing the
-          master_name, builder_name, build_number, step_name, and test_name of
-          either a Waterfall or Commit Queue configuration.
-
-    Returns:
-      _FlakeSwarmingTaskResponse: A response with whether the step is supported,
-          is in progress, or any data already available about the task.
-      BuildStep: A build step with the matching waterfall configuration, if any.
-      FlakeSwarmingTask: The original flake swarming task entity from which the
-          response is based, if any.
-    """
-    test_name = request.test_name
-    build_step = BuildStep.Create(request.master_name, request.builder_name,
-                                  request.build_number, request.step_name,
-                                  time_util.GetUTCNow())
-    step_mapper.FindMatchingWaterfallStep(build_step, test_name)
-
-    if not build_step.supported:
-      return _FlakeSwarmingTaskResponse(supported=False), None, None
-
-    master_name = build_step.wf_master_name
-    builder_name = build_step.wf_builder_name
-    build_number = build_step.wf_build_number
-    step_name = build_step.wf_step_name
-    task = FlakeSwarmingTask.Get(master_name, builder_name, build_number,
-                                 step_name, test_name)
-
-    if task:
-      completed = task.status == analysis_status.COMPLETED
-      error = task.status == analysis_status.ERROR
-
-      if completed:
-        return _FlakeSwarmingTaskResponse(
-            task_id=task.task_id,
-            completed=True,
-            total_reruns=task.tries,
-            pass_count=task.successes,
-            fail_count=task.tries - task.successes,
-            timeout_seconds=task.timeout_seconds,
-            triggering_source=triggering_sources.SOURCES_TO_DESCRIPTIONS.get(
-                task.triggering_source)), build_step, task
-      elif error:
-        # In case there's an error, do not rerun the swarming task to allow for
-        # investigation.
-        return _FlakeSwarmingTaskResponse(
-            task_id=task.task_id,
-            completed=False,
-            error=True,
-            timeout_seconds=task.timeout_seconds,
-            triggering_source=triggering_sources.SOURCES_TO_DESCRIPTIONS.get(
-                task.triggering_source)), build_step, task
-      else:
-        if task.task_id is not None:  # The task is in progress.
-          return _FlakeSwarmingTaskResponse(
-              completed=False,
-              task_id=task.task_id,
-              timeout_seconds=task.timeout_seconds,
-              triggering_source=triggering_sources.SOURCES_TO_DESCRIPTIONS.get(
-                  task.triggering_source)), build_step, task
-        else:  # The task is still pending.
-          return (_FlakeSwarmingTaskResponse(queued=task.queued), build_step,
-                  task)
-    else:
-      return _FlakeSwarmingTaskResponse(supported=True), build_step, None
-
   @gae_ts_mon.instrument_endpoint()
   @endpoints.method(
       _BuildFailureCollection,
@@ -803,92 +689,3 @@ class FindItApi(remote.Service):
       logging.exception('Failed to queue flake report for async processing')
 
     return _FlakeAnalysis(queued=queued)
-
-  @gae_ts_mon.instrument_endpoint()
-  @endpoints.method(
-      _FlakeSwarmingTaskRequest,
-      _FlakeSwarmingTaskResponse,
-      path='flakeswarmingtaskdata',
-      name='flakeswarmingtaskdata')
-  def GetFlakeSwarmingTaskData(self, request):
-    """Gets results of an existing flake swarming task.
-
-    Args:
-      request (_FlakeSwarmingTaskDataRequest): A request message containing the
-          master_name, builder_name, build_number, step_name, and test_name of
-          either a Waterfall or Commit Queue configuration.
-
-    Returns:
-      _FlakeSwarmingTaskResponse: A response with whether the step is supported,
-          is in progress, or any data already available about the task.
-    """
-    _ValidateOauthUser()
-    response, _, _ = self._GetFlakeSwarmingTaskResponse(request)
-    return response
-
-  @gae_ts_mon.instrument_endpoint()
-  @endpoints.method(
-      _FlakeSwarmingTaskRequest,
-      _FlakeSwarmingTaskResponse,
-      path='flakeswarmingtask',
-      name='flakeswarmingtask')
-  def TriggerFlakeSwarmingTask(self, request):
-    """Triggers or gets results of a flake swarming task.
-
-    Args:
-      request (_FlakeSwarmingTaskRequest): A request message containing the
-          master_name, builder_name, build_number, step_name, and test_name of
-          either a Waterfall or Commit Queue configuration.
-
-    Returns:
-      _FlakeSwarmingTaskResponse: A response with whether the step is supported,
-          has been queued, its results are available, or an error occurred.
-    """
-    _ValidateOauthUser()
-
-    response, build_step, task = self._GetFlakeSwarmingTaskResponse(request)
-
-    # Abandon and rerun the task if a previous request has been made through
-    # Findit API but not started within 24 hours.
-    rerun = (
-        task and task.triggering_source == triggering_sources.FINDIT_API and
-        task.queued and
-        (not task.requested_time or
-         task.requested_time < time_util.GetUTCNow() - timedelta(hours=24)))
-
-    if (not rerun and
-        (response.task_id or response.queued or response.supported == False)):
-      return response
-
-    master_name = build_step.wf_master_name
-    builder_name = build_step.wf_builder_name
-    build_number = build_step.wf_build_number
-    step_name = build_step.wf_step_name
-
-    if not task:
-      # The task can be triggered, but has not yet been.
-      task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
-                                      step_name, request.test_name)
-      task.triggering_source = triggering_sources.FINDIT_API
-    else:
-      # Reset the task's request time as though it were new.
-      task.request_time = time_util.GetUTCNow()
-      logging.warning(('Flake swarming task %s/%s/%s/%s/%s was requested more '
-                       'than 24 hours ago. Abandoning and re-requesting.'),
-                      master_name, builder_name, build_number, step_name,
-                      request.test_name)
-
-    # The request needs to be triggered.
-    try:
-      _AsyncProcessFlakeSwarmingTaskRequest(
-          master_name, builder_name, build_number, step_name, request.test_name,
-          request.total_reruns)
-      queued = True
-      task.queued = True
-      task.put()  # Only write to the data store if the request succeeds.
-    except Exception:
-      queued = False
-      logging.exception('Failed to queue flake swarming task request for '
-                        'async processing')
-
-    return _FlakeSwarmingTaskResponse(queued=queued)

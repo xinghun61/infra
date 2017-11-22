@@ -16,8 +16,6 @@ WATERFALL_ANALYSIS_QUEUE = 'waterfall-analysis-queue'
 WATERFALL_TRY_JOB_QUEUE = 'waterfall-try-job-queue'
 WATERFALL_FAILURE_ANALYSIS_REQUEST_QUEUE = 'waterfall-failure-analysis-request'
 WATERFALL_FLAKE_ANALYSIS_REQUEST_QUEUE = 'waterfall-flake-analysis-request'
-WATERFALL_FLAKE_SWARMING_TASK_REQUEST_QUEUE = (
-    'waterfall-flake-swarming-task-request')
 RERUN_TRYJOB_QUEUE = 'rerun-tryjob'
 
 # Waterfall-related.
@@ -25,8 +23,6 @@ WATERFALL_PROCESS_FAILURE_ANALYSIS_REQUESTS_URL = (
     '/waterfall/task/process-failure-analysis-requests')
 WATERFALL_PROCESS_FLAKE_ANALYSIS_REQUEST_URL = (
     '/waterfall/task/process-flake-analysis-request')
-WATERFALL_PROCESS_FLAKE_SWARMING_TASK_REQUEST_URL = (
-    '/waterfall/task/process-flake-swarming-task-request')
 WATERFALL_ALERTS_URL = 'https://sheriff-o-matic.appspot.com/alerts'
 COMPILE_STEP_NAME = 'compile'
 
