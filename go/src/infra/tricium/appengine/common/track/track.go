@@ -229,6 +229,12 @@ type Comment struct {
 	// communication about the comment by the service. For instance,
 	// this is the ID used to report feedback for a comment.
 	UUID string
+	// Comment creation time.
+	//
+	// Comment creation time in terms of when it is tracked in the service not
+	// when it is created by the analyzer. This timestamp allows for filtering
+	// on time when summarizing analyzer feedback.
+	CreationTime time.Time
 	// Comment encoded as JSON.
 	//
 	// The comment must be an encoded tricium.Data_Comment JSON message

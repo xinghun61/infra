@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/logging"
 
 	"golang.org/x/net/context"
@@ -331,11 +332,12 @@ func collectComments(c context.Context, t tricium.Data_Type, isolator common.Iso
 				return comments, fmt.Errorf("failed to marshal comment data: %v", err)
 			}
 			comments = append(comments, &track.Comment{
-				Parent:    workerKey,
-				UUID:      uuid.String(),
-				Comment:   j,
-				Category:  comment.Category,
-				Platforms: results.Platforms,
+				Parent:       workerKey,
+				UUID:         uuid.String(),
+				CreationTime: clock.Now(c).UTC(),
+				Comment:      j,
+				Category:     comment.Category,
+				Platforms:    results.Platforms,
 			})
 		}
 	default:
