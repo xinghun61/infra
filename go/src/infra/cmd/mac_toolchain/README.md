@@ -70,3 +70,17 @@ upload and tag them properly. Run `mac_toolchain help upload` for more options.
 
 The upload command is meant to be run manually, and it will upload many GB of
 data. Be patient.
+
+### Debugging packages
+
+To debug the packages locally, run:
+
+    mac_toolchain package -output-dir path/to/dir -xcode-path /path/to/Xcode.app
+
+This will drop `mac.cipd` and `ios.cipd` files in `path/to/out` directory and
+will not try to upload the packages to CIPD server.
+
+You can then install Xcode from these local packages with:
+
+    cipd pkg-deploy -root path/to/Xcode.app path/to/out/mac.cipd
+    cipd pkg-deploy -root path/to/Xcode.app path/to/out/ios.cipd

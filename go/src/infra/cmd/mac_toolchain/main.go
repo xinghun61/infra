@@ -55,20 +55,35 @@ func (t *KindType) Set(v string) error {
 
 type commonFlags struct {
 	subcommands.CommandRunBase
-	cipdPackagePrefix  string
-	serviceAccountJSON string
+	cipdPackagePrefix string
 }
 
 type installRun struct {
 	commonFlags
-	xcodeVersion string
-	outputDir    string
-	kind         KindType
+	xcodeVersion       string
+	outputDir          string
+	kind               KindType
+	serviceAccountJSON string
 }
 
 type uploadRun struct {
 	commonFlags
+	xcodePath          string
+	serviceAccountJSON string
+}
+
+type packageRun struct {
+	commonFlags
 	xcodePath string
+	outputDir string
+}
+
+func normalizeCipdPrefix(prefix string) string {
+	// Strip the trailing /.
+	for strings.HasSuffix(prefix, "/") {
+		prefix = prefix[:len(prefix)-1]
+	}
+	return prefix
 }
 
 func (c *installRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
@@ -83,6 +98,7 @@ func (c *installRun) Run(a subcommands.Application, args []string, env subcomman
 	}
 	logging.Infof(ctx, "About to install Xcode %s in %s for %s", c.xcodeVersion, c.outputDir, c.kind.String())
 
+	c.cipdPackagePrefix = normalizeCipdPrefix(c.cipdPackagePrefix)
 	if err := installXcode(ctx, c.xcodeVersion, c.outputDir, AcceptedLicensesFile, c.cipdPackagePrefix, c.kind, c.serviceAccountJSON); err != nil {
 		errors.Log(ctx, err)
 		return 1
@@ -96,11 +112,26 @@ func (c *uploadRun) Run(a subcommands.Application, args []string, env subcommand
 		errors.Log(ctx, errors.Reason("path to Xcode.app is not specified (-xcode-path)").Err())
 		return 1
 	}
-	// Strip the trailing /.
-	for strings.HasSuffix(c.cipdPackagePrefix, "/") {
-		c.cipdPackagePrefix = c.cipdPackagePrefix[:len(c.cipdPackagePrefix)-1]
+	c.cipdPackagePrefix = normalizeCipdPrefix(c.cipdPackagePrefix)
+	if err := packageXcode(ctx, c.xcodePath, c.cipdPackagePrefix, c.serviceAccountJSON, ""); err != nil {
+		errors.Log(ctx, err)
+		return 1
 	}
-	if err := packageXcode(ctx, c.xcodePath, c.cipdPackagePrefix, c.serviceAccountJSON); err != nil {
+	return 0
+}
+
+func (c *packageRun) Run(a subcommands.Application, args []string, env subcommands.Env) int {
+	ctx := cli.GetContext(a, c, env)
+	if c.xcodePath == "" {
+		errors.Log(ctx, errors.Reason("path to Xcode.app is not specified (-xcode-path)").Err())
+		return 1
+	}
+	if c.outputDir == "" {
+		errors.Log(ctx, errors.Reason("output directory is not specified (-output-dir)").Err())
+		return 1
+	}
+	c.cipdPackagePrefix = normalizeCipdPrefix(c.cipdPackagePrefix)
+	if err := packageXcode(ctx, c.xcodePath, c.cipdPackagePrefix, "", c.outputDir); err != nil {
 		errors.Log(ctx, err)
 		return 1
 	}
@@ -109,20 +140,27 @@ func (c *uploadRun) Run(a subcommands.Application, args []string, env subcommand
 
 func commonFlagVars(c *commonFlags) {
 	c.Flags.StringVar(&c.cipdPackagePrefix, "cipd-package-prefix", DefaultCipdPackagePrefix, "CIPD package prefix.")
-	c.Flags.StringVar(&c.serviceAccountJSON, "service-account-json", "", "Service account to use for authentication.")
 }
 
 func installFlagVars(c *installRun) {
 	commonFlagVars(&c.commonFlags)
 	c.Flags.StringVar(&c.xcodeVersion, "xcode-version", "", "Xcode version code. (required)")
 	c.Flags.StringVar(&c.outputDir, "output-dir", "", "Path where to install contents of Xcode.app (required).")
+	c.Flags.StringVar(&c.serviceAccountJSON, "service-account-json", "", "Service account to use for authentication.")
 	c.Flags.Var(&c.kind, "kind", "Installation kind: "+KindTypeEnum.Choices()+". (default: \""+string(DefaultKind)+"\")")
 	c.kind = DefaultKind
 }
 
 func uploadFlagVars(c *uploadRun) {
 	commonFlagVars(&c.commonFlags)
+	c.Flags.StringVar(&c.serviceAccountJSON, "service-account-json", "", "Service account to use for authentication.")
 	c.Flags.StringVar(&c.xcodePath, "xcode-path", "", "Path to Xcode.app to be uploaded. (required)")
+}
+
+func packageFlagVars(c *packageRun) {
+	commonFlagVars(&c.commonFlags)
+	c.Flags.StringVar(&c.xcodePath, "xcode-path", "", "Path to Xcode.app to be uploaded. (required)")
+	c.Flags.StringVar(&c.outputDir, "output-dir", "", "Path to drop created CIPD packages. (required)")
 }
 
 var (
@@ -152,6 +190,17 @@ by the -output-dir. If you want an actual app that Finder can launch, specify
 			return c
 		},
 	}
+
+	cmdPackage = &subcommands.Command{
+		UsageLine: "package <options>",
+		ShortDesc: "Create CIPD packages locally.",
+		LongDesc:  "Package Xcode into CIPD packages locally (will not upload).",
+		CommandRun: func() subcommands.CommandRun {
+			c := &packageRun{}
+			packageFlagVars(c)
+			return c
+		},
+	}
 )
 
 func main() {
@@ -171,6 +220,7 @@ func main() {
 			subcommands.CmdHelp,
 			cmdInstall,
 			cmdUpload,
+			cmdPackage,
 		},
 	}
 	os.Exit(subcommands.Run(application, nil))

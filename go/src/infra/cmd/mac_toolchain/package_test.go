@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"golang.org/x/net/context"
 	"gopkg.in/yaml.v2"
 
 	cipd "go.chromium.org/luci/cipd/client/cipd/local"
@@ -71,15 +72,15 @@ func TestMakePackages(t *testing.T) {
 	})
 }
 
-func TestUploadCipdPackages(t *testing.T) {
+func TestBuildCipdPackages(t *testing.T) {
 	t.Parallel()
 
-	Convey("uploadCipdPackages works", t, func() {
+	Convey("buildCipdPackages works", t, func() {
 		packages := Packages{
 			"a": {Package: "path/a", Data: []cipd.PackageChunkDef{}},
 			"b": {Package: "path/b", Data: []cipd.PackageChunkDef{}},
 		}
-		uploadFn := func(p PackageSpec) error {
+		buildFn := func(p PackageSpec) error {
 			name := filepath.Base(p.YamlPath)
 			So(strings.HasSuffix(name, ".yaml"), ShouldBeTrue)
 			name = name[:len(name)-len(".yaml")]
@@ -94,8 +95,75 @@ func TestUploadCipdPackages(t *testing.T) {
 		}
 
 		Convey("for valid package definitions", func() {
-			err := uploadCipdPackages(packages, uploadFn)
+			err := buildCipdPackages(packages, buildFn)
 			So(err, ShouldBeNil)
+		})
+	})
+}
+
+func TestPackageXcode(t *testing.T) {
+	t.Parallel()
+
+	Convey("packageXcode works", t, func() {
+		var s MockSession
+		ctx := useMockCmd(context.Background(), &s)
+
+		Convey("for remote upload using default credentials", func() {
+			err := packageXcode(ctx, "testdata/Xcode-new.app", "test/prefix", "", "")
+			So(err, ShouldBeNil)
+			So(s.Calls, ShouldHaveLength, 2)
+
+			for i := 0; i < 2; i++ {
+				So(s.Calls[i].Executable, ShouldEqual, "cipd")
+				So(s.Calls[i].Args, ShouldContain, "create")
+				So(s.Calls[i].Args, ShouldContain, "-verification-timeout")
+				So(s.Calls[i].Args, ShouldContain, "60m")
+				So(s.Calls[i].Args, ShouldContain, "xcode_version:TESTXCODEVERSION")
+				So(s.Calls[i].Args, ShouldContain, "build_version:TESTBUILDVERSION")
+				So(s.Calls[i].Args, ShouldContain, "testbuildversion")
+
+				So(s.Calls[i].Args, ShouldNotContain, "-service-account-json")
+			}
+		})
+
+		Convey("for remote upload using a service account", func() {
+			err := packageXcode(ctx, "testdata/Xcode-new.app", "test/prefix", "test-sa", "")
+			So(err, ShouldBeNil)
+			So(s.Calls, ShouldHaveLength, 2)
+
+			for i := 0; i < 2; i++ {
+				So(s.Calls[i].Executable, ShouldEqual, "cipd")
+				So(s.Calls[i].Args, ShouldContain, "create")
+				So(s.Calls[i].Args, ShouldContain, "-verification-timeout")
+				So(s.Calls[i].Args, ShouldContain, "60m")
+				So(s.Calls[i].Args, ShouldContain, "xcode_version:TESTXCODEVERSION")
+				So(s.Calls[i].Args, ShouldContain, "build_version:TESTBUILDVERSION")
+				So(s.Calls[i].Args, ShouldContain, "testbuildversion")
+
+				So(s.Calls[i].Args, ShouldContain, "-service-account-json")
+			}
+		})
+
+		Convey("for local package creating", func() {
+			// Make sure `outputDir` actually exists in testdata; otherwise the test
+			// will needlessly create a directory and leave it behind.
+			err := packageXcode(ctx, "testdata/Xcode-new.app", "test/prefix", "", "testdata/outdir")
+			So(err, ShouldBeNil)
+			So(s.Calls, ShouldHaveLength, 2)
+
+			So(s.Calls[0].Args, ShouldContain, filepath.Join("testdata/outdir", "ios.cipd"))
+			So(s.Calls[1].Args, ShouldContain, filepath.Join("testdata/outdir", "mac.cipd"))
+
+			for i := 0; i < 2; i++ {
+				So(s.Calls[i].Executable, ShouldEqual, "cipd")
+				So(s.Calls[i].Args, ShouldContain, "pkg-build")
+
+				So(s.Calls[i].Args, ShouldNotContain, "-service-account-json")
+				So(s.Calls[i].Args, ShouldNotContain, "-verification-timeout")
+				So(s.Calls[i].Args, ShouldNotContain, "60m")
+				So(s.Calls[i].Args, ShouldNotContain, "-tag")
+				So(s.Calls[i].Args, ShouldNotContain, "-ref")
+			}
 		})
 	})
 }

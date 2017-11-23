@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"golang.org/x/net/context"
@@ -104,17 +105,25 @@ func makePackages(xcodeAppPath string, cipdPackagePrefix string, excludeAll, exc
 	return
 }
 
-// uploadCipdPackages builds and uploads CIPD packages to the server. `uploadFn`
-// callback takes a PackageSpec for each package in `packages` and is expected
-// to call `cipd create` on it.
-func uploadCipdPackages(packages Packages, uploadFn func(PackageSpec) error) error {
+// buildCipdPackages builds and optionally uploads CIPD packages to the
+// server. `buildFn` callback takes a PackageSpec for each package in `packages`
+// and is expected to call `cipd pkg-build` or `cipd create` on it.
+func buildCipdPackages(packages Packages, buildFn func(PackageSpec) error) error {
 	tmpDir, err := ioutil.TempDir("", "mac_toolchain_")
 	if err != nil {
 		return errors.Annotate(err, "cannot create a temporary folder for CIPD package configuration files in %s", os.TempDir()).Err()
 	}
 	defer os.RemoveAll(tmpDir)
 
-	for name, p := range packages {
+	// Iterate deterministically (for testability).
+	names := make([]string, 0, len(packages))
+	for name := range packages {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		p := packages[name]
 		yamlBytes, err := yaml.Marshal(p)
 		if err != nil {
 			return errors.Annotate(err, "failed to serialize %s.yaml", name).Err()
@@ -123,23 +132,36 @@ func uploadCipdPackages(packages Packages, uploadFn func(PackageSpec) error) err
 		if err = ioutil.WriteFile(yamlPath, yamlBytes, 0600); err != nil {
 			return errors.Annotate(err, "failed to write package definition file %s", yamlPath).Err()
 		}
-		if err = uploadFn(PackageSpec{Name: p.Package, YamlPath: yamlPath}); err != nil {
+		if err = buildFn(PackageSpec{Name: p.Package, YamlPath: yamlPath}); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func createUploader(ctx context.Context, xcodeVersion, buildVersion, serviceAccountJSON string) func(PackageSpec) error {
-	uploader := func(p PackageSpec) error {
-		args := []string{
-			"create", "-pkg-def", p.YamlPath,
-			"-tag", "xcode_version:" + xcodeVersion,
-			"-tag", "build_version:" + buildVersion,
-			"-ref", strings.ToLower(buildVersion), // Refs must match [a-z0-9_-]*
-			"-ref", "latest",
-			"-verification-timeout", "60m",
+func createBuilder(ctx context.Context, xcodeVersion, buildVersion, serviceAccountJSON, outputDir string) func(PackageSpec) error {
+	builder := func(p PackageSpec) error {
+		args := []string{}
+		if outputDir != "" {
+			pkgParts := strings.Split(p.Name, "/")
+			fileName := pkgParts[len(pkgParts)-1] + ".cipd"
+			args = append(args, "pkg-build",
+				"-out", filepath.Join(outputDir, fileName),
+			)
+			// Ensure outputDir exists. MkdirAll returns nil if path already exists.
+			if err := os.MkdirAll(outputDir, 0777); err != nil {
+				return errors.Annotate(err, "failed to create output directory %s", outputDir).Err()
+			}
+		} else {
+			args = append(args,
+				"create", "-verification-timeout", "60m",
+				"-tag", "xcode_version:"+xcodeVersion,
+				"-tag", "build_version:"+buildVersion,
+				"-ref", strings.ToLower(buildVersion), // Refs must match [a-z0-9_-]*
+				"-ref", "latest",
+			)
 		}
+		args = append(args, "-pkg-def", p.YamlPath)
 		if serviceAccountJSON != "" {
 			args = append(args, "-service-account-json", serviceAccountJSON)
 		}
@@ -151,10 +173,10 @@ func createUploader(ctx context.Context, xcodeVersion, buildVersion, serviceAcco
 		}
 		return nil
 	}
-	return uploader
+	return builder
 }
 
-func packageXcode(ctx context.Context, xcodeAppPath string, cipdPackagePrefix, serviceAccountJSON string) error {
+func packageXcode(ctx context.Context, xcodeAppPath string, cipdPackagePrefix, serviceAccountJSON, outputDir string) error {
 	xcodeVersion, buildVersion, err := getXcodeVersion(filepath.Join(xcodeAppPath, "Contents", "version.plist"))
 	if err != nil {
 		return errors.Annotate(err, "this doesn't look like a valid Xcode.app folder: %s", xcodeAppPath).Err()
@@ -166,13 +188,13 @@ func packageXcode(ctx context.Context, xcodeAppPath string, cipdPackagePrefix, s
 		return err
 	}
 
-	uploadFn := createUploader(ctx, xcodeVersion, buildVersion, serviceAccountJSON)
+	buildFn := createBuilder(ctx, xcodeVersion, buildVersion, serviceAccountJSON, outputDir)
 
-	if err = uploadCipdPackages(packages, uploadFn); err != nil {
+	if err = buildCipdPackages(packages, buildFn); err != nil {
 		return err
 	}
 
-	fmt.Printf("\nUploaded CIPD packages:\n")
+	fmt.Printf("\nCIPD packages:\n")
 	for _, p := range packages {
 		fmt.Printf("  %s  %s\n", p.Package, strings.ToLower(buildVersion))
 	}
