@@ -9,6 +9,8 @@ import (
 
 	"golang.org/x/net/context"
 
+	"go.chromium.org/luci/common/errors"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -23,10 +25,34 @@ func TestInstallXcode(t *testing.T) {
 			err := installXcode(ctx, "testVersion", "testdata/Xcode-old.app",
 				"testdata/acceptedLicenses.plist", "test/prefix", macKind, "")
 			So(err, ShouldBeNil)
-			So(len(s.Calls), ShouldEqual, 1)
+			So(s.Calls, ShouldHaveLength, 3)
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
 			So(s.Calls[0].Args, ShouldResemble, []string{
+				"puppet-check-updates", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
+			})
+			So(s.Calls[0].ConsumedStdin, ShouldEqual, "test/prefix/mac testVersion\n")
+
+			So(s.Calls[1].Executable, ShouldEqual, "cipd")
+			So(s.Calls[1].Args, ShouldResemble, []string{
 				"ensure", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
+			})
+			So(s.Calls[1].ConsumedStdin, ShouldEqual, "test/prefix/mac testVersion\n")
+
+			So(s.Calls[2].Executable, ShouldEqual, "chmod")
+			So(s.Calls[2].Args, ShouldResemble, []string{
+				"-R", "u+w", "testdata/Xcode-old.app",
+			})
+		})
+
+		Convey("for already installed package", func() {
+			s.ReturnError = []error{errors.Reason("already installed").Err()}
+			err := installXcode(ctx, "testVersion", "testdata/Xcode-old.app",
+				"testdata/acceptedLicenses.plist", "test/prefix", macKind, "")
+			So(err, ShouldBeNil)
+			So(s.Calls, ShouldHaveLength, 1)
+			So(s.Calls[0].Executable, ShouldEqual, "cipd")
+			So(s.Calls[0].Args, ShouldResemble, []string{
+				"puppet-check-updates", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
 			})
 			So(s.Calls[0].ConsumedStdin, ShouldEqual, "test/prefix/mac testVersion\n")
 		})
@@ -35,16 +61,29 @@ func TestInstallXcode(t *testing.T) {
 			err := installXcode(ctx, "testVersion", "testdata/Xcode-old.app",
 				"testdata/acceptedLicenses.plist", "test/prefix", macKind, "test/service-account.json")
 			So(err, ShouldBeNil)
-			So(len(s.Calls), ShouldEqual, 1)
+			So(s.Calls, ShouldHaveLength, 3)
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
 			So(s.Calls[0].Args, ShouldResemble, []string{
-				"ensure", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
+				"puppet-check-updates", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
 				"-service-account-json", "test/service-account.json",
 			})
 			So(s.Calls[0].ConsumedStdin, ShouldEqual, "test/prefix/mac testVersion\n")
+
+			So(s.Calls[1].Executable, ShouldEqual, "cipd")
+			So(s.Calls[1].Args, ShouldResemble, []string{
+				"ensure", "-ensure-file", "-", "-root", "testdata/Xcode-old.app",
+				"-service-account-json", "test/service-account.json",
+			})
+			So(s.Calls[1].ConsumedStdin, ShouldEqual, "test/prefix/mac testVersion\n")
+
+			So(s.Calls[2].Executable, ShouldEqual, "chmod")
+			So(s.Calls[2].Args, ShouldResemble, []string{
+				"-R", "u+w", "testdata/Xcode-old.app",
+			})
 		})
 
 		Convey("for new license, ios", func() {
+			s.ReturnError = []error{errors.Reason("already installed").Err()}
 			s.ReturnOutput = []string{"", "old/xcode/path"}
 			err := installXcode(ctx, "testVersion", "testdata/Xcode-new.app",
 				"testdata/acceptedLicenses.plist", "test/prefix", iosKind, "")
@@ -53,7 +92,7 @@ func TestInstallXcode(t *testing.T) {
 
 			So(s.Calls[0].Executable, ShouldEqual, "cipd")
 			So(s.Calls[0].Args, ShouldResemble, []string{
-				"ensure", "-ensure-file", "-", "-root", "testdata/Xcode-new.app",
+				"puppet-check-updates", "-ensure-file", "-", "-root", "testdata/Xcode-new.app",
 			})
 			So(s.Calls[0].ConsumedStdin, ShouldEqual,
 				"test/prefix/mac testVersion\n"+

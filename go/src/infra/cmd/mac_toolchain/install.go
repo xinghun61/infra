@@ -16,18 +16,34 @@ import (
 
 func installPackages(ctx context.Context, xcodeVersion, xcodeAppPath, cipdPackagePrefix string, kind KindType, serviceAccountJSON string) error {
 	cipdArgs := []string{
-		"ensure", "-ensure-file", "-",
+		"-ensure-file", "-",
 		"-root", xcodeAppPath,
 	}
 	if serviceAccountJSON != "" {
 		cipdArgs = append(cipdArgs, "-service-account-json", serviceAccountJSON)
 	}
+	cipdCheckArgs := append([]string{"puppet-check-updates"}, cipdArgs...)
+	cipdEnsureArgs := append([]string{"ensure"}, cipdArgs...)
 	ensureSpec := cipdPackagePrefix + "/mac " + xcodeVersion + "\n"
 	if kind == iosKind {
 		ensureSpec += cipdPackagePrefix + "/ios " + xcodeVersion + "\n"
 	}
-	if err := RunWithStdin(ctx, ensureSpec, "cipd", cipdArgs...); err != nil {
+	// Check if `cipd ensure` will do something. Note: `cipd puppet-check-updates`
+	// returns code 0 when `cipd ensure` has work to do, and "fails" otherwise.
+	// TODO(sergeyberezin): replace this with a better option when
+	// https://crbug.com/788032 is fixed.
+	if err := RunWithStdin(ctx, ensureSpec, "cipd", cipdCheckArgs...); err != nil {
+		return nil
+	}
+
+	if err := RunWithStdin(ctx, ensureSpec, "cipd", cipdEnsureArgs...); err != nil {
 		return errors.Annotate(err, "failed to install CIPD packages: %s", ensureSpec).Err()
+	}
+	// Xcode really wants its files to be user-writable (hangs mysteriously
+	// otherwise). CIPD by default installs everything read-only. Update
+	// permissions post-install.
+	if err := RunCommand(ctx, "chmod", "-R", "u+w", xcodeAppPath); err != nil {
+		return errors.Annotate(err, "failed to update Xcode.app permissions in %s", xcodeAppPath).Err()
 	}
 	return nil
 }
