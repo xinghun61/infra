@@ -50,8 +50,8 @@ TEMPLATE2LABEL_COLS = ['template_id', 'label']
 TEMPLATE2COMPONENT_COLS = ['template_id', 'component_id']
 TEMPLATE2ADMIN_COLS = ['template_id', 'admin_id']
 TEMPLATE2FIELDVALUE_COLS = [
-    'template_id', 'field_id', 'int_value', 'str_value', 'date_value',
-    'user_id']
+    'template_id', 'field_id', 'int_value', 'str_value', 'user_id',
+    'date_value', 'url_value']
 PROJECTISSUECONFIG_COLS = [
     'project_id', 'statuses_offer_merge', 'exclusive_label_prefixes',
     'default_template_for_developers', 'default_template_for_users',
@@ -954,7 +954,7 @@ class ConfigService(object):
       for fv in template.field_values:
         template2fieldvalue_rows.append(
             (template.template_id, fv.field_id, fv.int_value, fv.str_value,
-             fv.user_id or None, fv.date_value))
+             fv.user_id or None, fv.date_value, fv.url_value))
 
     self.template2label_tbl.InsertRows(
         cnxn, TEMPLATE2LABEL_COLS, template2label_rows, ignore=True,

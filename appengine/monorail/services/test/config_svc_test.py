@@ -711,7 +711,18 @@ class ConfigServiceTest(unittest.TestCase):
     self.SetUpUpdateWellKnownStatuses_Default(project_id)
     self.cnxn.Commit()
 
-  def SetUpUpdateTemplates_Default(self, project_id):
+  def SetUpUpdateTemplates_Default(
+      self, project_id, component_rows=None, admin_rows=None, fv_rows=None):
+    """Replay for UpdateTemplates.
+
+    template_tbl and template2label_tbl are based on DEFAULT_TEMPLATES
+
+    Args:
+      project_id: the project id
+      component_rows: optional list of template2component_rows
+      admin_rows: optional list of template2admin_rows
+      fv_rows: optional list of template2fieldvalue_rows
+    """
     self.config_service.template_tbl.Select(
       self.cnxn, cols=['id'], project_id=project_id).AndReturn([])
     self.config_service.template2label_tbl.Delete(
@@ -751,9 +762,9 @@ class ConfigServiceTest(unittest.TestCase):
         (1, 'Type-Defect'),
         (1, 'Priority-Medium'),
         ]
-    template2component_rows = []
-    template2admin_rows = []
-    template2fieldvalue_rows = []
+    template2component_rows = component_rows or []
+    template2admin_rows = admin_rows or []
+    template2fieldvalue_rows = fv_rows or []
 
     self.config_service.template2label_tbl.InsertRows(
         self.cnxn, config_svc.TEMPLATE2LABEL_COLS, template2label_rows,
@@ -825,6 +836,18 @@ class ConfigServiceTest(unittest.TestCase):
   def testUpdateTemplates(self):
     config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     self.SetUpUpdateTemplates_Default(789)
+
+    self.mox.ReplayAll()
+    self.config_service._UpdateTemplates(self.cnxn, config)
+    self.mox.VerifyAll()
+
+  def testUpdateTemplates_CustomFields(self):
+    config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    config.templates[0].field_values = [
+        tracker_bizobj.MakeFieldValue(
+            1, None, None, None, None, 'www.google.com', False)]
+    self.SetUpUpdateTemplates_Default(
+        789, fv_rows=[(2, 1, None, None, None, None, 'www.google.com')])
 
     self.mox.ReplayAll()
     self.config_service._UpdateTemplates(self.cnxn, config)

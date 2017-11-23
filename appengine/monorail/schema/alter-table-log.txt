@@ -1125,3 +1125,8 @@ ALTER TABLE FieldDef MODIFY field_type ENUM (
 
 ALTER TABLE Issue2FieldValue ADD COLUMN url_value VARCHAR(1024);
 ALTER TABLE Issue2FieldValue ADD INDEX (field_id, url_value);
+
+================================================================
+2017-11-22: Add url_value column to Template2FieldValue table.
+
+ALTER TABLE Template2FieldValue ADD COLUMN url_value VARCHAR(1024);

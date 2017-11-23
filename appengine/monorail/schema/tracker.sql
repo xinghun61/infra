@@ -463,6 +463,7 @@ CREATE TABLE Template2FieldValue (
   str_value VARCHAR(1024),
   user_id INT UNSIGNED,
   date_value INT,
+  url_value VARCHAR(1024),
 
   INDEX (template_id, field_id),
 
