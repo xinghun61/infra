@@ -621,7 +621,7 @@ class SearchQuery(object):
       self, buckets=None, tags=None, status=None, result=None,
       failure_reason=None, cancelation_reason=None, created_by=None,
       max_builds=None, start_cursor=None, retry_of=None, canary=None,
-      create_time_low=None, create_time_high=None):
+      create_time_low=None, create_time_high=None, include_experimental=None):
     """Initializes SearchQuery.
 
     Args:
@@ -644,6 +644,8 @@ class SearchQuery(object):
         create_time attribute. Inclusive.
       create_time_high (datetime.datetime): if not None, maximum value of
         create_time attribute. Exclusive.
+      include_experimental (bool): if true, search results will include
+        experimental builds. Otherwise, experimental builds will be excluded.
     """
     self.buckets = buckets
     self.tags = tags
@@ -658,6 +660,7 @@ class SearchQuery(object):
     self.create_time_high = create_time_high
     self.max_builds = max_builds
     self.start_cursor = start_cursor
+    self.include_experimental = include_experimental
 
   def copy(self):
     return SearchQuery(**self.__dict__)
@@ -819,6 +822,11 @@ def _query_search(q):
       return False
     if not _between(build.create_time, q.create_time_low, q.create_time_high):
       return False  # pragma: no cover
+
+    # Filter out experimental builds in this process for the same reasons why we
+    # don't filter completed builds at the datastore level, see comment above.
+    if build.experimental and not q.include_experimental:
+      return False
     return True
 
   return _fetch_page(
@@ -973,6 +981,8 @@ def _tag_index_search(q):
         continue  # pragma: no cover
       if any(t not in b.tags for t in q.tags):
         skipped_entries += 1
+        continue
+      if b.experimental and not q.include_experimental:
         continue
       result.append(b)
 

@@ -305,6 +305,7 @@ class BuildBucketApi(remote.Service):
       # search by canary_preference is not supported
       creation_ts_low=messages.IntegerField(12),  # inclusive
       creation_ts_high=messages.IntegerField(13),  # exclusive
+      include_experimental=messages.BooleanField(14),
   )
 
   class SearchResponseMessage(messages.Message):
@@ -333,6 +334,7 @@ class BuildBucketApi(remote.Service):
         canary=request.canary,
         create_time_low=parse_datetime(request.creation_ts_low),
         create_time_high=parse_datetime(request.creation_ts_high),
+        include_experimental=request.include_experimental,
     ))
     return self.SearchResponseMessage(
         builds=map(api_common.build_to_message, builds),

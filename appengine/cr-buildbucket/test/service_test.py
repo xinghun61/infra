@@ -83,6 +83,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
           }]
         },
         canary=False,
+        experimental=False,
     )
 
     self.patch(
@@ -1141,6 +1142,30 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
   def test_search_with_tag_index_cursor_but_no_inded_tag(self):
     with self.assertRaises(errors.InvalidInputError):
       self.search(start_cursor='id>1')
+
+  def test_search_with_experimental(self):
+    self.put_build(self.test_build)
+    build2 = model.Build(
+        id=self.test_build.key.id() - 1,  # newer
+        bucket=self.test_build.bucket,
+        tags=self.test_build.tags,
+        experimental=True,
+    )
+    self.put_build(build2)
+
+    builds, _ = self.search(buckets=[self.test_build.bucket])
+    self.assertEqual(builds, [self.test_build])
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG])
+    self.assertEqual(builds, [self.test_build])
+
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket], include_experimental=True)
+    self.assertEqual(builds, [build2, self.test_build])
+    builds, _ = self.search(
+        buckets=[self.test_build.bucket], tags=[self.INDEXED_TAG],
+        include_experimental=True)
+    self.assertEqual(builds, [build2, self.test_build])
 
   #################################### PEEK ####################################
 
