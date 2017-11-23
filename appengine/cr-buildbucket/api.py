@@ -79,6 +79,7 @@ class PutRequestMessage(messages.Message):
   lease_expiration_ts = messages.IntegerField(5)
   pubsub_callback = messages.MessageField(PubSubCallbackMessage, 6)
   canary_preference = messages.EnumField(model.CanaryPreference, 7)
+  experimental = messages.BooleanField(8)
 
 
 class BuildResponseMessage(messages.Message):
@@ -114,6 +115,7 @@ def put_request_messages_to_build_requests(requests):
         client_operation_id=r.client_operation_id,
         pubsub_callback=pubsub_callback_from_message(r.pubsub_callback),
         canary_preference=(r.canary_preference or model.CanaryPreference.AUTO),
+        experimental=r.experimental,
     )
     for r in requests
   ]

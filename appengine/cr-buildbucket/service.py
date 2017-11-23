@@ -167,6 +167,7 @@ def validate_tags(tags, mode, builder=None):
 _BuildRequestBase = collections.namedtuple('_BuildRequestBase', [
   'project', 'bucket', 'tags', 'parameters', 'lease_expiration_date',
   'client_operation_id', 'pubsub_callback', 'retry_of', 'canary_preference',
+  'experimental',
 ])
 
 
@@ -177,7 +178,8 @@ class BuildRequest(_BuildRequestBase):
       cls, project, bucket, tags=None, parameters=None,
       lease_expiration_date=None, client_operation_id=None,
       pubsub_callback=None, retry_of=None,
-      canary_preference=model.CanaryPreference.AUTO):
+      canary_preference=model.CanaryPreference.AUTO,
+      experimental=None):
     """Creates an BuildRequest. Does not perform validation.
 
     Args:
@@ -196,10 +198,12 @@ class BuildRequest(_BuildRequestBase):
       retry_of (int): value for model.Build.retry_of attribute.
       canary_preference (model.CanaryPreference): specifies whether canary of
         the build infrastructure should be used.
+      experimental (bool): whether this build is experimental.
     """
     self = super(BuildRequest, cls).__new__(
         cls, project, bucket, tags, parameters, lease_expiration_date,
-        client_operation_id, pubsub_callback, retry_of, canary_preference)
+        client_operation_id, pubsub_callback, retry_of, canary_preference,
+        experimental)
     return self
 
   def normalize(self):
@@ -233,7 +237,8 @@ class BuildRequest(_BuildRequestBase):
     return BuildRequest(
         self.project, self.bucket, normalized_tags, self.parameters,
         self.lease_expiration_date, self.client_operation_id,
-        self.pubsub_callback, self.retry_of, self.canary_preference)
+        self.pubsub_callback, self.retry_of, self.canary_preference,
+        self.experimental)
 
   def _client_op_memcache_key(self, identity=None):
     if self.client_operation_id is None:  # pragma: no cover
@@ -259,6 +264,7 @@ class BuildRequest(_BuildRequestBase):
         pubsub_callback=self.pubsub_callback,
         retry_of=self.retry_of,
         canary_preference=self.canary_preference,
+        experimental=self.experimental,
     )
     if self.lease_expiration_date is not None:
       build.lease_expiration_date = self.lease_expiration_date
@@ -445,8 +451,10 @@ def add_many_async(build_request_list):
   @ndb.tasklet
   def put_and_cache_builds_async():
     """Puts new builds, updates metrics and memcache."""
+    # Normalize builds right before putting.
     for b in new_builds.itervalues():
       b.tags = sorted(set(b.tags))
+      b.experimental = bool(b.experimental)
     yield ndb.put_multi_async(new_builds.values())
     memcache_sets = []
     for i, b in new_builds.iteritems():

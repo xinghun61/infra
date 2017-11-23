@@ -238,17 +238,17 @@ message Builder {
   // (see also http://docs.buildbot.net/0.8.9/manual/cfg-properties.html#interpolate)
   // but are currently against complicating config with this.
   optional google.protobuf.BoolValue auto_builder_dimension = 13;
-  // Swarming-only: This controls if buildbucket should check the in-production
-  // status of this builder with the provided host (e.g.
-  // "luci-migration.appspot.com")
-  //
-  // If this option IS UNSET, then buildbucket will set the property:
-  //
-  //   "$recipe_engine/runtime"["is_experimental"] = false
-  //
-  // If this option IS SET, then the value of 'is_experimental' is controlled by
-  // the given host's record for the mastername/buildername pair. If the build
-  // has no "mastername" property, then this setting has no effect.
+  // If set to true, by default a new build in this builder will be marked as
+  // experimental.
+  // This is useful for inherently experimental builders that use production
+  // recipes.
+  optional google.protobuf.BoolValue experimental = 15;
+  // If this field is set, and a build request is not marked as
+  // experimental/prod explicitly and has "mastername" property, buildbucket
+  // will contact this instance of luci-migration app to determine whether the
+  // builder is experimental.
+  // On success, this takes precedence over Builder.experimental proto field
+  // (above).
   optional google.protobuf.StringValue luci_migration_host = 14;
 }
 

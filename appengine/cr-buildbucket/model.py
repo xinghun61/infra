@@ -133,6 +133,9 @@ class Build(ndb.Model):
   # Specifies whether canary of build infrastructure should be used for this
   # build.
   canary_preference = msgprop.EnumProperty(CanaryPreference, indexed=False)
+  # If True, the build won't affect monitoring and won't be surfaced in
+  # search results unless explicitly requested.
+  experimental = ndb.BooleanProperty()
 
   # Lease-time attributes.
 

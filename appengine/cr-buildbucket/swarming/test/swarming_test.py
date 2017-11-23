@@ -292,61 +292,48 @@ class SwarmingTest(BaseTest):
       {'key': 'pool', 'value': 'Chrome'},
     ]))
 
-  def test_is_experimental_unset(self):
+  def test_is_migrating_builder_prod_async(self):
+    build = mkBuild(parameters={'properties': {}})
     builder_cfg = self.bucket_cfg.swarming.builders[0]
-    mrp = swarming._make_runtime_properties
 
-    # if no luci_migration_host is set, we bail early
-    self.assertEqual(mrp(builder_cfg, {'mastername': 'Nope'}).get_result(),
-                     {'is_experimental': False, 'is_luci': True})
+    def is_prod():
+      return swarming._is_migrating_builder_prod_async(
+          builder_cfg, build).get_result()
 
-  def test_is_experimental_no_mastername(self):
-    builder_cfg = self.bucket_cfg.swarming.builders[0]
-    builder_cfg.luci_migration_host.value = 'example.com'
-    mrp = swarming._make_runtime_properties
+    self.assertIsNone(is_prod())
+    self.assertFalse(net.json_request_async.called)
 
-    # No mastername skips lookup, even if there's a migration host.
-    self.assertEqual(mrp(builder_cfg, {}).get_result(),
-                     {'is_experimental': False, 'is_luci': True})
+    builder_cfg.luci_migration_host.value = 'migration.example.com'
+    self.assertIsNone(is_prod())
+    self.assertFalse(net.json_request_async.called)
 
-  def test_is_experimental_error(self):
-    builder_cfg = self.bucket_cfg.swarming.builders[0]
-    builder_cfg.luci_migration_host.value = 'example.com'
-    mrp = swarming._make_runtime_properties
+    self.json_response = {'luci_is_prod': True, 'bucket': 'luci.chromium.try'}
+    build.parameters['properties']['mastername'] = 'tryserver.chromium.linux'
+    self.assertTrue(is_prod())
+    self.assertTrue(net.json_request_async.called)
+    net.json_request_async.reset_mock()
 
-    # 404 results in an experimental build.
+    self.json_response['luci_is_prod'] = False
+    self.assertFalse((is_prod()))
+    self.assertTrue(net.json_request_async.called)
+
     self.net_err_response = net.NotFoundError('nope', 404, "can't find it")
-    self.assertEqual(mrp(builder_cfg, {'mastername': 'M'}).get_result(),
-                     {'is_experimental': True, 'is_luci': True})
+    self.assertIsNone(is_prod())
 
-    # 500 also results in an experimental build.
     self.net_err_response = net.Error('BOOM', 500, "IT'S BAD")
-    self.assertEqual(mrp(builder_cfg, {'mastername': 'M'}).get_result(),
-                     {'is_experimental': True, 'is_luci': True})
+    self.assertIsNone(is_prod())
 
-    # Bad json results in experimental build too.
     self.net_err_response = None
-    self.json_response = {'poop': True}
-    self.assertEqual(mrp(builder_cfg, {'mastername': 'M'}).get_result(),
-                     {'is_experimental': True, 'is_luci': True})
-
-  def test_is_experimental_works(self):
-    builder_cfg = self.bucket_cfg.swarming.builders[0]
-    builder_cfg.luci_migration_host.value = 'example.com'
-    mrp = swarming._make_runtime_properties
-
-    self.json_response = {'luci_is_prod': True, 'bucket': 'B'}
-    self.assertEqual(mrp(builder_cfg, {'mastername': 'M'}).get_result(),
-                     {'is_experimental': False, 'is_luci': True})
-
-    self.json_response = {'luci_is_prod': False, 'bucket': 'B'}
-    self.assertEqual(mrp(builder_cfg, {'mastername': 'M'}).get_result(),
-                     {'is_experimental': True, 'is_luci': True})
+    self.json_response = {'foo': True}
+    self.assertIsNone(is_prod())
 
   def test_create_task_async(self):
     self.patch(
         'components.auth.get_current_identity', autospec=True,
         return_value=auth.Identity('user', 'john@example.com'))
+    self.patch(
+        'swarming.swarming._is_migrating_builder_prod_async',
+        autospec=True, return_value=future(True))
 
     build = mkBuild(
         parameters={

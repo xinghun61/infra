@@ -36,6 +36,7 @@ class BuildMessage(messages.Message):
   canary_preference = messages.EnumField(model.CanaryPreference, 21)
   canary = messages.BooleanField(22)
   project = messages.StringField(23)
+  experimental = messages.BooleanField(24)
 
 
 def datetime_to_timestamp_safe(value):
@@ -51,29 +52,30 @@ def build_to_message(build, include_lease_key=False):
   assert build.key.id()
 
   msg = BuildMessage(
-    id=build.key.id(),
-    bucket=build.bucket,
-    tags=build.tags,
-    parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
-    status=build.status,
-    result=build.result,
-    result_details_json=json.dumps(build.result_details),
-    cancelation_reason=build.cancelation_reason,
-    failure_reason=build.failure_reason,
-    lease_key=build.lease_key if include_lease_key else None,
-    url=build.url,
-    created_ts=datetime_to_timestamp_safe(build.create_time),
-    started_ts=datetime_to_timestamp_safe(build.start_time),
-    updated_ts=datetime_to_timestamp_safe(build.update_time),
-    completed_ts=datetime_to_timestamp_safe(build.complete_time),
-    created_by=build.created_by.to_bytes() if build.created_by else None,
-    status_changed_ts=datetime_to_timestamp_safe(build.status_changed_time),
-    utcnow_ts=datetime_to_timestamp_safe(utils.utcnow()),
-    retry_of=build.retry_of,
-    canary_preference=build.canary_preference,
-    canary=build.canary,
-    project=build.project,
-    # when changing this function, make sure build_to_dict would still work
+      id=build.key.id(),
+      bucket=build.bucket,
+      tags=build.tags,
+      parameters_json=json.dumps(build.parameters or {}, sort_keys=True),
+      status=build.status,
+      result=build.result,
+      result_details_json=json.dumps(build.result_details),
+      cancelation_reason=build.cancelation_reason,
+      failure_reason=build.failure_reason,
+      lease_key=build.lease_key if include_lease_key else None,
+      url=build.url,
+      created_ts=datetime_to_timestamp_safe(build.create_time),
+      started_ts=datetime_to_timestamp_safe(build.start_time),
+      updated_ts=datetime_to_timestamp_safe(build.update_time),
+      completed_ts=datetime_to_timestamp_safe(build.complete_time),
+      created_by=build.created_by.to_bytes() if build.created_by else None,
+      status_changed_ts=datetime_to_timestamp_safe(build.status_changed_time),
+      utcnow_ts=datetime_to_timestamp_safe(utils.utcnow()),
+      retry_of=build.retry_of,
+      canary_preference=build.canary_preference,
+      canary=build.canary,
+      project=build.project,
+      experimental=build.experimental,
+      # when changing this function, make sure build_to_dict would still work
   )
   if build.lease_expiration_date is not None:
     msg.lease_expiration_ts = utils.datetime_to_timestamp(

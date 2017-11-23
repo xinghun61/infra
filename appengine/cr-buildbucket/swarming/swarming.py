@@ -322,35 +322,29 @@ def apply_if_tags(task):
 
 
 @ndb.tasklet
-def _make_runtime_properties(builder_cfg, build_properties):
-  """Creates the $recipe_engine/runtime JSON object.
+def _is_migrating_builder_prod_async(builder_cfg, build):
+  """Returns True if the builder is prod according to the migration app.
 
-  The value of 'is_experimental' depends on on the migration status of the
-  builder (see 'luci_migration_host' in the project config).
+  See also 'luci_migration_host' in the project config.
 
-  Returns:
-    A dict with 'is_experimental' and 'is_luci' booleans.
+  If unknown, returns None.
+  On failures, logs them and returns None.
   """
-  ret = {'is_experimental': False, 'is_luci': True}
-  master = build_properties.get('mastername')
-  migration_host = builder_cfg.luci_migration_host.value
-  if migration_host and master:
+  ret = None
+
+  master = (build.parameters.get(PARAM_PROPERTIES) or {}).get('mastername')
+  if master and builder_cfg.luci_migration_host.value:
     try:
-
       url = 'https://%s/masters/%s/builders/%s/' % (
-          migration_host, master, builder_cfg.name)
-
-      obj = yield net.json_request_async(url, params={'format': 'json'})
-      ret['is_experimental'] = not bool(obj.get('luci_is_prod'))
+          builder_cfg.luci_migration_host.value, master, builder_cfg.name)
+      res = yield net.json_request_async(url, params={'format': 'json'})
+      ret = res.get('luci_is_prod')
     except net.NotFoundError:
-      ret['is_experimental'] = True
       logging.warning(
           'missing migration status for %r/%r', master, builder_cfg.name)
     except net.Error:
-      ret['is_experimental'] = True
       logging.exception(
           'failed to get migration status for %r/%r', master, builder_cfg.name)
-
   raise ndb.Return(ret)
 
 
@@ -417,18 +411,26 @@ def _create_task_def_async(
   is_recipe = builder_cfg.HasField('recipe')
   if is_recipe:  # pragma: no branch
     build_properties = swarmingcfg_module.read_properties(builder_cfg.recipe)
-    recipe_revision = builder_cfg.recipe.revision or 'HEAD'
+    # Properties specified in build parameters must override those in builder
+    # config.
+    build_properties.update(build.parameters.get(PARAM_PROPERTIES) or {})
 
+    recipe_revision = builder_cfg.recipe.revision or 'HEAD'
     build_properties.update(
         buildername=builder_cfg.name,
         buildbucket=_buildbucket_property(build),
     )
+    assert isinstance(build.experimental, bool)
+    build_properties.setdefault('$recipe_engine/runtime', {}).update(
+        is_luci=True,
+        is_experimental=build.experimental,
+    )
+
     if build_number is not None:  # pragma: no branch
       build_properties['buildnumber'] = build_number
     if not fake_build:  # pragma: no branch
       build_properties['build_id'] = 'buildbucket/%s/%d' % (
           app_identity.get_default_version_hostname(), build.key.id())
-
 
     changes = params.get(PARAM_CHANGES)
     if changes:  # pragma: no branch
@@ -448,16 +450,6 @@ def _create_task_def_async(
       # property.
       emails = [c.get('author', {}).get('email') for c in changes]
       build_properties['blamelist'] = filter(None, emails)
-
-    # Properties specified in build parameters must override any values derived
-    # by swarmbucket.
-    build_properties.update(build.parameters.get(PARAM_PROPERTIES) or {})
-
-    # If the user already specified $recipe_engine/runtime, then don't attempt
-    # to fill it in.
-    if '$recipe_engine/runtime' not in build_properties:  # pragma: no branch
-      build_properties['$recipe_engine/runtime'] = (
-          yield _make_runtime_properties(builder_cfg, build_properties))
 
     task_template_params.update({
       'repository': builder_cfg.recipe.repository,
@@ -615,6 +607,12 @@ def prepare_task_def_async(build, settings, fake_build=False):
     build.tags.append('build_address:%s/%d' % (seq_name, build_number))
 
   build.url = _generate_build_url(settings.milo_hostname, build, build_number)
+
+  if build.experimental is None:
+    build.experimental = builder_cfg.experimental.value or False
+    is_prod = yield _is_migrating_builder_prod_async(builder_cfg, build)
+    if is_prod is not None:
+      build.experimental = not is_prod
 
   task_def = yield _create_task_def_async(
       bucket_cfg.swarming, builder_cfg, build, build_number, settings,

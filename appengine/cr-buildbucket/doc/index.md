@@ -70,6 +70,9 @@ A Build JSON object may have the following keys:
     response must be BAD REQUEST.
 *   `canary`: a boolean that indicates whether a canary of the build
     infrastructure is used to run this build.
+*   `experimental`: a boolean that indicates whether this build is experimental.
+    An experimental build does not show up in search results by default, does
+    not affect monitoring and its execution should not affect production.
 
 All timestamps are in microseconds since Unix Epoch.
 
