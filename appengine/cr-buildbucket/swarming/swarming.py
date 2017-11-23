@@ -183,12 +183,17 @@ def validate_build_parameters(builder_name, params):
   properties = params.pop(PARAM_PROPERTIES, None)
   if properties is not None:
     assert_object('properties', properties)
-    if properties.get('buildername', builder_name) != builder_name:
+    if properties.pop('buildername', builder_name) != builder_name:
       bad('inconsistent builder name')
     expected_emails = [c['author']['email'] for c in (changes or [])]
-    if properties.get('blamelist') not in (None, expected_emails):
+    if properties.pop('blamelist', None) not in (None, expected_emails):
         bad('inconsistent blamelist property; blamelist must not be set or '
             'it must match the emails in the "changes" build parameter')
+    # Validate the rest of the properties using common logic.
+    ctx = validation.Context.raise_on_error(exc_type=errors.InvalidInputError)
+    for k, v in properties.iteritems():
+      with ctx.prefix('property %r:', k):
+        swarmingcfg_module.validate_recipe_property(k, v, ctx)
 
   swarming = params.pop(PARAM_SWARMING, None)
   if swarming is not None:

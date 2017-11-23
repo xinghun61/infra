@@ -1,7 +1,8 @@
-
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+import json
 
 from components import utils
 utils.fix_protobuf_package()
@@ -19,15 +20,14 @@ from swarming import swarmingcfg
 
 class ProjectCfgTest(testing.AppengineTestCase):
   def cfg_test(self, swarming_text, mixins_text, expected_errors):
-    ctx = config_component.validation.Context()
-
     swarming_cfg = project_config_pb2.Swarming()
     protobuf.text_format.Merge(swarming_text, swarming_cfg)
 
     buildbucket_cfg = project_config_pb2.BuildbucketCfg()
     protobuf.text_format.Merge(mixins_text, buildbucket_cfg)
-
     mixins = {m.name: m for m in buildbucket_cfg.builder_mixins}
+
+    ctx = config_component.validation.Context()
     swarmingcfg.validate_project_cfg(swarming_cfg, mixins, True, ctx)
     self.assertEqual(
         map(config_test.errmsg, expected_errors),
@@ -63,6 +63,59 @@ class ProjectCfgTest(testing.AppengineTestCase):
         ''',
         '',
         [])
+
+  def test_validate_recipe_properties(self):
+    def test(properties, properties_j, expected_errors):
+      ctx = config_component.validation.Context()
+      swarmingcfg.validate_recipe_properties(properties, properties_j, ctx)
+      self.assertEqual(
+          map(config_test.errmsg, expected_errors),
+          ctx.result().messages)
+
+
+    test([], [], [])
+
+    runtime = '$recipe_engine/runtime:' + json.dumps({
+      'is_luci': False,
+      'is_experimental': True,
+    })
+    test(
+        properties=[
+          '',
+          ':',
+          'buildername:foobar',
+          'x:y',
+        ],
+        properties_j=[
+          'x:"y"',
+          'y:b',
+          'z',
+          runtime,
+        ],
+        expected_errors=[
+          'properties \'\': does not have a colon',
+          'properties \':\': key not specified',
+          'properties \'buildername:foobar\': reserved property',
+          'properties_j \'x:"y"\': duplicate property',
+          'properties_j \'y:b\': No JSON object could be decoded',
+          'properties_j \'z\': does not have a colon',
+          'properties_j %r: key \'is_luci\': reserved key' % runtime,
+          'properties_j %r: key \'is_experimental\': reserved key' % runtime,
+        ]
+    )
+
+    test(
+        [],
+        ['$recipe_engine/runtime:1'],
+        [
+          ('properties_j \'$recipe_engine/runtime:1\': '
+           'not a JSON object'),
+        ])
+
+    test(
+      [],
+      ['$recipe_engine/runtime:{"unrecognized_is_fine": 1}'],
+      [])
 
   def test_bad(self):
     self.cfg_test(
@@ -119,15 +172,6 @@ class ProjectCfgTest(testing.AppengineTestCase):
             caches { name: "b" path: "a\\c" }
             caches { name: "c" path: "a/.." }
             caches { name: "d" path: "/a" }
-            recipe {
-              properties: ""
-              properties: ":"
-              properties: "buildername:foobar"
-              properties: "x:y"
-              properties_j: "x:\\\"y\\\""
-              properties_j: "y:b"
-              properties_j: "z"
-            }
             priority: 300
           }
         ''',
@@ -151,69 +195,6 @@ class ProjectCfgTest(testing.AppengineTestCase):
            'On Windows forward-slashes will be replaced with back-slashes.'),
           'builder b2: cache #4: path cannot contain ".."',
           'builder b2: cache #5: path cannot start with "/"',
-          'builder b2: recipe: properties #1: does not have colon',
-          'builder b2: recipe: properties #2: key not specified',
-          ('builder b2: recipe: properties #3: '
-           'do not specify buildername property; '
-           'it is added by swarmbucket automatically'),
-          'builder b2: recipe: properties_j #1: duplicate property "x"',
-          ('builder b2: recipe: properties_j #2: '
-           'No JSON object could be decoded'),
-          'builder b2: recipe: properties_j #3: does not have colon',
-          'builder b2: priority must be in [0, 200] range; got 300',
-        ])
-
-    self.cfg_test(
-        '''
-          task_template_canary_percentage {value: 102}
-          builder_defaults {
-            swarming_tags: "wrong"
-            dimensions: ""
-          }
-          builders {
-            swarming_tags: "wrong2"
-            dimensions: ":"
-            dimensions: "a.b:c"
-            dimensions: "pool:default"
-          }
-          builders {
-            name: "b2"
-            swarming_tags: "builder:b2"
-            dimensions: "x:y"
-            dimensions: "x:y2"
-            recipe {
-              properties: ""
-              properties: ":"
-              properties: "buildername:foobar"
-              properties: "x:y"
-              properties_j: "x:\\\"y\\\""
-              properties_j: "y:b"
-              properties_j: "z"
-            }
-            priority: 300
-          }
-        ''',
-        '',
-        [
-          'task_template_canary_percentage.value must must be in [0, 100]',
-          'builder_defaults: tag #1: does not have ":": wrong',
-          'builder_defaults: dimension #1: does not have ":"',
-          'builder #1: tag #1: does not have ":": wrong2',
-          'builder #1: dimension #1: no key',
-          ('builder #1: dimension #2: '
-           'key "a.b" does not match pattern "^[a-zA-Z\_\-]+$"'),
-          ('builder b2: tag #1: do not specify builder tag; '
-           'it is added by swarmbucket automatically'),
-          'builder b2: dimension #2: duplicate key x',
-          'builder b2: recipe: properties #1: does not have colon',
-          'builder b2: recipe: properties #2: key not specified',
-          ('builder b2: recipe: properties #3: '
-           'do not specify buildername property; '
-           'it is added by swarmbucket automatically'),
-          'builder b2: recipe: properties_j #1: duplicate property "x"',
-          ('builder b2: recipe: properties_j #2: '
-           'No JSON object could be decoded'),
-          'builder b2: recipe: properties_j #3: does not have colon',
           'builder b2: priority must be in [0, 200] range; got 300',
         ])
 
@@ -284,7 +265,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
         ''',
         '',
         [
-          'builder_defaults: recipe: properties #1: does not have colon',
+          'builder_defaults: recipe: properties \'a\': does not have a colon',
         ])
 
   def test_validate_builder_mixins(self):

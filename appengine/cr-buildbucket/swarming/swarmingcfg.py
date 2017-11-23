@@ -163,40 +163,48 @@ def validate_recipe_cfg(recipe, ctx, final=True):
   validate_recipe_properties(recipe.properties, recipe.properties_j, ctx)
 
 
+def validate_recipe_property(key, value, ctx):
+  if not key:
+    ctx.error('key not specified')
+  elif key in {'buildername', 'buildbucket'}:
+    ctx.error('reserved property')
+  elif key == '$recipe_engine/runtime':
+    if not isinstance(value, dict):
+      ctx.error('not a JSON object')
+    else:
+      for k in ('is_luci', 'is_experimental'):
+        if k in value:
+          ctx.error('key %r: reserved key', k)
+
+
 def validate_recipe_properties(properties, properties_j, ctx):
   keys = set()
 
-  def validate_key(key):
-    if not key:
-      ctx.error('key not specified')
-    elif key =='buildername':
-      ctx.error(
-          'do not specify buildername property; '
-          'it is added by swarmbucket automatically')
-    if key in keys:
-      ctx.error('duplicate property "%s"', key)
+  def validate(props, is_json):
+    for p in props:
+      with ctx.prefix('%r: ', p):
+        if ':' not in p:
+          ctx.error('does not have a colon')
+          continue
 
-  for i, p in enumerate(properties):
-    with ctx.prefix('properties #%d: ', i + 1):
-      if ':' not in p:
-        ctx.error('does not have colon')
-      else:
-        key, _ = p.split(':', 1)
-        validate_key(key)
-        keys.add(key)
-
-  for i, p in enumerate(properties_j):
-    with ctx.prefix('properties_j #%d: ', i + 1):
-      if ':' not in p:
-        ctx.error('does not have colon')
-      else:
         key, value = p.split(':', 1)
-        validate_key(key)
-        keys.add(key)
-        try:
-          json.loads(value)
-        except ValueError as ex:
-          ctx.error(ex)
+        if is_json:
+          try:
+            value = json.loads(value)
+          except ValueError as ex:
+            ctx.error(ex)
+            continue
+
+        validate_recipe_property(key, value, ctx)
+        if key in keys:
+          ctx.error('duplicate property')
+        else:
+          keys.add(key)
+
+  with ctx.prefix('properties '):
+    validate(properties, False)
+  with ctx.prefix('properties_j '):
+    validate(properties_j, True)
 
 
 def validate_builder_cfg(builder, mixin_names, final, ctx):
