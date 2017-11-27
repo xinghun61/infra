@@ -36,6 +36,10 @@ It has these top-level messages:
 	AnalyzerProgress
 	ResultsRequest
 	ResultsResponse
+	FeedbackRequest
+	FeedbackResponse
+	ReportNotUsefulRequest
+	ReportNotUsefulResponse
 	GerritConsumerDetails
 */
 package tricium

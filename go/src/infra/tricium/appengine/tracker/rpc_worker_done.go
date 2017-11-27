@@ -75,7 +75,8 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 
 	// Process isolated output and collect comments.
 	// NB! This only applies to analyzers outputting comments.
-	comments, err := collectComments(c, req.Provides, isolator, run.IsolateServerURL, req.IsolatedOutputHash, workerKey)
+	comments, err := collectComments(c, req.Provides, isolator, run.IsolateServerURL,
+		req.IsolatedOutputHash, analyzerName, workerKey)
 	if err != nil {
 		return fmt.Errorf("failed to get worker results: %v", err)
 	}
@@ -308,7 +309,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 }
 
 func collectComments(c context.Context, t tricium.Data_Type, isolator common.IsolateAPI,
-	isolateServerURL, isolatedOutputHash string, workerKey *ds.Key) ([]*track.Comment, error) {
+	isolateServerURL, isolatedOutputHash, analyzer string, workerKey *ds.Key) ([]*track.Comment, error) {
 	comments := []*track.Comment{}
 	switch t {
 	case tricium.Data_RESULTS:
@@ -336,6 +337,7 @@ func collectComments(c context.Context, t tricium.Data_Type, isolator common.Iso
 				UUID:         uuid.String(),
 				CreationTime: clock.Now(c).UTC(),
 				Comment:      j,
+				Analyzer:     analyzer,
 				Category:     comment.Category,
 				Platforms:    results.Platforms,
 			})

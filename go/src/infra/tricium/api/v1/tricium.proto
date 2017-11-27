@@ -27,6 +27,14 @@ service Tricium {
   //
   // A run corresponds to an analyze request and is identified with a run ID.
   rpc Results(ResultsRequest) returns (ResultsResponse);
+
+  // Feedback requests feedback for an analyzer category.
+  rpc Feedback(FeedbackRequest) returns (FeedbackResponse);
+
+  // ReportNotUseful reports not useful feedback for a robot comment.
+  //
+  // NB! Issue reporting is currently not supported.
+  rpc ReportNotUseful(ReportNotUsefulRequest) returns (ReportNotUsefulResponse);
 }
 
 // AnalyzeRequest contains the details needed for an analysis request.
@@ -171,6 +179,65 @@ message ResultsResponse {
   // Results for a run with no specific analyzer selected will be marked as merged
   // if any included analyzer results were merged.
   bool is_merged = 2;
+}
+
+message FeedbackRequest {
+  // Analyzer category to provide aggregated feedback for.
+  //
+  // This includes the analyzer name along with optional subcategories
+  // separated with slash, e.g., "ClangTidy" or "ClangTidy/llvm-header-guard".
+  //
+  // Required field. Must include at least the analyzer name and should not
+  // end with a slash.
+  string category = 1;
+
+  // Start of time period to report feedback for.
+  //
+  // Feedback for comments created from this time will be included.
+  // Must be on the form "2006-01-02T08:04:05Z" (RFC 3339) and before end_time.
+  //
+  // Optional field. Defaults to epoch start of time (Jan 1, 1970).
+  string start_time = 2;
+
+  // End of time period to report feedback for.
+  //
+  // Feedback from comments created before this time will be included.
+  // Must be on the form "2006-01-02T08:04:05Z" (RFC 3339) and after start_time.
+  //
+  // Optional field. Defaults to now.
+  string end_time = 3;
+}
+
+message FeedbackResponse {
+  // Number of returned comments.
+  //
+  // In any case where an analyzer was run on multiple platforms and the resulting
+  // comments were merged, only merged comments are returned in this count. Note that
+  // only merged comments are ever returned from the Tricium service.
+  int32 comments = 1;
+
+  // Number of collected ‘not useful’ reports.
+  int32 not_useful_reports = 2;
+
+  // List of URLs to ‘not useful’ bug reports.
+  repeated string issues = 3;
+}
+
+message ReportNotUsefulRequest {
+  // ID of comment as returned by the Results end point.
+  string comment_id = 1;
+
+  // More feedback information.
+  //
+  // Optional field.
+  string more_details = 2;
+}
+
+message ReportNotUsefulResponse {
+  // URL to issue if created.
+  //
+  // Only created if there were feedback details.
+  string issue = 1;
 }
 
 enum State {

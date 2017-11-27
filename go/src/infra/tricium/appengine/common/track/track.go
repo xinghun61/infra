@@ -240,9 +240,13 @@ type Comment struct {
 	// The comment must be an encoded tricium.Data_Comment JSON message
 	// TODO(emso): Consider storing structured comment data.
 	Comment []byte `gae:",noindex"`
+	// Analyzer name.
+	//
+	// This field allows for filtering on analyzer name.
+	Analyzer string
 	// Comment category with subcategories.
 	//
-	// This includes the analyzer name, e.g., "clang-tidy/llvm-header-guard".
+	// This includes the analyzer name, e.g., "ClangTidy/llvm-header-guard".
 	Category string
 	// Platforms this comment applies to.
 	//
@@ -275,11 +279,12 @@ type CommentFeedback struct {
 	ID     int64   `gae:"$id"`
 	Parent *ds.Key `gae:"$parent"`
 	// Number of 'not useful' clicks.
-	NotUseful int
+	// TODO(emso): store information to prevent multiple clicks by the same user.
+	NotUsefulReports int
 	// Links to more information about why the comment was found not useful.
 	//
 	// This should typically be a link to a Monorail issue.
-	NotUsefulIssueURL []string
+	NotUsefulIssueURLs []string
 	// TODO(emso): Collect data for number of times shown?
 }
 
