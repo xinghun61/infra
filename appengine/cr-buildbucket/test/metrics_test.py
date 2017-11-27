@@ -141,10 +141,5 @@ class MetricsTest(testing.AppengineTestCase):
     actual = metrics._fields_for(build, expected.keys())
     self.assertEqual(expected, actual)
 
-    expected = {f: metrics._default_field_value(f) for f in expected}
-    self.assertEqual(
-        expected,
-        metrics._fields_for(None, expected.keys()))
-
     with self.assertRaises(ValueError):
       metrics._fields_for(build, ['wrong field'])

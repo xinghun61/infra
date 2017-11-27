@@ -101,11 +101,10 @@ def on_build_completed(build):  # pragma: no cover
     metrics.add_build_run_duration(build)
 
 
-def on_heartbeat_failure(build_id, build, ex):  # pragma: no cover
-  # build may be None
+def on_heartbeat_failure(build_id, ex):  # pragma: no cover
   assert not ndb.in_transaction()
   logging.warning('Heartbeat for build %s failed: %s', build_id, ex)
-  metrics.inc_heartbeat_failures(build)
+  metrics.inc_heartbeat_failures()
 
 
 def on_build_leased(build):  # pragma: no cover

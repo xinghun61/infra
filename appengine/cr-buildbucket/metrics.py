@@ -52,12 +52,6 @@ def _fields_for(build, field_names):
     if f not in _BUILD_FIELDS:
       raise ValueError('invalid field %r' % f)
 
-  if not build:
-    return {
-      f: _default_field_value(f)
-      for f in field_names
-    }
-
   tags = None
   result = {}
   for f in field_names:
@@ -120,10 +114,6 @@ inc_completed_builds = _incrementer(gae_ts_mon.CounterMetric(
     _build_fields(
         'bucket', 'builder', 'result', 'failure_reason', 'cancelation_reason',
         'canary')))
-inc_heartbeat_failures = _incrementer(gae_ts_mon.CounterMetric(
-    'buildbucket/builds/heartbeats',
-    'Failures to extend a build lease',
-    _build_fields('bucket', 'builder', 'status')))
 inc_lease_expirations = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/lease_expired',
     'Build lease expirations',
@@ -132,6 +122,11 @@ inc_leases = _incrementer(gae_ts_mon.CounterMetric(
     'buildbucket/builds/leases',
     'Successful build leases or lease extensions',
     _build_fields('bucket', 'builder')))
+
+
+inc_heartbeat_failures = gae_ts_mon.CounterMetric(
+    'buildbucket/builds/heartbeats',
+    'Failures to extend a build lease', []).increment
 
 
 _BUILD_DURATION_FIELDS = _build_fields(

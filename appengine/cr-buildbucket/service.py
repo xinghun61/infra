@@ -1237,11 +1237,10 @@ def heartbeat_async(build_id, lease_key, lease_expiration_date):
     yield build.put_async()
     raise ndb.Return(build)
 
-  build = None
   try:
     build = yield txn()
   except Exception as ex:
-    events.on_heartbeat_failure(build_id, build, ex)
+    events.on_heartbeat_failure(build_id, ex)
     raise
   raise ndb.Return(build)
 
