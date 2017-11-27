@@ -101,9 +101,14 @@ def RunSteps(api, buildername):
       )
   finally:
     step_result = api.step.active_result
-    if botconfig.get('lkgr_status_gs_path'):
+    html_status = None
+    if (hasattr(step_result, 'raw_io')
+        and hasattr(step_result.raw_io, 'output_texts')
+        and hasattr(step_result.raw_io.output_texts, 'get')):
+      html_status = step_result.raw_io.output_texts.get('html')
+    if botconfig.get('lkgr_status_gs_path') and html_status:
       api.gsutil.upload(
-        api.raw_io.input_text(step_result.raw_io.output_texts['html']),
+        api.raw_io.input_text(html_status),
         botconfig['lkgr_status_gs_path'],
         '%s-lkgr-status.html' % botconfig['project'],
         args=['-a', 'public-read'],
