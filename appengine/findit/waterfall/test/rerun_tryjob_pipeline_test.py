@@ -10,8 +10,8 @@ from pipelines.compile_failure.schedule_compile_try_job_pipeline import (
 from pipelines.test_failure.schedule_test_try_job_pipeline import (
     ScheduleTestTryJobPipeline)
 from services.parameters import BuildKey
-from services.parameters import ScheduleCompileTryJobParameters
-from services.parameters import ScheduleTestTryJobParameters
+from services.parameters import RunCompileTryJobParameters
+from services.parameters import RunTestTryJobParameters
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.rerun_tryjob_pipeline import RerunTryJobPipeline
 from waterfall.test import wf_testcase
@@ -36,7 +36,7 @@ class RerunTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     additional_parameters = {'tests': tests}
     urlsafe_try_job_key = 'MockUrlSafeTryJobKey123'
 
-    pipeline_input = ScheduleTestTryJobParameters(
+    pipeline_input = RunTestTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -47,7 +47,8 @@ class RerunTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         targeted_tests=tests,
         cache_name=None,
         dimensions=[],
-        force_buildbot=True)
+        force_buildbot=True,
+        urlsafe_try_job_key=urlsafe_try_job_key)
 
     self.MockSynchronousPipeline(ScheduleTestTryJobPipeline, pipeline_input,
                                  'build_id')
@@ -80,7 +81,7 @@ class RerunTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     additional_parameters = {'compile_targets': compile_targets}
     urlsafe_try_job_key = 'MockUrlSafeTryJobKey123'
 
-    pipeline_input = ScheduleCompileTryJobParameters(
+    pipeline_input = RunCompileTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -91,7 +92,8 @@ class RerunTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         suspected_revisions=suspected_revisions,
         cache_name=None,
         dimensions=[],
-        force_buildbot=True)
+        force_buildbot=True,
+        urlsafe_try_job_key=urlsafe_try_job_key)
     self.MockSynchronousPipeline(ScheduleCompileTryJobPipeline, pipeline_input,
                                  'build_id')
 

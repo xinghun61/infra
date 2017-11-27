@@ -32,8 +32,10 @@ class StartTestTryJobPipeline(BasePipeline):
     if not need_try_job:
       return
 
+    urlsafe_try_job_key = try_job_key.urlsafe()
     parameters = test_try_job.GetParametersToScheduleTestTryJob(
-        master_name, builder_name, build_number, failure_info, heuristic_result)
+        master_name, builder_name, build_number, failure_info, heuristic_result,
+        urlsafe_try_job_key)
     if not parameters.good_revision:
       # No last_pass in saved in failure_info.
       return
@@ -44,7 +46,7 @@ class StartTestTryJobPipeline(BasePipeline):
 
     try_job_id = yield ScheduleTestTryJobPipeline(parameters)
 
-    try_job_result = yield MonitorTryJobPipeline(try_job_key.urlsafe(),
+    try_job_result = yield MonitorTryJobPipeline(urlsafe_try_job_key,
                                                  try_job_type, try_job_id)
 
     yield IdentifyTestTryJobCulpritPipeline(

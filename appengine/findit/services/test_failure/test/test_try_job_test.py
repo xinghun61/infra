@@ -19,7 +19,7 @@ from model.wf_try_job_data import WfTryJobData
 from services import build_failure_analysis
 from services import try_job as try_job_service
 from services.parameters import BuildKey
-from services.parameters import ScheduleTestTryJobParameters
+from services.parameters import RunTestTryJobParameters
 from services.test_failure import test_try_job
 from waterfall import suspected_cl_util
 from waterfall import swarming_util
@@ -859,7 +859,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    expected_parameters = ScheduleTestTryJobParameters(
+    expected_parameters = RunTestTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -870,11 +870,12 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         force_buildbot=False,
         dimensions=['os:Mac-10.9', 'cpu:x86-64', 'pool:Chrome.Findit'],
         cache_name='cache',
-        targeted_tests={})
+        targeted_tests={},
+        urlsafe_try_job_key='urlsafe_try_job_key')
     self.assertEqual(expected_parameters,
                      test_try_job.GetParametersToScheduleTestTryJob(
                          master_name, builder_name, build_number, failure_info,
-                         None))
+                         None, 'urlsafe_try_job_key'))
 
   def testGetSwarmingTasksResult(self):
     master_name = 'm'
@@ -1001,7 +1002,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
 
-    pipeline_input = ScheduleTestTryJobParameters(
+    pipeline_input = RunTestTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -1662,7 +1663,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     build_id = '1'
     WfTryJob.Create(master_name, builder_name, build_number).put()
 
-    parameters = ScheduleTestTryJobParameters(
+    parameters = RunTestTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -1713,7 +1714,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     bad_revision = 'rev2'
     targeted_tests = {'a': ['test1', 'test2']}
 
-    parameters = ScheduleTestTryJobParameters(
+    parameters = RunTestTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,

@@ -13,7 +13,7 @@ from pipelines.compile_failure import start_compile_try_job_pipeline
 from pipelines.compile_failure.start_compile_try_job_pipeline import (
     StartCompileTryJobPipeline)
 from services.compile_failure import compile_try_job
-from services.parameters import ScheduleCompileTryJobParameters
+from services.parameters import RunCompileTryJobParameters
 from waterfall.test import wf_testcase
 
 
@@ -68,11 +68,11 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         'compile_targets': [],
         'suspected_revisions': [],
         'cache_name': 'cache_name',
-        'dimensions': []
+        'dimensions': [],
+        'urlsafe_try_job_key': 'urlsafe_try_job_key'
     }
 
-    pipeline_input = ScheduleCompileTryJobParameters.FromSerializable(
-        parameters)
+    pipeline_input = RunCompileTryJobParameters.FromSerializable(parameters)
     mock_parameter.return_value = pipeline_input
     self.MockSynchronousPipeline(
         start_compile_try_job_pipeline.ScheduleCompileTryJobPipeline,
@@ -107,16 +107,17 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(list(result), [])
     mock_pipeline.assert_not_called()
 
-  @mock.patch.object(
-      compile_try_job, 'NeedANewCompileTryJob', return_value=(True, None))
+  @mock.patch.object(compile_try_job, 'NeedANewCompileTryJob')
   @mock.patch.object(compile_try_job, 'GetParametersToScheduleCompileTryJob')
   @mock.patch.object(start_compile_try_job_pipeline,
                      'ScheduleCompileTryJobPipeline')
   def testNoCompileTryJobBecauseNoGoodRevision(self, mock_pipeline,
-                                               mock_parameter, _):
+                                               mock_parameter, mock_fn):
 
-    mock_parameter.return_value = ScheduleCompileTryJobParameters(
-        good_revision=None)
+    mock_parameter.return_value = RunCompileTryJobParameters(good_revision=None)
+    try_job = WfTryJob.Create('m', 'b', 1)
+    try_job.put()
+    mock_fn.return_value = (True, try_job.key)
     failure_info = {'failure_type': failure_type.COMPILE}
     pipeline = StartCompileTryJobPipeline()
     result = pipeline.run('m', 'b', 1, failure_info, {}, {}, True, False)

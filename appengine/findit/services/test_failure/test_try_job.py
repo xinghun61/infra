@@ -27,7 +27,7 @@ from model.wf_try_job_data import WfTryJobData
 from services import build_failure_analysis
 from services import git
 from services import try_job as try_job_service
-from services.parameters import ScheduleTestTryJobParameters
+from services.parameters import RunTestTryJobParameters
 from services.test_failure import ci_test_failure
 from waterfall import build_util
 from waterfall import suspected_cl_util
@@ -231,10 +231,11 @@ def GetParametersToScheduleTestTryJob(master_name,
                                       build_number,
                                       failure_info,
                                       heuristic_result,
+                                      urlsafe_try_job_key,
                                       force_buildbot=False):
   parameters = try_job_service.PrepareParametersToScheduleTryJob(
       master_name, builder_name, build_number, failure_info, heuristic_result,
-      force_buildbot)
+      urlsafe_try_job_key, force_buildbot)
 
   parameters['good_revision'] = _GetGoodRevisionTest(master_name, builder_name,
                                                      build_number, failure_info)
@@ -248,8 +249,7 @@ def GetParametersToScheduleTestTryJob(master_name,
       parent_mastername, parent_buildername)
   parameters['cache_name'] = swarming_util.GetCacheName(parent_mastername,
                                                         parent_buildername)
-
-  return ScheduleTestTryJobParameters.FromSerializable(parameters)
+  return RunTestTryJobParameters.FromSerializable(parameters)
 
 
 # TODO(chanli@): move this function to swarming task related module.

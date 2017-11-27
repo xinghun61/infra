@@ -26,10 +26,11 @@ class StartCompileTryJobPipeline(BasePipeline):
         heuristic_result, force_try_job)
     if not need_try_job:
       return
+    urlsafe_try_job_key = try_job_key.urlsafe()
 
     parameters = compile_try_job.GetParametersToScheduleCompileTryJob(
         master_name, builder_name, build_number, failure_info, signals,
-        heuristic_result)
+        heuristic_result, urlsafe_try_job_key)
     if not parameters.good_revision:
       # No last_pass in saved in failure_info.
       return
@@ -37,7 +38,7 @@ class StartCompileTryJobPipeline(BasePipeline):
     try_job_id = yield ScheduleCompileTryJobPipeline(parameters)
 
     try_job_result = yield MonitorTryJobPipeline(
-        try_job_key.urlsafe(), failure_type.COMPILE, try_job_id)
+        urlsafe_try_job_key, failure_type.COMPILE, try_job_id)
 
     yield culprit_pipeline.IdentifyCompileTryJobCulpritPipeline(
         master_name, builder_name, build_number, try_job_id, try_job_result)

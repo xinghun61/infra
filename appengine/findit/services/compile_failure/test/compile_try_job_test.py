@@ -17,7 +17,7 @@ from model.wf_try_job_data import WfTryJobData
 from services import try_job as try_job_service
 from services.compile_failure import compile_try_job
 from services.parameters import BuildKey
-from services.parameters import ScheduleCompileTryJobParameters
+from services.parameters import RunCompileTryJobParameters
 from waterfall import suspected_cl_util
 from waterfall import swarming_util
 from waterfall import waterfall_config
@@ -794,9 +794,10 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         'dimensions': dimensions,
         'cache_name': 'cache',
         'force_buildbot': False,
+        'urlsafe_try_job_key': 'urlsafe_try_job_key'
     }
 
-    expected_parameter = ScheduleCompileTryJobParameters(
+    expected_parameter = RunCompileTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -807,10 +808,12 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         cache_name=cache_name,
         dimensions=dimensions,
         compile_targets=[],
+        urlsafe_try_job_key='urlsafe_try_job_key',
         force_buildbot=False)
 
     parameter = compile_try_job.GetParametersToScheduleCompileTryJob(
-        master_name, builder_name, build_number, failure_info, None, None)
+        master_name, builder_name, build_number, failure_info, None, None,
+        'urlsafe_try_job_key')
     self.assertEqual(expected_parameter, parameter)
     self.assertEqual(expected_parameters_dict, parameter.ToSerializable())
 
@@ -994,7 +997,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     builder_name = u'b'
     build_number = 1
 
-    pipeline_input = ScheduleCompileTryJobParameters(
+    pipeline_input = RunCompileTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -1092,7 +1095,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     WfTryJob.Create(master_name, builder_name, build_number).put()
 
-    parameters = ScheduleCompileTryJobParameters(
+    parameters = RunCompileTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -1144,7 +1147,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     good_revision = 'rev1'
     bad_revision = 'rev2'
 
-    parameters = ScheduleCompileTryJobParameters(
+    parameters = RunCompileTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,

@@ -28,7 +28,7 @@ from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from services import try_job as try_job_service
 from services.parameters import BuildKey
-from services.parameters import ScheduleCompileTryJobParameters
+from services.parameters import RunCompileTryJobParameters
 from waterfall import buildbot
 from waterfall import swarming_util
 from waterfall import waterfall_config
@@ -492,7 +492,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 1
 
-    pipeline_input = ScheduleCompileTryJobParameters(
+    pipeline_input = RunCompileTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -690,13 +690,14 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         },
         'bad_revision': 'rev2',
         'suspected_revisions': [],
-        'force_buildbot': False
+        'force_buildbot': False,
+        'urlsafe_try_job_key': 'urlsafe_try_job_key'
     }
 
     self.assertEqual(expected_parameters,
                      try_job_service.PrepareParametersToScheduleTryJob(
                          master_name, builder_name, build_number, failure_info,
-                         {}))
+                         {}, 'urlsafe_try_job_key'))
 
   def testUpdateTryJobMetadataForBuildError(self):
     error_data = {'reason': 'BUILD_NOT_FOUND', 'message': 'message'}

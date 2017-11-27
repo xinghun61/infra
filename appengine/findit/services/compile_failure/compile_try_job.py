@@ -23,7 +23,7 @@ from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
 from services import try_job as try_job_service
-from services.parameters import ScheduleCompileTryJobParameters
+from services.parameters import RunCompileTryJobParameters
 from waterfall import build_util
 from waterfall import suspected_cl_util
 from waterfall import swarming_util
@@ -187,10 +187,11 @@ def GetParametersToScheduleCompileTryJob(master_name,
                                          failure_info,
                                          signals,
                                          heuristic_result,
+                                         urlsafe_try_job_key,
                                          force_buildbot=False):
   parameters = try_job_service.PrepareParametersToScheduleTryJob(
       master_name, builder_name, build_number, failure_info, heuristic_result,
-      force_buildbot)
+      urlsafe_try_job_key, force_buildbot)
 
   parameters['good_revision'] = _GetGoodRevisionCompile(
       master_name, builder_name, build_number, failure_info)
@@ -202,7 +203,7 @@ def GetParametersToScheduleCompileTryJob(master_name,
   parameters['cache_name'] = swarming_util.GetCacheName(master_name,
                                                         builder_name)
 
-  return ScheduleCompileTryJobParameters.FromSerializable(parameters)
+  return RunCompileTryJobParameters.FromSerializable(parameters)
 
 
 def GetFailedRevisionFromCompileResult(compile_result):

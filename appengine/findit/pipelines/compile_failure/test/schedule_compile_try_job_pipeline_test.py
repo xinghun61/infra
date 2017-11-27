@@ -10,7 +10,7 @@ from pipelines.compile_failure.schedule_compile_try_job_pipeline import (
     ScheduleCompileTryJobPipeline)
 from services.compile_failure import compile_try_job
 from services.parameters import BuildKey
-from services.parameters import ScheduleCompileTryJobParameters
+from services.parameters import RunCompileTryJobParameters
 from waterfall.test import wf_testcase
 
 
@@ -25,7 +25,7 @@ class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     good_revision = 'rev1'
     bad_revision = 'rev2'
 
-    pipeline_input = ScheduleCompileTryJobParameters(
+    pipeline_input = RunCompileTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -36,7 +36,8 @@ class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         cache_name=None,
         dimensions=[],
         force_buildbot=False,
-        compile_targets=[])
+        compile_targets=[],
+        urlsafe_try_job_key='urlsafe_try_job_key')
     try_job_pipeline = ScheduleCompileTryJobPipeline(pipeline_input)
     try_job_id = try_job_pipeline.run(pipeline_input)
 
@@ -53,7 +54,7 @@ class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     good_revision = 'rev1'
     bad_revision = 'rev2'
 
-    pipeline_input = ScheduleCompileTryJobParameters(
+    pipeline_input = RunCompileTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -64,7 +65,8 @@ class ScheduleCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         cache_name=None,
         dimensions=[],
         force_buildbot=False,
-        compile_targets=[])
+        compile_targets=[],
+        urlsafe_try_job_key='urlsafe_try_job_key')
     try_job_pipeline = ScheduleCompileTryJobPipeline(pipeline_input)
     with self.assertRaises(pipeline.Retry):
       try_job_pipeline.run(pipeline_input)

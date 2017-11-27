@@ -11,7 +11,7 @@ from pipelines.test_failure import start_test_try_job_pipeline
 from pipelines.test_failure.start_test_try_job_pipeline import (
     StartTestTryJobPipeline)
 from services.parameters import BuildKey
-from services.parameters import ScheduleTestTryJobParameters
+from services.parameters import RunTestTryJobParameters
 from services.test_failure import test_try_job
 from waterfall.test import wf_testcase
 
@@ -74,7 +74,7 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.put()
     mock_fn.return_value = (True, try_job.key)
-    parameters = ScheduleTestTryJobParameters(
+    parameters = RunTestTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -85,7 +85,8 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         targeted_tests={'step': ['test']},
         dimensions=[],
         cache_name=None,
-        force_buildbot=False)
+        force_buildbot=False,
+        urlsafe_try_job_key='urlsafe_try_job_key')
     mock_parameter.return_value = parameters
 
     self.MockSynchronousPipeline(
@@ -110,38 +111,43 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     pipeline.start()
     self.execute_queued_tasks()
 
-  @mock.patch.object(
-      test_try_job, 'NeedANewTestTryJob', return_value=(False, None))
+  @mock.patch.object(test_try_job, 'NeedANewTestTryJob')
   @mock.patch.object(start_test_try_job_pipeline, 'ScheduleTestTryJobPipeline')
-  def testNotNeedTestTryJob(self, mock_pipeline, _):
+  def testNotNeedTestTryJob(self, mock_pipeline, mock_fn):
     failure_info = {'failure_type': failure_type.TEST}
+    try_job = WfTryJob.Create('m', 'b', 1)
+    try_job.put()
+    mock_fn.return_value = (False, try_job.key)
     pipeline = StartTestTryJobPipeline()
     result = pipeline.run('m', 'b', 1, failure_info, {}, True, False)
     self.assertEqual(list(result), [])
     mock_pipeline.assert_not_called()
 
-  @mock.patch.object(
-      test_try_job, 'NeedANewTestTryJob', return_value=(True, None))
+  @mock.patch.object(test_try_job, 'NeedANewTestTryJob')
   @mock.patch.object(test_try_job, 'GetParametersToScheduleTestTryJob')
   @mock.patch.object(start_test_try_job_pipeline, 'ScheduleTestTryJobPipeline')
   def testNoTestTryJobBecauseNoGoodRevision(self, mock_pipeline, mock_parameter,
-                                            _):
+                                            mock_fn):
     failure_info = {'failure_type': failure_type.TEST}
-    mock_parameter.return_value = ScheduleTestTryJobParameters(
-        good_revision=None)
+    mock_parameter.return_value = RunTestTryJobParameters(good_revision=None)
+    try_job = WfTryJob.Create('m', 'b', 1)
+    try_job.put()
+    mock_fn.return_value = (True, try_job.key)
     pipeline = StartTestTryJobPipeline()
     result = pipeline.run('m', 'b', 1, failure_info, {}, True, False)
     self.assertEqual(list(result), [])
     mock_pipeline.assert_not_called()
 
-  @mock.patch.object(
-      test_try_job, 'NeedANewTestTryJob', return_value=(True, None))
+  @mock.patch.object(test_try_job, 'NeedANewTestTryJob')
   @mock.patch.object(test_try_job, 'GetParametersToScheduleTestTryJob')
   @mock.patch.object(start_test_try_job_pipeline, 'ScheduleTestTryJobPipeline')
   def testNoTestTryJobBecauseNoTargetedTests(self, mock_pipeline,
-                                             mock_parameter, _):
+                                             mock_parameter, mock_fn):
     failure_info = {'failure_type': failure_type.TEST}
-    mock_parameter.return_value = ScheduleTestTryJobParameters(
+    try_job = WfTryJob.Create('m', 'b', 1)
+    try_job.put()
+    mock_fn.return_value = (True, try_job.key)
+    mock_parameter.return_value = RunTestTryJobParameters(
         targeted_tests={}, good_revision='rev1')
     pipeline = StartTestTryJobPipeline()
     result = pipeline.run('m', 'b', 1, failure_info, {}, True, False)

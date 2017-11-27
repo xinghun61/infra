@@ -387,6 +387,7 @@ def PrepareParametersToScheduleTryJob(master_name,
                                       build_number,
                                       failure_info,
                                       heuristic_result,
+                                      urlsafe_try_job_key,
                                       force_buildbot=False):
   parameters = {}
 
@@ -400,6 +401,7 @@ def PrepareParametersToScheduleTryJob(master_name,
   parameters['suspected_revisions'] = GetSuspectsFromHeuristicResult(
       heuristic_result)
   parameters['force_buildbot'] = force_buildbot
+  parameters['urlsafe_try_job_key'] = urlsafe_try_job_key
   return parameters
 
 

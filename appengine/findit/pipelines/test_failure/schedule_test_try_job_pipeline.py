@@ -5,13 +5,13 @@
 from common import exceptions
 from gae_libs.pipelines import pipeline
 from gae_libs.pipelines import SynchronousPipeline
-from services.parameters import ScheduleTestTryJobParameters
+from services.parameters import RunTestTryJobParameters
 from services.test_failure import test_try_job
 
 
 class ScheduleTestTryJobPipeline(SynchronousPipeline):
   """A pipeline for scheduling a new try job for failed test build."""
-  input_type = ScheduleTestTryJobParameters
+  input_type = RunTestTryJobParameters
   output_type = basestring
 
   def RunImpl(self, pipeline_input):

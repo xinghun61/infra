@@ -10,8 +10,8 @@ from pipelines.compile_failure.schedule_compile_try_job_pipeline import (
 from pipelines.test_failure.schedule_test_try_job_pipeline import (
     ScheduleTestTryJobPipeline)
 from services.parameters import BuildKey
-from services.parameters import ScheduleCompileTryJobParameters
-from services.parameters import ScheduleTestTryJobParameters
+from services.parameters import RunCompileTryJobParameters
+from services.parameters import RunTestTryJobParameters
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
 
@@ -22,7 +22,7 @@ class RerunTryJobPipeline(BasePipeline):
   def run(self, master_name, builder_name, build_number, try_job_type,
           properties, additional_parameters, urlsafe_try_job_key):
     if try_job_type == failure_type.TEST:
-      pipeline_input = ScheduleTestTryJobParameters(
+      pipeline_input = RunTestTryJobParameters(
           build_key=BuildKey(
               master_name=master_name,
               builder_name=builder_name,
@@ -33,11 +33,12 @@ class RerunTryJobPipeline(BasePipeline):
           targeted_tests=additional_parameters.get('tests'),
           cache_name=None,
           dimensions=[],
-          force_buildbot=True)
+          force_buildbot=True,
+          urlsafe_try_job_key=urlsafe_try_job_key)
       rerun = yield ScheduleTestTryJobPipeline(pipeline_input)
 
     elif try_job_type == failure_type.COMPILE:
-      pipeline_input = ScheduleCompileTryJobParameters(
+      pipeline_input = RunCompileTryJobParameters(
           build_key=BuildKey(
               master_name=master_name,
               builder_name=builder_name,
@@ -48,7 +49,8 @@ class RerunTryJobPipeline(BasePipeline):
           suspected_revisions=properties.get('suspected_revisions'),
           cache_name=None,
           dimensions=[],
-          force_buildbot=True)
+          force_buildbot=True,
+          urlsafe_try_job_key=urlsafe_try_job_key)
       rerun = yield ScheduleCompileTryJobPipeline(pipeline_input)
     else:
       raise pipeline.Abort(

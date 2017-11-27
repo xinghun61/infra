@@ -68,7 +68,7 @@ class CulpritActionParameters(StructuredObject):
   heuristic_cls = ListOfCLKeys
 
 
-class ScheduleTryJobParameters(StructuredObject):
+class RunTryJobParameters(StructuredObject):
   """Shared parameters of ScheduleCompileTryJobPipeline and
       ScheduleTestTryJobPipeline."""
   build_key = BuildKey
@@ -78,14 +78,15 @@ class ScheduleTryJobParameters(StructuredObject):
   cache_name = basestring
   dimensions = list
   force_buildbot = bool
+  urlsafe_try_job_key = basestring
 
 
-class ScheduleCompileTryJobParameters(ScheduleTryJobParameters):
-  """Input for ScheduleTryJobParameters."""
+class RunCompileTryJobParameters(RunTryJobParameters):
+  """Input for RunTryJobParameters."""
   compile_targets = list
 
 
-class ScheduleTestTryJobParameters(ScheduleTryJobParameters):
+class RunTestTryJobParameters(RunTryJobParameters):
   """Input for ScheduleTestTryJobPipeline."""
   targeted_tests = dict
 

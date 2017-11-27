@@ -10,7 +10,7 @@ from gae_libs.pipelines import pipeline
 from pipelines.test_failure.schedule_test_try_job_pipeline import (
     ScheduleTestTryJobPipeline)
 from services.parameters import BuildKey
-from services.parameters import ScheduleTestTryJobParameters
+from services.parameters import RunTestTryJobParameters
 from services.test_failure import test_try_job
 from waterfall.test import wf_testcase
 
@@ -26,7 +26,7 @@ class ScheduleTestTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     bad_revision = 'rev2'
     targeted_tests = {'a': ['test1', 'test2']}
 
-    pipeline_input = ScheduleTestTryJobParameters(
+    pipeline_input = RunTestTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -37,7 +37,8 @@ class ScheduleTestTryjobPipelineTest(wf_testcase.WaterfallTestCase):
         targeted_tests=targeted_tests,
         dimensions=[],
         cache_name=None,
-        force_buildbot=False)
+        force_buildbot=False,
+        urlsafe_try_job_key='urlsafe_try_job_key')
 
     try_job_pipeline = ScheduleTestTryJobPipeline(pipeline_input)
     try_job_id = try_job_pipeline.run(pipeline_input)
@@ -55,7 +56,7 @@ class ScheduleTestTryjobPipelineTest(wf_testcase.WaterfallTestCase):
     bad_revision = 'rev2'
     targeted_tests = {'a': ['test1', 'test2']}
 
-    pipeline_input = ScheduleTestTryJobParameters(
+    pipeline_input = RunTestTryJobParameters(
         build_key=BuildKey(
             master_name=master_name,
             builder_name=builder_name,
@@ -66,7 +67,8 @@ class ScheduleTestTryjobPipelineTest(wf_testcase.WaterfallTestCase):
         targeted_tests=targeted_tests,
         dimensions=[],
         cache_name=None,
-        force_buildbot=False)
+        force_buildbot=False,
+        urlsafe_try_job_key='urlsafe_try_job_key')
 
     try_job_pipeline = ScheduleTestTryJobPipeline(pipeline_input)
     with self.assertRaises(pipeline.Retry):
