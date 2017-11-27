@@ -201,6 +201,10 @@ class Build(ndb.Model):
     assert (not self.complete_time or not self.start_time or
             self.complete_time >= self.start_time)
 
+    self.experimental = bool(self.experimental)
+    self.initial_tags = sorted(set(self.initial_tags))
+    self.tags = sorted(set(self.tags))
+
   def regenerate_lease_key(self):
     """Changes lease key to a different random int."""
     while True:

@@ -451,10 +451,6 @@ def add_many_async(build_request_list):
   @ndb.tasklet
   def put_and_cache_builds_async():
     """Puts new builds, updates metrics and memcache."""
-    # Normalize builds right before putting.
-    for b in new_builds.itervalues():
-      b.tags = sorted(set(b.tags))
-      b.experimental = bool(b.experimental)
     yield ndb.put_multi_async(new_builds.values())
     memcache_sets = []
     for i, b in new_builds.iteritems():

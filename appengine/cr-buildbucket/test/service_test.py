@@ -83,7 +83,6 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
           }]
         },
         canary=False,
-        experimental=False,
     )
 
     self.patch(
