@@ -83,3 +83,21 @@ def set_next(seq_name, next_number):
     raise ValueError('next number must be at least %d' % seq.next_number)
   seq.next_number = next_number
   seq.put()
+
+
+@ndb.transactional_tasklet
+def try_return_async(seq_name, number):
+  """Attempts to return the generated number back to the sequence.
+
+  Returns False if the number wasn't returned and cannot be reused by someone
+  else.
+  """
+  seq = yield NumberSequence.get_by_id_async(seq_name)
+  if not seq:
+    # If there is not sequence entity, the number can be used by someone else.
+    raise ndb.Return(True)
+  if seq.next_number != number + 1:
+    raise ndb.Return(False)
+  seq.next_number = number
+  yield seq.put_async()
+  raise ndb.Return(True)

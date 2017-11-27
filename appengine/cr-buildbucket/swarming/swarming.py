@@ -560,7 +560,48 @@ def _add_named_caches(builder_cfg, task_properties):
 
 
 @ndb.tasklet
-def prepare_task_def_async(build, settings, fake_build=False):
+def _get_builder_async(build):
+  """Returns builder info of the build.
+
+  Raises:
+    errors.InvalidInputError if build has no builder name.
+    errors.BuilderNotFoundError if builder is not found.
+
+  Returns:
+    (project_config_pb2.Bucket, project_config_pb2.Builder) tuple future.
+  """
+  if not build.parameters:
+    raise errors.InvalidInputError(
+        'A build for bucket %r must have parameters' % build.bucket)
+  builder_name = build.parameters.get(BUILDER_PARAMETER)
+  if not isinstance(builder_name, basestring):
+    raise errors.InvalidInputError('Invalid builder name %r' % builder_name)
+
+  project_id, bucket_cfg = yield config.get_bucket_async(build.bucket)
+  assert bucket_cfg, 'if there is no bucket, this code should not have run'
+  assert project_id == build.project, '%r != %r' % (project_id, build.project)
+  assert bucket_cfg.HasField('swarming'), 'not a swarming bucket'
+
+  for builder_cfg in bucket_cfg.swarming.builders:  # pragma: no branch
+    if builder_cfg.name == builder_name:  # pragma: no branch
+      raise ndb.Return(bucket_cfg, builder_cfg)
+
+  raise errors.BuilderNotFoundError(
+      'Builder %r is not found in bucket %r' % (builder_name, build.bucket))
+
+
+@ndb.tasklet
+def prepare_task_def_async(build, build_number=None, fake_build=False):
+  settings = yield get_settings_async()
+  bucket_cfg, builder_cfg = yield _get_builder_async(build)
+  ret = yield _prepare_task_def_async(
+      build, build_number, bucket_cfg, builder_cfg, settings, fake_build)
+  raise ndb.Return(ret)
+
+
+@ndb.tasklet
+def _prepare_task_def_async(
+    build, build_number, bucket_cfg, builder_cfg, settings, fake_build):
   """Prepares a swarming task definition.
 
   Validates the new build.
@@ -575,36 +616,11 @@ def prepare_task_def_async(build, settings, fake_build=False):
   if build.lease_key:
     raise errors.InvalidInputError(
         'Swarming buckets do not support creation of leased builds')
-  if not build.parameters:
-    raise errors.InvalidInputError(
-        'A build for bucket %r must have parameters' % build.bucket)
-  builder_name = build.parameters.get(BUILDER_PARAMETER)
-  if not isinstance(builder_name, basestring):
-    raise errors.InvalidInputError('Invalid builder name %r' % builder_name)
-  project_id, bucket_cfg = yield config.get_bucket_async(build.bucket)
-  assert project_id == build.project, '%r != %r' % (project_id, build.project)
 
-  if not config.is_swarming_config(bucket_cfg):
-    raise errors.InvalidInputError(
-        'Bucket %s is not configured for swarming' % build.bucket)
-
-  builder_cfg = None
-  for b in bucket_cfg.swarming.builders:  # pragma: no branch
-    if b.name == builder_name:  # pragma: no branch
-      builder_cfg = b
-      break
-  if not builder_cfg:
-    raise errors.BuilderNotFoundError(
-        'Builder %r is not found in bucket %r' % (builder_name, build.bucket))
-
-  build_number = None
-  if builder_cfg.build_numbers:  # pragma: no branch
-    seq_name = number_sequence_name(build.bucket, builder_name)
-    if fake_build:  # pragma: no cover | covered by swarmbucket_api_test
-      build_number = 0
-    else:
-      build_number = yield sequence.generate_async(seq_name, 1)
-    build.tags.append('build_address:%s/%d' % (seq_name, build_number))
+  if build_number is not None:
+    build.tags.append(
+        'build_address:%s/%s/%d' %
+        (build.bucket, builder_cfg.name, build_number))
 
   build.url = _generate_build_url(settings.milo_hostname, build, build_number)
 
@@ -635,27 +651,41 @@ def create_task_async(build):
     errors.InvalidInputError if build attribute values are inavlid.
   """
   settings = yield get_settings_async()
-  task_def = yield prepare_task_def_async(build, settings)
+  bucket_cfg, builder_cfg = yield _get_builder_async(build)
 
-  assert build.swarming_hostname
-  res = yield _call_api_async(
-      auth.get_current_identity(),
-      build.swarming_hostname,
-      'tasks/new',
-      method='POST',
-      payload=task_def,
-      # Make Swarming know what bucket the task belong too. Swarming uses
-      # this to authorize access to pools assigned to specific buckets only.
-      delegation_tags=['buildbucket:bucket:%s' % build.bucket],
-      # Higher timeout than normal because if the task creation request
-      # fails, but the task is actually created, later we will receive a
-      # notification that the task is completed, but we won't have a build
-      # for that task, which results in errors in the log.
-      deadline=30,
-      # This code path is executed by put and put_batch request handlers.
-      # Clients should retry these requests on transient errors, so
-      # do not retry requests to swarming.
-      max_attempts=1)
+  build_number = None
+  seq_name = number_sequence_name(build.bucket, builder_cfg.name)
+  if builder_cfg.build_numbers:  # pragma: no branch
+    build_number = yield sequence.generate_async(seq_name, 1)
+
+  res = None
+  try:
+    task_def = yield _prepare_task_def_async(
+        build, build_number, bucket_cfg, builder_cfg, settings, False)
+
+    assert build.swarming_hostname
+    res = yield _call_api_async(
+        auth.get_current_identity(),
+        build.swarming_hostname,
+        'tasks/new',
+        method='POST',
+        payload=task_def,
+        # Make Swarming know what bucket the task belong too. Swarming uses
+        # this to authorize access to pools assigned to specific buckets only.
+        delegation_tags=['buildbucket:bucket:%s' % build.bucket],
+        # Higher timeout than normal because if the task creation request
+        # fails, but the task is actually created, later we will receive a
+        # notification that the task is completed, but we won't have a build
+        # for that task, which results in errors in the log.
+        deadline=30,
+        # This code path is executed by put and put_batch request handlers.
+        # Clients should retry these requests on transient errors, so
+        # do not retry requests to swarming.
+        max_attempts=1)
+  finally:
+    if res is None and build_number is not None:  # pragma: no branch
+      yield _try_return_build_number_async(seq_name, build_number)
+
   task_id = res['task_id']
   logging.info('Created a swarming task %s: %r', task_id, res)
 
@@ -673,11 +703,11 @@ def create_task_async(build):
 
   # Mark the build as leased.
   assert 'expiration_secs' in task_def, task_def
-  # task['expiration_secs'] is max time for the task to be pending
+  # task_def['expiration_secs'] is max time for the task to be pending
   # It is encoded as string.
   task_expiration = datetime.timedelta(seconds=int(task_def['expiration_secs']))
-  # task['execution_timeout_secs'] is max time for the task to run
-  # It is encoded as string.
+  # task_def['properties']['execution_timeout_secs'] is max time for the task
+  # to run.
   task_expiration += datetime.timedelta(
       seconds=int(task_def['properties']['execution_timeout_secs']))
   task_expiration += datetime.timedelta(hours=1)
@@ -685,6 +715,18 @@ def create_task_async(build):
   build.regenerate_lease_key()
   build.leasee = _self_identity()
   build.never_leased = False
+
+
+@ndb.tasklet
+def _try_return_build_number_async(seq_name, build_number):
+  try:
+    returned = yield sequence.try_return_async(seq_name, build_number)
+    if not returned:  # pragma: no cover
+      # Log an error to alert on high rates of number losses with info
+      # on bucket/builder.
+      logging.error('lost a build number in builder %s', seq_name)
+  except Exception:  # pragma: no cover
+    logging.exception('exception when returning a build number')
 
 
 def _generate_build_url(milo_hostname, build, build_number):

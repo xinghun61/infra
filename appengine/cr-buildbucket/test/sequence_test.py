@@ -24,3 +24,10 @@ class SequenceTest(testing.AppengineTestCase):
     with self.assertRaises(ValueError):
       sequence.set_next('a', 1)
     sequence.set_next('b', 1)
+
+  def test_try_return_async(self):
+    self.assertTrue(sequence.try_return_async('a', 1).get_result())
+    self.assertEqual(sequence.generate_async('a', 1).get_result(), 1)
+    self.assertEqual(sequence.generate_async('a', 1).get_result(), 2)
+    self.assertFalse(sequence.try_return_async('a', 1).get_result())
+    self.assertTrue(sequence.try_return_async('a', 2).get_result())

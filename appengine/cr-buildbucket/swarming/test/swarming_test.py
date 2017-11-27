@@ -224,8 +224,7 @@ class SwarmingTest(BaseTest):
         tags=['builder:linux_chromium_rel_ng'],
     )
 
-    task_def = swarming.prepare_task_def_async(
-        build, self.settings).get_result()
+    task_def = swarming.prepare_task_def_async(build).get_result()
 
     self.assertEqual(task_def['properties']['caches'], [
       {'path': 'cache/a', 'name': 'a'},
@@ -245,15 +244,13 @@ class SwarmingTest(BaseTest):
         tags=['builder:linux_chromium_rel_ng'],
     )
 
-    task_def = swarming.prepare_task_def_async(
-        build, self.settings).get_result()
+    task_def = swarming.prepare_task_def_async(build).get_result()
 
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], '120')
 
     builder_cfg.execution_timeout_secs = 60
-    task_def = swarming.prepare_task_def_async(
-        build, self.settings).get_result()
+    task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(
         task_def['properties']['execution_timeout_secs'], '60')
 
@@ -268,8 +265,7 @@ class SwarmingTest(BaseTest):
         tags=['builder:linux_chromium_rel_ng'],
     )
 
-    task_def = swarming.prepare_task_def_async(
-        build, self.settings).get_result()
+    task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(task_def['properties']['dimensions'], sorted([
       {'key': 'builder', 'value': 'linux_chromium_rel_ng'},
       {'key': 'cores', 'value': '8'},
@@ -279,8 +275,7 @@ class SwarmingTest(BaseTest):
 
     # But don't override if "builder" dimension is already set.
     builder_cfg.dimensions.append('builder:custom')
-    task_def = swarming.prepare_task_def_async(
-        build, self.settings).get_result()
+    task_def = swarming.prepare_task_def_async(build).get_result()
     self.assertEqual(task_def['properties']['dimensions'], sorted([
       {'key': 'builder', 'value': 'custom'},
       {'key': 'cores', 'value': '8'},
@@ -313,10 +308,10 @@ class SwarmingTest(BaseTest):
     self.assertFalse((is_prod()))
     self.assertTrue(net.json_request_async.called)
 
-    self.net_err_response = net.NotFoundError('nope', 404, "can't find it")
+    self.net_err_response = net.NotFoundError('nope', 404, 'can\'t find it')
     self.assertIsNone(is_prod())
 
-    self.net_err_response = net.Error('BOOM', 500, "IT'S BAD")
+    self.net_err_response = net.Error('BOOM', 500, 'IT\'S BAD')
     self.assertIsNone(is_prod())
 
     self.net_err_response = None
@@ -348,7 +343,9 @@ class SwarmingTest(BaseTest):
     self.json_response = {
       'task_id': 'deadbeef',
       'request': {
+        'expiration_secs': 3600,
         'properties': {
+          'execution_timeout_secs': 1800,
           'dimensions': [
             {'key': 'cores', 'value': '8'},
             {'key': 'os', 'value': 'Ubuntu'},
@@ -502,7 +499,7 @@ class SwarmingTest(BaseTest):
         tags=['builder:linux_chromium_rel_ng'],
     )
 
-    with self.assertRaises(errors.InvalidInputError):
+    with self.assertRaises(AssertionError):
       swarming.create_task_async(build).get_result()
 
   def test_create_task_async_without_template(self):
@@ -545,7 +542,9 @@ class SwarmingTest(BaseTest):
     self.json_response = {
       'task_id': 'deadbeef',
       'request': {
+        'expiration_secs': 3600,
         'properties': {
+          'execution_timeout_secs': 1800,
           'dimensions': [
             {'key': 'cores', 'value': '8'},
             {'key': 'os', 'value': 'Ubuntu'},
@@ -698,7 +697,9 @@ class SwarmingTest(BaseTest):
     self.json_response = {
       'task_id': 'deadbeef',
       'request': {
+        'expiration_secs': 3600,
         'properties': {
+          'execution_timeout_secs': 1800,
           'dimensions': [
             {'key': 'cores', 'value': '8'},
             {'key': 'os', 'value': 'Ubuntu'},
@@ -746,7 +747,9 @@ class SwarmingTest(BaseTest):
     self.json_response = {
       'task_id': 'deadbeef',
       'request': {
+        'expiration_secs': 3600,
         'properties': {
+          'execution_timeout_secs': 1800,
           'dimensions': [
             {'key': 'cores', 'value': '16'},
             {'key': 'os', 'value': 'Ubuntu'},
@@ -907,6 +910,20 @@ class SwarmingTest(BaseTest):
     }
 
     swarming.create_task_async(build).get_result()
+
+  @mock.patch('sequence.try_return_async')
+  def test_create_task_async_swarming_500(self, try_return_async):
+    build = mkBuild(
+        parameters={'builder_name': 'linux_chromium_rel_ng'}
+    )
+    self.net_err_response = net.Error('BOOM', 500, 'boom')
+    try_return_async.return_value = future(None)
+
+    with self.assertRaises(net.Error):
+      swarming.create_task_async(build).get_result()
+
+    try_return_async.assert_called_with(
+        'luci.chromium.try/linux_chromium_rel_ng', 1)
 
   def test_cancel_task(self):
     self.json_response = {}

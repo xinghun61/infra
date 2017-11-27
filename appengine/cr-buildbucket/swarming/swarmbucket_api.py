@@ -133,7 +133,7 @@ class SwarmbucketApi(remote.Service):
       build = build_request.create_build(1, identity, utils.utcnow())
       task_def = swarming.prepare_task_def_async(
           build,
-          swarming.get_settings_async().get_result(),
+          build_number=0,
           fake_build=True).get_result()
       task_def_json = json.dumps(task_def)
 
