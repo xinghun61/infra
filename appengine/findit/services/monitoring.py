@@ -26,3 +26,12 @@ def OnActionOnTestCulprits():
       'type': 'test',
       'action_taken': 'culprit_notified'
   })
+
+
+def OnTryJobError(try_job_type, error_dict, master_name, builder_name):
+  monitoring.try_job_errors.increment({
+      'type': try_job_type,
+      'error': error_dict.get('message', 'unknown'),
+      'master_name': master_name,
+      'builder_name': builder_name
+  })

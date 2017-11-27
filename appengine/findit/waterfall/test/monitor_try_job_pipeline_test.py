@@ -6,195 +6,27 @@ from datetime import datetime
 import json
 import logging
 import mock
+import time
 
 from google.appengine.api import taskqueue
 
+from common import exceptions
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
-from common.waterfall import try_job_error
-from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from gae_libs.pipelines import pipeline
 from libs import analysis_status
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from services import try_job as try_job_service
 from waterfall import buildbot
 from waterfall import monitor_try_job_pipeline
-from waterfall import swarming_util
-from waterfall import waterfall_config
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.test import wf_testcase
 
 
 class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
-
-  def testDictsAreEqual(self):
-    self.assertTrue(monitor_try_job_pipeline._DictsAreEqual(None, None))
-    self.assertTrue(monitor_try_job_pipeline._DictsAreEqual({}, {}))
-    self.assertTrue(monitor_try_job_pipeline._DictsAreEqual({'a': 1}, {'a': 1}))
-    self.assertTrue(
-        monitor_try_job_pipeline._DictsAreEqual(
-            {
-                'a': 1
-            }, {'a': 1,
-                'b': 2}, exclude_keys=['b']))
-    self.assertTrue(
-        monitor_try_job_pipeline._DictsAreEqual(
-            {
-                'a': 1,
-                'b': 1
-            }, {'a': 1,
-                'b': 2}, exclude_keys=['b']))
-    self.assertTrue(
-        monitor_try_job_pipeline._DictsAreEqual(
-            {
-                'a': 1
-            }, {}, exclude_keys=['a']))
-    self.assertFalse(
-        monitor_try_job_pipeline._DictsAreEqual({
-            'a': 1
-        }, {'a': 2}))
-    self.assertFalse(
-        monitor_try_job_pipeline._DictsAreEqual({
-            'a': 1,
-            'b': 2
-        }, {'a': 1}))
-    self.assertFalse(
-        monitor_try_job_pipeline._DictsAreEqual({
-            'a': 1
-        }, {'a': 1,
-            'b': 2}))
-
-  def testUpdateTryJobMetadataForBuildError(self):
-    error_data = {'reason': 'BUILD_NOT_FOUND', 'message': 'message'}
-    error = buildbucket_client.BuildbucketError(error_data)
-    try_job_data = WfTryJobData.Create('1')
-    try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
-
-    monitor_try_job_pipeline._UpdateTryJobMetadata(
-        try_job_data, failure_type.COMPILE, None, error, False)
-    self.assertEqual(try_job_data.error, error_data)
-
-  def testUpdateTryJobMetadata(self):
-    try_job_id = '1'
-    url = 'url'
-    build_data = {
-        'id': try_job_id,
-        'url': url,
-        'status': 'COMPLETED',
-        'completed_ts': '1454367574000000',
-        'created_ts': '1454367570000000',
-    }
-    report = {
-        'result': {
-            'rev1': 'passed',
-            'rev2': 'failed'
-        },
-        'metadata': {
-            'regression_range_size': 2
-        }
-    }
-    build = buildbucket_client.BuildbucketBuild(build_data)
-    expected_error_dict = {
-        'message':
-            'Try job monitoring was abandoned.',
-        'reason': (
-            'Timeout after %s hours' %
-            waterfall_config.GetTryJobSettings().get('job_timeout_hours'))
-    }
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
-
-    monitor_try_job_pipeline._UpdateTryJobMetadata(
-        try_job_data, failure_type.COMPILE, build, None, False, report)
-    try_job_data = WfTryJobData.Get(try_job_id)
-    self.assertIsNone(try_job_data.error)
-    self.assertEqual(try_job_data.regression_range_size, 2)
-    self.assertEqual(try_job_data.number_of_commits_analyzed, 2)
-    self.assertEqual(try_job_data.end_time, datetime(2016, 2, 1, 22, 59, 34))
-    self.assertEqual(try_job_data.request_time, datetime(
-        2016, 2, 1, 22, 59, 30))
-    self.assertEqual(try_job_data.try_job_url, url)
-
-    monitor_try_job_pipeline._UpdateTryJobMetadata(
-        try_job_data, failure_type.COMPILE, build, None, True)
-    self.assertEqual(try_job_data.error, expected_error_dict)
-    self.assertEqual(try_job_data.error_code, try_job_error.TIMEOUT)
-
-  @mock.patch.object(buildbot, 'GetStepLog')
-  @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
-  def testGetTryJobsForCompileSuccess(self, mock_buildbucket, mock_report):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    try_job_id = '1'
-    regression_range_size = 2
-
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = try_job.key
-    try_job_data.try_job_url = (
-        'https://build.chromium.org/p/m/builders/b/builds/1234')
-    try_job_data.put()
-    try_job.compile_results = [{
-        'report': None,
-        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-        'try_job_id': '1',
-    }]
-    try_job.status = analysis_status.RUNNING
-    try_job.put()
-
-    build_response = {
-        'id': '1',
-        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-        'status': 'COMPLETED',
-    }
-    report = {
-        'result': {
-            'rev1': 'passed',
-            'rev2': 'failed'
-        },
-        'metadata': {
-            'regression_range_size': 2
-        }
-    }
-    mock_buildbucket.GetTryJobs.return_value = [
-        (None, buildbucket_client.BuildbucketBuild(build_response))
-    ]
-    mock_report.return_value = report
-
-    pipeline = MonitorTryJobPipeline()
-    pipeline.start_test()
-    pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
-    pipeline.callback(callback_params=pipeline.last_params)
-
-    # Reload from ID to get all internal properties in sync.
-    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
-    pipeline.finalized()
-    compile_result = pipeline.outputs.default.value
-
-    expected_compile_result = {
-        'report': {
-            'result': {
-                'rev1': 'passed',
-                'rev2': 'failed'
-            },
-            'metadata': {
-                'regression_range_size': regression_range_size
-            }
-        },
-        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-        'try_job_id': '1',
-    }
-
-    self.assertEqual(expected_compile_result, compile_result)
-
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual(expected_compile_result, try_job.compile_results[-1])
-    self.assertEqual(analysis_status.RUNNING, try_job.status)
-
-    try_job_data = WfTryJobData.Get(try_job_id)
-    self.assertEqual(try_job_data.regression_range_size, regression_range_size)
 
   @mock.patch.object(buildbot, 'GetStepLog')
   @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
@@ -242,15 +74,18 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     ]
     mock_report.return_value = report
 
-    pipeline = MonitorTryJobPipeline()
-    pipeline.start_test()
-    pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
-    pipeline.callback(callback_params=json.dumps(pipeline.last_params))
+    monitor_pipeline = MonitorTryJobPipeline()
+    monitor_pipeline.start_test()
+    monitor_pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE,
+                         try_job_id)
+    monitor_pipeline.callback(
+        callback_params=json.dumps(monitor_pipeline.last_params))
 
     # Reload from ID to get all internal properties in sync.
-    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
-    pipeline.finalized()
-    compile_result = pipeline.outputs.default.value
+    monitor_pipeline = MonitorTryJobPipeline.from_id(
+        monitor_pipeline.pipeline_id)
+    monitor_pipeline.finalized()
+    compile_result = monitor_pipeline.outputs.default.value
 
     expected_compile_result = {
         'report': {
@@ -352,139 +187,19 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mock_buildbucket.GetTryJobs.side_effect = get_tryjobs_responses
     mock_report.return_value = report
 
-    pipeline = MonitorTryJobPipeline()
-    pipeline.start_test()
-    pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
-    pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
+    monitor_pipeline = MonitorTryJobPipeline()
+    monitor_pipeline.start_test()
+    monitor_pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
+    monitor_pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
     # Since run() calls callback() immediately, we use -1.
     for _ in range(len(get_tryjobs_responses) - 1):
-      pipeline.callback(callback_params=pipeline.last_params)
+      monitor_pipeline.callback(callback_params=monitor_pipeline.last_params)
 
     # Reload from ID to get all internal properties in sync.
-    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
-    pipeline.finalized()
-    test_result = pipeline.outputs.default.value
-
-    expected_test_result = {
-        'report': {
-            'result': {
-                'rev1': {
-                    'a_test': {
-                        'status': 'passed',
-                        'valid': True
-                    }
-                },
-                'rev2': {
-                    'a_test': {
-                        'status': 'failed',
-                        'valid': True,
-                        'failures': ['test1', 'test2']
-                    }
-                }
-            }
-        },
-        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-        'try_job_id': '3',
-    }
-    self.assertEqual(expected_test_result, test_result)
-
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual(expected_test_result, try_job.test_results[-1])
-    self.assertEqual(analysis_status.RUNNING, try_job.status)
-
-  @mock.patch.object(buildbot, 'GetStepLog')
-  @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
-  def testGetTryJobsForTestSuccess(self, mock_buildbucket, mock_report):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    try_job_id = '3'
-
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.test_results = [{
-        'report': None,
-        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-        'try_job_id': try_job_id,
-    }]
-    try_job.status = analysis_status.RUNNING
-    try_job.put()
-
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = try_job.key
-    try_job_data.try_job_url = (
-        'https://build.chromium.org/p/m/builders/b/builds/1234')
-    try_job_data.put()
-
-    data = [{
-        'build': {
-            'id': '3',
-            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-            'status': 'STARTED'
-        }
-    }, {
-        'error': {
-            'reason': 'BUILD_NOT_FOUND',
-            'message': 'message',
-        }
-    }, {
-        'build': {
-            'id': '3',
-            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-            'status': 'STARTED'
-        }
-    }, {
-        'error': {
-            'reason': 'BUILD_NOT_FOUND',
-            'message': 'message',
-        }
-    }, {
-        'build': {
-            'id': '3',
-            'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
-            'status': 'COMPLETED',
-        }
-    }]
-
-    report = {
-        'result': {
-            'rev1': {
-                'a_test': {
-                    'status': 'passed',
-                    'valid': True
-                }
-            },
-            'rev2': {
-                'a_test': {
-                    'status': 'failed',
-                    'valid': True,
-                    'failures': ['test1', 'test2']
-                }
-            }
-        }
-    }
-
-    get_tryjobs_responses = [
-        [(None, buildbucket_client.BuildbucketBuild(data[0]['build']))],
-        [(buildbucket_client.BuildbucketError(data[1]['error']), None)],
-        [(None, buildbucket_client.BuildbucketBuild(data[2]['build']))],
-        [(buildbucket_client.BuildbucketError(data[3]['error']), None)],
-        [(None, buildbucket_client.BuildbucketBuild(data[4]['build']))],
-    ]
-    mock_buildbucket.GetTryJobs.side_effect = get_tryjobs_responses
-    mock_report.return_value = report
-
-    pipeline = MonitorTryJobPipeline()
-    pipeline.start_test()
-    pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
-    pipeline.run(try_job.key.urlsafe(), failure_type.TEST, try_job_id)
-    # Since run() calls callback() immediately, we use -1.
-    for _ in range(len(get_tryjobs_responses) - 1):
-      pipeline.callback(callback_params=pipeline.last_params)
-
-    # Reload from ID to get all internal properties in sync.
-    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
-    pipeline.finalized()
-    test_result = pipeline.outputs.default.value
+    monitor_pipeline = MonitorTryJobPipeline.from_id(
+        monitor_pipeline.pipeline_id)
+    monitor_pipeline.finalized()
+    test_result = monitor_pipeline.outputs.default.value
 
     expected_test_result = {
         'report': {
@@ -565,15 +280,17 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     ]
     mock_report.return_value = report
 
-    pipeline = MonitorTryJobPipeline()
-    pipeline.start_test()
-    pipeline.run(try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id)
-    pipeline.callback(callback_params=pipeline.last_params)
+    monitor_pipeline = MonitorTryJobPipeline()
+    monitor_pipeline.start_test()
+    monitor_pipeline.run(try_job.key.urlsafe(), failure_type.FLAKY_TEST,
+                         try_job_id)
+    monitor_pipeline.callback(callback_params=monitor_pipeline.last_params)
 
     # Reload from ID to get all internal properties in sync.
-    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
-    pipeline.finalized()
-    flake_result = pipeline.outputs.default.value
+    monitor_pipeline = MonitorTryJobPipeline.from_id(
+        monitor_pipeline.pipeline_id)
+    monitor_pipeline.finalized()
+    flake_result = monitor_pipeline.outputs.default.value
 
     expected_flake_result = {
         'report': {
@@ -606,212 +323,20 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job_data = FlakeTryJobData.Get(try_job_id)
     self.assertEqual(try_job_data.last_buildbucket_response, build_response)
 
-  def testUpdateTryJobResultAnalyzing(self):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    try_job_id = '3'
-
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.put()
-
-    pipeline = MonitorTryJobPipeline()
-    pipeline._UpdateTryJobResult(try_job.key.urlsafe(), failure_type.TEST,
-                                 try_job_id, 'url',
-                                 buildbucket_client.BuildbucketBuild.STARTED)
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual(analysis_status.RUNNING, try_job.status)
-
-  def testUpdateFlakeTryJobResult(self):
-    master_name = 'm'
-    builder_name = 'b'
-    step_name = 's'
-    test_name = 't'
-    git_hash = 'a1b2c3d4'
-    try_job_id = '2'
-    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
-                                 test_name, git_hash)
-    try_job.put()
-
-    pipeline = MonitorTryJobPipeline()
-    pipeline._UpdateTryJobResult(try_job.key.urlsafe(), failure_type.FLAKY_TEST,
-                                 try_job_id, 'url',
-                                 buildbucket_client.BuildbucketBuild.STARTED)
-    try_job = FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
-                              git_hash)
-    self.assertEqual(analysis_status.RUNNING, try_job.status)
-
-  def testGetErrorForNoError(self):
-    build_response = {
-        'id':
-            1,
-        'url':
-            'https://build.chromium.org/p/m/builders/b/builds/1234',
-        'status':
-            'COMPLETED',
-        'completed_ts':
-            '1454367574000000',
-        'created_ts':
-            '1454367570000000',
-        'result_details_json':
-            json.dumps({
-                'properties': {
-                    'report': {
-                        'result': {
-                            'rev1': 'passed',
-                            'rev2': 'failed'
-                        },
-                        'metadata': {
-                            'regression_range_size': 2
-                        }
-                    }
-                }
-            })
-    }
-    self.assertEqual(
-        monitor_try_job_pipeline._GetError(build_response, None, False, False),
-        (None, None))
-    self.assertEqual(
-        monitor_try_job_pipeline._GetError({}, None, False, False), (None,
-                                                                     None))
-
-  def testGetErrorForTimeout(self):
-    expected_error_dict = {
-        'message':
-            'Try job monitoring was abandoned.',
-        'reason': (
-            'Timeout after %s hours' %
-            waterfall_config.GetTryJobSettings().get('job_timeout_hours'))
-    }
-
-    self.assertEqual(
-        monitor_try_job_pipeline._GetError({}, None, True, False),
-        (expected_error_dict, try_job_error.TIMEOUT))
-
-  def testGetErrorForBuildbucketReportedError(self):
-    build_response = {
-        'result_details_json':
-            json.dumps({
-                'error': {
-                    'message': 'Builder b not found'
-                }
-            })
-    }
-
-    expected_error_dict = {
-        'message': 'Buildbucket reported an error.',
-        'reason': 'Builder b not found'
-    }
-
-    self.assertEqual(
-        monitor_try_job_pipeline._GetError(build_response, None, False, False),
-        (expected_error_dict, try_job_error.CI_REPORTED_ERROR))
-
-  def testGetErrorUnknown(self):
-    build_response = {
-        'result_details_json': json.dumps({
-            'error': {
-                'abc': 'abc'
-            }
-        })
-    }
-
-    expected_error_dict = {
-        'message': 'Buildbucket reported an error.',
-        'reason': MonitorTryJobPipeline.UNKNOWN
-    }
-
-    self.assertEqual(
-        monitor_try_job_pipeline._GetError(build_response, None, False, False),
-        (expected_error_dict, try_job_error.CI_REPORTED_ERROR))
-
-  def testGetErrorInfraFailure(self):
-    build_response = {
-        'result':
-            'FAILED',
-        'failure_reason':
-            'INFRA_FAILURE',
-        'result_details_json':
-            json.dumps({
-                'properties': {
-                    'report': {
-                        'metadata': {
-                            'infra_failure': True
-                        }
-                    }
-                }
-            })
-    }
-
-    expected_error_dict = {
-        'message': 'Try job encountered an infra issue during execution.',
-        'reason': MonitorTryJobPipeline.UNKNOWN
-    }
-
-    self.assertEqual(
-        monitor_try_job_pipeline._GetError(build_response, None, False, False),
-        (expected_error_dict, try_job_error.INFRA_FAILURE))
-
-  def testGetErrorUnexpectedBuildFailure(self):
-    build_response = {
-        'result':
-            'FAILED',
-        'failure_reason':
-            'BUILD_FAILURE',
-        'result_details_json':
-            json.dumps({
-                'properties': {
-                    'report': {
-                        'metadata': {
-                            'infra_failure': True
-                        }
-                    }
-                }
-            })
-    }
-
-    expected_error_dict = {
-        'message': 'Buildbucket reported a general error.',
-        'reason': MonitorTryJobPipeline.UNKNOWN
-    }
-
-    self.assertEqual(
-        monitor_try_job_pipeline._GetError(build_response, None, False, False),
-        (expected_error_dict, try_job_error.INFRA_FAILURE))
-
-  def testGetErrorUnknownBuildbucketFailure(self):
-    build_response = {
-        'result': 'FAILED',
-        'failure_reason': 'SOME_FAILURE',
-        'result_details_json': json.dumps({
-            'properties': {
-                'report': {}
-            }
-        })
-    }
-
-    expected_error_dict = {
-        'message': 'SOME_FAILURE',
-        'reason': MonitorTryJobPipeline.UNKNOWN
-    }
-
-    self.assertEqual(
-        monitor_try_job_pipeline._GetError(build_response, None, False, False),
-        (expected_error_dict, try_job_error.UNKNOWN))
-
   def testReturnNoneIfNoTryJobId(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
-    pipeline = MonitorTryJobPipeline()
-    pipeline.start_test()
+    monitor_pipeline = MonitorTryJobPipeline()
+    monitor_pipeline.start_test()
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    pipeline.run(try_job.key.urlsafe(), failure_type.TEST, None)
+    monitor_pipeline.run(try_job.key.urlsafe(), failure_type.TEST, None)
 
     # Reload from ID to get all internal properties in sync.
-    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
-    pipeline.finalized()
-    test_result = pipeline.outputs.default.value
+    monitor_pipeline = MonitorTryJobPipeline.from_id(
+        monitor_pipeline.pipeline_id)
+    monitor_pipeline.finalized()
+    test_result = monitor_pipeline.outputs.default.value
     self.assertIsNone(test_result)
 
   @mock.patch.object(buildbot, 'GetStepLog')
@@ -861,16 +386,18 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     ]
     mock_report.return_value = report
 
-    pipeline = MonitorTryJobPipeline(try_job.key.urlsafe(),
-                                     failure_type.COMPILE, try_job_id)
-    pipeline.start_test()
-    pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
-    pipeline.callback(**pipeline.last_params)
+    monitor_pipeline = MonitorTryJobPipeline(try_job.key.urlsafe(),
+                                             failure_type.COMPILE, try_job_id)
+    monitor_pipeline.start_test()
+    monitor_pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE,
+                         try_job_id)
+    monitor_pipeline.callback(**monitor_pipeline.last_params)
 
     # Reload from ID to get all internal properties in sync.
-    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
-    pipeline.finalized()
-    compile_result = pipeline.outputs.default.value
+    monitor_pipeline = MonitorTryJobPipeline.from_id(
+        monitor_pipeline.pipeline_id)
+    monitor_pipeline.finalized()
+    compile_result = monitor_pipeline.outputs.default.value
 
     expected_compile_result = {
         'report': {
@@ -896,290 +423,43 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job_data.regression_range_size, regression_range_size)
     self.assertIsInstance(try_job_data.start_time, datetime)
 
-  def testGetErrorReportMissing(self):
-    build_response = {'result_details_json': json.dumps({'properties': {}})}
-
-    expected_error_dict = {
-        'message': 'No result report was found.',
-        'reason': MonitorTryJobPipeline.UNKNOWN
-    }
-
-    self.assertEqual(
-        monitor_try_job_pipeline._GetError(build_response, None, False, True),
-        (expected_error_dict, try_job_error.UNKNOWN))
-
-  @mock.patch.object(swarming_util, 'GetStepLog')
-  @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
-  def testGetTryJobsForCompileSuccessSwarming(self, mock_buildbucket,
-                                              mock_report):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    try_job_id = '1'
-    try_job_url = 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10'
-    regression_range_size = 2
-
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = try_job.key
-    try_job_data.try_job_url = try_job_url
-    try_job_data.put()
-    try_job.compile_results = [{
-        'report': None,
-        'url': try_job_url,
-        'try_job_id': '1',
-    }]
-    try_job.status = analysis_status.RUNNING
-    try_job.put()
-
-    build_response = {
-        'id':
-            '1',
-        'url':
-            try_job_url,
-        'status':
-            'COMPLETED',
-        'result_details_json':
-            json.dumps({
-                'swarming': {
-                    'task_result': {
-                        'bot_id': 'dummy_bot'
-                    }
-                },
-            }),
-        'parameters_json':
-            json.dumps({
-                'swarming': {
-                    'override_builder_cfg': {
-                        'caches': [{
-                            'path': 'builder',
-                            'name': 'dummy_cache',
-                        }]
-                    }
-                }
-            })
-    }
-    report = {
-        'result': {
-            'rev1': 'passed',
-            'rev2': 'failed'
-        },
-        'metadata': {
-            'regression_range_size': 2
-        }
-    }
-    mock_buildbucket.GetTryJobs.return_value = [
-        (None, buildbucket_client.BuildbucketBuild(build_response))
-    ]
-    mock_report.return_value = report
-
-    pipeline = MonitorTryJobPipeline()
-    pipeline.start_test()
-    pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
-    pipeline.callback(callback_params=pipeline.last_params)
-
-    # Reload from ID to get all internal properties in sync.
-    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
-    pipeline.finalized()
-    compile_result = pipeline.outputs.default.value
-
-    expected_compile_result = {
-        'report': {
-            'result': {
-                'rev1': 'passed',
-                'rev2': 'failed'
-            },
-            'metadata': {
-                'regression_range_size': regression_range_size
-            }
-        },
-        'url': try_job_url,
-        'try_job_id': '1',
-    }
-
-    self.assertEqual(expected_compile_result, compile_result)
-
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual(expected_compile_result, try_job.compile_results[-1])
-    self.assertEqual(analysis_status.RUNNING, try_job.status)
-
-    try_job_data = WfTryJobData.Get(try_job_id)
-    self.assertEqual(try_job_data.regression_range_size, regression_range_size)
-
-  @mock.patch.object(swarming_util, 'GetStepLog')
-  @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
-  def testGetTryJobsForCompileSuccessSwarmingNoBot(self, mock_buildbucket,
-                                                   mock_report):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    try_job_id = '1'
-    try_job_url = 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10'
-    regression_range_size = 2
-
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = try_job.key
-    try_job_data.try_job_url = try_job_url
-    try_job_data.put()
-    try_job.compile_results = [{
-        'report': None,
-        'url': try_job_url,
-        'try_job_id': '1',
-    }]
-    try_job.status = analysis_status.RUNNING
-    try_job.put()
-
-    build_response = {
-        'id':
-            '1',
-        'url':
-            try_job_url,
-        'status':
-            'COMPLETED',
-        'parameters_json':
-            json.dumps({
-                'swarming': {
-                    'override_builder_cfg': {
-                        'caches': [{
-                            'path': 'builder',
-                            'name': 'dummy_cache',
-                        }]
-                    }
-                }
-            })
-    }
-    report = {
-        'result': {
-            'rev1': 'passed',
-            'rev2': 'failed'
-        },
-        'metadata': {
-            'regression_range_size': 2
-        }
-    }
-    mock_buildbucket.GetTryJobs.return_value = [
-        (None, buildbucket_client.BuildbucketBuild(build_response))
-    ]
-    mock_report.return_value = report
-
-    pipeline = MonitorTryJobPipeline()
-    pipeline.start_test()
-    pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
-    pipeline.callback(callback_params=pipeline.last_params)
-
-    # Reload from ID to get all internal properties in sync.
-    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
-    pipeline.finalized()
-    compile_result = pipeline.outputs.default.value
-
-    expected_compile_result = {
-        'report': {
-            'result': {
-                'rev1': 'passed',
-                'rev2': 'failed'
-            },
-            'metadata': {
-                'regression_range_size': regression_range_size
-            }
-        },
-        'url': try_job_url,
-        'try_job_id': '1',
-    }
-
-    self.assertEqual(expected_compile_result, compile_result)
-
-    try_job = WfTryJob.Get(master_name, builder_name, build_number)
-    self.assertEqual(expected_compile_result, try_job.compile_results[-1])
-    self.assertEqual(analysis_status.RUNNING, try_job.status)
-
-    try_job_data = WfTryJobData.Get(try_job_id)
-    self.assertEqual(try_job_data.regression_range_size, regression_range_size)
-
-  @mock.patch.object(swarming_util, 'GetStepLog')
-  @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
-  def testGetTryJobsForCompileSuccessSwarmingNoReport(self, mock_buildbucket,
-                                                      mock_report):
-    master_name = 'm'
-    builder_name = 'b'
-    build_number = 1
-    try_job_id = '1'
-    try_job_url = 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10'
-
-    try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job_data = WfTryJobData.Create(try_job_id)
-    try_job_data.try_job_key = try_job.key
-    try_job_data.try_job_url = try_job_url
-    try_job_data.put()
-    try_job.compile_results = [{
-        'report': None,
-        'url': try_job_url,
-        'try_job_id': '1',
-    }]
-    try_job.status = analysis_status.RUNNING
-    try_job.put()
-
-    build_response = {
-        'id': '1',
-        'url': try_job_url,
-        'status': 'COMPLETED',
-    }
-    mock_buildbucket.GetTryJobs.return_value = [
-        (None, buildbucket_client.BuildbucketBuild(build_response))
-    ]
-    mock_report.return_value = {}
-
-    pipeline = MonitorTryJobPipeline()
-    pipeline.start_test()
-    pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE, try_job_id)
-    pipeline.callback(callback_params=pipeline.last_params)
-
-    # Reload from ID to get all internal properties in sync.
-    pipeline = MonitorTryJobPipeline.from_id(pipeline.pipeline_id)
-    pipeline.finalized()
-
-  @mock.patch('waterfall.swarming_util.GetBot', return_value='BotName')
-  @mock.patch(
-      'waterfall.swarming_util.GetBuilderCacheName', return_value='CacheName')
-  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
-  def testRecordCacheStats(self, mock_cl, *_):
-    cases = [(None, None, '100', 100), ('100', '100', '200', 200),
-             ('100', '200', '100', 200), ('200', '200', '100',
-                                          200), ('100', '200', '300', 300)]
-    for (checked_out_revision, cached_revision, bad_revision,
-         synced_revision) in cases:
-      mock_commit_position = mock.PropertyMock()
-      mock_commit_position.side_effect = filter(None, [
-          int(checked_out_revision) if checked_out_revision else None,
-          int(cached_revision) if cached_revision else None,
-          int(bad_revision) if bad_revision else None,
-      ])
-      type(mock_cl.return_value).commit_position = mock_commit_position
-      build = buildbucket_client.BuildbucketBuild({
-          'parameters_json':
-              json.dumps({
-                  'properties': {
-                      'bad_revision': bad_revision
-                  }
-              })
-      })
-      report = {
-          'last_checked_out_revision': checked_out_revision,
-          'previously_cached_revision': cached_revision
-      }
-      with mock.patch(
-          'model.wf_try_bot_cache.WfTryBotCache.AddBot') as mock_add_bot:
-        monitor_try_job_pipeline._RecordCacheStats(build, report)
-        mock_add_bot.assert_called_once_with('BotName',
-                                             int(checked_out_revision)
-                                             if checked_out_revision else None,
-                                             synced_revision)
-
   @mock.patch.object(logging, 'warning')
-  @mock.patch.object(MonitorTryJobPipeline, 'get_callback_task',
-                     side_effect=taskqueue.TombstonedTaskError)
+  @mock.patch.object(
+      MonitorTryJobPipeline,
+      'get_callback_task',
+      side_effect=taskqueue.TombstonedTaskError)
   def testDelayCallbackException(self, _, mocked_logging):
-    pipeline = MonitorTryJobPipeline()
-    pipeline.start_test()
-    pipeline.delay_callback(60, pipeline.last_params, name='name')
+    monitor_pipeline = MonitorTryJobPipeline()
+    monitor_pipeline.start_test()
+    monitor_pipeline.delay_callback(
+        60, monitor_pipeline.last_params, name='name')
     mocked_logging.assert_called()
+
+  @mock.patch.object(
+      try_job_service,
+      'OnGetTryJobError',
+      side_effect=exceptions.RetryException('error_reason', 'error_message'))
+  @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
+  def testMonitorTryJobMaxError(self, mock_buildbucket, _):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '1'
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.put()
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.try_job_url = (
+        'https://build.chromium.org/p/m/builders/b/builds/1234')
+    try_job_data.put()
+
+    error_data = {'reason': 'BUILD_NOT_FOUND', 'message': 'message'}
+    error = buildbucket_client.BuildbucketError(error_data)
+    mock_buildbucket.GetTryJobs.return_value = [(error, None)]
+
+    monitor_pipeline = MonitorTryJobPipeline()
+    monitor_pipeline.start_test()
+    with self.assertRaises(pipeline.Retry):
+      monitor_pipeline.run(try_job.key.urlsafe(), failure_type.COMPILE,
+                           try_job_id)

@@ -24,10 +24,26 @@ class MonitoringTest(wf_testcase.WaterfallTestCase):
         'master_name': master_name,
         'builder_name': builder_name
     }
-    mock_mo.assert_is_called_once_with(parameters)
+    mock_mo.assert_called_once_with(parameters)
 
   @mock.patch.object(mo.culprit_found, 'increment')
   def testOnActionOnTestCulprits(self, mock_mo):
     monitoring.OnActionOnTestCulprits()
     parameters = {'type': 'test', 'action_taken': 'culprit_notified'}
-    mock_mo.assert_is_called_once_with(parameters)
+    mock_mo.assert_called_once_with(parameters)
+
+  @mock.patch.object(mo.try_job_errors, 'increment')
+  def testOnTryJobError(self, mock_mo):
+    try_job_type = failure_type.COMPILE
+    master_name = 'm'
+    builder_name = 'b'
+    error_dict = {'message': 'message', 'reason': 'reason'}
+    monitoring.OnTryJobError(try_job_type, error_dict, master_name,
+                             builder_name)
+    parameters = {
+        'type': try_job_type,
+        'error': error_dict.get('message', 'unknown'),
+        'master_name': master_name,
+        'builder_name': builder_name
+    }
+    mock_mo.assert_called_once_with(parameters)

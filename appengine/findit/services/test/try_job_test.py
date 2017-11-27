@@ -4,14 +4,23 @@
 
 from datetime import datetime
 from datetime import timedelta
+import json
+import logging
 import mock
+import time
 
+from google.appengine.ext import ndb
+
+from common import exceptions
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
+from common.waterfall import try_job_error
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+from libs import analysis_status
 from libs import time_util
 from model import result_status
+from model.flake.flake_try_job import FlakeTryJob
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from model.wf_failure_group import WfFailureGroup
@@ -20,8 +29,10 @@ from model.wf_try_job_data import WfTryJobData
 from services import try_job as try_job_service
 from services.parameters import BuildKey
 from services.parameters import ScheduleCompileTryJobParameters
-from waterfall.test import wf_testcase
+from waterfall import buildbot
+from waterfall import swarming_util
 from waterfall import waterfall_config
+from waterfall.test import wf_testcase
 
 _GIT_REPO = CachedGitilesRepository(
     FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
@@ -678,3 +689,661 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                      try_job_service.PrepareParametersToScheduleTryJob(
                          master_name, builder_name, build_number, failure_info,
                          {}))
+
+  def testUpdateTryJobMetadataForBuildError(self):
+    error_data = {'reason': 'BUILD_NOT_FOUND', 'message': 'message'}
+    error = buildbucket_client.BuildbucketError(error_data)
+    try_job_data = WfTryJobData.Create('1')
+    try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
+
+    try_job_service.UpdateTryJobMetadata(try_job_data, failure_type.COMPILE,
+                                         None, error, False)
+    self.assertEqual(try_job_data.error, error_data)
+
+  def testUpdateTryJobMetadataUpdateStartTime(self):
+    try_job_id = '1'
+    url = 'url'
+    build_data = {
+        'id': try_job_id,
+        'url': url,
+        'status': 'STARTED',
+        'completed_ts': '1454367574000000',
+        'created_ts': '1454367570000000',
+        'updated_ts': '1454367571000000',
+    }
+    build = buildbucket_client.BuildbucketBuild(build_data)
+    try_job_data = WfTryJobData.Create('1')
+    try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
+
+    try_job_service.UpdateTryJobMetadata(try_job_data, failure_type.COMPILE,
+                                         build, None, False, None, False)
+    self.assertEqual(try_job_data.start_time,
+                     time_util.MicrosecondsToDatetime('1454367571000000'))
+
+  def testUpdateTryJobMetadata(self):
+    try_job_id = '1'
+    url = 'url'
+    build_data = {
+        'id': try_job_id,
+        'url': url,
+        'status': 'COMPLETED',
+        'completed_ts': '1454367574000000',
+        'created_ts': '1454367570000000',
+    }
+    report = {
+        'result': {
+            'rev1': 'passed',
+            'rev2': 'failed'
+        },
+        'metadata': {
+            'regression_range_size': 2
+        }
+    }
+    build = buildbucket_client.BuildbucketBuild(build_data)
+    expected_error_dict = {
+        'message':
+            'Try job monitoring was abandoned.',
+        'reason': (
+            'Timeout after %s hours' %
+            waterfall_config.GetTryJobSettings().get('job_timeout_hours'))
+    }
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = WfTryJob.Create('m', 'b', 123).key
+
+    try_job_service.UpdateTryJobMetadata(try_job_data, failure_type.COMPILE,
+                                         build, None, False, report)
+    try_job_data = WfTryJobData.Get(try_job_id)
+    self.assertIsNone(try_job_data.error)
+    self.assertEqual(try_job_data.regression_range_size, 2)
+    self.assertEqual(try_job_data.number_of_commits_analyzed, 2)
+    self.assertEqual(try_job_data.end_time, datetime(2016, 2, 1, 22, 59, 34))
+    self.assertEqual(try_job_data.request_time, datetime(
+        2016, 2, 1, 22, 59, 30))
+    self.assertEqual(try_job_data.try_job_url, url)
+
+    try_job_service.UpdateTryJobMetadata(try_job_data, failure_type.COMPILE,
+                                         build, None, True)
+    self.assertEqual(try_job_data.error, expected_error_dict)
+    self.assertEqual(try_job_data.error_code, try_job_error.TIMEOUT)
+
+  @mock.patch('waterfall.swarming_util.GetBot', return_value='BotName')
+  @mock.patch(
+      'waterfall.swarming_util.GetBuilderCacheName', return_value='CacheName')
+  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  def testRecordCacheStats(self, mock_cl, *_):
+    cases = [(None, None, '100', 100), ('100', '100', '200', 200),
+             ('100', '200', '100', 200), ('200', '200', '100',
+                                          200), ('100', '200', '300', 300)]
+    for (checked_out_revision, cached_revision, bad_revision,
+         synced_revision) in cases:
+      mock_commit_position = mock.PropertyMock()
+      mock_commit_position.side_effect = filter(None, [
+          int(checked_out_revision) if checked_out_revision else None,
+          int(cached_revision) if cached_revision else None,
+          int(bad_revision) if bad_revision else None,
+      ])
+      type(mock_cl.return_value).commit_position = mock_commit_position
+      build = buildbucket_client.BuildbucketBuild({
+          'parameters_json':
+              json.dumps({
+                  'properties': {
+                      'bad_revision': bad_revision
+                  }
+              })
+      })
+      report = {
+          'last_checked_out_revision': checked_out_revision,
+          'previously_cached_revision': cached_revision
+      }
+      with mock.patch(
+          'model.wf_try_bot_cache.WfTryBotCache.AddBot') as mock_add_bot:
+        try_job_service._RecordCacheStats(build, report)
+        mock_add_bot.assert_called_once_with('BotName',
+                                             int(checked_out_revision)
+                                             if checked_out_revision else None,
+                                             synced_revision)
+
+  @mock.patch.object(swarming_util, 'GetBot', return_value=None)
+  @mock.patch.object(swarming_util, 'GetBuilderCacheName', return_value=None)
+  @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
+  def testRecordCacheStatsNotEnoughInfo(self, mock_fn, *_):
+    try_job_service._RecordCacheStats(None, None)
+    mock_fn.assert_not_called()
+
+  @mock.patch.object(WfTryJobData, 'put')
+  def testUpdateLastBuildbucketResponseNoBuild(self, mock_fn):
+    try_job_service._UpdateLastBuildbucketResponse(None, None)
+    mock_fn.assert_not_called()
+
+  @mock.patch.object(WfTryJobData, 'put')
+  def testUpdateLastBuildbucketResponse(self, _):
+    try_job_data = WfTryJobData.Create('m/b/123')
+    response = {'id': '1'}
+    build = buildbucket_client.BuildbucketBuild(response)
+    try_job_service._UpdateLastBuildbucketResponse(try_job_data, build)
+    self.assertEqual(try_job_data.last_buildbucket_response, response)
+
+  def testGetErrorForNoError(self):
+    build_response = {
+        'id':
+            1,
+        'url':
+            'https://build.chromium.org/p/m/builders/b/builds/1234',
+        'status':
+            'COMPLETED',
+        'completed_ts':
+            '1454367574000000',
+        'created_ts':
+            '1454367570000000',
+        'result_details_json':
+            json.dumps({
+                'properties': {
+                    'report': {
+                        'result': {
+                            'rev1': 'passed',
+                            'rev2': 'failed'
+                        },
+                        'metadata': {
+                            'regression_range_size': 2
+                        }
+                    }
+                }
+            })
+    }
+    self.assertEqual(
+        try_job_service._GetError(build_response, None, False, False), (None,
+                                                                        None))
+    self.assertEqual(
+        try_job_service._GetError({}, None, False, False), (None, None))
+
+  def testGetErrorForTimeout(self):
+    expected_error_dict = {
+        'message':
+            'Try job monitoring was abandoned.',
+        'reason': (
+            'Timeout after %s hours' %
+            waterfall_config.GetTryJobSettings().get('job_timeout_hours'))
+    }
+
+    self.assertEqual(
+        try_job_service._GetError({}, None, True, False),
+        (expected_error_dict, try_job_error.TIMEOUT))
+
+  def testGetErrorForBuildbucketReportedError(self):
+    build_response = {
+        'result_details_json':
+            json.dumps({
+                'error': {
+                    'message': 'Builder b not found'
+                }
+            })
+    }
+
+    expected_error_dict = {
+        'message': 'Buildbucket reported an error.',
+        'reason': 'Builder b not found'
+    }
+
+    self.assertEqual(
+        try_job_service._GetError(build_response, None, False, False),
+        (expected_error_dict, try_job_error.CI_REPORTED_ERROR))
+
+  def testGetErrorUnknown(self):
+    build_response = {
+        'result_details_json': json.dumps({
+            'error': {
+                'abc': 'abc'
+            }
+        })
+    }
+
+    expected_error_dict = {
+        'message': 'Buildbucket reported an error.',
+        'reason': try_job_service.UNKNOWN
+    }
+
+    self.assertEqual(
+        try_job_service._GetError(build_response, None, False, False),
+        (expected_error_dict, try_job_error.CI_REPORTED_ERROR))
+
+  def testGetErrorInfraFailure(self):
+    build_response = {
+        'result':
+            'FAILED',
+        'failure_reason':
+            'INFRA_FAILURE',
+        'result_details_json':
+            json.dumps({
+                'properties': {
+                    'report': {
+                        'metadata': {
+                            'infra_failure': True
+                        }
+                    }
+                }
+            })
+    }
+
+    expected_error_dict = {
+        'message': 'Try job encountered an infra issue during execution.',
+        'reason': try_job_service.UNKNOWN
+    }
+
+    self.assertEqual(
+        try_job_service._GetError(build_response, None, False, False),
+        (expected_error_dict, try_job_error.INFRA_FAILURE))
+
+  def testGetErrorUnexpectedBuildFailure(self):
+    build_response = {
+        'result':
+            'FAILED',
+        'failure_reason':
+            'BUILD_FAILURE',
+        'result_details_json':
+            json.dumps({
+                'properties': {
+                    'report': {
+                        'metadata': {
+                            'infra_failure': True
+                        }
+                    }
+                }
+            })
+    }
+
+    expected_error_dict = {
+        'message': 'Buildbucket reported a general error.',
+        'reason': try_job_service.UNKNOWN
+    }
+
+    self.assertEqual(
+        try_job_service._GetError(build_response, None, False, False),
+        (expected_error_dict, try_job_error.INFRA_FAILURE))
+
+  def testGetErrorUnknownBuildbucketFailure(self):
+    build_response = {
+        'result': 'FAILED',
+        'failure_reason': 'SOME_FAILURE',
+        'result_details_json': json.dumps({
+            'properties': {
+                'report': {}
+            }
+        })
+    }
+
+    expected_error_dict = {
+        'message': 'SOME_FAILURE',
+        'reason': try_job_service.UNKNOWN
+    }
+
+    self.assertEqual(
+        try_job_service._GetError(build_response, None, False, False),
+        (expected_error_dict, try_job_error.UNKNOWN))
+
+  def testGetErrorReportMissing(self):
+    build_response = {'result_details_json': json.dumps({'properties': {}})}
+
+    expected_error_dict = {
+        'message': 'No result report was found.',
+        'reason': try_job_service.UNKNOWN
+    }
+
+    self.assertEqual(
+        try_job_service._GetError(build_response, None, False, True),
+        (expected_error_dict, try_job_error.UNKNOWN))
+
+  def testUpdateTryJobResultAnalyzing(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '3'
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.put()
+
+    try_job_service._UpdateTryJobResult(
+        try_job.key.urlsafe(), failure_type.TEST, try_job_id, 'url',
+        buildbucket_client.BuildbucketBuild.STARTED)
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(analysis_status.RUNNING, try_job.status)
+
+  def testUpdateFlakeTryJobResult(self):
+    master_name = 'm'
+    builder_name = 'b'
+    step_name = 's'
+    test_name = 't'
+    git_hash = 'a1b2c3d4'
+    try_job_id = '2'
+    try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
+                                 test_name, git_hash)
+    try_job.put()
+
+    try_job_service._UpdateTryJobResult(
+        try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id, 'url',
+        buildbucket_client.BuildbucketBuild.STARTED)
+    try_job = FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
+                              git_hash)
+    self.assertEqual(analysis_status.RUNNING, try_job.status)
+
+  def testUpdateCompileTyrJobResultAppend(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '3'
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.compile_results = [{'try_job_id': try_job_id}]
+    try_job.status = analysis_status.RUNNING
+    try_job.put()
+
+    try_job_service._UpdateTryJobResult(
+        try_job.key.urlsafe(), failure_type.COMPILE, try_job_id, 'url',
+        buildbucket_client.BuildbucketBuild.COMPLETED)
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(analysis_status.RUNNING, try_job.status)
+
+  def testGetOrCreateTryJobDataGet(self):
+    try_job_id = '1'
+    urlsafe_try_job_key = WfTryJob.Create('m', 'b', 1).key.urlsafe()
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = ndb.Key(urlsafe=urlsafe_try_job_key)
+    try_job_data.put()
+    self.assertIsNotNone(
+        try_job_service.GetOrCreateTryJobData(failure_type.COMPILE, try_job_id,
+                                              urlsafe_try_job_key))
+
+  def testGetOrCreateTryJobDataCreate(self):
+    try_job_id = '1'
+    urlsafe_try_job_key = FlakeTryJob.Create('m', 'b', 'a', 't',
+                                             'gh').key.urlsafe()
+    self.assertIsNotNone(
+        try_job_service.GetOrCreateTryJobData(failure_type.FLAKY_TEST,
+                                              try_job_id, urlsafe_try_job_key))
+
+  @mock.patch.object(time, 'time', return_value=1511298536.959618)
+  @mock.patch.object(waterfall_config, 'GetTryJobSettings')
+  def testInitializeParams(self, mock_config, _):
+    mock_config.return_value = {
+        'job_timeout_hours': 1,
+        'server_query_interval_seconds': 5,
+        'allowed_response_error_times': 5
+    }
+
+    try_job_id = '1'
+    try_job_type = failure_type.COMPILE
+    urlsafe_try_job_key = 'urlsafe_try_job_key'
+    expected_params = {
+        'try_job_id': try_job_id,
+        'try_job_type': try_job_type,
+        'urlsafe_try_job_key': urlsafe_try_job_key,
+        'deadline': 1511302136.959618,
+        'already_set_started': False,
+        'error_count': 0,
+        'max_error_times': 5,
+        'default_pipeline_wait_seconds': 5,
+        'timeout_hours': 1,
+        'backoff_time': 5,
+    }
+    self.assertEqual(expected_params,
+                     try_job_service.InitializeParams(try_job_id, try_job_type,
+                                                      urlsafe_try_job_key))
+
+  def testGetUpdatedParams(self):
+    parames = {
+        'error_count': 0,
+    }
+    new_params = try_job_service._GetUpdatedParams(parames, error_count=1)
+    self.assertEqual(1, new_params['error_count'])
+
+  def testOnGetTryJobError(self):
+    params = {'error_count': 0, 'max_error_times': 5}
+    expected_params = {'error_count': 1, 'max_error_times': 5}
+    self.assertEqual(expected_params,
+                     try_job_service.OnGetTryJobError(params, None, None, None))
+
+  @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
+  def testOnGetTryJobErrorExceedMaxTry(self, _):
+    params = {'error_count': 5, 'max_error_times': 5, 'try_job_type': 1}
+    with self.assertRaises(exceptions.RetryException):
+      try_job_service.OnGetTryJobError(params, None, None,
+                                       buildbucket_client.BuildbucketError({
+                                           'reason': 'reason',
+                                           'message': 'message'
+                                       }))
+
+  @mock.patch.object(try_job_service, '_UpdateTryJobResult')
+  def testOnTryJobRunningNothingToUpdate(self, mock_fn):
+    params = {'already_set_started': True, 'try_job_type': 1, 'try_job_id': '1'}
+    try_job_service.OnTryJobRunning(params, None, None, None)
+    mock_fn.assert_not_called()
+
+  @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
+  @mock.patch.object(try_job_service, '_UpdateTryJobResult')
+  def testOnTryJobRunning(self, *_):
+    try_job_id = '1'
+    params = {
+        'already_set_started': False,
+        'try_job_type': failure_type.COMPILE,
+        'try_job_id': try_job_id,
+        'default_pipeline_wait_seconds': 5,
+        'urlsafe_try_job_key': 'urlsafe_try_job_key'
+    }
+
+    build_data = {
+        'id': try_job_id,
+        'url': 'url',
+        'status': 'STARTED',
+        'completed_ts': '1454367574000000',
+        'created_ts': '1454367570000000',
+        'updated_ts': '1454367571000000'
+    }
+    build = buildbucket_client.BuildbucketBuild(build_data)
+    new_params = try_job_service.OnTryJobRunning(params, None, build, None)
+
+    expected_params = {
+        'already_set_started': True,
+        'try_job_type': failure_type.COMPILE,
+        'try_job_id': try_job_id,
+        'error_count': 0,
+        'backoff_time': 5,
+        'default_pipeline_wait_seconds': 5,
+        'urlsafe_try_job_key': 'urlsafe_try_job_key'
+    }
+
+    self.assertEqual(new_params, expected_params)
+
+  @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
+  @mock.patch.object(
+      try_job_service, '_UpdateTryJobResult', return_value=['result'])
+  @mock.patch.object(buildbot, 'GetStepLog')
+  def testOnTryJobCompletedBuildbot(self, mock_report, *_):
+    try_job_id = '1'
+    params = {
+        'already_set_started': False,
+        'try_job_type': failure_type.COMPILE,
+        'try_job_id': try_job_id,
+        'default_pipeline_wait_seconds': 5,
+        'urlsafe_try_job_key': 'urlsafe_try_job_key'
+    }
+
+    urlsafe_try_job_key = WfTryJob.Create('m', 'b', 1).key.urlsafe()
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = ndb.Key(urlsafe=urlsafe_try_job_key)
+    try_job_data.put()
+
+    build_data = {
+        'id': try_job_id,
+        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+        'status': 'COMPLETED',
+        'completed_ts': '1454367574000000',
+        'created_ts': '1454367570000000',
+        'updated_ts': '1454367571000000'
+    }
+    build = buildbucket_client.BuildbucketBuild(build_data)
+
+    report = {
+        'result': {
+            'rev1': 'passed',
+            'rev2': 'failed'
+        },
+        'metadata': {
+            'regression_range_size': 2
+        }
+    }
+    mock_report.return_value = report
+    self.assertEqual('result',
+                     try_job_service.OnTryJobCompleted(params, try_job_data,
+                                                       build, None))
+
+  @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
+  @mock.patch.object(
+      try_job_service, '_UpdateTryJobResult', return_value=['result'])
+  @mock.patch.object(buildbot, 'GetStepLog', side_effect=TypeError)
+  @mock.patch.object(logging, 'exception')
+  def testOnTryJobCompletedBuildbotNoReport(self, mock_log, *_):
+    try_job_id = '1'
+    params = {
+        'already_set_started': False,
+        'try_job_type': failure_type.COMPILE,
+        'try_job_id': try_job_id,
+        'default_pipeline_wait_seconds': 5,
+        'urlsafe_try_job_key': 'urlsafe_try_job_key'
+    }
+
+    urlsafe_try_job_key = WfTryJob.Create('m', 'b', 1).key.urlsafe()
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = ndb.Key(urlsafe=urlsafe_try_job_key)
+    try_job_data.put()
+
+    build_data = {
+        'id': try_job_id,
+        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+        'status': 'COMPLETED',
+        'completed_ts': '1454367574000000',
+        'created_ts': '1454367570000000',
+        'updated_ts': '1454367571000000'
+    }
+    build = buildbucket_client.BuildbucketBuild(build_data)
+
+    self.assertEqual('result',
+                     try_job_service.OnTryJobCompleted(params, try_job_data,
+                                                       build, None))
+    mock_log.assert_called_once_with(
+        'Failed to load result report for %s/%s/%s due to exception %s.' %
+        ('m', 'b', 1234, TypeError().message))
+
+  @mock.patch.object(try_job_service, '_RecordCacheStats')
+  @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
+  @mock.patch.object(
+      try_job_service, '_UpdateTryJobResult', return_value=['result'])
+  @mock.patch.object(swarming_util, 'GetStepLog')
+  def testOnTryJobCompletedSwarmingbot(self, mock_report, *_):
+    try_job_id = '1'
+    params = {
+        'already_set_started': False,
+        'try_job_type': failure_type.COMPILE,
+        'try_job_id': try_job_id,
+        'default_pipeline_wait_seconds': 5,
+        'urlsafe_try_job_key': 'urlsafe_try_job_key'
+    }
+
+    urlsafe_try_job_key = WfTryJob.Create('m', 'b', 1).key.urlsafe()
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = ndb.Key(urlsafe=urlsafe_try_job_key)
+    try_job_data.put()
+
+    build_data = {
+        'id': try_job_id,
+        'url': 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10',
+        'status': 'COMPLETED',
+        'completed_ts': '1454367574000000',
+        'created_ts': '1454367570000000',
+        'updated_ts': '1454367571000000'
+    }
+    build = buildbucket_client.BuildbucketBuild(build_data)
+
+    report = {
+        'result': {
+            'rev1': 'passed',
+            'rev2': 'failed'
+        },
+        'metadata': {
+            'regression_range_size': 2
+        }
+    }
+    mock_report.return_value = report
+    self.assertEqual('result',
+                     try_job_service.OnTryJobCompleted(params, try_job_data,
+                                                       build, None))
+
+  @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
+  @mock.patch.object(
+      try_job_service, '_UpdateTryJobResult', return_value=['result'])
+  @mock.patch.object(swarming_util, 'GetStepLog', return_value=None)
+  @mock.patch.object(try_job_service, '_RecordCacheStats')
+  def testOnTryJobCompletedSwarmingbotNoReport(self, mock_fn, *_):
+    try_job_id = '1'
+    params = {
+        'already_set_started': False,
+        'try_job_type': failure_type.COMPILE,
+        'try_job_id': try_job_id,
+        'default_pipeline_wait_seconds': 5,
+        'urlsafe_try_job_key': 'urlsafe_try_job_key'
+    }
+
+    urlsafe_try_job_key = WfTryJob.Create('m', 'b', 1).key.urlsafe()
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = ndb.Key(urlsafe=urlsafe_try_job_key)
+    try_job_data.put()
+
+    build_data = {
+        'id': try_job_id,
+        'url': 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10',
+        'status': 'COMPLETED',
+        'completed_ts': '1454367574000000',
+        'created_ts': '1454367570000000',
+        'updated_ts': '1454367571000000'
+    }
+    build = buildbucket_client.BuildbucketBuild(build_data)
+
+    self.assertEqual('result',
+                     try_job_service.OnTryJobCompleted(params, try_job_data,
+                                                       build, None))
+    mock_fn.assert_not_called()
+
+  @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
+  @mock.patch.object(
+      try_job_service, '_UpdateTryJobResult', return_value=['result'])
+  @mock.patch.object(swarming_util, 'GetStepLog', side_effect=TypeError)
+  @mock.patch.object(logging, 'exception')
+  def testOnTryJobCompletedSwarmingbotException(self, mock_log, *_):
+    try_job_id = '1'
+    params = {
+        'already_set_started': False,
+        'try_job_type': failure_type.COMPILE,
+        'try_job_id': try_job_id,
+        'default_pipeline_wait_seconds': 5,
+        'urlsafe_try_job_key': 'urlsafe_try_job_key'
+    }
+
+    urlsafe_try_job_key = WfTryJob.Create('m', 'b', 1).key.urlsafe()
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = ndb.Key(urlsafe=urlsafe_try_job_key)
+    try_job_data.put()
+
+    build_data = {
+        'id': try_job_id,
+        'url': 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10',
+        'status': 'COMPLETED',
+        'completed_ts': '1454367574000000',
+        'created_ts': '1454367570000000',
+        'updated_ts': '1454367571000000'
+    }
+    build = buildbucket_client.BuildbucketBuild(build_data)
+
+    self.assertEqual('result',
+                     try_job_service.OnTryJobCompleted(params, try_job_data,
+                                                       build, None))
+    mock_log.assert_called_once_with(
+        'Failed to load result report for swarming/%s due to exception %s.' %
+        ('3595be5002f4bc10', TypeError().message))
