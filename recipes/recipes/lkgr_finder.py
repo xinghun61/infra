@@ -19,6 +19,7 @@ DEPS = [
   'recipe_engine/properties',
   'recipe_engine/python',
   'recipe_engine/raw_io',
+  'recipe_engine/step',
 ]
 
 
@@ -90,23 +91,25 @@ def RunSteps(api, buildername):
     step_test_data += api.raw_io.test_api.output_text(
         '<html>lkgr</html>', name='html')
 
-  with api.context(cwd=checkout_dir.join('infra')):
-    step_result = api.python(
-        'calculate %s lkgr' % botconfig['project'],
-        checkout_dir.join('infra', 'run.py'),
-        args,
-        step_test_data=lambda: step_test_data
-    )
-
-  if botconfig.get('lkgr_status_gs_path'):
-    api.gsutil.upload(
-      api.raw_io.input_text(step_result.raw_io.output_texts['html']),
-      botconfig['lkgr_status_gs_path'],
-      '%s-lkgr-status.html' % botconfig['project'],
-      args=['-a', 'public-read'],
-      metadata={'Content-Type': 'text/html'},
-      link_name='%s-lkgr-status.html' % botconfig['project'],
-    )
+  try:
+    with api.context(cwd=checkout_dir.join('infra')):
+      api.python(
+          'calculate %s lkgr' % botconfig['project'],
+          checkout_dir.join('infra', 'run.py'),
+          args,
+          step_test_data=lambda: step_test_data
+      )
+  finally:
+    step_result = api.step.active_result
+    if botconfig.get('lkgr_status_gs_path'):
+      api.gsutil.upload(
+        api.raw_io.input_text(step_result.raw_io.output_texts['html']),
+        botconfig['lkgr_status_gs_path'],
+        '%s-lkgr-status.html' % botconfig['project'],
+        args=['-a', 'public-read'],
+        metadata={'Content-Type': 'text/html'},
+        link_name='%s-lkgr-status.html' % botconfig['project'],
+      )
 
   new_lkgr = step_result.raw_io.output_texts['lkgr_hash']
   if new_lkgr and new_lkgr != current_lkgr:
@@ -125,3 +128,19 @@ def GenTests(api):
             api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'),
         )
     )
+
+  buildername = 'WebRTC lkgr finder'
+  botconfig = BUILDERS[buildername]
+  yield (
+      api.test(botconfig['project'] + '_lkgr_failure') +
+      api.properties.generic(buildername=buildername) +
+      api.properties(path_config='kitchen') +
+      api.step_data(
+          'read lkgr from ref',
+          api.gitiles.make_commit_test_data('deadbeef1', 'Commit1'),
+      ) +
+      api.step_data(
+          'calculate webrtc lkgr',
+          retcode=1
+      )
+  )
