@@ -25,6 +25,7 @@ indexes:
 - kind: Build
   properties:
   - name: bucket
+  - name: experimental
   - name: status
   - name: never_leased
   - name: create_time
