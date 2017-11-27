@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import base64
-import collections
 import contextlib
 import datetime
 import json
@@ -13,7 +12,6 @@ from components import utils
 utils.fix_protobuf_package()
 
 from google import protobuf
-from google.appengine.ext import ndb
 
 from components import auth
 from components import net
@@ -27,7 +25,7 @@ from swarming import isolate
 from swarming import swarming
 from proto import project_config_pb2
 from proto import service_config_pb2
-from test.test_util import future, ununicide
+from test.test_util import future, future_exception, ununicide
 import errors
 import model
 
@@ -57,9 +55,7 @@ class SwarmingTest(BaseTest):
     self.net_err_response = None
     def json_request_async(*_, **__):
       if self.net_err_response is not None:
-        f = ndb.Future()
-        f.set_exception(self.net_err_response)
-        return f
+        return future_exception(self.net_err_response)
       if self.json_response is not None:
         return future(self.json_response)
       self.fail('unexpected outbound request')  # pragma: no cover

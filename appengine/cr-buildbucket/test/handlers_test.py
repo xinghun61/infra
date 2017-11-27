@@ -4,18 +4,17 @@
 
 import contextlib
 import datetime
-import json
 import mock
 
 from google.appengine.ext import ndb
 
 from components import utils
 
+from test.test_util import future_exception
 from testing_utils import testing
 import handlers
 import main
 import model
-import service
 
 
 class HandlerTest(testing.AppengineTestCase):
@@ -324,9 +323,7 @@ class TaskBackfillTagIndexTest(HandlerTest):
 
     def add(tag, entries):
       if tag == 'buildset:1':
-        f = ndb.Future()
-        f.set_exception(Exception('transient error'))
-        return f
+        return future_exception(Exception('transient error'))
       return orig_add(tag, entries)
 
     with mock.patch(

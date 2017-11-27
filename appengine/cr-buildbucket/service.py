@@ -329,11 +329,15 @@ def add_many_async(build_request_list):
   assert all(isinstance(r, BuildRequest) for r in build_request_list)
   # A list of all requests. If a i-th request is None, it means it is done.
   build_request_list = build_request_list[:]
-  pending_reqs = lambda: ((i, r) for i, r in enumerate(build_request_list) if r)
   results = [None] * len(build_request_list)  # return value of this function
   identity = auth.get_current_identity()
   ctx = ndb.get_context()
   new_builds = {}
+
+  def pending_reqs():
+    for i, r in enumerate(build_request_list):
+      if results[i] is None:
+        yield i, r
 
   def validate_and_normalize():
     """Validates and normalizes requests.
@@ -394,7 +398,6 @@ def add_many_async(build_request_list):
       if b:  # pragma: no branch
         # A cached build has been found.
         i = cached_build_ids[b.key.id()]
-        build_request_list[i] = None
         results[i] = (b, None)
 
   def create_new_builds():
@@ -417,21 +420,20 @@ def add_many_async(build_request_list):
     """Creates a swarming task for each new build in a swarming bucket."""
     buckets = set(b.bucket for b in new_builds.itervalues())
     bucket_cfg_futs = {b: config.get_bucket_async(b) for b in buckets}
-    yield bucket_cfg_futs.values()
-    create_tasks = []
-    for b in new_builds.itervalues():
-      _, cfg = bucket_cfg_futs[b.bucket].get_result()
-      if cfg and config.is_swarming_config(cfg):
-        create_tasks.append(swarming.create_task_async(b))
-    yield create_tasks
 
-  def cancel_swarming_tasks_async():
-    cancel_tasks = []
-    for b in new_builds.values():
-      if b.swarming_hostname and b.swarming_task_id:
-        cancel_tasks.append(swarming.cancel_task_async(
-            b.swarming_hostname, b.swarming_task_id))
-    return cancel_tasks
+    create_futs = {}
+    for i, b in new_builds.iteritems():
+      _, cfg = yield bucket_cfg_futs[b.bucket]
+      if cfg and config.is_swarming_config(cfg):
+        create_futs[i] = swarming.create_task_async(b)
+    for i, fut in create_futs.iteritems():
+      try:
+        with _with_swarming_api_error_converter():
+          yield fut
+      except Exception as ex:
+        results[i] = (None, ex)
+        # TODO: return unused build number
+        del new_builds[i]
 
   def update_tag_indexes_async():
     """Updates tag indexes.
@@ -468,24 +470,12 @@ def add_many_async(build_request_list):
   yield check_cached_builds_async()
   create_new_builds()
   if new_builds:
-    try:
-      with _with_swarming_api_error_converter():
-        yield create_swarming_tasks_async()
-      # Update tag indexes after swarming tasks are successfully created,
-      # as opposed to before, to avoid creating tag index entries for
-      # nonexistent builds in case swarming task creation fails.
-      yield update_tag_indexes_async()
-      yield put_and_cache_builds_async()
-    except:  # pragma: no cover
-      # Save exception info before the next try..except.
-      exi = sys.exc_info()
-      # Try to cancel swarming tasks. Best effort.
-      try:
-        yield cancel_swarming_tasks_async()
-      except Exception as ex:
-        # Emit an error log entry so we can alert on high rate of these errors.
-        logging.error('could not clean swarming tasks after creation\n%s', ex)
-      raise exi[0], exi[1], exi[2]
+    yield create_swarming_tasks_async()
+    # Update tag indexes after swarming tasks are successfully created,
+    # as opposed to before, to avoid creating tag index entries for
+    # nonexistent builds in case swarming task creation fails.
+    yield update_tag_indexes_async()
+    yield put_and_cache_builds_async()
 
   # Validate and return results.
   assert all(results), results

@@ -22,3 +22,9 @@ def future(result):  # pragma: no cover
   f = ndb.Future()
   f.set_result(result)
   return f
+
+
+def future_exception(ex):  # pragma: no cover
+  f = ndb.Future()
+  f.set_exception(ex)
+  return f
