@@ -39,6 +39,14 @@ _GIT_REPO = CachedGitilesRepository(
 
 
 class TryJobTest(wf_testcase.WaterfallTestCase):
+  def setUp(self):
+    super(TryJobTest, self).setUp()
+    self.patcher = mock.patch('waterfall.swarming_util.GetBotsByDimension')
+    self.patcher.start()
+
+  def tearDown(self):
+    self.patcher.stop()
+    super(TryJobTest, self).tearDown()
 
   def testShouldBailOutIfBuildHasNoStartTime(self):
     build = WfBuild.Create('m', 'b', 1)

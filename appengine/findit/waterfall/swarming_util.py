@@ -752,7 +752,13 @@ def GetBotsByDimension(dimensions, http_client):
   url = BOT_LIST_URL % (_SwarmingHost(), _DimensionsToQueryString(dimensions))
 
   content, error = _SendRequestToServer(url, http_client)
-  if error or not content:
+  if error:
+    logging.error('failed to list bots by dimension with %s, falling back to '
+                  'any selecting any bot', error)
+    return []
+
+  if not content:
+    logging.warning('got blank response from %s', url)
     return []
 
   content_data = json.loads(content)
