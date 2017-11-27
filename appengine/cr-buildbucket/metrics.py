@@ -82,10 +82,13 @@ def _incrementer(metric):
 
   Metric fields must conform _BUILD_FIELDS.
 
-  The returned function accepts a build.
+  The returned function accepts a build, but ignores it if it is experimental.
   """
   fields_for = _fields_for_fn(metric.field_spec)
-  return lambda b: metric.increment(fields_for(b))   # pragma: no cover
+  def inc(build):  # pragma: no cover
+    if not build.experimental:
+      metric.increment(fields_for(build))
+  return inc
 
 
 def _adder(metric, value_fn):
@@ -94,10 +97,13 @@ def _adder(metric, value_fn):
   Metric fields must conform _BUILD_FIELDS.
   value_fn accepts a build.
 
-  The returned function accepts a build.
+  The returned function accepts a build, but ignores it if it is experimental.
   """
   fields_for = _fields_for_fn(metric.field_spec)
-  return lambda b: metric.add(value_fn(b), fields_for(b))  # pragma: no cover
+  def add(build):  # pragma: no cover
+    if not build.experimental:
+      metric.add(value_fn(build), fields_for(build))
+  return add
 
 
 inc_created_builds = _incrementer(gae_ts_mon.CounterMetric(
@@ -212,7 +218,9 @@ TAG_INDEX_SEARCH_SKIPPED_BUILDS = gae_ts_mon.NonCumulativeDistributionMetric(
 def set_build_status_metric(metric, bucket, status):
   q = model.Build.query(
       model.Build.bucket == bucket,
-      model.Build.status == status)
+      model.Build.status == status,
+      model.Build.experimental == False,
+  )
   value = yield q.count_async()
   metric.set(value, {'bucket': bucket}, target_fields=GLOBAL_TARGET_FIELDS)
 
@@ -222,6 +230,7 @@ def set_build_latency(metric_sec, bucket, must_be_never_leased):
   q = model.Build.query(
       model.Build.bucket == bucket,
       model.Build.status == model.BuildStatus.SCHEDULED,
+      model.Build.experimental == False,
   )
   if must_be_never_leased:
     q = q.filter(model.Build.never_leased == True)

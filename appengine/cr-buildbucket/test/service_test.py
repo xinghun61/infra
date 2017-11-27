@@ -1468,8 +1468,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.lease()
     with self.assertRaises(errors.InvalidInputError):
       service.heartbeat(
-        self.test_build.key.id(), self.test_build.lease_key,
-        lease_expiration_date=None)
+          self.test_build.key.id(), self.test_build.lease_key,
+          lease_expiration_date=None)
 
   ################################### COMPLETE #################################
 

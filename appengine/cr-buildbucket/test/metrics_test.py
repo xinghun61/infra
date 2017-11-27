@@ -26,6 +26,12 @@ class MetricsTest(testing.AppengineTestCase):
           bucket='chromium',
           status=model.BuildStatus.SCHEDULED,
           create_time=datetime.datetime(2015, 1, 1),
+          experimental=True,
+      ),
+      model.Build(
+          bucket='chromium',
+          status=model.BuildStatus.SCHEDULED,
+          create_time=datetime.datetime(2015, 1, 1),
       ),
       model.Build(
           bucket='chromium',
@@ -62,6 +68,13 @@ class MetricsTest(testing.AppengineTestCase):
           bucket='chromium',
           status=model.BuildStatus.SCHEDULED,
           never_leased=True,
+          create_time=datetime.datetime(2014, 1, 1),
+          experimental=True,
+      ),
+      model.Build(
+          bucket='chromium',
+          status=model.BuildStatus.SCHEDULED,
+          never_leased=True,
           create_time=datetime.datetime(2015, 1, 1),
       ),
       model.Build(
@@ -89,7 +102,7 @@ class MetricsTest(testing.AppengineTestCase):
           bucket='v8',
           status=model.BuildStatus.SCHEDULED,
           never_leased=True,
-          create_time=datetime.datetime(2015, 1, 3)
+          create_time=datetime.datetime(2015, 1, 3),
       ),
     ])
     metrics.set_build_latency(
