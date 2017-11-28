@@ -28,6 +28,7 @@ class FlakeTryJobServiceTest(TestCase):
         flake_try_job.GetSwarmingTaskIdForTryJob(None, None, None, None))
 
   def testIsTryJobResultAtRevisionValid(self):
+    self.assertFalse(flake_try_job.IsTryJobResultAtRevisionValid(None, 'r'))
     self.assertFalse(flake_try_job.IsTryJobResultAtRevisionValid({}, 'r'))
     self.assertFalse(
         flake_try_job.IsTryJobResultAtRevisionValid({
@@ -168,6 +169,9 @@ class FlakeTryJobServiceTest(TestCase):
                 'valid': True
             }
         }, 'browser_tests'))
+    self.assertFalse(
+        flake_try_job.IsTryJobResultAtRevisionValidForStep(
+            None, 'browser_tests'))
     self.assertFalse(
         flake_try_job.IsTryJobResultAtRevisionValidForStep({
             'browser_tests': {

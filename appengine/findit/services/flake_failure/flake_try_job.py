@@ -122,7 +122,7 @@ def IsTryJobResultAtRevisionValid(result, revision):
         }
     revision (str): The revision to ensure is in the result dict.
   """
-  return revision in result.get('report', {}).get('result', {})
+  return result and revision in result.get('report', {}).get('result', {})
 
 
 def IsTryJobResultAtRevisionValidForStep(result_at_revision, step_name):
@@ -154,7 +154,7 @@ def IsTryJobResultAtRevisionValidForStep(result_at_revision, step_name):
   """
   # step_name is assumed to be in result_at_revision for valid use of this
   # function.
-  if step_name not in result_at_revision:
+  if not result_at_revision or step_name not in result_at_revision:
     return False
 
   return result_at_revision[step_name]['valid']
