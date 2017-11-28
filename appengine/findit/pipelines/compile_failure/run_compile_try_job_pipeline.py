@@ -57,7 +57,7 @@ class RunCompileTryJobPipeline(AsynchronousPipeline):
       if not try_job_id:
         logging.error('Failed to schedule a try job for %s/%s/%d.' %
                       run_try_job_params.build_key.GetParts())
-        self.Complete(None)
+        self.Complete({})
         return
 
       try_job_type = failure_type.COMPILE

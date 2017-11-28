@@ -637,8 +637,9 @@ def SaveSuspectedCLs(suspected_cls, master_name, builder_name, build_number,
         suspected_cl['failures'], suspected_cl['top_score'])
 
 
-def GetHeuristicSuspectedCLs(analysis):
+def GetHeuristicSuspectedCLs(master_name, builder_name, build_number):
   """Gets revisions of suspected cls found by heuristic approach."""
+  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   suspects = ListOfCLKeys()
   if analysis and analysis.suspected_cls:
     suspects.extend([

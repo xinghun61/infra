@@ -1029,10 +1029,10 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     suspected_cls = [{'repo_name': 'chromium', 'revision': 'r123_2'}]
 
     self.assertEqual(suspected_cls,
-                     build_failure_analysis.GetHeuristicSuspectedCLs(analysis)
-                     .ToSerializable())
+                     build_failure_analysis.GetHeuristicSuspectedCLs(
+                         'm', 'b', 123).ToSerializable())
 
   def testGetHeuristicSuspectedCLsNoAnalysis(self):
-    self.assertEqual(
-        [],
-        build_failure_analysis.GetHeuristicSuspectedCLs(None).ToSerializable())
+    self.assertEqual([],
+                     build_failure_analysis.GetHeuristicSuspectedCLs(
+                         'm', 'b', 123).ToSerializable())

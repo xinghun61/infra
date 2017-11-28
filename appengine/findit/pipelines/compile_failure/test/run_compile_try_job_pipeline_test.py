@@ -265,7 +265,7 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       compile_try_job, 'ScheduleCompileTryJob', return_value=None)
-  def testReturnNoneIfNoTryJobId(self, _):
+  def testReturnEmptyDictIfNoTryJobId(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 1
@@ -292,7 +292,7 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         try_job_pipeline.pipeline_id)
     try_job_pipeline.finalized()
     compile_result = try_job_pipeline.outputs.default.value
-    self.assertIsNone(compile_result)
+    self.assertEqual({}, compile_result)
 
   @mock.patch.object(logging, 'warning')
   @mock.patch.object(

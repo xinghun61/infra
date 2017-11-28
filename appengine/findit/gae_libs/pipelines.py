@@ -283,7 +283,7 @@ class GeneratorPipeline(BasePipeline):
     self._LogStatusPath()
     arg = _ConvertPipelineParametersToInputObject(self.input_type, args, kwargs)
     pipeline_iter = self.RunImpl(arg)
-    if pipeline_iter and type(pipeline_iter) != types.GeneratorType:
+    if pipeline_iter and not isinstance(pipeline_iter, types.GeneratorType):
       raise pipeline.Abort(
           '%s did not spawn other pipelines' % self.__class__.__name__)
     next_future = None

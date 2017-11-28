@@ -459,8 +459,8 @@ def IdentifyTestTryJobCulprits(master_name, builder_name, build_number,
 
   # Saves cls found by heuristic approach for later use.
   # This part must be before UpdateWfAnalysisWithTryJobResult().
-  analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-  heuristic_cls = build_failure_analysis.GetHeuristicSuspectedCLs(analysis)
+  heuristic_cls = build_failure_analysis.GetHeuristicSuspectedCLs(
+      master_name, builder_name, build_number)
 
   # Add try-job results to WfAnalysis.
   UpdateWfAnalysisWithTryJobResult(master_name, builder_name, build_number,

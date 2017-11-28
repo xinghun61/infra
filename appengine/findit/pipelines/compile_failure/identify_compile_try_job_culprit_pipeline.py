@@ -2,77 +2,34 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from gae_libs.pipeline_wrapper import BasePipeline
-from model.wf_analysis import WfAnalysis
-from model.wf_try_job_data import WfTryJobData
+from gae_libs.pipelines import GeneratorPipeline
 from pipelines.compile_failure import (
     revert_and_notify_compile_culprit_pipeline as revert_pipeline)
-from services import build_failure_analysis
 from services import git
 from services.compile_failure import compile_try_job
 from services.parameters import BuildKey
 from services.parameters import CulpritActionParameters
+from services.parameters import IdentifyCompileTryJobCulpritParameters
 
 
-class IdentifyCompileTryJobCulpritPipeline(BasePipeline):
+class IdentifyCompileTryJobCulpritPipeline(GeneratorPipeline):
   """A pipeline to identify culprit CL info based on try job compile results."""
+  input_type = IdentifyCompileTryJobCulpritParameters
+  output_type = bool
 
-  # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, result):
+  def RunImpl(self, pipeline_input):
     """Identifies the information for failed revisions.
 
     Please refer to try_job_result_format.md for format check.
     """
-    culprits = None
-    flaky_compile = False
-    try_job_id = result.get('try_job_id') if result else None
-    if try_job_id and result and result.get('report'):
-      failed_revision = compile_try_job.GetFailedRevisionFromCompileResult(
-          result)
-      failed_revisions = [failed_revision] if failed_revision else []
-      culprits = git.GetCLInfo(failed_revisions)
-
-      # In theory there are 2 cases where compile failure could be flaky:
-      # 1. All revisions passed in the try job (try job will not run at good
-      # revision in this case),
-      # 2. The compile even failed at good revision.
-      # We cannot guarantee in the first case the compile failure is flaky
-      # because it's also possible the difference between buildbot and trybot
-      # causes this.
-      # So currently we'll only consider the second case.
-      if not culprits and compile_try_job.CompileFailureIsFlaky(result):
-        flaky_compile = True
-
-      if culprits:
-        result['culprit'] = {'compile': culprits[failed_revision]}
-        try_job_data = WfTryJobData.Get(try_job_id)
-        try_job_data.culprits = {'compile': failed_revision}
-        try_job_data.put()
-
-    # Store try-job results.
-    compile_try_job.UpdateTryJobResult(master_name, builder_name, build_number,
-                                       result, try_job_id, culprits)
-
-    # Saves cls found by heuristic approach to determine a culprit is found
-    # by both heuristic and try job when sending notifications.
-    # This part must be before UpdateWfAnalysisWithTryJobResult().
-    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    heuristic_cls = build_failure_analysis.GetHeuristicSuspectedCLs(analysis)
-
-    # Add try-job results to WfAnalysis.
-    compile_try_job.UpdateWfAnalysisWithTryJobResult(master_name, builder_name,
-                                                     build_number, result,
-                                                     culprits, flaky_compile)
-
-    # TODO (chanli): Update suspected_cl for builds in the same group with
-    # current build.
-    # Updates suspected_cl.
-    compile_try_job.UpdateSuspectedCLs(master_name, builder_name, build_number,
-                                       culprits)
+    culprits, heuristic_cls = compile_try_job.IdentifyCompileTryJobCulprit(
+        pipeline_input)
 
     if not culprits:
       return
 
+    master_name, builder_name, build_number = (
+        pipeline_input.build_key.GetParts())
     yield revert_pipeline.RevertAndNotifyCompileCulpritPipeline(
         CulpritActionParameters(
             build_key=BuildKey(

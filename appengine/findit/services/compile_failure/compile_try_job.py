@@ -22,6 +22,9 @@ from model import analysis_approach_type
 from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_try_job import WfTryJob
+from model.wf_try_job_data import WfTryJobData
+from services import build_failure_analysis
+from services import git
 from services import try_job as try_job_service
 from services.parameters import RunCompileTryJobParameters
 from waterfall import build_util
@@ -206,20 +209,6 @@ def GetParametersToScheduleCompileTryJob(master_name,
   return RunCompileTryJobParameters.FromSerializable(parameters)
 
 
-def GetFailedRevisionFromCompileResult(compile_result):
-  """Determines the failed revision given compile_result.
-
-  Args:
-    compile_result: A dict containing the results from a compile. Please refer
-    to try_job_result_format.md for format check.
-
-  Returns:
-    The failed revision from compile_results, or None if not found.
-  """
-  return (compile_result.get('report', {}).get('culprit')
-          if compile_result else None)
-
-
 def _GetRevisionsInRange(sub_ranges):
   """Get revisions in regression range by flattening sub_ranges.
 
@@ -238,8 +227,9 @@ def CompileFailureIsFlaky(result):
   if not result:
     return False
 
-  try_job_result = result.get('report', {}).get('result')
-  sub_ranges = result.get('report', {}).get('metadata', {}).get('sub_ranges')
+  try_job_result = result.report.result
+  sub_ranges = (result.report.metadata.get('sub_ranges', [])
+                if result.report.metadata else [])
 
   if (not try_job_result or  # There is some issue with try job, cannot decide.
       not sub_ranges or  # Missing range information.
@@ -255,11 +245,13 @@ def CompileFailureIsFlaky(result):
 
 
 @ndb.transactional
-def UpdateTryJobResult(master_name, builder_name, build_number, result,
-                       try_job_id, culprits):
+def UpdateTryJobResult(parameters, culprits):
+  master_name, builder_name, build_number = (parameters.build_key.GetParts())
   try_job = WfTryJob.Get(master_name, builder_name, build_number)
-  try_job_service.UpdateTryJobResultWithCulprit(try_job.compile_results, result,
-                                                try_job_id, culprits)
+  new_result = parameters.result.ToSerializable() if parameters.result else {}
+  try_job_id = parameters.result.try_job_id if parameters.result else None
+  try_job_service.UpdateTryJobResultWithCulprit(
+      try_job.compile_results, new_result, try_job_id, culprits)
   try_job.status = analysis_status.COMPLETED
   try_job.put()
 
@@ -381,3 +373,54 @@ def ScheduleCompileTryJob(parameters, notification_id):
       runner_id=notification_id)
 
   return build_id
+
+
+def IdentifyCompileTryJobCulprit(parameters):
+  """Processes try job result and identifies culprit."""
+  culprits = None
+  flaky_compile = False
+
+  master_name, builder_name, build_number = parameters.build_key.GetParts()
+  result = parameters.result
+  try_job_id = result.try_job_id if result else None
+  if try_job_id and result and result.report:
+    failed_revision = result.report.culprit
+    failed_revisions = [failed_revision] if failed_revision else []
+    culprits = git.GetCLInfo(failed_revisions)
+
+    # In theory there are 2 cases where compile failure could be flaky:
+    # 1. All revisions passed in the try job (try job will not run at good
+    # revision in this case),
+    # 2. The compile even failed at good revision.
+    # We cannot guarantee in the first case the compile failure is flaky
+    # because it's also possible the difference between buildbot and trybot
+    # causes this.
+    # So currently we'll only consider the second case.
+    if not culprits and CompileFailureIsFlaky(result):
+      flaky_compile = True
+
+    if culprits:
+      result.culprit = {'compile': culprits[failed_revision]}
+      try_job_data = WfTryJobData.Get(try_job_id)
+      try_job_data.culprits = {'compile': failed_revision}
+      try_job_data.put()
+
+  # Store try-job results.
+  UpdateTryJobResult(parameters, culprits)
+
+  # Saves cls found by heuristic approach to determine a culprit is found
+  # by both heuristic and try job when sending notifications.
+  # This part must be before UpdateWfAnalysisWithTryJobResult().
+  heuristic_cls = build_failure_analysis.GetHeuristicSuspectedCLs(
+      master_name, builder_name, build_number)
+
+  # Add try-job results to WfAnalysis.
+  UpdateWfAnalysisWithTryJobResult(master_name, builder_name, build_number,
+                                   result, culprits, flaky_compile)
+
+  # TODO (chanli): Update suspected_cl for builds in the same group with
+  # current build.
+  # Updates suspected_cl.
+  UpdateSuspectedCLs(master_name, builder_name, build_number, culprits)
+
+  return culprits, heuristic_cls

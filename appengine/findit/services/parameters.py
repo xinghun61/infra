@@ -91,14 +91,6 @@ class RunTestTryJobParameters(RunTryJobParameters):
   targeted_tests = dict
 
 
-class RunFlakeTryJobParameters(StructuredObject):
-  """Input for RunFlakeTryJobPipeline to compile and isolate only."""
-  analysis_urlsafe_key = basestring
-  revision = basestring
-  flake_cache_name = basestring
-  dimensions = list
-
-
 class TryJobReport(StructuredObject):
   """Common info in reports of waterfall and flake try jobs."""
   last_checked_out_revision = basestring
@@ -118,3 +110,24 @@ class CompileTryJobResult(StructuredObject):
   url = basestring
   try_job_id = basestring
   culprit = dict
+
+
+class IdentifyCompileTryJobCulpritParameters(StructuredObject):
+  build_key = BuildKey
+  result = CompileTryJobResult
+
+
+class RunFlakeTryJobParameters(StructuredObject):
+  """Input for RunFlakeTryJobPipeline to compile and isolate only."""
+  analysis_urlsafe_key = basestring
+  revision = basestring
+  flake_cache_name = basestring
+  dimensions = list
+
+
+class TryJobReport(StructuredObject):
+  """Common info in reports of waterfall and flake try jobs."""
+  last_checked_out_revision = basestring
+  previously_checked_out_revision = basestring
+  previously_cached_revision = basestring
+  metadata = dict

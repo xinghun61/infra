@@ -2,12 +2,15 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from gae_libs import pipelines
 from gae_libs.pipeline_wrapper import BasePipeline
 from services.compile_failure import compile_try_job
 from pipelines.compile_failure import (identify_compile_try_job_culprit_pipeline
                                        as culprit_pipeline)
 from pipelines.compile_failure.run_compile_try_job_pipeline import (
     RunCompileTryJobPipeline)
+from services.parameters import BuildKey
+from services.parameters import IdentifyCompileTryJobCulpritParameters
 
 
 class StartCompileTryJobPipeline(BasePipeline):
@@ -35,5 +38,12 @@ class StartCompileTryJobPipeline(BasePipeline):
 
     try_job_result = yield RunCompileTryJobPipeline(parameters)
 
+    identify_culprit_input = pipelines.CreateInputObjectInstance(
+        IdentifyCompileTryJobCulpritParameters,
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=try_job_result)
     yield culprit_pipeline.IdentifyCompileTryJobCulpritPipeline(
-        master_name, builder_name, build_number, try_job_result)
+        identify_culprit_input)

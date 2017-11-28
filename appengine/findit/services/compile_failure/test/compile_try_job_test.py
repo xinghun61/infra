@@ -7,6 +7,7 @@ import mock
 
 from common import exceptions
 from common.waterfall import failure_type
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
 from model import analysis_approach_type
 from model import result_status
@@ -14,9 +15,13 @@ from model.wf_analysis import WfAnalysis
 from model.wf_failure_group import WfFailureGroup
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from services import build_failure_analysis
 from services import try_job as try_job_service
 from services.compile_failure import compile_try_job
 from services.parameters import BuildKey
+from services.parameters import CompileTryJobReport
+from services.parameters import CompileTryJobResult
+from services.parameters import IdentifyCompileTryJobCulpritParameters
 from services.parameters import RunCompileTryJobParameters
 from waterfall import suspected_cl_util
 from waterfall import swarming_util
@@ -25,6 +30,25 @@ from waterfall.test import wf_testcase
 
 
 class CompileTryJobTest(wf_testcase.WaterfallTestCase):
+
+  def _MockGetChangeLog(self, revision):
+
+    class MockedChangeLog(object):
+
+      def __init__(self, commit_position, code_review_url):
+        self.commit_position = commit_position
+        self.code_review_url = code_review_url
+        self.change_id = str(commit_position)
+
+    mock_change_logs = {}
+    mock_change_logs['rev1'] = MockedChangeLog(1, 'url_1')
+    mock_change_logs['rev2'] = MockedChangeLog(2, 'url_2')
+    return mock_change_logs.get(revision)
+
+  def setUp(self):
+    super(CompileTryJobTest, self).setUp()
+
+    self.mock(CachedGitilesRepository, 'GetChangeLog', self._MockGetChangeLog)
 
   @mock.patch.object(logging, 'info')
   def testDoNotGroupUnknownBuildFailure(self, mock_logging):
@@ -817,43 +841,28 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_parameter, parameter)
     self.assertEqual(expected_parameters_dict, parameter.ToSerializable())
 
-  def testGetFailedRevisionFromCompileResult(self):
-    culprit = '1234567'
-    compile_result = {'report': {'culprit': culprit}}
-    self.assertEqual(
-        culprit,
-        compile_try_job.GetFailedRevisionFromCompileResult(compile_result))
-
   def testCompileFailureIsNotFlaky(self):
-    result = {
-        'report': {
-            'culprit': 'rev',
-            'result': 'result',
-            'metadata': {
-                'sub_ranges': []
-            }
-        }
-    }
+    try_job_result = {'rev': 'failed'}
+    report = CompileTryJobReport(
+        culprit='rev', result=try_job_result, metadata={'sub_ranges': []})
+    result = CompileTryJobResult(report=report)
+
     self.assertFalse(compile_try_job.CompileFailureIsFlaky(result))
 
   def testCompileFailureIsFlakyNoResult(self):
     self.assertFalse(compile_try_job.CompileFailureIsFlaky(None))
 
   def testCompileFailureIsFlaky(self):
-    result = {
-        'report': {
-            'result': {
-                'r0': 'failed',
-                'r1': 'passed',
-                'r2': 'passed',
-                'r3': 'passed',
-                'r4': 'passed',
-            },
-            'metadata': {
-                'sub_ranges': [[None, 'r1', 'r2'], ['r3', 'r4']]
-            }
-        }
+    try_job_result = {
+        'r0': 'failed',
+        'r1': 'passed',
+        'r2': 'passed',
+        'r3': 'passed',
+        'r4': 'passed',
     }
+    metadata = {'sub_ranges': [[None, 'r1', 'r2'], ['r3', 'r4']]}
+    report = CompileTryJobReport(result=try_job_result, metadata=metadata)
+    result = CompileTryJobResult(report=report)
     self.assertTrue(compile_try_job.CompileFailureIsFlaky(result))
 
   def testUpdateTryJobResultNoCulprit(self):
@@ -861,8 +870,13 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 123
     WfTryJob.Create(master_name, builder_name, build_number).put()
-    compile_try_job.UpdateTryJobResult(master_name, builder_name, build_number,
-                                       None, None, None)
+    parameters = IdentifyCompileTryJobCulpritParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=CompileTryJobResult.FromSerializable({}))
+    compile_try_job.UpdateTryJobResult(parameters, None)
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(analysis_status.COMPLETED, try_job.status)
 
@@ -870,16 +884,29 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
-    result = {'culprit': {'compile': 'rev'}}
+    result = {'culprit': {'compile': 'rev'}, 'try_job_id': '2'}
     culprits = {'rev': {'revision': 'rev'}}
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.compile_results = [{'try_job_id': '2'}]
     try_job.put()
 
-    expected_results = [{'try_job_id': '2', 'culprit': {'compile': 'rev'}}]
+    parameters = IdentifyCompileTryJobCulpritParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=CompileTryJobResult.FromSerializable(result))
 
-    compile_try_job.UpdateTryJobResult(master_name, builder_name, build_number,
-                                       result, '2', culprits)
+    expected_results = [{
+        'try_job_id': '2',
+        'culprit': {
+            'compile': 'rev'
+        },
+        'report': None,
+        'url': None
+    }]
+
+    compile_try_job.UpdateTryJobResult(parameters, culprits)
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(analysis_status.COMPLETED, try_job.status)
     self.assertEqual(expected_results, try_job.compile_results)
@@ -888,16 +915,31 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     master_name = 'm'
     builder_name = 'b'
     build_number = 123
-    result = {'culprit': {'compile': 'rev'}}
+    result = {'culprit': {'compile': 'rev'}, 'try_job_id': '2'}
     culprits = {'rev': {'revision': 'rev'}}
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.compile_results = [{'try_job_id': '1'}]
     try_job.put()
 
-    expected_results = [{'try_job_id': '1'}, {'culprit': {'compile': 'rev'}}]
+    parameters = IdentifyCompileTryJobCulpritParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=CompileTryJobResult.FromSerializable(result))
 
-    compile_try_job.UpdateTryJobResult(master_name, builder_name, build_number,
-                                       result, '2', culprits)
+    expected_results = [{
+        'try_job_id': '1'
+    }, {
+        'culprit': {
+            'compile': 'rev'
+        },
+        'try_job_id': '2',
+        'report': None,
+        'url': None
+    }]
+
+    compile_try_job.UpdateTryJobResult(parameters, culprits)
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(analysis_status.COMPLETED, try_job.status)
     self.assertListEqual(expected_results, try_job.compile_results)
@@ -1162,3 +1204,167 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
     with self.assertRaises(exceptions.RetryException):
       compile_try_job.ScheduleCompileTryJob(parameters, 'pipeline')
+
+  def _CreateEntities(self,
+                      master_name,
+                      builder_name,
+                      build_number,
+                      try_job_id,
+                      try_job_status=None,
+                      compile_results=None):
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.status = try_job_status
+    try_job.compile_results = compile_results
+    try_job.put()
+
+    try_job_data = WfTryJobData.Create(try_job_id)
+    try_job_data.try_job_key = try_job.key
+    try_job_data.put()
+
+  def testIdentifyCulpritForCompileTryJobSuccess(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '1'
+
+    compile_result = {
+        'report': {
+            'result': {
+                'rev1': 'passed',
+                'rev2': 'failed'
+            },
+            'culprit': 'rev2'
+        },
+        'try_job_id': try_job_id,
+    }
+
+    self._CreateEntities(
+        master_name,
+        builder_name,
+        build_number,
+        try_job_id,
+        try_job_status=analysis_status.RUNNING,
+        compile_results=[compile_result])
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.put()
+
+    expected_culprit = 'rev2'
+    expected_suspected_cl = {
+        'revision': 'rev2',
+        'commit_position': 2,
+        'url': 'url_2',
+        'repo_name': 'chromium'
+    }
+    expected_compile_result = {
+        'report': {
+            'result': {
+                'rev1': 'passed',
+                'rev2': 'failed'
+            },
+            'culprit': 'rev2',
+            'previously_checked_out_revision': None,
+            'previously_cached_revision': None,
+            'last_checked_out_revision': None,
+            'metadata': None
+        },
+        'try_job_id': try_job_id,
+        'culprit': {
+            'compile': expected_suspected_cl
+        },
+        'url': None
+    }
+    expected_analysis_suspected_cls = [{
+        'revision': 'rev2',
+        'commit_position': 2,
+        'url': 'url_2',
+        'repo_name': 'chromium',
+        'failures': {
+            'compile': []
+        },
+        'top_score': None
+    }]
+
+    parameters = IdentifyCompileTryJobCulpritParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=CompileTryJobResult.FromSerializable(compile_result))
+
+    culprits, _ = compile_try_job.IdentifyCompileTryJobCulprit(parameters)
+    self.assertEqual(culprits, {'rev2': expected_suspected_cl})
+
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    self.assertEqual(expected_compile_result, try_job.compile_results[-1])
+    self.assertEqual(analysis_status.COMPLETED, try_job.status)
+
+    try_job_data = WfTryJobData.Get(try_job_id)
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertEqual({'compile': expected_culprit}, try_job_data.culprits)
+    self.assertEqual(analysis.result_status, result_status.FOUND_UNTRIAGED)
+    self.assertEqual(analysis.suspected_cls, expected_analysis_suspected_cls)
+
+  @mock.patch.object(
+      build_failure_analysis, 'GetHeuristicSuspectedCLs', return_value=[])
+  @mock.patch.object(
+      compile_try_job, 'CompileFailureIsFlaky', return_value=True)
+  def testIdentifyCulpritForCompileTryJobSuccessFlaky(self, *_):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '1'
+
+    compile_result = {
+        'report': {
+            'result': {
+                'rev1': 'passed',
+                'rev2': 'passed'
+            },
+        },
+        'try_job_id': try_job_id,
+    }
+
+    self._CreateEntities(
+        master_name,
+        builder_name,
+        build_number,
+        try_job_id,
+        try_job_status=analysis_status.RUNNING,
+        compile_results=[compile_result])
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.put()
+
+    parameters = IdentifyCompileTryJobCulpritParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=CompileTryJobResult.FromSerializable(compile_result))
+    culprits, _ = compile_try_job.IdentifyCompileTryJobCulprit(parameters)
+    self.assertEqual(culprits, {})
+
+  def testIdentifyCompileTryJobCulpritNoResult(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '1'
+    compile_result = {}
+
+    self._CreateEntities(
+        master_name,
+        builder_name,
+        build_number,
+        try_job_id,
+        try_job_status=analysis_status.RUNNING,
+        compile_results=[compile_result])
+    analysis = WfAnalysis.Create(master_name, builder_name, build_number)
+    analysis.put()
+
+    parameters = IdentifyCompileTryJobCulpritParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=CompileTryJobResult.FromSerializable(compile_result))
+    culprits, _ = compile_try_job.IdentifyCompileTryJobCulprit(parameters)
+    self.assertIsNone(culprits)

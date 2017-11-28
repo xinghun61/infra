@@ -81,6 +81,10 @@ class SerilizableObjectTest(unittest.TestCase):
     obj_a = _ObjectA(v=None)
     self.assertDictEqual({'v': None}, obj_a.ToSerializable())
 
+  def testFromSerializableNone(self):
+    obj_b = _ObjectB.FromSerializable(None)
+    self.assertIsNone(obj_b)
+
   def testFromSerializable(self):
     data = {'a': {'v': 1}, 'v': {'key': 'value'}}
     obj_b = _ObjectB.FromSerializable(data)

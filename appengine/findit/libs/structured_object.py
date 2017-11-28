@@ -248,6 +248,9 @@ class StructuredObject(BaseSerializableObject):
     Returns:
       An instance of the given class with attributes set to the given data.
     """
+    if data is None:
+      return data
+
     assert isinstance(
         data, dict), ('Expecting a dict, but got %s' % type(data).__name__)
     defined_attributes = cls._GetDefinedAttributes()
