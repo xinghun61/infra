@@ -16,6 +16,8 @@ from monorail_api import Issue
 from model.flake import master_flake_analysis
 from waterfall.flake import flake_constants
 
+_BUG_SUMMARY_SEARCH_QUERY_TEMPLATE = 'summary:{} is:open'
+
 
 def IsBugFilingEnabledForAnalysis(analysis):
   """Returns true if bug filing is enabled, false otherwise"""
@@ -49,7 +51,8 @@ def ShouldFileBugForAnalysis(analysis):
     - The pipeline hasn't been attempted before (see above).
     - The analysis has sufficient confidence (1.0).
     - The analysis doesn't already have a bug associated with it.
-    - A bug isn't open for the same test.
+    - A duplicate bug hasn't been filed by Findit or CTF.
+    - A duplicate bug hasn't been filed by a human.
   """
   if not IsBugFilingEnabledForAnalysis(analysis):
     analysis.LogInfo('Bug creation feature disabled.')
@@ -77,6 +80,10 @@ def ShouldFileBugForAnalysis(analysis):
 
   if BugAlreadyExistsForLabel(analysis.test_name):
     analysis.LogInfo('Bug already exists for label %s' % analysis.test_name)
+    return False
+
+  if BugAlreadyExistsForTest(analysis.test_name):
+    analysis.LogInfo('Bug about flakiness already exists')
     return False
 
   return True
@@ -133,6 +140,34 @@ def BugAlreadyExistsForLabel(test_name):
   open_issues = [issue for issue in issues if issue.open]
   if open_issues:
     return True
+
+  return False
+
+
+def BugAlreadyExistsForTest(test_name):
+  """Search for test_name issues that are about flakiness.
+
+  Args:
+    test_name (str): The test name to search for.
+
+  Returns:
+    True is there is already a bug about this test being flaky, False otherwise.
+  """
+  assert test_name
+
+  query = _BUG_SUMMARY_SEARCH_QUERY_TEMPLATE.format(test_name)
+
+  issue_tracker_api = IssueTrackerAPI(
+      'chromium', use_staging=appengine_util.IsStaging())
+  issues = issue_tracker_api.getIssues(query)
+  if not issues:
+    return False
+
+  for issue in issues:
+    if issue.open and ('flake' in issue.summary or 'flaky' in issue.summary):
+      logging.info('A bug for test %s already exists for flakiness. Bug id %s',
+                   test_name, issue.id)
+      return True
 
   return False
 
