@@ -15,7 +15,9 @@ from services.parameters import BuildKey
 from services.parameters import CLKey
 from services.parameters import CulpritActionParameters
 from services.parameters import DictOfCLKeys
+from services.parameters import IdentifyTestTryJobCulpritParameters
 from services.parameters import ListOfCLKeys
+from services.parameters import TestTryJobResult
 from services.test_failure import test_try_job
 from waterfall.test import wf_testcase
 
@@ -37,35 +39,75 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
                     'a_test': {
                         'status': 'passed',
                         'valid': True,
+                        'pass_fail_counts': {
+                            'a_test1': {
+                                'pass_count': 20,
+                                'fail_count': 0
+                            }
+                        }
                     },
                     'b_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['b_test1']
+                        'failures': ['b_test1'],
+                        'pass_fail_counts': {
+                            'b_test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            }
+                        }
                     }
                 },
                 'rev1': {
                     'a_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['a_test1']
+                        'failures': ['a_test1'],
+                        'pass_fail_counts': {
+                            'a_test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            }
+                        }
                     },
                     'b_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['b_test1']
+                        'failures': ['b_test1'],
+                        'pass_fail_counts': {
+                            'b_test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            }
+                        }
                     }
                 },
                 'rev2': {
                     'a_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['a_test1', 'a_test2']
+                        'failures': ['a_test1', 'a_test2'],
+                        'pass_fail_counts': {
+                            'a_test1': {
+                                'pass_count': 0,
+                                'fail_count': 0
+                            },
+                            'b_test1': {
+                                'pass_count': 0,
+                                'fail_count': 0
+                            }
+                        }
                     },
                     'b_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['b_test1']
+                        'failures': ['b_test1'],
+                        'pass_fail_counts': {
+                            'b_test1': {
+                                'pass_count': 0,
+                                'fail_count': 0
+                            }
+                        }
                     }
                 }
             },
@@ -80,7 +122,13 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             }
         },
         'url': 'url',
-        'try_job_id': try_job_id
+        'try_job_id': try_job_id,
+        'culprit': {
+            'a_test': {
+                'a_test1': 'rev1',
+                'a_test2': 'rev2'
+            },
+        }
     }
     culprits_result = {
         'rev1': {
@@ -112,8 +160,13 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             heuristic_cls=ListOfCLKeys()),
         mocked_output=False)
 
-    pipeline = IdentifyTestTryJobCulpritPipeline(master_name, builder_name,
-                                                 build_number, test_result)
+    parameters = IdentifyTestTryJobCulpritParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=TestTryJobResult.FromSerializable(test_result))
+    pipeline = IdentifyTestTryJobCulpritPipeline(parameters)
     pipeline.start()
     self.execute_queued_tasks()
 
@@ -134,8 +187,13 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             culprits=DictOfCLKeys(),
             heuristic_cls=ListOfCLKeys()),
         mocked_output=False)
-    pipeline = IdentifyTestTryJobCulpritPipeline(master_name, builder_name,
-                                                 build_number, None)
+    parameters = IdentifyTestTryJobCulpritParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=None)
+    pipeline = IdentifyTestTryJobCulpritPipeline(parameters)
     pipeline.start()
     self.execute_queued_tasks()
 

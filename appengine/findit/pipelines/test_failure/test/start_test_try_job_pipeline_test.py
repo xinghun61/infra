@@ -11,7 +11,9 @@ from pipelines.test_failure import start_test_try_job_pipeline
 from pipelines.test_failure.start_test_try_job_pipeline import (
     StartTestTryJobPipeline)
 from services.parameters import BuildKey
+from services.parameters import IdentifyTestTryJobCulpritParameters
 from services.parameters import RunTestTryJobParameters
+from services.parameters import TestTryJobResult
 from services.test_failure import test_try_job
 from waterfall.test import wf_testcase
 
@@ -92,14 +94,83 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.MockAsynchronousPipeline(
         start_test_try_job_pipeline.RunTestTryJobPipeline, parameters,
         'try_job_result')
-    self.MockPipeline(
+
+    expected_test_result = {
+        'report': {
+            'culprits': None,
+            'last_checked_out_revision': None,
+            'previously_cached_revision': None,
+            'previously_checked_out_revision': None,
+            'metadata': None,
+            'result': {
+                'rev1': {
+                    'a_test': {
+                        'status': 'passed',
+                        'valid': True,
+                        'failures': None,
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'a',
+                            'canonical_step_name': 'a',
+                            'patched': False,
+                            'swarm_task_ids': ['id1'],
+                        },
+                        'pass_fail_counts': {},
+                    }
+                },
+                'rev2': {
+                    'a_test': {
+                        'status': 'failed',
+                        'valid': True,
+                        'failures': ['test1', 'test2'],
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'a',
+                            'canonical_step_name': 'a',
+                            'patched': False,
+                            'swarm_task_ids': ['id2'],
+                        },
+                        'pass_fail_counts': {
+                            'test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            },
+                            'test2': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            }
+                        }
+                    }
+                }
+            },
+        },
+        'url': 'https://build.chromium.org/p/m/builders/b/builds/1234',
+        'try_job_id': '1',
+        'culprit': None,
+    }
+    identify_culprit_input = IdentifyTestTryJobCulpritParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=TestTryJobResult.FromSerializable(expected_test_result))
+    self.MockGeneratorPipeline(
         start_test_try_job_pipeline.IdentifyTestTryJobCulpritPipeline,
-        'final_result',
-        expected_args=[
-            master_name, builder_name, build_number, 'try_job_id',
-            'try_job_result'
-        ],
-        expected_kwargs={})
+        identify_culprit_input, False)
 
     pipeline = StartTestTryJobPipeline('m', 'b', 1, failure_info, {}, True,
                                        False)

@@ -306,8 +306,8 @@ def _GetTestFailureCausedByCL(result):
 
   failures = {}
   for step_name, step_result in result.iteritems():
-    if step_result['status'] == 'failed':
-      failures[step_name] = step_result['failures']
+    if step_result.status == 'failed':
+      failures[step_name] = step_result.failures
 
   return failures
 
@@ -332,7 +332,7 @@ def _GetUpdatedSuspectedCLs(analysis, result, culprits):
     if revision not in suspected_cl_revisions:
       suspected_cl_revisions.append(revision)
       failures = _GetTestFailureCausedByCL(
-          result.get('report', {}).get('result', {}).get(revision))
+          result.report.result.get(revision) if result else None)
       suspected_cl_copy['failures'] = failures
       suspected_cl_copy['top_score'] = None
       suspected_cls.append(suspected_cl_copy)
@@ -364,8 +364,8 @@ def FindCulpritForEachTestFailure(result):
   #     },
   #     ...
   # }
-  if result['report'].get('culprits'):
-    for step_name, tests in result['report']['culprits'].iteritems():
+  if result.report.culprits:
+    for step_name, tests in result.report.culprits.iteritems():
       culprit_map[step_name]['tests'] = {}
       for test_name, revision in tests.iteritems():
         culprit_map[step_name]['tests'][test_name] = {'revision': revision}
@@ -392,11 +392,21 @@ def GetCulpritDataForTest(culprit_map):
 
 
 @ndb.transactional
-def UpdateTryJobResult(master_name, builder_name, build_number, result,
-                       try_job_id, culprits):
+def UpdateTryJobResult(parameters, culprits):
+  """ Updates try job result with culprit info.
+  Args:
+    parameters (IdentifyTestTryJobCulpritParameters): Parameters to identify
+      culprit from try job result.
+    culprits (dict): A dict of culprits info: revision, repo_name,
+      commit_position and url.
+
+  """
+  master_name, builder_name, build_number = (parameters.build_key.GetParts())
   try_job = WfTryJob.Get(master_name, builder_name, build_number)
-  try_job_service.UpdateTryJobResultWithCulprit(try_job.test_results, result,
-                                                try_job_id, culprits)
+  new_result = parameters.result.ToSerializable() if parameters.result else {}
+  try_job_id = parameters.result.try_job_id if parameters.result else None
+  try_job_service.UpdateTryJobResultWithCulprit(
+      try_job.test_results, new_result, try_job_id, culprits)
   try_job.status = analysis_status.COMPLETED
   try_job.put()
 
@@ -427,7 +437,7 @@ def UpdateSuspectedCLs(master_name, builder_name, build_number, culprits,
   for culprit in culprits.values():
     revision = culprit['revision']
     failures = _GetTestFailureCausedByCL(
-        result.get('report', {}).get('result', {}).get(revision))
+        result.report.result.get(revision) if result else None)
 
     suspected_cl_util.UpdateSuspectedCL(culprit['repo_name'], revision,
                                         culprit.get('commit_position'),
@@ -436,26 +446,34 @@ def UpdateSuspectedCLs(master_name, builder_name, build_number, culprits,
                                         failure_type.TEST, failures, None)
 
 
-def IdentifyTestTryJobCulprits(master_name, builder_name, build_number, result):
+def IdentifyTestTryJobCulprits(parameters):
+  """Processes try job result and identifies culprit.
+
+  Args:
+    parameters (IdentifyTestTryJobCulpritParameters): Parameters to identify
+      culprit from try job result.
+  """
   culprits = None
   flaky_failures = {}
-  try_job_id = result.get('try_job_id') if result else None
-  if try_job_id and result and result.get('report'):
+
+  master_name, builder_name, build_number = parameters.build_key.GetParts()
+  result = parameters.result
+  try_job_id = result.try_job_id if result else None
+  if try_job_id and result and result.report:
     culprit_map, failed_revisions = FindCulpritForEachTestFailure(result)
     culprits = git.GetCLInfo(failed_revisions)
 
     if not culprits:
-      flaky_failures = result.get('report', {}).get('flakes')
+      flaky_failures = result.report.flakes
     if culprits:
       try_job_data = WfTryJobData.Get(try_job_id)
       UpdateCulpritMapWithCulpritInfo(culprit_map, culprits)
       try_job_data.culprits = GetCulpritDataForTest(culprit_map)
       try_job_data.put()
-      result['culprit'] = culprit_map
+      result.culprit = culprit_map
 
   # Store try-job results.
-  UpdateTryJobResult(master_name, builder_name, build_number, result,
-                     try_job_id, culprits)
+  UpdateTryJobResult(parameters, culprits)
 
   # Saves cls found by heuristic approach for later use.
   # This part must be before UpdateWfAnalysisWithTryJobResult().

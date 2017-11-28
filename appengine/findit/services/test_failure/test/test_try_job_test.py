@@ -19,7 +19,10 @@ from model.wf_try_job_data import WfTryJobData
 from services import build_failure_analysis
 from services import try_job as try_job_service
 from services.parameters import BuildKey
+from services.parameters import IdentifyTestTryJobCulpritParameters
 from services.parameters import RunTestTryJobParameters
+from services.parameters import TestTryJobAllStepsResult
+from services.parameters import TestTryJobResult
 from services.test_failure import test_try_job
 from waterfall import suspected_cl_util
 from waterfall import swarming_util
@@ -1062,7 +1065,8 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     expected_failures = {'b_test': ['b_test1']}
 
     self.assertEqual(expected_failures,
-                     test_try_job._GetTestFailureCausedByCL(result))
+                     test_try_job._GetTestFailureCausedByCL(
+                         TestTryJobAllStepsResult.FromSerializable(result)))
 
   def testGetSuspectedCLsForTestTryJobAndHeuristicResultsSame(self):
     suspected_cl = {
@@ -1152,8 +1156,9 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         }
     ]
 
-    cl_result = test_try_job._GetUpdatedSuspectedCLs(analysis, result,
-                                                     try_job_suspected_cls)
+    cl_result = test_try_job._GetUpdatedSuspectedCLs(
+        analysis,
+        TestTryJobResult.FromSerializable(result), try_job_suspected_cls)
     self.assertEqual(cl_result, expected_cls)
 
   def testGetSuspectedCLsForTestTryJobWithHeuristicResult(self):
@@ -1191,10 +1196,10 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         [suspected_cl])
 
   def testFindCulpritForEachTestFailureRevisionNotRun(self):
-    result = {'report': {'result': {'rev2': 'passed'}}}
+    result = {'report': {'result': {'rev2': {'a': {'status': 'passed'}}}}}
 
     culprit_map, failed_revisions = test_try_job.FindCulpritForEachTestFailure(
-        result)
+        TestTryJobResult.FromSerializable(result))
     self.assertEqual(culprit_map, {})
     self.assertEqual(failed_revisions, [])
 
@@ -1202,7 +1207,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     result = {'report': {'culprits': {'a_tests': {'Test1': 'rev1'}}}}
 
     culprit_map, failed_revisions = test_try_job.FindCulpritForEachTestFailure(
-        result)
+        TestTryJobResult.FromSerializable(result))
 
     expected_culprit_map = {
         'a_tests': {
@@ -1222,8 +1227,13 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 123
     WfTryJob.Create(master_name, builder_name, build_number).put()
-    test_try_job.UpdateTryJobResult(master_name, builder_name, build_number,
-                                    None, '123', None)
+    parameters = IdentifyTestTryJobCulpritParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=None)
+    test_try_job.UpdateTryJobResult(parameters, None)
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(try_job.status, analysis_status.COMPLETED)
 
@@ -1295,7 +1305,8 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     build_number = 1
     WfAnalysis.Create(master_name, builder_name, build_number).put()
     test_try_job.UpdateWfAnalysisWithTryJobResult(
-        master_name, builder_name, build_number, {}, ['rev1'], {})
+        master_name, builder_name, build_number,
+        TestTryJobResult(), ['rev1'], {})
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertEqual(analysis.result_status, result_status.FOUND_UNTRIAGED)
 
@@ -1328,7 +1339,8 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     }
     culprits = {'rev': {'revision': 'rev', 'repo_name': 'chromium'}}
     test_try_job.UpdateSuspectedCLs(master_name, builder_name, build_number,
-                                    culprits, result)
+                                    culprits,
+                                    TestTryJobResult.FromSerializable(result))
     mock_fn.assert_called_with('chromium', 'rev', None,
                                analysis_approach_type.TRY_JOB, master_name,
                                builder_name, build_number, failure_type.TEST,
@@ -1353,40 +1365,163 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
     test_result = {
         'report': {
+            'last_checked_out_revision': 'rev',
+            'metadata': {},
+            'previously_cached_revision': 'rev',
+            'previously_checked_out_revision': 'rev',
             'result': {
                 'rev0': {
                     'a_test': {
                         'status': 'passed',
                         'valid': True,
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'a_test',
+                            'canonical_step_name': 'a_test',
+                            'patched': False,
+                            'swarm_task_ids': ['id1'],
+                        },
+                        'pass_fail_counts': {}
                     },
                     'b_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['b_test1']
+                        'failures': ['b_test1'],
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'b_test',
+                            'canonical_step_name': 'b_test',
+                            'patched': False,
+                            'swarm_task_ids': ['id2'],
+                        },
+                        'pass_fail_counts': {
+                            'b_test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            },
+                        }
                     }
                 },
                 'rev1': {
                     'a_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['a_test1']
+                        'failures': ['a_test1'],
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'a_test',
+                            'canonical_step_name': 'a_test',
+                            'patched': False,
+                            'swarm_task_ids': ['id3'],
+                        },
+                        'pass_fail_counts': {
+                            'a_test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            },
+                        }
                     },
                     'b_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['b_test1']
+                        'failures': ['b_test1'],
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'b_test',
+                            'canonical_step_name': 'b_test',
+                            'patched': False,
+                            'swarm_task_ids': ['id4'],
+                        },
+                        'pass_fail_counts': {
+                            'b_test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            },
+                        }
                     }
                 },
                 'rev2': {
                     'a_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['a_test1', 'a_test2']
+                        'failures': ['a_test1', 'a_test2'],
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'a_test',
+                            'canonical_step_name': 'a_test',
+                            'patched': False,
+                            'swarm_task_ids': ['id5'],
+                        },
+                        'pass_fail_counts': {
+                            'a_test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            },
+                            'a_test2': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            },
+                        }
                     },
                     'b_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['b_test1']
+                        'failures': ['b_test1'],
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'b_test',
+                            'canonical_step_name': 'b_test',
+                            'patched': False,
+                            'swarm_task_ids': ['id6'],
+                        },
+                        'pass_fail_counts': {
+                            'b_test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            },
+                        }
                     }
                 }
             },
@@ -1430,40 +1565,164 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
     expected_test_result = {
         'report': {
+            'last_checked_out_revision': 'rev',
+            'metadata': {},
+            'previously_cached_revision': 'rev',
+            'previously_checked_out_revision': 'rev',
             'result': {
                 'rev0': {
                     'a_test': {
                         'status': 'passed',
                         'valid': True,
+                        'failures': None,
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'a_test',
+                            'canonical_step_name': 'a_test',
+                            'patched': False,
+                            'swarm_task_ids': ['id1'],
+                        },
+                        'pass_fail_counts': {}
                     },
                     'b_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['b_test1']
+                        'failures': ['b_test1'],
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'b_test',
+                            'canonical_step_name': 'b_test',
+                            'patched': False,
+                            'swarm_task_ids': ['id2'],
+                        },
+                        'pass_fail_counts': {
+                            'b_test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            },
+                        }
                     }
                 },
                 'rev1': {
                     'a_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['a_test1']
+                        'failures': ['a_test1'],
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'a_test',
+                            'canonical_step_name': 'a_test',
+                            'patched': False,
+                            'swarm_task_ids': ['id3'],
+                        },
+                        'pass_fail_counts': {
+                            'a_test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            },
+                        }
                     },
                     'b_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['b_test1']
+                        'failures': ['b_test1'],
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'b_test',
+                            'canonical_step_name': 'b_test',
+                            'patched': False,
+                            'swarm_task_ids': ['id4'],
+                        },
+                        'pass_fail_counts': {
+                            'b_test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            },
+                        }
                     }
                 },
                 'rev2': {
                     'a_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['a_test1', 'a_test2']
+                        'failures': ['a_test1', 'a_test2'],
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'a_test',
+                            'canonical_step_name': 'a_test',
+                            'patched': False,
+                            'swarm_task_ids': ['id5'],
+                        },
+                        'pass_fail_counts': {
+                            'a_test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            },
+                            'a_test2': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            },
+                        }
                     },
                     'b_test': {
                         'status': 'failed',
                         'valid': True,
-                        'failures': ['b_test1']
+                        'failures': ['b_test1'],
+                        'step_metadata': {
+                            'dimensions': {
+                                'gpu': 'none',
+                                'os': 'Windows-7-SP1',
+                                'cpu': 'x86-64',
+                                'pool': 'Chrome'
+                            },
+                            'waterfall_buildername': 'b',
+                            'waterfall_mastername': 'm',
+                            'full_step_name': 'b_test',
+                            'canonical_step_name': 'b_test',
+                            'patched': False,
+                            'swarm_task_ids': ['id6'],
+                        },
+                        'pass_fail_counts': {
+                            'b_test1': {
+                                'pass_count': 0,
+                                'fail_count': 20
+                            },
+                        }
                     }
                 }
             },
@@ -1489,8 +1748,13 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    culprits, _ = test_try_job.IdentifyTestTryJobCulprits(
-        master_name, builder_name, build_number, test_result)
+    parameters = IdentifyTestTryJobCulpritParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=TestTryJobResult.FromSerializable(test_result))
+    culprits, _ = test_try_job.IdentifyTestTryJobCulprits(parameters)
 
     expected_culprits = {
         'rev1': {
@@ -1511,7 +1775,6 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(expected_test_result, try_job.test_results[-1])
     self.assertEqual(analysis_status.COMPLETED, try_job.status)
-
     try_job_data = WfTryJobData.Get(try_job_id)
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     expected_culprit_data = {
@@ -1520,7 +1783,6 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
             'a_test2': 'rev2',
         }
     }
-
     expected_cls = [{
         'revision': 'rev1',
         'commit_position': 1,
@@ -1623,8 +1885,13 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    culprits, _ = test_try_job.IdentifyTestTryJobCulprits(
-        master_name, builder_name, build_number, test_result)
+    parameters = IdentifyTestTryJobCulpritParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=TestTryJobResult.FromSerializable(test_result))
+    culprits, _ = test_try_job.IdentifyTestTryJobCulprits(parameters)
     self.assertEqual({}, culprits)
 
   def testIdentifyTestTryJobCulpritsNoResult(self):
@@ -1645,8 +1912,13 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    culprits, _ = test_try_job.IdentifyTestTryJobCulprits(
-        master_name, builder_name, build_number, test_result)
+    parameters = IdentifyTestTryJobCulpritParameters(
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=None)
+    culprits, _ = test_try_job.IdentifyTestTryJobCulprits(parameters)
     self.assertIsNone(culprits)
 
   @mock.patch.object(

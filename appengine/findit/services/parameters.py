@@ -143,7 +143,8 @@ class TestTryJobAllRevisionsResult(TypedDict):
 
 
 class TestTryJobReport(TryJobReport):
-  culprit = dict
+  culprits = dict
+  flakes = dict
   result = TestTryJobAllRevisionsResult
 
 
@@ -155,6 +156,11 @@ class TestTryJobResult(TryJobResult):
 class IdentifyCompileTryJobCulpritParameters(StructuredObject):
   build_key = BuildKey
   result = CompileTryJobResult
+
+
+class IdentifyTestTryJobCulpritParameters(StructuredObject):
+  build_key = BuildKey
+  result = TestTryJobResult
 
 
 class RunFlakeTryJobParameters(StructuredObject):

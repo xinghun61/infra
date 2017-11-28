@@ -4,11 +4,14 @@
 
 import logging
 
+from gae_libs import pipelines
 from gae_libs.pipeline_wrapper import BasePipeline
 from pipelines.test_failure.identify_test_try_job_culprit_pipeline import (
     IdentifyTestTryJobCulpritPipeline)
 from pipelines.test_failure.run_test_try_job_pipeline import (
     RunTestTryJobPipeline)
+from services.parameters import BuildKey
+from services.parameters import IdentifyTestTryJobCulpritParameters
 from services.test_failure import test_try_job
 
 
@@ -42,5 +45,11 @@ class StartTestTryJobPipeline(BasePipeline):
 
     try_job_result = yield RunTestTryJobPipeline(parameters)
 
-    yield IdentifyTestTryJobCulpritPipeline(master_name, builder_name,
-                                            build_number, try_job_result)
+    identify_culprit_input = pipelines.CreateInputObjectInstance(
+        IdentifyTestTryJobCulpritParameters,
+        build_key=BuildKey(
+            master_name=master_name,
+            builder_name=builder_name,
+            build_number=build_number),
+        result=try_job_result)
+    yield IdentifyTestTryJobCulpritPipeline(identify_culprit_input)

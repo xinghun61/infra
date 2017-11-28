@@ -63,7 +63,7 @@ def GetCLInfo(revisions):
   # TODO(crbug/767759): remove hard-coded 'chromium' when DEPS file parsing is
   # supported.
   for revision in revisions:
-    cls[revision] = {'revision': revision, 'repo_name': u'chromium'}
+    cls[revision] = {'revision': revision, 'repo_name': 'chromium'}
     change_log = git_repo.GetChangeLog(revision)
     if change_log:
       cls[revision]['commit_position'] = (change_log.commit_position)

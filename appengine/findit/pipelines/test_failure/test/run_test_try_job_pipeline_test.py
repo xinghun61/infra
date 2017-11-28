@@ -122,7 +122,8 @@ class RunTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
     expected_test_result = {
         'report': {
-            'culprit': None,
+            'culprits': None,
+            'flakes': None,
             'last_checked_out_revision': None,
             'previously_cached_revision': None,
             'previously_checked_out_revision': None,
@@ -343,7 +344,8 @@ class RunTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
     expected_test_result = {
         'report': {
-            'culprit': None,
+            'culprits': None,
+            'flakes': None,
             'last_checked_out_revision': None,
             'previously_cached_revision': None,
             'previously_checked_out_revision': None,
@@ -568,7 +570,8 @@ class RunTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     }
     expected_test_result = {
         'report': {
-            'culprit': None,
+            'culprits': None,
+            'flakes': None,
             'last_checked_out_revision': None,
             'previously_cached_revision': None,
             'previously_checked_out_revision': None,

@@ -2,29 +2,33 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from gae_libs.pipeline_wrapper import BasePipeline
+from gae_libs.pipelines import GeneratorPipeline
 from pipelines.test_failure.revert_and_notify_test_culprit_pipeline import (
     RevertAndNotifyTestCulpritPipeline)
 from services import git
 from services.parameters import BuildKey
 from services.parameters import CulpritActionParameters
+from services.parameters import IdentifyTestTryJobCulpritParameters
 from services.test_failure import test_try_job
 
 
-class IdentifyTestTryJobCulpritPipeline(BasePipeline):
-  """A pipeline to identify culprit CL info based on try job results."""
+class IdentifyTestTryJobCulpritPipeline(GeneratorPipeline):
+  """A pipeline to identify culprit CL info based on test try job results."""
+  input_type = IdentifyTestTryJobCulpritParameters
+  output_type = bool
 
-  # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, result):
+  def RunImpl(self, pipeline_input):
     """Identifies the information for failed revisions.
 
     Please refer to try_job_result_format.md for format check.
     """
     culprits, heuristic_cls = test_try_job.IdentifyTestTryJobCulprits(
-        master_name, builder_name, build_number, result)
+        pipeline_input)
     if not culprits:
       return
 
+    master_name, builder_name, build_number = (
+        pipeline_input.build_key.GetParts())
     yield RevertAndNotifyTestCulpritPipeline(
         CulpritActionParameters(
             build_key=BuildKey(

@@ -265,10 +265,7 @@ def GetResultAnalysisStatus(analysis, result):
   # possible the heuristic-based result was triaged before the completion of
   # this try job.
 
-  # TODO(chanli): Remove the case where result is a dict in the change of
-  # refactoring identify_test_try_job_culprit_pipeline.
-  try_job_found_culprit = result and (result.get('culprit') if isinstance(
-      result, dict) else result.culprit)
+  try_job_found_culprit = result and result.culprit
   if (try_job_found_culprit and
       (old_result_status is None or
        old_result_status == result_status.NOT_FOUND_UNTRIAGED or

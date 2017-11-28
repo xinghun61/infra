@@ -28,6 +28,7 @@ from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from services import try_job as try_job_service
 from services.parameters import BuildKey
+from services.parameters import CompileTryJobResult
 from services.parameters import RunCompileTryJobParameters
 from waterfall import buildbot
 from waterfall import swarming_util
@@ -318,7 +319,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    status = try_job_service.GetResultAnalysisStatus(analysis, result)
+    status = try_job_service.GetResultAnalysisStatus(
+        analysis, CompileTryJobResult.FromSerializable(result))
 
     self.assertEqual(status, result_status.FOUND_UNTRIAGED)
 
@@ -340,7 +342,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    status = try_job_service.GetResultAnalysisStatus(analysis, result)
+    status = try_job_service.GetResultAnalysisStatus(
+        analysis, CompileTryJobResult.FromSerializable(result))
 
     self.assertEqual(status, result_status.FOUND_UNTRIAGED)
 
@@ -363,7 +366,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    status = try_job_service.GetResultAnalysisStatus(analysis, result)
+    status = try_job_service.GetResultAnalysisStatus(
+        analysis, CompileTryJobResult.FromSerializable(result))
 
     self.assertEqual(status, result_status.FOUND_UNTRIAGED)
 
@@ -385,7 +389,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    status = try_job_service.GetResultAnalysisStatus(analysis, result)
+    status = try_job_service.GetResultAnalysisStatus(
+        analysis, CompileTryJobResult.FromSerializable(result))
 
     self.assertEqual(status, result_status.FOUND_UNTRIAGED)
 
@@ -397,7 +402,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
     result = {}
 
-    status = try_job_service.GetResultAnalysisStatus(analysis, result)
+    status = try_job_service.GetResultAnalysisStatus(
+        analysis, CompileTryJobResult.FromSerializable(result))
     self.assertIsNone(status)
 
   def testGetResultanalysisStatusWithTryJobCulpritAndHeuristicResult(self):
@@ -418,7 +424,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    status = try_job_service.GetResultAnalysisStatus(analysis, result)
+    status = try_job_service.GetResultAnalysisStatus(
+        analysis, CompileTryJobResult.FromSerializable(result))
     self.assertEqual(status, result_status.FOUND_CORRECT)
 
   def testGetResultanalysisStatusWithNoCulpritTriagedCorrect(self):
@@ -431,7 +438,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
     result = {}
 
-    status = try_job_service.GetResultAnalysisStatus(analysis, result)
+    status = try_job_service.GetResultAnalysisStatus(
+        analysis, CompileTryJobResult.FromSerializable(result))
     self.assertEqual(status, result_status.NOT_FOUND_CORRECT)
 
   def testGetResultanalysisStatusWithNoCulpritTriagedIncorrect(self):
@@ -443,7 +451,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     result = {}
-    status = try_job_service.GetResultAnalysisStatus(analysis, result)
+    status = try_job_service.GetResultAnalysisStatus(
+        analysis, CompileTryJobResult.FromSerializable(result))
     self.assertEqual(status, result_status.NOT_FOUND_INCORRECT)
 
   def testGetUpdatedAnalysisResultNoAnalysis(self):
