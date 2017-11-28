@@ -147,11 +147,13 @@ class _CreateBugIfStillFlaky(pipelines.GeneratorPipeline):
       return
 
     subject, body = _GenerateSubjectAndBodyForBug(analysis)
+    priority_label = issue_tracking_service.GetPriorityLabelForConfidence(
+        analysis.confidence_in_culprit)
 
     # Log our attempt in analysis so we don't retry perpetually.
     analysis.Update(has_attempted_filing=True)
-    bug_id = issue_tracking_service.CreateBugForTest(analysis.test_name,
-                                                     subject, body)
+    bug_id = issue_tracking_service.CreateBugForTest(
+        analysis.test_name, subject, body, priority_label)
     if not bug_id:
       analysis.LogError('Couldn\'t create bug!')
       return

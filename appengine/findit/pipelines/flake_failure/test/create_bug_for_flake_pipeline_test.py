@@ -187,6 +187,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
         DataPoint.Create(build_number=100, pass_rate=.5, task_ids=['task_id'])
     ]
     analysis.suspected_flake_build_number = 100
+    analysis.confidence_in_culprit = 1.0
     analysis.Save()
 
     # Create a flake analysis request with no bug.
@@ -297,6 +298,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.data_points = [DataPoint.Create(build_number=200, pass_rate=.5)]
+    analysis.confidence_in_culprit = 1.0
     analysis.Save()
 
     # Create a flake analysis request with no bug.
@@ -396,6 +398,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.data_points = [DataPoint.Create(build_number=200, pass_rate=.5)]
+    analysis.confidence_in_culprit = 1.0
     analysis.Save()
 
     # Create a flake analysis request with no bug.

@@ -662,3 +662,13 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     self.assertFalse(issue_tracking_service.UnderDailyLimit(analysis))
+
+  def testGetPriorityLabelForConfidence(self):
+    self.assertEqual('Pri-1',
+                     issue_tracking_service.GetPriorityLabelForConfidence(1.0))
+    self.assertEqual('Pri-1',
+                     issue_tracking_service.GetPriorityLabelForConfidence(.98))
+    self.assertEqual('Pri-3',
+                     issue_tracking_service.GetPriorityLabelForConfidence(.9))
+    self.assertEqual('Pri-3',
+                     issue_tracking_service.GetPriorityLabelForConfidence(.85))

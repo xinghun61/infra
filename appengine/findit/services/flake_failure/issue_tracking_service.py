@@ -173,7 +173,19 @@ def BugAlreadyExistsForTest(test_name):
   return False
 
 
-def CreateBugForTest(test_name, subject, description):
+def GetPriorityLabelForConfidence(confidence):
+  """Returns a priority for a given confidence score."""
+  assert confidence
+  assert confidence <= 1.0
+  assert confidence >= 0.0
+
+  if confidence >= .98:
+    return 'Pri-1'
+  else:
+    return 'Pri-3'
+
+
+def CreateBugForTest(test_name, subject, description, priority='Pri-2'):
   """Creates a bug with the given information.
 
   Returns:
@@ -184,12 +196,19 @@ def CreateBugForTest(test_name, subject, description):
   assert description
 
   issue = Issue({
-      'status': 'Unconfirmed',
-      'summary': subject,
-      'description': description,
-      'projectId': 'chromium',
-      'labels': [test_name, 'Test-Findit-Analyzed', 'Sheriff-Chromium'],
-      'state': 'open',
+      'status':
+          'Available',
+      'summary':
+          subject,
+      'description':
+          description,
+      'projectId':
+          'chromium',
+      'labels': [
+          test_name, 'Test-Findit-Analyzed', 'Sheriff-Chromium', priority
+      ],
+      'state':
+          'open',
       'components': ['Tests>Flaky']
   })
 
