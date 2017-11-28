@@ -28,6 +28,7 @@ import (
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/xsrf"
 	"go.chromium.org/luci/server/router"
 )
@@ -351,12 +352,24 @@ func FileBugHandler(ctx *router.Context) {
 	for i, cc := range rawJSON.Cc {
 		ccList[i] = &monorail.AtomPerson{cc}
 	}
+
+	sa, err := info.ServiceAccount(c)
+	if err != nil {
+		logging.Errorf(c, "failed to get service account: %v", err)
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	user := auth.CurrentIdentity(c)
+	description := fmt.Sprintf("Filed by %s on behalf of %s\n\n%s", sa, user.Email(),
+		rawJSON.Description)
+
 	fileBugReq := &monorail.InsertIssueRequest{
 		ProjectId: "chromium",
 		Issue: &monorail.Issue{
 			Cc:          ccList,
 			Summary:     rawJSON.Summary,
-			Description: rawJSON.Description,
+			Description: description,
 			Status:      "Available",
 			Labels:      rawJSON.Labels,
 		},
