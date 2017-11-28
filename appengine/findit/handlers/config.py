@@ -148,7 +148,8 @@ def _ValidateTrybotMapping(builders_to_trybots):
           not isinstance(
               trybot_config.get('swarmbucket_trybot', ''), basestring)):
         return False
-      if not trybot_config.get('swarmbucket_mastername'):
+      if (not trybot_config.get('swarmbucket_mastername') and
+          not trybot_config.get('use_swarmbucket')):
         # Validate buildbucket style config. (Not swarmbucket).
         if (not trybot_config.get('mastername') or
             not trybot_config.get('waterfall_trybot') or
@@ -162,6 +163,9 @@ def _ValidateTrybotMapping(builders_to_trybots):
         return False
       if (trybot_config.has_key('strict_regex') and
           not isinstance(trybot_config['strict_regex'], bool)):
+        return False
+      if (trybot_config.has_key('use_swarmbucket') and
+          not isinstance(trybot_config['use_swarmbucket'], bool)):
         return False
       if (trybot_config.has_key('not_run_tests') and
           not isinstance(trybot_config['not_run_tests'], bool)):

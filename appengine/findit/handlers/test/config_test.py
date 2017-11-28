@@ -578,6 +578,14 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
+    self.assertTrue(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'use_swarmbucket': True
+                }
+            }
+        }))
     self.assertFalse(
         config._ValidateTrybotMapping({
             'master1': {

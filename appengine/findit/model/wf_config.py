@@ -58,6 +58,10 @@ class FinditConfig(VersionedConfig):
   #              'mastername': 'tryserver.chromium.linux',
   #              'strict_regex": true
   #         },
+  #         'Mac': {
+  #              'strict_regex': true,
+  #              'use_swarmbucket': true  # If true, no other configs needed.
+  #         },
   #         ...
   #      },
   #      ...
