@@ -343,8 +343,12 @@ def TriggerTryJob(master_name, builder_name, tryserver_mastername,
 
 
 @ndb.transactional
-def CreateTryJobData(build_id, try_job_key, has_compile_targets,
-                     has_heuristic_results, try_job_type):
+def CreateTryJobData(build_id,
+                     try_job_key,
+                     has_compile_targets,
+                     has_heuristic_results,
+                     try_job_type,
+                     runner_id=None):
   try_job_data = WfTryJobData.Create(build_id)
   try_job_data.created_time = time_util.GetUTCNow()
   try_job_data.has_compile_targets = has_compile_targets
@@ -352,6 +356,7 @@ def CreateTryJobData(build_id, try_job_key, has_compile_targets,
   try_job_data.try_job_key = try_job_key
   try_job_data.try_job_type = failure_type.GetDescriptionForFailureType(
       try_job_type)
+  try_job_data.runner_id = runner_id
   try_job_data.put()
 
 
@@ -759,4 +764,22 @@ def OnTryJobRunning(params, try_job_data, build, error):
         error_count=0,
         backoff_time=params['default_pipeline_wait_seconds'],
         already_set_started=True)
+  return None
+
+
+def GetCurrentWaterfallTryJobID(urlsafe_try_job_key, runner_id):
+  try_job = (ndb.Key(urlsafe=urlsafe_try_job_key).get()
+             if urlsafe_try_job_key else None)
+  if not try_job or not try_job.try_job_ids:
+    return None
+
+  try_job_ids = try_job.try_job_ids
+  for i in xrange(len(try_job_ids) - 1, -1, -1):
+    try_job_id = try_job_ids[i]
+    try_job_data = WfTryJobData.Get(try_job_id)
+    if not try_job_data:
+      continue
+
+    if try_job_data.runner_id == runner_id:
+      return try_job_id
   return None

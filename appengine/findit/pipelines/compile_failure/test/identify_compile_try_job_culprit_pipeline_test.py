@@ -76,7 +76,7 @@ class IdentifyCompileTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     pipeline = culprit_pipeline.IdentifyCompileTryJobCulpritPipeline(
-        master_name, builder_name, build_number, '1', None)
+        master_name, builder_name, build_number, None)
     pipeline.start()
     self.execute_queued_tasks()
 
@@ -162,7 +162,7 @@ class IdentifyCompileTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             heuristic_cls=ListOfCLKeys()),
         mocked_output=False)
     pipeline = culprit_pipeline.IdentifyCompileTryJobCulpritPipeline(
-        master_name, builder_name, build_number, '1', compile_result)
+        master_name, builder_name, build_number, compile_result)
     pipeline.start()
     self.execute_queued_tasks()
 
@@ -209,7 +209,7 @@ class IdentifyCompileTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             heuristic_cls=ListOfCLKeys()),
         mocked_output=False)
     pipeline = culprit_pipeline.IdentifyCompileTryJobCulpritPipeline(
-        master_name, builder_name, build_number, '1', compile_result)
+        master_name, builder_name, build_number, compile_result)
     pipeline.start()
     self.execute_queued_tasks()
 
@@ -265,7 +265,7 @@ class IdentifyCompileTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             heuristic_cls=ListOfCLKeys()),
         mocked_output=False)
     pipeline = culprit_pipeline.IdentifyCompileTryJobCulpritPipeline(
-        master_name, builder_name, build_number, '1', compile_result)
+        master_name, builder_name, build_number, compile_result)
     pipeline.start()
     self.execute_queued_tasks()
 

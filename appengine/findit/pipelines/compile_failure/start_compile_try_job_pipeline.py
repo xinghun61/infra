@@ -2,14 +2,12 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import BasePipeline
 from services.compile_failure import compile_try_job
 from pipelines.compile_failure import (identify_compile_try_job_culprit_pipeline
                                        as culprit_pipeline)
-from pipelines.compile_failure.schedule_compile_try_job_pipeline import (
-    ScheduleCompileTryJobPipeline)
-from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
+from pipelines.compile_failure.run_compile_try_job_pipeline import (
+    RunCompileTryJobPipeline)
 
 
 class StartCompileTryJobPipeline(BasePipeline):
@@ -35,10 +33,7 @@ class StartCompileTryJobPipeline(BasePipeline):
       # No last_pass in saved in failure_info.
       return
 
-    try_job_id = yield ScheduleCompileTryJobPipeline(parameters)
-
-    try_job_result = yield MonitorTryJobPipeline(
-        urlsafe_try_job_key, failure_type.COMPILE, try_job_id)
+    try_job_result = yield RunCompileTryJobPipeline(parameters)
 
     yield culprit_pipeline.IdentifyCompileTryJobCulpritPipeline(
-        master_name, builder_name, build_number, try_job_id, try_job_result)
+        master_name, builder_name, build_number, try_job_result)

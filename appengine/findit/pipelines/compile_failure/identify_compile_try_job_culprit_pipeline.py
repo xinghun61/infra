@@ -18,13 +18,14 @@ class IdentifyCompileTryJobCulpritPipeline(BasePipeline):
   """A pipeline to identify culprit CL info based on try job compile results."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, try_job_id, result):
+  def run(self, master_name, builder_name, build_number, result):
     """Identifies the information for failed revisions.
 
     Please refer to try_job_result_format.md for format check.
     """
     culprits = None
     flaky_compile = False
+    try_job_id = result.get('try_job_id') if result else None
     if try_job_id and result and result.get('report'):
       failed_revision = compile_try_job.GetFailedRevisionFromCompileResult(
           result)

@@ -69,7 +69,7 @@ class CulpritActionParameters(StructuredObject):
 
 
 class RunTryJobParameters(StructuredObject):
-  """Shared parameters of ScheduleCompileTryJobPipeline and
+  """Shared parameters of RunCompileTryJobPipeline and
       ScheduleTestTryJobPipeline."""
   build_key = BuildKey
   good_revision = basestring
@@ -97,3 +97,24 @@ class RunFlakeTryJobParameters(StructuredObject):
   revision = basestring
   flake_cache_name = basestring
   dimensions = list
+
+
+class TryJobReport(StructuredObject):
+  """Common info in reports of waterfall and flake try jobs."""
+  last_checked_out_revision = basestring
+  previously_checked_out_revision = basestring
+  previously_cached_revision = basestring
+  metadata = dict
+
+
+class CompileTryJobReport(TryJobReport):
+  """Special information in report of compile try jobs."""
+  culprit = basestring
+  result = dict
+
+
+class CompileTryJobResult(StructuredObject):
+  report = CompileTryJobReport
+  url = basestring
+  try_job_id = basestring
+  culprit = dict

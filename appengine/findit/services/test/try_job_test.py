@@ -39,6 +39,7 @@ _GIT_REPO = CachedGitilesRepository(
 
 
 class TryJobTest(wf_testcase.WaterfallTestCase):
+
   def setUp(self):
     super(TryJobTest, self).setUp()
     self.patcher = mock.patch('waterfall.swarming_util.GetBotsByDimension')
@@ -1356,3 +1357,31 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     mock_log.assert_called_once_with(
         'Failed to load result report for swarming/%s due to exception %s.' %
         ('3595be5002f4bc10', TypeError().message))
+
+  def testGetCurrentWaterfallTryJobID(self):
+    try_job = WfTryJob.Create('m', 'b', '54321')
+    try_job.try_job_ids = ['1', '2', '3', '4']
+    try_job.put()
+    try_job_data = WfTryJobData.Create('2')
+    try_job_data.try_job_key = try_job.key
+    try_job_data.runner_id = 'pipeline_id'
+    try_job_data.put()
+    try_job_data = WfTryJobData.Create('3')
+    try_job_data.try_job_key = try_job.key
+    try_job_data.runner_id = 'pipeline_id3'
+    try_job_data.put()
+    self.assertEqual('2',
+                     try_job_service.GetCurrentWaterfallTryJobID(
+                         try_job.key.urlsafe(), 'pipeline_id'))
+
+  def testGetCurrentWaterfallTryJobIDNoTryJob(self):
+    self.assertIsNone(
+        try_job_service.GetCurrentWaterfallTryJobID(None, 'pipeline_id'))
+
+  def testGetCurrentWaterfallTryJobIDNoTryJobData(self):
+    try_job = WfTryJob.Create('m', 'b', '54321')
+    try_job.try_job_ids = ['1', '2', '3']
+    try_job.put()
+    self.assertIsNone(
+        try_job_service.GetCurrentWaterfallTryJobID(try_job.key.urlsafe(),
+                                                    'pipeline_id'))

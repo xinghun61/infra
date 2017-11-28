@@ -43,6 +43,9 @@ class BaseTryJobData(ndb.Model):
   # The name of the target for the callback url
   callback_target = ndb.StringProperty(indexed=False)
 
+  # The pipeline_id which is running this try_job.
+  runner_id = ndb.StringProperty(indexed=False)
+
   @ndb.ComputedProperty
   def master_name(self):  # pragma: no cover
     return BaseTryJob.GetMasterName(self.try_job_key)

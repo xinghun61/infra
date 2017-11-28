@@ -372,9 +372,12 @@ def ScheduleCompileTryJob(parameters, notification_id):
 
   # Create a corresponding WfTryJobData entity to capture as much metadata as
   # early as possible.
-  try_job_service.CreateTryJobData(build_id, try_job.key,
-                                   bool(parameters.compile_targets),
-                                   bool(parameters.suspected_revisions),
-                                   failure_type.COMPILE)
+  try_job_service.CreateTryJobData(
+      build_id,
+      try_job.key,
+      bool(parameters.compile_targets),
+      bool(parameters.suspected_revisions),
+      failure_type.COMPILE,
+      runner_id=notification_id)
 
   return build_id

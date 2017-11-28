@@ -74,20 +74,14 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline_input = RunCompileTryJobParameters.FromSerializable(parameters)
     mock_parameter.return_value = pipeline_input
-    self.MockSynchronousPipeline(
-        start_compile_try_job_pipeline.ScheduleCompileTryJobPipeline,
-        pipeline_input, 'try_job_id')
-    self.MockPipeline(
-        start_compile_try_job_pipeline.MonitorTryJobPipeline,
-        'try_job_result',
-        expected_args=[try_job.key.urlsafe(), try_job_type, 'try_job_id'],
-        expected_kwargs={})
+    self.MockAsynchronousPipeline(
+        start_compile_try_job_pipeline.RunCompileTryJobPipeline, pipeline_input,
+        'try_job_result')
     self.MockPipeline(
         culprit_pipeline.IdentifyCompileTryJobCulpritPipeline,
         'final_result',
         expected_args=[
-            master_name, builder_name, build_number, 'try_job_id',
-            'try_job_result'
+            master_name, builder_name, build_number, 'try_job_result'
         ],
         expected_kwargs={})
 
@@ -98,8 +92,7 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(
       compile_try_job, 'NeedANewCompileTryJob', return_value=(False, None))
-  @mock.patch.object(start_compile_try_job_pipeline,
-                     'ScheduleCompileTryJobPipeline')
+  @mock.patch.object(start_compile_try_job_pipeline, 'RunCompileTryJobPipeline')
   def testNotNeedCompileTryJob(self, mock_pipeline, _):
     failure_info = {'failure_type': failure_type.COMPILE}
     pipeline = StartCompileTryJobPipeline()
@@ -109,8 +102,7 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(compile_try_job, 'NeedANewCompileTryJob')
   @mock.patch.object(compile_try_job, 'GetParametersToScheduleCompileTryJob')
-  @mock.patch.object(start_compile_try_job_pipeline,
-                     'ScheduleCompileTryJobPipeline')
+  @mock.patch.object(start_compile_try_job_pipeline, 'RunCompileTryJobPipeline')
   def testNoCompileTryJobBecauseNoGoodRevision(self, mock_pipeline,
                                                mock_parameter, mock_fn):
 

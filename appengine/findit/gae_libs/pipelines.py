@@ -243,6 +243,10 @@ class BasePipeline(pipeline.Pipeline):
       self.OnAbort(arg)
     self.OnFinalized(arg)
 
+  def run_test(self, *args, **kwargs):  # pragma: no cover
+    # This method needs to be implemented for unit tests.
+    pass
+
 
 class SynchronousPipeline(BasePipeline):
   """Base class for synchronous pipelines which returns a result immediately."""
@@ -309,7 +313,7 @@ class AsynchronousPipeline(BasePipeline):
     raise NotImplementedError()
 
   def Complete(self, result):
-    if not isinstance(result, self.output_type):
+    if result and not isinstance(result, self.output_type):
       self.abort('Expected output of type %s, but got %s' %
                  (self.output_type.__name__, type(result).__name__))
       return
