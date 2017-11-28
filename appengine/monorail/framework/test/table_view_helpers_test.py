@@ -487,3 +487,44 @@ class TableViewHelpersTest(unittest.TestCase):
          },
         label_values)
     self.assertEqual([], non_col_labels)
+
+  def testChooseCellFactory(self):
+    """We choose the right kind of table cell for the specified column."""
+    cell_factories = {
+      'summary': table_view_helpers.TableCellSummary,
+      'stars': table_view_helpers.TableCellStars,
+      }
+    os_fd = tracker_bizobj.MakeFieldDef(
+        1, 789, 'os', tracker_pb2.FieldTypes.ENUM_TYPE, None, None, False,
+        False, False, None, None, None, False, None, None, None, None,
+        'Operating system', False)
+    deadline_fd = tracker_bizobj.MakeFieldDef(
+        2, 789, 'deadline', tracker_pb2.FieldTypes.DATE_TYPE, None, None, False,
+        False, False, None, None, None, False, None, None, None, None,
+        'Deadline to resolve issue', False)
+    self.config.field_defs = [os_fd, deadline_fd]
+
+    # The column is defined in cell_factories.
+    actual = table_view_helpers.ChooseCellFactory(
+        'summary', cell_factories, self.config)
+    self.assertEqual(table_view_helpers.TableCellSummary, actual)
+
+    # The column is a composite column.
+    actual = table_view_helpers.ChooseCellFactory(
+        'summary/stars', cell_factories, self.config)
+    self.assertEqual('FactoryClass', actual.__name__)
+
+    # The column is a enum custom field, so it is treated like a label.
+    actual = table_view_helpers.ChooseCellFactory(
+        'os', cell_factories, self.config)
+    self.assertEqual(table_view_helpers.TableCellKeyLabels, actual)
+
+    # The column is a non-enum custom field.
+    actual = table_view_helpers.ChooseCellFactory(
+        'deadline', cell_factories, self.config)
+    self.assertEqual(table_view_helpers.TableCellCustom, actual)
+
+    # Column that don't match one of the other cases is assumed to be a label.
+    actual = table_view_helpers.ChooseCellFactory(
+        'reward', cell_factories, self.config)
+    self.assertEqual(table_view_helpers.TableCellKeyLabels, actual)

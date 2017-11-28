@@ -643,6 +643,7 @@ class TableCellCustom(TableCell):
   def ExtractValue(self, fv, _users_by_id):
     return 'field-id-%d-not-implemented-yet' % fv.field_id
 
+
 def ChooseCellFactory(col, cell_factories, config):
   """Return the CellFactory to use for the given column."""
   if col in cell_factories:
@@ -652,7 +653,7 @@ def ChooseCellFactory(col, cell_factories, config):
     return CompositeTableCell(col.split('/'), cell_factories)
 
   fd = tracker_bizobj.FindFieldDef(col, config)
-  if fd:
+  if fd and fd.field_type != tracker_pb2.FieldTypes.ENUM_TYPE:
     return TableCellCustom
 
   return TableCellKeyLabels
