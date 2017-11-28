@@ -266,6 +266,7 @@ class SomAnnotations extends Polymer.mixinBehaviors(
   ////////////////////// Bugs ///////////////////////////
 
   _linkNewBug() {
+    // TODO(zhangtiff): Move annotation creation to the backend.
     let data = {bugs: [this.$.fileBug.filedBugId]};
     let promises = this._fileBugModel.map((alert) => {
       return this.sendAnnotation(alert.key, 'add', data);

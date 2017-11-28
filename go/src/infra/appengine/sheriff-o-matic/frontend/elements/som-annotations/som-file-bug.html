@@ -15,10 +15,10 @@
     </style>
     <paper-dialog id="fileBugDialog" with-backdrop>
       <h2>File a new bug</h2>
-      <div class="error">[[fileBugErrorMessage]]</div>
+      <div class="error">[[_fileBugErrorMessage]]</div>
       <paper-input id="summary" label="Summary" value="[[summary]]"></paper-input>
       <paper-textarea id="description" always-float-label label="Description" value="[[description]]"></paper-textarea>
-      <paper-input id="cc" label="CC (seperate by commas)" value="[[_arrayToSTring(cc)]]"></paper-input>
+      <paper-input id="cc" label="CC (seperate by commas)" value="[[_arrayToString(cc)]]"></paper-input>
       <paper-dropdown-menu id="priority" label="Select priority">
         <paper-listbox slot="dropdown-content" selected="2">
           <paper-item label="Pri-0">0 = Emergency</paper-item>
@@ -38,7 +38,7 @@
 
 
     <paper-dialog id="bugFiledDialog" with-backdrop>
-      <div>Successfully linked new bug <a href$="https://crbug.com/[[filedBugId]]"> Bug [[filedBugId]]</a> to alert.</div>
+      <div>Successfully linked new bug <a href$="https://crbug.com/[[filedBugId]]" target="_blank"> Bug [[filedBugId]]</a> to alert.</div>
       <div class="buttons">
         <button dialog-dismiss>
           Close

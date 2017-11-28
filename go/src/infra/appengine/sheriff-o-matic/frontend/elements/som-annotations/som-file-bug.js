@@ -15,6 +15,11 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
     return {
       /** The bug's summary. */
       summary: String,
+      /** The user filing the bug. */
+      creator: {
+        type: String,
+        observer: '_creatorChanged',
+      },
       /** The bug's description. */
       description: String,
       /** The bug's labels. */
@@ -23,11 +28,11 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
       cc: Array,
       /** The bug's priority. */
       priority: String,
-      fileBugErrorMessage: {
+      _fileBugErrorMessage: {
         type: String,
         value: '',
       },
-      filedBugId: String
+      filedBugId: String,
     }
   }
 
@@ -37,6 +42,12 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
 
   close() {
     this.$.fileBugDialog.close();
+  }
+
+  _creatorChanged(creator) {
+    if (!this.cc || !this.cc.length) {
+      this.cc = [creator];
+    }
   }
 
   _fileBug() {
@@ -69,7 +80,7 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
           .postJSON('/api/v1/filebug/', bugData)
           .then(jsonParsePromise)
           .catch((error) => {
-            this.fileBugErrorMessage = 'Error trying to create new issue: ' + error;
+            this._fileBugErrorMessage = 'Error trying to create new issue: ' + error;
           })
           .then(this._fileBugResponse.bind(this));
     }
@@ -79,7 +90,7 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
     if (response.issue && response.issue.id) {
       this.filedBugId = response.issue.id.toString();
     } else {
-       this.fileBugErrorMessage = 'Error, no issue or issue id found: ' + response;
+       this._fileBugErrorMessage = 'Error, no issue or issue id found: ' + response;
     }
 
     this.fire('success');
