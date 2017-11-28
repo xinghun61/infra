@@ -480,7 +480,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
     data_point.build_number = build_number - 1
     data_point.pass_rate = success_rate
     analysis.data_points.append(data_point)
-    analysis.status = analysis_status.COMPLETED
+    analysis.status = analysis_status.RUNNING
     analysis.suspected_flake_build_number = 100
     analysis.request_time = datetime.datetime(2016, 10, 01, 12, 10, 00)
     analysis.start_time = datetime.datetime(2016, 10, 01, 12, 10, 05)
@@ -554,7 +554,7 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'bug_id':
             '',
         'culprit_analysis_status':
-            '',
+            'pending',
         'culprit_confidence':
             '',
         'culprit_text':

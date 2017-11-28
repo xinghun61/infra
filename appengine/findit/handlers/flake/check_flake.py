@@ -490,6 +490,19 @@ class CheckFlake(BaseHandler):
     regression_range_confidence = AsPercentString(regression_range_confidence)
     culprit_confidence = AsPercentString(culprit_confidence)
 
+    # TODO(crbug.com/789289): Culprit status value should be correct.
+    culprit_status = (
+        analysis_status.STATUS_TO_DESCRIPTION.get(analysis.try_job_status) or
+        '')
+
+    if not culprit_status:
+      if analysis.status == analysis_status.RUNNING:
+        culprit_status = 'pending'
+      elif analysis.status == analysis_status.ERROR:
+        culprit_status = 'skipped'
+      else:
+        culprit_status = 'error'
+
     data = {
         'key':
             analysis.key.urlsafe(),
@@ -546,9 +559,8 @@ class CheckFlake(BaseHandler):
             suspected_flake.get('lower_bound_git_hash', '') or '',
         'regression_range_confidence':
             regression_range_confidence,
-        'culprit_analysis_status': (
-            analysis_status.STATUS_TO_DESCRIPTION.get(analysis.try_job_status)
-            or ''),
+        'culprit_analysis_status':
+            culprit_status,
         'culprit_url':
             culprit.get('url', ''),
         'culprit_text':
