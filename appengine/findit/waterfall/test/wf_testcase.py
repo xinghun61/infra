@@ -2,9 +2,11 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from google.appengine.api import users
-
 import copy
+import mock
+
+from google.appengine.api import users
+from google.appengine.api import urlfetch
 
 import gae_ts_mon
 
@@ -241,4 +243,16 @@ class WaterfallTestCase(TestCase):  # pragma: no cover.
     super(WaterfallTestCase, self).setUp()
     self.UpdateUnitTestConfigSettings()
     self.maxDiff = None
+    # Make sure that no tests derived from this actually call urlfetch.fetch.
+    mock.patch.object(
+        urlfetch,
+        'fetch',
+        side_effect=AssertionError(
+            'unittests must not perform actual network requests. Instead, '
+            'mocks should be provided for the methods that do any network '
+            'operations')).start()
     gae_ts_mon.reset_for_unittest(disable=True)
+
+  def tearDown(self):
+    mock.patch.stopall()
+    super(WaterfallTestCase, self).tearDown()
