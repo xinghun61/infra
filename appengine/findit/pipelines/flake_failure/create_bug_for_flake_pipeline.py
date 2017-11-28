@@ -25,9 +25,9 @@ from waterfall.flake.analyze_flake_for_build_number_pipeline import (
 from waterfall.flake.lookback_algorithm import IsFullyStable
 
 _SUBJECT_TEMPLATE = '{} is Flaky'
-_BODY_TEMPLATE = ('Findit has detected a flake at test {}.\n'
+_BODY_TEMPLATE = ('Findit has detected a flake at test {}.\n\n'
                   'Culprit ({} confidence): {}\n'
-                  'Regression range: {}\n'
+                  'Regression range: {}\n\n'
                   'Analysis: {}\n\n'
                   'If this result was incorrect, apply the label '
                   'Findit-Incorrect-Result, mark the bug as Untriaged and the '

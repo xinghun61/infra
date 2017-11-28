@@ -269,7 +269,8 @@ def _ValidateCheckFlakeSettings(settings):
       isinstance(settings.get('update_monorail_bug'), bool) and
       isinstance(settings.get('minimum_confidence_to_update_cr'),
                  (float, int)) and
-      isinstance(settings.get('throttle_flake_analyses'), bool))
+      isinstance(settings.get('throttle_flake_analyses'), bool) and
+      isinstance(settings.get('minimum_confidence_to_create_bug'), float))
 
 
 def _ValidateCodeReviewSettings(settings):

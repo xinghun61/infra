@@ -147,7 +147,8 @@ class FinditConfig(VersionedConfig):
   #     'new_flake_bugs_per_day': 2,
   #     'update_monorail_bug': False,
   #     'minimum_confidence_score_to_run_tryjobs': 0.6,
-  #     'throttle_flake_analyses': False
+  #     'throttle_flake_analyses': False,
+  #     'minimum_confidence_to_create_bug': .9
   # }
   check_flake_settings = ndb.JsonProperty(indexed=False, default={})
 

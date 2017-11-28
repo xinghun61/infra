@@ -175,6 +175,7 @@ _DEFAULT_CHECK_FLAKE_SETTINGS = {
     'new_flake_bugs_per_day': 2,
     'update_monorail_bug': False,
     'throttle_flake_analyses': False,
+    'minimum_confidence_to_create_bug': .9
 }
 
 _DEFAULT_CODE_REVIEW_SETTINGS = {

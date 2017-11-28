@@ -142,6 +142,7 @@ _MOCK_CHECK_FLAKE_SETTINGS = {
     'minimum_confidence_score_to_run_tryjobs': 0.6,
     'minimum_confidence_to_update_cr': 0.5,
     'throttle_flake_analyses': True,
+    'minimum_confidence_to_create_bug': .9
 }
 
 _MOCK_CODE_REVIEW_SETTINGS = {

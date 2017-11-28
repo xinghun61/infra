@@ -14,6 +14,7 @@ from monorail_api import IssueTrackerAPI
 from monorail_api import Issue
 
 from model.flake import master_flake_analysis
+from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 
 _BUG_SUMMARY_SEARCH_QUERY_TEMPLATE = 'summary:{} is:open'
@@ -207,6 +208,10 @@ def _HasSufficientConfidenceInCulprit(analysis):
   """Returns true is there's high enough confidence in the culprit."""
   if not analysis.confidence_in_culprit:
     return False
-  return (abs(analysis.confidence_in_culprit -
-              flake_constants.MINIMUM_CONFIDENCE_TO_CREATE_BUG) <=
-          flake_constants.EPSILON)
+
+  flake_settings = waterfall_config.GetCheckFlakeSettings()
+  minimum_confidence = flake_settings.get(
+      'minimum_confidence_to_create_bug',
+      flake_constants.MINIMUM_CONFIDENCE_TO_CREATE_BUG)
+  return (analysis.confidence_in_culprit + flake_constants.EPSILON >=
+          minimum_confidence)

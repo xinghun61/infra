@@ -556,6 +556,11 @@ class IssueTrackingServiceTest(wf_testcase.WaterfallTestCase):
 
     analysis.confidence_in_culprit = .9
     analysis.put()
+    self.assertTrue(
+        issue_tracking_service._HasSufficientConfidenceInCulprit(analysis))
+
+    analysis.confidence_in_culprit = .8
+    analysis.put()
     self.assertFalse(
         issue_tracking_service._HasSufficientConfidenceInCulprit(analysis))
 

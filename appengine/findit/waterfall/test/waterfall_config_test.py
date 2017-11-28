@@ -301,6 +301,7 @@ class MastersTest(wf_testcase.WaterfallTestCase):
         'update_monorail_bug': False,
         'minimum_confidence_score_to_run_tryjobs': 0.6,
         'throttle_flake_analyses': False,
+        'minimum_confidence_to_create_bug': .9
     }, waterfall_config.GetCheckFlakeSettings())
 
   def testGetCodeReviewSettings(self):
