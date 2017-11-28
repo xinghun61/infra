@@ -1,5 +1,5 @@
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="crdx-user-dopdown.html">
+<link rel="import" href="crdx-user-dropdown.html">
 <link rel="import" href="crdx-user-id.html">
 <link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../iron-behaviors/iron-control-state.html">
@@ -8,11 +8,11 @@
   <template>
     <style>
     </style>
-    <paper-input id="input" value="{{inputValue}}">
+    <paper-input id="input" label="[[label]]" value="{{inputValue}}" on-input="_inputChanged">
       <template is="dom-repeat" items="[[selectedUsers]]">
         <crdx-user-id
           slot="prefix"
-          crdx-user-id="[[item.userId]]"
+          user-id="[[item.userId]]"
           email="[[item.email]]"
           profile-link="[[item.profileLink]]"
           full-name="[[item.fullName]]"
@@ -57,6 +57,15 @@
             type: String,
             value: '',
             notify: true,
+          },
+          /**
+           * The display label.
+           *
+           * @type String
+           */
+          label: {
+            type: String,
+            value: 'place holder',
           },
           /**
            * List of suggestions displayed in the dropdown.
@@ -108,7 +117,6 @@
       ready() {
         super.ready();
         this.addEventListener('focused-changed', e => this._toggleDropdown(e));
-        this.addEventListener('click', e => this._toggleDropdown(e));
       }
 
       /** Updates inputDisabled. */
@@ -136,6 +144,9 @@
       _saveUser(e) {
          this.push('selectedUsers', e.detail.selectedUser);
          this.$.dropdown.close();
+         this.inputValue = '';
+         this.dispatchEvent(
+             new CustomEvent('user-selected', {detail: e.detail}));
       }
 
       /**
@@ -157,6 +168,9 @@
         }
       }
 
+      _inputChanged(e) {
+        this.dispatchEvent(new CustomEvent('input', {detail: e.detail}));
+      }
     }
     customElements.define(CrdxUserInput.is, CrdxUserInput);
   </script>

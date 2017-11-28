@@ -33,6 +33,8 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
         value: '',
       },
       filedBugId: String,
+      /** Autocomplete-d cc suggestions. */
+      ccSuggestions: Array
     }
   }
 
@@ -102,7 +104,6 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
     this.$.bugFiledDialog.open();
   }
 
-
   _arrayToString(arr) {
     return arr.join(", ");
   }
@@ -114,6 +115,44 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
       })
     }
     return [];
+  }
+
+  _ccChanged(e) {
+    // Don't try to autocomplete single chars.
+    if (e.target.inputValue.length < 2) {
+      return;
+    }
+
+    // TODO: Determine if this call should be debounced. The on-input event
+    // might already do some debouncing for us, but we should verify.
+    fetch('/_/autocomplete/' + encodeURIComponent(e.target.inputValue),
+      {credentials: 'include'}).then((resp) => {
+        return resp.json();
+      }).then((json) => {
+        let suggestions = json.map((email) => {
+          return {userId: email, email: email};
+        });
+
+        // Filter out already selected emails from suggestions.
+        let selectedUserIds = this.$.cc.selectedUsers.map((user) => {
+            return user.userId;
+        });
+
+        this.ccSuggestions = [];
+        for (let i = 0; i < suggestions.length; i++) {
+          let user = suggestions[i];
+          if (selectedUserIds.indexOf(user.userId) < 0) {
+            this.ccSuggestions.push(user);
+          }
+        }
+
+      }).catch((err) => {
+        console.error(err);
+      });
+  }
+
+  _ccUserSelected(e) {
+    this.ccSuggestions = [];
   }
 }
 
