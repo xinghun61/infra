@@ -362,7 +362,7 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
       compile_try_job,
       'ScheduleCompileTryJob',
       side_effect=exceptions.RetryException('error_reason', 'error_message'))
-  def testScheduleNewTryJobForTestRaise(self, _):
+  def testScheduleNewTryJobForCompileRaise(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 223

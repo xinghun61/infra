@@ -7,12 +7,11 @@ from common.waterfall import failure_type
 from gae_libs.pipelines import pipeline_handlers
 from pipelines.compile_failure.run_compile_try_job_pipeline import (
     RunCompileTryJobPipeline)
-from pipelines.test_failure.schedule_test_try_job_pipeline import (
-    ScheduleTestTryJobPipeline)
+from pipelines.test_failure.run_test_try_job_pipeline import (
+    RunTestTryJobPipeline)
 from services.parameters import BuildKey
 from services.parameters import RunCompileTryJobParameters
 from services.parameters import RunTestTryJobParameters
-from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.rerun_tryjob_pipeline import RerunTryJobPipeline
 from waterfall.test import wf_testcase
 
@@ -50,14 +49,8 @@ class RerunTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         force_buildbot=True,
         urlsafe_try_job_key=urlsafe_try_job_key)
 
-    self.MockSynchronousPipeline(ScheduleTestTryJobPipeline, pipeline_input,
-                                 'build_id')
-
-    self.MockPipeline(
-        MonitorTryJobPipeline,
-        '',
-        expected_args=[urlsafe_try_job_key, 'test', 'build_id'],
-        expected_kwargs={})
+    self.MockAsynchronousPipeline(RunTestTryJobPipeline, pipeline_input,
+                                  'try_job_result')
 
     root_pipeline = RerunTryJobPipeline(
         master_name, builder_name, build_number, failure_type.TEST, properties,

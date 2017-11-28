@@ -436,10 +436,10 @@ def UpdateSuspectedCLs(master_name, builder_name, build_number, culprits,
                                         failure_type.TEST, failures, None)
 
 
-def IdentifyTestTryJobCulprits(master_name, builder_name, build_number,
-                               try_job_id, result):
+def IdentifyTestTryJobCulprits(master_name, builder_name, build_number, result):
   culprits = None
   flaky_failures = {}
+  try_job_id = result.get('try_job_id') if result else None
   if try_job_id and result and result.get('report'):
     culprit_map, failed_revisions = FindCulpritForEachTestFailure(result)
     culprits = git.GetCLInfo(failed_revisions)
@@ -497,8 +497,12 @@ def ScheduleTestTryJob(parameters, notification_id):
 
   # Create a corresponding WfTryJobData entity to capture as much metadata as
   # early as possible.
-  try_job_service.CreateTryJobData(build_id, try_job.key, False,
-                                   bool(parameters.suspected_revisions),
-                                   failure_type.TEST)
+  try_job_service.CreateTryJobData(
+      build_id,
+      try_job.key,
+      False,
+      bool(parameters.suspected_revisions),
+      failure_type.TEST,
+      runner_id=notification_id)
 
   return build_id

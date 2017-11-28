@@ -113,7 +113,7 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
         mocked_output=False)
 
     pipeline = IdentifyTestTryJobCulpritPipeline(master_name, builder_name,
-                                                 build_number, '1', test_result)
+                                                 build_number, test_result)
     pipeline.start()
     self.execute_queued_tasks()
 
@@ -135,7 +135,7 @@ class IdentifyTestTryJobCulpritPipelineTest(wf_testcase.WaterfallTestCase):
             heuristic_cls=ListOfCLKeys()),
         mocked_output=False)
     pipeline = IdentifyTestTryJobCulpritPipeline(master_name, builder_name,
-                                                 build_number, None, None)
+                                                 build_number, None)
     pipeline.start()
     self.execute_queued_tasks()
 

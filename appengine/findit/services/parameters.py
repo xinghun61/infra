@@ -105,11 +105,51 @@ class CompileTryJobReport(TryJobReport):
   result = dict
 
 
-class CompileTryJobResult(StructuredObject):
-  report = CompileTryJobReport
+class TryJobResult(StructuredObject):
+  """Object represents a try job results saved in wf_try_job entity."""
   url = basestring
   try_job_id = basestring
   culprit = dict
+
+
+class CompileTryJobResult(TryJobResult):
+  """Object represents a compile try job results saved in wf_try_job entity."""
+  report = CompileTryJobReport
+
+
+class PassFailCount(StructuredObject):
+  pass_count = int
+  fail_count = int
+
+
+class PassFailCounts(TypedDict):
+  _value_type = PassFailCount
+
+
+class TestTryJobStepResult(StructuredObject):
+  status = basestring
+  valid = bool
+  step_metadata = dict
+  pass_fail_counts = PassFailCounts
+  failures = list
+
+
+class TestTryJobAllStepsResult(TypedDict):
+  _value_type = TestTryJobStepResult
+
+
+class TestTryJobAllRevisionsResult(TypedDict):
+  _value_type = TestTryJobAllStepsResult
+
+
+class TestTryJobReport(TryJobReport):
+  culprit = dict
+  result = TestTryJobAllRevisionsResult
+
+
+class TestTryJobResult(TryJobResult):
+  """Object represents a test try job results saved in wf_try_job entity."""
+  report = TestTryJobReport
 
 
 class IdentifyCompileTryJobCulpritParameters(StructuredObject):
@@ -123,11 +163,3 @@ class RunFlakeTryJobParameters(StructuredObject):
   revision = basestring
   flake_cache_name = basestring
   dimensions = list
-
-
-class TryJobReport(StructuredObject):
-  """Common info in reports of waterfall and flake try jobs."""
-  last_checked_out_revision = basestring
-  previously_checked_out_revision = basestring
-  previously_cached_revision = basestring
-  metadata = dict

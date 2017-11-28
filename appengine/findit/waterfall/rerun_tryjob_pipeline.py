@@ -7,12 +7,11 @@ from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
 from pipelines.compile_failure.run_compile_try_job_pipeline import (
     RunCompileTryJobPipeline)
-from pipelines.test_failure.schedule_test_try_job_pipeline import (
-    ScheduleTestTryJobPipeline)
+from pipelines.test_failure.run_test_try_job_pipeline import (
+    RunTestTryJobPipeline)
 from services.parameters import BuildKey
 from services.parameters import RunCompileTryJobParameters
 from services.parameters import RunTestTryJobParameters
-from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
 
 class RerunTryJobPipeline(BasePipeline):
@@ -35,10 +34,7 @@ class RerunTryJobPipeline(BasePipeline):
           dimensions=[],
           force_buildbot=True,
           urlsafe_try_job_key=urlsafe_try_job_key)
-      rerun = yield ScheduleTestTryJobPipeline(pipeline_input)
-      yield MonitorTryJobPipeline(
-          urlsafe_try_job_key,
-          failure_type.GetDescriptionForFailureType(try_job_type), rerun)
+      yield RunTestTryJobPipeline(pipeline_input)
 
     elif try_job_type == failure_type.COMPILE:
       pipeline_input = RunCompileTryJobParameters(

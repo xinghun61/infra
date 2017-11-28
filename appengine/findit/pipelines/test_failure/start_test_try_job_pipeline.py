@@ -4,14 +4,12 @@
 
 import logging
 
-from common.waterfall import failure_type
 from gae_libs.pipeline_wrapper import BasePipeline
 from pipelines.test_failure.identify_test_try_job_culprit_pipeline import (
     IdentifyTestTryJobCulpritPipeline)
-from pipelines.test_failure.schedule_test_try_job_pipeline import (
-    ScheduleTestTryJobPipeline)
+from pipelines.test_failure.run_test_try_job_pipeline import (
+    RunTestTryJobPipeline)
 from services.test_failure import test_try_job
-from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
 
 class StartTestTryJobPipeline(BasePipeline):
@@ -22,8 +20,6 @@ class StartTestTryJobPipeline(BasePipeline):
     """Starts a try job if one is needed for the given test failure."""
     if not build_completed:  # Only start try-jobs for completed builds.
       return
-
-    try_job_type = failure_type.TEST
 
     # Gets the swarming tasks' results.
     need_try_job, try_job_key = test_try_job.NeedANewTestTryJob(
@@ -44,10 +40,7 @@ class StartTestTryJobPipeline(BasePipeline):
       logging.info('All tests are flaky, no try job will be triggered.')
       return
 
-    try_job_id = yield ScheduleTestTryJobPipeline(parameters)
+    try_job_result = yield RunTestTryJobPipeline(parameters)
 
-    try_job_result = yield MonitorTryJobPipeline(urlsafe_try_job_key,
-                                                 try_job_type, try_job_id)
-
-    yield IdentifyTestTryJobCulpritPipeline(
-        master_name, builder_name, build_number, try_job_id, try_job_result)
+    yield IdentifyTestTryJobCulpritPipeline(master_name, builder_name,
+                                            build_number, try_job_result)

@@ -1490,7 +1490,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     }
 
     culprits, _ = test_try_job.IdentifyTestTryJobCulprits(
-        master_name, builder_name, build_number, try_job_id, test_result)
+        master_name, builder_name, build_number, test_result)
 
     expected_culprits = {
         'rev1': {
@@ -1624,7 +1624,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     culprits, _ = test_try_job.IdentifyTestTryJobCulprits(
-        master_name, builder_name, build_number, try_job_id, test_result)
+        master_name, builder_name, build_number, test_result)
     self.assertEqual({}, culprits)
 
   def testIdentifyTestTryJobCulpritsNoResult(self):
@@ -1646,7 +1646,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     culprits, _ = test_try_job.IdentifyTestTryJobCulprits(
-        master_name, builder_name, build_number, try_job_id, test_result)
+        master_name, builder_name, build_number, test_result)
     self.assertIsNone(culprits)
 
   @mock.patch.object(

@@ -15,13 +15,13 @@ class IdentifyTestTryJobCulpritPipeline(BasePipeline):
   """A pipeline to identify culprit CL info based on try job results."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, try_job_id, result):
+  def run(self, master_name, builder_name, build_number, result):
     """Identifies the information for failed revisions.
 
     Please refer to try_job_result_format.md for format check.
     """
     culprits, heuristic_cls = test_try_job.IdentifyTestTryJobCulprits(
-        master_name, builder_name, build_number, try_job_id, result)
+        master_name, builder_name, build_number, result)
     if not culprits:
       return
 
