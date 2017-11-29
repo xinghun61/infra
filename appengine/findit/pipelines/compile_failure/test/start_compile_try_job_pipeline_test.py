@@ -25,8 +25,13 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   def testNotScheduleTryJobIfBuildNotCompleted(self):
+    heuristic_result = {
+        'failure_info': {},
+        'signals': {},
+        'heuristic_result': {}
+    }
     pipeline = StartCompileTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, {}, {}, {}, False, False)
+    result = pipeline.run('m', 'b', 1, heuristic_result, False, False)
     self.assertEqual(list(result), [])
 
   @mock.patch.object(compile_try_job, 'GetParametersToScheduleCompileTryJob')
@@ -107,8 +112,13 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         culprit_pipeline.IdentifyCompileTryJobCulpritPipeline,
         identify_culprit_input, False)
 
-    pipeline = StartCompileTryJobPipeline('m', 'b', 1, failure_info, {}, {},
-                                          True, False)
+    heuristic_result = {
+        'failure_info': failure_info,
+        'signals': {},
+        'heuristic_result': {}
+    }
+    pipeline = StartCompileTryJobPipeline('m', 'b', 1, heuristic_result, True,
+                                          False)
     pipeline.start()
     self.execute_queued_tasks()
 
@@ -176,8 +186,13 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         culprit_pipeline.IdentifyCompileTryJobCulpritPipeline,
         identify_culprit_input, False)
 
-    pipeline = StartCompileTryJobPipeline('m', 'b', 1, failure_info, {}, {},
-                                          True, False)
+    heuristic_result = {
+        'failure_info': failure_info,
+        'signals': {},
+        'heuristic_result': {}
+    }
+    pipeline = StartCompileTryJobPipeline('m', 'b', 1, heuristic_result, True,
+                                          False)
     pipeline.start()
     self.execute_queued_tasks()
 
@@ -186,8 +201,13 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(start_compile_try_job_pipeline, 'RunCompileTryJobPipeline')
   def testNotNeedCompileTryJob(self, mock_pipeline, _):
     failure_info = {'failure_type': failure_type.COMPILE}
+    heuristic_result = {
+        'failure_info': failure_info,
+        'signals': {},
+        'heuristic_result': {}
+    }
     pipeline = StartCompileTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, failure_info, {}, {}, True, False)
+    result = pipeline.run('m', 'b', 1, heuristic_result, True, False)
     self.assertEqual(list(result), [])
     mock_pipeline.assert_not_called()
 
@@ -202,7 +222,12 @@ class StartCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job.put()
     mock_fn.return_value = (True, try_job.key)
     failure_info = {'failure_type': failure_type.COMPILE}
+    heuristic_result = {
+        'failure_info': failure_info,
+        'signals': {},
+        'heuristic_result': {}
+    }
     pipeline = StartCompileTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, failure_info, {}, {}, True, False)
+    result = pipeline.run('m', 'b', 1, heuristic_result, True, False)
     self.assertEqual(list(result), [])
     mock_pipeline.assert_not_called()

@@ -16,12 +16,15 @@ from services.parameters import IdentifyCompileTryJobCulpritParameters
 class StartCompileTryJobPipeline(BasePipeline):
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, failure_info, signals,
-          heuristic_result, build_completed, force_try_job):
+  def run(self, master_name, builder_name, build_number, heuristic_result,
+          build_completed, force_try_job):
     """Starts a try job if one is needed for the given compile failure."""
     if not build_completed:  # Only start try-jobs for completed builds.
       return
 
+    failure_info = heuristic_result.get('failure_info')
+    signals = heuristic_result.get('signals')
+    heuristic_result = heuristic_result.get('heuristic_result')
     need_try_job, try_job_key = compile_try_job.NeedANewCompileTryJob(
         master_name, builder_name, build_number, failure_info, signals,
         heuristic_result, force_try_job)

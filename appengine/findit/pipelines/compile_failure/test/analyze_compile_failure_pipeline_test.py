@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import logging
 import mock
 
 from common import constants
@@ -9,8 +10,6 @@ from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from pipelines.compile_failure import analyze_compile_failure_pipeline
-from pipelines.compile_failure import (identify_compile_failure_suspect_pipeline
-                                       as suspect_pipeline)
 from pipelines.compile_failure.analyze_compile_failure_pipeline import (
     AnalyzeCompileFailurePipeline)
 from waterfall.test import wf_testcase
@@ -41,26 +40,16 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self._SetupAnalysis(master_name, builder_name, build_number)
 
     self.MockPipeline(
-        analyze_compile_failure_pipeline.DetectFirstCompileFailurePipeline,
-        'failure_info',
-        expected_args=[current_failure_info],
-        expected_kwargs={})
-    self.MockPipeline(
-        analyze_compile_failure_pipeline.ExtractSignalForCompilePipeline,
-        'signals',
-        expected_args=['failure_info'],
-        expected_kwargs={})
-    self.MockPipeline(
-        suspect_pipeline.IdentifyCompileFailureSuspectPipeline,
+        analyze_compile_failure_pipeline.HeuristicAnalysisForCompilePipeline,
         'heuristic_result',
-        expected_args=['failure_info', 'signals', False],
+        expected_args=[current_failure_info, False],
         expected_kwargs={})
     self.MockPipeline(
         analyze_compile_failure_pipeline.StartCompileTryJobPipeline,
         'try_job_result',
         expected_args=[
-            master_name, builder_name, build_number, 'failure_info', 'signals',
-            'heuristic_result', False, False
+            master_name, builder_name, build_number, 'heuristic_result', False,
+            False
         ],
         expected_kwargs={})
 
@@ -122,9 +111,11 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(analysis)
     self.assertNotEqual(analysis_status.ERROR, analysis.status)
 
+  @mock.patch.object(logging, 'info')
   @mock.patch.object(analyze_compile_failure_pipeline,
                      'StartCompileTryJobPipeline')
-  def testAnalyzeCompileFailurePipelineStartTryJob(self, mocked_pipeline):
+  def testAnalyzeCompileFailurePipelineStartTryJob(self, mocked_pipeline,
+                                                   mock_log):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
@@ -148,8 +139,17 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
         master_name, builder_name, build_number, None, False, False)
     root_pipeline._HandleUnexpectedAborting(True)
 
-    mocked_pipeline.assert_called_once_with(master_name, builder_name,
-                                            build_number, failure_info, {},
-                                            None, False, False)
+    heuristic_result = {
+        'failure_info': failure_info,
+        'signals': {},
+        'heuristic_result': None
+    }
+    mocked_pipeline.assert_called_once_with(
+        master_name, builder_name, build_number, heuristic_result, False, False)
     mocked_pipeline.assert_has_calls(
         [mock.call().start(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)])
+    mock_log.assert_called_once_with(
+        'A try job pipeline for build %s, %s, %s starts after heuristic '
+        'analysis was aborted. Check pipeline at: %s.',
+        root_pipeline.master_name, root_pipeline.builder_name,
+        root_pipeline.build_number, root_pipeline.pipeline_status_path())
