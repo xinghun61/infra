@@ -47,8 +47,8 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
   }
 
   _creatorChanged(creator) {
-    if (!this.cc || !this.cc.length) {
-      this.cc = [creator];
+    if (!this.$.cc.selectedUsers || !this.$.cc.selectedUsers.length) {
+      this.$.cc.selectedUsers = [{userId: creator, email: creator}];
     }
   }
 
@@ -74,7 +74,7 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
       let bugData = {
         Summary: this.$.summary.value,
         Description: this.$.description.value,
-        Cc: this._stringToArray(this.$.cc.value),
+        Cc: this.$.cc.selectedUsers,
         Labels: labels,
       }
 
@@ -119,13 +119,15 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
 
   _ccChanged(e) {
     // Don't try to autocomplete single chars.
-    if (e.target.inputValue.length < 2) {
+    let query = e.target.inputValue || '';
+    query = query.replace(/\,/, '').trim();
+    if (query.length < 2) {
       return;
     }
 
     // TODO: Determine if this call should be debounced. The on-input event
     // might already do some debouncing for us, but we should verify.
-    fetch('/_/autocomplete/' + encodeURIComponent(e.target.inputValue),
+    fetch('/_/autocomplete/' + encodeURIComponent(query),
       {credentials: 'include'}).then((resp) => {
         return resp.json();
       }).then((json) => {
