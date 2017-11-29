@@ -92,6 +92,7 @@ func createTestResultEvent(c context.Context, f *model.FullResult, p *UploadPara
 		StepName:    p.StepName,
 		Interrupted: i,
 		StartTime:   startTime,
+		Run:         &gen.TestRun{}, // eventuploader reflection logic will fail if .Run is nil.
 		Runs:        tests,
 		BuildbotInfo: &gen.TestResultEvent_BuildbotInfo{
 			MasterName:  p.Master,

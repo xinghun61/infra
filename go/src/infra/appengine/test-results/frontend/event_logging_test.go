@@ -48,6 +48,7 @@ func TestCreateEvent(t *testing.T) {
 			},
 			StartTime: zeroTS,
 			WriteTime: zeroTS,
+			Run:       &gen.TestRun{},
 			Runs: []*gen.TestRun{
 				{
 					Actual:   []gen.ResultType{gen.ResultType_PASS},
