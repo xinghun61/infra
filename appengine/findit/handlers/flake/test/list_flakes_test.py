@@ -209,8 +209,8 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
                 analysis_key,
             'master_name':
                 self.master_name1,
-            'request_time':
-                '2016-10-01 00:00:00 UTC',
+            'request_utc_timestamp':
+                1475280000,
             'result_status':
                 result_status.RESULT_STATUS_TO_DESCRIPTION[self.result_status1],
             'step_name':
@@ -292,8 +292,8 @@ class FilterFlakeTest(wf_testcase.WaterfallTestCase):
                 self.master_name1,
             'result_status':
                 result_status.RESULT_STATUS_TO_DESCRIPTION[self.result_status1],
-            'request_time':
-                '2016-10-01 00:00:00 UTC',
+            'request_utc_timestamp':
+                1475280000,
             'step_name':
                 self.step_name1,
             'suspected_build':

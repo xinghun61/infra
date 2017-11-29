@@ -51,7 +51,24 @@
       border-color: #c5c56d;
     }
   </style>
-  <script>
+  <script type="text/javascript">
+    $(function() {
+      $('.timestamp').each(function() {
+        var oldTimestamp = $(this).text();
+        var newTimestamp = getLocalTimeString(oldTimestamp);
+        $(this).text(newTimestamp);
+      });
+    });
+
+    // Converts the given unix timestamp to the local time.
+    function getLocalTimeString(unixTimestamp) {
+      if (unixTimestamp == null) {
+        return unixTimestamp;
+      }
+      var localDate = new Date(unixTimestamp);
+      return localDate.toLocaleString();
+    }
+
     function getParameters() {
       parameters = {}
       if ('{{ triage }}') {
@@ -209,7 +226,9 @@
       <tbody>
         {% for analysis in master_flake_analyses %}
         <tr>
-          <td>{{ analysis.request_time or '' }}</td>
+          <td>
+            <div class="timestamp">{{ analysis.request_utc_timestamp or '' }}</div>
+          </td>
           <td>
             {{ analysis.master_name }}, {{ analysis.builder_name }}, {{ analysis.build_number }}
           </td>
