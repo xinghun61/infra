@@ -21,17 +21,12 @@ per-file luci*.py=dnj@chromium.org
 per-file luci*.py=iannucci@chromium.org
 per-file luci*.py=vadimsh@chromium.org
 
-per-file publish_tarball.py=phajdan.jr@chromium.org
-
 per-file recipe_autoroller.py=iannucci@chromium.org
-per-file recipe_autoroller.py=phajdan.jr@chromium.org
 
 per-file recipe_roll_tryjob.py=martiniss@chromium.org
 
 per-file recipe_simulation.py=iannucci@chromium.org
 per-file recipe_simulation.py=tandrii@chromium.org
-
-per-file recipes_py_continuous.py=phajdan.jr@chromium.org
 
 per-file sheriff-o-matic-wct.py=seanmccullough@chromium.org
 
