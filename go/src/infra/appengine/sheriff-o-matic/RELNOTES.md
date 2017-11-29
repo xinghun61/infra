@@ -1,3 +1,27 @@
+# Release Notes sheriff-o-matic 2017-11-29
+
+- 6 commits, 2 bugs affected since dc0bf59
+- 2 Authors:
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [Revert "[som] Update RELNOTES.md for weekly push."](https://chromium-review.googlesource.com/795039) (seanmccullough@chromium.org)
+- [[som] Fix some text entry issues with email autocomplete](https://chromium-review.googlesource.com/795370) (seanmccullough@chromium.org)
+- [[som] Update RELNOTES.md for weekly push.](https://chromium-review.googlesource.com/795111) (seanmccullough@chromium.org)
+- [Add autocomplete UI for cc: field in bug form.](https://chromium-review.googlesource.com/792349) (seanmccullough@chromium.org)
+- [SoM: Restore autofilling CCed user.](https://chromium-review.googlesource.com/792271) (zhangtiff@google.com)
+- [[som] Add a user email autocomplete handler.](https://chromium-review.googlesource.com/786681) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/788894](https://crbug.com/788894)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/788825](https://crbug.com/788825)
+
 # Release Notes sheriff-o-matic 2017-11-21
 
 - 9 commits, 6 bugs affected since 52887aa (2017-11-08T00:07:03Z)
