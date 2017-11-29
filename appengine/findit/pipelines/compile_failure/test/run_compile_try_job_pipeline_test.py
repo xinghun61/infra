@@ -123,7 +123,7 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(taskqueue, 'Queue')
   @mock.patch.object(
       try_job_service, 'GetCurrentWaterfallTryJobID', return_value='3')
-  @mock.patch.object(try_job_service, '_UpdateTryJobResult')
+  @mock.patch.object(try_job_service, '_UpdateTryJobEntity')
   @mock.patch.object(compile_try_job, 'ScheduleCompileTryJob', return_value='3')
   @mock.patch.object(try_job_service, 'OnTryJobCompleted')
   @mock.patch.object(buildbot, 'GetStepLog')

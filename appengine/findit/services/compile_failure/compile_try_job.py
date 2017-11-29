@@ -250,8 +250,9 @@ def UpdateTryJobResult(parameters, culprits):
   try_job = WfTryJob.Get(master_name, builder_name, build_number)
   new_result = parameters.result.ToSerializable() if parameters.result else {}
   try_job_id = parameters.result.try_job_id if parameters.result else None
-  try_job_service.UpdateTryJobResultWithCulprit(
-      try_job.compile_results, new_result, try_job_id, culprits)
+  if culprits:
+    try_job_service.UpdateTryJobResult(
+        try_job.compile_results, new_result, try_job_id)
   try_job.status = analysis_status.COMPLETED
   try_job.put()
 

@@ -653,17 +653,17 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job.try_job_ids[0], build_id)
     self.assertIsNotNone(try_job.compile_results)
 
-  def testUpdateTryJobResultWithCulpritAppendNewResult(self):
+  def testUpdateTryJobResultAppendNewResult(self):
     try_job_result = [{'try_job_id': '111'}]
-    try_job_service.UpdateTryJobResultWithCulprit(
-        try_job_result, {'try_job_id': '123'}, '123', ['rev1'])
+    try_job_service.UpdateTryJobResult(
+        try_job_result, {'try_job_id': '123'}, '123')
     self.assertEqual([{
         'try_job_id': '111'
     }, {
         'try_job_id': '123'
     }], try_job_result)
 
-  def testUpdateTryJobResultWithCulprit(self):
+  def testUpdateTryJobResult(self):
     try_job_result = [{'try_job_id': '111'}, {'try_job_id': '123'}]
     new_result = {'try_job_id': '123', 'url': 'url'}
 
@@ -673,17 +673,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         'try_job_id': '123',
         'url': 'url'
     }]
-    try_job_service.UpdateTryJobResultWithCulprit(try_job_result, new_result,
-                                                  '123', ['rev1'])
-    self.assertEqual(expected_updated_result, try_job_result)
-
-  def testUpdateTryJobResultNoCulprit(self):
-    try_job_result = [{'try_job_id': '111'}, {'try_job_id': '123'}]
-    new_result = [{'try_job_id': '123', 'url': 'url'}]
-
-    expected_updated_result = [{'try_job_id': '111'}, {'try_job_id': '123'}]
-    try_job_service.UpdateTryJobResultWithCulprit(try_job_result, new_result,
-                                                  '123', [])
+    try_job_service.UpdateTryJobResult(try_job_result, new_result, '123')
     self.assertEqual(expected_updated_result, try_job_result)
 
   def testPrepareParametersToScheduleTryJob(self):
@@ -1020,7 +1010,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
     try_job.put()
 
-    try_job_service._UpdateTryJobResult(
+    try_job_service._UpdateTryJobEntity(
         try_job.key.urlsafe(), failure_type.TEST, try_job_id, 'url',
         buildbucket_client.BuildbucketBuild.STARTED)
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
@@ -1037,7 +1027,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                                  test_name, git_hash)
     try_job.put()
 
-    try_job_service._UpdateTryJobResult(
+    try_job_service._UpdateTryJobEntity(
         try_job.key.urlsafe(), failure_type.FLAKY_TEST, try_job_id, 'url',
         buildbucket_client.BuildbucketBuild.STARTED)
     try_job = FlakeTryJob.Get(master_name, builder_name, step_name, test_name,
@@ -1051,15 +1041,48 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     try_job_id = '3'
 
     try_job = WfTryJob.Create(master_name, builder_name, build_number)
-    try_job.compile_results = [{'try_job_id': try_job_id}]
+    try_job.compile_results = [{'try_job_id': '1'}]
     try_job.status = analysis_status.RUNNING
     try_job.put()
 
-    try_job_service._UpdateTryJobResult(
+    try_job_service._UpdateTryJobEntity(
         try_job.key.urlsafe(), failure_type.COMPILE, try_job_id, 'url',
         buildbucket_client.BuildbucketBuild.COMPLETED)
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(analysis_status.RUNNING, try_job.status)
+    expected_compile_results = [{
+        'try_job_id': '1'
+    }, {
+        'try_job_id': '3',
+        'report': None,
+        'url': 'url'
+    }]
+    self.assertEqual(try_job.compile_results, expected_compile_results)
+
+  def testUpdateTryJobResultResultIsNotAtTheEndOfList(self):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 1
+    try_job_id = '3'
+
+    try_job = WfTryJob.Create(master_name, builder_name, build_number)
+    try_job.compile_results = [{'try_job_id': try_job_id}, {'try_job_id': '1'}]
+    try_job.status = analysis_status.RUNNING
+    try_job.put()
+
+    try_job_service._UpdateTryJobEntity(
+        try_job.key.urlsafe(), failure_type.COMPILE, try_job_id, 'url',
+        buildbucket_client.BuildbucketBuild.COMPLETED)
+    try_job = WfTryJob.Get(master_name, builder_name, build_number)
+    expected_compile_results = [{
+        'try_job_id': '3',
+        'report': None,
+        'url': 'url'
+    }, {
+        'try_job_id': '1'
+    }]
+    self.assertEqual(analysis_status.RUNNING, try_job.status)
+    self.assertEqual(try_job.compile_results, expected_compile_results)
 
   def testGetOrCreateTryJobDataGet(self):
     try_job_id = '1'
@@ -1130,14 +1153,14 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                                            'message': 'message'
                                        }))
 
-  @mock.patch.object(try_job_service, '_UpdateTryJobResult')
+  @mock.patch.object(try_job_service, '_UpdateTryJobEntity')
   def testOnTryJobRunningNothingToUpdate(self, mock_fn):
     params = {'already_set_started': True, 'try_job_type': 1, 'try_job_id': '1'}
     try_job_service.OnTryJobRunning(params, None, None, None)
     mock_fn.assert_not_called()
 
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
-  @mock.patch.object(try_job_service, '_UpdateTryJobResult')
+  @mock.patch.object(try_job_service, '_UpdateTryJobEntity')
   def testOnTryJobRunning(self, *_):
     try_job_id = '1'
     params = {
@@ -1173,7 +1196,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
-      try_job_service, '_UpdateTryJobResult', return_value=['result'])
+      try_job_service, '_UpdateTryJobEntity', return_value=['result'])
   @mock.patch.object(buildbot, 'GetStepLog')
   def testOnTryJobCompletedBuildbot(self, mock_report, *_):
     try_job_id = '1'
@@ -1216,7 +1239,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
-      try_job_service, '_UpdateTryJobResult', return_value=['result'])
+      try_job_service, '_UpdateTryJobEntity', return_value=['result'])
   @mock.patch.object(buildbot, 'GetStepLog', side_effect=TypeError)
   @mock.patch.object(logging, 'exception')
   def testOnTryJobCompletedBuildbotNoReport(self, mock_log, *_):
@@ -1254,7 +1277,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(try_job_service, '_RecordCacheStats')
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
-      try_job_service, '_UpdateTryJobResult', return_value=['result'])
+      try_job_service, '_UpdateTryJobEntity', return_value=['result'])
   @mock.patch.object(swarming_util, 'GetStepLog')
   def testOnTryJobCompletedSwarmingbot(self, mock_report, *_):
     try_job_id = '1'
@@ -1297,7 +1320,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
-      try_job_service, '_UpdateTryJobResult', return_value=['result'])
+      try_job_service, '_UpdateTryJobEntity', return_value=['result'])
   @mock.patch.object(swarming_util, 'GetStepLog', return_value=None)
   @mock.patch.object(try_job_service, '_RecordCacheStats')
   def testOnTryJobCompletedSwarmingbotNoReport(self, mock_fn, *_):
@@ -1332,7 +1355,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
-      try_job_service, '_UpdateTryJobResult', return_value=['result'])
+      try_job_service, '_UpdateTryJobEntity', return_value=['result'])
   @mock.patch.object(swarming_util, 'GetStepLog', side_effect=TypeError)
   @mock.patch.object(logging, 'exception')
   def testOnTryJobCompletedSwarmingbotException(self, mock_log, *_):

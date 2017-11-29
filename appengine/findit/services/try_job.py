@@ -374,18 +374,20 @@ def UpdateTryJob(master_name, builder_name, build_number, build_id,
   return try_job
 
 
-def UpdateTryJobResultWithCulprit(try_job_result, new_result, try_job_id,
-                                  culprits):
-  if culprits:
-    updated = False
-    for result_to_update in try_job_result:
-      if try_job_id == result_to_update['try_job_id']:
-        result_to_update.update(new_result)
+def UpdateTryJobResult(result_to_update, new_result, try_job_id):
+  updated = False
+  if result_to_update:
+    for i in xrange(len(result_to_update) - 1, -1, -1):
+      # The result needs to be updated should be at the end of the list.
+      if result_to_update[i].get('try_job_id') == try_job_id:
+        result_to_update[i].update(new_result)
         updated = True
         break
-
-    if not updated:
-      try_job_result.append(new_result)
+  if not updated:
+    # Normally result for current try job should have been saved in
+    # schedule_try_job_pipeline, so this branch shouldn't be reached.
+    result_to_update = result_to_update or []
+    result_to_update.append(new_result)
 
 
 def PrepareParametersToScheduleTryJob(master_name,
@@ -598,7 +600,7 @@ def _RecordCacheStats(build, report):
 
 
 @ndb.transactional
-def _UpdateTryJobResult(urlsafe_try_job_key,
+def _UpdateTryJobEntity(urlsafe_try_job_key,
                         try_job_type,
                         try_job_id,
                         try_job_url,
@@ -620,12 +622,7 @@ def _UpdateTryJobResult(urlsafe_try_job_key,
   else:
     result_to_update = try_job.test_results
 
-  if result_to_update and result_to_update[-1]['try_job_id'] == try_job_id:
-    result_to_update[-1].update(result)
-  else:
-    # Normally result for current try job should have been saved in
-    # schedule_try_job_pipeline, so this branch shouldn't be reached.
-    result_to_update.append(result)
+  UpdateTryJobResult(result_to_update, result, try_job_id)
 
   if status == BuildbucketBuild.STARTED:
     try_job.status = analysis_status.RUNNING
@@ -733,7 +730,7 @@ def OnTryJobCompleted(params, try_job_data, build, error):
 
   UpdateTryJobMetadata(try_job_data, try_job_type, build, error, False, report
                        if report else {})
-  result_to_update = _UpdateTryJobResult(params['urlsafe_try_job_key'],
+  result_to_update = _UpdateTryJobEntity(params['urlsafe_try_job_key'],
                                          try_job_type, try_job_id, build.url,
                                          BuildbucketBuild.COMPLETED, report)
   return result_to_update[-1]
@@ -746,7 +743,7 @@ def OnTryJobRunning(params, try_job_data, build, error):
       build.status == BuildbucketBuild.STARTED):
     # It is possible this branch is skipped if a fast build goes from
     # 'SCHEDULED' to 'COMPLETED' between queries.
-    _UpdateTryJobResult(params['urlsafe_try_job_key'], try_job_type, try_job_id,
+    _UpdateTryJobEntity(params['urlsafe_try_job_key'], try_job_type, try_job_id,
                         build.url, BuildbucketBuild.STARTED)
 
     # Update as much try job metadata as soon as possible to avoid data

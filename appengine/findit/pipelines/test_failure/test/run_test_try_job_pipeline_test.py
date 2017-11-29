@@ -224,7 +224,7 @@ class RunTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_test_result, test_result)
 
-  @mock.patch.object(try_job_service, '_UpdateTryJobResult')
+  @mock.patch.object(try_job_service, '_UpdateTryJobEntity')
   @mock.patch.object(test_try_job, 'ScheduleTestTryJob', return_value='3')
   @mock.patch.object(try_job_service, 'OnTryJobCompleted')
   @mock.patch.object(buildbot, 'GetStepLog')
@@ -470,7 +470,7 @@ class RunTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     test_result = try_job_pipeline.outputs.default.value
     self.assertEqual({}, test_result)
 
-  @mock.patch.object(try_job_service, '_UpdateTryJobResult')
+  @mock.patch.object(try_job_service, '_UpdateTryJobEntity')
   @mock.patch.object(test_try_job, 'ScheduleTestTryJob', return_value='1')
   @mock.patch.object(try_job_service, 'OnTryJobCompleted')
   @mock.patch.object(buildbot, 'GetStepLog')
