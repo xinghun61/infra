@@ -337,7 +337,7 @@ ratelimiting_cost_thresh_ms = 2000
 # extra amount added to their bucket at the end of the request.
 ratelimiting_cost_penalty = 1
 
-api_ratelimiting_enabled = False
+api_ratelimiting_enabled = True
 
 # Enable cost-based api rate limiting. This only applies if
 # api_ratelimiting_enabled = True
