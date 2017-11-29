@@ -1,4 +1,4 @@
-# Copyright 2015 The Chromium Authors. All rights reserved.
+# Copyright 2017 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
@@ -8,21 +8,22 @@ from common import constants
 from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
-from waterfall import analyze_build_failure_pipeline
-from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
+from pipelines.test_failure import analyze_test_failure_pipeline
+from pipelines.test_failure.analyze_test_failure_pipeline import (
+    AnalyzeTestFailurePipeline)
 from waterfall.test import wf_testcase
 
 
-class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
+class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  def _Setup(self,
-             master_name,
-             builder_name,
-             build_number,
-             status=analysis_status.PENDING,
-             failure_info=None,
-             signals=None):
+  def _SetupAnalysis(self,
+                     master_name,
+                     builder_name,
+                     build_number,
+                     status=analysis_status.PENDING,
+                     signals=None,
+                     failure_info=None):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.status = status
     analysis.failure_info = failure_info
@@ -35,40 +36,42 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     build_number = 124
     current_failure_info = {}
 
-    self._Setup(master_name, builder_name, build_number)
+    self._SetupAnalysis(master_name, builder_name, build_number)
 
     self.MockPipeline(
-        analyze_build_failure_pipeline.DetectFirstFailurePipeline,
-        'failure_info',
-        expected_args=[current_failure_info],
-        expected_kwargs={})
-    self.MockPipeline(
-        analyze_build_failure_pipeline.ExtractSignalPipeline,
-        'signals',
-        expected_args=['failure_info'],
-        expected_kwargs={})
-    self.MockPipeline(
-        analyze_build_failure_pipeline.IdentifyCulpritPipeline,
+        analyze_test_failure_pipeline.HeuristicAnalysisForTestPipeline,
         'heuristic_result',
-        expected_args=['failure_info', 'signals', False],
+        expected_args=[current_failure_info, False],
         expected_kwargs={})
     self.MockPipeline(
-        analyze_build_failure_pipeline.TriggerSwarmingTasksPipeline,
+        analyze_test_failure_pipeline.TriggerSwarmingTasksPipeline,
         None,
         expected_args=[
-            master_name, builder_name, build_number, 'failure_info', False
+            master_name, builder_name, build_number, 'heuristic_result', False
         ],
         expected_kwargs={})
     self.MockPipeline(
-        analyze_build_failure_pipeline.StartTestTryJobPipeline,
-        'try_job_result',
+        analyze_test_failure_pipeline.ProcessSwarmingTasksResultPipeline,
+        None,
         expected_args=[
-            master_name, builder_name, build_number, 'failure_info',
-            'heuristic_result', False, False
+            master_name, builder_name, build_number, 'heuristic_result', False
         ],
         expected_kwargs={})
+    self.MockPipeline(
+        analyze_test_failure_pipeline.StartTestTryJobPipeline,
+        'try_job_result',
+        expected_args=[
+            master_name, builder_name, build_number, 'heuristic_result', False,
+            False
+        ],
+        expected_kwargs={})
+    self.MockPipeline(
+        analyze_test_failure_pipeline.TriggerFlakeAnalysesPipeline,
+        None,
+        expected_args=[master_name, builder_name, build_number],
+        expected_kwargs={})
 
-    root_pipeline = AnalyzeBuildFailurePipeline(
+    root_pipeline = AnalyzeTestFailurePipeline(
         master_name, builder_name, build_number, current_failure_info, False,
         False)
     root_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
@@ -79,26 +82,26 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 124
 
-    self._Setup(master_name, builder_name, build_number)
+    self._SetupAnalysis(master_name, builder_name, build_number)
 
-    root_pipeline = AnalyzeBuildFailurePipeline(
-        master_name, builder_name, build_number, None, False, False)
+    root_pipeline = AnalyzeTestFailurePipeline(master_name, builder_name,
+                                               build_number, None, False, False)
     root_pipeline._ResetAnalysis(master_name, builder_name, build_number)
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
     self.assertEqual(analysis_status.RUNNING, analysis.status)
     self.assertIsNone(analysis.result_status)
 
-  def testAnalyzeBuildFailurePipelineAbortedIfWithError(self):
+  def testAnalyzeTestFailurePipelineAbortedIfWithError(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
 
-    self._Setup(
+    self._SetupAnalysis(
         master_name, builder_name, build_number, status=analysis_status.RUNNING)
 
-    root_pipeline = AnalyzeBuildFailurePipeline(
-        master_name, builder_name, build_number, None, False, False)
+    root_pipeline = AnalyzeTestFailurePipeline(master_name, builder_name,
+                                               build_number, None, False, False)
     root_pipeline._HandleUnexpectedAborting(True)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
@@ -107,49 +110,52 @@ class AnalyzeBuildFailurePipelineTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(analysis.result_status)
     self.assertTrue(analysis.aborted)
 
-  def testAnalyzeBuildFailurePipelineNotAbortedIfWithoutError(self):
+  def testAnalyzeTestFailurePipelineNotAbortedIfWithoutError(self):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
 
-    self._Setup(
+    self._SetupAnalysis(
         master_name,
         builder_name,
         build_number,
         status=analysis_status.COMPLETED)
 
-    root_pipeline = AnalyzeBuildFailurePipeline(
-        master_name, builder_name, build_number, None, False, False)
+    root_pipeline = AnalyzeTestFailurePipeline(master_name, builder_name,
+                                               build_number, None, False, False)
     root_pipeline._HandleUnexpectedAborting(True)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
     self.assertIsNotNone(analysis)
     self.assertNotEqual(analysis_status.ERROR, analysis.status)
 
-  @mock.patch(
-      'waterfall.analyze_build_failure_pipeline.StartTestTryJobPipeline')
-  def testAnalyzeBuildFailurePipelineStartTryJob(self, mocked_pipeline):
+  @mock.patch.object(analyze_test_failure_pipeline, 'StartTestTryJobPipeline')
+  def testAnalyzeTestFailurePipelineStartTryJob(self, mocked_pipeline):
     master_name = 'm'
     builder_name = 'b'
     build_number = 124
-
     failure_info = {
-        'compile': {
+        'test': {
             'last_pass': 122,
             'current_failure': 123,
             'first_failure': 123
         }
     }
 
-    self._Setup(
+    self._SetupAnalysis(
         master_name,
         builder_name,
         build_number,
         status=analysis_status.RUNNING,
+        signals={},
         failure_info=failure_info)
 
-    root_pipeline = AnalyzeBuildFailurePipeline(
-        master_name, builder_name, build_number, None, False, False)
+    root_pipeline = AnalyzeTestFailurePipeline(master_name, builder_name,
+                                               build_number, None, False, False)
     root_pipeline._HandleUnexpectedAborting(True)
+
+    heuristic_result = {'failure_info': failure_info, 'heuristic_result': None}
+    mocked_pipeline.assert_called_once_with(
+        master_name, builder_name, build_number, heuristic_result, False, False)
     mocked_pipeline.assert_has_calls(
-        [mock.call().start(queue_name=constants.DEFAULT_QUEUE)])
+        [mock.call().start(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)])
