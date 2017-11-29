@@ -1,6 +1,7 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
 
 <link rel="import" href="../../elements/som-rev-range/som-rev-range.html">
+<link rel="import" href="../../elements/som-layout-test-builder-configs-behavior.html">
 <link rel="import" href="../../elements/som-tree-behavior.html">
 <link rel="import" href="../../elements/som-linkify-behavior.html">
 
@@ -93,13 +94,14 @@
             <ul>
               <template is="dom-repeat" items="[[extension.reason.tests]]" as="test" sort="_sortTests">
                 <li id="test_results">
-                  <a target="_blank" href$="[[_linkForTest(extension.reason,test.test_name)]]">
+                  <a target="_blank" href$="[[_linkForTest(extension.reason, test.test_name)]]">
                     [[test.test_name]]
                   </a>
                   (
-                  <a target="_blank" href$="[[_linkToCSForTest(test.test_name)]]">
-                    Code Search
-                  </a>
+                  <a target="_blank" href$="[[_linkToCSForTest(test.test_name)]]">Code Search</a>
+                  <template is="dom-if" if="[[_haveTestExpectations(test)]]">
+                    , <a href$="[[_linkToEditForTest(extension.builders, test.test_name)]]">edit test expectations</a>
+                  </template>
                   )
                   <template is="dom-if" if="[[_hasSuspect(test)]]">
                     <template is="dom-repeat" items="[[test.suspected_cls]]" as="testCL">

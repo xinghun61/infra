@@ -46,6 +46,7 @@ class SomEditExpectationForm extends Polymer.LegacyElementMixin(Polymer.Element)
           'Win10',
           'Linux',
           'Android',
+          'KitKat',
           'Release',
           'Debug',
         ],

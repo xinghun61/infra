@@ -4,7 +4,8 @@ const codeSearchURL = 'https://cs.chromium.org/';
 const testResultsURL = 'https://test-results.appspot.com/';
 
 class SomExtensionBuildFailure extends Polymer.mixinBehaviors(
-    [LinkifyBehavior, TreeBehavior], Polymer.Element) {
+    [LinkifyBehavior, TreeBehavior, LayoutTestBuilderConfigsBehavior],
+    Polymer.Element) {
 
   static get is() {
     return 'som-extension-build-failure';
@@ -158,6 +159,14 @@ class SomExtensionBuildFailure extends Polymer.mixinBehaviors(
     return tests && tests.length > 0;
   }
 
+  _haveTestExpectations(test) {
+    return test && test.expectations && test.expectations.length > 0;
+  }
+
+  _editTestExpectationLink(test, expectation) {
+    return `/test-expectations/edit/${test.test_name}`;
+  }
+
   _isFlaky(test) {
     return test && test.is_flaky;
   }
@@ -186,8 +195,18 @@ class SomExtensionBuildFailure extends Polymer.mixinBehaviors(
     return url + encodeURIComponent(query);
   }
 
-  _linkToEditForTest(testName) {
-    return 'test-expectations/' + encodeURIComponent(testName);
+  _linkToEditForTest(builders, testName) {
+    let modifiers = [];
+    builders.forEach((builder) => {
+      let config = this.getLayoutTestBuilderConfig(builder.name);
+      if (config && config.specifiers) {
+        config.specifiers.forEach((mod) => {
+          modifiers.push('modifiers='+ encodeURIComponent(mod));
+        });
+      }
+    });
+    return 'test-expectations/' + encodeURIComponent(testName) + '?' +
+        modifiers.join('&');
   }
 
   _linkForCL(cl) {
