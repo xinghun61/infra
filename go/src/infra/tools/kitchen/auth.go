@@ -15,7 +15,7 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/luci/common/auth"
-	"go.chromium.org/luci/common/devshell"
+	"go.chromium.org/luci/common/auth/devshell"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/system/environ"
