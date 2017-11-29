@@ -16,6 +16,7 @@ import (
 
 	"go.chromium.org/luci/common/auth"
 	"go.chromium.org/luci/common/auth/devshell"
+	"go.chromium.org/luci/common/auth/gsutil"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/system/environ"
@@ -97,7 +98,12 @@ type AuthContext struct {
 	// binary is in PATH.
 	EnableGitAuth bool
 
-	// EnableDevShell enables DevShell server instance used for authentication
+	// EnableDevShell enables DevShell server and gsutil auth shim.
+	//
+	// They are used to make gsutil and gcloud use LUCI authentication.
+	//
+	// On Windows only gsutil auth shim is enabled, since enabling DevShell there
+	// triggers bugs in gsutil. See https://crbug.com/788058#c14.
 	EnableDevShell bool
 
 	// KnownGerritHosts is list of Gerrit hosts to force git authentication for.
@@ -110,12 +116,17 @@ type AuthContext struct {
 	ctx           context.Context     // stores modified LUCI_CONTEXT
 	exported      lucictx.Exported    // exported LUCI_CONTEXT on disk
 	authenticator *auth.Authenticator // used by Kitchen itself
-	srv           *devshell.Server    // DevShell server instance
 	anonymous     bool                // true if not associated with any account
 	email         string              // an account email or "" for anonymous
 
-	gitHome      string       // custom HOME for git or "" if not using git auth
-	devShellAddr *net.TCPAddr // address local DevShell instance is listening on
+	gsutilSrv   *gsutil.Server // gsutil auth shim server
+	gsutilState string         // path to a kitchen-managed state directory
+	gsutilBoto  string         // path to a generated .boto file
+
+	devShellSrv  *devshell.Server // DevShell server instance
+	devShellAddr *net.TCPAddr     // address local DevShell instance is listening on
+
+	gitHome string // custom HOME for git or "" if not using git auth
 }
 
 // Launch launches this auth context. It must be called before any other method.
@@ -155,7 +166,7 @@ func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
 	if ac.EnableGitAuth {
 		// Create new HOME for git and populate it with .gitconfig.
 		ac.gitHome = filepath.Join(tempDir, "git_home_"+ac.ID)
-		if err := os.Mkdir(ac.gitHome, 0777); err != nil {
+		if err := os.Mkdir(ac.gitHome, 0700); err != nil {
 			return errors.Annotate(err, "failed to create git HOME for %q account at %s", ac.ID, ac.gitHome).Err()
 		}
 		if err := ac.writeGitConfig(); err != nil {
@@ -168,15 +179,39 @@ func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
 		if err != nil {
 			return errors.Annotate(err, "failed to get token source for %q account", ac.ID).Err()
 		}
-		ac.srv = &devshell.Server{
-			Source: source,
-			Email:  ac.email,
+
+		// The directory for .boto and gsutil credentials cache (including access
+		// tokens).
+		ac.gsutilState = filepath.Join(tempDir, "gsutil_"+ac.ID)
+		if err := os.Mkdir(ac.gsutilState, 0700); err != nil {
+			return errors.Annotate(err, "failed to create gsutil state dir for %q account at %s", ac.ID, ac.gsutilState).Err()
 		}
-		addr, err := ac.srv.Start(ctx)
-		if err != nil {
-			return errors.Annotate(err, "failed to start the DevShell server").Err()
+
+		// Launch gsutil auth shim server. It will put a specially constructed .boto
+		// into gsutilState dir (and return path to it).
+		ac.gsutilSrv = &gsutil.Server{
+			Source:   source,
+			StateDir: ac.gsutilState,
 		}
-		ac.devShellAddr = addr
+		if ac.gsutilBoto, err = ac.gsutilSrv.Start(ctx); err != nil {
+			return errors.Annotate(err, "failed to start gsutil auth shim server for %q account", ac.ID).Err()
+		}
+
+		// Presence of DevShell env var breaks gsutil on Windows. Luckily, we rarely
+		// need to use gcloud in Windows, and gsutil (which we do use on Windows
+		// extensively) is covered by gsutil auth shim server setup above.
+		if runtime.GOOS != "windows" {
+			ac.devShellSrv = &devshell.Server{
+				Source: source,
+				Email:  ac.email,
+			}
+			if ac.devShellAddr, err = ac.devShellSrv.Start(ctx); err != nil {
+				return errors.Annotate(err, "failed to start the DevShell server").Err()
+			}
+		} else {
+			// See https://crbug.com/788058#c14.
+			logging.Warningf(ac.ctx, "Disabling devshell auth on Windows")
+		}
 	}
 
 	return nil
@@ -189,12 +224,24 @@ func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
 func (ac *AuthContext) Close() {
 	if ac.gitHome != "" {
 		if err := os.RemoveAll(ac.gitHome); err != nil {
-			logging.Warningf(ac.ctx, "Failed to clean up git HOME for %q account at [%s]: %s", ac.ID, ac.gitHome, err)
+			logging.Errorf(ac.ctx, "Failed to clean up git HOME for %q account at [%s]: %s", ac.ID, ac.gitHome, err)
 		}
 	}
 
-	if ac.srv != nil {
-		if err := ac.srv.Stop(ac.ctx); err != nil {
+	if ac.gsutilSrv != nil {
+		if err := ac.gsutilSrv.Stop(ac.ctx); err != nil {
+			logging.Errorf(ac.ctx, "Failed to stop gsutil shim server for %q account: %s", ac.ID, err)
+		}
+	}
+
+	if ac.gsutilState != "" {
+		if err := os.RemoveAll(ac.gsutilState); err != nil {
+			logging.Errorf(ac.ctx, "Failed to clean up gsutil state for %q account at [%s]: %s", ac.ID, ac.gsutilState, err)
+		}
+	}
+
+	if ac.devShellSrv != nil {
+		if err := ac.devShellSrv.Stop(ac.ctx); err != nil {
 			logging.Errorf(ac.ctx, "Failed to stop DevShell server for %q account: %s", ac.ID, err)
 		}
 	}
@@ -208,11 +255,14 @@ func (ac *AuthContext) Close() {
 	ac.ctx = nil
 	ac.exported = nil
 	ac.authenticator = nil
-	ac.srv = nil
 	ac.anonymous = false
 	ac.email = ""
-	ac.gitHome = ""
+	ac.gsutilSrv = nil
+	ac.gsutilState = ""
+	ac.gsutilBoto = ""
+	ac.devShellSrv = nil
 	ac.devShellAddr = nil
+	ac.gitHome = ""
 }
 
 // Authenticator returns an authenticator that can be used by Kitchen itself.
@@ -229,17 +279,29 @@ func (ac *AuthContext) Authenticator() *auth.Authenticator {
 func (ac *AuthContext) ExportIntoEnv(env environ.Env) environ.Env {
 	env = env.Clone()
 	ac.exported.SetInEnviron(env)
+
 	if ac.EnableGitAuth {
 		env.Set("GIT_TERMINAL_PROMPT", "0")           // no interactive prompts
 		env.Set("GIT_CONFIG_NOSYSTEM", "1")           // no $(prefix)/etc/gitconfig
 		env.Set("INFRA_GIT_WRAPPER_HOME", ac.gitHome) // tell gitwrapper about the new HOME
 	}
+
 	if ac.EnableDevShell {
-		env.Set("BOTO_CONFIG", "") // disable any hardcoded tokens in gsutil
-		if ac.devShellAddr != nil {
-			env.Set(devshell.EnvKey, fmt.Sprintf("%d", ac.devShellAddr.Port)) // pass the DevShell port
+		env.Remove("BOTO_PATH") // avoid picking up bot-local configs, if any
+		if ac.anonymous {
+			// Make sure gsutil is not picking up any stale .boto configs randomly
+			// laying around on the bot. Setting BOTO_CONFIG to empty dir disables
+			// default ~/.boto.
+			env.Set("BOTO_CONFIG", "")
+		} else {
+			// Point gsutil to use our auth shim server.
+			env.Set("BOTO_CONFIG", ac.gsutilBoto)
+			if ac.devShellAddr != nil {
+				env.Set(devshell.EnvKey, fmt.Sprintf("%d", ac.devShellAddr.Port)) // pass the DevShell port
+			}
 		}
 	}
+
 	return env
 }
 

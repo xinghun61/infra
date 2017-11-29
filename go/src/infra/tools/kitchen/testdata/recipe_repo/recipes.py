@@ -7,6 +7,8 @@ import os
 import shutil
 import socket
 import sys
+import urllib
+import urllib2
 
 
 def main():
@@ -42,7 +44,9 @@ def main():
   assert get_current_account() == 'recipe_acc', get_current_account()
   if os.environ.get('SWARMING_TASK_ID'):
     assert get_git_email() == 'recipe@example.com', get_git_email()
-    assert get_devshell_email() == 'recipe@example.com', get_devshell_email()
+    assert get_gsutil_token() == 'fake_recipe_acc_token', get_gsutil_token()
+    if sys.platform != 'win32':
+      assert get_devshell_email() == 'recipe@example.com', get_devshell_email()
 
   with open(args.properties_file) as f:
     properties = json.load(f)
@@ -97,6 +101,26 @@ def get_devshell_email():
 
   pbl_len = len(pbl)
   return pbl[0] if pbl_len > 0 else None
+
+
+def get_gsutil_token():
+  cfg = {}
+  with open(os.environ['BOTO_CONFIG'], 'rt') as f:
+    for line in f:
+      if '=' in line:
+        k, v = line.split('=')
+        cfg[k.strip()] = v.strip()
+
+  data = urllib.urlencode({
+    'grant_type': 'refresh_token',
+    'refresh_token': cfg['gs_oauth2_refresh_token'],
+    'client_id': 'fake',
+    'client_secret': 'fake',
+  })
+
+  req = urllib2.Request(cfg['provider_token_uri'], data)
+  token = json.loads(urllib2.urlopen(req).read())
+  return token['access_token']
 
 
 if __name__ == '__main__':

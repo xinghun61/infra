@@ -74,8 +74,14 @@ func TestCook(t *testing.T) {
 			// Setup fake auth.
 			fakeAuth := localauth.Server{
 				TokenGenerators: map[string]localauth.TokenGenerator{
-					"recipe_acc": &authtest.FakeTokenGenerator{Email: "recipe@example.com"},
-					"system_acc": &authtest.FakeTokenGenerator{Email: "system@example.com"},
+					"recipe_acc": &authtest.FakeTokenGenerator{
+						Email: "recipe@example.com",
+						Token: "fake_recipe_acc_token",
+					},
+					"system_acc": &authtest.FakeTokenGenerator{
+						Email: "system@example.com",
+						Token: "fake_system_acc_token",
+					},
 				},
 				DefaultAccountID: "recipe_acc",
 			}
