@@ -1,3 +1,24 @@
+# Release Notes sheriff-o-matic 2017-11-28
+
+- 3 commits, 2 bugs affected since dc0bf59 (2017-11-22T01:41:01Z)
+- 2 Authors:
+  - zhangtiff@google.com
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [Add autocomplete UI for cc: field in bug form.](https://chromium-review.googlesource.com/792349) (seanmccullough@chromium.org)
+- [SoM: Restore autofilling CCed user.](https://chromium-review.googlesource.com/792271) (zhangtiff@google.com)
+- [[som] Add a user email autocomplete handler.](https://chromium-review.googlesource.com/786681) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/788894](https://crbug.com/788894)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/788825](https://crbug.com/788825)
+
 # Release Notes sheriff-o-matic 2017-11-21
 
 - 9 commits, 6 bugs affected since 52887aa (2017-11-08T00:07:03Z)
