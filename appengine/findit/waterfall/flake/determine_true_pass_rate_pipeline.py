@@ -210,10 +210,13 @@ class DetermineTruePassRatePipeline(BasePipeline):
     # Extract pass rate and iterations information before running the task.
     data_point_for_build_number = (
         analysis.FindMatchingDataPointWithBuildNumber(build_number))
-    pass_rate = (data_point_for_build_number.pass_rate
-                 if data_point_for_build_number else None)
-    iterations_completed = (data_point_for_build_number.iterations
-                            if data_point_for_build_number else 0)
+    pass_rate = None
+    iterations_completed = 0
+    if data_point_for_build_number:
+      pass_rate = data_point_for_build_number.pass_rate
+      iterations_completed = data_point_for_build_number.iterations
+      analysis.LogInfo('swarming tasks for build %s: %s' %
+                      (build_number, data_point_for_build_number.task_ids))
 
     # If max iterations have been performed, and the pass rate hasn't converged
     # just move on to the next build number.
