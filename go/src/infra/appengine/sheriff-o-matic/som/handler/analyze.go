@@ -345,7 +345,7 @@ func putAlertsBigQuery(c context.Context, tree string, alertsSummary *messages.A
 		return err
 	}
 
-	row := gen.SOMAlertsEvent{
+	row := &gen.SOMAlertsEvent{
 		Timestamp: ts,
 		Tree:      tree,
 		RequestId: appengine.RequestID(c),
@@ -375,6 +375,7 @@ func putAlertsBigQuery(c context.Context, tree string, alertsSummary *messages.A
 
 		row.Alerts = append(row.Alerts, alertEvt)
 	}
+
 	return up.Put(c, row)
 }
 
