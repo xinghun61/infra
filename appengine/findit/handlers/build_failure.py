@@ -360,7 +360,8 @@ def _GetAllSuspectedCLsAndCheckStatus(master_name, builder_name, build_number,
     if build:
       cl['status'] = build['status']
       cl['confidence'] = '%d%%' % (
-          suspected_cl_util.GetSuspectedCLConfidenceScore(confidences, build))
+          suspected_cl_util.GetSuspectedCLConfidenceScore(confidences, build)
+          or 0)
 
   return suspected_cls
 
