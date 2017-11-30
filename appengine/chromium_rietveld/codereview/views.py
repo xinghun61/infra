@@ -1013,6 +1013,9 @@ def show(request):
     logging.exception('Error while loading try job results')
     try_job_loading_error = True
 
+  landed_days_ago = issue.get_time_since_landed()
+  landed_days_ago = landed_days_ago.days if landed_days_ago else 'unknown'
+
   return respond(request, 'issue.html', {
     'default_builders':
       models_chromium.TryserverBuilders.get_builders(),
@@ -1032,7 +1035,7 @@ def show(request):
     'display_generated_msgs': display_generated_msgs,
     'display_exp_tryjob_results': display_exp_tryjob_results,
     'offer_cq': request.issue.is_cq_available,
-    'landed_days_ago': issue.get_time_since_landed() or 'unknown',
+    'landed_days_ago': landed_days_ago,
   })
 
 
@@ -1339,6 +1342,8 @@ def download_patch(request):
 
 def _issue_as_dict(issue, messages, request=None):
   """Converts an issue into a dict."""
+  landed_days_ago = issue.get_time_since_landed()
+  landed_days_ago = landed_days_ago.days if landed_days_ago else 'unknown'
   values = {
     'offer_cq': issue.is_cq_available,
     'owner': library.get_nickname(issue.owner, True, request),
@@ -1362,7 +1367,7 @@ def _issue_as_dict(issue, messages, request=None):
     'commit': issue.commit,
     'cq_dry_run': issue.cq_dry_run,
     'cq_dry_run_last_triggered_by': issue.cq_dry_run_last_triggered_by,
-    'landed_days_ago': issue.get_time_since_landed() or 'unknown',
+    'landed_days_ago': landed_days_ago,
   }
   if messages:
     values['messages'] = sorted(
