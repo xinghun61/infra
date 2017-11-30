@@ -53,6 +53,10 @@
       }
 
       .pending {
+        background-color: yellow;
+      }
+
+      .skipped {
         background-color: gray;
       }
 
@@ -78,18 +82,18 @@
             <td class="description">Regression range analysis</td>
             <td class="data">
               <span class$="[[_regressionRangeStatus]]">&nbsp;&nbsp;&nbsp;</span>
-              <template is="dom-if" if="[[!isAnalysisComplete(_regressionRangeStatus)]]">
+              <template is="dom-if" if="[[!shouldShowRegressionRange(_regressionRangeStatus, regressionRangeLower, regressionRangeUpper)]]">
                 <span>[[_regressionRangeStatus]]</span>
               </template>
 
-              <template is="dom-if" if="[[isAnalysisComplete(_regressionRangeStatus)]]">
+              <template is="dom-if" if="[[shouldShowRegressionRange(_regressionRangeStatus, regressionRangeLower, regressionRangeUpper)]]">
                 <a href$="[[_regressionRangeUrl]]">[[_regressionRangeText]]</a>
                 (Confidence [[regressionRangeConfidence]]%)
               </template>
             </td>
           </tr>
 
-          <template is="dom-if" if="[[_hasHeuristicAnalysisResults(heuristicAnalysisResults)]]">
+          <template is="dom-if" if="[[hasHeuristicAnalysisResults(heuristicAnalysisResults)]]">
             <tr>
               <td class="description">Heuristic analysis</td>
               <td class="data">
@@ -102,27 +106,27 @@
             </tr>
           </template>
 
-          <tr>
-            <td class="description">Culprit analysis</td>
-            <td class="data">
-              <span class$="[[_culpritAnalysisStatus]]">&nbsp;&nbsp;&nbsp;</span>
-              <template is="dom-if" if="[[!isAnalysisComplete(_culpritAnalysisStatus)]]">
-                <span>
-                  [[_culpritAnalysisStatus]]
-                </span>
-              </template>
-              <template is="dom-if" if="[[isAnalysisComplete(_culpritAnalysisStatus)]]">
+          <!-- If we've found a regression range, we should show the culprit status. -->
+          <template is="dom-if" if="[[isRegressionAnalysisComplete(_regressionRangeStatus)]]">
+            <tr>
+              <td class="description">Culprit analysis</td>
+              <td class="data">
+                <!-- If no culprit is found yet, just show the status. -->
+                <template is="dom-if" if="[[!isCulpritFound(_culpritAnalysisStatus, culpritUrl)]]">
+                  <span class$="[[_culpritAnalysisStatus]]">&nbsp;&nbsp;&nbsp;</span>
+                  <span>
+                    [[_culpritAnalysisStatus]]
+                  </span>
+                </template>
+
+                <!-- If there's a culprit, show that. -->
                 <template is="dom-if" if="[[isCulpritFound(_culpritAnalysisStatus, culpritUrl)]]">
                   <a href$="[[culpritUrl]]">[[culpritText]]</a>
                   (Confidence [[culpritConfidence]]%)
                 </template>
-                <template is="dom-if" if="[[!isCulpritFound(_culpritAnalysisStatus, culpritUrl)]]">
-                  No culprit found.
-                </template>
-              </template>
-              <!-- End isAnalysisComplete -->
-            </td>
-          </tr>
+              </td>
+            </tr>
+          </template>
 
           <template is="dom-if" if="[[bugId]]">
             <tr>
@@ -240,15 +244,23 @@
         },
 
         // Computed bindings
-        isAnalysisComplete: function (status) {
+        isRegressionAnalysisComplete: function (status) {
           return status == 'completed';
+        },
+
+        regressionRangeFound: function(regressionRangeLower, regressionRangeUpper) {
+          return regressionRangeLower && regressionRangeUpper;
+        },
+
+        shouldShowRegressionRange: function(status, regressionRangeLower, regressionRangeUpper) {
+          return this.isRegressionAnalysisComplete(status) && this.regressionRangeFound(regressionRangeLower, regressionRangeUpper);
         },
 
         isCulpritFound: function (status, culpritUrl) {
           return status == 'completed' && culpritUrl;
         },
 
-        _hasHeuristicAnalysisResults: function(heuristicAnalysisResults) {
+        hasHeuristicAnalysisResults: function(heuristicAnalysisResults) {
           return heuristicAnalysisResults && heuristicAnalysisResults.length > 0;
         },
 
