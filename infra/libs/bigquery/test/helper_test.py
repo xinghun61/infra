@@ -15,28 +15,27 @@ from infra.libs.bigquery.test import testmessage_pb2
 class TestBigQueryHelper(unittest.TestCase):
   def setUp(self):
     super(TestBigQueryHelper, self).setUp()
-    bq_client = mock.Mock()
-    self.bq_helper = helper.BigQueryHelper(bq_client)
+    self.bq_client = mock.Mock()
 
     self.dataset_id = 'test_dataset'
     self.table_id = 'test_table'
-    self.table = bq_client.get_table(
-        bq_client.dataset(self.dataset_id).table(self.table_id))
-    self.mock_create_rows = bq_client.create_rows
+    self.table = self.bq_client.get_table(
+        self.bq_client.dataset(self.dataset_id).table(self.table_id))
+    self.mock_create_rows = self.bq_client.create_rows
     self.mock_create_rows.return_value = None
 
   def test_send_rows_tuple(self):
     rows = [('a',), ('b',), ('c',)]
-    self.bq_helper.send_rows(self.dataset_id, self.table_id, rows)
+    helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows)
     self.mock_create_rows.assert_any_call(self.table, rows)
 
   def test_send_rows_unsupported_type(self):
     with self.assertRaises(helper.UnsupportedTypeError):
-      self.bq_helper.send_rows(self.dataset_id, self.table_id, [{}])
+      helper.send_rows(self.bq_client, self.dataset_id, self.table_id, [{}])
 
   def test_send_rows_message(self):
     rows = [testmessage_pb2.TestMessage(name='test_name')]
-    self.bq_helper.send_rows(self.dataset_id, self.table_id, rows)
+    helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows)
     expected_rows_arg = [{'name': u'test_name'}]
     self.mock_create_rows.assert_any_call(self.table, expected_rows_arg)
 
@@ -49,7 +48,7 @@ class TestBigQueryHelper(unittest.TestCase):
         },
     ]
     with self.assertRaises(helper.BigQueryInsertError):
-      self.bq_helper.send_rows(self.dataset_id, self.table_id, rows)
+      helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows)
 
   def test_message_to_dict(self):
     msg = testmessage_pb2.TestMessage(

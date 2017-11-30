@@ -2,7 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from .helper import BigQueryHelper
 from .helper import BigQueryInsertError
 from .helper import UnsupportedTypeError
 from .helper import message_to_dict
+from .helper import send_rows

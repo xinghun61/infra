@@ -38,39 +38,34 @@ def _get_value(value):
   return value
 
 
-class BigQueryHelper(object):
-  """BigQueryHelper is a thread safe helper for some common BigQuery tasks."""
+def send_rows(bq_client, dataset_id, table_id, rows):
+  """Sends rows to BigQuery.
 
-  def __init__(self, bq_client):
-    """bq_client: an instance of google.cloud.bigquery.client.Client"""
-    self._bq_client = bq_client
-    self._lock = threading.RLock()
-
-  def send_rows(self, dataset_id, table_id, rows):
-    """
+  Args:
     rows: a list of any of the following
       * tuples: each tuple should contain data of the correct type for each
       schema field on the current table and in the same order as the schema
       fields.
       * google.protobuf.message.Message instance
+    bq_client: an instance of google.cloud.bigquery.client.Client
+    dataset_id, table_id (str): identifiers for the table to which the rows will
+      be inserted
 
-    Please use google.protobuf.message.Message instances moving forward.
-    Tuples are deprecated.
-    """
-    for i, row in enumerate(rows):
-      if isinstance(row, tuple):
-        continue
-      elif isinstance(row, message_pb.Message):
-        rows[i] = message_to_dict(row)
-      else:
-        raise UnsupportedTypeError(type(row).__name__)
-    with self._lock:
-      table = self._bq_client.get_table(
-        self._bq_client.dataset(dataset_id).table(table_id))
-      insert_errors = self._bq_client.create_rows(table, rows)
-    if insert_errors:
-      logging.error('Failed to send event to bigquery: %s', insert_errors)
-      raise BigQueryInsertError(insert_errors)
+  Please use google.protobuf.message.Message instances moving forward.
+  Tuples are deprecated.
+  """
+  for i, row in enumerate(rows):
+    if isinstance(row, tuple):
+      continue
+    elif isinstance(row, message_pb.Message):
+      rows[i] = message_to_dict(row)
+    else:
+      raise UnsupportedTypeError(type(row).__name__)
+  table = bq_client.get_table(bq_client.dataset(dataset_id).table(table_id))
+  insert_errors = bq_client.create_rows(table, rows)
+  if insert_errors:
+    logging.error('Failed to send event to bigquery: %s', insert_errors)
+    raise BigQueryInsertError(insert_errors)
 
 
 class UnsupportedTypeError(Exception):
