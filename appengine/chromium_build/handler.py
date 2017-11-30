@@ -135,8 +135,7 @@ class FetchPagesAction(base_page.BasePage):
 class MainAction(base_page.BasePage):
 
   def get(self):
-    args = self.request.query_string
-    self.redirect('/p/chromium/console' + '?' + args)
+    self.redirect('https://ci.chromium.org/p/chromium/g/main/console')
 
 
 # Call initial bootstrap for the app module.
@@ -147,8 +146,6 @@ base_page.bootstrap()
 # http://code.google.com/appengine/docs/python/runtime.html#App_Caching for more
 # info.
 application = webapp2.WSGIApplication(
-  [('/', MainAction),
-   ('/p/(.*)/' + ONE_BOX_URL, OneBoxAction),
-   ('/p/(.*)', PageAction),
+  [('/.*', MainAction),
    ('/tasks/fetch_pages', FetchPagesAction)])
 gae_ts_mon.initialize(application)
