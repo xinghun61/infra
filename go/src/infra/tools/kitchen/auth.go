@@ -208,9 +208,6 @@ func (ac *AuthContext) Launch(ctx context.Context, tempDir string) (err error) {
 			if ac.devShellAddr, err = ac.devShellSrv.Start(ctx); err != nil {
 				return errors.Annotate(err, "failed to start the DevShell server").Err()
 			}
-		} else {
-			// See https://crbug.com/788058#c14.
-			logging.Warningf(ac.ctx, "Disabling devshell auth on Windows")
 		}
 	}
 
@@ -294,10 +291,13 @@ func (ac *AuthContext) ExportIntoEnv(env environ.Env) environ.Env {
 			// default ~/.boto.
 			env.Set("BOTO_CONFIG", "")
 		} else {
-			// Point gsutil to use our auth shim server.
+			// Point gsutil to use our auth shim server and export devshell port.
 			env.Set("BOTO_CONFIG", ac.gsutilBoto)
 			if ac.devShellAddr != nil {
-				env.Set(devshell.EnvKey, fmt.Sprintf("%d", ac.devShellAddr.Port)) // pass the DevShell port
+				env.Set(devshell.EnvKey, fmt.Sprintf("%d", ac.devShellAddr.Port))
+			} else {
+				// See https://crbug.com/788058#c14.
+				logging.Warningf(ac.ctx, "Disabling devshell auth for account %q", ac.ID)
 			}
 		}
 	}
