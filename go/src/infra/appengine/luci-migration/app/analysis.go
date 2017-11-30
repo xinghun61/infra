@@ -43,6 +43,7 @@ import (
 func cronAnalyzeBuilders(c *router.Context) error {
 	var builders []*storage.Builder
 	q := datastore.NewQuery(storage.BuilderKind).
+		Eq("SchedulingType", config.SchedulingType_TRYJOBS).
 		Lt("Migration.Status", storage.StatusMigrated)
 	if err := datastore.GetAll(c.Context, q, &builders); err != nil {
 		return err

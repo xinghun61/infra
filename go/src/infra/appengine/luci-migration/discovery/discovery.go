@@ -44,12 +44,6 @@ type Builders struct {
 func (d *Builders) Discover(c context.Context, master *config.Master) error {
 	logging.Infof(c, "discovering new builders")
 
-	if master.SchedulingType != config.SchedulingType_TRYJOBS {
-		// TODO(nodir): add support for other types of scheduling
-		logging.Infof(c, "unsupported scheduling type %s", master.SchedulingType)
-		return nil
-	}
-
 	// Fetch builder names of a master.
 	names, err := d.fetchBuilderNames(c, master)
 	if err != nil {
@@ -121,12 +115,7 @@ func (d *Builders) registerBuilder(c context.Context, master *config.Master, nam
 		return errors.Annotate(err, "could not create a monorail bug for builder %q", &builder.ID).Err()
 	}
 
-	// Save.
-	if err := datastore.Put(c, builder); err != nil {
-		// Monorail issue was created though. Too bad.
-		return err
-	}
-	return nil
+	return datastore.Put(c, builder)
 }
 
 type masterJSON struct {
