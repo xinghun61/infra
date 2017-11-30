@@ -220,26 +220,19 @@ message TestResultEvent {
   // Run is the result of the test run.
   TestRun run = 6;
 
-	repeated TestRun runs = 7;
-
   // BuildId is the build_id in chrome-infra-events:raw_events.completed_builds_legacy
   string build_id = 8;
 
-	message BuildbotInfo {
-		string master_name = 1;
-		string builder_name = 2;
-		int64 build_number = 3;
-	}
-
+  // BuildbotInfo identifies where the test run ran.
 	BuildbotInfo buildbot_info = 9;
-
-  google.protobuf.Timestamp write_time = 10;
 }
 
-message WriteLatency {
-	string master = 1;
-	string builder = 2;
+// BuildbotInfo identifies a buildbot build.
+message BuildbotInfo {
+  // MasterName is the master name.
+	string master_name = 1;
+  // BuilderName is the builder name.
+	string builder_name = 2;
+  // BuildNumber is the build number.
 	int64 build_number = 3;
-	int64 write_latency = 4;
-	string table_name = 5;
 }

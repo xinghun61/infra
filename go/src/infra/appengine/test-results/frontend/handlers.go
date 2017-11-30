@@ -80,8 +80,6 @@ func init() {
 	r.GET(
 		"/internal/cron/delete_old_results", cronMW, deleteOldResultsHandler)
 
-	r.GET("/internal/cron/update_write_age_metrics", cronMW, updateWriteAgeMetrics)
-
 	http.DefaultServeMux.Handle("/", r)
 }
 
