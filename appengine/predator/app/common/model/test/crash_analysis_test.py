@@ -182,9 +182,10 @@ class CrashAnalysisTest(AppengineTestCase):
                      crash_analysis._FEEDBACK_URL_TEMPLATE % (
                          mock_host, mock_analysis.client_id, mock_key))
 
+  # pylint: disable=attribute-defined-outside-init
   def testToJson(self):
     """Tests ``ToJson`` method."""
-    analysis = CrashAnalysis()
+    analysis = MockCrashAnalysis()
     analysis.crashed_version = '50.0.1234.0'
     analysis.signature = 'sig'
     analysis.platform = 'win'
@@ -193,20 +194,23 @@ class CrashAnalysisTest(AppengineTestCase):
     self.assertDictEqual(analysis.ToJson(),
                          {'signature': analysis.signature,
                           'platform': analysis.platform,
-                          'stack_trace': analysis.stack_trace})
+                          'stack_trace': analysis.stack_trace,
+                          'client_id': 'mock_client',
+                          'crash_identifiers': 'crash_identifiers'})
 
-    analysis.stack_trace = None
     frame = StackFrame(0, 'src/', 'func', 'a.cc', 'src/a.cc', [3])
     callstack = CallStack(0, [frame])
+    analysis.stack_trace = None
     analysis.stacktrace = Stacktrace([callstack], callstack)
     self.assertDictEqual(analysis.ToJson(),
                          {'signature': analysis.signature,
                           'platform': analysis.platform,
-                          'stack_trace': analysis.stacktrace.ToString()})
+                          'stack_trace': analysis.stacktrace.ToString(),
+                          'client_id': 'mock_client',
+                          'crash_identifiers': 'crash_identifiers'})
 
   def testReInitialize(self):
     """Tests ``ReInitialize`` method."""
-    analysis = CrashAnalysis()
     crashed_version = '50.0.1234.0'
     signature = 'sig'
     platform = 'win'
@@ -218,6 +222,7 @@ class CrashAnalysisTest(AppengineTestCase):
         signature=signature, version=crashed_version,
         process_type='renderer')
     predator = self.GetMockPredatorApp(client_id=CrashClient.FRACAS)
+    analysis = predator.CreateAnalysis({'signature': signature})
     crash_data = predator.GetCrashData(raw_crash_data)
     predator.GetCrashData = mock.Mock(return_value=crash_data)
 

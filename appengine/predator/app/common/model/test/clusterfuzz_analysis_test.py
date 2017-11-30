@@ -111,7 +111,9 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
                           'platform': None,
                           'stack_trace': None,
                           'crash_revision': None,
-                          'signature': None})
+                          'signature': None,
+                          'client_id': 'clusterfuzz',
+                          'crash_identifiers': None})
 
   def testToJsonForNonEmptyDependencies(self):
     """Tests ``ToJson`` for non-empty self.dependencies."""
@@ -150,7 +152,9 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
             'platform': None,
             'stack_trace': None,
             'crash_revision': None,
-            'signature': None
+            'signature': None,
+            'crash_identifiers': None,
+            'client_id': 'clusterfuzz'
         })
 
   def testToJsonForNonEmptyDependencyRolls(self):
@@ -187,4 +191,6 @@ class ClusterfuzzAnalysisTest(AppengineTestCase):
                           'platform': None,
                           'stack_trace': None,
                           'crash_revision': None,
-                          'signature': None})
+                          'signature': None,
+                          'crash_identifiers': None,
+                          'client_id': 'clusterfuzz'})

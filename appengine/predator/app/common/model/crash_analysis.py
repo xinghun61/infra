@@ -272,7 +272,9 @@ class CrashAnalysis(ndb.Model):
     return {
         'signature': self.signature,
         'platform': self.platform,
-        'stack_trace': raw_stacktrace
+        'stack_trace': raw_stacktrace,
+        'client_id': self.client_id,
+        'crash_identifiers': self.identifiers,
     }
 
   def ReInitialize(self, client):

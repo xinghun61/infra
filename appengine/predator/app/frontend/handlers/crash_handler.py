@@ -73,56 +73,32 @@ class CrashHandler(BaseHandler):
                    pubsub_message['message_id'],
                    received_message['subscription'])
       logging.info('Crash data is %s', json.dumps(json_crash_data))
-
-      need_analysis, crash_data = NeedNewAnalysis(json_crash_data)
-      if need_analysis:
-        StartNewAnalysis(json_crash_data['client_id'], crash_data.identifiers)
-
+      StartAnalysis(json_crash_data)
     except (KeyError, ValueError):  # pragma: no cover.
       # TODO: save exception in datastore and create a page to show them.
       logging.exception('Failed to process crash message')
       logging.info(self.request.body)
 
 
-def NeedNewAnalysis(json_crash_data):
-  """Checks if an analysis is needed for this crash.
-
-  Args:
-    json_crash_data (dict): Crash information from clients.
-
-  Returns:
-    (need_analysis, crash_data)
-    need_analysis: True if a new analysis is needed; False otherwise.
-    crash_data: CrashData of this crash.
-  """
-  # N.B., must call PredatorForClientID indirectly, for mock testing.
-  predator_client = crash_pipeline.PredatorForClientID(
-      json_crash_data['client_id'],
-      CachedGitilesRepository.Factory(HttpClientAppengine()),
-      CrashConfig.Get())
-  crash_data = predator_client.GetCrashData(json_crash_data)
-  return predator_client.NeedsNewAnalysis(crash_data), crash_data
-
-
 # TODO(http://crbug.com/659346): we don't cover anything after the
 # call to _NeedsNewAnalysis.
-def StartNewAnalysis(client_id, identifiers):
+def StartAnalysis(json_crash_data):
   """Creates a pipeline object to perform the analysis, and start it.
 
   Args:
     client_id (CrashClient): Can be CrashClient.FRACAS, CrashClient.CRACAS or
       CrashClient.CLUSTERFUZZ.
     identifiers (dict): key value pairs to uniquely identify a crash.
+    need_analysis (bool): Whether or not we should schedule
+      CrashAnalysisPipeline.
   """
-  logging.info('New %s analysis is scheduled for %s',
-               client_id, repr(identifiers))
   # N.B., we cannot pass ``predator_client`` directly to the _pipeline_cls,
   # because it is not JSON-serializable (and there's no way to make it such,
   # since JSON-serializability is defined by JSON-encoders rather than
   # as methods on the objects being encoded).
-  pipeline = crash_pipeline.CrashWrapperPipeline(client_id, identifiers)
+  pipeline = crash_pipeline.CrashWrapperPipeline(json_crash_data)
   # Attribute defined outside __init__ - pylint: disable=W0201
   pipeline.target = appengine_util.GetTargetNameForModule(
-      constants.CRASH_BACKEND[client_id])
-  queue_name = constants.CRASH_ANALYSIS_QUEUE[client_id]
+      constants.CRASH_BACKEND[json_crash_data['client_id']])
+  queue_name = constants.CRASH_ANALYSIS_QUEUE[json_crash_data['client_id']]
   pipeline.start(queue_name=queue_name)

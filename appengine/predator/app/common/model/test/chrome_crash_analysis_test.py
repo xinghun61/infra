@@ -10,6 +10,13 @@ from common.appengine_testcase import AppengineTestCase
 from common.model.chrome_crash_analysis import ChromeCrashAnalysis
 
 
+class MockChromeCrashAnalysis(ChromeCrashAnalysis):  # prama: no cover.
+
+  @property
+  def client_id(self):
+    return 'mock_chrome_crash'
+
+
 class ChromeCrashAnalysisTest(AppengineTestCase):
 
   def testDoNotUseIdentifiersToSetProperties(self):
@@ -81,14 +88,14 @@ class ChromeCrashAnalysisTest(AppengineTestCase):
                          {'channel': analysis.channel,
                           'historical_metadata': analysis.historical_metadata})
 
-  def testToJson(self):
+  def testToJson(self):  # pylint: disable=attribute-defined-outside-init
     historical_metadata = [{'chrome_version': '1'}, {'chrome_version': '2'}]
     channel = 'win'
     expected_json = {
         'channel': channel,
         'historical_metadata': historical_metadata
     }
-    analysis = ChromeCrashAnalysis.Create(expected_json)
+    analysis = MockChromeCrashAnalysis.Create(expected_json)
     analysis.channel = channel
     analysis.historical_metadata = historical_metadata
 
@@ -97,4 +104,6 @@ class ChromeCrashAnalysisTest(AppengineTestCase):
                           'platform': None,
                           'stack_trace': None,
                           'chrome_version': None,
-                          'signature': None})
+                          'signature': None,
+                          'client_id': 'mock_chrome_crash',
+                          'crash_identifiers': None})

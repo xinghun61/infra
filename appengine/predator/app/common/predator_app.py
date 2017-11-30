@@ -210,9 +210,6 @@ class PredatorApp(object):
 
       logging.info('Force redo crash %s', repr(crash_data.identifiers))
 
-    model = model or self.CreateAnalysis(crash_data.identifiers)
-    model.Initialize(crash_data)
-    model.put()
     return True
 
   def ResultMessageToClient(self, analysis):

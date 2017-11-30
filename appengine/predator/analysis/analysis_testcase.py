@@ -6,6 +6,7 @@ import copy
 
 from libs.base_testcase import BaseTestCase
 from libs.gitiles.change_log import ChangeLog
+from analysis.type_enums import CrashClient
 
 
 DUMMY_CHANGELOG = ChangeLog.FromDict({
@@ -77,9 +78,10 @@ class AnalysisTestCase(BaseTestCase):  # pragma: no cover.
     return copy.deepcopy(DUMMY_CHANGELOG)
 
   def GetDummyClusterfuzzData(
-      self, client_id='mock_client', version='1', signature='signature',
-      platform='win', stack_trace=None, regression_range=None,
-      testcase_id='213412343', crash_type='check', crash_address='0x0023',
+      self, client_id=CrashClient.CLUSTERFUZZ, version='1',
+      signature='signature', platform='win', stack_trace=None,
+      regression_range=None, testcase_id='213412343',
+      crash_type='check', crash_address='0x0023',
       job_type='android_asan', sanitizer='ASAN', dependencies=None,
       dependency_rolls=None, redo=False, security_flag=False):
     crash_identifiers = {'testcase_id': testcase_id}
@@ -123,7 +125,7 @@ class AnalysisTestCase(BaseTestCase):  # pragma: no cover.
     return crash_data
 
   def GetDummyChromeCrashData(
-      self, client_id='mock_client', version='1', signature='signature',
+      self, client_id=CrashClient.CRACAS, version='1', signature='signature',
       platform='win', stack_trace=None, regression_range=None, channel='canary',
       historical_metadata=None, process_type='browser'):
     crash_identifiers = {
