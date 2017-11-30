@@ -537,8 +537,6 @@ class CheckFlake(BaseHandler):
             self._ShowCustomRunOptions(analysis),
         'show_debug_options':
             self._ShowDebugInfo(),
-        'show_heuristic_results':
-            self._ShowDebugInfo(),
         'pipeline_status_path':
             analysis.pipeline_status_path,
 

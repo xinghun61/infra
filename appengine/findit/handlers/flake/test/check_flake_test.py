@@ -353,8 +353,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
             'pipelinestatus',
         'show_debug_options':
             False,
-        'show_heuristic_results':
-            False,
         'bug_id':
             '',
         'culprit_analysis_status':
@@ -548,8 +546,6 @@ class CheckFlakeTest(wf_testcase.WaterfallTestCase):
         'pipeline_status_path':
             'pipelinestatus',
         'show_debug_options':
-            False,
-        'show_heuristic_results':
             False,
         'bug_id':
             '',

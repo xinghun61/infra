@@ -424,6 +424,7 @@
       $('#culprit_analysis_status').attr('class', (findit.culpritAnalysisStatus || '').toLowerCase());
 
       DrawFlakeTrend();
+
       $('input[name=triage-radio-button]').on('change', function () {
         triageSuspectedFlake($(this).val());
       });
@@ -448,6 +449,7 @@
                          regression-range-upper="{{regression_range_upper}}"
                          regression-range-lower="{{regression_range_lower}}"
                          regression-range-confidence="{{regression_range_confidence}}"
+                         heuristic-analysis-results="{{suspected_culprits|tojson}}"
                          culprit-analysis-status="{{culprit_analysis_status}}"
                          culprit-url="{{culprit_url}}"
                          culprit-text="{{culprit_text}}"
@@ -503,6 +505,7 @@
         <input type="submit" value="Cancel Analysis" />
       </form>
     {% endif %}
+
     {% if show_admin_options %}
       <div style="border: 1px solid black">
         <!-- Rerun options -->

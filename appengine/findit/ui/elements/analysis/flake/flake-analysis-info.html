@@ -29,6 +29,12 @@
         background-color: #f2f2f2;
       }
 
+      ul {
+        padding-left: 20px;
+        margin-top: 0;
+        margin-bottom: 0;
+      }
+
       .title {
         font-size: 16px;
         font-weight: bold;
@@ -39,6 +45,7 @@
       .description {
         font-weight: 500;
         text-align: right;
+        vertical-align: top;
       }
 
       .data {
@@ -60,6 +67,7 @@
       .error {
         background-color: red;
       }
+
     </style>
     <!-- End style. -->
     <expandable-card>
@@ -67,7 +75,7 @@
       <div slot="expandable-card-content">
         <table>
           <tr>
-            <td class="description">Regression analysis</td>
+            <td class="description">Regression range analysis</td>
             <td class="data">
               <span class$="[[_regressionRangeStatus]]">&nbsp;&nbsp;&nbsp;</span>
               <template is="dom-if" if="[[!isAnalysisComplete(_regressionRangeStatus)]]">
@@ -80,6 +88,19 @@
               </template>
             </td>
           </tr>
+
+          <template is="dom-if" if="[[_hasHeuristicAnalysisResults(heuristicAnalysisResults)]]">
+            <tr>
+              <td class="description">Heuristic analysis</td>
+              <td class="data">
+                <ul>
+                  <template is="dom-repeat" items="{{heuristicAnalysisResults}}">
+                    <li><a href="{{item.url}}">{{item.commit_position}}</a></li>
+                  </template>
+                </ul>
+              </td>
+            </tr>
+          </template>
 
           <tr>
             <td class="description">Culprit analysis</td>
@@ -119,7 +140,6 @@
   <script>
     (function () {
       'use strict';
-      // TODO (crbug.com/786630): Support showing hueristic results.
       Polymer({
         is: 'flake-analysis-info',
 
@@ -128,6 +148,8 @@
           regressionRangeConfidence: String,
           regressionRangeUpper: String,
           regressionRangeLower: String,
+
+          heuristicAnalysisResults: Array,
 
           culpritAnalysisStatus: String,
           culpritUrl: String,
@@ -160,6 +182,7 @@
             type: String,
             computed: 'computeCulpritAnalysisStatus(culpritAnalysisStatus)'
           },
+
         },
 
         // Computed properties.
@@ -223,6 +246,10 @@
 
         isCulpritFound: function (status, culpritUrl) {
           return status == 'completed' && culpritUrl;
+        },
+
+        _hasHeuristicAnalysisResults: function(heuristicAnalysisResults) {
+          return heuristicAnalysisResults && heuristicAnalysisResults.length > 0;
         },
 
       });
