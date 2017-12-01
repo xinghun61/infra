@@ -1561,7 +1561,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.leasee = self.current_identity
     self.test_build.put()
 
-    service.reset_expired_builds()
+    service.check_expired_builds()
     build = self.test_build.key.get()
     self.assertEqual(build.status, model.BuildStatus.SCHEDULED)
     self.assertIsNone(build.lease_key)
@@ -1571,7 +1571,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.result = model.BuildResult.SUCCESS
     self.test_build.complete_time = utils.utcnow()
     self.test_build.put()
-    service.reset_expired_builds()
+    service.check_expired_builds()
     build = self.test_build.key.get()
     self.assertEqual(build.status, model.BuildStatus.COMPLETED)
 
@@ -1579,7 +1579,7 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.create_time = utils.utcnow() - datetime.timedelta(days=365)
     self.test_build.put()
 
-    service.reset_expired_builds()
+    service.check_expired_builds()
     build = self.test_build.key.get()
     self.assertEqual(build.status, model.BuildStatus.COMPLETED)
     self.assertEqual(build.result, model.BuildResult.CANCELED)

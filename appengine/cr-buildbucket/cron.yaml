@@ -1,8 +1,8 @@
 cron:
 
-- description: reset expired builds
+- description: check expired builds
   target: backend
-  url: /internal/cron/buildbucket/reset_expired_builds
+  url: /internal/cron/buildbucket/check_expired_builds
   schedule: every 1 minutes
 
 - description: update buckets

@@ -24,12 +24,12 @@ class HandlerTest(testing.AppengineTestCase):
 
 
 class BuildBucketBackendHandlersTest(HandlerTest):
-  @mock.patch('service.reset_expired_builds', autospec=True)
-  def test_reset_expired_builds(self, reset_expired_builds):
-    path = '/internal/cron/buildbucket/reset_expired_builds'
+  @mock.patch('service.check_expired_builds', autospec=True)
+  def test_check_expired_builds(self, check_expired_builds):
+    path = '/internal/cron/buildbucket/check_expired_builds'
     response = self.test_app.get(path, headers={'X-AppEngine-Cron': 'true'})
     self.assertEquals(200, response.status_int)
-    reset_expired_builds.assert_called_once_with()
+    check_expired_builds.assert_called_once_with()
 
 
 class TaskBackfillTagIndexTest(HandlerTest):

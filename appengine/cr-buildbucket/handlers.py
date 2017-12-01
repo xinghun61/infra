@@ -39,12 +39,12 @@ class MainHandler(webapp2.RequestHandler):  # pragma: no cover
     return self.redirect(README_MD)
 
 
-class CronResetExpiredBuilds(webapp2.RequestHandler):
+class CronCheckExpiredBuilds(webapp2.RequestHandler):
   """Resets expired builds."""
 
   @decorators.require_cronjob
   def get(self):
-    service.reset_expired_builds()
+    service.check_expired_builds()
 
 
 class CronUpdateBuckets(webapp2.RequestHandler):  # pragma: no cover
@@ -341,8 +341,8 @@ def get_frontend_routes():  # pragma: no cover
 def get_backend_routes():
   return [
     webapp2.Route(
-        r'/internal/cron/buildbucket/reset_expired_builds',
-        CronResetExpiredBuilds),
+        r'/internal/cron/buildbucket/check_expired_builds',
+        CronCheckExpiredBuilds),
     webapp2.Route(
         r'/internal/cron/buildbucket/update_buckets',
         CronUpdateBuckets),

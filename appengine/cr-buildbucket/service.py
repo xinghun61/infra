@@ -1447,7 +1447,7 @@ def _timeout_async(build_id):
     events.on_build_completed(build)
 
 
-def reset_expired_builds():
+def check_expired_builds():
   """For all building expired builds, resets their lease_key and state."""
   futures = []
 
