@@ -1,0 +1,7 @@
+indexes:
+
+# Fetch builders to analyze.
+- kind: Builder
+  properties:
+  - name: SchedulingType
+  - name: Migration.Status
