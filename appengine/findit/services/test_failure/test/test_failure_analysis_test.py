@@ -38,16 +38,16 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             },
         },
         'builds': {
-            '99': {
+            99: {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            '98': {
+            98: {
                 'blame_list': ['r98_1'],
             },
-            '97': {
+            97: {
                 'blame_list': ['r97_1'],
             },
-            '96': {
+            96: {
                 'blame_list': ['r96_1', 'r96_2'],
             },
         }
@@ -262,16 +262,16 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             },
         },
         'builds': {
-            '99': {
+            99: {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            '98': {
+            98: {
                 'blame_list': ['r98_1'],
             },
-            '97': {
+            97: {
                 'blame_list': ['r97_1'],
             },
-            '96': {
+            96: {
                 'blame_list': ['r96_1', 'r96_2'],
             },
         }
@@ -560,10 +560,10 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             },
         },
         'builds': {
-            '99': {
+            99: {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            '98': {
+            98: {
                 'blame_list': ['r98_1'],
             },
         }
@@ -594,7 +594,6 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual([], suspected_cls)
 
-  @mock.patch.object(ci_failure, 'CheckForFirstKnownFailure')
   @mock.patch.object(
       extract_test_signal,
       'ExtractSignalsForTestFailure',
@@ -608,7 +607,8 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(build_failure_analysis,
                      'SaveAnalysisAfterHeuristicAnalysisCompletes')
   @mock.patch.object(build_failure_analysis, 'SaveSuspectedCLs')
-  def testHeuristicAnalysisForTest(self, *_):
+  @mock.patch.object(ci_failure, 'CheckForFirstKnownFailure')
+  def testHeuristicAnalysisForTest(self, mock_failure_info, *_):
     failure_info = {
         'master_name': 'm',
         'builder_name': 'b',
@@ -623,15 +623,16 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             }
         },
         'builds': {
-            '99': {
+            99: {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            '98': {
+            98: {
                 'blame_list': ['r98_1'],
             }
         }
     }
 
+    mock_failure_info.return_value = failure_info
     WfAnalysis.Create('m', 'b', 99).put()
     result = test_failure_analysis.HeuristicAnalysisForTest(failure_info, True)
     expected_result = {

@@ -123,7 +123,7 @@ def AnalyzeTestFailure(failure_info, change_logs, deps_info, failure_signals):
     if step_analysis_result['supported']:
       step_failure_signal = FailureSignal.FromDict(failure_signals[step_name])
       for build_number in range(start_build_number, failed_build_number + 1):
-        for revision in builds[str(build_number)]['blame_list']:
+        for revision in builds[build_number]['blame_list']:
           if is_test_level:
             # Checks files at test level.
             for test_analysis_result in step_analysis_result['tests']:
@@ -199,10 +199,9 @@ def HeuristicAnalysisForTest(failure_info, build_completed):
   builder_name = failure_info['builder_name']
   build_number = failure_info['build_number']
 
-  # 1. Detects first failed builds for failed test step.
-  ci_failure.CheckForFirstKnownFailure(master_name, builder_name, build_number,
-                                       failure_info['failed_steps'],
-                                       failure_info['builds'])
+  # 1. Detects first failed builds for failed test step, updates failure_info.
+  failure_info = ci_failure.CheckForFirstKnownFailure(
+      master_name, builder_name, build_number, failure_info)
 
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   analysis.failure_info = failure_info

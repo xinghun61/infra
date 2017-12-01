@@ -30,7 +30,7 @@ def _Analyze(start_build_number,
              use_ninja_output=False):
 
   for build_number in range(start_build_number, failed_build_number + 1):
-    for revision in builds[str(build_number)]['blame_list']:
+    for revision in builds[build_number]['blame_list']:
       new_suspected_cl_dict, max_score = build_failure_analysis.AnalyzeOneCL(
           build_number, failure_signal, change_logs[revision], deps_info,
           use_ninja_output)
@@ -205,10 +205,10 @@ def HeuristicAnalysisForCompile(failure_info, build_completed):
   builder_name = failure_info['builder_name']
   build_number = failure_info['build_number']
 
-  # 1. Detects first failed builds for failed compile step.
-  ci_failure.CheckForFirstKnownFailure(master_name, builder_name, build_number,
-                                       failure_info['failed_steps'],
-                                       failure_info['builds'])
+  # 1. Detects first failed builds for failed compile step,
+  # updates failure_info.
+  failure_info = ci_failure.CheckForFirstKnownFailure(
+      master_name, builder_name, build_number, failure_info)
 
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
   analysis.failure_info = failure_info
