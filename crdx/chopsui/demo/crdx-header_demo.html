@@ -1,0 +1,25 @@
+<link rel="import" href="../../polymer/polymer.html">
+<link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+<link rel="import" href="../crdx-header.html">
+<link rel="import" href="../crdx-login.html">
+
+<link rel="stylesheet" type="text/css" href="../crdx-styles.css">
+
+Example of crdx-header without any content in slots
+
+<demo-snippet>
+  <template>
+    <crdx-header app-title="Demo" logo-url="../img/logo.png"></crdx-header>
+  </template>
+</demo-snippet>
+
+Example of crdx-header using slots and crdx-login
+
+<demo-snippet>
+  <template>
+    <crdx-header app-title="Demo" logo-src="../img/logo.png">
+      <span slot="subheader">&gt; <a href="#">Breadcrumbs</a></span>
+      <crdx-login login-url="https://www.google.com/" logout-url="https://store.google.com/" user="jojwang@chromium.org"></crdx-login>
+    </crdx-header>
+  </template>
+</demo-snippet>
