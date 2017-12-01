@@ -90,10 +90,17 @@ class TestAndroidDockerClient(unittest.TestCase):
     self.assertEquals(volumes.get('/opt/infra-android'),
                       {'bind': '/opt/infra-android', 'mode': 'ro'})
 
-  def test_get_env(self):
+  def test_get_env_no_cache(self):
     env = containers.AndroidDockerClient()._get_env('')
     self.assertEquals(env.get('ADB_LIBUSB'), '0')
+    self.assertFalse('ISOLATED_CACHE_SIZE' in env)
 
+  def test_get_env_with_cache(self):
+    client = containers.AndroidDockerClient()
+    client.cache_size = '1234567890'
+    env = client._get_env('')
+    self.assertEquals(env.get('ADB_LIBUSB'), '0')
+    self.assertEquals(env.get('ISOLATED_CACHE_SIZE'), '1234567890')
 
 class TestAddDevice(unittest.TestCase):
   def setUp(self):

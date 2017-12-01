@@ -15,6 +15,36 @@ from infra.services.swarm_docker import main_helpers
 
 _USB_BUS_LOCK_FILE = '/var/lock/android_docker.usb_bus.lock'
 
+
+def get_disk_partition_size(path, android_devices, usage_ratio=0.8):
+  """Gets the size on disk a container will be granted for its isolate cache.
+
+  Args:
+    path: Path to a file or dir on the same filesystem as the caches. The path
+          will be stat'ed to get that filesystem's info.
+    android_devices: List of devices connected.
+    usage_ratio: What percentage of the disk to use.
+  Returns:
+    Size in bytes of the isolate cache each swarming bot will use.
+  """
+  # Fetch the usage stats of the filesystem that the caches will be located.
+  fs_stat = os.statvfs(path)
+  # Use only the specified percent of the disk for container usage. Keep the
+  # remainder free for host-side things.
+  total_size = (fs_stat.f_bsize * fs_stat.f_blocks) * usage_ratio
+  # Each container gets its own seperate cache, so calculate the number of
+  # needed caches. Note that some devices may temporarily disappear, so let's
+  # provision for at least seven per bot. (In case 6 of the 7 drop off
+  # momentarily and the remainder suddenly has the entire disk to work with.)
+  number_of_caches = max(7, len(android_devices))
+  partition_size = total_size / number_of_caches
+  # Round to nearest block size
+  partition_size = int(fs_stat.f_bsize * round(partition_size/fs_stat.f_bsize))
+  # Finally, to ensure that we don't allocate a tiny cache if something goes
+  # wrong above, ignore the calculated value if it's less than 10 GB.
+  return max(10 * 1024 * 1024 * 1024, partition_size)
+
+
 def kill_adb():
   """Kills the adb daemon if it's up and running on the host.
 
@@ -125,6 +155,10 @@ def main():
   except main_helpers.FlockTimeoutError:
     logging.error('Unable to acquire usb bus lock in time.')
     return 1
+
+  # Limit the isolated cache size of each container to avoid running out of
+  # space on disk.
+  docker_client.cache_size = get_disk_partition_size('/b/', android_devices)
 
   # Lock on each device individually so multiple devices can be worked on
   # simultaneously.

@@ -57,6 +57,10 @@ class AndroidContainerDescriptor(containers.ContainerDescriptorBase):
 
 
 class AndroidDockerClient(containers.DockerClient):
+  def __init__(self):
+    super(AndroidDockerClient, self).__init__()
+    self.cache_size = None
+
   def _get_volumes(self, container_workdir):
     volumes = super(AndroidDockerClient, self)._get_volumes(container_workdir)
     volumes = volumes.copy()
@@ -67,6 +71,8 @@ class AndroidDockerClient(containers.DockerClient):
   def _get_env(self, swarming_url):
     env = super(AndroidDockerClient, self)._get_env(swarming_url)
     env['ADB_LIBUSB'] = '0'
+    if self.cache_size:
+      env['ISOLATED_CACHE_SIZE'] = self.cache_size
     return env
 
   @staticmethod
