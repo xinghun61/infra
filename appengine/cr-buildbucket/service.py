@@ -1221,7 +1221,13 @@ def heartbeat_async(build_id, lease_key, lease_expiration_date):
     if build is None:
       raise errors.BuildNotFoundError()
     if build.status == model.BuildStatus.COMPLETED:
-      raise errors.BuildIsCompletedError()
+      msg = ''
+      if (build.result == model.BuildResult.CANCELED and
+          build.cancelation_reason == model.CancelationReason.TIMEOUT):
+        msg = (
+            'Build was marked as timed out '
+            'because it did not complete for %s' % model.BUILD_TIMEOUT)
+      raise errors.BuildIsCompletedError(msg)
     _check_lease(build, lease_key)
     build.lease_expiration_date = lease_expiration_date
     yield build.put_async()

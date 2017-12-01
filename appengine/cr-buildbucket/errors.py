@@ -8,19 +8,22 @@ BUCKET_NAME_REGEX = re.compile(r'^[0-9a-z_\.\-/]{1,100}$')
 
 
 class Error(Exception):
-  pass
+  def __init__(self, message=''):
+    # passing None instead of empty docstring so that
+    # Exception class applies its own default.
+    super(Error, self).__init__(message or self.__doc__ or None)
 
 
 class NotFoundError(Error):
-  pass
+  """Requested resource not found."""
 
 
 class BuildNotFoundError(NotFoundError):
-  pass
+  """Requested build was not found."""
 
 
 class BuilderNotFoundError(NotFoundError):
-  pass
+  """Requested builder was not found."""
 
 
 class BuildIsCompletedError(Error):

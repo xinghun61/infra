@@ -1433,15 +1433,32 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.status = model.BuildStatus.COMPLETED
     self.test_build.result = model.BuildResult.CANCELED
     self.test_build.cancelation_reason = (
-      model.CancelationReason.CANCELED_EXPLICITLY)
+        model.CancelationReason.CANCELED_EXPLICITLY)
     self.test_build.complete_time = utils.utcnow()
     self.test_build.put()
 
     new_expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
     with self.assertRaises(errors.BuildIsCompletedError):
       service.heartbeat(
-        self.test_build.key.id(), 0,
-        lease_expiration_date=new_expiration_date)
+          self.test_build.key.id(), 0,
+          lease_expiration_date=new_expiration_date)
+
+  def test_heartbeat_timed_out(self):
+    self.test_build.status = model.BuildStatus.COMPLETED
+    self.test_build.result = model.BuildResult.CANCELED
+    self.test_build.cancelation_reason = model.CancelationReason.TIMEOUT
+    self.test_build.complete_time = utils.utcnow()
+    self.test_build.put()
+
+    new_expiration_date = utils.utcnow() + datetime.timedelta(minutes=1)
+    exc_regex = (
+        'Build was marked as timed out '
+        'because it did not complete for 2 days')
+    with self.assertRaisesRegexp(errors.BuildIsCompletedError, exc_regex):
+      service.heartbeat(
+          self.test_build.key.id(), 0,
+          lease_expiration_date=new_expiration_date)
+
 
   def test_heartbeat_batch(self):
     self.lease()

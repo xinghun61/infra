@@ -20,3 +20,7 @@ class ErrorsTest(testing.AppengineTestCase):
       errors.validate_bucket_name('no spaces')
     errors.validate_bucket_name('good-name')
     errors.validate_bucket_name('luci.infra.try', project_id='infra')
+
+  def test_default_message(self):
+    ex = errors.BuildIsCompletedError()
+    self.assertEqual(ex.message, 'Build is complete and cannot be changed.')
