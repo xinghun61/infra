@@ -878,7 +878,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         bad_revision='rev2',
         suspected_revisions=[],
         force_buildbot=False,
-        dimensions=['os:Mac-10.9', 'cpu:x86-64', 'pool:Chrome.Findit'],
+        dimensions=['os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'],
         cache_name='cache',
         targeted_tests={},
         urlsafe_try_job_key='urlsafe_try_job_key')

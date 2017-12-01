@@ -1178,9 +1178,9 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(all_flaked)
 
   def testGetCacheName(self):
-    cache_name_a = swarming_util.GetCacheName('luci.chromium.try',
+    cache_name_a = swarming_util.GetCacheName('luci.chromium.findit',
                                               'linux_chromium_variable')
-    cache_name_b = swarming_util.GetCacheName('luci.chromium.try',
+    cache_name_b = swarming_util.GetCacheName('luci.chromium.findit',
                                               'win_chromium_variable')
     cache_name_c = swarming_util.GetCacheName('luci.chromium.ci',
                                               'win_chromium_variable')

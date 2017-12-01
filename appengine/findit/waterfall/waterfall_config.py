@@ -15,9 +15,9 @@ _UNSUPPORTED_MASTERS = [
     'chromium.perf',
 ]
 
-_DEFAULT_DIMENSIONS = ['pool:Chrome.Findit']
+_DEFAULT_DIMENSIONS = ['pool:luci.chromium.findit']
 
-SWARMBUCKET_MASTER = 'luci.chromium.try'
+SWARMBUCKET_MASTER = 'luci.chromium.findit'
 SWARMBUCKET_BUILDER = 'findit_variable'
 
 

@@ -56,7 +56,7 @@ class PeriodicBotUpdateTest(wf_testcase.WaterfallTestCase):
                         'recipe': {
                             'name': 'findit/chromium/preemptive_bot_update'
                         },
-                        'dimensions': ['id:bot1', 'pool:Chrome.Findit'],
+                        'dimensions': ['id:bot1', 'pool:luci.chromium.findit'],
                         'caches': [{
                             'path': 'builder',
                             'name': 'builder_908bcf0b6984d585a05cf6c94016'
@@ -70,7 +70,7 @@ class PeriodicBotUpdateTest(wf_testcase.WaterfallTestCase):
                 }
             }),
         'bucket':
-            'luci.chromium.try',
+            'luci.chromium.findit',
         'pubsub_callback': {
             'topic':
                 'projects/findit-for-me/topics/jobs',

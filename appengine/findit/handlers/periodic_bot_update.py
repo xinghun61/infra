@@ -10,8 +10,8 @@ from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
 from waterfall import swarming_util
 
-_FINDIT_SWARMING_POOL = 'Chrome.Findit'
-_TARGET_MASTER = 'luci.chromium.try'
+_FINDIT_SWARMING_POOL = 'luci.chromium.findit'
+_TARGET_MASTER = 'luci.chromium.findit'
 _PLATFORM_BUILDER_MAP = {
     'Linux': 'linux_chromium_variable',
     'Mac': 'mac_chromium_variable',

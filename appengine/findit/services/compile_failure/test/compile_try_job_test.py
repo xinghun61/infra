@@ -810,7 +810,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     good_revision = 'rev1'
     bad_revision = 'rev2'
     cache_name = 'cache'
-    dimensions = ['os:Mac-10.9', 'cpu:x86-64', 'pool:Chrome.Findit']
+    dimensions = ['os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit']
 
     expected_parameters_dict = {
         'build_key': {

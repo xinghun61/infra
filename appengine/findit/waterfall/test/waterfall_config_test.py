@@ -177,7 +177,7 @@ class MastersTest(wf_testcase.WaterfallTestCase):
                      waterfall_config.GetWaterfallTrybot('master1', 'builder1'))
     self.assertEqual(('swarming_tryserver2', 'swarming_trybot2'),
                      waterfall_config.GetWaterfallTrybot('master2', 'builder4'))
-    self.assertEqual(('luci.chromium.try', 'findit_variable'),
+    self.assertEqual(('luci.chromium.findit', 'findit_variable'),
                      waterfall_config.GetWaterfallTrybot('master2', 'builder5'))
     self.assertEqual(('tryserver2', 'trybot2'),
                      waterfall_config.GetWaterfallTrybot(
@@ -192,7 +192,7 @@ class MastersTest(wf_testcase.WaterfallTestCase):
                      waterfall_config.GetFlakeTrybot('master3', 'builder3'))
     self.assertEqual(('swarming_tryserver2', 'swarming_trybot2'),
                      waterfall_config.GetFlakeTrybot('master2', 'builder4'))
-    self.assertEqual(('luci.chromium.try', 'findit_variable'),
+    self.assertEqual(('luci.chromium.findit', 'findit_variable'),
                      waterfall_config.GetFlakeTrybot('master2', 'builder5'))
     self.assertEqual(('tryserver2', 'trybot2_flake'),
                      waterfall_config.GetFlakeTrybot(
@@ -312,7 +312,7 @@ class MastersTest(wf_testcase.WaterfallTestCase):
     }, waterfall_config.GetCodeReviewSettings())
 
   def testGetTrybotDimensions(self):
-    self.assertEqual(['os:Mac-10.9', 'cpu:x86-64', 'pool:Chrome.Findit'],
+    self.assertEqual(['os:Mac-10.9', 'cpu:x86-64', 'pool:luci.chromium.findit'],
                      waterfall_config.GetTrybotDimensions('m', 'b'))
     self.assertIsNone(
         waterfall_config.GetTrybotDimensions('master1', 'builder1'))

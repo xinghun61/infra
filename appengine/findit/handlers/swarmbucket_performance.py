@@ -39,7 +39,7 @@ def _GetSwarmbucketBuilders():
 
   Returns:
     A dictionary that maps swarming builders like
-    'luci.chromium.try/linux_variable' to buildbot builders like
+    'luci.chromium.findit/linux_variable' to buildbot builders like
     'tryserver.chromium.linux/linux_variable'
   """
   results = {}
