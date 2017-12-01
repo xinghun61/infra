@@ -36,6 +36,10 @@ class MasterNotFoundException(Exception):
 RestartSpec = collections.namedtuple('RestartSpec',
     ('name', 'desired_state_name', 'message', 'restart_time'))
 
+_OFFICIAL_WARNING = """\
+%(master)s is an official master.
+Please consult with chrome-pmo@ before proceeding with this restart.
+"""
 
 _MASTER_CONFIGS = {
   'chromiumos': {'ref': 'chromeos'},
@@ -72,6 +76,13 @@ the filer to determine which release branch needs updating.
 
 See: go/chrome-infra-doc-cros for more information.
 """,
+  },
+
+  'official.android': {
+    'message': _OFFICIAL_WARNING,
+  },
+  'official.android.continuous': {
+    'message': _OFFICIAL_WARNING,
   },
 }
 
