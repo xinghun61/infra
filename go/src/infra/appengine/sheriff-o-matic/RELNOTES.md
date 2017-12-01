@@ -1,3 +1,26 @@
+# Release Notes sheriff-o-matic 2017-12-01
+
+- 3 commits, 3 bugs affected since ec11864 (2017-11-29T18:54:29Z)
+- 2 Authors:
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [[som] Send a *pointer* to a proto struct to eventuploader](https://chromium-review.googlesource.com/801353) (seanmccullough@chromium.org)
+- [SoM: add snippet about user to inline-filed bugs.](https://chromium-review.googlesource.com/792591) (zhangtiff@google.com)
+- [[som, TA/DA] Add link to test expectation editor.](https://chromium-review.googlesource.com/795013) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/603982](https://crbug.com/603982)
+  -  [https://crbug.com/790559](https://crbug.com/790559)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/788825](https://crbug.com/788825)
+
+
 # Release Notes sheriff-o-matic 2017-11-29
 
 - 6 commits, 2 bugs affected since dc0bf59
