@@ -246,7 +246,12 @@ func init() {
 
 	m := base.Extend(
 		templates.WithTemplates(prepareTemplates()),
-		auth.Authenticate(server.UsersAPIAuthMethod{}),
+		auth.Authenticate(
+			server.UsersAPIAuthMethod{},
+			&server.OAuth2Method{
+				Scopes: []string{server.EmailScope},
+			},
+		),
 		checkAccess,
 	)
 	// All POST forms must be protected with XSRF token.
