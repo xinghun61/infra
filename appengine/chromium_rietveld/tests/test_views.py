@@ -68,9 +68,8 @@ class TestSearch(TestCase):
 
   def test_json_get_api(self):
     today = datetime.date.today()
-    start = datetime.datetime(today.year, today.month, 1)
-    next_month = today + datetime.timedelta(days=31)
-    end = datetime.datetime(next_month.year, next_month.month, 1)
+    start = today - datetime.timedelta(days=2)
+    end = today + datetime.timedelta(days=2)
     # This search is derived from a real query that comes up in the logs
     # quite regulary. It searches for open issues with a test group as
     # reviewer within a month and requests the returned data to be encoded
