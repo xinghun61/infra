@@ -19,6 +19,9 @@ _DOCKER_VOLUMES = {
     '/etc/shadow': {'bind': '/etc/shadow', 'mode': 'ro'},
     '/etc/passwd': {'bind': '/etc/passwd', 'mode': 'ro'},
     '/etc/group': {'bind': '/etc/group', 'mode': 'ro'},
+    # Needed to give chrome-bot the same root access inside the container.
+    '/etc/sudoers': {'bind': '/etc/sudoers', 'mode': 'ro'},
+    '/etc/sudoers.d': {'bind': '/etc/sudoers.d', 'mode': 'ro'},
     # Needed by swarming bot to auth with server.
     '/var/lib/luci_machine_tokend': {
         'bind': '/var/lib/luci_machine_tokend',
