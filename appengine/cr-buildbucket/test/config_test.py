@@ -698,7 +698,7 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertEqual(
         url,
         ('https://chromium.googlesource.com/chromium/src/+/'
-         'infra/config/testbed-test.cfg'))
+         'refs/heads/infra/config/testbed-test.cfg'))
 
   def test_is_swarming_config(self):
     cfg = project_config_pb2.Bucket()
