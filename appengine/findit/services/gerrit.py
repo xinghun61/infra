@@ -400,7 +400,7 @@ def _GetDailyNumberOfCommits(limit):
 
 def _CulpritWasAutoCommitted(culprit_info):
   author_email = culprit_info['author']['email']
-  return author_email in constants.AUTO_COMMIT_ACCOUNTS
+  return author_email in constants.NO_AUTO_COMMIT_REVERT_ACCOUNTS
 
 
 def _ShouldCommitRevert(repo_name, revision, revert_status, pipeline_id):

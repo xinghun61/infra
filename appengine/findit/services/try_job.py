@@ -23,6 +23,7 @@ import time
 
 from google.appengine.ext import ndb
 
+from common import constants
 from common import exceptions
 from common.findit_http_client import FinditHttpClient
 from common.findit_http_client import HttpClientMetricsInterceptor
@@ -781,3 +782,14 @@ def GetCurrentWaterfallTryJobID(urlsafe_try_job_key, runner_id):
     if try_job_data.runner_id == runner_id:
       return try_job_id
   return None
+
+
+def GetCulpritsWithoutNoBlameAccountsCLS(culprits):
+  updated_culprits = {}
+  for revision, culprit in culprits.iteritems():
+    if culprit.get('author') in constants.NO_BLAME_ACTION_ACCOUNTS:
+      # Should not flag any NO_BLAME_ACTION_ACCOUNTS CLs as culprits.
+      continue
+    updated_culprits[revision] = culprit
+
+  return updated_culprits

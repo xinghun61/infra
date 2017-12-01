@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import namedtuple
 import logging
 import mock
 
@@ -34,16 +35,22 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
 
   def _MockGetChangeLog(self, revision):
 
+    class Author(namedtuple('Author', ['name', 'email'])):
+      pass
+
     class MockedChangeLog(object):
 
-      def __init__(self, commit_position, code_review_url):
+      def __init__(self, commit_position, code_review_url, author, email):
         self.commit_position = commit_position
         self.code_review_url = code_review_url
         self.change_id = str(commit_position)
+        self.author = Author(author, email)
 
     mock_change_logs = {}
-    mock_change_logs['rev1'] = MockedChangeLog(1, 'url_1')
-    mock_change_logs['rev2'] = MockedChangeLog(2, 'url_2')
+    mock_change_logs['rev1'] = MockedChangeLog(1, 'url_1', 'author1',
+                                               'author1@abc.com')
+    mock_change_logs['rev2'] = MockedChangeLog(2, 'url_2', 'author2',
+                                               'author2@abc.com')
     return mock_change_logs.get(revision)
 
   def setUp(self):
@@ -1550,19 +1557,20 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-    a_test1_suspected_cl = {
+    expected_culprit_info_1 = {
         'revision': 'rev1',
+        'repo_name': 'chromium',
         'commit_position': 1,
         'url': 'url_1',
-        'repo_name': 'chromium'
+        'author': 'author1@abc.com'
     }
-    a_test2_suspected_cl = {
+    expected_culprit_info_2 = {
         'revision': 'rev2',
+        'repo_name': 'chromium',
         'commit_position': 2,
         'url': 'url_2',
-        'repo_name': 'chromium'
+        'author': 'author2@abc.com',
     }
-
     expected_test_result = {
         'report': {
             'last_checked_out_revision': 'rev',
@@ -1741,8 +1749,8 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         'culprit': {
             'a_test': {
                 'tests': {
-                    'a_test1': a_test1_suspected_cl,
-                    'a_test2': a_test2_suspected_cl
+                    'a_test1': expected_culprit_info_1,
+                    'a_test2': expected_culprit_info_2
                 }
             }
         }
@@ -1757,18 +1765,8 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     culprits, _ = test_try_job.IdentifyTestTryJobCulprits(parameters)
 
     expected_culprits = {
-        'rev1': {
-            'revision': 'rev1',
-            'repo_name': 'chromium',
-            'commit_position': 1,
-            'url': 'url_1'
-        },
-        'rev2': {
-            'revision': 'rev2',
-            'repo_name': 'chromium',
-            'commit_position': 2,
-            'url': 'url_2'
-        }
+        'rev1': expected_culprit_info_1,
+        'rev2': expected_culprit_info_2
     }
     self.assertEqual(culprits, expected_culprits)
 
@@ -1787,6 +1785,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         'revision': 'rev1',
         'commit_position': 1,
         'url': 'url_1',
+        'author': 'author1@abc.com',
         'repo_name': 'chromium',
         'failures': {
             'a_test': ['a_test1'],
@@ -1797,6 +1796,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
         'revision': 'rev2',
         'commit_position': 2,
         'url': 'url_2',
+        'author': 'author2@abc.com',
         'repo_name': 'chromium',
         'failures': {
             'a_test': ['a_test1', 'a_test2'],

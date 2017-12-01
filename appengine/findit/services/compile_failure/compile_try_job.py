@@ -251,8 +251,8 @@ def UpdateTryJobResult(parameters, culprits):
   new_result = parameters.result.ToSerializable() if parameters.result else {}
   try_job_id = parameters.result.try_job_id if parameters.result else None
   if culprits:
-    try_job_service.UpdateTryJobResult(
-        try_job.compile_results, new_result, try_job_id)
+    try_job_service.UpdateTryJobResult(try_job.compile_results, new_result,
+                                       try_job_id)
   try_job.status = analysis_status.COMPLETED
   try_job.put()
 
@@ -387,7 +387,8 @@ def IdentifyCompileTryJobCulprit(parameters):
   if try_job_id and result and result.report:
     failed_revision = result.report.culprit
     failed_revisions = [failed_revision] if failed_revision else []
-    culprits = git.GetCLInfo(failed_revisions)
+    culprits = try_job_service.GetCulpritsWithoutNoBlameAccountsCLS(
+        git.GetCLInfo(failed_revisions))
 
     # In theory there are 2 cases where compile failure could be flaky:
     # 1. All revisions passed in the try job (try job will not run at good

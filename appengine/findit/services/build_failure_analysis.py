@@ -12,8 +12,9 @@ import os
 
 from google.appengine.ext import ndb
 
-from common.findit_http_client import FinditHttpClient
 from common import monitoring
+from common.constants import NO_BLAME_ACTION_ACCOUNTS
+from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
@@ -552,8 +553,13 @@ def AnalyzeOneCL(build_number,
                  deps_info,
                  use_ninja_output=False):
   """Checkes one CL to see if it's a suspect."""
-  justification_dict = CheckFiles(failure_signal, change_log, deps_info,
-                                  use_ninja_output)
+
+  if change_log and change_log['author']['email'] in NO_BLAME_ACTION_ACCOUNTS:
+    # This change should never be flagged as suspect.
+    justification_dict = None
+  else:
+    justification_dict = CheckFiles(failure_signal, change_log, deps_info,
+                                    use_ninja_output)
 
   if not justification_dict:
     return None, None

@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import namedtuple
 from datetime import datetime
 
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
@@ -160,12 +161,16 @@ class GitTest(wf_testcase.WaterfallTestCase):
 
   def _MockGetChangeLog(self, revision):
 
+    class Author(namedtuple('Author', ['name', 'email'])):
+      pass
+
     class MockedChangeLog(object):
 
       def __init__(self, commit_position, code_review_url):
         self.commit_position = commit_position
         self.code_review_url = code_review_url
         self.change_id = str(commit_position)
+        self.author = Author('author', 'author@abc.com')
 
     mock_change_logs = {}
     mock_change_logs['rev1'] = None
@@ -186,7 +191,8 @@ class GitTest(wf_testcase.WaterfallTestCase):
             'revision': 'rev2',
             'repo_name': 'chromium',
             'commit_position': 123,
-            'url': 'url'
+            'url': 'url',
+            'author': 'author@abc.com'
         }
     }
     self.assertEqual(expected_culprits, git.GetCLInfo(failed_revisions))

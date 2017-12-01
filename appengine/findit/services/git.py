@@ -69,7 +69,7 @@ def GetCLInfo(revisions):
       cls[revision]['commit_position'] = (change_log.commit_position)
       cls[revision]['url'] = (change_log.code_review_url or
                               change_log.commit_url)
-
+      cls[revision]['author'] = change_log.author.email
   return cls
 
 

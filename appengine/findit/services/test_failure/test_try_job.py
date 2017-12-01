@@ -406,8 +406,8 @@ def UpdateTryJobResult(parameters, culprits):
   new_result = parameters.result.ToSerializable() if parameters.result else {}
   try_job_id = parameters.result.try_job_id if parameters.result else None
   if culprits:
-    try_job_service.UpdateTryJobResult(
-        try_job.test_results, new_result, try_job_id)
+    try_job_service.UpdateTryJobResult(try_job.test_results, new_result,
+                                       try_job_id)
   try_job.status = analysis_status.COMPLETED
   try_job.put()
 
@@ -462,7 +462,8 @@ def IdentifyTestTryJobCulprits(parameters):
   try_job_id = result.try_job_id if result else None
   if try_job_id and result and result.report:
     culprit_map, failed_revisions = FindCulpritForEachTestFailure(result)
-    culprits = git.GetCLInfo(failed_revisions)
+    culprits = try_job_service.GetCulpritsWithoutNoBlameAccountsCLS(
+        git.GetCLInfo(failed_revisions))
 
     if not culprits:
       flaky_failures = result.report.flakes

@@ -63,6 +63,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f99_1.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r99_2': {
             'revision':
@@ -74,6 +77,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f99_2.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r98_1': {
             'revision':
@@ -85,6 +91,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'y/z/f98.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r97_1': {
             'revision':
@@ -101,6 +110,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f99_1.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r96_1': {
             'revision':
@@ -112,6 +124,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f96_1.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
     }
     deps_info = {}
@@ -272,6 +287,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f99_1.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r99_2': {
             'revision':
@@ -283,6 +301,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f99_2.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r98_1': {
             'revision':
@@ -294,6 +315,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'y/z/f98.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r97_1': {
             'revision':
@@ -310,6 +334,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f99_1.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r96_1': {
             'revision':
@@ -321,6 +348,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f96_1.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
     }
     deps_info = {}

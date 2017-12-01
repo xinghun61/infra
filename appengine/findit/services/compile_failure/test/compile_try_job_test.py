@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+from collections import namedtuple
 import logging
 import mock
 
@@ -33,16 +34,22 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
 
   def _MockGetChangeLog(self, revision):
 
+    class Author(namedtuple('Author', ['name', 'email'])):
+      pass
+
     class MockedChangeLog(object):
 
-      def __init__(self, commit_position, code_review_url):
+      def __init__(self, commit_position, code_review_url, author, email):
         self.commit_position = commit_position
         self.code_review_url = code_review_url
         self.change_id = str(commit_position)
+        self.author = Author(author, email)
 
     mock_change_logs = {}
-    mock_change_logs['rev1'] = MockedChangeLog(1, 'url_1')
-    mock_change_logs['rev2'] = MockedChangeLog(2, 'url_2')
+    mock_change_logs['rev1'] = MockedChangeLog(1, 'url_1', 'author1',
+                                               'author1@abc.com')
+    mock_change_logs['rev2'] = MockedChangeLog(2, 'url_2', 'author2',
+                                               'author2@abc.com')
     return mock_change_logs.get(revision)
 
   def setUp(self):
@@ -1249,11 +1256,12 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
     analysis.put()
 
     expected_culprit = 'rev2'
-    expected_suspected_cl = {
+    expected_culprit_info = {
         'revision': 'rev2',
+        'repo_name': 'chromium',
         'commit_position': 2,
         'url': 'url_2',
-        'repo_name': 'chromium'
+        'author': 'author2@abc.com',
     }
     expected_compile_result = {
         'report': {
@@ -1269,7 +1277,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         },
         'try_job_id': try_job_id,
         'culprit': {
-            'compile': expected_suspected_cl
+            'compile': expected_culprit_info
         },
         'url': None
     }
@@ -1278,12 +1286,14 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         'commit_position': 2,
         'url': 'url_2',
         'repo_name': 'chromium',
+        'author': 'author2@abc.com',
         'failures': {
             'compile': []
         },
         'top_score': None
     }]
 
+    expected_culprits = {'rev2': expected_culprit_info}
     parameters = IdentifyCompileTryJobCulpritParameters(
         build_key=BuildKey(
             master_name=master_name,
@@ -1292,7 +1302,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         result=CompileTryJobResult.FromSerializable(compile_result))
 
     culprits, _ = compile_try_job.IdentifyCompileTryJobCulprit(parameters)
-    self.assertEqual(culprits, {'rev2': expected_suspected_cl})
+    self.assertEqual(expected_culprits, culprits)
 
     try_job = WfTryJob.Get(master_name, builder_name, build_number)
     self.assertEqual(expected_compile_result, try_job.compile_results[-1])

@@ -11,6 +11,7 @@ import time
 
 from google.appengine.ext import ndb
 
+from common import constants
 from common import exceptions
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
@@ -655,8 +656,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
   def testUpdateTryJobResultAppendNewResult(self):
     try_job_result = [{'try_job_id': '111'}]
-    try_job_service.UpdateTryJobResult(
-        try_job_result, {'try_job_id': '123'}, '123')
+    try_job_service.UpdateTryJobResult(try_job_result, {'try_job_id': '123'},
+                                       '123')
     self.assertEqual([{
         'try_job_id': '111'
     }, {
@@ -1417,3 +1418,37 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(
         try_job_service.GetCurrentWaterfallTryJobID(try_job.key.urlsafe(),
                                                     'pipeline_id'))
+
+  def testGetCulpritsWithoutNoBlameAccountsCLS(self):
+    culprit_info_1 = {
+        'revision': 'rev1',
+        'repo_name': 'chromium',
+        'commit_position': 1,
+        'url': 'url_1',
+        'author': 'author1@abc.com'
+    }
+    culprit_info_3 = {
+        'revision': 'rev3',
+        'repo_name': 'chromium',
+        'commit_position': 3,
+        'url': 'url_3',
+        'author': 'author3@abc.com',
+    }
+
+    culprits = {
+        'rev1': culprit_info_1,
+        'rev2': {
+            'revision': 'rev2',
+            'repo_name': 'chromium',
+            'commit_position': 2,
+            'url': 'url_2',
+            'author': constants.NO_BLAME_ACTION_ACCOUNTS[0],
+        },
+        'rev3': culprit_info_3
+    }
+
+    expected_culprits = {'rev1': culprit_info_1, 'rev3': culprit_info_3}
+
+    self.assertEqual(
+        expected_culprits,
+        try_job_service.GetCulpritsWithoutNoBlameAccountsCLS(culprits))

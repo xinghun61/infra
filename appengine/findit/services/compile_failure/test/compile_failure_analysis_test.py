@@ -54,6 +54,9 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f99_1.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r99_2': {
             'revision':
@@ -65,6 +68,9 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f99_2.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r98_1': {
             'revision':
@@ -76,6 +82,9 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'y/z/f98.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
     }
     deps_info = {}
@@ -183,6 +192,9 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f99_1.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r99_2': {
             'revision':
@@ -194,6 +206,9 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f99_2.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r98_1': {
             'revision':
@@ -205,6 +220,9 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'y/z/f98.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
     }
     deps_info = {}
@@ -339,6 +357,9 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f99_1.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r99_2': {
             'revision':
@@ -350,6 +371,9 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'a/b/f99_2.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
         'r98_1': {
             'revision':
@@ -361,6 +385,9 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
                     'new_path': 'y/z/f98.cc'
                 },
             ],
+            'author': {
+                'email': 'author@abc.com'
+            }
         },
     }
     deps_info = {}

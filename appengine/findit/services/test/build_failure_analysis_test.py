@@ -6,6 +6,7 @@ from collections import defaultdict
 from datetime import datetime
 import mock
 
+from common.constants import NO_BLAME_ACTION_ACCOUNTS
 from common.waterfall import failure_type
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs import analysis_status
@@ -1009,6 +1010,13 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     build_number = 123
     result, max_score = build_failure_analysis.AnalyzeOneCL(
         build_number, {}, {}, {})
+    self.assertIsNone(result)
+    self.assertIsNone(max_score)
+
+  def testAnalyzeOneCLShouldNotBlameChange(self):
+    change_log = {'author': {'email': NO_BLAME_ACTION_ACCOUNTS[0]}}
+    result, max_score = build_failure_analysis.AnalyzeOneCL(
+        123, {}, change_log, {})
     self.assertIsNone(result)
     self.assertIsNone(max_score)
 
