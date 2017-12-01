@@ -172,7 +172,7 @@ func cronDiscoverBuilders(c *router.Context) error {
 	}
 
 	discoverer := &discovery.Builders{
-		RegistrationSemaphore: make(parallel.Semaphore, 10),
+		DatastoreOpSem: make(parallel.Semaphore, 10),
 		Buildbot: milo.NewBuildbotPRPCClient(&prpc.Client{
 			C:    &http.Client{Transport: transport},
 			Host: cfg.BuildbotServiceHostname,

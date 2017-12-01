@@ -153,8 +153,11 @@ func handleAnalyzeBuilder(c *router.Context) error {
 	// in other places, e.g. Monorail or monitoring.
 	err = datastore.RunInTransaction(c.Context, func(c context.Context) error {
 		now := clock.Now(c)
-		if err := datastore.Get(c, builder); err != nil {
+		switch err := datastore.Get(c, builder); {
+		case err != nil:
 			return err
+		case builder.Migration.Status >= storage.StatusMigrated:
+			return nil
 		}
 		builder.Migration = *migration
 		migrationDetails := &storage.BuilderMigrationDetails{

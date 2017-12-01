@@ -60,8 +60,7 @@ func TestBuilderMasterFilter(t *testing.T) {
 		So(err, ShouldBeNil)
 		datastore.GetTestable(c).CatchupIndexes()
 
-		q := datastore.NewQuery(BuilderKind)
-		q = BuilderMasterFilter(c, q, "tryserver.chromium.linux")
+		q := BuilderMasterFilter(c, nil, "tryserver.chromium.linux")
 		var builders []*Builder
 		err = datastore.GetAll(c, q, &builders)
 		So(err, ShouldBeNil)

@@ -50,8 +50,13 @@ func TestDiscovery(t *testing.T) {
 			ID:      bid("tryserver.chromium.linux", "linux_chromium_rel_ng"),
 			IssueID: storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 54},
 		}
-		err := datastore.Put(c, chromiumRelNg)
+		deletedBuilder := &storage.Builder{
+			ID:      bid("tryserver.chromium.linux", "deleted"),
+			IssueID: storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 55},
+		}
+		err := datastore.Put(c, chromiumRelNg, deletedBuilder)
 		So(err, ShouldBeNil)
+		datastore.GetTestable(c).CatchupIndexes()
 
 		// Mock Buildbot service.
 		buildbotServer := prpctest.Server{}
@@ -67,11 +72,16 @@ func TestDiscovery(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		// Mock Monorail.
-		var monorailReqs []*monorail.InsertIssueRequest
+		var bugReqs []*monorail.InsertIssueRequest
+		var commentReqs []*monorail.InsertCommentRequest
 		monorailServer := &monorailtest.ServerMock{
 			InsertIssueImpl: func(c context.Context, in *monorail.InsertIssueRequest) (*monorail.InsertIssueResponse, error) {
-				monorailReqs = append(monorailReqs, in)
-				return &monorail.InsertIssueResponse{Issue: &monorail.Issue{Id: 55}}, nil
+				bugReqs = append(bugReqs, in)
+				return &monorail.InsertIssueResponse{Issue: &monorail.Issue{Id: 56}}, nil
+			},
+			InsertCommentImpl: func(c context.Context, in *monorail.InsertCommentRequest) (*monorail.InsertCommentResponse, error) {
+				commentReqs = append(commentReqs, in)
+				return &monorail.InsertCommentResponse{}, nil
 			},
 		}
 
@@ -91,9 +101,12 @@ func TestDiscovery(t *testing.T) {
 		err = d.Discover(c, linuxTryserver)
 		So(err, ShouldBeNil)
 
-		// Verify the request to create a bug for asan.
-		So(monorailReqs, ShouldHaveLength, 1)
-		So(monorailReqs[0].Issue.Summary, ShouldEqual, "Migrate \"linux_chromium_asan_rel_ng\" to LUCI")
+		// Verify sent monorail requests.
+		So(bugReqs, ShouldHaveLength, 1)
+		So(bugReqs[0].Issue.Summary, ShouldEqual, "Migrate \"linux_chromium_asan_rel_ng\" to LUCI")
+		So(commentReqs, ShouldHaveLength, 1)
+		So(commentReqs[0].Issue, ShouldResemble, &monorail.IssueRef{ProjectId: "chromium", IssueId: 55})
+		So(commentReqs[0].Comment.Updates.Status, ShouldEqual, monorail.StatusFixed)
 
 		// Verify linux_chromium_asan_rel_ng was discovered.
 		chromiumAsanRelNg := &storage.Builder{
@@ -106,13 +119,13 @@ func TestDiscovery(t *testing.T) {
 			SchedulingType: config.SchedulingType_TRYJOBS,
 			OS:             config.OS_LINUX,
 
-			IssueID:                 storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 55},
+			IssueID:                 storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 56},
 			IssueDescriptionVersion: bugs.DescriptionVersion,
 
 			LUCIBuildbucketBucket: "luci.chromium.try",
 		})
 
-		// Verify linux_chromium_rel_ng was notrediscovered.
+		// Verify linux_chromium_rel_ng was not rediscovered.
 		chromiumRelNg.IssueID = storage.IssueID{}
 		err = datastore.Get(c, chromiumRelNg)
 		So(err, ShouldBeNil)

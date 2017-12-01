@@ -34,6 +34,9 @@ const builderIDSep = ':' // must have byte length of 1
 
 // BuilderMasterFilter limits a builder query to builders of the master.
 func BuilderMasterFilter(c context.Context, q *datastore.Query, master string) *datastore.Query {
+	if q == nil {
+		q = datastore.NewQuery(BuilderKind)
+	}
 	q = q.Gt("__key__", datastore.NewKey(c, BuilderKind, master+string(builderIDSep), 0, nil))
 	// ';' is the next rune after ':'. master name cannot have ':' or ';'
 	q = q.Lt("__key__", datastore.NewKey(c, BuilderKind, master+string(builderIDSep+1), 0, nil))

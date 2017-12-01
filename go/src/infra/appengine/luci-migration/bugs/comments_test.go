@@ -87,5 +87,14 @@ For the latest status, see https://luci-migration.example.com/masters/tryserver.
 			So(err, ShouldBeNil)
 			So(actualMonorailReq.Comment.Updates.Labels, ShouldResemble, []string{"-MigrationStatus-WAI"})
 		})
+
+		Convey("Migrated", func() {
+			builder.Migration.Status = storage.StatusMigrated
+			err := PostComment(c, ForwardingFactory(monorailServer), builder)
+			So(err, ShouldBeNil)
+			So(actualMonorailReq.Comment.Updates.Labels, ShouldResemble, []string{"MigrationStatus-WAI"})
+			So(actualMonorailReq.Comment.Updates.Status, ShouldEqual, monorail.StatusFixed)
+			So(actualMonorailReq.Comment.Content, ShouldEqual, `Status changed to "Migrated"`)
+		})
 	})
 }

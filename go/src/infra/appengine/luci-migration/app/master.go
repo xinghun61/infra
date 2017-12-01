@@ -57,8 +57,7 @@ func handleMasterPage(c *router.Context) error {
 
 func masterPage(c context.Context, master string) (*masterViewModel, error) {
 	model := &masterViewModel{Name: master}
-	q := datastore.NewQuery(storage.BuilderKind)
-	q = storage.BuilderMasterFilter(c, q, master)
+	q := storage.BuilderMasterFilter(c, nil, master)
 	err := datastore.Run(c, q, func(b *storage.Builder) {
 		model.Builders = append(model.Builders, masterBuilderViewModel{
 			Builder:    b,

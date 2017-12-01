@@ -17,6 +17,7 @@ import (
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/clock"
+	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
@@ -36,7 +37,7 @@ type Builders struct {
 
 	Buildbot milo.BuildbotClient
 
-	RegistrationSemaphore parallel.Semaphore // bounds parallel builder registration
+	DatastoreOpSem parallel.Semaphore // bounds parallel datastore operations
 }
 
 // Discover fetches builder names of the master and registers new ones in the
@@ -49,48 +50,72 @@ func (d *Builders) Discover(c context.Context, master *config.Master) error {
 	if err != nil {
 		return errors.Annotate(err, "could not fetch builder names from master %s", master.Name).Err()
 	}
+	toRegister := stringset.NewFromSlice(names...)
 
-	// Check which builders we don't know about.
-	toCheck := make([]interface{}, len(names))
-	for i, b := range names {
-		toCheck[i] = &storage.Builder{ID: bid(master.Name, b)}
-	}
-
-	// NOTE: There is probably an upper-bound (~500) to the number of items we can Get.
-	// Right now, luci/gae won't help us here. If we ever hit a master with enough builders
-	// to hit this upper-bound, we must fix this at luci/gae level.
-	// In practice, we have at most 400 builders per master though.
-	exists, err := datastore.Exists(c, toCheck...)
-	switch {
-	case err != nil:
-		return err
-	case exists.All():
-		// We know about all builders.
-		logging.Infof(c, "nothing new")
-		return nil
-	}
-
-	// New builders are discovered. Register them.
-	// This should always return nil.
 	return parallel.FanOutIn(func(work chan<- func() error) {
-		for i, name := range names {
-			if !exists.Get(i) {
-				name := name
-				c := logging.SetField(c, "builder", name)
-				work <- func() error {
-					if d.RegistrationSemaphore != nil {
-						d.RegistrationSemaphore.Lock()
-						defer d.RegistrationSemaphore.Unlock()
-					}
-					logging.Infof(c, "registering builder")
-					if err := d.registerBuilder(c, master, name); err != nil {
-						logging.WithError(err).Errorf(c, "could not register builder")
-					}
-					return nil
+		dsWork := func(title, builder string, f func() error) {
+			work <- func() error {
+				c := logging.SetField(c, "builder", builder)
+				logging.Infof(c, "%s", title)
+				if d.DatastoreOpSem != nil {
+					d.DatastoreOpSem.Lock()
+					defer d.DatastoreOpSem.Unlock()
 				}
+				if err := f(); err != nil {
+					logging.WithError(err).Errorf(c, "failed to %s", title)
+				}
+				return nil
 			}
 		}
+
+		q := storage.BuilderMasterFilter(c, nil, master.Name)
+		err := datastore.RunBatch(c, 32, q, func(b *storage.Builder) error {
+			if !toRegister.Del(b.ID.Builder) {
+				// The Buildbot builder no longer exists. Perhaps it was migrated!
+				dsWork("mark as migrated", b.ID.Builder, func() error {
+					return d.markMigrated(c, b)
+				})
+			}
+			return nil
+		})
+		if err != nil {
+			work <- func() error { return err }
+			return
+		}
+		toRegister.Iter(func(name string) bool {
+			dsWork("register builder", name, func() error {
+				return d.registerBuilder(c, master, name)
+			})
+			return true
+		})
 	})
+}
+
+func (d *Builders) markMigrated(c context.Context, builder *storage.Builder) error {
+	builder.Migration = storage.BuilderMigration{
+		Status: storage.StatusMigrated,
+	}
+	if err := bugs.PostComment(c, d.Monorail, builder); err != nil {
+		return errors.Annotate(err, "could not mark the bug as fixed").Err()
+	}
+
+	// Note: if this transaction ultimately fails (rare case), we will post the
+	// monorail comment again.
+	return datastore.RunInTransaction(c, func(c context.Context) error {
+		if err := datastore.Get(c, builder); err != nil {
+			return err
+		}
+
+		builder.Migration = storage.BuilderMigration{
+			Status: storage.StatusMigrated,
+		}
+		details := &storage.BuilderMigrationDetails{
+			Parent:      datastore.KeyForObj(c, builder),
+			TrustedHTML: "The builder is marked as Migrated because Buildbot builder no longer exists",
+		}
+
+		return datastore.Put(c, builder, details)
+	}, nil)
 }
 
 func (d *Builders) registerBuilder(c context.Context, master *config.Master, name string) error {

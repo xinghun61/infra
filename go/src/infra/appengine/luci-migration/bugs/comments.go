@@ -37,16 +37,19 @@ var statusChangedTmpl = template.Must(template.New("").
 			return fmt.Sprintf("%d%%", int(100.0*f))
 		},
 	}).
-	Parse(strings.TrimSpace(`
-Status changed to "{{.Builder.Migration.Status}}" (correctness {{.Builder.Migration.Correctness | percent}}, speed {{.Builder.Migration.Speed | percent}})
+	Parse(`
+Status changed to "{{.Builder.Migration.Status}}"
+{{- if not .Migrated}} (correctness {{.Builder.Migration.Correctness | percent}}, speed {{.Builder.Migration.Speed | percent}})
 For the latest status, see https://{{.Hostname}}/masters/{{.Builder.ID.Master|pathEscape}}/builders/{{.Builder.ID.Builder|pathEscape}}
-`)))
+{{end}}
+`))
 
 // PostComment posts a comment on the builder bug about the current status.
 func PostComment(c context.Context, client ClientFactory, builder *storage.Builder) error {
 	tmplArgs := map[string]interface{}{
 		"Builder":  builder,
 		"Hostname": info.DefaultVersionHostname(c),
+		"Migrated": builder.Migration.Status == storage.StatusMigrated,
 	}
 	contentBuf := &bytes.Buffer{}
 	if err := statusChangedTmpl.Execute(contentBuf, tmplArgs); err != nil {
@@ -54,10 +57,16 @@ func PostComment(c context.Context, client ClientFactory, builder *storage.Build
 	}
 
 	var label string
-	if builder.Migration.Status == storage.StatusLUCIWAI {
+	switch builder.Migration.Status {
+	case storage.StatusLUCIWAI, storage.StatusMigrated:
 		label = "MigrationStatus-WAI"
-	} else {
+	default:
 		label = "-MigrationStatus-WAI"
+	}
+
+	var status string
+	if builder.Migration.Status == storage.StatusMigrated {
+		status = monorail.StatusFixed
 	}
 
 	req := &monorail.InsertCommentRequest{
@@ -67,8 +76,9 @@ func PostComment(c context.Context, client ClientFactory, builder *storage.Build
 		},
 		SendEmail: true,
 		Comment: &monorail.InsertCommentRequest_Comment{
-			Content: contentBuf.String(),
+			Content: strings.TrimSpace(contentBuf.String()),
 			Updates: &monorail.Update{
+				Status: status,
 				Labels: []string{label},
 			},
 		},
