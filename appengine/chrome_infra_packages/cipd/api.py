@@ -725,6 +725,8 @@ class PackageRepositoryApi(remote.Service):
     caller = auth.get_current_identity()
     visible_pkgs = [p for p in pkgs if acl.can_fetch_package(p, caller)]
     visible_dirs = [d for d in dirs if acl.can_fetch_package(d, caller)]
+    visible_pkgs.sort()
+    visible_dirs.sort()
 
     return ListPackagesResponse(packages=visible_pkgs, directories=visible_dirs)
 
