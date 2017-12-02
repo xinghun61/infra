@@ -107,7 +107,8 @@ func (d *Builders) markMigrated(c context.Context, builder *storage.Builder) err
 		}
 
 		builder.Migration = storage.BuilderMigration{
-			Status: storage.StatusMigrated,
+			Status:       storage.StatusMigrated,
+			AnalysisTime: clock.Now(c),
 		}
 		details := &storage.BuilderMigrationDetails{
 			Parent:      datastore.KeyForObj(c, builder),
