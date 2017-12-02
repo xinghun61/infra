@@ -70,7 +70,7 @@ func (d *Builders) Discover(c context.Context, master *config.Master) error {
 
 		q := storage.BuilderMasterFilter(c, nil, master.Name)
 		err := datastore.RunBatch(c, 32, q, func(b *storage.Builder) error {
-			if !toRegister.Del(b.ID.Builder) {
+			if !toRegister.Del(b.ID.Builder) && b.Migration.Status < storage.StatusMigrated {
 				// The Buildbot builder no longer exists. Perhaps it was migrated!
 				dsWork("mark as migrated", b.ID.Builder, func() error {
 					return d.markMigrated(c, b)

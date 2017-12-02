@@ -54,7 +54,12 @@ func TestDiscovery(t *testing.T) {
 			ID:      bid("tryserver.chromium.linux", "deleted"),
 			IssueID: storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 55},
 		}
-		err := datastore.Put(c, chromiumRelNg, deletedBuilder)
+		migratedBuilder := &storage.Builder{
+			ID:        bid("tryserver.chromium.linux", "migrated"),
+			IssueID:   storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 60},
+			Migration: storage.BuilderMigration{Status: storage.StatusMigrated},
+		}
+		err := datastore.Put(c, chromiumRelNg, deletedBuilder, migratedBuilder)
 		So(err, ShouldBeNil)
 		datastore.GetTestable(c).CatchupIndexes()
 
