@@ -1,11 +1,11 @@
-# chops-ui
+# chopsui
 
-Design Doc: go/chops-ui
+Design Doc: go/chopsui
 
 This directory contains Polymer Web Components that are meant to be shared
 by Chrome Operations' application frontends.
 
-chopsui/ has been published as the bower package: chops-ui
+chopsui/ has been published as the bower package: chopsui
 
 ## Definitions
 
@@ -19,7 +19,7 @@ chopsui/ has been published as the bower package: chops-ui
 
 Code changes should be done in the infra repo.
 
-New versions of the chops-ui bower package are published by pushing git tags. This should be done in the chopsui repo. See the Pushing a New Version section.
+New versions of the chopsui bower package are published by pushing git tags. This should be done in the chopsui repo. See the Pushing a New Version section.
 
 ## Documenting elements
 Please add demos and documentation for elements as described in the [polymer docs](https://www.polymer-project.org/2.0/docs/tools/documentation#document-an-element).
@@ -30,7 +30,7 @@ Check that your demo and documentation are working and correct by running:
 polymer serve
 ```
 
-then visit localhost:XXXX/componenets/chops-ui/demo/my-el_demo.html
+then visit localhost:XXXX/componenets/chopsui/demo/my-el_demo.html
 
 ## Pushing a New Version
 
@@ -75,6 +75,6 @@ That's it!
 Run
 
 ```sh
-bower info chops-ui
+bower info chopsui
 ```
 You should see the new version tag you just pushed listed under 'Available versions'.
