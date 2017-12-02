@@ -29,7 +29,7 @@ import (
 
 func testContext() context.Context {
 	c := context.Background()
-	c = memory.UseWithAppID(c, "dev~luci-migration-dev")
+	c = memory.UseWithAppID(c, "luci-migration-dev")
 	c = logging.SetLevel(c, logging.Debug)
 	c = gologger.StdConfig.Use(c)
 	c = testsecrets.Use(c)

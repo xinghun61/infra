@@ -20,9 +20,12 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 
+	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 )
 
@@ -50,13 +53,35 @@ func handleIndexPage(c *router.Context) error {
 }
 
 func indexPage(c context.Context) (*indexViewModel, error) {
+	cfg, err := config.Get(c)
+	if err != nil {
+		return nil, err
+	}
+
+	cfgMap := make(map[string]*config.Master, len(cfg.Masters))
+	for _, m := range cfg.Masters {
+		cfgMap[m.Name] = m
+	}
+
+	hasInternalAccess, err := auth.IsMember(c, accessGroup)
+	if err != nil {
+		return nil, errors.Annotate(err, "could not check group membership").Err()
+	}
+
 	masters := map[string]*indexMasterViewModel{}
 	masterNames := []string{}
 	// Note: may have to cache this if we have a lot of builders.
 	q := datastore.NewQuery(storage.BuilderKind)
-	err := datastore.Run(c, q, func(b *storage.Builder) {
+	err = datastore.Run(c, q, func(b *storage.Builder) {
 		m := masters[b.ID.Master]
 		if m == nil {
+			switch mCfg := cfgMap[b.ID.Master]; {
+			case mCfg == nil:
+				return
+			case !mCfg.Public && !hasInternalAccess:
+				return
+			}
+
 			m = &indexMasterViewModel{Name: b.ID.Master}
 			masters[b.ID.Master] = m
 			masterNames = append(masterNames, m.Name)

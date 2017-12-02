@@ -34,6 +34,9 @@ message Master {
     // It is assumed to have "LUCI <buildbot_builder_name>" builders for each
     // Buildbot builder.
     string luci_bucket = 4;
+
+    // If public, access is not controlled for read-only requests.
+    bool public = 5;
 }
 
 enum SchedulingType {

@@ -17,13 +17,18 @@ package app
 import (
 	"testing"
 
+	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/auth/identity"
+	memcfg "go.chromium.org/luci/common/config/impl/memory"
+	"go.chromium.org/luci/luci_config/server/cfgclient/backend/testconfig"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
 	"go.chromium.org/luci/server/templates"
 
+	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -36,6 +41,28 @@ func TestIndex(t *testing.T) {
 		c := testContext()
 		datastore.GetTestable(c).Consistent(true)
 
+		cfg := &config.Config{
+			Masters: []*config.Master{
+				{
+					Name:   "tryserver.chromium.linux",
+					Public: true,
+				},
+				{
+					Name:   "tryserver.chromium.mac",
+					Public: true,
+				},
+				{
+					Name: "internal.tryserver.chromium.linux",
+				},
+			},
+		}
+		c = testconfig.WithCommonClient(c, memcfg.New(map[string]memcfg.ConfigSet{
+			"services/luci-migration-dev": {
+				"config.cfg": proto.MarshalTextString(cfg),
+			},
+		}))
+		c = auth.WithState(c, &authtest.FakeState{Identity: identity.AnonymousIdentity})
+
 		handle := func(c context.Context) (*indexViewModel, error) {
 			model, err := indexPage(c)
 			if err == nil {
@@ -47,10 +74,6 @@ func TestIndex(t *testing.T) {
 		}
 
 		Convey("works", func() {
-			c := auth.WithState(c, &authtest.FakeState{
-				Identity: "user:user@example.com",
-			})
-
 			err := datastore.Put(
 				c,
 				&storage.Builder{
@@ -104,6 +127,77 @@ func TestIndex(t *testing.T) {
 						MigratedBuilderCount:   1,
 						MigratedBuilderPercent: 50,
 						TotalBuilderCount:      2,
+					},
+				},
+			})
+		})
+		Convey("internal builder", func() {
+			err := datastore.Put(
+				c,
+				&storage.Builder{
+					ID: storage.BuilderID{
+						Master:  "tryserver.chromium.linux",
+						Builder: "linux_chromium_asan_rel_ng",
+					},
+					Migration: storage.BuilderMigration{Status: storage.StatusLUCINotWAI},
+				},
+				&storage.Builder{
+					ID: storage.BuilderID{
+						Master:  "internal.tryserver.chromium.linux",
+						Builder: "linux_chromium_asan_rel_ng",
+					},
+					Migration: storage.BuilderMigration{Status: storage.StatusLUCINotWAI},
+				},
+			)
+			So(err, ShouldBeNil)
+
+			model, err := handle(c)
+			So(err, ShouldBeNil)
+			So(model, ShouldResemble, &indexViewModel{
+				Masters: []*indexMasterViewModel{
+					{
+						Name:              "tryserver.chromium.linux",
+						TotalBuilderCount: 1,
+					},
+				},
+			})
+		})
+		Convey("has internal access", func() {
+			c = auth.WithState(c, &authtest.FakeState{
+				Identity:       "user:user@example.com",
+				IdentityGroups: []string{accessGroup},
+			})
+
+			err := datastore.Put(
+				c,
+				&storage.Builder{
+					ID: storage.BuilderID{
+						Master:  "tryserver.chromium.linux",
+						Builder: "linux_chromium_asan_rel_ng",
+					},
+					Migration: storage.BuilderMigration{Status: storage.StatusLUCINotWAI},
+				},
+				&storage.Builder{
+					ID: storage.BuilderID{
+						Master:  "internal.tryserver.chromium.linux",
+						Builder: "linux_chromium_asan_rel_ng",
+					},
+					Migration: storage.BuilderMigration{Status: storage.StatusLUCINotWAI},
+				},
+			)
+			So(err, ShouldBeNil)
+
+			model, err := handle(c)
+			So(err, ShouldBeNil)
+			So(model, ShouldResemble, &indexViewModel{
+				Masters: []*indexMasterViewModel{
+					{
+						Name:              "internal.tryserver.chromium.linux",
+						TotalBuilderCount: 1,
+					},
+					{
+						Name:              "tryserver.chromium.linux",
+						TotalBuilderCount: 1,
 					},
 				},
 			})

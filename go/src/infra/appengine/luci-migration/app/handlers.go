@@ -230,43 +230,62 @@ func init() {
 	// very random. Seed it with real randomness.
 	mathrand.SeedRandomly()
 
-	base := standard.Base()
-
-	// Setup HTTP routes.
+	mwBase := standard.Base()
 	r := router.New()
 
 	standard.InstallHandlers(r)
-	r.GET("/internal/cron/discover-builders", base, errHandler(cronDiscoverBuilders))
+	r.GET("/internal/cron/discover-builders", mwBase, errHandler(cronDiscoverBuilders))
 	// TODO: make it an API instead of cron when we have a strong need for API.
-	r.GET("/internal/cron/update-bugs", base, errHandler(cronUpdateBugDescriptions))
-	r.POST("/_ah/push-handlers/buildbucket", base, taskHandler(handleBuildbucketPubSub))
-	r.GET("/internal/cron/analyze-builders", base, errHandler(cronAnalyzeBuilders))
-	r.POST("/internal/task/analyze-builder/*ignored", base, taskHandler(handleAnalyzeBuilder))
-	r.POST("/internal/task/notify/*ignored", base, taskHandler(handleNotifyOnBuilderChange))
+	r.GET("/internal/cron/update-bugs", mwBase, errHandler(cronUpdateBugDescriptions))
+	r.POST("/_ah/push-handlers/buildbucket", mwBase, taskHandler(handleBuildbucketPubSub))
+	r.GET("/internal/cron/analyze-builders", mwBase, errHandler(cronAnalyzeBuilders))
+	r.POST("/internal/task/analyze-builder/*ignored", mwBase, taskHandler(handleAnalyzeBuilder))
+	r.POST("/internal/task/notify/*ignored", mwBase, taskHandler(handleNotifyOnBuilderChange))
 
-	m := base.Extend(
+	mwHTML := mwBase.Extend(
 		templates.WithTemplates(prepareTemplates()),
 		auth.Authenticate(
 			server.UsersAPIAuthMethod{},
-			&server.OAuth2Method{
-				Scopes: []string{server.EmailScope},
-			},
+			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
 		),
-		checkAccess,
 	)
+	mwMasterRoute := mwHTML.Extend(checkMasterAccess)
 	// All POST forms must be protected with XSRF token.
-	mxsrf := m.Extend(xsrf.WithTokenCheck)
 
-	r.GET("/", m, errHandler(handleIndexPage))
-	r.GET("/masters/:master/", m, errHandler(handleMasterPage))
-	r.GET("/masters/:master/builders/:builder/", m, errHandler(handleBuilderPage))
-	r.POST("/masters/:master/builders/:builder/", mxsrf, errHandler(handleBuilderPagePost))
+	r.GET("/", mwHTML, errHandler(handleIndexPage))
+	r.GET("/masters/:master/", mwMasterRoute, errHandler(handleMasterPage))
+	r.GET("/masters/:master/builders/:builder/", mwMasterRoute, errHandler(handleBuilderPage))
+	r.POST("/masters/:master/builders/:builder/", mwMasterRoute.Extend(xsrf.WithTokenCheck), errHandler(handleBuilderPagePost))
 
 	http.DefaultServeMux.Handle("/", r)
 }
 
-// checkAccess restricts all requests to publicAccessGroup group.
-func checkAccess(c *router.Context, next router.Handler) {
+// checkMasterAccess checks access to the master.
+func checkMasterAccess(c *router.Context, next router.Handler) {
+	master := c.Params.ByName("master")
+	cfg, err := config.Get(c.Context)
+	if err != nil {
+		logging.WithError(err).Errorf(c.Context, "cannot load config", accessGroup)
+		http.Error(c.Writer, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	var masterCfg *config.Master
+	for _, m := range cfg.Masters {
+		if m.Name == master {
+			masterCfg = m
+			break
+		}
+	}
+	switch {
+	case masterCfg == nil:
+		http.NotFound(c.Writer, c.Request)
+		return
+	case masterCfg.Public:
+		next(c)
+		return
+	}
+
 	switch allow, err := auth.IsMember(c.Context, accessGroup); {
 	case err != nil:
 		logging.WithError(err).Errorf(c.Context, "cannot check %q membership", accessGroup)
