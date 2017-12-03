@@ -71,10 +71,14 @@ class SomFileBug extends Polymer.mixinBehaviors([AnnotationManagerBehavior, Post
         labels.push(this.$.priority.selectedItemLabel);
       }
 
+      let selectedUsers = this.$.cc.selectedUsers.map((u) => {
+        return u.email;
+      });
+
       let bugData = {
         Summary: this.$.summary.value,
         Description: this.$.description.value,
-        Cc: this.$.cc.selectedUsers,
+        Cc: selectedUsers,
         Labels: labels,
       }
 
