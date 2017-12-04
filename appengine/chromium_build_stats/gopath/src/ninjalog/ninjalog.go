@@ -239,19 +239,19 @@ func Dump(w io.Writer, steps []Step) error {
 	return nil
 }
 
-// Dedup dedupes steps. step may have the same start and end.
+// Dedup dedupes steps. step may have the same cmd hash.
 // Dedup only returns the first step for these steps.
 // steps will be sorted by start time.
 func Dedup(steps []Step) []Step {
+	m := make(map[string]bool)
 	sort.Sort(Steps(steps))
 	var dedup []Step
-	var last Step
 	for _, s := range steps {
-		if s.Start == last.Start && s.End == last.End {
+		if m[s.CmdHash] {
 			continue
 		}
 		dedup = append(dedup, s)
-		last = s
+		m[s.CmdHash] = true
 	}
 	return dedup
 }

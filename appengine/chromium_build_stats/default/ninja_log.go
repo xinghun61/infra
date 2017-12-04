@@ -68,7 +68,7 @@ You need to <a href="{{.Login}}">login</a> to upload .ninja_log file.
 <h1><a href="/file/{{.Path}}">{{.Path}}</a></h1>
 <ul>
  <li><a href="{{.Filename}}/lastbuild">.ninja_log</a>
- <li><a href="{{.Filename}}/table">.ninja_log in table format</a>
+ <li><a href="{{.Filename}}/table?dedup=true">.ninja_log in table format</a> (<a href="{{.Filename}}/table">full</a>)
  <li><a href="{{.Filename}}/metadata.json">metadata.json</a>
  <li><a href="{{.Filename}}/trace.html">trace viewer</a> [<a href="{{.Filename}}/trace.json">trace.json</a>]
 </ul>
@@ -130,6 +130,12 @@ func ninjaLogHandler(w http.ResponseWriter, req *http.Request) {
 
 	ctx := appengine.NewContext(req)
 
+	err := req.ParseForm()
+	if err != nil {
+		ctx.Errorf("failed to parse form: %v", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
 	// should we set access control like /file?
 
 	config := google.NewAppEngineConfig(ctx, []string{
@@ -149,6 +155,9 @@ func ninjaLogHandler(w http.ResponseWriter, req *http.Request) {
 		ctx.Errorf("failed to fetch %s: %v", logPath, err)
 		http.Error(w, err.Error(), http.StatusNotFound)
 		return
+	}
+	if len(req.Form["dedup"]) > 0 {
+		njl.Steps = ninjalog.Dedup(njl.Steps)
 	}
 
 	err = outFunc(w, logPath, njl)
