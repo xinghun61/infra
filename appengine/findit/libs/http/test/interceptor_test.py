@@ -15,9 +15,10 @@ from libs.http import interceptor
 class DummyHttpClient(retry_http_client.RetryHttpClient):
   """Returns mock response based on the url."""
 
-  def __init__(self):
-    super(DummyHttpClient,
-          self).__init__(interceptor=interceptor.LoggingInterceptor())
+  def __init__(self, retriable_exceptions=None):
+    dummy_interceptor = interceptor.LoggingInterceptor(
+        retriable_exceptions=retriable_exceptions or [])
+    super(DummyHttpClient, self).__init__(interceptor=dummy_interceptor)
 
   def _Get(self, url, timeout_seconds, headers=None):
     url = urlparse.urlparse(url)
@@ -62,12 +63,25 @@ class InterceptorTest(testing.AppengineTestCase):
                                          NotImplementedError,
                                          'Post not supported', url)
 
+  @mock.patch.object(logging, 'warning')
+  @mock.patch.object(logging, 'exception')
+  def testWithExceptionRetriable(self, mock_logging_e, mock_logging_w):
+    client = DummyHttpClient(retriable_exceptions=[NotImplementedError])
+    url = 'https://test.com/'
+    with self.assertRaises(NotImplementedError):
+      _status, _content = client.Post(url, {}, max_retries=2)
+    mock_logging_e.assert_called_once_with('got exception %s("%s") for url %s',
+                                           NotImplementedError,
+                                           'Post not supported', url)
+    mock_logging_w.assert_called_once_with('got exception %s("%s") for url %s',
+                                           NotImplementedError,
+                                           'Post not supported', url)
+
   def testGetHost(self):
     self.assertEqual(
         'test.com',
         interceptor.HttpInterceptorBase.GetHost('https://test.com/long/path'))
     self.assertIsNone(interceptor.HttpInterceptorBase.GetHost(''))
-
 
   @mock.patch.object(logging, 'info')
   def testNoExceptionHttpError(self, mock_logging):
@@ -79,4 +93,3 @@ class InterceptorTest(testing.AppengineTestCase):
     mock_logging.assert_called_once_with(
         'request to %s responded with %d http status and headers %s', url, 404,
         '[]')
-

@@ -7,6 +7,7 @@ import logging
 import urlparse
 
 _NO_RETRY_CODES = [200, 302, 401, 403, 404, 409, 501]
+_RETRIABLE_EXCEPTIONS = []
 
 
 class HttpInterceptorBase(object):
@@ -21,8 +22,10 @@ class HttpInterceptorBase(object):
   methods instead of the ones originally sent to them.
   """
 
-  def __init__(self, no_retry_codes=None):
+  def __init__(self, no_retry_codes=None, retriable_exceptions=None):
     self.no_retry_codes = no_retry_codes or _NO_RETRY_CODES
+    self._retriable_exceptions = tuple(retriable_exceptions or
+                                       _RETRIABLE_EXCEPTIONS)
 
   def GetAuthenticationHeaders(self, request):
     """An interceptor can override this method to produce auth headers.
@@ -88,7 +91,9 @@ class HttpInterceptorBase(object):
     Retruns: An exception to be raised to the caller or None.
     """
     _ = request
-    _ = can_retry
+    if can_retry and isinstance(exception, self._retriable_exceptions):
+      # Only swallow a known exception when can_retry is true.
+      return None
     return exception
 
   @staticmethod
@@ -116,8 +121,7 @@ class LoggingInterceptor(HttpInterceptorBase):
   def OnResponse(self, request, response):
     if response.get('status_code') != 200:
       logging.info('request to %s responded with %d http status and headers %s',
-                   request.get('url'),
-                   response.get('status_code', 0),
+                   request.get('url'), response.get('status_code', 0),
                    json.dumps(response.get('headers', {}).items()))
     else:
       logging.info('got response status 200 for url %s', request.get('url'))
@@ -126,10 +130,10 @@ class LoggingInterceptor(HttpInterceptorBase):
 
   def OnException(self, request, exception, can_retry):
     if can_retry:
-      logging.warning('got exception %s("%s") for url %s',
-                      type(exception), exception.message, request.get('url'))
+      logging.warning('got exception %s("%s") for url %s', type(exception),
+                      exception.message, request.get('url'))
     else:
-      logging.exception('got exception %s("%s") for url %s',
-                        type(exception), exception.message, request.get('url'))
+      logging.exception('got exception %s("%s") for url %s', type(exception),
+                        exception.message, request.get('url'))
     return super(LoggingInterceptor, self).OnException(request, exception,
                                                        can_retry)
