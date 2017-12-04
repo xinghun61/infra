@@ -14,6 +14,7 @@ from google.appengine.ext import ndb
 from apiclient.errors import HttpError
 from common.test.mocks import MockComment, MockIssue, MockIssueTrackerAPI
 import gae_ts_mon
+from handlers import flake_issues
 from handlers.flake_issues import (
     ProcessIssue, CreateFlakyRun, CTF_CAN_FILE_BUGS_FOR_TESTS)
 import main
@@ -220,6 +221,22 @@ class FlakeIssuesTestCase(testing.AppengineTestCase):
     self.assertEqual(updated_flake.num_reported_flaky_runs, 3)
     self.assertEqual(updated_flake.issue_last_updated,
                      datetime.datetime(2015, 11, 10, 10, 11, 0))
+
+  @mock_datetime_utc(2015, 11, 10, 10, 11, 0)
+  @mock.patch.object(flake_issues, 'get_existing_issue')
+  def test_creates_issue_for_new_flake_but_issue_exists(self, issue_fn):
+    flake = self._create_flake()
+    flake.key = ndb.Key('Flake', 'test-flake-key')
+    flake.put()
+
+    issue = mock.MagicMock()
+    issue.id = 1
+    issue.created = datetime.datetime(2017, 1, 1)
+    issue_fn.return_value = issue
+
+    with mock.patch('handlers.flake_issues.MIN_REQUIRED_FLAKY_RUNS', 2):
+      response = self.test_app.post('/issues/process/%s' % flake.key.urlsafe())
+      self.assertEqual(200, response.status_int)
 
   def test_step_flakes_do_not_ask_sheriffs_to_disable_them(self):
     flake = self._create_flake()
@@ -1185,3 +1202,45 @@ class TestOverrideIssueID(testing.AppengineTestCase):
     self.test_app.get(
         '/override_issue_id?key=%s&issue_id=0' % key.urlsafe())
     self.assertEqual(key.get().issue_id, 0)
+
+  def test_get_existing_issue_id(self):
+    mock_api = mock.MagicMock()
+    with self.assertRaises(AssertionError):
+      flake_issues.get_existing_issue(mock_api, None)
+
+    mock_api.getIssues.return_value = None
+    self.assertEqual(None, flake_issues.get_existing_issue(mock_api, 'test'))
+    self.assertTrue(mock_api.getIssues.called)
+    args, _ = mock_api.getIssues.call_args
+    self.assertEqual(
+      ('summary:test reporter:findit-for-me@appspot.gserviceaccount.com '
+       'is:open',), args)
+    mock_api.reset_mock()
+
+    mock_issue = mock.MagicMock()
+    mock_issue.id = 10
+    mock_issue.open = True
+    mock_issue.updated = datetime.datetime(2017, 1, 1)
+    mock_issue.summary = 'test is flaky'
+    mock_api.getIssues.return_value = [mock_issue]
+    self.assertEqual(10, flake_issues.get_existing_issue(mock_api, 'test').id)
+    self.assertTrue(mock_api.getIssues.called)
+    args, _ = mock_api.getIssues.call_args
+    self.assertEqual(
+      ('summary:test reporter:findit-for-me@appspot.gserviceaccount.com '
+       'is:open',), args)
+    mock_api.reset_mock()
+
+    mock_issue = mock.MagicMock()
+    mock_issue.id = 20
+    mock_issue.open = False
+    mock_issue.updated = datetime.datetime(2017, 1, 1)
+    mock_issue.summary = 'test flaked'
+    mock_api.getIssues.return_value = [mock_issue]
+    self.assertEqual(None, flake_issues.get_existing_issue(mock_api, 'test'))
+    self.assertTrue(mock_api.getIssues.called)
+    args, _ = mock_api.getIssues.call_args
+    self.assertEqual(
+      ('summary:test reporter:findit-for-me@appspot.gserviceaccount.com '
+       'is:open',), args)
+    mock_api.reset_mock()

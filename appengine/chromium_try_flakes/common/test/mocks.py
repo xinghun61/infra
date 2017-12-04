@@ -60,6 +60,10 @@ class MonorailDB(object): # pragma: no cover
       raise HttpError(mock.Mock(status=404), '')
     return self.issues[project][issue_id]
 
+  # pylint: disable=unused-argument
+  def getIssues(self, query, project):
+    return []
+
   def update(self, issue, comment):
     self.issues[issue.project_id][issue.id] = issue
     issue.comments.append(
@@ -76,6 +80,11 @@ class MockIssueTrackerAPI(object): # pragma: no cover
   def getIssue(self, issue_id, project=None):
     project = project or self.project
     return self.database.getIssue(issue_id, project)
+
+  # pylint: disable=unused-argument
+  def getIssues(self, query, project=None):
+    project = project or self.project
+    return self.database.getIssues(query, project)
 
   def getComments(self, issue_id):
     return self.database.getComments(issue_id, self.project)

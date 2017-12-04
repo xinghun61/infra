@@ -127,6 +127,31 @@ def get_queue_details(flake_name):
   else:
     return 'Sheriff Bug Queue', 'Sheriff-Chromium'
 
+def get_existing_issue(api, test_name):
+  """Search for issues about test_name filed by Findit.
+
+  Args:
+    api (IssueTrackerApi): Api object to make the call through.
+    test_name (str): The test name to search for.
+
+  Returns:
+    (int) issue if one exists, None otherwise.
+  """
+  # TODO(crbug.com/790545): Use customized fields when they're available.
+  assert test_name
+
+  query = ('summary:{} reporter:findit-for-me@appspot.gserviceaccount.com'
+           ' is:open'.format(test_name))
+
+  current_issues = api.getIssues(query)
+  if current_issues is None:
+    return None
+
+  for current_issue in current_issues:
+    if current_issue.open:
+      return current_issue
+
+  return None
 
 class ProcessIssue(webapp2.RequestHandler):
   time_since_first_flake = gae_ts_mon.FloatMetric(
@@ -439,6 +464,15 @@ class ProcessIssue(webapp2.RequestHandler):
     if len(new_flakes) < MIN_REQUIRED_FLAKY_RUNS:
       logging.info('Too few new flakes: %d', len(new_flakes))
       return
+
+    # Don't file a bug if one already exists.
+    if not flake.issue_id or flake.issue_id <= 0:
+      existing_issue = get_existing_issue(api, flake.name)
+      if existing_issue:
+        logging.info('A bug for test %s already exists for flakiness. '
+                     'Bug id %s', flake.name, existing_issue.id)
+        flake.issue_id = existing_issue.id
+        flake.issue_last_updated = existing_issue.created
 
     if flake.issue_id > 0:
       # Update issues at most once a day.
