@@ -259,8 +259,10 @@ class BuildBucketApi(remote.Service):
       if build:
         one_res.build = api_common.build_to_message(
             build, include_lease_key=True)
-      else:
+      elif isinstance(ex, errors.Error):
         one_res.error = exception_to_error_message(ex)
+      else:
+        raise ex
       res.results.append(one_res)
     return res
 
@@ -475,9 +477,10 @@ class BuildBucketApi(remote.Service):
       if build:
         msg.lease_expiration_ts = utils.datetime_to_timestamp(
             build.lease_expiration_date)
-      else:
+      elif isinstance(ex, errors.Error):
         msg.error = exception_to_error_message(ex)
-
+      else:
+        raise ex
       return msg
 
     results = service.heartbeat_batch(heartbeats)

@@ -276,6 +276,14 @@ class ApiTests(object):
       'error': {'reason': 'INVALID_INPUT', 'message': 'Just bad'},
     })
 
+  @mock.patch('service.add_many_async', autospec=True)
+  def test_put_batch_with_exception(self, add_many_async):
+    add_many_async.return_value = future([(None, Exception())])
+    req = {
+      'builds': [{'bucket': 'chromium'}],
+    }
+    self.call_api('put_batch', req, status=500)
+
   ####### SEARCH ###############################################################
 
   @mock.patch('service.search', autospec=True)

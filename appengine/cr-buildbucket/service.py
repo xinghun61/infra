@@ -334,6 +334,10 @@ def add_many_async(build_request_list):
   ctx = ndb.get_context()
   new_builds = {}
 
+  logging.info(
+      '%s is creating %d builds',
+      auth.get_current_identity(), len(build_request_list))
+
   def pending_reqs():
     for i, r in enumerate(build_request_list):
       if results[i] is None:
