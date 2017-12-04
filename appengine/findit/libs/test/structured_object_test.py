@@ -57,12 +57,14 @@ class _Future(object):
 class SerilizableObjectTest(unittest.TestCase):
 
   def testAttributeCached(self):
-    self.assertFalse(hasattr(_ObjectA, '_dynamic_definitions'))
+    dynamic_definitions_attr_name = '%s.%s._dynamic_definitions' % (
+        _ObjectA.__module__, _ObjectA.__name__)
+    self.assertFalse(hasattr(_ObjectA, dynamic_definitions_attr_name))
     attributes = _ObjectA._GetDefinedAttributes()
     expected_attributes = {'v': int}
     self.assertDictEqual(expected_attributes, attributes)
-    self.assertTrue(hasattr(_ObjectA, '_dynamic_definitions'))
-    cached_attributes = _ObjectA._dynamic_definitions
+    self.assertTrue(hasattr(_ObjectA, dynamic_definitions_attr_name))
+    cached_attributes = getattr(_ObjectA, dynamic_definitions_attr_name)
     self.assertDictEqual(expected_attributes, cached_attributes)
     attributes = _ObjectA._GetDefinedAttributes()
     self.assertTrue(attributes is cached_attributes)

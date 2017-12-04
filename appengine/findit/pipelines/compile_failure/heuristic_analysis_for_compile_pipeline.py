@@ -18,14 +18,14 @@ class HeuristicAnalysisForCompilePipeline(SynchronousPipeline):
 
     Args:
       heuristic_params (CompileHeuristicAnalysisParameters): A structured object
-      with 2 parts:
+      with 2 fields:
         failure_info (CompileFailureInfo): An object of failure info for the
         current failed build.
         build_completed (bool): If the build is completed.
 
     Returns:
       A CompileHeuristicAnalysisOutput object returned by
-      build_failure_analysis.AnalyzeBuildFailure.
+      compile_failure_analysis.HeuristicAnalysisForCompile.
     """
     return compile_failure_analysis.HeuristicAnalysisForCompile(
         heuristic_params)
