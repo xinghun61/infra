@@ -1,3 +1,21 @@
+# Release Notes sheriff-o-matic 2017-12-04
+
+- 2 commits, 1 bugs affected since e9701c3 (2017-12-01T16:06:40Z)
+- 2 Authors:
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [SoM: Add chopsui dep.](https://chromium-review.googlesource.com/806245) (zhangtiff@google.com)
+- [[som] Fix bug filing form.](https://chromium-review.googlesource.com/804806) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/791184](https://crbug.com/791184)
+
+
 # Release Notes sheriff-o-matic 2017-12-01
 
 - 3 commits, 3 bugs affected since ec11864 (2017-11-29T18:54:29Z)
