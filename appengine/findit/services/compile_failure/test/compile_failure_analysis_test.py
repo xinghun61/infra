@@ -14,6 +14,9 @@ from services import deps
 from services import git
 from services.compile_failure import compile_failure_analysis
 from services.compile_failure import extract_compile_signal
+from services.parameters import CompileFailureInfo
+from services.parameters import CompileHeuristicAnalysisOutput
+from services.parameters import CompileHeuristicAnalysisParameters
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
@@ -24,7 +27,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     failure_info = {
         'master_name': 'm',
         'builder_name': 'b',
-        'build_number': 99,
+        'build_number': 123,
         'failure_type': failure_type.COMPILE,
         'failed': True,
         'chromium_revision': 'r99_2',
@@ -150,11 +153,9 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     analysis_result, suspected_cls = (
         compile_failure_analysis.AnalyzeCompileFailure(
-            failure_info, change_logs, deps_info, failure_signals_json))
+            CompileFailureInfo.FromSerializable(failure_info), change_logs,
+            deps_info, failure_signals_json))
 
-    import json
-    print json.dumps(expected_analysis_result, indent=2, sort_keys=True)
-    print json.dumps(analysis_result, indent=2, sort_keys=True)
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
 
@@ -286,7 +287,8 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     analysis_result, suspected_cls = (
         compile_failure_analysis.AnalyzeCompileFailure(
-            failure_info, change_logs, deps_info, failure_signals_json))
+            CompileFailureInfo.FromSerializable(failure_info), change_logs,
+            deps_info, failure_signals_json))
 
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
@@ -295,7 +297,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   def testAnalyzeCompileFailureNoCompileFailure(self, mock_logging):
     failure_info = {'failed_steps': {'a': {}}}
     analysis_result, _ = compile_failure_analysis.AnalyzeCompileFailure(
-        failure_info, None, None, None)
+        CompileFailureInfo.FromSerializable(failure_info), None, None, None)
     self.assertEqual({'failures': []}, analysis_result)
     mock_logging.assert_has_called_with(
         'No failed compile step when analyzing a compile failure.')
@@ -307,6 +309,8 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   def testAnalyzeCompileFailureNotSupported(self, _):
     failure_info = {
         'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 123,
         'failed_steps': {
             'compile': {
                 'current_failure': 123,
@@ -316,7 +320,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         'builds': {}
     }
     analysis_result, _ = compile_failure_analysis.AnalyzeCompileFailure(
-        failure_info, None, None, None)
+        CompileFailureInfo.FromSerializable(failure_info), None, None, None)
     self.assertEqual({'failures': []}, analysis_result)
 
   @mock.patch.object(
@@ -327,7 +331,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     failure_info = {
         'master_name': 'm',
         'builder_name': 'b',
-        'build_number': 99,
+        'build_number': 123,
         'failure_type': failure_type.COMPILE,
         'failed': True,
         'chromium_revision': 'r99_2',
@@ -435,56 +439,133 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     analysis_result, suspected_cls = (
         compile_failure_analysis.AnalyzeCompileFailure(
-            failure_info, change_logs, deps_info, failure_signals_json))
+            CompileFailureInfo.FromSerializable(failure_info), change_logs,
+            deps_info, failure_signals_json))
 
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
 
-  @mock.patch.object(
-      extract_compile_signal,
-      'ExtractSignalsForCompileFailure',
-      return_value='signals')
   @mock.patch.object(git, 'PullChangeLogs', return_value={})
   @mock.patch.object(deps, 'ExtractDepsInfo', return_value={})
-  @mock.patch.object(
-      compile_failure_analysis,
-      'AnalyzeCompileFailure',
-      return_value=('heuristic_result', []))
   @mock.patch.object(build_failure_analysis,
                      'SaveAnalysisAfterHeuristicAnalysisCompletes')
   @mock.patch.object(build_failure_analysis, 'SaveSuspectedCLs')
   @mock.patch.object(ci_failure, 'CheckForFirstKnownFailure')
-  def testHeuristicAnalysisForCompile(self, mock_failure_info, *_):
+  @mock.patch.object(extract_compile_signal, 'ExtractSignalsForCompileFailure')
+  @mock.patch.object(compile_failure_analysis, 'AnalyzeCompileFailure')
+  def testHeuristicAnalysisForCompile(self, mock_result, mock_signals,
+                                      mock_failure_info, *_):
     failure_info = {
-        'master_name': 'm',
-        'builder_name': 'b',
-        'build_number': 99,
-        'failure_type': failure_type.COMPILE,
-        'failed': True,
-        'chromium_revision': 'r99_2',
+        'build_number': 213,
+        'master_name': 'chromium.win',
+        'builder_name': 'WinMSVC64 (dbg)',
+        'parent_mastername': None,
+        'parent_buildername': None,
         'failed_steps': {
             'compile': {
-                'current_failure': 99,
-                'first_failure': 98,
+                'last_pass': 212,
+                'current_failure': 213,
+                'first_failure': 213
             }
         },
         'builds': {
-            99: {
-                'blame_list': ['r99_1', 'r99_2'],
+            '212': {
+                'blame_list': [
+                    '3045acb501991e37fb2416ab8816d2ff4e66735f',
+                ],
+                'chromium_revision': 'c7388ba52388421e91c113ed807dec16b830c45b'
             },
-            98: {
-                'blame_list': ['r98_1'],
+            '213': {
+                'blame_list': [
+                    'e282b48ad7a9715d132c649fe1aff9dde0347b1c',
+                ],
+                'chromium_revision': '2fefee0825b80ec3ebec5c661526818da9490180'
             }
+        },
+        'failure_type': 8,
+        'failed': True,
+        'chromium_revision': '2fefee0825b80ec3ebec5c661526818da9490180',
+    }
+
+    signals = {
+        'compile': {
+            'failed_edges': [{
+                'dependencies': [
+                    'third_party/webrtc/media/base/codec.h',
+                    'third_party/webrtc/rtc_base/sanitizer.h',
+                ],
+                'output_nodes': ['obj/third_party/webrtc/media//file.obj'],
+                'rule':
+                    'CXX'
+            }],
+            'files': {
+                'c:/b/c/b/win/src/third_party/webrtc/media/engine/file.cc': [
+                    76
+                ]
+            },
+            'failed_targets': [{
+                'source': '../../third_party/webrtc/media/engine/target1.cc',
+                'target': 'obj/third_party/webrtc/media//file.obj'
+            }],
+            'failed_output_nodes': [
+                'obj/third_party/webrtc/media/rtc_audio_video/fon.obj'
+            ],
+            'keywords': {}
         }
     }
-    mock_failure_info.return_value = failure_info
+    mock_signals.return_value = signals
 
-    WfAnalysis.Create('m', 'b', 99).put()
+    heuristic_result = {
+        'failures': [{
+            'first_failure':
+                213,
+            'supported':
+                True,
+            'suspected_cls': [{
+                'commit_position': 517979,
+                'url': 'url/0366f1a82a0d2c4e0b82a3632e1dff5ee0b35690',
+                'hints': {
+                    'add a.cc': 5
+                },
+                'score': 5,
+                'build_number': 213,
+                'revision': '0366f1a82a0d2c4e0b82a3632e1dff5ee0b35690',
+                'repo_name': 'chromium'
+            }],
+            'step_name':
+                'compile',
+            'last_pass':
+                212,
+            'new_compile_suspected_cls': [{
+                'commit_position': 517979,
+                'url': 'url/0366f1a82a0d2c4e0b82a3632e1dff5ee0b35690',
+                'hints': {
+                    'add a.cc': 5
+                },
+                'score': 5,
+                'build_number': 213,
+                'revision': '0366f1a82a0d2c4e0b82a3632e1dff5ee0b35690',
+                'repo_name': 'chromium'
+            }],
+            'use_ninja_dependencies':
+                True
+        }]
+    }
+    mock_result.return_value = heuristic_result, []
+    mock_failure_info.return_value = CompileFailureInfo.FromSerializable(
+        failure_info)
+
+    WfAnalysis.Create('chromium.win', 'WinMSVC64 (dbg)', 213).put()
+    heuristic_params = CompileHeuristicAnalysisParameters(
+        failure_info=CompileFailureInfo.FromSerializable(failure_info),
+        build_completed=True)
     result = compile_failure_analysis.HeuristicAnalysisForCompile(
-        failure_info, True)
+        heuristic_params)
     expected_result = {
         'failure_info': failure_info,
-        'signals': 'signals',
-        'heuristic_result': 'heuristic_result'
+        'signals': signals,
+        'heuristic_result': heuristic_result
     }
-    self.assertEqual(result, expected_result)
+    self.assertEqual(
+        result,
+        CompileHeuristicAnalysisOutput.FromSerializable(expected_result))

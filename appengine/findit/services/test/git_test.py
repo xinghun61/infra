@@ -9,6 +9,7 @@ from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from services import git
+from services.parameters import CompileFailureInfo
 from waterfall.test import wf_testcase
 
 
@@ -133,7 +134,8 @@ class GitTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    change_logs = git.PullChangeLogs(failure_info)
+    change_logs = git.PullChangeLogs(
+        CompileFailureInfo.FromSerializable(failure_info))
     self.assertEqual(expected_change_logs, change_logs)
 
   def testPullChangelogsFailed(self):
@@ -157,7 +159,7 @@ class GitTest(wf_testcase.WaterfallTestCase):
     }
 
     with self.assertRaises(Exception):
-      git.PullChangeLogs(failure_info)
+      git.PullChangeLogs(CompileFailureInfo.FromSerializable(failure_info))
 
   def _MockGetChangeLog(self, revision):
 

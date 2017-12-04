@@ -12,6 +12,7 @@ from libs.deps import chrome_dependency_fetcher
 from libs.deps.dependency import Dependency
 from libs.gitiles.diff import ChangeType
 from services import deps
+from services.parameters import BaseFailureInfo
 
 _DEP_FETCHER = chrome_dependency_fetcher.ChromeDependencyFetcher(
     CachedGitilesRepository.Factory(FinditHttpClient()))
@@ -222,5 +223,6 @@ class DepsTest(testing.AppengineTestCase):
 
     self.mock(chrome_dependency_fetcher.ChromeDependencyFetcher,
               'GetDependency', MockGetDependency)
-    deps_info = deps.ExtractDepsInfo(failure_info, change_logs)
+    deps_info = deps.ExtractDepsInfo(
+        BaseFailureInfo.FromSerializable(failure_info), change_logs)
     self.assertEqual(expected_deps_info, deps_info)

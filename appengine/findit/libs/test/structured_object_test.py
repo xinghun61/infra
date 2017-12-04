@@ -361,3 +361,9 @@ class SerilizableObjectTest(unittest.TestCase):
     la.append(obj_a2)
 
     self.assertTrue(da != la)
+
+  def testTypedDictFromSerializableNone(self):
+    self.assertIsNone(_DictOfObjectA.FromSerializable(None))
+
+  def testTypedListFromSerializableNone(self):
+    self.assertIsNone(_ListOfObjectA.FromSerializable(None))

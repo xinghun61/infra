@@ -11,6 +11,9 @@ from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from model.wf_build import WfBuild
 from services import ci_failure
+from services.parameters import BaseFailedSteps
+from services.parameters import CompileFailureInfo
+from services.parameters import FailureInfoBuilds
 from waterfall import buildbot
 from waterfall import build_util
 from waterfall.test import wf_testcase
@@ -52,15 +55,17 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
             'blame_list': ['some_git_hash']
         }
     }
+    failed_steps = BaseFailedSteps.FromSerializable(failed_steps)
+    builds = FailureInfoBuilds.FromSerializable(builds)
 
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.RUNNING)
 
-    failure_info = {'failed_steps': failed_steps, 'builds': builds}
+    failure_info = CompileFailureInfo(failed_steps=failed_steps, builds=builds)
     failure_info = ci_failure.CheckForFirstKnownFailure(
         master_name, builder_name, build_number, failure_info)
 
-    self.assertEqual(failed_steps, failure_info['failed_steps'])
+    self.assertEqual(failed_steps, failure_info.failed_steps)
 
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testStopLookingBackIfAllFailedStepsPassedInLastBuild(self, mock_fn):
@@ -74,7 +79,8 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
             'blame_list': ['some_git_hash']
         }
     }
-
+    failed_steps = BaseFailedSteps.FromSerializable(failed_steps)
+    builds = FailureInfoBuilds.FromSerializable(builds)
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.RUNNING)
 
@@ -100,12 +106,13 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    failure_info = {'failed_steps': failed_steps, 'builds': builds}
+    failure_info = CompileFailureInfo(failed_steps=failed_steps, builds=builds)
     failure_info = ci_failure.CheckForFirstKnownFailure(
         master_name, builder_name, build_number, failure_info)
 
-    self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
-    self.assertEqual(expected_builds, failure_info['builds'])
+    self.assertEqual(expected_failed_steps,
+                     failure_info.failed_steps.ToSerializable())
+    self.assertEqual(expected_builds, failure_info.builds.ToSerializable())
 
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testStopLookingBackIfFindTheFirstBuild(self, mock_fn):
@@ -128,7 +135,8 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
             'blame_list': ['5934404dc5392ab3ae2c82b52b366889fb858d91']
         }
     }
-
+    failed_steps = BaseFailedSteps.FromSerializable(failed_steps)
+    builds = FailureInfoBuilds.FromSerializable(builds)
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.RUNNING)
 
@@ -141,11 +149,13 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     expected_failed_steps = {
         'a_tests': {
             'current_failure': 2,
-            'first_failure': 0
+            'first_failure': 0,
+            'last_pass': None
         },
         'unit_tests': {
             'current_failure': 2,
-            'first_failure': 0
+            'first_failure': 0,
+            'last_pass': None
         }
     }
 
@@ -163,12 +173,14 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
             'blame_list': ['5934404dc5392ab3ae2c82b52b366889fb858d91']
         },
     }
-    failure_info = {'failed_steps': failed_steps, 'builds': builds}
+    failure_info = CompileFailureInfo(failed_steps=failed_steps, builds=builds)
 
-    failure_info = ci_failure.CheckForFirstKnownFailure(
-        master_name, builder_name, build_number, failure_info)
-    self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
-    self.assertEqual(expected_builds, failure_info['builds'])
+    ci_failure.CheckForFirstKnownFailure(master_name, builder_name,
+                                         build_number, failure_info)
+
+    self.assertEqual(expected_failed_steps,
+                     failure_info.failed_steps.ToSerializable())
+    self.assertEqual(expected_builds, failure_info.builds.ToSerializable())
 
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testLookBackUntilGreenBuild(self, mock_fn):
@@ -191,6 +203,8 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
             'blame_list': ['64c72819e898e952103b63eabc12772f9640af07']
         }
     }
+    failed_steps = BaseFailedSteps.FromSerializable(failed_steps)
+    builds = FailureInfoBuilds.FromSerializable(builds)
 
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.RUNNING)
@@ -243,12 +257,12 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    failure_info = {'failed_steps': failed_steps, 'builds': builds}
-
-    failure_info = ci_failure.CheckForFirstKnownFailure(
-        master_name, builder_name, build_number, failure_info)
-    self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
-    self.assertEqual(expected_builds, failure_info['builds'])
+    failure_info = CompileFailureInfo(failed_steps=failed_steps, builds=builds)
+    ci_failure.CheckForFirstKnownFailure(master_name, builder_name,
+                                         build_number, failure_info)
+    self.assertEqual(expected_failed_steps,
+                     failure_info.failed_steps.ToSerializable())
+    self.assertEqual(expected_builds, failure_info.builds.ToSerializable())
 
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testGetBuildFailureInfo(self, mock_fn):
@@ -280,7 +294,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         'failed_steps': {
             'abc_test': {
                 'current_failure': build_number,
-                'first_failure': build_number
+                'first_failure': build_number,
             }
         },
         'failure_type': failure_type.TEST,

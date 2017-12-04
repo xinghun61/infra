@@ -19,12 +19,13 @@ from waterfall import waterfall_config
 def ExtractSignalsForCompileFailure(failure_info, http_client):
   signals = {}
 
-  master_name = failure_info['master_name']
-  builder_name = failure_info['builder_name']
-  build_number = failure_info['build_number']
+  master_name = failure_info.master_name
+  builder_name = failure_info.builder_name
+  build_number = failure_info.build_number
   step_name = 'compile'
 
-  if step_name not in failure_info.get('failed_steps', {}):
+  if (not failure_info.failed_steps or
+      step_name not in failure_info.failed_steps):
     logging.debug('No compile failure found when extracting signals for failed '
                   'build %s/%s/%d', master_name, builder_name, build_number)
     return signals

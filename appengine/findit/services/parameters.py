@@ -27,6 +27,13 @@ class CLKey(StructuredObject):
   revision = basestring
 
 
+class BaseCL(StructuredObject):
+  repo_name = basestring
+  revision = basestring
+  commit_position = int
+  url = basestring
+
+
 class DictOfCLKeys(TypedDict):
   _value_type = CLKey
 
@@ -169,3 +176,117 @@ class RunFlakeTryJobParameters(StructuredObject):
   revision = basestring
   flake_cache_name = basestring
   dimensions = list
+
+
+# Structured objects related to failure info.
+class FailureInfoBuild(StructuredObject):
+  blame_list = list
+  chromium_revision = basestring
+
+
+class FailureInfoBuilds(TypedDict):
+  _value_type = FailureInfoBuild
+
+
+class BaseFailureInfo(StructuredObject):
+  master_name = basestring
+  builder_name = basestring
+  build_number = int
+  parent_mastername = basestring
+  parent_buildername = basestring
+  builds = FailureInfoBuilds
+  failure_type = int
+  failed = bool
+  chromium_revision = basestring
+
+
+class BaseFailedStep(StructuredObject):
+  last_pass = int
+  current_failure = int
+  first_failure = int
+
+
+class BaseFailedSteps(TypedDict):
+  _value_type = BaseFailedStep
+
+
+class CompileFailureInfo(BaseFailureInfo):
+  failed_steps = BaseFailedSteps
+
+
+class CompileHeuristicAnalysisParameters(StructuredObject):
+  failure_info = CompileFailureInfo
+  build_completed = bool
+
+
+# Structured objects related to failure signals.
+class BaseFailureSignal(StructuredObject):
+  files = dict
+  keywords = dict
+
+
+class FailedEdge(StructuredObject):
+  dependencies = list
+  output_nodes = list
+  rule = basestring
+
+
+class FailedEdges(TypedList):
+  _element_type = FailedEdge
+
+
+class FailedTarget(StructuredObject):
+  source = basestring
+  target = basestring
+
+
+class FailedTargets(TypedList):
+  _element_type = FailedTarget
+
+
+class CompileFailureSignal(BaseFailureSignal):
+  failed_edges = FailedEdges
+  failed_targets = FailedTargets
+  failed_output_nodes = list
+
+
+class CompileFailureSignals(TypedDict):
+  _value_type = CompileFailureSignal
+
+
+# Structured objects related to heuristic result.
+class SuspectedCL(BaseCL):
+  hints = dict
+  score = int
+  build_number = int
+
+
+class SuspectedCLs(TypedList):
+  _element_type = SuspectedCL
+
+
+class HeuristicResultFailure(StructuredObject):
+  suspected_cls = SuspectedCLs
+  first_failure = int
+  last_pass = int
+  supported = bool
+  step_name = basestring
+
+
+class CompileHeuristicResultFailure(HeuristicResultFailure):
+  new_compile_suspected_cls = SuspectedCLs
+  use_ninja_dependencies = bool
+
+
+class CompileHeuristicResultFailures(TypedList):
+  _element_type = CompileHeuristicResultFailure
+
+
+class CompileHeuristicResult(TypedDict):
+  _value_type = CompileHeuristicResultFailures
+
+
+class CompileHeuristicAnalysisOutput(StructuredObject):
+  failure_info = CompileFailureInfo
+  signals = CompileFailureSignals
+  heuristic_result = CompileHeuristicResult
