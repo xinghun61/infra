@@ -9,6 +9,7 @@ import mock
 
 from google.appengine.api import app_identity
 
+from analysis import log_util
 from analysis.type_enums import CrashClient
 from common.appengine_testcase import AppengineTestCase
 from common.model.crash_analysis import CrashAnalysis
@@ -104,11 +105,15 @@ class PredatorTest(AppengineTestCase):
   def testPublishResultDoNothingIfAnalysisFailed(self,
                                                  mock_publish_to_client):
     """Tests that ``PublishResult`` does nothing if analysis failed."""
-    crash_identifiers = {'signature': 'sig'}
+    crash_identifiers = {
+        'testcase_id':
+        'predator_app_test_publish_result_do_nothing_if_analysis_failed'
+    }
     analysis = self.predator.CreateAnalysis(crash_identifiers)
     analysis.identifiers = crash_identifiers
     analysis.result = None
     analysis.status = analysis_status.ERROR
+    analysis.log.Reset()
     analysis.put()
 
     self.assertIsNone(self.predator.PublishResult(crash_identifiers))
@@ -125,11 +130,14 @@ class PredatorTest(AppengineTestCase):
         'other_data': 'data',
     }
 
-    crash_identifiers = {'signature': 'sig'}
+    crash_identifiers = {
+        'testcase_id': 'predator_app_test_msg_to_client_found_true'
+    }
     analysis = self.predator.CreateAnalysis(crash_identifiers)
     analysis.identifiers = crash_identifiers
     analysis.result = analysis_result
     analysis.status = analysis_status.COMPLETED
+    analysis.log.Reset()
     analysis.put()
 
     processed_analysis_result = copy.deepcopy(analysis_result)
@@ -142,18 +150,22 @@ class PredatorTest(AppengineTestCase):
         'client_id': self.predator.client_id,
         'result': processed_analysis_result,
     }
-    self.assertDictEqual(self.predator.ResultMessageToClient(analysis),
+    self.assertDictEqual(self.predator.ResultMessageToClient(crash_identifiers),
                          expected_processed_result)
 
   def testResultMessageToClientFoundFalse(self):
     analysis_result = {
         'found': False,
+        'log': 'Failed to parse stacktrace',
     }
-    crash_identifiers = {'signature': 'sig'}
+    crash_identifiers = {
+        'testcase_id': 'predator_app_test_msg_to_client_found_false'
+    }
     analysis = self.predator.CreateAnalysis(crash_identifiers)
     analysis.identifiers = crash_identifiers
     analysis.result = analysis_result
     analysis.status = analysis_status.COMPLETED
+    analysis.log.Reset()
     analysis.put()
 
     result = copy.deepcopy(analysis_result)
@@ -164,7 +176,61 @@ class PredatorTest(AppengineTestCase):
         'result': result,
     }
 
-    self.assertDictEqual(self.predator.ResultMessageToClient(analysis),
+    self.assertDictEqual(self.predator.ResultMessageToClient(crash_identifiers),
+                         expected_processed_result)
+
+  def testResultMessageToClientFailedToFinishAnalysis(self):
+    crash_identifiers = {
+        'testcase_id':
+        'predator_app_test_msg_to_client_failed_to_finish_analysis'
+    }
+    analysis = self.predator.CreateAnalysis(crash_identifiers)
+    analysis.identifiers = crash_identifiers
+    analysis.status = analysis_status.PENDING
+    analysis.log.Reset()
+    analysis.put()
+
+    result = {'found': False,
+              'log': [{'level': 'error',
+                       'name': 'UnknownError',
+                       'message': ('Predator failed to catch the error message '
+                                   'for %s' % repr(crash_identifiers))}]}
+    result['feedback_url'] = analysis.feedback_url
+    expected_processed_result = {
+        'crash_identifiers': crash_identifiers,
+        'client_id': self.predator.client_id,
+        'result': result,
+    }
+
+    self.assertDictEqual(self.predator.ResultMessageToClient(crash_identifiers),
+                         expected_processed_result)
+
+  def testResultMessageToClientForNonSupportedAnalysis(self):
+    crash_identifiers = {
+        'testcase_id':
+        'predator_app_test_msg_to_client_for_non_supported_analysis'
+    }
+    analysis = self.predator.CreateAnalysis(crash_identifiers)
+    analysis.identifiers = crash_identifiers
+    analysis.status = analysis_status.PENDING
+    analysis.log.Reset()
+    analysis.put()
+
+    log_util.LogInfo(analysis.log, 'Unsupported',
+                     'Predator doesn\'t support analysis.')
+
+    result = {'found': False,
+              'log': [{'level': 'info',
+                       'name': 'Unsupported',
+                       'message': 'Predator doesn\'t support analysis.'}]}
+    result['feedback_url'] = analysis.feedback_url
+    expected_processed_result = {
+        'crash_identifiers': crash_identifiers,
+        'client_id': self.predator.client_id,
+        'result': result,
+    }
+
+    self.assertDictEqual(self.predator.ResultMessageToClient(crash_identifiers),
                          expected_processed_result)
 
   @mock.patch('gae_libs.pubsub_util.PublishMessagesToTopic')
@@ -174,12 +240,42 @@ class PredatorTest(AppengineTestCase):
     message = {'result': 'dummy'}
     message_to_client.return_value = message
 
-    identifiers = {'signature': 'sig'}
+    identifiers = {
+        'testcase_id': 'predator_app_test_publish_result_to_client'
+    }
     analysis = self.predator.CreateAnalysis(identifiers)
     analysis.identifiers = identifiers
+    analysis.log.Reset()
     analysis.put()
 
     self.predator.PublishResult(identifiers)
     publish_to_topic.assert_called_with(
         [json.dumps(message)],
         self.predator.client_config['analysis_result_pubsub_topic'])
+
+  def testResultMessageToClientWhenFailedToAnalysis(self):
+    """Tests ``ResultMessageToClient`` when the analysis failed."""
+    crash_identifiers = {
+        'testcase_id':
+        'predator_app_test_result_msg_to_client_when_failed_to_analysis'
+    }
+    analysis = self.predator.CreateAnalysis(crash_identifiers)
+    analysis.identifiers = crash_identifiers
+    analysis.status = analysis_status.ERROR
+    analysis.result = {'found': False,
+                       'log': 'Failed to parse stacktrace.'}
+    analysis.log.Reset()
+    analysis.put()
+
+    processed_analysis_result = {'found': False,
+                                 'log': 'Failed to parse stacktrace.'}
+    processed_analysis_result['feedback_url'] = analysis.feedback_url
+
+    expected_processed_result = {
+        'crash_identifiers': crash_identifiers,
+        'client_id': self.predator.client_id,
+        'result': processed_analysis_result,
+    }
+
+    self.assertDictEqual(self.predator.ResultMessageToClient(crash_identifiers),
+                         expected_processed_result)

@@ -133,15 +133,19 @@ class PredatorForFracasTest(AppengineTestCase):
     urlsafe_key = 'abcde'
     mocked_urlsafe.return_value = urlsafe_key
 
-    crash_identifiers = {'signature': 'sig'}
+    crash_identifiers = {
+        'testcase_id':
+        'predator_for_chromecrash_test_process_result_for_publishing'
+    }
     analysis = FracasCrashAnalysis.Create(crash_identifiers)
     analysis.result = {'other': 'data'}
     analysis.status = analysis_status.COMPLETED
     analysis.identifiers = crash_identifiers
+    analysis.log.Reset()
     analysis.put()
     expected_processed_suspect = {
         'client_id': self._client.client_id,
-        'crash_identifiers': {'signature': 'sig'},
+        'crash_identifiers': crash_identifiers,
         'result': {
             'feedback_url': crash_analysis._FEEDBACK_URL_TEMPLATE % (
                 mocked_host, CrashClient.FRACAS, urlsafe_key),
@@ -149,7 +153,7 @@ class PredatorForFracasTest(AppengineTestCase):
         }
     }
 
-    self.assertDictEqual(self._client.ResultMessageToClient(analysis),
+    self.assertDictEqual(self._client.ResultMessageToClient(crash_identifiers),
                          expected_processed_suspect)
 
 

@@ -38,11 +38,17 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
     self.assertTrue(self._client._CheckPolicy(crash_data))
 
   def testCreateAnalysis(self):
-    self.assertIsNotNone(self._client.CreateAnalysis({'testcase': '341335434'}))
+    self.assertIsNotNone(self._client.CreateAnalysis({
+        'testcase_id': 'predator_for_clusterfuzz_test_create_analysis'
+    }))
 
   def testGetAnalysis(self):
-    crash_identifiers = {'testcase': '341335434'}
+    crash_identifiers = {
+        'testcase_id': 'predator_for_clusterfuzz_test_get_analysis'
+    }
     analysis = self._client.CreateAnalysis(crash_identifiers)
+    analysis.identifiers = crash_identifiers
+    analysis.log.Reset()
     analysis.put()
     self.assertEqual(self._client.GetAnalysis(crash_identifiers), analysis)
 
@@ -53,11 +59,15 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
                                                  mock_publish_to_client,
                                                  mock_publish_to_try_bot):
     """Tests that ``PublishResult`` does nothing if analysis failed."""
-    crash_identifiers = {'signature': 'sig'}
+    crash_identifiers = {
+        'testcase_id': ('predator_for_clusterfuzz_test_publish_result_do_'
+                        'nothing_if_analysis_failed')
+    }
     analysis = self._client.CreateAnalysis(crash_identifiers)
     analysis.identifiers = crash_identifiers
     analysis.result = None
     analysis.status = analysis_status.ERROR
+    analysis.log.Reset()
     analysis.put()
 
     self.assertIsNone(self._client.PublishResult(crash_identifiers))
@@ -70,15 +80,20 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
   def testPublishResultDoNothingIfTestcasePlatformIsNotLinux(
       self, mock_publish_to_client, mock_publish_to_try_bot):
     """Tests ``PublishResult`` does nothing if the platform is not supported."""
-    identifiers = {'testcase': '1234'}
+    identifiers = {
+        'testcase_id': ('predator_for_clusterfuzz_test_publish_result_do_'
+                        'nothing_if_testcase_platform_is_not_linux')
+    }
     analysis = self._client.CreateAnalysis(identifiers)
+    analysis.identifiers = identifiers
     analysis.result = {'found': False}
     analysis.status = analysis_status.COMPLETED
     analysis.platform = 'win'
+    analysis.log.Reset()
     analysis.put()
 
     self.assertIsNone(self._client.PublishResult(identifiers))
-    mock_publish_to_client.assert_called_with(analysis)
+    mock_publish_to_client.assert_called_with(identifiers)
     mock_publish_to_try_bot.assert_not_called()
 
   @mock.patch('libs.gitiles.gitiles_repository.GitilesRepository.'
@@ -94,14 +109,19 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
         ],
         'other_data': 'data',
     }
-    identifiers = {'testcase': '1234'}
+    identifiers = {
+        'testcase_id': ('predator_for_clusterfuzz_test_msg_to_try_bot_if_there'
+                        '_are_suspects')
+    }
     analysis = self._client.CreateAnalysis(identifiers)
+    analysis.identifiers = identifiers
     analysis.testcase_id = '1234'
     analysis.dependency_rolls = {'src/': DependencyRoll('src/', 'https://repo',
                                                         'old_rev', 'new_rev')}
     analysis.platform = 'linux'
     analysis.result = analysis_result
     analysis.status = analysis_status.COMPLETED
+    analysis.log.Reset()
     analysis.put()
 
     commits = ['git_hash1', 'git_hash2']
@@ -130,14 +150,19 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
         'found': False,
         'other_data': 'data',
     }
-    identifiers = {'testcase': '1234'}
+    identifiers = {
+        'testcase_id': ('predator_for_clusterfuzz_test_msg_to_try_bot_if_there'
+                        '_is_no_suspect')
+    }
     analysis = self._client.CreateAnalysis(identifiers)
+    analysis.identifiers = identifiers
     analysis.testcase_id = '1234'
     analysis.dependency_rolls = {'src/': DependencyRoll('src/', 'https://repo',
                                                         'old_rev', 'new_rev')}
     analysis.platform = 'linux'
     analysis.result = analysis_result
     analysis.status = analysis_status.COMPLETED
+    analysis.log.Reset()
     analysis.put()
 
     commits = ['git_hash1', 'git_hash2']
@@ -161,12 +186,61 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
   @mock.patch('gae_libs.pubsub_util.PublishMessagesToTopic')
   @mock.patch('common.predator_for_clusterfuzz.PredatorForClusterfuzz.'
               'MessageToTryBot')
+  def testDoNotPublishResultToTryBotIfWithoutRegressionRange(
+      self, message_to_try_bot, publish_message):
+    """Tests ``PublishResultToTryBot`` publish message to try bot."""
+    message = 'blabla'
+    message_to_try_bot.return_value = message
+    identifiers = {
+        'testcase_id': ('predator_for_clusterfuzz_test_do_not_publish_result'
+                        '_to_try_bot_if_without_regression_range')
+    }
+    analysis = self._client.CreateAnalysis(identifiers)
+    analysis.identifiers = identifiers
+    analysis.log.Reset()
+    analysis.put()
+    self._client.PublishResultToTryBot(identifiers)
+    self.assertFalse(publish_message.called)
+
+  @mock.patch('gae_libs.pubsub_util.PublishMessagesToTopic')
+  @mock.patch('common.predator_for_clusterfuzz.PredatorForClusterfuzz.'
+              'MessageToTryBot')
+  def testDoNotPublishResultToTryBotIfPlatformNotSupported(
+      self, message_to_try_bot, publish_message):
+    """Tests ``PublishResultToTryBot`` publish message to try bot."""
+    message = 'blabla'
+    message_to_try_bot.return_value = message
+    identifiers = {
+        'testcase_id': ('predator_for_clusterfuzz_test_do_not_publish_result'
+                        '_to_try_bot_if_platform_not_supported')
+    }
+    analysis = self._client.CreateAnalysis(identifiers)
+    analysis.identifiers = identifiers
+    analysis.regression_range = ('rev1', 'rev5')
+    analysis.platform = 'win'
+    analysis.log.Reset()
+    analysis.put()
+    self._client.PublishResultToTryBot(identifiers)
+    self.assertFalse(publish_message.called)
+
+  @mock.patch('gae_libs.pubsub_util.PublishMessagesToTopic')
+  @mock.patch('common.predator_for_clusterfuzz.PredatorForClusterfuzz.'
+              'MessageToTryBot')
   def testPublishResultToTryBot(self, message_to_try_bot, publish_message):
     """Tests ``PublishResultToTryBot`` publish message to try bot."""
     message = 'blabla'
     message_to_try_bot.return_value = message
-    analysis = self._client.CreateAnalysis({'signature': 'sig'})
-    self._client.PublishResultToTryBot(analysis)
+    identifiers = {
+        'testcase_id':
+        'predator_for_clusterfuzz_test_publish_result_to_try_bot'
+    }
+    analysis = self._client.CreateAnalysis(identifiers)
+    analysis.identifiers = identifiers
+    analysis.regression_range = ('rev1', 'rev5')
+    analysis.platform = 'linux'
+    analysis.log.Reset()
+    analysis.put()
+    self._client.PublishResultToTryBot(identifiers)
     publish_message.assert_called_with(
         [json.dumps(message)], self._client.client_config['try_bot_topic'])
 
@@ -176,13 +250,18 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
               'PublishResultToClient')
   def testPublishResult(self, publish_to_client, publish_to_try_bot):
     """Tests ``PublishResult`` publish message to all topics."""
-    identifiers = {'signature': 'sig'}
+    identifiers = {
+        'testcase_id':
+        'predator_for_clusterfuzz_test_publish_result'
+    }
     analysis = self._client.CreateAnalysis(identifiers)
+    analysis.identifiers = identifiers
     analysis.platform = 'linux'
+    analysis.log.Reset()
     analysis.put()
     self._client.PublishResult(identifiers)
-    publish_to_client.assert_called_with(analysis)
-    publish_to_try_bot.assert_called_with(analysis)
+    publish_to_client.assert_called_with(identifiers)
+    publish_to_try_bot.assert_called_with(identifiers)
 
   def testResultMessageToClientFoundTrue(self):
     """Tests ``ResultMessageToClient`` when there is result."""
@@ -194,19 +273,23 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
              'other': 'data'}
         ],
         'regression_range': ['rev0', 'rev3'],
-        'log': 'Failed to parse stacktrace',
         'other_data': 'data',
     }
 
-    crash_identifiers = {'testcase_id': '123'}
+    crash_identifiers = {
+        'testcase_id':
+        'predator_for_clusterfuzz_test_result_msg_to_client_found_true'
+    }
     analysis = self._client.CreateAnalysis(crash_identifiers)
     analysis.result = analysis_result
     analysis.identifiers = crash_identifiers
-    analysis.error_name = 'Failed to parse stacktrace'
     analysis.status = analysis_status.COMPLETED
+    analysis.log.Reset()
     analysis.put()
 
     processed_analysis_result = copy.deepcopy(analysis_result)
+    for cl in processed_analysis_result['suspected_cls']:
+      cl['confidence'] = round(cl['confidence'], 2)
     processed_analysis_result['feedback_url'] = analysis.feedback_url
     del processed_analysis_result['regression_range']
 
@@ -215,21 +298,25 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
         'client_id': self._client.client_id,
         'result': processed_analysis_result,
     }
-    self.assertDictEqual(self._client.ResultMessageToClient(analysis),
+    self.assertDictEqual(self._client.ResultMessageToClient(crash_identifiers),
                          expected_processed_result)
 
   def testResultMessageToClientFoundFalse(self):
     """Tests ``ResultMessageToClient`` when there is no result."""
+
+    crash_identifiers = {
+        'testcase_id':
+        'predator_for_clusterfuzz_test_result_msg_to_client_found_false'
+    }
+    analysis = self._client.CreateAnalysis(crash_identifiers)
     analysis_result = {
         'found': False,
         'log': 'Failed to parse stacktrace',
     }
-    crash_identifiers = {'testcase_id': '123'}
-    analysis = self._client.CreateAnalysis(crash_identifiers)
-    analysis.error_name = 'Failed to parse stacktrace'
     analysis.result = analysis_result
     analysis.identifiers = crash_identifiers
     analysis.status = analysis_status.COMPLETED
+    analysis.log.Reset()
     analysis.put()
 
     processed_analysis_result = copy.deepcopy(analysis_result)
@@ -241,5 +328,5 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
         'result': processed_analysis_result,
     }
 
-    self.assertDictEqual(self._client.ResultMessageToClient(analysis),
+    self.assertDictEqual(self._client.ResultMessageToClient(crash_identifiers),
                          expected_processed_result)

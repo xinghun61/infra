@@ -38,3 +38,4 @@ class Log(ndb.Model):
 
   def Reset(self):
     self.logs = []
+    self.put()

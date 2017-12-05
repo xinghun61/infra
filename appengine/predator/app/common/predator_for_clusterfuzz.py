@@ -89,27 +89,24 @@ class PredatorForClusterfuzz(PredatorApp):
     return ClusterfuzzData(raw_crash_data, self._get_repository,
                            top_n_frames=self.client_config['top_n'])
 
-  def ResultMessageToClient(self, analysis):
+  def ResultMessageToClient(self, crash_identifiers):
     """Converts culprit into publishable result to client.
 
     Args:
-      analysis (ClusterfuzzAnalysis): The ClusterfuzzAnalysis entity which
-          contains the result.
+      crash_identifiers (dict): Dict containing identifiers that can uniquely
+        identify CrashAnalysis entity.
 
     Returns:
       A dict of the given ``crash_identifiers``, this model's
       ``client_id``, and a publishable version of this model's ``result``.
     """
-    result = copy.deepcopy(analysis.result)
-    result['feedback_url'] = analysis.feedback_url
+    message = super(PredatorForClusterfuzz, self).ResultMessageToClient(
+        crash_identifiers)
+    result = message['result']
     if 'regression_range' in result:
       del result['regression_range']
 
-    return {
-        'crash_identifiers': analysis.identifiers,
-        'client_id': self.client_id,
-        'result': result
-    }
+    return message
 
   def MessageToTryBot(self, analysis):
     """Gets log to push to try bot topic."""
@@ -134,8 +131,21 @@ class PredatorForClusterfuzz(PredatorApp):
 
     return message
 
-  def PublishResultToTryBot(self, analysis):
+  def PublishResultToTryBot(self, crash_identifiers):
     """Publishes heuristic results to try bot."""
+    analysis = self.GetAnalysis(crash_identifiers)
+    if not analysis.regression_range:
+      logging.info('Skipping this testcase because it does not have regression '
+                   'range.')
+      return
+
+    supported_platforms = self.client_config['try_bot_supported_platforms']
+    if not analysis.platform in supported_platforms:
+      logging.info('Skipping testcase because %s is not a supported platform.'
+                   ' Supported platforms: %s.', analysis.platform,
+                   repr(supported_platforms))
+      return
+
     message = self.MessageToTryBot(analysis)
     topic = self.client_config['try_bot_topic']
     pubsub_util.PublishMessagesToTopic([json.dumps(message)], topic)
@@ -145,19 +155,5 @@ class PredatorForClusterfuzz(PredatorApp):
 
   def PublishResult(self, crash_identifiers):
     """Publish results to clusterfuzz and try bot."""
-    analysis = self.GetAnalysis(crash_identifiers)
-    if not analysis or analysis.failed:
-      logging.info('Can\'t publish results because analysis failed: %s',
-                   repr(crash_identifiers))
-      return
-
-    self.PublishResultToClient(analysis)
-
-    supported_platforms = self.client_config['try_bot_supported_platforms']
-    if not analysis.platform in supported_platforms:
-      logging.info('Skipping testcase because %s is not a supported platform.'
-                   ' Supported platforms: %s.', analysis.platform,
-                   repr(supported_platforms))
-      return
-
-    self.PublishResultToTryBot(analysis)
+    self.PublishResultToClient(crash_identifiers)
+    self.PublishResultToTryBot(crash_identifiers)

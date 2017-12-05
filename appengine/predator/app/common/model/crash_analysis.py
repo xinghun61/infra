@@ -187,7 +187,7 @@ class CrashAnalysis(ndb.Model):
 
   @property
   def log(self):
-    return Log.Get(self.identifiers)
+    return Log.Get(self.identifiers) or Log.Create(self.identifiers)
 
   @classmethod
   def _CreateKey(cls, crash_identifiers):

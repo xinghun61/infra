@@ -212,7 +212,7 @@ class PredatorApp(object):
 
     return True
 
-  def ResultMessageToClient(self, analysis):
+  def ResultMessageToClient(self, crash_identifiers):
     """Converts culprit into publishable result to client.
 
     Args:
@@ -223,7 +223,22 @@ class PredatorApp(object):
       A dict of the given ``crash_identifiers``, this model's
       ``client_id``, and a publishable version of this model's ``result``.
     """
+    analysis = self.GetAnalysis(crash_identifiers)
+    if not analysis.completed and not analysis.failed:
+      analysis.result = analysis.result or {'found': False}
+      if not analysis.log.logs:
+        # If the log didn't catch any error message, for example the log data in
+        # datastore was lost or deleted. Add an UnknownError message.
+        log_util.LogError(
+            analysis.log, 'UnknownError',
+            'Predator failed to catch the error message for %s' %
+                repr(crash_identifiers))
+      analysis.put()
+
     result = copy.deepcopy(analysis.result)
+    log = analysis.log.logs
+    if log:
+      result['log'] = log
     if result.get('found') and 'suspected_cls' in result:
       for cl in result['suspected_cls']:
         cl['confidence'] = round(cl['confidence'], 2)
@@ -235,24 +250,18 @@ class PredatorApp(object):
         'result': result
     }
 
-  def PublishResultToClient(self, analysis):
+  def PublishResultToClient(self, crash_identifiers):
     """Publishes result to client."""
-    message = self.ResultMessageToClient(analysis)
+    message = self.ResultMessageToClient(crash_identifiers)
     topic = self.client_config['analysis_result_pubsub_topic']
     pubsub_util.PublishMessagesToTopic([json.dumps(message)], topic)
     logging.info('Publish result for %s to %s:\n%s',
-                 repr(analysis.identifiers), self.client_id,
+                 repr(crash_identifiers), self.client_id,
                  json.dumps(message, indent=4, sort_keys=True))
 
   def PublishResult(self, crash_identifiers):
     """Publishes results to related pub/sub topics."""
-    analysis = self.GetAnalysis(crash_identifiers)
-    if not analysis or analysis.failed:
-      logging.info('Can\'t publish result to %s because analysis failed:\n%s',
-                   self.client_id, repr(crash_identifiers))
-      return
-
-    self.PublishResultToClient(analysis)
+    self.PublishResultToClient(crash_identifiers)
 
   # TODO(http://crbug.com/659346): coverage tests for this class, not
   # just for PredatorForFracas.
