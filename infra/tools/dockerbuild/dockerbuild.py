@@ -200,7 +200,7 @@ def add_argparse_options(parser):
   subparser.add_argument('--wheel', action='append',
       choices=wheel.SPEC_NAMES,
       help='Only build packages for the specified wheel(s).')
-  subparser.add_argument('--wheel_re', action='append',
+  subparser.add_argument('--wheel_re', action='append', default=[],
       help='Only build packages for the wheels matching these regexes.')
   subparser.add_argument('--rebuild', action='store_true',
       help='Force rebuild of package even if it is already built.')
