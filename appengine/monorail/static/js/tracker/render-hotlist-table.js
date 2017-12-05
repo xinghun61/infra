@@ -149,7 +149,7 @@ function createUrlCell(td, cell) {
     aLink.target = '_blank';
     aLink.rel = 'nofollow';
     aLink.textContent = value['item'];
-    aLink.style.display = 'block'
+    aLink.classList.add('fieldvalue_url');
     td.appendChild(aLink);
   });
 }

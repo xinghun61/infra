@@ -57,7 +57,8 @@
        <td class="url col_[table_data.cells.col_index]" [if-any table_data.cells.align]align="[table_data.cells.align]"[end]>
          [if-any table_data.cells.values]
            [for table_data.cells.values]
-             <a href="[table_data.cells.values.item]" target="_blank" rel="nofollow">[table_data.cells.values.item]</a>
+             [# TODO(jojwang): set limit on cell width and truncate long urls OR implement display strings.]
+             <a class="fieldvalue_url" href="[table_data.cells.values.item]" target="_blank" rel="nofollow">[table_data.cells.values.item]</a>
            [end]
          [end]
        </td>

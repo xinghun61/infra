@@ -472,6 +472,16 @@ img {
 .fieldvalue { text-decoration: none; }
 .fieldvalue:hover { text-decoration: underline; }
 
+.fieldvalue_url {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.fieldvalue_url:after {
+    content: "\A";
+    white-space: pre;
+}
+
 #colcontrol {
     padding: 5px;
 }

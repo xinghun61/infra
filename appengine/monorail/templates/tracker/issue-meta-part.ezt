@@ -110,14 +110,16 @@
           [if-any issue.fields.values issue.fields.derived_values]
             [for issue.fields.values]
               [is issue.fields.field_def.type_name "URL_TYPE"]
-                <a href="[issue.fields.values.val]" target="_blank" rel="nofollow">[issue.fields.values.val]</a>
+                <a class="fieldvalue_url" href="[issue.fields.values.val]" target="_blank" rel="nofollow">[issue.fields.values.val]</a>
               [else]
                 <a href="list?q=[issue.fields.field_name]=&quot;[format "url"][issue.fields.values.val][end]&quot;"
                     class="fieldvalue" title="[issue.fields.values.val] [if-any issue.fields.values.docstring]= [end]
                     [issue.fields.values.docstring]">[issue.fields.values.val]
                 </a>
               [end]
-              [if-index issue.fields.values last][if-any issue.fields.derived_values],[end][else],[end]
+              [is issue.fields.field_def.type_name "URL_TYPE"][else]
+                [if-index issue.fields.values last][if-any issue.fields.derived_values],[end][else],[end]
+              [end]
             [end]
             [for issue.fields.derived_values]
               <a href="list?q=[issue.fields.field_name]=&quot;[format "url"][issue.fields.derived_values.val][end]&quot;" class="fieldvalue"
