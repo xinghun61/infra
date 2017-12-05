@@ -338,9 +338,8 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
     return validation.Context(
         on_message=lambda msg: ctx.msg(msg.severity, '%s', msg.text))
 
-  if swarming.hostname:
-    with ctx.prefix('hostname: '):
-      validate_hostname(swarming.hostname, ctx)
+  with ctx.prefix('hostname: '):
+    validate_hostname(swarming.hostname, ctx)
 
   if swarming.task_template_canary_percentage.value > 100:
     ctx.error('task_template_canary_percentage.value must must be in [0, 100]')
@@ -404,8 +403,6 @@ def flatten_builder(builder, defaults, mixins):
 
 
 def validate_service_cfg(swarming, ctx):
-  with ctx.prefix('default_hostname: '):
-    validate_hostname(swarming.default_hostname, ctx)
   if swarming.milo_hostname:
     with ctx.prefix('milo_hostname: '):
       validate_hostname(swarming.milo_hostname, ctx)

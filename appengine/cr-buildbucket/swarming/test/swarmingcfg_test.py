@@ -36,6 +36,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
   def test_valid(self):
     self.cfg_test(
         '''
+          hostname: "example.com"
           builder_defaults {
             swarming_tags: "master:master.a"
             dimensions: "cores:8"
@@ -120,11 +121,11 @@ class ProjectCfgTest(testing.AppengineTestCase):
   def test_bad(self):
     self.cfg_test(
         '''
-          hostname: "chromium-swarm.appspot.com"
           builders {}
         ''',
         '',
         [
+          'hostname: unspecified',
           'builder #1: name unspecified',
           'builder #1: has no "pool" dimension',
           'builder #1: recipe: name unspecified',
@@ -133,6 +134,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
 
     self.cfg_test(
         '''
+          hostname: "example.com"
           builder_defaults {name: "x"}
           builders {
             name: "release"
@@ -719,18 +721,13 @@ class ServiceCfgTest(testing.AppengineTestCase):
         ctx.result().messages)
 
   def test_valid(self):
-    self.cfg_test('default_hostname: "chromium-swarm.appspot.com"', [])
-
-  def test_empty(self):
-    self.cfg_test('', ['default_hostname: unspecified'])
+    self.cfg_test('', [])
 
   def test_schema_in_hostname(self):
     self.cfg_test(
         '''
-          default_hostname: "https://swarming.example.com"
           milo_hostname: "https://milo.example.com"
         ''',
         [
-          'default_hostname: must not contain "://"',
           'milo_hostname: must not contain "://"',
         ])
