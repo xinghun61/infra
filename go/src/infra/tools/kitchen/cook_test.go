@@ -9,7 +9,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -18,8 +17,6 @@ import (
 
 	"go.chromium.org/luci/common/auth/authtest"
 	"go.chromium.org/luci/common/auth/localauth"
-	"go.chromium.org/luci/common/flag/stringlistflag"
-	"go.chromium.org/luci/common/flag/stringmapflag"
 	log "go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/logging/gologger"
 	"go.chromium.org/luci/common/system/environ"
@@ -39,17 +36,10 @@ func TestCook(t *testing.T) {
 
 		Convey("updateEnv", func() {
 			cook.TempDir = "/tmp"
-			cook.PrefixPathENV = stringlistflag.Flag{"/path2", "/path3"}
-			cook.SetEnvAbspath = stringmapflag.Value{"FOO": "/bar", "BAZ": "/qux"}
 
-			env := environ.New([]string{"PATH=/path"})
-			cook.updateEnv(env)
+			env := environ.New(nil)
+			cook.updateEnv(&env)
 			So(env.Map(), ShouldResemble, map[string]string{
-				"PATH": strings.Join([]string{"/path2", "/path3", "/path"}, string(os.PathListSeparator)),
-
-				"BAZ": "/qux",
-				"FOO": "/bar",
-
 				"TEMPDIR": "/tmp",
 				"TMPDIR":  "/tmp",
 				"TEMP":    "/tmp",

@@ -11,7 +11,6 @@ import (
 	"regexp"
 
 	"go.chromium.org/luci/common/errors"
-	"go.chromium.org/luci/common/flag/stringlistflag"
 	"go.chromium.org/luci/common/system/filesystem"
 )
 
@@ -74,47 +73,6 @@ func (c *CookFlags) Normalize() error {
 
 	if len(c.Properties) > 0 && c.PropertiesFile != "" {
 		return inputError("only one of -properties or -properties-file is allowed")
-	}
-
-	// normalizePathSlice normalizes a slice of forward-slash-delimited path
-	// strings.
-	//
-	// This operation is destructive, as the normalized result uses the same
-	// backing array as the initial path slice.
-	normalizePathSlice := func(sp *stringlistflag.Flag) error {
-		s := *sp
-		seen := make(map[string]struct{}, len(s))
-		normalized := s[:0]
-		for _, p := range s {
-			p := filepath.FromSlash(p)
-			if err := filesystem.AbsPath(&p); err != nil {
-				return err
-			}
-			if _, ok := seen[p]; ok {
-				continue
-			}
-			seen[p] = struct{}{}
-			normalized = append(normalized, p)
-		}
-
-		*sp = normalized
-		return nil
-	}
-
-	// Normalize c.PrefixPathENV
-	if err := normalizePathSlice(&c.PrefixPathENV); err != nil {
-		return err
-	}
-
-	// Normalize c.SetEnvAbspath
-	for key, value := range c.SetEnvAbspath {
-		if value == "" {
-			return inputError("-set-env-abspath requires a PATH value")
-		}
-		if err := filesystem.AbsPath(&value); err != nil {
-			return err
-		}
-		c.SetEnvAbspath[key] = value
 	}
 
 	if c.TempDir != "" {

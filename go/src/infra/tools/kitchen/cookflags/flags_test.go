@@ -82,16 +82,6 @@ var flagTestCases = []struct {
 		flags: []string{
 			"-mode", "buildbot",
 			"-repository", "meep",
-			"-recipe", "cool_recipe",
-			"-set-env-abspath", "sup",
-		},
-		errValidate: "requires a PATH value",
-	},
-
-	{
-		flags: []string{
-			"-mode", "buildbot",
-			"-repository", "meep",
 			"-properties", `{"something":"awesome"}`,
 			"-recipe", "cool_recipe",
 		},
@@ -125,10 +115,6 @@ var flagTestCases = []struct {
 			"-properties", `{"something":"awesome"}`,
 			"-temp-dir", "tmp",
 			"-recipe", "cool_recipe",
-			"-prefix-path-env", "some/dir",
-			"-prefix-path-env", "foo",
-			"-prefix-path-env", "foo",
-			"-set-env-abspath", "DORK=sup",
 			"-known-gerrit-host", "abc.googlesource.com",
 			"-known-gerrit-host", "def.googlesource.com",
 			"-logdog-tag", "A=B",
@@ -141,14 +127,7 @@ var flagTestCases = []struct {
 			Revision:      "HEAD",
 			WorkDir:       "kitchen-workdir",
 			CheckoutDir:   "kitchen-checkout",
-			PrefixPathENV: []string{
-				"$CWD/some/dir",
-				"$CWD/foo",
-			},
-			SetEnvAbspath: map[string]string{
-				"DORK": "$CWD/sup",
-			},
-			TempDir: "$CWD/tmp",
+			TempDir:       "$CWD/tmp",
 			LogDogFlags: LogDogFlags{
 				GlobalTags: map[string]string{
 					"A":      "B",
@@ -201,12 +180,6 @@ func TestFlags(t *testing.T) {
 							}
 							So(cf.Normalize(), ShouldErrLike, tc.errValidate)
 							if tc.errValidate == nil {
-								for i, p := range cf.PrefixPathENV {
-									cf.PrefixPathENV[i] = r.Replace(p)
-								}
-								for i, e := range cf.SetEnvAbspath {
-									cf.SetEnvAbspath[i] = r.Replace(e)
-								}
 								cf.TempDir = r.Replace(cf.TempDir)
 								So(cf, ShouldResemble, tc.cf)
 							}

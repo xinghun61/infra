@@ -33,7 +33,7 @@ func editSystemCmd() *subcommands.Command {
 					"Using an empty version will remove the package. The subdir is optional and defaults to '.'.")
 
 			ret.Flags.Var(&ret.prefixPathEnv, "ppe",
-				"(repeatable) override a -prefix-path-env entry. Using a value like '!value' will remove a path entry.")
+				"(repeatable) override a PATH prefix entry. Using a value like '!value' will remove a path entry.")
 
 			ret.Flags.Int64Var(&ret.priority, "p", -1, "set the swarming task priority (0-255), lower is faster to scheduler.")
 

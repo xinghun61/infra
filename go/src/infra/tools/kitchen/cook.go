@@ -252,23 +252,6 @@ func (c *cookRun) ensureAndRunRecipe(ctx context.Context, env environ.Env) *buil
 	return result
 }
 
-// stepModuleProperties are constructed properties for the "recipe_engine/step"
-// recipe module.
-type stepModuleProperties struct {
-	PrefixPATH []string `json:"prefix_path,omitempty"`
-}
-
-// stepModuleProperties returns properties for the "recipe_engine/step" module.
-func (c *cookRun) stepModuleProperties() *stepModuleProperties {
-	if len(c.PrefixPathENV) == 0 {
-		return nil
-	}
-
-	return &stepModuleProperties{
-		PrefixPATH: []string(c.PrefixPathENV),
-	}
-}
-
 // pathModuleProperties returns properties for the "recipe_engine/path" module.
 func (c *cookRun) pathModuleProperties() (map[string]string, error) {
 	recipeTempDir := filepath.Join(c.TempDir, "rt")
@@ -330,10 +313,6 @@ func (c *cookRun) prepareProperties(env environ.Env) (map[string]interface{}, *k
 		return nil, nil, err
 	}
 	props["$recipe_engine/path"] = pathProps
-
-	if p := c.stepModuleProperties(); p != nil {
-		props["$recipe_engine/step"] = p
-	}
 
 	// Use "generic" infra path config. See
 	// https://chromium.googlesource.com/chromium/tools/depot_tools/+/master/recipes/recipe_modules/infra_paths/
@@ -474,7 +453,7 @@ func (c *cookRun) run(ctx context.Context, args []string, env environ.Env) *buil
 		}
 	}
 
-	c.updateEnv(env)
+	c.updateEnv(&env)
 
 	// Make kitchen use the new $PATH too. This is needed for exec.LookPath called
 	// by kitchen to pick up binaries in the modified $PATH. In practice, we do it
@@ -538,24 +517,7 @@ func (c *cookRun) flushResult(result *build.BuildRunResult) (err error) {
 }
 
 // updateEnv updates $PATH, $PYTHONPATH and temp path env variables in env.
-func (c *cookRun) updateEnv(env environ.Env) {
-	addPaths := func(key string, paths []string) {
-		if len(paths) == 0 {
-			return
-		}
-		cur, _ := env.Get(key)
-		all := make([]string, 0, len(paths)+1)
-		all = append(all, paths...)
-		if len(cur) > 0 {
-			all = append(all, cur)
-		}
-		env.Set(key, strings.Join(all, string(os.PathListSeparator)))
-	}
-
-	addPaths("PATH", c.PrefixPathENV)
-
-	env.Load(c.SetEnvAbspath)
-
+func (c *cookRun) updateEnv(env *environ.Env) {
 	// Tell subprocesses to use Kitchen's temp dir.
 	if c.TempDir == "" {
 		// It should have been initialized in c.run.
@@ -627,7 +589,7 @@ func (c *cookRun) setupAuth(ctx context.Context, enableGitAuth bool, enableDevSh
 			}
 		}
 		if systemAuth.LocalAuth == nil {
-			return errors.New(fmt.Sprintf("can't change system account, no such logical account %q in LUCI_CONTEXT", c.SystemAccount))
+			return errors.Reason("can't change system account, no such logical account %q in LUCI_CONTEXT", c.SystemAccount).Err()
 		}
 	default:
 		systemAuth.LocalAuth = lucictx.GetLocalAuth(ctx)

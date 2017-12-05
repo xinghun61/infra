@@ -6,10 +6,12 @@ package main
 
 import (
 	"encoding/json"
-	"infra/tools/kitchen/cookflags"
 	"strings"
 
+	swarming "go.chromium.org/luci/common/api/swarming/swarming/v1"
 	"go.chromium.org/luci/common/errors"
+
+	"infra/tools/kitchen/cookflags"
 )
 
 // EditJobDefinition is a temporary type returned by JobDefinition.Edit. It
@@ -211,7 +213,8 @@ func (ejd *EditJobDefinition) SwarmingHostname(host string) {
 	})
 }
 
-// PrefixPathEnv controls kitchen's -prefix-path-env commandline variables.
+// PrefixPathEnv controls swarming's env_prefix mapping.
+//
 // Values prepended with '!' will remove them from the existing list of values
 // (if present). Otherwise these values will be appended to the current list of
 // path-prefix-envs.
@@ -219,24 +222,42 @@ func (ejd *EditJobDefinition) PrefixPathEnv(values []string) {
 	if len(values) == 0 {
 		return
 	}
-	ejd.tweakKitchenArgs(func(cf *cookflags.CookFlags) error {
+	ejd.tweakSystemland(func(s *Systemland) error {
+		var newPath []string
+		for _, pair := range s.SwarmingTask.Properties.EnvPrefixes {
+			if pair.Key == "PATH" {
+				newPath = pair.Value
+				break
+			}
+		}
+
 		for _, v := range values {
 			if strings.HasPrefix(v, "!") {
 				var toCut []int
-				for i, cur := range cf.PrefixPathENV {
+				for i, cur := range newPath {
 					if cur == v[1:] {
 						toCut = append(toCut, i)
 					}
 				}
 				for _, i := range toCut {
-					cf.PrefixPathENV = append(
-						cf.PrefixPathENV[:i],
-						cf.PrefixPathENV[i+1:]...)
+					newPath = append(newPath[:i], newPath[i+1:]...)
 				}
 			} else {
-				cf.PrefixPathENV = append(cf.PrefixPathENV, v)
+				newPath = append(newPath, v)
 			}
 		}
+
+		for _, pair := range s.SwarmingTask.Properties.EnvPrefixes {
+			if pair.Key == "PATH" {
+				pair.Value = newPath
+				return nil
+			}
+		}
+
+		s.SwarmingTask.Properties.EnvPrefixes = append(
+			s.SwarmingTask.Properties.EnvPrefixes,
+			&swarming.SwarmingRpcsStringListPair{Key: "PATH", Value: newPath})
+
 		return nil
 	})
 }

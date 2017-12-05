@@ -9,7 +9,6 @@ import (
 	"strconv"
 
 	"go.chromium.org/luci/common/flag/stringlistflag"
-	"go.chromium.org/luci/common/flag/stringmapflag"
 )
 
 const (
@@ -29,13 +28,11 @@ type CookFlags struct {
 
 	RecipeResultByteLimit int `json:"recipe_result_byte_limit"`
 
-	Properties     PropertyFlag        `json:"properties"`
-	PropertiesFile string              `json:"properties_file"`
-	PrefixPathENV  stringlistflag.Flag `json:"prefix_path_env"`
-	SetEnvAbspath  stringmapflag.Value `json:"set_env_abspath"`
-	CacheDir       string              `json:"cache_dir"`
-	TempDir        string              `json:"temp_dir"`
-	BuildURL       string              `json:"build_url"`
+	Properties     PropertyFlag `json:"properties"`
+	PropertiesFile string       `json:"properties_file"`
+	CacheDir       string       `json:"cache_dir"`
+	TempDir        string       `json:"temp_dir"`
+	BuildURL       string       `json:"build_url"`
 
 	OutputResultJSONPath string `json:"output_result_json"`
 
@@ -75,21 +72,6 @@ func (c *CookFlags) Register(fs *flag.FlagSet) {
 		"recipe",
 		"",
 		"Name of the recipe to run")
-
-	fs.Var(
-		&c.PrefixPathENV,
-		"prefix-path-env",
-		"Add this forward-slash-delimited filesystem path to the beginning of the PATH "+
-			"environment. The path value will be made absolute relative to the current working directory. "+
-			"Can be specified multiple times, in which case values will appear at the beginning "+
-			"of PATH in the order that they are supplied. Elements specified here will be forcefully "+
-			"prefixed to the PATH of step commands by the recipe engine.")
-
-	fs.Var(
-		&c.SetEnvAbspath,
-		"set-env-abspath",
-		"Accepts a KEY=PATH environment variable. PATH is a filesystem path that will be exported "+
-			"to the environment as an absolute path.")
 
 	fs.StringVar(
 		&c.CheckoutDir,
@@ -190,8 +172,6 @@ func (c *CookFlags) Dump() []string {
 	ret.str("output-result-json", c.OutputResultJSONPath)
 	ret.str("recipe", c.RecipeName)
 
-	ret.list("prefix-path-env", c.PrefixPathENV)
-	ret.stringMap("set-env-abspath", c.SetEnvAbspath)
 	ret.str("luci-system-account", c.SystemAccount)
 	ret.str("luci-system-account-json", c.SystemAccountJSON)
 	ret.list("known-gerrit-host", c.KnownGerritHost)
