@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import os
 import re
 
 from analysis.stacktrace import CallStack
@@ -255,10 +256,15 @@ class FilterFramesBeforeAndInBetweenSignatureParts(CallStackFilter):
     if not self.signature_parts:
       return stack_buffer
 
+    def MatchSignaturePartWithFrame(signature_part, frame):
+      return (signature_part in frame.function or
+              signature_part.lower() ==
+              os.path.basename(frame.file_path).lower())
+
     def MatchSignatureWithFrames(frames, signature_parts):
       for frame in frames:
         for index, signature_part in enumerate(signature_parts):
-          if signature_part in frame.function:
+          if MatchSignaturePartWithFrame(signature_part, frame):
             return True, signature_parts[index:]
 
       return False, None
@@ -271,7 +277,7 @@ class FilterFramesBeforeAndInBetweenSignatureParts(CallStackFilter):
              frame_index < len(frames)):
         frame = frames[frame_index]
         signature_part = signature_parts[signature_index]
-        if signature_part in frame.function:
+        if MatchSignaturePartWithFrame(signature_part, frame):
           signature_index += 1
         else:
           filtered_index.append(frame_index)

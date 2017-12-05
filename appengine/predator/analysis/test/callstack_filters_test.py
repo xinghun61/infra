@@ -441,3 +441,25 @@ class FilterFramesBeforeAndInBetweenSignaturePartsTest(AnalysisTestCase):
         callstack_filters.FilterFramesBeforeAndInBetweenSignatureParts(
             'func1\nfunc3')(stack_buffer),
         expected_stack_buffer)
+
+  def testFilterFramesBothBeforeAndInBetweenSignaturePartsForFileNameCrashState(
+      self):
+    """Tests filtering frames before and in between file name crash state."""
+    frame_list = [
+        StackFrame(
+            0, 'src/v8', 'func0', 'a.cc', 'a.cc', [1]),
+        StackFrame(
+            1, 'src', 'func1', 'b.cc', 'b.cc', [1]),
+        StackFrame(
+            2, 'src', 'func2', 'c.cc', 'c.cc', [2, 3]),
+        StackFrame(
+            3, 'src/v8', 'func3', 'd.cc', 'd.cc', [1]),
+    ]
+
+    stack_buffer = CallStackBuffer(0, frame_list=frame_list)
+    expected_stack_buffer = CallStackBuffer(
+        0, frame_list=[frame_list[1], frame_list[3]])
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.FilterFramesBeforeAndInBetweenSignatureParts(
+            'b.cc\nd.cc')(stack_buffer),
+        expected_stack_buffer)
