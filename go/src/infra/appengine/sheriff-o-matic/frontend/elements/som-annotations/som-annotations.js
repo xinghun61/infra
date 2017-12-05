@@ -100,7 +100,7 @@ class SomAnnotations extends Polymer.mixinBehaviors(
     this._commentTextInput = this.$.commentText;
     this._snoozeTimeInput = this.$.snoozeTime;
 
-    this.fetchAnnotations();
+    this.fetch();
   }
 
   fetch() {
@@ -230,16 +230,9 @@ class SomAnnotations extends Polymer.mixinBehaviors(
       }
     }
 
-    let labels = ['Filed-Via-SoM'];
-    if (trooperBug) {
-      labels.push('infra-troopers');
-    } else {
-      labels.push('sheriff-chromium');
-    }
-
     this.$.fileBug.summary = bugSummary;
     this.$.fileBug.description = this._commentForBug(this._fileBugModel);
-    this.$.fileBug.labels = labels;
+    this.$.fileBug.labels = this._fileBugLabel;
 
     this.$.fileBug.open();
   }
