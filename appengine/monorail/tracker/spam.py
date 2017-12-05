@@ -18,6 +18,7 @@ from framework import servlet
 from framework import template_helpers
 from framework import xsrf
 from tracker import spam_helpers
+from tracker import tracker_bizobj
 
 class FlagSpamForm(servlet.Servlet):
   """Flag or un-flag the specified issue/comment for the logged in user."""
@@ -56,6 +57,18 @@ class FlagSpamForm(servlet.Servlet):
             mr.auth.user_id, mr.local_id, comment_id))
         raise permissions.PermissionException(
             'User lacks permission to flag spam')
+
+      # Prevent users who can't view issue from being able to mark it as spam.
+      config = self.services.config.GetProjectConfig(mr.cnxn, mr.project_id)
+      granted_perms = tracker_bizobj.GetGrantedPerms(
+          issue, mr.auth.effective_ids, config)
+      permit_view = permissions.CanViewIssue(
+          mr.auth.effective_ids, mr.perms, mr.project, issue,
+          granted_perms=granted_perms)
+      if not permit_view:
+        logging.warning('Issue is %r', issue)
+        raise permissions.PermissionException(
+          'User is not allowed to view this issue, so cannot flag it as spam.')
 
     # TODO: Check for exceeding the max number of flags, issue verdict then too.
 
