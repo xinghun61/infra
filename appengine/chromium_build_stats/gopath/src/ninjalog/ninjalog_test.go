@@ -414,6 +414,52 @@ func TestFlow(t *testing.T) {
 	}
 }
 
+func TestWeightedTime(t *testing.T) {
+	steps := []Step{
+		Step{
+			Start:   0 * time.Millisecond,
+			End:     3 * time.Millisecond,
+			Out:     "target-a",
+			CmdHash: "hash-target-a",
+		},
+		Step{
+			Start:   2 * time.Millisecond,
+			End:     5 * time.Millisecond,
+			Out:     "target-b",
+			CmdHash: "hash-target-b",
+		},
+		Step{
+			Start:   2 * time.Millisecond,
+			End:     8 * time.Millisecond,
+			Out:     "target-c",
+			CmdHash: "hash-target-c",
+		},
+		Step{
+			Start:   2 * time.Millisecond,
+			End:     3 * time.Millisecond,
+			Out:     "target-d",
+			CmdHash: "hash-target-d",
+		},
+	}
+
+	// 0 1 2 3 4 5 6 7 8
+	// +-+-+-+-+-+-+-+-+
+	// <--A-->
+	//     <--B-->
+	//     <------C---->
+	//     <D>
+	got := WeightedTime(steps)
+	want := map[string]time.Duration{
+		"target-a": 2*time.Millisecond + 1*time.Millisecond/4,
+		"target-b": 1*time.Millisecond/4 + 2*time.Millisecond/2,
+		"target-c": 1*time.Millisecond/4 + 2*time.Millisecond/2 + 3*time.Millisecond,
+		"target-d": 1 * time.Millisecond / 4,
+	}
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("WeightedTime(%v)=%v; want=%v", steps, got, want)
+	}
+}
+
 func BenchmarkParse(b *testing.B) {
 	data, err := ioutil.ReadFile("testdata/ninja_log")
 	if err != nil {

@@ -67,6 +67,16 @@ type ByDuration struct{ Steps }
 
 func (s ByDuration) Less(i, j int) bool { return s.Steps[i].Duration() < s.Steps[j].Duration() }
 
+// ByWeightedTime is used to sort by weighted time.
+type ByWeightedTime struct {
+	Weighted map[string]time.Duration
+	Steps
+}
+
+func (s ByWeightedTime) Less(i, j int) bool {
+	return s.Weighted[s.Steps[i].Out] < s.Weighted[s.Steps[j].Out]
+}
+
 // Metadata is data added by compile.py.
 type Metadata struct {
 	// Platform is platform of buildbot.
@@ -242,6 +252,8 @@ func Dump(w io.Writer, steps []Step) error {
 // Dedup dedupes steps. step may have the same cmd hash.
 // Dedup only returns the first step for these steps.
 // steps will be sorted by start time.
+//
+// TODO(ukai): categorizes by extension.
 func Dedup(steps []Step) []Step {
 	m := make(map[string]bool)
 	sort.Sort(Steps(steps))
@@ -254,6 +266,27 @@ func Dedup(steps []Step) []Step {
 		m[s.CmdHash] = true
 	}
 	return dedup
+}
+
+// TotalTime returns startup time and end time of ninja, and accumulated time
+// of all tasks.
+func TotalTime(steps []Step) (startupTime, endTime, cpuTime time.Duration) {
+	if len(steps) == 0 {
+		return 0, 0, 0
+	}
+	steps = Dedup(steps)
+	startup := steps[0].Start
+	var end time.Duration
+	for _, s := range steps {
+		if s.Start < startup {
+			startup = s.Start
+		}
+		if s.End > end {
+			end = s.End
+		}
+		cpuTime += s.Duration()
+	}
+	return startup, end, cpuTime
 }
 
 // Flow returns concurrent steps by time.
@@ -281,4 +314,95 @@ func Flow(steps []Step) [][]Step {
 		threads[tid] = append(threads[tid], s)
 	}
 	return threads
+}
+
+// action represents an event's action. "start" or "end".
+type action string
+
+const (
+	unknownAction action = ""
+	startAction   action = "start"
+	stopAction    action = "stop"
+)
+
+// event is an event of steps.
+type event struct {
+	time   time.Duration
+	action action
+	target string
+}
+
+// toEvent converts steps into events.
+// events are sorted by its time.
+func toEvent(steps []Step) []event {
+	var events []event
+	for _, s := range steps {
+		events = append(events,
+			event{
+				time:   s.Start,
+				action: startAction,
+				target: s.Out,
+			},
+			event{
+				time:   s.End,
+				action: stopAction,
+				target: s.Out,
+			},
+		)
+	}
+	sort.Slice(events, func(i, j int) bool {
+		if events[i].time == events[j].time {
+			// If a task starts and stops on the same time stamp
+			// then the start will come first.
+			return events[i].action < events[j].action
+		}
+		return events[i].time < events[j].time
+	})
+	return events
+}
+
+// WeightedTime calculates weighted time, which is elapsed time with
+// each segment divided by the number of tasks that were running in paralle.
+// This makes it a much better approximation of how "important" a slow step was.
+// For example, A link that is entirely or mostly serialized will have a
+// weighted time that is the same or similar to its elapsed time.
+// A compile that runs in parallel with 999 other compiles will have a weighted
+// time that is tiny.
+func WeightedTime(steps []Step) map[string]time.Duration {
+	if len(steps) == 0 {
+		return nil
+	}
+	steps = Dedup(steps)
+	events := toEvent(steps)
+	weightedDuration := make(map[string]time.Duration)
+
+	// Track the tasks which are currently running.
+	runningTasks := make(map[string]time.Duration)
+
+	// Record the time we have processed up to so we know how to calculate
+	// time deltas.
+	lastTime := events[0].time
+
+	// Track the accumulated weighted time so that it can efficiently be
+	// added to individual tasks.
+	var lastWeightedTime time.Duration
+
+	for _, event := range events {
+		numRunning := len(runningTasks)
+		if numRunning > 0 {
+			// Update the total weighted time up to this moment.
+			lastWeightedTime += (event.time - lastTime) / time.Duration(numRunning)
+		}
+		switch event.action {
+		case startAction:
+			// Record the total weighted task time when this task starts.
+			runningTasks[event.target] = lastWeightedTime
+		case stopAction:
+			// Record the change in the total weighted task time while this task ran.
+			weightedDuration[event.target] = lastWeightedTime - runningTasks[event.target]
+			delete(runningTasks, event.target)
+		}
+		lastTime = event.time
+	}
+	return weightedDuration
 }

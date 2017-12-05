@@ -17,6 +17,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"time"
 
 	"appengine"
 	"appengine/user"
@@ -89,10 +90,18 @@ Exit:{{.Metadata.Exit}}
 {{if .Metadata.Error}}Error: {{.Metadata.Error}}
 {{.Metadata.Raw}}{{end}}
 <hr />
+{{ .CPUTime }} elapsed time over {{ .RunTime }} ({{printf "%1.1fx" .Parallelism}} parallelism) <br />
+ninja startup: {{ .StartupTime }} <br />
+ninja end: {{ .EndTime }} <br />
+{{ len .Steps }} build steps completed, average of {{printf "%1.2f/s" .StepsPerSec }}
+
+<hr />
+{{$w := .WeightedTimes}}
 <table border=1>
 <tr>
  <th>n
  <th>duration
+ <th>weighted
  <th>start
  <th>end
  <th>restat
@@ -102,6 +111,7 @@ Exit:{{.Metadata.Exit}}
 <tr>
  <td><a name="{{$i}}" href="#{{$i}}">{{$i}}</a>
  <td>{{$step.Duration}}
+ <td>{{index $w $step.Out}}
  <td>{{$step.Start}}
  <td>{{$step.End}}
  <td>{{if gt $step.Restat 0}}{{$step.Restat}}{{end}}
@@ -274,11 +284,40 @@ func lastBuild(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) er
 	return ninjalog.Dump(w, njl.Steps)
 }
 
+type tableData struct {
+	*ninjalog.NinjaLog
+	StartupTime   time.Duration
+	EndTime       time.Duration
+	CPUTime       time.Duration
+	WeightedTimes map[string]time.Duration
+}
+
+func (t tableData) RunTime() time.Duration {
+	return t.EndTime - t.StartupTime
+}
+
+func (t tableData) Parallelism() float64 {
+	return float64(t.CPUTime) / float64(t.RunTime())
+}
+
+func (t tableData) StepsPerSec() float64 {
+	return float64(len(t.Steps)) / t.RunTime().Seconds()
+}
+
 func table(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error {
-	w.Header().Set("Content-Type", "text/html")
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	sort.Sort(sort.Reverse(ninjalog.ByDuration{Steps: njl.Steps}))
-	return tableTmpl.Execute(w, njl)
+	data := tableData{
+		NinjaLog: njl,
+	}
+	data.StartupTime, data.EndTime, data.CPUTime = ninjalog.TotalTime(njl.Steps)
+	data.WeightedTimes = ninjalog.WeightedTime(njl.Steps)
+	// TODO(ukai): sort by req parameter, or sort by javascript.
+	sort.Sort(sort.Reverse(ninjalog.ByWeightedTime{
+		Weighted: data.WeightedTimes,
+		Steps:    njl.Steps,
+	}))
+	return tableTmpl.Execute(w, data)
 }
 
 func metadataJSON(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error {
