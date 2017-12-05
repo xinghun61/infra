@@ -1,6 +1,9 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/chopsui/crdx-user-input.html">
 
+<link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
+
 <link rel="import" href="../../elements/som-input-styles.html">
 <link rel="import" href="../../elements/som-utility-styles.html">
 
@@ -20,24 +23,26 @@
     <paper-dialog id="fileBugDialog" with-backdrop>
       <h2>File a new bug</h2>
       <div class="error">[[_fileBugErrorMessage]]</div>
-      <paper-input id="summary" label="Summary" value="[[summary]]"></paper-input>
-      <paper-textarea id="description" always-float-label label="Description" value="[[description]]"></paper-textarea>
-      <crdx-user-input
-          id="cc" label="CC"
-          input-value="[[_arrayToString(cc)]]"
-          suggestions="[[ccSuggestions]]"
-          on-input="_ccChanged"
-          on-user-selected="_ccUserSelected"
-          multiple></crdx-user-input>
-      <paper-dropdown-menu id="priority" label="Select priority">
-        <paper-listbox slot="dropdown-content" selected="2">
-          <paper-item label="Pri-0">0 = Emergency</paper-item>
-          <paper-item label="Pri-1">1 = Need (for target milestone)</paper-item>
-          <paper-item label="Pri-2">2 = Want (for target milstone)</paper-item>
-          <paper-item label="Pri-3">3 = Not time critical</paper-item>
-        </paper-listbox>
-      </paper-dropdown-menu>
-      <paper-input id="labels" label="Labels (separate by commas)" value="[[_arrayToString(labels)]]"></paper-input>
+      <paper-dialog-scrollable>
+        <paper-input id="summary" label="Summary" value="[[summary]]"></paper-input>
+        <paper-textarea id="description" always-float-label label="Description" value="[[description]]"></paper-textarea>
+        <crdx-user-input
+            id="cc" label="CC"
+            input-value="[[_arrayToString(cc)]]"
+            suggestions="[[ccSuggestions]]"
+            on-input="_ccChanged"
+            on-user-selected="_ccUserSelected"
+            multiple></crdx-user-input>
+        <paper-dropdown-menu id="priority" label="Select priority">
+          <paper-listbox slot="dropdown-content" selected="2">
+            <paper-item label="Pri-0">0 = Emergency</paper-item>
+            <paper-item label="Pri-1">1 = Need (for target milestone)</paper-item>
+            <paper-item label="Pri-2">2 = Want (for target milstone)</paper-item>
+            <paper-item label="Pri-3">3 = Not time critical</paper-item>
+          </paper-listbox>
+        </paper-dropdown-menu>
+        <paper-input id="labels" label="Labels (separate by commas)" value="[[_arrayToString(labels)]]"></paper-input>
+      </paper-dialog-scrollable>
       <div class="buttons">
         <button dialog-dismiss>
           Close
@@ -45,6 +50,7 @@
         <button class="emphasized"  on-tap="_fileBug">File Bug</button>
       </div>
     </paper-dialog>
+
 
 
     <paper-dialog id="bugFiledDialog" with-backdrop>

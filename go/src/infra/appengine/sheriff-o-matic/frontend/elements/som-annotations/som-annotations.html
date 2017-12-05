@@ -3,6 +3,7 @@
 <link rel="import" href="../../bower_components/iron-a11y-keys/iron-a11y-keys.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/paper-dialog/paper-dialog.html">
+<link rel="import" href="../../bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html">
 <link rel="import" href="../../bower_components/paper-input/paper-input.html">
 <link rel="import" href="../../bower_components/paper-input/paper-textarea.html">
 
@@ -45,16 +46,6 @@
       #commentsDialog iron-icon:hover {
         color: #222;
         background-color: #aaa;
-      }
-      #commentsList {
-        display: block;
-        max-height: 400px;
-        overflow: auto;
-      }
-      #groupList, #ungroupList {
-        display: block;
-        max-height: 400px;
-        overflow: auto;
       }
       #commentsList li {
         list-style-type: none;
@@ -192,23 +183,25 @@
     <paper-dialog id="commentsDialog" with-backdrop>
       <iron-a11y-keys target="[[_commentTextInput]]" keys="enter" on-keys-pressed="_addComment"></iron-a11y-keys>
       <h2>Comments</h2>
-      <ul id="commentsList" hidden$="[[_commentsHidden]]">
-        <template is="dom-repeat" items="[[_commentsModelAnnotation.comments]]" as="comment">
-          <li class="comment">
-            <span class="comment-context">
-              <a href="mailto:[[comment.user]]" class="user-info">
-                [[_computeUsername(comment.user)]]
-              </a> on
-              <span class="comment-time">
-                [[_formatTimestamp(comment.time)]]
+      <paper-dialog-scrollable>
+        <ul id="commentsList" hidden$="[[_commentsHidden]]">
+          <template is="dom-repeat" items="[[_commentsModelAnnotation.comments]]" as="comment">
+            <li class="comment">
+              <span class="comment-context">
+                <a href="mailto:[[comment.user]]" class="user-info">
+                  [[_computeUsername(comment.user)]]
+                </a> on
+                <span class="comment-time">
+                  [[_formatTimestamp(comment.time)]]
+                </span>
+                <iron-icon icon="close" title="Remove" id="removeComment[[index]]"
+                  hidden$="[[_computeHideDeleteComment(comment)]]" on-tap="_removeComment"></iron-icon>
               </span>
-              <iron-icon icon="close" title="Remove" id="removeComment[[index]]"
-                hidden$="[[_computeHideDeleteComment(comment)]]" on-tap="_removeComment"></iron-icon>
-            </span>
-            <som-marked-element class="comment-text" markdown="[[comment.text]]"></som-marked-element>
-          </li>
-        </template>
-      </ul>
+              <som-marked-element class="comment-text" markdown="[[comment.text]]"></som-marked-element>
+            </li>
+          </template>
+        </ul>
+      </paper-dialog-scrollable>
       <paper-textarea autofocus label="add comment" id="commentText" required></paper-textarea>
       <div class="error">[[_commentsErrorMessage]]</div>
       <div class="buttons">
@@ -224,7 +217,7 @@
     <paper-dialog id="ungroupDialog" with-backdrop>
       <iron-a11y-keys keys="enter" on-keys-pressed="_ungroup"></iron-a11y-keys>
       <h2>Ungroup</h2>
-      <div id="groupList">
+      <paper-dialog-scrollable id="groupList" class="scrollable">
         <label class="checkbox ungroup-row">
           <input type="checkbox" on-change="_checkAll" data-checkbox-selector=".ungroup-checkbox" />
           Check/Uncheck All
@@ -235,7 +228,7 @@
             [[alert.title]]
           </label>
         </template>
-      </div>
+      </paper-dialog-scrollable>
       <div class="error">[[_ungroupErrorMessage]]</div>
       <div class="buttons">
         <button dialog-dismiss>

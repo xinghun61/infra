@@ -38,7 +38,8 @@
     "paper-progress": "^2.0.1",
     "vaadin-grid": "^3.0.0",
     "marked": "^0.3.6",
-    "chopsui": "^0.0.33"
+    "chopsui": "^0.0.33",
+    "paper-dialog-scrollable": "^2.1.0"
   },
   "resolutions": {
     "polymer": "^2.0.0"
