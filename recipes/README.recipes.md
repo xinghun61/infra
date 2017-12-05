@@ -29,6 +29,7 @@
   * [infra_system:examples/full](#recipes-infra_system_examples_full)
   * [isolate_go_perf](#recipes-isolate_go_perf)
   * [lkgr_finder](#recipes-lkgr_finder)
+  * [luci_check](#recipes-luci_check)
   * [luci_gae](#recipes-luci_gae)
   * [luci_go](#recipes-luci_go)
   * [luci_py](#recipes-luci_py)
@@ -336,6 +337,11 @@ Returns file size if file exists, else None
 [DEPS](/recipes/recipes/lkgr_finder.py#8): [build/chromium\_checkout][build/recipe_modules/chromium_checkout], [build/v8][build/recipe_modules/v8], [build/webrtc][build/recipe_modules/webrtc], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/gitiles][depot_tools/recipe_modules/gitiles], [depot\_tools/gsutil][depot_tools/recipe_modules/gsutil], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/raw\_io][recipe_engine/recipe_modules/raw_io], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
 &mdash; **def [RunSteps](/recipes/recipes/lkgr_finder.py#54)(api, buildername):**
+### *recipes* / [luci\_check](/recipes/recipes/luci_check.py)
+
+[DEPS](/recipes/recipes/luci_check.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python]
+
+&mdash; **def [RunSteps](/recipes/recipes/luci_check.py#13)(api):**
 ### *recipes* / [luci\_gae](/recipes/recipes/luci_gae.py)
 
 [DEPS](/recipes/recipes/luci_gae.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [depot\_tools/git][depot_tools/recipe_modules/git], [depot\_tools/presubmit][depot_tools/recipe_modules/presubmit], [depot\_tools/tryserver][depot_tools/recipe_modules/tryserver], [infra\_checkout](#recipe_modules-infra_checkout), [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/json][recipe_engine/recipe_modules/json], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
