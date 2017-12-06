@@ -50,7 +50,7 @@ Also, it contains instructions how to change this bug template.
 
 END
 
-components: "Infra>Platform"
+components: "Infra>Platform>Admin"
 cc: "nodir@chromium.org"
 cc: "estaab@chromium.org"
 cc: "efoo@chromium.org"
