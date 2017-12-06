@@ -183,40 +183,40 @@ class PredatorForCracasTest(AppengineTestCase):
   @mock.patch('common.predator_app.PredatorApp.ResultMessageToClient')
   def testResultMessageToClientIfRegressionRangIsNone(self, mock_super_method):
     """Tests ``ResultMessageToClient`` method when regression range is None."""
-    mock_super_method.side_effect = lambda *args: args
+    mock_super_method.side_effect = lambda *args: {'result': args[0]}
     crash_identifiers = {'regression_range': None}
     analysis = self.predator.CreateAnalysis(crash_identifiers)
     analysis.regression_range = None
     analysis.identifiers = crash_identifiers
     analysis.put()
 
-    args = self.predator.ResultMessageToClient(analysis)
-    self.assertEqual(args[0].regression_range, [])
+    msg = self.predator.ResultMessageToClient(crash_identifiers)
+    self.assertEqual(msg['result']['regression_range'], [])
 
   @mock.patch('common.predator_app.PredatorApp.ResultMessageToClient')
   def testResultMessageToClientIfRegressionRangIsNotNone(
       self, mock_super_method):
     """Tests ``ResultMessageToClient`` method when regression range is None."""
-    mock_super_method.side_effect = lambda *args: args
+    mock_super_method.side_effect = lambda *args: {'result': args[0]}
     crash_identifiers = {'regression_range': ['rev0', 'rev1']}
     analysis = self.predator.CreateAnalysis(crash_identifiers)
     analysis.regression_range = ['rev0', 'rev1']
     analysis.identifiers = crash_identifiers
     analysis.put()
 
-    args = self.predator.ResultMessageToClient(analysis)
-    self.assertEqual(args[0].regression_range, ['rev0', 'rev1'])
+    msg = self.predator.ResultMessageToClient(crash_identifiers)
+    self.assertEqual(msg['result']['regression_range'], ['rev0', 'rev1'])
 
   @mock.patch('common.predator_app.PredatorApp.ResultMessageToClient')
   def testResultMessageToClient(self, mock_super_method):
     """Tests ``ResultMessageToClient`` when regression range is not None."""
-    mock_super_method.side_effect = lambda *args: args
+    mock_super_method.side_effect = lambda *args: {'result': args[0]}
     crash_identifiers = {'regression_range': ['2', '3']}
     analysis = self.predator.CreateAnalysis(crash_identifiers)
     analysis.identifiers = crash_identifiers
 
-    args = self.predator.ResultMessageToClient(analysis)
-    self.assertEqual(args[0].identifiers, crash_identifiers)
+    msg = self.predator.ResultMessageToClient(crash_identifiers)
+    self.assertEqual(msg['result'], crash_identifiers)
 
   def testCrashDataCls(self):
     """Tests ``CrashDataCls`` returns the class of the crash data."""
