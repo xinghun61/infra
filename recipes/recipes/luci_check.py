@@ -5,6 +5,8 @@
 DEPS = [
   'depot_tools/bot_update',
   'depot_tools/gclient',
+  'recipe_engine/context',
+  'recipe_engine/path',
   'recipe_engine/properties',
   'recipe_engine/python',
 ]
@@ -14,7 +16,8 @@ def RunSteps(api):
   api.gclient.set_config('infra')
   api.bot_update.ensure_checkout()
   api.gclient.runhooks()
-  api.python('Run checks', 'run.py', ['infra.tools.luci_check'])
+  with api.context(cwd=api.path['checkout']):
+    api.python('Run checks', 'run.py', ['infra.tools.luci_check'])
 
 
 def GenTests(api):

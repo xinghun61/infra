@@ -84,6 +84,7 @@
       "run.py",
       "infra.tools.luci_check"
     ],
+    "cwd": "[START_DIR]/infra",
     "name": "Run checks"
   },
   {
