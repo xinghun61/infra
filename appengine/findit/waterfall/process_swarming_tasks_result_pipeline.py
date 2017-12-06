@@ -25,7 +25,7 @@ class ProcessSwarmingTasksResultPipeline(BasePipeline):
 
     for step_name, step_failure in failure_info['failed_steps'].iteritems():
       step_has_first_time_failure = ci_test_failure.AnyTestHasFirstTimeFailure(
-          step_failure.get('tests', {}), build_number)
+          step_failure.get('tests') or {}, build_number)
       if not step_has_first_time_failure:
         continue
       task_result = yield ProcessSwarmingTaskResultPipeline(
