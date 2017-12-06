@@ -174,7 +174,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(_FAILURE_SIGNALS, signals)
 
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    self.assertEqual(_FAILURE_SIGNALS, analysis.signals)
+    self.assertIsNone(analysis.signals)
 
   def testExtractSignalsForTestFailureForTestsFlaky(self):
     master_name = 'm'

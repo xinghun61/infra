@@ -97,7 +97,4 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
       signals[step_name] = extractors.ExtractSignal(
           master_name, builder_name, step_name, None, failure_log).ToDict()
 
-  extract_signal.SaveSignalInAnalysis(master_name, builder_name, build_number,
-                                      signals)
-
   return signals
