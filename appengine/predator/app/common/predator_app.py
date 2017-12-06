@@ -68,6 +68,7 @@ class PredatorApp(object):
   def SetLog(self, log):
     """Sets log instance to store useful logs to datastore for users."""
     self._log = log
+    self._Predator().SetLog(log)
 
   # This is a class method because it should be the same for all
   # instances of this class. We can in fact call class methods on

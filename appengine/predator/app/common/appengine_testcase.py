@@ -10,6 +10,7 @@ from google.appengine.api import users
 
 from analysis.analysis_testcase import AnalysisTestCase
 from analysis.crash_data import CrashData
+from analysis.predator import Predator
 from analysis.type_enums import CrashClient
 from common.predator_app import PredatorApp
 from common.model.crash_config import CrashConfig
@@ -99,6 +100,15 @@ class MockCrashAnalysis(CrashAnalysis):  # pragma: no cover
     return 'mock_client'
 
 
+class MockChangelistClassifier(object):  # pragma: no cover
+
+  def __init__(self, *_):
+    self._log = None
+
+  def SetLog(self, log):
+    self._log = log
+
+
 class AppengineTestCase(AnalysisTestCase, TestCase):  # pragma: no cover
 
   def setUp(self):
@@ -155,6 +165,11 @@ class AppengineTestCase(AnalysisTestCase, TestCase):  # pragma: no cover
 
       def CreateAnalysis(self, crash_identifiers):
         return MockCrashAnalysis.Create(crash_identifiers)
+
+      def _Predator(self):
+        return Predator(MockChangelistClassifier(get_repository, None, None),
+                        self._component_classifier,
+                        self._project_classifier)
 
     mock_predator = MockPredatorApp()
     mock_predator.SetLog(self.GetMockLog())

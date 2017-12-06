@@ -14,16 +14,16 @@ class Predator(object): # pragma: no cover
   """The Main entry point into the Predator library."""
 
   def __init__(self, changelist_classifier, component_classifier,
-               project_classifier, log=None):
-    self._log = log
+               project_classifier):
+    self._log = None
     self.changelist_classifier = changelist_classifier
     self.component_classifier = component_classifier
     self.project_classifier = project_classifier
-    self._SetLog()
 
-  def _SetLog(self):
+  def SetLog(self, log):
     """Makes sure that classifiers are using the same log as Predator."""
-    self.changelist_classifier.SetLog(self._log)
+    self._log = log
+    self.changelist_classifier.SetLog(log)
 
   def _FindCulprit(self, report):
     """Given a CrashReport, return suspected project, components and cls."""

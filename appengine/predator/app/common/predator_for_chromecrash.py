@@ -86,8 +86,7 @@ class PredatorForChromeCrash(PredatorApp):  # pylint: disable=W0223
                                                    meta_feature,
                                                    meta_weight),
                               self._component_classifier,
-                              self._project_classifier,
-                              log=self._log)
+                              self._project_classifier)
 
   def _Predator(self):  # pragma: no cover
     return self._predator
