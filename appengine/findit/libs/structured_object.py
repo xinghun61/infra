@@ -186,7 +186,6 @@ class StructuredObject(BaseSerializableObject):
     Returns:
       A dict from defined attributes to their types.
     """
-
     cache_name = '_%s.%s._dynamic_definitions' % (cls.__module__, cls.__name__)
     if not hasattr(cls, cache_name):
       d = {}

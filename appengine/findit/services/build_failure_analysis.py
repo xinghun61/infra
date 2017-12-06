@@ -528,11 +528,32 @@ def CreateCLInfoDict(justification_dict, build_number, change_log):
 
 
 def GetLowerBoundForAnalysis(step_failure_info):
+  if isinstance(step_failure_info, dict):
+    # This is for compatibility of test failures, will be removed in next CL.
+    # TODO(chanli): remove it when no need.
+    if step_failure_info.get('last_pass') is not None:
+      return step_failure_info.get('last_pass') + 1
+    return step_failure_info['first_failure']
+
   return (step_failure_info.last_pass + 1
           if step_failure_info.last_pass else step_failure_info.first_failure)
 
 
 def InitializeStepLevelResult(step_name, step_failure_info, master_name):
+  # This is for compatibility of test failures, will be removed in next CL.
+  # TODO(chanli): remove it when no need.
+  if isinstance(step_failure_info, dict):
+    return {
+        'step_name':
+            step_name,
+        'first_failure':
+            step_failure_info['first_failure'],
+        'last_pass':
+            step_failure_info.get('last_pass'),
+        'suspected_cls': [],
+        'supported':
+            waterfall_config.StepIsSupportedForMaster(step_name, master_name)
+    }
   return {
       'step_name':
           step_name,

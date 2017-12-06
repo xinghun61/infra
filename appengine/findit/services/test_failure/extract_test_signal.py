@@ -23,12 +23,11 @@ from waterfall.failure_signal import FailureSignal
 def ExtractSignalsForTestFailure(failure_info, http_client):
   signals = {}
 
-  master_name = failure_info.master_name
-  builder_name = failure_info.builder_name
-  build_number = failure_info.build_number
-  failed_steps = failure_info.failed_steps or {}
+  master_name = failure_info['master_name']
+  builder_name = failure_info['builder_name']
+  build_number = failure_info['build_number']
 
-  for step_name in failed_steps:
+  for step_name in failure_info.get('failed_steps', {}):
     failure_log = None
     if not waterfall_config.StepIsSupportedForMaster(step_name, master_name):
       # Bail out if the step is not supported.
@@ -42,8 +41,8 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
     else:
       json_formatted_log = True
       # 2. Gets gtest results.
-      list_isolated_data = (
-          failure_info.failed_steps[step_name].list_isolated_data)
+      list_isolated_data = failure_info['failed_steps'][step_name].get(
+          'list_isolated_data', [])
       gtest_result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
           list_isolated_data, http_client)
       if gtest_result:

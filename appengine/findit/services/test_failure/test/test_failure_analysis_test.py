@@ -11,15 +11,206 @@ from services import build_failure_analysis
 from services import ci_failure
 from services import deps
 from services import git
-from services.parameters import TestFailureInfo
-from services.parameters import TestHeuristicAnalysisOutput
-from services.parameters import TestHeuristicAnalysisParameters
 from services.test_failure import extract_test_signal
 from services.test_failure import test_failure_analysis
 from waterfall.test import wf_testcase
 
 
 class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
+
+  def testAnalyzeTestFailure(self):
+    failure_info = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 99,
+        'failure_type': failure_type.TEST,
+        'failed': True,
+        'chromium_revision': 'r99_2',
+        'failed_steps': {
+            'a': {
+                'current_failure': 99,
+                'first_failure': 98,
+            },
+            'b': {
+                'current_failure': 99,
+                'first_failure': 98,
+                'last_pass': 96,
+            },
+        },
+        'builds': {
+            99: {
+                'blame_list': ['r99_1', 'r99_2'],
+            },
+            98: {
+                'blame_list': ['r98_1'],
+            },
+            97: {
+                'blame_list': ['r97_1'],
+            },
+            96: {
+                'blame_list': ['r96_1', 'r96_2'],
+            },
+        }
+    }
+    change_logs = {
+        'r99_1': {
+            'revision':
+                'r99_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f99_1.cc',
+                    'new_path': 'a/b/f99_1.cc'
+                },
+            ],
+            'author': {
+                'email': 'author@abc.com'
+            }
+        },
+        'r99_2': {
+            'revision':
+                'r99_2',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f99_2.cc',
+                    'new_path': 'a/b/f99_2.cc'
+                },
+            ],
+            'author': {
+                'email': 'author@abc.com'
+            }
+        },
+        'r98_1': {
+            'revision':
+                'r98_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'y/z/f98.cc',
+                    'new_path': 'y/z/f98.cc'
+                },
+            ],
+            'author': {
+                'email': 'author@abc.com'
+            }
+        },
+        'r97_1': {
+            'revision':
+                'r97_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.ADD,
+                    'old_path': '/dev/null',
+                    'new_path': 'x/y/f99_1.cc'
+                },
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f99_1.cc',
+                    'new_path': 'a/b/f99_1.cc'
+                },
+            ],
+            'author': {
+                'email': 'author@abc.com'
+            }
+        },
+        'r96_1': {
+            'revision':
+                'r96_1',
+            'touched_files': [
+                {
+                    'change_type': ChangeType.MODIFY,
+                    'old_path': 'a/b/f96_1.cc',
+                    'new_path': 'a/b/f96_1.cc'
+                },
+            ],
+            'author': {
+                'email': 'author@abc.com'
+            }
+        },
+    }
+    deps_info = {}
+    failure_signals_json = {
+        'a': {
+            'files': {
+                'src/a/b/f99_2.cc': [],
+            },
+        },
+        'b': {
+            'files': {
+                'x/y/f99_1.cc': [],
+            },
+        },
+    }
+    expected_analysis_result = {
+        'failures': [{
+            'step_name':
+                'a',
+            'supported':
+                True,
+            'first_failure':
+                98,
+            'last_pass':
+                None,
+            'suspected_cls': [{
+                'build_number': 99,
+                'repo_name': 'chromium',
+                'revision': 'r99_2',
+                'commit_position': None,
+                'url': None,
+                'score': 2,
+                'hints': {
+                    'modified f99_2.cc (and it was in log)': 2,
+                },
+            }],
+        }, {
+            'step_name':
+                'b',
+            'supported':
+                True,
+            'first_failure':
+                98,
+            'last_pass':
+                96,
+            'suspected_cls': [{
+                'build_number': 97,
+                'repo_name': 'chromium',
+                'revision': 'r97_1',
+                'commit_position': None,
+                'url': None,
+                'score': 5,
+                'hints': {
+                    'added x/y/f99_1.cc (and it was in log)': 5,
+                },
+            }],
+        }]
+    }
+
+    expected_suspected_cl = [{
+        'repo_name': 'chromium',
+        'revision': 'r99_2',
+        'commit_position': None,
+        'url': None,
+        'failures': {
+            'a': []
+        },
+        'top_score': 2
+    }, {
+        'repo_name': 'chromium',
+        'revision': 'r97_1',
+        'commit_position': None,
+        'url': None,
+        'failures': {
+            'b': []
+        },
+        'top_score': 5
+    }]
+
+    analysis_result, suspected_cls = (test_failure_analysis.AnalyzeTestFailure(
+        failure_info, change_logs, deps_info, failure_signals_json))
+
+    self.assertEqual(expected_analysis_result, analysis_result)
+    self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
 
   def testAnalyzeTestFailureTestLevel(self):
     failure_info = {
@@ -349,8 +540,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }]
 
     analysis_result, suspected_cls = (test_failure_analysis.AnalyzeTestFailure(
-        TestFailureInfo.FromSerializable(failure_info), change_logs, deps_info,
-        failure_signals_json))
+        failure_info, change_logs, deps_info, failure_signals_json))
 
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
@@ -400,8 +590,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
 
     analysis_result, suspected_cls = (test_failure_analysis.AnalyzeTestFailure(
-        TestFailureInfo.FromSerializable(failure_info), change_logs, deps_info,
-        failure_signals_json))
+        failure_info, change_logs, deps_info, failure_signals_json))
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual([], suspected_cls)
 
@@ -412,7 +601,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(git, 'PullChangeLogs', return_value={})
   @mock.patch.object(deps, 'ExtractDepsInfo', return_value={})
   @mock.patch.object(
-      test_failure_analysis, 'AnalyzeTestFailure', return_value=({}, []))
+      test_failure_analysis,
+      'AnalyzeTestFailure',
+      return_value=('heuristic_result', []))
   @mock.patch.object(build_failure_analysis,
                      'SaveAnalysisAfterHeuristicAnalysisCompletes')
   @mock.patch.object(build_failure_analysis, 'SaveSuspectedCLs')
@@ -441,13 +632,11 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    mock_failure_info.return_value = TestFailureInfo.FromSerializable(
-        failure_info)
+    mock_failure_info.return_value = failure_info
     WfAnalysis.Create('m', 'b', 99).put()
-    heuristic_params = TestHeuristicAnalysisParameters(
-        failure_info=TestFailureInfo.FromSerializable(failure_info),
-        build_completed=True)
-    result = test_failure_analysis.HeuristicAnalysisForTest(heuristic_params)
-    expected_result = {'failure_info': failure_info, 'heuristic_result': {}}
-    self.assertEqual(
-        TestHeuristicAnalysisOutput.FromSerializable(expected_result), result)
+    result = test_failure_analysis.HeuristicAnalysisForTest(failure_info, True)
+    expected_result = {
+        'failure_info': failure_info,
+        'heuristic_result': 'heuristic_result'
+    }
+    self.assertEqual(result, expected_result)

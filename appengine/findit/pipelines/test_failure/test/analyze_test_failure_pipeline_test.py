@@ -8,8 +8,6 @@ from common import constants
 from gae_libs.pipelines import pipeline_handlers
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
-from services.parameters import TestHeuristicAnalysisOutput
-from services.parameters import TestHeuristicAnalysisParameters
 from pipelines.test_failure import analyze_test_failure_pipeline
 from pipelines.test_failure.analyze_test_failure_pipeline import (
     AnalyzeTestFailurePipeline)
@@ -40,33 +38,30 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
 
     self._SetupAnalysis(master_name, builder_name, build_number)
 
-    heuristic_params = TestHeuristicAnalysisParameters.FromSerializable({
-        'failure_info': current_failure_info,
-        'build_completed': False
-    })
-    heuristic_output = {'failure_info': None, 'heuristic_result': None}
-    self.MockSynchronousPipeline(
+    self.MockPipeline(
         analyze_test_failure_pipeline.HeuristicAnalysisForTestPipeline,
-        heuristic_params, TestHeuristicAnalysisOutput.FromSerializable({}))
+        'heuristic_result',
+        expected_args=[current_failure_info, False],
+        expected_kwargs={})
     self.MockPipeline(
         analyze_test_failure_pipeline.TriggerSwarmingTasksPipeline,
         None,
         expected_args=[
-            master_name, builder_name, build_number, heuristic_output, False
+            master_name, builder_name, build_number, 'heuristic_result', False
         ],
         expected_kwargs={})
     self.MockPipeline(
         analyze_test_failure_pipeline.ProcessSwarmingTasksResultPipeline,
         None,
         expected_args=[
-            master_name, builder_name, build_number, heuristic_output, False
+            master_name, builder_name, build_number, 'heuristic_result', False
         ],
         expected_kwargs={})
     self.MockPipeline(
         analyze_test_failure_pipeline.StartTestTryJobPipeline,
         'try_job_result',
         expected_args=[
-            master_name, builder_name, build_number, heuristic_output, False,
+            master_name, builder_name, build_number, 'heuristic_result', False,
             False
         ],
         expected_kwargs={})
@@ -81,8 +76,6 @@ class AnalyzeTestFailurePipelineTest(wf_testcase.WaterfallTestCase):
         False)
     root_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
-    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-    self.assertEqual(analysis_status.RUNNING, analysis.status)
 
   def testBuildFailurePipelineStartWithNoneResultStatus(self):
     master_name = 'm'

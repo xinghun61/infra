@@ -15,8 +15,6 @@ from pipelines.test_failure.heuristic_analysis_for_test_pipeline import (
     HeuristicAnalysisForTestPipeline)
 from pipelines.test_failure.start_test_try_job_pipeline import (
     StartTestTryJobPipeline)
-from services.parameters import TestFailureInfo
-from services.parameters import TestHeuristicAnalysisParameters
 from waterfall.flake.trigger_flake_analyses_pipeline import (
     TriggerFlakeAnalysesPipeline)
 from waterfall.process_swarming_tasks_result_pipeline import (
@@ -114,10 +112,8 @@ class AnalyzeTestFailurePipeline(BasePipeline):
     # https://github.com/GoogleCloudPlatform/appengine-pipelines/wiki/Python
 
     # Heuristic Approach.
-    heuristic_params = TestHeuristicAnalysisParameters(
-        failure_info=TestFailureInfo.FromSerializable(current_failure_info),
-        build_completed=build_completed)
-    heuristic_result = yield HeuristicAnalysisForTestPipeline(heuristic_params)
+    heuristic_result = yield HeuristicAnalysisForTestPipeline(
+        current_failure_info, build_completed)
 
     # Try job approach.
     with pipeline.InOrder():

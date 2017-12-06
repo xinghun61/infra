@@ -2,29 +2,46 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from gae_libs.pipelines import SynchronousPipeline
-from services.parameters import TestHeuristicAnalysisOutput
-from services.parameters import TestHeuristicAnalysisParameters
+from gae_libs.pipeline_wrapper import BasePipeline
 from services.test_failure import test_failure_analysis
 
 
-class HeuristicAnalysisForTestPipeline(SynchronousPipeline):
+#TODO(crbug/766851): Make this pipeline to inherit from new base pipeline.
+class HeuristicAnalysisForTestPipeline(BasePipeline):
   """A pipeline to identify culprit CLs for a test failure."""
-  input_type = TestHeuristicAnalysisParameters
-  output_type = TestHeuristicAnalysisOutput
 
-  def RunImpl(self, heuristic_params):
+  # Arguments number differs from overridden method - pylint: disable=W0221
+  def run(self, failure_info, build_completed):
     """Identifies culprit CL.
 
     Args:
-      heuristic_params (TestHeuristicAnalysisParameters): A structured object
-      with 2 fields:
-        failure_info (TestFailureInfo): An object of failure info for the
-        current failed build.
-        build_completed (bool): If the build is completed.
+      failure_info (dict): A dict of failure info for the current failed build
+        in the following form:
+      {
+        "master_name": "chromium.gpu",
+        "builder_name": "GPU Linux Builder"
+        "build_number": 25410,
+        "failed": true,
+        "failed_steps": {
+          "test": {
+            "current_failure": 25410,
+            "first_failure": 25410
+          }
+        },
+        "builds": {
+          "25410": {
+            "chromium_revision": "4bffcd598dd89e0016208ce9312a1f477ff105d1"
+            "blame_list": [
+              "b98e0b320d39a323c81cc0542e6250349183a4df",
+              ...
+            ],
+          }
+        }
+      }
+      build_completed (bool): If the build is completed.
 
     Returns:
-      A TestHeuristicAnalysisOutput object returned by
-      test_failure_analysis.HeuristicAnalysisForTest.
+      analysis_result returned by build_failure_analysis.AnalyzeBuildFailure.
     """
-    return test_failure_analysis.HeuristicAnalysisForTest(heuristic_params)
+    return test_failure_analysis.HeuristicAnalysisForTest(
+        failure_info, build_completed)

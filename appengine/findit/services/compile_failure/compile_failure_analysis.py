@@ -173,14 +173,14 @@ def HeuristicAnalysisForCompile(heuristic_params):
 
   Args:
     heuristic_params (CompileHeuristicAnalysisParameters): A structured object
-    with 2 fields:
+    with 2 parts:
       failure_info (CompileFailureInfo): An object of failure info for the
       current failed build.
       build_completed (bool): If the build is completed.
 
   Returns:
-    A CompileHeuristicAnalysisOutput object with information about
-    failure_info, signals and heuristic_result.
+    A CompileHeuristicAnalysisOutput object returned by
+    build_failure_analysis.AnalyzeBuildFailure.
   """
   failure_info = heuristic_params.failure_info
   build_completed = heuristic_params.build_completed
