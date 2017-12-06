@@ -57,7 +57,7 @@ class _Future(object):
 class SerilizableObjectTest(unittest.TestCase):
 
   def testAttributeCached(self):
-    dynamic_definitions_attr_name = '%s.%s._dynamic_definitions' % (
+    dynamic_definitions_attr_name = '_%s.%s._dynamic_definitions' % (
         _ObjectA.__module__, _ObjectA.__name__)
     self.assertFalse(hasattr(_ObjectA, dynamic_definitions_attr_name))
     attributes = _ObjectA._GetDefinedAttributes()

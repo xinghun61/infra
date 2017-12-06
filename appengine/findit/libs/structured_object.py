@@ -187,7 +187,7 @@ class StructuredObject(BaseSerializableObject):
       A dict from defined attributes to their types.
     """
 
-    cache_name = '%s.%s._dynamic_definitions' % (cls.__module__, cls.__name__)
+    cache_name = '_%s.%s._dynamic_definitions' % (cls.__module__, cls.__name__)
     if not hasattr(cls, cache_name):
       d = {}
       for name in dir(cls):
@@ -200,7 +200,6 @@ class StructuredObject(BaseSerializableObject):
           continue  # Ignore functions and methods.
         d[name] = value
       setattr(cls, cache_name, d)
-    # return cls._dynamic_definitions
     return getattr(cls, cache_name)
 
   def ToSerializable(self):
