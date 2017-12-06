@@ -72,6 +72,7 @@ SPAM_DATA_EXPORT_CRON = '/_cron/spamDataExport'
 LOAD_API_CLIENT_CONFIGS_CRON = '/_cron/loadApiClientConfigs'
 TRIM_VISITED_PAGES_CRON = '/_cron/trimVisitedPages'
 DATE_ACTION_CRON = '/_cron/dateAction'
+SPAM_TRAINING_CRON = '/_cron/spamTraining'
 
 # URLs of User pages
 SAVED_QUERIES = '/queries'

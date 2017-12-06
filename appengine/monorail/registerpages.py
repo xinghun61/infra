@@ -97,6 +97,8 @@ from tracker import issuererank
 from tracker import issuetips
 from tracker import spam
 
+from features import spamtraining
+
 from api import api_service
 
 
@@ -208,6 +210,7 @@ class ServletRegistry(object):
         urls.OUTBOUND_EMAIL_TASK: notify.OutboundEmailTask,
         urls.SPAM_DATA_EXPORT_TASK: spammodel.TrainingDataExportTask,
         urls.DATE_ACTION_CRON: dateaction.DateActionCron,
+        urls.SPAM_TRAINING_CRON: spamtraining.TrainSpamModelCron,
         urls.ISSUE_DATE_ACTION_TASK: dateaction.IssueDateActionTask,
         })
 

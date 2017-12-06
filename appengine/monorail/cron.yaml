@@ -33,3 +33,6 @@ cron:
   url: /_cron/dateAction
   timezone: US/Pacific
   schedule: every day 04:00
+- description: retrain spam model with GCS training data
+  url: /_cron/spamTraining
+  schedule: every day 2:00

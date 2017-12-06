@@ -112,6 +112,18 @@ banner_message = ''
 # User accounts with email addresses at these domains are all banned.
 banned_user_domains = []
 
+# Location of GCS spam classification staging trainer. Whenever the training
+# code is changed, this should be updated to point to the new package.
+trainer_staging = ('gs://monorail-staging-mlengine/spam_trainer_1510605085/'
+                   'packages/74260afd7cb92857a3a75c829c442cc1ddf569fca98d11b30'
+                   '2a12b567b3ea68a/trainer-0.0.0.tar.gz')
+
+# Location of GCS spam classification prod trainer. Whenever the training
+# code is changed, this should be updated to point to the new package.
+trainer_prod = ('gs://monorail-prod-mlengine/spam_trainer_1510606651/packages/'
+                '4a8e8cd6a8a7ce7233017c617788a6d636806a8c4ffe2aac49535194b1386'
+                'cae/trainer-0.0.0.tar.gz')
+
 
 ####
 # Part 3: Settings that enable specific features
