@@ -71,6 +71,13 @@ gcloud ml-engine local predict --model-dir $OUTPUT_DIR/export/Servo/{TIMESTAMP}/
 ### Submitting a training job to ML Engine
 
 This will run a job and output a trained model to GCS. Job names must be unique.
+
+First verify you're in the `monorail-prod` GCP project.
+
+```sh
+gcloud init
+```
+
 To submit a training job manually, run:
 
 ```sh
@@ -80,12 +87,12 @@ gcloud ml-engine jobs submit training $JOB_NAME \
     --package-path trainer/ \
     --module-name trainer.task \
     --runtime-version 1.2 \
-    --job-dir gs://monorail-staging-mlengine/$JOB_NAME \
+    --job-dir gs://monorail-prod-mlengine/$JOB_NAME \
     --region us-central1 \
     -- \
     --train-steps 1000 \
     --verbosity DEBUG \
-    --gcs-bucket monorail-staging.appspot.com \
+    --gcs-bucket monorail-prod.appspot.com \
     --gcs-prefix spam_training_data
 ```
 
@@ -95,11 +102,11 @@ To upload a model you'll need to locate the exported model directory in GCS.
 To do that, run:
 
 ```sh
-gsutil ls -r gs://monorail-staging-mlengine/$JOB_NAME
+gsutil ls -r gs://monorail-prod-mlengine/$JOB_NAME
 
 # Look for a directory that matches the below structure and assign it.
 # It should have the structure $GCS_OUTPUT_LOCATION/export/Servo/$TIMESTAMP/.
-MODEL_BINARIES=gs://monorail-staging-mlengine/spam_trainer_1507059720/export/Servo/1507060043/
+MODEL_BINARIES=gs://monorail-prod-mlengine/spam_trainer_1507059720/export/Servo/1507060043/
 
 VERSION=v_$TIMESTAMP
 gcloud ml-engine versions create $VERSION \
