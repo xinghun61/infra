@@ -16,6 +16,7 @@ package app
 
 import (
 	"net/http"
+	"sort"
 
 	"golang.org/x/net/context"
 
@@ -64,6 +65,20 @@ func masterPage(c context.Context, master string) (*masterViewModel, error) {
 			ShowScores: b.Migration.Status != storage.StatusUnknown && b.Migration.Status != storage.StatusInsufficientData,
 		})
 	})
+
+	sort.Slice(model.Builders, func(i, j int) bool {
+		a := model.Builders[i]
+		b := model.Builders[j]
+		switch {
+		case a.Migration.Status < b.Migration.Status:
+			return true
+		case a.Migration.Status > b.Migration.Status:
+			return false
+		default:
+			return a.ID.Builder < b.ID.Builder
+		}
+	})
+
 	switch {
 	case err != nil:
 		return nil, err
