@@ -178,12 +178,12 @@ class WfAnalysis(BaseBuildModel):
   # The id of the failure group. Currently, this is the
   # [master_name, builder_name, build_number] of the build failure that opened
   # the failure_group. Example: ['m', 'b1', 1].
-  failure_group_key = ndb.JsonProperty(indexed=False)
+  failure_group_key = ndb.JsonProperty(indexed=False, compressed=True)
 
   # Failure info, result of DetectFirtstFailurePipeline.
-  failure_info = ndb.JsonProperty(indexed=False)
+  failure_info = ndb.JsonProperty(indexed=False, compressed=True)
   # Signals, result of ExtractSignalPipeline.
-  signals = ndb.JsonProperty(indexed=False)
+  signals = ndb.JsonProperty(indexed=False, compressed=True)
 
   def UpdateWithTryJobResult(self, updated_result_status, updated_suspected_cls,
                              updated_result):
