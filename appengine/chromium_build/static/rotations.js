@@ -104,10 +104,11 @@
   }
 
   $(document).ready(function() {
-    $.get('/p/chromium/all_rotations.js', function(json) {
-      parseJson(json);
-      initHighlights();
-    }, 'text')
+    $.get('https://build.chromium.org/deprecated/chromium/all_rotations.js',
+        function(json) {
+            parseJson(json);
+            initHighlights();
+        }, 'text')
     .fail(function(jqxhr, text_status, error) {
       console.log(jqxhr.responseText);
       var err = text_status + ', ' + error + ', code=' + jqxhr.status;
