@@ -195,9 +195,6 @@ func handleAnalyzeBuilder(c *router.Context) error {
 }
 
 func shouldNotify(builder *storage.Builder, now time.Time) bool {
-	// TODO(nodir): remove when the analysis algorithm wouldn't spam
-	return false
-
 	notif := builder.MostRecentNotification
 	if notif.Time.IsZero() {
 		// a notification was never sent
