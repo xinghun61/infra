@@ -112,13 +112,11 @@ class AppengineTestCase(AnalysisTestCase, TestCase):  # pragma: no cover
     get_repository = (get_repository or
                       GitilesRepository.Factory(self.GetMockHttpClient()))
     config = config or CrashConfig.Get()
-    log = self.GetMockLog()
 
     class MockPredatorApp(PredatorApp):  # pylint: disable=W0223
       """Overwrite abstract method of PredatorApp for testing."""
       def __init__(self):
-        super(MockPredatorApp, self).__init__(
-            get_repository, config, log=log)
+        super(MockPredatorApp, self).__init__(get_repository, config)
 
       @classmethod
       def _ClientID(cls):
@@ -158,4 +156,6 @@ class AppengineTestCase(AnalysisTestCase, TestCase):  # pragma: no cover
       def CreateAnalysis(self, crash_identifiers):
         return MockCrashAnalysis.Create(crash_identifiers)
 
-    return MockPredatorApp()
+    mock_predator = MockPredatorApp()
+    mock_predator.SetLog(self.GetMockLog())
+    return mock_predator

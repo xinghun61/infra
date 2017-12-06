@@ -40,8 +40,7 @@ CLIENT_ID_TO_CRASH_ANALYSIS = {
 
 
 # TODO(http://crbug.com/659346): write complete coverage tests for this.
-def PredatorForClientID(client_id, get_repository, config,
-                        log=None): # pragma: no cover
+def PredatorForClientID(client_id, get_repository, config): # pragma: no cover
   """Construct a ``PredatorApp`` from a client id string specifying the class.
 
   We cannot pass PredatorApp objects to the various methods in
@@ -72,7 +71,7 @@ def PredatorForClientID(client_id, get_repository, config,
     raise ValueError('PredatorForClientID: '
         'unknown or unsupported client %s' % client_id)
 
-  return cls(get_repository, config, log=log)
+  return cls(get_repository, config)
 
 
 # Some notes about the classes below, for people who are not familiar
@@ -114,7 +113,8 @@ class CrashBasePipeline(BasePipeline):
     self._predator = PredatorForClientID(
         client_id,
         CachedGitilesRepository.Factory(HttpClientAppengine()),
-        CrashConfig.Get(), log=self.log)
+        CrashConfig.Get())
+    self._predator.SetLog(self.log)
 
   @property
   def client_id(self): # pragma: no cover
@@ -233,7 +233,6 @@ class CrashWrapperPipeline(BasePipeline):
   """
   def __init__(self, raw_crash_data):
     super(CrashWrapperPipeline, self).__init__(raw_crash_data)
-    self._crash_identifiers = raw_crash_data['crash_identifiers']
     self._client_id = raw_crash_data['client_id']
 
   def run(self, raw_crash_data):
@@ -248,8 +247,12 @@ class CrashWrapperPipeline(BasePipeline):
     predator_client = PredatorForClientID(
         self._client_id,
         CachedGitilesRepository.Factory(HttpClientAppengine()),
-        CrashConfig.Get(), log=self.log)
+        CrashConfig.Get())
     crash_data = predator_client.GetCrashData(raw_crash_data)
+    log = Log.Get(crash_data.identifiers) or Log.Create(crash_data.identifiers)
+    # Reset log since it's the beginning of analysis.
+    log.Reset()
+    predator_client.SetLog(log)
 
     # Create CrashAnalysis for this crash and store it in datastore. Even if
     # we do not need a new analysis for this crash, we still want to keep the
@@ -263,19 +266,14 @@ class CrashWrapperPipeline(BasePipeline):
     need_analysis = predator_client.NeedsNewAnalysis(crash_data)
     if need_analysis:
       logging.info('New %s analysis is scheduled for %s',
-                   self._client_id, self._crash_identifiers)
+                   self._client_id, crash_data.identifiers)
 
-      run_analysis = yield CrashAnalysisPipeline(
-          self._client_id, self._crash_identifiers)
+      run_analysis = yield CrashAnalysisPipeline(self._client_id,
+                                                 crash_data.identifiers)
       with pipeline.After(run_analysis):
-        yield PublishResultPipeline(self._client_id, self._crash_identifiers)
+        yield PublishResultPipeline(self._client_id, crash_data.identifiers)
     else:
-      yield PublishResultPipeline(self._client_id, self._crash_identifiers)
-
-  @property
-  def log(self):
-    return (Log.Get(self._crash_identifiers) or
-            Log.Create(self._crash_identifiers))
+      yield PublishResultPipeline(self._client_id, crash_data.identifiers)
 
 
 class RerunPipeline(BasePipeline):

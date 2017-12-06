@@ -29,7 +29,7 @@ from libs import time_util
 
 class PredatorApp(object):
 
-  def __init__(self, get_repository, config, log=None):
+  def __init__(self, get_repository, config):
     """
     Args:
       get_repository (callable): a function from DEP urls to ``Repository``
@@ -41,7 +41,6 @@ class PredatorApp(object):
         for ``GitilesRepository``).
       config (ndb.CrashConfig): Config for clients and project and component
         classifiers.
-      log (Log): log instance to store useful logs to datastore for users.
     """
     self._get_repository = get_repository
 
@@ -64,6 +63,10 @@ class PredatorApp(object):
         config.repo_to_dep_path)
 
     self._config = config
+    self._log = None
+
+  def SetLog(self, log):
+    """Sets log instance to store useful logs to datastore for users."""
     self._log = log
 
   # This is a class method because it should be the same for all

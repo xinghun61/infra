@@ -52,9 +52,8 @@ class PredatorForChromeCrash(PredatorApp):  # pylint: disable=W0223
           cls.__name__)
     raise NotImplementedError()
 
-  def __init__(self, get_repository, config, log=None):
-    super(PredatorForChromeCrash, self).__init__(
-        get_repository, config, log=log)
+  def __init__(self, get_repository, config):
+    super(PredatorForChromeCrash, self).__init__(get_repository, config)
     meta_weight = MetaWeight({
         'TouchCrashedFileMeta': MetaWeight({
             'MinDistance': Weight(2.),
