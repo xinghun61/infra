@@ -19,6 +19,7 @@ from proto import project_pb2
 from proto import tracker_pb2
 from proto import usergroup_pb2
 from testing import fake
+from tracker import tracker_bizobj
 
 
 def MakeTemplate(prefix):
@@ -81,6 +82,15 @@ def MakeProject(prefix):
 
 
 class ApiV1HelpersTest(unittest.TestCase):
+
+  def setUp(self):
+    self.services = service_manager.Services(
+        user=fake.UserService(),
+        issue=fake.IssueService(),
+        project=fake.ProjectService(),
+        config=fake.ConfigService(),
+        issue_star=fake.IssueStarService())
+    self.services.user.TestAddUser('user@example.com', 1)
 
   def testConvertTemplate(self):
     """Test convert_template."""
@@ -149,35 +159,27 @@ class ApiV1HelpersTest(unittest.TestCase):
 
   def testConvertPerson(self):
     """Test convert_person."""
-    svcs = service_manager.Services()
-    svcs.user = fake.UserService()
-    svcs.user.TestAddUser('user@example.com', 1)
-    result = api_pb2_v1_helpers.convert_person(1, None, svcs)
+    result = api_pb2_v1_helpers.convert_person(1, None, self.services)
     self.assertIsInstance(result, api_pb2_v1.AtomPerson)
     self.assertEquals('user@example.com', result.name)
 
   def testConvertIssueIDs(self):
     """Test convert_issue_ids."""
-    svcs = service_manager.Services()
-    svcs.issue = fake.IssueService()
     issue1 = fake.MakeTestIssue(789, 1, 'one', 'New', 111L)
-    svcs.issue.TestAddIssue(issue1)
+    self.services.issue.TestAddIssue(issue1)
     issue_ids = [100001]
     mar = mock.Mock()
     mar.cnxn = None
     mar.project_name = 'test-project'
-    result = api_pb2_v1_helpers.convert_issue_ids(issue_ids, mar, svcs)
+    result = api_pb2_v1_helpers.convert_issue_ids(issue_ids, mar, self.services)
     self.assertEquals(1, len(result))
     self.assertEquals(1, result[0].issueId)
 
   def testConvertIssueRef(self):
     """Test convert_issueref_pbs."""
-    svcs = service_manager.Services()
-    svcs.issue = fake.IssueService()
     issue1 = fake.MakeTestIssue(12345, 1, 'one', 'New', 111L)
-    svcs.issue.TestAddIssue(issue1)
-    svcs.project = fake.ProjectService()
-    svcs.project.TestAddProject(
+    self.services.issue.TestAddIssue(issue1)
+    self.services.project.TestAddProject(
         'test-project', owner_ids=[2],
         project_id=12345)
     mar = mock.Mock()
@@ -188,21 +190,15 @@ class ApiV1HelpersTest(unittest.TestCase):
         issueId=1,
         projectId='test-project'
     )
-    result = api_pb2_v1_helpers.convert_issueref_pbs([ir], mar, svcs)
+    result = api_pb2_v1_helpers.convert_issueref_pbs([ir], mar, self.services)
     self.assertEquals(1, len(result))
     self.assertEquals(100001, result[0])
 
   def testConvertIssue(self):
     """Convert an internal Issue PB to an IssueWrapper API PB."""
-    svcs = service_manager.Services(
-        issue=fake.IssueService(),
-        project=fake.ProjectService(),
-        config=fake.ConfigService(),
-        issue_star=fake.IssueStarService(),
-        user=fake.UserService())
-    svcs.project.TestAddProject(
+    self.services.project.TestAddProject(
         'test-project', owner_ids=[2], project_id=12345)
-    svcs.user.TestAddUser('user@example.com', 111L)
+    self.services.user.TestAddUser('user@example.com', 111L)
 
     mar = mock.Mock()
     mar.cnxn = None
@@ -223,7 +219,7 @@ class ApiV1HelpersTest(unittest.TestCase):
     # TODO(jrobbins): set up a lot more fields.
 
     for cls in [api_pb2_v1.IssueWrapper, api_pb2_v1.IssuesGetInsertResponse]:
-      result = api_pb2_v1_helpers.convert_issue(cls, issue, mar, svcs)
+      result = api_pb2_v1_helpers.convert_issue(cls, issue, mar, self.services)
       self.assertEquals(1, result.id)
       self.assertEquals('one', result.title)
       self.assertEquals('one', result.summary)
@@ -252,11 +248,7 @@ class ApiV1HelpersTest(unittest.TestCase):
 
   def testConvertAmendments(self):
     """Test convert_amendments."""
-
-    svcs = service_manager.Services()
-    svcs.user = fake.UserService()
-    svcs.user.TestAddUser('user@example.com', 1)
-    svcs.user.TestAddUser('user2@example.com', 2)
+    self.services.user.TestAddUser('user2@example.com', 2)
     mar = mock.Mock()
     mar.cnxn = None
     issue = mock.Mock()
@@ -295,7 +287,7 @@ class ApiV1HelpersTest(unittest.TestCase):
         amendment_blockedon, amendment_blocking, amendment_mergedinto]
 
     result = api_pb2_v1_helpers.convert_amendments(
-        issue, amendments, mar, svcs)
+        issue, amendments, mar, self.services)
     self.assertEquals(amendment_summary.newvalue, result.summary)
     self.assertEquals(amendment_status.newvalue, result.status)
     self.assertEquals('user@example.com', result.owner)
@@ -307,10 +299,6 @@ class ApiV1HelpersTest(unittest.TestCase):
 
   def testConvertComment(self):
     """Test convert_comment."""
-
-    svcs = service_manager.Services()
-    svcs.user = fake.UserService()
-    svcs.user.TestAddUser('user@example.com', 1)
     mar = mock.Mock()
     mar.cnxn = None
     issue = fake.MakeTestIssue(project_id=12345, local_id=1, summary='sum',
@@ -324,7 +312,7 @@ class ApiV1HelpersTest(unittest.TestCase):
         timestamp=1437700000,
     )
     result = api_pb2_v1_helpers.convert_comment(
-        issue, comment, mar, svcs, None)
+        issue, comment, mar, self.services, None)
     self.assertEquals('user@example.com', result.author.name)
     self.assertEquals(comment.content, result.content)
     self.assertEquals('user@example.com', result.deletedBy.name)
@@ -337,14 +325,10 @@ class ApiV1HelpersTest(unittest.TestCase):
         datetime.datetime(2015, 7, 25, 0, 0, 0))
 
   def testGetUserEmail(self):
-    svcs = service_manager.Services()
-    svcs.user = fake.UserService()
-    svcs.user.TestAddUser('user@example.com', 1)
-
-    email = api_pb2_v1_helpers._get_user_email(svcs.user, '', 1)
+    email = api_pb2_v1_helpers._get_user_email(self.services.user, '', 1)
     self.assertEquals('user@example.com', email)
 
-    no_email = api_pb2_v1_helpers._get_user_email(svcs.user, '', 2)
+    no_email = api_pb2_v1_helpers._get_user_email(self.services.user, '', 2)
     self.assertEquals(framework_constants.DELETED_USER_NAME, no_email)
 
   def testSplitRemoveAdd(self):
@@ -358,13 +342,9 @@ class ApiV1HelpersTest(unittest.TestCase):
 
   def testIssueGlobalIDs(self):
     """Test issue_global_ids."""
-
-    svcs = service_manager.Services()
-    svcs.issue = fake.IssueService()
     issue1 = fake.MakeTestIssue(12345, 1, 'one', 'New', 111L)
-    svcs.issue.TestAddIssue(issue1)
-    svcs.project = fake.ProjectService()
-    svcs.project.TestAddProject(
+    self.services.issue.TestAddIssue(issue1)
+    self.services.project.TestAddProject(
         'test-project', owner_ids=[2],
         project_id=12345)
     mar = mock.Mock()
@@ -372,7 +352,8 @@ class ApiV1HelpersTest(unittest.TestCase):
     mar.project_name = 'test-project'
     mar.project_id = 12345
     pairs = ['test-project:1']
-    result = api_pb2_v1_helpers.issue_global_ids(pairs, 12345, mar, svcs)
+    result = api_pb2_v1_helpers.issue_global_ids(
+        pairs, 12345, mar, self.services)
     self.assertEquals(100001, result[0])
 
   def testConvertGroupSettings(self):
@@ -385,3 +366,155 @@ class ApiV1HelpersTest(unittest.TestCase):
         setting.who_can_view_members, result.who_can_view_members)
     self.assertEquals(setting.ext_group_type, result.ext_group_type)
     self.assertEquals(setting.last_sync_time, result.last_sync_time)
+
+  def testConvertComponentDef(self):
+    pass  # TODO(jrobbins): Fill in this test.
+
+  def testConvertComponentIDs(self):
+    pass  # TODO(jrobbins): Fill in this test.
+
+  def testConvertFieldValues_Empty(self):
+    """The client's request might not have any field edits."""
+    mar = mock.Mock()
+    mar.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+
+    field_values = []
+    actual = api_pb2_v1_helpers.convert_field_values(
+        field_values, mar, self.services)
+    (fv_list_add, fv_list_remove, fv_list_clear,
+     label_list_add, label_list_remove) = actual
+    self.assertEquals([], fv_list_add)
+    self.assertEquals([], fv_list_remove)
+    self.assertEquals([], fv_list_clear)
+    self.assertEquals([], label_list_add)
+    self.assertEquals([], label_list_remove)
+
+  def testConvertFieldValues_Normal(self):
+    """The client wants to edit a custom field."""
+    mar = mock.Mock()
+    mar.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    mar.config.field_defs = [
+        tracker_bizobj.MakeFieldDef(
+            1, 789, 'Priority', tracker_pb2.FieldTypes.ENUM_TYPE, None, None,
+            False, False, False, None, None, None, False, None, None, None,
+            None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            2, 789, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, None, None,
+            False, False, False, 0, 99, None, False, None, None, None,
+            None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            3, 789, 'Nickname', tracker_pb2.FieldTypes.STR_TYPE, None, None,
+            False, False, False, None, None, None, False, None, None, None,
+            None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            4, 789, 'Verifier', tracker_pb2.FieldTypes.USER_TYPE, None, None,
+            False, False, False, None, None, None, False, None, None, None,
+            None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            5, 789, 'Deadline', tracker_pb2.FieldTypes.DATE_TYPE, None, None,
+            False, False, False, None, None, None, False, None, None, None,
+            None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            6, 789, 'Homepage', tracker_pb2.FieldTypes.URL_TYPE, None, None,
+            False, False, False, None, None, None, False, None, None, None,
+            None, 'doc', False),
+        ]
+    field_values = [
+        api_pb2_v1.FieldValue(fieldName='Priority', fieldValue='High'),
+        api_pb2_v1.FieldValue(fieldName='EstDays', fieldValue='4'),
+        api_pb2_v1.FieldValue(fieldName='Nickname', fieldValue='Scout'),
+        api_pb2_v1.FieldValue(
+            fieldName='Verifier', fieldValue='user@example.com'),
+        api_pb2_v1.FieldValue(fieldName='Deadline', fieldValue='2017-12-06'),
+        api_pb2_v1.FieldValue(
+            fieldName='Homepage', fieldValue='http://example.com'),
+        ]
+    actual = api_pb2_v1_helpers.convert_field_values(
+        field_values, mar, self.services)
+    (fv_list_add, fv_list_remove, fv_list_clear,
+     label_list_add, label_list_remove) = actual
+    self.assertEquals(
+      [tracker_bizobj.MakeFieldValue(2, 4, None, None, None, None, False),
+       tracker_bizobj.MakeFieldValue(3, None, 'Scout', None, None, None, False),
+       tracker_bizobj.MakeFieldValue(4, None, None, 1, None, None, False),
+       tracker_bizobj.MakeFieldValue(
+           5, None, None, None, 1512518400, None, False),
+       tracker_bizobj.MakeFieldValue(
+           6, None, None, None, None, 'http://example.com', False),
+       ],
+      fv_list_add)
+    self.assertEquals([], fv_list_remove)
+    self.assertEquals([], fv_list_clear)
+    self.assertEquals(['Priority-High'], label_list_add)
+    self.assertEquals([], label_list_remove)
+
+  def testConvertFieldValues_ClearAndRemove(self):
+    """The client wants to clear and remove some custom fields."""
+    mar = mock.Mock()
+    mar.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    mar.config.field_defs = [
+        tracker_bizobj.MakeFieldDef(
+            1, 789, 'Priority', tracker_pb2.FieldTypes.ENUM_TYPE, None, None,
+            False, False, False, None, None, None, False, None, None, None,
+            None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            11, 789, 'OS', tracker_pb2.FieldTypes.ENUM_TYPE, None, None,
+            False, False, False, None, None, None, False, None, None, None,
+            None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            2, 789, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, None, None,
+            False, False, False, 0, 99, None, False, None, None, None,
+            None, 'doc', False),
+        tracker_bizobj.MakeFieldDef(
+            3, 789, 'Nickname', tracker_pb2.FieldTypes.STR_TYPE, None, None,
+            False, False, False, None, None, None, False, None, None, None,
+            None, 'doc', False),
+        ]
+    field_values = [
+        api_pb2_v1.FieldValue(
+            fieldName='Priority', fieldValue='High',
+            operator=api_pb2_v1.FieldValueOperator.remove),
+        api_pb2_v1.FieldValue(
+            fieldName='OS', operator=api_pb2_v1.FieldValueOperator.clear),
+        api_pb2_v1.FieldValue(
+            fieldName='EstDays', operator=api_pb2_v1.FieldValueOperator.clear),
+        api_pb2_v1.FieldValue(
+            fieldName='Nickname', fieldValue='Scout',
+            operator=api_pb2_v1.FieldValueOperator.remove),
+        ]
+    actual = api_pb2_v1_helpers.convert_field_values(
+        field_values, mar, self.services)
+    (fv_list_add, fv_list_remove, fv_list_clear,
+     label_list_add, label_list_remove) = actual
+    self.assertEquals([], fv_list_add)
+    self.assertEquals(
+        [tracker_bizobj.MakeFieldValue(
+            3, None, 'Scout', None, None, None, False)], 
+        fv_list_remove)
+    self.assertEquals([11, 2], fv_list_clear)
+    self.assertEquals([], label_list_add)
+    self.assertEquals(['Priority-High'], label_list_remove)
+
+  def testConvertFieldValues_Errors(self):
+    """We don't crash on bad requests."""
+    mar = mock.Mock()
+    mar.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    mar.config.field_defs = [
+        tracker_bizobj.MakeFieldDef(
+            2, 789, 'EstDays', tracker_pb2.FieldTypes.INT_TYPE, None, None,
+            False, False, False, 0, 99, None, False, None, None, None,
+            None, 'doc', False),
+        ]
+    field_values = [
+        api_pb2_v1.FieldValue(
+            fieldName='Unknown', operator=api_pb2_v1.FieldValueOperator.clear),
+        ]
+    actual = api_pb2_v1_helpers.convert_field_values(
+        field_values, mar, self.services)
+    (fv_list_add, fv_list_remove, fv_list_clear,
+     label_list_add, label_list_remove) = actual
+    self.assertEquals([], fv_list_add)
+    self.assertEquals([], fv_list_remove)
+    self.assertEquals([], fv_list_clear)
+    self.assertEquals([], label_list_add)
+    self.assertEquals([], label_list_remove)

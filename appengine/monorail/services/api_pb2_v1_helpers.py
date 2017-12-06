@@ -13,6 +13,7 @@ from businesslogic import work_env
 from framework import exceptions
 from framework import framework_constants
 from framework import framework_helpers
+from framework import framework_views
 from framework import permissions
 from framework import timestr
 from proto import api_pb2_v1
@@ -180,10 +181,8 @@ def convert_issue(cls, issue, mar, services):
     if fv.user_id:
       val = _get_user_email(
           services.user, mar.cnxn, fv.user_id)
-    elif fv.str_value:
-      val = fv.str_value
-    elif fv.int_value:
-      val = str(fv.int_value)
+    else:
+      val = str(tracker_bizobj.GetFieldValue(fv, {}))
     new_fv = api_pb2_v1.FieldValue(
         fieldName=field_name,
         fieldValue=val,
@@ -272,6 +271,10 @@ def convert_attachment(attachment):
 
 def convert_amendments(issue, amendments, mar, services):
   """Convert a list of Monorail Amendment PBs to API Update."""
+  amendments_user_ids = tracker_bizobj.UsersInvolvedInAmendments(amendments)
+  users_by_id = framework_views.MakeAllUserViews(
+      mar.cnxn, services.user, amendments_user_ids)
+  framework_views.RevealAllEmailsToMembers(mar, users_by_id)
 
   result = api_pb2_v1.Update(kind='monorail#issueCommentUpdate')
   for amendment in amendments:
@@ -309,7 +312,7 @@ def convert_amendments(issue, amendments, mar, services):
     elif amendment.field == tracker_pb2.FieldID.CUSTOM:
       fv = api_pb2_v1.FieldValue()
       fv.fieldName = amendment.custom_field_name
-      fv.fieldValue = amendment.newvalue
+      fv.fieldValue = tracker_bizobj.AmendmentString(amendment, users_by_id)
       result.fieldValues.append(fv)
 
   return result
@@ -457,31 +460,16 @@ def convert_field_values(field_values, mar, services):
         label_list_remove.append(raw_val)
       elif fv.operator == api_pb2_v1.FieldValueOperator.add:
         label_list_add.append(raw_val)
-      else:
+      else:  # pragma: no cover
         logging.warning('Unsupported field value operater %s', fv.operator)
     else:
-      new_fv = tracker_pb2.FieldValue(
-          field_id=field_def.field_id)
-      if field_def.field_type == tracker_pb2.FieldTypes.USER_TYPE:
-        try:
-          new_fv.user_id = services.user.LookupUserID(mar.cnxn, fv.fieldValue)
-        except user_svc.NoSuchUserException:
-          new_fv.user_id = 0
-      elif field_def.field_type == tracker_pb2.FieldTypes.STR_TYPE:
-        new_fv.str_value = fv.fieldValue
-      elif field_def.field_type == tracker_pb2.FieldTypes.INT_TYPE:
-        new_fv.int_value = int(fv.fieldValue)
-      elif field_def.field_type == tracker_pb2.FieldTypes.URL_TYPE:
-        new_fv.url_value = field_helpers.formatUrlFieldValue(fv.fieldValue)
-      else:
-        logging.warning(
-            'Unsupported field value type %s', field_def.field_type)
-
+      new_fv = field_helpers.ParseOneFieldValue(
+          mar.cnxn, services.user, field_def, fv.fieldValue)
       if fv.operator == api_pb2_v1.FieldValueOperator.remove:
         fv_list_remove.append(new_fv)
       elif fv.operator == api_pb2_v1.FieldValueOperator.add:
         fv_list_add.append(new_fv)
-      else:
+      else:  # pragma: no cover
         logging.warning('Unsupported field value operater %s', fv.operator)
 
   return (fv_list_add, fv_list_remove, fv_list_clear,

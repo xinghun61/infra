@@ -134,7 +134,7 @@ def ShiftEnumFieldsIntoLabels(
       del field_val_strs_remove[fd.field_id]
 
 
-def _ParseOneFieldValue(cnxn, user_service, fd, val_str):
+def ParseOneFieldValue(cnxn, user_service, fd, val_str):
   """Make one FieldValue PB from the given user-supplied string."""
   if fd.field_type == tracker_pb2.FieldTypes.INT_TYPE:
     try:
@@ -187,7 +187,7 @@ def ParseFieldValues(cnxn, user_service, field_val_strs, config):
     if fd.field_id not in field_val_strs:
       continue
     for val_str in field_val_strs[fd.field_id]:
-      fv = _ParseOneFieldValue(cnxn, user_service, fd, val_str)
+      fv = ParseOneFieldValue(cnxn, user_service, fd, val_str)
       if fv:
         field_values.append(fv)
 

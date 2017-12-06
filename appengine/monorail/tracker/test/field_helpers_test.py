@@ -182,7 +182,7 @@ class FieldHelpersTest(unittest.TestCase):
         123, 789, 'Foo', tracker_pb2.FieldTypes.INT_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
-    fv = field_helpers._ParseOneFieldValue(
+    fv = field_helpers.ParseOneFieldValue(
         self.mr.cnxn, self.services.user, fd, '8675309')
     self.assertEqual(fv.field_id, 123)
     self.assertEqual(fv.int_value, 8675309)
@@ -192,7 +192,7 @@ class FieldHelpersTest(unittest.TestCase):
         123, 789, 'Foo', tracker_pb2.FieldTypes.STR_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
-    fv = field_helpers._ParseOneFieldValue(
+    fv = field_helpers.ParseOneFieldValue(
         self.mr.cnxn, self.services.user, fd, '8675309')
     self.assertEqual(fv.field_id, 123)
     self.assertEqual(fv.str_value, '8675309')
@@ -203,7 +203,7 @@ class FieldHelpersTest(unittest.TestCase):
         123, 789, 'Foo', tracker_pb2.FieldTypes.USER_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
-    fv = field_helpers._ParseOneFieldValue(
+    fv = field_helpers.ParseOneFieldValue(
         self.mr.cnxn, self.services.user, fd, 'user@example.com')
     self.assertEqual(fv.field_id, 123)
     self.assertEqual(fv.user_id, 111)
@@ -213,7 +213,7 @@ class FieldHelpersTest(unittest.TestCase):
         123, 789, 'Deadline', tracker_pb2.FieldTypes.DATE_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
-    fv = field_helpers._ParseOneFieldValue(
+    fv = field_helpers.ParseOneFieldValue(
         self.mr.cnxn, self.services.user, fd, '2009-02-13')
     self.assertEqual(fv.field_id, 123)
     self.assertEqual(fv.date_value, 1234483200)
@@ -223,7 +223,7 @@ class FieldHelpersTest(unittest.TestCase):
         123, 789, 'Design Doc', tracker_pb2.FieldTypes.URL_TYPE, None,
         '', False, False, False, None, None, '', False, '', '',
         tracker_pb2.NotifyTriggers.NEVER, 'no_action', 'doc', False)
-    fv = field_helpers._ParseOneFieldValue(
+    fv = field_helpers.ParseOneFieldValue(
         self.mr.cnxn, self.services.user, fd, 'www.google.com')
     self.assertEqual(fv.field_id, 123)
     self.assertEqual(fv.url_value, 'http://www.google.com')
