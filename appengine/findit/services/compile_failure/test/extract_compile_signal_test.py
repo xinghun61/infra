@@ -9,7 +9,6 @@ from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from services import extract_signal
 from services.compile_failure import extract_compile_signal
-from services.parameters import CompileFailureInfo
 from waterfall import buildbot
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
@@ -54,7 +53,7 @@ class ExtractCompileSignalTest(wf_testcase.WaterfallTestCase):
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number)
 
     signals = extract_compile_signal.ExtractSignalsForCompileFailure(
-        CompileFailureInfo.FromSerializable(_COMPILE_FAILURE_INFO), None)
+        _COMPILE_FAILURE_INFO, None)
 
     expected_failed_edges = [{
         'output_nodes': ['a/b.o'],
@@ -77,7 +76,7 @@ class ExtractCompileSignalTest(wf_testcase.WaterfallTestCase):
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number)
 
     signals = extract_compile_signal.ExtractSignalsForCompileFailure(
-        CompileFailureInfo.FromSerializable(_COMPILE_FAILURE_INFO), None)
+        _COMPILE_FAILURE_INFO, None)
 
     expected_failed_edges = [{
         'output_nodes': ['a/b.o'],
@@ -90,10 +89,9 @@ class ExtractCompileSignalTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(
       waterfall_config, 'StepIsSupportedForMaster', return_value=False)
   def testCompileNotSupport(self, _):
-    self.assertEqual(
-        {},
-        extract_compile_signal.ExtractSignalsForCompileFailure(
-            CompileFailureInfo.FromSerializable(_COMPILE_FAILURE_INFO), None))
+    self.assertEqual({},
+                     extract_compile_signal.ExtractSignalsForCompileFailure(
+                         _COMPILE_FAILURE_INFO, None))
 
   def testCompileNotInFailedSteps(self):
     failure_info = {
@@ -112,8 +110,7 @@ class ExtractCompileSignalTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual({},
                      extract_compile_signal.ExtractSignalsForCompileFailure(
-                         CompileFailureInfo.FromSerializable(failure_info),
-                         None))
+                         failure_info, None))
 
   @mock.patch.object(extract_signal, 'GetStdoutLog', return_value=None)
   @mock.patch.object(
@@ -121,4 +118,4 @@ class ExtractCompileSignalTest(wf_testcase.WaterfallTestCase):
   def testFailedToGetFailureLog(self, *_):
     with self.assertRaises(Exception):
       extract_compile_signal.ExtractSignalsForCompileFailure(
-          CompileFailureInfo.FromSerializable(_COMPILE_FAILURE_INFO), None)
+          _COMPILE_FAILURE_INFO, None)

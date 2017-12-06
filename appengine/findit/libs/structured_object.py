@@ -317,10 +317,8 @@ class TypedDict(MutableMapping, BaseSerializableObject):
 
   @classmethod
   def FromSerializable(cls, data):
-    if data is None:
-      return None
-
     instance = cls()
+
     if issubclass(instance._value_type, BaseSerializableObject):
       for key, value in data.iteritems():
         instance._dict[key] = instance._value_type.FromSerializable(value)
@@ -368,10 +366,8 @@ class TypedList(MutableSequence, BaseSerializableObject):
 
   @classmethod
   def FromSerializable(cls, data):
-    if data is None:
-      return None
-
     instance = cls()
+
     if issubclass(instance._element_type, BaseSerializableObject):
       for value in data:
         instance._list.append(instance._element_type.FromSerializable(value))

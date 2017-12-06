@@ -19,7 +19,6 @@ from model import result_status
 from model.wf_analysis import WfAnalysis
 from model.wf_suspected_cl import WfSuspectedCL
 from services import build_failure_analysis
-from services.parameters import BaseFailedStep
 from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
 from waterfall.test import wf_testcase
@@ -956,43 +955,12 @@ class BuildFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(
         120, build_failure_analysis.GetLowerBoundForAnalysis(failure_info))
 
-  def testGetLowerBoundForAnalysisStructuredLastPass(self):
-    failure_info = BaseFailedStep(
-        last_pass=120, current_failure=121, first_failure=121)
-    self.assertEqual(
-        121, build_failure_analysis.GetLowerBoundForAnalysis(failure_info))
-
-  def testGetLowerBoundForAnalysisStructuredFirstFalure(self):
-    failure_info = BaseFailedStep(
-        last_pass=None, current_failure=121, first_failure=121)
-    self.assertEqual(
-        121, build_failure_analysis.GetLowerBoundForAnalysis(failure_info))
-
   @mock.patch.object(
       waterfall_config, 'StepIsSupportedForMaster', return_value=True)
   def testInitializeStepLevelResult(self, _):
     step_name = 'step'
     step_failure_info = {'first_failure': 120, 'last_pass': 119}
     master_name = 'm'
-
-    expected_result = {
-        'step_name': step_name,
-        'first_failure': 120,
-        'last_pass': 119,
-        'suspected_cls': [],
-        'supported': True
-    }
-    self.assertEqual(expected_result,
-                     build_failure_analysis.InitializeStepLevelResult(
-                         step_name, step_failure_info, master_name))
-
-  @mock.patch.object(
-      waterfall_config, 'StepIsSupportedForMaster', return_value=True)
-  def testInitializeStepLevelResultStructured(self, _):
-    master_name = 'm'
-    step_name = 'step'
-    step_failure_info = BaseFailedStep(
-        last_pass=119, current_failure=121, first_failure=120)
 
     expected_result = {
         'step_name': step_name,

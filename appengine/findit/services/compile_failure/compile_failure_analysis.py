@@ -14,9 +14,6 @@ from services import ci_failure
 from services import deps
 from services import git
 from services.compile_failure import extract_compile_signal
-from services.parameters import CompileFailureSignals
-from services.parameters import CompileHeuristicAnalysisOutput
-from services.parameters import CompileHeuristicResult
 from waterfall import waterfall_config
 from waterfall.failure_signal import FailureSignal
 
@@ -33,7 +30,7 @@ def _Analyze(start_build_number,
              use_ninja_output=False):
 
   for build_number in range(start_build_number, failed_build_number + 1):
-    for revision in builds[build_number].blame_list:
+    for revision in builds[build_number]['blame_list']:
       new_suspected_cl_dict, max_score = build_failure_analysis.AnalyzeOneCL(
           build_number, failure_signal, change_logs[revision], deps_info,
           use_ninja_output)
@@ -56,8 +53,7 @@ def AnalyzeCompileFailure(failure_info, change_logs, deps_info,
   """Analyzes given failure signals, and figure out culprits of compile failure.
 
   Args:
-    failure_info (CompileFailureInfo): Output of pipeline
-      DetectFirstFailurePipeline.
+    failure_info (dict): Output of pipeline DetectFirstFailurePipeline.
     change_logs (dict): Output of pipeline PullChangelogPipeline.
     deps_info (dict): Output of pipeline ExtractDEPSInfoPipeline.
     failure_signals (dict): Output of pipeline ExtractSignalPipeline.
@@ -112,15 +108,15 @@ def AnalyzeCompileFailure(failure_info, change_logs, deps_info,
   cl_failure_map = defaultdict(build_failure_analysis.CLInfo)
 
   step_name = constants.COMPILE_STEP_NAME
-  if step_name not in failure_info.failed_steps:
+  if step_name not in failure_info['failed_steps']:
     logging.debug('No failed compile step when analyzing a compile failure.')
     return analysis_result, []
 
-  builds = failure_info.builds
-  master_name = failure_info.master_name
-  compile_failure_info = failure_info.failed_steps[step_name]
+  builds = failure_info['builds']
+  master_name = failure_info['master_name']
+  compile_failure_info = failure_info['failed_steps'][step_name]
 
-  failed_build_number = compile_failure_info.current_failure
+  failed_build_number = compile_failure_info['current_failure']
   start_build_number = build_failure_analysis.GetLowerBoundForAnalysis(
       compile_failure_info)
   step_analysis_result = build_failure_analysis.InitializeStepLevelResult(
@@ -168,25 +164,46 @@ def AnalyzeCompileFailure(failure_info, change_logs, deps_info,
   return analysis_result, suspected_cls
 
 
-def HeuristicAnalysisForCompile(heuristic_params):
+def HeuristicAnalysisForCompile(failure_info, build_completed):
   """Identifies culprit CL.
 
-  Args:
-    heuristic_params (CompileHeuristicAnalysisParameters): A structured object
-    with 2 parts:
-      failure_info (CompileFailureInfo): An object of failure info for the
-      current failed build.
-      build_completed (bool): If the build is completed.
+      Args:
+        failure_info (dict): A dict of failure info for the current failed build
+          in the following form:
+        {
+          "master_name": "chromium.gpu",
+          "builder_name": "GPU Linux Builder"
+          "build_number": 25410,
+          "failed": true,
+          "failed_steps": {
+            "compile": {
+              "current_failure": 25410,
+              "first_failure": 25410
+            }
+          },
+          "builds": {
+            "25410": {
+              "chromium_revision": "4bffcd598dd89e0016208ce9312a1f477ff105d1"
+              "blame_list": [
+                "b98e0b320d39a323c81cc0542e6250349183a4df",
+                ...
+              ],
+            }
+          }
+        }
+        build_completed (bool): If the build is completed.
 
-  Returns:
-    A CompileHeuristicAnalysisOutput object returned by
-    build_failure_analysis.AnalyzeBuildFailure.
-  """
-  failure_info = heuristic_params.failure_info
-  build_completed = heuristic_params.build_completed
-  master_name = failure_info.master_name
-  builder_name = failure_info.builder_name
-  build_number = failure_info.build_number
+      Returns:
+        A dict in below format:
+          {
+              'failure_info': failure_info,
+              'signals': signals,
+              'heuristic_result': heuristic_result
+          }
+      """
+  master_name = failure_info['master_name']
+  builder_name = failure_info['builder_name']
+  build_number = failure_info['build_number']
 
   # 1. Detects first failed builds for failed compile step,
   # updates failure_info.
@@ -194,7 +211,7 @@ def HeuristicAnalysisForCompile(heuristic_params):
       master_name, builder_name, build_number, failure_info)
 
   analysis = WfAnalysis.Get(master_name, builder_name, build_number)
-  analysis.failure_info = failure_info.ToSerializable()
+  analysis.failure_info = failure_info
   analysis.put()
 
   # 2. Extracts failure signal.
@@ -217,12 +234,11 @@ def HeuristicAnalysisForCompile(heuristic_params):
       heuristic_result, suspected_cls)
 
   # Save suspected_cls to data_store.
-  build_failure_analysis.SaveSuspectedCLs(suspected_cls, master_name,
-                                          builder_name, build_number,
-                                          failure_info.failure_type)
-
-  return CompileHeuristicAnalysisOutput(
-      failure_info=failure_info,
-      signals=CompileFailureSignals.FromSerializable(signals),
-      heuristic_result=CompileHeuristicResult.FromSerializable(
-          heuristic_result))
+  build_failure_analysis.SaveSuspectedCLs(
+      suspected_cls, failure_info['master_name'], failure_info['builder_name'],
+      failure_info['build_number'], failure_info['failure_type'])
+  return {
+      'failure_info': failure_info,
+      'signals': signals,
+      'heuristic_result': heuristic_result
+  }

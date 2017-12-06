@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 """Logic related to examine builds and determine regression range."""
 
+import copy
 import logging
 
 from common.findit_http_client import FinditHttpClient
@@ -10,8 +11,6 @@ from common.waterfall import failure_type
 from libs import analysis_status
 from model import result_status
 from model.wf_analysis import WfAnalysis
-from services.parameters import FailureInfoBuild
-from services.parameters import FailureInfoBuilds
 from waterfall import build_util
 from waterfall import buildbot
 
@@ -39,14 +38,22 @@ def _ExtractBuildInfo(master_name, builder_name, build_number):
   return build_info
 
 
-def _GetBlameListAndRevisionForBuild(build_info):
-  """Gets blame list and chromium revision info for a build.
+def _SaveBlamelistAndChromiumRevisionIntoDict(build_info, builds):
+  """Saves blame list and chromium revision info for each build.
 
   Args:
     build_info (BuildInfo): a BuildInfo instance which contains blame list and
         chromium revision.
+    builds (dict): to which the blame list and chromium revision is saved. It
+        will be updated and looks like:
+        {
+          555 : {
+            'chromium_revision': 'a_git_hash',
+            'blame_list': ['git_hash1', 'git_hash2'],
+          },
+        }
   """
-  return {
+  builds[build_info.build_number] = {
       'chromium_revision': build_info.chromium_revision,
       'blame_list': build_info.blame_list
   }
@@ -54,7 +61,7 @@ def _GetBlameListAndRevisionForBuild(build_info):
 
 def _UpdateStringTypedBuildKeyToInt(builds):
   """Updates the string keys to int keys."""
-  updated_builds = FailureInfoBuilds()
+  updated_builds = {}
   for build_number, build in builds.iteritems():
     updated_builds[int(build_number)] = build
   return updated_builds
@@ -93,13 +100,14 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
     master_name (str): master of the failed build.
     builder_name (str): builder of the failed build.
     build_number (int): builder number of the current failed build.
-    failed_steps (BaseFailedSteps): the failed steps of the current failed
-      build. It will be updated with build numbers for 'first_failure' and
-      'last_pass' of each failed step.
-    builds (FailureInfoBuilds): a dict to save blame list and chromium revision.
+    failed_steps (dict): the failed steps of the current failed build. It will
+        be updated with build numbers for 'first_failure' and 'last_pass' of
+        each failed step.
+    builds (dict): a dict to save blame list and chromium revision.
   """
-  failed_steps = failure_info.failed_steps
-  failure_info.builds = _UpdateStringTypedBuildKeyToInt(failure_info.builds)
+  failed_steps = failure_info['failed_steps']
+  failure_info['builds'] = _UpdateStringTypedBuildKeyToInt(
+      failure_info['builds'])
   # Look back for first known failures.
   earliest_build_number = max(0, build_number - 1 - _MAX_BUILDS_TO_CHECK)
   for n in range(build_number - 1, earliest_build_number - 1, -1):
@@ -109,14 +117,13 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
       # Failed to extract the build information, bail out.
       return failure_info
 
-    failure_info.builds[build_info.build_number] = (
-        FailureInfoBuild.FromSerializable(
-            _GetBlameListAndRevisionForBuild(build_info)))
+    _SaveBlamelistAndChromiumRevisionIntoDict(build_info,
+                                              failure_info['builds'])
 
     if build_info.result == buildbot.SUCCESS:
       for step_name in failed_steps:
-        if failed_steps[step_name].last_pass is None:
-          failed_steps[step_name].last_pass = build_info.build_number
+        if 'last_pass' not in failed_steps[step_name]:
+          failed_steps[step_name]['last_pass'] = build_info.build_number
 
       # All steps passed, so stop looking back.
       return failure_info
@@ -127,16 +134,15 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
 
       for step_name in build_info.failed_steps:
         if (step_name in failed_steps and
-            failed_steps[step_name].last_pass is None):
-          failed_steps[step_name].first_failure = build_info.build_number
+            not 'last_pass' in failed_steps[step_name]):
+          failed_steps[step_name]['first_failure'] = build_info.build_number
 
       for step_name in failed_steps:
         if (step_name in build_info.passed_steps and
-            failed_steps[step_name].last_pass is None):
-          failed_steps[step_name].last_pass = build_info.build_number
+            'last_pass' not in failed_steps[step_name]):
+          failed_steps[step_name]['last_pass'] = build_info.build_number
 
-      if all(step_info.last_pass is not None
-             for step_info in failed_steps.values()):
+      if all('last_pass' in step_info for step_info in failed_steps.values()):
         # All failed steps passed in this build cycle.
         return failure_info
 
@@ -195,8 +201,7 @@ def GetBuildFailureInfo(master_name, builder_name, build_number):
     analysis.put()
     return failure_info, False
 
-  failure_info['builds'][build_info.build_number] = (
-      _GetBlameListAndRevisionForBuild(build_info))
+  _SaveBlamelistAndChromiumRevisionIntoDict(build_info, failure_info['builds'])
 
   failure_info['failed_steps'] = _CreateADictOfFailedSteps(build_info)
 

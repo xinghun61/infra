@@ -2,30 +2,46 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from gae_libs.pipelines import SynchronousPipeline
+from gae_libs.pipeline_wrapper import BasePipeline
 from services.compile_failure import compile_failure_analysis
-from services.parameters import CompileHeuristicAnalysisOutput
-from services.parameters import CompileHeuristicAnalysisParameters
 
 
-class HeuristicAnalysisForCompilePipeline(SynchronousPipeline):
+#TODO(crbug/766851): Make this pipeline to inherit from new base pipeline.
+class HeuristicAnalysisForCompilePipeline(BasePipeline):
   """A pipeline to identify culprit CLs for a compile failure."""
-  input_type = CompileHeuristicAnalysisParameters
-  output_type = CompileHeuristicAnalysisOutput
 
-  def RunImpl(self, heuristic_params):
+  # Arguments number differs from overridden method - pylint: disable=W0221
+  def run(self, failure_info, build_completed):
     """Identifies culprit CL.
 
     Args:
-      heuristic_params (CompileHeuristicAnalysisParameters): A structured object
-      with 2 parts:
-        failure_info (CompileFailureInfo): An object of failure info for the
-        current failed build.
-        build_completed (bool): If the build is completed.
+      failure_info (dict): A dict of failure info for the current failed build
+        in the following form:
+      {
+        "master_name": "chromium.gpu",
+        "builder_name": "GPU Linux Builder"
+        "build_number": 25410,
+        "failed": true,
+        "failed_steps": {
+          "compile": {
+            "current_failure": 25410,
+            "first_failure": 25410
+          }
+        },
+        "builds": {
+          "25410": {
+            "chromium_revision": "4bffcd598dd89e0016208ce9312a1f477ff105d1"
+            "blame_list": [
+              "b98e0b320d39a323c81cc0542e6250349183a4df",
+              ...
+            ],
+          }
+        }
+      }
+      build_completed (bool): If the build is completed.
 
     Returns:
-      A CompileHeuristicAnalysisOutput object returned by
-      build_failure_analysis.AnalyzeBuildFailure.
+      analysis_result returned by build_failure_analysis.AnalyzeBuildFailure.
     """
     return compile_failure_analysis.HeuristicAnalysisForCompile(
-        heuristic_params)
+        failure_info, build_completed)
