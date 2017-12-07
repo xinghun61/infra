@@ -21,6 +21,16 @@ import (
 	"infra/appengine/luci-migration/common"
 )
 
+var pdtLoc *time.Location
+
+func init() {
+	var err error
+	pdtLoc, err = time.LoadLocation("US/Pacific")
+	if err != nil {
+		panic(err)
+	}
+}
+
 // tmplDetails is an HTML template that consumes a comparison struct and
 // produces the HTML report of analysis, which will be displayed on a builder
 // page.
@@ -32,13 +42,18 @@ var tmplDetails = template.Must(template.New("").Funcs(template.FuncMap{
 		return x
 	},
 	"durationString": common.DurationString,
+	"timeString": func(t time.Time) string {
+		// in practice t is in [now-week, now] range, so
+		// day of the week is precise enough and short.
+		return t.In(pdtLoc).Format("Mon 15:04:05 MST")
+	},
 }).Parse(`
 {{define "buildResults"}}
   {{- range $index, $b := . -}}
     {{- if gt $index 0}}, {{end -}}
 <a href="{{$b.URL}}">{{$b.Status}}</a>
   {{- end }}
-{{.Age | durationString}} ago.
+at {{.MostRecentlyCompleted | timeString }}.
 {{end}}
 
 {{define "groups"}}

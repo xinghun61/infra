@@ -64,12 +64,13 @@ func (s groupSide) avgRunDuration() time.Duration {
 	return avg / time.Duration(count)
 }
 
-// Age returns duration from most recent build completion to now.
-func (s groupSide) Age() time.Duration {
+// MostRecentlyCompleted returns completion time of the most recently created
+// build.
+func (s groupSide) MostRecentlyCompleted() time.Time {
 	if len(s) == 0 {
-		return 0
+		return time.Time{}
 	}
-	return time.Now().Sub(s[len(s)-1].CompletionTime)
+	return s[len(s)-1].CompletionTime
 }
 
 // success returns true if at least one build succeeded, otherwise false.
