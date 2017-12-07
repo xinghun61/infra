@@ -1,5 +1,7 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
 
+<link rel="import" href="../../bower_components/chopsui/crdx-header.html">
+<link rel="import" href="../../bower_components/chopsui/crdx-login.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/iron-location/iron-location.html">
 <link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
@@ -25,11 +27,24 @@
 <dom-module id="som-app">
   <template>
     <style include="som-header-styles som-utility-styles">
+      crdx-header {
+        --crdx-header-text-color: #fff;
+        top: 0;
+        position: fixed;
+        background-color: #000;
+      }
+      crdx-login {
+        --crdx-login-link-color: #fff;
+      }
       iron-icon {
         flex-shrink: 0;
       }
       #alertView {
         padding-bottom: 5em;
+      }
+      #headerRightContent {
+        display: flex;
+        align-items: center;
       }
       #refresh, #toggleDrawer {
         display: flex;
@@ -40,7 +55,7 @@
       }
       #toggleDrawer {
         display: none;
-        padding-left: 8px;
+        padding-right: 8px;
       }
       #lastUpdated, #username {
         text-align: right;
@@ -51,7 +66,7 @@
       }
       #somContainer {
         box-sizing: border-box;
-        padding-top: 60px;
+        padding-top: 50px;
         width: 100%;
         min-height: 100%;
         display: flex;
@@ -71,40 +86,8 @@
         background: #fff;
         z-index: 1;
       }
-      #somHeader {
-        top: 0;
-        position: fixed;
-        background: #000;
-        color: #fff;
-        font-size: 16px;
-        width: 100%;
-        height: 60px;
-        display: flex;
-        flex-direction: row;
-        justify-content: space-between;
-        z-index: 10;
-      }
-      #somHeader a {
-        color: #fff;
-      }
-      #somTitle {
-        min-width: 170px;
-        padding: 0 8px;
-        font-weight: bold;
-      }
-      #somTitle img {
-        max-width: 30px;
-        max-height: 30px;
-        vertical-align: middle;
-      }
       .error {
         margin-top: 0;
-      }
-      .header-section {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
-        padding: 0 4px;
       }
       .page-body {
         display: flex;
@@ -117,7 +100,7 @@
       .page-body-padded {
         padding: 1em 16px;
       }
-      @media (max-width: 1024px) {
+      @media (max-width: 1280px) {
         #somContent {
           padding-left: 0;
         }
@@ -138,39 +121,29 @@
           display: flex;
         }
       }
-      @media (max-width: 800px) {
-        .header-section {
-          font-size: 0.8em;
-          min-width: 10%;
-          text-align: left;
+      @media (max-width: 840px) {
+        crdx-header {
+          --crdx-header-title-theme: {
+            display: none;
+          };
         }
         #lastUpdatedTimeShort {
           /* Responsively display a shorter last updated time. */
           display: inline;
         }
         #lastUpdatedTime,
-        #fetchingAlerts,
-        #somTitle,
-        #treeTitle {
+        #fetchingAlerts {
           display: none;
         }
       }
     </style>
     <iron-location id="url" path="{{_path}}" url-space-regex="^(?!(/_ah/|/auth/))"></iron-location>
-    <div id="somHeader">
-      <div class="header-section">
-        <iron-icon id="toggleDrawer" icon="menu" on-tap="_toggleDrawer"></iron-icon>
-        <span id="somTitle">
-          <template is="dom-if" if="[[_treeLogo]]">
-            <a href="/[[_tree.name]]"><img src="[[_treeLogo]]" alt="[[_tree.name]]" title="[[_tree.name]]" /></a>
-          </template>
-          Sheriff-o-Matic
-        </span>
-        <div id="treeTitle">
-          [[_pathIdentifier]]
-        </div>
+    <crdx-header logo-src="[[_treeLogo]]" app-title="Sheriff-o-Matic">
+      <iron-icon slot="before-header" id="toggleDrawer" on-tap="_toggleDrawer" icon="menu"></iron-icon>
+      <div slot="subheader" id="treeTitle">
+        &gt; [[_pathIdentifier]]
       </div>
-      <div class="header-section">
+      <div id="headerRightContent">
         <div id="lastUpdated" hidden$="[[!_showAlertView]]">
           Last updated: <span hidden$="[[!_lastUpdated]]" id="lastUpdatedTime">
             <span class="line">[[_lastUpdated.time]]</span>
@@ -181,13 +154,11 @@
           </span>
           <span hidden$="[[_lastUpdated]]" id="lastUpdatedUnknown">Unknown</span>
         </div>
-        <div id="username">
-          [[user]] (<a href$="[[logoutUrl]]">Log Out </a>)
-        </div>
+        <crdx-login id="username" user="[[user]]" logout-url="[[logoutUrl]]"></crdx-login>
         <iron-icon id="refresh" on-tap="_refresh" icon="refresh"></iron-icon>
         <paper-spinner id="fetchingAlerts" active="[[_fetchingAlerts]]"></paper-spinner>
       </div>
-    </div>
+    </crdx-header>
     <div id="somContainer">
       <div id="somDrawerWrapper">
         <som-drawer

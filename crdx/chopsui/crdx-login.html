@@ -3,19 +3,20 @@
 <dom-module id="crdx-login">
   <template>
     <style>
-      * {
-        font-family: 'Roboto', 'Noto', sans-serif;
-        font-size: .75em;
+      :host {
+        --crdx-login-link-color: inherit;
       }
-      a:link {
+      a, a:link {
+        color: var(--crdx-login-link-color);
+        font-size: 0.75em;
         text-decoration: none;
       }
     </style>
     <template is="dom-if" if="[[!user]]">
-      <p><a href="[[loginUrl]]">LOGIN</a></p>
+      <a href="[[loginUrl]]">LOGIN</a>
     </template>
     <template is="dom-if" if="[[user]]">
-      <p>[[user]] (<a href="[[logoutUrl]]">LOGOUT</a>)</p>
+      [[user]] (<a href="[[logoutUrl]]">LOGOUT</a>)
     </template>
   </template>
   <script>
