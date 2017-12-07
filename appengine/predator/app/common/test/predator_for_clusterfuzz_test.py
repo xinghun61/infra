@@ -303,7 +303,6 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
 
   def testResultMessageToClientFoundFalse(self):
     """Tests ``ResultMessageToClient`` when there is no result."""
-
     crash_identifiers = {
         'testcase_id':
         'predator_for_clusterfuzz_test_result_msg_to_client_found_false'
@@ -330,3 +329,67 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
 
     self.assertDictEqual(self._client.ResultMessageToClient(crash_identifiers),
                          expected_processed_result)
+
+  def testDoNotDisableFeaturesForSmallRegressionRange(self):
+    """Tests that predator don't disable features for small regression range."""
+    crash_identifiers = {
+        'testcase_id':
+        ('predator_for_clusterfuzz_test_do_not_disable_features'
+         '_for_small_regression')
+    }
+    analysis = self._client.CreateAnalysis(crash_identifiers)
+    analysis.identifiers = crash_identifiers
+    analysis.status = analysis_status.COMPLETED
+    analysis.commit_count_in_regression_range = 10
+    analysis.put()
+
+    predator = PredatorForClusterfuzz(self.GetMockRepoFactory(),
+                                      CrashConfig.Get())
+    old_weights = predator._Predator().changelist_classifier._model._meta_weight
+    predator.RedefineClassifierIfLargeRegressionRange(analysis.identifiers)
+    new_weights = predator._Predator().changelist_classifier._model._meta_weight
+    self.assertTrue(new_weights == old_weights)
+
+  def testRedefineClassifierIfLargeRegressionRange(self):
+    """Tests that predator disable features for big regression range crash."""
+    crash_identifiers = {
+        'testcase_id':
+        'predator_for_clusterfuzz_test_disable_features_for_big_regression'
+    }
+    analysis = self._client.CreateAnalysis(crash_identifiers)
+    analysis.identifiers = crash_identifiers
+    analysis.status = analysis_status.COMPLETED
+    analysis.commit_count_in_regression_range = 1000
+    analysis.put()
+
+    predator = PredatorForClusterfuzz(self.GetMockRepoFactory(),
+                                      CrashConfig.Get())
+    predator.RedefineClassifierIfLargeRegressionRange(analysis.identifiers)
+    weights = predator._Predator().changelist_classifier._model._meta_weight
+    self.assertFalse('TouchCrashedComponent' in weights)
+    self.assertFalse('TouchCrashedDirectory' in weights)
+
+  @mock.patch('common.model.clusterfuzz_analysis.ClusterfuzzAnalysis.'
+              'ToCrashReport')
+  @mock.patch('analysis.predator.Predator.FindCulprit')
+  @mock.patch('common.predator_for_clusterfuzz.PredatorForClusterfuzz.'
+              'RedefineClassifierIfLargeRegressionRange')
+  def testFindCulprit(self, mock_disable_features, mock_find_culprit,
+                      mock_to_crash_report):
+    """Tests ``FindCulprit`` called RedefineClassifierIfLargeRegressionRange."""
+    crash_identifiers = {
+        'testcase_id':
+        'predator_for_clusterfuzz_test_find_culprit'
+    }
+
+    predator = PredatorForClusterfuzz(self.GetMockRepoFactory(),
+                                      CrashConfig.Get())
+    analysis = predator.CreateAnalysis(crash_identifiers)
+    analysis.identifiers = crash_identifiers
+    analysis.status = analysis_status.COMPLETED
+    analysis.put()
+
+    predator.FindCulprit(crash_identifiers)
+    self.assertTrue(mock_to_crash_report.called)
+    self.assertTrue(mock_disable_features.called)
+    self.assertTrue(mock_find_culprit.called)

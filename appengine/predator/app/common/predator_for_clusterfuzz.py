@@ -33,6 +33,8 @@ from common.predator_app import PredatorApp
 from common.model.clusterfuzz_analysis import ClusterfuzzAnalysis
 from gae_libs import pubsub_util
 
+_BIG_REGRESSION_RANGE_COMMITS_THRESHOLD = 100
+
 
 class PredatorForClusterfuzz(PredatorApp):
   @classmethod
@@ -155,3 +157,39 @@ class PredatorForClusterfuzz(PredatorApp):
     """Publish results to clusterfuzz and try bot."""
     self.PublishResultToClient(crash_identifiers)
     self.PublishResultToTryBot(crash_identifiers)
+
+  def RedefineClassifierIfLargeRegressionRange(self, crash_identifiers):
+    """Disable features for revisions in regression range > 100 commits.
+
+    For crash with big regression range, it's easy to get false positives if we
+    enable TouchCrashedComponentFeature and TouchCrashedDirectoryFeature,
+    Because it has a big chance to hit these features and cause false positives.
+    So we should disable these 2 features.
+    """
+    analysis = self.GetAnalysis(crash_identifiers)
+    if (analysis.commit_count_in_regression_range <
+        _BIG_REGRESSION_RANGE_COMMITS_THRESHOLD):
+      return
+
+    get_repository = self._predator.changelist_classifier._get_repository
+    meta_weight = MetaWeight({
+        'TouchCrashedFileMeta': MetaWeight({
+            'MinDistance': Weight(1.),
+            'TopFrameIndex': Weight(1.),
+            'TouchCrashedFile': Weight(1.),
+        }),
+    })
+
+    meta_feature = WrapperMetaFeature([
+        TouchCrashedFileMetaFeature([MinDistanceFeature(get_repository),
+                                     TopFrameIndexFeature(),
+                                     TouchCrashedFileFeature()])])
+
+    self._predator.changelist_classifier = ChangelistClassifier(
+        get_repository, meta_feature, meta_weight)
+
+  def FindCulprit(self, crash_identifiers):
+    """Given a crash_identifiers, returns a ``Culprit``."""
+    self.RedefineClassifierIfLargeRegressionRange(crash_identifiers)
+    analysis = self.GetAnalysis(crash_identifiers)
+    self._predator.FindCulprit(analysis.ToCrashReport())

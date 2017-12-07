@@ -267,8 +267,7 @@ class PredatorApp(object):
     """Publishes results to related pub/sub topics."""
     self.PublishResultToClient(crash_identifiers)
 
-  # TODO(http://crbug.com/659346): coverage tests for this class, not
-  # just for PredatorForFracas.
-  def FindCulprit(self, crash_report): # pragma: no cover
-    """Given a ``CrashReport``, returns a ``Culprit``."""
-    return self._Predator().FindCulprit(crash_report)
+  def FindCulprit(self, crash_identifiers):
+    """Given a crash_identifiers, returns a ``Culprit``."""
+    analysis = self.GetAnalysis(crash_identifiers)
+    return self._Predator().FindCulprit(analysis.ToCrashReport())

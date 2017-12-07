@@ -279,3 +279,21 @@ class PredatorTest(AppengineTestCase):
 
     self.assertDictEqual(self.predator.ResultMessageToClient(crash_identifiers),
                          expected_processed_result)
+
+  @mock.patch('common.appengine_testcase.MockCrashAnalysis.ToCrashReport')
+  @mock.patch('analysis.predator.Predator.FindCulprit')
+  def testFindCulprit(self, mock_find_culprit, mock_to_crash_report):
+    """Tests ``FindCulprit`` called ``FindCulprit`` in ``Predator`` class."""
+    crash_identifiers = {
+        'testcase_id':
+        'predator_app_test_find_culprit'
+    }
+    predator = self.GetMockPredatorApp()
+    analysis = predator.CreateAnalysis(crash_identifiers)
+    analysis.identifiers = crash_identifiers
+    analysis.status = analysis_status.COMPLETED
+    analysis.put()
+
+    predator.FindCulprit(crash_identifiers)
+    self.assertTrue(mock_to_crash_report.called)
+    self.assertTrue(mock_find_culprit.called)
