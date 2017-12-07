@@ -54,13 +54,13 @@ limitations under the License. */}}
       <div>
         Buildbot:
         <a href="https://ci.chromium.org/buildbot/{{.Builder.ID.Master}}/{{.Builder.ID.Builder}}/">builds</a>,
-        <a href="https://goto.google.com/buildbucket-dashboard?bucket=master.{{.Builder.ID.Master}}&amp;builder={{.Builder.ID.Builder}}">metrics</a>.
+        <a href="https://goto.google.com/buildbucket-dashboard?duration=1w&bucket=master.{{.Builder.ID.Master}}&amp;builder={{.Builder.ID.Builder}}">metrics</a>.
       </div>
 
       <div>
         LUCI:
         <a href="https://ci.chromium.org/buildbucket/{{.Builder.LUCIBuildbucketBucket}}/{{.Builder.ID.Builder}}/">builds</a>,
-        <a href="https://goto.google.com/buildbucket-dashboard?bucket={{.Builder.LUCIBuildbucketBucket}}&amp;builder={{.Builder.ID.Builder}}">metrics</a>.
+        <a href="https://goto.google.com/buildbucket-dashboard?duration=1w&bucket={{.Builder.LUCIBuildbucketBucket}}&amp;builder={{.Builder.ID.Builder}}">metrics</a>.
       </div>
 
       <div>
