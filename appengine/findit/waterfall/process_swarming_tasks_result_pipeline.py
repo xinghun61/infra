@@ -15,10 +15,10 @@ class ProcessSwarmingTasksResultPipeline(BasePipeline):
   """Root Pipeline to process results of swarming reruns."""
 
   # Arguments number differs from overridden method - pylint: disable=W0221
-  def run(self, master_name, builder_name, build_number, heuristic_result,
+  def run(self, master_name, builder_name, build_number, failure_info,
           build_completed):
     task_results = []
-    failure_info = heuristic_result.get('failure_info', {})
+
     # Waits for build to complete to process the results of swarming reruns.
     if not build_completed or failure_info['failure_type'] != failure_type.TEST:
       return

@@ -10,6 +10,7 @@ from common.waterfall import failure_type
 from libs import analysis_status
 from model.wf_analysis import WfAnalysis
 from gae_libs.pipelines import pipeline_handlers
+from pipelines.compile_failure import analyze_compile_failure_pipeline
 from services import ci_failure
 from waterfall import build_failure_analysis_pipelines
 from waterfall.test import wf_testcase
@@ -158,7 +159,7 @@ class BuildFailureAnalysisPipelinesTest(wf_testcase.WaterfallTestCase):
     mock_info.return_value = failure_info, True
 
     self.MockPipeline(
-        build_failure_analysis_pipelines.AnalyzeCompileFailurePipeline,
+        analyze_compile_failure_pipeline.AnalyzeCompileFailurePipeline,
         'failure_info',
         expected_args=[
             master_name, builder_name, build_number, failure_info, False, False
@@ -191,7 +192,7 @@ class BuildFailureAnalysisPipelinesTest(wf_testcase.WaterfallTestCase):
     mock_info.return_value = (failure_info, True)
 
     self.MockPipeline(
-        build_failure_analysis_pipelines.AnalyzeTestFailurePipeline,
+        build_failure_analysis_pipelines.AnalyzeBuildFailurePipeline,
         'failure_info',
         expected_args=[
             master_name, builder_name, build_number, failure_info, False, False
@@ -242,7 +243,7 @@ class BuildFailureAnalysisPipelinesTest(wf_testcase.WaterfallTestCase):
           'chromium_revision': 'rev',
           'failure_type': failure_type.COMPILE
       }, False))
-  @mock.patch.object(build_failure_analysis_pipelines,
+  @mock.patch.object(analyze_compile_failure_pipeline,
                      'AnalyzeCompileFailurePipeline')
   def testNotStartPipelineForAnalysisWithNoFailure(self, mocked_pipeline, _):
     master_name = 'm'

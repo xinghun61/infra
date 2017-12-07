@@ -66,9 +66,8 @@ class TriggerSwarmingTasksPipeline(BasePipeline):
           master_name,
           builder_name,
           build_number,
-          heuristic_result,
+          failure_info,
           force=False):
-    failure_info = heuristic_result.get('failure_info', {})
     if (not failure_info or not failure_info['failed_steps'] or
         not failure_info['failure_type'] == failure_type.TEST):
       return

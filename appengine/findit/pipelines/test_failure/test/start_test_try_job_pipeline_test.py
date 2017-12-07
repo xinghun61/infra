@@ -22,9 +22,8 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
   def testNotScheduleTryJobIfBuildNotCompleted(self):
-    heuristic_result = {'failure_info': {}, 'heuristic_result': {}}
     pipeline = start_test_try_job_pipeline.StartTestTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, heuristic_result, False, False)
+    result = pipeline.run('m', 'b', 1, {}, {}, False, False)
     self.assertEqual(list(result), [])
 
   @mock.patch.object(test_try_job, 'GetParametersToScheduleTestTryJob')
@@ -173,8 +172,7 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         start_test_try_job_pipeline.IdentifyTestTryJobCulpritPipeline,
         identify_culprit_input, False)
 
-    heuristic_result = {'failure_info': failure_info, 'heuristic_result': {}}
-    pipeline = StartTestTryJobPipeline('m', 'b', 1, heuristic_result, True,
+    pipeline = StartTestTryJobPipeline('m', 'b', 1, failure_info, {}, True,
                                        False)
     pipeline.start()
     self.execute_queued_tasks()
@@ -186,9 +184,8 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job = WfTryJob.Create('m', 'b', 1)
     try_job.put()
     mock_fn.return_value = (False, try_job.key)
-    heuristic_result = {'failure_info': failure_info, 'heuristic_result': {}}
     pipeline = StartTestTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, heuristic_result, True, False)
+    result = pipeline.run('m', 'b', 1, failure_info, {}, True, False)
     self.assertEqual(list(result), [])
     mock_pipeline.assert_not_called()
 
@@ -202,9 +199,8 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     try_job = WfTryJob.Create('m', 'b', 1)
     try_job.put()
     mock_fn.return_value = (True, try_job.key)
-    heuristic_result = {'failure_info': failure_info, 'heuristic_result': {}}
     pipeline = StartTestTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, heuristic_result, True, False)
+    result = pipeline.run('m', 'b', 1, failure_info, {}, True, False)
     self.assertEqual(list(result), [])
     mock_pipeline.assert_not_called()
 
@@ -219,8 +215,7 @@ class StartTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     mock_fn.return_value = (True, try_job.key)
     mock_parameter.return_value = RunTestTryJobParameters(
         targeted_tests={}, good_revision='rev1')
-    heuristic_result = {'failure_info': failure_info, 'heuristic_result': {}}
     pipeline = StartTestTryJobPipeline()
-    result = pipeline.run('m', 'b', 1, heuristic_result, True, False)
+    result = pipeline.run('m', 'b', 1, failure_info, {}, True, False)
     self.assertEqual(list(result), [])
     mock_pipeline.assert_not_called()

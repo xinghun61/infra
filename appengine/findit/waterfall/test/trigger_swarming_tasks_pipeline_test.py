@@ -228,7 +228,7 @@ class TriggerSwarmingTasksPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.mock(trigger_swarming_task_pipeline, 'TriggerSwarmingTaskPipeline',
               _MockedTriggerSwarmingTaskPipeline)
-    pipeline = TriggerSwarmingTasksPipeline('m', 'b', 1, {'failure_info': {}})
+    pipeline = TriggerSwarmingTasksPipeline('m', 'b', 1, {})
     pipeline.start()
     self.execute_queued_tasks()
     self.assertEqual(_MockedTriggerSwarmingTaskPipeline.count, 0)
@@ -264,8 +264,7 @@ class TriggerSwarmingTasksPipelineTest(wf_testcase.WaterfallTestCase):
         },
         'failure_type': failure_type.COMPILE
     }
-    pipeline = TriggerSwarmingTasksPipeline('m', 'b', 2,
-                                            {'failure_info': failure_info})
+    pipeline = TriggerSwarmingTasksPipeline('m', 'b', 2, failure_info)
     pipeline.start()
     self.execute_queued_tasks()
     self.assertEqual(_MockedTriggerSwarmingTaskPipeline.count, 0)
@@ -335,9 +334,8 @@ class TriggerSwarmingTasksPipelineTest(wf_testcase.WaterfallTestCase):
 
     self.mock(trigger_swarming_task_pipeline, 'TriggerSwarmingTaskPipeline',
               _MockedTriggerSwarmingTaskPipeline)
-    pipeline = TriggerSwarmingTasksPipeline(
-        master_name, builder_name, build_number, {'failure_info': failure_info},
-        True)
+    pipeline = TriggerSwarmingTasksPipeline(master_name, builder_name,
+                                            build_number, failure_info, True)
     pipeline.start()
     self.execute_queued_tasks()
     self.assertEqual(_MockedTriggerSwarmingTaskPipeline.count, 1)

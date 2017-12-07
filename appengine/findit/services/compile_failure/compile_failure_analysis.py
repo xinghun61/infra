@@ -194,12 +194,7 @@ def HeuristicAnalysisForCompile(failure_info, build_completed):
         build_completed (bool): If the build is completed.
 
       Returns:
-        A dict in below format:
-          {
-              'failure_info': failure_info,
-              'signals': signals,
-              'heuristic_result': heuristic_result
-          }
+        heuristic_result returned by build_failure_analysis.AnalyzeBuildFailure.
       """
   master_name = failure_info['master_name']
   builder_name = failure_info['builder_name']
