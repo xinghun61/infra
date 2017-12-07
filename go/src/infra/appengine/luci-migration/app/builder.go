@@ -21,21 +21,21 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"golang.org/x/net/context"
-
 	"github.com/julienschmidt/httprouter"
+
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 
+	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
-	"time"
-
-	"go.chromium.org/luci/common/clock"
 )
 
 const (
@@ -47,11 +47,12 @@ const (
 type builderViewModel struct {
 	Builder *storage.Builder
 
-	StatusKnown       bool
-	StatusClassSuffix string // Bootstrap label class suffix
-	StatusAge         time.Duration
-	StatusOutdated    bool
-	Details           template.HTML
+	StatusKnown            bool
+	StatusClassSuffix      string // Bootstrap label class suffix
+	StatusAge              time.Duration
+	StatusOutdated         bool
+	Details                template.HTML
+	ShowLUCIIsProdCheckbox bool
 }
 
 func parseBuilderIDFromRequest(params *httprouter.Params) (storage.BuilderID, error) {
@@ -135,6 +136,7 @@ func builderPage(c context.Context, id storage.BuilderID) (*builderViewModel, er
 	model.StatusClassSuffix = migrationStatusLabelClassSuffix(mig.Status)
 	model.StatusAge = clock.Now(c).Sub(model.Builder.Migration.AnalysisTime)
 	model.StatusOutdated = model.StatusAge > 24*time.Hour
+	model.ShowLUCIIsProdCheckbox = enableLUCISProdCheckbox(model.Builder)
 	return model, nil
 }
 
@@ -155,6 +157,15 @@ func handleBuilderPagePost(c *router.Context) error {
 		return nil
 	}
 
+	builder := &storage.Builder{ID: id}
+	switch err := datastore.Get(c.Context, builder); {
+	case err == datastore.ErrNoSuchEntity:
+		http.NotFound(c.Writer, c.Request)
+		return nil
+	case err != nil:
+		return err
+	}
+
 	percentageValue := c.Request.FormValue(experimentPercentageFormValueName)
 	percentage, err := strconv.Atoi(percentageValue)
 	if err != nil || percentage < 0 || percentage > 100 {
@@ -167,6 +178,11 @@ func handleBuilderPagePost(c *router.Context) error {
 	switch v := c.Request.FormValue(luciIsProdFormValueName); v {
 	case "":
 	case "on":
+		if !enableLUCISProdCheckbox(builder) {
+			body := fmt.Sprintf("cannot set %q on builder %q", luciIsProdFormValueName, &id)
+			http.Error(c.Writer, body, http.StatusBadRequest)
+			return nil
+		}
 		luciIsProd = true
 	default:
 		msg := fmt.Sprintf("invalid %s %q", luciIsProdFormValueName, v)
@@ -174,39 +190,23 @@ func handleBuilderPagePost(c *router.Context) error {
 		return nil
 	}
 
-	notFound := false
 	err = datastore.RunInTransaction(c.Context, func(c context.Context) error {
-		builder := &storage.Builder{ID: id}
-		err := datastore.Get(c, builder)
-		switch {
-		case err == datastore.ErrNoSuchEntity:
-			notFound = true
-			return nil
-		case err != nil:
+		if err := datastore.Get(c, builder); err != nil {
 			return err
-		default:
-			builder.ExperimentPercentage = percentage
-			builder.LUCIIsProd = luciIsProd
-			return datastore.Put(c, builder)
 		}
+		builder.LUCIIsProd = luciIsProd
+		builder.ExperimentPercentage = percentage
+		return datastore.Put(c, builder)
 	}, nil)
-
-	switch {
-	case err != nil:
+	if err != nil {
 		return err
-
-	case notFound:
-		http.NotFound(c.Writer, c.Request)
-		return nil
-
-	default:
-		logging.Infof(
-			c.Context,
-			"updated experiment percentage/prod of %q to %d%%/%t by %q",
-			&id, percentage, luciIsProd, auth.CurrentIdentity(c.Context))
-		http.Redirect(c.Writer, c.Request, c.Request.URL.String(), http.StatusFound)
-		return nil
 	}
+	logging.Infof(
+		c.Context,
+		"updated experiment percentage/prod of %q to %d%%/%t by %q",
+		&id, percentage, luciIsProd, auth.CurrentIdentity(c.Context))
+	http.Redirect(c.Writer, c.Request, c.Request.URL.String(), http.StatusFound)
+	return nil
 }
 
 // migrationStatusLabelClassSuffix returns a Bootstrap label class suffix for a
@@ -220,4 +220,8 @@ func migrationStatusLabelClassSuffix(s storage.MigrationStatus) string {
 	default:
 		return "default"
 	}
+}
+
+func enableLUCISProdCheckbox(builder *storage.Builder) bool {
+	return builder.SchedulingType != config.SchedulingType_TRYJOBS
 }

@@ -110,11 +110,12 @@ func TestBuilder(t *testing.T) {
 			model, err := handle(c)
 			So(err, ShouldBeNil)
 			So(model, ShouldResemble, &builderViewModel{
-				Builder:           builder,
-				StatusKnown:       true,
-				StatusClassSuffix: "danger",
-				StatusAge:         time.Hour,
-				Details:           "almost",
+				Builder:                builder,
+				StatusKnown:            true,
+				StatusClassSuffix:      "danger",
+				StatusAge:              time.Hour,
+				Details:                "almost",
+				ShowLUCIIsProdCheckbox: true,
 			})
 		})
 		Convey("set experiment percentage", func() {
