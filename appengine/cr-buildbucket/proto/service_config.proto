@@ -16,8 +16,7 @@ message SettingsCfg {
 
 // Swarmbucket settings.
 message SwarmingSettings {
-  // Default value of swarming.hostname field in cr-buildbucket.cfg files.
-  optional string default_hostname = 1;
+  reserved 1; // default_hostname
   // Swarmbucket build URLs will point to this Milo instance.
   optional string milo_hostname = 2;
   // Default value of swarming.task_template_canary_percentage field in

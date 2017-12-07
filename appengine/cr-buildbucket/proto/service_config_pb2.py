@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='service_config.proto',
   package='buildbucket',
   syntax='proto2',
-  serialized_pb=_b('\n\x14service_config.proto\x12\x0b\x62uildbucket\">\n\x0bSettingsCfg\x12/\n\x08swarming\x18\x01 \x01(\x0b\x32\x1d.buildbucket.SwarmingSettings\"t\n\x10SwarmingSettings\x12\x18\n\x10\x64\x65\x66\x61ult_hostname\x18\x01 \x01(\t\x12\x15\n\rmilo_hostname\x18\x02 \x01(\t\x12/\n\'default_task_template_canary_percentage\x18\x03 \x01(\x05')
+  serialized_pb=_b('\n\x14service_config.proto\x12\x0b\x62uildbucket\">\n\x0bSettingsCfg\x12/\n\x08swarming\x18\x01 \x01(\x0b\x32\x1d.buildbucket.SwarmingSettings\"`\n\x10SwarmingSettings\x12\x15\n\rmilo_hostname\x18\x02 \x01(\t\x12/\n\'default_task_template_canary_percentage\x18\x03 \x01(\x05J\x04\x08\x01\x10\x02')
 )
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
@@ -65,21 +65,14 @@ _SWARMINGSETTINGS = _descriptor.Descriptor(
   containing_type=None,
   fields=[
     _descriptor.FieldDescriptor(
-      name='default_hostname', full_name='buildbucket.SwarmingSettings.default_hostname', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
-      message_type=None, enum_type=None, containing_type=None,
-      is_extension=False, extension_scope=None,
-      options=None),
-    _descriptor.FieldDescriptor(
-      name='milo_hostname', full_name='buildbucket.SwarmingSettings.milo_hostname', index=1,
+      name='milo_hostname', full_name='buildbucket.SwarmingSettings.milo_hostname', index=0,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=_b("").decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None),
     _descriptor.FieldDescriptor(
-      name='default_task_template_canary_percentage', full_name='buildbucket.SwarmingSettings.default_task_template_canary_percentage', index=2,
+      name='default_task_template_canary_percentage', full_name='buildbucket.SwarmingSettings.default_task_template_canary_percentage', index=1,
       number=3, type=5, cpp_type=1, label=1,
       has_default_value=False, default_value=0,
       message_type=None, enum_type=None, containing_type=None,
@@ -98,7 +91,7 @@ _SWARMINGSETTINGS = _descriptor.Descriptor(
   oneofs=[
   ],
   serialized_start=101,
-  serialized_end=217,
+  serialized_end=197,
 )
 
 _SETTINGSCFG.fields_by_name['swarming'].message_type = _SWARMINGSETTINGS

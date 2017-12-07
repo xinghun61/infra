@@ -65,7 +65,6 @@ class SwarmingTest(BaseTest):
         side_effect=json_request_async)
 
     self.settings = service_config_pb2.SwarmingSettings(
-        default_hostname='swarming.example.com',
         milo_hostname='milo.example.com',
     )
     self.patch(

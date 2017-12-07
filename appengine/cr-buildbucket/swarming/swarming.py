@@ -350,7 +350,7 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
 
 @ndb.tasklet
 def _create_task_def_async(
-    swarming_cfg, builder_cfg, build, build_number, settings, fake_build):
+    swarming_cfg, builder_cfg, build, build_number, fake_build):
   """Creates a swarming task definition for the |build|.
 
   Supports build properties that are supported by Buildbot-Buildbucket
@@ -391,9 +391,9 @@ def _create_task_def_async(
   if not task_template:
     raise TemplateNotFound('task template is not configured')
 
-  build.swarming_hostname = swarming_cfg.hostname or settings.default_hostname
+  build.swarming_hostname = swarming_cfg.hostname
   if not build.swarming_hostname:  # pragma: no cover
-    raise Error('default swarming hostname is not configured')
+    raise Error('swarming hostname is not configured')
   task_template_params = {
     'bucket': build.bucket,
     'builder_hash': (
@@ -631,8 +631,7 @@ def _prepare_task_def_async(
       build.experimental = not is_prod
 
   task_def = yield _create_task_def_async(
-      bucket_cfg.swarming, builder_cfg, build, build_number, settings,
-      fake_build)
+      bucket_cfg.swarming, builder_cfg, build, build_number, fake_build)
   raise ndb.Return(task_def)
 
 
