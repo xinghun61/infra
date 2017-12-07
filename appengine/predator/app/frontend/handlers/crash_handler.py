@@ -6,6 +6,7 @@ import base64
 import json
 import logging
 
+from analysis.exceptions import PredatorError
 from common import constants
 from common import crash_pipeline
 from common.model.crash_config import CrashConfig
@@ -74,7 +75,7 @@ class CrashHandler(BaseHandler):
                    received_message['subscription'])
       logging.info('Crash data is %s', json.dumps(json_crash_data))
       StartAnalysis(json_crash_data)
-    except (KeyError, ValueError):  # pragma: no cover.
+    except (KeyError, ValueError, PredatorError):  # pragma: no cover.
       # TODO: save exception in datastore and create a page to show them.
       logging.exception('Failed to process crash message')
       logging.info(self.request.body)
