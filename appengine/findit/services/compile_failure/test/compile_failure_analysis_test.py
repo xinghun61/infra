@@ -35,10 +35,10 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             },
         },
         'builds': {
-            99: {
+            '99': {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            98: {
+            '98': {
                 'blame_list': ['r98_1'],
             },
         }
@@ -173,10 +173,10 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             }
         },
         'builds': {
-            99: {
+            '99': {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            98: {
+            '98': {
                 'blame_list': ['r98_1'],
             }
         }
@@ -338,10 +338,10 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             }
         },
         'builds': {
-            99: {
+            '99': {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            98: {
+            '98': {
                 'blame_list': ['r98_1'],
             }
         }
@@ -440,6 +440,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
 
+  @mock.patch.object(ci_failure, 'CheckForFirstKnownFailure')
   @mock.patch.object(
       extract_compile_signal,
       'ExtractSignalsForCompileFailure',
@@ -453,8 +454,7 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(build_failure_analysis,
                      'SaveAnalysisAfterHeuristicAnalysisCompletes')
   @mock.patch.object(build_failure_analysis, 'SaveSuspectedCLs')
-  @mock.patch.object(ci_failure, 'CheckForFirstKnownFailure')
-  def testHeuristicAnalysisForCompile(self, mock_failure_info, *_):
+  def testHeuristicAnalysisForCompile(self, *_):
     failure_info = {
         'master_name': 'm',
         'builder_name': 'b',
@@ -469,15 +469,14 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             }
         },
         'builds': {
-            99: {
+            '99': {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            98: {
+            '98': {
                 'blame_list': ['r98_1'],
             }
         }
     }
-    mock_failure_info.return_value = failure_info
 
     WfAnalysis.Create('m', 'b', 99).put()
     result = compile_failure_analysis.HeuristicAnalysisForCompile(

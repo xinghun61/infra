@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 """Logic related to examine builds and determine regression range."""
 
-import copy
 import logging
 
 from common.findit_http_client import FinditHttpClient
@@ -59,14 +58,6 @@ def _SaveBlamelistAndChromiumRevisionIntoDict(build_info, builds):
   }
 
 
-def _UpdateStringTypedBuildKeyToInt(builds):
-  """Updates the string keys to int keys."""
-  updated_builds = {}
-  for build_number, build in builds.iteritems():
-    updated_builds[int(build_number)] = build
-  return updated_builds
-
-
 def _CreateADictOfFailedSteps(build_info):
   """ Returns a dict with build number for failed steps.
 
@@ -93,7 +84,7 @@ def _CreateADictOfFailedSteps(build_info):
 
 
 def CheckForFirstKnownFailure(master_name, builder_name, build_number,
-                              failure_info):
+                              failed_steps, builds):
   """Checks for first known failures of the given failed steps.
 
   Args:
@@ -105,9 +96,6 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
         each failed step.
     builds (dict): a dict to save blame list and chromium revision.
   """
-  failed_steps = failure_info['failed_steps']
-  failure_info['builds'] = _UpdateStringTypedBuildKeyToInt(
-      failure_info['builds'])
   # Look back for first known failures.
   earliest_build_number = max(0, build_number - 1 - _MAX_BUILDS_TO_CHECK)
   for n in range(build_number - 1, earliest_build_number - 1, -1):
@@ -115,10 +103,9 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
     build_info = _ExtractBuildInfo(master_name, builder_name, n)
     if not build_info:
       # Failed to extract the build information, bail out.
-      return failure_info
+      return
 
-    _SaveBlamelistAndChromiumRevisionIntoDict(build_info,
-                                              failure_info['builds'])
+    _SaveBlamelistAndChromiumRevisionIntoDict(build_info, builds)
 
     if build_info.result == buildbot.SUCCESS:
       for step_name in failed_steps:
@@ -126,7 +113,7 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
           failed_steps[step_name]['last_pass'] = build_info.build_number
 
       # All steps passed, so stop looking back.
-      return failure_info
+      return
     else:
       # If a step is not run due to some bot exception, we are not sure
       # whether the step could pass or not. So we only check failed/passed
@@ -144,9 +131,7 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
 
       if all('last_pass' in step_info for step_info in failed_steps.values()):
         # All failed steps passed in this build cycle.
-        return failure_info
-
-  return failure_info
+        return
 
 
 def GetBuildFailureInfo(master_name, builder_name, build_number):
