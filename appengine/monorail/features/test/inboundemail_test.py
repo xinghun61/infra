@@ -264,6 +264,20 @@ class InboundEmailTest(unittest.TestCase):
         self.cnxn, self.issue, 111L,
         'Filed by user@example.com on behalf of user@google.com\n\nissue body'
         ).AndReturn(None)
+
+    # Mock command parsing.
+    mock_uia = commitlogcommands.UpdateIssueAction(self.issue.local_id)
+    self.mox.StubOutWithMock(commitlogcommands, 'UpdateIssueAction')
+    commitlogcommands.UpdateIssueAction(self.issue.local_id).AndReturn(mock_uia)
+
+    self.mox.StubOutWithMock(mock_uia, 'Parse')
+    mock_uia.Parse(
+        self.cnxn, self.project.project_name, 111L, ['issue body'],
+        self.services, strip_quoted_lines=True)
+
+    self.mox.StubOutWithMock(mock_uia, 'Run')
+    mock_uia.Run(self.cnxn, self.services, allow_edit=True)
+
     self.mox.ReplayAll()
 
     ret = self.inbound.ProcessAlert(

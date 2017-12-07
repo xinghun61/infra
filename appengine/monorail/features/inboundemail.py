@@ -228,11 +228,13 @@ class InboundEmail(webapp2.RequestHandler):
     labels = ['Infra-Troopers-Alerts', 'Restrict-View-Google', 'Pri-2']
     field_values = []
     component_ids = []
-    body = 'Filed by %s on behalf of %s\n\n%s' % (author_addr, from_addr, body)
+    formatted_body = 'Filed by %s on behalf of %s\n\n%s' % (
+        author_addr, from_addr, body)
 
     mr = monorailrequest.MonorailRequestBase(
         services=self.services, user_id=author_id, cnxn=cnxn)
     with work_env.WorkEnv(mr, self.services) as we:
+      updated_issue = None
       owner_id = None
       if owner_email:
         owner_id = self.services.user.LookupUserID(cnxn, owner_email,
@@ -262,9 +264,10 @@ class InboundEmail(webapp2.RequestHandler):
               latest_issue = issue
 
           if latest_issue:
+            updated_issue = latest_issue
             # Find all comments on the issue by the current user.
             comments = self.services.issue.GetComments(cnxn,
-                issue_id=[latest_issue.issue_id], commenter_id=[author_id])
+                issue_id=[updated_issue.issue_id], commenter_id=[author_id])
 
             # Timestamp for 24 hours ago in seconds from epoch.
             yesterday = int(time.time()) - 24 * 60 * 60
@@ -278,12 +281,19 @@ class InboundEmail(webapp2.RequestHandler):
 
             # Add a reply to the existing issue for this incident.
             self.services.issue.CreateIssueComment(
-                cnxn, latest_issue, author_id, body)
-            return None
+                cnxn, updated_issue, author_id, formatted_body)
 
-      we.CreateIssue(
-          project.project_id, subject, status, owner_id,
-          cc_ids, labels, field_values, component_ids, body)
+      if not updated_issue:
+        updated_issue = we.CreateIssue(
+            project.project_id, subject, status, owner_id,
+            cc_ids, labels, field_values, component_ids, formatted_body)
+
+      # Update issue using commads.
+      lines = body.strip().split('\n')
+      uia = commitlogcommands.UpdateIssueAction(updated_issue.local_id)
+      uia.Parse(cnxn, project.project_name, author_id, lines, self.services,
+                strip_quoted_lines=True)
+      uia.Run(cnxn, self.services, allow_edit=True)
 
 
   def ProcessIssueReply(
