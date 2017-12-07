@@ -33,6 +33,7 @@ const (
 	settingsKey           = "tree"
 	productionAnalyticsID = "UA-55762617-1"
 	stagingAnalyticsID    = "UA-55762617-22"
+	prodAppID             = "sheriff-o-matic"
 )
 
 var (
@@ -137,11 +138,15 @@ func base(includeCookie bool) router.MiddlewareChain {
 	if includeCookie {
 		a.Methods = append(a.Methods, server.CookieAuth)
 	}
-	return standard.Base().Extend(a.GetMiddleware()).Extend(prodServiceClients)
+	return standard.Base().Extend(a.GetMiddleware()).Extend(serviceClients)
 }
 
-func prodServiceClients(ctx *router.Context, next router.Handler) {
-	ctx.Context = client.WithProdClients(ctx.Context)
+func serviceClients(ctx *router.Context, next router.Handler) {
+	if info.AppID(ctx.Context) == prodAppID {
+		ctx.Context = client.WithProdClients(ctx.Context)
+	} else {
+		ctx.Context = client.WithStagingClients(ctx.Context)
+	}
 	next(ctx)
 }
 

@@ -516,7 +516,7 @@ func WithProdClients(ctx context.Context) context.Context {
 	}
 
 	miloPRPCClient := &prpc.Client{
-		C:       client, //&http.Client{Transport: urlfetch.Get(ctx)},
+		C:       client,
 		Host:    "luci-milo.appspot.com",
 		Options: prpc.DefaultOptions(),
 	}
@@ -526,6 +526,39 @@ func WithProdClients(ctx context.Context) context.Context {
 	ctx = WithMiloBuildInfo(ctx, miloBuildInfo)
 
 	ctx = WithMonorail(ctx, "https://monorail-prod.appspot.com")
+	ctx = WithTestResults(ctx, "https://test-results.appspot.com")
+
+	reader, err := newReader(ctx, &http.Client{Transport: urlfetch.Get(ctx)})
+	if err != nil {
+		panic(fmt.Sprintf("creating newReader: %v", err))
+	}
+	memcachingReader := NewMemcacheReader(reader)
+	ctx = WithReader(ctx, memcachingReader)
+
+	return ctx
+}
+
+// WithStagingClients returns a context for connecting to staging services.
+func WithStagingClients(ctx context.Context) context.Context {
+	ctx = WithCrRev(ctx, "https://cr-rev.appspot.com")
+	ctx = WithFindit(ctx, "https://findit-for-me.appspot.com")
+
+	client, err := getAsSelfOAuthClient(ctx)
+	if err != nil {
+		panic("No OAuth client in context")
+	}
+
+	miloPRPCClient := &prpc.Client{
+		C:       client,
+		Host:    "luci-milo.appspot.com",
+		Options: prpc.DefaultOptions(),
+	}
+	miloBuildbot := milo.NewBuildbotPRPCClient(miloPRPCClient)
+	miloBuildInfo := milo.NewBuildInfoPRPCClient(miloPRPCClient)
+	ctx = WithMiloBuildbot(ctx, miloBuildbot)
+	ctx = WithMiloBuildInfo(ctx, miloBuildInfo)
+
+	ctx = WithMonorail(ctx, "https://monorail-staging.appspot.com")
 	ctx = WithTestResults(ctx, "https://test-results.appspot.com")
 
 	reader, err := newReader(ctx, &http.Client{Transport: urlfetch.Get(ctx)})
