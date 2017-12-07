@@ -31,7 +31,7 @@ swarming {
   builders {
     name: "release"
     dimensions: "os:Linux"
-    dimensions: "pool:default"
+    dimensions: "pool:luci.chromium.try"
     recipe {
       repository: "https://example.com"
       name: "x"
@@ -221,9 +221,6 @@ class ConfigTest(testing.AppengineTestCase):
         name: "luci.chromium.try"
         acl_sets: "public"
         swarming {
-          builder_defaults {
-            dimensions: "pool:default"
-          }
           builders {
             name: "release"
             mixins: "recipe-x"

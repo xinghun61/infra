@@ -127,7 +127,6 @@ class ProjectCfgTest(testing.AppengineTestCase):
         [
           'hostname: unspecified',
           'builder #1: name unspecified',
-          'builder #1: has no "pool" dimension',
           'builder #1: recipe: name unspecified',
           'builder #1: recipe: repository unspecified',
         ])

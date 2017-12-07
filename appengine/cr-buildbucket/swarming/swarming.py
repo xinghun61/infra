@@ -217,6 +217,8 @@ def validate_build_parameters(builder_name, params):
         bad('swarming.override_builder_cfg cannot override builder name')
       if override_builder_cfg.mixins:
         bad('swarming.override_builder_cfg cannot use mixins')
+      if 'pool:' in override_builder_cfg.dimensions:
+        bad('swarming.override_builder_cfg cannot remove pool dimension')
       ctx = validation.Context.raise_on_error(
           exc_type=errors.InvalidInputError,
           prefix='swarming.override_builder_cfg parameter: ')
@@ -250,7 +252,7 @@ def _prepare_builder_config(builder_cfg, swarming_param):
     protoutil.merge_dict(override_builder_cfg_data, result)
     ctx = validation.Context.raise_on_error(
         exc_type=errors.InvalidInputError,
-        prefix='swarming.override_buider_cfg parameter: ')
+        prefix='swarming.override_builder_cfg parameter: ')
     swarmingcfg_module.merge_builder(result, override_builder_cfg)
     swarmingcfg_module.validate_builder_cfg(result, [], True, ctx)
   return result

@@ -222,8 +222,6 @@ def validate_builder_cfg(builder, mixin_names, final, ctx):
       validate_tag(t, ctx)
 
   validate_dimensions('dimension', builder.dimensions, ctx)
-  if final and not has_pool_dimension(builder.dimensions):
-    ctx.error('has no "pool" dimension')
 
   cache_paths = set()
   cache_names = set()
@@ -366,10 +364,6 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
       merged = copy.deepcopy(b)
       flatten_builder(merged, swarming.builder_defaults, mixins)
       validate_builder_cfg(merged, mixins, True, ctx)
-
-
-def has_pool_dimension(dimensions):
-  return any(d.startswith('pool:') for d in dimensions)
 
 
 def flatten_builder(builder, defaults, mixins):
