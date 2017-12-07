@@ -216,8 +216,10 @@ class ConfigTest(testing.AppengineTestCase):
         users.GetCurrentUser(), True, message='message', **config_data)
 
     response = self.test_app.get(
-        '/config', params={'version': 1,
-                           'format': 'json'})
+        '/config', params={
+            'version': 1,
+            'format': 'json'
+        })
     self.assertEquals(response.status_int, 200)
 
     expected_response = {
@@ -257,16 +259,20 @@ class ConfigTest(testing.AppengineTestCase):
                    re.MULTILINE | re.DOTALL),
         self.test_app.get,
         '/config',
-        params={'version': 0,
-                'format': 'json'})
+        params={
+            'version': 0,
+            'format': 'json'
+        })
     self.assertRaisesRegexp(
         webtest.app.AppError,
         re.compile('The requested version is invalid or not found.',
                    re.MULTILINE | re.DOTALL),
         self.test_app.get,
         '/config',
-        params={'version': 2,
-                'format': 'json'})
+        params={
+            'version': 2,
+            'format': 'json'
+        })
 
   def testIsListOfType(self):
     self.assertFalse(config._IsListOfType({}, basestring))
@@ -276,46 +282,46 @@ class ConfigTest(testing.AppengineTestCase):
     self.assertTrue(config._IsListOfType(['a', 'b'], basestring))
 
   def testValidateSupportedMastersDict(self):
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping(
             _MOCK_STEPS_FOR_MASTERS_RULES_OLD_FORMAT))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping(None))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping([]))
-    self.assertFalse(config._ValidateMastersAndStepsRulesMapping({}))
-    self.assertFalse(
+    self.assertTrue(config._ValidateMastersAndStepsRulesMapping(None))
+    self.assertTrue(config._ValidateMastersAndStepsRulesMapping([]))
+    self.assertTrue(config._ValidateMastersAndStepsRulesMapping({}))
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': [],  # Should be a dict.
-        }))
-    self.assertFalse(
-        config._ValidateMastersAndStepsRulesMapping({
-            'supported_masters': {},
-            # 'global' is missing.
-        }))
-    self.assertFalse(
-        config._ValidateMastersAndStepsRulesMapping({
-            'supported_masters': {},
-            'global': []  # Should be a dict.
         }))
     self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {},
-            'global': {}
+            # 'global' is missing.
+        }))
+    self.assertTrue(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {},
+            'global': []  # Should be a dict.
         }))
     self.assertFalse(
+        config._ValidateMastersAndStepsRulesMapping({
+            'supported_masters': {},
+            'global': {}
+        }))
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 3: {},  # Key should be a string.
             },
             'global': {}
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master': [],  # Value should be a dict.
             },
             'global': {}
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master': {
@@ -324,14 +330,14 @@ class ConfigTest(testing.AppengineTestCase):
             },
             'global': {}
         }))
-    self.assertTrue(
+    self.assertFalse(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master': {},
             },
             'global': {}
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master': {
@@ -340,7 +346,7 @@ class ConfigTest(testing.AppengineTestCase):
             },
             'global': {}
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master': {
@@ -349,7 +355,7 @@ class ConfigTest(testing.AppengineTestCase):
             },
             'global': {}
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master': {
@@ -358,7 +364,7 @@ class ConfigTest(testing.AppengineTestCase):
             },
             'global': {}
         }))
-    self.assertTrue(
+    self.assertFalse(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master': {
@@ -367,7 +373,7 @@ class ConfigTest(testing.AppengineTestCase):
             },
             'global': {}
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master': {
@@ -377,7 +383,7 @@ class ConfigTest(testing.AppengineTestCase):
             },
             'global': {}
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master': {
@@ -387,7 +393,7 @@ class ConfigTest(testing.AppengineTestCase):
             },
             'global': {}
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master': {
@@ -397,7 +403,7 @@ class ConfigTest(testing.AppengineTestCase):
             },
             'global': {}
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master': {
@@ -407,7 +413,7 @@ class ConfigTest(testing.AppengineTestCase):
             },
             'global': {}
         }))
-    self.assertTrue(
+    self.assertFalse(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master': {
@@ -417,7 +423,7 @@ class ConfigTest(testing.AppengineTestCase):
             },
             'global': {}
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master1': {
@@ -429,7 +435,7 @@ class ConfigTest(testing.AppengineTestCase):
                 'unsupported_steps': 1  # Should be a list.
             }
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master1': {
@@ -441,7 +447,7 @@ class ConfigTest(testing.AppengineTestCase):
                 'unsupported_steps': []  # Should not be empty.
             }
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master1': {
@@ -453,7 +459,7 @@ class ConfigTest(testing.AppengineTestCase):
                 'unsupported_steps': [1]  # Should be a list of strings.
             }
         }))
-    self.assertTrue(
+    self.assertFalse(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master1': {
@@ -465,7 +471,7 @@ class ConfigTest(testing.AppengineTestCase):
                 'unsupported_steps': ['step3']
             }
         }))
-    self.assertTrue(
+    self.assertFalse(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master1': {
@@ -478,7 +484,7 @@ class ConfigTest(testing.AppengineTestCase):
                 'unsupported_steps': ['step3']
             }
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateMastersAndStepsRulesMapping({
             'supported_masters': {
                 'master1': {
@@ -504,7 +510,7 @@ class ConfigTest(testing.AppengineTestCase):
             'unsupported_steps': ['step3', 'step3']
         }
     }
-    self.assertTrue(
+    self.assertFalse(
         config._ValidateMastersAndStepsRulesMapping(
             valid_rules_with_duplicates))
     self.assertEqual({
@@ -520,7 +526,7 @@ class ConfigTest(testing.AppengineTestCase):
     }, valid_rules_with_duplicates)
 
   def testValidateTrybotMapping(self):
-    self.assertTrue(
+    self.assertFalse(
         config._ValidateTrybotMapping({
             'master1': {
                 'builder1': {
@@ -529,7 +535,7 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
-    self.assertTrue(
+    self.assertFalse(
         config._ValidateTrybotMapping({
             'master1': {
                 'builder1': {
@@ -539,7 +545,7 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
-    self.assertTrue(
+    self.assertFalse(
         config._ValidateTrybotMapping({
             'master1': {
                 'builder1': {
@@ -549,7 +555,7 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateTrybotMapping({
             'master1': {
                 'builder1': {
@@ -559,7 +565,7 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
-    self.assertTrue(
+    self.assertFalse(
         config._ValidateTrybotMapping({
             'master1': {
                 'builder1': {
@@ -569,7 +575,7 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
-    self.assertTrue(
+    self.assertFalse(
         config._ValidateTrybotMapping({
             'master1': {
                 'builder1': {
@@ -578,7 +584,7 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
-    self.assertTrue(
+    self.assertFalse(
         config._ValidateTrybotMapping({
             'master1': {
                 'builder1': {
@@ -586,7 +592,15 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
-    self.assertFalse(
+    self.assertTrue(
+        config._ValidateTrybotMapping({
+            'master1': {
+                'builder1': {
+                    'use_swarmbucket': 'bad_value'
+                }
+            }
+        }))
+    self.assertTrue(
         config._ValidateTrybotMapping({
             'master1': {
                 'builder1': {
@@ -595,7 +609,7 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateTrybotMapping({
             'master1': {
                 'builder1': {
@@ -604,7 +618,7 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateTrybotMapping({
             'master1': {
                 'builder1': {
@@ -614,7 +628,7 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateTrybotMapping({
             'master1': {
                 'builder1': {
@@ -624,7 +638,7 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateTrybotMapping({
             'master1': {
                 'builder1': {
@@ -634,7 +648,7 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
-    self.assertFalse(
+    self.assertTrue(
         config._ValidateTrybotMapping({
             'master1': {
                 'builder1': {
@@ -644,376 +658,10 @@ class ConfigTest(testing.AppengineTestCase):
                 }
             }
         }))
-    self.assertFalse(config._ValidateTrybotMapping(['a']))
-    self.assertFalse(config._ValidateTrybotMapping({'a': ['b']}))
-    self.assertFalse(config._ValidateTrybotMapping({'a': {'b': ['1']}}))
-    self.assertFalse(config._ValidateTrybotMapping({'a': {'b': {}}}))
-
-  def testValidateTryJobSettings(self):
-    self.assertFalse(config._ValidateTryJobSettings([]))
-    self.assertFalse(config._ValidateTryJobSettings({}))
-    self.assertFalse(
-        config._ValidateTryJobSettings({
-            'server_query_interval_seconds': '1',  # Should be an int.
-            'job_timeout_hours': 1,
-            'allowed_response_error_times': 1,
-            'max_seconds_look_back_for_group': 1,
-            'pubsub_topic': 'projects/findit/topics/jobs',
-            'pubsub_token': 'DummyT0k3n$trin9z0rz',
-        }))
-    self.assertFalse(
-        config._ValidateTryJobSettings({
-            'server_query_interval_seconds': 1,
-            'job_timeout_hours': '1',  # Should be an int.
-            'allowed_response_error_times': 1,
-            'max_seconds_look_back_for_group': 1,
-            'pubsub_topic': 'projects/findit/topics/jobs',
-            'pubsub_token': 'DummyT0k3n$trin9z0rz',
-        }))
-    self.assertFalse(
-        config._ValidateTryJobSettings({
-            'server_query_interval_seconds': 1,
-            'job_timeout_hours': 1,
-            'allowed_response_error_times': '1',  # Should be an int.
-            'max_seconds_look_back_for_group': 1,
-            'pubsub_topic': 'projects/findit/topics/jobs',
-            'pubsub_token': 'DummyT0k3n$trin9z0rz',
-        }))
-    self.assertFalse(
-        config._ValidateTryJobSettings({
-            'server_query_interval_seconds': 1,
-            'job_timeout_hours': 1,
-            'allowed_response_error_times': 1,
-            'max_seconds_look_back_for_group': 'a',  # Should be an int.
-            'pubsub_topic': 'projects/findit/topics/jobs',
-            'pubsub_token': 'DummyT0k3n$trin9z0rz',
-        }))
-    self.assertFalse(
-        config._ValidateTryJobSettings({
-            'server_query_interval_seconds': 1,
-            'job_timeout_hours': 1,
-            'allowed_response_error_times': 1,
-            'max_seconds_look_back_for_group': 1,
-            'pubsub_topic': 1,  # Should be str.
-            'pubsub_token': 'DummyT0k3n$trin9z0rz',
-        }))
-    self.assertFalse(
-        config._ValidateTryJobSettings({
-            'server_query_interval_seconds': 1,
-            'job_timeout_hours': 1,
-            'allowed_response_error_times': 1,
-            'max_seconds_look_back_for_group': 1,
-            'pubsub_topic': 'projects/findit/topics/jobs',
-            'pubsub_token': 1,  # Should be str.
-        }))
-    self.assertTrue(config._ValidateTryJobSettings(_MOCK_TRY_JOB_SETTINGS))
-
-  def testValidateSwarmingSettings(self):
-    self.assertFalse(config._ValidateSwarmingSettings([]))
-    self.assertFalse(config._ValidateSwarmingSettings({}))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': ['chromium-swarm.appspot.com'
-                           ],  # Should be a string.
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 10,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': '150',  # Should be an int.
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 10,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': {},  # Should be an int.
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 10,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': [],  # Should be an int.
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 10,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': None,  # should be an int.
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 10,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 1,  # Should be a string.
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 10,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 3.2,  # Should be a string.
-            'iterations_to_rerun': 10,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 1.0,  # Should be an int.
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 1,
-            'get_swarming_task_id_timeout_seconds': '300',  # Should be an int.
-            'get_swarming_task_id_wait_seconds': 10
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 1,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': []  # Should be an int.
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 1,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_secondds': 10,
-            'server_retry_timeout_hours': {}  # Should be an int.
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 1,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_secondds': 10,
-            'server_retry_timeout_hours': 1,
-            'maximum_server_contact_retry_interval_seconds':
-                ''  # Should be an int.
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 1,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_secondds': 10,
-            'server_retry_timeout_hours': 1,
-            'maximum_server_contact_retry_interval_seconds': 2,
-            'should_retry_server': 3  # Should be a bool.
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 10,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10,
-            'server_retry_timeout_hours': 1,
-            'maximum_server_contact_retry_interval_seconds': 1,
-            'should_retry_server': False,
-            'minimum_number_of_available_bots': '5',  # Should be an int.
-            'minimum_percentage_of_available_bots': 0.1
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 10,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10,
-            'server_retry_timeout_hours': 1,
-            'maximum_server_contact_retry_interval_seconds': 1,
-            'should_retry_server': False,
-            'minimum_number_of_available_bots': 5,
-            'minimum_percentage_of_available_bots': 10  # Should be a float.
-        }))
-    self.assertFalse(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 10,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10,
-            'server_retry_timeout_hours': 1,
-            'maximum_server_contact_retry_interval_seconds': 1,
-            'should_retry_server': False,
-            'minimum_number_of_available_bots': 5,
-            'minimum_percentage_of_available_bots': 0.1,
-            'per_iteration_timeout_seconds': 'a'  # Should be an int.
-        }))
-    self.assertTrue(
-        config._ValidateSwarmingSettings({
-            'server_host': 'chromium-swarm.appspot.com',
-            'default_request_priority': 150,
-            'request_expiration_hours': 20,
-            'server_query_interval_seconds': 60,
-            'task_timeout_hours': 23,
-            'isolated_server': 'https://isolateserver.appspot.com',
-            'isolated_storage_url': 'isolateserver.storage.googleapis.com',
-            'iterations_to_rerun': 10,
-            'get_swarming_task_id_timeout_seconds': 300,
-            'get_swarming_task_id_wait_seconds': 10,
-            'server_retry_timeout_hours': 1,
-            'maximum_server_contact_retry_interval_seconds': 1,
-            'should_retry_server': False,
-            'minimum_number_of_available_bots': 5,
-            'minimum_percentage_of_available_bots': 0.1,
-            'per_iteration_timeout_seconds': 60,
-        }))
-
-  def testValidateDownloadBuildDataSettings(self):
-    self.assertFalse(config._ValidateDownloadBuildDataSettings({}))
-    self.assertFalse(
-        config._ValidateDownloadBuildDataSettings({
-            'download_interval_seconds': {},  # Should be an int.
-            'memcache_master_download_expiration_seconds': 10,
-            'use_ninja_output_log': False
-        }))
-    self.assertFalse(
-        config._ValidateDownloadBuildDataSettings({
-            'download_interval_seconds': 10,
-            'memcache_master_download_expiration_seconds': [
-            ],  # Should be an int.
-            'use_ninja_output_log': False
-        }))
-    self.assertFalse(
-        config._ValidateDownloadBuildDataSettings({
-            'download_interval_seconds': 10,
-            'memcache_master_download_expiration_seconds': 3600,
-            'use_ninja_output_log': 'blabla'  # Should be a bool.
-        }))
-    self.assertTrue(
-        config._ValidateDownloadBuildDataSettings({
-            'download_interval_seconds': 10,
-            'memcache_master_download_expiration_seconds': 3600,
-            'use_ninja_output_log': False
-        }))
-
-  def testConfigurationDictIsValid(self):
-    self.assertTrue(
-        config._ConfigurationDictIsValid({
-            'steps_for_masters_rules': {
-                'supported_masters': {
-                    'master1': {
-                        'unsupported_steps': ['step1', 'step2'],
-                    },
-                    'master2': {
-                        'supported_steps': ['step3'],
-                        'check_global': False
-                    }
-                },
-                'global': {
-                    'unsupported_steps': ['step5'],
-                }
-            }
-        }))
-    self.assertFalse(config._ConfigurationDictIsValid([]))
-    self.assertFalse(
-        config._ConfigurationDictIsValid({
-            'this_is_not_a_valid_property': []
-        }))
+    self.assertTrue(config._ValidateTrybotMapping(['a']))
+    self.assertTrue(config._ValidateTrybotMapping({'a': ['b']}))
+    self.assertTrue(config._ValidateTrybotMapping({'a': {'b': ['1']}}))
+    self.assertTrue(config._ValidateTrybotMapping({'a': {'b': {}}}))
 
   def testFormatTimestamp(self):
     self.assertIsNone(config._FormatTimestamp(None))
@@ -1100,604 +748,90 @@ class ConfigTest(testing.AppengineTestCase):
 
     self.assertEquals(expected_response, response.json_body)
 
-  def testValidateActionSettings(self):
-    self.assertFalse(config._ValidateActionSettings({}))
-    self.assertFalse(
-        config._ValidateActionSettings({
-            'cr_notification_build_threshold': 2,
-            'cr_notification_latency_limit_minutes': 1000,
-            'auto_create_revert_compile': 'True',  # Should be boolean.
-        }))
-    self.assertFalse(
-        config._ValidateActionSettings({
-            'cr_notification_build_threshold': 2,
-            'cr_notification_latency_limit_minutes': 1000,
-            'cr_notification_should_notify_flake_culprit': [
-            ],  # Should be boolean.
-            'auto_create_revert_compile': True,
-        }))
-    self.assertFalse(
-        config._ValidateActionSettings({
-            'cr_notification_build_threshold': 2,
-            'cr_notification_latency_limit_minutes': 1000,
-            'cr_notification_should_notify_flake_culprit': True,
-            'auto_create_revert_compile': True,
-            'auto_commit_revert_compile': 'False',  # Should be boolean.
-            'culprit_commit_limit_hours': 24,
-            'auto_commit_daily_threshold': 4,
-            'auto_revert_daily_threshold': 10,
-        }))
-    self.assertFalse(
-        config._ValidateActionSettings({
-            'cr_notification_build_threshold': 2,
-            'cr_notification_latency_limit_minutes': 1000,
-            'cr_notification_should_notify_flake_culprit': True,
-            'auto_create_revert_compile': True,
-            'auto_commit_revert_compile': False,
-            'culprit_commit_limit_hours': '24',  # Should be int.
-            'auto_commit_daily_threshold': 4,
-            'auto_revert_daily_threshold': 10,
-        }))
-    self.assertFalse(
-        config._ValidateActionSettings({
-            'cr_notification_build_threshold': 2,
-            'cr_notification_latency_limit_minutes': 1000,
-            'cr_notification_should_notify_flake_culprit': True,
-            'auto_create_revert_compile': True,
-            'auto_commit_revert_compile': False,
-            'culprit_commit_limit_hours': 24,
-            'auto_commit_daily_threshold': '4',  # Should be int.
-            'auto_revert_daily_threshold': 10,
-        }))
-    self.assertFalse(
-        config._ValidateActionSettings({
-            'cr_notification_build_threshold': 2,
-            'cr_notification_latency_limit_minutes': 1000,
-            'cr_notification_should_notify_flake_culprit': True,
-            'auto_create_revert_compile': True,
-            'auto_commit_revert_compile': False,
-            'culprit_commit_limit_hours': 24,
-            'auto_commit_daily_threshold': 4,
-            'auto_revert_daily_threshold': '10',  # Should be int.
-        }))
-    self.assertFalse(
-        config._ValidateActionSettings({
-            'cr_notification_build_threshold': 2,
-            'cr_notification_latency_limit_minutes': 1000,
-            'cr_notification_should_notify_flake_culprit': True,
-            'auto_create_revert_compile': True,
-            'auto_commit_revert_compile': False,
-            'culprit_commit_limit_hours': 24,
-            'auto_commit_daily_threshold': 4,
-            'auto_revert_daily_threshold': 10,
-            'rotations_url': 123,  # Should be str.
-        }))
-    self.assertTrue(
-        config._ValidateActionSettings({
-            'cr_notification_build_threshold':
-                2,
-            'cr_notification_latency_limit_minutes':
-                1000,
-            'cr_notification_should_notify_flake_culprit':
-                True,
-            'auto_create_revert_compile':
-                True,
-            'auto_commit_revert_compile':
-                False,
-            'culprit_commit_limit_hours':
-                24,
-            'auto_commit_daily_threshold':
-                4,
-            'auto_revert_daily_threshold':
-                10,
-            'rotations_url': ('https://build.chromium.org/deprecated/chromium'
-                              '/all_rotations.js')
-        }))
+  @mock.patch('gae_libs.token.ValidateAuthToken')
+  def testPostConfigurationSettingsFail(self, mocked_ValidateAuthToken):
+    self.mock_current_user(user_email='test@chromium.org', is_admin=True)
+    mocked_ValidateAuthToken.side_effect = [(True, False)]
 
-  def testValidateFlakeAnalyzerTryJobRerunSettings(self):
-    self.assertFalse(config._ValidateFlakeAnalyzerTryJobRerunSettings({}))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerTryJobRerunSettings({
-            'lower_flake_threshold': 'b',  # Should be a float.
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerTryJobRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 'a',  # Should be a float.
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerTryJobRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': [],  # Should be an int.
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerTryJobRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': {},  # Should be an int.
-            'iterations_to_rerun': 100,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerTryJobRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 3.2,  # Should be an int.
-        }))
-    self.assertTrue(
-        config._ValidateFlakeAnalyzerTryJobRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 4,
-        }))
+    self.assertRaisesRegexp(
+        webtest.app.AppError,
+        re.compile('not present in config', re.MULTILINE | re.DOTALL),
+        self.test_app.post,
+        '/config',
+        params={
+            'format': 'json',
+            'message': 'forgot how to config',
+        })
 
-  def testValidateFlakeAnalyzerSwarmingRerunSettings(self):
-    self.assertFalse(config._ValidateFlakeAnalyzerSwarmingRerunSettings({}))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 1,  # Should be a float.
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'use_nearby_neighbor': True,
-            'max_iterations_to_rerun': 800,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 'a',  # Should be a float.
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'use_nearby_neighbor': True,
-            'max_iterations_to_rerun': 800,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': [],  # Should be an int.
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'use_nearby_neighbor': True,
-            'max_iterations_to_rerun': 800,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': {},  # Should be an int.
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'use_nearby_neighbor': True,
-            'max_iterations_to_rerun': 800,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 3.2,  # Should be an int.
-            'max_build_numbers_to_look_back': 1000,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'use_nearby_neighbor': True,
-            'max_iterations_to_rerun': 800,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 4,
-            'max_build_numbers_to_look_back': 'a',  # Should be an int.
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'use_nearby_neighbor': True,
-            'max_iterations_to_rerun': 800,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 4,
-            'max_build_numbers_to_look_back': 1000,
-            'create_monorail_bug': 10,  # Should be a bool.
-            'new_flake_bugs_per_day': 2,
-            'use_nearby_neighbor': True,
-            'max_iterations_to_rerun': 800,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 4,
-            'max_build_numbers_to_look_back': 100,
-            'use_nearby_neighbor': [],  # Should be a bool.
-            'max_iterations_to_rerun': 800,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 4,
-            'max_build_numbers_to_look_back': 1000,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': {},  # Should be int.
-            'use_nearby_neighbor': True,
-            'max_iterations_to_rerun': 800,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'update_monorail_bug': 'True',  # Should be a bool.
-            'max_iterations_to_rerun': 800,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'update_monorail_bug': True,
-            'max_dive_in_a_row': 4.0,  # Should be an int.
-            'dive_rate_threshold': 0.4,
-            'max_iterations_to_rerun': 800,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'update_monorail_bug': True,
-            'dive_rate_threshold': 40,  # Should be a float.
-            'max_iterations_to_rerun': 800,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'update_monorail_bug': True,
-            'max_dive_in_a_row': 4,
-            'dive_rate_threshold': 0.4,
-            'max_iterations_to_rerun': 800.0,  # Should be an int.
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'update_monorail_bug': True,
-            'max_dive_in_a_row': 4,
-            'dive_rate_threshold': 0.4,
-            'max_iterations_to_rerun': 800,
-            'per_iteration_timeout_seconds': {},  # Should be an int.
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'update_monorail_bug': True,
-            'max_dive_in_a_row': 4,
-            'dive_rate_threshold': 0.4,
-            'max_iterations_to_rerun': 800,
-            'per_iteration_timeout_seconds': 'a',  # Should be an int.
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'update_monorail_bug': True,
-            'max_dive_in_a_row': 4,
-            'dive_rate_threshold': 0.4,
-            'max_iterations_to_rerun': 800,
-            'per_iteration_timeout_seconds': 60,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 360.0,  # Should be an int.
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'update_monorail_bug': True,
-            'max_dive_in_a_row': 4,
-            'dive_rate_threshold': 0.4,
-            'max_iterations_to_rerun': 800,
-            'per_iteration_timeout_seconds': 60,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': {},  # Should be an int
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'update_monorail_bug': True,
-            'max_dive_in_a_row': 4,
-            'dive_rate_threshold': 0.4,
-            'max_iterations_to_rerun': 800,
-            'per_iteration_timeout_seconds': 60,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': {},  # Should be an int.
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'update_monorail_bug': True,
-            'max_dive_in_a_row': 4,
-            'dive_rate_threshold': 0.4,
-            'max_iterations_to_rerun': 800,
-            'per_iteration_timeout_seconds': 60,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': {},  # Should be an int.
-            'max_iterations_per_task': 200,
-        }))
-    self.assertFalse(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'update_monorail_bug': True,
-            'max_dive_in_a_row': 4,
-            'dive_rate_threshold': 0.4,
-            'max_iterations_to_rerun': 800,
-            'per_iteration_timeout_seconds': 60,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'data_point_sample_size': 5,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 2.00,  # Should be an int.
-        }))
-    self.assertTrue(
-        config._ValidateFlakeAnalyzerSwarmingRerunSettings({
-            'lower_flake_threshold': 0.02,
-            'upper_flake_threshold': 0.98,
-            'max_flake_in_a_row': 4,
-            'max_stable_in_a_row': 4,
-            'iterations_to_rerun': 100,
-            'max_build_numbers_to_look_back': 1000,
-            'use_nearby_neighbor': True,
-            'create_monorail_bug': True,
-            'new_flake_bugs_per_day': 2,
-            'update_monorail_bug': True,
-            'max_dive_in_a_row': 4,
-            'dive_rate_threshold': 0.4,
-            'max_iterations_to_rerun': 800,
-            'per_iteration_timeout_seconds': 60,
-            'timeout_per_test_seconds': 120,
-            'timeout_per_swarming_task_seconds': 3600,
-            'swarming_task_cushion': 2.0,
-            'swarming_task_retries_per_build': 2,
-            'iterations_to_run_after_timeout': 10,
-            'max_iterations_per_task': 200,
-        }))
-
-  def testValidateCodeReviewSettings(self):
-    self.assertTrue(
-        config._ValidateCodeReviewSettings({
-            'rietveld_hosts': ['abc.com'],
-            'gerrit_hosts': ['def.com'],
-            'commit_bot_emails': ['commit-bot@abc.com'],
-        }))
-    self.assertFalse(
-        config._ValidateCodeReviewSettings({
-            'rietveld_hosts': 'abc.com',
-            'gerrit_hosts': 'def.com',
-        }))
-    self.assertFalse(
-        config._ValidateCodeReviewSettings({
-            'rietveld_hosts': 'abc.com',
-            'gerrit_hosts': 'def.com',
-            'commit_bot_emails': 'commit-bot@abc.com',
-        }))
+  def testValidateConfig(self):
+    spec = {
+        'required_int':
+            int,
+        'required_float': (float,),  # One item tuple must be supported.
+        'optional_string': (str, False),
+        'required_even_length_list': (list, True,
+                                      lambda x: ['odd'] * (len(x) % 2)),
+        'optional_nested_dict': (dict, False, {
+            'inner_key': int
+        })
+    }
+    good_config = {
+        'required_int': 1,
+        'required_float': 2.5,
+        'optional_string': 'hello world',
+        'required_even_length_list': [1, 2, 3, 4],
+        'optional_nested_dict': {
+            'inner_key': 5,
+        }
+    }
+    good_config_2 = {
+        'required_int': 1,
+        'required_float': 2,  # int should satisfy float req.
+        'optional_string': u'hello world',  # Unicode should satisfy str req.
+        'required_even_length_list': [],
+        'optional_nested_dict': {
+            'inner_key': 5,
+            'extra_key': 'whimsy',  # extra keys should not break the config.
+        }
+    }
+    good_config_3 = {
+        'required_int': 1,
+        'required_float': 2.5,  # int should satisfy float req.
+        'required_even_length_list': [],
+        # optional should be optional.
+    }
+    bad_types = {
+        'required_int': 1.5,
+        'required_float': False,
+        'optional_string': ['h', 'e', 'l', 'l', 'o'],
+        'required_even_length_list': (1, 2, 3, 4),
+        'optional_nested_dict': {
+            'inner_key': 5.0,
+        }
+    }
+    bad_custom_validation = {
+        'required_int': 1,
+        'required_float': 2.5,
+        'optional_string': 'hello world',
+        'required_even_length_list': [1, 2, 3],
+        'optional_nested_dict': {
+            'inner_missing': 5,
+        }
+    }
+    self.assertEqual([], config._ValidateConfig('', good_config, spec))
+    self.assertEqual([], config._ValidateConfig('', good_config_2, spec))
+    self.assertEqual([], config._ValidateConfig('', good_config_3, spec))
+    self.assertEqual([
+        'Expected key inner_key, value 5.0 to be <type \'int\'> in config '
+        '/optional_nested_dict',
+        'Expected key optional_string, value [\'h\', \'e\', \'l\', \'l\', \'o\''
+        '] to be <type \'basestring\'> in config ',
+        'Expected key required_int, value 1.5 to be <type \'int\'> in config ',
+        'Expected key required_even_length_list, value (1, 2, 3, 4) to be '
+        '<type \'list\'> in config '
+    ], config._ValidateConfig('', bad_types, spec))
+    self.assertEqual([
+        'Required key inner_key not present in config /optional_nested_dict',
+        'odd'
+    ], config._ValidateConfig('', bad_custom_validation, spec))
+    self.assertNotEqual([], config._ValidateConfig('', 'not_a_dict', spec))

@@ -3,6 +3,7 @@
 # found in the LICENSE file.
 """Handles requests to the findit config page."""
 
+import logging
 import json
 
 from gae_libs import token
@@ -70,60 +71,74 @@ def _ValidateMastersAndStepsRulesMapping(steps_for_masters_rules):
     10. Lists should never be empty.
   """
   if not isinstance(steps_for_masters_rules, dict):
-    return False
+    return ['Expected steps_for_masters_rules to be dict']
 
   # 'supported_masters' is mandatory and must be a dict.
   supported_masters = steps_for_masters_rules.get('supported_masters')
   if not isinstance(supported_masters, dict):
-    return False
+    return ['Expected supported_masters to be dict']
 
   for supported_master, rules in supported_masters.iteritems():
-    # Masters must be strings, rules must be dicts.
     if (not isinstance(supported_master, basestring) or
         not isinstance(rules, dict)):
-      return False
+      return ['Supported_masters must map strings to dicts']
 
-    # If 'check_global' is specified, it must be a bool.
     check_global = rules.get('check_global')
     if check_global is not None and not isinstance(check_global, bool):
-      return False
+      return [
+          'For %s, if "check_global" is specified, it must be a bool.' %
+          supported_master
+      ]
 
     supported_steps = rules.get('supported_steps')
     if supported_steps is not None:
       if not _IsListOfType(supported_steps, basestring):
-        return False
+        return [
+            'For %s, if "supported_steps" is specified, '
+            'it must be a list of str.' % supported_master
+        ]
 
       supported_steps = _RemoveDuplicatesAndSort(supported_steps)
 
     unsupported_steps = rules.get('unsupported_steps')
     if unsupported_steps is not None:
-      # If check global is False, disallow 'unsupported_steps'.
       if check_global is False:
-        return False
+        return [
+            'For %s, if "check_global" is False, '
+            '"unsupported_steps" is not allowed.' % supported_master
+        ]
 
       if not _IsListOfType(unsupported_steps, basestring):
-        return False
+        return [
+            'For %s, if "unsupported_steps" is specified, '
+            'it must be a list of str.' % supported_master
+        ]
 
-      # 'supported_list' and 'unsupported_list' must not overlap.
       if (supported_steps and
           not set(supported_steps).isdisjoint(unsupported_steps)):
-        return False
+        return [
+            'For %s, "supported_list" and "unsupported_list" '
+            'must not overlap.' % supported_master
+        ]
 
       unsupported_steps = _RemoveDuplicatesAndSort(unsupported_steps)
 
   # Check format of 'global'.
   global_rules = steps_for_masters_rules.get('global')
   if not isinstance(global_rules, dict):
-    return False
+    return ['"global" must be provided and be a dict']
 
   global_unsupported_steps = global_rules.get('unsupported_steps')
   if global_unsupported_steps is not None:
     if not _IsListOfType(global_unsupported_steps, basestring):
-      return False
+      return [
+          'If "global/unsupported_steps" is specified, '
+          'it must be a list of str.'
+      ]
     global_unsupported_steps = _RemoveDuplicatesAndSort(
         global_unsupported_steps)
 
-  return True
+  return []
 
 
 def _ValidateTrybotMapping(builders_to_trybots):
@@ -132,199 +147,254 @@ def _ValidateTrybotMapping(builders_to_trybots):
     return bool(a) != bool(b)
 
   if not isinstance(builders_to_trybots, dict):
-    return False
-  for builders in builders_to_trybots.values():
+    return ['builders_to_trybots must be provided and be a dict.']
+  for master, builders in builders_to_trybots.iteritems():
     if not isinstance(builders, dict):
-      return False
-    for trybot_config in builders.values():
+      return [master + ': the trybot mapping must be a dict']
+    for builder, trybot_config in builders.iteritems():
+      builder = '%s/%s' % (master, builder)
       if not isinstance(trybot_config, dict):
-        return False
+        return ['The trybot_config for %s must be a dict' % builder]
       if xor(
           trybot_config.get('swarmbucket_mastername'),
           trybot_config.get('swarmbucket_trybot')):
-        return False
+        return [
+            'For %s, both swarmbucket_mastername and swarmbucket_trybot'
+            ' (or neither) must be specified' % builder
+        ]
       if (not isinstance(
           trybot_config.get('swarmbucket_mastername', ''), basestring) or
           not isinstance(
               trybot_config.get('swarmbucket_trybot', ''), basestring)):
-        return False
+        return [
+            'For %s, both swarmbucket_mastername and swarmbucket_trybot '
+            'must be strings (if provided)' % builder
+        ]
       if (not trybot_config.get('swarmbucket_mastername') and
           not trybot_config.get('use_swarmbucket')):
         # Validate buildbucket style config. (Not swarmbucket).
         if (not trybot_config.get('mastername') or
             not trybot_config.get('waterfall_trybot') or
             not isinstance(trybot_config['waterfall_trybot'], basestring)):
-          return False
+          return [
+              'For %s, both mastername and waterfall_trybot must be strings' %
+              builder
+          ]
       if (trybot_config.get('flake_trybot') is not None and
           not isinstance(trybot_config['flake_trybot'], basestring)):
         # Specifying a flake_trybot is optional in case flake analysis is not
         # supported, i.e. in case not_run_tests is True. If it is set, it must
         # be a string.
-        return False
+        return [
+            'For %s, if flake_trybot is specified, it must be a string' %
+            builder
+        ]
       if (trybot_config.has_key('strict_regex') and
           not isinstance(trybot_config['strict_regex'], bool)):
-        return False
+        return [
+            'For %s, if strict_regex is specified, it must be a boolean' %
+            builder
+        ]
       if (trybot_config.has_key('use_swarmbucket') and
           not isinstance(trybot_config['use_swarmbucket'], bool)):
-        return False
+        return [
+            'For %s, if use_swarmbucket is specified, it must be a boolean' %
+            builder
+        ]
       if (trybot_config.has_key('not_run_tests') and
           not isinstance(trybot_config['not_run_tests'], bool)):
-        return False
-  return True
+        return [
+            'For %s, if not_run_tests is specified, it must be a boolean' %
+            builder
+        ]
+  return []
 
 
-def _ValidateTryJobSettings(settings):
-  return (isinstance(settings, dict) and
-          isinstance(settings.get('server_query_interval_seconds'), int) and
-          isinstance(settings.get('job_timeout_hours'), int) and
-          isinstance(settings.get('allowed_response_error_times'), int) and
-          isinstance(settings.get('pubsub_token'), basestring) and
-          isinstance(settings.get('pubsub_topic'), basestring) and
-          isinstance(settings.get('pubsub_swarming_topic'), basestring) and
-          isinstance(settings.get('max_seconds_look_back_for_group'), int))
+def _ValidateConfig(name, d, spec):
+  """Validate that a given config matches the specification.
+
+  Configs are dicts, and specs are dicts in the following format:
+  {
+    # Either format is okay. required is a boolean, defaults to True if not
+    # given.
+    'key_name': type,
+    'key_name': (type, required),
+    'key_name': (type, required, validator_or_nested_spec),
+   }
+
+  This function iterates over every key in the spec and
+    - makes sure that the key is present in the given config(d) if required is
+      true,
+    - makes sure that the value is the type(s) given in the spec, note that it
+      is okay to pass a tuple of types if the spec itself is a tuple
+        e.g.((int, float), True)
+    - makes sure that the value passes a custom validation if custom validation,
+      if a validator function is provided, or if a nested spec is provided, it
+      recursively calls _ValidateConfig on the value of the key (such as a
+      nested dict)
+
+  This function returns a list of errors (strings). It is expected that any
+  custom validation functions will return a list of errors.
+
+  A return value of [], indicates that there are no errors."""
+
+  errors = []
+
+  if not isinstance(d, dict):
+    err = 'Expect %s to be a dictionary in config %s' % (d, name)
+    logging.error(err)
+    return [err]
+
+  for key in spec:
+    requirements = spec[key]
+
+    # Sane defaults.
+    required_type = int
+    required_key = True
+    custom_validator = None
+
+    if isinstance(requirements, tuple):
+      tuple_length = len(requirements)
+      if tuple_length == 1:
+        required_type = requirements[0]
+      elif tuple_length == 2:
+        required_type, required_key = requirements
+      else:
+        assert tuple_length == 3, 'The config tuple length must be < 3'
+        required_type, required_key, custom_validator = requirements
+    else:
+      required_type = requirements
+
+    if required_type == float:
+      required_type = (int, float)
+    elif required_type == str:
+      required_type = basestring
+
+    # Actual validation.
+
+    # Validate key presence.
+    if required_key and not key in d:
+      err = 'Required key %s not present in config %s' % (key, name)
+      logging.error(err)
+      errors.append(err)
+    # Validate type.
+    elif key in d and not isinstance(d[key], required_type):
+      err = 'Expected key %s, value %r to be %s in config % s' % (key, d[key],
+                                                                  required_type,
+                                                                  name)
+      logging.error(err)
+      errors.append(err)
+    # Custom validator is a spec.
+    elif (key in d and isinstance(custom_validator, dict)):
+      errors += _ValidateConfig('%s/%s' % (name, key), d[key], custom_validator)
+    # Custom validator is a function.
+    elif key in d and callable(custom_validator):
+      inner_errors = custom_validator(d[key])
+      errors += inner_errors
+      err = 'Key %s, value %r in config %s failed: %s' % (key, d[key], name,
+                                                          inner_errors)
+      logging.error(err)
+
+  return errors
 
 
-def _ValidateSwarmingSettings(settings):
-  return (isinstance(settings, dict) and
-          isinstance(settings.get('server_host'), basestring) and
-          isinstance(settings.get('default_request_priority'), int) and
-          isinstance(settings.get('request_expiration_hours'), int) and
-          isinstance(settings.get('server_query_interval_seconds'), int) and
-          isinstance(settings.get('task_timeout_hours'), int) and
-          isinstance(settings.get('isolated_server'), basestring) and
-          isinstance(settings.get('isolated_storage_url'), basestring) and
-          isinstance(settings.get('iterations_to_rerun'), int) and isinstance(
-              settings.get('get_swarming_task_id_timeout_seconds'), int) and
-          isinstance(settings.get('get_swarming_task_id_wait_seconds'), int) and
-          isinstance(settings.get('server_retry_timeout_hours'), int) and
-          isinstance(
-              settings.get('maximum_server_contact_retry_interval_seconds'),
-              int) and isinstance(settings.get('should_retry_server'), bool) and
-          isinstance(settings.get('minimum_number_of_available_bots'), int) and
-          isinstance(
-              settings.get('minimum_percentage_of_available_bots'),
-              (float, int)) and
-          isinstance(settings.get('per_iteration_timeout_seconds'), int))
-
-
-def _ValidateDownloadBuildDataSettings(settings):
-  return (isinstance(settings, dict) and isinstance(
-      settings.get('download_interval_seconds'), int) and isinstance(
-          settings.get('memcache_master_download_expiration_seconds'), int) and
-          isinstance(settings.get('use_ninja_output_log'), bool))
-
-
-def _ValidateActionSettings(settings):
-  return (
-      isinstance(settings, dict) and
-      isinstance(settings.get('cr_notification_build_threshold'), int) and
-      isinstance(settings.get('cr_notification_latency_limit_minutes'), int) and
-      isinstance(settings.get('auto_create_revert_compile'), bool) and
-      isinstance(settings.get('auto_commit_revert_compile'), bool) and
-      isinstance(settings.get('culprit_commit_limit_hours'), int) and
-      isinstance(settings.get('auto_commit_daily_threshold'), int) and
-      isinstance(settings.get('auto_revert_daily_threshold'), int) and
-      isinstance(
-          settings.get('cr_notification_should_notify_flake_culprit'), bool) and
-      isinstance(settings.get('rotations_url'), basestring))
-
-
-def _ValidateFlakeAnalyzerSwarmingRerunSettings(settings):
-  return (isinstance(settings, dict) and
-          isinstance(settings.get('lower_flake_threshold'), (float, int)) and
-          isinstance(settings.get('upper_flake_threshold'), (float, int)) and
-          isinstance(settings.get('max_flake_in_a_row'), int) and
-          isinstance(settings.get('max_stable_in_a_row'), int) and
-          isinstance(settings.get('iterations_to_rerun'), int) and
-          isinstance(settings.get('max_build_numbers_to_look_back'), int) and
-          isinstance(settings.get('use_nearby_neighbor'), bool) and
-          isinstance(settings.get('max_dive_in_a_row'), int) and
-          isinstance(settings.get('dive_rate_threshold'), (float, int)) and
-          isinstance(settings.get('max_iterations_to_rerun'), int) and
-          isinstance(settings.get('per_iteration_timeout_seconds'), int) and
-          isinstance(settings.get('timeout_per_test_seconds'), int) and
-          isinstance(settings.get('timeout_per_swarming_task_seconds'), int) and
-          isinstance(settings.get('swarming_task_cushion'), (float, int)) and
-          isinstance(settings.get('swarming_task_retries_per_build'), int) and
-          isinstance(settings.get('iterations_to_run_after_timeout'), int) and
-          isinstance(settings.get('max_iterations_per_task'), int))
-
-
-def _ValidateFlakeAnalyzerTryJobRerunSettings(settings):
-  return (isinstance(settings, dict) and
-          isinstance(settings.get('lower_flake_threshold'), (float, int)) and
-          isinstance(settings.get('upper_flake_threshold'), (float, int)) and
-          isinstance(settings.get('max_flake_in_a_row'), int) and
-          isinstance(settings.get('max_stable_in_a_row'), int) and
-          isinstance(settings.get('iterations_to_rerun'), int))
-
-
-def _ValidateCheckFlakeSettings(settings):
-  return (
-      isinstance(settings, dict) and
-      _ValidateFlakeAnalyzerSwarmingRerunSettings(
-          settings.get('swarming_rerun')) and
-      _ValidateFlakeAnalyzerTryJobRerunSettings(settings.get('try_job_rerun'))
-      and isinstance(
-          settings.get('minimum_confidence_score_to_run_tryjobs'),
-          (float, int)) and
-      isinstance(settings.get('create_monorail_bug'), bool) and
-      isinstance(settings.get('new_flake_bugs_per_day'), int) and
-      isinstance(settings.get('update_monorail_bug'), bool) and
-      isinstance(settings.get('minimum_confidence_to_update_cr'),
-                 (float, int)) and
-      isinstance(settings.get('throttle_flake_analyses'), bool) and
-      isinstance(settings.get('minimum_confidence_to_create_bug'), float))
-
-
-def _ValidateCodeReviewSettings(settings):
-  return (isinstance(settings, dict) and
-          isinstance(settings.get('commit_bot_emails'), list) and
-          isinstance(settings.get('rietveld_hosts'), list) and
-          isinstance(settings.get('gerrit_hosts'), list))
-
-
-# Maps config properties to their validation functions.
-_CONFIG_VALIDATION_FUNCTIONS = {
-    'steps_for_masters_rules': _ValidateMastersAndStepsRulesMapping,
-    'builders_to_trybots': _ValidateTrybotMapping,
-    'try_job_settings': _ValidateTryJobSettings,
-    'swarming_settings': _ValidateSwarmingSettings,
-    'download_build_data_settings': _ValidateDownloadBuildDataSettings,
-    'action_settings': _ValidateActionSettings,
-    'check_flake_settings': _ValidateCheckFlakeSettings,
-    'code_review_settings': _ValidateCodeReviewSettings,
+# Maps config properties to their validation specs.
+# Please keep this config sorted by key name.
+#
+# Configs are dicts, and specs are dicts in the following format:
+# {
+#   'key_name': type,   # This implies required = True, and no custom validator.
+#   'key_name': (type, required),
+#   'key_name': (type, required, validator_or_nested_spec),
+#  }
+_CONFIG_SPEC = {  # yapf: disable
+    'action_settings': (dict, True, {
+        'auto_commit_daily_threshold': int,
+        'auto_commit_revert_compile': bool,
+        'auto_create_revert_compile': bool,
+        'auto_revert_daily_threshold': int,
+        'cr_notification_build_threshold': int,
+        'cr_notification_latency_limit_minutes': int,
+        'cr_notification_should_notify_flake_culprit': bool,
+        'culprit_commit_limit_hours': int,
+        'rotations_url': str,
+    }),
+    'builders_to_trybots': (dict, True, _ValidateTrybotMapping),
+    'check_flake_settings': (dict, True, {
+        'create_monorail_bug': bool,
+        'minimum_confidence_score_to_run_tryjobs': float,
+        'minimum_confidence_to_create_bug': float,
+        'minimum_confidence_to_update_cr': float,
+        'new_flake_bugs_per_day': int,
+        'swarming_rerun': (dict, True, {
+            'dive_rate_threshold': float,
+            'iterations_to_rerun': int,
+            'iterations_to_run_after_timeout': int,
+            'lower_flake_threshold': float,
+            'max_build_numbers_to_look_back': int,
+            'max_dive_in_a_row': int,
+            'max_flake_in_a_row': int,
+            'max_iterations_per_task': int,
+            'max_iterations_to_rerun': int,
+            'max_stable_in_a_row': int,
+            'per_iteration_timeout_seconds': int,
+            'swarming_task_cushion': float,
+            'swarming_task_retries_per_build': int,
+            'timeout_per_swarming_task_seconds': int,
+            'timeout_per_test_seconds': int,
+            'upper_flake_threshold': float,
+            'use_nearby_neighbor': bool,
+        }),
+        'throttle_flake_analyses': bool,
+        'try_job_rerun': (dict, True, {
+            'iterations_to_rerun': int,
+            'lower_flake_threshold': float,
+            'max_flake_in_a_row': int,
+            'max_stable_in_a_row': int,
+            'upper_flake_threshold': float,
+        }),
+        'update_monorail_bug': bool,
+    }),
+    'code_review_settings': (dict, True, {
+        'commit_bot_emails': list,
+        'gerrit_hosts': list,
+        'rietveld_hosts': list,
+    }),
+    'download_build_data_settings': (dict, True, {
+        'download_interval_seconds': int,
+        'memcache_master_download_expiration_seconds': int,
+        'use_ninja_output_log': bool,
+    }),
+    'steps_for_masters_rules': (dict, True,
+                                _ValidateMastersAndStepsRulesMapping),
+    'swarming_settings': (dict, True, {
+        'default_request_priority': int,
+        'get_swarming_task_id_timeout_seconds': int,
+        'get_swarming_task_id_wait_seconds': int,
+        'isolated_server': str,
+        'isolated_storage_url': str,
+        'iterations_to_rerun': int,
+        'maximum_server_contact_retry_interval_seconds': int,
+        'minimum_number_of_available_bots': int,
+        'minimum_percentage_of_available_bots': float,
+        'per_iteration_timeout_seconds': int,
+        'request_expiration_hours': int,
+        'server_host': str,
+        'server_query_interval_seconds': int,
+        'server_retry_timeout_hours': int,
+        'should_retry_server': bool,
+        'task_timeout_hours': int,
+    }),
+    'try_job_settings': (dict, True, {
+        'allowed_response_error_times': int,
+        'job_timeout_hours': int,
+        'max_seconds_look_back_for_group': int,
+        'pubsub_swarming_topic': str,
+        'pubsub_token': str,
+        'pubsub_topic': str,
+        'server_query_interval_seconds': int,
+    }),
 }
-
-
-def _ConfigurationDictIsValid(configuration_dict):
-  """Checks that each configuration setting is properly formatted.
-
-  Args:
-      configuration_dict: A dictionary expected to map configuration properties
-      by name to their intended settings. For example,
-
-      configuration_dict = {
-          'some_config_property': (some dictionary),
-          'some_other_config_property': (some list),
-          'another_config_property': (some value),
-          ...
-      }
-
-  Returns:
-      True if all configuration properties are properly formatted, False
-      otherwise.
-  """
-  if not isinstance(configuration_dict, dict):
-    return False
-
-  for configurable_property, configuration in configuration_dict.iteritems():
-    validation_function = _CONFIG_VALIDATION_FUNCTIONS.get(
-        configurable_property)
-    if validation_function is None or not validation_function(configuration):
-      return False
-
-  return True
 
 
 def _FormatTimestamp(timestamp):
@@ -381,9 +451,11 @@ class Configuration(BaseHandler):
       return self.CreateError('Please provide the reason to update the config',
                               400)
 
-    if not _ConfigurationDictIsValid(new_config_dict):  # pragma: no cover
+    errors = _ValidateConfig('', new_config_dict, _CONFIG_SPEC)
+    if errors:
       return self.CreateError(
-          'New configuration settings is not properly formatted.', 400)
+          'New configuration settings is not properly formatted.\n'
+          'The following errors were detected \n %s' % '\n'.join(errors), 400)
 
     wf_config.FinditConfig.Get().Update(
         users.get_current_user(),
