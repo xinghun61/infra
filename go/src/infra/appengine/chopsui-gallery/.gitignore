@@ -1,0 +1,7 @@
+# Google App Engine generated folder
+appengine-generated/
+bower_components/
+
+# Polymer generated files.
+demo/
+static/

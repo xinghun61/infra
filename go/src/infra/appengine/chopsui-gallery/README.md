@@ -30,27 +30,15 @@ in that shell window.
 ## Running the app locally
 
 ```sh
-make build
-gae.py devserver -A chopsui-gallery
+make devserver
 ```
 
 ## Updating the app
 
-When the chops-ui package releases a new version, the chopsui-gallery should be updated.
+When the chopsui package releases a new version, the chopsui-gallery should be updated.
 
-To have chopsui-gallery reflect the changes made in the chops-ui package run the following commands:
-
-```sh
-make build
-gae.py upload -A chopsui-gallery
-gae.py switch # to allocate all traffic to the new version.
-```
-
-'make build' creates several new directories,
-whenever necessary run:
+To have chopsui-gallery reflect the changes made in the chopsui package run the following commands:
 
 ```sh
-make clean
+make deploy_prod
 ```
-
-to remove those files before doing 'make build' again.

@@ -13,7 +13,7 @@
     "tests"
   ],
   "dependencies": {
-    "chops-ui": "chops-ui#*"
+    "chopsui": "chopsui#*"
   },
   "devDependencies": {
       "iron-demo-helpers": "PolymerElements/iron-demo-helpers",
