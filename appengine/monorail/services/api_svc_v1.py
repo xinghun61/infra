@@ -86,6 +86,7 @@ def monorail_api_method(
       ret = None
       c_id = None
       c_email = None
+      mar = None
       try:
         if settings.read_only and http_method.lower() != 'get':
           raise permissions.PermissionException(
@@ -100,13 +101,13 @@ def monorail_api_method(
           auth_client_ids.append(endpoints.API_EXPLORER_CLIENT_ID)
         if self._services is None:
           self._set_services(service_manager.set_up_services())
+        mar = self.mar_factory(request)
         c_id, c_email = api_base_checks(
-            request, requester,
-            self._services, sql.MonorailConnection(),
+            request, requester, self._services, mar.cnxn,
             auth_client_ids, auth_emails)
         self.ratelimiter.CheckStart(c_id, c_email, start_time)
-        self.increment_request_limit(request, c_id, c_email)
-        ret = func(self, *args, **kwargs)
+        self.increment_request_limit(mar, request, c_id, c_email)
+        ret = func(self, mar, *args, **kwargs)
       except user_svc.NoSuchUserException as e:
         approximate_http_status = 404
         raise endpoints.NotFoundException(
@@ -141,6 +142,8 @@ def monorail_api_method(
         logging.exception('Unexpected error in monorail API')
         raise
       finally:
+        if mar:
+          mar.CleanUp()
         now = time_fn()
         elapsed_ms = int((now - start_time) * 1000)
         if c_id and c_email:
@@ -309,8 +312,7 @@ class MonorailApi(remote.Service):
       self._mar = monorailrequest.MonorailApiRequest(request, self._services)
     return self._mar
 
-  def aux_delete_comment(self, request, delete=True):
-    mar = self.mar_factory(request)
+  def aux_delete_comment(self, mar, request, delete=True):
     action_name = 'delete' if delete else 'undelete'
 
     with work_env.WorkEnv(mar, self._services) as we:
@@ -336,11 +338,10 @@ class MonorailApi(remote.Service):
       we.DeleteComment(issue, issue_comment, delete=delete)
     return api_pb2_v1.IssuesCommentsDeleteResponse()
 
-  def increment_request_limit(self, request, client_id, client_email):
+  def increment_request_limit(self, mar, _request, client_id, client_email):
     """Check whether the requester has exceeded API quotas limit,
     and increment request count in DB and ts_mon.
     """
-    mar = self.mar_factory(request)
     # soft_limit == hard_limit for api_request, so NeedCaptcha() either
     # returns False if under limit, or raise ExcessiveActivityException.
     # Don't count actions by whitelisted users, which helps reduce DB writes.
@@ -364,9 +365,9 @@ class MonorailApi(remote.Service):
       path='projects/{projectId}/issues/{issueId}/comments/{commentId}',
       http_method='DELETE',
       name='issues.comments.delete')
-  def issues_comments_delete(self, request):
+  def issues_comments_delete(self, mar, request):
     """Delete a comment."""
-    return self.aux_delete_comment(request, True)
+    return self.aux_delete_comment(mar, request, True)
 
   @monorail_api_method(
       api_pb2_v1.ISSUES_COMMENTS_INSERT_REQUEST_RESOURCE_CONTAINER,
@@ -374,9 +375,8 @@ class MonorailApi(remote.Service):
       path='projects/{projectId}/issues/{issueId}/comments',
       http_method='POST',
       name='issues.comments.insert')
-  def issues_comments_insert(self, request):
+  def issues_comments_insert(self, mar, request):
     """Add a comment."""
-    mar = self.mar_factory(request)
     # Because we will modify issues, load from DB rather than cache.
     issue = self._services.issue.GetIssueByLocalID(
         mar.cnxn, mar.project_id, request.issueId, use_cache=False)
@@ -582,9 +582,8 @@ class MonorailApi(remote.Service):
       path='projects/{projectId}/issues/{issueId}/comments',
       http_method='GET',
       name='issues.comments.list')
-  def issues_comments_list(self, request):
+  def issues_comments_list(self, mar, request):
     """List all comments for an issue."""
-    mar = self.mar_factory(request)
     issue = self._services.issue.GetIssueByLocalID(
         mar.cnxn, mar.project_id, request.issueId)
     comments = self._services.issue.GetCommentsForIssue(
@@ -607,9 +606,9 @@ class MonorailApi(remote.Service):
       path='projects/{projectId}/issues/{issueId}/comments/{commentId}',
       http_method='POST',
       name='issues.comments.undelete')
-  def issues_comments_undelete(self, request):
+  def issues_comments_undelete(self, mar, request):
     """Restore a deleted comment."""
-    return self.aux_delete_comment(request, False)
+    return self.aux_delete_comment(mar, request, False)
 
   @monorail_api_method(
       api_pb2_v1.USERS_GET_REQUEST_RESOURCE_CONTAINER,
@@ -617,10 +616,9 @@ class MonorailApi(remote.Service):
       path='users/{userId}',
       http_method='GET',
       name='users.get')
-  def users_get(self, request):
+  def users_get(self, mar, request):
     """Get a user."""
     owner_project_only = request.ownerProjectsOnly
-    mar = self.mar_factory(request)
     (visible_ownership, visible_deleted, visible_membership,
      visible_contrib) = sitewide_helpers.GetUserProjects(
         mar.cnxn, self._services, mar.auth.user_pb, mar.auth.effective_ids,
@@ -659,9 +657,8 @@ class MonorailApi(remote.Service):
       path='projects/{projectId}/issues/{issueId}',
       http_method='GET',
       name='issues.get')
-  def issues_get(self, request):
+  def issues_get(self, mar, request):
     """Get an issue."""
-    mar = self.mar_factory(request)
     issue = self._services.issue.GetIssueByLocalID(
         mar.cnxn, mar.project_id, request.issueId)
 
@@ -674,9 +671,8 @@ class MonorailApi(remote.Service):
       path='projects/{projectId}/issues',
       http_method='POST',
       name='issues.insert')
-  def issues_insert(self, request):
+  def issues_insert(self, mar, request):
     """Add a new issue."""
-    mar = self.mar_factory(request)
     if not mar.perms.CanUsePerm(
         permissions.CREATE_ISSUE, mar.auth.effective_ids, mar.project, []):
       raise permissions.PermissionException(
@@ -733,10 +729,8 @@ class MonorailApi(remote.Service):
       path='projects/{projectId}/issues',
       http_method='GET',
       name='issues.list')
-  def issues_list(self, request):
+  def issues_list(self, mar, request):
     """List issues for projects."""
-    mar = self.mar_factory(request)
-
     if request.additionalProject:
       for project_name in request.additionalProject:
         project = self._services.project.GetProjectByName(
@@ -770,9 +764,8 @@ class MonorailApi(remote.Service):
       path='groups/settings',
       http_method='GET',
       name='groups.settings.list')
-  def groups_settings_list(self, request):
+  def groups_settings_list(self, mar, request):
     """List all group settings."""
-    mar = self.mar_factory(request)
     all_groups = self._services.usergroup.GetAllUserGroupsInfo(mar.cnxn)
     group_settings = []
     for g in all_groups:
@@ -789,9 +782,8 @@ class MonorailApi(remote.Service):
       path='groups',
       http_method='POST',
       name='groups.create')
-  def groups_create(self, request):
+  def groups_create(self, mar, request):
     """Create a new user group."""
-    mar = self.mar_factory(request)
     if not permissions.CanCreateGroup(mar.perms):
       raise permissions.PermissionException(
           'The user is not allowed to create groups.')
@@ -820,9 +812,8 @@ class MonorailApi(remote.Service):
       path='groups/{groupName}',
       http_method='GET',
       name='groups.get')
-  def groups_get(self, request):
+  def groups_get(self, mar, request):
     """Get a group's settings and users."""
-    mar = self.mar_factory(request)
     if not mar.viewed_user_auth:
       raise user_svc.NoSuchUserException(request.groupName)
     group_id = mar.viewed_user_auth.user_id
@@ -862,9 +853,8 @@ class MonorailApi(remote.Service):
       path='groups/{groupName}',
       http_method='POST',
       name='groups.update')
-  def groups_update(self, request):
+  def groups_update(self, mar, request):
     """Update a group's settings and users."""
-    mar = self.mar_factory(request)
     group_id = mar.viewed_user_auth.user_id
     member_ids_dict, owner_ids_dict = self._services.usergroup.LookupMembers(
         mar.cnxn, [group_id])
@@ -915,9 +905,8 @@ class MonorailApi(remote.Service):
       path='projects/{projectId}/components',
       http_method='GET',
       name='components.list')
-  def components_list(self, request):
+  def components_list(self, mar, _request):
     """List all components of a given project."""
-    mar = self.mar_factory(request)
     config = self._services.config.GetProjectConfig(mar.cnxn, mar.project_id)
     components = [api_pb2_v1_helpers.convert_component_def(
         cd, mar, self._services) for cd in config.component_defs]
@@ -930,9 +919,8 @@ class MonorailApi(remote.Service):
       path='projects/{projectId}/components',
       http_method='POST',
       name='components.create')
-  def components_create(self, request):
+  def components_create(self, mar, request):
     """Create a component."""
-    mar = self.mar_factory(request)
     if not mar.perms.CanUsePerm(
         permissions.EDIT_PROJECT, mar.auth.effective_ids, mar.project, []):
       raise permissions.PermissionException(
@@ -994,9 +982,8 @@ class MonorailApi(remote.Service):
       path='projects/{projectId}/components/{componentPath}',
       http_method='DELETE',
       name='components.delete')
-  def components_delete(self, request):
+  def components_delete(self, mar, request):
     """Delete a component."""
-    mar = self.mar_factory(request)
     config = self._services.config.GetProjectConfig(mar.cnxn, mar.project_id)
     component_path = request.componentPath
     component_def = tracker_bizobj.FindComponentDef(
@@ -1031,9 +1018,8 @@ class MonorailApi(remote.Service):
       path='projects/{projectId}/components/{componentPath}',
       http_method='POST',
       name='components.update')
-  def components_update(self, request):
+  def components_update(self, mar, request):
     """Update a component."""
-    mar = self.mar_factory(request)
     config = self._services.config.GetProjectConfig(mar.cnxn, mar.project_id)
     component_path = request.componentPath
     component_def = tracker_bizobj.FindComponentDef(
@@ -1152,6 +1138,8 @@ class ClientConfigApi(remote.Service):
       http_method='POST',
       name='client_configs.update')
   def client_configs_update(self, request):
+    if self._services is None:
+      self._set_services(service_manager.set_up_services())
     mar = self.mar_factory(request)
     if not mar.perms.HasPerm(permissions.ADMINISTER_SITE, None, None):
       raise permissions.PermissionException(
@@ -1232,6 +1220,7 @@ class ClientConfigApi(remote.Service):
             self._services.project.UpdateExtraPerms(
                 mar.cnxn, p_id, user_id, list(perm.extra_permissions))
 
+    mar.CleanUp()
     return message_types.VoidMessage()
 
   def _GetProjectIDs(self, project_str, project_name_to_ids):

@@ -96,6 +96,9 @@ class FakeMonorailApiRequest(object):
     self.start = self.GetParam('start')
     self.num = self.GetParam('num')
 
+  def CleanUp(self):
+    self.cnxn = None
+
   @property
   def project_id(self):
     return self.project.project_id if self.project else None
