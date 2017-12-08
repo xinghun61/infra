@@ -3,6 +3,7 @@ description: Machine Provider agent.
 builders:
   - infra-continuous-trusty-64
   - infra-continuous-win-64
+install_mode: copy
 go_packages:
   - go.chromium.org/luci/mp/cmd/mpagent
 root: ../../go/bin
