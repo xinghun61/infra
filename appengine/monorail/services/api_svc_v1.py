@@ -47,8 +47,6 @@ from search import frontendsearchpipeline
 from services import api_pb2_v1_helpers
 from services import client_config_svc
 from services import config_svc
-from services import issue_svc
-from services import project_svc
 from services import service_manager
 from services import tracker_fulltext
 from services import user_svc
@@ -114,7 +112,7 @@ def monorail_api_method(
         raise endpoints.NotFoundException(
             'The user does not exist: %s' % str(e))
       except (exceptions.NoSuchProjectException,
-              issue_svc.NoSuchIssueException,
+              exceptions.NoSuchIssueException,
               config_svc.NoSuchComponentException) as e:
         approximate_http_status = 404
         raise endpoints.NotFoundException(str(e))
@@ -322,7 +320,7 @@ class MonorailApi(remote.Service):
       try:
         issue_comment = all_comments[request.commentId]
       except IndexError:
-        raise issue_svc.NoSuchIssueException(
+        raise exceptions.NoSuchIssueException(
               'The issue %s:%d does not have comment %d.' %
               (mar.project_name, request.issueId, request.commentId))
 

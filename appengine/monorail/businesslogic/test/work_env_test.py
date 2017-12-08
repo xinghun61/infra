@@ -14,8 +14,6 @@ from businesslogic import work_env
 from framework import exceptions
 from proto import project_pb2
 from proto import tracker_pb2
-from services import issue_svc
-from services import project_svc
 from services import service_manager
 from testing import fake
 from testing import testing_helpers
@@ -267,7 +265,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testGetIssue_NoSuchIssue(self):
     """We reject attempts to get a non-existent issue."""
-    with self.assertRaises(issue_svc.NoSuchIssueException):
+    with self.assertRaises(exceptions.NoSuchIssueException):
       with self.work_env as we:
         _actual = we.GetIssue(78901)
 
@@ -294,7 +292,7 @@ class WorkEnvTest(unittest.TestCase):
 
   def testGetIssueByLocalID_NoSuchIssue(self):
     """We reject attempts to get a non-existent issue."""
-    with self.assertRaises(issue_svc.NoSuchIssueException):
+    with self.assertRaises(exceptions.NoSuchIssueException):
       with self.work_env as we:
         _actual = we.GetIssueByLocalID(789, 1)
 

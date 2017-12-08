@@ -41,7 +41,6 @@ from framework import urls
 from framework import xsrf
 from proto import user_pb2
 from services import features_svc
-from services import issue_svc
 from services import tracker_fulltext
 from tracker import field_helpers
 from tracker import issuepeek
@@ -142,7 +141,7 @@ class IssueDetail(issuepeek.IssuePeek):
       try:
         issue = we.GetIssueByLocalID(
             mr.project_id, mr.local_id, use_cache=False)
-      except issue_svc.NoSuchIssueException:
+      except exceptions.NoSuchIssueException:
         issue = None
 
       # Show explanation of skipped issue local IDs or deleted issues.

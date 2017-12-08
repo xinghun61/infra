@@ -25,4 +25,25 @@ class NoSuchProjectException(Error):
   pass
 
 
-# TODO(jrobbins): move more exceptions here.
+class NoSuchIssueException(Error):
+  """The requested issue was not found."""
+  pass
+
+
+class NoSuchAttachmentException(Error):
+  """The requested attachment was not found."""
+  pass
+
+
+class NoSuchCommentException(Error):
+  """The requested comment was not found."""
+  pass
+
+
+class MidAirCollisionException(Error):
+  """The item was updated by another user at the same time."""
+
+  def __init__(self, name, continue_issue_id):
+    super(MidAirCollisionException, self).__init__()
+    self.name = name  # human-readable name for the artifact being edited.
+    self.continue_issue_id = continue_issue_id  # ID of issue to start over.

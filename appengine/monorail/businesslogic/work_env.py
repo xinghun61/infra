@@ -387,8 +387,8 @@ class WorkEnv(object):
       The specified Issue PB.
 
     Raises:
-      exception.InputException: Something was not specified properly.
-      issue_svc.NoSuchIssueException: The issue does not exist.
+      exceptions.InputException: Something was not specified properly.
+      exceptions.NoSuchIssueException: The issue does not exist.
     """
     if project_id is None:
       raise exceptions.InputException('No project specified')

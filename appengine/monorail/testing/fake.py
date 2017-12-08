@@ -25,7 +25,6 @@ from proto import usergroup_pb2
 from services import caches
 from services import config_svc
 from services import features_svc
-from services import issue_svc
 from services import project_svc
 from services import user_svc
 from tracker import tracker_bizobj
@@ -595,7 +594,7 @@ class IssueStarService(AbstractStarService):
     try:
       issue = services.issue.GetIssue(cnxn, issue_id)
       issue.star_count += (1 if starred else -1)
-    except issue_svc.NoSuchIssueException:
+    except exceptions.NoSuchIssueException:
       pass
 
   # pylint: disable=arguments-differ
@@ -1172,7 +1171,7 @@ class IssueService(object):
       if not attach.deleted:
         return attach, comment_id, issue_id
 
-    raise issue_svc.NoSuchAttachmentException()
+    raise exceptions.NoSuchAttachmentException()
 
   def GetComments(self, _cnxn, where=None, order_by=None, **kwargs):
     # This is a very limited subset of what the real GetComments() can do.
@@ -1190,7 +1189,7 @@ class IssueService(object):
     if len(comments) == 1:
       return comments[0]
 
-    raise issue_svc.NoSuchCommentException()
+    raise exceptions.NoSuchCommentException()
 
   def ResolveIssueRefs(self, cnxn, ref_projects, default_project_name, refs):
     result = []
@@ -1202,7 +1201,7 @@ class IssueService(object):
       try:
         issue = self.GetIssueByLocalID(cnxn, project.project_id, local_id)
         result.append(issue.issue_id)
-      except issue_svc.NoSuchIssueException:
+      except exceptions.NoSuchIssueException:
         misses.append((project.project_id, local_id))
 
     return result, misses
@@ -1229,7 +1228,7 @@ class IssueService(object):
     try:
       return self.issues_by_project[project_id][local_id]
     except KeyError:
-      raise issue_svc.NoSuchIssueException()
+      raise exceptions.NoSuchIssueException()
 
   def GetAnyOnHandIssue(self, issue_ids, start=None, end=None):
     return None  # Treat them all like misses.
@@ -1238,7 +1237,7 @@ class IssueService(object):
     if issue_id in self.issues_by_iid:
       return self.issues_by_iid[issue_id]
     else:
-      raise issue_svc.NoSuchIssueException()
+      raise exceptions.NoSuchIssueException()
 
   def GetCommentsByUser(self, cnxn, user_id):
     """Get all comments created by a user"""
@@ -1262,7 +1261,7 @@ class IssueService(object):
     try:
       issue = self.issues_by_project[project_id][local_id]
     except KeyError:
-      raise issue_svc.NoSuchIssueException()
+      raise exceptions.NoSuchIssueException()
     return issue.issue_id
 
   def GetCommentsForIssue(self, _cnxn, issue_id):

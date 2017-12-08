@@ -25,6 +25,7 @@ from third_party import cloudstorage
 
 import settings
 from features import filterrules_helpers
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
@@ -402,7 +403,7 @@ class IssueService(object):
     try:
       return issue_ids[0]
     except IndexError:
-      raise NoSuchIssueException()
+      raise exceptions.NoSuchIssueException()
 
   def ResolveIssueRefs(
       self, cnxn, ref_projects, default_project_name, refs):
@@ -663,7 +664,7 @@ class IssueService(object):
     try:
       return issues[0]
     except IndexError:
-      raise NoSuchIssueException()
+      raise exceptions.NoSuchIssueException()
 
   def GetIssuesByLocalIDs(
       self, cnxn, project_id, local_id_list, use_cache=True, shard_id=None):
@@ -703,8 +704,8 @@ class IssueService(object):
     try:
       return issues[0]
     except IndexError:
-      raise NoSuchIssueException('The issue %s:%d does not exist.' % (
-          project_id, local_id))
+      raise exceptions.NoSuchIssueException(
+          'The issue %s:%d does not exist.' % (project_id, local_id))
 
   def GetOpenAndClosedIssues(self, cnxn, issue_ids):
     """Return the requested issues in separate open and closed lists.
@@ -1062,6 +1063,9 @@ class IssueService(object):
       index_now: True if the issue should be updated in the full text index.
       comment: This should be the content of the comment
           corresponding to this change.
+      iids_to_invalidate: optional set of issue IDs that need to be invalidated.
+          If provided, affected issues will be accumulated here and, the caller
+          must call InvalidateIIDs() afterwards.
       rules: optional list of preloaded FilterRule PBs for this project.
       predicate_asts: optional list of QueryASTs for the rules.  If rules are
           provided, then predicate_asts should also be provided.
@@ -1231,14 +1235,14 @@ class IssueService(object):
         remove_issue = self.GetIssue(cnxn, merged_remove)
         remove_ref = remove_issue.project_name, remove_issue.local_id
         iids_to_invalidate.add(merged_remove)
-      except NoSuchIssueException:
+      except exceptions.NoSuchIssueException:
         remove_ref = None
 
       try:
         add_issue = self.GetIssue(cnxn, merged_add)
         add_ref = add_issue.project_name, add_issue.local_id
         iids_to_invalidate.add(merged_add)
-      except NoSuchIssueException:
+      except exceptions.NoSuchIssueException:
         add_ref = None
 
       amendments.append(tracker_bizobj.MakeMergedIntoAmendment(
@@ -1474,14 +1478,14 @@ class IssueService(object):
         merged_remove = self.GetIssue(cnxn, issue.merged_into)
         remove_ref = merged_remove.project_name, merged_remove.local_id
         iids_to_invalidate.add(issue.merged_into)
-      except NoSuchIssueException:
+      except exceptions.NoSuchIssueException:
         remove_ref = None
 
       try:
         merged_add = self.GetIssue(cnxn, merged_into)
         add_ref = merged_add.project_name, merged_add.local_id
         iids_to_invalidate.add(merged_into)
-      except NoSuchIssueException:
+      except exceptions.NoSuchIssueException:
         add_ref = None
 
       issue.merged_into = merged_into
@@ -1548,7 +1552,8 @@ class IssueService(object):
         logging.info('amendments: %s', amendments)
         # Forget all the modificiations made to this issue in RAM.
         self.issue_2lc.InvalidateKeys(cnxn, [issue.issue_id])
-        raise MidAirCollisionException('issue %d' % local_id, local_id)
+        raise exceptions.MidAirCollisionException(
+            'issue %d' % local_id, local_id)
 
     # update the modified_timestamp for any comment added, even if it was
     # just a text comment with no issue fields changed.
@@ -2077,7 +2082,7 @@ class IssueService(object):
     try:
       return comments[0]
     except IndexError:
-      raise NoSuchCommentException()
+      raise exceptions.NoSuchCommentException()
 
   def GetCommentsForIssue(self, cnxn, issue_id):
     """Return all IssueComment PBs for the specified issue.
@@ -2397,7 +2402,7 @@ class IssueService(object):
       NoSuchAttachmentException: the attachment was not found.
     """
     if attachment_id is None:
-      raise NoSuchAttachmentException()
+      raise exceptions.NoSuchAttachmentException()
 
     attachment_row = self.attachment_tbl.SelectRow(
         cnxn, cols=ATTACHMENT_COLS, id=attachment_id)
@@ -2411,7 +2416,7 @@ class IssueService(object):
             gcs_object_id=gcs_object_id)
         return attachment, comment_id, issue_id
 
-    raise NoSuchAttachmentException()
+    raise exceptions.NoSuchAttachmentException()
 
   def GetAttachmentsByID(self, cnxn, attachment_ids):
     """Return all Attachment PBs by attachment ids.
@@ -2692,32 +2697,3 @@ def _UpdateClosedTimestamp(config, issue, old_effective_status):
 
     issue.reset('closed_timestamp')
     return
-
-
-class Error(Exception):
-  """Base exception class for this package."""
-  pass
-
-
-class NoSuchIssueException(Error):
-  """The requested issue was not found."""
-  pass
-
-
-class NoSuchAttachmentException(Error):
-  """The requested attachment was not found."""
-  pass
-
-
-class NoSuchCommentException(Error):
-  """The requested comment was not found."""
-  pass
-
-
-class MidAirCollisionException(Error):
-  """The item was updated by another user at the same time."""
-
-  def __init__(self, name, continue_issue_id):
-    super(MidAirCollisionException, self).__init__()
-    self.name = name  # human-readable name for the artifact being edited.
-    self.continue_issue_id = continue_issue_id  # ID of issue to start over.

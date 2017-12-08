@@ -19,7 +19,6 @@ from framework import timestr
 from proto import api_pb2_v1
 from proto import project_pb2
 from proto import tracker_pb2
-from services import issue_svc
 from services import project_svc
 from services import user_svc
 from tracker import field_helpers
@@ -146,7 +145,7 @@ def convert_issueref_pbs(issueref_pbs, mar, services):
         issue = services.issue.GetIssueByLocalID(
             mar.cnxn, project_id, ir.issueId)
         result.append(issue.issue_id)
-      except issue_svc.NoSuchIssueException:
+      except exceptions.NoSuchIssueException:
         logging.warning(
             'Issue (%s:%d) does not exist.' % (ir.projectId, ir.issueId))
     return result

@@ -15,6 +15,7 @@ from google.appengine.api import search
 from google.appengine.ext import testbed
 
 import settings
+from framework import exceptions
 from framework import sql
 from proto import tracker_pb2
 from services import caches
@@ -816,7 +817,7 @@ class IssueServiceTest(unittest.TestCase):
     self.mox.StubOutWithMock(self.services.issue, '_UpdateIssuesModified')
 
     self.services.issue.GetIssue(
-        self.cnxn, 0).AndRaise(issue_svc.NoSuchIssueException)
+        self.cnxn, 0).AndRaise(exceptions.NoSuchIssueException)
     self.services.issue.GetIssue(
         self.cnxn, target_issue.issue_id).AndReturn(target_issue)
     self.services.issue.UpdateIssue(
@@ -1270,7 +1271,7 @@ class IssueServiceTest(unittest.TestCase):
     self.SetUpGetComment_Missing(7890101)
     self.mox.ReplayAll()
     self.assertRaises(
-        issue_svc.NoSuchCommentException,
+        exceptions.NoSuchCommentException,
         self.services.issue.GetComment, self.cnxn, 7890101)
     self.mox.VerifyAll()
 

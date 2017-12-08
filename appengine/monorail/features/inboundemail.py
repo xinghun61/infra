@@ -25,13 +25,13 @@ from features import commitlogcommands
 from features import notify_helpers
 from framework import authdata
 from framework import emailfmt
+from framework import exceptions
 from framework import framework_constants
 from framework import monorailrequest
 from framework import permissions
 from framework import sql
 from framework import template_helpers
 from proto import project_pb2
-from services import issue_svc
 from services import user_svc
 
 
@@ -316,7 +316,7 @@ class InboundEmail(webapp2.RequestHandler):
     try:
       issue = self.services.issue.GetIssueByLocalID(
           cnxn, project.project_id, local_id)
-    except issue_svc.NoSuchIssueException:
+    except exceptions.NoSuchIssueException:
       issue = None
 
     if not issue or issue.deleted:

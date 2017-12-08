@@ -53,8 +53,6 @@ from framework import urls
 from framework import xsrf
 from proto import project_pb2
 from search import query2ast
-from services import issue_svc
-from services import project_svc
 from services import secrets_svc
 from services import user_svc
 from services import usergroup_svc
@@ -394,7 +392,7 @@ class Servlet(webapp2.RequestHandler):
       # TODO(jrobbins): can we do better than an error page? not much.
       self.response.status = httplib.BAD_REQUEST
 
-    except issue_svc.MidAirCollisionException as e:
+    except exceptions.MidAirCollisionException as e:
       logging.info('Mid-air collision detected.')
       collision_page_url = urls.ARTIFACT_COLLISION
       url = framework_helpers.FormatAbsoluteURL(

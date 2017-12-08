@@ -22,8 +22,6 @@ from proto import project_pb2
 from proto import tracker_pb2
 from search import frontendsearchpipeline
 from services import api_svc_v1
-from services import issue_svc
-from services import project_svc
 from services import service_manager
 from services import tracker_fulltext
 from services import user_svc
@@ -1100,7 +1098,7 @@ class AllBaseChecksTest(unittest.TestCase):
     request = RequestMock()
     request.projectId = 'test-project'
     request.issueId = 12345
-    with self.assertRaises(issue_svc.NoSuchIssueException):
+    with self.assertRaises(exceptions.NoSuchIssueException):
       api_svc_v1.api_base_checks(
           request, requester, self.services, None, self.auth_client_ids, [])
 

@@ -7,9 +7,9 @@
 
 import unittest
 
+from framework import exceptions
 from framework import permissions
 from services import service_manager
-from services import issue_svc
 from testing import fake
 from testing import testing_helpers
 from tracker import spam
@@ -101,7 +101,7 @@ class FlagSpamFormTest(unittest.TestCase):
       'comment_id': 123,
       'spam': 'true'
     }
-    with self.assertRaises(issue_svc.NoSuchCommentException):
+    with self.assertRaises(exceptions.NoSuchCommentException):
       res = self.servlet.ProcessFormData(mr, post_data)
 
     # test owner case, comment exists.

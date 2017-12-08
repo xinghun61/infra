@@ -19,9 +19,9 @@ import re
 from features import commands
 from features import notify
 from framework import emailfmt
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_helpers
-from services import issue_svc
 
 
 # Actions have separate 'Parse' and 'Run' implementations to allow better
@@ -99,7 +99,7 @@ class UpdateIssueAction(IssueAction):
     try:
       issue = services.issue.GetIssueByLocalID(
           cnxn, self.project.project_id, self.local_id)
-    except issue_svc.NoSuchIssueException:
+    except exceptions.NoSuchIssueException:
       return  # Issue does not exist, so do nothing
 
     old_owner_id = issue.owner_id

@@ -14,6 +14,7 @@ from third_party import ezt
 
 import settings
 from businesslogic import work_env
+from framework import exceptions
 from framework import framework_helpers
 from framework import framework_views
 from framework import grid_view_helpers
@@ -26,7 +27,6 @@ from framework import urls
 from framework import xsrf
 from search import searchpipeline
 from search import query2ast
-from services import issue_svc
 from tracker import tablecell
 from tracker import tracker_bizobj
 from tracker import tracker_constants
@@ -65,7 +65,7 @@ class IssueList(servlet.Servlet):
           url = framework_helpers.FormatAbsoluteURL(
               mr, urls.ISSUE_DETAIL, id=local_id)
           self.redirect(url, abort=True)  # Jump to specified issue.
-        except issue_svc.NoSuchIssueException:
+        except exceptions.NoSuchIssueException:
           pass  # The user is searching for a number that is not an issue ID.
 
       with mr.profiler.Phase('finishing config work'):

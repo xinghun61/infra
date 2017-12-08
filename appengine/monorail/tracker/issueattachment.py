@@ -22,12 +22,12 @@ import webapp2
 from google.appengine.api import app_identity
 from google.appengine.api import images
 
+from framework import exceptions
 from framework import framework_helpers
 from framework import gcs_helpers
 from framework import permissions
 from framework import servlet
 from framework import urls
-from services import issue_svc
 from tracker import tracker_helpers
 from tracker import tracker_views
 
@@ -53,11 +53,11 @@ class AttachmentPage(servlet.Servlet):
     try:
       attachment, _issue = tracker_helpers.GetAttachmentIfAllowed(
           mr, self.services)
-    except issue_svc.NoSuchIssueException:
+    except exceptions.NoSuchIssueException:
       webapp2.abort(404, 'issue not found')
-    except issue_svc.NoSuchAttachmentException:
+    except exceptions.NoSuchAttachmentException:
       webapp2.abort(404, 'attachment not found')
-    except issue_svc.NoSuchCommentException:
+    except exceptions.NoSuchCommentException:
       webapp2.abort(404, 'comment not found')
 
     if not attachment.gcs_object_id:

@@ -14,6 +14,7 @@ from businesslogic import work_env
 from features import commands
 from features import notify
 from framework import authdata
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
@@ -25,7 +26,6 @@ from framework import sql
 from framework import template_helpers
 from framework import urls
 from framework import xsrf
-from services import issue_svc
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 from tracker import tracker_helpers
@@ -45,7 +45,7 @@ class IssuePeek(servlet.Servlet):
       with work_env.WorkEnv(mr, self.services) as we:
         issue = we.GetIssueByLocalID(mr.project_id, mr.local_id)
         config = we.GetProjectConfig(mr.project_id)
-    except issue_svc.NoSuchIssueException:
+    except exceptions.NoSuchIssueException:
       return
     if not issue:
       return

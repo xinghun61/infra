@@ -19,11 +19,11 @@ from third_party import cloudstorage
 from third_party import ezt
 
 from features import prettify
+from framework import exceptions
 from framework import filecontent
 from framework import permissions
 from framework import servlet
 from framework import template_helpers
-from services import issue_svc
 from tracker import tracker_bizobj
 from tracker import tracker_helpers
 from tracker import tracker_views
@@ -48,11 +48,11 @@ class AttachmentText(servlet.Servlet):
       try:
         attachment, issue = tracker_helpers.GetAttachmentIfAllowed(
             mr, self.services)
-      except issue_svc.NoSuchIssueException:
+      except exceptions.NoSuchIssueException:
         webapp2.abort(404, 'issue not found')
-      except issue_svc.NoSuchAttachmentException:
+      except exceptions.NoSuchAttachmentException:
         webapp2.abort(404, 'attachment not found')
-      except issue_svc.NoSuchCommentException:
+      except exceptions.NoSuchCommentException:
         webapp2.abort(404, 'comment not found')
 
     content = []
