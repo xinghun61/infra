@@ -192,4 +192,4 @@ class PredatorForClusterfuzz(PredatorApp):
     """Given a crash_identifiers, returns a ``Culprit``."""
     self.RedefineClassifierIfLargeRegressionRange(crash_identifiers)
     analysis = self.GetAnalysis(crash_identifiers)
-    self._predator.FindCulprit(analysis.ToCrashReport())
+    return self._predator.FindCulprit(analysis.ToCrashReport())
