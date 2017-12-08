@@ -562,7 +562,12 @@ def _fetch_page(query, page_size, start_cursor, predicate=None):
 
   entities = []
   while len(entities) < page_size:
-    page, curs, more = query.fetch_page(page_size, start_cursor=curs)
+    # It is important not to request more than needed in query.fetch_page,
+    # otherwise the cursor we return to the user skips fetched, but not returned
+    # entities, and the user will never see them.
+    to_fetch = page_size - len(entities)
+
+    page, curs, more = query.fetch_page(to_fetch, start_cursor=curs)
     for entity in page:
       if predicate is None or predicate(entity):  # pragma: no branch
         entities.append(entity)
