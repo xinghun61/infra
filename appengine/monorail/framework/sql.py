@@ -30,6 +30,11 @@ CONNECTION_COUNT = ts_mon.CounterMetric(
     'Count of connections made to the SQL database.',
     [ts_mon.BooleanField('success')])
 
+DB_CNXN_LATENCY = ts_mon.CumulativeDistributionMetric(
+    'monorail/sql/db_cnxn_latency',
+    'Time needed to establish a DB connection.',
+    None)
+
 
 @framework_helpers.retry(2, delay=1, backoff=2)
 def MakeConnection(instance, database):
@@ -38,12 +43,16 @@ def MakeConnection(instance, database):
     raise ValueError('unit tests should not need real database connections')
   try:
     if settings.dev_mode:
+      start_time = time.time()
       cnxn = MySQLdb.connect(
         host='127.0.0.1', port=3306, db=database, user='root', charset='utf8')
     else:
+      start_time = time.time()
       cnxn = MySQLdb.connect(
         unix_socket='/cloudsql/' + instance, db=database, user='root',
         charset='utf8')
+    duration = int((time.time() - start_time) * 1000)
+    DB_CNXN_LATENCY.add(duration)
     CONNECTION_COUNT.increment({'success': True})
   except MySQLdb.OperationalError:
     CONNECTION_COUNT.increment({'success': False})
