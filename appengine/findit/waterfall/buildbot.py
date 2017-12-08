@@ -174,18 +174,6 @@ def GetMasterNameFromUrl(url):
   return match.group(1)
 
 
-def GetSwarmingTaskIdFromUrl(url):
-  swarming_match = None
-  for pattern in _SWARMING_TASK_URL_PATTERNS:
-    swarming_match = pattern.match(url)
-    if swarming_match:
-      break
-  if swarming_match:
-    task_id = swarming_match.groups()[0]
-    return task_id
-  return None
-
-
 def ParseBuildUrl(url):
   """Parses the given build url.
 
@@ -399,25 +387,15 @@ def ValidateBuildUrl(url):
       _BUILD_URL_PATTERN.match(url))
 
 
-def GetBuildInfo(url, http_client):
-  request = None
-  triplet = ParseBuildUrl(url)
-  if triplet:
-    master, builder, build_number = triplet
-    request = {
-        'buildbot': {
-            'masterName': master,
-            'builderName': builder,
-            'buildNumber': build_number
-        }
-    }
-  else:
-    task_id = GetSwarmingTaskIdFromUrl(url)
-    request = {
-        'swarming': {
-            'host': 'chromium-swarm.appspot.com',
-            'task': task_id
-        }
-    }
+def GetBuildInfo(build, http_client):
+  master, builder, build_number = ParseBuildUrl(build)
+  request = {
+
+      'buildbot': {
+          'masterName': master,
+          'builderName': builder,
+          'buildNumber': build_number
+      }
+  }
   return rpc_util.DownloadJsonData(_MILO_BUILDINFO_ENDPOINT, request,
                                    http_client)

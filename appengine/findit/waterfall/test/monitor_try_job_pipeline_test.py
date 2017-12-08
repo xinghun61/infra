@@ -20,7 +20,7 @@ from model.flake.flake_try_job_data import FlakeTryJobData
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from services import try_job as try_job_service
-from waterfall import buildbot
+from waterfall import swarming_util
 from waterfall import monitor_try_job_pipeline
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 from waterfall.test import wf_testcase
@@ -28,7 +28,7 @@ from waterfall.test import wf_testcase
 
 class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
-  @mock.patch.object(buildbot, 'GetStepLog')
+  @mock.patch.object(swarming_util, 'GetStepLog')
   @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
   def testGetTryJobsForCompileSuccessSerializedCallback(self, mock_buildbucket,
                                                         mock_report):
@@ -111,7 +111,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job_data.regression_range_size, regression_range_size)
     self.assertIsInstance(try_job_data.start_time, datetime)
 
-  @mock.patch.object(buildbot, 'GetStepLog')
+  @mock.patch.object(swarming_util, 'GetStepLog')
   @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
   def testGetTryJobsForTestMissingTryJobData(self, mock_buildbucket,
                                              mock_report):
@@ -228,7 +228,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_test_result, try_job.test_results[-1])
     self.assertEqual(analysis_status.RUNNING, try_job.status)
 
-  @mock.patch.object(buildbot, 'GetStepLog')
+  @mock.patch.object(swarming_util, 'GetStepLog')
   @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
   def testGetTryJobsForFlakeSuccess(self, mock_buildbucket, mock_report):
     master_name = 'm'
@@ -339,7 +339,7 @@ class MonitorTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     test_result = monitor_pipeline.outputs.default.value
     self.assertIsNone(test_result)
 
-  @mock.patch.object(buildbot, 'GetStepLog')
+  @mock.patch.object(swarming_util, 'GetStepLog')
   @mock.patch.object(monitor_try_job_pipeline, 'buildbucket_client')
   def testGetTryJobsForCompileSuccessBackwardCompatibleCallback(
       self, mock_buildbucket, mock_report):

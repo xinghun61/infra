@@ -31,7 +31,6 @@ from services import try_job as try_job_service
 from services.parameters import BuildKey
 from services.parameters import CompileTryJobResult
 from services.parameters import RunCompileTryJobParameters
-from waterfall import buildbot
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
@@ -1198,7 +1197,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
       try_job_service, '_UpdateTryJobEntity', return_value=['result'])
-  @mock.patch.object(buildbot, 'GetStepLog')
+  @mock.patch.object(swarming_util, 'GetStepLog')
   def testOnTryJobCompletedBuildbot(self, mock_report, *_):
     try_job_id = '1'
     params = {
@@ -1241,7 +1240,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
       try_job_service, '_UpdateTryJobEntity', return_value=['result'])
-  @mock.patch.object(buildbot, 'GetStepLog', side_effect=TypeError)
+  @mock.patch.object(swarming_util, 'GetStepLog', side_effect=TypeError)
   @mock.patch.object(logging, 'exception')
   def testOnTryJobCompletedBuildbotNoReport(self, mock_log, *_):
     try_job_id = '1'
@@ -1272,8 +1271,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                      try_job_service.OnTryJobCompleted(params, try_job_data,
                                                        build, None))
     mock_log.assert_called_once_with(
-        'Failed to load result report for %s/%s/%s due to exception %s.' %
-        ('m', 'b', 1234, TypeError().message))
+        'Failed to load result report for tryjob/%s due to exception %s.' %
+        (try_job_id, TypeError().message))
 
   @mock.patch.object(try_job_service, '_RecordCacheStats')
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
@@ -1297,7 +1296,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
     build_data = {
         'id': try_job_id,
-        'url': 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10',
+        'url': 'https://ci.chromium.org/p/chromium/builders/'
+        'luci.chromium.findit/findit_variable/102',
         'status': 'COMPLETED',
         'completed_ts': '1454367574000000',
         'created_ts': '1454367570000000',
@@ -1341,7 +1341,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
     build_data = {
         'id': try_job_id,
-        'url': 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10',
+        'url': 'https://ci.chromium.org/p/chromium/builders/'
+        'luci.chromium.findit/findit_variable/102',
         'status': 'COMPLETED',
         'completed_ts': '1454367574000000',
         'created_ts': '1454367570000000',
@@ -1376,7 +1377,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
     build_data = {
         'id': try_job_id,
-        'url': 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10',
+        'url': 'https://ci.chromium.org/p/chromium/builders/'
+        'luci.chromium.findit/findit_variable/102',
         'status': 'COMPLETED',
         'completed_ts': '1454367574000000',
         'created_ts': '1454367570000000',
@@ -1388,8 +1390,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                      try_job_service.OnTryJobCompleted(params, try_job_data,
                                                        build, None))
     mock_log.assert_called_once_with(
-        'Failed to load result report for swarming/%s due to exception %s.' %
-        ('3595be5002f4bc10', TypeError().message))
+        'Failed to load result report for tryjob/%s due to exception %s.' %
+        (try_job_id, TypeError().message))
 
   def testGetCurrentWaterfallTryJobID(self):
     try_job = WfTryJob.Create('m', 'b', '54321')

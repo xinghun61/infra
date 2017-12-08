@@ -673,6 +673,8 @@ def GetSwarmingBotCounts(dimensions, http_client):
   return bot_counts
 
 
+# TODO(robertocn): Move this outside of swarming_util, as this applies to all
+# tryjobs now.
 def GetStepLog(try_job_id, full_step_name, http_client, log_type='stdout'):
   """Returns specific log of the specified step."""
 
@@ -685,7 +687,15 @@ def GetStepLog(try_job_id, full_step_name, http_client, log_type='stdout'):
   data = logdog_util.GetStepLogForBuild(build.response, full_step_name,
                                         log_type, http_client)
 
-  if log_type.lower() != 'stdout':  # pragma: no branch
+  if log_type.lower() == 'json.output[ninja_info]':
+    # Check if data is malformatted.
+    try:
+      json.loads(data)
+    except ValueError:
+      logging.error('json.output[ninja_info] is malformatted')
+      return None
+
+  if log_type.lower() not in ['stdout', 'json.output[ninja_info]']:
     try:
       return json.loads(data) if data else None
     except ValueError:

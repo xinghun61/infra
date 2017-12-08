@@ -435,29 +435,6 @@ class BuildBotTest(unittest.TestCase):
     mocked_log.assert_called_with(
         'Failed to json load data for step_metadata. Data is: log.')
 
-  def testGetSwarmingTaskIdFromUrl(self):
-    cases = {
-        'https://unknown.host/swarming/task/3595be5002f4bc10':
-            None,
-        'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10': (
-            '3595be5002f4bc10'),
-        'http://build.chromium.org/p/chromium/builders/Linux':
-            None,
-        'https://ci.chromium.org/swarming/task/3595be5002f4bc10': (
-            '3595be5002f4bc10'),
-        'https://ci.chromium.org/buildbot/m2/b/123':
-            None,
-        'https://luci-milo.appspot.com/buildbot/chromium.linux'
-        '/Linux%20Builder/82087':
-            None,
-    }
-
-    for url, expected_result in cases.iteritems():
-      result = buildbot.GetSwarmingTaskIdFromUrl(url)
-      print url, expected_result
-      print result
-      self.assertEqual(expected_result, result)
-
   def testValidateBuildUrl(self):
     swarm_url = 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10'
     non_swarm_url = ('https://luci-milo.appspot.com/buildbot/chromium.linux'
@@ -476,6 +453,3 @@ class BuildBotTest(unittest.TestCase):
       mock_parse.return_value = ('m', 'b', 1)
       buildbot.GetBuildInfo('fake_url', 'fake_http_client')
       self.assertIn('buildbot', mock_fn.call_args[0][1])
-      mock_parse.return_value = None
-      buildbot.GetBuildInfo('fake_url', 'fake_http_client')
-      self.assertIn('swarming', mock_fn.call_args[0][1])

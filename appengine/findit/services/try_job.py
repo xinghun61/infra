@@ -697,37 +697,21 @@ def OnGetTryJobError(params, try_job_data, build, error):
 def OnTryJobCompleted(params, try_job_data, build, error):
   try_job_id = params['try_job_id']
   try_job_type = params['try_job_type']
-  swarming_task_id = buildbot.GetSwarmingTaskIdFromUrl(build.url)
 
   # We want to retry 404s due to logdog's propagation delay (inherent to
   # pubsub) of up to 3 minutes.
   http_client = FinditHttpClient(interceptor=HttpClientMetricsInterceptor(
       no_retry_codes=[200, 302, 401, 403, 409, 501]))
 
-  if swarming_task_id:
-    try:
-      report = swarming_util.GetStepLog(try_job_id, 'report', http_client,
-                                        'report')
-      if report:
-        _RecordCacheStats(build, report)
-    except (ValueError, TypeError) as e:
-      report = {}
-      logging.exception('Failed to load result report for swarming/%s '
-                        'due to exception %s.' % (swarming_task_id, e.message))
-  else:
-    try_job_master_name, try_job_builder_name, try_job_build_number = (
-        buildbot.ParseBuildUrl(build.url))
-
-    try:
-      report = buildbot.GetStepLog(try_job_master_name, try_job_builder_name,
-                                   try_job_build_number, 'report', http_client,
-                                   'report')
-    except (ValueError, TypeError) as e:
-      report = {}
-      logging.exception(
-          'Failed to load result report for %s/%s/%s due to exception %s.' %
-          (try_job_master_name, try_job_builder_name, try_job_build_number,
-           e.message))
+  try:
+    report = swarming_util.GetStepLog(try_job_id, 'report', http_client,
+                                      'report')
+    if report:
+      _RecordCacheStats(build, report)
+  except (ValueError, TypeError) as e:
+    report = {}
+    logging.exception('Failed to load result report for tryjob/%s '
+                      'due to exception %s.' % (try_job_id, e.message))
 
   UpdateTryJobMetadata(try_job_data, try_job_type, build, error, False, report
                        if report else {})
