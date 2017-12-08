@@ -1,0 +1,32 @@
+summary: "Config change not taking effect in <service> for <project>"
+
+description: <<END
+Please check logs of respective service to see if there config validation errors.
+File another issue like this: https://goto.google.com/luci-config-issue
+
+// Please delete commented out sections before submission
+// Feel free to add free form text.
+
+// Tell us your CL or CLs which have landed but didn't have desired effect:
+// For example, https://chromium-review.googlesource.com/812126.
+cl: <gerrit url OR gitiles commit link>
+
+// Have you verified your change was picked up by luci-config?
+// If so, paste here URL to luci-config for your project.
+// For example,  https://luci-config.appspot.com/#/projects/chromium
+luci_config_url: <url>
+
+// What did you expect to happen?
+expectation: ...
+
+// How did you verify it didn't?
+verification: ...
+
+END
+
+components: "Infra>Platform>Admin"
+cc: "tandrii@chromium.org"
+type: Task
+pri: P1
+labels: "Restrict-View-Google"
+labels: "LUCI-TaskForce"
