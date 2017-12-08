@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 
 	"golang.org/x/net/context"
@@ -239,8 +238,7 @@ func (s isolateServer) fetch(c context.Context, serverURL, digest string, buf *b
 	if err != nil {
 		return err
 	}
-	dgst := &isolateservice.HandlersEndpointsV1Digest{Digest: digest}
-	if err := client.Fetch(c, dgst, io.WriteSeeker(buf)); err != nil {
+	if err := client.Fetch(c, isolated.HexDigest(digest), buf); err != nil {
 		return fmt.Errorf("failed to fetch: %v", err)
 	}
 	return nil
