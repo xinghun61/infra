@@ -1170,6 +1170,38 @@ class SwarmingTest(BaseTest):
         swarming._generate_build_url(None, build, 54),
         ('https://swarming.example.com/task?id=deadbeef'))
 
+  def test_extract_properties(self):
+    annotations = {
+      'substep': [
+        {
+          'step': {
+            'property': [
+              {'name': 'p1', 'value': '{}'},
+              {'name': 'p2', 'value': '"s"'},
+            ]
+          }
+        },
+        {},
+        {'step': {}},
+        {
+          'step': {
+            'property': [
+              {'name': 'p2', 'value': '"s2"'},
+              {'name': 'p3', 'value': '2'},
+            ]
+          }
+        },
+      ],
+    }
+    self.assertEqual(
+        swarming._extract_properties(annotations),
+        {
+          'p1': {},
+          'p2': 's2',
+          'p3': 2,
+        },
+    )
+
 
 class SubNotifyTest(BaseTest):
   def setUp(self):

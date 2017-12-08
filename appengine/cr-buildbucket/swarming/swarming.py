@@ -909,9 +909,25 @@ def _sync_build_in_memory(
       build.result_details['ui'] = {
         'info': '\n'.join(annotations.get('text', [])),
       }
+      build.result_details['properties'] = _extract_properties(
+          build_run_result.get('annotations') or {})
     if errmsg:
       build.result_details['error'] = {'message': errmsg}
   return True
+
+
+def _extract_properties(annotation_step):
+  """Extracts properties from an annotation step"""
+  ret = {}
+
+  def extract(step):
+    for p in step.get('property') or ():
+      ret[p['name']] = json.loads(p['value'])
+    for s in step.get('substep') or ():
+      extract(s.get('step') or {})
+
+  extract(annotation_step)
+  return ret
 
 
 @ndb.tasklet
