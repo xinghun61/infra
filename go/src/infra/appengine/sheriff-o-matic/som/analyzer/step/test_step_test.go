@@ -571,7 +571,7 @@ func TestTruncateTestName(t *testing.T) {
 
 		Convey("multiple tests", func() {
 			t.TestNames = []string{"a", "b"}
-			So(t.testTrunc(), ShouldResemble, "a,b")
+			So(t.testTrunc(), ShouldResemble, "a and 1 other(s)")
 		})
 
 		Convey("chromium tree example", func() {

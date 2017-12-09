@@ -49,7 +49,7 @@ func (t *TestFailure) Signature() string {
 // testTrunc returns the test name, potentially truncated.
 func (t *TestFailure) testTrunc() string {
 	if len(t.TestNames) > 1 {
-		return strings.Join(t.TestNames, ",")
+		return fmt.Sprintf("%s and %d other(s)", t.TestNames[0], len(t.TestNames)-1)
 	}
 
 	split := strings.Split(t.TestNames[0], "/")
@@ -231,6 +231,7 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 		}
 
 		if name != f.Step.Name {
+			logging.Infof(ctx, "name != f.Step.Name: %q vs %q", name, f.Step.Name)
 			// Signal that we still found something useful, even if we
 			// don't have test results.
 			return name, failedTests, nil
@@ -244,25 +245,40 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 		if !ok {
 			return "", nil, err
 		}
-
 		// If res is a simple top-level test result, just check it here.
-		if res["expected"] != nil || res["actual"] != nil {
-			expected := strings.Split(res["expected"].(string), " ")
-			actual := strings.Split(res["actual"].(string), " ")
+		expected := res["expected"]
+		actual := res["actual"]
+		if expected != nil || actual != nil {
+			expected := strings.Split(expected.(string), " ")
+			actual := strings.Split(actual.(string), " ")
 			ue := unexpected(expected, actual)
 
 			isUnexpected, ok := res["is_unexpected"]
-			if len(ue) > 0 && res["bugs"] == nil && ok && isUnexpected.(bool) {
-				failedTests = append(failedTests, testName)
+			// is_unexpected is optional accordding the format doc, but in practice
+			// we rarely see it set. Don't depend on it, but do log it for later
+			// reference.
+			if ok {
+				logging.Infof(ctx, "%v, is_unexpected: %v, %v", ue, isUnexpected, ok)
+			}
+			hasPass := false
+			// If there was a pass at all, count it.
+			for _, r := range actual {
+				if r == "PASS" {
+					hasPass = true
+				}
 			}
 
+			if len(ue) > 0 && !hasPass {
+				logging.Infof(ctx, "%s's unexpected results: %v. %v vs %v", testName, ue, actual, expected)
+				failedTests = append(failedTests, testName)
+			}
 			continue
 		}
-
 		// res is not a simple top-level test result, so recurse to find
 		// the actual results.
 		ue, err := traverseResults(testName, res)
 		if err != nil {
+			logging.WithError(err).Errorf(ctx, "traversing test results")
 			return "", nil, err
 		}
 

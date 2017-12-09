@@ -894,59 +894,21 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 				alr.Severity = messages.TreeCloser
 			}
 			bf.Reason = &messages.Reason{Raw: reasons[i]}
-			tr, ok := reasons[i].(*step.TestFailure)
-			if ok && len(tr.Tests) > 0 {
-				for _, test := range tr.Tests {
-					alr := alr
 
-					alr.Type = messages.AlertBuildFailure
-					alr.Key = alertKey(failure.Master.Name(), failure.Build.BuilderName, step.GetTestSuite(failure), test.TestName)
+			alr.Title = reasons[i].Title([]*messages.BuildStep{failure})
+			reasonSeverity := reasons[i].Severity()
+			if reasonSeverity != messages.NoSeverity {
+				alr.Severity = reasonSeverity
+			}
 
-					// Re-set this, because otherwise we run into issues where this is copied
-					// between alerts, and the Count field gets set incorrectly.
-					bf.Builders = []messages.AlertedBuilder{
-						{
-							Name:          failure.Build.BuilderName,
-							URL:           client.BuilderURL(failure.Master, failure.Build.BuilderName).String(),
-							StartTime:     failure.Build.Times[0],
-							FirstFailure:  failure.Build.Number,
-							LatestFailure: failure.Build.Number,
-							Master:        failure.Build.Master,
-							Count:         1,
-						},
-					}
-					bf.Reason = &messages.Reason{
-						Raw: &step.TestFailure{
-							TestNames: []string{test.TestName},
-							StepName:  tr.StepName,
-							Tests:     []step.TestWithResult{test},
-						},
-					}
-					alr.Title = bf.Reason.Title([]*messages.BuildStep{failure})
-					alr.Extension = bf
-					rs <- res{
-						f:   failure,
-						a:   &alr,
-						err: nil,
-					}
+			alr.Type = messages.AlertBuildFailure
+			alr.Key = alertKey(failure.Master.Name(), failure.Build.BuilderName, step.GetTestSuite(failure), "")
+			alr.Extension = bf
 
-				}
-			} else {
-				alr.Title = reasons[i].Title([]*messages.BuildStep{failure})
-				reasonSeverity := reasons[i].Severity()
-				if reasonSeverity != messages.NoSeverity {
-					alr.Severity = reasonSeverity
-				}
-
-				alr.Type = messages.AlertBuildFailure
-				alr.Key = alertKey(failure.Master.Name(), failure.Build.BuilderName, step.GetTestSuite(failure), "")
-				alr.Extension = bf
-
-				rs <- res{
-					f:   failure,
-					a:   &alr,
-					err: nil,
-				}
+			rs <- res{
+				f:   failure,
+				a:   &alr,
+				err: nil,
 			}
 		}()
 	}
