@@ -47,6 +47,9 @@ class ProjectTwoLevelCacheTest(unittest.TestCase):
     self.cache_manager = fake.CacheManager()
     self.project_service = MakeProjectService(self.cache_manager, self.mox)
 
+  def tearDown(self):
+    self.testbed.deactivate()
+
   def testDeserializeProjects(self):
     project_rows = [
         (123, 'proj1', 'test proj 1', 'test project', 'live', 'anyone', '', '',

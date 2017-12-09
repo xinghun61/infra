@@ -53,6 +53,9 @@ class UserTwoLevelCacheTest(unittest.TestCase):
     self.cache_manager = fake.CacheManager()
     self.user_service = MakeUserService(self.cache_manager, self.mox)
 
+  def tearDown(self):
+    self.testbed.deactivate()
+
   def testDeserializeUsersByID(self):
     user_rows = [
         (111L, 'a@example.com', False, False, False, False, True, False, '',

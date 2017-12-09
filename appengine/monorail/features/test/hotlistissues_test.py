@@ -75,6 +75,7 @@ class HotlistIssuesUnitTest(unittest.TestCase):
 
   def tearDown(self):
     self.mox.UnsetStubs()
+    self.testbed.deactivate()
 
   def testAssertBasePermissions(self):
     private_hotlist = self.services.features.TestAddHotlist(

@@ -23,6 +23,9 @@ class XsrfTest(unittest.TestCase):
     self.testbed.init_memcache_stub()
     self.testbed.init_datastore_v3_stub()
 
+  def tearDown(self):
+    self.testbed.deactivate()
+
   def testGenerateToken_AnonUserGetsNoToken(self):
     self.assertEqual('', xsrf.GenerateToken(0L, '/path'))
 

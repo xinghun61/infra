@@ -41,6 +41,9 @@ class IssuePeekTest(unittest.TestCase):
         789, 'summary', 'status', 111L, [], [], [], [], 111L,
         'The screen is just dark when I press power on')
 
+  def tearDown(self):
+    self.testbed.deactivate()
+
   def testAssertBasePermission(self):
     """Permit users who can view issues."""
     mr = testing_helpers.MakeMonorailRequest(

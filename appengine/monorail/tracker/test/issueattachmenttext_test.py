@@ -81,7 +81,8 @@ class IssueAttachmentTextTest(unittest.TestCase):
     cloudstorage.open = fake.gcs_open
 
   def tearDown(self):
-     cloudstorage.open = self._old_gcs_open
+    self.testbed.deactivate()
+    cloudstorage.open = self._old_gcs_open
 
   def testGatherPageData_CommentDeleteed(self):
     """If the attachment's comment was deleted, give a 403."""

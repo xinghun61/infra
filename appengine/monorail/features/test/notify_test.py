@@ -157,6 +157,9 @@ class NotifyTaskHandleRequestTest(unittest.TestCase):
         project_id=12345, local_id=1, owner_id=2, reporter_id=1)
     self.services.issue.TestAddIssue(self.issue1)
 
+  def tearDown(self):
+    self.testbed.deactivate()
+
   def VerifyParams(self, result, params):
     self.assertEqual(
         bool(params['send_email']), result['params']['send_email'])

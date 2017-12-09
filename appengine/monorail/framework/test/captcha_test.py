@@ -27,6 +27,8 @@ class CaptchaTest(unittest.TestCase):
   def tearDown(self):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
+    self.testbed.deactivate()
+
 
   def testVerify_NoGuess(self):
     self.mox.StubOutWithMock(captcha, '_AskRecaptcha')

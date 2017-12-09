@@ -61,6 +61,7 @@ class IssueattachmentTest(unittest.TestCase):
         self.attachment, self.comment.id, self.issue.issue_id)
 
   def tearDown(self):
+    self.testbed.deactivate()
     cloudstorage.open = self._old_gcs_open
 
   def testGatherPageData_NotFound(self):

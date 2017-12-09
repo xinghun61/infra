@@ -89,6 +89,9 @@ class ComputeIssueEntryURLTest(unittest.TestCase):
     self.testbed.init_memcache_stub()
     self.testbed.init_datastore_v3_stub()
 
+  def tearDown(self):
+    self.testbed.deactivate()
+
   def testComputeIssueEntryURL_Normal(self):
     _request, mr = testing_helpers.GetRequestObjects(
         path='/p/proj/issues/detail?id=123&q=term',
@@ -122,6 +125,9 @@ class IssueListURLTest(unittest.TestCase):
     self.testbed.init_user_stub()
     self.testbed.init_memcache_stub()
     self.testbed.init_datastore_v3_stub()
+
+  def tearDown(self):
+    self.testbed.deactivate()
 
   def testIssueListURL_NotCustomized(self):
     _request, mr = testing_helpers.GetRequestObjects(

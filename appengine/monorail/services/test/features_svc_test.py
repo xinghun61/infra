@@ -41,6 +41,9 @@ class HotlistTwoLevelCacheTest(unittest.TestCase):
     self.cache_manager = fake.CacheManager()
     self.features_service = MakeFeaturesService(self.cache_manager, self.mox)
 
+  def tearDown(self):
+    self.testbed.deactivate()
+
   def testDeserializeHotlists(self):
     hotlist_rows = [
         (123, 'hot1', 'test hot 1', 'test hotlist', False, ''),
@@ -94,6 +97,7 @@ class FeaturesServiceTest(unittest.TestCase):
 
   def tearDown(self):
     memcache.flush_all()
+    self.testbed.deactivate()
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 

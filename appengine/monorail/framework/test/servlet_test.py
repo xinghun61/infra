@@ -52,6 +52,9 @@ class ServletTest(unittest.TestCase):
     self.testbed.init_memcache_stub()
     self.testbed.init_datastore_v3_stub()
 
+  def tearDown(self):
+    self.testbed.deactivate()
+
   def testDefaultValues(self):
     self.assertEqual(None, self.page_class._MAIN_TAB_MODE)
     self.assertTrue(self.page_class._TEMPLATE_PATH.endswith('/templates/'))

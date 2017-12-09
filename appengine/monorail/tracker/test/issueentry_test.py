@@ -66,6 +66,7 @@ class IssueEntryTest(unittest.TestCase):
     self.mox = mox.Mox()
 
   def tearDown(self):
+    self.testbed.deactivate()
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
