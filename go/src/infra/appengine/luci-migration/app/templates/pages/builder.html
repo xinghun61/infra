@@ -68,8 +68,9 @@ limitations under the License. */}}
         <a href="{{.Builder.IssueID.URL}}">{{.Builder.IssueID.URL}}</a>
       </div>
 
-      <form method="post" class="form-inline">
+      <form method="post" action="update" class="form-inline">
         <input type="hidden" id="xsrf_token" name="xsrf_token" value="{{$.XsrfToken}}">
+        <input type="hidden" id="action" name="action" value="update">
         <div class="form-group">
           <label for="experimentPercentage">Experiment percentage</label>
           <input id="experimentPercentage" name="experimentPercentage" type="range" list="tickmarks" value="{{.Builder.ExperimentPercentage}}">
@@ -95,12 +96,19 @@ limitations under the License. */}}
         <button type="submit" class="btn btn-default">Update</button>
       </form>
 
-    {{if not .StatusKnown}}
+    {{if .ShowAnalysis}}
+      <form method="post" class="form-inline">
+          <input type="hidden" id="xsrf_token" name="xsrf_token" value="{{$.XsrfToken}}">
+          <input type="hidden" id="action" name="action" value="analyze">
+        <button type="submit" class="btn btn-default">Start analysis now</button>
+        it may take a minute or two
+      </form>
+      {{if not .StatusKnown}}
       <div class="alert alert-info" role="alert" style="margin-top: 10px">
         Migration status is unknown.
         Perhaps this builder was not analyzed yet.
       </div>
-    {{else}}
+      {{else}}
       <h2>Latest comparison</h2>
       <div class="status">
         Status: <span class="label label-{{.StatusClassSuffix}}">{{.Builder.Migration.Status}}</span>
@@ -119,6 +127,7 @@ limitations under the License. */}}
 
       <h3>Why?</h3>
       <div>{{.Details}}</div>
+      {{end}}
     {{end}}
     </div>
   </div>

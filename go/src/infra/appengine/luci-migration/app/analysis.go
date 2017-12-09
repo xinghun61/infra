@@ -39,6 +39,8 @@ import (
 	"infra/appengine/luci-migration/storage"
 )
 
+const analysisTaskQueue = "analyze-builders"
+
 // cronAnalyzeBuilders enqueues a push task for each not-migrated-yet builder.
 func cronAnalyzeBuilders(c *router.Context) error {
 	var builders []*storage.Builder
@@ -51,17 +53,22 @@ func cronAnalyzeBuilders(c *router.Context) error {
 
 	tasks := make([]*taskqueue.Task, len(builders))
 	for i, b := range builders {
-		values := url.Values{}
-		values.Set("builder", b.ID.String())
-		tasks[i] = taskqueue.NewPOSTTask("/internal/task/analyze-builder/"+common.PathEscape(b.ID.String()), values)
+		tasks[i] = builderAnalysisTask(b.ID)
 		tasks[i].Delay = time.Duration(mathrand.Int(c.Context)%30) * time.Minute
-		tasks[i].RetryCount = 2
 	}
-	if err := taskqueue.Add(c.Context, "analyze-builders", tasks...); err != nil {
+	if err := taskqueue.Add(c.Context, analysisTaskQueue, tasks...); err != nil {
 		return err
 	}
 	logging.Infof(c.Context, "enqueued %d tasks", len(tasks))
 	return nil
+}
+
+func builderAnalysisTask(id storage.BuilderID) *taskqueue.Task {
+	values := url.Values{}
+	values.Set("builder", id.String())
+	task := taskqueue.NewPOSTTask("/internal/task/analyze-builder/"+common.PathEscape(id.String()), values)
+	task.RetryCount = 2
+	return task
 }
 
 // loadBuilderInRequest loads the builder specified in the HTTP request.

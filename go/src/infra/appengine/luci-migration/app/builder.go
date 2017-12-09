@@ -23,10 +23,11 @@ import (
 	"strings"
 	"time"
 
-	"golang.org/x/net/context"
 	"github.com/julienschmidt/httprouter"
+	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/datastore"
+	"go.chromium.org/gae/service/taskqueue"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
@@ -53,6 +54,7 @@ type builderViewModel struct {
 	StatusOutdated         bool
 	Details                template.HTML
 	ShowLUCIIsProdCheckbox bool
+	ShowAnalysis           bool
 }
 
 func parseBuilderIDFromRequest(params *httprouter.Params) (storage.BuilderID, error) {
@@ -136,7 +138,8 @@ func builderPage(c context.Context, id storage.BuilderID) (*builderViewModel, er
 	model.StatusClassSuffix = migrationStatusLabelClassSuffix(mig.Status)
 	model.StatusAge = clock.Now(c).Sub(model.Builder.Migration.AnalysisTime)
 	model.StatusOutdated = model.StatusAge > 24*time.Hour
-	model.ShowLUCIIsProdCheckbox = enableLUCISProdCheckbox(model.Builder)
+	model.ShowLUCIIsProdCheckbox = luciIsProdCheckboxEnabled(model.Builder)
+	model.ShowAnalysis = model.Builder.SchedulingType == config.SchedulingType_TRYJOBS
 	return model, nil
 }
 
@@ -166,6 +169,27 @@ func handleBuilderPagePost(c *router.Context) error {
 		return err
 	}
 
+	switch c.Request.FormValue("action") {
+	case "update":
+		return updateBuilder(c, builder)
+	case "analyze":
+		return analyzeBuilder(c, builder)
+	default:
+		http.Error(c.Writer, "invalid action", http.StatusBadRequest)
+		return nil
+	}
+}
+
+func analyzeBuilder(c *router.Context, builder *storage.Builder) error {
+	task := builderAnalysisTask(builder.ID)
+	if err := taskqueue.Add(c.Context, analysisTaskQueue, task); err != nil {
+		return err
+	}
+	http.Redirect(c.Writer, c.Request, c.Request.URL.String(), http.StatusFound)
+	return nil
+}
+
+func updateBuilder(c *router.Context, builder *storage.Builder) error {
 	percentageValue := c.Request.FormValue(experimentPercentageFormValueName)
 	percentage, err := strconv.Atoi(percentageValue)
 	if err != nil || percentage < 0 || percentage > 100 {
@@ -178,8 +202,8 @@ func handleBuilderPagePost(c *router.Context) error {
 	switch v := c.Request.FormValue(luciIsProdFormValueName); v {
 	case "":
 	case "on":
-		if !enableLUCISProdCheckbox(builder) {
-			body := fmt.Sprintf("cannot set %q on builder %q", luciIsProdFormValueName, &id)
+		if !luciIsProdCheckboxEnabled(builder) {
+			body := fmt.Sprintf("cannot set %q on builder %q", luciIsProdFormValueName, &builder.ID)
 			http.Error(c.Writer, body, http.StatusBadRequest)
 			return nil
 		}
@@ -204,7 +228,7 @@ func handleBuilderPagePost(c *router.Context) error {
 	logging.Infof(
 		c.Context,
 		"updated experiment percentage/prod of %q to %d%%/%t by %q",
-		&id, percentage, luciIsProd, auth.CurrentIdentity(c.Context))
+		&builder.ID, percentage, luciIsProd, auth.CurrentIdentity(c.Context))
 	http.Redirect(c.Writer, c.Request, c.Request.URL.String(), http.StatusFound)
 	return nil
 }
@@ -222,6 +246,6 @@ func migrationStatusLabelClassSuffix(s storage.MigrationStatus) string {
 	}
 }
 
-func enableLUCISProdCheckbox(builder *storage.Builder) bool {
+func luciIsProdCheckboxEnabled(builder *storage.Builder) bool {
 	return builder.SchedulingType != config.SchedulingType_TRYJOBS
 }
