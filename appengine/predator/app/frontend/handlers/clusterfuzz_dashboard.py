@@ -42,8 +42,10 @@ class ClusterfuzzDashBoard(DashBoard):
     crashes = []
     for crash in crash_analyses:
       log_names = []
-      for log in crash.result.get('log', {}).itervalues():
-        log_names.extend(log.keys())
+
+      if crash.result:
+        for log in crash.result.get('log', []):
+          log_names.append(log['name'])
 
       display_data = {
           'signature': crash.signature,

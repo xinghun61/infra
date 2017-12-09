@@ -61,7 +61,8 @@ class ClusterfuzzDashBoardTest(AppengineTestCase):
         'suspected_cls': [{'author': 'someone'}],
         'suspected_project': 'chromium',
         'suspected_components': ['Blink'],
-        'log': {'error': {'FailedToParseStacktrace': 'blabla...'}},
+        'log': [{'level': 'error', 'name': 'FailedToParseStacktrace',
+                 'message': 'blabla...'}],
     }
     analysis.put()
 
@@ -77,6 +78,35 @@ class ClusterfuzzDashBoardTest(AppengineTestCase):
         'suspected_cls': [{'author': 'someone'}],
         'suspected_project': 'chromium',
         'suspected_components': ['Blink'],
+        'key': analysis.key.urlsafe(),
+    }]
+
+    self.assertListEqual(self.dashboard.CrashDataToDisplay([analysis]),
+                         expected_display_data)
+
+  def testCrashDataToDisplayForFailedAnalysis(self):
+    analysis = ClusterfuzzAnalysis()
+    analysis.signature = 'sig'
+    analysis.testcase_id = '123'
+    analysis.crashed_version = '134abs'
+    analysis.job_type = 'asan_job'
+    analysis.crash_type = 'check'
+    analysis.platform = 'win'
+    analysis.commit_count_in_regression_range = 3
+    analysis.put()
+
+    expected_display_data = [{
+        'signature': 'sig',
+        'testcase_id': '123',
+        'version': '134abs',
+        'job_type': 'asan_job',
+        'crash_type': 'check',
+        'platform': 'win',
+        'commits': 3,
+        'log': [],
+        'suspected_cls': [],
+        'suspected_project': '',
+        'suspected_components': [],
         'key': analysis.key.urlsafe(),
     }]
 
