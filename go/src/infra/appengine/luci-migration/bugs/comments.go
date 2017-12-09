@@ -24,7 +24,9 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/info"
+	"go.chromium.org/gae/service/memcache"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/logging"
 
 	"infra/appengine/luci-migration/common"
 	"infra/appengine/luci-migration/storage"
@@ -46,6 +48,23 @@ For the latest status, see https://{{.Hostname}}/masters/{{.Builder.ID.Master|pa
 
 // PostComment posts a comment on the builder bug about the current status.
 func PostComment(c context.Context, client ClientFactory, builder *storage.Builder) error {
+	// did we already post about this?
+	var lockKey string
+	if t := builder.Migration.AnalysisTime; !t.IsZero() {
+		lockKey = fmt.Sprintf("comments-%q-%d", &builder.ID, t.Unix())
+		switch err := memcache.Add(c, memcache.NewItem(c, lockKey)); {
+		case err == memcache.ErrNotStored:
+			logging.Infof(c, "we have already posted this comment")
+			return nil
+
+		case err != nil:
+			return errors.Annotate(err, "failed to lock on comment").Err()
+
+		default:
+			// we didn't post this comment yet and we've acquired a lock to do so
+		}
+	}
+
 	tmplArgs := map[string]interface{}{
 		"Builder":  builder,
 		"Hostname": info.DefaultVersionHostname(c),
@@ -86,7 +105,16 @@ func PostComment(c context.Context, client ClientFactory, builder *storage.Build
 
 	_, err := client(builder.IssueID.Hostname).InsertComment(c, req)
 	if err != nil {
+		if lockKey != "" {
+			if lockErr := memcache.Delete(c, lockKey); lockErr != nil {
+				logging.Errorf(
+					c,
+					"failed to unlock comment (%s) after a failure to post it (%s); this comment is lost forever",
+					lockErr, err)
+			}
+		}
 		return errors.Annotate(err, "InsertComment RPC failed").Err()
 	}
+
 	return nil
 }

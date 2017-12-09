@@ -21,6 +21,7 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/impl/memory"
+	"go.chromium.org/luci/common/clock/testclock"
 
 	"infra/appengine/luci-migration/storage"
 	"infra/monorail"
@@ -55,9 +56,10 @@ func TestPostComment(t *testing.T) {
 				ID:       54,
 			},
 			Migration: storage.BuilderMigration{
-				Status:      storage.StatusLUCIWAI,
-				Correctness: 1.0,
-				Speed:       0.9,
+				AnalysisTime: testclock.TestRecentTimeUTC,
+				Status:       storage.StatusLUCIWAI,
+				Correctness:  1.0,
+				Speed:        0.9,
 			},
 		}
 
@@ -95,6 +97,21 @@ For the latest status, see https://luci-migration.example.com/masters/tryserver.
 			So(actualMonorailReq.Comment.Updates.Labels, ShouldResemble, []string{"MigrationStatus-WAI"})
 			So(actualMonorailReq.Comment.Updates.Status, ShouldEqual, monorail.StatusFixed)
 			So(actualMonorailReq.Comment.Content, ShouldEqual, `Status changed to "Migrated"`)
+		})
+
+		Convey("Do not post twice", func() {
+			reqs := 0
+
+			monorailServer.InsertCommentImpl = func(c context.Context, in *monorail.InsertCommentRequest) (*monorail.InsertCommentResponse, error) {
+				reqs++
+				return &monorail.InsertCommentResponse{}, nil
+			}
+
+			err := PostComment(c, ForwardingFactory(monorailServer), builder)
+			So(err, ShouldBeNil)
+			err = PostComment(c, ForwardingFactory(monorailServer), builder)
+			So(err, ShouldBeNil)
+			So(reqs, ShouldEqual, 1)
 		})
 	})
 }
