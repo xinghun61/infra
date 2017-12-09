@@ -20,25 +20,22 @@ from trainer.spam_helpers import GenerateFeaturesRaw
 
 
 CSV_COLUMNS = ['verdict', 'subject', 'content', 'email']
+LEGACY_CSV_COLUMNS = ['verdict', 'subject', 'content']
 
 
-def from_file(filename):
+def from_file(f):
   rows = []
   skipped_rows = 0
-  with open(filename) as f:
-    for row in csv.reader(f):
-      if len(row) != len(CSV_COLUMNS):
-        skipped_rows += 1
-        continue
+  for row in csv.reader(f):
+    if len(row) == len(CSV_COLUMNS):
+      # Throw out email field
+      rows.append(row[:3])
+    elif len(row) == len(LEGACY_CSV_COLUMNS):
       rows.append(row)
+    else:
+      skipped_rows += 1
 
-  if not rows:
-    raise Exception('No training data found in CSV file: %s' % filename)
-
-  if skipped_rows:
-    tf.logging.warning('Skipped %d rows' % skipped_rows)
-
-  return rows
+  return rows, skipped_rows
 
 
 def fetch_training_data(bucket, prefix):
@@ -53,31 +50,30 @@ def fetch_training_data(bucket, prefix):
   items = response.get('items')
   csv_filepaths = [blob.get('name') for blob in items]
 
+  # Add code
+  csv_filepaths = [
+    'spam-training-data/full-android.csv',
+    'spam-training-data/full-support.csv',
+  ] + csv_filepaths
+
   for filepath in csv_filepaths:
-    training_data.extend(fetch_training_csv(filepath, objects, bucket))
+    rows, skipped_rows = fetch_training_csv(filepath, objects, bucket)
+
+    if len(rows):
+      training_data.extend(rows)
+
+    tf.logging.info('{:<40}{:<20}{:<20}'.format(
+      filepath,
+      'added %d rows' % len(rows),
+      'skipped %d rows' % skipped_rows))
 
   return training_data
 
 
 def fetch_training_csv(filepath, objects, bucket):
-  tf.logging.info('Fetching CSV: %s' % filepath)
   request = objects.get_media(bucket=bucket, object=filepath)
   media = make_api_request(request)
-  rows = []
-  skipped_rows = 0
-
-  for row in csv.reader(StringIO.StringIO(media)):
-    if len(row) != len(CSV_COLUMNS):
-      skipped_rows += 1
-      continue
-    rows.append(row)
-
-  if skipped_rows:
-    tf.logging.warning('Skipped %d rows' % skipped_rows)
-  if len(rows):
-    tf.logging.info('Appending %d training rows' % len(rows))
-
-  return rows
+  return from_file(StringIO.StringIO(media))
 
 
 def make_api_request(request):
@@ -93,7 +89,7 @@ def transform_csv_to_features(csv_training_data):
   X = []
   y = []
   for row in csv_training_data:
-      verdict, subject, content, _ = row
+      verdict, subject, content = row
       X.append(GenerateFeaturesRaw(str(subject), str(content),
         trainer.model.SPAM_FEATURE_HASHES))
       y.append(1 if verdict == 'spam' else 0)
