@@ -181,6 +181,10 @@
      #usefulLinks {
        margin: .25em 0;
      }
+     #allLinks {
+       font-size: 8pt;
+       margin: 1em;
+     }
      #subAlertMenu {
        width: 500px;
      }
@@ -320,8 +324,16 @@
           </template>
           <div id="usefulLinks" hidden$="[[!_haveLinks(selectedAlert, alert)]]">
             Useful Links:
-            <template is="dom-repeat" items="[[_getLinks(selectedAlert, alert)]]" as="link">
+            <template is="dom-repeat" items="[[_getImportantLinks(selectedAlert, alert)]]" as="link">
               <a class="alert-link" target="_blank" href$="[[_linkify(linkStyle, link.href)]]">[[link.title]]</a>
+            </template>
+            <template is="dom-if" if="[[_haveOtherLinks(selectedAlert, alert)]]">
+              <div id="allLinks">
+                All links:
+                <template is="dom-repeat" items="[[_getLinks(selectedAlert, alert)]]" as="link">
+                  <a class="alert-link" target="_blank" href$="[[_linkify(linkStyle, link.href)]]">[[link.title]]</a>
+                </template>
+              </div>
             </template>
           </div>
           <som-extension-trooper-failure tree-name="[[treeName]]" type="[[alert.type]]" extension="[[_getExtension(selectedAlert, alert)]]" link-style="[[linkStyle]]"></som-extension-trooper-failure>

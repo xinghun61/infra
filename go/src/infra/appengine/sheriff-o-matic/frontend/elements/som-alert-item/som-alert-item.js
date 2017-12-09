@@ -304,6 +304,26 @@ class SomAlertItem extends Polymer.mixinBehaviors(
     return this._getSelected(selected, alert).extension;
   }
 
+  _getImportantLinks(selected, alert) {
+    let links = this._getSelected(selected, alert).links;
+    if (!links) {
+      return [];
+    }
+    return links.filter((link) => {
+      return link.title && link.title.indexOf('(failed)') > -1;
+    });
+  }
+
+  _haveOtherLinks(selected, alert) {
+    let allLinks = this._getLinks(selected, alert);
+    let importantLinks = this._getImportantLinks(selected, alert);
+    if (allLinks && importantLinks) {
+      return allLinks.length > 0 && allLinks.length > importantLinks.length;
+    }
+
+    return allLinks && allLinks.length > 0;
+  }
+
   _getLinks(selected, alert) {
     return this._getSelected(selected, alert).links;
   }
