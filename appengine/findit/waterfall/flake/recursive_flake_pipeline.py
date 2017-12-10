@@ -51,6 +51,22 @@ def _ShouldContinueAnalysis(build_number):
   return build_number is not None
 
 
+def _GetDelaySeconds(analysis, retries, manually_triggered):
+  assert retries >= 0
+
+  if retries > flake_constants.MAX_RETRY_TIMES:
+    analysis.LogInfo('Retries exceed max count, RecursiveFlakePipeline will '
+                     'try off peak PST hours')
+    delay_delta = swarming_util.GetETAToStartAnalysis(
+        manually_triggered) - time_util.GetUTCNow()
+    return int(delay_delta.total_seconds())
+  else:
+    delay_seconds = retries * flake_constants.BASE_COUNT_DOWN_SECONDS
+    analysis.LogInfo('No available swarming bots, RecursiveFlakePipeline will '
+                     'be tried after %d seconds' % delay_seconds)
+    return delay_seconds
+
+
 class RecursiveFlakePipeline(BasePipeline):
 
   def __init__(self,
@@ -273,22 +289,8 @@ class RecursiveFlakePipeline(BasePipeline):
             force=force)
     else:  # Can't start analysis, reschedule.
       retries += 1
-      if retries > flake_constants.MAX_RETRY_TIMES:
-        logging.info('Retrys exceed max count, RecursiveFlakePipeline on '
-                     'MasterFlakeAnalysis %s/%s/%s/%s/%s will start off peak '
-                     'hour', self.master_name, self.builder_name,
-                     self.triggering_build_number, self.step_name,
-                     self.test_name)
-        delay_delta = swarming_util.GetETAToStartAnalysis(
-            self.manually_triggered) - time_util.GetUTCNow()
-        delay_seconds = int(delay_delta.total_seconds())
-      else:
-        delay_seconds = retries * flake_constants.BASE_COUNT_DOWN_SECONDS
-        logging.info('No available swarming bots, RecursiveFlakePipeline on '
-                     'MasterFlakeAnalysis %s/%s/%s/%s/%s will be tried after'
-                     '%d seconds', self.master_name, self.builder_name,
-                     self.triggering_build_number, self.step_name,
-                     self.test_name, delay_seconds)
+      delay_seconds = _GetDelaySeconds(analysis, retries,
+                                       self.manually_triggered)
       delay = yield DelayPipeline(delay_seconds)
       with pipeline.After(delay):
         yield RecursiveFlakePipeline(
