@@ -71,6 +71,7 @@ limitations under the License. */}}
       <form method="post" action="update" class="form-inline">
         <input type="hidden" id="xsrf_token" name="xsrf_token" value="{{$.XsrfToken}}">
         <input type="hidden" id="action" name="action" value="update">
+        {{if .TryBuilder}}
         <div class="form-group">
           <label for="experimentPercentage">Experiment percentage</label>
           <input id="experimentPercentage" name="experimentPercentage" type="range" list="tickmarks" value="{{.Builder.ExperimentPercentage}}">
@@ -87,16 +88,16 @@ limitations under the License. */}}
             <option value="90">
             <option value="100">
           </datalist>
-          {{if .ShowLUCIIsProdCheckbox}}
-          <label>
-            <input id="luciIsProd" name="luciIsProd" type="checkbox" {{if .Builder.LUCIIsProd}}checked{{end}}> LUCI Is Prod?
-          </label>
-          {{end}}
         </div>
+        {{else}}
+        <label>
+          <input id="luciIsProd" name="luciIsProd" type="checkbox" {{if .Builder.LUCIIsProd}}checked{{end}}> LUCI Is Prod?
+        </label>
+        {{end}}
         <button type="submit" class="btn btn-default">Update</button>
       </form>
 
-    {{if .ShowAnalysis}}
+    {{if .TryBuilder}}
       <form method="post" class="form-inline">
           <input type="hidden" id="xsrf_token" name="xsrf_token" value="{{$.XsrfToken}}">
           <input type="hidden" id="action" name="action" value="analyze">

@@ -48,13 +48,12 @@ const (
 type builderViewModel struct {
 	Builder *storage.Builder
 
-	StatusKnown            bool
-	StatusClassSuffix      string // Bootstrap label class suffix
-	StatusAge              time.Duration
-	StatusOutdated         bool
-	Details                template.HTML
-	ShowLUCIIsProdCheckbox bool
-	ShowAnalysis           bool
+	StatusKnown       bool
+	StatusClassSuffix string // Bootstrap label class suffix
+	StatusAge         time.Duration
+	StatusOutdated    bool
+	Details           template.HTML
+	TryBuilder        bool
 }
 
 func parseBuilderIDFromRequest(params *httprouter.Params) (storage.BuilderID, error) {
@@ -138,8 +137,7 @@ func builderPage(c context.Context, id storage.BuilderID) (*builderViewModel, er
 	model.StatusClassSuffix = migrationStatusLabelClassSuffix(mig.Status)
 	model.StatusAge = clock.Now(c).Sub(model.Builder.Migration.AnalysisTime)
 	model.StatusOutdated = model.StatusAge > 24*time.Hour
-	model.ShowLUCIIsProdCheckbox = luciIsProdCheckboxEnabled(model.Builder)
-	model.ShowAnalysis = model.Builder.SchedulingType == config.SchedulingType_TRYJOBS
+	model.TryBuilder = model.Builder.SchedulingType == config.SchedulingType_TRYJOBS
 	return model, nil
 }
 
@@ -190,19 +188,27 @@ func analyzeBuilder(c *router.Context, builder *storage.Builder) error {
 }
 
 func updateBuilder(c *router.Context, builder *storage.Builder) error {
-	percentageValue := c.Request.FormValue(experimentPercentageFormValueName)
-	percentage, err := strconv.Atoi(percentageValue)
-	if err != nil || percentage < 0 || percentage > 100 {
-		msg := fmt.Sprintf("invalid %s %q", experimentPercentageFormValueName, percentageValue)
-		http.Error(c.Writer, msg, http.StatusBadRequest)
-		return nil
+	percentage := -1
+	if v := c.Request.FormValue(experimentPercentageFormValueName); v != "" {
+		if builder.SchedulingType != config.SchedulingType_TRYJOBS {
+			body := fmt.Sprintf("cannot set %q on builder %q", experimentPercentageFormValueName, &builder.ID)
+			http.Error(c.Writer, body, http.StatusBadRequest)
+			return nil
+		}
+		var err error
+		percentage, err = strconv.Atoi(v)
+		if err != nil || percentage < 0 || percentage > 100 {
+			msg := fmt.Sprintf("invalid %s %q", experimentPercentageFormValueName, v)
+			http.Error(c.Writer, msg, http.StatusBadRequest)
+			return nil
+		}
 	}
 
 	var luciIsProd bool
 	switch v := c.Request.FormValue(luciIsProdFormValueName); v {
 	case "":
 	case "on":
-		if !luciIsProdCheckboxEnabled(builder) {
+		if builder.SchedulingType == config.SchedulingType_TRYJOBS {
 			body := fmt.Sprintf("cannot set %q on builder %q", luciIsProdFormValueName, &builder.ID)
 			http.Error(c.Writer, body, http.StatusBadRequest)
 			return nil
@@ -214,12 +220,14 @@ func updateBuilder(c *router.Context, builder *storage.Builder) error {
 		return nil
 	}
 
-	err = datastore.RunInTransaction(c.Context, func(c context.Context) error {
+	err := datastore.RunInTransaction(c.Context, func(c context.Context) error {
 		if err := datastore.Get(c, builder); err != nil {
 			return err
 		}
 		builder.LUCIIsProd = luciIsProd
-		builder.ExperimentPercentage = percentage
+		if percentage != -1 {
+			builder.ExperimentPercentage = percentage
+		}
 		return datastore.Put(c, builder)
 	}, nil)
 	if err != nil {
@@ -244,8 +252,4 @@ func migrationStatusLabelClassSuffix(s storage.MigrationStatus) string {
 	default:
 		return "default"
 	}
-}
-
-func luciIsProdCheckboxEnabled(builder *storage.Builder) bool {
-	return builder.SchedulingType != config.SchedulingType_TRYJOBS
 }
