@@ -151,8 +151,26 @@ func TestScheduling(t *testing.T) {
 						"user_agent:luci-migration",
 					},
 				})
-
 			})
+
+			Convey("dry_run property is propagated, if set", func() {
+				// dry_run may be set by CQ only on presubmit builds.
+				b.Build.Output.Properties.(*OutputProperties).DryRun = "true"
+				putBuilder(100)
+				err := HandleNotification(c, b, bbService)
+				So(err, ShouldBeNil)
+				So(actualPutRequest, ShouldNotBeNil)
+
+				var actualParams interface{}
+				err = json.Unmarshal([]byte(actualPutRequest.ParametersJson), &actualParams)
+				So(err, ShouldBeNil)
+				So(actualParams.(map[string]interface{})["properties"], ShouldResemble, map[string]interface{}{
+					"category": "cq_experimental",
+					"revision": "deadbeef",
+					"dry_run":  "true",
+				})
+			})
+
 			Convey("ignores builders with 0 percentage", func() {
 				putBuilder(0)
 				err := HandleNotification(c, b, bbService)

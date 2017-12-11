@@ -61,7 +61,8 @@ type Build struct {
 
 // OutputProperties is used for parsing Build.Output.Properties.
 type OutputProperties struct {
-	GotRevision string `json:"got_revision"`
+	GotRevision string      `json:"got_revision"`
+	DryRun      interface{} `json:"dry_run"`
 }
 
 // HandleNotification retries builds on LUCI.
@@ -107,11 +108,16 @@ func handleCompletedBuildbotBuild(c context.Context, build *Build, bbService *bb
 
 	// This build should be scheduled on LUCI.
 	// Prepare new build request.
-	newParamsJSON, err := setProps(build.ParametersJSON, map[string]interface{}{
-		"revision": (build.Output.Properties).(*OutputProperties).GotRevision,
+	outProps := (build.Output.Properties).(*OutputProperties)
+	props := map[string]interface{}{
+		"revision": outProps.GotRevision,
 		// Mark the build as experimental, so it does not confuse users of Rietveld and Gerrit.
 		"category": "cq_experimental",
-	})
+	}
+	if outProps.DryRun != nil {
+		props["dry_run"] = outProps.DryRun
+	}
+	newParamsJSON, err := setProps(build.ParametersJSON, props)
 	if err != nil {
 		return err
 	}
