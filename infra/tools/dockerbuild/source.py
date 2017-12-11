@@ -267,6 +267,22 @@ def _download_pypi_archive(fd, meta):
 Repository._DOWNLOAD_MAP['pypi_archive'] = _download_pypi_archive
 
 
+def _download_local(fd, meta):
+  basename = os.path.basename(meta)
+  with tarfile.open(mode='w:bz2', fileobj=fd) as tf:
+    tf.add(meta, arcname=basename)
+  return '%s.tar.bz2' % (basename,)
+
+
+def local_directory(name, version, path):
+  return Source(
+      name=name,
+      version=version,
+      download_type='local_directory',
+      download_meta=path)
+Repository._DOWNLOAD_MAP['local_directory'] = _download_local
+
+
 def pypi_sdist(name, version):
   """Defines a Source whose remote data is a PyPi source distribution."""
 

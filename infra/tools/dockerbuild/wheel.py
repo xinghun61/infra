@@ -192,7 +192,7 @@ class PlatformNotSupported(Exception):
 class Builder(object):
 
   def __init__(self, spec, build_fn, arch_map=None, abi_map=None,
-               only_plat=None, skip_plat=None):
+               only_plat=None, skip_plat=None, version_fn=None):
     """Initializes a new wheel Builder.
 
     spec (Spec): The wheel specification.
@@ -208,6 +208,8 @@ class Builder(object):
         that it can build for the named platforms.
     skip_plat (iterable or None): If not None, this Builder will avoid declaring
         that it can build for the named platforms.
+    version_fn (callable or None): If not None, and spec.version is None, this
+        function will be used to set the spec version at runtime.
     """
 
     self._spec = spec
@@ -216,14 +218,15 @@ class Builder(object):
     self._abi_map = abi_map or {}
     self._only_plat = frozenset(only_plat or ())
     self._skip_plat = frozenset(skip_plat or ())
+    self._version_fn = version_fn or (lambda _system: self._spec.version)
 
   @property
   def spec(self):
     return self._spec
 
-  def wheel(self, _system, plat):
+  def wheel(self, system, plat):
     wheel = Wheel(
-        spec=self._spec,
+        spec=self._spec._replace(version=self._version_fn(system)),
         plat=plat,
         # Only support Python 2.7 for now, can augment later.
         pyversion='27',
@@ -357,6 +360,13 @@ def _build_package(system, wheel):
 
 
 def _build_source(system, wheel, src):
+  """Creates Python wheel from src.
+
+  Args:
+    system (dockerbuild.runtime.System): Represents the local system.
+    wheel (dockerbuild.wheel.Wheel): The wheel to build.
+    src (dockerbuild.source.Source): The source to build the wheel from.
+  """
   dx = system.dockcross_image(wheel.plat)
   with system.temp_subdir('%s_%s' % wheel.spec.tuple) as tdir:
     build_dir = system.repo.ensure(src, tdir)
@@ -621,6 +631,34 @@ def Packaged(name, version, only_plat, **kwargs):
   return Builder(spec, build_fn, **kwargs)
 
 
+def InfraPure(name):
+  """Wheel builder for pure Python wheels built from the current local repo's
+     packages folder.
+
+  Args:
+    name (str): The wheel name.
+  """
+  spec = Spec(
+      name=name,
+      version=None,
+      universal=UniversalSpec(pyversions=['py2'])
+  )
+
+  def _local_path(system):
+    return os.path.join(os.path.dirname(system.root), 'packages', name)
+
+  def version_fn(system):
+    dir_path = os.path.dirname(_local_path(system))
+    _, revision = system.check_run(['git', '-C', dir_path, 'rev-parse', 'HEAD'])
+    return revision.strip()
+
+  def build_fn(system, wheel):
+    path = _local_path(system)
+    src = source.local_directory(name, wheel.spec.version, path)
+    return _build_source(system, wheel, src)
+
+  return Builder(spec, build_fn, version_fn=version_fn)
+
 def Universal(name, version, pyversions=None, **kwargs):
   """Universal wheel version of BuildWheel.
 
@@ -872,5 +910,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('six', '1.10.0'),
   Universal('uritemplate', '3.0.0'),
   Universal('urllib3', '1.22'),
+
+  InfraPure('infra_libs'),
 )}
 SPEC_NAMES = sorted(SPECS.keys())

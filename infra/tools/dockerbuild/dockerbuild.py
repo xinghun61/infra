@@ -97,6 +97,8 @@ def _main_wheel_build(args, system):
           spec_name, plat.name)
       try:
         pkg_path = build.build(w, system, rebuild=args.rebuild)
+        if not pkg_path:
+          continue
       except wheel.PlatformNotSupported:
         util.LOGGER.warning('Not supported on: %s', plat.name)
         continue
