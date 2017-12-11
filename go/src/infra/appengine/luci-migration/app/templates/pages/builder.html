@@ -68,7 +68,7 @@ limitations under the License. */}}
         <a href="{{.Builder.IssueID.URL}}">{{.Builder.IssueID.URL}}</a>
       </div>
 
-      <form method="post" action="update" class="form-inline">
+      <form method="post" class="form-inline">
         <input type="hidden" id="xsrf_token" name="xsrf_token" value="{{$.XsrfToken}}">
         <input type="hidden" id="action" name="action" value="update">
         {{if .TryBuilder}}
