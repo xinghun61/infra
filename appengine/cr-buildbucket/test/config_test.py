@@ -40,6 +40,20 @@ swarming {
 }
 ''')
 
+LUCI_DART_TRY_CONFIG_TEXT = (
+'''name: "luci.dart.try"
+swarming {
+  builders {
+    name: "release"
+    dimensions: "pool:Dart.LUCI"
+    recipe {
+      repository: "https://example.com"
+      name: "x"
+    }
+  }
+}
+''')
+
 MASTER_TRYSERVER_CHROMIUM_LINUX_CONFIG_TEXT = (
 '''name: "master.tryserver.chromium.linux"
 acls {
@@ -251,6 +265,24 @@ class ConfigTest(testing.AppengineTestCase):
       }
       ''')
 
+    dart_buildbucket_cfg = parse_cfg('''
+      buckets {
+        name: "luci.dart.try"
+        swarming {
+          builder_defaults {
+            dimensions: "pool:Dart.LUCI"
+            recipe {
+              repository: "https://example.com"
+              name: "x"
+            }
+          }
+          builders {
+            name: "release"
+          }
+        }
+      }
+      ''')
+
     v8_buildbucket_cfg = parse_cfg('''
       buckets {
         name: "master.tryserver.v8"
@@ -273,6 +305,7 @@ class ConfigTest(testing.AppengineTestCase):
 
     get_project_configs.return_value = {
       'chromium': ('deadbeef', chromium_buildbucket_cfg, None),
+      'dart': ('deadbeef', dart_buildbucket_cfg, None),
       'v8': (None, v8_buildbucket_cfg, None),
       'test': ('babe', test_buildbucket_cfg, None),
     }
@@ -290,6 +323,15 @@ class ConfigTest(testing.AppengineTestCase):
           config_content=LUCI_CHROMIUM_TRY_CONFIG_TEXT,
           config_content_binary=text_to_binary(
               LUCI_CHROMIUM_TRY_CONFIG_TEXT),
+      ),
+      config.Bucket(
+          id='luci.dart.try',
+          entity_schema_version=config.CURRENT_BUCKET_SCHEMA_VERSION,
+          project_id='dart',
+          revision='deadbeef',
+          config_content=LUCI_DART_TRY_CONFIG_TEXT,
+          config_content_binary=text_to_binary(
+              LUCI_DART_TRY_CONFIG_TEXT),
       ),
       config.Bucket(
           id='master.tryserver.chromium.linux',

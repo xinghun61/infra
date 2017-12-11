@@ -339,12 +339,12 @@ def cron_update_buckets():
 
         report_reservation = bucket is None or bucket.project_id != project_id
         Bucket(
-          id=bucket_cfg.name,
-          entity_schema_version=CURRENT_BUCKET_SCHEMA_VERSION,
-          project_id=project_id,
-          revision=revision,
-          config_content=protobuf.text_format.MessageToString(bucket_cfg),
-          config_content_binary=bucket_cfg.SerializeToString(),
+            id=bucket_cfg.name,
+            entity_schema_version=CURRENT_BUCKET_SCHEMA_VERSION,
+            project_id=project_id,
+            revision=revision,
+            config_content=protobuf.text_format.MessageToString(bucket_cfg),
+            config_content_binary=bucket_cfg.SerializeToString(),
         ).put()
         if report_reservation:
           logging.warning(
