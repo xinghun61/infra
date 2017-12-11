@@ -2,6 +2,6 @@ indexes:
 
 # Used by tricium.Feedback for analyzer feedback aggregation.
 - kind: Comment
-    properties:
-    - name: Analyzer
-    - name: CreationTime
+  properties:
+  - name: Analyzer
+  - name: CreationTime
