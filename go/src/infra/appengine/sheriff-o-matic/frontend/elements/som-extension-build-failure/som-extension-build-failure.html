@@ -4,6 +4,7 @@
 <link rel="import" href="../../elements/som-layout-test-builder-configs-behavior.html">
 <link rel="import" href="../../elements/som-tree-behavior.html">
 <link rel="import" href="../../elements/som-linkify-behavior.html">
+<link rel="import" href="../../elements/som-test-results/som-master-results.html">
 
 <dom-module id="som-extension-build-failure">
   <template>
@@ -103,6 +104,14 @@
                     , <a href$="[[_linkToEditForTest(extension.builders, test.test_name)]]">edit test expectations</a>
                   </template>
                   )
+                  <template is="dom-if" if="[[_hasResultHistory(extension.reason)]]">
+                    <template is="dom-repeat" items="[[extension.reason.alert_test_results]]" as="testResults">
+                      <template is="dom-repeat" items="[[testResults.master_results]]" as="masterResults">
+                        <som-master-results master-results="[[masterResults]]">
+                        </som-master-results>
+                      </template>
+                    </template>
+                  </template>
                   <template is="dom-if" if="[[_hasSuspect(test)]]">
                     <template is="dom-repeat" items="[[test.suspected_cls]]" as="testCL">
                       <img src="/images/findit.png" alt="findit" title="findit" height="20" width="20">

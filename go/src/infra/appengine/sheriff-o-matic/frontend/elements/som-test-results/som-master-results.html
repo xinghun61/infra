@@ -23,10 +23,13 @@
         <iron-icon icon="[[_computeExpandIcon(masterIsCollapsed)]]" on-tap="[[_toggleExpand]]"></iron-icon>
       </span>
       <div class="row-item">
-        <som-builder-results builder-results="[[_getFirstResults(masterResults)]]"></som-builder-results>
+        <som-builder-results
+            master-name="[[masterResults.master_name]]"
+            builder-results="[[_getFirstResults(masterResults)]]"></som-builder-results>
         <iron-collapse id="collapse">
           <template is="dom-repeat" items="[[_getAdditionalResults(masterResults)]]">
-            <som-builder-results builder-results="[[item]]"></som-builder-results>
+            <som-builder-results master-name="[[masterResults.master_name]]" builder-results="[[items]]">
+            </som-builder-results>
           </template>
         </iron-collapse>
       </div>
