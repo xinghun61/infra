@@ -44,6 +44,9 @@ class MockSQLCnxn(object):
   def commit(self):
     pass
 
+  def close(self):
+    pass
+
 
 sql.MakeConnection = MockSQLCnxn
 

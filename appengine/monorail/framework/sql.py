@@ -96,7 +96,7 @@ class MonorailConnection(object):
 
     return self.sql_cnxns[shard_id]
 
-  def Execute(self, stmt_str, stmt_args, shard_id=None, commit=True):
+  def Execute(self, stmt_str, stmt_args, shard_id=None, commit=True, retries=1):
     """Execute the given SQL statement on one of the relevant databases."""
     if shard_id is None:
       # No shard was specified, so hit the master.
@@ -104,21 +104,35 @@ class MonorailConnection(object):
     else:
       sql_cnxn = self.GetConnectionForShard(shard_id)
 
-    return self._ExecuteWithSQLConnection(
-      sql_cnxn, stmt_str, stmt_args, commit=commit)
+    try:
+      return self._ExecuteWithSQLConnection(
+          sql_cnxn, stmt_str, stmt_args, commit=commit)
+    except MySQLdb.OperationalError as e:
+      logging.exception(e)
+      logging.info('retries: %r', retries)
+      if retries > 0:
+        self.sql_cnxns = {}  # Drop all old mysql connections and make new.
+        return self.Execute(
+            stmt_str, stmt_args, shard_id=shard_id, commit=commit,
+            retries=retries - 1)
 
   def _ExecuteWithSQLConnection(
       self, sql_cnxn, stmt_str, stmt_args, commit=True):
     """Execute a statement on the given database and return a cursor."""
-    cursor = sql_cnxn.cursor()
-    cursor.execute('SET NAMES utf8mb4')
-    start_time = time.time()
     if stmt_str.startswith('INSERT') or stmt_str.startswith('REPLACE'):
       logging.info('SQL stmt_str: \n%s', stmt_str)
       logging.info('SQL stmt_args: %r', stmt_args)
-      cursor.executemany(stmt_str, stmt_args)
     else:
       logging.info('SQL stmt: \n%s', (stmt_str % tuple(stmt_args)))
+
+    start_time = time.time()
+    cursor = sql_cnxn.cursor()
+    cursor.execute('SET NAMES utf8mb4')
+    logging.info('made cursor in %d ms',
+                 int((time.time() - start_time) * 1000))
+    if stmt_str.startswith('INSERT') or stmt_str.startswith('REPLACE'):
+      cursor.executemany(stmt_str, stmt_args)
+    else:
       cursor.execute(stmt_str, args=stmt_args)
     logging.info('%d rows in %d ms', cursor.rowcount,
                  int((time.time() - start_time) * 1000))
@@ -204,6 +218,7 @@ class SQLTableManager(object):
 
     cursor = cnxn.Execute(stmt_str, stmt_args, shard_id=shard_id)
     rows = cursor.fetchall()
+    cursor.close()
     return rows
 
   def SelectRow(
@@ -260,6 +275,7 @@ class SQLTableManager(object):
         cursor = cnxn.Execute(stmt_str, stmt_args, commit=commit)
         if cursor.lastrowid:
           generated_ids.append(cursor.lastrowid)
+        cursor.close()
       return generated_ids
 
     stmt = Statement.MakeInsert(
@@ -318,7 +334,9 @@ class SQLTableManager(object):
     stmt_str, stmt_args = stmt.Generate()
 
     cursor = cnxn.Execute(stmt_str, stmt_args, commit=commit)
-    return cursor.rowcount
+    result = cursor.rowcount
+    cursor.close()
+    return result
 
   def IncrementCounterValue(self, cnxn, col_name, where=None, **kwargs):
     """Atomically increment a counter stored in MySQL, return new value.
@@ -341,7 +359,9 @@ class SQLTableManager(object):
     cursor = cnxn.Execute(stmt_str, stmt_args)
     assert cursor.rowcount == 1, (
         'missing or ambiguous counter: %r' % cursor.rowcount)
-    return cursor.lastrowid
+    result = cursor.lastrowid
+    cursor.close()
+    return result
 
   def Delete(self, cnxn, where=None, commit=True, **kwargs):
     """Delete the specified table rows.
@@ -364,7 +384,9 @@ class SQLTableManager(object):
     stmt_str, stmt_args = stmt.Generate()
 
     cursor = cnxn.Execute(stmt_str, stmt_args, commit=commit)
-    return cursor.rowcount
+    result = cursor.rowcount
+    cursor.close()
+    return result
 
 
 class Statement(object):
