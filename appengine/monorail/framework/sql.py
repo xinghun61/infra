@@ -115,6 +115,8 @@ class MonorailConnection(object):
         return self.Execute(
             stmt_str, stmt_args, shard_id=shard_id, commit=commit,
             retries=retries - 1)
+      else:
+        raise e
 
   def _ExecuteWithSQLConnection(
       self, sql_cnxn, stmt_str, stmt_args, commit=True):
