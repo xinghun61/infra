@@ -15,6 +15,7 @@ import (
 	"html/template"
 	"net/http"
 	"path"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -90,12 +91,35 @@ Exit:{{.Metadata.Exit}}
 {{if .Metadata.Error}}Error: {{.Metadata.Error}}
 {{.Metadata.Raw}}{{end}}
 <hr />
+<h2>Summary</h2>
 {{ .CPUTime }} elapsed time over {{ .RunTime }} ({{printf "%1.1fx" .Parallelism}} parallelism) <br />
 ninja startup: {{ .StartupTime }} <br />
 ninja end: {{ .EndTime }} <br />
 {{ len .Steps }} build steps completed, average of {{printf "%1.2f/s" .StepsPerSec }}
 
 <hr />
+<h2>Time by build-step type</h2>
+<table border=1>
+<tr>
+ <th>
+ <th>count
+ <th>duration
+ <th>weighted
+ <th>build-step type
+</tr>
+{{range $i, $stat := .Stats }}
+<tr>
+ <td>{{$i}}
+ <td>{{$stat.Count}}
+ <td>{{$stat.Time}}
+ <td>{{$stat.Weighted}}
+ <td>{{$stat.Type}}
+</tr>
+{{end}}
+</table>
+
+<hr />
+<h2>Time by each build-step</h2>
 {{$w := .WeightedTimes}}
 <table border=1>
 <tr>
@@ -116,6 +140,7 @@ ninja end: {{ .EndTime }} <br />
  <td>{{$step.End}}
  <td>{{if gt $step.Restat 0}}{{$step.Restat}}{{end}}
  <td>{{$step.Out}}
+  {{range $step.Outs}}<br/>{{.}}{{end}}
 </tr>
 {{end}}
 </table>
@@ -290,6 +315,7 @@ type tableData struct {
 	EndTime       time.Duration
 	CPUTime       time.Duration
 	WeightedTimes map[string]time.Duration
+	Stats         []ninjalog.Stat
 }
 
 func (t tableData) RunTime() time.Duration {
@@ -304,6 +330,25 @@ func (t tableData) StepsPerSec() float64 {
 	return float64(len(t.Steps)) / t.RunTime().Seconds()
 }
 
+func typeFromExt(s ninjalog.Step) string {
+	target := s.Out
+	if strings.Contains(target, ".mojom") {
+		return "mojo"
+	}
+	if strings.HasSuffix(target, "type_mappings") {
+		return "type_mappings"
+	}
+	ext := filepath.Ext(target)
+	if ext == "" {
+		return "(no extension found)"
+	}
+	switch ext {
+	case ".pdb", ".dll", ".exe":
+		return "PEFile (linking)"
+	}
+	return ext
+}
+
 func table(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error {
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
@@ -312,6 +357,7 @@ func table(w http.ResponseWriter, logPath string, njl *ninjalog.NinjaLog) error 
 	}
 	data.StartupTime, data.EndTime, data.CPUTime = ninjalog.TotalTime(njl.Steps)
 	data.WeightedTimes = ninjalog.WeightedTime(njl.Steps)
+	data.Stats = ninjalog.StatsByType(njl.Steps, data.WeightedTimes, typeFromExt)
 	// TODO(ukai): sort by req parameter, or sort by javascript.
 	sort.Sort(sort.Reverse(ninjalog.ByWeightedTime{
 		Weighted: data.WeightedTimes,

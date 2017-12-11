@@ -325,9 +325,14 @@ func TestDedup(t *testing.T) {
 	got := Dedup(steps)
 	want := append([]Step{}, stepsSorted...)
 	want = append(want, Step{
-		Start:   302 * time.Millisecond,
-		End:     5764 * time.Millisecond,
-		Out:     "gen/ui/keyboard/webui/keyboard.mojom-internal.h",
+		Start: 302 * time.Millisecond,
+		End:   5764 * time.Millisecond,
+		Out:   "gen/ui/keyboard/webui/keyboard.mojom-internal.h",
+		Outs: []string{
+			"gen/ui/keyboard/webui/keyboard.mojom.cc",
+			"gen/ui/keyboard/webui/keyboard.mojom.h",
+			"gen/ui/keyboard/webui/keyboard.mojom.js",
+		},
 		CmdHash: "a551cc46f8c21e5a",
 	})
 	if !reflect.DeepEqual(got, want) {

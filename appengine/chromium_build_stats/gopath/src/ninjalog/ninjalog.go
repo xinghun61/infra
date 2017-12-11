@@ -26,6 +26,9 @@ type Step struct {
 	Restat  int
 	Out     string
 	CmdHash string
+
+	// other outs for the same CmdHash if dedup'ed.
+	Outs []string
 }
 
 // Duration reports step's duration.
@@ -252,18 +255,17 @@ func Dump(w io.Writer, steps []Step) error {
 // Dedup dedupes steps. step may have the same cmd hash.
 // Dedup only returns the first step for these steps.
 // steps will be sorted by start time.
-//
-// TODO(ukai): categorizes by extension.
 func Dedup(steps []Step) []Step {
-	m := make(map[string]bool)
+	m := make(map[string]*Step)
 	sort.Sort(Steps(steps))
 	var dedup []Step
 	for _, s := range steps {
-		if m[s.CmdHash] {
+		if os := m[s.CmdHash]; os != nil {
+			os.Outs = append(os.Outs, s.Out)
 			continue
 		}
 		dedup = append(dedup, s)
-		m[s.CmdHash] = true
+		m[s.CmdHash] = &dedup[len(dedup)-1]
 	}
 	return dedup
 }
@@ -405,4 +407,43 @@ func WeightedTime(steps []Step) map[string]time.Duration {
 		lastTime = event.time
 	}
 	return weightedDuration
+}
+
+// Stat represents statistics for build step.
+type Stat struct {
+	Type     string
+	Count    int
+	Time     time.Duration
+	Weighted time.Duration
+}
+
+// StatsByType summarizes build step statistics with weighted and typeOf.
+// Stats is sorted by Weighted, longer first.
+func StatsByType(steps []Step, weighted map[string]time.Duration, typeOf func(Step) string) []Stat {
+	if len(steps) == 0 {
+		return nil
+	}
+	steps = Dedup(steps)
+	m := make(map[string]int) // type to index of stats.
+	var stats []Stat
+	for _, step := range steps {
+		t := typeOf(step)
+		if i, ok := m[t]; ok {
+			stats[i].Count++
+			stats[i].Time += step.Duration()
+			stats[i].Weighted += weighted[step.Out]
+			continue
+		}
+		stats = append(stats, Stat{
+			Type:     t,
+			Count:    1,
+			Time:     step.Duration(),
+			Weighted: weighted[step.Out],
+		})
+		m[t] = len(stats) - 1
+	}
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Weighted > stats[j].Weighted
+	})
+	return stats
 }
