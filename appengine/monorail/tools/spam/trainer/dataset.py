@@ -5,9 +5,7 @@
 
 from __future__ import absolute_import
 from __future__ import division
-from __future__ import print_function
 
-import csv
 import StringIO
 import tensorflow as tf
 
@@ -16,26 +14,7 @@ from googleapiclient import errors
 from oauth2client.client import GoogleCredentials
 
 import trainer.model
-from trainer.spam_helpers import GenerateFeaturesRaw
-
-
-CSV_COLUMNS = ['verdict', 'subject', 'content', 'email']
-LEGACY_CSV_COLUMNS = ['verdict', 'subject', 'content']
-
-
-def from_file(f):
-  rows = []
-  skipped_rows = 0
-  for row in csv.reader(f):
-    if len(row) == len(CSV_COLUMNS):
-      # Throw out email field
-      rows.append(row[:3])
-    elif len(row) == len(LEGACY_CSV_COLUMNS):
-      rows.append(row)
-    else:
-      skipped_rows += 1
-
-  return rows, skipped_rows
+import trainer.spam_helpers
 
 
 def fetch_training_data(bucket, prefix):
@@ -73,7 +52,7 @@ def fetch_training_data(bucket, prefix):
 def fetch_training_csv(filepath, objects, bucket):
   request = objects.get_media(bucket=bucket, object=filepath)
   media = make_api_request(request)
-  return from_file(StringIO.StringIO(media))
+  return trainer.spam_helpers.from_file(StringIO.StringIO(media))
 
 
 def make_api_request(request):
@@ -83,14 +62,3 @@ def make_api_request(request):
     tf.logging.error('There was an error with the API. Details:')
     tf.logging.error(err._get_reason())
     raise
-
-
-def transform_csv_to_features(csv_training_data):
-  X = []
-  y = []
-  for row in csv_training_data:
-      verdict, subject, content = row
-      X.append(GenerateFeaturesRaw(str(subject), str(content),
-        trainer.model.SPAM_FEATURE_HASHES))
-      y.append(1 if verdict == 'spam' else 0)
-  return X, y

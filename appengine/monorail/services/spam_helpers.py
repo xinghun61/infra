@@ -4,15 +4,20 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 """
-Spam classifier helper functions. These are mostly fo feature extraction, so
+Spam classifier helper functions. These are mostly for feature extraction, so
 that the serving code and training code both use the same set of features.
 """
 
+import csv
 import hashlib
 import re
 
 
+CSV_COLUMNS = ['verdict', 'subject', 'content', 'email']
+LEGACY_CSV_COLUMNS = ['verdict', 'subject', 'content']
 DELIMITERS = ['\s', '\,', '\.', '\?', '!', '\:', '\(', '\)']
+# Must be identical to settings.spam_feature_hashes.
+SPAM_FEATURE_HASHES = 500
 
 
 def _HashFeatures(content, num_features):
@@ -53,3 +58,30 @@ def GenerateFeaturesRaw(summary, description, num_hashes):
     description = description.encode('utf-8')
 
   return { 'word_hashes': _HashFeatures([summary, description], num_hashes) }
+
+
+def from_file(f):
+  """Reads a training data file and returns an array."""
+  rows = []
+  skipped_rows = 0
+  for row in csv.reader(f):
+    if len(row) == len(CSV_COLUMNS):
+      # Throw out email field.
+      rows.append(row[:3])
+    elif len(row) == len(LEGACY_CSV_COLUMNS):
+      rows.append(row)
+    else:
+      skipped_rows += 1
+
+  return rows, skipped_rows
+
+
+def transform_csv_to_features(csv_training_data):
+  X = []
+  y = []
+  for row in csv_training_data:
+    verdict, subject, content = row
+    X.append(GenerateFeaturesRaw(str(subject), str(content),
+      SPAM_FEATURE_HASHES))
+    y.append(1 if verdict == 'spam' else 0)
+  return X, y

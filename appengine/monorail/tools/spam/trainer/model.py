@@ -10,8 +10,8 @@ from __future__ import print_function
 import numpy as np
 import tensorflow as tf
 
-# Must be identical to settings.spam_feature_hashes.
-SPAM_FEATURE_HASHES = 500
+from trainer.spam_helpers import SPAM_FEATURE_HASHES
+
 
 # Important: we assume this list mirrors the output of GenerateFeaturesRaw.
 INPUT_COLUMNS = [

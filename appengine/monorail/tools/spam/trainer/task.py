@@ -16,6 +16,7 @@ from tensorflow.contrib.training.python.training import hparam
 
 import trainer.dataset
 import trainer.model
+import trainer.spam_helpers
 
 
 def generate_experiment_fn(**experiment_args):
@@ -36,14 +37,14 @@ def generate_experiment_fn(**experiment_args):
     if hparams.train_file:
 
       with open(hparams.train_file) as f:
-        training_data, _ = trainer.dataset.from_file(f)
+        training_data, _ = trainer.spam_helpers.from_file(f)
     else:
       training_data = trainer.dataset.fetch_training_data(hparams.gcs_bucket,
         hparams.gcs_prefix)
 
     tf.logging.info('Training data received. Len: %d' % len(training_data))
 
-    X, y = trainer.dataset.transform_csv_to_features(training_data)
+    X, y = trainer.spam_helpers.transform_csv_to_features(training_data)
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2,
       random_state=42)
 
