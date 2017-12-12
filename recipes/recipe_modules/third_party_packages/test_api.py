@@ -10,6 +10,7 @@ from . import ninja as tpp_ninja
 from . import cmake as tpp_cmake
 from . import swig as tpp_swig
 from . import go as tpp_go
+from . import dep as tpp_dep
 
 from recipe_engine import recipe_test_api
 
@@ -47,3 +48,7 @@ class ThirdPartyPackagesTestApi(recipe_test_api.RecipeTestApi):
   @property
   def go(self):
     return tpp_go
+
+  @property
+  def dep(self):
+    return tpp_dep

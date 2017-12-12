@@ -1,0 +1,225 @@
+[
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::gitiles]/resources/gerrit_client.py",
+      "--json-file",
+      "/path/to/tmp/json",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/golang/dep/+refs",
+      "--format",
+      "json"
+    ],
+    "name": "refs",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"HEAD\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/heads/master\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v0.3.0\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v0.3.1\": null, @@@",
+      "@@@STEP_LOG_LINE@json.output@  \"refs/tags/v0.3.2\": null@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@",
+      "@@@STEP_LOG_LINE@refs@HEAD@@@",
+      "@@@STEP_LOG_LINE@refs@refs/heads/master@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v0.3.0@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v0.3.1@@@",
+      "@@@STEP_LOG_LINE@refs@refs/tags/v0.3.2@@@",
+      "@@@STEP_LOG_END@refs@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "search",
+      "go/cmd/github.com/golang/dep/linux-amd64",
+      "-tag",
+      "version:0.3.2",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "name": "cipd search go/cmd/github.com/golang/dep/linux-amd64 version:0.3.2",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": []@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[recipe_engine::file]/resources/fileutil.py",
+      "--json-output",
+      "/path/to/tmp/json",
+      "rmtree",
+      "[START_DIR]/dep"
+    ],
+    "infra_step": true,
+    "name": "rmtree workdir"
+  },
+  {
+    "cmd": [
+      "python",
+      "-u",
+      "RECIPE_MODULE[depot_tools::git]/resources/git_setup.py",
+      "--path",
+      "[START_DIR]/dep/src/github.com/golang/dep",
+      "--url",
+      "https://chromium.googlesource.com/external/github.com/golang/dep"
+    ],
+    "name": "git setup"
+  },
+  {
+    "cmd": [
+      "git",
+      "retry",
+      "fetch",
+      "origin",
+      "refs/tags/v0.3.2",
+      "--progress"
+    ],
+    "cwd": "[START_DIR]/dep/src/github.com/golang/dep",
+    "env": {
+      "PATH": "RECIPE_PACKAGE_REPO[depot_tools]:<PATH>"
+    },
+    "infra_step": true,
+    "name": "git fetch"
+  },
+  {
+    "cmd": [
+      "git",
+      "checkout",
+      "-f",
+      "FETCH_HEAD"
+    ],
+    "cwd": "[START_DIR]/dep/src/github.com/golang/dep",
+    "infra_step": true,
+    "name": "git checkout"
+  },
+  {
+    "cmd": [
+      "git",
+      "rev-parse",
+      "HEAD"
+    ],
+    "cwd": "[START_DIR]/dep/src/github.com/golang/dep",
+    "infra_step": true,
+    "name": "read revision",
+    "stdout": "/path/to/tmp/",
+    "~followup_annotations": [
+      "@@@STEP_TEXT@<br/>checked out 'deadbeef'<br/>@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "git",
+      "clean",
+      "-f",
+      "-d",
+      "-x"
+    ],
+    "cwd": "[START_DIR]/dep/src/github.com/golang/dep",
+    "infra_step": true,
+    "name": "git clean"
+  },
+  {
+    "cmd": [
+      "cipd",
+      "ensure",
+      "-root",
+      "[START_DIR]/dep/_cipd",
+      "-ensure-file",
+      "infra/go/${platform} version:1.9.1",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json"
+    ],
+    "name": "ensure_installed",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": [@@@",
+      "@@@STEP_LOG_LINE@json.output@    {@@@",
+      "@@@STEP_LOG_LINE@json.output@      \"instance_id\": \"resolved-instance_id-of-version:1.9.1---\", @@@",
+      "@@@STEP_LOG_LINE@json.output@      \"package\": \"infra/go/${platform}\"@@@",
+      "@@@STEP_LOG_LINE@json.output@    }@@@",
+      "@@@STEP_LOG_LINE@json.output@  ]@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "[START_DIR]/dep/_cipd/bin/go",
+      "get",
+      "github.com/golang/dep/cmd/dep"
+    ],
+    "env": {
+      "GOBIN": "[START_DIR]/dep/bin",
+      "GOPATH": "[START_DIR]/dep",
+      "GOROOT": "[START_DIR]/dep/_cipd"
+    },
+    "name": "go get"
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-build",
+      "-in",
+      "[START_DIR]/dep/bin",
+      "-name",
+      "go/cmd/github.com/golang/dep/linux-amd64",
+      "-out",
+      "[START_DIR]/dep/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-install-mode",
+      "symlink"
+    ],
+    "name": "build linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"go/cmd/github.com/golang/dep/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "cmd": [
+      "cipd",
+      "pkg-register",
+      "[START_DIR]/dep/package.cipd",
+      "-json-output",
+      "/path/to/tmp/json",
+      "-service-account-json",
+      "/creds/service_accounts/service-account-cipd-builder.json",
+      "-ref",
+      "latest",
+      "-tag",
+      "version:0.3.2"
+    ],
+    "name": "register go/cmd/github.com/golang/dep/linux-amd64",
+    "~followup_annotations": [
+      "@@@STEP_LOG_LINE@json.output@{@@@",
+      "@@@STEP_LOG_LINE@json.output@  \"result\": {@@@",
+      "@@@STEP_LOG_LINE@json.output@    \"instance_id\": \"40-chars-fake-of-the-package-instance_id\", @@@",
+      "@@@STEP_LOG_LINE@json.output@    \"package\": \"go/cmd/github.com/golang/dep/linux-amd64\"@@@",
+      "@@@STEP_LOG_LINE@json.output@  }@@@",
+      "@@@STEP_LOG_LINE@json.output@}@@@",
+      "@@@STEP_LOG_END@json.output@@@"
+    ]
+  },
+  {
+    "name": "$result",
+    "recipe_result": null,
+    "status_code": 0
+  }
+]

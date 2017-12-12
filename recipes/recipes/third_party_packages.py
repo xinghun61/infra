@@ -44,6 +44,8 @@ def RunSteps(api, dry_run):
       api.third_party_packages.swig.package()
     with api.step.nest('go'):
       api.third_party_packages.go.package()
+    with api.step.nest('dep'):
+      api.third_party_packages.dep.package()
 
 
 def GenTests(api):
@@ -105,7 +107,13 @@ def GenTests(api):
         api.third_party_packages.go.PACKAGE_TEMPLATE % {
           'platform': platform,
         },
-        '1.2.3' + api.third_party_packages.go.PACKAGE_VERSION_SUFFIX)
+        '1.2.3' + api.third_party_packages.go.PACKAGE_VERSION_SUFFIX) +
+      api.step_data('dep.refs',
+        api.gitiles.make_refs_test_data('refs/tags/v0.3.1')) +
+      cipd_search(
+        'dep',
+        api.third_party_packages.dep.PACKAGE_PREFIX + platform,
+        '0.3.1' + api.third_party_packages.dep.PACKAGE_VERSION_SUFFIX)
     )
 
   yield (
