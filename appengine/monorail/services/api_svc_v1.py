@@ -128,7 +128,13 @@ def monorail_api_method(
         raise
       except endpoints.UnauthorizedException:
         approximate_http_status = 401
+        # Client will refresh token and retry.
         raise
+      except oauth.InvalidOAuthTokenError:
+        approximate_http_status = 401
+        # Client will refresh token and retry.
+        raise endpoints.UnauthorizedException(
+            'Auth error: InvalidOAuthTokenError')
       except actionlimit.ExcessiveActivityException as e:
         approximate_http_status = 403
         raise endpoints.ForbiddenException(
