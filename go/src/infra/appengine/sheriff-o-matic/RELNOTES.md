@@ -1,3 +1,36 @@
+# Release Notes sheriff-o-matic 2017-12-12
+
+- 10 commits, 7 bugs affected since 6c327c1 (2017-12-05T00:09:03Z)
+- 2 Authors:
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [[som] Add test result history fetching to the analyzer.](https://chromium-review.googlesource.com/821191) (seanmccullough@chromium.org)
+- [[som] Separate alert links into "Useful" and less prominent "All"](https://chromium-review.googlesource.com/818626) (seanmccullough@chromium.org)
+- [[som] Add support for using test run history from test-results server](https://chromium-review.googlesource.com/817495) (seanmccullough@chromium.org)
+- [[som] Some tweaks to render test results embedded in alerts.](https://chromium-review.googlesource.com/817658) (seanmccullough@chromium.org)
+- [[som] Stop splitting test failures into one alert per test failure.](https://chromium-review.googlesource.com/815940) (seanmccullough@chromium.org)
+- [[som] Make a separate client services init for staging/prod](https://chromium-review.googlesource.com/812455) (seanmccullough@chromium.org)
+- [SoM: Add crdx-header to SoM.](https://chromium-review.googlesource.com/812545) (zhangtiff@google.com)
+- [SoM: Restore custom labels per-tree to bug filing.](https://chromium-review.googlesource.com/809510) (zhangtiff@google.com)
+- [SoM: Make file bug dialog scrollable.](https://chromium-review.googlesource.com/809625) (zhangtiff@google.com)
+- [SoM: Update on-call links.](https://chromium-review.googlesource.com/809926) (zhangtiff@google.com)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/739864](https://crbug.com/739864)
+  -  [https://crbug.com/757630](https://crbug.com/757630)
+  -  [https://crbug.com/792303](https://crbug.com/792303)
+
+- zhangtiff@google.com:
+  -  [https://crbug.com/760265](https://crbug.com/760265)
+  -  [https://crbug.com/788734](https://crbug.com/788734)
+  -  [https://crbug.com/792149](https://crbug.com/792149)
+  -  [https://crbug.com/792193](https://crbug.com/792193)
+
 # Release Notes sheriff-o-matic 2017-12-04
 
 - 2 commits, 1 bugs affected since e9701c3 (2017-12-01T16:06:40Z)
