@@ -14,6 +14,7 @@ import (
 	"google.golang.org/appengine"
 
 	"infra/appengine/sheriff-o-matic/som/analyzer"
+	buildstep "infra/appengine/sheriff-o-matic/som/analyzer/step"
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/model"
 	"infra/appengine/sheriff-o-matic/som/model/gen"
@@ -165,8 +166,18 @@ func generateAlerts(ctx *router.Context) (*messages.AlertsSummary, error) {
 	}
 
 	alertCount.Set(c, int64(len(alerts)), tree)
-	logging.Debugf(c, "storing %d alerts for %s", len(alerts), tree)
 
+	// Attach test result histories to test failure alerts.
+	for _, alert := range alerts {
+		if !isTestFailure(alert) {
+			continue
+		}
+		if err := attachTestResults(c, &alert); err != nil {
+			logging.WithError(err).Errorf(c, "attaching results")
+		}
+	}
+
+	logging.Debugf(c, "storing %d alerts for %s", len(alerts), tree)
 	alertsSummary := &messages.AlertsSummary{
 		RevisionSummaries: map[string]messages.RevisionSummary{},
 		Alerts:            alerts,
@@ -178,6 +189,87 @@ func generateAlerts(ctx *router.Context) (*messages.AlertsSummary, error) {
 	}
 
 	return alertsSummary, nil
+}
+
+func attachTestResults(c context.Context, alert *messages.Alert) error {
+	trc := client.GetTestResults(c)
+	bf, ok := alert.Extension.(messages.BuildFailure)
+	if !ok {
+		return fmt.Errorf("couldn't cast to a BuildFailure: %+v", bf)
+	}
+	step := bf.StepAtFault.Step.Name
+	tf, ok := bf.Reason.Raw.(*buildstep.TestFailure)
+	if !ok {
+		return fmt.Errorf("couldn't cast to a TestFailure: %+v", tf)
+	}
+
+	// TODO(seanmccullough) use all TestNames, not just the last one.
+	test := ""
+	for _, t := range tf.TestNames {
+		test = t
+	}
+
+	resultsByMaster := map[string]*messages.MasterResults{}
+	alertTestResults := messages.AlertTestResults{
+		TestName:      test,
+		MasterResults: []messages.MasterResults{},
+	}
+
+	for _, builder := range bf.Builders {
+		masterName := builder.Master
+		builderName := builder.Name
+		trh, err := trc.GetTestResultHistory(c, masterName, builderName, step)
+		if err != nil {
+			logging.WithError(err).Errorf(c, "couldn't get test results history for %q %q %q %q", test, masterName, builderName, step)
+			continue
+		}
+
+		// Go back one build before LatestPassing for extra history, try to get
+		// the last 10 builds if possible.
+		end := builder.LatestPassing - 1
+		if builder.LatestFailure > 11 && builder.LatestFailure-builder.LatestPassing < 10 {
+			end = builder.LatestFailure - 11
+		}
+
+		for _, test := range tf.TestNames {
+			tr, err := trh.ResultsForBuildRange(test, builder.LatestFailure, end)
+			if err != nil {
+				logging.Errorf(c, err.Error())
+				logging.WithError(err).Errorf(c, "couldn't get test results history for %q %q %q %q in build range [%d, %d]", test, masterName, builderName, step, builder.LatestPassing, builder.LatestFailure)
+				continue
+			}
+			if _, ok := resultsByMaster[masterName]; !ok {
+				resultsByMaster[masterName] = &messages.MasterResults{
+					MasterName:     masterName,
+					BuilderResults: []messages.BuilderResults{},
+				}
+			}
+			masterResults := resultsByMaster[masterName]
+			builderResults := messages.BuilderResults{
+				BuilderName: builderName,
+				Results:     []messages.Results{},
+			}
+
+			// Now attach to bf.Reason.Raw (which should be step.TestFailure,
+			// which has AlertTestResults []messages.AlertTestResults
+			for _, r := range tr {
+				builderResults.Results = append(builderResults.Results,
+					messages.Results{
+						BuildNumber: r.BuildNumber,
+						Revision:    r.ChromeRevision,
+						Actual:      r.Results,
+					})
+			}
+			masterResults.BuilderResults = append(masterResults.BuilderResults, builderResults)
+		}
+	}
+	for _, masterResult := range resultsByMaster {
+		alertTestResults.MasterResults = append(alertTestResults.MasterResults, *masterResult)
+	}
+	tf.AlertTestResults = append(tf.AlertTestResults, alertTestResults)
+	bf.Reason.Raw = tf
+
+	return nil
 }
 
 // mergeAlertsByReason merges alerts for step failures occurring across multiple builders into

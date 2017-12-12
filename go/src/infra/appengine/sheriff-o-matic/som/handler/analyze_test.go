@@ -12,6 +12,7 @@ import (
 	"golang.org/x/net/context"
 
 	"infra/appengine/sheriff-o-matic/som/analyzer"
+	"infra/appengine/sheriff-o-matic/som/analyzer/step"
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/client/mock"
 	testhelper "infra/appengine/sheriff-o-matic/som/client/test"
@@ -490,4 +491,118 @@ func (a annList) Less(i, j int) bool {
 
 func (a annList) Swap(i, j int) {
 	a[i], a[j] = a[j], a[i]
+}
+
+func TestAttachTestResults(t *testing.T) {
+	Convey("basic", t, func() {
+
+		ctx := newTestContext()
+		ctx = authtest.MockAuthConfig(ctx)
+		fakeTRServer := testhelper.NewFakeServer()
+		defer fakeTRServer.Server.Close()
+
+		testHistory := map[string]interface{}{
+			"test-builder": &client.BuilderTestHistory{
+				BuildNumbers:   []int64{10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0},
+				ChromeRevision: []string{"10", "9", "8", "7", "6", "5", "4", "3", "2", "1", "0"},
+				Tests: map[string]*client.TestResultHistory{
+					"test 1": &client.TestResultHistory{
+						Results: [][]interface{}{
+							{float64(5), "B"},
+							{float64(5), "A"},
+						},
+					},
+				},
+				FailureMap: map[string]string{
+					"A": "PASS",
+					"B": "FAIL",
+				},
+			},
+		}
+		fakeTRServer.JSONResponse = testHistory
+
+		ctx = client.WithTestResults(ctx, fakeTRServer.Server.URL)
+		Convey("empty alert", func() {
+			alert := &messages.Alert{}
+			err := attachTestResults(ctx, alert)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("with test failure", func() {
+			alert := &messages.Alert{
+				Extension: messages.BuildFailure{
+					Builders: []messages.AlertedBuilder{
+						{
+							Master:        "master",
+							Name:          "test-builder",
+							LatestFailure: 10,
+							FirstFailure:  8,
+							LatestPassing: 7,
+						},
+					},
+					StepAtFault: &messages.BuildStep{
+						Step: &messages.Step{
+							Name: "test step",
+						},
+					},
+					Reason: &messages.Reason{
+						Raw: &step.TestFailure{
+							TestNames: []string{"test 1"},
+							StepName:  "test step",
+						},
+					},
+				},
+			}
+			err := attachTestResults(ctx, alert)
+			So(err, ShouldBeNil)
+			alertTestResults := alert.Extension.(messages.BuildFailure).Reason.Raw.(*step.TestFailure).AlertTestResults
+			So(alertTestResults, ShouldNotBeEmpty)
+			So(alertTestResults, ShouldResemble, []messages.AlertTestResults{
+				{
+					TestName: "test 1",
+					MasterResults: []messages.MasterResults{
+						{
+							MasterName: "master",
+							BuilderResults: []messages.BuilderResults{
+								{
+									BuilderName: "test-builder",
+									Results: []messages.Results{
+										{
+											BuildNumber: 10,
+											Revision:    "10",
+											Actual:      []string{"FAIL"},
+										},
+
+										{
+											BuildNumber: 9,
+											Revision:    "9",
+											Actual:      []string{"FAIL"},
+										},
+
+										{
+											BuildNumber: 8,
+											Revision:    "8",
+											Actual:      []string{"FAIL"},
+										},
+
+										{
+											BuildNumber: 7,
+											Revision:    "7",
+											Actual:      []string{"FAIL"},
+										},
+
+										{
+											BuildNumber: 6,
+											Revision:    "6",
+											Actual:      []string{"FAIL"},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			})
+		})
+	})
 }
