@@ -36,7 +36,7 @@ def generate_experiment_fn(**experiment_args):
     if hparams.train_file:
 
       with open(hparams.train_file) as f:
-        training_data = trainer.dataset.from_file(f)
+        training_data, _ = trainer.dataset.from_file(f)
     else:
       training_data = trainer.dataset.fetch_training_data(hparams.gcs_bucket,
         hparams.gcs_prefix)
