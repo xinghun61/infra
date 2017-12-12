@@ -7,6 +7,7 @@ RUN /usr/bin/apt-get -y dist-upgrade
 RUN /usr/bin/apt-get -y install curl
 RUN /usr/bin/apt-get -y install sudo
 RUN /usr/bin/apt-get -y install python
+RUN /usr/bin/apt-get -y install lsof
 
 # Cleanup to shrink image sizes.
 RUN /usr/bin/find /var/lib/apt/lists /tmp /var/tmp /usr/share/info \
