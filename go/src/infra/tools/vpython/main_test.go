@@ -24,20 +24,27 @@ import (
 	"go.chromium.org/luci/common/system/filesystem"
 	"go.chromium.org/luci/common/testing/testfs"
 
-	"go.chromium.org/luci/vpython"
-
 	"golang.org/x/net/context"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 var (
-	testDataDir          = "test_data"
-	testMainRunScriptENV = "_VPYTHON_MAIN_TEST_RUN_SCRIPT"
+	testDataDir                 = "test_data"
+	testMainRunScriptENV        = "_VPYTHON_MAIN_TEST_RUN_SCRIPT"
+	behaveExactlyLikeVpythonENV = "_VPYTHON_MAIN_TEST_PASSTHROUGH"
 )
 
 var vpythonDebug = flag.Bool("vpython.debug", false, "Enable vpython debug otuput.")
 var vpythonTestCase = flag.String("vpython.testcase", "", "Run a specific test case. Useful for debugging.")
+
+func init() {
+	// Do we need to behave exactly like vpython.exe?
+	env := environ.System()
+	if env.GetEmpty(behaveExactlyLikeVpythonENV) != "" {
+		main()
+	}
+}
 
 func TestMain(t *testing.T) {
 	self, err := os.Executable()
@@ -47,7 +54,6 @@ func TestMain(t *testing.T) {
 
 	// Are we a spawned subprocess of TestMain?
 	env := environ.System()
-	env.Remove(vpython.EnvironmentStampPathENV)
 	if v := env.GetEmpty(testMainRunScriptENV); v != "" {
 		os.Exit(testMainRunDelegate(self, v))
 		return
