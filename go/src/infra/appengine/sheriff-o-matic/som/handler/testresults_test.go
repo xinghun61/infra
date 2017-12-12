@@ -108,13 +108,13 @@ func TestGetBQClient(t *testing.T) {
 var rowResultsOne = []messages.Results{
 	{
 		BuildNumber: 1,
-		Actual:      []int{1}, // [FAIL]
-		Expected:    []int{2}, // [PASS]
+		Actual:      []string{"FAIL"},
+		Expected:    []string{"PASS"},
 	},
 	{
 		BuildNumber: 2,
-		Actual:      []int{1},
-		Expected:    []int{2},
+		Actual:      []string{"FAIL"},
+		Expected:    []string{"PASS"},
 	},
 }
 

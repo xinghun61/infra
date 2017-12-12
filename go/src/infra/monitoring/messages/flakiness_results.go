@@ -25,7 +25,8 @@ type BuilderResults struct {
 
 // Results holds the test result from one build.
 type Results struct {
-	BuildNumber int   `json:"build_number" bigquery:"build_number"`
-	Actual      []int `json:"test_actual" bigquery:"actual"`
-	Expected    []int `json:"test_expected" bigquery:"expected"`
+	BuildNumber int64    `json:"build_number"`
+	Revision    string   `json:"revision"`
+	Actual      []string `json:"test_actual"`
+	Expected    []string `json:"test_expected"`
 }
