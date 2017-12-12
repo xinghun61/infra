@@ -1,0 +1,71 @@
+syntax = "proto3";
+
+import "google/protobuf/timestamp.proto";
+
+package findit;
+
+// The action that was taken by Findit.
+enum AnalysisAction {
+  // A comment was left on a bug.
+  BUG_COMMENTED = 0;
+
+  // A bug was created.
+  BUG_CREATED = 1;
+
+  // A comment was left on a CL codereview.
+  CL_COMMENTED = 2;
+
+  // A revert was created.
+  REVERT_CREATED = 3;
+
+  // A revert was created and submitted.
+  REVERT_SUBMITTED = 4;
+
+
+}
+
+
+// The eventual conclusion of the analysis.
+enum AnalysisOutcome {
+  // Recieved a request that wasn't supported.
+  NOT_SUPPORTED = 0;
+
+  // Findit couldn't reproduce the failure.
+  NOT_REPRODUCIBLE = 1;
+
+  // Findit could reproduce the results, but no suspect or culprit was found.
+  REPRODUCIBLE = 2;
+
+  // Findit could reproduce the results, a suspect was identified but no culprit was found.
+  SUSPECT = 3;
+
+  // Findit could reproduce the results and a culprit was found.
+  CULPRIT = 4;
+}
+
+// Culprit/suspect responsible for the failure or flake.
+message Culprit {
+  // Host of the project.
+  string host  = 1;
+
+  // Project the culprit contributed to.
+  string project = 2;
+
+  // Git ref (ex 'refs/head/master') the culprit contributed to.
+  string ref = 3;
+
+  // Revision of the culprit cl.
+  string revision = 4;
+
+  // Confidence of the findings (0-1).
+  float confidence = 5;
+}
+
+// Collection of timestamps relevant for querying.
+message AnalysisTimestamp {
+  // Time (on Findit server) when the analysis was started.
+  google.protobuf.Timestamp started = 1;
+
+  // Time (on Findit server) when the analysis was completed.
+  google.protobuf.Timestamp completed = 2;
+}

@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+import "findit.proto";
+
+// Schema for a test analysis event.
+message TestAnalysisCompletionEvent {
+  // Name of the bucket, masters are "master." + master.
+  string bucket_name = 1;
+
+  // Name of the builder.
+  string builder_name = 2;
+
+  // Name of the step as shown on Milo UI.
+  string step_name = 3;
+
+  // Build id which Findit started the analysis at.
+  string detected_build_id = 4;
+
+  // Build id which broke the test.
+  string culprit_build_id = 5;
+
+  // Suspects.
+  repeated findit.Culprit suspects = 6;
+
+  // Culprit responsible.
+  findit.Culprit culprit = 7;
+
+  // Collections of relevant timestamps, see findit.proto for more info.
+  findit.AnalysisTimestamp timestamp = 8;
+
+  // The outcome of this analysis, see findit.proto for more info.
+  findit.AnalysisOutcome outcome = 9;
+
+  // The action taken by Findit, see findit.proto for more info.
+  repeated findit.AnalysisAction actions = 10;
+
+  // Test Analysis specific fields.
+
+  // Name of the test.
+  string test_name = 20;
+
+  // Test type (flake or failure).
+  bool flake = 21;
+}

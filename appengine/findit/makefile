@@ -6,6 +6,7 @@ INFRAPYTHON := "../../ENV/bin/python"
 GAE_PY := "gae.py"
 APPID := "findit-for-me"
 STAGING_APPID := "findit-for-me-staging"
+PROTOC := "../../cipd/protoc"
 MODULES := default waterfall-frontend waterfall-backend
 LOCAL_VERSION := `$(INFRAPYTHON) $(GAE_PY) version`
 LOCAL_HASH := `git rev-parse --short HEAD`
@@ -82,7 +83,7 @@ migrate:
 
 
 ##### Development ###
-run:
+run: proto
 	$(INFRAPYTHON) $(GAE_PY) devserver
 
 YAPF := $(shell command -v yapf 2> /dev/null)
@@ -92,10 +93,15 @@ ifndef YAPF
 endif
 	git cl format --full --python
 
+proto:
+	@$(PROTOC) --proto_path=model/proto/ \
+		--python_out=model/proto/ \
+		model/proto/*.proto
+
 
 
 ##### Unit tests ###
-test:
+test: proto
 	@mkdir -p $(TMPDIR)/coverage
 	$(INFRAPYTHON) ../../test.py test appengine/findit \
 	  --html-report $(TMPDIR)/coverage

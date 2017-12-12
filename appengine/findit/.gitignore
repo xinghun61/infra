@@ -10,3 +10,6 @@ third_party/bower_components
 # Project files
 .idea/*
 .vscode/*
+
+# Generated proto files
+*_pb2.py
