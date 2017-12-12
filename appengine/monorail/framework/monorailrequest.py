@@ -87,14 +87,14 @@ class MonorailApiRequest(MonorailRequestBase):
   """A class to hold information parsed from the Endpoints API request."""
 
   # pylint: disable=attribute-defined-outside-init
-  def __init__(self, request, services):
+  def __init__(self, request, services, cnxn=None):
     requester = (
         endpoints.get_current_user() or
         oauth.get_current_user(
             framework_constants.OAUTH_SCOPE))
     requester_email = requester.email().lower()
     super(MonorailApiRequest, self).__init__(
-        services=services, user_email=requester_email)
+        services=services, user_email=requester_email, cnxn=cnxn)
     self.me_user_id = self.auth.user_id
     self.viewed_username = None
     self.viewed_user_auth = None

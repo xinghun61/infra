@@ -136,6 +136,26 @@ class FakeFrontendSearchPipeline(object):
     pass
 
 
+class MonorailApiBadAuthTest(testing.EndpointsTestCase):
+
+  api_service_cls = api_svc_v1.MonorailApi
+
+  def setUp(self):
+    super(MonorailApiBadAuthTest, self).setUp()
+    self.requester = RequesterMock(email='requester@example.com')
+    self.mock(endpoints, 'get_current_user', lambda: None)
+    self.request = {'userId': 'user@example.com'}
+
+  def testUsersGet_BadOAuth(self):
+    """The requester's token is invalid, e.g., because it expired."""
+    oauth.get_current_user = Mock(
+        return_value=RequesterMock(email='test@example.com'))
+    oauth.get_current_user.side_effect = oauth.Error()
+    with self.assertRaises(webtest.AppError) as cm:
+      self.call_api('users_get', self.request)
+    self.assertTrue(cm.exception.message.startswith('Bad response: 401'))
+
+
 class MonorailApiTest(testing.EndpointsTestCase):
 
   api_service_cls = api_svc_v1.MonorailApi
@@ -158,7 +178,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
           'projectId': 'test-project',
           'issueId': 1}
     self.mock(api_svc_v1.MonorailApi, 'mar_factory',
-              lambda x, y: FakeMonorailApiRequest(
+              lambda x, y, z: FakeMonorailApiRequest(
                   self.request, self.services))
 
     # api_base_checks is tested in AllBaseChecksTest,
@@ -762,7 +782,7 @@ class MonorailApiTest(testing.EndpointsTestCase):
         'ext_group_type': ext_group_type}
     self.request.pop("userId", None)
     self.mock(api_svc_v1.MonorailApi, 'mar_factory',
-              lambda x, y: FakeMonorailApiRequest(
+              lambda x, y, z: FakeMonorailApiRequest(
                   request, self.services, perms=perms))
     return request
 

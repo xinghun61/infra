@@ -101,10 +101,11 @@ def monorail_api_method(
           auth_client_ids.append(endpoints.API_EXPLORER_CLIENT_ID)
         if self._services is None:
           self._set_services(service_manager.set_up_services())
-        mar = self.mar_factory(request)
+        cnxn = sql.MonorailConnection()
         c_id, c_email = api_base_checks(
-            request, requester, self._services, mar.cnxn,
+            request, requester, self._services, cnxn,
             auth_client_ids, auth_emails)
+        mar = self.mar_factory(request, cnxn)
         self.ratelimiter.CheckStart(c_id, c_email, start_time)
         self.increment_request_limit(mar, request, c_id, c_email)
         ret = func(self, mar, *args, **kwargs)
@@ -307,9 +308,10 @@ class MonorailApi(remote.Service):
   def _set_services(cls, services):
     cls._services = services
 
-  def mar_factory(self, request):
+  def mar_factory(self, request, cnxn):
     if not self._mar:
-      self._mar = monorailrequest.MonorailApiRequest(request, self._services)
+      self._mar = monorailrequest.MonorailApiRequest(
+          request, self._services, cnxn=cnxn)
     return self._mar
 
   def aux_delete_comment(self, mar, request, delete=True):
@@ -1126,9 +1128,10 @@ class ClientConfigApi(remote.Service):
   def _set_services(cls, services):
     cls._services = services
 
-  def mar_factory(self, request):
+  def mar_factory(self, request, cnxn):
     if not self._mar:
-      self._mar = monorailrequest.MonorailApiRequest(request, self._services)
+      self._mar = monorailrequest.MonorailApiRequest(
+          request, self._services, cnxn=cnxn)
     return self._mar
 
   @endpoints.method(
@@ -1140,7 +1143,7 @@ class ClientConfigApi(remote.Service):
   def client_configs_update(self, request):
     if self._services is None:
       self._set_services(service_manager.set_up_services())
-    mar = self.mar_factory(request)
+    mar = self.mar_factory(request, sql.MonorailConnection())
     if not mar.perms.HasPerm(permissions.ADMINISTER_SITE, None, None):
       raise permissions.PermissionException(
           'The requester %s is not allowed to update client configs.' %
