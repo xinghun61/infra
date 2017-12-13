@@ -4,25 +4,30 @@
 import copy
 import mock
 
-from gae_libs.pipelines import pipeline_handlers
-from gae_libs.pipelines import CreateInputObjectInstance
+from dto.test_location import TestLocation
 
-from model.flake.flake_culprit import FlakeCulprit
+from gae_libs.pipelines import CreateInputObjectInstance
+from gae_libs.pipelines import pipeline_handlers
+
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
+from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+
 from pipelines.flake_failure import create_bug_for_flake_pipeline
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
+
 from services.flake_failure import issue_tracking_service
-from waterfall import swarming_util
+
 from waterfall import build_util
+from waterfall import swarming_util
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
     AnalyzeFlakeForBuildNumberPipeline)
-from waterfall.test.wf_testcase import WaterfallTestCase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
+from waterfall.test.wf_testcase import WaterfallTestCase
 
 
 class CreateBugForFlakePipelineTest(WaterfallTestCase):
@@ -58,8 +63,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        test_location={'file': '/foo/bar',
-                       'line': '1'})
+        test_location=TestLocation(file='foo/bar', line=1))
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
 
     self.MockPipeline(
@@ -111,8 +115,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        test_location={'file': '/foo/bar',
-                       'line': '1'})
+        test_location=TestLocation(file='/foo/bar', line=2))
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
     pipeline_job.start()
 
@@ -150,8 +153,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        test_location={'file': '/foo/bar',
-                       'line': '1'})
+        test_location=TestLocation(file='/foo/bar', line=1))
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
     pipeline_job.start()
 
@@ -197,8 +199,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        test_location={'file': '/foo/bar',
-                       'line': '1'})
+        test_location=TestLocation(file='/foo/bar', line=1))
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
 
     self.MockPipeline(
@@ -235,8 +236,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        test_location={'file': '/foo/bar',
-                       'line': '1'})
+        test_location=TestLocation(file='/foo/bar', line=1))
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
     pipeline_job.start()
     self.execute_queued_tasks()
@@ -272,8 +272,7 @@ class CreateBugForFlakePipelineTest(WaterfallTestCase):
     create_bug_input = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
-        test_location={'file': '/foo/bar',
-                       'line': '1'})
+        test_location=TestLocation(file='/foo/bar', line=1))
     pipeline_job = CreateBugForFlakePipeline(create_bug_input)
     pipeline_job.start()
     self.execute_queued_tasks()

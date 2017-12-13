@@ -8,18 +8,25 @@ from google.appengine.datastore import datastore_stub_util
 from google.appengine.ext import ndb
 from google.appengine.ext import testbed
 
+from dto.test_location import TestLocation
+
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+
 from libs.gitiles.blame import Blame
 from libs.gitiles.blame import Region
 from libs.gitiles.change_log import ChangeLog
+
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from waterfall.flake import heuristic_analysis_util
+
+from services.flake_failure import heuristic_analysis
+
+from waterfall import swarming_util
 from waterfall.test import wf_testcase
 
 
-class HeuristicAnalysisUtilTest(wf_testcase.WaterfallTestCase):
+class HeuristicAnalysisTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
     self.testbed = testbed.Testbed()
@@ -35,16 +42,15 @@ class HeuristicAnalysisUtilTest(wf_testcase.WaterfallTestCase):
 
   def testGenerateSuspectedRanges(self):
     self.assertEqual([(None, 'r1')],
-                     heuristic_analysis_util.GenerateSuspectedRanges(
-                         ['r1'], ['r1', 'r2']))
+                     heuristic_analysis.GenerateSuspectedRanges(['r1'],
+                                                                ['r1', 'r2']))
     self.assertEqual([('r1', 'r2')],
-                     heuristic_analysis_util.GenerateSuspectedRanges(
-                         ['r2'], ['r1', 'r2']))
+                     heuristic_analysis.GenerateSuspectedRanges(['r2'],
+                                                                ['r1', 'r2']))
     self.assertEqual([(None, 'r1'), ('r3', 'r4'), ('r4', 'r5')],
-                     heuristic_analysis_util.GenerateSuspectedRanges(
+                     heuristic_analysis.GenerateSuspectedRanges(
                          ['r1', 'r4', 'r5'], ['r1', 'r2', 'r3', 'r4', 'r5']))
-    self.assertEqual([], heuristic_analysis_util.GenerateSuspectedRanges([],
-                                                                         []))
+    self.assertEqual([], heuristic_analysis.GenerateSuspectedRanges([], []))
 
   def testGetSuspectedRevisions(self):
     region_1 = Region(1, 5, 'r1', 'a', 'a@email.com', '2017-08-11 19:38:42')
@@ -56,37 +62,34 @@ class HeuristicAnalysisUtilTest(wf_testcase.WaterfallTestCase):
     expected_suspected_revisions = ['r2']
 
     self.assertEqual(expected_suspected_revisions,
-                     heuristic_analysis_util.GetSuspectedRevisions(
+                     heuristic_analysis.GetSuspectedRevisions(
                          blame, revision_range))
-    self.assertEqual([],
-                     heuristic_analysis_util.GetSuspectedRevisions([], ['r1']))
-    self.assertEqual([],
-                     heuristic_analysis_util.GetSuspectedRevisions(
-                         blame, ['r4']))
+    self.assertEqual([], heuristic_analysis.GetSuspectedRevisions([], ['r1']))
+    self.assertEqual([], heuristic_analysis.GetSuspectedRevisions(
+        blame, ['r4']))
 
   def testListCommitPositionsFromSuspectedRanges(self):
     self.assertEqual(  # No heuristic results.
-        [],
-        heuristic_analysis_util.ListCommitPositionsFromSuspectedRanges({}, []))
+        [], heuristic_analysis.ListCommitPositionsFromSuspectedRanges({}, []))
     self.assertEqual(  # Blame list not available.
         [],
-        heuristic_analysis_util.ListCommitPositionsFromSuspectedRanges(
-            {}, [('r1', 'r2')]))
+        heuristic_analysis.ListCommitPositionsFromSuspectedRanges({}, [('r1',
+                                                                        'r2')]))
     self.assertEqual(  # Blame list available. This should be the expected case.
         [1, 2],
-        heuristic_analysis_util.ListCommitPositionsFromSuspectedRanges({
+        heuristic_analysis.ListCommitPositionsFromSuspectedRanges({
             'r1': 1,
             'r2': 2,
         }, [('r1', 'r2')]))
     self.assertEqual(  # First revision is suspected.
         [1],
-        heuristic_analysis_util.ListCommitPositionsFromSuspectedRanges({
+        heuristic_analysis.ListCommitPositionsFromSuspectedRanges({
             'r1': 1,
             'r2': 2,
         }, [(None, 'r1')]))
     self.assertEqual(  # Two suspects in a row 'r3' and 'r4'.
         [1, 2, 3, 4],
-        heuristic_analysis_util.ListCommitPositionsFromSuspectedRanges({
+        heuristic_analysis.ListCommitPositionsFromSuspectedRanges({
             'r1': 1,
             'r2': 2,
             'r3': 3,
@@ -126,9 +129,8 @@ class HeuristicAnalysisUtilTest(wf_testcase.WaterfallTestCase):
         None,
         code_review_url='url')
 
-    git_repo = CachedGitilesRepository(None, None)
-    heuristic_analysis_util.SaveFlakeCulpritsForSuspectedRevisions(
-        git_repo, analysis.key.urlsafe(), suspected_revisions)
+    heuristic_analysis.SaveFlakeCulpritsForSuspectedRevisions(
+        None, analysis.key.urlsafe(), suspected_revisions)
 
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
@@ -160,9 +162,8 @@ class HeuristicAnalysisUtilTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     mocked_fn.return_value = None
-    git_repo = CachedGitilesRepository(None, None)
-    heuristic_analysis_util.SaveFlakeCulpritsForSuspectedRevisions(
-        git_repo, analysis.key.urlsafe(), suspected_revisions)
+    heuristic_analysis.SaveFlakeCulpritsForSuspectedRevisions(
+        None, analysis.key.urlsafe(), suspected_revisions)
 
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
@@ -200,11 +201,47 @@ class HeuristicAnalysisUtilTest(wf_testcase.WaterfallTestCase):
     analysis.Save()
 
     mocked_fn.return_value = None
-    git_repo = CachedGitilesRepository(None, None)
-    heuristic_analysis_util.SaveFlakeCulpritsForSuspectedRevisions(
-        git_repo, analysis.key.urlsafe(), suspected_revisions)
+    heuristic_analysis.SaveFlakeCulpritsForSuspectedRevisions(
+        None, analysis.key.urlsafe(), suspected_revisions)
 
     analysis = MasterFlakeAnalysis.GetVersion(
         master_name, builder_name, build_number, step_name, test_name)
 
     self.assertIn(suspect.key.urlsafe(), analysis.suspect_urlsafe_keys)
+
+  @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask', return_value={})
+  def testGetTestLocationNoTestLocations(self, _):
+    self.assertIsNone(heuristic_analysis.GetTestLocation(None, 'task', 'test'))
+
+  @mock.patch.object(
+      swarming_util,
+      'GetIsolatedOutputForTask',
+      return_value={'test_locations': {}})
+  def testGetTestLocationNoTestLocation(self, _):
+    self.assertIsNone(heuristic_analysis.GetTestLocation(None, 'task', 'test'))
+
+  @mock.patch.object(
+      swarming_util,
+      'GetIsolatedOutputForTask',
+      return_value={'test_locations': {
+          'test': {}
+      }})
+  def testGetTestLocationTestLocationIncomplete(self, _):
+    self.assertIsNone(heuristic_analysis.GetTestLocation(None, 'task', 'test'))
+
+  @mock.patch.object(swarming_util, 'GetIsolatedOutputForTask')
+  def testGetTestLocation(self, mock_get_isolated_output):
+    test_name = 'test'
+    expected_test_location = {
+        'line': 123,
+        'file': '/path/to/test_file.cc',
+    }
+    mock_get_isolated_output.return_value = {
+        'test_locations': {
+            test_name: expected_test_location,
+        }
+    }
+
+    self.assertEqual(
+        TestLocation.FromSerializable(expected_test_location),
+        heuristic_analysis.GetTestLocation('task', test_name, None))

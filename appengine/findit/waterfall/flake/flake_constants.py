@@ -6,6 +6,10 @@
 # during off-peak hours.
 BASE_COUNT_DOWN_SECONDS = 2 * 60
 
+# The chromium git repository to pull revisions and blame info from.
+CHROMIUM_GIT_REPOSITORY_URL = (
+    'https://chromium.googlesource.com/chromium/src.git')
+
 # Percent that when sampling we consider that the pass rate has converged.
 # This means that if pass_rate_a - pass_rate_b < this that the test has
 # reached its pass rate.

@@ -2,23 +2,26 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 import base64
-import logging
 import datetime
+import logging
 
 from google.appengine.ext import ndb
+
+from dto.test_location import TestLocation
+
+from common.findit_http_client import FinditHttpClient
+
 from gae_libs import pipelines
 from gae_libs.pipelines import pipeline
 
-from common.findit_http_client import FinditHttpClient
-from libs import time_util
 from libs.structured_object import StructuredObject
-from model.flake.master_flake_analysis import MasterFlakeAnalysis
+
 from model.flake.flake_analysis_request import FlakeAnalysisRequest
-from model.flake.flake_culprit import FlakeCulprit
+
 from services.flake_failure import issue_tracking_service
+
 from waterfall import build_util
 from waterfall import swarming_util
-from waterfall.flake import flake_constants
 from waterfall.flake import triggering_sources
 from waterfall.flake.analyze_flake_for_build_number_pipeline import (
     AnalyzeFlakeForBuildNumberPipeline)
@@ -40,7 +43,7 @@ _ITERATIONS_TO_CONFIRM_FLAKE_TIMEOUT = 60 * 60  # One hour.
 
 class CreateBugForFlakePipelineInputObject(StructuredObject):
   analysis_urlsafe_key = unicode
-  test_location = dict
+  test_location = TestLocation
 
 
 class CreateBugForFlakePipeline(pipelines.GeneratorPipeline):

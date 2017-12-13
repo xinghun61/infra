@@ -6,21 +6,26 @@ from datetime import datetime
 import copy
 import mock
 
-from common import constants
+from dto.test_location import TestLocation
+
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.pipelines import pipeline_handlers
+
 from libs import analysis_status
 from libs import time_util
+from libs.gitiles.blame import Blame
+
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+
+from services.flake_failure import heuristic_analysis
+
 from waterfall.flake import confidence
 from waterfall.flake import flake_constants
 from waterfall.flake import finish_build_analysis_pipeline
 from waterfall.flake.finish_build_analysis_pipeline import (
     FinishBuildAnalysisPipeline)
-from waterfall.flake.get_test_location_pipeline import GetTestLocationPipeline
-from waterfall.flake.identify_suspected_revisions_pipeline import (
-    IdentifySuspectedRevisionsPipeline)
 from waterfall.flake.initialize_flake_try_job_pipeline import (
     InitializeFlakeTryJobPipeline)
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
@@ -31,42 +36,45 @@ from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
   app_module = pipeline_handlers._APP
 
-  def testFinishBuildAnalysisPipeline(self):
+  @mock.patch.object(finish_build_analysis_pipeline,
+                     '_IdentifySuspectedRevisions')
+  @mock.patch.object(heuristic_analysis, 'GenerateSuspectedRanges')
+  @mock.patch.object(heuristic_analysis,
+                     'SaveFlakeCulpritsForSuspectedRevisions')
+  def testFinishBuildAnalysisPipeline(self, mock_save, mock_ranges,
+                                      mock_revisions):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
     step_name = 's'
     test_name = 't'
-    test_location = {'line': 1, 'file': 'file.cc'}
-
     lower_bound = 1
     upper_bound = 10
     user_range = True
     iterations = 100
-    suspected_ranges = [[None, 'r1']]
+    suspected_revision = 'r1'
+    suspected_revisions = [suspected_revision]
+    suspected_ranges = [[None, suspected_revision]]
+    mock_revisions.return_value = suspected_revisions
+    mock_ranges.return_value = suspected_ranges
 
     analysis = MasterFlakeAnalysis.Create(master_name, builder_name,
                                           build_number, step_name, test_name)
     analysis.status = analysis_status.COMPLETED
     analysis.algorithm_parameters = copy.deepcopy(
         DEFAULT_CONFIG_DATA['check_flake_settings'])
-    analysis.put()
+    analysis.suspected_flake_build_number = build_number
+    analysis.data_points = [
+        DataPoint.Create(
+            build_number=build_number, blame_list=[suspected_revision])
+    ]
+    analysis.Save()
 
     task = FlakeSwarmingTask.Create(master_name, builder_name, build_number,
                                     step_name, test_name)
     task.status = analysis_status.COMPLETED
     task.put()
 
-    self.MockPipeline(
-        GetTestLocationPipeline,
-        test_location,
-        expected_args=[analysis.key.urlsafe()],
-        expected_kwargs={})
-    self.MockPipeline(
-        IdentifySuspectedRevisionsPipeline,
-        suspected_ranges,
-        expected_args=[analysis.key.urlsafe(), test_location],
-        expected_kwargs={})
     self.MockPipeline(
         InitializeFlakeTryJobPipeline,
         '',
@@ -84,8 +92,10 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
 
     pipeline = FinishBuildAnalysisPipeline(analysis.key.urlsafe(), lower_bound,
                                            upper_bound, iterations, False)
-    pipeline.start(queue_name=constants.DEFAULT_QUEUE)
+    pipeline.start()
     self.execute_queued_tasks()
+
+    self.assertTrue(mock_save.called)
 
   @mock.patch.object(confidence, 'SteppinessForBuild', return_value=0.6)
   def testGetBuildConfidenceScore(self, _):
@@ -137,3 +147,21 @@ class FinishBuildAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
         analysis, None, analysis_status.ERROR, {'error': 'error'})
     self.assertEqual(analysis_status.ERROR, analysis.status)
     self.assertEqual(datetime(2017, 6, 27), analysis.end_time)
+
+  @mock.patch.object(heuristic_analysis, 'GetTestLocation')
+  @mock.patch.object(CachedGitilesRepository, 'GetBlame')
+  def testIdentifySuspectedRanges(self, mock_blame, mock_test_location):
+    mock_blame.return_value = [Blame('r1000', 'a/b.cc')]
+    mock_test_location.return_value = TestLocation(file='a/b.cc', line=1)
+    suspected_revision = 'r1000'
+    analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
+    analysis.data_points = [
+        DataPoint.Create(
+            build_number=123, git_hash='r1000', blame_list=[suspected_revision])
+    ]
+    analysis.suspected_flake_build_number = 123
+    analysis.Save()
+
+    self.assertEqual([suspected_revision],
+                     finish_build_analysis_pipeline._IdentifySuspectedRevisions(
+                         analysis, None))

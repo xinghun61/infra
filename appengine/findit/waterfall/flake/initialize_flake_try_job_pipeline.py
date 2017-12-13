@@ -9,12 +9,12 @@ from libs import analysis_status
 from libs import time_util
 
 from common import monitoring
+from services.flake_failure import heuristic_analysis
 from waterfall import build_util
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
 from waterfall.flake import flake_constants
-from waterfall.flake import heuristic_analysis_util
 from waterfall.flake import lookback_algorithm
 from waterfall.flake import recursive_flake_try_job_pipeline
 from waterfall.flake.recursive_flake_try_job_pipeline import (
@@ -221,7 +221,7 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
         if len(blamed_cls) > 1:
           revisions_to_commits = _RevisionToCommitPositions(blamed_cls)
           suspected_commit_positions = (
-              heuristic_analysis_util.ListCommitPositionsFromSuspectedRanges(
+              heuristic_analysis.ListCommitPositionsFromSuspectedRanges(
                   revisions_to_commits, suspected_ranges))
           analysis.LogInfo('Commit positions to analyze first from heuristic '
                            'analysis %r --> %r' % (suspected_ranges,

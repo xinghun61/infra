@@ -8,29 +8,36 @@ import mock
 
 from google.appengine.ext import ndb
 
-from gae_libs.pipelines import CreateInputObjectInstance
-from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
-from libs.gitiles.change_log import ChangeLog
-
 from common import constants
 from common.waterfall import failure_type
+
+from dto.test_location import TestLocation
+
+from gae_libs.pipelines import CreateInputObjectInstance
 from gae_libs.pipelines import pipeline_handlers
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
+
 from libs import analysis_status
+from libs.gitiles.change_log import ChangeLog
+
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
+
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
+
 from services.flake_failure import flake_try_job
+from services.flake_failure import heuristic_analysis
+
 from waterfall import swarming_util
 from waterfall.flake import confidence
 from waterfall.flake import flake_constants
 from waterfall.flake import recursive_flake_try_job_pipeline
-from waterfall.flake.get_test_location_pipeline import GetTestLocationPipeline
 from waterfall.flake.recursive_flake_try_job_pipeline import (
     _GetNextCommitPositionAndRemainingSuspects)
 from waterfall.flake.recursive_flake_try_job_pipeline import (
@@ -455,7 +462,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
-  def testNextCommitPositionPipelineCompleted(self, mock_fn):
+  @mock.patch.object(heuristic_analysis, 'GetTestLocation')
+  def testNextCommitPositionPipelineCompleted(self, mock_test_location,
+                                              mock_change_log):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -468,7 +477,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     remaining_suggested_commits = []
     change_log = ChangeLog(None, None, git_hash, commit_position, None, None,
                            url, None)
-    mock_fn.return_value = change_log
+    mock_change_log.return_value = change_log
 
     try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
                                  test_name, git_hash)
@@ -504,6 +513,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.Save()
 
+    test_location = TestLocation(file='foo/bar', line=1)
+    mock_test_location.return_value = test_location
+
     self.MockPipeline(
         recursive_flake_try_job_pipeline.RecursiveFlakeTryJobPipeline,
         '',
@@ -519,12 +531,6 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         '',
         expected_args=[analysis.key.urlsafe()],
         expected_kwargs={})
-    test_location = {'file': 'foo/bar', 'line': 1}
-    self.MockPipeline(
-        GetTestLocationPipeline,
-        test_location,
-        expected_args=[analysis.key.urlsafe()])
-
     input_obj = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,
         analysis_urlsafe_key=unicode(analysis.key.urlsafe()),
@@ -544,7 +550,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(95, culprit.commit_position)
 
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
-  def testNextCommitPositionNewlyAddedFlakyTest(self, mocked_fn):
+  @mock.patch.object(heuristic_analysis, 'GetTestLocation')
+  def testNextCommitPositionNewlyAddedFlakyTest(self, mocked_test_location,
+                                                mock_change_log):
     master_name = 'm'
     builder_name = 'b'
     build_number = 100
@@ -559,7 +567,7 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     change_log = ChangeLog(None, None, revision,
                            most_recently_run_commit_position, None, None, url,
                            None)
-    mocked_fn.return_value = change_log
+    mock_change_log.return_value = change_log
 
     try_job = FlakeTryJob.Create(master_name, builder_name, step_name,
                                  test_name, revision)
@@ -590,6 +598,9 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         DEFAULT_CONFIG_DATA['check_flake_settings'])
     analysis.Save()
 
+    test_location = TestLocation(file='foo/bar', line=1)
+    mocked_test_location.return_value = test_location
+
     self.MockPipeline(
         recursive_flake_try_job_pipeline.RecursiveFlakeTryJobPipeline,
         '',
@@ -599,12 +610,6 @@ class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
         '',
         expected_args=[analysis.key.urlsafe()],
         expected_kwargs={})
-
-    test_location = {'file': 'foo/bar', 'line': 1}
-    self.MockPipeline(
-        GetTestLocationPipeline,
-        test_location,
-        expected_args=[analysis.key.urlsafe()])
 
     input_obj = CreateInputObjectInstance(
         CreateBugForFlakePipelineInputObject,

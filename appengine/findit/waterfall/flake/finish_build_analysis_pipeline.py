@@ -6,20 +6,26 @@ import logging
 
 from google.appengine.ext import ndb
 
+from common.findit_http_client import FinditHttpClient
+
+from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
+
 from libs import analysis_status
 from libs import time_util
 
 from common import monitoring
+
 from model import result_status
+
+from services.flake_failure import heuristic_analysis
+
+from waterfall import extractor_util
 from waterfall.flake import confidence
 from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants
 from waterfall.flake import lookback_algorithm
-from waterfall.flake.get_test_location_pipeline import GetTestLocationPipeline
-from waterfall.flake.identify_suspected_revisions_pipeline import (
-    IdentifySuspectedRevisionsPipeline)
 from waterfall.flake.initialize_flake_try_job_pipeline import (
     InitializeFlakeTryJobPipeline)
 from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
@@ -122,8 +128,26 @@ def _UserSpecifiedRange(lower_bound_build_number, upper_bound_build_number):
           upper_bound_build_number is not None)
 
 
-class FinishBuildAnalysisPipeline(BasePipeline):
+def _IdentifySuspectedRevisions(analysis, http_client):
+  suspected_data_point = analysis.GetDataPointOfSuspectedBuild()
+  assert suspected_data_point
 
+  test_location = heuristic_analysis.GetTestLocation(
+      suspected_data_point.GetSwarmingTaskId(), analysis.test_name, http_client)
+
+  normalized_file_path = extractor_util.NormalizeFilePath(test_location.file)
+
+  git_repo = CachedGitilesRepository(
+      http_client, flake_constants.CHROMIUM_GIT_REPOSITORY_URL)
+
+  git_blame = git_repo.GetBlame(normalized_file_path,
+                                suspected_data_point.git_hash)
+
+  return heuristic_analysis.GetSuspectedRevisions(
+      git_blame, suspected_data_point.blame_list)
+
+
+class FinishBuildAnalysisPipeline(BasePipeline):
   # Arguments number differs from overridden method - pylint: disable=W0221
   def run(self, analysis_urlsafe_key, lower_bound_build_number,
           upper_bound_build_number, user_specified_iterations, force):
@@ -150,9 +174,7 @@ class FinishBuildAnalysisPipeline(BasePipeline):
     analysis = ndb.Key(urlsafe=analysis_urlsafe_key).get()
     assert analysis
 
-    logging.info('%s/%s/%s/%s/%s Regression range analysis completed',
-                 analysis.master_name, analysis.builder_name,
-                 analysis.build_number, analysis.step_name, analysis.test_name)
+    analysis.LogInfo('Regression range analysis completed')
     data_points_within_range = analysis.GetDataPointsWithinBuildNumberRange(
         lower_bound_build_number, upper_bound_build_number)
     data_points = flake_analysis_util.NormalizeDataPointsByBuildNumber(
@@ -172,13 +194,23 @@ class FinishBuildAnalysisPipeline(BasePipeline):
         None,
         build_confidence_score=build_confidence_score)
 
+    suspected_data_point = analysis.GetDataPointOfSuspectedBuild()
+    assert suspected_data_point
+
+    # Run heuristic analysis before triggering try jobs.
+    http_client = FinditHttpClient()
+    suspected_revisions = _IdentifySuspectedRevisions(analysis, http_client)
+
+    heuristic_analysis.SaveFlakeCulpritsForSuspectedRevisions(
+        http_client, analysis_urlsafe_key, suspected_revisions)
+
+    suspected_ranges = heuristic_analysis.GenerateSuspectedRanges(
+        suspected_revisions, analysis.GetDataPointOfSuspectedBuild().blame_list)
+
+    analysis.LogInfo('Identified suspected ranges %s from revisions %r' %
+                     (suspected_ranges, suspected_revisions))
+
     with pipeline.InOrder():
-      # Perform heuristic analysis to identify suspects to examine first.
-      test_location = yield GetTestLocationPipeline(analysis_urlsafe_key)
-
-      suspected_ranges = yield IdentifySuspectedRevisionsPipeline(
-          analysis_urlsafe_key, test_location)
-
       yield InitializeFlakeTryJobPipeline(
           analysis.key.urlsafe(), suspected_ranges, user_specified_iterations,
           user_specified_range, force)

@@ -9,21 +9,29 @@ from google.appengine.ext import ndb
 from common import monitoring
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
+
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
+
 from libs import analysis_status
 from libs import time_util
+
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
+
 from pipelines.delay_pipeline import DelayPipeline
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
+
 from gae_libs import pipelines
+
 from services.flake_failure import flake_try_job
+from services.flake_failure import heuristic_analysis
+
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
@@ -31,7 +39,6 @@ from waterfall.flake import flake_analysis_util
 from waterfall.flake import flake_constants
 from waterfall.flake import lookback_algorithm
 from waterfall.flake.flake_analysis_util import NormalizedDataPoint
-from waterfall.flake.get_test_location_pipeline import GetTestLocationPipeline
 from waterfall.flake.process_flake_try_job_result_pipeline import (
     ProcessFlakeTryJobResultPipeline)
 from waterfall.flake.schedule_flake_try_job_pipeline import (
@@ -40,8 +47,9 @@ from waterfall.flake.send_notification_for_flake_culprit_pipeline import (
     SendNotificationForFlakeCulpritPipeline)
 from waterfall.monitor_try_job_pipeline import MonitorTryJobPipeline
 
-_GIT_REPO = CachedGitilesRepository(
-    FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
+_HTTP_CLIENT = FinditHttpClient()
+_GIT_REPO = CachedGitilesRepository(_HTTP_CLIENT,
+                                    flake_constants.CHROMIUM_GIT_REPOSITORY_URL)
 
 
 @ndb.transactional
@@ -552,8 +560,9 @@ class NextCommitPositionPipeline(BasePipeline):
           'result': 'completed',
       })
 
-      test_location = yield GetTestLocationPipeline(
-          flake_analysis.key.urlsafe())
+      test_location = heuristic_analysis.GetTestLocation(
+          suspected_build_data_point.GetSwarmingTaskId(),
+          flake_analysis.test_name, _HTTP_CLIENT)
 
       input_obj = pipelines.CreateInputObjectInstance(
           CreateBugForFlakePipelineInputObject,
