@@ -217,13 +217,35 @@ class InboundEmailTest(unittest.TestCase):
 
   def testProcessAlert_NewIssue(self):
     """When an alert for a new incident comes in, create a new issue."""
+    self.mox.StubOutWithMock(self.services.config, 'LookupLabelID')
+    self.services.config.LookupLabelID(
+        self.cnxn, self.project.project_id, 'Incident-Id-incident-1'
+    ).AndReturn(None)
+
+    # Mock command parsing.
+    mock_uia = commitlogcommands.UpdateIssueAction(101L)
+    self.mox.StubOutWithMock(commitlogcommands, 'UpdateIssueAction')
+    commitlogcommands.UpdateIssueAction(101L).AndReturn(mock_uia)
+
+    self.mox.StubOutWithMock(mock_uia, 'Parse')
+    mock_uia.Parse(
+        self.cnxn, self.project.project_name, 111L, ['issue body'],
+        self.services, strip_quoted_lines=True)
+
+    self.mox.StubOutWithMock(mock_uia, 'Run')
+    mock_uia.Run(self.cnxn, self.services, allow_edit=True)
+
+    self.mox.ReplayAll()
+
     ret = self.inbound.ProcessAlert(
         self.cnxn, self.project, self.project_addr, 'user@google.com',
         'user@example.com', 111L, 'issue title', 'issue body', 'incident-1')
 
+    self.mox.VerifyAll()
     self.assertIsNone(ret)
+
     actual_issue = self.services.issue.GetIssueByLocalID(
-        self.cnxn, self.project.project_id, 101)
+        self.cnxn, self.project.project_id, 101L)
     actual_comments = self.services.issue.GetCommentsForIssue(
         self.cnxn, actual_issue.issue_id)
     self.assertEqual('issue title', actual_issue.summary)
@@ -264,6 +286,20 @@ class InboundEmailTest(unittest.TestCase):
         self.cnxn, self.issue, 111L,
         'Filed by user@example.com on behalf of user@google.com\n\nissue body'
         ).AndReturn(None)
+
+    # Mock command parsing.
+    mock_uia = commitlogcommands.UpdateIssueAction(self.issue.local_id)
+    self.mox.StubOutWithMock(commitlogcommands, 'UpdateIssueAction')
+    commitlogcommands.UpdateIssueAction(self.issue.local_id).AndReturn(mock_uia)
+
+    self.mox.StubOutWithMock(mock_uia, 'Parse')
+    mock_uia.Parse(
+        self.cnxn, self.project.project_name, 111L, ['issue body'],
+        self.services, strip_quoted_lines=True)
+
+    self.mox.StubOutWithMock(mock_uia, 'Run')
+    mock_uia.Run(self.cnxn, self.services, allow_edit=True)
+
     self.mox.ReplayAll()
 
     ret = self.inbound.ProcessAlert(
