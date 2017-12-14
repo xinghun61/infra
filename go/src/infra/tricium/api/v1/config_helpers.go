@@ -65,31 +65,28 @@ func checkAcls(c context.Context, pc *ProjectConfig, role Acl_Role) (bool, error
 	return ok, nil
 }
 
-// LookupProjectAnalyzer looks up the given analyzer in the project config.
-func LookupProjectAnalyzer(pc *ProjectConfig, analyzer string) (*Analyzer, error) {
-	return lookupAnalyzer(pc.Analyzers, analyzer)
+// LookupProjectFunction looks up the given function in the project config.
+func LookupProjectFunction(pc *ProjectConfig, function string) *Function {
+	return lookupFunction(pc.Functions, function)
 }
 
-// LookupServiceAnalyzer looks up the given analyzer in the service config.
-func LookupServiceAnalyzer(sc *ServiceConfig, analyzer string) (*Analyzer, error) {
-	return lookupAnalyzer(sc.Analyzers, analyzer)
+// LookupServiceFunction looks up the given function in the service config.
+func LookupServiceFunction(sc *ServiceConfig, function string) *Function {
+	return lookupFunction(sc.Functions, function)
 }
 
-func lookupAnalyzer(analyzers []*Analyzer, analyzer string) (*Analyzer, error) {
-	for _, a := range analyzers {
-		if a.Name == "" {
-			return nil, fmt.Errorf("found analyzer missing name, looking for analyze %s", analyzer)
-		}
-		if a.Name == analyzer {
-			return a, nil
+func lookupFunction(functions []*Function, function string) *Function {
+	for _, f := range functions {
+		if f.Name == function {
+			return f
 		}
 	}
-	return nil, nil
+	return nil
 }
 
 // LookupImplForPlatform returns the first impl providing data for the provided platform.
-func LookupImplForPlatform(a *Analyzer, platform Platform_Name) *Impl {
-	for _, i := range a.Impls {
+func LookupImplForPlatform(f *Function, platform Platform_Name) *Impl {
+	for _, i := range f.Impls {
 		if i.ProvidesForPlatform == platform {
 			return i
 		}
@@ -107,9 +104,10 @@ func LookupPlatform(sc *ServiceConfig, platform Platform_Name) *Platform_Details
 	return nil
 }
 
-// SupportsPlatform checks if the provided analyzer has an implementation providing data for the provided platform.
-func SupportsPlatform(a *Analyzer, platform Platform_Name) bool {
-	for _, i := range a.Impls {
+// SupportsPlatform checks if the provided function has an implementation providing
+// data for the provided platform.
+func SupportsPlatform(f *Function, platform Platform_Name) bool {
+	for _, i := range f.Impls {
 		if i.ProvidesForPlatform == platform {
 			return true
 		}
@@ -117,9 +115,9 @@ func SupportsPlatform(a *Analyzer, platform Platform_Name) bool {
 	return false
 }
 
-// SupportsConfig checks if the analyzer has a config def matching the provided config.
-func SupportsConfig(a *Analyzer, config *Config) bool {
-	for _, c := range a.ConfigDefs {
+// SupportsConfig checks if the function has a config def matching the provided config.
+func SupportsConfig(f *Function, config *Config) bool {
+	for _, c := range f.ConfigDefs {
 		if c.Name == config.Name {
 			return true
 		}
@@ -148,28 +146,46 @@ func GetRecipeCmd(sc *ServiceConfig, platform Platform_Name) (*Cmd, error) {
 	}, nil
 }
 
-// IsAnalyzerValid checks if the analyzer config entry is valid.
+// IsFunctionValid checks if the function config entry is valid.
 //
-// A valid analyzer config entry has a name, valid deps and valid impl entries.
-// Note that there are more requirements for an analyzer config to be fully
+// A valid function config entry has a name, valid deps and valid impl entries.
+// Note that there are more requirements for a function config to be fully
 // valid in a merged config, for instance, data dependencies are required.
-func IsAnalyzerValid(a *Analyzer, sc *ServiceConfig) error {
-	if a.GetName() == "" {
-		return errors.New("missing name in analyzer config")
+func IsFunctionValid(f *Function, sc *ServiceConfig) error {
+	switch f.GetType() {
+	case Function_NONE:
+		return errors.New("missing type in function config")
+	case Function_ANALYZER:
+		if f.GetProvides() != Data_RESULTS {
+			return errors.New("analyzer function must return results")
+		}
+	case Function_ISOLATOR:
+		if f.GetProvides() == Data_RESULTS {
+			return errors.New("isolator functions must not return results")
+		}
+	}
+	if f.GetName() == "" {
+		return errors.New("missing name in function config")
+	}
+	if f.GetNeeds() == Data_NONE {
+		return errors.New("missing input type in function config")
+	}
+	if f.GetProvides() == Data_NONE {
+		return errors.New("missing output type in function config")
 	}
 	pm := make(map[Platform_Name]bool)
-	for _, i := range a.Impls {
-		needs, err := LookupDataTypeDetails(sc, a.Needs)
+	for _, i := range f.Impls {
+		needs, err := LookupDataTypeDetails(sc, f.Needs)
 		if err != nil {
-			return errors.New("analyzer has impl that needs unknown data type")
+			return errors.New("function has impl that needs unknown data type")
 		}
-		provides, err := LookupDataTypeDetails(sc, a.Provides)
+		provides, err := LookupDataTypeDetails(sc, f.Provides)
 		if err != nil {
-			return errors.New("analyzer has impl that provides unknown data type")
+			return errors.New("function has impl that provides unknown data type")
 		}
 		ok, err := IsImplValid(i, sc, needs, provides)
 		if !ok {
-			return fmt.Errorf("invalid impl for analyzer %s: %v", a.Name, err)
+			return fmt.Errorf("invalid impl for function %s: %v", f.Name, err)
 		}
 		if i.ProvidesForPlatform == Platform_ANY {
 			continue

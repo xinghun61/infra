@@ -30,44 +30,38 @@ func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) (*tricium.Pr
 		Acls:       pc.Acls,
 		Selections: pc.Selections,
 	}
-	analyzers := map[string]*tricium.Analyzer{}
+	functions := map[string]*tricium.Function{}
 	for _, s := range pc.Selections {
-		// Get merged analyzer definition.
-		if _, ok := analyzers[s.Analyzer]; !ok {
-			sca, err := tricium.LookupServiceAnalyzer(sc, s.Analyzer)
-			if err != nil {
-				return nil, fmt.Errorf("failed to lookup analyzer %s in service config: %v", s.Analyzer, err)
-			}
-			pca, err := tricium.LookupProjectAnalyzer(pc, s.Analyzer)
-			if err != nil {
-				return nil, fmt.Errorf("failed to lookup analyzer %s in project config: %v", s.Analyzer, err)
-			}
-			a, err := mergeAnalyzers(s.Analyzer, sc, sca, pca)
+		// Get merged function definition.
+		if _, ok := functions[s.Function]; !ok {
+			sca := tricium.LookupServiceFunction(sc, s.Function)
+			pca := tricium.LookupProjectFunction(pc, s.Function)
+			f, err := mergeFunctions(s.Function, sc, sca, pca)
 			if err != nil {
 				return nil, err
 			}
-			analyzers[s.Analyzer] = a
-			res.Analyzers = append(res.Analyzers, a)
+			functions[s.Function] = f
+			res.Functions = append(res.Functions, f)
 		}
-		if err := tricium.IsAnalyzerValid(analyzers[s.Analyzer], sc); err != nil {
-			return nil, fmt.Errorf("analyzer is not valid: %v", err)
+		if err := tricium.IsFunctionValid(functions[s.Function], sc); err != nil {
+			return nil, fmt.Errorf("function is not valid: %v", err)
 		}
-		if !tricium.SupportsPlatform(analyzers[s.Analyzer], s.Platform) {
-			return nil, fmt.Errorf("no support for platform %s by analyzer %s", s.Platform, s.Analyzer)
+		if !tricium.SupportsPlatform(functions[s.Function], s.Platform) {
+			return nil, fmt.Errorf("no support for platform %s by function %s", s.Platform, s.Function)
 		}
 		for _, c := range s.Configs {
-			if !tricium.SupportsConfig(analyzers[s.Analyzer], c) {
-				return nil, fmt.Errorf("no support for config %s by analyzer %s", c.Name, s.Analyzer)
+			if !tricium.SupportsConfig(functions[s.Function], c) {
+				return nil, fmt.Errorf("no support for config %s by function %s", c.Name, s.Function)
 			}
 		}
 	}
-	for _, v := range analyzers {
-		res.Analyzers = append(res.Analyzers, v)
+	for _, v := range functions {
+		res.Functions = append(res.Functions, v)
 	}
 	return res, nil
 }
 
-// mergeAnalyzers merges the provided service and project analyzer configs.
+// mergeFunctions merges the provided service and project function configs.
 //
 // In merging, the following override rules are applied:
 // - existence of project path_filters fully replace any service path_filters.
@@ -75,36 +69,43 @@ func Validate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig) (*tricium.Pr
 // - project owner, component
 // Errors:
 //  - change of data dependency in service config not allowed
-func mergeAnalyzers(analyzer string, sc *tricium.ServiceConfig, sa, pa *tricium.Analyzer) (*tricium.Analyzer, error) {
+func mergeFunctions(function string, sc *tricium.ServiceConfig, sa, pa *tricium.Function) (*tricium.Function, error) {
 	// TODO(emso): extract nil checks an similar out of this function and let if focus on only merging
 	if sa == nil && pa == nil {
-		return nil, fmt.Errorf("unknown analyzer %s", analyzer)
+		return nil, fmt.Errorf("unknown function %s", function)
 	}
-	res := &tricium.Analyzer{Name: analyzer}
+	res := &tricium.Function{Name: function}
 	if sa != nil {
-		if err := tricium.IsAnalyzerValid(sa, sc); err != nil {
-			return nil, fmt.Errorf("invalid service analyzer config for %s: %v", analyzer, err)
+		if err := tricium.IsFunctionValid(sa, sc); err != nil {
+			return nil, fmt.Errorf("invalid service function config for %s: %v", function, err)
 		}
 		if sa.GetNeeds() == tricium.Data_NONE || sa.GetProvides() == tricium.Data_NONE {
-			return nil, fmt.Errorf("service analyzer config must have data dependencies, analyzer: %s", analyzer)
+			return nil, fmt.Errorf("service function config must have data dependencies, function: %s", function)
 		}
+		res.Type = sa.Type
 		res.Needs = sa.Needs
 		res.Provides = sa.Provides
 		res.PathFilters = sa.PathFilters
 		res.Owner = sa.Owner
-		res.Component = sa.Component
+		res.MonorailComponent = sa.MonorailComponent
 		res.ConfigDefs = sa.ConfigDefs
 		res.Impls = sa.Impls
 	}
 	if pa != nil {
 		if sa != nil &&
+			(sa.Type != pa.Type) {
+			return nil, fmt.Errorf("cannot merge functions of different type, name: %s, service type: %s, project type: %s",
+				pa.Name, sa.Type, pa.Type)
+		}
+		res.Type = pa.Type
+		if sa != nil &&
 			(pa.GetNeeds() != tricium.Data_NONE && pa.GetNeeds() != sa.GetNeeds() ||
 				pa.GetProvides() != tricium.Data_NONE && pa.GetProvides() != sa.GetProvides()) {
-			return nil, fmt.Errorf("change of service analyzer data dependencies not allowed, analyzer: %s", analyzer)
+			return nil, fmt.Errorf("change of service function data dependencies not allowed, function: %s", function)
 		}
 		if sa == nil {
 			if pa.GetNeeds() == tricium.Data_NONE || pa.GetProvides() == tricium.Data_NONE {
-				return nil, fmt.Errorf("project analyzer config is missing data dependencies, analyzer: %s", analyzer)
+				return nil, fmt.Errorf("project function config is missing data dependencies, function: %s", function)
 			}
 			res.Needs = pa.Needs
 			res.Provides = pa.Provides
@@ -115,8 +116,8 @@ func mergeAnalyzers(analyzer string, sc *tricium.ServiceConfig, sa, pa *tricium.
 			pa.Needs = sa.Needs
 			pa.Provides = sa.Provides
 		}
-		if err := tricium.IsAnalyzerValid(pa, sc); err != nil {
-			return nil, fmt.Errorf("invalid project analyzer config for %s: %v", analyzer, err)
+		if err := tricium.IsFunctionValid(pa, sc); err != nil {
+			return nil, fmt.Errorf("invalid project function config for %s: %v", function, err)
 		}
 		if pa.GetPathFilters() != nil {
 			res.PathFilters = pa.PathFilters
@@ -124,8 +125,8 @@ func mergeAnalyzers(analyzer string, sc *tricium.ServiceConfig, sa, pa *tricium.
 		if pa.GetOwner() != "" {
 			res.Owner = pa.Owner
 		}
-		if pa.GetComponent() != "" {
-			res.Component = pa.Component
+		if pa.GetMonorailComponent() != "" {
+			res.MonorailComponent = pa.MonorailComponent
 		}
 		if sa != nil {
 			res.ConfigDefs = mergeConfigDefs(sa.ConfigDefs, pa.ConfigDefs)
@@ -138,7 +139,7 @@ func mergeAnalyzers(analyzer string, sc *tricium.ServiceConfig, sa, pa *tricium.
 	return res, nil
 }
 
-// mergeConfigDefs merges the service analyzer config defs with the project analyzer config defs.
+// mergeConfigDefs merges the service function config defs with the project function config defs.
 //
 // The project config defs can override service config defs with the same name.
 func mergeConfigDefs(scd []*tricium.ConfigDef, pcd []*tricium.ConfigDef) []*tricium.ConfigDef {
@@ -156,7 +157,7 @@ func mergeConfigDefs(scd []*tricium.ConfigDef, pcd []*tricium.ConfigDef) []*tric
 	return res
 }
 
-// mergeImpls merges the service analyzer implementations with the project analyzer implementations.
+// mergeImpls merges the service function implementations with the project function implementations.
 //
 // All provided impl entries are assumed to be valid.
 // The project implementations can override the service implementations for the same platform.

@@ -66,7 +66,7 @@ var Platform_Name_value = map[string]int32{
 func (x Platform_Name) String() string {
 	return proto.EnumName(Platform_Name_name, int32(x))
 }
-func (Platform_Name) EnumDescriptor() ([]byte, []int) { return fileDescriptor2, []int{0, 0} }
+func (Platform_Name) EnumDescriptor() ([]byte, []int) { return fileDescriptor3, []int{0, 0} }
 
 // Platforms supported by Tricium.
 type Platform struct {
@@ -75,7 +75,7 @@ type Platform struct {
 func (m *Platform) Reset()                    { *m = Platform{} }
 func (m *Platform) String() string            { return proto.CompactTextString(m) }
 func (*Platform) ProtoMessage()               {}
-func (*Platform) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0} }
+func (*Platform) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
 
 // Platform details for supported platforms.
 //
@@ -100,7 +100,7 @@ type Platform_Details struct {
 func (m *Platform_Details) Reset()                    { *m = Platform_Details{} }
 func (m *Platform_Details) String() string            { return proto.CompactTextString(m) }
 func (*Platform_Details) ProtoMessage()               {}
-func (*Platform_Details) Descriptor() ([]byte, []int) { return fileDescriptor2, []int{0, 0} }
+func (*Platform_Details) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0, 0} }
 
 func (m *Platform_Details) GetName() Platform_Name {
 	if m != nil {
@@ -129,9 +129,9 @@ func init() {
 	proto.RegisterEnum("tricium.Platform_Name", Platform_Name_name, Platform_Name_value)
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/v1/platform.proto", fileDescriptor2) }
+func init() { proto.RegisterFile("infra/tricium/api/v1/platform.proto", fileDescriptor3) }
 
-var fileDescriptor2 = []byte{
+var fileDescriptor3 = []byte{
 	// 270 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0xd0, 0xc1, 0x4e, 0xb3, 0x40,
 	0x14, 0x05, 0xe0, 0x9f, 0xd2, 0xbf, 0xd0, 0x8b, 0x31, 0xd7, 0x49, 0x34, 0xa4, 0x0b, 0x4b, 0xea,

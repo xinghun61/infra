@@ -66,7 +66,7 @@ var State_value = map[string]int32{
 func (x State) String() string {
 	return proto.EnumName(State_name, int32(x))
 }
-func (State) EnumDescriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
+func (State) EnumDescriptor() ([]byte, []int) { return fileDescriptor4, []int{0} }
 
 type Consumer int32
 
@@ -97,7 +97,7 @@ var Consumer_value = map[string]int32{
 func (x Consumer) String() string {
 	return proto.EnumName(Consumer_name, int32(x))
 }
-func (Consumer) EnumDescriptor() ([]byte, []int) { return fileDescriptor3, []int{1} }
+func (Consumer) EnumDescriptor() ([]byte, []int) { return fileDescriptor4, []int{1} }
 
 // AnalyzeRequest contains the details needed for an analysis request.
 type AnalyzeRequest struct {
@@ -125,7 +125,7 @@ type AnalyzeRequest struct {
 func (m *AnalyzeRequest) Reset()                    { *m = AnalyzeRequest{} }
 func (m *AnalyzeRequest) String() string            { return proto.CompactTextString(m) }
 func (*AnalyzeRequest) ProtoMessage()               {}
-func (*AnalyzeRequest) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{0} }
+func (*AnalyzeRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{0} }
 
 func (m *AnalyzeRequest) GetProject() string {
 	if m != nil {
@@ -172,7 +172,7 @@ type AnalyzeResponse struct {
 func (m *AnalyzeResponse) Reset()                    { *m = AnalyzeResponse{} }
 func (m *AnalyzeResponse) String() string            { return proto.CompactTextString(m) }
 func (*AnalyzeResponse) ProtoMessage()               {}
-func (*AnalyzeResponse) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{1} }
+func (*AnalyzeResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{1} }
 
 func (m *AnalyzeResponse) GetRunId() string {
 	if m != nil {
@@ -215,7 +215,7 @@ type ProgressRequest struct {
 func (m *ProgressRequest) Reset()                    { *m = ProgressRequest{} }
 func (m *ProgressRequest) String() string            { return proto.CompactTextString(m) }
 func (*ProgressRequest) ProtoMessage()               {}
-func (*ProgressRequest) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{2} }
+func (*ProgressRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{2} }
 
 func (m *ProgressRequest) GetRunId() string {
 	if m != nil {
@@ -269,7 +269,7 @@ type ProgressResponse struct {
 func (m *ProgressResponse) Reset()                    { *m = ProgressResponse{} }
 func (m *ProgressResponse) String() string            { return proto.CompactTextString(m) }
 func (*ProgressResponse) ProtoMessage()               {}
-func (*ProgressResponse) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{3} }
+func (*ProgressResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{3} }
 
 func (m *ProgressResponse) GetRunId() string {
 	if m != nil {
@@ -315,7 +315,7 @@ type AnalyzerProgress struct {
 func (m *AnalyzerProgress) Reset()                    { *m = AnalyzerProgress{} }
 func (m *AnalyzerProgress) String() string            { return proto.CompactTextString(m) }
 func (*AnalyzerProgress) ProtoMessage()               {}
-func (*AnalyzerProgress) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{4} }
+func (*AnalyzerProgress) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{4} }
 
 func (m *AnalyzerProgress) GetAnalyzer() string {
 	if m != nil {
@@ -381,7 +381,7 @@ type ResultsRequest struct {
 func (m *ResultsRequest) Reset()                    { *m = ResultsRequest{} }
 func (m *ResultsRequest) String() string            { return proto.CompactTextString(m) }
 func (*ResultsRequest) ProtoMessage()               {}
-func (*ResultsRequest) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{5} }
+func (*ResultsRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{5} }
 
 func (m *ResultsRequest) GetRunId() string {
 	if m != nil {
@@ -419,7 +419,7 @@ type ResultsResponse struct {
 func (m *ResultsResponse) Reset()                    { *m = ResultsResponse{} }
 func (m *ResultsResponse) String() string            { return proto.CompactTextString(m) }
 func (*ResultsResponse) ProtoMessage()               {}
-func (*ResultsResponse) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{6} }
+func (*ResultsResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{6} }
 
 func (m *ResultsResponse) GetResults() *Data_Results {
 	if m != nil {
@@ -463,7 +463,7 @@ type FeedbackRequest struct {
 func (m *FeedbackRequest) Reset()                    { *m = FeedbackRequest{} }
 func (m *FeedbackRequest) String() string            { return proto.CompactTextString(m) }
 func (*FeedbackRequest) ProtoMessage()               {}
-func (*FeedbackRequest) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{7} }
+func (*FeedbackRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{7} }
 
 func (m *FeedbackRequest) GetCategory() string {
 	if m != nil {
@@ -502,7 +502,7 @@ type FeedbackResponse struct {
 func (m *FeedbackResponse) Reset()                    { *m = FeedbackResponse{} }
 func (m *FeedbackResponse) String() string            { return proto.CompactTextString(m) }
 func (*FeedbackResponse) ProtoMessage()               {}
-func (*FeedbackResponse) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{8} }
+func (*FeedbackResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{8} }
 
 func (m *FeedbackResponse) GetComments() int32 {
 	if m != nil {
@@ -537,7 +537,7 @@ type ReportNotUsefulRequest struct {
 func (m *ReportNotUsefulRequest) Reset()                    { *m = ReportNotUsefulRequest{} }
 func (m *ReportNotUsefulRequest) String() string            { return proto.CompactTextString(m) }
 func (*ReportNotUsefulRequest) ProtoMessage()               {}
-func (*ReportNotUsefulRequest) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{9} }
+func (*ReportNotUsefulRequest) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{9} }
 
 func (m *ReportNotUsefulRequest) GetCommentId() string {
 	if m != nil {
@@ -563,7 +563,7 @@ type ReportNotUsefulResponse struct {
 func (m *ReportNotUsefulResponse) Reset()                    { *m = ReportNotUsefulResponse{} }
 func (m *ReportNotUsefulResponse) String() string            { return proto.CompactTextString(m) }
 func (*ReportNotUsefulResponse) ProtoMessage()               {}
-func (*ReportNotUsefulResponse) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{10} }
+func (*ReportNotUsefulResponse) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{10} }
 
 func (m *ReportNotUsefulResponse) GetIssue() string {
 	if m != nil {
@@ -611,7 +611,7 @@ type GerritConsumerDetails struct {
 func (m *GerritConsumerDetails) Reset()                    { *m = GerritConsumerDetails{} }
 func (m *GerritConsumerDetails) String() string            { return proto.CompactTextString(m) }
 func (*GerritConsumerDetails) ProtoMessage()               {}
-func (*GerritConsumerDetails) Descriptor() ([]byte, []int) { return fileDescriptor3, []int{11} }
+func (*GerritConsumerDetails) Descriptor() ([]byte, []int) { return fileDescriptor4, []int{11} }
 
 func (m *GerritConsumerDetails) GetHost() string {
 	if m != nil {
@@ -944,9 +944,9 @@ var _Tricium_serviceDesc = grpc.ServiceDesc{
 	Metadata: "infra/tricium/api/v1/tricium.proto",
 }
 
-func init() { proto.RegisterFile("infra/tricium/api/v1/tricium.proto", fileDescriptor3) }
+func init() { proto.RegisterFile("infra/tricium/api/v1/tricium.proto", fileDescriptor4) }
 
-var fileDescriptor3 = []byte{
+var fileDescriptor4 = []byte{
 	// 900 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xc4, 0x56, 0xcd, 0x6e, 0xdb, 0x46,
 	0x10, 0x0e, 0x2d, 0x53, 0xa2, 0x46, 0x89, 0xcc, 0x2c, 0x12, 0x9b, 0x56, 0x91, 0x46, 0x65, 0x7b,

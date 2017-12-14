@@ -7,6 +7,7 @@ syntax = "proto3";
 package tricium;
 
 import "infra/tricium/api/v1/data.proto";
+import "infra/tricium/api/v1/function.proto";
 import "infra/tricium/api/v1/platform.proto";
 
 // Tricium service configuration.
@@ -20,8 +21,8 @@ message ServiceConfig {
   // Supported data types.
   repeated Data.TypeDetails data_details = 2;
 
-  // List of shared analyzers.
-  repeated Analyzer analyzers = 3;
+  // List of shared functions.
+  repeated Function functions = 3;
 
   // Details for connected projects.
   repeated ProjectDetails projects = 4;
@@ -42,7 +43,7 @@ message ServiceConfig {
   //
   // This should be a full URL with no trailing slash.
   string swarming_server = 7;
-  
+
   // Isolate server to use for this service instance.
   //
   // This should be a full URL with no trailing slash.
@@ -74,8 +75,8 @@ message ProjectDetails {
 
 // Tricium project configuration.
 //
-// Specifies details needed to connect a project to Tricium, adds project
-// specific analyzers and implementations, and selects analyzer
+// Specifies details needed to connect a project to Tricium.
+// Adds project-specific functions and selects shared function
 // implementations.
 message ProjectConfig {
   // Project name,
@@ -84,11 +85,13 @@ message ProjectConfig {
   // Access control rules for the project.
   repeated Acl acls = 2;
 
-  // Project-specific analyzer details. This includes project-specific analyzer
-  // implementations and full project-specific analyzer specifications.
-  repeated Analyzer analyzers = 3;
+  // Project-specific function details.
+  //
+  // This includes project-specific analyzer implementations and full
+  // project-specific analyzer specifications.
+  repeated Function functions = 3;
 
-  // Selection of analyzer implementations to run for this project.
+  // Selection of function implementations to run for this project.
   repeated Selection selections = 4;
 }
 
@@ -148,154 +151,23 @@ message Acl {
   string identity = 3;
 }
 
-// Selection of analyzer implementations to run for a project.
+// Selection of function implementations to run for a project.
 message Selection {
-  // Name of analyzer to run.
-  string analyzer = 1;
+  // Name of function to run.
+  string function = 1;
 
   // Name of platform to retrieve results from.
   Platform.Name platform = 2;
 
-  // Analyzer configuration to use on this platform.
+  // Function configuration to use on this platform.
   repeated Config configs = 3;
 }
 
-// Analyzer specification.
-message Analyzer {
-  // Name of analyzer. This name is used to select the analyzer and is used
-  // when reporting results for the analyzer. This name should be unique among
-  // Tricium analyzers.
-  string name = 1;
-
-  // Tricium data needed by this analyzer.
-  Data.Type needs = 2;
-
-  // Tricium data provided by this analyzer.
-  Data.Type provides = 3;
-
-  // Paths to run this analyzer on, defined as a glob.
-  repeated string path_filters = 4; // Default: "*"
-
-  // Email to the owner of this analyzer.
-  string owner = 6;
-
-   // Monorail bug component for bug filing.
-  string component = 7;
-
-  // Analyzer configuration. These configuration options enable projects to
-  // customize how an analyzer implementation analyzes their files.  It's
-  // common for analyzers to provide a list of possible checks which can be
-  // configured via a command line flag or similar. This field provides a way
-  // to expose such flags as configuration options.
-  repeated ConfigDef config_defs = 8;
-
-  // Analyzer implementations. An analyzer may run on many platforms and this
-  // may require many different implementations of the analyzer. An
-  // implementation may be shared between several platforms if possible.
-  repeated Impl impls = 9;
-}
-
-// Definition of an analyzer configuration, e.g., ClangTidy is configured with
-// a ‘checks’ flag.
-message ConfigDef {
-  // Name of configuration option.
-  string name = 1;
-
-  // Default value for the config, e.g., checks=”all”.
-  string default = 2;
-}
-
-// Analyzer implementation.
-//
-// Implementation can be either recipe-based or command-based.
-// If platform-specific data is needed or provided, the specific platform
-// details should be provided in the implementation.
-// Note that the runtime platform of the implementation may be different than
-// the platform(s) used to refine the data-dependency.
-message Impl {
-  // Data-dependency details specific to this implementation.
-  // For instance, if the needed data needs to be tied to a specific platform
-  // then the 'needs_for_platform' field should be set to that platform.
-  // Likewise for any provided data type tied to a specific platform, this
-  // should be indicated with the 'provides_for_platform' field.
-  // Either if these fields can be left out for implementations of analyzers
-  // not needing or providing platform-specific data.
-  Platform.Name needs_for_platform = 1;
-  Platform.Name provides_for_platform = 2;
-
-  // The platform to run this implementation on. This may be different
-  // from the platforms used to refine data-dependencies, as long as the
-  // data consumed/produced follows the specification.
-  Platform.Name runtime_platform = 3;
-
-  // Cipd packages needed by this implementation.
-  repeated CipdPackage cipd_packages = 4;
-
-  oneof impl {
-    // Recipe for recipe-based implementation.
-    Recipe recipe = 5;
-
-    // Command for binary-based implementation.
-    Cmd cmd = 6;
-  }
-
-  // Deadline for execution of corresponding worker (in minutes). Note that
-  // this deadline includes the launch of a swarming task for the corresponding
-  // worker, and collection of results from that worker.
-  int32 deadline = 7;
-}
-
-// Specification of how to find a recipe.
-message Recipe {
-  // Repository URL of the recipe package.
-  string repository = 1;
-
-  // Path to recipe in the repository.
-  string path = 2;
-
-  // Revision to use.
-  string revision = 3;
-
-  // Recipe properties which will be provided as a JSON string to the recipe.
-  repeated Property properties = 4;
-}
-
-// Property used to configure a recipe.
-//
-// All properties for a recipe are encoded as a JSON string and passed via
-// the 'kitchen cook' command, ending up as build properties.
-message Property {
-  string key = 1;
-  string value = 2;
-}
-
-// Analyzer configuration used when selecting an analyzer implementation.
+// Function configuration used when selecting a function implementation.
 message Config {
   // Name of the configuration option.
   string name = 1;
 
   // Value of the configuration.
   string value = 2;
-}
-
-// Specification of a command.
-message Cmd {
-  // Executable binary.
-  string exec = 1;
-
-  // Arguments in order.
-  repeated string args = 2;
-}
-
-// CIPD package.
-message CipdPackage {
-  // CIPD package name.
-  string package_name = 1;
-
-  // Path to directory, relative to the working directory, where to install
-  // package. Cannot be empty or start with a slash.
-  string path = 2;
-
-  // Package version.
-  string version = 3;
 }

@@ -44,8 +44,9 @@ func TestValidate(t *testing.T) {
 				},
 			},
 		}
-		analyzers := []*tricium.Analyzer{
+		functions := []*tricium.Function{
 			{
+				Type:     tricium.Function_ANALYZER,
 				Name:     analyzer,
 				Needs:    tricium.Data_FILES,
 				Provides: tricium.Data_RESULTS,
@@ -69,13 +70,13 @@ func TestValidate(t *testing.T) {
 			},
 		}
 
-		Convey("Supported analyzer platform OK", func() {
+		Convey("Supported function platform OK", func() {
 			_, err := Validate(sd, &tricium.ProjectConfig{
 				Name:      project,
-				Analyzers: analyzers,
+				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
-						Analyzer: analyzer,
+						Function: analyzer,
 						Platform: platform,
 					},
 				},
@@ -83,13 +84,13 @@ func TestValidate(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 
-		Convey("Non-supported analyzer platform causes error", func() {
+		Convey("Non-supported function platform causes error", func() {
 			_, err := Validate(sd, &tricium.ProjectConfig{
 				Name:      project,
-				Analyzers: analyzers,
+				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
-						Analyzer: analyzer,
+						Function: analyzer,
 						Platform: tricium.Platform_WINDOWS,
 					},
 				},
@@ -97,13 +98,13 @@ func TestValidate(t *testing.T) {
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("Supported analyzer config OK", func() {
+		Convey("Supported function config OK", func() {
 			_, err := Validate(sd, &tricium.ProjectConfig{
 				Name:      project,
-				Analyzers: analyzers,
+				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
-						Analyzer: analyzer,
+						Function: analyzer,
 						Platform: platform,
 						Configs: []*tricium.Config{
 							{
@@ -117,13 +118,13 @@ func TestValidate(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 
-		Convey("Non-supported analyzer config causes error", func() {
+		Convey("Non-supported function config causes error", func() {
 			_, err := Validate(sd, &tricium.ProjectConfig{
 				Name:      project,
-				Analyzers: analyzers,
+				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
-						Analyzer: analyzer,
+						Function: analyzer,
 						Platform: platform,
 						Configs: []*tricium.Config{
 							{
@@ -139,7 +140,7 @@ func TestValidate(t *testing.T) {
 	})
 }
 
-func TestMergeAnalyzers(t *testing.T) {
+func TestMergeFunctions(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		analyzer := "PyLint"
 		platform := tricium.Platform_UBUNTU
@@ -162,18 +163,25 @@ func TestMergeAnalyzers(t *testing.T) {
 			},
 		}
 
-		Convey("Project analyzer def without service def must have data deps", func() {
-			_, err := mergeAnalyzers(analyzer, sc, nil, &tricium.Analyzer{Name: analyzer})
+		Convey("Project function def without service def must have data deps", func() {
+			_, err := mergeFunctions(analyzer, sc, nil, &tricium.Function{
+				Type: tricium.Function_ANALYZER,
+				Name: analyzer,
+			})
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("Service analyzer def must have data deps", func() {
-			_, err := mergeAnalyzers(analyzer, sc, &tricium.Analyzer{Name: analyzer}, nil)
+		Convey("Service function def must have data deps", func() {
+			_, err := mergeFunctions(analyzer, sc, &tricium.Function{
+				Type: tricium.Function_ANALYZER,
+				Name: analyzer,
+			}, nil)
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("No service analyzer config is OK", func() {
-			_, err := mergeAnalyzers(analyzer, sc, nil, &tricium.Analyzer{
+		Convey("No service function config is OK", func() {
+			_, err := mergeFunctions(analyzer, sc, nil, &tricium.Function{
+				Type:     tricium.Function_ANALYZER,
 				Name:     analyzer,
 				Needs:    tricium.Data_FILES,
 				Provides: tricium.Data_RESULTS,
@@ -181,8 +189,9 @@ func TestMergeAnalyzers(t *testing.T) {
 			So(err, ShouldBeNil)
 		})
 
-		Convey("No project analyzer config is OK", func() {
-			_, err := mergeAnalyzers(analyzer, sc, &tricium.Analyzer{
+		Convey("No project function config is OK", func() {
+			_, err := mergeFunctions(analyzer, sc, &tricium.Function{
+				Type:     tricium.Function_ANALYZER,
 				Name:     analyzer,
 				Needs:    tricium.Data_FILES,
 				Provides: tricium.Data_RESULTS,
@@ -191,19 +200,21 @@ func TestMergeAnalyzers(t *testing.T) {
 		})
 
 		Convey("Change of service data deps not allowed", func() {
-			_, err := mergeAnalyzers(analyzer, sc, &tricium.Analyzer{
+			_, err := mergeFunctions(analyzer, sc, &tricium.Function{
+				Type:     tricium.Function_ANALYZER,
 				Name:     analyzer,
 				Needs:    tricium.Data_FILES,
 				Provides: tricium.Data_RESULTS,
-			}, &tricium.Analyzer{
+			}, &tricium.Function{
+				Type:     tricium.Function_ISOLATOR,
 				Name:     analyzer,
 				Provides: tricium.Data_CLANG_DETAILS,
 			})
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("Neither service nor analyzer config not OK", func() {
-			_, err := mergeAnalyzers(analyzer, sc, nil, nil)
+		Convey("Neither service nor function config not OK", func() {
+			_, err := mergeFunctions(analyzer, sc, nil, nil)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -212,13 +223,14 @@ func TestMergeAnalyzers(t *testing.T) {
 			comp := "someonesComp"
 			exec := "cat"
 			deadline := int32(120)
-			a, err := mergeAnalyzers(analyzer, sc, &tricium.Analyzer{
-				Name:        analyzer,
-				Needs:       tricium.Data_FILES,
-				Provides:    tricium.Data_RESULTS,
-				PathFilters: []string{"*\\.py", "*\\.pypy"},
-				Owner:       "emso",
-				Component:   "compA",
+			a, err := mergeFunctions(analyzer, sc, &tricium.Function{
+				Type:              tricium.Function_ANALYZER,
+				Name:              analyzer,
+				Needs:             tricium.Data_FILES,
+				Provides:          tricium.Data_RESULTS,
+				PathFilters:       []string{"*\\.py", "*\\.pypy"},
+				Owner:             "emso",
+				MonorailComponent: "compA",
 				Impls: []*tricium.Impl{
 					{
 						ProvidesForPlatform: platform,
@@ -231,11 +243,12 @@ func TestMergeAnalyzers(t *testing.T) {
 						Deadline: 60,
 					},
 				},
-			}, &tricium.Analyzer{
-				Name:        analyzer,
-				PathFilters: []string{"*\\.py"},
-				Owner:       user,
-				Component:   comp,
+			}, &tricium.Function{
+				Type:              tricium.Function_ANALYZER,
+				Name:              analyzer,
+				PathFilters:       []string{"*\\.py"},
+				Owner:             user,
+				MonorailComponent: comp,
 				Impls: []*tricium.Impl{
 					{
 						ProvidesForPlatform: platform,
@@ -252,7 +265,7 @@ func TestMergeAnalyzers(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(a, ShouldNotBeNil)
 			So(a.Owner, ShouldEqual, user)
-			So(a.Component, ShouldEqual, comp)
+			So(a.MonorailComponent, ShouldEqual, comp)
 			So(len(a.PathFilters), ShouldEqual, 1)
 			So(len(a.Impls), ShouldEqual, 1)
 			So(a.Impls[0].ProvidesForPlatform, ShouldEqual, platform)

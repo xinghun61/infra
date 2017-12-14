@@ -28,20 +28,20 @@ func Generate(sc *tricium.ServiceConfig, pc *tricium.ProjectConfig, paths []stri
 		return nil, fmt.Errorf("unknown project, project: %s", pc.Name)
 	}
 	var workers []*admin.Worker
-	analyzers := map[string]*tricium.Analyzer{}
+	functions := map[string]*tricium.Function{}
 	for _, s := range vpc.Selections {
-		if _, ok := analyzers[s.Analyzer]; !ok {
-			a, err := tricium.LookupProjectAnalyzer(vpc, s.Analyzer)
-			if err != nil {
-				return nil, fmt.Errorf("failed to lookup project analyzer: %v", err)
+		if _, ok := functions[s.Function]; !ok {
+			f := tricium.LookupProjectFunction(vpc, s.Function)
+			if f == nil {
+				return nil, fmt.Errorf("failed to lookup project function: %v", err)
 			}
-			analyzers[s.Analyzer] = a
+			functions[s.Function] = f
 		}
-		ok, err := includeAnalyzer(analyzers[s.Analyzer], paths)
+		ok, err := includeFunction(functions[s.Function], paths)
 		if err != nil {
-			return nil, fmt.Errorf("failed include analyzer check: %v", err)
+			return nil, fmt.Errorf("failed include function check: %v", err)
 		} else if ok {
-			w, err := createWorker(s, sc, analyzers[s.Analyzer])
+			w, err := createWorker(s, sc, functions[s.Function])
 			if err != nil {
 				return nil, fmt.Errorf("failed to create worker: %v", err)
 			}
@@ -136,21 +136,22 @@ func checkWorkerDeps(w *admin.Worker, m map[string]*admin.Worker, visited map[st
 	return nil
 }
 
-// includeAnalyzer checks if the provided analyzer should be included based on the provided paths.
+// includeFunction checks if the provided function should be included based on the provided paths.
 //
-// The paths are checked against the path filters included for the analyzer. If there are no
-// path filters, or no paths, then the analyzer is included without further checking.
-// With both paths and path filters, there needs to be at least one path match for the analyzer to
+// The paths are checked against the path filters included for the function. If there are no
+// path filters, or no paths, then the function is included without further checking.
+// With both paths and path filters, there needs to be at least one path match for the function to
 // be included.
-func includeAnalyzer(a *tricium.Analyzer, paths []string) (bool, error) {
-	if len(paths) == 0 || a.PathFilters == nil || len(a.PathFilters) == 0 {
+// Note that path filters are only provided for analyzers.
+func includeFunction(f *tricium.Function, paths []string) (bool, error) {
+	if f.Type == tricium.Function_ISOLATOR || len(paths) == 0 || f.PathFilters == nil || len(f.PathFilters) == 0 {
 		return true, nil
 	}
 	for _, p := range paths {
-		for _, f := range a.PathFilters {
-			ok, err := filepath.Match(f, p)
+		for _, filter := range f.PathFilters {
+			ok, err := filepath.Match(filter, p)
 			if err != nil {
-				return false, fmt.Errorf("failed to check path filter %s for path %s", f, p)
+				return false, fmt.Errorf("failed to check path filter %s for path %s", filter, p)
 			}
 			if ok {
 				return true, nil
@@ -160,17 +161,17 @@ func includeAnalyzer(a *tricium.Analyzer, paths []string) (bool, error) {
 	return false, nil
 }
 
-// createWorker creates a worker from the provided analyzer, selection and service config.
+// createWorker creates a worker from the provided function, selection and service config.
 //
-// The provided analyzer is assumed to be verified.
-func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, a *tricium.Analyzer) (*admin.Worker, error) {
-	i := tricium.LookupImplForPlatform(a, s.Platform) // if verified, there should be an impl.
+// The provided function is assumed to be verified.
+func createWorker(s *tricium.Selection, sc *tricium.ServiceConfig, f *tricium.Function) (*admin.Worker, error) {
+	i := tricium.LookupImplForPlatform(f, s.Platform) // if verified, there should be an impl.
 	p := tricium.LookupPlatform(sc, s.Platform)       // if verified, the platform should be known.
-	// TODO(emso): Consider composing worker names using a character not allowed in analyzer/platform names, e.g., '/'.
+	// TODO(emso): Consider composing worker names using a character not allowed in function/platform names, e.g., '/'.
 	w := &admin.Worker{
-		Name:                fmt.Sprintf("%s_%s", s.Analyzer, s.Platform),
-		Needs:               a.Needs,
-		Provides:            a.Provides,
+		Name:                fmt.Sprintf("%s_%s", s.Function, s.Platform),
+		Needs:               f.Needs,
+		Provides:            f.Provides,
 		NeedsForPlatform:    i.NeedsForPlatform,
 		ProvidesForPlatform: i.ProvidesForPlatform,
 		RuntimePlatform:     i.RuntimePlatform,

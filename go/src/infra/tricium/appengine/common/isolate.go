@@ -130,6 +130,7 @@ func (s isolateServer) IsolateGitFileDetails(c context.Context, serverURL string
 
 // IsolateWorker implements the IsolateAPI interface.
 func (s isolateServer) IsolateWorker(c context.Context, serverURL string, worker *admin.Worker, isolatedInput string) (string, error) {
+	// TODO(emso): Include command deadline.
 	mode := 0444
 	iso := isolated.New()
 	iso.Command = append([]string{worker.Cmd.Exec}, worker.Cmd.Args...)

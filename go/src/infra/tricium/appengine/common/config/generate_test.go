@@ -57,8 +57,9 @@ var (
 				IsPlatformSpecific: true,
 			},
 		},
-		Analyzers: []*tricium.Analyzer{
+		Functions: []*tricium.Function{
 			{
+				Type:     tricium.Function_ANALYZER,
 				Name:     pylint,
 				Needs:    tricium.Data_FILES,
 				Provides: tricium.Data_RESULTS,
@@ -83,8 +84,9 @@ func TestGenerate(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		pc := &tricium.ProjectConfig{
 			Name: project,
-			Analyzers: []*tricium.Analyzer{
+			Functions: []*tricium.Function{
 				{
+					Type:     tricium.Function_ANALYZER,
 					Name:     mylint,
 					Needs:    tricium.Data_FILES,
 					Provides: tricium.Data_RESULTS,
@@ -102,6 +104,7 @@ func TestGenerate(t *testing.T) {
 					},
 				},
 				{
+					Type:     tricium.Function_ISOLATOR,
 					Name:     isolator,
 					Needs:    tricium.Data_GIT_FILE_DETAILS,
 					Provides: tricium.Data_FILES,
@@ -121,15 +124,15 @@ func TestGenerate(t *testing.T) {
 			},
 			Selections: []*tricium.Selection{
 				{
-					Analyzer: isolator,
+					Function: isolator,
 					Platform: platform,
 				},
 				{
-					Analyzer: pylint,
+					Function: pylint,
 					Platform: platform,
 				},
 				{
-					Analyzer: mylint,
+					Function: mylint,
 					Platform: platform,
 				},
 			},
@@ -238,31 +241,45 @@ func TestFollowWorkerDeps(t *testing.T) {
 	})
 }
 
-func TestIncludeAnalyzer(t *testing.T) {
+func TestIncludeFunction(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		Convey("No paths means analyzer is included", func() {
-			ok, err := includeAnalyzer(&tricium.Analyzer{}, nil)
+		Convey("No paths means function is included", func() {
+			ok, err := includeFunction(&tricium.Function{
+				Type: tricium.Function_ANALYZER,
+			}, nil)
 			So(err, ShouldBeNil)
 			So(ok, ShouldBeTrue)
 		})
-		Convey("No file paths means analyzer is included", func() {
-			ok, err := includeAnalyzer(&tricium.Analyzer{}, []string{"README.md"})
+		Convey("No file paths means function is included", func() {
+			ok, err := includeFunction(&tricium.Function{
+				Type: tricium.Function_ANALYZER,
+			}, []string{"README.md"})
 			So(err, ShouldBeNil)
 			So(ok, ShouldBeTrue)
 		})
-		Convey("Analyzer is included when path matches filter", func() {
-			ok, err := includeAnalyzer(&tricium.Analyzer{
+		Convey("Analyzer function is included when path matches filter", func() {
+			ok, err := includeFunction(&tricium.Function{
+				Type:        tricium.Function_ANALYZER,
 				PathFilters: []string{"*.md"},
 			}, []string{"README.md"})
 			So(err, ShouldBeNil)
 			So(ok, ShouldBeTrue)
 		})
-		Convey("Analyzer is not included when there is no match", func() {
-			ok, err := includeAnalyzer(&tricium.Analyzer{
+		Convey("Analyzer function is not included when there is no match", func() {
+			ok, err := includeFunction(&tricium.Function{
+				Type:        tricium.Function_ANALYZER,
 				PathFilters: []string{"*.md"},
 			}, []string{"file.cpp"})
 			So(err, ShouldBeNil)
 			So(ok, ShouldBeFalse)
+		})
+		Convey("Isolator function is included regardless of path match", func() {
+			ok, err := includeFunction(&tricium.Function{
+				Type:        tricium.Function_ISOLATOR,
+				PathFilters: []string{"*.md"},
+			}, []string{"file.cpp"})
+			So(err, ShouldBeNil)
+			So(ok, ShouldBeTrue)
 		})
 	})
 }
@@ -274,7 +291,7 @@ func TestCreateWorker(t *testing.T) {
 		config := "enable"
 		configValue := "all"
 		selection := &tricium.Selection{
-			Analyzer: analyzer,
+			Function: analyzer,
 			Platform: platform,
 			Configs: []*tricium.Config{
 				{
@@ -307,7 +324,7 @@ func TestCreateWorker(t *testing.T) {
 		}
 		deadline := int32(120)
 		Convey("Correctly creates cmd-based worker", func() {
-			a := &tricium.Analyzer{
+			f := &tricium.Function{
 				Name:       analyzer,
 				Needs:      tricium.Data_FILES,
 				Provides:   tricium.Data_RESULTS,
@@ -332,11 +349,11 @@ func TestCreateWorker(t *testing.T) {
 					},
 				},
 			}
-			w, err := createWorker(selection, sc, a)
+			w, err := createWorker(selection, sc, f)
 			So(err, ShouldBeNil)
 			So(w.Name, ShouldEqual, fmt.Sprintf("%s_%s", analyzer, platform))
-			So(w.Needs, ShouldEqual, a.Needs)
-			So(w.Provides, ShouldEqual, a.Provides)
+			So(w.Needs, ShouldEqual, f.Needs)
+			So(w.Provides, ShouldEqual, f.Provides)
 			So(w.ProvidesForPlatform, ShouldEqual, platform)
 			So(len(w.Dimensions), ShouldEqual, 1)
 			So(w.Dimensions[0], ShouldEqual, dimension)
@@ -351,7 +368,7 @@ func TestCreateWorker(t *testing.T) {
 			recipe := "recipe"
 			repo := "infra-repo"
 			rev := "abcdefg"
-			a := &tricium.Analyzer{
+			f := &tricium.Function{
 				Name:       analyzer,
 				Needs:      tricium.Data_FILES,
 				Provides:   tricium.Data_RESULTS,
@@ -378,11 +395,11 @@ func TestCreateWorker(t *testing.T) {
 					},
 				},
 			}
-			w, err := createWorker(selection, sc, a)
+			w, err := createWorker(selection, sc, f)
 			So(err, ShouldBeNil)
 			So(w.Name, ShouldEqual, fmt.Sprintf("%s_%s", analyzer, platform))
-			So(w.Needs, ShouldEqual, a.Needs)
-			So(w.Provides, ShouldEqual, a.Provides)
+			So(w.Needs, ShouldEqual, f.Needs)
+			So(w.Provides, ShouldEqual, f.Provides)
 			So(w.ProvidesForPlatform, ShouldEqual, platform)
 			So(len(w.Dimensions), ShouldEqual, 1)
 			So(w.Dimensions[0], ShouldEqual, dimension)

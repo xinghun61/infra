@@ -104,34 +104,35 @@ func TestCanRequest(t *testing.T) {
 	})
 }
 
-func TestLookupAnalyzer(t *testing.T) {
+func TestLookupFunction(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
 		analyzer := "PyLint"
-		sc := &ServiceConfig{Analyzers: []*Analyzer{{Name: analyzer}}}
+		sc := &ServiceConfig{Functions: []*Function{{
+			Type: Function_ANALYZER,
+			Name: analyzer,
+		}}}
 
-		Convey("Known service analyzer is known", func() {
-			a, err := LookupServiceAnalyzer(sc, analyzer)
-			So(err, ShouldBeNil)
-			So(a, ShouldNotBeNil)
-			So(a.Name, ShouldEqual, analyzer)
+		Convey("Known service function is known", func() {
+			f := LookupServiceFunction(sc, analyzer)
+			So(f, ShouldNotBeNil)
+			So(f.Name, ShouldEqual, analyzer)
 		})
 
-		Convey("Unknown service analyzer is unknown", func() {
-			a, err := LookupServiceAnalyzer(sc, "blabla")
-			So(err, ShouldBeNil)
-			So(a, ShouldBeNil)
+		Convey("Unknown service function is unknown", func() {
+			f := LookupServiceFunction(sc, "blabla")
+			So(f, ShouldBeNil)
 		})
 
 		pc := &ProjectConfig{
-			Analyzers: []*Analyzer{
+			Functions: []*Function{
 				{},
 			},
 		}
 
-		Convey("Analyzer without name causes error", func() {
-			_, err := LookupProjectAnalyzer(pc, analyzer)
-			So(err, ShouldNotBeNil)
+		Convey("Function without name returns nil", func() {
+			f := LookupProjectFunction(pc, analyzer)
+			So(f, ShouldBeNil)
 		})
 	})
 }
@@ -140,7 +141,8 @@ func TestSupportsPlatform(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
 		platform := Platform_UBUNTU
-		a := &Analyzer{
+		a := &Function{
+			Type: Function_ANALYZER,
 			Name: "PyLint",
 			Impls: []*Impl{
 				{
@@ -168,7 +170,8 @@ func TestSupportsConfig(t *testing.T) {
 	Convey("Test Environment", t, func() {
 
 		configName := "enable"
-		a := &Analyzer{
+		a := &Function{
+			Type: Function_ANALYZER,
 			Name: "PyLint",
 			ConfigDefs: []*ConfigDef{
 				{
@@ -193,7 +196,7 @@ func TestSupportsConfig(t *testing.T) {
 func TestLookupImplForPlatform(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		platform := Platform_LINUX
-		a := &Analyzer{Impls: []*Impl{{ProvidesForPlatform: platform}}}
+		a := &Function{Impls: []*Impl{{ProvidesForPlatform: platform}}}
 		Convey("Impl for known platform is returned", func() {
 			i := LookupImplForPlatform(a, platform)
 			So(i, ShouldNotBeNil)
@@ -247,18 +250,57 @@ func TestIsValid(t *testing.T) {
 			},
 		}
 
-		Convey("Analyzer config without name causes error", func() {
-			a := &Analyzer{}
-			err := IsAnalyzerValid(a, sc)
+		Convey("Function without type causes error", func() {
+			f := &Function{
+				Name:     "PyLint",
+				Needs:    Data_FILES,
+				Provides: Data_RESULTS,
+			}
+			err := IsFunctionValid(f, sc)
 			So(err, ShouldNotBeNil)
 		})
 
-		Convey("Analyzer with impl without platforms causes error", func() {
-			a := &Analyzer{
+		Convey("Function without name causes error", func() {
+			f := &Function{
+				Type:     Function_ANALYZER,
+				Needs:    Data_FILES,
+				Provides: Data_RESULTS,
+			}
+			err := IsFunctionValid(f, sc)
+			So(err, ShouldNotBeNil)
+		})
+
+		Convey("Analyzer function must return results", func() {
+			f := &Function{
+				Type:     Function_ANALYZER,
+				Name:     "ConfusedAnalyzer",
+				Needs:    Data_FILES,
+				Provides: Data_CLANG_DETAILS,
+			}
+			So(IsFunctionValid(f, sc), ShouldNotBeNil)
+			f.Provides = Data_RESULTS
+			So(IsFunctionValid(f, sc), ShouldBeNil)
+		})
+
+		Convey("Isolator functions must not return results", func() {
+			f := &Function{
+				Type:     Function_ISOLATOR,
+				Name:     "ConfusedIsolator",
+				Needs:    Data_FILES,
+				Provides: Data_RESULTS,
+			}
+			So(IsFunctionValid(f, sc), ShouldNotBeNil)
+			f.Provides = Data_CLANG_DETAILS
+			So(IsFunctionValid(f, sc), ShouldBeNil)
+		})
+
+		Convey("Function with impl without platforms causes error", func() {
+			f := &Function{
+				Type:  Function_ANALYZER,
 				Name:  "PyLint",
 				Impls: []*Impl{{}},
 			}
-			err := IsAnalyzerValid(a, sc)
+			err := IsFunctionValid(f, sc)
 			So(err, ShouldNotBeNil)
 		})
 

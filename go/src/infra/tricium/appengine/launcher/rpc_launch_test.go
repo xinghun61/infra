@@ -67,8 +67,9 @@ func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.Service
 				IsPlatformSpecific: true,
 			},
 		},
-		Analyzers: []*tricium.Analyzer{
+		Functions: []*tricium.Function{
 			{
+				Type:     tricium.Function_ANALYZER,
 				Name:     hello,
 				Needs:    tricium.Data_GIT_FILE_DETAILS,
 				Provides: tricium.Data_RESULTS,
@@ -86,6 +87,7 @@ func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.Service
 				},
 			},
 			{
+				Type:     tricium.Function_ISOLATOR,
 				Name:     fileIsolator,
 				Needs:    tricium.Data_GIT_FILE_DETAILS,
 				Provides: tricium.Data_FILES,
@@ -103,6 +105,7 @@ func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.Service
 				},
 			},
 			{
+				Type:     tricium.Function_ANALYZER,
 				Name:     pylint,
 				Needs:    tricium.Data_FILES,
 				Provides: tricium.Data_RESULTS,
@@ -128,15 +131,15 @@ func (*mockConfigProvider) GetProjectConfig(c context.Context, project string) (
 		Name: project,
 		Selections: []*tricium.Selection{
 			{
-				Analyzer: fileIsolator,
+				Function: fileIsolator,
 				Platform: tricium.Platform_UBUNTU,
 			},
 			{
-				Analyzer: hello,
+				Function: hello,
 				Platform: tricium.Platform_UBUNTU,
 			},
 			{
-				Analyzer: pylint,
+				Function: pylint,
 				Platform: tricium.Platform_UBUNTU,
 			},
 		},
