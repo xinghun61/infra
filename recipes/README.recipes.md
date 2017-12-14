@@ -532,7 +532,7 @@ See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 
 &mdash; **def [RunSteps](/recipes/recipes/wpt_import.py#31)(api):**
 
-&mdash; **def [git\_cl\_issue\_link](/recipes/recipes/wpt_import.py#69)(api):**
+&mdash; **def [git\_cl\_issue\_link](/recipes/recipes/wpt_import.py#71)(api):**
 
 Runs a step which adds a link to the current CL if there is one.
 

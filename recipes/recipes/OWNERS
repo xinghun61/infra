@@ -35,3 +35,4 @@ per-file sync_submodules.py=emso@chromium.org
 
 per-file wpt*.py=jeffcarp@chromium.org
 per-file wpt*.py=qyearsley@chromium.org
+per-file wpt*.py=robertma@chromium.org

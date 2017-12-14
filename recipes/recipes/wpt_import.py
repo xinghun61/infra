@@ -58,6 +58,8 @@ def RunSteps(api):
       '/creds/refresh_tokens/blink-w3c-test-autoroller',
       '--credentials-json',
       '/creds/json/wpt-import.json',
+      '--monorail-auth-json',
+      '/creds/service_accounts/service-account-wpt-monorail-api.json',
     ]
     try:
       with api.context(cwd=blink_dir):
