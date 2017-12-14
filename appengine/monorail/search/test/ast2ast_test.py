@@ -43,7 +43,8 @@ class AST2ASTTest(unittest.TestCase):
         user=fake.UserService(),
         project=fake.ProjectService(),
         issue=fake.IssueService(),
-        config=fake.ConfigService())
+        config=fake.ConfigService(),
+        features=fake.FeaturesService())
     self.services.user.TestAddUser('a@example.com', 111L)
 
   def testPreprocessAST_EmptyAST(self):
@@ -526,6 +527,38 @@ class AST2ASTTest(unittest.TestCase):
     new_cond = ast2ast._PreprocessExactUsers(
         self.cnxn, cond, self.services.user, [OWNER_ID_FIELD])
     self.assertEqual(cond, new_cond)
+
+  def testPreprocessHotlistCond(self):
+    hotlist_field = BUILTIN_ISSUE_FIELDS['hotlist']
+    hotlist_id_field = BUILTIN_ISSUE_FIELDS['hotlist_id']
+
+    self.services.user.TestAddUser('gatsby@chromium.org', 111L)
+
+    # Setup hotlists
+    self.services.features.TestAddHotlist(
+        'Hotlist1', owner_ids=[111L], hotlist_id=10)
+    self.services.features.TestAddHotlist(
+        'Hotlist2', owner_ids=[111L], hotlist_id=20)
+    self.services.features.TestAddHotlist(
+        'Hotlist3', owner_ids=[111L], hotlist_id=30)
+
+    hotlist_query_vals = ['gatsby@chromium.org:Hotlist1,Hotlist3']
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.TEXT_HAS, [hotlist_field], hotlist_query_vals, [])
+    actual = ast2ast._PreprocessHotlistCond(
+        self.cnxn, cond, [1], self.services, None)
+    self.assertEqual(ast_pb2.QueryOp.EQ, actual.op)
+    self.assertEqual([hotlist_id_field], actual.field_defs)
+    self.assertEqual([10, 30], actual.int_values)
+
+  def testPreprocessHotlistCond_UserNotFound(self):
+    hotlist_field = BUILTIN_ISSUE_FIELDS['hotlist']
+    hotlist_query_vals = ['gatsby@chromium.org:Hotlist1,Hotlist3']
+    cond = ast_pb2.MakeCond(
+        ast_pb2.QueryOp.TEXT_HAS, [hotlist_field], hotlist_query_vals, [])
+    actual = ast2ast._PreprocessHotlistCond(
+        self.cnxn, cond, [1], self.services, None)
+    self.assertEqual(cond, actual)
 
   def testPreprocessCustomCond_User(self):
     fd = tracker_pb2.FieldDef(

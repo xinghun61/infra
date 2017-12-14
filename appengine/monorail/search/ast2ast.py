@@ -28,9 +28,11 @@ The simplified main query is better because:
     than it would be to deal with an even more complex SQL main query.
 """
 
+import collections
 import logging
 import re
 
+from collections import defaultdict
 from proto import ast_pb2
 from proto import tracker_pb2
 # TODO(jrobbins): if BUILTIN_ISSUE_FIELDS was passed through, I could
@@ -401,6 +403,36 @@ def _PreprocessCommentByCond(
       [query2ast.BUILTIN_ISSUE_FIELDS['commentby_id']])
 
 
+def _PreprocessHotlistCond(
+    cnxn, cond, _project_ids, services, _harmonized_config):
+  """Preprocess hotlist=user:hotlist-name cond into hotlist_id=IDs, if exact."""
+  # TODO(jojwang): add support for searches that don't contain domain names.
+  # eg jojwang:hotlist-name
+  users_to_hotlists = collections.defaultdict(list)
+  for val in cond.str_values:
+    user, hotlists_str = val.split(':', 1)
+    hotlist_names = [name.strip() for name in hotlists_str.split(',')]
+    try:
+      users_to_hotlists[int(user)].extend(hotlist_names)
+    except ValueError:
+      try:
+        user_id = services.user.LookupUserID(cnxn, user)
+        users_to_hotlists[user_id].extend(hotlist_names)
+      except user_svc.NoSuchUserException:
+        logging.info('could not convert user %r to int ID', val)
+        return cond
+  hotlist_ids = set()
+  for user_id, hotlists in users_to_hotlists.items():
+    user_to_hotlist = services.features.LookupHotlistIDs(
+        cnxn, hotlists, [user_id])
+    for hotlist in user_to_hotlist.values():
+      hotlist_ids.add(hotlist.hotlist_id)
+  return ast_pb2.Condition(
+      op=_TextOpToIntOp(cond.op),
+      field_defs=[query2ast.BUILTIN_ISSUE_FIELDS['hotlist_id']],
+      int_values=list(hotlist_ids))
+
+
 def _PreprocessCustomCond(cnxn, cond, services):
   """Preprocess a custom_user_field=emails cond into IDs, if exact matches."""
   # TODO(jrobbins): better support for ambiguous fields.
@@ -431,6 +463,7 @@ _PREPROCESSORS = {
     'reporter': _PreprocessReporterCond,
     'starredby': _PreprocessStarredByCond,
     'commentby': _PreprocessCommentByCond,
+    'hotlist': _PreprocessHotlistCond,
     }
 
 

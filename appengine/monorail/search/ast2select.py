@@ -435,6 +435,18 @@ def _ProcessAttachmentCond(cond, alias, _user_alias):
   return left_joins, where
 
 
+def _ProcessHotlistIDCond(_cond, _alias, _user_alias):
+  """Convert hotlist_id=IDS cond to SQL."""
+  # TODO(jojwang): Implement this. Blocks launch.
+  return [], []
+
+
+def _ProcessHotlistCond(_cond, _alias, _user_alias):
+  """Convert hotlist=user:hotlist-name to SQL"""
+  # TODO(jojwang): Implement this. Blocks launch.
+  return [], []
+
+
 _PROCESSORS = {
     'owner': _ProcessOwnerCond,
     'owner_id': _ProcessOwnerIDCond,
@@ -455,6 +467,8 @@ _PROCESSORS = {
     'blocking_id': _ProcessBlockingIDCond,
     'mergedinto_id': _ProcessMergedIntoIDCond,
     'attachment': _ProcessAttachmentCond,
+    'hotlist_id': _ProcessHotlistIDCond,
+    'hotlist': _ProcessHotlistCond,
     }
 
 

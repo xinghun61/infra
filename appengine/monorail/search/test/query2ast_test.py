@@ -486,6 +486,25 @@ class QueryParsingUnitTest(unittest.TestCase):
                  [BUILTIN_ISSUE_FIELDS['reporter']], ['@google.com'], []),
         cond1)
 
+    # Search for issues in certain user hotlists.
+    ast = query2ast.ParseUserQuery(
+        'hotlist=gatsby@chromium.org:Hotlist1', '',
+        BUILTIN_ISSUE_FIELDS, self.default_config)
+    cond1 = ast.conjunctions[0].conds[0]
+    self.assertEqual(
+        MakeCond(
+            EQ, [BUILTIN_ISSUE_FIELDS['hotlist']],
+            ['gatsby@chromium.org:hotlist1'], []),
+        cond1)
+
+    # Search for 'Hotlist' labels.
+    ast = query2ast.ParseUserQuery(
+        'hotlist:sublabel', '', BUILTIN_ISSUE_FIELDS, self.default_config)
+    cond1 = ast.conjunctions[0].conds[0]
+    self.assertEqual(
+        MakeCond(KEY_HAS, [BUILTIN_ISSUE_FIELDS['label']],
+                 ['hotlist-sublabel'], []),
+        cond1)
 
   def testParseUserQuery_SearchWithinCustomFields(self):
     """Enums are treated as labels, other fields are kept as fields."""
@@ -672,4 +691,3 @@ class QueryParsingUnitTest(unittest.TestCase):
     self.assertEqual(
         ['Parentheses are ignored in saved queries.'],
         warnings)
-

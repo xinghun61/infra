@@ -107,6 +107,8 @@ _ISSUE_FIELDS_LIST = [
     ('component', TXT),
     ('component_id', NUM),
     ('description', TXT),
+    ('hotlist', TXT),
+    ('hotlist_id', NUM),
     ('id', NUM),
     ('is_spam', BOOL),
     ('label', TXT),
@@ -321,7 +323,19 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
     else:  # Look for any label with that prefix.
       return ast_pb2.MakeCond(op, fields['label'], [unquoted_value], [])
 
-  if prefix in fields:  # search built-in and custom fields. E.g., summary.
+  # Determine hotlist query type.
+  # If prefix is not 'hotlist', quick_or_vals is empty, or qov
+  # does not contain ':', is_fields will remain True
+  is_fields = True
+  if prefix == 'hotlist':
+    for qov in quick_or_vals:
+      if ':' not in qov:
+        is_fields = False
+      # Only check the first qov
+      break
+
+  # search built-in and custom fields. E.g., summary.
+  if prefix in fields and is_fields:
     # Note: if first matching field is date-type, we assume they all are.
     # TODO(jrobbins): better handling for rare case where multiple projects
     # define the same custom field name, and one is a date and another is not.
