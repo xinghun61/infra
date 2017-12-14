@@ -541,7 +541,7 @@ func WithProdClients(ctx context.Context) context.Context {
 // WithStagingClients returns a context for connecting to staging services.
 func WithStagingClients(ctx context.Context) context.Context {
 	ctx = WithCrRev(ctx, "https://cr-rev.appspot.com")
-	ctx = WithFindit(ctx, "https://findit-for-me.appspot.com")
+	ctx = WithFindit(ctx, "https://findit-for-me-staging.appspot.com")
 
 	client, err := getAsSelfOAuthClient(ctx)
 	if err != nil {
