@@ -92,7 +92,7 @@ Exit:{{.Metadata.Exit}}
 {{.Metadata.Raw}}{{end}}
 <hr />
 <h2>Summary</h2>
-{{ .CPUTime }} elapsed time over {{ .RunTime }} ({{printf "%1.1fx" .Parallelism}} parallelism) <br />
+{{ .RunTime }} weighted time ({{ .CPUTime }} CPU time, {{printf "%1.1fx" .Parallelism}} parallelism) <br />
 ninja startup: {{ .StartupTime }} <br />
 ninja end: {{ .EndTime }} <br />
 {{ len .Steps }} build steps completed, average of {{printf "%1.2f/s" .StepsPerSec }}
@@ -103,16 +103,16 @@ ninja end: {{ .EndTime }} <br />
 <tr>
  <th>
  <th>count
- <th>duration
  <th>weighted
+ <th>duration
  <th>build-step type
 </tr>
 {{range $i, $stat := .Stats }}
 <tr>
  <td>{{$i}}
  <td>{{$stat.Count}}
- <td>{{$stat.Time}}
  <td>{{$stat.Weighted}}
+ <td>{{$stat.Time}}
  <td>{{$stat.Type}}
 </tr>
 {{end}}
@@ -124,8 +124,8 @@ ninja end: {{ .EndTime }} <br />
 <table border=1>
 <tr>
  <th>n
- <th>duration
  <th>weighted
+ <th>duration
  <th>start
  <th>end
  <th>restat
@@ -134,8 +134,8 @@ ninja end: {{ .EndTime }} <br />
 {{range $i, $step := .Steps}}
 <tr>
  <td><a name="{{$i}}" href="#{{$i}}">{{$i}}</a>
- <td>{{$step.Duration}}
  <td>{{index $w $step.Out}}
+ <td>{{$step.Duration}}
  <td>{{$step.Start}}
  <td>{{$step.End}}
  <td>{{if gt $step.Restat 0}}{{$step.Restat}}{{end}}
