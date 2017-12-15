@@ -112,7 +112,7 @@ def add_argparse_options(parser):
       help='Bug containing master restart request.')
   parser.add_argument(
       '-r', '--reviewer', action='append',
-      help=('Reviewer (ldap or ldap@google.com) to TBR the CL to. '
+      help=('Reviewer (username or username@google.com) to TBR the CL to. '
             'If not specified, chooses a random reviewer from OWNERS file'))
   parser.add_argument(
       '-f', '--force', action='store_true',
@@ -215,7 +215,7 @@ def get_master_state_checkout():
 
 
 def autocomplete_and_partition(reviewers):
-  """Autocompletes ldap to ldap@google.com.
+  """Autocompletes username to username@google.com.
 
   Returns partitions the list into google.com emails and others.
   """
@@ -252,7 +252,7 @@ def commit(
       print
       print 'Error: not @google.com email(s) for reviewers found:'
       print '  %s' % ('\n  '.join(other))
-      print 'Hint: save your fingertips - use just ldap: -r <ldap>'
+      print 'Hint: save your fingertips - use just username: -r <username>'
       return 1
 
     tbr_whom = ', '.join(google)
