@@ -84,7 +84,7 @@ Go: use
 [example CL](https://chromium-review.googlesource.com/c/infra/infra/+/719962)
 
 Python: use
-[BigQueryHelper](https://cs.chromium.org/chromium/infra/infra/libs/bigquery/helper.py?q=Bigqueryhelper&sq=package:chromium&l=11)
+[infra.libs.bigquery](https://cs.chromium.org/chromium/infra/infra/libs/bigquery/helper.py)
 [example CL](https://chrome-internal-review.googlesource.com/c/infra/infra_internal/+/445955)
 
 
@@ -138,10 +138,13 @@ You will need the
 library in your environment. infra.git/ENV has this dependency already, so you
 only need to add it if you are working outside that environment.
 
-Check out the (../../infra/libs/bigquery/helper.py)[BigQueryHelper] class. It
-makes it easy to add insert IDs, which BigQuery uses to deduplicate rows in the
-streaming insert buffer. It is recommended that you use it. You'll still have to
-provide an authenticated instance of google.cloud.bigquery.client.Client.
+Check out the (../../infra/libs/bigquery/helper.py)[bigquery helper module].
+Under the hood, it uses the [BigQuery Python
+client](https://cloud.google.com/bigquery/docs/reference/libraries#client-libraries-usage-python).
+It is recommended that you use it over using the client directly, as it houses
+common logic around handling edge cases, formatting errors, and handling
+protobufs. You'll still have to provide an authenticated instance of
+google.cloud.bigquery.client.Client.
 
 See
 [this change](https://chrome-internal-review.googlesource.com/c/407748/)
