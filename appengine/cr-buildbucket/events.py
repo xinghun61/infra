@@ -136,15 +136,6 @@ class TaskPublishNotification(webapp2.RequestHandler):
   def post(self, build_id):  # pylint: disable=unused-argument
     body = json.loads(self.request.body)
 
-    if 'id' not in body:  # pragma: no cover
-      # Legacy mode.
-      # TODO(nodir): remove in 2 days
-      pubsub.publish(
-          body['topic'],
-          json.dumps(body['message'], sort_keys=True),
-          body['attrs'])
-      return
-
     assert body.get('mode') in ('global', 'callback')
     build = model.Build.get_by_id(body['id'])
     if not build:  # pragma: no cover
