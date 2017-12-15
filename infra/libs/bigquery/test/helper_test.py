@@ -64,8 +64,8 @@ class TestBigQueryHelper(unittest.TestCase):
     expected = {
         'name': u'test_name',
         'nesteds': [
-            {'timestamps': [timestamp_pb2.Timestamp().ToDatetime(),
-                            timestamp_pb2.Timestamp().ToDatetime()],
+            {'timestamps': [timestamp_pb2.Timestamp().ToDatetime().isoformat(),
+                            timestamp_pb2.Timestamp().ToDatetime().isoformat()],
             },
             {},
         ],

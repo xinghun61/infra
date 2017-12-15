@@ -32,7 +32,7 @@ def message_to_dict(msg):
 
 def _get_value(value):
   if isinstance(value, timestamp_pb2.Timestamp):
-    return value.ToDatetime()
+    return value.ToDatetime().isoformat()
   elif isinstance(value, message_pb.Message):
     return message_to_dict(value)
   return value
