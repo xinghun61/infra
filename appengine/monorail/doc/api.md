@@ -103,7 +103,7 @@ This API provides the following methods to read/write user/issue/comment objects
 			* status(string): The new status of the issue.
 			* owner(string): The new owner of the issue.
 			* labels(list of string): The labels to add/remove.
-			* cc(lsit of string): A list of emails to add/remove from cc field.
+			* cc(list of string): A list of emails to add/remove from cc field.
 			* blockedOn(list of string): The ID of the issues on which the current issue is blocked.
 			* blocking(list of string): The ID of the issues which the current issue is blocking.
 			* mergedInto(string): The ID of the issue to merge into.
@@ -134,7 +134,7 @@ This API provides the following methods to read/write user/issue/comment objects
 	* totalResults(int): Total number of comments retrieved.
 	* items(list of dict): A list of comments.
 		* attachments(dict): The attachment of this comment.
-		* author(string): The author of this comment.
+		* author(dict): The author of this comment.
 		* canDelete(boolean): Whether the requester could delete this comment.
 		* content(string): Content of this comment.
 		* deletedBy(dict): The user who has deleted this comment.
@@ -175,7 +175,7 @@ This API provides the following methods to read/write user/issue/comment objects
 	* labels(list of string): Labels of this issue.
 	* author(dict): The reporter of this issue.
 	* owner(dict): The owner of this issue.
-	* cc(list of string): The list of emails to cc.
+	* cc(list of dict): The list of emails to cc.
 	* updated(string): Last updated datetime of this issue.
 	* published(string): Published datetime of this issue.
 	* closed(string): Closed datetime of this issue.
@@ -200,11 +200,11 @@ This API provides the following methods to read/write user/issue/comment objects
 		* blockedOn(list of dict): The issues on which the current issue is blocked.
 		* blocking(list of dict): The issues which the current issue is blocking.
 		* cc(list of string): The list of emails to cc.
-		* description(string): Content of the issue.
+		* description(required, string): Content of the issue.
 		* labels(list of string): Labels of this issue.
 		* owner(dict): The owner of this issue.
-		* status(string): Status of this issue.
-		* summary(string): Summary of this issue.
+		* status(required, string): Status of this issue.
+		* summary(requred, string): Summary of this issue.
 		* components(list of string): Components of this issue.
 * Return message:
 	* id(int): ID of this issue.
@@ -216,7 +216,7 @@ This API provides the following methods to read/write user/issue/comment objects
 	* labels(list of string): Labels of this issue.
 	* author(dict): The reporter of this issue.
 	* owner(dict): The owner of this issue.
-	* cc(list of string): The list of emails to cc.
+	* cc(list of dict): The list of emails to cc.
 	* updated(string): Last updated datetime of this issue.
 	* published(string): Published datetime of this issue.
 	* closed(string): Closed datetime of this issue.
@@ -256,7 +256,7 @@ This API provides the following methods to read/write user/issue/comment objects
 		* blocking(list of dict): The issues which the current issue is blocking.
 		* canComment(boolean): Whether the requester can comment on this issue.
 		* canEdit(boolean): Whether the requester can edit this issue.
-		* cc(list of string): The list of emails to cc.
+		* cc(list of dict): The list of emails to cc.
 		* closed(string): Closed datetime of this issue.
 		* description(string): Content of this issue.
 		* id(int): ID of this issue.
