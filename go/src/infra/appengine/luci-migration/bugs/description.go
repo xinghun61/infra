@@ -40,7 +40,7 @@ var descriptionTmpl = template.Must(template.New("").
 Migrate builder {{.Builder.ID}} to LUCI.
 
 Buildbot: https://ci.chromium.org/buildbot/{{.Builder.ID.Master|pathEscape}}/{{.Builder.ID.Builder|pathEscape}}
-LUCI: https://ci.chromium.org/buildbucket/{{.Builder.LUCIBuildbucketBucket|pathEscape}}/{{.Builder.ID.Builder|pathEscape}}
+LUCI: https://ci.chromium.org/buildbucket/{{.LUCIBucket|pathEscape}}/{{.Builder.ID.Builder|pathEscape}}
 
 Migration app will be posting updates on changes of the migration status.
 For the latest status, see
@@ -52,16 +52,21 @@ Migration app will close this bug when the builder is entirely migrated from Bui
 // DescriptionVersion is the current version of bug description.
 const DescriptionVersion = 1
 
-func bugDescription(c context.Context, builder *storage.Builder) string {
+func bugDescription(c context.Context, builder *storage.Builder) (string, error) {
+	master := config.Get(c).FindMaster(builder.ID.Master)
+	if master == nil {
+		return "", errors.Reason("master %q is not configured", builder.ID.Master).Err()
+	}
 	descArgs := map[string]interface{}{
-		"Builder":  builder,
-		"Hostname": info.DefaultVersionHostname(c),
+		"Builder":    builder,
+		"Hostname":   info.DefaultVersionHostname(c),
+		"LUCIBucket": master.LuciBucket,
 	}
 	buf := &bytes.Buffer{}
 	if err := descriptionTmpl.Execute(buf, descArgs); err != nil {
-		panic(fmt.Errorf("bug desription didn't render: %s", err))
+		return "", errors.Annotate(err,"bug desription didn't render").Err()
 	}
-	return buf.String()
+	return buf.String(), nil
 }
 
 // CreateBuilderBug creates a Monorail issue to migrate the builder to LUCI.
@@ -79,13 +84,18 @@ func CreateBuilderBug(c context.Context, client ClientFactory, builder *storage.
 		}, s)
 	}
 
+	desc, err := bugDescription(c, builder)
+	if err != nil {
+		return err
+	}
+
 	req := &monorail.InsertIssueRequest{
 		ProjectId: builder.IssueID.Project,
 		SendEmail: true,
 		Issue: &monorail.Issue{
 			Status:      "Available",
 			Summary:     fmt.Sprintf("Migrate %q to LUCI", builder.ID.Builder),
-			Description: bugDescription(c, builder),
+			Description: desc,
 			Components:  []string{"Infra>Platform"},
 			Labels: []string{
 				"Via-Luci-Migration",
@@ -114,18 +124,23 @@ func CreateBuilderBug(c context.Context, client ClientFactory, builder *storage.
 // UpdateBuilderBugDescription updates description of builder's monorail bug.
 // On success, updates builder.IssueDescriptionVersion.
 func UpdateBuilderBugDescription(c context.Context, client ClientFactory, builder *storage.Builder) error {
+	desc, err := bugDescription(c, builder)
+	if err != nil {
+		return err
+	}
+
 	req := &monorail.InsertCommentRequest{
 		Issue: &monorail.IssueRef{
 			ProjectId: builder.IssueID.Project,
 			IssueId:   int32(builder.IssueID.ID),
 		},
 		Comment: &monorail.InsertCommentRequest_Comment{
-			Content: bugDescription(c, builder),
+			Content: desc,
 			Updates: &monorail.Update{IsDescription: true},
 		},
 	}
 
-	_, err := client(builder.IssueID.Hostname).InsertComment(c, req)
+	_, err = client(builder.IssueID.Hostname).InsertComment(c, req)
 	if err != nil {
 		return errors.Annotate(err, "InsertComment RPC failed").Err()
 	}

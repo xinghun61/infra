@@ -121,10 +121,9 @@ func (d *Builders) markMigrated(c context.Context, builder *storage.Builder) err
 
 func (d *Builders) registerBuilder(c context.Context, master *config.Master, name string) error {
 	builder := &storage.Builder{
-		ID:                    bid(master.Name, name),
-		SchedulingType:        master.SchedulingType,
-		LUCIBuildbucketBucket: master.LuciBucket,
-		OS: master.Os,
+		ID:             bid(master.Name, name),
+		SchedulingType: master.SchedulingType,
+		OS:             master.Os,
 	}
 
 	// Create a Monorail issue.

@@ -44,6 +44,14 @@ func TestDiscovery(t *testing.T) {
 	Convey("Discovery", t, func() {
 		c := context.Background()
 		c = memory.Use(c)
+		c = config.Use(c, &config.Config{
+			Masters: []*config.Master{
+				{
+					Name:       "tryserver.chromium.linux",
+					LuciBucket: "luci.chromium.try",
+				},
+			},
+		})
 
 		// Make tryserver.chromium.linux:linux_chromium_rel_ng known.
 		chromiumRelNg := &storage.Builder{
@@ -126,8 +134,6 @@ func TestDiscovery(t *testing.T) {
 
 			IssueID:                 storage.IssueID{Hostname: "monorail-prod.appspot.com", Project: "chromium", ID: 56},
 			IssueDescriptionVersion: bugs.DescriptionVersion,
-
-			LUCIBuildbucketBucket: "luci.chromium.try",
 		})
 
 		// Verify linux_chromium_rel_ng was not rediscovered.

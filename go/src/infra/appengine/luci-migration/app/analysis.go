@@ -106,13 +106,15 @@ func handleAnalyzeBuilder(c *router.Context) error {
 		return nil
 	}
 
-	cfg, err := config.Get(c.Context)
-	if err != nil {
-		return err
-	}
+	cfg := config.Get(c.Context)
 	if cfg.BuildbucketHostname == "" {
 		return errors.New("buildbucket hostname is not configured")
 	}
+	master := cfg.FindMaster(builder.ID.Master)
+	if master == nil {
+		return errors.Reason("master %q is not configured", builder.ID.Master).Err()
+	}
+
 	transport, err := auth.GetRPCTransport(c.Context, auth.AsSelf)
 	if err != nil {
 		return errors.Annotate(err, "could not get RPC transport").Err()
@@ -142,7 +144,7 @@ func handleAnalyzeBuilder(c *router.Context) error {
 		c.Context,
 		builder.ID.Builder,
 		"master."+builder.ID.Master,
-		builder.LUCIBuildbucketBucket,
+		master.LuciBucket,
 		builder.Migration.Status,
 	)
 	if err != nil {

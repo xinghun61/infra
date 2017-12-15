@@ -100,6 +100,10 @@ func handleCompletedBuildbotBuild(c context.Context, build *Build, bbService *bb
 		// we don't support non-tryjob yet
 		return nil
 	}
+	master := config.Get(c).FindMaster(builder.ID.Master)
+	if master == nil {
+		return errors.Reason("master %q is not configured", builder.ID.Master).Err()
+	}
 
 	// Should we experiment with this CL?
 	if !shouldExperiment(build.Tags.Get(buildbucket.TagBuildSet), builder.ExperimentPercentage) {
@@ -126,7 +130,7 @@ func handleCompletedBuildbotBuild(c context.Context, build *Build, bbService *bb
 	newTags.Set(attemptTagKey, "0")
 	newTags[buildbucket.TagBuildSet] = build.Tags[buildbucket.TagBuildSet]
 	newBuild := &bbapi.ApiPutRequestMessage{
-		Bucket:            builder.LUCIBuildbucketBucket,
+		Bucket:            master.LuciBucket,
 		ClientOperationId: "luci-migration-retry-" + strconv.FormatInt(build.ID, 10),
 		ParametersJson:    newParamsJSON,
 		Tags:              newTags.Format(),

@@ -36,6 +36,14 @@ func TestDescription(t *testing.T) {
 	Convey("Description", t, func() {
 		c := context.Background()
 		c = memory.Use(c)
+		c = config.Use(c, &config.Config{
+			Masters: []*config.Master{
+				{
+					Name:       "tryserver.chromium.linux",
+					LuciBucket: "luci.chromium.try",
+				},
+			},
+		})
 
 		var actualIssueReq *monorail.InsertIssueRequest
 		var actualCommentReq *monorail.InsertCommentRequest
@@ -56,7 +64,6 @@ func TestDescription(t *testing.T) {
 				Master:  "tryserver.chromium.linux",
 				Builder: "linux_chromium_rel_ng",
 			},
-			LUCIBuildbucketBucket: "luci.chromium.try",
 			OS: config.OS_LINUX,
 			IssueID: storage.IssueID{
 				Project: "chromium",

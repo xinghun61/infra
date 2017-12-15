@@ -53,11 +53,7 @@ func handleIndexPage(c *router.Context) error {
 }
 
 func indexPage(c context.Context) (*indexViewModel, error) {
-	cfg, err := config.Get(c)
-	if err != nil {
-		return nil, err
-	}
-
+	cfg := config.Get(c)
 	cfgMap := make(map[string]*config.Master, len(cfg.Masters))
 	for _, m := range cfg.Masters {
 		cfgMap[m.Name] = m

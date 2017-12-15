@@ -161,10 +161,8 @@ func cronDiscoverBuilders(c *router.Context) error {
 		return errors.Annotate(err, "could not get RPC transport").Err()
 	}
 
-	cfg, err := config.Get(c.Context)
+	cfg := config.Get(c.Context)
 	switch {
-	case err != nil:
-		return err
 	case cfg.BuildbotServiceHostname == "":
 		return errors.New("invalid config: discovery: milo host unspecified")
 	case cfg.MonorailHostname == "":
@@ -230,7 +228,7 @@ func init() {
 	// very random. Seed it with real randomness.
 	mathrand.SeedRandomly()
 
-	mwBase := standard.Base()
+	mwBase := standard.Base().Extend(config.Middleware)
 	r := router.New()
 
 	standard.InstallHandlers(r)
@@ -263,15 +261,9 @@ func init() {
 // checkMasterAccess checks access to the master.
 func checkMasterAccess(c *router.Context, next router.Handler) {
 	master := c.Params.ByName("master")
-	cfg, err := config.Get(c.Context)
-	if err != nil {
-		logging.WithError(err).Errorf(c.Context, "cannot load config", accessGroup)
-		http.Error(c.Writer, "Internal server error", http.StatusInternalServerError)
-		return
-	}
 
 	var masterCfg *config.Master
-	for _, m := range cfg.Masters {
+	for _, m := range config.Get(c.Context).Masters {
 		if m.Name == master {
 			masterCfg = m
 			break

@@ -90,6 +90,15 @@ func TestScheduling(t *testing.T) {
 				So(shouldExperiment("foo", 1), ShouldBeFalse)
 			})
 
+			c = config.Use(c, &config.Config{
+				Masters: []*config.Master{
+					{
+						Name:       "tryserver.chromium.linux",
+						LuciBucket: "luci.chromium.try",
+					},
+				},
+			})
+
 			putBuilder := func(percentage int) {
 				err := datastore.Put(c, &storage.Builder{
 					ID: storage.BuilderID{

@@ -17,13 +17,10 @@ package app
 import (
 	"testing"
 
-	"github.com/golang/protobuf/proto"
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/luci/common/auth/identity"
-	memcfg "go.chromium.org/luci/common/config/impl/memory"
-	"go.chromium.org/luci/luci_config/server/cfgclient/backend/testconfig"
 	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/authtest"
 	"go.chromium.org/luci/server/templates"
@@ -41,7 +38,7 @@ func TestIndex(t *testing.T) {
 		c := testContext()
 		datastore.GetTestable(c).Consistent(true)
 
-		cfg := &config.Config{
+		c = config.Use(c, &config.Config{
 			Masters: []*config.Master{
 				{
 					Name:   "tryserver.chromium.linux",
@@ -55,12 +52,7 @@ func TestIndex(t *testing.T) {
 					Name: "internal.tryserver.chromium.linux",
 				},
 			},
-		}
-		c = testconfig.WithCommonClient(c, memcfg.New(map[string]memcfg.ConfigSet{
-			"services/luci-migration-dev": {
-				"config.cfg": proto.MarshalTextString(cfg),
-			},
-		}))
+		})
 		c = auth.WithState(c, &authtest.FakeState{Identity: identity.AnonymousIdentity})
 
 		handle := func(c context.Context) (*indexViewModel, error) {
