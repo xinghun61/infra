@@ -206,7 +206,7 @@
   },
   {
     "cmd": [
-      "python",
+      "vpython",
       "-u",
       "[START_DIR]/src/third_party/WebKit/Tools/Scripts/wpt-import",
       "--auto-update",

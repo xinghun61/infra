@@ -63,7 +63,8 @@ def RunSteps(api):
     ]
     try:
       with api.context(cwd=blink_dir):
-        api.python('Import changes from WPT to Chromium', script, args)
+        api.python('Import changes from WPT to Chromium', script, args,
+                   venv=True)
     finally:
       git_cl_issue_link(api)
 
