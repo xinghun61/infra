@@ -307,14 +307,11 @@ def cron_update_buckets():
       _normalize_acls(bucket_cfg.acls)
 
       if bucket_cfg.HasField('swarming'):
-        defaults = project_config_pb2.Builder(
-            dimensions=['pool:' + bucket_cfg.name],
-        )
-        # Pull builder defaults out.
-        swarmingcfg.merge_builder(
-            defaults, bucket_cfg.swarming.builder_defaults)
+        # Pull builder defaults out and apply default pool.
+        defaults = bucket_cfg.swarming.builder_defaults
         bucket_cfg.swarming.ClearField('builder_defaults')
-        # Flatten builders before putting to datastore.
+        if not any(d.startswith('pool:') for d in defaults.dimensions):
+          defaults.dimensions.append('pool:' + bucket_cfg.name)
         for b in bucket_cfg.swarming.builders:
           swarmingcfg.flatten_builder(b, defaults, builder_mixins_by_name)
 

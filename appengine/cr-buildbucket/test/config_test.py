@@ -235,9 +235,11 @@ class ConfigTest(testing.AppengineTestCase):
         name: "luci.chromium.try"
         acl_sets: "public"
         swarming {
+          builder_defaults {
+            mixins: "recipe-x"
+          }
           builders {
             name: "release"
-            mixins: "recipe-x"
             dimensions: "os:Linux"
           }
         }

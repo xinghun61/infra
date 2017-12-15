@@ -367,7 +367,7 @@ def validate_project_cfg(swarming, mixins, mixins_are_valid, ctx):
 
 
 def flatten_builder(builder, defaults, mixins):
-  """Inlines defaults or mixins into the builder.
+  """Inlines defaults and mixins into the builder.
 
   Applies defaults, then mixins and then reapplies values defined in |builder|.
   Flattenes defaults and referenced mixins recursively.
