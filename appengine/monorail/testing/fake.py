@@ -1844,7 +1844,7 @@ class FeaturesService(object):
             hotlist.hotlist_id, hotlist.name)
           continue
         if hotlist.owner_ids[0] in owner_ids:
-          id_dict[(name, hotlist.owner_ids[0])] = hotlist
+          id_dict[(name, hotlist.owner_ids[0])] = hotlist.hotlist_id
     return id_dict
 
   def GetHotlists(self, cnxn, hotlist_ids, use_cache=True):

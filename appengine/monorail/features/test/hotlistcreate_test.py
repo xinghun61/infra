@@ -104,7 +104,9 @@ class HotlistCreateTest(unittest.TestCase):
     hotlists_by_id = self.servlet.services.features.LookupHotlistIDs(
         self.mr.cnxn, ['Hotlist-owner-editor'], [222L])
     self.assertTrue(('Hotlist-owner-editor', 222L) in hotlists_by_id)
-    hotlist = hotlists_by_id[('Hotlist-owner-editor', 222L)]
+    hotlist_id = hotlists_by_id[('Hotlist-owner-editor', 222L)]
+    hotlist = self.servlet.services.features.GetHotlist(
+        self.mr.cnxn, hotlist_id, use_cache=False)
     self.assertEquals(hotlist.owner_ids, [222L])
     self.assertEquals(hotlist.editor_ids, [])
 

@@ -328,11 +328,11 @@ def _ParseStructuredTerm(prefix, op_str, value, fields, now=None):
   # does not contain ':', is_fields will remain True
   is_fields = True
   if prefix == 'hotlist':
-    for qov in quick_or_vals:
-      if ':' not in qov:
+    try:
+      if ':' not in quick_or_vals[0]:
         is_fields = False
-      # Only check the first qov
-      break
+    except IndexError:
+      is_fields = False
 
   # search built-in and custom fields. E.g., summary.
   if prefix in fields and is_fields:

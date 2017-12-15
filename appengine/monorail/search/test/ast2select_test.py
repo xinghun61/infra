@@ -782,6 +782,54 @@ class AST2SelectTest(unittest.TestCase):
         where)
     self.assertTrue(sql._IsValidWhereCond(where[0][0]))
 
+  def testProcessHotlistIDCond_MultiValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['hotlist_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1, 2])
+    left_joins, where = ast2select._ProcessHotlistIDCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('Hotlist2Issue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.hotlist_id IN (%s,%s)', [1, 2])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.hotlist_id IS NOT NULL', [])],
+        where)
+
+  def testProcessHotlistIDCond_SingleValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['hotlist_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], [], [1])
+    left_joins, where = ast2select._ProcessHotlistIDCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('Hotlist2Issue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.hotlist_id = %s', [1])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.hotlist_id IS NOT NULL', [])],
+        where)
+
+  def testProcessHotlistIDCond_NegatedMultiValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['hotlist_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1, 2])
+    left_joins, where = ast2select._ProcessHotlistIDCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('Hotlist2Issue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.hotlist_id IN (%s,%s)', [1, 2])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.hotlist_id IS NULL', [])],
+        where)
+
+  def testProcessHotlistIDCond_NegatedSingleValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['hotlist_id']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], [], [1])
+    left_joins, where = ast2select._ProcessHotlistIDCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+        [('Hotlist2Issue AS Cond1 ON Issue.id = Cond1.issue_id AND '
+          'Cond1.hotlist_id = %s', [1])],
+        left_joins)
+    self.assertEqual(
+        [('Cond1.hotlist_id IS NULL', [])],
+        where)
+
   def testCompare_IntTypes(self):
     val_type = tracker_pb2.FieldTypes.INT_TYPE
     cond_str, cond_args = ast2select._Compare(

@@ -405,19 +405,27 @@ def _PreprocessCommentByCond(
 
 def _PreprocessHotlistCond(
     cnxn, cond, _project_ids, services, _harmonized_config):
-  """Preprocess hotlist=user:hotlist-name cond into hotlist_id=IDs, if exact."""
+  """Preprocess hotlist query
+
+  Preprocesses a hotlist query in the form:
+  'hotlist=<user_email>:<hotlist-name>,<hotlist-name>,<user2_email>:...
+  into hotlist_id=IDs, if exact.
+  """
   # TODO(jojwang): add support for searches that don't contain domain names.
   # eg jojwang:hotlist-name
   users_to_hotlists = collections.defaultdict(list)
+  cur_user = ''
   for val in cond.str_values:
-    user, hotlists_str = val.split(':', 1)
-    hotlist_names = [name.strip() for name in hotlists_str.split(',')]
+    if ':' in val:
+      cur_user, hotlists_str = val.split(':', 1)
+    else:
+      hotlists_str = val
     try:
-      users_to_hotlists[int(user)].extend(hotlist_names)
+      users_to_hotlists[int(cur_user)].append(hotlists_str)
     except ValueError:
       try:
-        user_id = services.user.LookupUserID(cnxn, user)
-        users_to_hotlists[user_id].extend(hotlist_names)
+        user_id = services.user.LookupUserID(cnxn, cur_user)
+        users_to_hotlists[user_id].append(hotlists_str)
       except user_svc.NoSuchUserException:
         logging.info('could not convert user %r to int ID', val)
         return cond
@@ -425,8 +433,8 @@ def _PreprocessHotlistCond(
   for user_id, hotlists in users_to_hotlists.items():
     user_to_hotlist = services.features.LookupHotlistIDs(
         cnxn, hotlists, [user_id])
-    for hotlist in user_to_hotlist.values():
-      hotlist_ids.add(hotlist.hotlist_id)
+    for hotlist_id in user_to_hotlist.values():
+      hotlist_ids.add(hotlist_id)
   return ast_pb2.Condition(
       op=_TextOpToIntOp(cond.op),
       field_defs=[query2ast.BUILTIN_ISSUE_FIELDS['hotlist_id']],

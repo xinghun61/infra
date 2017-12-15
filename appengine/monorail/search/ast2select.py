@@ -435,10 +435,20 @@ def _ProcessAttachmentCond(cond, alias, _user_alias):
   return left_joins, where
 
 
-def _ProcessHotlistIDCond(_cond, _alias, _user_alias):
+def _ProcessHotlistIDCond(cond, alias, _user_alias):
   """Convert hotlist_id=IDS cond to SQL."""
-  # TODO(jojwang): Implement this. Blocks launch.
-  return [], []
+  join_str = (
+    'Hotlist2Issue AS {alias} ON Issue.id = {alias}.issue_id'.format(
+        alias=alias))
+  field_type, field_values = _GetFieldTypeAndValues(cond)
+  if not field_values and cond.op == ast_pb2.QueryOp.NE:
+    return [], []
+  cond_str, cond_args = _Compare(
+      alias, ast_pb2.QueryOp.EQ, field_type, 'hotlist_id', field_values)
+  left_joins = [(join_str + ' AND ' + cond_str, cond_args)]
+  where = [_CompareAlreadyJoined(alias, cond.op, 'hotlist_id')]
+
+  return left_joins, where
 
 
 def _ProcessHotlistCond(_cond, _alias, _user_alias):
