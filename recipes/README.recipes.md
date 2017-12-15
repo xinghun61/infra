@@ -532,20 +532,20 @@ See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 
 &mdash; **def [RunSteps](/recipes/recipes/wpt_import.py#31)(api):**
 
-&mdash; **def [git\_cl\_issue\_link](/recipes/recipes/wpt_import.py#71)(api):**
+&mdash; **def [git\_cl\_issue\_link](/recipes/recipes/wpt_import.py#72)(api):**
 
 Runs a step which adds a link to the current CL if there is one.
 
-[build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/fb705494f4f6957e6484c4202e4b4fca4a93700a/scripts/slave/README.recipes.md#recipe_modules-chromium
-[build/recipe_modules/chromium_checkout]: https://chromium.googlesource.com/chromium/tools/build.git/+/fb705494f4f6957e6484c4202e4b4fca4a93700a/scripts/slave/README.recipes.md#recipe_modules-chromium_checkout
-[build/recipe_modules/goma]: https://chromium.googlesource.com/chromium/tools/build.git/+/fb705494f4f6957e6484c4202e4b4fca4a93700a/scripts/slave/README.recipes.md#recipe_modules-goma
-[build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/fb705494f4f6957e6484c4202e4b4fca4a93700a/scripts/slave/README.recipes.md#recipe_modules-luci_config
-[build/recipe_modules/perf_dashboard]: https://chromium.googlesource.com/chromium/tools/build.git/+/fb705494f4f6957e6484c4202e4b4fca4a93700a/scripts/slave/README.recipes.md#recipe_modules-perf_dashboard
-[build/recipe_modules/puppet_service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/fb705494f4f6957e6484c4202e4b4fca4a93700a/scripts/slave/README.recipes.md#recipe_modules-puppet_service_account
-[build/recipe_modules/trigger]: https://chromium.googlesource.com/chromium/tools/build.git/+/fb705494f4f6957e6484c4202e4b4fca4a93700a/scripts/slave/README.recipes.md#recipe_modules-trigger
-[build/recipe_modules/v8]: https://chromium.googlesource.com/chromium/tools/build.git/+/fb705494f4f6957e6484c4202e4b4fca4a93700a/scripts/slave/README.recipes.md#recipe_modules-v8
-[build/recipe_modules/webrtc]: https://chromium.googlesource.com/chromium/tools/build.git/+/fb705494f4f6957e6484c4202e4b4fca4a93700a/scripts/slave/README.recipes.md#recipe_modules-webrtc
-[build/recipe_modules/zip]: https://chromium.googlesource.com/chromium/tools/build.git/+/fb705494f4f6957e6484c4202e4b4fca4a93700a/scripts/slave/README.recipes.md#recipe_modules-zip
+[build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/de4a16975eb2a6924f850f664c315e708aa0a87a/scripts/slave/README.recipes.md#recipe_modules-chromium
+[build/recipe_modules/chromium_checkout]: https://chromium.googlesource.com/chromium/tools/build.git/+/de4a16975eb2a6924f850f664c315e708aa0a87a/scripts/slave/README.recipes.md#recipe_modules-chromium_checkout
+[build/recipe_modules/goma]: https://chromium.googlesource.com/chromium/tools/build.git/+/de4a16975eb2a6924f850f664c315e708aa0a87a/scripts/slave/README.recipes.md#recipe_modules-goma
+[build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/de4a16975eb2a6924f850f664c315e708aa0a87a/scripts/slave/README.recipes.md#recipe_modules-luci_config
+[build/recipe_modules/perf_dashboard]: https://chromium.googlesource.com/chromium/tools/build.git/+/de4a16975eb2a6924f850f664c315e708aa0a87a/scripts/slave/README.recipes.md#recipe_modules-perf_dashboard
+[build/recipe_modules/puppet_service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/de4a16975eb2a6924f850f664c315e708aa0a87a/scripts/slave/README.recipes.md#recipe_modules-puppet_service_account
+[build/recipe_modules/trigger]: https://chromium.googlesource.com/chromium/tools/build.git/+/de4a16975eb2a6924f850f664c315e708aa0a87a/scripts/slave/README.recipes.md#recipe_modules-trigger
+[build/recipe_modules/v8]: https://chromium.googlesource.com/chromium/tools/build.git/+/de4a16975eb2a6924f850f664c315e708aa0a87a/scripts/slave/README.recipes.md#recipe_modules-v8
+[build/recipe_modules/webrtc]: https://chromium.googlesource.com/chromium/tools/build.git/+/de4a16975eb2a6924f850f664c315e708aa0a87a/scripts/slave/README.recipes.md#recipe_modules-webrtc
+[build/recipe_modules/zip]: https://chromium.googlesource.com/chromium/tools/build.git/+/de4a16975eb2a6924f850f664c315e708aa0a87a/scripts/slave/README.recipes.md#recipe_modules-zip
 [depot_tools/recipe_modules/bot_update]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/41d9d87e9653e46166db0e97a184c801a28d75e3/recipes/README.recipes.md#recipe_modules-bot_update
 [depot_tools/recipe_modules/cipd]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/41d9d87e9653e46166db0e97a184c801a28d75e3/recipes/README.recipes.md#recipe_modules-cipd
 [depot_tools/recipe_modules/depot_tools]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/41d9d87e9653e46166db0e97a184c801a28d75e3/recipes/README.recipes.md#recipe_modules-depot_tools
