@@ -12,6 +12,7 @@ tracker configuration.
 
 import logging
 
+from framework import exceptions
 from framework import framework_bizobj
 from framework import framework_constants
 from framework import framework_helpers
@@ -671,6 +672,181 @@ def MakeIssueDelta(
     delta.summary = summary
 
   return delta
+
+
+def ApplyIssueDelta(cnxn, issue_service, issue, delta, config):
+  """Apply an issue delta to an issue in RAM.
+
+  Args:
+    cnxn: connection to SQL database.
+    issue_service: object to access issue-related data in the database.
+    issue: Issue to be updated.
+    delta: IssueDelta object with new values for everything being changed.
+    config: ProjectIssueConfig object for the project containing the issue.
+
+  Returns:
+    A pair (amendments, impacted_iids) where amendments is a list of Amendment
+    protos to describe what changed, and impacted_iids is a set of other IIDs
+    for issues that are modified because they are related to the given issue.
+  """
+  amendments = []
+  impacted_iids = set()
+  if (delta.status is not None and delta.status != issue.status):
+    status = framework_bizobj.CanonicalizeLabel(delta.status)
+    amendments.append(MakeStatusAmendment(status, issue.status))
+    issue.status = status
+  if (delta.owner_id is not None and delta.owner_id != issue.owner_id):
+    amendments.append(MakeOwnerAmendment(delta.owner_id, issue.owner_id))
+    issue.owner_id = delta.owner_id
+
+  # compute the set of cc'd users added and removed
+  cc_add = [cc for cc in delta.cc_ids_add if cc not in issue.cc_ids]
+  cc_remove = [cc for cc in delta.cc_ids_remove if cc in issue.cc_ids]
+  if cc_add or cc_remove:
+    cc_ids = [cc for cc in list(issue.cc_ids) + cc_add
+              if cc not in cc_remove]
+    issue.cc_ids = cc_ids
+    amendments.append(MakeCcAmendment(cc_add, cc_remove))
+
+  # compute the set of components added and removed
+  comp_ids_add = [
+      c for c in delta.comp_ids_add if c not in issue.component_ids]
+  comp_ids_remove = [
+      c for c in delta.comp_ids_remove if c in issue.component_ids]
+  if comp_ids_add or comp_ids_remove:
+    comp_ids = [cid for cid in list(issue.component_ids) + comp_ids_add
+                if cid not in comp_ids_remove]
+    issue.component_ids = comp_ids
+    amendments.append(MakeComponentsAmendment(
+        comp_ids_add, comp_ids_remove, config))
+
+  # compute the set of labels added and removed
+  labels_add = [framework_bizobj.CanonicalizeLabel(l)
+                for l in delta.labels_add]
+  labels_add = [l for l in labels_add if l]
+  labels_remove = [framework_bizobj.CanonicalizeLabel(l)
+                   for l in delta.labels_remove]
+  labels_remove = [l for l in labels_remove if l]
+
+  (labels, update_labels_add,
+   update_labels_remove) = framework_bizobj.MergeLabels(
+       issue.labels, labels_add, labels_remove,
+       config.exclusive_label_prefixes)
+
+  if update_labels_add or update_labels_remove:
+    issue.labels = labels
+    amendments.append(MakeLabelsAmendment(
+        update_labels_add, update_labels_remove))
+
+  # compute the set of custom fields added and removed
+  (field_vals, update_fields_add,
+   update_fields_remove) = MergeFields(
+       issue.field_values, delta.field_vals_add, delta.field_vals_remove,
+       config.field_defs)
+
+  if update_fields_add or update_fields_remove:
+    issue.field_values = field_vals
+    for fd in config.field_defs:
+      added_values_this_field = [
+          fv for fv in update_fields_add if fv.field_id == fd.field_id]
+      if added_values_this_field:
+        amendments.append(MakeFieldAmendment(
+            fd.field_id, config,
+            [GetFieldValue(fv, {})
+             for fv in added_values_this_field],
+            old_values=[]))
+      removed_values_this_field = [
+          fv for fv in update_fields_remove if fv.field_id == fd.field_id]
+      if removed_values_this_field:
+        amendments.append(MakeFieldAmendment(
+            fd.field_id, config, [],
+            old_values=[GetFieldValue(fv, {})
+                        for fv in removed_values_this_field]))
+
+  if delta.fields_clear:
+    field_clear_set = set(delta.fields_clear)
+    revised_fields = []
+    for fd in config.field_defs:
+      if fd.field_id not in field_clear_set:
+        revised_fields.extend(
+            fv for fv in issue.field_values if fv.field_id == fd.field_id)
+      else:
+        amendments.append(
+            MakeFieldClearedAmendment(fd.field_id, config))
+        if fd.field_type == tracker_pb2.FieldTypes.ENUM_TYPE:
+          prefix = fd.field_name.lower() + '-'
+          filtered_labels = [
+              lab for lab in issue.labels
+              if not lab.lower().startswith(prefix)]
+          issue.labels = filtered_labels
+
+    issue.field_values = revised_fields
+
+  if delta.blocked_on_add or delta.blocked_on_remove:
+    old_blocked_on = issue.blocked_on_iids
+    blocked_on_add = [iid for iid in delta.blocked_on_add
+                      if iid not in old_blocked_on]
+    add_refs = [
+        (ref_issue.project_name, ref_issue.local_id)
+        for ref_issue in issue_service.GetIssues(cnxn, delta.blocked_on_add)]
+    blocked_on_rm = [iid for iid in delta.blocked_on_remove
+                     if iid in old_blocked_on]
+    remove_refs = [
+        (ref_issue.project_name, ref_issue.local_id)
+        for ref_issue in issue_service.GetIssues(cnxn, blocked_on_rm)]
+    amendments.append(MakeBlockedOnAmendment(
+        add_refs, remove_refs, default_project_name=issue.project_name))
+    blocked_on = [iid for iid in old_blocked_on + blocked_on_add
+                  if iid not in delta.blocked_on_remove]
+    (issue.blocked_on_iids, issue.blocked_on_ranks
+     ) = issue_service.SortBlockedOn(cnxn, issue, blocked_on)
+    impacted_iids.update(blocked_on_add + blocked_on_rm)
+
+  if delta.blocking_add or delta.blocking_remove:
+    old_blocking = issue.blocking_iids
+    blocking_add = [iid for iid in delta.blocking_add
+                    if iid not in old_blocking]
+    add_refs = [(ref_issue.project_name, ref_issue.local_id)
+                for ref_issue in issue_service.GetIssues(cnxn, blocking_add)]
+    blocking_remove = [iid for iid in delta.blocking_remove
+                       if iid in old_blocking]
+    remove_refs = [
+        (ref_issue.project_name, ref_issue.local_id)
+        for ref_issue in issue_service.GetIssues(cnxn, blocking_remove)]
+    amendments.append(MakeBlockingAmendment(
+        add_refs, remove_refs, default_project_name=issue.project_name))
+    blocking_refs = [iid for iid in old_blocking + blocking_add
+                     if iid not in blocking_remove]
+    issue.blocking_iids = blocking_refs
+    impacted_iids.update(blocking_add + blocking_remove)
+
+  if (delta.merged_into is not None and
+      delta.merged_into != issue.merged_into):
+    merged_remove = issue.merged_into
+    merged_add = delta.merged_into
+    issue.merged_into = delta.merged_into
+    try:
+      remove_issue = issue_service.GetIssue(cnxn, merged_remove)
+      remove_ref = remove_issue.project_name, remove_issue.local_id
+      impacted_iids.add(merged_remove)
+    except exceptions.NoSuchIssueException:
+      remove_ref = None
+
+    try:
+      add_issue = issue_service.GetIssue(cnxn, merged_add)
+      add_ref = add_issue.project_name, add_issue.local_id
+      impacted_iids.add(merged_add)
+    except exceptions.NoSuchIssueException:
+      add_ref = None
+
+    amendments.append(MakeMergedIntoAmendment(
+        add_ref, remove_ref, default_project_name=issue.project_name))
+
+  if delta.summary and delta.summary != issue.summary:
+    amendments.append(MakeSummaryAmendment(delta.summary, issue.summary))
+    issue.summary = delta.summary
+
+  return amendments, impacted_iids
 
 
 def MakeAmendment(

@@ -1580,6 +1580,9 @@ class IssueService(object):
     """This always returns empty results.  Mock it to test other cases."""
     return []
 
+  def SortBlockedOn(self, cnxn, issue, blocked_on_iids):
+    return blocked_on_iids, [0] * len(blocked_on_iids)
+
   def ApplyIssueRerank(
       self, cnxn, parent_id, relations_to_change, commit=True, invalidate=True):
     pass

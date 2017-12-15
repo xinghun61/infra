@@ -10,11 +10,28 @@ import unittest
 from framework import framework_constants
 from framework import framework_views
 from proto import tracker_pb2
+from services import service_manager
+from testing import fake
 from tracker import tracker_bizobj
 from tracker import tracker_constants
 
 
 class BizobjTest(unittest.TestCase):
+
+  def setUp(self):
+    self.cnxn = 'fake cnxn'
+    self.services = service_manager.Services(
+        issue=fake.IssueService())
+    self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
+    self.config.field_defs = [
+        tracker_pb2.FieldDef(
+            field_id=1, project_id=789, field_name='EstDays',
+            field_type=tracker_pb2.FieldTypes.INT_TYPE),
+        ]
+    self.config.component_defs = [
+        tracker_pb2.ComponentDef(component_id=1, project_id=789, path='UI'),
+        tracker_pb2.ComponentDef(component_id=2, project_id=789, path='DB'),
+        ]
 
   def testGetOwnerId(self):
     issue = tracker_pb2.Issue()
@@ -797,6 +814,154 @@ class BizobjTest(unittest.TestCase):
     self.assertIsNone(actual.owner_id)
     self.assertIsNone(actual.merged_into)
     self.assertIsNone(actual.summary)
+
+  def testApplyIssueDelta_NoChange(self):
+    """A delta with no change should change nothing."""
+    issue = tracker_pb2.Issue(
+        status='New', owner_id=111L, cc_ids=[222L], labels=['a', 'b'],
+        component_ids=[1], blocked_on_iids=[78902], blocking_iids=[78903],
+        merged_into=78904, summary='Sum')
+    delta = tracker_pb2.IssueDelta()
+
+    amendments, impacted_iids = tracker_bizobj.ApplyIssueDelta(
+        self.cnxn, self.services.issue, issue, delta, self.config)
+
+    self.assertEqual('New', issue.status)
+    self.assertEqual(111L, issue.owner_id)
+    self.assertEqual([222L], issue.cc_ids)
+    self.assertEqual(['a', 'b'], issue.labels)
+    self.assertEqual([1], issue.component_ids)
+    self.assertEqual([78902], issue.blocked_on_iids)
+    self.assertEqual([78903], issue.blocking_iids)
+    self.assertEqual(78904, issue.merged_into)
+    self.assertEqual('Sum', issue.summary)
+
+    self.assertEqual(0, len(amendments))
+    self.assertEqual(0, len(impacted_iids))
+
+  def testApplyIssueDelta_BuiltInFields(self):
+    """A delta can change built-in fields."""
+    ref_issue_70 = fake.MakeTestIssue(
+        789, 70, 'Something that must be done before', 'New', 111L)
+    self.services.issue.TestAddIssue(ref_issue_70)
+    ref_issue_71 = fake.MakeTestIssue(
+        789, 71, 'Something that can only be done after', 'New', 111L)
+    self.services.issue.TestAddIssue(ref_issue_71)
+    ref_issue_72 = fake.MakeTestIssue(
+        789, 72, 'Something that seems the same', 'New', 111L)
+    self.services.issue.TestAddIssue(ref_issue_72)
+    ref_issue_73 = fake.MakeTestIssue(
+        789, 73, 'Something that used to seem the same', 'New', 111L)
+    self.services.issue.TestAddIssue(ref_issue_73)
+    issue = tracker_pb2.Issue(
+        status='New', owner_id=111L, cc_ids=[222L], labels=['a', 'b'],
+        component_ids=[1], blocked_on_iids=[78902], blocking_iids=[78903],
+        merged_into=ref_issue_73.issue_id, summary='Sum')
+    delta = tracker_pb2.IssueDelta(
+      status='Duplicate', owner_id=999L, cc_ids_add=[333L, 444L],
+      comp_ids_add=[2], labels_add=['c', 'd'],
+      blocked_on_add=[ref_issue_70.issue_id],
+      blocking_add=[ref_issue_71.issue_id],
+      merged_into=ref_issue_72.issue_id, summary='New summary')
+
+    actual_amendments, actual_impacted_iids = tracker_bizobj.ApplyIssueDelta(
+        self.cnxn, self.services.issue, issue, delta, self.config)
+
+    self.assertEqual('Duplicate', issue.status)
+    self.assertEqual(999L, issue.owner_id)
+    self.assertEqual([222L, 333L, 444L], issue.cc_ids)
+    self.assertEqual([1, 2], issue.component_ids)
+    self.assertEqual(['a', 'b', 'c', 'd'], issue.labels)
+    self.assertEqual([78902, ref_issue_70.issue_id], issue.blocked_on_iids)
+    self.assertEqual([78903, ref_issue_71.issue_id], issue.blocking_iids)
+    self.assertEqual(ref_issue_72.issue_id, issue.merged_into)
+    self.assertEqual('New summary', issue.summary)
+
+    self.assertEqual(
+      [tracker_bizobj.MakeStatusAmendment('Duplicate', 'New'),
+       tracker_bizobj.MakeOwnerAmendment(999L, 111L),
+       tracker_bizobj.MakeCcAmendment([333L, 444L], []),
+       tracker_bizobj.MakeComponentsAmendment([2], [], self.config),
+       tracker_bizobj.MakeLabelsAmendment(['c', 'd'], []),
+       tracker_bizobj.MakeBlockedOnAmendment([(None, 70)], []),
+       tracker_bizobj.MakeBlockingAmendment([(None, 71)], []),
+       tracker_bizobj.MakeMergedIntoAmendment((None, 72), (None, 73)),
+       tracker_bizobj.MakeSummaryAmendment('New summary', 'Sum'),
+       ],
+      actual_amendments)
+    self.assertEqual(
+      set([ref_issue_70.issue_id, ref_issue_71.issue_id,
+           ref_issue_72.issue_id, ref_issue_73.issue_id]),
+      actual_impacted_iids)
+
+  def testApplyIssueDelta_ReferrencedIssueNotFound(self):
+    """This part of the code copes with missing issues."""
+    issue = tracker_pb2.Issue(
+        status='New', owner_id=111L, cc_ids=[222L], labels=['a', 'b'],
+        component_ids=[1], blocked_on_iids=[78902], blocking_iids=[78903],
+        merged_into=78904, summary='Sum')
+    delta = tracker_pb2.IssueDelta(
+      blocked_on_add=[78905], blocked_on_remove=[78902],
+      blocking_add=[78906], blocking_remove=[78903],
+      merged_into=78907)
+
+    actual_amendments, actual_impacted_iids = tracker_bizobj.ApplyIssueDelta(
+        self.cnxn, self.services.issue, issue, delta, self.config)
+
+    self.assertEqual([78905], issue.blocked_on_iids)
+    self.assertEqual([78906], issue.blocking_iids)
+    self.assertEqual(78907, issue.merged_into)
+
+    self.assertEqual(
+      [tracker_bizobj.MakeBlockedOnAmendment([], []),
+       tracker_bizobj.MakeBlockingAmendment([], []),
+       tracker_bizobj.MakeMergedIntoAmendment(None, None),
+       ],
+      actual_amendments)
+    self.assertEqual(
+      set([78902, 78903, 78905, 78906]),
+      actual_impacted_iids)
+
+  def testApplyIssueDelta_CustomFields(self):
+    """A delta can add, remove, or clear custom fields."""
+    fd_a = tracker_pb2.FieldDef(
+        field_id=1, project_id=789, field_name='a',
+        field_type=tracker_pb2.FieldTypes.INT_TYPE,
+        is_multivalued=True)
+    fd_b = tracker_pb2.FieldDef(
+        field_id=2, project_id=789, field_name='b',
+        field_type=tracker_pb2.FieldTypes.INT_TYPE)
+    fd_c = tracker_pb2.FieldDef(
+        field_id=3, project_id=789, field_name='c',
+        field_type=tracker_pb2.FieldTypes.INT_TYPE)
+    fd_d = tracker_pb2.FieldDef(
+        field_id=4, project_id=789, field_name='d',
+        field_type=tracker_pb2.FieldTypes.ENUM_TYPE)
+    self.config.field_defs = [fd_a, fd_b, fd_c, fd_d]
+    fv_a1 = tracker_pb2.FieldValue(field_id=1, int_value=1)
+    fv_a2 = tracker_pb2.FieldValue(field_id=1, int_value=2)
+    fv_b1 = tracker_pb2.FieldValue(field_id=2, int_value=1)
+    fv_c1 = tracker_pb2.FieldValue(field_id=3, int_value=1)
+    issue = tracker_pb2.Issue(
+        status='New', owner_id=111L, labels=['d-val', 'Hot'], summary='Sum',
+        field_values=[fv_a1, fv_b1, fv_c1])
+    delta = tracker_pb2.IssueDelta(
+      field_vals_add=[fv_a2], field_vals_remove=[fv_b1], fields_clear=[3, 4])
+
+    actual_amendments, actual_impacted_iids = tracker_bizobj.ApplyIssueDelta(
+        self.cnxn, self.services.issue, issue, delta, self.config)
+
+    self.assertEqual([fv_a1, fv_a2], issue.field_values)
+    self.assertEqual(['Hot'], issue.labels)
+
+    self.assertEqual(
+      [tracker_bizobj.MakeFieldAmendment(1, self.config, ['2'], []),
+       tracker_bizobj.MakeFieldAmendment(2, self.config, [], ['1']),
+       tracker_bizobj.MakeFieldClearedAmendment(3, self.config),
+       tracker_bizobj.MakeFieldClearedAmendment(4, self.config),
+       ],
+      actual_amendments)
+    self.assertEqual(set(), actual_impacted_iids)
 
   def testMakeAmendment(self):
     amendment = tracker_bizobj.MakeAmendment(
