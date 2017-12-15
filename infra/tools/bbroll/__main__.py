@@ -224,6 +224,8 @@ _add_pin('kitchen',
          'infra/tools/luci/kitchen/', 'go/src/infra/tools/kitchen')
 _add_pin('vpython',
          'infra/tools/luci/vpython/', 'go/src/infra/tools/vpython')
+_add_pin('vpython-native',
+         'infra/tools/luci/vpython-native/', 'go/src/infra/tools/vpython')
 _add_pin('git',
          'infra/git/')
 _add_pin('git-wrapper',
