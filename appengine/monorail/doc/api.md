@@ -199,7 +199,7 @@ This API provides the following methods to read/write user/issue/comment objects
 	* body(dict):
 		* blockedOn(list of dict): The issues on which the current issue is blocked.
 		* blocking(list of dict): The issues which the current issue is blocking.
-		* cc(list of string): The list of emails to cc.
+		* cc(list of dict): The list of emails to cc.
 		* description(required, string): Content of the issue.
 		* labels(list of string): Labels of this issue.
 		* owner(dict): The owner of this issue.
