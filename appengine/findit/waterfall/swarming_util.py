@@ -30,6 +30,7 @@ from model.wf_try_bot_cache import WfTryBot
 from model.wf_try_bot_cache import WfTryBotCache
 from model.wf_step import WfStep
 from waterfall import waterfall_config
+from waterfall.flake import flake_constants
 from waterfall.swarming_task_request import SwarmingTaskRequest
 
 # Swarming task states.
@@ -730,9 +731,12 @@ def UpdateAnalysisResult(analysis_result, flaky_failures):
   return all_flaked
 
 
-def GetCacheName(master, builder):
+def GetCacheName(master, builder, suffix=""):
   hash_part = hashlib.sha256('%s:%s' % (master, builder)).hexdigest()
-  return 'builder_' + hash_part
+  result = 'builder_%s' % hash_part
+  if suffix:
+    result = '%s_%s' % (result, suffix)
+  return result
 
 
 def GetBot(build):
@@ -888,6 +892,16 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
   request_dimensions = dict([x.split(':', 1) for x in tryjob.dimensions])
   bots_with_cache = OnlyAvailable(
       GetAllBotsWithCache(request_dimensions, cache_name, http_client))
+
+  # Flake tryjobs check out older code, so there's little benefit in trying to
+  # optimize the way we do for non-flake tryjobs, we do however select the bot
+  # with the fewest named caches in an effort to avoid unnecessary cache
+  # evictions.
+  if cache_name and cache_name.endswith(flake_constants.FLAKE_CACHE_SUFFIX):
+    selected_bot = _GetBotWithFewestNamedCaches(bots_with_cache)['bot_id']
+    tryjob.dimensions.append('id:%s' % selected_bot)
+    return
+
   if bots_with_cache:
     git_repo = CachedGitilesRepository(
         http_client, 'https://chromium.googlesource.com/chromium/src.git')

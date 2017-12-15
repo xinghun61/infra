@@ -24,7 +24,7 @@ from waterfall.flake.send_notification_for_flake_culprit_pipeline import (
     SendNotificationForFlakeCulpritPipeline)
 from waterfall.test import wf_testcase
 
-_DEFAULT_CACHE_NAME = swarming_util.GetCacheName('pm', 'pb')
+_DEFAULT_CACHE_NAME = swarming_util.GetCacheName('pm', 'pb') + '_flake'
 
 
 class MockInfo(object):

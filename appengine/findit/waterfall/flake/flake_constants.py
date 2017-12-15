@@ -60,6 +60,10 @@ DEFAULT_UPPER_FLAKE_THRESHOLD = 0.98
 # Epsilon for floating point comparison.
 EPSILON = 0.001
 
+# This suffix distinguishes the on-bot named cache (work directory) from flake
+# vs. non-flake tryjobs.
+FLAKE_CACHE_SUFFIX = 'flake'
+
 # Maximum iterations allowed per swarming task.
 MAX_ITERATIONS_PER_TASK = 200
 

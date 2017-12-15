@@ -1184,13 +1184,19 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
                                               'win_chromium_variable')
     cache_name_c = swarming_util.GetCacheName('luci.chromium.ci',
                                               'win_chromium_variable')
+    cache_name_d = swarming_util.GetCacheName('luci.chromium.ci',
+                                              'win_chromium_variable',
+                                              'flake')
 
     self.assertTrue(cache_name_a.startswith('builder_'))
     self.assertTrue(cache_name_b.startswith('builder_'))
     self.assertTrue(cache_name_c.startswith('builder_'))
+    self.assertTrue(cache_name_d.startswith('builder_'))
+    self.assertTrue(cache_name_d.endswith('_flake'))
     self.assertNotEqual(cache_name_a, cache_name_b)
     self.assertNotEqual(cache_name_a, cache_name_c)
     self.assertNotEqual(cache_name_b, cache_name_c)
+    self.assertNotEqual(cache_name_c, cache_name_d)
 
   def testGetBot(self):
 
@@ -1426,6 +1432,18 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     tryjob.revision = 'def01234'
     swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
     mock_changelog.assert_called_once_with('def01234')
+
+  @mock.patch('waterfall.swarming_util._GetBotWithFewestNamedCaches',
+              lambda x: x[0])
+  @mock.patch(
+      'waterfall.swarming_util.GetAllBotsWithCache', return_value=ALL_BOTS)
+  @mock.patch('waterfall.swarming_util.OnlyAvailable', return_value=SOME_BOTS)
+  def testAssignWarmCacheHostFlake(self, *_):
+    cache_name = 'cache_name_flake'
+    tryjob = MockTryJob()
+    tryjob.revision = 'def01234'
+    swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
+    self.assertIn('id:' + SOME_BOTS[0]['bot_id'], tryjob.dimensions)
 
   @mock.patch(
       'waterfall.swarming_util.GetAllBotsWithCache', return_value=ALL_BOTS)

@@ -243,8 +243,10 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
                                                triggering_build_number)
           parent_mastername = build_info.parent_mastername or master_name
           parent_buildername = build_info.parent_buildername or builder_name
-          cache_name = swarming_util.GetCacheName(parent_mastername,
-                                                  parent_buildername)
+          cache_name = swarming_util.GetCacheName(
+              parent_mastername,
+              parent_buildername,
+              suffix=flake_constants.FLAKE_CACHE_SUFFIX)
           dimensions = waterfall_config.GetTrybotDimensions(
               parent_mastername, parent_buildername)
           analysis.LogInfo(
