@@ -43,7 +43,12 @@ have version control and can use the protoc tool to create language-specific
 instances. Use the
 [bqschemaupdater](https://chromium.googlesource.com/infra/luci/luci-go/+/master/tools/cmd/bqschemaupdater/README.md)
 to create new tables or modify existing tables in BigQuery. As of right now,
-this tool must be run manually.
+this tool must be run manually. Running the go environment setup script from
+infra.git:
+
+    eval `go/env.py`
+
+and this should install bqschemaupdater in your path.
 
 # Step 2: Send events to BigQuery
 
@@ -131,7 +136,7 @@ With `eventuploader`, you can construct a synchronous `Uploader` or asynchronous
 [kitchen](../../go/src/infra/tools/kitchen/monitoring.go) is an example of a
 tool that uses eventuploader.
 
-### From Python: BigQueryHelper
+### From Python: infra/libs/bigquery
 
 You will need the
 [google-cloud-bigquery](https://pypi.python.org/pypi/google-cloud-bigquery)
