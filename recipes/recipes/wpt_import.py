@@ -54,6 +54,7 @@ def RunSteps(api):
     script = blink_dir.join('Tools', 'Scripts', 'wpt-import')
     args = [
       '--auto-update',
+      '--auto-file-bugs',
       '--auth-refresh-token-json',
       '/creds/refresh_tokens/blink-w3c-test-autoroller',
       '--credentials-json',

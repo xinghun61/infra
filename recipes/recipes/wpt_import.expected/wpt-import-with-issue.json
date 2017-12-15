@@ -210,6 +210,7 @@
       "-u",
       "[START_DIR]/src/third_party/WebKit/Tools/Scripts/wpt-import",
       "--auto-update",
+      "--auto-file-bugs",
       "--auth-refresh-token-json",
       "/creds/refresh_tokens/blink-w3c-test-autoroller",
       "--credentials-json",
