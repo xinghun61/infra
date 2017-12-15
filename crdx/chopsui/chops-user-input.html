@@ -1,16 +1,16 @@
 <link rel="import" href="../polymer/polymer.html">
-<link rel="import" href="crdx-user-dropdown.html">
-<link rel="import" href="crdx-user-id.html">
+<link rel="import" href="chops-user-dropdown.html">
+<link rel="import" href="chops-user-id.html">
 <link rel="import" href="../paper-input/paper-input.html">
 <link rel="import" href="../iron-behaviors/iron-control-state.html">
 
-<dom-module id="crdx-user-input">
+<dom-module id="chops-user-input">
   <template>
     <style>
     </style>
     <paper-input id="input" label="[[label]]" value="{{inputValue}}" on-input="_inputChanged">
       <template is="dom-repeat" items="[[selectedUsers]]">
-        <crdx-user-id
+        <chops-user-id
           slot="prefix"
           user-id="[[item.userId]]"
           email="[[item.email]]"
@@ -18,18 +18,18 @@
           full-name="[[item.fullName]]"
           on-remove-user="_removeUser"
           removeable>
-        </crdx-user-id>
+        </chops-user-id>
       </template>
     </paper-input>
-    <crdx-user-dropdown id="dropdown" on-user-selected="_saveUser" suggestions="[[suggestions]]">
-    </crdx-user-dropdown>
+    <chops-user-dropdown id="dropdown" on-user-selected="_saveUser" suggestions="[[suggestions]]">
+    </chops-user-dropdown>
   </template>
   <script>
     'use strict';
 
     /**
      *
-     * `<crdx-user-input>` as an input element for choosing users with
+     * `<chops-user-input>` as an input element for choosing users with
      * dropdown suggestions and autocomplete.
      *
      * It is up to the developer using this element to provide and update
@@ -39,12 +39,12 @@
      *
      * customElement
      * @polymer
-     * @demo /demo/crdx-user-input_demo.html
+     * @demo /demo/chops-user-input_demo.html
      *
      */
-    class CrdxUserInput extends Polymer.mixinBehaviors(
+    class ChopsUserInput extends Polymer.mixinBehaviors(
         [Polymer.IronControlState], Polymer.Element) {
-      static get is() { return 'crdx-user-input'; }
+      static get is() { return 'chops-user-input'; }
 
       static get properties() {
         return {
@@ -172,6 +172,6 @@
         this.dispatchEvent(new CustomEvent('input', {detail: e.detail}));
       }
     }
-    customElements.define(CrdxUserInput.is, CrdxUserInput);
+    customElements.define(ChopsUserInput.is, ChopsUserInput);
   </script>
 </dom-moduel>

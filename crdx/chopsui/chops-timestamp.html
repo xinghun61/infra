@@ -3,7 +3,7 @@
 <script src="../moment/min/moment.min.js"></script>
 <script src="../moment-timezone/builds/moment-timezone-with-data.min.js"></script>
 
-<dom-module id="crdx-timestamp">
+<dom-module id="chops-timestamp">
   <template>
     <style>
     </style>
@@ -19,16 +19,16 @@
     'use strict';
 
     /**
-     * `<crdx-timestamp>` displays a formatted time string in PDT and the relative time.
+     * `<chops-timestamp>` displays a formatted time string in PDT and the relative time.
      *
      * This element shows a time in a human readable form.
      *
      * @customElement
      * @polymer
-     * @demo /demo/crdx-timestamp_demo.html
+     * @demo /demo/chops-timestamp_demo.html
      */
-    class CrdxTimestamp extends Polymer.Element {
-      static get is() { return 'crdx-timestamp'; }
+    class ChopsTimestamp extends Polymer.Element {
+      static get is() { return 'chops-timestamp'; }
 
       static get properties() {
         return {
@@ -61,6 +61,6 @@
       }
 
     }
-    customElements.define(CrdxTimestamp.is, CrdxTimestamp);
+    customElements.define(ChopsTimestamp.is, ChopsTimestamp);
   </script>
 <dom-module>

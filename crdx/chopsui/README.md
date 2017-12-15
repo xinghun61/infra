@@ -30,7 +30,7 @@ Check that your demo and documentation are working and correct by running:
 polymer serve
 ```
 
-then visit localhost:XXXX/componenets/chopsui/demo/my-el_demo.html
+then visit localhost:XXXX/components/chopsui/demo/my-el_demo.html
 
 ## Pushing a New Version
 

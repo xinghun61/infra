@@ -1,7 +1,7 @@
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
 
-<link rel="import" href="../../bower_components/chopsui/crdx-header.html">
-<link rel="import" href="../../bower_components/chopsui/crdx-login.html">
+<link rel="import" href="../../bower_components/chopsui/chops-header.html">
+<link rel="import" href="../../bower_components/chopsui/chops-login.html">
 <link rel="import" href="../../bower_components/iron-icons/iron-icons.html">
 <link rel="import" href="../../bower_components/iron-location/iron-location.html">
 <link rel="import" href="../../bower_components/iron-pages/iron-pages.html">
@@ -27,14 +27,14 @@
 <dom-module id="som-app">
   <template>
     <style include="som-header-styles som-utility-styles">
-      crdx-header {
-        --crdx-header-text-color: #fff;
+      chops-header {
+        --chops-header-text-color: #fff;
         top: 0;
         position: fixed;
         background-color: #000;
       }
-      crdx-login {
-        --crdx-login-link-color: #fff;
+      chops-login {
+        --chops-login-link-color: #fff;
       }
       iron-icon {
         flex-shrink: 0;
@@ -122,8 +122,8 @@
         }
       }
       @media (max-width: 840px) {
-        crdx-header {
-          --crdx-header-title-theme: {
+        chops-header {
+          --chops-header-title-theme: {
             display: none;
           };
         }
@@ -138,7 +138,7 @@
       }
     </style>
     <iron-location id="url" path="{{_path}}" url-space-regex="^(?!(/_ah/|/auth/))"></iron-location>
-    <crdx-header logo-src="[[_treeLogo]]" app-title="Sheriff-o-Matic">
+    <chops-header logo-src="[[_treeLogo]]" app-title="Sheriff-o-Matic">
       <iron-icon slot="before-header" id="toggleDrawer" on-tap="_toggleDrawer" icon="menu"></iron-icon>
       <div slot="subheader" id="treeTitle">
         &gt; [[_pathIdentifier]]
@@ -154,11 +154,11 @@
           </span>
           <span hidden$="[[_lastUpdated]]" id="lastUpdatedUnknown">Unknown</span>
         </div>
-        <crdx-login id="username" user="[[user]]" logout-url="[[logoutUrl]]"></crdx-login>
+        <chops-login id="username" user="[[user]]" logout-url="[[logoutUrl]]"></chops-login>
         <iron-icon id="refresh" on-tap="_refresh" icon="refresh"></iron-icon>
         <paper-spinner id="fetchingAlerts" active="[[_fetchingAlerts]]"></paper-spinner>
       </div>
-    </crdx-header>
+    </chops-header>
     <div id="somContainer">
       <div id="somDrawerWrapper">
         <som-drawer

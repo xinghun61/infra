@@ -8,7 +8,7 @@
     "chopsui",
     "chops-ui"
   ],
-  "main": "crdx-user-dropdown.html",
+  "main": "chops-user-dropdown.html",
   "repository": {
     "type": "git",
     "url": "https://chromium.googlesource.com/infra/infra/crdx/chopsui.git"

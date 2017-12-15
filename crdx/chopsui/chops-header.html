@@ -1,14 +1,14 @@
 <link rel="import" href="../../bower_components/polymer/polymer.html">
 <link rel="import" href="../../bower_components/polymer/polymer-element.html">
 
-<link rel="import" href="crdx-login.html">
+<link rel="import" href="chops-login.html">
 
-<dom-module id="crdx-header">
+<dom-module id="chops-header">
   <template>
     <style>
       :host {
-        --crdx-header-text-color: inherit;
-        color: var(--crdx-header-text-color);
+        --chops-header-text-color: inherit;
+        color: var(--chops-header-text-color);
         background: #dce5f8;
         font-size: 14px;
         width: 100%;
@@ -23,10 +23,10 @@
         font-size: 18px;
         display: flex;
         align-items: center;
-        @apply --crdx-header-title-theme;
+        @apply --chops-header-title-theme;
       }
       #headerTitle a {
-        color: var(--crdx-header-text-color);
+        color: var(--chops-header-text-color);
         text-decoration: none;
       }
       #headerTitle a:hover {
@@ -85,7 +85,7 @@
     'use strict';
 
     /**
-     * `crdx-header` is a shared header element for ChOps frontends to use.
+     * `chops-header` is a shared header element for ChOps frontends to use.
      *
      * This element contains two slots for clients to add content. The default
      * slot holds content in the header section to the right of the title. And
@@ -94,12 +94,12 @@
      *
      * @customElement
      * @polymer
-     * @demo /demo/crdx-header_demo.html
+     * @demo /demo/chops-header_demo.html
      */
-    class CrdxHeader extends Polymer.Element {
+    class ChopsHeader extends Polymer.Element {
 
       static get is() {
-        return 'crdx-header';
+        return 'chops-header';
       }
 
       static get properties() {
@@ -107,7 +107,7 @@
           /* String for the title of the application. */
           appTitle: {
             type: String,
-            value: 'CRDX App',
+            value: 'Chops App',
           },
           /* The home URL for the application. Defaults to '/'. */
           homeUrl: {
@@ -121,6 +121,6 @@
       }
     }
 
-    customElements.define(CrdxHeader.is, CrdxHeader);
+    customElements.define(ChopsHeader.is, ChopsHeader);
   </script>
 </dom-module>

@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <title>userLoginTest</title>
 <meta charset="utf-8">
-<link rel="import" href="../crdx-login.html">
+<link rel="import" href="../chops-login.html">
 <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
 <script src="../../web-component-tester/browser.js"></script>
 
-<test-fixture id="crdx-login-test">
+<test-fixture id="chops-login-test">
   <template>
-    <crdx-login></crdx-login>
+    <chops-login></chops-login>
   </template>
 </test-fixture>
 
 <script>
   'use strict';
 
-  suite('crdx-login', function() {
+  suite('chops-login', function() {
     var element;
     setup(function() {
-      element = fixture('crdx-login-test');
+      element = fixture('chops-login-test');
       element.loginUrl = 'https://www.google.com/';
       element.logoutUrl = 'https://www.google.com/';
     });

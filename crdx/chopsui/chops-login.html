@@ -1,13 +1,13 @@
 <link rel="import" href="../polymer/polymer.html">
 
-<dom-module id="crdx-login">
+<dom-module id="chops-login">
   <template>
     <style>
       :host {
-        --crdx-login-link-color: inherit;
+        --chops-login-link-color: inherit;
       }
       a, a:link {
-        color: var(--crdx-login-link-color);
+        color: var(--chops-login-link-color);
         font-size: 0.75em;
         text-decoration: none;
       }
@@ -23,7 +23,7 @@
     'use strict';
 
     /**
-     * `crdx-login` shows the login/logout links and current user, if provided.
+     * `chops-login` shows the login/logout links and current user, if provided.
      *
      * When the user is logged in provide, at least, the user and logoutURL properties.
      * When there is no user logged in provide, at least the loginURL property.
@@ -32,10 +32,10 @@
      *
      * @customElement
      * @polymer
-     * @demo /demo/crdx-login_demo.html
+     * @demo /demo/chops-login_demo.html
      */
-    class CrdxLogin extends Polymer.Element {
-      static get is() { return 'crdx-login'; }
+    class ChopsLogin extends Polymer.Element {
+      static get is() { return 'chops-login'; }
 
       static get properties() {
         return {
@@ -55,6 +55,6 @@
         }
       }
     }
-    customElements.define(CrdxLogin.is, CrdxLogin);
+    customElements.define(ChopsLogin.is, ChopsLogin);
   </script>
 <dom-module>

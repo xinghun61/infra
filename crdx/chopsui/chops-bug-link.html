@@ -1,6 +1,6 @@
 <link rel="import" href="../polymer/polymer.html">
 
-<dom-module id="crdx-bug-link">
+<dom-module id="chops-bug-link">
   <template>
     <style>
       :host {
@@ -35,17 +35,17 @@
     const bugProjectNameRe = /[a-z0-9][-a-z0-9]*[a-z0-9]/i;
 
     /**
-     * `<crdx-bug-link>` displays a link to a chromium bug.
+     * `<chops-bug-link>` displays a link to a chromium bug.
      *
      * All properties except for `bug` are optional. Set short to true
      * when the description should not be shown.
      *
      * @customElement
      * @polymer
-     * @demo /demo/crdx-bug-link_demo.html
+     * @demo /demo/chops-bug-link_demo.html
      */
-    class CrdxBugLink extends Polymer.Element {
-      static get is() { return 'crdx-bug-link'; }
+    class ChopsBugLink extends Polymer.Element {
+      static get is() { return 'chops-bug-link'; }
 
       static get properties() {
         return {
@@ -88,6 +88,6 @@
       }
 
     }
-    customElements.define(CrdxBugLink.is, CrdxBugLink);
+    customElements.define(ChopsBugLink.is, ChopsBugLink);
   </script>
 <dom-module>

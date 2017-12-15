@@ -1,23 +1,23 @@
 <!DOCTYPE html>
-<title>CrdxTimestamp</title>
+<title>ChopsTimestamp</title>
 <meta charset="utf-8">
 <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
 <script src="../../web-component-tester/browser.js"></script>
-<link rel="import" href="../crdx-timestamp.html">
+<link rel="import" href="../chops-timestamp.html">
 
-<test-fixture id="crdx-timestamp-test">
+<test-fixture id="chops-timestamp-test">
   <template>
-    <crdx-timestamp></crdx-timestamp>
+    <chops-timestamp></chops-timestamp>
   </template>
 </test-fixture>
 
 <script>
   'use strict';
 
-  suite('crdx-timestamp', function() {
+  suite('chops-timestamp', function() {
     let element;
     setup(function() {
-      element = fixture('crdx-timestamp-test');
+      element = fixture('chops-timestamp-test');
       element.date = new Date();
     });
 

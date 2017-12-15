@@ -1,6 +1,6 @@
 <link rel="import" href="../../polymer/polymer.html">
 <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
-<link rel="import" href="../crdx-tree-status.html">
+<link rel="import" href="../chops-tree-status.html">
 
 <demo-snippet>
   <template>
@@ -29,10 +29,10 @@
       errorTree.statusErrorJson = {error: 'Failure!'};
       errorTree.statusUrl = 'https://infra-status.appspot.com/';
     </script>
-    <crdx-tree-status id="closed-tree"> </crdx-tree-status>
+    <chops-tree-status id="closed-tree"> </chops-tree-status>
     <br>
-    <crdx-tree-status id="open-tree"></crdx-tree-status>
+    <chops-tree-status id="open-tree"></chops-tree-status>
     <br>
-    <crdx-tree-status id="error-tree"></crdx-tree-status>
+    <chops-tree-status id="error-tree"></chops-tree-status>
   </template>
 </demo-snippet>

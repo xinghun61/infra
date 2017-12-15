@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <title>usersDropdown</title>
 <meta charset="utf-8">
-<link rel="import" href="../crdx-user-dropdown.html">
+<link rel="import" href="../chops-user-dropdown.html">
 <script srx="../../webcomponentsjs/webcomponents-lite.js"></script>
 <script src="../../web-component-tester/browser.js"></script>
 
-<test-fixture id="crdx-user-dropdown-test">
+<test-fixture id="chops-user-dropdown-test">
   <template>
-    <crdx-user-dropdown></crdx-user-dropdown>
+    <chops-user-dropdown></chops-user-dropdown>
   </template>
 </test-fixture>
 
 <script>
   'use strict';
 
-  suite('crdx-user-dropdown', function() {
+  suite('chops-user-dropdown', function() {
     var element;
     setup(function() {
-      element = fixture('crdx-user-dropdown-test');
+      element = fixture('chops-user-dropdown-test');
       element.suggestions = ['blah', 'blahman', 'blahdimir'];
     });
 
