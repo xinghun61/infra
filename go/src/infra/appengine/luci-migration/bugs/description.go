@@ -64,7 +64,7 @@ func bugDescription(c context.Context, builder *storage.Builder) (string, error)
 	}
 	buf := &bytes.Buffer{}
 	if err := descriptionTmpl.Execute(buf, descArgs); err != nil {
-		return "", errors.Annotate(err,"bug desription didn't render").Err()
+		return "", errors.Annotate(err, "bug desription didn't render").Err()
 	}
 	return buf.String(), nil
 }

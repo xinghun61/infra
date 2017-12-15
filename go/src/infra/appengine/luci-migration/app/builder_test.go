@@ -45,6 +45,14 @@ func TestBuilder(t *testing.T) {
 		c = auth.WithState(c, &authtest.FakeState{
 			Identity: "user:user@example.com",
 		})
+		c = config.Use(c, &config.Config{
+			Masters: []*config.Master{
+				{
+					Name:       "tryserver.chromium.linux",
+					LuciBucket: "luci.chromium.try",
+				},
+			},
+		})
 
 		id := storage.BuilderID{
 			Master:  "tryserver.chromium.linux",
@@ -112,6 +120,7 @@ func TestBuilder(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(model, ShouldResemble, &builderViewModel{
 				Builder:           builder,
+				LUCIBucket:        "luci.chromium.try",
 				StatusKnown:       true,
 				StatusClassSuffix: "danger",
 				StatusAge:         time.Hour,

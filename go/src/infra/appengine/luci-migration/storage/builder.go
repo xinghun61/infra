@@ -53,8 +53,6 @@ type Builder struct {
 	IssueID                 IssueID
 	IssueDescriptionVersion int
 
-	LUCIBuildbucketBucket string
-
 	Migration BuilderMigration
 
 	ExperimentPercentage int

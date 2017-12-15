@@ -46,7 +46,8 @@ const (
 )
 
 type builderViewModel struct {
-	Builder *storage.Builder
+	Builder    *storage.Builder
+	LUCIBucket string
 
 	StatusKnown       bool
 	StatusClassSuffix string // Bootstrap label class suffix
@@ -78,15 +79,6 @@ func handleBuilderPage(c *router.Context) error {
 		return nil
 	}
 
-	cfg := config.Get(c.Context)
-	if cfg.BuildbucketHostname == "" {
-		return errors.New("buildbucket hostname is not configured")
-	}
-	master := cfg.FindMaster(id.Master)
-	if master == nil {
-		return errors.Reason("master %q is not configured", id.Master).Err()
-	}
-
 	viewModel, err := builderPage(c.Context, id)
 	if err == errNotFound {
 		http.NotFound(c.Writer, c.Request)
@@ -100,7 +92,7 @@ func handleBuilderPage(c *router.Context) error {
 		c.Writer.Header().Add("Content-Type", "application/json")
 		return json.NewEncoder(c.Writer).Encode(map[string]interface{}{
 			"luci_is_prod": viewModel.Builder.LUCIIsProd,
-			"bucket":       master.LuciBucket,
+			"bucket":       viewModel.LUCIBucket,
 		})
 	}
 
@@ -109,7 +101,15 @@ func handleBuilderPage(c *router.Context) error {
 }
 
 func builderPage(c context.Context, id storage.BuilderID) (*builderViewModel, error) {
-	model := &builderViewModel{Builder: &storage.Builder{ID: id}}
+	master := config.Get(c).FindMaster(id.Master)
+	if master == nil {
+		return nil, errors.Reason("master %q is not configured", id.Master).Err()
+	}
+
+	model := &builderViewModel{
+		Builder:    &storage.Builder{ID: id},
+		LUCIBucket: master.LuciBucket,
+	}
 	migrationDetails := &storage.BuilderMigrationDetails{
 		Parent: datastore.KeyForObj(c, model.Builder),
 	}

@@ -41,6 +41,14 @@ func TestScheduling(t *testing.T) {
 	Convey("Scheduling", t, func(testCtx C) {
 		c := context.Background()
 		c = memory.Use(c)
+		c = config.Use(c, &config.Config{
+			Masters: []*config.Master{
+				{
+					Name:       "tryserver.chromium.linux",
+					LuciBucket: "luci.chromium.try",
+				},
+			},
+		})
 
 		buildSet := &buildbucket.GerritChange{
 			Host:     "gerrit.example.com",
@@ -105,9 +113,8 @@ func TestScheduling(t *testing.T) {
 						Master:  "tryserver.chromium.linux",
 						Builder: "linux_chromium_rel_ng",
 					},
-					SchedulingType:        config.SchedulingType_TRYJOBS,
-					LUCIBuildbucketBucket: "luci.chromium.try",
-					ExperimentPercentage:  percentage,
+					SchedulingType:       config.SchedulingType_TRYJOBS,
+					ExperimentPercentage: percentage,
 				})
 				So(err, ShouldBeNil)
 			}
