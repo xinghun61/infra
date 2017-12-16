@@ -96,8 +96,12 @@ With `depot_tools` in your path, run:
 # Get an auth token for your @google.com account if you don't already have one.
 depot-tools-auth login https://chromereviews.googleplex.com
 
-# Restart chromium.fyi master in 15 minutes.
-cit restart chromium.fyi -r <current trooper> [-b <bug number>]
+# The cit restart syntax is:
+# cit restart <waterfall name> -r <current trooper> [-b <bug number>]
+#
+# e.g. To restart the chromium.fyi master in 15 minutes for bug 123, with
+# trooper joe on duty:
+cit restart chromium.fyi -r joe -b 123
 ```
 
 Note: if you're not in the committers list CQ will try it first and
