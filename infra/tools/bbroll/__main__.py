@@ -45,7 +45,12 @@ _PinConfig = collections.namedtuple('_PinConfig', (
   'infra_relpath',
 
   # platform (bool)    - If True, appends "${platform}" to the package_base.
-  'platform'))
+  'platform',
+
+  # extra_packages (tuple[str]) - If set, these other packages will have their
+  # versions updated to match this pin's when this pin is updated.
+  'extra_packages',
+))
 
 
 def cipd_output(args):
@@ -110,6 +115,14 @@ class PinConfig(_PinConfig):
     if self.platform:
       return self.package_base + '${platform}'
     return self.package_base
+
+  @property
+  def cipd_packages(self):
+    """Returns the CIPD package name plus all extra_packages for this pin."""
+    ret = [self.package_base]+list(self.extra_packages)
+    if self.platform:
+      return [x + '${platform}' for x in ret]
+    return ret
 
   def raw_version(self, cipd_version):
     """Converts from a full CIPD tag back to a raw version, depending on whether
@@ -217,15 +230,16 @@ class PinConfig(_PinConfig):
 
 
 _PINS = collections.OrderedDict()
-def _add_pin(name, package_base, infra_relpath=None, platform=True):
-  _PINS[name] = PinConfig(name, package_base, infra_relpath, platform)
+def _add_pin(name, package_base, infra_relpath=None, platform=True,
+             extra_packages=()):
+  _PINS[name] = PinConfig(name, package_base, infra_relpath, platform,
+                          extra_packages)
 
 _add_pin('kitchen',
          'infra/tools/luci/kitchen/', 'go/src/infra/tools/kitchen')
 _add_pin('vpython',
-         'infra/tools/luci/vpython/', 'go/src/infra/tools/vpython')
-_add_pin('vpython-native',
-         'infra/tools/luci/vpython-native/', 'go/src/infra/tools/vpython')
+         'infra/tools/luci/vpython/', 'go/src/infra/tools/vpython',
+         extra_packages=('infra/tools/luci/vpython-native/',))
 _add_pin('git',
          'infra/git/')
 _add_pin('git-wrapper',
@@ -365,25 +379,27 @@ def roll_canary(args):
   # Update the template.
   # Minimize the template diff by using regex.
   # Assume package name goes before version.
-  pattern = (
-    r'(package_name": "%s[^}]+version": ")[^"]+(")' %
-    re.escape(pin.cipd_package))
-  match_count = len(re.findall(pattern, contents))
-  if match_count != 1:
-    print(
-      'expected to find exactly 1 match of pattern %r, found %d!' %
-      (pattern, match_count))
-    print('please fix the template or me')
-    return 1
+  for pkg_name in pin.cipd_packages:
+    pattern = (
+      r'(package_name": "%s[^}]+version": ")[^"]+(")' %
+      re.escape(pkg_name))
+    match_count = len(re.findall(pattern, contents))
+    if match_count != 1:
+      print(
+        'expected to find exactly 1 match of pattern %r, found %d!' %
+        (pattern, match_count))
+      print('please fix the template or me')
+      return 1
 
-  updated_contents = re.sub(pattern, r'\1%s\2' % new_ver, contents)
-  if contents == updated_contents:
-    print('internal failure: did not change the template')
-    return 1
+    updated_contents = re.sub(pattern, r'\1%s\2' % new_ver, contents)
+    if contents == updated_contents:
+      print('internal failure: did not change the template')
+      return 1
+    contents = updated_contents
 
   # Save changes.
   with open(CANARY_TEMPLATE_FILENAME, 'w') as f:
-    f.write(updated_contents)
+    f.write(contents)
 
   make_commit(
       ('cr-buildbucket: roll canary %(pin_name)s @ %(new_rev_short)s\n'
