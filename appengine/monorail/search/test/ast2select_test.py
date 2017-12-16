@@ -830,6 +830,54 @@ class AST2SelectTest(unittest.TestCase):
         [('Cond1.hotlist_id IS NULL', [])],
         where)
 
+  def testProcessHotlistCond_SingleValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['hotlist']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd], ['invalid:spa'], [])
+    left_joins, where = ast2select._ProcessHotlistCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+      [('(Hotlist2Issue JOIN Hotlist AS Cond1 ON '
+        'Hotlist2Issue.hotlist_id = Cond1.id AND (LOWER(Cond1.name) LIKE %s))'
+        ' ON Issue.id = Hotlist2Issue.issue_id', ['%spa%'])],
+      left_joins)
+    self.assertEqual([('Cond1.name IS NOT NULL', [])], where)
+
+  def testProcessHotlistCond_SingleValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['hotlist']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.EQ, [fd],
+                            ['invalid:spa', 'port', 'invalid2:barc'], [])
+    left_joins, where = ast2select._ProcessHotlistCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+      [('(Hotlist2Issue JOIN Hotlist AS Cond1 ON '
+        'Hotlist2Issue.hotlist_id = Cond1.id AND (LOWER(Cond1.name) LIKE %s OR '
+        'LOWER(Cond1.name) LIKE %s OR LOWER(Cond1.name) LIKE %s)) ON '
+        'Issue.id = Hotlist2Issue.issue_id', ['%spa%', '%port%', '%barc%'])],
+      left_joins)
+    self.assertEqual([('Cond1.name IS NOT NULL', [])], where)
+
+  def testProcessHotlistCond_SingleValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['hotlist']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NE, [fd], ['invalid:spa'], [])
+    left_joins, where = ast2select._ProcessHotlistCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+      [('(Hotlist2Issue JOIN Hotlist AS Cond1 ON '
+        'Hotlist2Issue.hotlist_id = Cond1.id AND (LOWER(Cond1.name) LIKE %s))'
+        ' ON Issue.id = Hotlist2Issue.issue_id', ['%spa%'])],
+      left_joins)
+    self.assertEqual([('Cond1.name IS NULL', [])], where)
+
+  def testProcessHotlistCond_SingleValue(self):
+    fd = BUILTIN_ISSUE_FIELDS['hotlist']
+    cond = ast_pb2.MakeCond(ast_pb2.QueryOp.NOT_TEXT_HAS, [fd],
+                            ['invalid:spa', 'port', 'invalid2:barc'], [])
+    left_joins, where = ast2select._ProcessHotlistCond(cond, 'Cond1', 'User1')
+    self.assertEqual(
+      [('(Hotlist2Issue JOIN Hotlist AS Cond1 ON '
+        'Hotlist2Issue.hotlist_id = Cond1.id AND (LOWER(Cond1.name) LIKE %s OR '
+        'LOWER(Cond1.name) LIKE %s OR LOWER(Cond1.name) LIKE %s)) ON '
+        'Issue.id = Hotlist2Issue.issue_id', ['%spa%', '%port%', '%barc%'])],
+      left_joins)
+    self.assertEqual([('Cond1.name IS NULL', [])], where)
+
   def testCompare_IntTypes(self):
     val_type = tracker_pb2.FieldTypes.INT_TYPE
     cond_str, cond_args = ast2select._Compare(

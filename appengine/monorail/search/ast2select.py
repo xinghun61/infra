@@ -451,10 +451,27 @@ def _ProcessHotlistIDCond(cond, alias, _user_alias):
   return left_joins, where
 
 
-def _ProcessHotlistCond(_cond, _alias, _user_alias):
+def _ProcessHotlistCond(cond, alias, _user_alias):
   """Convert hotlist=user:hotlist-name to SQL"""
-  # TODO(jojwang): Implement this. Blocks launch.
-  return [], []
+  # hotlist conditions that reach this function definitely have invalid
+  # user_name/id/email. This validity was determined in
+  # ast2ast._PreprocessHotlistCond. Any possible user identification is ignored.
+  hotlist_substrings = []
+  for val in cond.str_values:
+    substring = val.split(':')[-1]
+    if substring:
+      hotlist_substrings.append(substring)
+  hotlist_cond_str, hotlist_cond_args = _Compare(
+      alias, ast_pb2.QueryOp.TEXT_HAS, tracker_pb2.FieldTypes.STR_TYPE,
+      'name', hotlist_substrings)
+  left_joins = [(
+      '(Hotlist2Issue JOIN Hotlist AS {alias} '
+      'ON Hotlist2Issue.hotlist_id = {alias}.id AND {hotlist_cond}) '
+      'ON Issue.id = Hotlist2Issue.issue_id'.format(
+          alias=alias, hotlist_cond=hotlist_cond_str), hotlist_cond_args)]
+  where = [_CompareAlreadyJoined(alias, cond.op, 'name')]
+
+  return left_joins, where
 
 
 _PROCESSORS = {
@@ -545,7 +562,7 @@ def _Compare(alias, op, val_type, col, vals):
         it requires matching an empty set of labels.
   """
   vals_ph = sql.PlaceHolders(vals)
-  if col in ['label', 'status', 'email']:
+  if col in ['label', 'status', 'email', 'name']:
     alias_col = 'LOWER(%s.%s)' % (alias, col)
   else:
     alias_col = '%s.%s' % (alias, col)
