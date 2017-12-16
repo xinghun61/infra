@@ -806,7 +806,9 @@ def _SortByDistanceToCommitPosition(bots, cache_name, commit_position,
   cache_stats = WfTryBotCache.Get(cache_name)
 
   def _distance(bot_id):
-    local_cp = cache_stats.checked_out_commit_positions.get(bot_id, 0)
+    # If the bot is new, the bot_id will not be present, but if it failed to get
+    # the revision, the key will be present with a value of None.
+    local_cp = cache_stats.checked_out_commit_positions.get(bot_id) or 0
     return commit_position - local_cp
 
   if include_later:
