@@ -431,9 +431,14 @@ def _PreprocessHotlistCond(
         return cond
   hotlist_ids = set()
   for user_id, hotlists in users_to_hotlists.items():
-    user_to_hotlist = services.features.LookupHotlistIDs(
-        cnxn, hotlists, [user_id])
-    for hotlist_id in user_to_hotlist.values():
+    if not hotlists[0]:
+      user_hotlists = services.features.GetHotlistsByUserID(cnxn, user_id)
+      user_hotlist_ids = [hotlist.hotlist_id for hotlist in user_hotlists if
+                          user_id in hotlist.owner_ids]
+    else:
+      user_hotlist_ids = services.features.LookupHotlistIDs(
+          cnxn, hotlists, [user_id]).values()
+    for hotlist_id in user_hotlist_ids:
       hotlist_ids.add(hotlist_id)
   return ast_pb2.Condition(
       op=_TextOpToIntOp(cond.op),

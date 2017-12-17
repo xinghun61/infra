@@ -534,6 +534,7 @@ class AST2ASTTest(unittest.TestCase):
 
     self.services.user.TestAddUser('gatsby@example.org', 111L)
     self.services.user.TestAddUser('daisy@example.com', 222L)
+    self.services.user.TestAddUser('nick@example.org', 333L)
 
     # Setup hotlists
     self.services.features.TestAddHotlist(
@@ -544,16 +545,22 @@ class AST2ASTTest(unittest.TestCase):
         'Hotlist3', owner_ids=[222L], hotlist_id=30)
     self.services.features.TestAddHotlist(
         'Hotlist4', owner_ids=[222L], hotlist_id=40)
+    self.services.features.TestAddHotlist(
+        'Hotlist5', owner_ids=[333L], hotlist_id=50)
+    self.services.features.TestAddHotlist(
+        'Hotlist6', owner_ids=[333L], hotlist_id=60)
 
     hotlist_query_vals = [
-        'gatsby@example.org:Hotlist1', 'daisy@example.com:Hotlist3', 'Hotlist4']
+        'gatsby@example.org:Hotlist1',
+        'nick@example.org:',
+        'daisy@example.com:Hotlist3', 'Hotlist4']
     cond = ast_pb2.MakeCond(
         ast_pb2.QueryOp.TEXT_HAS, [hotlist_field], hotlist_query_vals, [])
     actual = ast2ast._PreprocessHotlistCond(
         self.cnxn, cond, [1], self.services, None)
     self.assertEqual(ast_pb2.QueryOp.EQ, actual.op)
     self.assertEqual([hotlist_id_field], actual.field_defs)
-    self.assertItemsEqual([10, 30, 40], actual.int_values)
+    self.assertItemsEqual([10, 30, 40, 50, 60], actual.int_values)
 
   def testPreprocessHotlistCond_UserNotFound(self):
     hotlist_field = BUILTIN_ISSUE_FIELDS['hotlist']
