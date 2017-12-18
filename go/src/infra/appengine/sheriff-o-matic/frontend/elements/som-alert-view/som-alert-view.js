@@ -346,7 +346,7 @@ class SomAlertView extends Polymer.mixinBehaviors(
   }
 
   _alertStreamVarName(stream) {
-    return stream.replace('.', '_');
+    return stream.replace(/\./g, '_');
   }
 
   _computeFetchingAlerts(activeRequests) {
