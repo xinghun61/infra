@@ -9,6 +9,7 @@
       :host {
         --chops-header-text-color: inherit;
         color: var(--chops-header-text-color);
+        box-sizing: border-box;
         background: #dce5f8;
         font-size: 14px;
         width: 100%;
@@ -79,7 +80,9 @@
         </span>
       </div>
     </div>
-    <slot class="header-section"></slot>
+    <div class="header-section">
+      <slot></slot>
+    </div>
   </template>
   <script>
     'use strict';

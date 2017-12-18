@@ -21,18 +21,14 @@ deps:
 format:
 	gofmt -s -w .
 
-getversion:
-	$(eval VERS := $(shell ../../../../../luci/appengine/components/tools/calculate_version.py | cut -c 1-35))
-	echo version is $(VERS)
-
 test: build
 	go test --cover
 	xvfb-run -a $(WCT_PATH)
 
-deploy_prod: build getversion deploy_prod_run clean
+deploy_prod: build deploy_prod_run clean
 
 deploy_prod_run:
-	appcfg.py -A tree-status -V ${VERS} update app.yaml
+	gae.py upload -A tree-status
 
 devserver:
-	dev_appserver.py app.yaml
+	gae.py devserver -A tree-status
