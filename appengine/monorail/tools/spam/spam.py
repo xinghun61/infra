@@ -22,8 +22,8 @@ import re
 import sys
 import googleapiclient
 
+from google.cloud.storage import client, bucket, blob
 import spam_helpers
-
 from apiclient.discovery import build
 from oauth2client.client import GoogleCredentials
 
@@ -75,6 +75,27 @@ def LocalPredict(_):
     json.dump({'inputs': instance['word_hashes']}, f)
 
 
+def get_auc(model_name, bucket_obj):
+  bucket_obj.blob = blob.Blob('%s/eval_data.json' % model_name, bucket_obj)
+  data = bucket_obj.blob.download_as_string()
+  data_dict = json.loads(data)
+  return data_dict['auc'], data_dict['auc_precision_recall']
+
+
+def CompareAccuracy(args):
+  client_obj = client.Client(project=args.project)
+  bucket_name = '%s-mlengine' % args.project
+  bucket_obj = bucket.Bucket(client_obj, bucket_name)
+
+  model1_auc, model1_auc_pr = get_auc(args.model1, bucket_obj)
+  print('%s:\nAUC: %f\tAUC Precision/Recall: %f\n'
+        % (args.model1, model1_auc, model1_auc_pr))
+
+  model2_auc, model2_auc_pr = get_auc(args.model2, bucket_obj)
+  print('%s:\nAUC: %f\tAUC Precision/Recall: %f'
+        % (args.model2, model2_auc, model2_auc_pr))
+
+
 def main():
   if not credentials and 'GOOGLE_APPLICATION_CREDENTIALS' not in os.environ:
     print ('GOOGLE_APPLICATION_CREDENTIALS environment variable is not set. '
@@ -83,6 +104,8 @@ def main():
 
   parser = argparse.ArgumentParser(description='Spam classifier utilities.')
   parser.add_argument('--project', '-p', default='monorail-staging')
+
+  project = parser.parse_known_args()
   subparsers = parser.add_subparsers(dest='command')
 
   predict = subparsers.add_parser('predict',
@@ -93,11 +116,36 @@ def main():
   subparsers.add_parser('local-predict',
     help='Create an instance on the local filesystem to use in prediction.')
 
+  ml = googleapiclient.discovery.build('ml', 'v1', credentials=credentials)
+
+  request = ml.projects().models().get(name='projects/%s/models/%s'
+                                       % (project[0].project, MODEL_NAME))
+  response = request.execute()
+
+  default_version = re.search(
+      '.*(spam_trainer_\d+).*',
+      response['defaultVersion']['deploymentUri']).group(1)
+
+  compare = subparsers.add_parser('compare-accuracy',
+                                  help='Compare the accuracy of two models.')
+
+  compare.add_argument('--model1',
+                       default=default_version,
+                       help='The first model to find the auc values of.')
+
+  # TODO(carapew): Make second default the most recently deployed model
+  compare.add_argument('--model2',
+                       default='spam_trainer_1513384515'
+                       if project[0].project == 'monorail-staging' else
+                       'spam_trainer_1513384825',
+                       help='The second model to find the auc values of.')
+
   args = parser.parse_args()
 
   cmds = {
     'predict':  Predict,
     'local-predict':  LocalPredict,
+    'compare-accuracy': CompareAccuracy,
   }
   res = cmds[args.command](args)
 

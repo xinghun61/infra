@@ -22,7 +22,7 @@ class TrainSpamModelCron(webapp2.RequestHandler):
 
     app_id = app_identity.get_application_id()
     project_id = 'projects/%s' % (app_id)
-    job_id = 'spam_training_%d' % time.time()
+    job_id = 'spam_trainer_%d' % time.time()
     training_input = {
         'scaleTier': 'BASIC',
         'packageUris': [

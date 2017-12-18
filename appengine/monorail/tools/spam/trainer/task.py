@@ -4,15 +4,22 @@
 # https://developers.google.com/open-source/licenses/bsd
 
 import argparse
+import json
 import os
+import re
 
 import numpy as np
 import tensorflow as tf
+from googleapiclient import discovery
+from googleapiclient import errors
+from oauth2client.client import GoogleCredentials
 from sklearn.model_selection import train_test_split
 from tensorflow.contrib.learn.python.learn import learn_runner
 from tensorflow.contrib.learn.python.learn.estimators import run_config
 from tensorflow.contrib.learn.python.learn.utils import saved_model_export_utils
 from tensorflow.contrib.training.python.training import hparam
+
+from google.cloud.storage import blob, bucket, client
 
 import trainer.dataset
 import trainer.model
@@ -71,6 +78,36 @@ def generate_experiment_fn(**experiment_args):
     )
   return _experiment_fn
 
+
+def store_eval(job_dir, results):
+
+  tf.logging.info('job_dir: %s' % job_dir)
+  job_info = re.search('gs://(monorail-.+)-mlengine/(spam_trainer_\d+)',
+                       job_dir)
+
+  # Only upload eval data if this is not being run locally.
+  if job_info:
+    project = job_info.group(1)
+    job_name = job_info.group(2)
+
+    tf.logging.info('project: %s' % project)
+    tf.logging.info('job_name: %s' % job_name)
+
+    client_obj = client.Client(project=project)
+    bucket_name = '%s-mlengine' % project
+    bucket_obj = bucket.Bucket(client_obj, bucket_name)
+
+    bucket_obj.blob = blob.Blob(job_name + '/eval_data.json', bucket_obj)
+    for key, value in results[0].iteritems():
+      if isinstance(value, np.float32):
+        results[0][key] = value.item()
+
+    bucket_obj.blob.upload_from_string(json.dumps(results[0]),
+                                       content_type='application/json')
+
+  else:
+    tf.logging.error('Could not find bucket "%s" to output evalution to.'
+                     % job_dir)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -177,7 +214,7 @@ if __name__ == '__main__':
   # learn_runner pulls configuration information from environment
   # variables using tf.learn.RunConfig and uses this configuration
   # to conditionally execute Experiment, or param server code.
-  learn_runner.run(
+  eval_results = learn_runner.run(
     generate_experiment_fn(
       min_eval_frequency=args.min_eval_frequency,
       eval_delay_secs=args.eval_delay_secs,
@@ -192,3 +229,7 @@ if __name__ == '__main__':
     run_config=run_config.RunConfig(model_dir=args.job_dir),
     hparams=hparam.HParams(**args.__dict__)
   )
+
+  # Store a json blob in GCS with the results of training job (AUC of
+  # precision/recall, etc).
+  store_eval(args.job_dir, eval_results)
