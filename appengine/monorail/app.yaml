@@ -35,6 +35,10 @@ handlers:
   script: monorailapp.app
   login: admin
 
+- url: /_ah/warmup
+  script: monorailapp.app
+  login: admin
+
 - url: /_task/.*
   script: monorailapp.app
   login: admin
@@ -54,6 +58,7 @@ handlers:
 inbound_services:
 - mail
 - mail_bounce
+- warmup
 
 libraries:
 - name: endpoints

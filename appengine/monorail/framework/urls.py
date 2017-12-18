@@ -74,6 +74,9 @@ TRIM_VISITED_PAGES_CRON = '/_cron/trimVisitedPages'
 DATE_ACTION_CRON = '/_cron/dateAction'
 SPAM_TRAINING_CRON = '/_cron/spamTraining'
 
+# URLs of handlers needed for GAE instance management.
+WARMUP = '/_ah/warmup'
+
 # URLs of User pages
 SAVED_QUERIES = '/queries'
 DASHBOARD = '/dashboard'

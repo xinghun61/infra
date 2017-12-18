@@ -41,6 +41,7 @@ from framework import reap
 from framework import registerpages_helpers
 from framework import tokenrefresh
 from framework import urls
+from framework import warmup
 
 from project import peopledetail
 from project import peoplelist
@@ -307,8 +308,8 @@ class ServletRegistry(object):
         urls.LOAD_API_CLIENT_CONFIGS_CRON: (
             client_config_svc.LoadApiClientConfigs),
         urls.CLIENT_MON: clientmon.ClientMonitor,
-        urls.TRIM_VISITED_PAGES_CRON:
-        trimvisitedpages.TrimVisitedPages
+        urls.TRIM_VISITED_PAGES_CRON: trimvisitedpages.TrimVisitedPages,
+        urls.WARMUP: warmup.Warmup,
         })
 
     self._SetupProjectServlets({
