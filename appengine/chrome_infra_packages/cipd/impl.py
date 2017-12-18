@@ -164,7 +164,7 @@ class RepoService(object):
     """Returns PackageInstance entity if such instance is registered.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       instance_id: identifier of the package instance (SHA1 of package file).
 
     Returns:
@@ -176,7 +176,7 @@ class RepoService(object):
     """Returns Package entity if it exists.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
 
     Returns:
       Package or None.
@@ -188,7 +188,7 @@ class RepoService(object):
     """Fetches a package, calls the callback, puts it back.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       callback: func(package_entity) -> (True to save; False to skip saving).
 
     Returns:
@@ -211,7 +211,7 @@ class RepoService(object):
     there's no garbage collection mechanism there yet.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
 
     Returns:
       True if deleted something, False if already gone.
@@ -319,7 +319,7 @@ class RepoService(object):
     """Returns results of some asynchronous processor or None if not ready.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       instance_id: identifier of the package instance (SHA1 of package file).
       processor_name: name of the processor to retrieve results of.
 
@@ -337,7 +337,7 @@ class RepoService(object):
     is_instance_file_uploaded method).
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       instance_id: identifier of the package instance (SHA1 of package file).
       caller: auth.Identity that issued the request.
       now: datetime when the request was made (or None for current time).
@@ -442,7 +442,7 @@ class RepoService(object):
     """Returns True if package instance file is uploaded to CAS.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       instance_id: identifier of the package instance (SHA1 of package file).
 
     Returns:
@@ -456,7 +456,7 @@ class RepoService(object):
     """Opens a new session for data upload to CAS.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       instance_id: identifier of the package instance (SHA1 of package file).
       caller: auth.Identity of whoever is opening an upload session.
 
@@ -477,7 +477,7 @@ class RepoService(object):
     successfully finished.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       ref: name of the reference, e.g. 'stable'.
       instance_id: identifier of the package instance (SHA1 of package file).
       caller: auth.Identity that issued the request.
@@ -504,7 +504,7 @@ class RepoService(object):
     """Fetches information about given package refs.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       refs: list of strings with refs to look for.
 
     Returns:
@@ -521,7 +521,7 @@ class RepoService(object):
     Newest refs first.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       instance_id: identifier of the package instance (SHA1 of package file).
 
     Returns:
@@ -538,7 +538,7 @@ class RepoService(object):
     Newest refs first.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       instance_id: identifier of the package instance (SHA1 of package file).
 
     Returns:
@@ -558,7 +558,7 @@ class RepoService(object):
     Newest tags first.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       instance_id: identifier of the package instance (SHA1 of package file).
 
     Returns:
@@ -576,7 +576,7 @@ class RepoService(object):
     """Fetches information about given instance tags.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       instance_id: identifier of the package instance (SHA1 of package file).
       tags: list of strings with tags to look for.
 
@@ -599,7 +599,7 @@ class RepoService(object):
     all processors successfully finished.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       instance_id: identifier of the package instance (SHA1 of package file).
       tags: list of strings with tags to attach.
       caller: auth.Identity that issued the request.
@@ -638,7 +638,7 @@ class RepoService(object):
     Idempotent. Skips missing tags.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       instance_id: identifier of the package instance (SHA1 of package file).
       tags: list of strings with tags to detach.
     """
@@ -687,7 +687,7 @@ class RepoService(object):
     """Given an instance ID, a ref or a tag returns instance IDs that match it.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       version: version to resolve.
       limit: maximum number of matching instance IDs to return.
 
@@ -718,6 +718,44 @@ class RepoService(object):
 
     raise AssertionError('Impossible state')
 
+  def list_instances(self, package_name, limit=100, cursor=None):
+    """Enumerates all instances of a package, most recent first.
+
+    Filters out not-yet processed instances, returning only instances that can
+    be fetched.
+
+    Args:
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
+      limit: maximum number of instances to return (i.e. page size).
+      cursor: a cursor string from previous list_instances call, for pagination.
+
+    Returns:
+      Tuple (list of PackageInstance entities, next cursor as str or None).
+
+    Raises:
+      ValueError if the cursor is not valid.
+    """
+    assert limit > 0, limit
+
+    q = PackageInstance.query(ancestor=package_key(package_name))
+    q = q.order(-PackageInstance.registered_ts)
+
+    out = []
+
+    try:
+      cursor = ndb.Cursor(urlsafe=cursor) if cursor else None
+      while True:
+        page, cursor, more = q.fetch_page(limit - len(out), start_cursor=cursor)
+        assert len(page) + len(out) <= limit, (len(page), len(out), limit)
+        out.extend(i for i in page if i.ready)
+        if len(out) == limit or not more:
+          return out, cursor.urlsafe() if more else None
+    except (
+        datastore_errors.BadArgumentError,
+        datastore_errors.BadRequestError,
+        datastore_errors.BadValueError) as exc:
+      raise ValueError(str(exc))
+
   def process_instance(self, package_name, instance_id, processors):
     """Performs the post processing step creating ProcessingResult entities.
 
@@ -725,7 +763,7 @@ class RepoService(object):
     ran. Can be retried by task queue service multiple times.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       instance_id: identifier of the package instance (SHA1 of package file).
       processors: names of processors to run.
     """
@@ -790,7 +828,7 @@ class RepoService(object):
     Instance must exist and all its processors must finish successfully.
 
     Args:
-      package_name: name of the package, e.g. 'infra/tools/cipd'.
+      package_name: name of the package, e.g. 'infra/tools/cipd/linux-amd64'.
       instance_id: identifier of the package instance (SHA1 of package file).
     """
     inst = package_instance_key(package_name, instance_id).get()
@@ -954,6 +992,11 @@ class PackageInstance(ndb.Model):
   def instance_id(self):
     """Package instance ID (SHA1 of package file content)."""
     return self.key.string_id()
+
+  @property
+  def ready(self):
+    """True if all processors have successfully processed the instance."""
+    return not self.processors_pending and not self.processors_failure
 
 
 def package_key(package_name):

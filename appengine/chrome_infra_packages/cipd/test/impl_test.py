@@ -747,6 +747,55 @@ class TestRepoService(testing.AppengineTestCase):
     self.assertEqual(2, len(res))
     self.assertTrue(set(['a'*40, 'b'*40, 'c'*40]).issuperset(res))
 
+  def test_list_instances_success(self):
+    now = datetime.datetime(2018, 1, 1, 0, 0)
+    pkg = 'package/name'
+
+    def mk(iid, ts, by='user:a@example.com', procs=0):
+      inst = impl.PackageInstance(
+          key=impl.package_instance_key(pkg, iid),
+          registered_by=auth.Identity.from_bytes(by),
+          registered_ts=now+datetime.timedelta(seconds=ts),
+          processors_pending=['proc']*procs)
+      inst.put()
+      return inst
+
+    # No instanced yet at all.
+    res, cursor = self.service.list_instances(pkg)
+    self.assertEqual([], res)
+    self.assertIsNone(cursor)
+
+    # Add a bunch of instances (all are ready).
+    old = mk('a'*40, -5)
+    fresh = mk('b'*40, 0)
+    oldest = mk('c'*40, -10)
+
+    def do_tests():
+      # Returned in correct order.
+      res, cursor = self.service.list_instances(pkg)
+      self.assertEqual([fresh, old, oldest], res)
+      self.assertIsNone(cursor)
+
+      # Pagination works too.
+      res, cursor = self.service.list_instances(pkg, limit=2)
+      self.assertEqual([fresh, old], res)
+      self.assertIsNotNone(cursor)
+      res, cursor = self.service.list_instances(pkg, limit=2, cursor=cursor)
+      self.assertEqual([oldest], res)
+      self.assertIsNone(cursor)
+
+    do_tests()
+
+    # Add one more not-yet-ready instance.
+    mk('d'*40, 5, procs=1)
+
+    # The listing totally ignores it.
+    do_tests()
+
+  def test_list_instances_bad_cursor(self):
+    with self.assertRaises(ValueError):
+      self.service.list_instances('a/b', cursor='watsup')
+
   def test_read_missing_counter(self):
     counter = self.service.read_counter('a/b', 'a'*40, 'test.counter')
     self.assertEqual(0, counter.value)

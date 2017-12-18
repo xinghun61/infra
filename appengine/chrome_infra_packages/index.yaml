@@ -1,5 +1,11 @@
 indexes:
 
+- kind: PackageInstance
+  ancestor: yes
+  properties:
+  - name: registered_ts
+    direction: desc
+
 - kind: InstanceTag
   properties:
   - name: tag

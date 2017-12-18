@@ -441,6 +441,99 @@ class PackageRepositoryApiTest(testing.EndpointsTestCase):
         'instance_id': 'a'*40,
       })
 
+  def test_list_instances_ok(self):
+    pkg = 'good/name'
+
+    def mk(iid, when):
+      inst, registered = self.repo_service.register_instance(
+          package_name=pkg,
+          instance_id=iid,
+          caller=auth.Identity.from_bytes('user:abc@example.com'),
+          now=datetime.datetime(2014, 1, 1)+datetime.timedelta(seconds=when))
+      self.assertTrue(registered)
+      return {
+        u'instance_id': unicode(iid),
+        u'package_name': unicode(pkg),
+        u'registered_by': u'user:abc@example.com',
+        u'registered_ts': unicode(
+            utils.datetime_to_timestamp(inst.registered_ts)),
+      }
+
+    a_inst = mk('a'*40, -10)
+    b_inst = mk('b'*40, 10)
+
+    resp = self.call_api('list_instances', {'package_name': pkg})
+    self.assertEqual({
+      'instances': [b_inst, a_inst],  # b is newer
+      'status': 'SUCCESS',
+    }, resp.json_body)
+
+    # Now the same with pagination.
+    page1 = self.call_api('list_instances', {
+      'package_name': pkg,
+      'limit': 1,
+    })
+    cursor = page1.json_body['cursor']
+    self.assertTrue(isinstance(cursor, basestring))
+    self.assertEqual({
+      'instances': [b_inst],
+      'cursor': cursor,
+      'status': 'SUCCESS',
+    }, page1.json_body)
+
+    page2 = self.call_api('list_instances', {
+      'package_name': pkg,
+      'limit': 1,
+      'cursor': cursor,
+    })
+    self.assertEqual({
+      'instances': [a_inst],
+      'status': 'SUCCESS',
+    }, page2.json_body)
+
+  def test_list_instances_bad_package_name(self):
+    resp = self.call_api('list_instances', {'package_name': 'bad name'})
+    self.assertEqual({
+      'status': 'ERROR',
+      'error_message': 'Invalid package name',
+    }, resp.json_body)
+
+  def test_list_instances_bad_limit(self):
+    resp = self.call_api('list_instances', {
+      'package_name': 'good/name',
+      'limit': 0,
+    })
+    self.assertEqual({
+      'status': 'ERROR',
+      'error_message': 'The limit must be positive',
+    }, resp.json_body)
+
+  def test_list_instances_no_access(self):
+    self.mock(api.acl, 'can_fetch_instance', lambda *_: False)
+    with self.call_should_fail(403):
+      self.call_api('list_instances', {'package_name': 'good/name'})
+
+  def test_list_instances_no_such_package(self):
+    resp = self.call_api('list_instances', {'package_name': 'good/name'})
+    self.assertEqual({'status': 'PACKAGE_NOT_FOUND'}, resp.json_body)
+
+  def test_list_instances_bad_cursor(self):
+    _, registered = self.repo_service.register_instance(
+        package_name='good/name',
+        instance_id='a'*40,
+        caller=auth.Identity.from_bytes('user:abc@example.com'),
+        now=datetime.datetime(2014, 1, 1))
+    self.assertTrue(registered)
+
+    resp = self.call_api('list_instances', {
+      'package_name': 'good/name',
+      'cursor': 'zzz',
+    })
+    self.assertEqual({
+      'status': 'ERROR',
+      'error_message': 'Invalid cursor zzz. Details: Incorrect padding',
+    }, resp.json_body)
+
   def test_fetch_acl_ok(self):
     acl.modify_roles(
         changes=[

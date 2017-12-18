@@ -240,7 +240,7 @@ class PackageResponse(messages.Message):
 
 
 class ListPackagesResponse(messages.Message):
-  """Results of listPackage call."""
+  """Results of listPackages call."""
   status = messages.EnumField(Status, 1, required=True)
   error_message = messages.StringField(2, required=False)
 
@@ -272,6 +272,17 @@ class FetchInstanceResponse(messages.Message):
   fetch_url = messages.StringField(4, required=False)
   # For SUCCESS, list of processors applied to the instance.
   processors = messages.MessageField(Processor, 5, repeated=True)
+
+
+class ListInstancesResponse(messages.Message):
+  """Results of listInstances call."""
+  status = messages.EnumField(Status, 1, required=True)
+  error_message = messages.StringField(2, required=False)
+
+  # For SUCCESS, information about the instances.
+  instances = messages.MessageField(PackageInstance, 3, repeated=True)
+  # A query cursor (if there's more instances to fetch), or ''.
+  cursor = messages.StringField(4, required=False)
 
 
 ################################################################################
@@ -730,6 +741,7 @@ class PackageRepositoryApi(remote.Service):
 
     return ListPackagesResponse(packages=visible_pkgs, directories=visible_dirs)
 
+
   @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
@@ -783,6 +795,7 @@ class PackageRepositoryApi(remote.Service):
         fetch_url=self.service.generate_fetch_url(instance),
         processors=processors_protos(instance))
 
+
   @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
@@ -830,6 +843,43 @@ class PackageRepositoryApi(remote.Service):
         instance=instance_to_proto(instance))
 
 
+  @gae_ts_mon.instrument_endpoint()
+  @endpoints_method(
+      endpoints.ResourceContainer(
+          message_types.VoidMessage,
+          package_name=messages.StringField(1, required=True),
+          limit=messages.IntegerField(2, default=100),
+          cursor=messages.StringField(3)),
+      ListInstancesResponse,
+      http_method='GET',
+      path='instances',
+      name='listInstances')
+  @auth.public  # ACL check is inside
+  def list_instances(self, request):
+    """Lists all registered package instances, most recent first."""
+    package_name = validate_package_name(request.package_name)
+    if request.limit <= 0:
+      raise ValidationError('The limit must be positive')
+
+    caller = auth.get_current_identity()
+    if not acl.can_fetch_instance(package_name, caller):
+      raise auth.AuthorizationError()
+
+    if not self.service.get_package(package_name):
+      raise PackageNotFoundError()
+
+    try:
+      instances, cursor = self.service.list_instances(
+          package_name, limit=request.limit, cursor=request.cursor)
+    except ValueError as exc:
+      raise ValidationError(str(exc))
+
+    return ListInstancesResponse(
+        status=Status.SUCCESS,
+        instances=[instance_to_proto(i) for i in instances],
+        cursor=cursor)
+
+
   ### Refs methods.
 
 
@@ -862,6 +912,7 @@ class PackageRepositoryApi(remote.Service):
         caller=caller,
         now=utils.utcnow())
     return SetRefResponse(ref=package_ref_to_proto(ref_entity))
+
 
   @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
@@ -938,6 +989,7 @@ class PackageRepositoryApi(remote.Service):
 
     return FetchTagsResponse(tags=[tag_to_proto(tag) for tag in attached])
 
+
   @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
@@ -968,6 +1020,7 @@ class PackageRepositoryApi(remote.Service):
         caller=caller,
         now=utils.utcnow())
     return AttachTagsResponse(tags=[tag_to_proto(attached[t]) for t in tags])
+
 
   @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
@@ -1102,6 +1155,7 @@ class PackageRepositoryApi(remote.Service):
           for role in acl.ROLES
         }))
 
+
   @gae_ts_mon.instrument_endpoint()
   @endpoints_method(
       endpoints.ResourceContainer(
@@ -1179,7 +1233,7 @@ class PackageRepositoryApi(remote.Service):
             file_name=client.get_cipd_client_filename(package_name)))
 
 
-  # Counter methods.
+  ### Counter methods.
 
 
   @gae_ts_mon.instrument_endpoint()

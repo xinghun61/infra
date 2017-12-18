@@ -15,7 +15,7 @@ clean:
 	rm -f ${APP_DIR}/static/html/*-vulcanized.html
 
 build:
-	${NODE_DIR}/node.py ${APP_DIR}/../../../node_modules/vulcanize/bin/vulcanize \
+	${NODE_DIR}/node.py ${APP_DIR}/node_modules/vulcanize/bin/vulcanize \
 		--inline-css --inline-scripts \
 		${APP_DIR}/static/html/index.html > \
 		${APP_DIR}/static/html/index-vulcanized.html
