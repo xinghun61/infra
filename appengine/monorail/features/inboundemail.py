@@ -33,6 +33,7 @@ from framework import sql
 from framework import template_helpers
 from proto import project_pb2
 from services import user_svc
+from tracker import tracker_helpers
 
 
 TEMPLATE_PATH_BASE = framework_constants.TEMPLATE_PATH
@@ -80,6 +81,9 @@ class InboundEmail(webapp2.RequestHandler):
 
     if email_tasks:
       notify_helpers.AddAllEmailTasks(email_tasks)
+
+  def IsWhitelisted(self, email_addr):
+    return email_addr.endswith(settings.alert_whitelisted_suffixes)
 
   def ProcessMail(self, msg, project_addr):
     """Process an inbound email message."""
@@ -186,7 +190,6 @@ class InboundEmail(webapp2.RequestHandler):
 
     return None
 
-
   def ProcessAlert(
       self, cnxn, project, project_addr, from_addr, author_addr,
       author_id, subject, body, incident_id, owner_email=None):
@@ -215,7 +218,7 @@ class InboundEmail(webapp2.RequestHandler):
       Adds a new comment to the issue, if no error is reported.
     """
     # Make sure the email address is whitelisted.
-    if not from_addr.endswith(settings.alert_whitelisted_suffixes):
+    if not self.IsWhitelisted(from_addr):
       logging.info('Unauthorized %s tried to send alert to %s',
                      from_addr, project_addr)
       return None
@@ -227,9 +230,14 @@ class InboundEmail(webapp2.RequestHandler):
 
     labels = ['Infra-Troopers-Alerts', 'Restrict-View-Google', 'Pri-2']
     field_values = []
-    component_ids = []
+    components = ['Infra']
+
     formatted_body = 'Filed by %s on behalf of %s\n\n%s' % (
         author_addr, from_addr, body)
+
+    # Lookup components.
+    config = self.services.config.GetProjectConfig(cnxn, project.project_id)
+    component_ids = tracker_helpers.LookupComponentIDs(components, config)
 
     mr = monorailrequest.MonorailRequestBase(
         services=self.services, user_id=author_id, cnxn=cnxn)
@@ -291,10 +299,11 @@ class InboundEmail(webapp2.RequestHandler):
       # Update issue using commands.
       lines = body.strip().split('\n')
       uia = commitlogcommands.UpdateIssueAction(updated_issue.local_id)
-      uia.Parse(cnxn, project.project_name, author_id, lines, self.services,
-                strip_quoted_lines=True)
-      uia.Run(cnxn, self.services, allow_edit=True)
+      commands_found = uia.Parse(cnxn, project.project_name, author_id, lines,
+                self.services, strip_quoted_lines=True)
 
+      if commands_found:
+        uia.Run(cnxn, self.services, allow_edit=True)
 
   def ProcessIssueReply(
       self, cnxn, project, local_id, project_addr, from_addr, author_id,

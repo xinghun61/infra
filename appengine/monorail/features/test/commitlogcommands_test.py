@@ -41,18 +41,28 @@ class InboundEmailTest(unittest.TestCase):
     self.mox.UnsetStubs()
     self.mox.ResetAll()
 
+  def testParse_NoCommandLines(self):
+    commands_found = self.uia.Parse(self.cnxn, self.project.project_name, 101,
+                   ['line 1'], self.services,
+                   hostport=80, strip_quoted_lines=True)
+    self.assertEquals(False, commands_found)
+    self.assertEquals('line 1', self.uia.description)
+    self.assertEquals('line 1', self.uia.inbound_message)
+
   def testParse_StripQuotedLines(self):
-    self.uia.Parse(self.cnxn, self.project.project_name, 101,
+    commands_found = self.uia.Parse(self.cnxn, self.project.project_name, 101,
                    ['summary:something', '> line 1', 'line 2'], self.services,
                    hostport=80, strip_quoted_lines=True)
+    self.assertEquals(True, commands_found)
     self.assertEquals('line 2', self.uia.description)
     self.assertEquals('summary:something\n> line 1\nline 2',
                       self.uia.inbound_message)
 
   def testParse_NoStripQuotedLines(self):
-    self.uia.Parse(self.cnxn, self.project.project_name, 101,
+    commands_found = self.uia.Parse(self.cnxn, self.project.project_name, 101,
                    ['summary:something', '> line 1', 'line 2'], self.services,
                    hostport=80)
+    self.assertEquals(True, commands_found)
     self.assertEquals('> line 1\nline 2', self.uia.description)
     self.assertIsNone(self.uia.inbound_message)
 

@@ -323,7 +323,7 @@ class ConfigTwoLevelCache(caches.AbstractTwoLevelCache):
          if comp_id == component_id],
         [cc_id for comp_id, cc_id in component2cc_rows
          if comp_id == component_id],
-        created, creator_id, 
+        created, creator_id,
         modified=modified, modifier_id=modifier_id,
         label_ids=[label_id for comp_id, label_id in component2label_rows
                    if comp_id == component_id])

@@ -41,11 +41,29 @@ class IssueAction(object):
   def Parse(
       self, cnxn, project_name, commenter_id, lines, services,
       strip_quoted_lines=False, hostport=None):
-    """Populate object from raw user input."""
+    """Populate object from raw user input.
+
+    Args:
+      cnxn: connection to SQL database.
+      project_name: Name of the project containing the issue.
+      commenter_id: int user ID of user creating comment.
+      lines: list of strings containing test to be parsed.
+      services: References to existing objects from Monorail's service layer.
+      strip_quoted_lines: boolean for whether to remove quoted lines from text.
+      hostport: Optionally override the current instance's hostport variable.
+
+    Returns:
+      A boolean for whether any command lines were found while parsing.
+
+    Side-effect:
+      Edits the values of instance variables in this class with parsing output.
+    """
     self.project = services.project.GetProjectByName(cnxn, project_name)
     self.config = services.config.GetProjectConfig(
         cnxn, self.project.project_id)
     self.commenter_id = commenter_id
+
+    has_commands = False
 
     # Process all valid key-value lines. Once we find a non key-value line,
     # treat the rest as the 'description'.
@@ -53,6 +71,7 @@ class IssueAction(object):
       valid_line = False
       m = re.match(r'^\s*(\w+)\s*\:\s*(.*?)\s*$', line)
       if m:
+        has_commands = True
         # Process Key-Value
         key = m.group(1).lower()
         value = m.group(2)
@@ -81,6 +100,8 @@ class IssueAction(object):
 
     for key in ['commenter_id', 'description', 'hostport']:
       logging.info('\t%s: %s', key, self.__dict__[key])
+
+    return has_commands
 
   def Run(self, cnxn, services, allow_edit=True):
     """Execute this action."""

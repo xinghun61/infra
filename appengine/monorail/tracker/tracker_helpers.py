@@ -823,7 +823,7 @@ def _LabelsMaskedOrNot(config, field_names, invert=False, trim_prefix=False):
   return result
 
 
-def LookupComponentIDs(component_paths, config, errors):
+def LookupComponentIDs(component_paths, config, errors=None):
   """Look up the IDs of the specified components in the given config."""
   component_ids = []
   for path in component_paths:
@@ -833,7 +833,11 @@ def LookupComponentIDs(component_paths, config, errors):
     if cd:
       component_ids.append(cd.component_id)
     else:
-      errors.components = 'Unknown component %s' % path
+      error_text = 'Unknown component %s' % path
+      if errors:
+        errors.components = error_text
+      else:
+        logging.info(error_text)
 
   return component_ids
 

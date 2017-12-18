@@ -209,10 +209,18 @@ class InboundEmailTest(unittest.TestCase):
     self.assertIsNone(ret)
 
   def testProcessAlert_NonWhitelistedSender(self):
-    # TODO(zhangtiff): Check to make sure the error path was hit.
+    self.assertTrue(self.inbound.IsWhitelisted('test@google.com'))
+    self.assertFalse(self.inbound.IsWhitelisted('test@notgoogle.com'))
+
+    self.mox.StubOutWithMock(self.inbound, 'IsWhitelisted')
+    self.inbound.IsWhitelisted('user@malicious.com').AndReturn(False)
+
+    self.mox.ReplayAll()
     ret = self.inbound.ProcessAlert(
         self.cnxn, self.project, self.project_addr, 'user@malicious.com',
         'user@example.com', 111L, 'issue title', 'issue body', 'incident')
+
+    self.mox.VerifyAll()
     self.assertIsNone(ret)
 
   def testProcessAlert_NewIssue(self):
@@ -231,9 +239,6 @@ class InboundEmailTest(unittest.TestCase):
     mock_uia.Parse(
         self.cnxn, self.project.project_name, 111L, ['issue body'],
         self.services, strip_quoted_lines=True)
-
-    self.mox.StubOutWithMock(mock_uia, 'Run')
-    mock_uia.Run(self.cnxn, self.services, allow_edit=True)
 
     self.mox.ReplayAll()
 
@@ -296,9 +301,6 @@ class InboundEmailTest(unittest.TestCase):
     mock_uia.Parse(
         self.cnxn, self.project.project_name, 111L, ['issue body'],
         self.services, strip_quoted_lines=True)
-
-    self.mox.StubOutWithMock(mock_uia, 'Run')
-    mock_uia.Run(self.cnxn, self.services, allow_edit=True)
 
     self.mox.ReplayAll()
 
