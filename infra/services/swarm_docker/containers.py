@@ -111,6 +111,7 @@ class DockerClient(object):
   def __init__(self):
     self._client = docker.from_env()
     self.logged_in = False
+    self._num_configured_containers = None
 
   def ping(self, retries=5):
     """Checks if the engine is responsive.
@@ -207,7 +208,13 @@ class DockerClient(object):
     return volumes
 
   def _get_env(self, swarming_url):
-    return {_SWARMING_URL_ENV_VAR: swarming_url + '/bot_code'}
+    env = {_SWARMING_URL_ENV_VAR: swarming_url + '/bot_code'}
+    if self._num_configured_containers:
+      env['NUM_CONFIGURED_CONTAINERS'] = self._num_configured_containers
+    return env
+
+  def set_num_configured_containers(self, num_configured_containers):
+    self._num_configured_containers = num_configured_containers
 
   def create_container(self, container_desc, image_name, swarming_url, labels):
     container_workdir = '/b/%s' % container_desc.name

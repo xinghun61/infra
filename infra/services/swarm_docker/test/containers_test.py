@@ -312,6 +312,12 @@ class TestDockerClient(unittest.TestCase):
     self.assertEquals(container.name, '1')
     mock_chown.assert_called_with(mock_mkdir.call_args[0][0], 1, 2)
 
+  def test_num_containers_is_set(self):
+    client = containers.DockerClient()
+    self.assertIsNone(client._get_env('').get('NUM_CONFIGURED_CONTAINERS'))
+    client.set_num_configured_containers(42)
+    self.assertEquals(client._get_env('').get('NUM_CONFIGURED_CONTAINERS'), 42)
+
 
 class TestContainer(unittest.TestCase):
   def setUp(self):

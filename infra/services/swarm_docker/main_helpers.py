@@ -199,6 +199,7 @@ def launch_containers(
               container_desc.name)
 
       threads = []
+      docker_client.set_num_configured_containers(len(container_descriptors))
       for cd in container_descriptors:
         # TODO(sergiyb): Remove should_create_container logic from this generic
         # container management loop and move it outside of the launch_container
