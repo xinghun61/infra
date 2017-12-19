@@ -2,6 +2,8 @@
 
 [TOC]
 
+TL;DR: [go/vpython-and-you](./vpython_one_page.md)
+
 Chrome Operations builds and maintains a tool called `vpython`, which
 offers a simple, easy, reliable, and dependable mechanism for the instantiation
 of arbitrary user-specified Python virtual environments for Operations and
@@ -514,7 +516,7 @@ requirements.
 As a trade-off, we ask that users perform a one-time manual expansion of
 dependencies when constructing a `vpython` specification.
 
-Tooling can be developed to facilitate construction of `vpython` specifications 
+Tooling can be developed to facilitate construction of `vpython` specifications
 if this is problematic or a pain point.
 
 ## Available Wheels
