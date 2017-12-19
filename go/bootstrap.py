@@ -15,15 +15,12 @@ import contextlib
 import json
 import logging
 import os
-import platform
 import shutil
 import stat
 import subprocess
 import sys
-import tarfile
 import tempfile
 import urllib
-import zipfile
 
 
 LOGGER = logging.getLogger(__name__)
@@ -452,6 +449,24 @@ def get_go_environ(layout):
   # get_go_environ is invoked multiple times.
   paths_to_add = [p for p in paths_to_add if p and p not in path]
   env['PATH'] = os.pathsep.join(paths_to_add + path)
+
+  # Disable cgo on Linux and Windows.
+  #
+  # There are multiple reasons for this:
+  #  * Makes all binaries statically linked (no dependency on dynamic libc).
+  #  * Makes cross-compiled and non-cross-compiled binaries be more similar, so
+  #    they behave uniformly across platforms.
+  #  * Makes sure dependencies with cgo don't work locally for developers, as
+  #    they won't really work when building code on the bots. We don't maintain
+  #    C toolchain on bots that build Go code currently (especially true for
+  #    Windows bots).
+  #
+  # Unfortunately, some third party libraries (e.g github.com/shirou/gopsutil)
+  # have poor support for non-cgo build on OSX, so we keep it enabled on OSX,
+  # assuming there's not a wide variety of OSX platforms out there and it's fine
+  # to have dynamically linked binaries.
+  if sys.platform != 'darwin':
+    env['CGO_ENABLED'] = '0'
 
   # Add a tag to the prompt
   infra_prompt_tag = env.get('INFRA_PROMPT_TAG')
