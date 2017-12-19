@@ -28,7 +28,7 @@ from proto import project_config_pb2
 from proto import service_config_pb2
 import errors
 
-CURRENT_BUCKET_SCHEMA_VERSION = 2
+CURRENT_BUCKET_SCHEMA_VERSION = 3
 ACL_SET_NAME_RE = re.compile('^[a-z0-9_]+$')
 
 @utils.cache
@@ -243,6 +243,31 @@ def _normalize_acls(acls):
       del acls[i]
 
 
+def _populate_new_fields(builder):
+  """Populates *_new fields in the given project_config_pb2.Builder.
+
+  TODO(nodir): remove this function and its usages.
+  """
+
+  for f in ('build_numbers', 'experimental', 'auto_builder_dimension'):
+    new_f = f + '_new'
+    if not builder.HasField(f):
+      builder.ClearField(new_f)
+    else:
+      v = getattr(builder, f)
+      v = getattr(v, 'value', v) # unwrap the wrapper, if any
+      setattr(
+          builder, new_f,
+          project_config_pb2.YES if v else project_config_pb2.NO)
+
+  if not builder.HasField('luci_migration_host'):
+    builder.ClearField('luci_migration_host_new')
+  elif not builder.luci_migration_host.value:
+    builder.luci_migration_host_new = '-'
+  else:
+    builder.luci_migration_host_new = builder.luci_migration_host.value
+
+
 def cron_update_buckets():
   """Synchronizes Bucket entities with configs fetched from luci-config.
 
@@ -271,6 +296,16 @@ def cron_update_buckets():
   for project_id, (revision, project_cfg, _) in config_map.iteritems():
     if project_cfg is None:
       continue
+
+    # TODO(nodir); remove this block.
+    for m in project_cfg.builder_mixins:
+      _populate_new_fields(m)
+    for bucket in project_cfg.buckets:
+      if bucket.HasField('swarming'):
+        _populate_new_fields(bucket.swarming.builder_defaults)
+        for builder in bucket.swarming.builders:
+          _populate_new_fields(builder)
+
     # revision is None in file-system mode. Use SHA1 of the config as revision.
     revision = revision or 'sha1:%s' % hashlib.sha1(
       project_cfg.SerializeToString()).hexdigest()

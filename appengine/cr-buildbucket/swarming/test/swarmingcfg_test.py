@@ -706,6 +706,38 @@ class ProjectCfgTest(testing.AppengineTestCase):
           auto_builder_dimension { value: true }
       ''')
 
+  def test_merge_toggle(self):
+    unset = project_config_pb2.Builder()
+    yes = project_config_pb2.Builder(experimental_new=project_config_pb2.YES)
+    no = project_config_pb2.Builder(experimental_new=project_config_pb2.NO)
+
+    b = project_config_pb2.Builder()
+    swarmingcfg.merge_builder(b, unset)
+    swarmingcfg.merge_builder(b, yes)
+    self.assertEqual(b.experimental_new, project_config_pb2.YES)
+
+    swarmingcfg.merge_builder(b, unset)
+    self.assertEqual(b.experimental_new, project_config_pb2.YES)
+
+    swarmingcfg.merge_builder(b, no)
+    self.assertEqual(b.experimental_new, project_config_pb2.NO)
+
+  def test_merge_luci_migration_host(self):
+    unset = project_config_pb2.Builder()
+    yes = project_config_pb2.Builder(luci_migration_host_new='example.com')
+    no = project_config_pb2.Builder(luci_migration_host_new='-')
+
+    b = project_config_pb2.Builder()
+    swarmingcfg.merge_builder(b, unset)
+    swarmingcfg.merge_builder(b, yes)
+    self.assertEqual(b.luci_migration_host_new, 'example.com')
+
+    swarmingcfg.merge_builder(b, unset)
+    self.assertEqual(b.luci_migration_host_new, 'example.com')
+
+    swarmingcfg.merge_builder(b, no)
+    self.assertEqual(b.luci_migration_host_new, '')
+
 
 class ServiceCfgTest(testing.AppengineTestCase):
   def cfg_test(self, swarming_text, expected_errors):

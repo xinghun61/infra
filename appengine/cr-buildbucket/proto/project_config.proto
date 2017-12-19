@@ -47,6 +47,8 @@ message AclSet {
 // SECURITY WARNING: if adding more fields to this message, keep in mind that
 // a user that has permissions to schedule a build to the bucket, can override
 // this config.
+//
+// Next tag: 20.
 message Builder {
   reserved 8;
 
@@ -206,16 +208,22 @@ message Builder {
   optional uint32 execution_timeout_secs = 7;
   // Caches that should be present on the bot.
   repeated CacheEntry caches = 9;
-  // If true, generate monotonically increasing contiguous numbers for each
-  // build, unique within the builder.
-  // If enabled, limits the build creation rate in this builder to 5 per second.
+  // TODO(nodir): remove this field.
   optional bool build_numbers = 11;
+  // If YES, generate monotonically increasing contiguous numbers for each
+  // build, unique within the builder.
+  // Note: this limits the build creation rate in this builder to 5 per second.
+  //
+  // TODO(nodir): rename to build_numbers.
+  optional Toggle build_numbers_new = 16;
   // Email of a service account to run the build as or literal 'bot' string to
   // use Swarming bot's account (if available). Passed directly to Swarming.
   // Subject to Swarming's ACLs.
   optional string service_account = 12;
-  // If true, each builder will get extra dimension "builder:<builder name>"
-  // added. Default is false.
+  // TODO(nodir): remove this field.
+  optional google.protobuf.BoolValue auto_builder_dimension = 13;
+  // If YES, each builder will get extra dimension "builder:<builder name>"
+  // added. Default is UNSET.
   //
   // For example, this config
   //
@@ -228,7 +236,7 @@ message Builder {
   //
   //   builders {
   //     name: "linux-compiler"
-  //     auto_builder_dimension { value: true }
+  //     auto_builder_dimension: YES
   //   }
   //
   // We've considered providing interpolation like this
@@ -237,19 +245,35 @@ message Builder {
   //   }
   // (see also http://docs.buildbot.net/0.8.9/manual/cfg-properties.html#interpolate)
   // but are currently against complicating config with this.
-  optional google.protobuf.BoolValue auto_builder_dimension = 13;
-  // If set to true, by default a new build in this builder will be marked as
+  //
+  // TODO(nodir): rename to auto_builder_dimension.
+  optional Toggle auto_builder_dimension_new = 17;
+  // TODO(nodir): remove this field.
+  optional google.protobuf.BoolValue experimental = 15;
+  // If YES, by default a new build in this builder will be marked as
   // experimental.
   // This is useful for inherently experimental builders that use production
   // recipes.
-  optional google.protobuf.BoolValue experimental = 15;
-  // If this field is set, and a build request is not marked as
+  //
+  // TODO(nodir): delete experimental field and rename this to
+  // one experimental.
+  optional Toggle experimental_new = 18;
+  // TODO(nodir): remove this field.
+  optional google.protobuf.StringValue luci_migration_host = 14;
+  // If not empty and not "-", and a build request is not marked as
   // experimental/prod explicitly and has "mastername" property, buildbucket
   // will contact this instance of luci-migration app to determine whether the
   // builder is experimental.
   // On success, this takes precedence over Builder.experimental proto field
   // (above).
-  optional google.protobuf.StringValue luci_migration_host = 14;
+  //
+  // Special value "-" means no luci_migration_host specified.
+  // Useful in a builder that wants to override luci_migration_host
+  // specified in builder_defaults or mixin.
+  //
+  // TODO(nodir): delete experimental field and rename this to
+  // one experimental.
+  optional string luci_migration_host_new = 19;
 }
 
 // Configuration of buildbucket-swarming integration for one bucket.
@@ -271,13 +295,10 @@ message Swarming {
   // explicitly specified.
   repeated Builder builders = 4;
 
-  message OptionalUint32 {
-    optional uint32 value = 1;
-  }
   // Percentage of builds that should use a canary swarming task template.
   // A value from 0 to 100.
   // If omitted, default percentage is used.
-  optional OptionalUint32 task_template_canary_percentage = 5;
+  optional google.protobuf.UInt32Value task_template_canary_percentage = 5;
 }
 
 // Defines one bucket in buildbucket.cfg
@@ -307,4 +328,13 @@ message BuildbucketCfg {
   // A mixin can be referenced in any builder defined within the BuildbucketCfg.
   // See also Buider.mixins field.
   repeated Builder builder_mixins = 3;
+}
+
+// Toggle is a boolean with an extra state UNSET.
+// When protobuf messages are merged, UNSET does not overwrite an existing
+// value.
+enum Toggle {
+  UNSET = 0;
+  YES = 1;
+  NO = 2;
 }

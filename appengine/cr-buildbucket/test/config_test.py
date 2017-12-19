@@ -747,3 +747,31 @@ class ConfigTest(testing.AppengineTestCase):
 
     cfg.swarming.hostname = 'exists.now'
     self.assertTrue(config.is_swarming_config(cfg))
+
+  def test_populate_new_fields_empty(self):
+    builder = project_config_pb2.Builder()
+    config._populate_new_fields(builder)
+    self.assertFalse(builder.HasField('experimental_new'))
+    self.assertFalse(builder.HasField('luci_migration_host_new'))
+
+  def test_populate_new_fields_with_true_values(self):
+    builder = project_config_pb2.Builder(
+        experimental={'value': True},
+        build_numbers=True,
+        luci_migration_host={'value': 'example.com'},
+    )
+    config._populate_new_fields(builder)
+    self.assertEqual(builder.experimental_new, project_config_pb2.YES)
+    self.assertEqual(builder.build_numbers_new, project_config_pb2.YES)
+    self.assertEqual(builder.luci_migration_host_new, 'example.com')
+
+  def test_populate_new_fields_with_false_values(self):
+    builder = project_config_pb2.Builder(
+        experimental={},
+        build_numbers=False,
+        luci_migration_host={},
+    )
+    config._populate_new_fields(builder)
+    self.assertEqual(builder.experimental_new, project_config_pb2.NO)
+    self.assertEqual(builder.build_numbers_new, project_config_pb2.NO)
+    self.assertEqual(builder.luci_migration_host_new, '-')

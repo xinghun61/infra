@@ -93,6 +93,8 @@ def merge_builder(b1, b2):
   b1.MergeFrom(b2)
   b1.dimensions[:] = dims
   b1.swarming_tags[:] = sorted(set(b1.swarming_tags))
+  if b1.luci_migration_host_new == '-':
+    b1.luci_migration_host_new = ''
 
   caches = [
     t[1]
