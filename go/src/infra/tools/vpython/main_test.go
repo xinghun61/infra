@@ -30,9 +30,11 @@ import (
 )
 
 var (
-	testDataDir                 = "test_data"
-	testMainRunScriptENV        = "_VPYTHON_MAIN_TEST_RUN_SCRIPT"
+	testDataDir          = "test_data"
+	testMainRunScriptENV = "_VPYTHON_MAIN_TEST_RUN_SCRIPT"
+
 	behaveExactlyLikeVpythonENV = "_VPYTHON_MAIN_TEST_PASSTHROUGH"
+	vpythonTestBinaryEnv        = "_VPYTHON_MAIN_TEST_BINARY"
 )
 
 var vpythonDebug = flag.Bool("vpython.debug", false, "Enable vpython debug otuput.")
@@ -51,6 +53,7 @@ func TestMain(t *testing.T) {
 	if err != nil {
 		t.Fatalf("could not get executable path: %s", err)
 	}
+	os.Setenv(vpythonTestBinaryEnv, self)
 
 	// Are we a spawned subprocess of TestMain?
 	env := environ.System()

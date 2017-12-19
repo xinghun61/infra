@@ -92,7 +92,7 @@ var (
 				return err
 			}
 			clNum := "630300"
-			_, _, err = ge.ChangeQuery(ctx, gerrit.ChangeQueryRequest{Query: clNum})
+			_, _, err = ge.ChangeQuery(ctx, gerrit.ChangeQueryParams{Query: clNum})
 			if err != nil {
 				return err
 			}

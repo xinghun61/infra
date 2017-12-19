@@ -218,14 +218,14 @@ func CulpritInBuild(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs
 // pure revert of another; instead, the get-pure-revert api of Gerrit needs to
 // be checked, like RevertOfCulprit below does.
 func getRevertAndCulpritChanges(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) (*gerrit.Change, *gerrit.Change) {
-	cls, _, err := cs.gerrit.ChangeQuery(ctx, gerrit.ChangeQueryRequest{Query: rc.CommitHash})
+	cls, _, err := cs.gerrit.ChangeQuery(ctx, gerrit.ChangeQueryParams{Query: rc.CommitHash})
 	if err != nil {
 		panic(err)
 	}
 	if len(cls) == 0 {
 		panic(fmt.Sprintf("no CL found for commit %q", rc.CommitHash))
 	}
-	revert, err := cs.gerrit.GetChangeDetails(ctx, cls[0].ChangeID, []string{})
+	revert, err := cs.gerrit.ChangeDetails(ctx, cls[0].ChangeID, gerrit.ChangeDetailsParams{})
 
 	if err != nil {
 		panic(err)
@@ -234,7 +234,8 @@ func getRevertAndCulpritChanges(ctx context.Context, ap *AuditParams, rc *Releva
 		return revert, nil
 	}
 
-	culprit, err := cs.gerrit.GetChangeDetails(ctx, strconv.Itoa(revert.RevertOf), []string{"CURRENT_REVISION"})
+	culprit, err := cs.gerrit.ChangeDetails(ctx, strconv.Itoa(revert.RevertOf),
+		gerrit.ChangeDetailsParams{Options: []string{"CURRENT_REVISION"}})
 	if err != nil {
 		panic(err)
 	}

@@ -41,12 +41,12 @@ type mockGerritClient struct {
 	e  error
 }
 
-func (c mockGerritClient) ChangeQuery(ctx context.Context, r gerrit.ChangeQueryRequest) ([]*gerrit.Change, bool, error) {
+func (c mockGerritClient) ChangeQuery(ctx context.Context, r gerrit.ChangeQueryParams) ([]*gerrit.Change, bool, error) {
 	ret := c.q[r.Query]
 	return ret, false, c.e
 }
 
-func (c mockGerritClient) GetChangeDetails(ctx context.Context, cid string, options []string) (*gerrit.Change, error) {
+func (c mockGerritClient) ChangeDetails(ctx context.Context, cid string, p gerrit.ChangeDetailsParams) (*gerrit.Change, error) {
 	ret := c.q[cid]
 	return ret[0], c.e
 }

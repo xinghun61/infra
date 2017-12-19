@@ -9,7 +9,6 @@
 # >
 # [VPYTHON:END]
 
-import six
 import sys
 
 # lol windows
@@ -17,5 +16,10 @@ if sys.platform == "win32":
     import os, msvcrt
     msvcrt.setmode(sys.stdout.fileno(), os.O_BINARY)
 
-print "I imported six"
+try:
+  import six
+  print "SUCCESS"
+except ImportError:
+  print "FAIL"
+
 sys.stdout.flush()

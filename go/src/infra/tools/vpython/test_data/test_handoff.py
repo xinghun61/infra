@@ -5,6 +5,7 @@
 # This empty vpython spec prevents the test_handoff.py script from ever
 # having a vpython spec, even if this repo eventually adds one.
 # [VPYTHON:BEGIN]
+#
 # [VPYTHON:END]
 
 try:
@@ -20,9 +21,19 @@ import sys
 print "I'm in script A"
 sys.stdout.flush()
 
-# this makes the `main_test.go` behave like vpython (instead of like a go test
-# binary)
-os.environ['_VPYTHON_MAIN_TEST_PASSTHROUGH'] = '1'
 MY_DIR = os.path.dirname(os.path.abspath(__file__))
-subprocess.check_call([
-  sys.executable, os.path.join(MY_DIR, 'test_handoff.py.triggered')])
+SCRIPT = os.path.join(MY_DIR, 'test_handoff.py.triggered')
+VPYTHON = os.getenv('_VPYTHON_MAIN_TEST_BINARY')
+if not VPYTHON: # so we can run the test by hand
+  VPYTHON = 'vpython.bat' if sys.platform.startswith('win') else 'vpython'
+else:
+  # so the the test binary behaves like vpython.exe
+  os.putenv('_VPYTHON_MAIN_TEST_PASSTHROUGH', '1')
+
+sys.stdout.write("sys.executable (expect FAIL): ")
+sys.stdout.flush()
+subprocess.call([sys.executable, SCRIPT])
+
+sys.stdout.write("vpython (expect SUCCESS): ")
+sys.stdout.flush()
+subprocess.call([VPYTHON, SCRIPT])

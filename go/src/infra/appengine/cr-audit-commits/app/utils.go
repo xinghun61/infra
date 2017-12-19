@@ -37,8 +37,8 @@ const (
 var testClients *Clients
 
 type gerritClientInterface interface {
-	GetChangeDetails(context.Context, string, []string) (*gerrit.Change, error)
-	ChangeQuery(context.Context, gerrit.ChangeQueryRequest) ([]*gerrit.Change, bool, error)
+	ChangeDetails(context.Context, string, gerrit.ChangeDetailsParams) (*gerrit.Change, error)
+	ChangeQuery(context.Context, gerrit.ChangeQueryParams) ([]*gerrit.Change, bool, error)
 	IsChangePureRevert(context.Context, string) (bool, error)
 }
 

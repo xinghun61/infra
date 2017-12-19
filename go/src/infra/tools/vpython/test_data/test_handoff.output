@@ -1,2 +1,3 @@
 I'm in script A
-I imported six
+sys.executable (expect FAIL): FAIL
+vpython (expect SUCCESS): SUCCESS
