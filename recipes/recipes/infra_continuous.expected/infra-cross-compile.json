@@ -100,20 +100,6 @@
   },
   {
     "cmd": [
-      "vpython",
-      "-u",
-      "[START_DIR]/infra/glyco/tests/run_all_tests.py"
-    ],
-    "cwd": "[START_DIR]/infra",
-    "env_prefixes": {
-      "PATH": [
-        "/opt/infra-system/bin"
-      ]
-    },
-    "name": "Glyco tests"
-  },
-  {
-    "cmd": [
       "python",
       "-u",
       "[START_DIR]/infra/go/env.py",
