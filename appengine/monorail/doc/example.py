@@ -24,5 +24,16 @@ monorail = apiclient.discovery.build(
     discoveryServiceUrl=DISCOVERY_URL,
     http=http)
 
+# Create a chromium project issue
+insert_response = monorail.issues().insert(projectId='chromium', body={
+    'summary': 'Strange grinding sound',
+    'status': 'Untriaged',
+    'cc': [{'name':'user1@example.org'}, {'name':'user2@example.org'}]
+}).execute()
+
+new_issue_id = insert_response['id']
+
 # Get all issues of chromium
-issues = monorail.issues().list(projectId='chromium').execute()
+list_response = monorail.issues().list(projectId='chromium').execute()
+issues = list_response['items']
+total_issues = list_response['totalResults']
