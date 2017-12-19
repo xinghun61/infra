@@ -187,9 +187,17 @@ func (br *BuilderTestHistory) ResultsForBuildRange(testName string, latest, earl
 		if err != nil {
 			return nil, err
 		}
+		rev := ""
+		if len(br.ChromeRevision) > i {
+			rev = br.ChromeRevision[i]
+		}
+		buildNum := int64(0)
+		if len(br.BuildNumbers) > i {
+			buildNum = br.BuildNumbers[i]
+		}
 		ret = append(ret, &BuildTestResults{
-			ChromeRevision: br.ChromeRevision[i],
-			BuildNumber:    br.BuildNumbers[i],
+			ChromeRevision: rev,
+			BuildNumber:    buildNum,
 			Results:        res,
 		})
 	}
