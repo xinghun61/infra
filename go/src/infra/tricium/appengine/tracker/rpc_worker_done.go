@@ -163,7 +163,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	}
 
 	// Write state changes and results in parallel in a transaction.
-	logging.Infof(c, "Updating state: worker %s: %s, analyzer %s: %s, run %s, %s",
+	logging.Infof(c, "Updating state: worker %s: %s, analyzer %s: %s, run %d, %s",
 		req.Worker, workerState, analyzerName, analyzerState, req.RunId, runState)
 
 	// Now that all prerequisite data was loaded, run the mutations in a transaction.
