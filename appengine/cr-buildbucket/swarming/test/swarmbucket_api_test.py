@@ -44,7 +44,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         builders {
           name: "linux_chromium_rel_ng"
           category: "Chromium"
-          build_numbers: true
+          build_numbers: YES
           recipe {
             repository: "https://example.com"
             name: "presubmit"

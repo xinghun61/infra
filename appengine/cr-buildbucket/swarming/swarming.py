@@ -335,10 +335,10 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
   ret = None
 
   master = (build.parameters.get(PARAM_PROPERTIES) or {}).get('mastername')
-  if master and builder_cfg.luci_migration_host.value:
+  if master and builder_cfg.luci_migration_host not in (None, '', '-'):
     try:
       url = 'https://%s/masters/%s/builders/%s/' % (
-          builder_cfg.luci_migration_host.value, master, builder_cfg.name)
+          builder_cfg.luci_migration_host, master, builder_cfg.name)
       res = yield net.json_request_async(url, params={'format': 'json'})
       ret = res.get('luci_is_prod')
     except net.NotFoundError:
@@ -496,7 +496,7 @@ def _create_task_def_async(
 
   dimensions = list(builder_cfg.dimensions)
   if (builder_cfg.HasField('auto_builder_dimension') and
-      builder_cfg.auto_builder_dimension.value and
+      builder_cfg.auto_builder_dimension == project_config_pb2.YES and
       all(not dim.startswith('builder:') for dim in dimensions)):
     dimensions.append('builder:' + builder_cfg.name)
 
@@ -627,7 +627,8 @@ def _prepare_task_def_async(
   build.url = _generate_build_url(settings.milo_hostname, build, build_number)
 
   if build.experimental is None:
-    build.experimental = builder_cfg.experimental.value or False
+    build.experimental = (
+        builder_cfg.experimental == project_config_pb2.YES)
     is_prod = yield _is_migrating_builder_prod_async(builder_cfg, build)
     if is_prod is not None:
       build.experimental = not is_prod
@@ -656,7 +657,7 @@ def create_task_async(build):
 
   build_number = None
   seq_name = number_sequence_name(build.bucket, builder_cfg.name)
-  if builder_cfg.build_numbers:  # pragma: no branch
+  if builder_cfg.build_numbers == project_config_pb2.YES:  # pragma: no branch
     build_number = yield sequence.generate_async(seq_name, 1)
 
   res = None

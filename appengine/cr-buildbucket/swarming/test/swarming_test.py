@@ -83,7 +83,7 @@ class SwarmingTest(BaseTest):
           dimensions: "os:Ubuntu"
           dimensions: "pool:Chrome"
           priority: 108
-          build_numbers: true
+          build_numbers: YES
           service_account: "robot@example.com"
           recipe {
             repository: "https://example.com/repo"
@@ -255,7 +255,7 @@ class SwarmingTest(BaseTest):
 
   def test_auto_builder_dimension(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
-    builder_cfg.auto_builder_dimension.value = True
+    builder_cfg.auto_builder_dimension = project_config_pb2.YES
 
     build = mkBuild(
         parameters={
@@ -293,7 +293,7 @@ class SwarmingTest(BaseTest):
     self.assertIsNone(is_prod())
     self.assertFalse(net.json_request_async.called)
 
-    builder_cfg.luci_migration_host.value = 'migration.example.com'
+    builder_cfg.luci_migration_host = 'migration.example.com'
     self.assertIsNone(is_prod())
     self.assertFalse(net.json_request_async.called)
 

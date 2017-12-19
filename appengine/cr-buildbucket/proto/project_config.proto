@@ -50,7 +50,10 @@ message AclSet {
 //
 // Next tag: 20.
 message Builder {
-  reserved 8;
+  reserved 8;  // cipd_packages
+  reserved 11; // build_numbers of the old format.
+  reserved 13; // auto_builder_dimension of the old format.
+  reserved 15; // experimental of the old format.
 
   // Describes a named cache that should be present on the bot.
   // See also https://github.com/luci/luci-py/blob/3a2941345cf011a96bcd83d76328395323245bb5/appengine/swarming/swarming_rpcs.py#L166
@@ -208,20 +211,14 @@ message Builder {
   optional uint32 execution_timeout_secs = 7;
   // Caches that should be present on the bot.
   repeated CacheEntry caches = 9;
-  // TODO(nodir): remove this field.
-  optional bool build_numbers = 11;
   // If YES, generate monotonically increasing contiguous numbers for each
   // build, unique within the builder.
   // Note: this limits the build creation rate in this builder to 5 per second.
-  //
-  // TODO(nodir): rename to build_numbers.
-  optional Toggle build_numbers_new = 16;
+  optional Toggle build_numbers = 16;
   // Email of a service account to run the build as or literal 'bot' string to
   // use Swarming bot's account (if available). Passed directly to Swarming.
   // Subject to Swarming's ACLs.
   optional string service_account = 12;
-  // TODO(nodir): remove this field.
-  optional google.protobuf.BoolValue auto_builder_dimension = 13;
   // If YES, each builder will get extra dimension "builder:<builder name>"
   // added. Default is UNSET.
   //
@@ -245,21 +242,12 @@ message Builder {
   //   }
   // (see also http://docs.buildbot.net/0.8.9/manual/cfg-properties.html#interpolate)
   // but are currently against complicating config with this.
-  //
-  // TODO(nodir): rename to auto_builder_dimension.
-  optional Toggle auto_builder_dimension_new = 17;
-  // TODO(nodir): remove this field.
-  optional google.protobuf.BoolValue experimental = 15;
+  optional Toggle auto_builder_dimension = 17;
   // If YES, by default a new build in this builder will be marked as
   // experimental.
   // This is useful for inherently experimental builders that use production
   // recipes.
-  //
-  // TODO(nodir): delete experimental field and rename this to
-  // one experimental.
-  optional Toggle experimental_new = 18;
-  // TODO(nodir): remove this field.
-  optional google.protobuf.StringValue luci_migration_host = 14;
+  optional Toggle experimental = 18;
   // If not empty and not "-", and a build request is not marked as
   // experimental/prod explicitly and has "mastername" property, buildbucket
   // will contact this instance of luci-migration app to determine whether the
@@ -270,10 +258,7 @@ message Builder {
   // Special value "-" means no luci_migration_host specified.
   // Useful in a builder that wants to override luci_migration_host
   // specified in builder_defaults or mixin.
-  //
-  // TODO(nodir): delete experimental field and rename this to
-  // one experimental.
-  optional string luci_migration_host_new = 19;
+  optional string luci_migration_host = 19;
 }
 
 // Configuration of buildbucket-swarming integration for one bucket.

@@ -690,7 +690,7 @@ class ProjectCfgTest(testing.AppengineTestCase):
             name: "bucket"
             swarming {
               builder_defaults {
-                auto_builder_dimension {value: true}
+                auto_builder_dimension: YES
                 dimensions: "pool:dedicated"
               }
               builders {
@@ -703,40 +703,40 @@ class ProjectCfgTest(testing.AppengineTestCase):
       '''
           name: "ng-1000"
           dimensions: "pool:mixed"
-          auto_builder_dimension { value: true }
+          auto_builder_dimension: YES
       ''')
 
   def test_merge_toggle(self):
     unset = project_config_pb2.Builder()
-    yes = project_config_pb2.Builder(experimental_new=project_config_pb2.YES)
-    no = project_config_pb2.Builder(experimental_new=project_config_pb2.NO)
+    yes = project_config_pb2.Builder(experimental=project_config_pb2.YES)
+    no = project_config_pb2.Builder(experimental=project_config_pb2.NO)
 
     b = project_config_pb2.Builder()
     swarmingcfg.merge_builder(b, unset)
     swarmingcfg.merge_builder(b, yes)
-    self.assertEqual(b.experimental_new, project_config_pb2.YES)
+    self.assertEqual(b.experimental, project_config_pb2.YES)
 
     swarmingcfg.merge_builder(b, unset)
-    self.assertEqual(b.experimental_new, project_config_pb2.YES)
+    self.assertEqual(b.experimental, project_config_pb2.YES)
 
     swarmingcfg.merge_builder(b, no)
-    self.assertEqual(b.experimental_new, project_config_pb2.NO)
+    self.assertEqual(b.experimental, project_config_pb2.NO)
 
   def test_merge_luci_migration_host(self):
     unset = project_config_pb2.Builder()
-    yes = project_config_pb2.Builder(luci_migration_host_new='example.com')
-    no = project_config_pb2.Builder(luci_migration_host_new='-')
+    yes = project_config_pb2.Builder(luci_migration_host='example.com')
+    no = project_config_pb2.Builder(luci_migration_host='-')
 
     b = project_config_pb2.Builder()
     swarmingcfg.merge_builder(b, unset)
     swarmingcfg.merge_builder(b, yes)
-    self.assertEqual(b.luci_migration_host_new, 'example.com')
+    self.assertEqual(b.luci_migration_host, 'example.com')
 
     swarmingcfg.merge_builder(b, unset)
-    self.assertEqual(b.luci_migration_host_new, 'example.com')
+    self.assertEqual(b.luci_migration_host, 'example.com')
 
     swarmingcfg.merge_builder(b, no)
-    self.assertEqual(b.luci_migration_host_new, '')
+    self.assertEqual(b.luci_migration_host, '')
 
 
 class ServiceCfgTest(testing.AppengineTestCase):
