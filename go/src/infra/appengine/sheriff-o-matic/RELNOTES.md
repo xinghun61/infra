@@ -1,3 +1,32 @@
+# Release Notes sheriff-o-matic 2017-12-19
+
+- 7 commits, 4 bugs affected since 5c8bea6 (2017-12-12T22:10:38Z)
+- 3 Authors:
+  - mcgreevy@chromium.org
+  - seanmccullough@chromium.org
+  - zhangtiff@google.com
+
+## Changes in this release
+
+- [Roll infra/go/src/go.chromium.org/luci (14 commits)](https://chromium-review.googlesource.com/832587) (mcgreevy@chromium.org)
+- [[som] Handle some badly formed test results cases more gracefully.](https://chromium-review.googlesource.com/833994) (seanmccullough@chromium.org)
+- [[som] Add analyzer cron for chromium.gpu.fyi](https://chromium-review.googlesource.com/833992) (seanmccullough@chromium.org)
+- [[som] Replace *all* dots with underscores when mapping tree name to prop](https://chromium-review.googlesource.com/833212) (seanmccullough@chromium.org)
+- [[som] Show commit positions instead of short hashes in rev range.](https://chromium-review.googlesource.com/831109) (seanmccullough@chromium.org)
+- [ChOpsUI: Rename prefix to chops-.](https://chromium-review.googlesource.com/828469) (zhangtiff@google.com)
+- [[som] have staging hit findit staging.](https://chromium-review.googlesource.com/827670) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- mcgreevy@chromium.org:
+  -  [https://crbug.com/794425](https://crbug.com/794425)
+
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/666140](https://crbug.com/666140)
+  -  [https://crbug.com/786764](https://crbug.com/786764)
+  -  [https://crbug.com/792347](https://crbug.com/792347)
+
+
 # Release Notes sheriff-o-matic 2017-12-12
 
 - 10 commits, 7 bugs affected since 6c327c1 (2017-12-05T00:09:03Z)
