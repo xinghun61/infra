@@ -42,6 +42,15 @@ supported_platforms:
 go_packages:
   - go.chromium.org/luci/cipd/client/cmd/cipd
   - ...
+# Environment variables to set when building go code. Only CGO_ENABLED is
+# recognized currently.
+go_build_environ:
+  # If given, overrides CGO_ENABLED env var when building this package.
+  # In particular, setting this to 0 disables cgo, making the binary statically
+  # linked. Note that when cross-compiling, cgo is disabled by default, unless
+  # explicitly enabled by setting CGO_ENABLED to 1. Most likely this will fail,
+  # since infra.git's go environ doesn't have C cross-compiler available.
+  CGO_ENABLED: 0
 # Path to the root of the package source files on the system we're building
 # the package from. Can be absolute or relative to the path of the *.yaml
 # file itself.
@@ -94,6 +103,7 @@ all necessary files for packaging):
 * `builders`
 * `supports_cross_compilation`
 * `supported_platforms`
+* `go_build_environ`
 * `go_packages`
 * `generate_bat_shim`
 
@@ -208,6 +218,3 @@ of built packages to pick (what `+${platform}` to search for).
 Cross compiling toolset doesn't include C compiler, so the binaries are built in
 `CGO_ENABLED=0` mode, meaning some stdlib functions that depend on libc are not
 working or working differently compared to natively built executables.
-
-In particular `os/user` doesn't work at all, and DNS resolution in `net` uses
-different implementation.

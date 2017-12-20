@@ -43,6 +43,12 @@ IS_WINDOWS = sys.platform == 'win32'
 EXE_SUFFIX = '.exe' if IS_WINDOWS else ''
 
 
+class PackageDefException(Exception):
+  """Raised if a package definition is invalid."""
+  def __init__(self, path, msg):
+    super(PackageDefException, self).__init__('%s: %s' % (path, msg))
+
+
 class BuildException(Exception):
   """Raised on errors during package build step."""
 
@@ -71,12 +77,26 @@ class PackageDef(collections.namedtuple(
     return self.pkg_def.get('go_packages') or []
 
   @property
+  def cgo_enabled(self):
+    """Either True, False or None (meaning "let go decide itself")."""
+    val = self.pkg_def.get('go_build_environ', {}).get('CGO_ENABLED')
+    return None if val is None else bool(val)
+
+  @property
   def pkg_root(self):
     """Absolute path to a package root directory."""
     root = self.pkg_def['root'].replace('/', os.sep)
     if os.path.isabs(root):
       return root
     return os.path.abspath(os.path.join(os.path.dirname(self.path), root))
+
+  def validate(self):
+    """Raises PackageDefException if the package definition looks invalid."""
+    for var_name in self.pkg_def.get('go_build_environ', {}):
+      if var_name != 'CGO_ENABLED':
+        raise PackageDefException(
+            self.path,
+            'Only "CGO_ENABLED" is supported in "go_build_environ" currently')
 
   def should_build(self, builder, host_vars):
     """Returns True if package should be built in the current environment.
@@ -162,6 +182,51 @@ class PackageDef(collections.namedtuple(
     with open(out_path, 'w') as f:
       json.dump(pkg_def, f)
     return out_path, gen_files
+
+
+# Carries modifications for go-related env vars.
+#
+# If a field has value None, it will be popped from the environment in
+# 'apply_to_environ'.
+class GoEnviron(collections.namedtuple(
+    'GoEnviron', ['GOOS', 'GOARCH', 'CGO_ENABLED'])):
+
+  @staticmethod
+  def host_native():
+    """Returns GoEnviron that instructs Go to not cross-compile."""
+    return GoEnviron(GOOS=None, GOARCH=None, CGO_ENABLED=None)
+
+  @staticmethod
+  def from_environ():
+    """Reads GoEnviron from the current os.environ.
+
+    If CGO_ENABLED is not given, picks the default based on whether we are
+    cross-compiling or not. cgo is disabled by default when cross-compiling.
+    """
+    cgo = os.environ.get('CGO_ENABLED')
+    if cgo is None:
+      cgo = not os.environ.get('GOOS')
+    else:
+      cgo = cgo == '1'
+    return GoEnviron(
+        GOOS=os.environ.get('GOOS'),
+        GOARCH=os.environ.get('GOARCH'),
+        CGO_ENABLED=cgo)
+
+  def apply_to_environ(self):
+    """Applies GoEnviron to the current os.environ."""
+    if self.GOOS is not None:
+      os.environ['GOOS'] = self.GOOS
+    else:
+      os.environ.pop('GOOS', None)
+    if self.GOARCH is not None:
+      os.environ['GOARCH'] = self.GOARCH
+    else:
+      os.environ.pop('GOARCH', None)
+    if self.CGO_ENABLED is not None:
+      os.environ['CGO_ENABLED'] = '1' if self.CGO_ENABLED else '0'
+    else:
+      os.environ.pop('CGO_ENABLED', None)
 
 
 def render_path(p, pkg_vars):
@@ -261,18 +326,21 @@ def print_title(title):
 
 
 def print_go_step_title(title):
-  """Same as 'print_title', but also appends values of GOOS and GOARCH."""
-  if is_cross_compiling():
+  """Same as 'print_title', but also appends values of GOOS, GOARCH, etc."""
+  go_vars = [
+    (k, os.environ[k])
+    for k in ('GOOS', 'GOARCH', 'GOARM', 'CGO_ENABLED')
+    if k in os.environ
+  ]
+  if go_vars:
     title += '\n' + '-' * 80
-    title += '\n  GOOS=%s' % os.environ['GOOS']
-    title += '\n  GOARCH=%s' % os.environ['GOARCH']
-    if 'GOARM' in os.environ:
-      title += '\n  GOARM=%s' % os.environ['GOARM']
+    for k, v in go_vars:
+      title += '\n  %s=%s' % (k, v)
   print_title(title)
 
 
 @contextlib.contextmanager
-def hacked_workspace(go_workspace, goos=None, goarch=None):
+def hacked_workspace(go_workspace, go_environ):
   """Symlinks Go workspace into new root, modifies os.environ.
 
   Go toolset embeds absolute paths to *.go files into the executable. Use
@@ -280,8 +348,7 @@ def hacked_workspace(go_workspace, goos=None, goarch=None):
 
   Args:
     go_workspace: path to 'infra/go' or 'infra_internal/go'.
-    goos: if set, overrides GOOS environment variable (removes it if '').
-    goarch: if set, overrides GOARCH environment variable (removes it if '').
+    go_environ: instance of GoEnviron object with go related env vars.
 
   Yields:
     Path where go_workspace is symlinked to.
@@ -299,17 +366,7 @@ def hacked_workspace(go_workspace, goos=None, goarch=None):
     new_workspace = os.path.join(new_root, rel)
 
   orig_environ = os.environ.copy()
-
-  if goos is not None:
-    if goos == '':
-      os.environ.pop('GOOS', None)
-    else:
-      os.environ['GOOS'] = goos
-  if goarch is not None:
-    if goarch == '':
-      os.environ.pop('GOARCH', None)
-    else:
-      os.environ['GOARCH'] = goarch
+  go_environ.apply_to_environ()
 
   # Make sure we build ARMv6 code even if the host is ARMv7. See the comment in
   # get_host_package_vars for reasons why. Also explicitly set GOARM to 6 when
@@ -357,7 +414,7 @@ def bootstrap_go_toolset(go_workspace):
   Used to verify that our platform detection in get_host_package_vars() matches
   the Go toolset being used.
   """
-  with hacked_workspace(go_workspace) as new_workspace:
+  with hacked_workspace(go_workspace, GoEnviron.host_native()) as new_workspace:
     print_go_step_title('Making sure Go toolset is installed')
     # env.py does the actual job of bootstrapping if the toolset is missing.
     output = subprocess.check_output(
@@ -379,7 +436,7 @@ def bootstrap_go_toolset(go_workspace):
     return env
 
 
-def run_go_clean(go_workspace, packages, goos=None, goarch=None):
+def run_go_clean(go_workspace, go_environ, packages):
   """Removes object files and executables left from building given packages.
 
   Transitively cleans all dependencies (including stdlib!) and removes
@@ -387,11 +444,10 @@ def run_go_clean(go_workspace, packages, goos=None, goarch=None):
 
   Args:
     go_workspace: path to 'infra/go' or 'infra_internal/go'.
+    go_environ: instance of GoEnviron object with go related env vars.
     packages: list of go packages to clean (can include '...' patterns).
-    goos: if set, overrides GOOS environment variable (removes it if '').
-    goarch: if set, overrides GOARCH environment variable (removes it if '').
   """
-  with hacked_workspace(go_workspace, goos, goarch) as new_workspace:
+  with hacked_workspace(go_workspace, go_environ) as new_workspace:
     print_go_step_title('Cleaning:\n  %s' % '\n  '.join(packages))
     subprocess.check_call(
         args=[
@@ -405,8 +461,7 @@ def run_go_clean(go_workspace, packages, goos=None, goarch=None):
     print 'Done.'
 
 
-def run_go_install(
-    go_workspace, packages, rebuild=False, goos=None, goarch=None):
+def run_go_install(go_workspace, go_environ, packages, rebuild=False):
   """Builds (and installs) Go packages into GOBIN via 'go install ...'.
 
   Compiles and installs packages into default GOBIN, which is <go_workspace>/bin
@@ -414,14 +469,13 @@ def run_go_install(
 
   Args:
     go_workspace: path to 'infra/go' or 'infra_internal/go'.
+    go_environ: instance of GoEnviron object with go related env vars.
     packages: list of go packages to build (can include '...' patterns).
     rebuild: if True, will forcefully rebuild all dependences.
-    goos: if set, overrides GOOS environment variable (removes it if '').
-    goarch: if set, overrides GOARCH environment variable (removes it if '').
   """
   rebuild_opt = ['-a'] if rebuild else []
   title = 'Rebuilding' if rebuild else 'Building'
-  with hacked_workspace(go_workspace, goos, goarch) as new_workspace:
+  with hacked_workspace(go_workspace, go_environ) as new_workspace:
     print_go_step_title('%s:\n  %s' % (title, '\n  '.join(packages)))
     subprocess.check_call(
         args=[
@@ -432,21 +486,19 @@ def run_go_install(
         stderr=subprocess.STDOUT)
 
 
-def run_go_build(
-    go_workspace, package, output, rebuild=False, goos=None, goarch=None):
+def run_go_build(go_workspace, go_environ, package, output, rebuild=False):
   """Builds single Go package.
 
   Args:
     go_workspace: path to 'infra/go' or 'infra_internal/go'.
+    go_environ: instance of GoEnviron object with go related env vars.
     package: go package to build.
     output: where to put the resulting binary.
     rebuild: if True, will forcefully rebuild all dependences.
-    goos: if set, overrides GOOS environment variable (removes it if '').
-    goarch: if set, overrides GOARCH environment variable (removes it if '').
   """
   rebuild_opt = ['-a'] if rebuild else []
   title = 'Rebuilding' if rebuild else 'Building'
-  with hacked_workspace(go_workspace, goos, goarch) as new_workspace:
+  with hacked_workspace(go_workspace, go_environ) as new_workspace:
     print_go_step_title('%s %s' % (title, package))
     subprocess.check_call(
         args=[
@@ -468,37 +520,67 @@ def build_go_code(go_workspace, pkg_defs):
     go_workspace: path to 'infra/go' or 'infra_internal/go'.
     pkg_defs: list of PackageDef objects that define what to build.
   """
-  # Grab a set of all go packages we need to build and install into GOBIN.
-  to_install = []
-  for p in pkg_defs:
-    to_install.extend(p.go_packages)
-  to_install = sorted(set(to_install))
-  if not to_install:
-    return
+  # TODO(vadimsh): Revisit this once Go 1.10 (with its content-addressed build
+  # cache) is released. In theory, Go 1.10 will be smart enough to efficiently
+  # build packages in arbitrary order, regardless of their intended build
+  # environment. Until then, group 'go build' calls by the environment, to
+  # avoid rebuilding common packages all the time.
 
-  # Make sure there are no stale files in the workspace.
-  run_go_clean(go_workspace, to_install)
+  # Whatever GOOS, GOARCH, etc were passed from outside. They are set when
+  # cross-compiling.
+  default_environ = GoEnviron.from_environ()
 
-  if not is_cross_compiling():
-    # If not cross-compiling, build all Go code in a single "go install" step,
-    # it's faster that way. We can't do that when cross-compiling, since
-    # 'go install' isn't supposed to be used for cross-compilation and the
-    # toolset actively complains with "go install: cannot install cross-compiled
-    # binaries when GOBIN is set".
-    run_go_install(go_workspace, to_install)
-  else:
-    # Prebuild stdlib once. 'go build' calls below are discarding build results,
-    # so it's better to install as much shared stuff as possible beforehand.
-    run_go_install(go_workspace, ['std'])
+  # Grab a set of all go packages we need to build and install into GOBIN,
+  # figuring out a go environment they want.
+  go_packages = {}  # go package name => GoEnviron
+  for pkg_def in pkg_defs:
+    pkg_env = default_environ
+    if pkg_def.cgo_enabled is not None:
+      pkg_env = default_environ._replace(CGO_ENABLED=pkg_def.cgo_enabled)
+    for name in pkg_def.go_packages:
+      if name in go_packages and go_packages[name] != pkg_env:
+        raise BuildException(
+            'Go package %s is being built in two different go environments '
+            '(%s and %s), this is not supported' %
+            (name, pkg_env, go_packages[name]))
+      go_packages[name] = pkg_env
 
-    # Build packages one by one and put the resulting binaries into GOBIN, as if
-    # they were installed there. It's where the rest of the build.py code
-    # expects them to be (see also 'root' property in package definition YAMLs).
-    go_bin = os.path.join(go_workspace, 'bin')
-    exe_suffix = get_package_vars()['exe_suffix']
-    for pkg in to_install:
-      bin_name = pkg[pkg.rfind('/')+1:] + exe_suffix
-      run_go_build(go_workspace, pkg, os.path.join(go_bin, bin_name))
+  # Group packages by the environment they want.
+  packages_per_env = {}  # GoEnviron => [str]
+  for name, pkg_env in go_packages.iteritems():
+    packages_per_env.setdefault(pkg_env, []).append(name)
+
+  # Execute build command for each individual environment.
+  for pkg_env, to_install in sorted(packages_per_env.iteritems()):
+    to_install = sorted(to_install)
+    if not to_install:
+      continue
+
+    # Make sure there are no stale files in the workspace.
+    run_go_clean(go_workspace, pkg_env, to_install)
+
+    if not is_cross_compiling():
+      # If not cross-compiling, build all Go code in a single "go install" step,
+      # it's faster that way. We can't do that when cross-compiling, since
+      # 'go install' isn't supposed to be used for cross-compilation and the
+      # toolset actively complains with "go install: cannot install
+      # cross-compiled binaries when GOBIN is set".
+      run_go_install(go_workspace, pkg_env, to_install)
+    else:
+      # Prebuild stdlib once. 'go build' calls below are discarding build
+      # results, so it's better to install as much shared stuff as possible
+      # beforehand.
+      run_go_install(go_workspace, pkg_env, ['std'])
+
+      # Build packages one by one and put the resulting binaries into GOBIN, as
+      # if they were installed there. It's where the rest of the build.py code
+      # expects them to be (see also 'root' property in package definition
+      # YAMLs).
+      go_bin = os.path.join(go_workspace, 'bin')
+      exe_suffix = get_package_vars()['exe_suffix']
+      for pkg in to_install:
+        bin_name = pkg[pkg.rfind('/')+1:] + exe_suffix
+        run_go_build(go_workspace, pkg_env, pkg, os.path.join(go_bin, bin_name))
 
 
 def enumerate_packages(py_venv, package_def_dir, package_def_files):
@@ -521,9 +603,15 @@ def enumerate_packages(py_venv, package_def_dir, package_def_files):
     for name in package_def_files:
       abs_path = os.path.abspath(os.path.join(package_def_dir, name))
       if not os.path.isfile(abs_path):
-        raise BuildException('No such package definition file: %s' % name)
+        raise PackageDefException(name, 'No such package definition file')
       paths.append(abs_path)
-  return [PackageDef(p, read_yaml(py_venv, p)) for p in sorted(paths)]
+  # Load and validate YAMLs.
+  pkgs = []
+  for p in sorted(paths):
+    pkg = PackageDef(p, read_yaml(py_venv, p))
+    pkg.validate()
+    pkgs.append(pkg)
+  return pkgs
 
 
 def read_yaml(py_venv, path):
@@ -550,7 +638,7 @@ def read_yaml(py_venv, path):
   with open(path, 'r') as f:
     out, _ = proc.communicate(f.read())
   if proc.returncode:
-    raise BuildException('Failed to parse YAML at %s' % path)
+    raise PackageDefException(path, 'Failed to parse YAML')
   return json.loads(out)
 
 
@@ -819,11 +907,10 @@ def build_cipd_client(go_workspace, out_dir):
   # Build cipd client binary for the host platform.
   run_go_build(
       go_workspace,
+      GoEnviron.host_native(),
       package='go.chromium.org/luci/cipd/client/cmd/cipd',
       output=cipd_exe,
-      rebuild=True,
-      goos='',
-      goarch='')
+      rebuild=True)
 
   return cipd_exe
 
@@ -898,9 +985,14 @@ def run(
   tags.append('build_host_hostname:' + socket.gethostname().split('.')[0])
   tags.append('build_host_platform:' + host_vars['platform'])
 
-  all_packages = enumerate_packages(py_venv, package_def_dir, package_def_files)
-  packages_to_build = [p for p in all_packages if p.should_build(builder,
-                                                                 host_vars)]
+  # Load all package definitions and pick ones we want to build (based on
+  # whether we are cross-compiling or not).
+  try:
+    defs = enumerate_packages(py_venv, package_def_dir, package_def_files)
+  except PackageDefException as exc:
+    print >> sys.stderr, exc
+    return 1
+  packages_to_build = [p for p in defs if p.should_build(builder, host_vars)]
 
   print_title('Overview')
   if upload:

@@ -7,6 +7,8 @@ builders:
   - infra-continuous-win-32
   - infra-continuous-win-64
 supports_cross_compilation: true
+go_build_environ:
+  CGO_ENABLED: 0
 go_packages:
   - infra/tools/led
 root: ../../go/bin
