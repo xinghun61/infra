@@ -24,6 +24,7 @@ func TestFullResult(t *testing.T) {
 			Runtime:    &runtime,
 			Bugs:       []string{"crbug.com/700", "crbug.com/900"},
 			Unexpected: &unexpected,
+			Artifacts:  map[string][]string{"image": []string{"foo.png", "bar.png"}},
 		}
 
 		ft := FullTest{
@@ -111,6 +112,7 @@ func TestFullResult(t *testing.T) {
 							Runtime:    &runtime,
 							Bugs:       []string{"crbug.com/700", "crbug.com/900"},
 							Unexpected: &unexpected,
+							Artifacts:  map[string][]string{"image": []string{"foo.png", "bar.png"}},
 						},
 					}
 					So(ft.Flatten("/"), ShouldResemble, expected)

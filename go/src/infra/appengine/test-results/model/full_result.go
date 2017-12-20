@@ -224,7 +224,13 @@ func (ft *FullTest) constructTree(m map[string]interface{}) error {
 // isFullTestLeaf returns true if the supplied map likely represents a
 // FullTestLeaf.
 func isFullTestLeaf(m map[string]interface{}) bool {
-	for _, val := range m {
+	for key, val := range m {
+		// This could be a leaf even though it contains a value that successfully
+		// casts to map[string]interface{}, because that works for the "artifacts"
+		// field even though it's on a leaf node.
+		if key == "artifacts" {
+			continue
+		}
 		if _, ok := val.(map[string]interface{}); ok {
 			return false
 		}
@@ -265,6 +271,9 @@ type FullTestLeaf struct {
 	// Format (https://www.chromium.org/developers/the-json-test-results-format)
 	// as string, but uploaders use []string.
 	ReferenceTestType []string `json:"reftest_type,omitempty"`
+
+	// Artifacts identify extra files produced by the test.
+	Artifacts map[string][]string `json:"artifacts"`
 }
 
 var _ Node = (*FullTestLeaf)(nil)
