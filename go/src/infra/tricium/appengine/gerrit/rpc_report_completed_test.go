@@ -62,5 +62,17 @@ func TestReportCompletedRequest(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(mock.LastMsg, ShouldContainSubstring, "3 results")
 		})
+
+		Convey("Does not report completion when reporting is disabled", func() {
+			request.GerritReportingDisabled = true
+			So(ds.Put(ctx, request), ShouldBeNil)
+			mock := &mockRestAPI{}
+			err := reportLaunched(ctx, &admin.ReportLaunchedRequest{
+				RunId: run.ID,
+			}, mock)
+			So(err, ShouldBeNil)
+			So(mock.LastMsg, ShouldEqual, "")
+		})
+
 	})
 }

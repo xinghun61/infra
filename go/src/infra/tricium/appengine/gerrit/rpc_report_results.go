@@ -71,5 +71,9 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 	if err := common.RunInParallel(ops); err != nil {
 		return err
 	}
+	if request.GerritReportingDisabled {
+		logging.Infof(c, "Gerrit reporting disabled, not reporting results (run ID: %s, project: %s)", req.RunId, request.Project)
+		return nil
+	}
 	return gerrit.PostRobotComments(c, request.GerritHost, request.GerritChange, request.GerritRevision, req.RunId, comments)
 }

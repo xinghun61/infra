@@ -156,6 +156,7 @@ func analyze(c context.Context, req *tricium.AnalyzeRequest, cp config.ProviderA
 		request.GerritProject = req.GerritDetails.Project
 		request.GerritChange = req.GerritDetails.Change
 		request.GerritRevision = req.GerritDetails.Revision
+		request.GerritReportingDisabled = gd.DisableReporting
 	}
 	requestRes := &track.AnalyzeRequestResult{
 		ID:    1,

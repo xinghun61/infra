@@ -126,6 +126,11 @@ message GerritDetails {
 
   // Gerrit project name.
   string project = 2;
+
+  // Disable reporting to Gerrit.
+  //
+  // Whether to send progress and results to Gerrit.
+  bool disable_reporting = 3;
 }
 
 // Access control rules.

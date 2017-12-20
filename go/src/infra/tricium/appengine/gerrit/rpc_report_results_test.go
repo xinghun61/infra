@@ -82,5 +82,17 @@ func TestReportResultsRequest(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(mock.LastComments), ShouldEqual, len(results)-1) // only include the two selected comments
 		})
+
+		Convey("Does not report results when reporting is disabled", func() {
+			request.GerritReportingDisabled = true
+			So(ds.Put(ctx, request), ShouldBeNil)
+			mock := &mockRestAPI{}
+			err := reportResults(ctx, &admin.ReportResultsRequest{
+				RunId:    run.ID,
+				Analyzer: analyzerName,
+			}, mock)
+			So(err, ShouldBeNil)
+			So(len(mock.LastComments), ShouldEqual, 0) // only include the two selected comments
+		})
 	})
 }

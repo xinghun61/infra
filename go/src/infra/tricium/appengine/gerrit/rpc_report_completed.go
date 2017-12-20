@@ -59,6 +59,10 @@ func reportCompleted(c context.Context, req *admin.ReportCompletedRequest, gerri
 	if err := common.RunInParallel(ops); err != nil {
 		return err
 	}
+	if request.GerritReportingDisabled {
+		logging.Infof(c, "Gerrit reporting disabled, not reporting completion (run ID: %s, project: %s)", req.RunId, request.Project)
+		return nil
+	}
 	// Create result message.
 	n := 0
 	var buf bytes.Buffer

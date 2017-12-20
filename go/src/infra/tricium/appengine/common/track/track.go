@@ -77,12 +77,14 @@ type AnalyzeRequest struct {
 	GitRef string `gae:",noindex"`
 	// Consumer of progress updates and results.
 	Consumer tricium.Consumer
-	// Gerrit details for when the Gerrit reporter is selected.
+	// Gerrit details for the Gerrit consumer.
 	GerritHost    string `gae:",noindex"`
 	GerritProject string `gae:",noindex"`
 	GerritChange  string `gae:",noindex"`
 	// Note that Gerrit revision is another name for Gerrit patch set.
 	GerritRevision string `gae:",noindex"`
+	// Disabled Gerrit reporting means that no progress or result messages are sent to Gerrit.
+	GerritReportingDisabled bool `gae:",noindex"`
 }
 
 // AnalyzeRequestResult tracks the state of a tricium.Analyze request.

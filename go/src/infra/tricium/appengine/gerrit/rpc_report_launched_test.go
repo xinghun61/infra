@@ -27,11 +27,25 @@ func TestReportLaunchedRequest(t *testing.T) {
 		requestKey := ds.KeyForObj(ctx, request)
 		run := &track.WorkflowRun{ID: 1, Parent: requestKey}
 		So(ds.Put(ctx, run), ShouldBeNil)
+
 		Convey("Report launched request", func() {
+			mock := &mockRestAPI{}
 			err := reportLaunched(ctx, &admin.ReportLaunchedRequest{
 				RunId: run.ID,
-			}, &mockRestAPI{})
+			}, mock)
 			So(err, ShouldBeNil)
+			So(mock.LastMsg, ShouldNotEqual, "")
+		})
+
+		Convey("Does not report launched when reporting is disabled", func() {
+			request.GerritReportingDisabled = true
+			So(ds.Put(ctx, request), ShouldBeNil)
+			mock := &mockRestAPI{}
+			err := reportLaunched(ctx, &admin.ReportLaunchedRequest{
+				RunId: run.ID,
+			}, mock)
+			So(err, ShouldBeNil)
+			So(mock.LastMsg, ShouldEqual, "")
 		})
 	})
 }
