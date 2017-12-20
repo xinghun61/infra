@@ -258,6 +258,7 @@ func (e ErrNoMatches) Error() string {
 // on the query is set to 1 before running the query.
 func getFirstTestFile(c context.Context, q *datastore.Query) (*model.TestFile, error) {
 	q = q.Limit(1)
+	logging.Infof(c, "getting testfile with query %+v", q)
 	var tfs []*model.TestFile
 	if err := datastore.GetAll(c, q, &tfs); err != nil {
 		logging.Errorf(c, "GetAll failed for query: %+v: %v", q, err)

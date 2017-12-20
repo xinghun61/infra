@@ -198,6 +198,7 @@ func uploadHandler(ctx *router.Context) {
 	if !info.IsDevAppServer(c) {
 		c = appengine.WithContext(c, r)
 	}
+	logging.Infof(c, "%d files in this upload", len(fileheaders))
 	for _, fh := range fileheaders {
 		if err := doFileUpload(c, fh); err != nil {
 			msg := logging.WithError(err)
@@ -225,6 +226,8 @@ func doFileUpload(c context.Context, fh *multipart.FileHeader) error {
 		return statusError{err, http.StatusInternalServerError}
 	}
 	defer file.Close()
+
+	logging.Infof(c, "handling upload for %q", fh.Filename)
 
 	var r io.Reader = file
 

@@ -551,6 +551,9 @@ func (ag *AggregateResult) Merge(other *AggregateResult) error {
 //
 // The returned error is ErrBuildNumberConflict when
 // other.BuildNumbers[0] already has the latest build number.
+// This can happen if a single build re-uses a step name, or the
+// normalized test name derived from the step name is the same as another
+// step in the same build.
 func (info *BuilderInfo) Merge(other *BuilderInfo) error {
 	if len(info.BuildNumbers) > 0 && len(other.BuildNumbers) > 0 {
 		if info.BuildNumbers[0] == other.BuildNumbers[0] {
@@ -621,7 +624,7 @@ func (at *AggregateTest) Merge(other AggregateTest) error {
 		if leaf1, ok := (*at)[k].(*AggregateTestLeaf); ok {
 			leaf2, ok := v.(*AggregateTestLeaf)
 			if !ok {
-				return fmt.Errorf("model: Merge: expected *AggregateTestLeaf, but got: %#v", v)
+				return fmt.Errorf("model: Merge: %q expected *AggregateTestLeaf, but got: %#v", k, v)
 			}
 			if err := leaf1.Merge(leaf2); err != nil {
 				return err
@@ -636,7 +639,7 @@ func (at *AggregateTest) Merge(other AggregateTest) error {
 		}
 		at2, ok := v.(AggregateTest)
 		if !ok {
-			return fmt.Errorf("model: Merge (v): expected AggregateTest, but got: %#v", v)
+			return fmt.Errorf("model: Merge (v) %q: expected AggregateTest, but got: %#v", k, v)
 		}
 		if err := at1.Merge(at2); err != nil {
 			return err
