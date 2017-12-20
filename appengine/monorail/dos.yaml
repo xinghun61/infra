@@ -127,3 +127,5 @@ blacklist:
     description: someone hitting /p/chromium issue list every 5 seconds 2017-11-20
   - subnet: 62.201.223.18
     description: someone hitting /p/chromium template admin page 2017-12-18
+  - subnet: 184.75.209.185
+    description: someone hitting /p/monorail template admin page 2017-12-20
