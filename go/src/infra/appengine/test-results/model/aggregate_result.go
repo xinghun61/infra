@@ -368,6 +368,15 @@ func (at *AggregateTest) constructTree(m map[string]interface{}) error {
 		if *at == nil {
 			*at = AggregateTest{}
 		}
+		if child["artifacts"] != nil {
+			// Whelp, child is actually a AggregateTestLeaf pretending to be an AggregateTest
+			// because it was parsed incorrectly by bugs in older code. Hoist its contents
+			// up to the parent level. The actual artifacts field contents have been lost
+			// so we don't bother trying to reconstruct them.
+			actualLeaf := child["artifacts"].(*AggregateTestLeaf)
+			(*at)[k] = actualLeaf
+			continue
+		}
 		(*at)[k] = child
 	}
 

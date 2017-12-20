@@ -406,6 +406,70 @@ func TestAggregateResult(t *testing.T) {
 					So(actual, ShouldResemble, t)
 				})
 			})
+
+			Convey("Testing with merge issue testdata/*.json", func() {
+				// This test is to verify we can recover from incorrectly parsed full_results.json
+				// files that have been merged into results.json and results-small.json.
+				// Essentially, for a period of time the "artifacts" field was incorrectly
+				// interpreted as another branch in the test name trie, and thus its contents
+				// were stored as an  AggregateTest instead of a field on AggregateTestLeaf.
+				// While the FullResults parser was fixed to stop doing this, we still have
+				// broken data to deal with in the Merge step.
+				good, err := ioutil.ReadFile(filepath.Join("testdata", "merge-results.json"))
+				So(err, ShouldBeNil)
+				results := AggregateResult{}
+				So(json.Unmarshal(good, &results), ShouldBeNil)
+
+				good, err = ioutil.ReadFile(filepath.Join("testdata", "merge-results-small.json"))
+				So(err, ShouldBeNil)
+				resultsSmall := AggregateResult{}
+				So(json.Unmarshal(good, &resultsSmall), ShouldBeNil)
+
+				good, err = ioutil.ReadFile(filepath.Join("testdata", "merge-full-results.json"))
+				So(err, ShouldBeNil)
+				fullResults := FullResult{}
+				So(json.Unmarshal(good, &fullResults), ShouldBeNil)
+
+				// Verify that we can parse bad old data correctly.
+				resultsOctaneNode := results.Tests["octane"].(AggregateTest)
+				So(resultsOctaneNode, ShouldNotBeNil)
+				resultsLeafNode := resultsOctaneNode["http://chromium.github.io/octane/index.html?auto=1"].(*AggregateTestLeaf)
+				So(resultsLeafNode, ShouldNotBeNil)
+				So(len(resultsLeafNode.Results), ShouldEqual, 1)
+
+				resultsSmallOctaneNode := resultsSmall.Tests["octane"].(AggregateTest)
+				So(resultsSmallOctaneNode, ShouldNotBeNil)
+				resultsSmallLeafNode := resultsSmallOctaneNode["http://chromium.github.io/octane/index.html?auto=1"].(*AggregateTestLeaf)
+				So(resultsSmallLeafNode, ShouldNotBeNil)
+				So(len(resultsSmallLeafNode.Results), ShouldEqual, 1)
+
+				// Now convert the FullResults to aggregate so we can merge.
+				fullAgg, err := fullResults.AggregateResult()
+				So(err, ShouldBeNil)
+
+				octaneNode := fullAgg.Tests["octane"].(AggregateTest)
+				So(octaneNode, ShouldNotBeNil)
+				leafNode := octaneNode["http://chromium.github.io/octane/index.html?auto=1"].(*AggregateTestLeaf)
+				So(leafNode, ShouldNotBeNil)
+				So(len(leafNode.Results), ShouldEqual, 1)
+
+				// Test the merge with bad old data.
+				So(results.Merge(&fullAgg), ShouldBeNil)
+				So(resultsSmall.Merge(&fullAgg), ShouldBeNil)
+
+				// Verify that the merge actually worked.
+				resultsOctaneNode = resultsSmall.Tests["octane"].(AggregateTest)
+				So(resultsOctaneNode, ShouldNotBeNil)
+				resultsLeafNode = resultsOctaneNode["http://chromium.github.io/octane/index.html?auto=1"].(*AggregateTestLeaf)
+				So(resultsLeafNode, ShouldNotBeNil)
+				So(len(resultsLeafNode.Results), ShouldEqual, 2)
+
+				resultsSmallOctaneNode = resultsSmall.Tests["octane"].(AggregateTest)
+				So(resultsSmallOctaneNode, ShouldNotBeNil)
+				resultsSmallLeafNode = resultsSmallOctaneNode["http://chromium.github.io/octane/index.html?auto=1"].(*AggregateTestLeaf)
+				So(resultsSmallLeafNode, ShouldNotBeNil)
+				So(len(resultsSmallLeafNode.Results), ShouldEqual, 2)
+			})
 		})
 	})
 }
