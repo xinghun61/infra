@@ -7,7 +7,9 @@ import json
 import mock
 
 from common.waterfall import failure_type
+
 from model.wf_build import WfBuild
+
 from waterfall import build_util
 from waterfall import buildbot
 from waterfall import swarming_util
@@ -214,54 +216,53 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     self.assertIsNone(build_util.GetLatestBuildNumber('m', 'b'))
 
   @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
-  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=11)
-  def testGetEarliestContainingBuild(self, *_):
-    # Test exact match.
-    self.assertEqual(2,
-                     build_util.GetEarliestContainingBuild('m', 'b', 2, 2,
-                                                           30).build_number)
+  def testGetBoundingBuildsExactMatch(self, *_):
+    lower_bound, upper_bound = build_util.GetBoundingBuilds(
+        'm', 'b', 0, 100, 30)
+    self.assertEqual(1, lower_bound.build_number)
+    self.assertEqual(2, upper_bound.build_number)
 
-    self.assertEqual(2,
-                     build_util.GetEarliestContainingBuild('m', 'b', 1, 10,
-                                                           30).build_number)
+  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
+  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=100)
+  def testGetBoundingBuildsNoLowerUpperBounds(self, *_):
+    lower_bound, upper_bound = build_util.GetBoundingBuilds(
+        'm', 'b', None, None, 30)
+    self.assertEqual(1, lower_bound.build_number)
+    self.assertEqual(2, upper_bound.build_number)
 
-    self.assertEqual(3,
-                     build_util.GetEarliestContainingBuild('m', 'b', 0, 10,
-                                                           35).build_number)
+  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
+  def testGetBoundingBuildsCommitBeforeEarliestBuild(self, *_):
+    lower_bound_build_number = 3
+    lower_bound, upper_bound = build_util.GetBoundingBuilds(
+        'm', 'b', lower_bound_build_number, 100, 10)
+    
+    self.assertIsNone(lower_bound)
+    self.assertEqual(lower_bound_build_number, upper_bound.build_number)
 
-    self.assertEqual(4,
-                     build_util.GetEarliestContainingBuild('m', 'b', 1, 9,
-                                                           45).build_number)
+  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
+  def testGetBoundingBuildsCommitAfterLatestBuild(self, *_):
+    upper_bound_build_number = 5
+    lower_bound, upper_bound = build_util.GetBoundingBuilds(
+        'm', 'b', None, upper_bound_build_number, 10000)
 
-    self.assertEqual(5,
-                     build_util.GetEarliestContainingBuild('m', 'b', 0, 10,
-                                                           60).build_number)
+    self.assertEqual(upper_bound_build_number, lower_bound.build_number)
+    self.assertIsNone(upper_bound)
 
-    self.assertEqual(11,
-                     build_util.GetEarliestContainingBuild(
-                         'm', 'b', 0, None, 1000).build_number)
+  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
+  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=10)
+  def testGetBoundingBuilds(self, *_):
+    lower_bound, upper_bound = build_util.GetBoundingBuilds(
+        'm', 'b', None, None, 45)
 
-    self.assertEqual(0,
-                     build_util.GetEarliestContainingBuild(
-                         'm', 'b', None, 6, 1).build_number)
-
-    self.assertEqual(1,
-                     build_util.GetEarliestContainingBuild(
-                         'm', 'b', None, 6, 12).build_number)
-
-    self.assertEqual(3,
-                     build_util.GetEarliestContainingBuild(
-                         'm', 'b', 1, None, 35).build_number)
-
-    self.assertEqual(4,
-                     build_util.GetEarliestContainingBuild('m', 'b', 2, 6,
-                                                           50).build_number)
+    self.assertEqual(3, lower_bound.build_number)
+    self.assertEqual(4, upper_bound.build_number)
 
   @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=None)
-  def testGetEarliestContainingBuildNoLatestBuild(self, *_):
-    self.assertIsNone(
-        build_util.GetEarliestContainingBuild('m', 'b', None, None, 50))
+  def testGetBoundingBuildsNoLatestBuild(self, *_):
+    self.assertEqual(
+        (None, None),
+        build_util.GetBoundingBuilds('m', 'b', None, None, 50))
 
   @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
   def testFindValidBuildNumberForStepNearby(self, mock_list_fn):

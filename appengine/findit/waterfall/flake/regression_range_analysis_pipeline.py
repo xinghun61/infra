@@ -167,9 +167,10 @@ def _GetEarliestContainingBuildNumber(commit_position, master_flake_analysis):
   if lower_bound is not None and lower_bound == upper_bound:
     return lower_bound
 
-  return build_util.GetEarliestContainingBuild(master_name, builder_name,
-                                               lower_bound, upper_bound,
-                                               commit_position).build_number
+  _, upper_bound_build = build_util.GetBoundingBuilds(
+      master_name, builder_name, lower_bound, upper_bound,
+      commit_position)
+  return upper_bound_build.build_number
 
 
 def _RemoveStablePointsWithinRange(analysis, lower_bound_build_number,

@@ -105,18 +105,10 @@ def GetLatestBuildNumber(master_name, builder_name):
   return recent_builds[0]
 
 
-def GetEarliestContainingBuild(
+def GetBoundingBuilds(
     master_name, builder_name, lower_bound_build_number,
     upper_bound_build_number, requested_commit_position):
-  """Finds the earliest build that contains the requested commit position.
-
-    The lower/upper bounds represent a build number range to search. The upper
-    bound build number must have a commit position greater than the requested
-    commit in order to contain it, while the lower bound build number's commit
-    position must be smaller than the requested commit position. For example,
-    If the requested commit position is 200 and build numbers 1 and 3 are passed
-    in as the lower/upper bounds, then build 1's commit position must be under
-    200 and build 3's commit position must be at least 200.
+  """Finds the two builds immediately before and after a commit position.
 
   Args:
     master_name (str): The name of the master.
@@ -124,38 +116,42 @@ def GetEarliestContainingBuild(
     lower_bound_build_number (int): The earliest build number to search.
     upper_bound_build_number (int): The latest build number to search.
     requested_commit_position (int): The specified commit_position to find the
-        containing build number.
+        bounding build numbers.
 
   Returns:
-    (BuildInfo): The earliest build that contains the requested commit position,
-        or None if not determined due to unexpected errors.
+    (BuildInfo, Buildinfo): The two nearest builds that bound the requested
+        commit position, with the first being earlier of the two. For example,
+        if build_1 has commit position 100, build_2 has commit position 110,
+        and 105 is requested, returns (build_1, build_2). Returns None for
+        either or both of the builds if they cannot be determined. If the
+        requested commit is before the lower bound, returns (None, BuildInfo).
+        If the requested commit is after the upper bound, returns
+        (BuildInfo, None). The calling code should check for the returned builds
+        and decide what to do accordingly.
   """
-  if lower_bound_build_number is None:
-    lower_bound_build_number = 0
-    earliest_build_info = GetBuildInfo(master_name, builder_name,
-                                       lower_bound_build_number)
-    if requested_commit_position <= earliest_build_info.commit_position:
-      # The requested commit position is before the earliest available build.
-      # Fallback to the earliest build. The calling code should compare the
-      # requested commit position to what is returned here and raise an alert
-      # accordingly.
-      return earliest_build_info
+  lower_bound_build_number = lower_bound_build_number or 0
+  earliest_build_info = GetBuildInfo(master_name, builder_name,
+                                     lower_bound_build_number)
+  assert earliest_build_info
+  assert earliest_build_info.commit_position is not None
+
+  if requested_commit_position <= earliest_build_info.commit_position:
+    return None, earliest_build_info
 
   if upper_bound_build_number is None:
     upper_bound_build_number = GetLatestBuildNumber(master_name, builder_name)
 
-    if upper_bound_build_number is None:
-      logging.error('Failed to detect latest build number')
-      return None
+  if upper_bound_build_number is None:
+    logging.error('Failed to detect latest build number')
+    return None, None
 
-    latest_build_info = GetBuildInfo(master_name, builder_name,
-                                     upper_bound_build_number)
-    if requested_commit_position >= latest_build_info.commit_position:
-      # If the requested commit is beyond what has actually been committed.
-      # Fallback to the latest build. The calling code should compare the
-      # requested commit position to what is returned here and raise an alert
-      # accordingly.
-      return latest_build_info
+  latest_build_info = GetBuildInfo(master_name, builder_name,
+                                   upper_bound_build_number)
+  assert latest_build_info
+  assert latest_build_info.commit_position is not None
+
+  if requested_commit_position >= latest_build_info.commit_position:
+    return latest_build_info, None
 
   # Bisect the build number range and search for the earliest build whose
   # commit position >= requested_commit_position.
@@ -166,10 +162,15 @@ def GetEarliestContainingBuild(
     candidate_build_number = (upper_bound - lower_bound) / 2 + lower_bound
     candidate_build = GetBuildInfo(master_name, builder_name,
                                    candidate_build_number)
+    assert candidate_build
 
     if candidate_build.commit_position == requested_commit_position:
       # Exact match.
-      return candidate_build
+      lower_bound_build = GetBuildInfo(
+          master_name, builder_name, candidate_build_number - 1)
+      assert lower_bound_build
+      return lower_bound_build, candidate_build
+
     if candidate_build.commit_position > requested_commit_position:
       # Go left.
       upper_bound = candidate_build_number
@@ -177,7 +178,12 @@ def GetEarliestContainingBuild(
       # Go right.
       lower_bound = candidate_build_number
 
-  return GetBuildInfo(master_name, builder_name, upper_bound)
+  lower_bound_build = GetBuildInfo(master_name, builder_name, lower_bound)
+  upper_bound_build = GetBuildInfo(master_name, builder_name, upper_bound)
+  assert lower_bound_build
+  assert upper_bound_build
+
+  return lower_bound_build, upper_bound_build
 
 
 def FindValidBuildNumberForStepNearby(master_name,
@@ -202,7 +208,8 @@ def FindValidBuildNumberForStepNearby(master_name,
     search_distance (int): Distance to search on either side of the build.
 
   Returns:
-    (int) Valid nearby build if any, else None."""
+    (int) Valid nearby build if any, else None.
+  """
   builds_to_look_at = [build_number]
   for x in range(1, search_distance + 1):
     builds_to_look_at.append(build_number + x)

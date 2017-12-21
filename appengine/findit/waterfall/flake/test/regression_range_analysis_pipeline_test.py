@@ -131,9 +131,10 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
       self.assertEqual(expected_dict[build_number].ToDict(),
                        builds_to_commits[build_number].ToDict())
 
-  @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
-  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=6)
-  def testGetEarliestBuildNumberFromRelativeBuildNumber(self, _):
+  @mock.patch.object(build_util, 'GetBoundingBuilds')
+  @mock.patch.object(build_util, 'GetLatestBuildNumber')
+  def testGetEarliestBuildNumberFromRelativeBuildNumber(
+      self, mock_build, mock_bound):
     data_point_1 = DataPoint()
     data_point_1.build_number = 1
     data_point_1.commit_position = 20
@@ -152,8 +153,12 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     analysis.data_points = [data_point_1, data_point_2, data_point_4]
 
+    build_number = 6
+    mock_build.return_value = build_number
+    mock_bound.return_value = (None, BuildInfo('m', 'b', build_number))
+
     self.assertEqual(
-        6,
+        build_number,
         regression_range_analysis_pipeline._GetEarliestContainingBuildNumber(
             100, analysis))
 
@@ -180,7 +185,9 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
       return_value=(None, None))
   @mock.patch.object(
       build_util, 'GetBuildInfo', return_value=BuildInfo('m', 'b', 123))
-  @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=123)
+  @mock.patch.object(build_util, 'GetBoundingBuilds',
+                     return_value=(BuildInfo('m', 'b', 122),
+                                   BuildInfo('m', 'b', 123)))
   def testGetEarliestBuildNumberNoDataPoints(self, *_):
     self.assertEqual(
         123,
