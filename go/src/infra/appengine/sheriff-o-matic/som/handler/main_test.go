@@ -1183,6 +1183,18 @@ func TestMain(t *testing.T) {
         "status-url": "https://chromium-status.appspot.com",
         "track-revisions": true
     }}`,
+						gkUnkeptTreesURL: `{    "chromium": {
+        "build-db": "waterfall_build_db.json",
+        "masters": {
+            "https://build.chromium.org/p/chromium": ["*"]
+        },
+        "open-tree": true,
+        "password-file": "/creds/gatekeeper/chromium_status_password",
+        "revision-properties": "got_revision_cp",
+        "set-status": true,
+        "status-url": "https://chromium-status.appspot.com",
+        "track-revisions": true
+    }}`,
 						gkConfigInternalURL: `
 {
   "comment": ["This is a configuration file for gatekeeper_ng.py",

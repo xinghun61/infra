@@ -93,6 +93,18 @@ func setUpGitiles(c context.Context) context.Context {
         "status-url": "https://chromium-status.appspot.com",
         "track-revisions": true
     }}`,
+			gkUnkeptTreesURL: `{    "chromium": {
+        "build-db": "waterfall_build_db.json",
+        "masters": {
+            "https://build.chromium.org/p/chromium": ["*"]
+        },
+        "open-tree": true,
+        "password-file": "/creds/gatekeeper/chromium_status_password",
+        "revision-properties": "got_revision_cp",
+        "set-status": true,
+        "status-url": "https://chromium-status.appspot.com",
+        "track-revisions": true
+    }}`,
 			gkConfigInternalURL: `
 {
   "comment": ["This is a configuration file for gatekeeper_ng.py",
@@ -139,6 +151,28 @@ func setUpGitiles(c context.Context) context.Context {
    }
 }`,
 			gkConfigCorpURL: `
+{
+  "comment": ["This is a configuration file for gatekeeper_ng.py",
+              "Look at that for documentation on this file's format."],
+  "masters": {
+    "https://build.chromium.org/p/chromium": [
+      {
+        "categories": [
+          "chromium_tree_closer"
+        ],
+        "builders": {
+          "Win": {
+            "categories": [
+              "chromium_windows"
+            ]
+          },
+          "*": {}
+        }
+      }
+    ]
+   }
+}`,
+			gkUnkeptConfigURL: `
 {
   "comment": ["This is a configuration file for gatekeeper_ng.py",
               "Look at that for documentation on this file's format."],
