@@ -1,0 +1,7 @@
+{
+    "chromium.gpu.fyi": {
+        "masters": {
+            "https://build.chromium.org/p/chromium.gpu.fyi": ["*"]
+        }
+     }
+}

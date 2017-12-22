@@ -1,0 +1,16 @@
+{
+  "comment": ["This is a gatekeeper config meant only for SoM to use."],
+  "masters": {
+    "https://build.chromium.org/p/chromium.gpu.fyi": [
+      {
+        "forgive_all": true,
+        "builders": {
+          "*": {
+            "forgiving_optional": ["*"]
+          }
+        },
+        "close_tree": false
+      }
+    ]
+  }
+}
