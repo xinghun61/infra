@@ -69,7 +69,6 @@
         'Win32 Debug (Clang)',
         'Win32 Debug',
         'Win32 Release (Clang)',
-        'Win32 Release (MSVC)',
         'Win32 Release [large tests]',
         'Win32 Release',
         'Win64 Debug (Clang)',
