@@ -131,6 +131,18 @@ message GerritDetails {
   //
   // Whether to send progress and results to Gerrit.
   bool disable_reporting = 3;
+
+  // Whitelisted groups.
+  //
+  // The owner of a change will be checked for membership of a whitelisted
+  // group. An asterisk entry means all groups are whitelisted.
+  //
+  // Group names must be known to the Chrome infra auth service,
+  // https://chrome-infra-auth.appspot.com. Contact a Chromium trooper
+  // if you need to add or modify a group: g.co/bugatrooper.
+  //
+  // Note that no presence of this field effectively blacklists all groups.
+  repeated string whitelisted_group = 4;
 }
 
 // Access control rules.

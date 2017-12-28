@@ -174,6 +174,7 @@ func composeChangesQueryURL(host, project string, lastTimestamp time.Time, offse
 	v.Add("start", strconv.Itoa(offset))
 	v.Add("o", "CURRENT_REVISION")
 	v.Add("o", "CURRENT_FILES")
+	v.Add("o", "DETAILED_ACCOUNTS")
 	v.Add("q", fmt.Sprintf("project:%s after:\"%s\"", project, ts))
 	return fmt.Sprintf("%s/a/changes/?%s", hostWithProtocol(host), v.Encode())
 }

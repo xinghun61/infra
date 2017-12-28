@@ -25,7 +25,11 @@ import (
 	"infra/tricium/appengine/common/track"
 )
 
-const queryChangeLimit = 2
+const (
+	queryChangeLimit   = 2
+	noWhitelistProject = "no-whitelist-project"
+	host               = "https://chromium-review.googlesource.com"
+)
 
 //mockPollRestAPI allows for modification of change state returned by QueryChanges.
 type mockPollRestAPI struct {
@@ -85,19 +89,28 @@ func (*mockConfigProvider) GetServiceConfig(c context.Context) (*tricium.Service
 			{
 				Name: "playground",
 				GerritDetails: &tricium.GerritDetails{
-					Host:    "https://chromium-review.googlesource.com",
-					Project: "project/tricium-gerrit",
+					Host:             host,
+					Project:          "project/tricium-gerrit",
+					WhitelistedGroup: []string{"*"},
 				},
 			},
 			{
 				Name: "infra",
 				GerritDetails: &tricium.GerritDetails{
-					Host:    "https://chromium-review.googlesource.com",
-					Project: "infra/infra",
+					Host:             host,
+					Project:          "infra/infra",
+					WhitelistedGroup: []string{"*"},
 				},
 			},
 			{
 				Name: "non-gerrit",
+			},
+			{
+				Name: noWhitelistProject,
+				GerritDetails: &tricium.GerritDetails{
+					Host:    host,
+					Project: noWhitelistProject,
+				},
 			},
 		},
 	}, nil
@@ -168,12 +181,16 @@ func TestPoll(t *testing.T) {
 		Convey("First poll (changes)", func() {
 			api := &mockPollRestAPI{}
 			lastChangeTs := clock.Now(ctx)
+			owner := &gr.AccountInfo{
+				Email: "emso@chromium.org",
+			}
 			// Fill up with a change per project
 			for _, gd := range gerritProjects {
 				api.addChanges(gd.Host, gd.Project, []gr.ChangeInfo{
 					{
 						Project: gd.Project,
 						Updated: gr.TimeStamp(lastChangeTs),
+						Owner:   owner,
 					},
 				})
 			}
@@ -190,6 +207,9 @@ func TestPoll(t *testing.T) {
 			rev := "abcdefg"
 			changeID := "project~branch~Ideadc0de"
 			file := "README.md"
+			owner := &gr.AccountInfo{
+				Email: "emso@chromium.org",
+			}
 			for _, gd := range gerritProjects {
 				files := make(map[string]*gr.FileInfo)
 				files[file] = &gr.FileInfo{Status: "A"}
@@ -202,6 +222,7 @@ func TestPoll(t *testing.T) {
 						CurrentRevision: rev,
 						Updated:         gr.TimeStamp(lastChangeTs),
 						Revisions:       revisions,
+						Owner:           owner,
 					},
 				})
 			}
@@ -216,7 +237,7 @@ func TestPoll(t *testing.T) {
 				}
 			})
 			Convey("Enqueues analyze requests", func() {
-				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]), ShouldEqual, len(gerritProjects))
+				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]), ShouldEqual, len(gerritProjects)-1)
 			})
 			Convey("Adds change tracking entities", func() {
 				for _, gd := range gerritProjects {
@@ -238,6 +259,9 @@ func TestPoll(t *testing.T) {
 			branch := "master"
 			changeIDFooter := "Ideadc0de"
 			file := "README.md"
+			owner := &gr.AccountInfo{
+				Email: "emso@chromium.org",
+			}
 			for _, gd := range gerritProjects {
 				var changes []gr.ChangeInfo
 				for i := 0; i < numChanges; i++ {
@@ -254,6 +278,7 @@ func TestPoll(t *testing.T) {
 						CurrentRevision: rev,
 						Updated:         gr.TimeStamp(tc.Now().UTC()),
 						Revisions:       revisions,
+						Owner:           owner,
 					})
 				}
 				api.addChanges(gd.Host, gd.Project, changes)
@@ -261,7 +286,7 @@ func TestPoll(t *testing.T) {
 			}
 			So(poll(ctx, api, cp), ShouldBeNil)
 			Convey("Enqueues analyze requests", func() {
-				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]), ShouldEqual, len(gerritProjects)*numChanges)
+				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]), ShouldEqual, (len(gerritProjects)-1)*numChanges)
 			})
 			Convey("Adds change tracking entities", func() {
 				for _, gd := range gerritProjects {
@@ -274,5 +299,43 @@ func TestPoll(t *testing.T) {
 				}
 			})
 		})
+
+		Convey("Second poll (changes, no whitelist)", func() {
+			api := &mockPollRestAPI{}
+			lastChangeTs := tc.Now().UTC()
+			// Fill up with a change in project with no whitelist.
+			rev := "abcdefg"
+			changeID := "project~branch~Ideadc0de"
+			file := "README.md"
+			owner := &gr.AccountInfo{
+				Email: "emso@chromium.org",
+			}
+			files := make(map[string]*gr.FileInfo)
+			files[file] = &gr.FileInfo{Status: "A"}
+			revisions := make(map[string]gr.RevisionInfo)
+			revisions[rev] = gr.RevisionInfo{Files: files}
+			api.addChanges(host, noWhitelistProject, []gr.ChangeInfo{
+				{
+					ID:              changeID,
+					Project:         noWhitelistProject,
+					CurrentRevision: rev,
+					Updated:         gr.TimeStamp(lastChangeTs),
+					Revisions:       revisions,
+					Owner:           owner,
+				},
+			})
+			So(poll(ctx, api, cp), ShouldBeNil)
+			tc.Add(time.Second)
+			So(poll(ctx, api, cp), ShouldBeNil)
+			Convey("Updates last poll timestamp to last change timestamp", func() {
+				p := &Project{ID: gerritProjectID(host, noWhitelistProject)}
+				So(ds.Get(ctx, p), ShouldBeNil)
+				So(lastChangeTs.Equal(p.LastPoll), ShouldBeTrue)
+			})
+			Convey("Does not enqueues analyze requests", func() {
+				So(len(tq.GetTestable(ctx).GetScheduledTasks()[common.AnalyzeQueue]), ShouldEqual, 0)
+			})
+		})
+
 	})
 }

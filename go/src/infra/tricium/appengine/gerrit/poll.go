@@ -12,9 +12,11 @@ import (
 	"github.com/golang/protobuf/proto"
 	ds "go.chromium.org/gae/service/datastore"
 	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/auth/identity"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/auth"
 
 	gr "golang.org/x/build/gerrit"
 	"golang.org/x/net/context"
@@ -79,7 +81,7 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 		details := pd.GetGerritDetails()
 		if details != nil {
 			ops = append(ops, func() error {
-				return pollProject(c, pd.Name, details.Host, details.Project, gerrit)
+				return pollProject(c, pd.Name, details, gerrit)
 			})
 		}
 	}
@@ -93,26 +95,26 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 // The timestamp of the most recent change in the last poll is used in the next poll,
 // (as the value of 'after' in the query string). If no previous poll has been logged,
 // then a time corresponding to zero is used (time.Time{}).
-func pollProject(c context.Context, triciumProject, gerritHost, gerritProject string, gerrit API) error {
+func pollProject(c context.Context, triciumProject string, gerritDetails *tricium.GerritDetails, gerrit API) error {
 	// Get last poll data for the given host/project.
-	p := &Project{ID: gerritProjectID(gerritHost, gerritProject)}
+	p := &Project{ID: gerritProjectID(gerritDetails.Host, gerritDetails.Project)}
 	if err := ds.Get(c, p); err != nil {
 		if err != ds.ErrNoSuchEntity {
 			return fmt.Errorf("failed to get Project entity: %v", err)
 		}
 		logging.Infof(c, "Found no previous entry for id:%s", p.ID)
 		err = nil
-		p.Instance = gerritHost
-		p.Project = gerritProject
+		p.Instance = gerritDetails.Host
+		p.Project = gerritDetails.Project
 	}
 
 	// If no previous poll, store current time and return.
 	if p.LastPoll.IsZero() {
 		logging.Infof(c, "No previous poll for %s/%s. Storing current timestamp and stopping.",
-			gerritHost, gerritProject)
-		p.ID = gerritProjectID(gerritHost, gerritProject)
-		p.Instance = gerritHost
-		p.Project = gerritProject
+			gerritDetails.Host, gerritDetails.Project)
+		p.ID = gerritProjectID(gerritDetails.Host, gerritDetails.Project)
+		p.Instance = gerritDetails.Host
+		p.Project = gerritDetails.Project
 		p.LastPoll = clock.Now(c).UTC()
 		logging.Debugf(c, "Storing project data: %+v", p)
 		if err := ds.Put(c, p); err != nil {
@@ -120,6 +122,7 @@ func pollProject(c context.Context, triciumProject, gerritHost, gerritProject st
 		}
 		return nil
 	}
+
 	logging.Infof(c, "Last poll: %+v", p)
 
 	// TODO(emso): Add a limit for how many entries that will be processed in a poll.
@@ -217,7 +220,7 @@ func pollProject(c context.Context, triciumProject, gerritHost, gerritProject st
 	//
 	// Running after the transaction because each seen change will result in one
 	// enqueued task and there is a limit on the number of action in a transaction.
-	return enqueueAnalyzeRequests(c, triciumProject, gerritHost, gerritProject, diff)
+	return enqueueAnalyzeRequests(c, triciumProject, gerritDetails, diff)
 }
 
 // extractUpdates extracts change updates.
@@ -293,13 +296,47 @@ func extractUpdates(c context.Context, p *Project, changes []gr.ChangeInfo) ([]g
 }
 
 // enqueueAnalyzeRequests enqueues Analyze requests for the provided Gerrit changes.
-func enqueueAnalyzeRequests(ctx context.Context, triciumProject, gerritHost, gerritProject string, changes []gr.ChangeInfo) error {
+func enqueueAnalyzeRequests(ctx context.Context, triciumProject string, gerritDetails *tricium.GerritDetails, changes []gr.ChangeInfo) error {
 	logging.Debugf(ctx, "Enqueue Analyze requests for %d changes", len(changes))
 	if len(changes) == 0 {
 		return nil
 	}
+	owners := map[string]bool{}
+	checkWhitelist := true
+	for _, g := range gerritDetails.WhitelistedGroup {
+		if g == "*" {
+			checkWhitelist = false
+			break
+		}
+	}
 	var tasks []*tq.Task
 	for _, c := range changes {
+		if checkWhitelist {
+			if len(gerritDetails.WhitelistedGroup) == 0 {
+				continue
+			}
+			whitelisted, ok := owners[c.Owner.Email]
+			if !ok {
+				ident, err := identity.MakeIdentity("user:" + c.Owner.Email)
+				if err != nil {
+					logging.Errorf(ctx, "Failed to create identity for %s, err: %v", c.Owner.Email, err)
+					// If we fail to create the identity for a user, skip this user for the rest of this poll.
+					owners[c.Owner.Email] = false
+					continue
+				}
+				authOK, err := auth.GetState(ctx).DB().IsMember(ctx, ident, gerritDetails.WhitelistedGroup)
+				if err != nil {
+					logging.Errorf(ctx, "Failed to check auth for %s, err: %v", c.Owner.Email, err)
+				}
+				whitelisted = authOK
+				owners[c.Owner.Email] = whitelisted
+			}
+			if !whitelisted {
+				logging.Infof(ctx, "Owner is not whitelisted, not triggering Analyze (owner: %s, project: %s)",
+					c.Owner.Email, gerritDetails.Project)
+				continue
+			}
+		}
 		var paths []string
 		for k, v := range c.Revisions[c.CurrentRevision].Files {
 			if v.Status != "Delete" {
@@ -315,8 +352,8 @@ func enqueueAnalyzeRequests(ctx context.Context, triciumProject, gerritHost, ger
 			Paths:    paths,
 			Consumer: tricium.Consumer_GERRIT,
 			GerritDetails: &tricium.GerritConsumerDetails{
-				Host:     gerritHost,
-				Project:  gerritProject,
+				Host:     gerritDetails.Host,
+				Project:  gerritDetails.Project,
 				Change:   c.ID,
 				Revision: c.CurrentRevision,
 			},
