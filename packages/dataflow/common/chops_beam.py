@@ -37,8 +37,8 @@ class BQWrite(beam.io.Write):
      beam.io.BigQuerySink will automatically add unique insert ids to rows,
      which BigQuery uses to prevent duplicate inserts.
   """
-  def __init__(self, table, dataset='aggregated',
+  def __init__(self, project, table, dataset='aggregated',
                write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE):
-    sink = beam.io.BigQuerySink(table, dataset, project='chrome-infra-events',
+    sink = beam.io.BigQuerySink(table, dataset, project,
                                 write_disposition=write_disposition)
     super(BQWrite, self).__init__(sink)

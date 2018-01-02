@@ -235,7 +235,7 @@ def main():
   _ = (p
        | chops_beam.BQRead(q)
        | ComputeAttempts()
-       | chops_beam.BQWrite('cq_attempts'))
+       | chops_beam.BQWrite('chrome-infra-events', 'cq_attempts'))
   p.run()
 
 

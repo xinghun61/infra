@@ -5,12 +5,12 @@ The `common` module provides reusable classes for writing Dataflow workflows.
 For easily constructing readable pipelines with standard defaults.
 
 ```
-q = ('SELECT blah FROM `chrome-infra-events.raw_events.foo`')
+q = ('SELECT blah FROM `example_project.example_dataset.example_table`')
 p = chops_beam.EventsPipeline()
 _ = (p
      | chops_beam.BQRead(q)
      | ... # do some transforms
-     | chops_beam.BQWrite('some_table'))
+     | chops_beam.BQWrite('example_project', 'destination_table'))
 p.run()
 ```
 
