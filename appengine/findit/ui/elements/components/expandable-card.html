@@ -55,7 +55,7 @@
       }
     </style>
     <paper-card id="card">
-      <paper-button id="header" on-tap="toggleShowMore">
+      <paper-button noink id="header" on-tap="toggleShowMore">
         <!-- Header content will be displayed always. -->
         <slot name="expandable-card-header"></slot>
 
@@ -93,7 +93,9 @@
         },
 
         // Event handlers.
-        toggleShowMore: function () {
+        toggleShowMore: function (e) {
+          if (e.srcElement.localName === "a")
+            return; // Don't expand if a link inside is clicked.
           this.showMore = !this.showMore;
           this.$.collapse.opened = this.showMore;
         },
