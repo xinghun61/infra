@@ -78,10 +78,11 @@ func poll(c context.Context, gerrit API, cp config.ProviderAPI) error {
 	}
 	var ops []func() error
 	for _, pd := range sc.Projects {
+		triciumProject := pd.GetName()
 		details := pd.GetGerritDetails()
 		if details != nil {
 			ops = append(ops, func() error {
-				return pollProject(c, pd.Name, details, gerrit)
+				return pollProject(c, triciumProject, details, gerrit)
 			})
 		}
 	}
