@@ -34,6 +34,7 @@ import contextlib
 import hashlib
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
@@ -179,6 +180,10 @@ def contains_subpackages(workspace, path):
   return stdout != ''
 
 
+def is_googlesource(url):
+  return re.match(r'https\://.*\.googlesource\.com/', url)
+
+
 def compare_deps(before, after):
   """Analyzes a difference in old and new deps, and prints some helpful stuff.
 
@@ -208,6 +213,10 @@ def compare_deps(before, after):
       print '  * %s' % p
     print '-'*74
 
+  # Package name => mirror repo URL (usually on *.googlesource.com) or '' if
+  # no mirror defines.
+  mirrors = {p['name']: p.get('repo') or '' for p in after['imports']}
+
   # Print a list of what have been bumped.
   def revisions(deps):
     return {p['name']: p['version'] for p in deps['imports']}
@@ -218,11 +227,16 @@ def compare_deps(before, after):
   for pkg, rev in rev_after.iteritems():
     if pkg in rev_before and rev != rev_before[pkg]:
       bumps.append((pkg, rev_before[pkg], rev))
+  bumps.sort()
   if bumps:
     print '-'*74
     print 'Updated repos:'
-    for pkg, sha1_before, sha1_after in sorted(bumps):
-      print '%s: %s => %s' % (pkg, sha1_before, sha1_after)
+    gs = [v for v in bumps if is_googlesource(mirrors[v[0]])]
+    rest = [v for v in bumps if not is_googlesource(mirrors[v[0]])]
+    for pkg, sha1_before, sha1_after in gs:
+      print '%s/+log/%s..%s' % (mirrors[pkg], sha1_before[:12], sha1_after[:12])
+    for pkg, sha1_before, sha1_after in rest:
+      print '%s: %s -> %s' % (pkg, sha1_before, sha1_after)
     print '-'*74
 
   # Print a list of packages that need git mirrors. All of them do, so it just
@@ -680,7 +694,11 @@ def update(workspace):
   """
   lock_path = os.path.join(workspace.vendor_root, 'glide.lock')
   with unhack_vendor(workspace):
-    # For some mysterious reason Glide doesn't update all dependencies on
+    # For some mysterious reasons Glide sometimes skips fetching commits for
+    # repos in its cache. Delete the cache. We are not really benefiting from
+    # it, since 'update' is infrequent operation.
+    remove_directory(os.path.join(workspace.gobase, '.glide'))
+    # For another mysterious reason Glide doesn't update all dependencies on
     # a first try. Run it until it reports there's nothing to update.
     deps = parse_glide_lock(read_file(lock_path))
     while True:
