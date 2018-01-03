@@ -4,26 +4,13 @@
 
 import gae_ts_mon
 
-found_suspects = gae_ts_mon.CounterMetric(
-    'predator/found_suspects',
-    'Metric monitoring whether Predator found CLs for the crash report. This '
-    'metric has fields like: {found_suspects: True/False, client_id: '
-    'Cracas/Fracas/Clusterfuzz}',
+reports_processed = gae_ts_mon.CounterMetric(
+    'predator/reports_count',
+    'Metric counting the number of crash reports that Predator has processed. '
+    'Contains fields describing whether Predator was successful at finding a '
+    'regression range, a components, or suspect changes for each report.',
     [gae_ts_mon.BooleanField('found_suspects'),
-     gae_ts_mon.StringField('client_id')])
-
-has_regression_range = gae_ts_mon.CounterMetric(
-    'predator/has_regression_range',
-    'Metric monitoring whether Predator has regression range for the crash '
-    'report. This metric has fields like: {has_regression_range: True/False, '
-    'client_id: Cracas/Fracas/Clusterfuzz}',
-    [gae_ts_mon.BooleanField('has_regression_range'),
-     gae_ts_mon.StringField('client_id')])
-
-found_components = gae_ts_mon.CounterMetric(
-    'predator/found_components',
-    'Metric monitoring whether Predator found components for the crash report. '
-    'This metric has fields like: {found_components: True/False, client_id: '
-    'Cracas/Fracas/Clusterfuzz}',
-    [gae_ts_mon.BooleanField('found_components'),
-     gae_ts_mon.StringField('client_id')])
+     gae_ts_mon.BooleanField('found_components'),
+     gae_ts_mon.BooleanField('has_regression_range'),
+     gae_ts_mon.StringField('client_id'),
+     gae_ts_mon.BooleanField('success')])

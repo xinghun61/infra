@@ -173,11 +173,17 @@ class CrashAnalysisPipeline(CrashBasePipeline):
     # Actually do the analysis.
     success, culprit = self._predator.FindCulprit(self._crash_identifiers)
     result, tags = culprit.ToDicts()
-    if success:
-      analysis.status = analysis_status.COMPLETED
-    else:
-      analysis.status = analysis_status.ERROR
 
+    monitoring.reports_processed.increment({
+        'found_suspects': tags['found_suspects'],
+        'found_components': tags['found_components'],
+        'has_regression_range': tags['has_regression_range'],
+        'client_id': self.client_id,
+        'success': success,
+    })
+
+    analysis.status = (analysis_status.COMPLETED if success else
+                       analysis_status.ERROR)
     analysis.completed_time = time_util.GetUTCNow()
     # Update model's status to say we're done, and save the results.
     analysis.result = result
@@ -188,10 +194,6 @@ class CrashAnalysisPipeline(CrashBasePipeline):
       if hasattr(analysis, tag_name):  # pragma: no cover
         setattr(analysis, tag_name, tag_value)
 
-      if hasattr(monitoring, tag_name):
-        metric = getattr(monitoring, tag_name)
-        metric.increment({tag_name: tag_value,
-                          'client_id': self.client_id})
     analysis.put()
 
     logging.info('Found %s analysis result for %s: \n%s', self.client_id,
