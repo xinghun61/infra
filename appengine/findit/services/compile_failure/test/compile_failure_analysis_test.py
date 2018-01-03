@@ -9,7 +9,11 @@ from common.waterfall import failure_type
 from libs.gitiles.diff import ChangeType
 from model.wf_analysis import WfAnalysis
 from services import build_failure_analysis
+from services import ci_failure
+from services import deps
+from services import git
 from services.compile_failure import compile_failure_analysis
+from services.compile_failure import extract_compile_signal
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
@@ -31,10 +35,10 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             },
         },
         'builds': {
-            '99': {
+            99: {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            '98': {
+            98: {
                 'blame_list': ['r98_1'],
             },
         }
@@ -169,10 +173,10 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             }
         },
         'builds': {
-            '99': {
+            99: {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            '98': {
+            98: {
                 'blame_list': ['r98_1'],
             }
         }
@@ -334,10 +338,10 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             }
         },
         'builds': {
-            '99': {
+            99: {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            '98': {
+            98: {
                 'blame_list': ['r98_1'],
             }
         }
@@ -435,3 +439,52 @@ class CompileFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
+
+  @mock.patch.object(
+      extract_compile_signal,
+      'ExtractSignalsForCompileFailure',
+      return_value='signals')
+  @mock.patch.object(git, 'PullChangeLogs', return_value={})
+  @mock.patch.object(deps, 'ExtractDepsInfo', return_value={})
+  @mock.patch.object(
+      compile_failure_analysis,
+      'AnalyzeCompileFailure',
+      return_value=('heuristic_result', []))
+  @mock.patch.object(build_failure_analysis,
+                     'SaveAnalysisAfterHeuristicAnalysisCompletes')
+  @mock.patch.object(build_failure_analysis, 'SaveSuspectedCLs')
+  @mock.patch.object(ci_failure, 'CheckForFirstKnownFailure')
+  def testHeuristicAnalysisForCompile(self, mock_failure_info, *_):
+    failure_info = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 99,
+        'failure_type': failure_type.COMPILE,
+        'failed': True,
+        'chromium_revision': 'r99_2',
+        'failed_steps': {
+            'compile': {
+                'current_failure': 99,
+                'first_failure': 98,
+            }
+        },
+        'builds': {
+            99: {
+                'blame_list': ['r99_1', 'r99_2'],
+            },
+            98: {
+                'blame_list': ['r98_1'],
+            }
+        }
+    }
+    mock_failure_info.return_value = failure_info
+
+    WfAnalysis.Create('m', 'b', 99).put()
+    result = compile_failure_analysis.HeuristicAnalysisForCompile(
+        failure_info, True)
+    expected_result = {
+        'failure_info': failure_info,
+        'signals': 'signals',
+        'heuristic_result': 'heuristic_result'
+    }
+    self.assertEqual(result, expected_result)

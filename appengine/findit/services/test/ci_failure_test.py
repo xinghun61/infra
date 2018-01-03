@@ -56,10 +56,11 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number,
                                    analysis_status.RUNNING)
 
-    ci_failure.CheckForFirstKnownFailure(master_name, builder_name,
-                                         build_number, failed_steps, builds)
+    failure_info = {'failed_steps': failed_steps, 'builds': builds}
+    failure_info = ci_failure.CheckForFirstKnownFailure(
+        master_name, builder_name, build_number, failure_info)
 
-    self.assertEqual(failed_steps, failed_steps)
+    self.assertEqual(failed_steps, failure_info['failed_steps'])
 
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testStopLookingBackIfAllFailedStepsPassedInLastBuild(self, mock_fn):
@@ -99,11 +100,12 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    ci_failure.CheckForFirstKnownFailure(master_name, builder_name,
-                                         build_number, failed_steps, builds)
+    failure_info = {'failed_steps': failed_steps, 'builds': builds}
+    failure_info = ci_failure.CheckForFirstKnownFailure(
+        master_name, builder_name, build_number, failure_info)
 
-    self.assertEqual(expected_failed_steps, failed_steps)
-    self.assertEqual(expected_builds, builds)
+    self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
+    self.assertEqual(expected_builds, failure_info['builds'])
 
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testStopLookingBackIfFindTheFirstBuild(self, mock_fn):
@@ -121,7 +123,7 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         }
     }
     builds = {
-        2: {
+        '2': {
             'chromium_revision': '5934404dc5392ab3ae2c82b52b366889fb858d91',
             'blame_list': ['5934404dc5392ab3ae2c82b52b366889fb858d91']
         }
@@ -162,11 +164,12 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         },
     }
 
-    ci_failure.CheckForFirstKnownFailure(master_name, builder_name,
-                                         build_number, failed_steps, builds)
+    failure_info = {'failed_steps': failed_steps, 'builds': builds}
 
-    self.assertEqual(expected_failed_steps, failed_steps)
-    self.assertEqual(expected_builds, builds)
+    failure_info = ci_failure.CheckForFirstKnownFailure(
+        master_name, builder_name, build_number, failure_info)
+    self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
+    self.assertEqual(expected_builds, failure_info['builds'])
 
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testLookBackUntilGreenBuild(self, mock_fn):
@@ -241,10 +244,12 @@ class CIFailureServicesTest(wf_testcase.WaterfallTestCase):
         }
     }
 
-    ci_failure.CheckForFirstKnownFailure(master_name, builder_name,
-                                         build_number, failed_steps, builds)
-    self.assertEqual(expected_failed_steps, failed_steps)
-    self.assertEqual(expected_builds, builds)
+    failure_info = {'failed_steps': failed_steps, 'builds': builds}
+
+    failure_info = ci_failure.CheckForFirstKnownFailure(
+        master_name, builder_name, build_number, failure_info)
+    self.assertEqual(expected_failed_steps, failure_info['failed_steps'])
+    self.assertEqual(expected_builds, failure_info['builds'])
 
   @mock.patch.object(buildbot, 'GetBuildDataFromMilo')
   def testGetBuildFailureInfo(self, mock_fn):

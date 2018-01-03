@@ -83,19 +83,29 @@ def _CreateADictOfFailedSteps(build_info):
   return failed_steps
 
 
+def _UpdateStringTypedBuildKeyToInt(builds):
+  """Updates the string keys to int keys."""
+  updated_builds = {}
+  for build_number, build in builds.iteritems():
+    updated_builds[int(build_number)] = build
+  return updated_builds
+
+
 def CheckForFirstKnownFailure(master_name, builder_name, build_number,
-                              failed_steps, builds):
+                              failure_info):
   """Checks for first known failures of the given failed steps.
 
   Args:
     master_name (str): master of the failed build.
     builder_name (str): builder of the failed build.
     build_number (int): builder number of the current failed build.
-    failed_steps (dict): the failed steps of the current failed build. It will
-        be updated with build numbers for 'first_failure' and 'last_pass' of
-        each failed step.
-    builds (dict): a dict to save blame list and chromium revision.
+    failure_info (dict): information of the build failure.
+  Returns:
+    failure_info (dict): updated failure_info.
   """
+  failed_steps = failure_info['failed_steps']
+  failure_info['builds'] = _UpdateStringTypedBuildKeyToInt(
+      failure_info['builds'])
   # Look back for first known failures.
   earliest_build_number = max(0, build_number - 1 - _MAX_BUILDS_TO_CHECK)
   for n in range(build_number - 1, earliest_build_number - 1, -1):
@@ -103,9 +113,10 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
     build_info = _ExtractBuildInfo(master_name, builder_name, n)
     if not build_info:
       # Failed to extract the build information, bail out.
-      return
+      return failure_info
 
-    _SaveBlamelistAndChromiumRevisionIntoDict(build_info, builds)
+    _SaveBlamelistAndChromiumRevisionIntoDict(build_info,
+                                              failure_info['builds'])
 
     if build_info.result == buildbot.SUCCESS:
       for step_name in failed_steps:
@@ -113,7 +124,7 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
           failed_steps[step_name]['last_pass'] = build_info.build_number
 
       # All steps passed, so stop looking back.
-      return
+      return failure_info
     else:
       # If a step is not run due to some bot exception, we are not sure
       # whether the step could pass or not. So we only check failed/passed
@@ -131,7 +142,8 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
 
       if all('last_pass' in step_info for step_info in failed_steps.values()):
         # All failed steps passed in this build cycle.
-        return
+        return failure_info
+  return failure_info
 
 
 def GetBuildFailureInfo(master_name, builder_name, build_number):

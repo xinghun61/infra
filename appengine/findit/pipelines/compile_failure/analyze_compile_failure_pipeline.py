@@ -10,12 +10,8 @@ from gae_libs.pipeline_wrapper import BasePipeline
 from libs import analysis_status
 from libs import time_util
 from model.wf_analysis import WfAnalysis
-from pipelines.compile_failure.detect_first_compile_failure_pipeline import (
-    DetectFirstCompileFailurePipeline)
-from pipelines.compile_failure.extract_signal_for_compile_pipeline import (
-    ExtractSignalForCompilePipeline)
-from pipelines.compile_failure.identify_compile_failure_suspect_pipeline import(
-     IdentifyCompileFailureSuspectPipeline)
+from pipelines.compile_failure.heuristic_analysis_for_compile_pipeline import (
+    HeuristicAnalysisForCompilePipeline)
 from pipelines.compile_failure.start_compile_try_job_pipeline import (
     StartCompileTryJobPipeline)
 
@@ -73,18 +69,21 @@ class AnalyzeCompileFailurePipeline(BasePipeline):
     self._HandleUnexpectedAborting(self.was_aborted)
 
   def _ContinueTryJobPipeline(self, failure_info, signals):
-
+    heuristic_result = {
+        'failure_info': failure_info,
+        'signals': signals,
+        'heuristic_result': None
+    }
     try_job_pipeline = StartCompileTryJobPipeline(
-        self.master_name, self.builder_name, self.build_number, failure_info,
-        signals, None, self.build_completed, self.force)
+        self.master_name, self.builder_name, self.build_number,
+        heuristic_result, self.build_completed, self.force)
     try_job_pipeline.target = appengine_util.GetTargetNameForModule(
         constants.WATERFALL_BACKEND)
     try_job_pipeline.start(queue_name=constants.WATERFALL_ANALYSIS_QUEUE)
     logging.info(
         'A try job pipeline for build %s, %s, %s starts after heuristic '
-        'analysis was aborted. Check pipeline at: %s.' % (
-            self.master_name, self.builder_name,
-            self.build_number, self.pipeline_status_path()))
+        'analysis was aborted. Check pipeline at: %s.', self.master_name,
+        self.builder_name, self.build_number, self.pipeline_status_path())
 
   def _ResetAnalysis(self, master_name, builder_name, build_number):
     analysis = WfAnalysis.Get(master_name, builder_name, build_number)
@@ -106,13 +105,10 @@ class AnalyzeCompileFailurePipeline(BasePipeline):
     # https://github.com/GoogleCloudPlatform/appengine-pipelines/wiki/Python
 
     # Heuristic Approach.
-    failure_info = yield DetectFirstCompileFailurePipeline(current_failure_info)
-    signals = yield ExtractSignalForCompilePipeline(failure_info)
-    heuristic_result = (yield IdentifyCompileFailureSuspectPipeline(
-                            failure_info, signals, build_completed))
+    heuristic_result = yield HeuristicAnalysisForCompilePipeline(
+        current_failure_info, build_completed)
 
     # Try job approach.
     # Checks if first time failures happen and starts a try job if yes.
     yield StartCompileTryJobPipeline(master_name, builder_name, build_number,
-                                     failure_info, signals, heuristic_result,
-                                     build_completed, force)
+                                     heuristic_result, build_completed, force)
