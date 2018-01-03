@@ -74,6 +74,13 @@ var RuleMap = map[string]*RepoConfig{
 					FailedBuildIsCompileFailure,
 					RevertOfCulprit,
 					OnlyCommitsOwnChange,
+				}},
+			AccountRules{
+				Account: "chrome-release-bot@chromium.org",
+				// This is *in addition* to any component defined for the repo.
+				MonorailComponent: "Infra>Client>Chrome>Release",
+				Funcs: []RuleFunc{
+					OnlyModifiesVersionFile,
 				},
 			},
 		},
