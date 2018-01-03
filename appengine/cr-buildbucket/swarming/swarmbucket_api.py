@@ -141,6 +141,8 @@ class SwarmbucketApi(remote.Service):
     except errors.InvalidInputError as ex:
       raise endpoints.BadRequestException(
           'invalid build request: %s' % ex.message)
+    except errors.BuilderNotFoundError as ex:
+      raise endpoints.NotFoundException(ex.message)
 
   @swarmbucket_api_method(
       SetNextBuildNumberRequest,

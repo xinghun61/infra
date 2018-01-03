@@ -241,6 +241,17 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
     }
     self.call_api('get_task_def', req, status=400)
 
+  def test_get_task_def_builder_not_found(self):
+    req = {
+      'build_request': {
+        'bucket': 'luci.chromium.try',
+        'parameters_json': json.dumps({
+          'builder_name': 'not-existing-builder',
+        }),
+      },
+    }
+    self.call_api('get_task_def', req, status=404)
+
   def test_get_task_def_forbidden(self):
     req = {
       'build_id': '8982540789124571952',
