@@ -93,13 +93,16 @@
       "gs://dataflow-chrome-infra/events/staging",
       "--temp_location",
       "gs://dataflow-chrome-infra/events/temp",
-      "--save_main_session"
+      "--save_main_session",
+      "--numWorkers",
+      "5"
     ],
     "env": {
       "GOOGLE_APPLICATION_CREDENTIALS": "/creds/service_accounts/service-account-dataflow-launcher.json",
       "PYTHONPATH": ""
     },
-    "name": "Remote execute"
+    "name": "Remote execute",
+    "timeout": 60
   },
   {
     "name": "$result",

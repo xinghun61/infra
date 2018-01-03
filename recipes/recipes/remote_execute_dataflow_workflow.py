@@ -22,9 +22,16 @@ PROPERTIES = {
   'job_name': Property(
       kind=str, help=('Name that appears on the Dataflow console. Must match '
                       'the regular expression [a-z]([-a-z0-9]{0,38}[a-z0-9])')),
+  'project': Property(
+      kind=str, help=('Name of Google Cloud Project under which the Dataflow '
+                      'job will be executed.')),
+  'num_workers': Property(
+      kind=int, default=3, help=('Number of GCE instances used to run job.')),
+  'timeout': Property(
+      kind=int, default=300, help=('Timeout, in seconds.')),
 }
 
-def RunSteps(api, workflow, job_name):
+def RunSteps(api, workflow, job_name, project, num_workers, timeout):
   api.gclient.set_config('infra')
   bot_update_step = api.bot_update.ensure_checkout()
   api.gclient.runhooks()
@@ -39,15 +46,19 @@ def RunSteps(api, workflow, job_name):
   env = {'PYTHONPATH': '', 'GOOGLE_APPLICATION_CREDENTIALS':
          api.puppet_service_account.get_key_path('dataflow-launcher')}
   with api.context(env=env):
-    api.step('Remote execute', [python_path, workflow_path, '--job_name',
-                                job_name, '--project', 'chrome-infra-events',
-                                '--runner', 'DataflowRunner', '--setup_file',
-                                setup_path, '--staging_location',
-                                'gs://dataflow-chrome-infra/events/staging',
-                                '--temp_location',
-                                'gs://dataflow-chrome-infra/events/temp',
-                                '--save_main_session'])
+    cmd = [python_path, workflow_path,
+           '--job_name', job_name,
+           '--project', project,
+           '--runner', 'DataflowRunner',
+           '--setup_file', setup_path,
+           '--staging_location', 'gs://dataflow-chrome-infra/events/staging',
+           '--temp_location', 'gs://dataflow-chrome-infra/events/temp',
+           '--save_main_session']
+    if num_workers:
+      cmd.extend(['--numWorkers', num_workers])
+    api.step('Remote execute', cmd, timeout=timeout)
 
 def GenTests(api):
   yield api.test('basic') + api.properties(
-      workflow='packages/dataflow/cq_attempts.py', job_name='cq-attempts')
+      workflow='packages/dataflow/cq_attempts.py', job_name='cq-attempts',
+      project='chrome-infra-events', num_workers=5, timeout=60)
