@@ -1,0 +1,44 @@
+summary: "Allocate new swarming machines replicating buildbot ones"
+
+description: <<END
+Please, provide new swarming bots with the same specs as buildbot ones.
+File another issue like this: https://goto.google.com/migrate2luci-bots-ticket
+Migration guide doc: https://goto.google.com/migrate2luci
+
+// Please delete commented out sections before submission
+// Feel free to add free form text.
+
+// Tell us the tracking bug for migrating a builder or builders,
+// for which you need new bots. For example, issue 790138.
+// Pro tip: mark the currently being filed ticket as blocking
+// the issue below.
+reference: issue <id>
+
+// Tell us the builder name and its OS if not clear from the name.
+builder: <builder name> [<os>]
+
+// Which bot(s) is(are) serving builders on buildbot today?
+// Either name (such as build41-m1.golo) or link to a buildbot builder
+// page (e.g.
+// https://build.chromium.org/deprecated/tryserver.chromium.win/builders/win10_chromium_x64_rel_ng)
+slaves: <id(s) | url>
+
+// How many bots do you need?
+// For a waterfall (aka CI) builder, this is almost always 1.
+// For chromium try builder with 100+ bots, do NOT request copy of
+// all 100+ bots at once. Rather, ask for 5..10% at a time
+// (see go/migrate2luci for more info).
+count:
+
+// Which swarming instance do you want these bots configured for?
+// This is almost always https://chromium-swarm.appspot.com,
+// if in doubt ask luci-eng@google.com.
+swarming_instance: <url>
+
+END
+
+components: "Infra>Labs"
+type: Task
+pri: P1
+labels: "Restrict-View-Google"
+labels: "LUCI-TaskForce"
