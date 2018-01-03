@@ -67,11 +67,11 @@ func TestFinditRules(t *testing.T) {
 			RevertOf: 666,
 		}
 		q := map[string][]*gerrit.Change{
-			"12ebe127":  {rvc},
-			"revertcid": {rvc},
-			"666":       {cc},
-			"badbadbad": {bad},
-			"badcid":    {bad},
+			"commit:12ebe127":  {rvc},
+			"revertcid":        {rvc},
+			"666":              {cc},
+			"commit:badbadbad": {bad},
+			"badcid":           {bad},
 		}
 		pr := map[string]bool{
 			"revertcid": true,
@@ -266,7 +266,7 @@ func TestFinditRules(t *testing.T) {
 			So(rr.Message, ShouldContainSubstring, "*pure* revert")
 		})
 		Convey("RevertOfCulprit Fail - not revert", func() {
-			testClients.gerrit.(*mockGerritClient).q["12ebe127"][0].RevertOf = 0
+			testClients.gerrit.(*mockGerritClient).q["commit:12ebe127"][0].RevertOf = 0
 			rr := RevertOfCulprit(ctx, ap, rc, testClients)
 			So(rr.RuleResultStatus, ShouldEqual, ruleFailed)
 			So(rr.Message, ShouldContainSubstring, "does not appear to be a revert")

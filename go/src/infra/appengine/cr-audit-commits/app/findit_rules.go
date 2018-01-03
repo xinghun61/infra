@@ -217,7 +217,7 @@ func CulpritInBuild(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs
 // pure revert of another; instead, the get-pure-revert api of Gerrit needs to
 // be checked, like RevertOfCulprit below does.
 func getRevertAndCulpritChanges(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients) (*gerrit.Change, *gerrit.Change) {
-	cls, _, err := cs.gerrit.ChangeQuery(ctx, gerrit.ChangeQueryParams{Query: rc.CommitHash})
+	cls, _, err := cs.gerrit.ChangeQuery(ctx, gerrit.ChangeQueryParams{Query: fmt.Sprintf("commit:%s", rc.CommitHash)})
 	if err != nil {
 		panic(err)
 	}
