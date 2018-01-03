@@ -58,22 +58,25 @@ var RuleMap = map[string]*RepoConfig{
 		StartingCommit:  "5677b32274aec4890c7dd991a6a84924e65d4853",
 		MonorailAPIURL:  "https://monorail-prod.appspot.com/_ah/api/monorail/v1",
 		MonorailProject: "chromium",
-		// TODO(robertocn): Change component and label to the correct
-		// ones. TBD.
-		MonorailComponent: "Tools>Test>Findit>Autorevert",
-		MonorailLabels:    []string{"CommitLog-Audit-Violation", "Restrict-View-Google"},
-		Rules: []RuleSet{AccountRules{
-			Account: "findit-for-me@appspot.gserviceaccount.com",
-			Funcs: []RuleFunc{
-				AutoCommitsPerDay,
-				AutoRevertsPerDay,
-				CulpritAge,
-				CulpritInBuild,
-				FailedBuildIsCompileFailure,
-				RevertOfCulprit,
-				OnlyCommitsOwnChange,
+		// TODO(robertocn): Create a repo-level component in monorail
+		// for the whole repo.
+		MonorailLabels: []string{"CommitLog-Audit-Violation", "Restrict-View-Google"},
+		Rules: []RuleSet{
+			AccountRules{
+				Account: "findit-for-me@appspot.gserviceaccount.com",
+				// This is *in addition* to any component defined for the repo.
+				MonorailComponent: "Tools>Test>Findit>Autorevert",
+				Funcs: []RuleFunc{
+					AutoCommitsPerDay,
+					AutoRevertsPerDay,
+					CulpritAge,
+					CulpritInBuild,
+					FailedBuildIsCompileFailure,
+					RevertOfCulprit,
+					OnlyCommitsOwnChange,
+				},
 			},
-		}},
+		},
 	},
 }
 
@@ -90,8 +93,9 @@ type RuleSet interface {
 // AccountRules is a RuleSet that applies to a commit if the commit has a given
 // account as either its author or its committer.
 type AccountRules struct {
-	Account string
-	Funcs   []RuleFunc
+	Account           string
+	Funcs             []RuleFunc
+	MonorailComponent string
 }
 
 // MatchesCommit determines whether the AccountRules set it's bound to, applies

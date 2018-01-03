@@ -130,6 +130,7 @@ type RelevantCommit struct {
 	CommitMessage          string `gae:",noindex"`
 	IssueID                int32
 	Retries                int32
+	NotificationComponents []string
 }
 
 // RuleResult represents the result of applying a single rule to a commit.

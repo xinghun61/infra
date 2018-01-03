@@ -99,7 +99,7 @@ func reportViolation(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit, c
 		}
 
 		if existingIssue == nil || !isValidIssue(existingIssue, sa, cfg) {
-			rc.IssueID, err = postIssue(ctx, cfg, summary, resultText(cfg, rc, false), cs)
+			rc.IssueID, err = postIssue(ctx, cfg, summary, resultText(cfg, rc, false), cs, rc.NotificationComponents)
 			if err != nil {
 				return err
 			}
@@ -142,7 +142,9 @@ func reportAuditFailure(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit
 		"identified and resolved.", cfg.LinkToCommit(rc.CommitHash))
 
 	var err error
-	rc.IssueID, err = postIssue(ctx, cfg, summary, description, cs)
+	// Route any failure to audit to Findit's team as they own this tool.
+	// TODO(crbug.com/798842): Use a custom component for this.
+	rc.IssueID, err = postIssue(ctx, cfg, summary, description, cs, []string{"Tools>Test>Findit>Autorevert"})
 	if err != nil {
 		return err
 	}
@@ -156,8 +158,8 @@ func reportAuditFailure(ctx context.Context, cfg *RepoConfig, rc *RelevantCommit
 }
 
 // isValidIssue checks that the monorail issue was created by the app and
-// has the correct component and summary. This is to avoid someone suppressing
-// an audit alert by creating a spurious bug.
+// has the correct repo-level component and summary. This is to avoid someone
+// suppressing an audit alert by creating a spurious bug.
 func isValidIssue(iss *monorail.Issue, sa string, cfg *RepoConfig) bool {
 	for _, st := range []string{
 		monorail.StatusFixed,
@@ -172,10 +174,14 @@ func isValidIssue(iss *monorail.Issue, sa string, cfg *RepoConfig) bool {
 		}
 	}
 	if strings.HasPrefix(iss.Summary, "Audit violation detected on") && iss.Author.Name == sa {
-		for _, c := range iss.Components {
-			if c == cfg.MonorailComponent {
-				return true
+		if cfg.MonorailComponent != "" {
+			for _, c := range iss.Components {
+				if c == cfg.MonorailComponent {
+					return true
+				}
 			}
+		} else {
+			return true
 		}
 	}
 	return false

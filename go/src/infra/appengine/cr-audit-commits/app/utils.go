@@ -123,10 +123,17 @@ func postComment(ctx context.Context, cfg *RepoConfig, i *monorail.Issue, c stri
 	return err
 }
 
-func postIssue(ctx context.Context, cfg *RepoConfig, s, d string, cs *Clients) (int32, error) {
+func postIssue(ctx context.Context, cfg *RepoConfig, s, d string, cs *Clients, ac []string) (int32, error) {
+	// The components for the issue will be the additional components
+	// depending on which rules were violated, and the component defined
+	// for the repo(if any).
+	components := append([]string{}, ac...)
+	if cfg.MonorailComponent != "" {
+		components = append(components, cfg.MonorailComponent)
+	}
 	iss := &monorail.Issue{
 		Description: d,
-		Components:  []string{cfg.MonorailComponent},
+		Components:  components,
 		Labels:      cfg.MonorailLabels,
 		Status:      monorail.StatusUntriaged,
 		Summary:     s,

@@ -22,9 +22,10 @@ import (
 )
 
 func TestFinditRules(t *testing.T) {
-	t.Parallel()
+	// TODO(crbug.com/798843): Uncomment this and make the tests not racy.
+	//t.Parallel()
 
-	Convey("Initialize configuration", t, func() {
+	Convey("Findit rules work", t, func() {
 		ctx := memory.Use(context.Background())
 		datastore.GetTestable(ctx).CatchupIndexes()
 		// Mock gerrit query, details (inner map)
