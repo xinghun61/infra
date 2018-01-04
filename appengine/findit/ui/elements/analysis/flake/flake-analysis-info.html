@@ -83,7 +83,9 @@
             <td class="data">
               <span class$="[[_regressionRangeStatus]]">&nbsp;&nbsp;&nbsp;</span>
               <template is="dom-if" if="[[!shouldShowRegressionRange(_regressionRangeStatus, regressionRangeLower, regressionRangeUpper)]]">
-                <span>[[_regressionRangeStatus]]</span>
+                <span>
+                  [[_regressionRangeStatus]]
+                </span>
               </template>
 
               <template is="dom-if" if="[[shouldShowRegressionRange(_regressionRangeStatus, regressionRangeLower, regressionRangeUpper)]]">
@@ -136,6 +138,13 @@
               </td>
             </tr>
           </template>
+
+          <template is="dom-if" if="[[analysisError(_regressionRangeStatus, _culpritAnalysisStatus)]]">
+            <tr>
+              <td class="description">Error</td>
+              <td class="data">[[error]]</td>
+            </tr>
+          </template>
         </table>
       </div>
     </expandable-card>
@@ -161,6 +170,8 @@
           culpritConfidence: String,
 
           bugId: String,
+
+          error: String,
 
           _header: {
             type: String,
@@ -197,11 +208,15 @@
           // Regression is finished, but culprit isn't done.
           if (regressionRangeAnalysisStatus.toLowerCase() === "completed" &&
             culpritAnalysisStatus.toLowerCase() !== "running" &&
-            culpritAnalysisStatus.toLowerCase() !== "pending") {
+            culpritAnalysisStatus.toLowerCase() !== "pending" &&
+            culpritAnalysisStatus.toLowerCase() !== "error") {
             status = "Analysis complete.";
             // Regression is complete, and culprit analysis is running or pending.
-          } else {
+          } else if (regressionRangeAnalysisStatus.toLowerCase() !== "error" &&
+                     culpritAnalysisStatus.toLowerCase() !== "error"){
             status = "Analysis running.";
+          } else {
+            status = "Analysis ended in error.";
           }
 
           // Add extra information
@@ -246,6 +261,10 @@
         // Computed bindings
         isRegressionAnalysisComplete: function (status) {
           return status == 'completed';
+        },
+
+        analysisError: function(regressionStatus, culpritStatus) {
+          return regressionStatus == 'error' || culpritStatus == 'error';
         },
 
         regressionRangeFound: function(regressionRangeLower, regressionRangeUpper) {

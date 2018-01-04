@@ -5,14 +5,78 @@
 </head>
 
 <body>
+  <h3>Complete with culprit and bug</h3>
   <flake-analysis-info regression-range-analysis-status="completed"
-                       regression-range-upper="fdsa"
-                       regression-range-lower="fdas"
+                        regression-range-upper="upper"
+                        regression-range-lower="lower"
+                        regression-range-confidence="50"
+                        culprit-analysis-status="completed"
+                        culprit-url="google.com"
+                        culprit-text="culprit"
+                        culprit-confidence="100"
+                        bug-id="12345">
+  </flake-analysis-info>
+
+  <h3>Complete with no culprit and bug</h3>
+  <flake-analysis-info regression-range-analysis-status="completed"
+                        regression-range-upper="upper"
+                        regression-range-lower="lower"
+                        regression-range-confidence="50"
+                        culprit-analysis-status="completed"
+                        culprit-url=""
+                        culprit-text=""
+                        culprit-confidence=""
+                        bug-id="12345">
+  </flake-analysis-info>
+
+  <h3>Running regression range</h3>
+  <flake-analysis-info regression-range-analysis-status="running"
+                        regression-range-upper=""
+                        regression-range-lower=""
+                        regression-range-confidence=""
+                        culprit-analysis-status=""
+                        culprit-url=""
+                        culprit-text=""
+                        culprit-confidence=""
+                        bug-id="">
+  </flake-analysis-info>
+
+  <h3>Running culprit analysis</h3>
+  <flake-analysis-info regression-range-analysis-status="completed"
+                        regression-range-upper="upper"
+                        regression-range-lower="lower"
+                        regression-range-confidence="50"
+                        culprit-analysis-status="running"
+                        culprit-url=""
+                        culprit-text=""
+                        culprit-confidence=""
+                        bug-id="">
+  </flake-analysis-info>
+
+  <h3>Regression range error</h3>
+  <flake-analysis-info regression-range-analysis-status="error"
+                       regression-range-upper="upper"
+                       regression-range-lower="lower"
                        regression-range-confidence="50"
-                       culprit-analysis-status="running"
+                       culprit-analysis-status=""
                        culprit-url=""
                        culprit-text=""
                        culprit-confidence=""
-                       bug-id="12345">
+                       bug-id=""
+                       error="error message">
   </flake-analysis-info>
+
+  <h3>Culprit analysis error</h3>
+  <flake-analysis-info regression-range-analysis-status="completed"
+                        regression-range-upper="upper"
+                        regression-range-lower="lower"
+                        regression-range-confidence="50"
+                        culprit-analysis-status="error"
+                        culprit-url=""
+                        culprit-text=""
+                        culprit-confidence=""
+                        bug-id=""
+                        error="error message">
+</flake-analysis-info>
 </body>
+
