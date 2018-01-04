@@ -1,3 +1,20 @@
+# Release Notes sheriff-o-matic 2018-01-04
+
+- 2 commits, 1 bugs affected since 7a3650e (2017-12-19T21:07:05Z)
+- 1 Authors:
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Now actually use the new "unkept" tree configs](https://chromium-review.googlesource.com/843067) (seanmccullough@chromium.org)
+- [[som] Add a separate gatekeeper "config" for trees that don't use gk.](https://chromium-review.googlesource.com/843044) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/796442](https://crbug.com/796442)
+
+
 # Release Notes sheriff-o-matic 2017-12-19
 
 - 7 commits, 4 bugs affected since 5c8bea6 (2017-12-12T22:10:38Z)
