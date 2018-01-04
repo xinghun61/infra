@@ -10,6 +10,8 @@ import time
 from google.protobuf import message as message_pb
 from google.protobuf import timestamp_pb2
 
+BATCH_DEFAULT = 500
+BATCH_LIMIT = 10000
 
 def message_to_dict(msg):
   """Converts a protobuf message to a dict, with field names as keys.
@@ -38,7 +40,7 @@ def _get_value(value):
   return value
 
 
-def send_rows(bq_client, dataset_id, table_id, rows):
+def send_rows(bq_client, dataset_id, table_id, rows, batch_size=BATCH_DEFAULT):
   """Sends rows to BigQuery.
 
   Args:
@@ -50,10 +52,17 @@ def send_rows(bq_client, dataset_id, table_id, rows):
     bq_client: an instance of google.cloud.bigquery.client.Client
     dataset_id, table_id (str): identifiers for the table to which the rows will
       be inserted
+    batch_size (int): the max number of rows to send to BigQuery in a single
+      request. Values exceeding the limit will use the limit. Values less than 1
+      will use BATCH_DEFAULT.
 
   Please use google.protobuf.message.Message instances moving forward.
   Tuples are deprecated.
   """
+  if batch_size > BATCH_LIMIT:
+    batch_size = BATCH_LIMIT
+  elif batch_size <= 0:
+    batch_size = BATCH_DEFAULT
   for i, row in enumerate(rows):
     if isinstance(row, tuple):
       continue
@@ -62,10 +71,16 @@ def send_rows(bq_client, dataset_id, table_id, rows):
     else:
       raise UnsupportedTypeError(type(row).__name__)
   table = bq_client.get_table(bq_client.dataset(dataset_id).table(table_id))
-  insert_errors = bq_client.create_rows(table, rows)
-  if insert_errors:
-    logging.error('Failed to send event to bigquery: %s', insert_errors)
-    raise BigQueryInsertError(insert_errors)
+  for row_set in _batch(rows, batch_size):
+    insert_errors = bq_client.create_rows(table, row_set)
+    if insert_errors:
+      logging.error('Failed to send event to bigquery: %s', insert_errors)
+      raise BigQueryInsertError(insert_errors)
+
+
+def _batch(rows, batch_size):
+  for i in xrange(0, len(rows), batch_size):
+    yield rows[i:i + batch_size]
 
 
 class UnsupportedTypeError(Exception):

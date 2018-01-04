@@ -29,6 +29,18 @@ class TestBigQueryHelper(unittest.TestCase):
     helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows)
     self.mock_create_rows.assert_any_call(self.table, rows)
 
+  def test_batch_sizes(self):
+    rows = [('a',), ('b',), ('c',)]
+    helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows, 0)
+    self.mock_create_rows.assert_any_call(self.table, rows)
+    helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows, 1)
+    self.mock_create_rows.assert_any_call(self.table, [('a',)])
+    self.mock_create_rows.assert_any_call(self.table, [('b',)])
+    self.mock_create_rows.assert_any_call(self.table, [('c',)])
+    helper.send_rows(self.bq_client, self.dataset_id, self.table_id, rows,
+                     helper.BATCH_LIMIT+1)
+    self.mock_create_rows.assert_any_call(self.table, rows)
+
   def test_send_rows_unsupported_type(self):
     with self.assertRaises(helper.UnsupportedTypeError):
       helper.send_rows(self.bq_client, self.dataset_id, self.table_id, [{}])
