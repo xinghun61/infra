@@ -34,7 +34,7 @@ func init() {
 
 	r.GET("/admin/smoketest", basemw, SmokeTest)
 
-	r.GET("/admin/status", templatesmw, Status)
+	r.GET("/view/status", templatesmw, Status)
 
 	http.DefaultServeMux.Handle("/", r)
 }
