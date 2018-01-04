@@ -96,6 +96,7 @@ import:
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
+  - cloudkms/v1
   - gensupport
   - google-api-go-generator
   - googleapi
