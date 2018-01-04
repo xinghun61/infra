@@ -105,9 +105,8 @@ def GetLatestBuildNumber(master_name, builder_name):
   return recent_builds[0]
 
 
-def GetBoundingBuilds(
-    master_name, builder_name, lower_bound_build_number,
-    upper_bound_build_number, requested_commit_position):
+def GetBoundingBuilds(master_name, builder_name, lower_bound_build_number,
+                      upper_bound_build_number, requested_commit_position):
   """Finds the two builds immediately before and after a commit position.
 
   Args:
@@ -166,8 +165,8 @@ def GetBoundingBuilds(
 
     if candidate_build.commit_position == requested_commit_position:
       # Exact match.
-      lower_bound_build = GetBuildInfo(
-          master_name, builder_name, candidate_build_number - 1)
+      lower_bound_build = GetBuildInfo(master_name, builder_name,
+                                       candidate_build_number - 1)
       assert lower_bound_build
       return lower_bound_build, candidate_build
 
@@ -214,6 +213,9 @@ def FindValidBuildNumberForStepNearby(master_name,
   for x in range(1, search_distance + 1):
     builds_to_look_at.append(build_number + x)
     builds_to_look_at.append(build_number - x)
+
+  logging.info('Examining build numbers %r for a valid build',
+               builds_to_look_at)
 
   http_client = FinditHttpClient()
   for build in builds_to_look_at:

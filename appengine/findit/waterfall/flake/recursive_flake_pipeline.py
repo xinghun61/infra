@@ -260,13 +260,17 @@ class RecursiveFlakePipeline(BasePipeline):
         # TODO(crbug.com/787931): Compile instead of error here when it's commit
         # position only.
         if not valid_build_number:
-          error_msg = 'Failed to find a valid build number around {}.'.format(
-              preferred_run_build_number)
+          error_msg = (
+              'Failed to find a valid build number around {}, '
+              'please add a link to this analysis at crbug.com/798923.'.
+              format(preferred_run_build_number))
           analysis.Update(
               status=analysis_status.ERROR,
               error={'error': error_msg,
                      'message': error_msg})
-          return
+          analysis.LogError(error_msg)
+          raise pipeline.Abort(error_msg)
+
         yield DetermineTruePassRatePipeline(analysis_urlsafe_key,
                                             valid_build_number, force)
 

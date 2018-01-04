@@ -434,7 +434,8 @@ class RecursiveFlakePipelineTest(wf_testcase.WaterfallTestCase):
     pipeline_job.start(queue_name=queue_name)
     self.execute_queued_tasks()
     self.assertEqual(analysis.status, analysis_status.ERROR)
-    self.assertEqual('Failed to find a valid build number around 100.',
+    self.assertEqual('Failed to find a valid build number around 100, '
+                     'please add a link to this analysis at crbug.com/798923.',
                      analysis.error['message'])
 
   @mock.patch.object(RecursiveFlakePipeline, 'was_aborted', return_value=True)
