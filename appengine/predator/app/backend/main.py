@@ -16,6 +16,7 @@ from gae_libs.pipeline_wrapper import pipeline_handlers
 
 # For appengine pipeline running on backend modules.
 pipeline_backend_application = pipeline_handlers._APP
+gae_ts_mon.initialize(pipeline_backend_application)
 
 
 backend_handler_mappings = [
@@ -29,3 +30,4 @@ backend_handler_mappings = [
      update_repo_to_dep_path.UpdateRepoToDepPath),
 ]
 backend_app = webapp2.WSGIApplication(backend_handler_mappings, debug=False)
+gae_ts_mon.initialize(backend_app)
