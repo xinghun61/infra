@@ -949,7 +949,9 @@ def _SafeCreateLoginURL(mr, continue_url=None):
   # or the option to add an account, even if they are currently
   # signed in to exactly one account.
   if mr.auth.user_id:
-    url = url.replace('/accounts/ServiceLogin', '/accounts/AccountChooser', 1)
+    # Notice: this makes assuptions about the output of users.create_login_url,
+    # which can change at any time. See https://crbug.com/monorail/3352.
+    url = url.replace('/ServiceLogin', '/AccountChooser', 1)
   return url
 
 
