@@ -222,6 +222,29 @@ class ChangelistClassifierTest(AppengineTestCase):
                        'name': 'NoRegressionRange',
                        'message': ('Can\'t find culprits due to unavailable '
                                    'regression range.')}])
+  @mock.patch(
+      'analysis.changelist_classifier.ChangelistClassifier.FindSuspects')
+  @mock.patch(
+      'analysis.changelist_classifier.ChangelistClassifier.GenerateSuspects')
+  def testLogFailedToFindSuspectedClsMessage(self, mock_generate_suspects,
+                                             mock_find_suspects):
+    """Tests logging messages if predator cannot find suspected cls."""
+    suspect = Suspect(DUMMY_CHANGELOG1, 'src/')
+    mock_generate_suspects.return_value = [suspect, suspect]
+    mock_find_suspects.return_value = []
+    report = CrashReport(
+        None, None, None, Stacktrace(DUMMY_CALLSTACKS, DUMMY_CALLSTACKS[0]),
+        (None, None), None, None)
+    self.changelist_classifier(report)
+    self.assertIsNone(self.changelist_classifier._log)
+
+    self.changelist_classifier.SetLog(self.GetMockLog())
+    self.changelist_classifier(report)
+    self.assertEqual(self.changelist_classifier._log.logs,
+                     [{'level': 'warning',
+                       'name': 'FailedToFindSuspectedCls',
+                       'message': ('Cannot find any match between cls in '
+                                   'regression range and stacktrace')}])
 
   @mock.patch('libs.gitiles.gitiles_repository.GitilesRepository.GetChangeLogs')
   def testGenerateSuspectsFilterReverted(self, mock_get_change_logs):

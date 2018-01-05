@@ -85,7 +85,14 @@ class ChangelistClassifier(object):
           LogLevel.ERROR)
       return []
 
-    return self.FindSuspects(report, suspects)
+    suspects = self.FindSuspects(report, suspects)
+    if not suspects:
+      log_util.Log(
+          self._log, 'FailedToFindSuspectedCls',
+          'Cannot find any match between cls in regression range and '
+          'stacktrace', LogLevel.WARNING)
+
+    return suspects
 
   def SetLog(self, log):
     self._log = log
