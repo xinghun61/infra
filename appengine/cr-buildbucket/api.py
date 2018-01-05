@@ -654,28 +654,6 @@ class BuildBucketApi(remote.Service):
         config_file_url=config.get_buildbucket_cfg_url(bucket.project_id),
     )
 
-  ####### LONGEST_PENDING_TIME #################################################
-
-  class LongestPendingTimeResponse(messages.Message):
-    longest_pending_time_sec = messages.FloatField(1)
-    error = messages.MessageField(ErrorMessage, 2)
-
-  @buildbucket_api_method(
-      endpoints.ResourceContainer(
-          message_types.VoidMessage,
-          bucket=messages.StringField(1, required=True),
-          builder=messages.StringField(2, required=True),
-      ),
-      LongestPendingTimeResponse,
-      path='metrics/longest-pending-time', http_method='GET')
-  @auth.public
-  def longest_pending_time(self, request):
-    """Returns longest pending time among all SCHEDULED builds of a builder."""
-    wait_time = service.longest_pending_time(request.bucket, request.builder)
-    return self.LongestPendingTimeResponse(
-        longest_pending_time_sec=wait_time.total_seconds(),
-    )
-
   ####### BACKFILL_TAG_INDEX ###################################################
 
   @buildbucket_api_method(

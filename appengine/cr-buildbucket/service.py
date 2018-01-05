@@ -1567,33 +1567,6 @@ def parse_identity(identity):
   return identity
 
 
-def longest_pending_time(bucket, builder):
-  """Returns longest waiting time among SCHEDULED builds of a builder.
-
-  |builder| is a value of "builder" tag.
-
-  Returns a datetime.timedelta.
-  """
-  if not bucket:
-    raise errors.InvalidInputError('no bucket')
-  if not acl.can_access_bucket(bucket):
-    raise acl.current_identity_cannot('access bucket %s', bucket)
-  if not builder:
-    raise errors.InvalidInputError('no builder')
-
-  # Find the oldest, still SCHEDULED build in this builder.
-  q = model.Build.query(
-      model.Build.bucket == bucket,
-      model.Build.tags == ('builder:%s' % builder),
-      model.Build.status == model.BuildStatus.SCHEDULED,
-      projection=[model.Build.create_time])
-  q = q.order(model.Build.create_time)
-  result = q.fetch(1)
-  if not result:
-    return datetime.timedelta(0)
-  return utils.utcnow() - result[0].create_time
-
-
 def _add_to_tag_index_async(tag, new_entries):
   """Adds index entries to the tag index.
 

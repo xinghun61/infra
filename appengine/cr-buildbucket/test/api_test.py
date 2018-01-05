@@ -727,19 +727,6 @@ class ApiTests(object):
     get.side_effect = auth.AuthorizationError
     self.call_api('get', {'id': 123}, status=403)
 
-  ####### LONGEST_PENDING_TIME #################################################
-
-  @mock.patch('service.longest_pending_time', autospec=True)
-  def test_longest_pending_time(self, longest_pending_time):
-    longest_pending_time.return_value = datetime.timedelta(seconds=42)
-    req = {
-      'bucket': 'chromium',
-      'builder': 'x',
-    }
-    res = self.call_api('longest_pending_time', req).json_body
-    self.assertEqual(res['longest_pending_time_sec'], 42)
-    longest_pending_time.assert_called_once_with('chromium', 'x')
-
   ####### BACKFILL_TAG_INDEX ###################################################
 
   @mock.patch('api.enqueue_task')
