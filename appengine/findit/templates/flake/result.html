@@ -324,17 +324,25 @@
           TODO(crbug/767541): Re-enable showing swarming tasks for try jobs.*/
         if (swarmingTaskIds && !tryJobUrl) {
           $('#swarming-task-container').html('Swarming run:');
-          $.each(swarmingTaskIds, function (index, value) {
+          {% if show_admin_options %}
+            $.each(swarmingTaskIds, function (index, value) {
+                var link = $('<a>', {
+                  text: 'task ' + (index + 1),
+                  href: 'https://chromium-swarm.appspot.com/task?id=' + value,
+                }).appendTo('#swarming-task-container');
+              if (index == swarmingTaskIds.length - 1) {
+                link.attr('id', 'representative-swarming-task');
+              } else {
+                link.attr('id', 'swarming-task')
+              }
+            });
+          {% else %}
             var link = $('<a>', {
-              text: 'task ' + (index + 1),
-              href: 'https://chromium-swarm.appspot.com/task?id=' + value,
+                  text: 'output',
+                  href: 'https://chromium-swarm.appspot.com/task?id=' + value,
             }).appendTo('#swarming-task-container');
-            if (index == swarmingTaskIds.length - 1) {
-              link.attr('id', 'representative-swarming-task');
-            } else {
-              link.attr('id', 'swarming-task')
-            }
-          });
+            link.attr('id', 'representative-swarming-task');
+          {% endif %}
           $('#swarming-task-container').show();
         } else {
           $('#swarming-task-container').hide();
@@ -541,19 +549,20 @@
           </div>
         </form>
       </div>
+
+      <br>
+      <br>
+      <div>
+        <b>Metadata:</b>
+        <br> Test rerun: {{ iterations_to_rerun }} times
+        <br> {% if request_time %} Request time: {{ request_time }}
+        <br> {% endif %} {% if pending_time %} Pending time: {{ pending_time }}
+        <br> {% endif %} {% if show_debug_info and duration %} Duration: {{ duration }}
+        <br> {% endif %} Total Try Jobs: {{ revision_level_number }}
+      </div>
+      <br>
     {% endif %}
-    <br>
-    <br>
-    <div>
-      <b>Metadata:</b>
-      <br> Test rerun: {{ iterations_to_rerun }} times
-      <br> {% if request_time %} Request time: {{ request_time }}
-      <br> {% endif %} {% if pending_time %} Pending time: {{ pending_time }}
-      <br> {% endif %} {% if show_debug_info and duration %} Duration: {{ duration }}
-      <br> {% endif %} Total Swarm Tasks: {{ build_level_number }}
-      <br> Total Try Jobs: {{ revision_level_number }}
-    </div>
-    <br>
+
     <div id="triage_flake">
       {% if suspected_flake %}
         <b>Feedback appreciated:</b>
