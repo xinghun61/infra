@@ -8,12 +8,11 @@ class TsApp extends Polymer.Element {
 
   static get properties() {
     return {
-      logoutUrl: {
-        type: String,
-        value: '/',
-      },
+      loginUrl: String,
+      logoutUrl: String,
       queryParams: Object,
       route: Object,
+      user: String,
       _mainRouteIsActive: Boolean,
       _tree: {
         type: Object,

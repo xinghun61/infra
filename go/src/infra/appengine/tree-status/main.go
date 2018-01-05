@@ -13,15 +13,18 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/appengine/gaeauth/server"
 	"go.chromium.org/luci/appengine/gaemiddleware/standard"
+	"go.chromium.org/luci/common/auth/identity"
 	"go.chromium.org/luci/common/logging"
+	"go.chromium.org/luci/server/analytics"
+	"go.chromium.org/luci/server/auth"
 	"go.chromium.org/luci/server/auth/xsrf"
 	"go.chromium.org/luci/server/router"
 )
 
 const (
-	productionAnalyticsID = "UA-55762617-27"
-	stagingAnalyticsID    = "UA-55762617-27"
+	authGroup = "tree-status-access"
 )
 
 var (
@@ -35,22 +38,65 @@ var errStatus = func(c context.Context, w http.ResponseWriter, status int, msg s
 }
 
 func base(includeCookie bool) router.MiddlewareChain {
-	return standard.Base()
+	a := auth.Authenticator{
+		Methods: []auth.Method{
+			&server.OAuth2Method{Scopes: []string{server.EmailScope}},
+		},
+	}
+	if includeCookie {
+		a.Methods = append(a.Methods, server.CookieAuth)
+	}
+	return standard.Base().Extend(a.GetMiddleware())
 }
 
 func indexPage(ctx *router.Context) {
-	c, w, _, _ := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+	c, w, r, _ := ctx.Context, ctx.Writer, ctx.Request, ctx.Params
+
+	user := auth.CurrentIdentity(c)
+
+	loginURL, err := auth.LoginURL(c, "/")
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// TODO(zhangtiff): Replace authentication requirement for main page with API
+	// endpoints that serve different data based on ACLs.
+	if user.Kind() == identity.Anonymous {
+		if err != nil {
+			errStatus(c, w, http.StatusInternalServerError, err.Error())
+		} else {
+			http.Redirect(w, r, loginURL, http.StatusFound)
+		}
+		return
+	}
+
+	isGoogler, err := auth.IsMember(c, authGroup)
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if !isGoogler {
+		errStatus(c, w, http.StatusForbidden,
+			"You don't have access to view this service.")
+		return
+	}
+
+	logoutURL, err := auth.LogoutURL(c, "/")
+
+	if err != nil {
+		errStatus(c, w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
 	tok, err := xsrf.Token(c)
 	if err != nil {
 		logging.Errorf(c, "while getting xsrf token: %s", err)
 	}
 
-	AnalyticsID := stagingAnalyticsID
 	isStaging := true
 	if !strings.HasSuffix(info.AppID(c), "-staging") {
-		logging.Debugf(c, "Using production GA ID for app %s", info.AppID(c))
-		AnalyticsID = productionAnalyticsID
 		isStaging = false
 	}
 
@@ -58,7 +104,10 @@ func indexPage(ctx *router.Context) {
 		"IsDevAppServer": info.IsDevAppServer(c),
 		"IsStaging":      isStaging,
 		"XsrfToken":      tok,
-		"AnalyticsID":    AnalyticsID,
+		"AnalyticsID":    analytics.ID(c),
+		"User":           user.Email(),
+		"LogoutUrl":      logoutURL,
+		"LoginUrl":       loginURL,
 	}
 
 	err = mainPage.Execute(w, data)
@@ -90,10 +139,18 @@ func getXSRFToken(ctx *router.Context) {
 
 //// Routes.
 func init() {
+	r := router.New()
 	basemw := base(true)
+	standard.InstallHandlers(r)
 
 	rootRouter := router.New()
 	rootRouter.GET("/*path", basemw, indexPage)
+
+	http.DefaultServeMux.Handle("/_ah/", r)
+	http.DefaultServeMux.Handle("/admin/", r)
+	http.DefaultServeMux.Handle("/api/", r)
+	http.DefaultServeMux.Handle("/auth/", r)
+	http.DefaultServeMux.Handle("/internal/", r)
 
 	http.DefaultServeMux.Handle("/", rootRouter)
 }

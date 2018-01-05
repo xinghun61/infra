@@ -25,10 +25,10 @@
           </a>
         </span>
       </template>
-      <chops-login user="test user" logout-url="[[logoutUrl]]"></chops-login>
+      <chops-login user="[[user]]" logout-url="[[logoutUrl]]" login-url="[[loginUrl]]"></chops-login>
     </chops-header>
     <div id="tsContainer">
-      <app-location route="{{route}}" query-params={{queryParams}}></app-location>
+      <app-location route="{{route}}" query-params="{{queryParams}}" url-space-regex="^(?!(/_ah/|/auth/))"></app-location>
       <app-route route="{{route}}" pattern="/" active="{{_mainRouteIsActive}}">
         <template is="dom-if" if="[[_mainRouteIsActive]]">
           <template is="dom-repeat" items="[[_trees]]" as="tree">
