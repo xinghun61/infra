@@ -151,7 +151,7 @@ type BuilderTestHistory struct {
 	ChromeRevision []string `json:"chromeRevision"`
 	// SecondsSinceEpoch contains some kind of timing information, which
 	// isn't currently used but should be.
-	SecondsSinceEpoch []int `json:"secondsSinceEpoch"`
+	SecondsSinceEpoch []float64 `json:"secondsSinceEpoch"`
 	// Tests is a map of test name to the history of results for test runs.
 	Tests map[string]*TestResultHistory `json:"tests"`
 	// FailureMap is used to decode result strings in TestResultHistory.
