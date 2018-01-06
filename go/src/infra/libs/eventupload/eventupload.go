@@ -40,6 +40,7 @@ var bqFields = map[reflect.Type][]fieldInfo{}
 var bqFieldsLock = sync.RWMutex{}
 
 const insertLimit = 10000
+const batchDefault = 500
 
 // EventUploader is an interface for types which implement a Put method. It
 // exists for the purpose of mocking Uploader in tests.
@@ -63,6 +64,9 @@ type Uploader struct {
 	// contains a field "status" set to either "success" or "failure."
 	uploads        metric.Counter
 	initMetricOnce sync.Once
+	// BatchSize is the max number of rows to send to BigQuery at a time.
+	// The default is 500.
+	BatchSize int
 }
 
 // Row implements bigquery.ValueSaver
@@ -175,11 +179,24 @@ func getValue(value interface{}, path []string) (interface{}, error) {
 //
 // Set UploadsMetricName on the resulting Uploader to use the default counter
 // metric.
+//
+// Set BatchSize to set a custom batch size.
 func NewUploader(ctx context.Context, c *bigquery.Client, datasetID, tableID string) *Uploader {
 	return &Uploader{
 		DatasetID: datasetID,
 		TableID:   tableID,
 		Uploader:  c.Dataset(datasetID).Table(tableID).Uploader(),
+	}
+}
+
+func (u *Uploader) batchSize() int {
+	switch {
+	case u.BatchSize > insertLimit:
+		return insertLimit
+	case u.BatchSize <= 0:
+		return batchDefault
+	default:
+		return u.BatchSize
 	}
 }
 
@@ -232,7 +249,7 @@ func (u *Uploader) Put(ctx context.Context, src interface{}) error {
 	if err != nil {
 		return err
 	}
-	for _, rowSet := range batch(rows, insertLimit) {
+	for _, rowSet := range batch(rows, u.batchSize()) {
 		var failed int
 		err = u.Uploader.Put(ctx, rowSet)
 		if err != nil {
@@ -256,13 +273,13 @@ func (u *Uploader) Put(ctx context.Context, src interface{}) error {
 }
 
 // TODO: when proto transition is complete, deal in *Rows, not bigquery.ValueSaver
-func batch(rows []bigquery.ValueSaver, insertLimit int) [][]bigquery.ValueSaver {
-	rowSetsLen := int(math.Ceil(float64(len(rows) / insertLimit)))
+func batch(rows []bigquery.ValueSaver, batchSize int) [][]bigquery.ValueSaver {
+	rowSetsLen := int(math.Ceil(float64(len(rows) / batchSize)))
 	rowSets := make([][]bigquery.ValueSaver, 0, rowSetsLen)
 	for len(rows) > 0 {
 		batch := rows
-		if len(batch) > insertLimit {
-			batch = batch[:insertLimit]
+		if len(batch) > batchSize {
+			batch = batch[:batchSize]
 		}
 		rowSets = append(rowSets, batch)
 		rows = rows[len(batch):]
