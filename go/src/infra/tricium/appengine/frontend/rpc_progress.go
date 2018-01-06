@@ -22,45 +22,9 @@ import (
 
 // Progress implements Tricium.Progress.
 func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest) (*tricium.ProgressResponse, error) {
-	var runID int64
-	if req.Consumer == tricium.Consumer_GERRIT {
-		gd := req.GetGerritDetails()
-		if gd == nil {
-			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit details")
-		}
-		if gd.Host == "" {
-			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit host")
-		}
-		if gd.Project == "" {
-			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit project")
-		}
-		if gd.Change == "" {
-			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit change ID")
-		}
-		if gd.Revision == "" {
-			return nil, grpc.Errorf(codes.InvalidArgument, "missing Gerrit revision")
-		}
-		// If Gerrit consumer and no run ID, lookup the run ID with the provided Gerrit change details.
-		if req.RunId == "" {
-			g := &GerritChangeToRunID{
-				ID: gerritMappingID(gd.Host, gd.Project, gd.Change),
-			}
-			if err := ds.Get(c, g); err != nil {
-				logging.WithError(err).Errorf(c, "failed to get GerritChangeToRunID entity: %v", err)
-				return nil, grpc.Errorf(codes.InvalidArgument, "failed to find run ID for Gerrit change")
-			}
-			runID = g.RunID
-		}
-	} else {
-		if req.RunId == "" {
-			return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
-		}
-		r, err := strconv.ParseInt(req.RunId, 10, 64)
-		if err != nil {
-			logging.WithError(err).Errorf(c, "failed to parse run ID: %s", req.RunId)
-			return nil, grpc.Errorf(codes.InvalidArgument, "invalid run ID")
-		}
-		runID = r
+	runID, err := validateProgressRequest(c, req)
+	if err != nil {
+		return nil, err
 	}
 	runState, analyzerProgress, err := progress(c, runID)
 	if err != nil {
@@ -73,6 +37,51 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 		State:            runState,
 		AnalyzerProgress: analyzerProgress,
 	}, nil
+}
+
+func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (int64, error) {
+	if req.Consumer == tricium.Consumer_GERRIT {
+		// Either Gerrit details or run ID should be given; if both are
+		// given then they may be conflicting; if the run ID is given
+		// then there should be no need to specify Gerrit details.
+		if req.RunId != "" {
+			return 0, grpc.Errorf(codes.InvalidArgument, "both Gerrit details and run ID given")
+		}
+		gd := req.GetGerritDetails()
+		if gd == nil {
+			return 0, grpc.Errorf(codes.InvalidArgument, "missing Gerrit details")
+		}
+		if gd.Host == "" {
+			return 0, grpc.Errorf(codes.InvalidArgument, "missing Gerrit host")
+		}
+		if gd.Project == "" {
+			return 0, grpc.Errorf(codes.InvalidArgument, "missing Gerrit project")
+		}
+		if gd.Change == "" {
+			return 0, grpc.Errorf(codes.InvalidArgument, "missing Gerrit change ID")
+		}
+		if gd.Revision == "" {
+			return 0, grpc.Errorf(codes.InvalidArgument, "missing Gerrit revision")
+		}
+		// Look up the run ID with the provided Gerrit change details.
+		g := &GerritChangeToRunID{
+			ID: gerritMappingID(gd.Host, gd.Project, gd.Change),
+		}
+		if err := ds.Get(c, g); err != nil {
+			logging.WithError(err).Errorf(c, "failed to get GerritChangeToRunID entity: %v", err)
+			return 0, grpc.Errorf(codes.InvalidArgument, "failed to find run ID for Gerrit change")
+		}
+		return g.RunID, nil
+	}
+	if req.RunId == "" {
+		return 0, grpc.Errorf(codes.InvalidArgument, "missing run ID")
+	}
+	runID, err := strconv.ParseInt(req.RunId, 10, 64)
+	if err != nil {
+		logging.WithError(err).Errorf(c, "failed to parse run ID: %s", req.RunId)
+		return 0, grpc.Errorf(codes.InvalidArgument, "invalid run ID")
+	}
+	return runID, nil
 }
 
 func progress(c context.Context, runID int64) (tricium.State, []*tricium.AnalyzerProgress, error) {
