@@ -136,4 +136,5 @@ class UMASamplingProfilerData(CrashData):
   @property
   def signature(self):
     subtree_root = self.subtree_stacks[0]['frames'][self.subtree_root_depth]
-    return subtree_root['function_name'][:SIGNATURE_MAX_LENGTH]
+    function_name = subtree_root.get('function_name', 'unsymbolized function')
+    return function_name[:SIGNATURE_MAX_LENGTH]

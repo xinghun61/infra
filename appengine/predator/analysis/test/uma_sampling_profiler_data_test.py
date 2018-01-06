@@ -6,6 +6,7 @@ import mock
 
 from analysis import stacktrace
 from analysis.analysis_testcase import AnalysisTestCase
+from analysis.crash_data import SIGNATURE_MAX_LENGTH
 from analysis.uma_sampling_profiler_data import UMASamplingProfilerData
 from libs.deps.chrome_dependency_fetcher import ChromeDependencyFetcher
 from libs.deps.dependency import Dependency
@@ -207,3 +208,24 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
     uma_data = UMASamplingProfilerData(
         raw_data, ChromeDependencyFetcher(self.GetMockRepoFactory()))
     self.assertTrue(uma_data.redo)
+
+  def testSignature(self):
+    """Tests generation of the signature."""
+    uma_data = self._GetDummyUMAData()
+    raw_data = TEST_DATA.copy()
+    # Preserve only the first stack.
+    raw_data['subtree_stacks'] = raw_data['subtree_stacks'][0:1]
+    root_frame = (
+        raw_data['subtree_stacks'][0]['frames'][raw_data['subtree_root_depth']])
+
+    # Check that the function gets truncated to the max length.
+    root_frame['function_name'] = 'x' * (SIGNATURE_MAX_LENGTH + 1)
+    uma_data = UMASamplingProfilerData(
+        raw_data, ChromeDependencyFetcher(self.GetMockRepoFactory()))
+    self.assertEqual(uma_data.signature, 'x' * SIGNATURE_MAX_LENGTH)
+
+    # Check that unsymbolized functions are properly handled.
+    del root_frame['function_name']
+    uma_data = UMASamplingProfilerData(
+        raw_data, ChromeDependencyFetcher(self.GetMockRepoFactory()))
+    self.assertEqual(uma_data.signature, 'unsymbolized function')
