@@ -11,8 +11,11 @@ import (
 
 	"cloud.google.com/go/bigquery"
 	"github.com/golang/protobuf/ptypes"
-	"go.chromium.org/luci/common/tsmon"
 	"golang.org/x/net/context"
+
+	"go.chromium.org/luci/common/tsmon"
+
+	"infra/libs/eventupload/testdata"
 
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -120,13 +123,13 @@ func TestSave(t *testing.T) {
 			t.Fatal("could not convert time to timestamp")
 		}
 		r := &Row{
-			Message: &TestMessage{
+			Message: &testdata.TestMessage{
 				Name:      "testname",
 				Timestamp: ts,
-				Nested: &NestedTestMessage{
+				Nested: &testdata.NestedTestMessage{
 					Name: "nestedname",
 				},
-				RepeatedNested: []*NestedTestMessage{
+				RepeatedNested: []*testdata.NestedTestMessage{
 					{Name: "repeated_one"},
 					{Name: "repeated_two"},
 				},
@@ -153,13 +156,13 @@ func TestRowsFromSrc(t *testing.T) {
 	}{
 		{
 			desc:    "accepts pointers to structs which implement proto.Message",
-			src:     &TestMessage{},
+			src:     &testdata.TestMessage{},
 			wantLen: 1,
 		},
 		// TODO: when proto transition is complete, change to does not accept
 		{
 			desc:    "accepts structs",
-			src:     TestMessage{},
+			src:     testdata.TestMessage{},
 			wantLen: 1,
 		},
 		// TODO: when proto transition is complete, change to does not accept
@@ -170,7 +173,7 @@ func TestRowsFromSrc(t *testing.T) {
 		},
 		{
 			desc:    "accepts slices of structs which implement proto.Message",
-			src:     []*TestMessage{{}, {}},
+			src:     []*testdata.TestMessage{{}, {}},
 			wantLen: 2,
 		},
 	}
