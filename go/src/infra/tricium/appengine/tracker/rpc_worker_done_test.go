@@ -86,8 +86,8 @@ func TestWorkerDoneRequest(t *testing.T) {
 		err = workerDone(ctx, &admin.WorkerDoneRequest{
 			RunId:    request.ID,
 			Worker:   fileIsolator,
-			ExitCode: 0,
 			Provides: tricium.Data_FILES,
+			State:    tricium.State_SUCCESS,
 		}, &mockIsolator{})
 		So(err, ShouldBeNil)
 
@@ -110,15 +110,15 @@ func TestWorkerDoneRequest(t *testing.T) {
 		err = workerDone(ctx, &admin.WorkerDoneRequest{
 			RunId:    request.ID,
 			Worker:   clangIsolatorWindows,
-			ExitCode: 0,
 			Provides: tricium.Data_RESULTS,
+			State:    tricium.State_SUCCESS,
 		}, &mockIsolator{})
 		So(err, ShouldBeNil)
 		err = workerDone(ctx, &admin.WorkerDoneRequest{
 			RunId:    request.ID,
 			Worker:   clangIsolatorUbuntu,
-			ExitCode: 0,
 			Provides: tricium.Data_RESULTS,
+			State:    tricium.State_SUCCESS,
 		}, &mockIsolator{})
 		So(err, ShouldBeNil)
 

@@ -55,6 +55,53 @@ func TestGetNext(t *testing.T) {
 	})
 }
 
+func TestGetWithDescendants(t *testing.T) {
+	Convey("Workflow with single worker, returns worker", t, func() {
+		cw := "Single"
+		wf := &Workflow{
+			Workers: []*Worker{
+				{
+					Name: cw,
+				},
+			},
+		}
+		sw := wf.GetWithDescendants(cw)
+		So(len(sw), ShouldEqual, 1)
+		So(sw[0], ShouldEqual, cw)
+	})
+
+	Convey("Workflow with descending workers, returns worker with descendants", t, func() {
+		cw := "First"
+		s := "Next1"
+		s2 := "Next2"
+		t := "Next1Next1"
+		t2 := "Next1Next2"
+		wf := &Workflow{
+			Workers: []*Worker{
+				{
+					Name: cw,
+					Next: []string{
+						s,
+						s2,
+					},
+				},
+				{
+					Name: s,
+					Next: []string{
+						t,
+						t2,
+					},
+				},
+				{Name: s2},
+				{Name: t},
+				{Name: t2},
+			},
+		}
+		sw := wf.GetWithDescendants(cw)
+		So(sw, ShouldResemble, []string{cw, s, t, t2, s2})
+	})
+}
+
 func TestRootWorkers(t *testing.T) {
 	Convey("Workflow with no root workers, returns no root workers", t, func() {
 		cw := "First"

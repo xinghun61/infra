@@ -26,7 +26,7 @@ var (
 	taskID = "349f0d849227cd10" // matches the above pubsub message
 )
 
-func TestDeocdePubsubMessage(t *testing.T) {
+func TestDecodePubsubMessage(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		tt := &trit.Testing{}
 		ctx := tt.Context()

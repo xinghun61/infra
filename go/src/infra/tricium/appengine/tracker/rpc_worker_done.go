@@ -36,7 +36,6 @@ func (*trackerServer) WorkerDone(c context.Context, req *admin.WorkerDoneRequest
 	if req.IsolatedOutputHash == "" {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing output hash")
 	}
-	// TODO(emso): check exit code
 	if err := workerDone(c, req, common.IsolateServer); err != nil {
 		return nil, grpc.Errorf(codes.Internal, "failed to track worker completion: %v", err)
 	}
@@ -74,17 +73,11 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	}
 
 	// Process isolated output and collect comments.
-	// NB! This only applies to analyzers outputting comments.
-	comments, err := collectComments(c, req.Provides, isolator, run.IsolateServerURL,
+	// NB! This only applies to successful analyzer functions outputting comments.
+	comments, err := collectComments(c, req.State, req.Provides, isolator, run.IsolateServerURL,
 		req.IsolatedOutputHash, analyzerName, workerKey)
 	if err != nil {
 		return fmt.Errorf("failed to get worker results: %v", err)
-	}
-
-	// Compute state of this worker.
-	workerState := tricium.State_SUCCESS
-	if req.ExitCode != 0 {
-		workerState = tricium.State_FAILURE
 	}
 
 	// Compute state of parent analyzer.
@@ -104,7 +97,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	analyzerNumComments := len(comments)
 	for _, wr := range workerResults {
 		if wr.Name == req.Worker {
-			wr.State = workerState // Setting state to what we will store in the below transaction.
+			wr.State = req.State // Setting state to what we will store in the below transaction.
 		} else {
 			analyzerNumComments += wr.NumComments
 		}
@@ -164,7 +157,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 
 	// Write state changes and results in parallel in a transaction.
 	logging.Infof(c, "Updating state: worker %s: %s, analyzer %s: %s, run %d, %s",
-		req.Worker, workerState, analyzerName, analyzerState, req.RunId, runState)
+		req.Worker, req.State, analyzerName, analyzerState, req.RunId, runState)
 
 	// Now that all prerequisite data was loaded, run the mutations in a transaction.
 	ops := []func() error{
@@ -198,17 +191,17 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 		},
 		// Update worker state, isolated output, and number of result comments.
 		func() error {
-			workerRes.State = workerState
+			workerRes.State = req.State
 			workerRes.IsolatedOutput = req.IsolatedOutputHash
 			workerRes.NumComments = len(comments)
 			if err := ds.Put(c, workerRes); err != nil {
 				return fmt.Errorf("failed to update WorkerRunResult: %v", err)
 			}
 			// Monitor worker success/failure.
-			if workerState == tricium.State_SUCCESS {
+			if req.State == tricium.State_SUCCESS {
 				workerSuccessCount.Add(c, 1, analyzerName, platformName)
 			} else {
-				workerFailureCount.Add(c, 1, analyzerName, platformName, workerState)
+				workerFailureCount.Add(c, 1, analyzerName, platformName, req.State)
 			}
 			return nil
 		},
@@ -308,9 +301,13 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	return nil
 }
 
-func collectComments(c context.Context, t tricium.Data_Type, isolator common.IsolateAPI,
+func collectComments(c context.Context, state tricium.State, t tricium.Data_Type, isolator common.IsolateAPI,
 	isolateServerURL, isolatedOutputHash, analyzer string, workerKey *ds.Key) ([]*track.Comment, error) {
 	comments := []*track.Comment{}
+	// Only collect comments if analyzer function completed successfully.
+	if state != tricium.State_SUCCESS {
+		return comments, nil
+	}
 	switch t {
 	case tricium.Data_RESULTS:
 		resultsStr, err := isolator.FetchIsolatedResults(c, isolateServerURL, isolatedOutputHash)

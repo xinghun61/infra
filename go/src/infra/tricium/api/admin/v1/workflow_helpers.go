@@ -20,6 +20,15 @@ func (wf *Workflow) GetNext(cw string) []string {
 	return nil
 }
 
+// GetWithDescendants returns the provided worker and its decendant workers.
+func (wf *Workflow) GetWithDescendants(cw string) []string {
+	workers := []string{cw}
+	for _, n := range wf.GetNext(cw) {
+		workers = append(workers, wf.GetWithDescendants(n)...)
+	}
+	return workers
+}
+
 // RootWorkers returns the list of root worker names.
 //
 // Root workers are those workers in need of the initial Tricium

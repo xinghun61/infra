@@ -17,6 +17,7 @@ import (
 	"google.golang.org/grpc/codes"
 
 	"infra/tricium/api/admin/v1"
+	"infra/tricium/api/v1"
 	"infra/tricium/appengine/common"
 	"infra/tricium/appengine/common/config"
 )
@@ -52,13 +53,20 @@ func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowCac
 	if err != nil {
 		return fmt.Errorf("failed to get worker output type: %v", err)
 	}
+
+	// Worker state.
+	workerState := tricium.State_SUCCESS
+	if exitCode != 0 {
+		workerState = tricium.State_FAILURE
+	}
+
 	// Mark worker as done.
 	b, err := proto.Marshal(&admin.WorkerDoneRequest{
 		RunId:              req.RunId,
 		Worker:             req.Worker,
 		IsolatedOutputHash: isolatedOutput,
-		ExitCode:           exitCode,
 		Provides:           w.Provides,
+		State:              workerState,
 	})
 	if err != nil {
 		return fmt.Errorf("failed to encode worker done request: %v", err)
@@ -67,6 +75,33 @@ func collect(c context.Context, req *admin.CollectRequest, wp config.WorkflowCac
 	t.Payload = b
 	if err := tq.Add(c, common.TrackerQueue, t); err != nil {
 		return fmt.Errorf("failed to enqueue track request: %v", err)
+	}
+
+	// Abort here if worker failed and mark descendants as failures.
+	if workerState == tricium.State_FAILURE {
+		logging.Warningf(c, "Execution of worker failed, exit code: %d, worker: %s, run ID: %s", exitCode, req.Worker, req.RunId)
+		var tasks []*tq.Task
+		for _, worker := range wf.GetWithDescendants(req.Worker) {
+			if worker == req.Worker {
+				continue
+			}
+			// Mark descendant worker as done and failed.
+			b, err := proto.Marshal(&admin.WorkerDoneRequest{
+				RunId:  req.RunId,
+				Worker: worker,
+				State:  tricium.State_ABORTED,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to encode worker done request: %v", err)
+			}
+			t := tq.NewPOSTTask("/tracker/internal/worker-done", nil)
+			t.Payload = b
+			tasks = append(tasks, t)
+		}
+		if err := tq.Add(c, common.TrackerQueue, tasks...); err != nil {
+			return fmt.Errorf("failed to enqueue track request: %v", err)
+		}
+		return nil
 	}
 
 	// Create layered isolated input, include the input in the collect request and

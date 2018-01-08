@@ -210,8 +210,6 @@ type WorkerRunResult struct {
 	// Hash to the isolated output collected from the corresponding swarming task.
 	IsolatedOutput string `gae:",noindex"`
 	SwarmingTaskID string `gae:",noindex"`
-	// Exit code of the corresponding swarming task.
-	ExitCode int
 	// Number of comments produced by this worker.
 	NumComments int `gae:",noindex"`
 	// Tricium result encoded as JSON.
