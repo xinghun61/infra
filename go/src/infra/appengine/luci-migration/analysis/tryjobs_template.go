@@ -104,14 +104,18 @@ at {{.MostRecentlyCompleted | timeString }}.
   <li>Considered builds at most {{.MinBuildAge | durationString}} old</li>
 </ul>
 
-{{if .FalseFailures}}
 <h3>False failures on LUCI</h3>
+{{if .FalseFailures}}
 {{template "groups" .FalseFailures}}
+{{else}}
+None.
 {{end}}
 
-{{if .FalseSuccesses}}
 <h3>False successes on LUCI</h3>
+{{if .FalseSuccesses}}
 {{template "groups" .FalseSuccesses}}
+{{else}}
+None.
 {{end}}
 
 {{/* add slow builds */}}
