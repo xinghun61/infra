@@ -1082,6 +1082,8 @@ class BuildBucketServiceTest(testing.AppengineTestCase):
     self.test_build.tags = [self.INDEXED_TAG]
     self.test_build.put()
 
+    self.put_many_builds(10)  # add unrelated builds
+
     model.TagIndex(
         id=self.INDEXED_TAG,
         permanently_incomplete=True).put()

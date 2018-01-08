@@ -848,7 +848,9 @@ def _tag_index_search(q):
   assert all_indexed_tags
   indexed_tag = all_indexed_tags[0] # choose the most selective tag.
   indexed_tag_key = indexed_tag.split(':', 1)[0]
+
   # Exclude the indexed tag from the tag filter.
+  q = q.copy()
   q.tags = q.tags[:]
   q.tags.remove(indexed_tag)
 
