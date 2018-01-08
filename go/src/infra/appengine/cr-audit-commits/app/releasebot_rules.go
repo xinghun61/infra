@@ -6,6 +6,7 @@ package crauditcommits
 
 import (
 	"fmt"
+	"strings"
 
 	"golang.org/x/net/context"
 
@@ -38,5 +39,5 @@ func onlyModifies(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *
 		return false, fmt.Errorf("Could not find commit %s through gitiles", rc.CommitHash)
 	}
 	td := c[0].TreeDiff
-	return len(td) == 1 && td[0].Type == "MODIFY" && td[0].OldPath == fn && td[0].NewPath == fn, nil
+	return len(td) == 1 && strings.ToLower(td[0].Type) == "modify" && td[0].OldPath == fn && td[0].NewPath == fn, nil
 }

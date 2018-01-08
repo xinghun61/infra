@@ -52,7 +52,7 @@ func TestReleaseBotRules(t *testing.T) {
 					Commit: "b07c0de",
 					TreeDiff: []gitiles.TreeDiff{
 						{
-							Type:    "MODIFY",
+							Type:    "modify",
 							OldPath: "chrome/VERSION",
 							NewPath: "chrome/VERSION",
 						},
@@ -73,12 +73,12 @@ func TestReleaseBotRules(t *testing.T) {
 						Commit: "b07c0de",
 						TreeDiff: []gitiles.TreeDiff{
 							{
-								Type:    "MODIFY",
+								Type:    "modify",
 								OldPath: "chrome/VERSION",
 								NewPath: "chrome/VERSION",
 							},
 							{
-								Type:    "ADD",
+								Type:    "add",
 								NewPath: "other/path",
 							},
 						},
@@ -96,7 +96,7 @@ func TestReleaseBotRules(t *testing.T) {
 						Commit: "b07c0de",
 						TreeDiff: []gitiles.TreeDiff{
 							{
-								Type:    "RENAME",
+								Type:    "rename",
 								OldPath: "chrome/VERSION",
 								NewPath: "chrome/VERSION.bak",
 							},
