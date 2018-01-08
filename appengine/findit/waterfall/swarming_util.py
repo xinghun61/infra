@@ -384,7 +384,9 @@ def GetIsolatedDataForStep(master_name,
   """
   step_isolated_data = []
   data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
-                                     http_client, {'stepname': step_name})
+                                     http_client, {
+                                         'stepname': step_name
+                                     })
   if not data:
     return step_isolated_data
 
@@ -421,7 +423,9 @@ def GetIsolatedShaForStep(master_name, builder_name, build_number, step_name,
         configuration.
   """
   data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
-                                     http_client, {'stepname': step_name})
+                                     http_client, {
+                                         'stepname': step_name
+                                     })
   if not data:
     logging.error('Failed to get swarming task data for %s/%s/%s/%s',
                   master_name, builder_name, build_number, step_name)
@@ -668,8 +672,9 @@ def GetSwarmingBotCounts(dimensions, http_client):
       k: int(content_data.get(k, 0))
       for k in ('busy', 'count', 'dead', 'quarantined')
   }
-  bot_counts['available'] = (bot_counts['count'] - bot_counts['busy'] -
-                             bot_counts['dead'] - bot_counts['quarantined'])
+  bot_counts['available'] = (
+      bot_counts['count'] - bot_counts['busy'] - bot_counts['dead'] -
+      bot_counts['quarantined'])
 
   return bot_counts
 
@@ -907,9 +912,10 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
   if bots_with_cache:
     git_repo = CachedGitilesRepository(
         http_client, 'https://chromium.googlesource.com/chromium/src.git')
-    # The bad revision in a tryjob is the later one, use that, unless the tryjob
-    # specifies a specific one
-    revision = tryjob.revision or tryjob.properties.get('bad_revision')
+    # TODO(crbug.com/800107): Pass revision as a parameter.
+    revision = (
+        tryjob.properties.get('bad_revision') or
+        tryjob.properties.get('test_revision'))
     if not revision:
       logging.error('Tryjob %s does not have a specified revision.' % tryjob)
       return

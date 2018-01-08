@@ -35,9 +35,12 @@ class MockBuild(object):
     self.response = response
 
 
-MOCK_BUILDS = [(None, MockBuild({
-    'tags': ['swarming_tag:log_location:logdog://host/project/path']
-}))]
+MOCK_BUILDS = [(None,
+                MockBuild({
+                    'tags': [
+                        'swarming_tag:log_location:logdog://host/project/path'
+                    ]
+                }))]
 
 ALL_BOTS = [{'bot_id': 'bot%d' % b} for b in range(10)]
 SOME_BOTS = [{'bot_id': 'bot%d' % b} for b in range(3)]
@@ -50,7 +53,14 @@ class MockTryJob(object):
     self.is_swarmbucket_build = True
     self.dimensions = ['os:OS', 'cpu:CPU']
     self.properties = {'bad_revision': 'a1b2c3d4'}
-    self.revision = None
+
+
+class MockFlakeTryJob(object):
+
+  def __init__(self):
+    self.is_swarmbucket_build = True
+    self.dimensions = ['os:OS', 'cpu:CPU']
+    self.properties = {'test_revision': 'a1b2c3d4'}
 
 
 class SwarmingHttpClient(RetryHttpClient):
@@ -247,10 +257,9 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     request.io_timeout_secs = 3
 
     url = 'https://chromium-swarm.appspot.com/_ah/api/swarming/v1/tasks/new'
-    self.logged_http_client.SetResponse('post', url,
-                                        json.dumps({
-                                            'task_id': '1'
-                                        }), 200)
+    self.logged_http_client.SetResponse('post', url, json.dumps({
+        'task_id': '1'
+    }), 200)
 
     expected_task_request_json = {
         'expiration_secs': 72000,
@@ -1185,8 +1194,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     cache_name_c = swarming_util.GetCacheName('luci.chromium.ci',
                                               'win_chromium_variable')
     cache_name_d = swarming_util.GetCacheName('luci.chromium.ci',
-                                              'win_chromium_variable',
-                                              'flake')
+                                              'win_chromium_variable', 'flake')
 
     self.assertTrue(cache_name_a.startswith('builder_'))
     self.assertTrue(cache_name_b.startswith('builder_'))
@@ -1404,34 +1412,17 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual('slave1',
                      swarming_util._GetBotWithFewestNamedCaches(bots)['bot_id'])
     # If there is a tie, the one with more free space is preferred.
-    self.assertEqual(
-        'slave3',
-        swarming_util._GetBotWithFewestNamedCaches(bots[1:])['bot_id'])
-    self.assertEqual(
-        'slave3',
-        swarming_util._GetBotWithFewestNamedCaches(bots[2:])['bot_id'])
+    self.assertEqual('slave3',
+                     swarming_util._GetBotWithFewestNamedCaches(
+                         bots[1:])['bot_id'])
+    self.assertEqual('slave3',
+                     swarming_util._GetBotWithFewestNamedCaches(
+                         bots[2:])['bot_id'])
     # If a bot does not have the caches dimension or the free space data, it is
     # only selected as a last resort.
-    self.assertEqual(
-        'slave4',
-        swarming_util._GetBotWithFewestNamedCaches(bots[3:])['bot_id'])
-
-  @mock.patch(
-      'waterfall.swarming_util.GetAllBotsWithCache', return_value=ALL_BOTS)
-  @mock.patch('waterfall.swarming_util.OnlyAvailable', return_value=SOME_BOTS)
-  @mock.patch(
-      'waterfall.swarming_util._HaveCommitPositionInLocalGitCache',
-      return_value=SOME_BOTS)
-  @mock.patch(
-      'waterfall.swarming_util._ClosestEarlier', return_value=ONE_BOT[0])
-  @mock.patch('waterfall.swarming_util._ClosestLater', return_value=ONE_BOT[0])
-  @mock.patch('waterfall.swarming_util.CachedGitilesRepository.GetChangeLog')
-  def testAssignWarmCacheHostSpecificRevision(self, mock_changelog, *_):
-    cache_name = 'cache_name'
-    tryjob = MockTryJob()
-    tryjob.revision = 'def01234'
-    swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
-    mock_changelog.assert_called_once_with('def01234')
+    self.assertEqual('slave4',
+                     swarming_util._GetBotWithFewestNamedCaches(
+                         bots[3:])['bot_id'])
 
   @mock.patch('waterfall.swarming_util._GetBotWithFewestNamedCaches',
               lambda x: x[0])
@@ -1440,8 +1431,7 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch('waterfall.swarming_util.OnlyAvailable', return_value=SOME_BOTS)
   def testAssignWarmCacheHostFlake(self, *_):
     cache_name = 'cache_name_flake'
-    tryjob = MockTryJob()
-    tryjob.revision = 'def01234'
+    tryjob = MockFlakeTryJob()
     swarming_util.AssignWarmCacheHost(tryjob, cache_name, self.http_client)
     self.assertIn('id:' + SOME_BOTS[0]['bot_id'], tryjob.dimensions)
 
@@ -1572,8 +1562,8 @@ class SwarmingUtilTest(wf_testcase.WaterfallTestCase):
         '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
         # Use Ordered dict to preserve the order of the dimensions.
         swarming_util._DimensionsToQueryString(
-            collections.OrderedDict([('bot_id', 'slave1'), ('cpu', 'x86_64'), (
-                'os', 'Mac')])))
+            collections.OrderedDict([('bot_id', 'slave1'), ('cpu', 'x86_64'),
+                                     ('os', 'Mac')])))
     self.assertEqual(
         '?dimensions=bot_id:slave1&dimensions=cpu:x86_64&dimensions=os:Mac',
         swarming_util._DimensionsToQueryString(
