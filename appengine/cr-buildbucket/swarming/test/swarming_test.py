@@ -282,40 +282,79 @@ class SwarmingTest(BaseTest):
       {'key': 'pool', 'value': 'Chrome'},
     ]))
 
-  def test_is_migrating_builder_prod_async(self):
-    build = mkBuild(parameters={'properties': {}})
+
+  def test_is_migrating_builder_prod_async_no_master_name(self):
     builder_cfg = self.bucket_cfg.swarming.builders[0]
-
-    def is_prod():
-      return swarming._is_migrating_builder_prod_async(
-          builder_cfg, build).get_result()
-
-    self.assertIsNone(is_prod())
-    self.assertFalse(net.json_request_async.called)
-
     builder_cfg.luci_migration_host = 'migration.example.com'
-    self.assertIsNone(is_prod())
+    build = mkBuild()
+    self.assertIsNone(swarming._is_migrating_builder_prod_async(
+        builder_cfg, build).get_result())
     self.assertFalse(net.json_request_async.called)
 
-    self.json_response = {'luci_is_prod': True, 'bucket': 'luci.chromium.try'}
-    build.parameters['properties']['mastername'] = 'tryserver.chromium.linux'
-    self.assertTrue(is_prod())
-    self.assertTrue(net.json_request_async.called)
-    net.json_request_async.reset_mock()
+  def test_is_migrating_builder_prod_async_no_host(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    build = mkBuild(parameters={'properties': {
+      'mastername': 'tryserver.chromium.linux',
+    }})
+    self.assertIsNone(swarming._is_migrating_builder_prod_async(
+        builder_cfg, build).get_result())
+    self.assertFalse(net.json_request_async.called)
 
-    self.json_response['luci_is_prod'] = False
-    self.assertFalse((is_prod()))
+  def test_is_migrating_builder_prod_async_prod(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.luci_migration_host = 'migration.example.com'
+    build = mkBuild(parameters={'properties': {
+      'mastername': 'tryserver.chromium.linux',
+    }})
+    self.json_response = {'luci_is_prod': True, 'bucket': 'luci.chromium.try'}
+    self.assertTrue(swarming._is_migrating_builder_prod_async(
+        builder_cfg, build).get_result())
     self.assertTrue(net.json_request_async.called)
+
+  def test_is_migrating_builder_prod_async_mastername_in_builder(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.luci_migration_host = 'migration.example.com'
+    builder_cfg.recipe.properties_j.append(
+        'mastername:"tryserver.chromium.linux"')
+    build = mkBuild()
+    self.json_response = {'luci_is_prod': True, 'bucket': 'luci.chromium.try'}
+    self.assertTrue(swarming._is_migrating_builder_prod_async(
+      builder_cfg, build).get_result())
+    self.assertTrue(net.json_request_async.called)
+
+  def test_is_migrating_builder_prod_async_404(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.luci_migration_host = 'migration.example.com'
+    build = mkBuild(parameters={'properties': {
+      'mastername': 'tryserver.chromium.linux',
+    }})
 
     self.net_err_response = net.NotFoundError('nope', 404, 'can\'t find it')
-    self.assertIsNone(is_prod())
+    self.assertIsNone(swarming._is_migrating_builder_prod_async(
+        builder_cfg, build).get_result())
+
+  def test_is_migrating_builder_prod_async_500(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.luci_migration_host = 'migration.example.com'
+    build = mkBuild(parameters={'properties': {
+      'mastername': 'tryserver.chromium.linux',
+    }})
 
     self.net_err_response = net.Error('BOOM', 500, 'IT\'S BAD')
-    self.assertIsNone(is_prod())
+    self.assertIsNone(swarming._is_migrating_builder_prod_async(
+        builder_cfg, build).get_result())
+
+  def test_is_migrating_builder_prod_async_no_is_prod_in_response(self):
+    builder_cfg = self.bucket_cfg.swarming.builders[0]
+    builder_cfg.luci_migration_host = 'migration.example.com'
+    build = mkBuild(parameters={'properties': {
+      'mastername': 'tryserver.chromium.linux',
+    }})
 
     self.net_err_response = None
     self.json_response = {'foo': True}
-    self.assertIsNone(is_prod())
+    self.assertIsNone(swarming._is_migrating_builder_prod_async(
+        builder_cfg, build).get_result())
 
   def test_create_task_async(self):
     self.patch(
@@ -1573,6 +1612,7 @@ def mkBuild(**kwargs):
       create_time=utils.utcnow(),
       created_by=auth.Identity('user', 'john@example.com'),
       canary_preference=model.CanaryPreference.PROD,
+      parameters={},
   )
   args.update(kwargs)
   return model.Build(**args)

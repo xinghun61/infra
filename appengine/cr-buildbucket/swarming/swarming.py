@@ -334,7 +334,13 @@ def _is_migrating_builder_prod_async(builder_cfg, build):
   """
   ret = None
 
-  master = (build.parameters.get(PARAM_PROPERTIES) or {}).get('mastername')
+  MASTER_PROPERTY = 'mastername'
+  master = (build.parameters.get(PARAM_PROPERTIES) or {}).get(MASTER_PROPERTY)
+  if master is None:
+    # TODO(nodir): undup with logic, it is also in _create_task_def_async
+    props = swarmingcfg_module.read_properties(builder_cfg.recipe)
+    master = props.get(MASTER_PROPERTY)
+
   if master and builder_cfg.luci_migration_host not in (None, '', '-'):
     try:
       url = 'https://%s/masters/%s/builders/%s/' % (
