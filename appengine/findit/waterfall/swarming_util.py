@@ -900,16 +900,17 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
   bots_with_cache = OnlyAvailable(
       GetAllBotsWithCache(request_dimensions, cache_name, http_client))
 
-  # Flake tryjobs check out older code, so there's little benefit in trying to
-  # optimize the way we do for non-flake tryjobs, we do however select the bot
-  # with the fewest named caches in an effort to avoid unnecessary cache
-  # evictions.
-  if cache_name and cache_name.endswith(flake_constants.FLAKE_CACHE_SUFFIX):
-    selected_bot = _GetBotWithFewestNamedCaches(bots_with_cache)['bot_id']
-    tryjob.dimensions.append('id:%s' % selected_bot)
-    return
-
   if bots_with_cache:
+
+    # Flake tryjobs check out older code, so there's little benefit in trying to
+    # optimize the way we do for non-flake tryjobs, we do however select the bot
+    # with the fewest named caches in an effort to avoid unnecessary cache
+    # evictions.
+    if cache_name and cache_name.endswith(flake_constants.FLAKE_CACHE_SUFFIX):
+      selected_bot = _GetBotWithFewestNamedCaches(bots_with_cache)['bot_id']
+      tryjob.dimensions.append('id:%s' % selected_bot)
+      return
+
     git_repo = CachedGitilesRepository(
         http_client, 'https://chromium.googlesource.com/chromium/src.git')
     # TODO(crbug.com/800107): Pass revision as a parameter.
