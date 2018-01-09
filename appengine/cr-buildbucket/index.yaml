@@ -4,7 +4,6 @@ indexes:
 - kind: Build
   properties:
     - name: bucket
-    - name: status
     - name: tags
 
 # Peeking.

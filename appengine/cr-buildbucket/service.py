@@ -781,16 +781,7 @@ def _query_search(q):
   elif q.status is not None:
     s = model.BuildStatus.lookup_by_number(q.status.number)
     expected_statuses = (s,)
-    if s == model.BuildStatus.COMPLETED:
-      # Vast majority of builds in the datastore are COMPLETED b/c
-      # that's the ultimate final state of any build.
-      # It is very inefficient to filter by status=COMPLETED using datastore
-      # because datastore merge-joins indexes for other filtering properties
-      # with huge list of completed builds.
-      # Omit the status in the query filter and filter in application.
-      pass
-    else:
-      dq = filter_if(model.Build.status, s)
+    dq = filter_if(model.Build.status, s)
   dq = filter_if(model.Build.result, q.result)
   dq = filter_if(model.Build.failure_reason, q.failure_reason)
   dq = filter_if(model.Build.cancelation_reason, q.cancelation_reason)
@@ -818,8 +809,11 @@ def _query_search(q):
     if not _between(build.create_time, q.create_time_low, q.create_time_high):
       return False  # pragma: no cover
 
-    # Filter out experimental builds in this process for the same reasons why we
-    # don't filter completed builds at the datastore level, see comment above.
+    # Most of the builds in the datastore are not experimental b/c
+    # It is inefficient to filter by experimental=False using datastore
+    # without a composite index, because datastore merge-joins indexes for other
+    # filtering properties with big list of non-experimental builds.
+    # Thus, filter out experimental builds in this process.
     if build.experimental and not q.include_experimental:
       return False
     return True
