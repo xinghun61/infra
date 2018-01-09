@@ -73,7 +73,8 @@ class ProcessSwarmingTasksResultPipelineTest(wf_testcase.WaterfallTestCase):
         expected_kwargs={})
 
     pipeline = ProcessSwarmingTasksResultPipeline(
-        master_name, builder_name, build_number, failure_info, build_completed)
+        master_name, builder_name, build_number, {'failure_info': failure_info},
+        build_completed)
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
 
@@ -89,6 +90,7 @@ class ProcessSwarmingTasksResultPipelineTest(wf_testcase.WaterfallTestCase):
     build_completed = False
 
     pipeline = ProcessSwarmingTasksResultPipeline(
-        master_name, builder_name, build_number, failure_info, build_completed)
+        master_name, builder_name, build_number, {'failure_info': failure_info},
+        build_completed)
     pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()

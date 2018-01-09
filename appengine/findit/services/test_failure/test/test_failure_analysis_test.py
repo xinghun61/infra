@@ -2,9 +2,17 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import mock
+
 from common.waterfall import failure_type
 from libs.gitiles.diff import ChangeType
+from model.wf_analysis import WfAnalysis
 from services import build_failure_analysis
+from services import ci_failure
+from services import deps
+from services import git
+from services.test_failure import ci_test_failure
+from services.test_failure import extract_test_signal
 from services.test_failure import test_failure_analysis
 from waterfall.test import wf_testcase
 
@@ -31,16 +39,16 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             },
         },
         'builds': {
-            '99': {
+            99: {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            '98': {
+            98: {
                 'blame_list': ['r98_1'],
             },
-            '97': {
+            97: {
                 'blame_list': ['r97_1'],
             },
-            '96': {
+            96: {
                 'blame_list': ['r96_1', 'r96_2'],
             },
         }
@@ -255,16 +263,16 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             },
         },
         'builds': {
-            '99': {
+            99: {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            '98': {
+            98: {
                 'blame_list': ['r98_1'],
             },
-            '97': {
+            97: {
                 'blame_list': ['r97_1'],
             },
-            '96': {
+            96: {
                 'blame_list': ['r96_1', 'r96_2'],
             },
         }
@@ -553,10 +561,10 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
             },
         },
         'builds': {
-            '99': {
+            99: {
                 'blame_list': ['r99_1', 'r99_2'],
             },
-            '98': {
+            98: {
                 'blame_list': ['r98_1'],
             },
         }
@@ -586,3 +594,51 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         failure_info, change_logs, deps_info, failure_signals_json))
     self.assertEqual(expected_analysis_result, analysis_result)
     self.assertEqual([], suspected_cls)
+
+  @mock.patch.object(
+      extract_test_signal,
+      'ExtractSignalsForTestFailure',
+      return_value='signals')
+  @mock.patch.object(git, 'PullChangeLogs', return_value={})
+  @mock.patch.object(deps, 'ExtractDepsInfo', return_value={})
+  @mock.patch.object(
+      test_failure_analysis,
+      'AnalyzeTestFailure',
+      return_value=('heuristic_result', []))
+  @mock.patch.object(build_failure_analysis,
+                     'SaveAnalysisAfterHeuristicAnalysisCompletes')
+  @mock.patch.object(build_failure_analysis, 'SaveSuspectedCLs')
+  @mock.patch.object(ci_test_failure, 'CheckFirstKnownFailureForSwarmingTests')
+  @mock.patch.object(ci_failure, 'CheckForFirstKnownFailure')
+  def testHeuristicAnalysisForTest(self, mock_failure_info, *_):
+    failure_info = {
+        'master_name': 'm',
+        'builder_name': 'b',
+        'build_number': 99,
+        'failure_type': failure_type.COMPILE,
+        'failed': True,
+        'chromium_revision': 'r99_2',
+        'failed_steps': {
+            'test': {
+                'current_failure': 99,
+                'first_failure': 98,
+            }
+        },
+        'builds': {
+            99: {
+                'blame_list': ['r99_1', 'r99_2'],
+            },
+            98: {
+                'blame_list': ['r98_1'],
+            }
+        }
+    }
+    mock_failure_info.return_value = failure_info
+
+    WfAnalysis.Create('m', 'b', 99).put()
+    result = test_failure_analysis.HeuristicAnalysisForTest(failure_info, True)
+    expected_result = {
+        'failure_info': failure_info,
+        'heuristic_result': 'heuristic_result'
+    }
+    self.assertEqual(result, expected_result)

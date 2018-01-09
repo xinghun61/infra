@@ -85,8 +85,7 @@ class DetectFirstFailurePipeline(BasePipeline):
     builds = failure_info['builds']
     # Checks first failed builds for each failed step.
     ci_failure.CheckForFirstKnownFailure(master_name, builder_name,
-                                         build_number,
-                                         failure_info['failed_steps'], builds)
+                                         build_number, failure_info)
 
     if failure_info['failure_type'] == failure_type.TEST:
       # Checks first failed builds for each failed test.

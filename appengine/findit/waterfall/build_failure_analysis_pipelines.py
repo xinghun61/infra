@@ -14,8 +14,9 @@ from libs import time_util
 from model.wf_analysis import WfAnalysis
 from pipelines.compile_failure.analyze_compile_failure_pipeline import (
     AnalyzeCompileFailurePipeline)
+from pipelines.test_failure.analyze_test_failure_pipeline import (
+    AnalyzeTestFailurePipeline)
 from services import ci_failure
-from waterfall.analyze_build_failure_pipeline import AnalyzeBuildFailurePipeline
 
 
 @ndb.transactional
@@ -116,9 +117,9 @@ def ScheduleAnalysisIfNeeded(master_name,
                                                    build_number, failure_info,
                                                    build_completed, force)
     else:
-      pipeline_job = AnalyzeBuildFailurePipeline(master_name, builder_name,
-                                                 build_number, failure_info,
-                                                 build_completed, force)
+      pipeline_job = AnalyzeTestFailurePipeline(master_name, builder_name,
+                                                build_number, failure_info,
+                                                build_completed, force)
     # Explicitly run analysis in the backend module "waterfall-backend".
     # Note: Just setting the target in queue.yaml does NOT work for pipeline
     # when deployed to App Engine, but it does work in dev-server locally.
