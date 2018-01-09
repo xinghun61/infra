@@ -19,11 +19,12 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/timestamp"
+	"golang.org/x/net/context"
+
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/tsmon/field"
 	"go.chromium.org/luci/common/tsmon/metric"
-	"golang.org/x/net/context"
 )
 
 // ID is the global InsertIDGenerator
@@ -133,22 +134,28 @@ func getFieldInfos(t reflect.Type) ([]fieldInfo, error) {
 	if f != nil {
 		return f, nil
 	}
+
 	bqFieldsLock.Lock()
 	defer bqFieldsLock.Unlock()
+
 	if f := bqFields[t]; f != nil {
 		return f, nil
 	}
+
 	props := proto.GetProperties(t).Prop
 	bqFields[t] = make([]fieldInfo, len(props))
 	for i, p := range props {
-		if p.OrigName == "" {
-			return nil, fmt.Errorf("OrigName is empty: %q", p.Name)
+		switch f, ok := t.FieldByName(p.Name); {
+		case !ok:
+			return nil, fmt.Errorf("field %q not found in %q", p.Name, t)
+		case p.OrigName == "":
+			return nil, fmt.Errorf("OrigName of field %q.%q is empty", t, p.Name)
+		case f.Type.PkgPath() == "github.com/golang/protobuf/ptypes/struct":
+			// Ignore protobuf structs, according to
+			// https://godoc.org/go.chromium.org/luci/tools/cmd/bqschemaupdater
+		default:
+			bqFields[t][i] = fieldInfo{f.Index, p}
 		}
-		field, ok := t.FieldByName(p.Name)
-		if !ok {
-			return nil, fmt.Errorf("field not found for name: %q", p.Name)
-		}
-		bqFields[t][i] = fieldInfo{field.Index, p}
 	}
 	return bqFields[t], nil
 }

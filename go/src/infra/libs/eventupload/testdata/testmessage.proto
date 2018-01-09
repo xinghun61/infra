@@ -13,6 +13,10 @@ message TestMessage {
     google.protobuf.Timestamp timestamp = 2;
     NestedTestMessage nested = 3;
     repeated NestedTestMessage repeated_nested = 4;
+
+    // This field will be ignored because it is
+    // google.protobuf.Struct.
+    google.protobuf.Struct wil_be_ignored = 5;
 }
 
 message NestedTestMessage {
