@@ -1,3 +1,22 @@
+# Release Notes sheriff-o-matic 2018-01-09
+
+- 3 commits, 2 bugs affected since 05c64a3 (2018-01-04T17:09:23Z)
+- 1 Authors:
+  - seanmccullough@chromium.org
+
+## Changes in this release
+
+- [[som] Get rid of messages.TestResults and custom parsing logic.](https://chromium-review.googlesource.com/855598) (seanmccullough@chromium.org)
+- [[som] Add messages.AlertTestFailure and set it when appropriate.](https://chromium-review.googlesource.com/854955) (seanmccullough@chromium.org)
+- [[som] Fix test result parsing for secondsSinceEpoch.](https://chromium-review.googlesource.com/852523) (seanmccullough@chromium.org)
+
+
+## Bugs updated, by author
+- seanmccullough@chromium.org:
+  -  [https://crbug.com/701839](https://crbug.com/701839)
+  -  [https://crbug.com/799079](https://crbug.com/799079)
+
+
 # Release Notes sheriff-o-matic 2018-01-04
 
 - 2 commits, 1 bugs affected since 7a3650e (2017-12-19T21:07:05Z)
