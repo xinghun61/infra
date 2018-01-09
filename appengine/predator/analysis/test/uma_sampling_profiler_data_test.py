@@ -2,6 +2,7 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
 import mock
 
 from analysis import stacktrace
@@ -211,8 +212,7 @@ class UMASamplingProfilerDataTest(AnalysisTestCase):
 
   def testSignature(self):
     """Tests generation of the signature."""
-    uma_data = self._GetDummyUMAData()
-    raw_data = TEST_DATA.copy()
+    raw_data = copy.deepcopy(TEST_DATA)
     # Preserve only the first stack.
     raw_data['subtree_stacks'] = raw_data['subtree_stacks'][0:1]
     root_frame = (
