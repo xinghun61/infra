@@ -184,14 +184,7 @@ def install(deps):
         pip + ['install', '--no-index', '-f', ipath] + requirements)
 
 
-def activate_env(env, manifest, quiet=False, run_within_virtualenv=False):
-  if hasattr(sys, 'real_prefix'):
-    if not run_within_virtualenv:
-      LOGGER.error('Already activated environment!')
-      return
-    LOGGER.info('Discarding current VirtualEnv (--run-within-virtualenv)')
-    sys.prefix = sys.real_prefix
-
+def activate_env(env, manifest, quiet=False):
   if not quiet:
     print 'Activating environment: %r' % env
   assert isinstance(manifest, dict)
@@ -257,9 +250,6 @@ def main(args):
                       'default: bootstrap/deps.pyl)')
   parser.add_argument('-q', '--quiet', action='store_true', default=False,
                       help='Supress all output')
-  parser.add_argument('-r', '--run-within-virtualenv', action='store_true',
-                      help='Run even if the script is being run within a '
-                           'VirtualEnv.')
   parser.add_argument('env_path',
                       help='Path to place environment (default: %(default)s)',
                       default='ENV')
@@ -290,7 +280,7 @@ def main(args):
 
   deps, kicked = filter_deps(merge_deps(opts.deps_file), plat)
   manifest = build_manifest(deps)
-  activate_env(opts.env_path, manifest, opts.quiet, opts.run_within_virtualenv)
+  activate_env(opts.env_path, manifest, opts.quiet)
 
   if not opts.quiet and kicked:
     print '---------------------------'
