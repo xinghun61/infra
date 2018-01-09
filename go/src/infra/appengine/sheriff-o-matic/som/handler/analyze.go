@@ -479,6 +479,7 @@ var (
 		messages.AlertIdleBuilder:    gen.SOMAlertsEvent_Alert_IDLE_BUILDER,
 		messages.AlertInfraFailure:   gen.SOMAlertsEvent_Alert_INFRA_FAILURE,
 		messages.AlertBuildFailure:   gen.SOMAlertsEvent_Alert_BUILD_FAILURE,
+		messages.AlertTestFailure:    gen.SOMAlertsEvent_Alert_TEST_FAILURE,
 	}
 )
 

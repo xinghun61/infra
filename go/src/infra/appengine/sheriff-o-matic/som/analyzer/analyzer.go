@@ -901,7 +901,13 @@ func (a *Analyzer) stepFailureAlerts(ctx context.Context, tree string, failures 
 				alr.Severity = reasonSeverity
 			}
 
-			alr.Type = messages.AlertBuildFailure
+			switch bf.Reason.Kind() {
+			case "test":
+				alr.Type = messages.AlertTestFailure
+			default:
+				alr.Type = messages.AlertBuildFailure
+			}
+
 			alr.Key = alertKey(failure.Master.Name(), failure.Build.BuilderName, step.GetTestSuite(failure), "")
 			alr.Extension = bf
 

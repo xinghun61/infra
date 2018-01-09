@@ -57,6 +57,9 @@ message SOMAlertsEvent {
       // BUILD_FAILURE indicates that one of the build steps failed, most likely
       // due to the patch it's building/running with.
       BUILD_FAILURE = 5;
+
+      // TEST_FAILURE indicates that one or more of the tests in the build failed.
+      TEST_FAILURE = 6;
     }
 
     // Type is the type of alert.

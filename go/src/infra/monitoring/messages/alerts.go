@@ -45,9 +45,12 @@ const (
 	// problems rather than errors in the code it tried to build or execute.
 	AlertInfraFailure = "infra-failure"
 
-	// AlertBuildFailure indicates that one of the build steps failed, must likely
+	// AlertBuildFailure indicates that one of the build steps failed, most likely
 	// due to the patch it's building/running with.
 	AlertBuildFailure = "build-failure"
+
+	// AlertTestFailure indicates that one of the test steps failed
+	AlertTestFailure = "test-failure"
 )
 
 func init() {
