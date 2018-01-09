@@ -109,13 +109,9 @@ func TestAnalyze(t *testing.T) {
 		So(err, ShouldBeNil)
 		bbService.BasePath = bbServer.URL
 
-		psAbsent := false
 		tryjobs := &Tryjobs{
 			Buildbucket: bbService,
 			MaxBuildAge: time.Hour * 24 * 7,
-			patchSetAbsent: func(context.Context, *http.Client, buildbucket.BuildSet) (bool, error) {
-				return psAbsent, nil
-			},
 		}
 
 		analyze := func() *storage.BuilderMigration {
@@ -175,27 +171,6 @@ func TestAnalyze(t *testing.T) {
 			So(mig.Correctness, ShouldAlmostEqual, 1.0)
 		})
 
-		Convey("Ignores Rietveld patchsets that don't exist", func() {
-			psAbsent = true
-			buildSetPrefix = "patch/rietveld/rietveld.example.com/1/"
-			buildSets = []mockedBuildSet{
-				{
-					Buildbot: mockedBuilds{failures: 1},
-					LUCI:     mockedBuilds{failures: 1},
-				},
-				{
-					Buildbot: mockedBuilds{failures: 1, successes: 1},
-					LUCI:     mockedBuilds{failures: 1, successes: 1},
-				},
-				{
-					Buildbot: mockedBuilds{failures: 0, successes: 2},
-					LUCI:     mockedBuilds{failures: 1, successes: 1},
-				},
-			}
-			mig := analyze()
-			So(mig.Status, ShouldEqual, storage.StatusInsufficientData)
-		})
-
 		Convey("fetch", func() {
 			buildSets = []mockedBuildSet{
 				{
@@ -217,9 +192,6 @@ func TestAnalyze(t *testing.T) {
 				BuildbotBucket: "master.tryserver.chromium.linux",
 				LUCIBucket:     "luci.chromium.try",
 				MaxGroups:      DefaultMaxGroups,
-				patchSetAbsent: func(context.Context, *http.Client, buildbucket.BuildSet) (bool, error) {
-					return false, nil
-				},
 			}
 			groups, err := f.Fetch(c)
 			So(err, ShouldBeNil)

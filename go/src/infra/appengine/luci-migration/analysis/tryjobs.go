@@ -53,9 +53,6 @@ type Tryjobs struct {
 	MaxGroups int
 	// MaxBuildAge, if >0, is the maximum age of builds to consider.
 	MaxBuildAge time.Duration
-
-	// mocked in tests
-	patchSetAbsent patchSetAbsenceChecker
 }
 
 // Analyze compares buildbot and LUCI tryjobs.
@@ -110,7 +107,6 @@ func (t *Tryjobs) analyze(c context.Context, builder, buildbotBucket, luciBucket
 		BuildbotBucket: buildbotBucket,
 		LUCIBucket:     luciBucket,
 		MaxGroups:      t.MaxGroups,
-		patchSetAbsent: t.patchSetAbsent,
 	}
 	if f.MaxGroups <= 0 {
 		f.MaxGroups = DefaultMaxGroups
@@ -136,9 +132,6 @@ type fetcher struct {
 	Builder                    string
 	BuildbotBucket, LUCIBucket string
 	MinCreationDate            time.Time
-
-	// mocked in tests
-	patchSetAbsent patchSetAbsenceChecker
 }
 
 // fetchGroup is an intermediate representation of a group.
@@ -146,7 +139,6 @@ type fetchGroup struct {
 	group
 	err chan error
 }
-
 
 // Fetch fetches Buildbot and LUCI builds, groups and joins them by patchset
 // until it collects f.MaxGroups of trustworthy groups.
@@ -196,7 +188,6 @@ func (f *fetcher) Fetch(c context.Context) ([]*group, error) {
 
 // fetchBuildSets fetches buildsets of completed LUCI builds until c is
 // cancelled.
-// Ignores builds for non-existing patchsets.
 func (f *fetcher) fetchBuildSets(c context.Context, buildSets chan buildbucket.BuildSet) error {
 	req := f.Buildbucket.Search()
 	req.Context(c)
@@ -216,12 +207,6 @@ func (f *fetcher) fetchBuildSets(c context.Context, buildSets chan buildbucket.B
 		searchErr = req.Run(foundBuilds, 0, nil)
 	}()
 
-	// check that Rietveld patchsets still exist.
-	psAbsent := f.patchSetAbsent
-	if psAbsent == nil {
-		psAbsent = patchSetAbsent // real one
-	}
-
 	seen := stringset.New(DefaultMaxGroups + groupFetchWorkers)
 	for msg := range foundBuilds {
 		var b buildbucket.Build
@@ -238,25 +223,9 @@ func (f *fetcher) fetchBuildSets(c context.Context, buildSets chan buildbucket.B
 		}
 		bs := b.BuildSets[0]
 
-		if !seen.Add(bs.String()) {
-			continue
+		if seen.Add(bs.String()) {
+			buildSets <- bs
 		}
-
-		// Serialize all requests to Rietveld b/c
-		// 1) This code is much simpler this way
-		// 2) We don't want to hammer Rietveld too much
-		// 3) The channel of buildSets is buffered, so underlying fetching
-		//    of LUCI builds and following fetching of Buildbot builds
-		//    won't be entirely blocked.
-		absent, err := psAbsent(c, f.HTTP, bs)
-		if err != nil {
-			return err
-		}
-		if absent {
-			logging.Debugf(c, "skipped build %d: patchset %s does not exist", b.ID, bs)
-			continue
-		}
-		buildSets <- bs
 	}
 
 	return searchErr
