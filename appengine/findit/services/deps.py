@@ -134,7 +134,7 @@ def DetectDependencyRolls(change_logs, os_platform, dep_fetcher):
 def ExtractDepsInfo(failure_info, change_logs):
   """
   Args:
-    failure_info (dict): Information about all build failures.
+    failure_info (BaseFailureInfo): Information about all build failures.
     change_logs (dict): Result of PullChangeLogs().
 
   Returns:
@@ -161,9 +161,9 @@ def ExtractDepsInfo(failure_info, change_logs):
       }
     }
   """
-  chromium_revision = failure_info['chromium_revision']
-  os_platform = GetOSPlatformName(failure_info['master_name'],
-                                  failure_info['builder_name'])
+  chromium_revision = failure_info.chromium_revision
+  os_platform = GetOSPlatformName(failure_info.master_name,
+                                  failure_info.builder_name)
 
   dep_fetcher = chrome_dependency_fetcher.ChromeDependencyFetcher(
       CachedGitilesRepository.Factory(FinditHttpClient()))

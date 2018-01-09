@@ -12,6 +12,8 @@ from model.wf_analysis import WfAnalysis
 from pipelines.compile_failure import analyze_compile_failure_pipeline
 from pipelines.compile_failure.analyze_compile_failure_pipeline import (
     AnalyzeCompileFailurePipeline)
+from services.parameters import CompileHeuristicAnalysisOutput
+from services.parameters import CompileHeuristicAnalysisParameters
 from waterfall.test import wf_testcase
 
 
@@ -39,16 +41,23 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
 
     self._SetupAnalysis(master_name, builder_name, build_number)
 
-    self.MockPipeline(
+    heuristic_params = CompileHeuristicAnalysisParameters.FromSerializable({
+        'failure_info': current_failure_info,
+        'build_completed': False
+    })
+    heuristic_output = {
+        'failure_info': None,
+        'signals': None,
+        'heuristic_result': None
+    }
+    self.MockSynchronousPipeline(
         analyze_compile_failure_pipeline.HeuristicAnalysisForCompilePipeline,
-        'heuristic_result',
-        expected_args=[current_failure_info, False],
-        expected_kwargs={})
+        heuristic_params, CompileHeuristicAnalysisOutput.FromSerializable({}))
     self.MockPipeline(
         analyze_compile_failure_pipeline.StartCompileTryJobPipeline,
         'try_job_result',
         expected_args=[
-            master_name, builder_name, build_number, 'heuristic_result', False,
+            master_name, builder_name, build_number, heuristic_output, False,
             False
         ],
         expected_kwargs={})
@@ -58,6 +67,8 @@ class AnalyzeCompileFailurePipelineTest(wf_testcase.WaterfallTestCase):
         False)
     root_pipeline.start(queue_name=constants.DEFAULT_QUEUE)
     self.execute_queued_tasks()
+    analysis = WfAnalysis.Get(master_name, builder_name, build_number)
+    self.assertEqual(analysis_status.RUNNING, analysis.status)
 
   def testBuildFailurePipelineStartWithNoneResultStatus(self):
     master_name = 'm'

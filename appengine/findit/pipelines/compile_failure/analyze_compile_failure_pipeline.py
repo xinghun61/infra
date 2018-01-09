@@ -14,6 +14,8 @@ from pipelines.compile_failure.heuristic_analysis_for_compile_pipeline import (
     HeuristicAnalysisForCompilePipeline)
 from pipelines.compile_failure.start_compile_try_job_pipeline import (
     StartCompileTryJobPipeline)
+from services.parameters import CompileFailureInfo
+from services.parameters import CompileHeuristicAnalysisParameters
 
 
 class AnalyzeCompileFailurePipeline(BasePipeline):
@@ -105,8 +107,11 @@ class AnalyzeCompileFailurePipeline(BasePipeline):
     # https://github.com/GoogleCloudPlatform/appengine-pipelines/wiki/Python
 
     # Heuristic Approach.
+    heuristic_params = CompileHeuristicAnalysisParameters(
+        failure_info=CompileFailureInfo.FromSerializable(current_failure_info),
+        build_completed=build_completed)
     heuristic_result = yield HeuristicAnalysisForCompilePipeline(
-        current_failure_info, build_completed)
+        heuristic_params)
 
     # Try job approach.
     # Checks if first time failures happen and starts a try job if yes.

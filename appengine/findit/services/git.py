@@ -31,7 +31,8 @@ def PullChangeLogs(failure_info):
   """Pulls change logs for CLs.
 
   Args:
-    failure_info (dict): Output of pipeline DetectFirstFailurePipeline.run().
+    failure_info (BaseFailureInfo): Output of pipeline
+      DetectFirstFailurePipeline.run().
 
   Returns:
     A dict with the following form:
@@ -44,8 +45,9 @@ def PullChangeLogs(failure_info):
       FinditHttpClient(), 'https://chromium.googlesource.com/chromium/src.git')
 
   change_logs = {}
-  for build in failure_info.get('builds', {}).values():
-    for revision in build['blame_list']:
+  builds = failure_info.builds or {}
+  for build in builds.values():
+    for revision in build.blame_list:
       change_log = git_repo.GetChangeLog(revision)
       if not change_log:
         raise Exception('Failed to get change log for %s' % revision)
