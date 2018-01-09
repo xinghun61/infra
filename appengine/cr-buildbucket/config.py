@@ -106,7 +106,6 @@ def validate_buildbucket_cfg(cfg, ctx):
   mixins_are_valid = not mixin_ctx.result().has_errors
   mixin_by_name = {m.name: m for m in cfg.builder_mixins}
 
-  is_sorted = True
   bucket_names = set()
 
   for i, bucket in enumerate(cfg.buckets):
@@ -125,9 +124,8 @@ def validate_buildbucket_cfg(cfg, ctx):
             if bucket_entity and bucket_entity.project_id != ctx.project_id:
               ctx.error('this name is already reserved by another project')
 
-        if is_sorted and i > 0 and cfg.buckets[i - 1].name:
-          if bucket.name < cfg.buckets[i - 1].name:
-            is_sorted = False
+          if i > 0 and bucket.name < cfg.buckets[i - 1].name:
+            ctx.warning('out of order')
 
       validate_access_list(bucket.acls, ctx)
       for name in bucket.acl_sets:
@@ -141,8 +139,6 @@ def validate_buildbucket_cfg(cfg, ctx):
         with ctx.prefix('swarming: '):
           swarmingcfg.validate_project_cfg(
               bucket.swarming, mixin_by_name, mixins_are_valid, ctx)
-  if not is_sorted:
-    ctx.warning('Buckets are not sorted by name')
 
 
 @validation.rule(

@@ -696,13 +696,17 @@ class ConfigTest(testing.AppengineTestCase):
 
   def test_validate_buildbucket_cfg_unsorted(self):
     self.cfg_validation_test(parse_cfg('''
+      buckets { name: "c" }
       buckets { name: "b" }
       buckets { name: "a" }
       '''),
         [
           validation_context.Message(
               severity=logging.WARNING,
-              text='Buckets are not sorted by name'),
+              text='Bucket b: out of order'),
+          validation_context.Message(
+              severity=logging.WARNING,
+              text='Bucket a: out of order'),
         ]
     )
 
