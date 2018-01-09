@@ -7,6 +7,8 @@
       :host {
         display: inline-block;
         width: 100%;
+
+        white-space: nowrap;
       }
 
       #header {
@@ -19,6 +21,9 @@
         text-align: left;
 
         color: black;
+
+        width: 90%;
+        overflow:hidden;
       }
 
       td {
@@ -38,6 +43,13 @@
       .data {
         color: darkslategrey;
       }
+
+      .selectable {
+        -webkit-user-select: all;  /* Chrome 49+ */
+        -moz-user-select: all;     /* Firefox 43+ */
+        -ms-user-select: all;      /* No support yet */
+        user-select: all;
+      }
     </style>
     <expandable-card>
       <div id="header" slot="expandable-card-header" inner-h-t-m-l="[[_header]]"></div>
@@ -45,22 +57,22 @@
         <table>
           <tr>
             <td class="description">Master</td>
-            <td class="data">[[masterName]]</td>
+            <td class="data selectable">[[masterName]]</td>
           </tr>
 
           <tr>
             <td class="description">Builder</td>
-            <td class="data">[[builderName]]</td>
+            <td class="data selectable">[[builderName]]</td>
           </tr>
 
           <tr>
             <td class="description">Step</td>
-            <td class="data">[[stepName]]</td>
+            <td class="data selectable">[[stepName]]</td>
           </tr>
 
           <tr>
             <td class="description">Test</td>
-            <td class="data">[[testName]]</td>
+            <td class="data selectable">[[testName]]</td>
           </tr>
 
         </table>
@@ -88,7 +100,7 @@
 
         // Computed properties.
         computeHeader: function (testName) {
-          return testName + " is flaky"
+          return 'Flaky test: ' + testName;
         },
 
       });
