@@ -143,17 +143,10 @@ type fetcher struct {
 
 // fetchGroup is an intermediate representation of a group.
 type fetchGroup struct {
-	sync.Mutex
 	group
 	err chan error
 }
 
-// locked calls f under lock.
-func (g *fetchGroup) locked(f func()) {
-	g.Lock()
-	defer g.Unlock()
-	f()
-}
 
 // Fetch fetches Buildbot and LUCI builds, groups and joins them by patchset
 // until it collects f.MaxGroups of trustworthy groups.
