@@ -44,13 +44,16 @@ func setUpGitiles(c context.Context) context.Context {
 }
 
 func TestTestStepFailureAlerts(t *testing.T) {
+	tr, fa := true, false
+	truePtr, falsePtr := &tr, &fa
+
 	Convey("test TestFailureAnalyzer", t, func() {
 		maxFailedTests = 2
 		Convey("analyze", func() {
 			tests := []struct {
 				name          string
 				failures      []*messages.BuildStep
-				testResults   *messages.TestResults
+				testResults   *model.FullResult
 				finditResults []*messages.FinditResult
 				wantResult    []messages.ReasonRaw
 				wantErr       error
@@ -97,12 +100,12 @@ func TestTestStepFailureAlerts(t *testing.T) {
 							},
 						},
 					},
-					testResults: &messages.TestResults{
-						Tests: map[string]interface{}{
-							"test_a": map[string]interface{}{
-								"expected":      "PASS",
-								"actual":        "FAIL",
-								"is_unexpected": true,
+					testResults: &model.FullResult{
+						Tests: model.FullTest{
+							"test_a": &model.FullTestLeaf{
+								Expected:   []string{"PASS"},
+								Actual:     []string{"FAIL"},
+								Unexpected: truePtr,
 							},
 						},
 					},
@@ -156,22 +159,22 @@ func TestTestStepFailureAlerts(t *testing.T) {
 							},
 						},
 					},
-					testResults: &messages.TestResults{
-						Tests: map[string]interface{}{
-							"test_a": map[string]interface{}{
-								"expected":      "PASS",
-								"actual":        "FAIL",
-								"is_unexpected": true,
+					testResults: &model.FullResult{
+						Tests: model.FullTest{
+							"test_a": &model.FullTestLeaf{
+								Expected:   []string{"PASS"},
+								Actual:     []string{"FAIL"},
+								Unexpected: truePtr,
 							},
-							"test_b": map[string]interface{}{
-								"expected":      "PASS",
-								"actual":        "FAIL",
-								"is_unexpected": true,
+							"test_b": &model.FullTestLeaf{
+								Expected:   []string{"PASS"},
+								Actual:     []string{"FAIL"},
+								Unexpected: truePtr,
 							},
-							"test_c": map[string]interface{}{
-								"expected":      "PASS",
-								"actual":        "FAIL",
-								"is_unexpected": true,
+							"test_c": &model.FullTestLeaf{
+								Expected:   []string{"PASS"},
+								Actual:     []string{"FAIL"},
+								Unexpected: truePtr,
 							},
 						},
 					},
@@ -251,12 +254,12 @@ func TestTestStepFailureAlerts(t *testing.T) {
 							},
 						},
 					},
-					testResults: &messages.TestResults{
-						Tests: map[string]interface{}{
-							"test_a": map[string]interface{}{
-								"expected":      "PASS",
-								"actual":        "FAIL",
-								"is_unexpected": true,
+					testResults: &model.FullResult{
+						Tests: model.FullTest{
+							"test_a": &model.FullTestLeaf{
+								Expected:   []string{"PASS"},
+								Actual:     []string{"FAIL"},
+								Unexpected: truePtr,
 							},
 						},
 					},
@@ -340,12 +343,12 @@ func TestTestStepFailureAlerts(t *testing.T) {
 							},
 						},
 					},
-					testResults: &messages.TestResults{
-						Tests: map[string]interface{}{
-							"test_a": map[string]interface{}{
-								"expected":      "PASS",
-								"actual":        "FAIL PASS",
-								"is_unexpected": false,
+					testResults: &model.FullResult{
+						Tests: model.FullTest{
+							"test_a": &model.FullTestLeaf{
+								Expected:   []string{"PASS"},
+								Actual:     []string{"FAIL", "PASS"},
+								Unexpected: falsePtr,
 							},
 						},
 					},
@@ -373,12 +376,12 @@ func TestTestStepFailureAlerts(t *testing.T) {
 							},
 						},
 					},
-					testResults: &messages.TestResults{
-						Tests: map[string]interface{}{
-							"test_a": map[string]interface{}{
-								"expected":      "PASS",
-								"actual":        "FAIL",
-								"is_unexpected": true,
+					testResults: &model.FullResult{
+						Tests: model.FullTest{
+							"test_a": &model.FullTestLeaf{
+								Expected:   []string{"PASS"},
+								Actual:     []string{"FAIL"},
+								Unexpected: truePtr,
 							},
 						},
 					},
@@ -503,41 +506,6 @@ func TestUnexpected(t *testing.T) {
 				So(got, ShouldResemble, test.want)
 			})
 		}
-	})
-}
-
-func TestTraverseResults(t *testing.T) {
-	Convey("empty", t, func() {
-		s, err := traverseResults("", nil)
-		So(len(s), ShouldEqual, 0)
-		So(err, ShouldEqual, nil)
-	})
-
-	Convey("recurse", t, func() {
-		s, err := traverseResults("", map[string]interface{}{
-			"test1": map[string]interface{}{
-				"subtest1": map[string]interface{}{
-					"expected": "PASS",
-					"actual":   "FAIL",
-				},
-			},
-		})
-		So(len(s), ShouldEqual, 0)
-		So(err, ShouldEqual, nil)
-	})
-
-	Convey("recurse, results", t, func() {
-		s, err := traverseResults("", map[string]interface{}{
-			"test1": map[string]interface{}{
-				"subtest1": map[string]interface{}{
-					"expected":      "PASS",
-					"actual":        "FAIL",
-					"is_unexpected": true,
-				},
-			},
-		})
-		So(len(s), ShouldEqual, 1)
-		So(err, ShouldEqual, nil)
 	})
 }
 

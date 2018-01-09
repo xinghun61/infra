@@ -17,6 +17,7 @@ import (
 	analyzertest "infra/appengine/sheriff-o-matic/som/analyzer/test"
 	"infra/appengine/sheriff-o-matic/som/client"
 	clientTest "infra/appengine/sheriff-o-matic/som/client/test"
+	"infra/appengine/test-results/model"
 	"infra/libs/testing/ansidiff"
 	"infra/monitoring/messages"
 
@@ -1155,7 +1156,7 @@ func TestStepFailureAlerts(t *testing.T) {
 		tests := []struct {
 			name        string
 			failures    []*messages.BuildStep
-			testResults messages.TestResults
+			testResults *model.FullResult
 			alerts      []messages.Alert
 			err         error
 		}{
@@ -1191,7 +1192,7 @@ func TestStepFailureAlerts(t *testing.T) {
 						},
 					},
 				},
-				testResults: messages.TestResults{},
+				testResults: &model.FullResult{},
 				alerts: []messages.Alert{
 					{
 						Key:      "fake.master.fake.builder.fake_tests.",
@@ -1337,7 +1338,7 @@ func TestStepFailureAlerts(t *testing.T) {
 						},
 					},
 				},
-				testResults: messages.TestResults{},
+				testResults: &model.FullResult{},
 				alerts: []messages.Alert{
 					{
 						Key:      "fake.master.fake.builder.fake_tests.",
@@ -1406,7 +1407,7 @@ func TestStepFailureAlerts(t *testing.T) {
 						},
 					},
 				},
-				testResults: messages.TestResults{},
+				testResults: &model.FullResult{},
 				alerts: []messages.Alert{
 					{
 						Key:      "fake.master.fake.builder.fake_tests.",
@@ -1474,7 +1475,7 @@ func TestStepFailureAlerts(t *testing.T) {
 						},
 					},
 				},
-				testResults: messages.TestResults{},
+				testResults: &model.FullResult{},
 				alerts: []messages.Alert{
 					{
 						Key:      "fake.master.fake.builder.fake_tests.4",
@@ -1524,7 +1525,7 @@ func TestStepFailureAlerts(t *testing.T) {
 		for _, test := range tests {
 			test := test
 			Convey(test.name, func() {
-				mc.TestResultsValue = &test.testResults
+				mc.TestResultsValue = test.testResults
 				alerts, err := a.stepFailureAlerts(ctx, "tree", test.failures, []*messages.FinditResult{})
 				So(err, ShouldResemble, test.err)
 				So(alerts, ShouldResemble, test.alerts)

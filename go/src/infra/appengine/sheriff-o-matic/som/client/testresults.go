@@ -27,8 +27,8 @@ type testResults struct {
 // format is master -> test -> list of builders
 type knownResults map[string]map[string][]string
 
-// TestResults fetches the results of a step failure's test run.
-func (trc *testResults) TestResults(ctx context.Context, master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
+// TestResults fetches the full_results.json of a step failure's test run.
+func (trc *testResults) TestResults(ctx context.Context, master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*model.FullResult, error) {
 	if err := trc.cacheKnownData(ctx); err != nil {
 		return nil, err
 	}
@@ -55,7 +55,7 @@ func (trc *testResults) TestResults(ctx context.Context, master *messages.Master
 	v.Add("testtype", stepName)
 
 	URL := fmt.Sprintf("%s/testfile?%s", trc.Host, v.Encode())
-	tr := &messages.TestResults{}
+	tr := &model.FullResult{}
 
 	if code, err := trc.getJSON(ctx, URL, tr); err != nil {
 		logging.Errorf(ctx, "Error (%d) fetching test results %s: %v", code, URL, err)

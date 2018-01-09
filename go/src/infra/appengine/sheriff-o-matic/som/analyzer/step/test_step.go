@@ -240,25 +240,23 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 		return name, nil, nil
 	}
 
-	for testName, testResults := range testResults.Tests {
-		res, ok := testResults.(map[string]interface{})
-		if !ok {
-			return "", nil, err
-		}
-		// If res is a simple top-level test result, just check it here.
-		expected := res["expected"]
-		actual := res["actual"]
+	delim := "/"
+	if testResults.PathDelim != nil {
+		delim = *testResults.PathDelim
+	}
+
+	for testName, res := range testResults.Tests.Flatten(delim) {
+
+		expected := res.Expected
+		actual := res.Actual
 		if expected != nil || actual != nil {
-			expected := strings.Split(expected.(string), " ")
-			actual := strings.Split(actual.(string), " ")
 			ue := unexpected(expected, actual)
 
-			isUnexpected, ok := res["is_unexpected"]
 			// is_unexpected is optional accordding the format doc, but in practice
 			// we rarely see it set. Don't depend on it, but do log it for later
 			// reference.
-			if ok {
-				logging.Infof(ctx, "%v, is_unexpected: %v, %v", ue, isUnexpected, ok)
+			if res.Unexpected != nil {
+				logging.Infof(ctx, "%v, is_unexpected: %+v", ue, *res.Unexpected)
 			}
 			hasPass := false
 			// If there was a pass at all, count it.
@@ -272,17 +270,7 @@ func getTestNames(ctx context.Context, f *messages.BuildStep) (string, []string,
 				logging.Infof(ctx, "%s's unexpected results: %v. %v vs %v", testName, ue, actual, expected)
 				failedTests = append(failedTests, testName)
 			}
-			continue
 		}
-		// res is not a simple top-level test result, so recurse to find
-		// the actual results.
-		ue, err := traverseResults(testName, res)
-		if err != nil {
-			logging.WithError(err).Errorf(ctx, "traversing test results")
-			return "", nil, err
-		}
-
-		failedTests = append(failedTests, ue[testName]...)
 	}
 
 	if len(failedTests) > maxFailedTests {
@@ -364,39 +352,6 @@ func getExpectationsForTest(ctx context.Context, testName string, config *te.Bui
 	}
 
 	return fs.ForTest(testName, config), nil
-}
-
-// testResults json is an arbitrarily deep tree, whose nodes are the actual
-// test results, so we recurse to find them.
-// TODO: return the *actual* results for each test, not just the names of the failing ones.
-func traverseResults(parent string, testResults map[string]interface{}) (map[string][]string, error) {
-	ret := map[string][]string{}
-	for testName, testResults := range testResults {
-		res, ok := testResults.(map[string]interface{})
-		if !ok {
-			return nil, fmt.Errorf("Couldn't convert test results to map: %s/%s", parent, testName)
-		}
-		// First check if results is actually results, or just another branch
-		// in the tree of test results
-		// Uuuuugly.
-		if res["expected"] == nil || res["actual"] == nil {
-			// Assume it's a branch.
-			childRes, err := traverseResults(fmt.Sprintf("%s/%s", parent, testName), res)
-			if err != nil {
-				return ret, err
-			}
-			for name, results := range childRes {
-				ret[name] = append(ret[name], results...)
-			}
-			continue
-		}
-
-		// TODO: something about when the test suddenly starts passing unexpectedly?
-		if ue, ok := res["is_unexpected"]; ok && ue.(bool) && res["actual"] != "PASS" {
-			ret[testName] = append(ret[testName], fmt.Sprintf("%s/%s", parent, testName))
-		}
-	}
-	return ret, nil
 }
 
 func contains(haystack []string, needle string) bool {

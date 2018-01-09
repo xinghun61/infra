@@ -6,6 +6,7 @@ import (
 
 	"golang.org/x/net/context"
 
+	"infra/appengine/test-results/model"
 	"infra/monitoring/messages"
 )
 
@@ -20,7 +21,7 @@ type MockReader struct {
 	BCache            map[string]*messages.Build
 	BuildValue        *messages.Build
 	Builds            map[string]*messages.Build
-	TestResultsValue  *messages.TestResults
+	TestResultsValue  *model.FullResult
 	StdioForStepValue []string
 	FinditResults     []*messages.FinditResult
 	BuildFetchError,
@@ -44,7 +45,7 @@ func (m MockReader) Build(ctx context.Context, master *messages.MasterLocation, 
 }
 
 // TestResults implements the Reader interface.
-func (m MockReader) TestResults(ctx context.Context, master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*messages.TestResults, error) {
+func (m MockReader) TestResults(ctx context.Context, master *messages.MasterLocation, builderName, stepName string, buildNumber int64) (*model.FullResult, error) {
 	return m.TestResultsValue, m.StepFetchError
 }
 
