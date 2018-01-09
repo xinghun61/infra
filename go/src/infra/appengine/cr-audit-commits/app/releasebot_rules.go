@@ -31,7 +31,7 @@ func OnlyModifiesVersionFile(ctx context.Context, ap *AuditParams, rc *RelevantC
 }
 
 func onlyModifies(ctx context.Context, ap *AuditParams, rc *RelevantCommit, cs *Clients, fn string) (bool, error) {
-	c, err := cs.gitiles.Log(ctx, ap.RepoCfg.BaseRepoURL, rc.CommitHash, gitiles.Limit(1))
+	c, err := cs.gitiles.Log(ctx, ap.RepoCfg.BaseRepoURL, rc.CommitHash, gitiles.Limit(1), gitiles.WithTreeDiff)
 	if err != nil {
 		return false, err
 	}
