@@ -44,6 +44,8 @@ func getBuilderCmd(authOpts auth.Options) *subcommands.Command {
 				"(repeatable) set tags for this build. Buildbucket expects these to be `key:value`.")
 			ret.Flags.StringVar(&ret.bbHost, "B", bbHostDefault,
 				"The buildbucket hostname to grab the definition from.")
+			ret.Flags.BoolVar(&ret.canary, "canary", false,
+				"Get a 'canary' build, rather than a 'prod' build.")
 
 			return ret
 		},
@@ -58,6 +60,7 @@ type cmdGetBuilder struct {
 
 	tags   stringlistflag.Flag
 	bbHost string
+	canary bool
 }
 
 func (c *cmdGetBuilder) validateFlags(ctx context.Context, args []string) (authOpts auth.Options, bucket, builder string, err error) {
@@ -107,11 +110,17 @@ func (c *cmdGetBuilder) grabBuilderDefinition(ctx context.Context, bucket, build
 		return nil, err
 	}
 
+	canaryPref := "PROD"
+	if c.canary {
+		canaryPref = "CANARY"
+	}
+
 	args := &swarmbucket.SwarmingSwarmbucketApiGetTaskDefinitionRequestMessage{
 		BuildRequest: &swarmbucket.ApiPutRequestMessage{
-			Bucket:         bucket,
-			ParametersJson: string(data),
-			Tags:           c.tags,
+			CanaryPreference: canaryPref,
+			Bucket:           bucket,
+			ParametersJson:   string(data),
+			Tags:             c.tags,
 		},
 	}
 	answer, err := sbucket.GetTaskDef(args).Context(ctx).Do()
