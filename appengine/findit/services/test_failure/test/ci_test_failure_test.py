@@ -10,8 +10,13 @@ import zlib
 
 from common.findit_http_client import FinditHttpClient
 from model.wf_step import WfStep
+from services.parameters import TestFailureInfo
+from services.parameters import TestFailedStep
+from services.parameters import TestFailedSteps
+from services.parameters import FailureInfoBuilds
 from services.test_failure import ci_test_failure
 from waterfall import swarming_util
+from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
 
@@ -100,7 +105,8 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     step.isolated = True
     step.put()
 
-    failed_step = {'current_failure': 223, 'first_failure': 221, 'tests': {}}
+    failed_step = {'current_failure': 223, 'first_failure': 221}
+    failed_step = TestFailedStep.FromSerializable(failed_step)
 
     ci_test_failure._InitiateTestLevelFirstFailureAndSaveLog(
         json_data, step, failed_step)
@@ -108,20 +114,25 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     expected_failed_step = {
         'current_failure': 223,
         'first_failure': 221,
+        'last_pass': None,
+        'list_isolated_data': None,
         'tests': {
             'Unittest2.Subtest1': {
                 'current_failure': 223,
                 'first_failure': 223,
+                'last_pass': None,
                 'base_test_name': 'Unittest2.Subtest1'
             },
             'Unittest3.Subtest2': {
                 'current_failure': 223,
                 'first_failure': 223,
+                'last_pass': None,
                 'base_test_name': 'Unittest3.Subtest2'
             }
         }
     }
-    self.assertEqual(expected_failed_step, failed_step)
+
+    self.assertEqual(expected_failed_step, failed_step.ToSerializable())
 
   def testInitiateTestLevelFirstFailureAndSaveLogwithLastPass(self):
     json_data = json.loads(
@@ -137,6 +148,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         'last_pass': 220,
         'tests': {}
     }
+    failed_step = TestFailedStep.FromSerializable(failed_step)
 
     ci_test_failure._InitiateTestLevelFirstFailureAndSaveLog(
         json_data, step, failed_step)
@@ -145,6 +157,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         'current_failure': 223,
         'first_failure': 221,
         'last_pass': 220,
+        'list_isolated_data': None,
         'tests': {
             'Unittest2.Subtest1': {
                 'current_failure': 223,
@@ -160,10 +173,13 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             }
         }
     }
-    self.assertEqual(expected_failed_step, failed_step)
+    self.assertEqual(expected_failed_step, failed_step.ToSerializable())
 
+  @mock.patch.object(
+      ci_test_failure, 'UpdateSwarmingSteps', return_value=True)
   @mock.patch.object(ci_test_failure, 'swarming_util')
-  def testCheckFirstKnownFailureForSwarmingTestsFoundFlaky(self, mock_module):
+  def testCheckFirstKnownFailureForSwarmingTestsFoundFlaky(
+      self, mock_module, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 221
@@ -195,33 +211,54 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             'chromium_revision': 'commit4'
         }
     }
+
+    failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed_steps': failed_steps,
+        'builds': builds
+    }
+    failure_info = TestFailureInfo.FromSerializable(failure_info)
+
     expected_failed_steps = failed_steps
+    expected_failed_steps['abc_test']['tests'] = None
+    expected_failed_steps['abc_test']['last_pass'] = None
     step = WfStep.Create(master_name, builder_name, build_number, step_name)
     step.isolated = True
     step.put()
 
-    mock_module.GetIsolatedDataForFailedBuild.return_value = True
     mock_module.RetrieveShardedTestResultsFromIsolatedServer.return_value = (
         json.loads(
             self._GetSwarmingData('isolated-plain',
                                   'm_b_223_abc_test_flaky.json')))
 
     ci_test_failure.CheckFirstKnownFailureForSwarmingTests(
-        master_name, builder_name, build_number, failed_steps, builds)
+        master_name, builder_name, build_number, failure_info)
 
-    self.assertEqual(expected_failed_steps, failed_steps)
+    self.assertEqual(expected_failed_steps,
+                     failure_info.failed_steps.ToSerializable())
 
   @mock.patch.object(
-      swarming_util, 'GetIsolatedDataForFailedBuild', return_value=None)
+      ci_test_failure, 'UpdateSwarmingSteps', return_value=False)
   def testCheckFirstKnownFailureForSwarmingTestsNoResult(self, _):
     master_name = 'm'
     builder_name = 'b'
     build_number = 224
     failed_steps = {}
     builds = {}
+    failure_info = {
+        'master_name': master_name,
+        'builder_name': builder_name,
+        'build_number': build_number,
+        'failed_steps': failed_steps,
+        'builds': builds
+    }
+    failure_info = TestFailureInfo.FromSerializable(failure_info)
+
     ci_test_failure.CheckFirstKnownFailureForSwarmingTests(
-        master_name, builder_name, build_number, failed_steps, builds)
-    self.assertEqual({}, failed_steps)
+        master_name, builder_name, build_number, failure_info)
+    self.assertEqual({}, failure_info.failed_steps.ToSerializable())
 
   def testUpdateFirstFailureOnTestLevelThenUpdateStepLevel(self):
     master_name = 'm'
@@ -246,7 +283,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             }
         }
     }
-
+    failed_step = TestFailedStep.FromSerializable(failed_step)
     step = WfStep.Create(master_name, builder_name, 223, step_name)
     step.isolated = True
     step.log_data = 'log'
@@ -290,6 +327,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         'current_failure': 224,
         'first_failure': 221,
         'last_pass': 220,
+        'list_isolated_data': None,
         'tests': {
             'Unittest2.Subtest1': {
                 'current_failure': 224,
@@ -300,11 +338,12 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             'Unittest3.Subtest2': {
                 'current_failure': 224,
                 'first_failure': 221,
-                'base_test_name': 'Unittest3.Subtest2'
+                'base_test_name': 'Unittest3.Subtest2',
+                'last_pass': None
             }
         }
     }
-    self.assertEqual(expected_failed_step, failed_step)
+    self.assertEqual(expected_failed_step, failed_step.ToSerializable())
 
   def testUpdateFirstFailureOnTestLevelFlaky(self):
     master_name = 'm'
@@ -323,6 +362,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             }
         }
     }
+    failed_step = TestFailedStep.FromSerializable(failed_step)
     step = WfStep.Create(master_name, builder_name, 222, step_name)
     step.isolated = True
     step.log_data = 'flaky'
@@ -336,6 +376,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         'current_failure': 223,
         'first_failure': 223,
         'last_pass': 222,
+        'list_isolated_data': None,
         'tests': {
             'Unittest2.Subtest1': {
                 'current_failure': 223,
@@ -345,7 +386,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             }
         }
     }
-    self.assertEqual(expected_failed_step, failed_step)
+    self.assertEqual(expected_failed_step, failed_step.ToSerializable())
 
   def testUpdateFailureInfoBuildsUpdateBuilds(self):
     failed_steps = {
@@ -382,42 +423,44 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
             }
         }
     }
+    failed_steps = TestFailedSteps.FromSerializable(failed_steps)
 
     builds = {
-        '220': {
+        220: {
             'blame_list': ['commit0'],
             'chromium_revision': 'commit0'
         },
-        '221': {
+        221: {
             'blame_list': ['commit1'],
             'chromium_revision': 'commit1'
         },
-        '222': {
+        222: {
             'blame_list': ['commit2'],
             'chromium_revision': 'commit2'
         },
-        '223': {
+        223: {
             'blame_list': ['commit3', 'commit4'],
             'chromium_revision': 'commit4'
         }
     }
+    builds = FailureInfoBuilds.FromSerializable(builds)
 
     ci_test_failure._UpdateFailureInfoBuilds(failed_steps, builds)
     expected_builds = {
-        '221': {
+        221: {
             'blame_list': ['commit1'],
             'chromium_revision': 'commit1'
         },
-        '222': {
+        222: {
             'blame_list': ['commit2'],
             'chromium_revision': 'commit2'
         },
-        '223': {
+        223: {
             'blame_list': ['commit3', 'commit4'],
             'chromium_revision': 'commit4'
         }
     }
-    self.assertEqual(builds, expected_builds)
+    self.assertEqual(expected_builds, builds.ToSerializable())
 
   @mock.patch.object(
       swarming_util,
@@ -428,7 +471,14 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     builder_name = 'b'
     build_number = 121
     step_name = 'atest'
-    failed_step = {'list_isolated_data': ''}
+    failed_step = {
+        'list_isolated_data': [{
+            'isolatedserver': 'https://isolateserver.appspot.com',
+            'namespace': 'default-gzip',
+            'digest': 'isolatedhashabctest-223'
+        }]
+    }
+    failed_step = TestFailedStep.FromSerializable(failed_step)
     self.assertFalse(
         ci_test_failure._StartTestLevelCheckForFirstFailure(
             master_name, builder_name, build_number, step_name, failed_step,
@@ -472,3 +522,180 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     tests = {'test1': {'first_failure': 1}}
     self.assertTrue(
         ci_test_failure.AnyTestHasFirstTimeFailure(tests, build_number))
+
+  @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
+  def testUpdateSwarmingSteps(self, mock_data):
+    master_name = 'm'
+    builder_name = 'b'
+    build_number = 223
+    failed_steps = {
+        'a_tests': {
+            'current_failure': 2,
+            'first_failure': 0
+        },
+        'unit_tests': {
+            'current_failure': 2,
+            'first_failure': 0
+        },
+        'compile': {
+            'current_failure': 2,
+            'first_failure': 0
+        }
+    }
+    failed_steps = TestFailedSteps.FromSerializable(failed_steps)
+
+    mock_data.return_value = [{
+        'failure': True,
+        'internal_failure': False,
+        'tags': ['stepname:net_unittests'],
+        'outputs_ref': {
+            'isolatedserver': 'https://isolateserver.appspot.com',
+            'namespace': 'default-gzip',
+            'isolated': 'isolatedhashnetunittests'
+        }
+    }, {
+        'failure': False,
+        'internal_failure': False,
+        'tags': ['stepname:unit_tests'],
+        'outputs_ref': {
+            'isolatedserver': 'https://isolateserver.appspot.com',
+            'namespace': 'default-gzip',
+            'isolated': 'isolatedhashunittests'
+        }
+    }, {
+        'failure': True,
+        'internal_failure': False,
+        'tags': ['stepname:unit_tests'],
+        'outputs_ref': {
+            'isolatedserver': 'https://isolateserver.appspot.com',
+            'namespace': 'default-gzip',
+            'isolated': 'isolatedhashunittests1'
+        }
+    }, {
+        'failure': True,
+        'internal_failure': False,
+        'tags': ['stepname:a'],
+        'outputs_ref': {
+            'isolatedserver': 'https://isolateserver.appspot.com',
+            'namespace': 'default-gzip',
+            'isolated': 'isolatedhasha'
+        }
+    }, {
+        'failure': True,
+        'internal_failure': False,
+        'tags': ['stepname:a_tests'],
+        'outputs_ref': {
+            'isolatedserver': 'https://isolateserver.appspot.com',
+            'namespace': 'default-gzip',
+            'isolated': 'isolatedhashatests'
+        }
+    }, {
+        'failure': True,
+        'internal_failure': False,
+        'tags': ['stepname:abc_test'],
+        'outputs_ref': {
+            'isolatedserver': 'https://isolateserver.appspot.com',
+            'namespace': 'default-gzip',
+            'isolated': 'isolatedhashabctest-223'
+        }
+    }, {
+        'failure': True,
+        'internal_failure': True
+    }]
+    result = ci_test_failure.UpdateSwarmingSteps(
+        master_name, builder_name, build_number, failed_steps, None)
+
+    expected_failed_steps = {
+        'a_tests': {
+            'current_failure':
+                2,
+            'first_failure':
+                0,
+            'last_pass':
+                None,
+            'tests':
+                None,
+            'list_isolated_data': [{
+                'digest':
+                    'isolatedhashatests',
+                'namespace':
+                    'default-gzip',
+                'isolatedserver': (waterfall_config.GetSwarmingSettings().get(
+                    'isolated_server'))
+            }]
+        },
+        'unit_tests': {
+            'current_failure':
+                2,
+            'first_failure':
+                0,
+            'last_pass':
+                None,
+            'tests':
+                None,
+            'list_isolated_data': [{
+                'digest':
+                    'isolatedhashunittests1',
+                'namespace':
+                    'default-gzip',
+                'isolatedserver': (waterfall_config.GetSwarmingSettings().get(
+                    'isolated_server'))
+            }]
+        },
+        'compile': {
+            'current_failure': 2,
+            'first_failure': 0,
+            'last_pass': None,
+            'tests': None,
+            'list_isolated_data': None
+        }
+    }
+
+    for step_name in failed_steps:
+      step = WfStep.Get(master_name, builder_name, build_number, step_name)
+      if step_name == 'compile':
+        self.assertIsNone(step)
+      else:
+        self.assertIsNotNone(step)
+
+    self.assertTrue(result)
+    self.assertEqual(expected_failed_steps, failed_steps.ToSerializable())
+
+  @mock.patch.object(
+      swarming_util, 'ListSwarmingTasksDataByTags', return_value=[])
+  def testUpdateSwarmingStepsDownloadFailed(self, _):
+    master_name = 'm'
+    builder_name = 'download_failed'
+    build_number = 223
+    failed_steps = {
+        'a_tests': {
+            'current_failure': 2,
+            'first_failure': 0
+        },
+        'unit_tests': {
+            'current_failure': 2,
+            'first_failure': 0
+        }
+    }
+    failed_steps = TestFailedSteps.FromSerializable(failed_steps)
+
+    result = ci_test_failure.UpdateSwarmingSteps(
+        master_name, builder_name, build_number, failed_steps, None)
+    expected_failed_steps = {
+        'a_tests': {
+            'current_failure': 2,
+            'first_failure': 0,
+            'last_pass': None,
+            'tests': None,
+            'list_isolated_data': None
+        },
+        'unit_tests': {
+            'current_failure': 2,
+            'first_failure': 0,
+            'last_pass': None,
+            'tests': None,
+            'list_isolated_data': None
+        }
+    }
+    self.assertFalse(result)
+    self.assertEqual(expected_failed_steps, failed_steps.ToSerializable())

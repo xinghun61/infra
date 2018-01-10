@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 import base64
-from collections import defaultdict
 from datetime import timedelta
 import hashlib
 import json
@@ -17,7 +16,6 @@ import zlib
 from google.appengine.api.urlfetch_errors import DeadlineExceededError
 from google.appengine.api.urlfetch_errors import DownloadError
 from google.appengine.api.urlfetch_errors import ConnectionClosedError
-from google.appengine.ext import ndb
 
 from common.findit_http_client import FinditHttpClient
 from common import monitoring
@@ -28,7 +26,6 @@ from infra_api_clients import logdog_util
 from libs import time_util
 from model.wf_try_bot_cache import WfTryBot
 from model.wf_try_bot_cache import WfTryBotCache
-from model.wf_step import WfStep
 from waterfall import waterfall_config
 from waterfall.flake import flake_constants
 from waterfall.swarming_task_request import SwarmingTaskRequest
@@ -289,7 +286,7 @@ def ListSwarmingTasksDataByTags(master_name,
   return items
 
 
-def _GenerateIsolatedData(outputs_ref):
+def GenerateIsolatedData(outputs_ref):
   if not outputs_ref:
     return {}
   return {
@@ -314,7 +311,7 @@ def GetSwarmingTaskResultById(task_id, http_client):
 
 def GetSwarmingTaskFailureLog(outputs_ref, http_client):
   """Downloads failure log from isolated server."""
-  isolated_data = _GenerateIsolatedData(outputs_ref)
+  isolated_data = GenerateIsolatedData(outputs_ref)
   return _DownloadTestResults(isolated_data, http_client)
 
 
@@ -327,43 +324,6 @@ def GetTagValue(tags, tag_name):
       content = tag[len(tag_prefix):]
       break
   return content
-
-
-def GetIsolatedDataForFailedBuild(master_name, builder_name, build_number,
-                                  failed_steps, http_client):
-  """Checks failed step_names in swarming log for the build.
-
-  Searches each failed step_name to identify swarming/non-swarming tests
-  and keeps track of isolated data for each failed swarming steps.
-  """
-  data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
-                                     http_client)
-  if not data:
-    return False
-
-  tag_name = 'stepname'
-  build_isolated_data = defaultdict(list)
-  for item in data:
-    if item['failure'] and not item['internal_failure']:
-      # Only retrieves test results from tasks which have failures and
-      # the failure should not be internal infrastructure failure.
-      swarming_step_name = GetTagValue(item['tags'], tag_name)
-      if swarming_step_name in failed_steps and item.get('outputs_ref'):
-        isolated_data = _GenerateIsolatedData(item['outputs_ref'])
-        build_isolated_data[swarming_step_name].append(isolated_data)
-
-  new_steps = []
-  for step_name in build_isolated_data:
-    failed_steps[step_name]['list_isolated_data'] = (
-        build_isolated_data[step_name])
-
-    # Create WfStep object for all the failed steps.
-    step = WfStep.Create(master_name, builder_name, build_number, step_name)
-    step.isolated = True
-    new_steps.append(step)
-
-  ndb.put_multi(new_steps)
-  return True
 
 
 def GetIsolatedDataForStep(master_name,
@@ -384,9 +344,7 @@ def GetIsolatedDataForStep(master_name,
   """
   step_isolated_data = []
   data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
-                                     http_client, {
-                                         'stepname': step_name
-                                     })
+                                     http_client, {'stepname': step_name})
   if not data:
     return step_isolated_data
 
@@ -399,10 +357,10 @@ def GetIsolatedDataForStep(master_name,
       if item['failure'] and not item['internal_failure']:
         # Only retrieves test results from tasks which have failures and
         # the failure should not be internal infrastructure failure.
-        isolated_data = _GenerateIsolatedData(item['outputs_ref'])
+        isolated_data = GenerateIsolatedData(item['outputs_ref'])
         step_isolated_data.append(isolated_data)
     else:
-      isolated_data = _GenerateIsolatedData(item['outputs_ref'])
+      isolated_data = GenerateIsolatedData(item['outputs_ref'])
       step_isolated_data.append(isolated_data)
 
   return step_isolated_data
@@ -423,9 +381,7 @@ def GetIsolatedShaForStep(master_name, builder_name, build_number, step_name,
         configuration.
   """
   data = ListSwarmingTasksDataByTags(master_name, builder_name, build_number,
-                                     http_client, {
-                                         'stepname': step_name
-                                     })
+                                     http_client, {'stepname': step_name})
   if not data:
     logging.error('Failed to get swarming task data for %s/%s/%s/%s',
                   master_name, builder_name, build_number, step_name)
@@ -672,9 +628,8 @@ def GetSwarmingBotCounts(dimensions, http_client):
       k: int(content_data.get(k, 0))
       for k in ('busy', 'count', 'dead', 'quarantined')
   }
-  bot_counts['available'] = (
-      bot_counts['count'] - bot_counts['busy'] - bot_counts['dead'] -
-      bot_counts['quarantined'])
+  bot_counts['available'] = (bot_counts['count'] - bot_counts['busy'] -
+                             bot_counts['dead'] - bot_counts['quarantined'])
 
   return bot_counts
 
@@ -914,9 +869,8 @@ def AssignWarmCacheHost(tryjob, cache_name, http_client):
     git_repo = CachedGitilesRepository(
         http_client, 'https://chromium.googlesource.com/chromium/src.git')
     # TODO(crbug.com/800107): Pass revision as a parameter.
-    revision = (
-        tryjob.properties.get('bad_revision') or
-        tryjob.properties.get('test_revision'))
+    revision = (tryjob.properties.get('bad_revision') or
+                tryjob.properties.get('test_revision'))
     if not revision:
       logging.error('Tryjob %s does not have a specified revision.' % tryjob)
       return

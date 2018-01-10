@@ -10,6 +10,7 @@ import os
 from model.wf_analysis import WfAnalysis
 from model.wf_step import WfStep
 from services import extract_signal
+from services.parameters import TestFailureInfo
 from services.test_failure import extract_test_signal
 from waterfall import buildbot
 from waterfall import swarming_util
@@ -41,9 +42,6 @@ _FAILURE_INFO = {
             'last_pass': 122,
             'current_failure': 123,
             'first_failure': 123,
-            'list_isolated_data': [{
-                'file_name': 'm_b_123_abc_test.json'
-            }]
         }
     }
 }
@@ -55,10 +53,10 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-  def _GetGtestResultLog(self, list_isolated_data):
+  def _GetGtestResultLog(self, file_name):
     file_name = os.path.join(
         os.path.dirname(__file__), os.path.pardir, os.path.pardir, 'test',
-        'data', list_isolated_data[0]['file_name'])
+        'data', file_name)
     with open(file_name, 'r') as f:
       return json.loads(f.read())
 
@@ -92,7 +90,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number)
 
     signals = extract_test_signal.ExtractSignalsForTestFailure(
-        failure_info, None)
+        TestFailureInfo.FromSerializable(failure_info), None)
     self.assertEqual(_FAILURE_SIGNALS, signals)
 
   @mock.patch.object(buildbot, 'GetStepLog', return_value=_ABC_TEST_FAILURE_LOG)
@@ -106,12 +104,11 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
 
     # Mock both stdiolog and gtest json results to test whether Findit will
     # go to step log first when both logs exist.
-    mock_gtest.return_value = self._GetGtestResultLog(
-        _FAILURE_INFO['failed_steps'][step_name]['list_isolated_data'])
+    mock_gtest.return_value = self._GetGtestResultLog('m_b_123_abc_test.json')
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number)
 
     signals = extract_test_signal.ExtractSignalsForTestFailure(
-        _FAILURE_INFO, None)
+        TestFailureInfo.FromSerializable(_FAILURE_INFO), None)
 
     step = WfStep.Get(master_name, builder_name, build_number, step_name)
 
@@ -141,19 +138,15 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
                 'last_pass': 123,
                 'current_failure': 124,
                 'first_failure': 124,
-                'list_isolated_data': [{
-                    'file_name': 'm_b_124_abc_test.json'
-                }]
             }
         }
     }
 
-    mock_gtest.return_value = self._GetGtestResultLog(
-        failure_info['failed_steps'][step_name]['list_isolated_data'])
+    mock_gtest.return_value = self._GetGtestResultLog('m_b_124_abc_test.json')
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number)
 
     signals = extract_test_signal.ExtractSignalsForTestFailure(
-        failure_info, None)
+        TestFailureInfo.FromSerializable(failure_info), None)
 
     step = WfStep.Get(master_name, builder_name, build_number, step_name)
 
@@ -176,7 +169,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number)
 
     signals = extract_test_signal.ExtractSignalsForTestFailure(
-        _FAILURE_INFO, None)
+        TestFailureInfo.FromSerializable(_FAILURE_INFO), None)
 
     self.assertEqual(_FAILURE_SIGNALS, signals)
 
@@ -225,7 +218,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number)
 
     signals = extract_test_signal.ExtractSignalsForTestFailure(
-        failure_info, None)
+        TestFailureInfo.FromSerializable(failure_info), None)
     self.assertEqual(expected_signals, signals)
 
   def testExtractSignalsForTestFailureForTests(self):
@@ -255,10 +248,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
                         'first_failure': 222,
                         'last_pass': 221
                     }
-                },
-                'list_isolated_data': [{
-                    'file_name': 'm_b_223_abc_test.json'
-                }]
+                }
             }
         }
     }
@@ -304,7 +294,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     self._CreateAndSaveWfAnanlysis(master_name, builder_name, build_number)
 
     signals = extract_test_signal.ExtractSignalsForTestFailure(
-        failure_info, None)
+        TestFailureInfo.FromSerializable(failure_info), None)
     self.assertEqual(expected_signals, signals)
 
   def testLogNotJsonLoadable(self):
@@ -349,7 +339,7 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     expected_signals = {'abc_test': {'files': {}, 'tests': {}}}
 
     signals = extract_test_signal.ExtractSignalsForTestFailure(
-        failure_info, None)
+        TestFailureInfo.FromSerializable(failure_info), None)
     self.assertEqual(expected_signals, signals)
 
   @mock.patch.object(
@@ -390,4 +380,5 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     }
 
     with self.assertRaises(Exception):
-      extract_test_signal.ExtractSignalsForTestFailure(failure_info, None)
+      extract_test_signal.ExtractSignalsForTestFailure(
+          TestFailureInfo.FromSerializable(failure_info), None)

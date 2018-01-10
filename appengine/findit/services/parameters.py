@@ -200,22 +200,60 @@ class BaseFailureInfo(StructuredObject):
   chromium_revision = basestring
 
 
-class BaseFailedStep(StructuredObject):
+class BaseSubFailure(StructuredObject):
   last_pass = int
   current_failure = int
   first_failure = int
 
 
 class BaseFailedSteps(TypedDict):
-  _value_type = BaseFailedStep
+  _value_type = BaseSubFailure
 
 
+# Structured objects related to compile failure info.
 class CompileFailureInfo(BaseFailureInfo):
   failed_steps = BaseFailedSteps
 
 
 class CompileHeuristicAnalysisParameters(StructuredObject):
   failure_info = CompileFailureInfo
+  build_completed = bool
+
+
+# Structured objects related to test failure info.
+class FailedTest(BaseSubFailure):
+  base_test_name = basestring
+
+
+class FailedTests(TypedDict):
+  _value_type = FailedTest
+
+
+class IsolatedData(StructuredObject):
+  isolatedserver = basestring
+  namespace = basestring
+  digest = basestring
+
+
+class IsolatedDataList(TypedList):
+  _element_type = IsolatedData
+
+
+class TestFailedStep(BaseSubFailure):
+  tests = FailedTests
+  list_isolated_data = IsolatedDataList
+
+
+class TestFailedSteps(TypedDict):
+  _value_type = TestFailedStep
+
+
+class TestFailureInfo(BaseFailureInfo):
+  failed_steps = TestFailedSteps
+
+
+class TestHeuristicAnalysisParameters(StructuredObject):
+  failure_info = TestFailureInfo
   build_completed = bool
 
 
@@ -244,6 +282,7 @@ class FailedTargets(TypedList):
   _element_type = FailedTarget
 
 
+# Structured objects related to compile failure signals.
 class CompileFailureSignal(BaseFailureSignal):
   failed_edges = FailedEdges
   failed_targets = FailedTargets
@@ -252,6 +291,19 @@ class CompileFailureSignal(BaseFailureSignal):
 
 class CompileFailureSignals(TypedDict):
   _value_type = CompileFailureSignal
+
+
+# Structured objects related to test failure signals.
+class TestFailureSignalsForOneStep(TypedDict):
+  _value_type = BaseFailureSignal
+
+
+class TestFailureSignal(BaseFailureSignal):
+  tests = TestFailureSignalsForOneStep
+
+
+class TestFailureSignals(TypedDict):
+  _value_type = TestFailureSignal
 
 
 # Structured objects related to heuristic result.
@@ -265,14 +317,18 @@ class SuspectedCLs(TypedList):
   _element_type = SuspectedCL
 
 
-class HeuristicResultFailure(StructuredObject):
+class HeuristicResultSubFailure(StructuredObject):
   suspected_cls = SuspectedCLs
   first_failure = int
   last_pass = int
+
+
+class HeuristicResultFailure(HeuristicResultSubFailure):
   supported = bool
   step_name = basestring
 
 
+# Structured objects related to heuristic result for compile failures.
 class CompileHeuristicResultFailure(HeuristicResultFailure):
   new_compile_suspected_cls = SuspectedCLs
   use_ninja_dependencies = bool
@@ -290,3 +346,25 @@ class CompileHeuristicAnalysisOutput(StructuredObject):
   failure_info = CompileFailureInfo
   signals = CompileFailureSignals
   heuristic_result = CompileHeuristicResult
+
+
+# Structured objects related to heuristic result for test failures.
+class TestHeuristicResultFailureTestsInOneStep(TypedDict):
+  _value_type = HeuristicResultSubFailure
+
+
+class TestHeuristicResultFailure(HeuristicResultFailure):
+  tests = TestHeuristicResultFailureTestsInOneStep
+
+
+class TestHeuristicResultFailures(TypedList):
+  _element_type = TestHeuristicResultFailure
+
+
+class TestHeuristicResult(TypedDict):
+  _value_type = TestHeuristicResultFailures
+
+
+class TestHeuristicAnalysisOutput(StructuredObject):
+  failure_info = TestFailureInfo
+  heuristic_result = TestHeuristicResult

@@ -93,9 +93,10 @@ def CheckForFirstKnownFailure(master_name, builder_name, build_number,
     master_name (str): master of the failed build.
     builder_name (str): builder of the failed build.
     build_number (int): builder number of the current failed build.
-    failure_info (CompileFailureInfo): information of the build failure.
+    failure_info (CompileFailureInfo, TestFailureInfo): information of the build
+      failure.
   Returns:
-    failure_info (CompileFailureInfo): updated failure_info.
+    failure_info (CompileFailureInfo, TestFailureInfo): updated failure_info.
   """
   failed_steps = failure_info.failed_steps
   failure_info.builds = _UpdateStringTypedBuildKeyToInt(failure_info.builds)

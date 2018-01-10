@@ -3,11 +3,17 @@
 # found in the LICENSE file.
 """Logic related to examine builds and determine regression range."""
 
+from collections import defaultdict
 import json
 import logging
 
+from google.appengine.ext import ndb
+
 from common.findit_http_client import FinditHttpClient
 from model.wf_step import WfStep
+from services.parameters import FailedTest
+from services.parameters import FailedTests
+from services.parameters import IsolatedDataList
 from services import gtest
 from waterfall import swarming_util
 
@@ -18,7 +24,7 @@ def _InitiateTestLevelFirstFailureAndSaveLog(json_data, step, failed_step=None):
   """Parses the json data and saves all the reliable failures to the step."""
   failed_test_log = {}
   if failed_step:
-    failed_step['tests'] = {}
+    failed_step.tests = failed_step.tests or FailedTests.FromSerializable({})
 
   for iteration in json_data.get('per_iteration_data'):
     for test_name in iteration.keys():
@@ -34,14 +40,16 @@ def _InitiateTestLevelFirstFailureAndSaveLog(json_data, step, failed_step=None):
       if is_reliable_failure:
         if failed_step:
           # Adds the test to failed_step.
-          failed_step['tests'][test_name] = {
-              'current_failure': failed_step['current_failure'],
-              'first_failure': failed_step['current_failure'],
+          failed_test_info = {
+              'current_failure': failed_step.current_failure,
+              'first_failure': failed_step.current_failure,
               'base_test_name': gtest.RemoveAllPrefixes(test_name),
           }
-          if failed_step.get('last_pass'):
-            failed_step['tests'][test_name]['last_pass'] = (
-                failed_step['last_pass'])
+          failed_step.tests[test_name] = FailedTest.FromSerializable(
+              failed_test_info)
+
+          if failed_step.last_pass:
+            failed_step.tests[test_name].last_pass = failed_step.last_pass
         # Stores the output to the step's log_data later.
         failed_test_log[test_name] = ''
         for test in iteration[test_name]:
@@ -51,8 +59,8 @@ def _InitiateTestLevelFirstFailureAndSaveLog(json_data, step, failed_step=None):
   step.log_data = json.dumps(failed_test_log) if failed_test_log else 'flaky'
   step.put()
 
-  if failed_step and not failed_step['tests']:  # All flaky.
-    del failed_step['tests']
+  if failed_step and not failed_step.tests:  # All flaky.
+    failed_step.tests = None
     return False
 
   return True
@@ -61,7 +69,7 @@ def _InitiateTestLevelFirstFailureAndSaveLog(json_data, step, failed_step=None):
 def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
                                         step_name, failed_step, http_client):
   """Downloads test results and initiates first failure info at test level."""
-  list_isolated_data = failed_step['list_isolated_data']
+  list_isolated_data = failed_step.list_isolated_data
   result_log = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
       list_isolated_data, http_client)
 
@@ -108,38 +116,38 @@ def _UpdateFirstFailureInfoForStep(current_build_number, failed_step):
   """Updates first_failure etc. for the step after the check for tests."""
   earliest_test_first_failure = current_build_number
   earliest_test_last_pass = current_build_number - 1
-  for failed_test in failed_step['tests'].itervalues():
+  for failed_test in failed_step.tests.itervalues():
     # Iterates through all failed tests to prepare data for step level update.
-    if not failed_test.get('last_pass'):
+    if not failed_test.last_pass:
       # The test failed throughout checking range,
       # and there is no last_pass info for step.
       # last_pass not found.
       earliest_test_last_pass = -1
-    earliest_test_first_failure = min(failed_test['first_failure'],
+    earliest_test_first_failure = min(failed_test.first_failure,
                                       earliest_test_first_failure)
-    if (failed_test.get('last_pass') and
-        failed_test['last_pass'] < earliest_test_last_pass):
-      earliest_test_last_pass = failed_test['last_pass']
+    if (failed_test.last_pass and
+        failed_test.last_pass < earliest_test_last_pass):
+      earliest_test_last_pass = failed_test.last_pass
 
   # Updates Step level first failure info and last_pass info.
-  failed_step['first_failure'] = max(earliest_test_first_failure,
-                                     failed_step['first_failure'])
+  failed_step.first_failure = max(earliest_test_first_failure,
+                                  failed_step.first_failure)
 
-  if ((not failed_step.get('last_pass') and earliest_test_last_pass >= 0) or
-      (failed_step.get('last_pass') and
-       earliest_test_last_pass > failed_step['last_pass'])):
-    failed_step['last_pass'] = earliest_test_last_pass
+  if ((not failed_step.last_pass and earliest_test_last_pass >= 0) or
+      (failed_step.last_pass and
+       earliest_test_last_pass > failed_step.last_pass)):
+    failed_step.last_pass = earliest_test_last_pass
 
 
 def _UpdateFirstFailureOnTestLevel(master_name, builder_name,
                                    current_build_number, step_name, failed_step,
                                    http_client):
   """Iterates backwards through builds to get first failure at test level."""
-  farthest_first_failure = failed_step['first_failure']
-  if failed_step.get('last_pass'):
-    farthest_first_failure = failed_step['last_pass'] + 1
+  farthest_first_failure = failed_step.first_failure
+  if failed_step.last_pass:
+    farthest_first_failure = failed_step.last_pass + 1
 
-  unfinished_tests = failed_step['tests'].keys()
+  unfinished_tests = failed_step.tests.keys()
   for build_number in range(current_build_number - 1,
                             max(farthest_first_failure - 1, 0), -1):
     # Checks back until farthest_first_failure or build 1, don't use build 0
@@ -165,16 +173,15 @@ def _UpdateFirstFailureOnTestLevel(master_name, builder_name,
 
     for test_name in test_checking_list:
       if failed_test_log.get(test_name):
-        failed_step['tests'][test_name]['first_failure'] = build_number
+        failed_step.tests[test_name].first_failure = build_number
       else:
         # Last pass for this test has been found.
         # TODO(chanli): Handle cases where the test is not run at all.
-        failed_step['tests'][test_name]['last_pass'] = build_number
+        failed_step.tests[test_name].last_pass = build_number
         unfinished_tests.remove(test_name)
 
     if not unfinished_tests:
       break
-
   _UpdateFirstFailureInfoForStep(current_build_number, failed_step)
 
 
@@ -183,30 +190,70 @@ def _UpdateFailureInfoBuilds(failed_steps, builds):
   build_numbers_in_builds = builds.keys()
   latest_last_pass = -1
   for failed_step in failed_steps.itervalues():
-    if not failed_step.get('last_pass'):
+    if not failed_step.last_pass:
       return
 
-    if (latest_last_pass < 0 or latest_last_pass > failed_step['last_pass']):
-      latest_last_pass = failed_step['last_pass']
+    if (latest_last_pass < 0 or latest_last_pass > failed_step.last_pass):
+      latest_last_pass = failed_step.last_pass
 
   for build_number in build_numbers_in_builds:
-    if int(build_number) < latest_last_pass:
+    if build_number < latest_last_pass:
       del builds[build_number]
 
 
+def UpdateSwarmingSteps(master_name, builder_name, build_number,
+                        failed_steps, http_client):
+  """Updates swarming steps based on swarming task data.
+
+  Searches each failed step_name to identify swarming/non-swarming steps and
+  updates failed swarming steps for isolated data.
+  Also creates and saves swarming steps in datastore.
+  """
+  data = swarming_util.ListSwarmingTasksDataByTags(master_name, builder_name,
+                                                   build_number, http_client)
+  if not data:
+    return False
+
+  tag_name = 'stepname'
+  build_isolated_data = defaultdict(list)
+  for item in data:
+    if item['failure'] and not item['internal_failure']:
+      # Only retrieves test results from tasks which have failures and
+      # the failure should not be internal infrastructure failure.
+      swarming_step_name = swarming_util.GetTagValue(item['tags'], tag_name)
+      if swarming_step_name in failed_steps and item.get('outputs_ref'):
+        isolated_data = swarming_util.GenerateIsolatedData(item['outputs_ref'])
+        build_isolated_data[swarming_step_name].append(isolated_data)
+
+  new_steps = []
+  for step_name in build_isolated_data:
+    failed_steps[step_name].list_isolated_data = (
+        IsolatedDataList.FromSerializable(build_isolated_data[step_name]))
+
+    # Create WfStep object for all the failed steps.
+    step = WfStep.Create(master_name, builder_name, build_number, step_name)
+    step.isolated = True
+    new_steps.append(step)
+
+  ndb.put_multi(new_steps)
+  return True
+
+
 def CheckFirstKnownFailureForSwarmingTests(master_name, builder_name,
-                                           build_number, failed_steps, builds):
+                                           build_number, failure_info):
   """Uses swarming test results to update first failure info at test level."""
   http_client = FinditHttpClient()
 
+  failed_steps = failure_info.failed_steps
+
   # Identifies swarming tests and saves isolated data to them.
-  result = swarming_util.GetIsolatedDataForFailedBuild(
+  updated = UpdateSwarmingSteps(
       master_name, builder_name, build_number, failed_steps, http_client)
-  if not result:
+  if not updated:
     return
 
   for step_name, failed_step in failed_steps.iteritems():
-    if not failed_step.get('list_isolated_data'):  # Non-swarming step.
+    if not failed_step.list_isolated_data:  # Non-swarming step.
       continue  # pragma: no cover.
 
     # Checks tests in one step and updates failed_step info if swarming.
@@ -214,12 +261,12 @@ def CheckFirstKnownFailureForSwarmingTests(master_name, builder_name,
                                                  build_number, step_name,
                                                  failed_step, http_client)
 
-    if result:  # pragma: no cover
+    if result:  # pragma: no branch
       # Iterates backwards to get a more precise failed_steps info.
       _UpdateFirstFailureOnTestLevel(master_name, builder_name, build_number,
                                      step_name, failed_step, http_client)
 
-  _UpdateFailureInfoBuilds(failed_steps, builds)
+  _UpdateFailureInfoBuilds(failed_steps, failure_info.builds)
 
 
 def AnyTestHasFirstTimeFailure(tests, build_number):
