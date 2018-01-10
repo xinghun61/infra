@@ -85,7 +85,7 @@ function generatePage(historyInstance)
         });
     } else {
         appendHTML(htmlForNavBar() + '<br><strong>No builders found for the ' +
-            'given test type. Please select another.</strong>');
+            'given test type. Please select another.</strong>', 'navbar');
         hideLoadingUI();
     }
 
@@ -845,13 +845,21 @@ function htmlForTestTable(rowsHTML, opt_excludeHeaders)
     return html + '<tbody>' + rowsHTML + '</tbody></table>';
 }
 
-function appendHTML(html)
+function appendHTML(html, id)
 {
     // InnerHTML to a div that's not in the document. This is
     // ~300ms faster in Safari 4 and Chrome 4 on mac.
     var div = document.createElement('div');
+    div.id = id;
     div.innerHTML = html;
-    document.body.appendChild(div);
+
+    // Replace previous occupant of this ID if one exists.
+    var oldDiv = document.getElementById(id);
+    if (oldDiv) {
+      document.body.replaceChild(div, oldDiv);
+    } else {
+      document.body.appendChild(div);
+    }
     postHeightChangedMessage();
 }
 
@@ -1372,9 +1380,9 @@ function hideLoadingUI()
 function generatePageForIndividualTests(tests)
 {
     if (g_history.dashboardSpecificState.showChrome)
-        appendHTML(htmlForNavBar());
+        appendHTML(htmlForNavBar(), 'navbar');
     performChunkedAction(function(test) {
-            appendHTML(htmlForIndividualTest(test));
+            appendHTML(htmlForIndividualTest(test), 'individual-test');
         },
         appendExpectations,
         tests);
@@ -1487,9 +1495,8 @@ function generatePageForBuilder(builder)
 
     if (g_history.isLayoutTestResults())
         html += headerForTestTableHtml();
-
-    html += '<br>' + testsHTML;
-    appendHTML(html);
+    appendHTML(html, 'navbar');
+    appendHTML(testsHTML, 'tests');
 
     var ths = document.getElementsByTagName('th');
     for (var i = 0; i < ths.length; i++) {
