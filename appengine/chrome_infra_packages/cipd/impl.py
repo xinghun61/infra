@@ -116,12 +116,11 @@ from . import processing
 from . import reader
 
 
-# Regular expression for a package name: <word>/<word/<word>. Package names must
-# be lower case.
-PACKAGE_NAME_RE = re.compile(r'^([a-z0-9_\-]+/)*[a-z0-9_\-]+$')
-
-# Regular expression for a package path (path inside package namespace).
-PACKAGE_PATH_RE = re.compile(r'^([a-z0-9_\-]+/)*[a-z0-9_\-]+$')
+# Regular expression for a superset of a set of allowed package names.
+#
+# Package names must be lower case and have form "<word>/<word/<word>". See
+# is_valid_package_name for the full spec of how the package name can look.
+PACKAGE_NAME_RE = re.compile(r'^([a-z0-9_\-\.]+/)*[a-z0-9_\-\.]+$')
 
 # Regular expression for a package reference name.
 REF_RE = re.compile(r'^[a-z0-9_\-]{1,100}$')
@@ -883,12 +882,20 @@ class RepoService(object):
 
 def is_valid_package_name(package_name):
   """True if string looks like a valid package name."""
-  return package_name and bool(PACKAGE_NAME_RE.match(package_name))
+  return (
+      package_name and
+      bool(PACKAGE_NAME_RE.match(package_name)) and
+      all(c.replace('.', '') != '' for c in package_name.split('/')))
 
 
 def is_valid_package_path(package_path):
-  """True if string looks like a valid package path."""
-  return package_path and bool(PACKAGE_PATH_RE.match(package_path))
+  """True if string looks like a valid package path.
+
+  The package path is similar to package names, except it doesn't necessarily
+  points to a concrete package. It can point to a "directory" inside the package
+  namespace (primarily to apply ACLs to it).
+  """
+  return is_valid_package_name(package_path)
 
 
 def is_valid_package_ref(ref):
