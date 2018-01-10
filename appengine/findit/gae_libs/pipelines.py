@@ -136,10 +136,9 @@ def _ValidateType(parameter_type, parameter_name):
   """
   assert type(parameter_type) == types.TypeType, (
       '%s must be defined with a class or a type' % parameter_name)
-  assert any(issubclass(parameter_type, t)
-             for t in _SUPPORTED_TYPES), ('%s must be in supported types: %r.' %
-                                          (parameter_name,
-                                           _SUPPORTED_TYPE_NAMES))
+  assert any(issubclass(parameter_type, t) for t in _SUPPORTED_TYPES), (
+      '%s must be in supported types: %r.' % (parameter_name,
+                                              _SUPPORTED_TYPE_NAMES))
 
 
 def _ConvertInputObjectToPipelineParameters(input_type, args, kwargs):
@@ -325,7 +324,8 @@ class AsynchronousPipeline(BasePipeline):
     result = self.RunImpl(arg)
     if result is not None:
       logging.warning('%s.RunImpl should return nothing, but got a %s',
-                      self.__class__.__name__, type(result).__name__)
+                      self.__class__.__name__,
+                      type(result).__name__)
 
   def callback(self, **additional_parameters):
     arg = _ConvertPipelineParametersToInputObject(self.input_type, self.args,

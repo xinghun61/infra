@@ -8,13 +8,16 @@ import math
 
 from google.appengine.ext import ndb
 
+from dto.int_range import IntRange
 from gae_libs.model.versioned_model import VersionedModel
+from libs import analysis_status
 from model import result_status
 from model import triage_status
 from model.base_analysis import BaseAnalysis
 from model.base_build_model import BaseBuildModel
 from model.base_triaged_model import TriagedModel
 from model.flake.flake_swarming_task import FlakeSwarmingTaskData
+from waterfall.build_info import BuildInfo
 
 
 class DataPoint(ndb.Model):
@@ -126,8 +129,8 @@ class DataPoint(ndb.Model):
     length = len(self.blame_list)
     assert (commit_position > self.commit_position - length and
             commit_position <= self.commit_position)
-    return self.blame_list[length
-                           - (self.commit_position - commit_position) - 1]
+    return self.blame_list[length - (self.commit_position - commit_position) -
+                           1]
 
   def GetDictOfCommitPositionAndRevision(self):
     """Gets a dict of commit_position:revision items for this data_point."""
@@ -224,6 +227,16 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     logging.error('%s/%s/%s/%s/%s %s', self.master_name, self.builder_name,
                   self.build_number, self.step_name, self.test_name, message)
 
+  def CanRunHeuristicAnalysis(self):
+    """Determies whether heuristic analysis can be attempted."""
+    already_run_statuses = [
+        analysis_status.SKIPPED, analysis_status.COMPLETED,
+        analysis_status.ERROR
+    ]
+
+    return (self.suspected_flake_build_id is not None and
+            self.heuristic_analysis_status not in already_run_statuses)
+
   def UpdateTriageResult(self,
                          triage_result,
                          suspect_info,
@@ -296,6 +309,7 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
         return data_point.commit_position
     return None
 
+  # TODO(crbug.com/798231): Remove once build level analysis is removed.
   def GetDataPointsWithinBuildNumberRange(self, lower_bound_build_number,
                                           upper_bound_build_number):
     """Filters data_points by lower and upper bound build numbers.
@@ -317,31 +331,29 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       return self.data_points
 
     lower_bound = self.GetCommitPositionOfBuild(lower_bound_build_number) or 0
-    upper_bound = self.GetCommitPositionOfBuild(
-        upper_bound_build_number) or float('inf')
+    upper_bound = self.GetCommitPositionOfBuild(upper_bound_build_number)
 
-    return self.GetDataPointsWithinCommitPositionRange(lower_bound, upper_bound)
+    return self.GetDataPointsWithinCommitPositionRange(
+        IntRange(lower=lower_bound, upper=upper_bound))
 
-  def GetDataPointsWithinCommitPositionRange(self, lower_bound_commit_position,
-                                             upper_bound_commit_position):
+  def GetDataPointsWithinCommitPositionRange(self, int_range):
     """Filters data_points by lower and upper bound commit positions.
 
     Args:
-      lower_bound_commit_position (int): The earlist commit position of a data
-          point to include.
-      upper_bound_commit_position (int): The latest commit position of a data
-          point to include.
+      int_range (IntRange): The upper and lower bound commit positions to
+          include in the returned results.
 
     Returns:
-      A list of DataPoins filtered by the input commit positions.
+      A list of DataPoints filtered by the input commit positions.
     """
+    lower = int_range.lower
+    upper = int_range.upper if int_range.upper is not None else float('inf')
 
-    def position_in_bounds(x):
-      return (x.commit_position is not None and
-              x.commit_position >= lower_bound_commit_position and
-              x.commit_position <= upper_bound_commit_position)
+    def PositionInBounds(data_point):
+      return (data_point.commit_position >= lower and
+              data_point.commit_position <= upper)
 
-    return filter(position_in_bounds, self.data_points)
+    return filter(PositionInBounds, self.data_points)
 
   def RemoveDataPointWithBuildNumber(self, build_number):
     self.data_points = filter(lambda x: x.build_number != build_number,
@@ -383,6 +395,28 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     return next((data_point for data_point in self.data_points
                  if data_point.build_number == build_number), None)
 
+  def UpdateSuspectedBuildID(self, lower_bound_build, upper_bound_build):
+    """Sets the suspected build ID if appropriate.
+
+      A suspected build cycle can be set when a regression range is identified
+      and spans at most a single build cycle.
+
+    Args:
+      analysis_urlsafe_key (str): The key to the analysis to update.
+      lower_bound_build (BuildInfo): The earlier build whose commit position to
+          check.
+      upper_bound_build (BuildInfo): The later build whose commit
+          position to check, assumed to be 1 build cycle apartlower_bound_build.
+    """
+    lower_bound = lower_bound_build.commit_position
+    upper_bound = upper_bound_build.commit_position
+    assert upper_bound > lower_bound
+
+    if (self.suspected_flake_build_id is None and
+        self.FindMatchingDataPointWithCommitPosition(lower_bound) and
+        self.FindMatchingDataPointWithCommitPosition(upper_bound)):
+      self.Update(suspected_flake_build_id=str(upper_bound_build.build_number))
+
   def Update(self, **kwargs):
     """Updates fields according to what's specified in kwargs.
 
@@ -406,7 +440,7 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
       result_status (int): The triage result status of this analysis.
       status (int): The status of the regression-range identification analysis.
       start_time (datetime): The timestamp that the overall analysis started.
-      suspected_builld (int): The suspected build number.
+      suspected_build (int): The suspected build number.
       try_job_status (int): The status of try job/culprit analysis.
     """
     any_changes = False
@@ -457,7 +491,11 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
   # }
   algorithm_parameters = ndb.JsonProperty(indexed=False)
 
+  # The ID of the build flakiness was suspected to have been introduced in.
+  suspected_flake_build_id = ndb.StringProperty(indexed=False)
+
   # The suspected build number to have introduced the flakiness.
+  # TODO(crbug.com/799324): Remove once build numbers are deprecated in LUCI.
   suspected_flake_build_number = ndb.IntegerProperty()
 
   # The confidence in the suspected build to have introduced the flakiness.
@@ -471,6 +509,10 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
 
   # A list of url-safe keys to FlakeCulprits identified by heuristic analysis.
   suspect_urlsafe_keys = ndb.StringProperty(repeated=True)
+
+  # Heuristic anlysis status. Can be PENDING if not yet ran, SKIPPED if wil not
+  # be run, COMPLETED or ERROR if already ran.
+  heuristic_analysis_status = ndb.IntegerProperty(indexed=False)
 
   # The status of try jobs, if any. None if analysis is still performing
   # swarming reruns, SKIPPED if try jobs will not be triggered, RUNNING when

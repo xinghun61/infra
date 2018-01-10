@@ -9,29 +9,23 @@ from google.appengine.ext import ndb
 from common import monitoring
 from common.findit_http_client import FinditHttpClient
 from common.waterfall import failure_type
-
+from dto.int_range import IntRange
 from gae_libs.gitiles.cached_gitiles_repository import CachedGitilesRepository
 from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
-
 from libs import analysis_status
 from libs import time_util
-
 from model.flake.flake_culprit import FlakeCulprit
 from model.flake.flake_try_job import FlakeTryJob
 from model.flake.flake_try_job_data import FlakeTryJobData
-
 from pipelines.delay_pipeline import DelayPipeline
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipeline)
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
-
 from gae_libs import pipelines
-
 from services.flake_failure import flake_try_job
 from services.flake_failure import heuristic_analysis
-
 from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.flake import confidence
@@ -58,8 +52,9 @@ def UpdateCulprit(analysis_urlsafe_key,
                   commit_position,
                   repo_name='chromium'):
   """Sets culprit information."""
-  culprit = (FlakeCulprit.Get(repo_name, revision) or
-             FlakeCulprit.Create(repo_name, revision, commit_position))
+  culprit = (
+      FlakeCulprit.Get(repo_name, revision) or
+      FlakeCulprit.Create(repo_name, revision, commit_position))
 
   needs_updating = False
 
@@ -339,21 +334,19 @@ class RecursiveFlakeTryJobPipeline(BasePipeline):
                                                urlsafe_flake_analysis_key)
 
         yield NextCommitPositionPipeline(
-            urlsafe_flake_analysis_key,
-            try_job.key.urlsafe(), remaining_suspected_commit_positions,
-            commit_position, lower_bound_commit_position,
-            upper_bound_commit_position, user_specified_iterations, cache_name,
-            dimensions, rerun)
+            urlsafe_flake_analysis_key, try_job.key.urlsafe(),
+            remaining_suspected_commit_positions, commit_position,
+            lower_bound_commit_position, upper_bound_commit_position,
+            user_specified_iterations, cache_name, dimensions, rerun)
     else:
       # Another analysis already ran the try job, use its results directly.
       flake_try_job.UpdateAnalysisDataPointsWithTryJobResult(
           analysis, try_job, commit_position, revision)
       yield NextCommitPositionPipeline(
-          urlsafe_flake_analysis_key,
-          try_job.key.urlsafe(), remaining_suspected_commit_positions,
-          commit_position, lower_bound_commit_position,
-          upper_bound_commit_position, user_specified_iterations, cache_name,
-          dimensions, rerun)
+          urlsafe_flake_analysis_key, try_job.key.urlsafe(),
+          remaining_suspected_commit_positions, commit_position,
+          lower_bound_commit_position, upper_bound_commit_position,
+          user_specified_iterations, cache_name, dimensions, rerun)
 
 
 def _NormalizeDataPoints(data_points):
@@ -448,12 +441,14 @@ def _GetNextCommitPositionAndRemainingSuspects(
             previously_run_commit_position))
     assert previously_run_data_point
 
-    lower_flake_threshold = (analysis.algorithm_parameters.get(
-        'try_job_rerun', {}).get('lower_flake_threshold',
-                                 flake_constants.DEFAULT_LOWER_FLAKE_THRESHOLD))
-    upper_flake_threshold = (analysis.algorithm_parameters.get(
-        'try_job_rerun', {}).get('upper_flake_threshold',
-                                 flake_constants.DEFAULT_UPPER_FLAKE_THRESHOLD))
+    lower_flake_threshold = (
+        analysis.algorithm_parameters.get('try_job_rerun', {}).get(
+            'lower_flake_threshold',
+            flake_constants.DEFAULT_LOWER_FLAKE_THRESHOLD))
+    upper_flake_threshold = (
+        analysis.algorithm_parameters.get('try_job_rerun', {}).get(
+            'upper_flake_threshold',
+            flake_constants.DEFAULT_UPPER_FLAKE_THRESHOLD))
 
     if not lookback_algorithm.IsStable(previously_run_data_point.pass_rate,
                                        lower_flake_threshold,
@@ -517,9 +512,10 @@ class NextCommitPositionPipeline(BasePipeline):
           error=try_job_data.error,
           end_time=time_util.GetUTCNow())
       duration = flake_analysis.end_time - flake_analysis.start_time
-      monitoring.analysis_durations.add(duration.total_seconds(),
-                                        {'type': 'flake',
-                                         'result': 'error'})
+      monitoring.analysis_durations.add(duration.total_seconds(), {
+          'type': 'flake',
+          'result': 'error'
+      })
       return
 
     algorithm_settings = flake_analysis.algorithm_parameters.get(
@@ -541,7 +537,9 @@ class NextCommitPositionPipeline(BasePipeline):
     if suspected_commit_position is not None:  # Finished.
       data_points_within_range = (
           flake_analysis.GetDataPointsWithinCommitPositionRange(
-              lower_bound_commit_position, upper_bound_commit_position))
+              IntRange(
+                  lower=lower_bound_commit_position,
+                  upper=upper_bound_commit_position)))
       confidence_score = _GetSuspectedCommitConfidenceScore(
           flake_analysis, suspected_commit_position, data_points_within_range)
       culprit_revision = suspected_build_data_point.GetRevisionAtCommitPosition(

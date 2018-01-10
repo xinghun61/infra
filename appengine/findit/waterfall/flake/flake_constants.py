@@ -33,6 +33,12 @@ DEFAULT_LOWER_FLAKE_THRESHOLD = 0.02
 # Number of bugs for flaky tests allowed to be filed per day.
 DEFAULT_NEW_FLAKE_BUGS_PER_DAY = 2
 
+# Number of commit positions to look back. Flakiness is most relevant within
+# roughly 500 build cycles from when it's detected, and each build has roughly
+# 10 commits.
+# TODO(crbug.com/799383): Add to config.
+DEFAULT_MAX_COMMIT_POSITIONS_TO_LOOK_BACK = 500 * 10  # 5000 commits.
+
 # Max build numbers to look back during a build-level analysis.
 DEFAULT_MAX_BUILD_NUMBERS = 500
 
