@@ -167,8 +167,13 @@ def RunSteps(api):
     # to avoid running into errors with older releases.
     # Exclude ios - it often uses internal buildspecs so public ones don't work.
     for release in api.omahaproxy.history(
-        min_major_version=43, exclude_platforms=['ios']):
-      if release['channel'] not in ('stable', 'beta', 'dev'):
+        min_major_version=63, exclude_platforms=['ios']):
+      if release['channel'] not in ('stable', 'beta', 'dev', 'canary'):
+        continue
+      # TODO(thomasanderson): When M66 reaches stable, update min_major_version
+      # to 66 and remove this check.
+      if (release['channel'] == 'canary' and
+          int(release['version'].split('.')[2]) < 3317):
         continue
       if 'chromium-%s.tar.xz' % release['version'] not in ls_result:
         missing_releases.add(release['version'])
