@@ -349,7 +349,7 @@ class CompileHeuristicAnalysisOutput(StructuredObject):
 
 
 # Structured objects related to heuristic result for test failures.
-class TestHeuristicResultFailureTestsInOneStep(TypedDict):
+class TestHeuristicResultFailureTestsInOneStep(TypedList):
   _value_type = HeuristicResultSubFailure
 
 

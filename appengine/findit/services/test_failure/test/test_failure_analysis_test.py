@@ -19,6 +19,122 @@ from services.test_failure import extract_test_signal
 from services.test_failure import test_failure_analysis
 from waterfall.test import wf_testcase
 
+SAMPLE_HEURISTIC_RESULT = {
+    'failures': [{
+        'step_name':
+            'a',
+        'first_failure':
+            98,
+        'last_pass':
+            None,
+        'supported':
+            True,
+        'suspected_cls': [{
+            'build_number': 99,
+            'repo_name': 'chromium',
+            'revision': 'r99_2',
+            'commit_position': None,
+            'url': None,
+            'score': 2,
+            'hints': {
+                'modified f99_2.cc (and it was in log)': 2,
+            },
+        }],
+    }, {
+        'step_name':
+            'b',
+        'first_failure':
+            98,
+        'last_pass':
+            96,
+        'supported':
+            True,
+        'suspected_cls': [{
+            'build_number': 97,
+            'repo_name': 'chromium',
+            'revision': 'r97_1',
+            'commit_position': None,
+            'url': None,
+            'score': 5,
+            'hints': {
+                'added x/y/f99_1.cc (and it was in log)': 5,
+            },
+        }, {
+            'build_number': 98,
+            'repo_name': 'chromium',
+            'revision': 'r98_1',
+            'commit_position': None,
+            'url': None,
+            'score': 4,
+            'hints': {
+                'modified f98.cc[123, 456] (and it was in log)': 4,
+            },
+        }],
+        'tests': [{
+            'test_name':
+                'Unittest1.Subtest1',
+            'first_failure':
+                98,
+            'last_pass':
+                97,
+            'suspected_cls': [{
+                'build_number': 97,
+                'repo_name': 'chromium',
+                'revision': 'r97_1',
+                'commit_position': None,
+                'url': None,
+                'score': 5,
+                'hints': {
+                    'added x/y/f99_1.cc (and it was in log)': 5,
+                },
+            }]
+        }, {
+            'test_name':
+                'Unittest2.Subtest1',
+            'first_failure':
+                98,
+            'last_pass':
+                97,
+            'suspected_cls': [{
+                'build_number': 98,
+                'repo_name': 'chromium',
+                'revision': 'r98_1',
+                'commit_position': None,
+                'url': None,
+                'score': 4,
+                'hints': {
+                    ('modified f98.cc[123] '
+                     '(and it was in log)'): 4,
+                },
+            }]
+        }, {
+            'test_name':
+                'Unittest3.Subtest2',
+            'first_failure':
+                98,
+            'last_pass':
+                96,
+            'suspected_cls': [{
+                'build_number': 98,
+                'repo_name': 'chromium',
+                'revision': 'r98_1',
+                'commit_position': None,
+                'url': None,
+                'score': 4,
+                'hints': {
+                    ('modified f98.cc[456] '
+                     '(and it was in log)'): 4,
+                },
+            }]
+        }, {
+            'test_name': 'Unittest3.Subtest3',
+            'first_failure': 98,
+            'last_pass': 96,
+            'suspected_cls': []
+        }]
+    }]
+}
+
 
 class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
 
@@ -204,122 +320,6 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     self.mock(build_failure_analysis, '_GetChangedLinesForChromiumRepo',
               MockGetChangedLines)
 
-    expected_analysis_result = {
-        'failures': [{
-            'step_name':
-                'a',
-            'first_failure':
-                98,
-            'last_pass':
-                None,
-            'supported':
-                True,
-            'suspected_cls': [{
-                'build_number': 99,
-                'repo_name': 'chromium',
-                'revision': 'r99_2',
-                'commit_position': None,
-                'url': None,
-                'score': 2,
-                'hints': {
-                    'modified f99_2.cc (and it was in log)': 2,
-                },
-            }],
-        }, {
-            'step_name':
-                'b',
-            'first_failure':
-                98,
-            'last_pass':
-                96,
-            'supported':
-                True,
-            'suspected_cls': [{
-                'build_number': 97,
-                'repo_name': 'chromium',
-                'revision': 'r97_1',
-                'commit_position': None,
-                'url': None,
-                'score': 5,
-                'hints': {
-                    'added x/y/f99_1.cc (and it was in log)': 5,
-                },
-            }, {
-                'build_number': 98,
-                'repo_name': 'chromium',
-                'revision': 'r98_1',
-                'commit_position': None,
-                'url': None,
-                'score': 4,
-                'hints': {
-                    'modified f98.cc[123, 456] (and it was in log)': 4,
-                },
-            }],
-            'tests': [{
-                'test_name':
-                    'Unittest1.Subtest1',
-                'first_failure':
-                    98,
-                'last_pass':
-                    97,
-                'suspected_cls': [{
-                    'build_number': 97,
-                    'repo_name': 'chromium',
-                    'revision': 'r97_1',
-                    'commit_position': None,
-                    'url': None,
-                    'score': 5,
-                    'hints': {
-                        'added x/y/f99_1.cc (and it was in log)': 5,
-                    },
-                }]
-            }, {
-                'test_name':
-                    'Unittest2.Subtest1',
-                'first_failure':
-                    98,
-                'last_pass':
-                    97,
-                'suspected_cls': [{
-                    'build_number': 98,
-                    'repo_name': 'chromium',
-                    'revision': 'r98_1',
-                    'commit_position': None,
-                    'url': None,
-                    'score': 4,
-                    'hints': {
-                        ('modified f98.cc[123] '
-                         '(and it was in log)'): 4,
-                    },
-                }]
-            }, {
-                'test_name':
-                    'Unittest3.Subtest2',
-                'first_failure':
-                    98,
-                'last_pass':
-                    96,
-                'suspected_cls': [{
-                    'build_number': 98,
-                    'repo_name': 'chromium',
-                    'revision': 'r98_1',
-                    'commit_position': None,
-                    'url': None,
-                    'score': 4,
-                    'hints': {
-                        ('modified f98.cc[456] '
-                         '(and it was in log)'): 4,
-                    },
-                }]
-            }, {
-                'test_name': 'Unittest3.Subtest3',
-                'first_failure': 98,
-                'last_pass': 96,
-                'suspected_cls': []
-            }]
-        }]
-    }
-
     expected_suspected_cl = [{
         'repo_name': 'chromium',
         'revision': 'r99_2',
@@ -353,7 +353,7 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         TestFailureInfo.FromSerializable(failure_info), change_logs, deps_info,
         failure_signals_json))
 
-    self.assertEqual(expected_analysis_result, analysis_result)
+    self.assertEqual(SAMPLE_HEURISTIC_RESULT, analysis_result)
     self.assertEqual(sorted(expected_suspected_cl), sorted(suspected_cls))
 
   def testAnalyzeTestFailureForUnsupportedStep(self):
@@ -413,7 +413,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(git, 'PullChangeLogs', return_value={})
   @mock.patch.object(deps, 'ExtractDepsInfo', return_value={})
   @mock.patch.object(
-      test_failure_analysis, 'AnalyzeTestFailure', return_value=({}, []))
+      test_failure_analysis,
+      'AnalyzeTestFailure',
+      return_value=(SAMPLE_HEURISTIC_RESULT, []))
   @mock.patch.object(build_failure_analysis,
                      'SaveAnalysisAfterHeuristicAnalysisCompletes')
   @mock.patch.object(build_failure_analysis, 'SaveSuspectedCLs')
@@ -450,6 +452,9 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
         failure_info=TestFailureInfo.FromSerializable(failure_info),
         build_completed=True)
     result = test_failure_analysis.HeuristicAnalysisForTest(heuristic_params)
-    expected_result = {'failure_info': failure_info, 'heuristic_result': {}}
+    expected_result = {
+        'failure_info': failure_info,
+        'heuristic_result': SAMPLE_HEURISTIC_RESULT
+    }
     self.assertEqual(
         TestHeuristicAnalysisOutput.FromSerializable(expected_result), result)
