@@ -15,22 +15,28 @@
 package analysis
 
 import (
+	"fmt"
 	"time"
 
 	"go.chromium.org/luci/buildbucket"
 )
 
+type groupKey struct {
+	// do not put interfaces in this struct,
+	// because it is used as a map key.
+
+	buildbucket.GerritChange
+	GotRevision string
+}
+
+func (k *groupKey) String() string {
+	return fmt.Sprintf("%s @ %q", &k.GerritChange, k.GotRevision)
+}
+
 // group is two sets of builds, for Buildbot and LUCI, that should have the same
 // results.
-// For tryserver, a group is defined by a patchset.
 type group struct {
-	// Key is the key that was used for grouping.
-	// For a tryserver, it is the value of "buildset" tag which identifies a
-	// patchset, e.g. "patch/gerrit/chromium-review.googlesource.com/514342/6"
-	Key string
-	// KeyURL is human-consumable URL for the key, if applicable.
-	// For a tryserver, it is a patchset URL.
-	KeyURL         string
+	Key            groupKey
 	LUCI, Buildbot groupSide
 }
 

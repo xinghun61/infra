@@ -61,11 +61,9 @@ at {{.MostRecentlyCompleted | timeString }}.
   {{range .}}
   <li>
     <div>Build group for
-      {{if .KeyURL -}}
-        <a href="{{.KeyURL}}">{{.KeyURL}}</a>
-      {{- else -}}
-        {{.Key}}
-      {{- end}}
+      <a href="{{.Key.GerritChange.URL}}">{{.Key.GerritChange.URL}}</a>
+      with got_revision="{{.Key.GotRevision}}"
+      </a>
     </div>
     <div>Buildbot: {{template "buildResults" .Buildbot}}</div>
     <div>LUCI: {{template "buildResults" .LUCI}}</div>

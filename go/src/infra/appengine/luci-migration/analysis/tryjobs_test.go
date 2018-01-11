@@ -35,15 +35,16 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func buildMsg(buildset string, duration time.Duration, result string) *bbapi.ApiCommonBuildMessage {
+func buildMsg(key groupKey, duration time.Duration, result string) *bbapi.ApiCommonBuildMessage {
 	return &bbapi.ApiCommonBuildMessage{
-		Tags:        []string{strpair.Format(buildbucket.TagBuildSet, buildset)},
-		Status:      "COMPLETED",
-		Result:      result,
-		CreatedBy:   "user:someone@example.com",
-		CreatedTs:   buildbucket.FormatTimestamp(testclock.TestRecentTimeUTC),
-		StartedTs:   buildbucket.FormatTimestamp(testclock.TestRecentTimeUTC),
-		CompletedTs: buildbucket.FormatTimestamp(testclock.TestRecentTimeUTC.Add(duration)),
+		Tags:              []string{strpair.Format(buildbucket.TagBuildSet, key.GerritChange.String())},
+		Status:            "COMPLETED",
+		Result:            result,
+		CreatedBy:         "user:someone@example.com",
+		CreatedTs:         buildbucket.FormatTimestamp(testclock.TestRecentTimeUTC),
+		StartedTs:         buildbucket.FormatTimestamp(testclock.TestRecentTimeUTC),
+		CompletedTs:       buildbucket.FormatTimestamp(testclock.TestRecentTimeUTC.Add(duration)),
+		ResultDetailsJson: fmt.Sprintf(`{"properties": {"got_revision": %q}}`, key.GotRevision),
 	}
 }
 
@@ -65,7 +66,6 @@ func TestAnalyze(t *testing.T) {
 
 		// Mock buildbucket server.
 		var buildSets []mockedBuildSet
-		buildSetPrefix := "patch/gerrit/gerrit.example.com/1/"
 		bbServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			res := &bbapi.ApiSearchResponseMessage{}
 			defer func() {
@@ -73,35 +73,37 @@ func TestAnalyze(t *testing.T) {
 				testCtx.So(err, ShouldBeNil)
 			}()
 
-			buildSetFmt := buildSetPrefix + "%d"
 			tags := strpair.ParseMap(r.URL.Query()["tag"])
 			buildSet := tags.Get(buildbucket.TagBuildSet)
 			if buildSet == "" {
 				for i := 0; i < len(buildSets); i++ {
-					buildSet := fmt.Sprintf(buildSetFmt, i)
-					// only buildset matters here, the rest is ignored
-					res.Builds = append(res.Builds, buildMsg(buildSet, time.Hour, bbapi.ResultSuccess))
+					// only group key matters here, the rest is ignored
+					patchSet := i + 1
+					res.Builds = append(res.Builds, buildMsg(mkKey(patchSet), time.Hour, bbapi.ResultSuccess))
 				}
 				return
 			}
 
-			var set int
-			_, err := fmt.Sscanf(buildSet, buildSetFmt, &set)
-			testCtx.So(err, ShouldBeNil)
+			cl, ok := buildbucket.ParseBuildSet(buildSet).(*buildbucket.GerritChange)
+			testCtx.So(ok, ShouldBeTrue)
+			testCtx.So(cl.PatchSet, ShouldBeBetween, 0, len(buildSets)+1)
+			key := mkKey(cl.PatchSet)
+			testCtx.So(cl, ShouldResemble, &key.GerritChange)
 
 			var spec mockedBuilds
 			switch r.FormValue("bucket") {
 			case "luci.chromium.try":
-				spec = buildSets[set].LUCI
+				spec = buildSets[cl.PatchSet-1].LUCI
 			case "master.tryserver.chromium.linux":
-				spec = buildSets[set].Buildbot
+				spec = buildSets[cl.PatchSet-1].Buildbot
 			}
+
 			// the order of res.Builds is newest to oldest.
 			for i := 0; i < spec.successes; i++ {
-				res.Builds = append(res.Builds, buildMsg(buildSet, time.Hour, bbapi.ResultSuccess))
+				res.Builds = append(res.Builds, buildMsg(key, time.Hour, bbapi.ResultSuccess))
 			}
 			for i := 0; i < spec.failures; i++ {
-				res.Builds = append(res.Builds, buildMsg(buildSet, time.Hour, bbapi.ResultFailure))
+				res.Builds = append(res.Builds, buildMsg(key, time.Hour, bbapi.ResultFailure))
 			}
 		}))
 		defer bbServer.Close()
@@ -196,19 +198,19 @@ func TestAnalyze(t *testing.T) {
 			groups, err := f.Fetch(c)
 			So(err, ShouldBeNil)
 			So(groups, ShouldHaveLength, 3)
-			gmap := map[string]*group{}
+			gmap := map[groupKey]*group{}
 			for _, g := range groups {
 				gmap[g.Key] = g
 			}
 
-			set0 := gmap[buildSetPrefix+"0"]
+			set0 := gmap[mkKey(1)]
 			So(set0, ShouldNotBeNil)
 			So(set0.Buildbot, ShouldHaveLength, 3)
 			So(set0.Buildbot.success(), ShouldBeFalse)
 			So(set0.LUCI, ShouldHaveLength, 3)
 			So(set0.LUCI.success(), ShouldBeFalse)
 
-			set1 := gmap[buildSetPrefix+"1"]
+			set1 := gmap[mkKey(2)]
 			So(set1, ShouldNotBeNil)
 			So(set1.Buildbot, ShouldHaveLength, 2)
 			So(set1.Buildbot.success(), ShouldBeTrue)
@@ -219,7 +221,7 @@ func TestAnalyze(t *testing.T) {
 			So(set1.LUCI[1].Status, ShouldEqual, buildbucket.StatusSuccess)
 			So(set1.LUCI[2].Status, ShouldEqual, buildbucket.StatusSuccess)
 
-			set2 := gmap[buildSetPrefix+"2"]
+			set2 := gmap[mkKey(3)]
 			So(set2, ShouldNotBeNil)
 			So(set2.Buildbot, ShouldHaveLength, 2)
 			So(set2.Buildbot.success(), ShouldBeTrue)
@@ -227,4 +229,15 @@ func TestAnalyze(t *testing.T) {
 			So(set2.LUCI.success(), ShouldBeTrue)
 		})
 	})
+}
+
+func mkKey(patchSet int) groupKey {
+	return groupKey{
+		GerritChange: buildbucket.GerritChange{
+			Host:     "gerrit.example.com",
+			Change:   1,
+			PatchSet: patchSet,
+		},
+		GotRevision: "deadbeef",
+	}
 }

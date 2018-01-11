@@ -15,6 +15,8 @@
 // Package analysis compares buildbucket builds on LUCI and Buildbot.
 package analysis
 
+// TODO(nodir): rewrite this implementation in SQL.
+
 import (
 	"bytes"
 	"fmt"
@@ -27,7 +29,6 @@ import (
 	"go.chromium.org/luci/buildbucket"
 	bbapi "go.chromium.org/luci/common/api/buildbucket/buildbucket/v1"
 	"go.chromium.org/luci/common/clock"
-	"go.chromium.org/luci/common/data/stringset"
 	"go.chromium.org/luci/common/data/strpair"
 	"go.chromium.org/luci/common/errors"
 	"go.chromium.org/luci/common/logging"
@@ -156,29 +157,29 @@ func (f *fetcher) Fetch(c context.Context) ([]*group, error) {
 	// - stop fetching LUCI builds when maxGroups groups are collected
 
 	const luciBatchSize = 100
-	// buildSets channel controls the lifetime of fetchGroups call (below).
-	buildSets := make(chan buildbucket.BuildSet, luciBatchSize)
-	// calling cancelBSFetcher will cause buildSets to close.
-	fetchBSCtx, cancelBSFetcher := context.WithCancel(c)
-	var bsErr error
+	// keys channel controls the lifetime of fetchGroups call (below).
+	keys := make(chan groupKey, luciBatchSize)
+	// calling cancelKeyFetcher will cause keys channel to close.
+	fetchKeysCtx, cancelKeyFetcher := context.WithCancel(c)
+	var keysErr error
 	go func() {
-		defer close(buildSets)
-		bsErr = f.fetchBuildSets(fetchBSCtx, buildSets)
-		if bsErr == context.Canceled {
+		defer close(keys)
+		keysErr = f.fetchGroupKeys(fetchKeysCtx, keys)
+		if keysErr == context.Canceled {
 			// This is expected. We should not return this from Fetch.
-			bsErr = nil
+			keysErr = nil
 		}
 	}()
 
-	// fetchGroups will return when buildSets channel is closed.
-	// cancelBSFetcher causes buildSets channel to close.
-	result, err := f.fetchGroups(c, buildSets, cancelBSFetcher)
+	// fetchGroups will return when keys channel is closed.
+	// cancelKeyFetcher causes keys channel to close.
+	result, err := f.fetchGroups(c, keys, cancelKeyFetcher)
 	// All goroutine defined above must exit by this time.
 	switch {
 	case err != nil:
-		return nil, err
-	case bsErr != nil:
-		return nil, bsErr
+		return nil, errors.Annotate(err, "could not fetch build groups").Err()
+	case keysErr != nil:
+		return nil, errors.Annotate(keysErr, "could not fetch build group keys").Err()
 	case c.Err() != nil:
 		return nil, c.Err()
 	}
@@ -186,60 +187,77 @@ func (f *fetcher) Fetch(c context.Context) ([]*group, error) {
 	return result, nil
 }
 
-// fetchBuildSets fetches buildsets of completed LUCI builds until c is
-// cancelled.
-func (f *fetcher) fetchBuildSets(c context.Context, buildSets chan buildbucket.BuildSet) error {
+type properties struct {
+	GotRevision string `json:"got_revision"`
+}
+
+// fetchGroupKeys fetches group keys of completed LUCI builds
+// until c is cancelled.
+func (f *fetcher) fetchGroupKeys(c context.Context, keys chan groupKey) error {
 	req := f.Buildbucket.Search()
 	req.Context(c)
 	req.Bucket(f.LUCIBucket)
 	req.Status(bbapi.StatusCompleted)
 	req.Tag(strpair.Format(buildbucket.TagBuilder, f.Builder))
 	req.CreationTsLow(buildbucket.FormatTimestamp(f.MinCreationDate))
-	req.Fields("builds(tags)") // we need only buildset tag
-	if cap(buildSets) > 0 {
-		req.MaxBuilds(int64(cap(buildSets)))
+	req.Fields("builds(tags, result_details_json)")
+	if cap(keys) > 0 {
+		req.MaxBuilds(int64(cap(keys)))
 	}
 
-	foundBuilds := make(chan *bbapi.ApiCommonBuildMessage, cap(buildSets))
+	foundBuilds := make(chan *bbapi.ApiCommonBuildMessage, cap(keys))
 	var searchErr error
 	go func() {
 		defer close(foundBuilds)
 		searchErr = req.Run(foundBuilds, 0, nil)
 	}()
 
-	seen := stringset.New(DefaultMaxGroups + groupFetchWorkers)
+	seen := make(map[groupKey]struct{}, DefaultMaxGroups+groupFetchWorkers)
 	for msg := range foundBuilds {
 		var b buildbucket.Build
+		var props properties
+		b.Output.Properties = &props
 		if err := b.ParseMessage(msg); err != nil {
 			return errors.Annotate(err, "parsing build %d", msg.Id).Err()
 		}
 
-		switch {
-		case len(b.BuildSets) == 0:
-			logging.Infof(c, "skipped build %d: no buildset tag", b.ID)
-			continue
-		case len(b.BuildSets) > 1:
-			logging.Warningf(c, "build %d has multiple buildsets; using first one, %q", b.ID, b.BuildSets[0])
+		var change *buildbucket.GerritChange
+		for _, bs := range b.BuildSets {
+			if cl, ok := bs.(*buildbucket.GerritChange); ok {
+				if change != nil {
+					logging.Warningf(c, "build %d has multiple Gerrit changes; using first one, %q", b.ID, change)
+					break
+				}
+				change = cl
+			}
 		}
-		bs := b.BuildSets[0]
+		if change == nil {
+			logging.Infof(c, "skipped build %d: no gerrit change", b.ID)
+			continue
+		}
 
-		if seen.Add(bs.String()) {
-			buildSets <- bs
+		key := groupKey{
+			GerritChange: *change,
+			GotRevision:  props.GotRevision,
+		}
+		if _, ok := seen[key]; !ok {
+			keys <- key
+			seen[key] = struct{}{}
 		}
 	}
 
 	return searchErr
 }
 
-// fetchGroups fetches a build group for each buildset.
+// fetchGroups fetches a build group for each group key.
 // Each build group has LUCI and Buildbot builds.
 // fetchGroups stops as soon as the minimum number of trustworthy groups is
 // reached; then it returns all the groups it fetched.
 // The order of groups corresponds to the order of buildSets.
 // This function is deterministic.
 //
-// cancel must close luciBuilds.
-func (f *fetcher) fetchGroups(c context.Context, buildSets <-chan buildbucket.BuildSet, cancel context.CancelFunc) ([]*group, error) {
+// cancel must close keys.
+func (f *fetcher) fetchGroups(c context.Context, keys <-chan groupKey, cancel context.CancelFunc) ([]*group, error) {
 	// make `cancel` cancel c too
 	origCancel := cancel
 	c, cancelC := context.WithCancel(c)
@@ -253,23 +271,17 @@ func (f *fetcher) fetchGroups(c context.Context, buildSets <-chan buildbucket.Bu
 		// this goroutine is referred to as "master goroutine"
 
 		defer close(groupC)
-		// this call returns when buildSets is closed, which is caused by calling
+		// this call returns when keys is closed, which is caused by calling
 		// cancel().
 		err := parallel.WorkPool(groupFetchWorkers, func(work chan<- func() error) {
-			for bs := range buildSets {
+			for key := range keys {
 				if c.Err() != nil {
 					return
 				}
 
 				g := &fetchGroup{}
+				g.Key = key
 				g.err = make(chan error, 1)
-				g.Key = bs.String()
-				type withURL interface {
-					URL() string
-				}
-				if urlable, ok := bs.(withURL); ok {
-					g.KeyURL = urlable.URL()
-				}
 				groupC <- g
 
 				// start fetching builds for this group.
@@ -331,31 +343,57 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 		req.Status(bbapi.StatusCompleted)
 		req.Tag(
 			strpair.Format(buildbucket.TagBuilder, f.Builder),
-			strpair.Format(buildbucket.TagBuildSet, g.Key))
+			strpair.Format(buildbucket.TagBuildSet, g.Key.GerritChange.String()))
 		req.CreationTsLow(buildbucket.FormatTimestamp(f.MinCreationDate))
-		req.Fields("builds(status, result, failure_reason, cancelation_reason, created_ts, started_ts, completed_ts, url)")
+		req.Fields(
+			"builds(cancelation_reason)",
+			"builds(completed_ts)",
+			"builds(created_ts)",
+			"builds(failure_reason)",
+			"builds(result)",
+			"builds(result_details_json)",
+			"builds(started_ts)",
+			"builds(status)",
+			"builds(url)",
+		)
 		var msgs []*bbapi.ApiCommonBuildMessage
 		msgs, *err = req.Fetch(0, nil)
 		if *err != nil {
 			return
 		}
 
-		builds := make(groupSide, len(msgs))
-		for i, msg := range msgs {
-			// Reverse order to make it oldest-to-newest.
+		builds := make(groupSide, 0, len(msgs))
+		for _, msg := range msgs {
+			var props properties
 			b := &buildbucket.Build{}
+			b.Output.Properties = &props
+
 			if *err = b.ParseMessage(msg); *err != nil {
 				return
 			}
+
+			if props.GotRevision != g.Key.GotRevision {
+				// This is very inefficient, but this whole file should be
+				// rewritten in SQL anyway.
+				continue
+			}
+
 			dur, _ := b.RunDuration()
-			builds[len(msgs)-1-i] = &build{
+			builds = append(builds, &build{
 				Status:         b.Status,
 				CreationTime:   b.CreationTime,
 				CompletionTime: b.CompletionTime,
 				RunDuration:    dur,
 				URL:            b.URL,
-			}
+			})
 		}
+
+		// Reverse order to make it oldest-to-newest.
+		for i := 0; i < len(builds)/2; i++ {
+			j := len(builds) - 1 - i
+			builds[i], builds[j] = builds[j], builds[i]
+		}
+
 		*side = builds
 	}
 
@@ -364,8 +402,13 @@ func (f *fetcher) fetchGroup(c context.Context, g *fetchGroup) error {
 	go fetchSide(f.BuildbotBucket, &g.Buildbot, &buildbotErr)
 	go fetchSide(f.LUCIBucket, &g.LUCI, &luciErr)
 	wg.Wait()
-	if buildbotErr != nil {
-		return buildbotErr
+
+	switch {
+	case buildbotErr != nil:
+		return errors.Annotate(buildbotErr, "could not fetch buildbot builds of key %q", &g.Key).Err()
+	case luciErr != nil:
+		return errors.Annotate(luciErr, "could not fetch LUCI builds of key %q", &g.Key).Err()
+	default:
+		return nil
 	}
-	return luciErr
 }
