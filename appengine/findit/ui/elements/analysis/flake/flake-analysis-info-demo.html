@@ -17,6 +17,30 @@
                         bug-id="12345">
   </flake-analysis-info>
 
+  <h3>Complete with culprit and bug no regression confidence</h3>
+  <flake-analysis-info regression-range-analysis-status="completed"
+                        regression-range-upper="upper"
+                        regression-range-lower="lower"
+                        regression-range-confidence
+                        culprit-analysis-status="completed"
+                        culprit-url="google.com"
+                        culprit-text="culprit"
+                        culprit-confidence="50"
+                        bug-id="12345">
+  </flake-analysis-info>
+
+  <h3>Complete with culprit and bug no culprit confidence</h3>
+  <flake-analysis-info regression-range-analysis-status="completed"
+                        regression-range-upper="upper"
+                        regression-range-lower="lower"
+                        regression-range-confidence="50"
+                        culprit-analysis-status="completed"
+                        culprit-url="google.com"
+                        culprit-text="culprit"
+                        culprit-confidence
+                        bug-id="12345">
+  </flake-analysis-info>
+
   <h3>Complete with no culprit and bug</h3>
   <flake-analysis-info regression-range-analysis-status="completed"
                         regression-range-upper="upper"

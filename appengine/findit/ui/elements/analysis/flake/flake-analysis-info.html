@@ -90,7 +90,9 @@
 
               <template is="dom-if" if="[[shouldShowRegressionRange(_regressionRangeStatus, regressionRangeLower, regressionRangeUpper)]]">
                 <a href$="[[_regressionRangeUrl]]">[[_regressionRangeText]]</a>
-                (Confidence [[regressionRangeConfidence]]%)
+                <template is="dom-if" if="[[regressionRangeConfidence]]">
+                  (Confidence [[regressionRangeConfidence]]%)
+                </template>
               </template>
             </td>
           </tr>
@@ -124,7 +126,9 @@
                 <!-- If there's a culprit, show that. -->
                 <template is="dom-if" if="[[isCulpritFound(_culpritAnalysisStatus, culpritUrl)]]">
                   <a href$="[[culpritUrl]]">[[culpritText]]</a>
-                  (Confidence [[culpritConfidence]]%)
+                  <template is="dom-if" if="[[culpritConfidence]]">
+                    (Confidence [[culpritConfidence]]%)
+                  </template>
                 </template>
               </td>
             </tr>
