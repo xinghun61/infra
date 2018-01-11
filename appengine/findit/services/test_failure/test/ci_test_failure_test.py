@@ -175,8 +175,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(expected_failed_step, failed_step.ToSerializable())
 
-  @mock.patch.object(
-      ci_test_failure, 'UpdateSwarmingSteps', return_value=True)
+  @mock.patch.object(ci_test_failure, 'UpdateSwarmingSteps', return_value=True)
   @mock.patch.object(ci_test_failure, 'swarming_util')
   def testCheckFirstKnownFailureForSwarmingTestsFoundFlaky(
       self, mock_module, _):
@@ -239,8 +238,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(expected_failed_steps,
                      failure_info.failed_steps.ToSerializable())
 
-  @mock.patch.object(
-      ci_test_failure, 'UpdateSwarmingSteps', return_value=False)
+  @mock.patch.object(ci_test_failure, 'UpdateSwarmingSteps', return_value=False)
   def testCheckFirstKnownFailureForSwarmingTestsNoResult(self, _):
     master_name = 'm'
     builder_name = 'b'
@@ -494,10 +492,7 @@ class CITestFailureTest(wf_testcase.WaterfallTestCase):
         ci_test_failure._GetSameStepFromBuild(master_name, builder_name,
                                               build_number, step_name, None))
 
-  @mock.patch.object(
-      swarming_util,
-      'GetIsolatedDataForStep',
-      return_value='step_isolated_data')
+  @mock.patch.object(swarming_util, 'GetIsolatedDataForStep', return_value=[])
   @mock.patch.object(
       swarming_util,
       'RetrieveShardedTestResultsFromIsolatedServer',

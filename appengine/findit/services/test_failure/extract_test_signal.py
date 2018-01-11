@@ -42,8 +42,9 @@ def ExtractSignalsForTestFailure(failure_info, http_client):
     else:
       json_formatted_log = True
       # 2. Gets gtest results.
-      list_isolated_data = (
-          failure_info.failed_steps[step_name].list_isolated_data)
+      list_isolated_data = failed_steps[step_name].list_isolated_data
+      list_isolated_data = (list_isolated_data.ToSerializable()
+                            if list_isolated_data else [])
       gtest_result = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
           list_isolated_data, http_client)
       if gtest_result:

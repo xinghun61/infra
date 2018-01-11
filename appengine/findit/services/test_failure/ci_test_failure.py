@@ -70,6 +70,8 @@ def _StartTestLevelCheckForFirstFailure(master_name, builder_name, build_number,
                                         step_name, failed_step, http_client):
   """Downloads test results and initiates first failure info at test level."""
   list_isolated_data = failed_step.list_isolated_data
+  list_isolated_data = (list_isolated_data.ToSerializable()
+                        if list_isolated_data else [])
   result_log = swarming_util.RetrieveShardedTestResultsFromIsolatedServer(
       list_isolated_data, http_client)
 
@@ -201,8 +203,8 @@ def _UpdateFailureInfoBuilds(failed_steps, builds):
       del builds[build_number]
 
 
-def UpdateSwarmingSteps(master_name, builder_name, build_number,
-                        failed_steps, http_client):
+def UpdateSwarmingSteps(master_name, builder_name, build_number, failed_steps,
+                        http_client):
   """Updates swarming steps based on swarming task data.
 
   Searches each failed step_name to identify swarming/non-swarming steps and
@@ -247,8 +249,8 @@ def CheckFirstKnownFailureForSwarmingTests(master_name, builder_name,
   failed_steps = failure_info.failed_steps
 
   # Identifies swarming tests and saves isolated data to them.
-  updated = UpdateSwarmingSteps(
-      master_name, builder_name, build_number, failed_steps, http_client)
+  updated = UpdateSwarmingSteps(master_name, builder_name, build_number,
+                                failed_steps, http_client)
   if not updated:
     return
 
