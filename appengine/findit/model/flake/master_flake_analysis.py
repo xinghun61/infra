@@ -281,6 +281,7 @@ class MasterFlakeAnalysis(BaseAnalysis, BaseBuildModel, VersionedModel,
     self.correct_culprit = None
     self.algorithm_parameters = None
     self.suspected_flake_build_number = None
+    self.suspect_urlsafe_keys = []
     self.culprit_urlsafe_key = None
     self.try_job_status = None
     self.data_points = []
