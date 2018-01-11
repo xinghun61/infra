@@ -18,12 +18,12 @@ import (
 	"infra/appengine/sheriff-o-matic/som/client"
 	"infra/appengine/sheriff-o-matic/som/model"
 	"infra/appengine/sheriff-o-matic/som/model/gen"
-	"infra/libs/eventupload"
 	"infra/monitoring/messages"
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
 	tq "go.chromium.org/gae/service/taskqueue"
+	"go.chromium.org/luci/common/eventupload"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/common/tsmon/field"

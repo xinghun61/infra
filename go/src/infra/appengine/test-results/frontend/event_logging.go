@@ -9,11 +9,11 @@ import (
 
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/eventupload"
 	"go.chromium.org/luci/common/logging"
 
 	"infra/appengine/test-results/model"
 	"infra/appengine/test-results/model/gen"
-	"infra/libs/eventupload"
 
 	"cloud.google.com/go/bigquery"
 )

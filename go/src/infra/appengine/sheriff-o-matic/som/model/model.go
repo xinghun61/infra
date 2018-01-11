@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"infra/appengine/sheriff-o-matic/som/model/gen"
-	"infra/libs/eventupload"
 
 	"cloud.google.com/go/bigquery"
 	"github.com/golang/protobuf/ptypes"
@@ -26,6 +25,7 @@ import (
 	"go.chromium.org/gae/service/info"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/data/stringset"
+	"go.chromium.org/luci/common/eventupload"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"golang.org/x/net/context"

@@ -13,13 +13,13 @@ import (
 	"time"
 
 	"infra/libs/bqschema/buildevent"
-	"infra/libs/eventupload"
 	"infra/libs/infraenv"
 	"infra/tools/kitchen/build"
 
 	cipdVersion "go.chromium.org/luci/cipd/version"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
+	"go.chromium.org/luci/common/eventupload"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/google"
 	"go.chromium.org/luci/common/proto/milo"
