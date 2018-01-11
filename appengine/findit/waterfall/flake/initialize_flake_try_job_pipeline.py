@@ -100,13 +100,14 @@ def _ShouldRunTryJobs(analysis, user_specified_range):
   """Determines whether try jobs should be run.
 
   Rules should be followed in order of precedence:
-  1. Never run try jobs if there is no suspected flake build.
-  2. Always run try jobs if the user requested a specific range to run that
+  1. Never run try jobs against blacklisted masters.
+  2. Never run try jobs if there is no suspected flake build.
+  3. Always run try jobs if the user requested a specific range to run that
      leads to a suspected build.
-  3. Never run try jobs if the stable build before the suspect isn't a full 100%
+  4. Never run try jobs if the stable build before the suspect isn't a full 100%
      passing or failing.
-  4. Always run try jobs if heuristic analysis suggests a culprit.
-  5. Never run try jobs if there is insufficient confidence in the suspected
+  5. Always run try jobs if heuristic analysis suggests a culprit.
+  6. Never run try jobs if there is insufficient confidence in the suspected
      build.
 
   Args:
@@ -118,6 +119,11 @@ def _ShouldRunTryJobs(analysis, user_specified_range):
     Boolean whether try jobs should be run after identifying a suspected build
         cycle.
   """
+  if analysis.master_name in flake_constants.UNSUPPORTED_MASTERS_FOR_TRY_JOBS:
+    analysis.LogInfo(
+        'Try jobs are not supported for master %s' % analysis.master_name)
+    return False
+
   if analysis.suspected_flake_build_number is None:
     analysis.LogInfo(
         'Skipping try jobs due to no suspected flake build being identified')

@@ -185,6 +185,13 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertFalse(
         initialize_flake_try_job_pipeline._HasHeuristicResults(analysis))
 
+  def testShouldRunTryJobsUnsupportedMaster(self):
+    unsupported_master = 'chromium.sandbox'
+    analysis = MasterFlakeAnalysis.Create(unsupported_master, 'b', 123, 's',
+                                          't')
+    self.assertFalse(
+        initialize_flake_try_job_pipeline._ShouldRunTryJobs(analysis, False))
+
   def testShouldRunTryJobsNoSuspectedBuild(self):
     analysis = MasterFlakeAnalysis.Create('m', 'b', 123, 's', 't')
     self.assertFalse(
@@ -385,7 +392,9 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(), [], 997, 'r997', 995, 1000, None,
             _DEFAULT_CACHE_NAME, None, False
         ],
-        expected_kwargs={'retries': 0})
+        expected_kwargs={
+            'retries': 0
+        })
     self.MockPipeline(
         SendNotificationForFlakeCulpritPipeline,
         '',
@@ -424,7 +433,9 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(), [], 997, 'r997', 995, 1000, None,
             _DEFAULT_CACHE_NAME, None, False
         ],
-        expected_kwargs={'retries': 0})
+        expected_kwargs={
+            'retries': 0
+        })
     self.MockPipeline(
         SendNotificationForFlakeCulpritPipeline,
         '',
@@ -463,7 +474,9 @@ class InitializeFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
             analysis.key.urlsafe(), expected_remaining_commits, 996, 'r996',
             995, 1000, None, _DEFAULT_CACHE_NAME, None, False
         ],
-        expected_kwargs={'retries': 0})
+        expected_kwargs={
+            'retries': 0
+        })
     self.MockPipeline(
         SendNotificationForFlakeCulpritPipeline,
         '',

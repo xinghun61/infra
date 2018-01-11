@@ -96,3 +96,6 @@ REQUIRED_NUMBER_OF_STABLE_POINTS_BEFORE_CULPRIT = 3
 
 # Cushion multiplier for test setup/teardown.
 SWARMING_TASK_CUSHION_MULTIPLIER = 2.0
+
+# List of unsupported masters for running try jobs.
+UNSUPPORTED_MASTERS_FOR_TRY_JOBS = ['chromium.sandbox']
