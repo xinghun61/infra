@@ -26,16 +26,16 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 	if err != nil {
 		return nil, err
 	}
-	runState, analyzerProgress, err := progress(c, runID)
+	runState, functionProgress, err := progress(c, runID)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "progress failed: %v, run ID: %d", err, runID)
 		return nil, grpc.Errorf(codes.Internal, "failed to execute progress request")
 	}
-	logging.Infof(c, "[frontend] Analyzer progress: %v", analyzerProgress)
+	logging.Infof(c, "[frontend] Function progress: %v", functionProgress)
 	return &tricium.ProgressResponse{
 		RunId:            strconv.FormatInt(runID, 10),
 		State:            runState,
-		AnalyzerProgress: analyzerProgress,
+		FunctionProgress: functionProgress,
 	}, nil
 }
 
@@ -84,7 +84,7 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 	return runID, nil
 }
 
-func progress(c context.Context, runID int64) (tricium.State, []*tricium.AnalyzerProgress, error) {
+func progress(c context.Context, runID int64) (tricium.State, []*tricium.FunctionProgress, error) {
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", runID, nil)
 	requestRes := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
 	if err := ds.Get(c, requestRes); err != nil {
@@ -116,10 +116,10 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Analyze
 	if err := ds.Get(c, workerResults); err != nil && err != ds.ErrNoSuchEntity {
 		return tricium.State_PENDING, nil, fmt.Errorf("failed to get WorkerRunResult entities: %v", err)
 	}
-	res := []*tricium.AnalyzerProgress{}
+	res := []*tricium.FunctionProgress{}
 	for _, wr := range workerResults {
-		p := &tricium.AnalyzerProgress{
-			Analyzer:    wr.Analyzer,
+		p := &tricium.FunctionProgress{
+			Name:        wr.Analyzer,
 			Platform:    wr.Platform,
 			State:       wr.State,
 			NumComments: int32(wr.NumComments),

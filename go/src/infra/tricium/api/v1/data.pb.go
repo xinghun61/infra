@@ -47,7 +47,7 @@ func (Data_Type) EnumDescriptor() ([]byte, []int) { return fileDescriptor1, []in
 
 // Tricium data types.
 //
-// Any data type provided or needed by a Tricium analyzer.
+// Any data type provided or needed by a Tricium function.
 type Data struct {
 }
 

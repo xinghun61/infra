@@ -34,7 +34,7 @@ It has these top-level messages:
 	AnalyzeResponse
 	ProgressRequest
 	ProgressResponse
-	AnalyzerProgress
+	FunctionProgress
 	ResultsRequest
 	ResultsResponse
 	FeedbackRequest

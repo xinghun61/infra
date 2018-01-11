@@ -78,18 +78,18 @@ message ProgressRequest {
   // If nothing else is provided, then all known progress for the run is returned.
   string run_id = 1;
 
-  // An optional analyzer name.
+  // An optional function name.
   //
-  // If provided, only progress for the provided analyzer will be returned.
-  // The analyzer name should match the name of the analyzer in the Tricium
+  // If provided, only progress for the provided function will be returned.
+  // The function name should match the name of the function in the Tricium
   // configuration.
   //
   // NB! Currently not supported.
-  string analyzer = 2;
+  string function = 2;
 
-  // Optional platform that may be provided together with an analyzer name.
+  // Optional platform that may be provided together with an function name.
   //
-  // If provided, only progress for the provided analyzer and platform will be provided.
+  // If provided, only progress for the provided function and platform will be provided.
   //
   // NB! Currently not supported.
   Platform platform = 3;
@@ -113,32 +113,32 @@ message ProgressResponse {
   // Overall state for the run provided in the progress request.
   State state = 2;
 
-  // Analyzer progress matching the requested progress report.
+  // Function progress matching the requested progress report.
   //
-  // For a provided run ID this corresponds to all analyzers and platforms, and
+  // For a provided run ID this corresponds to all functions and platforms, and
   // for any selection of these, a subset is returned.
   //
   // NB! Selection of a subset is currently not supported.
-  repeated AnalyzerProgress analyzer_progress = 3;
+  repeated FunctionProgress function_progress = 3;
 }
 
-message AnalyzerProgress {
-  // The analyzer name.
-  string analyzer = 1;
+message FunctionProgress {
+  // The function name.
+  string name = 1;
 
-  // The platform for which the analyzer progress is reported.
+  // The platform for which the function progress is reported.
   Platform.Name platform = 2;
 
-  // The state of the analyzer.
+  // The state of the function.
   //
-  // For an analyzer on a specific platform this state corresponds to the state
-  // of the worker, else it is the aggregated state of all workers for the analyzer.
+  // For an function on a specific platform this state corresponds to the state
+  // of the worker, else it is the aggregated state of all workers for the function.
   State state = 3;
 
-  // URL to the swarming server running tasks for the workers of the analyzer.
+  // URL to the swarming server running tasks for the workers of the function.
   string swarming_url = 4;
 
-  // The ID of the swarming task triggered for the analyzer worker.
+  // The ID of the swarming task triggered for the function worker.
   string swarming_task_id = 5;
 
   // Number of comments.
@@ -151,18 +151,18 @@ message ResultsRequest {
   // Run ID returned by an analyze request.
   string run_id = 1;
 
-  // An optional analyzer name.
+  // An optional function name.
   //
-  // If provided, only results for the provided analyzer are returned.
-  // If an analyzer is being run on more than one platform then the merged
-  // results of the analyzer can be returned by exclusion of a specific platform.
+  // If provided, only results for the provided function are returned.
+  // If a function is being run on more than one platform then the merged
+  // results of the function can be returned by exclusion of a specific platform.
   //
   // NB! Currently not supported.
-  string analyzer = 2;
+  string function = 2;
 
-  // Optional platform that can be provided together with an analyzer name.
+  // Optional platform that can be provided together with an function name.
   //
-  // If provided, only results for the provided platform and analyzer are returned.
+  // If provided, only results for the provided platform and function are returned.
   //
   // NB! Currently not supported.
   Platform.Name platform = 3;
@@ -174,9 +174,9 @@ message ResultsResponse {
 
   // Whether the returned results are merged.
   //
-  // Results may be merged if a result request for an analyzer running on multiple
+  // Results may be merged if a result request for an function running on multiple
   // platforms was made and the request did not include a specific platform.
-  // Results for a run with no specific analyzer selected will be marked as merged
+  // Results for a run with no specific function selected will be marked as merged
   // if any included analyzer results were merged.
   bool is_merged = 2;
 }
@@ -242,26 +242,26 @@ message ReportNotUsefulResponse {
 
 enum State {
   // Pending is for when an analysis request has been received but the corresponding
-  // workflow, analyzer, or workers are not running yet.
+  // workflow, function, or workers are not running yet.
   PENDING = 0;
 
-  // Running is for when the workflow, analyzer, or workers of a request have been launched
+  // Running is for when the workflow, function, or workers of a request have been launched
   // but have not finished.
   RUNNING = 1;
 
-  // Success is for a workflow, analyzer, or worker that successfully completed.
+  // Success is for a workflow, function, or worker that successfully completed.
   //
-  // Success of workflows and analyzers, is aggregated from underlying analyzers and workers,
+  // Success of workflows and functions, is aggregated from underlying functions and workers,
   // where full success means success is aggregated.
   SUCCESS = 2;
 
-  // Failure is for a workflow, analyzer, or worker that completed with failure.
+  // Failure is for a workflow, function, or worker that completed with failure.
   //
-  // Failure of workflows and analyzers, is aggregated from underlying analyzers and workers,
+  // Failure of workflows and functions, is aggregated from underlying functions and workers,
   // where any occurrence of failure means failure is aggregated.
   FAILURE = 3;
 
-  // Canceled is for user canceled workflows, analyzers, and workers.
+  // Canceled is for user canceled workflows, functions, and workers.
   // NB! Not supported yet.
   CANCELED = 4;
 

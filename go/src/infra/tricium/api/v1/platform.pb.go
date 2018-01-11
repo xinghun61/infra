@@ -88,12 +88,12 @@ type Platform_Details struct {
 	// Whether this platform can be used as a runtime platform.
 	//
 	// Note that we can analyze for some platforms without actually running
-	// the analyzer workers on those platforms.
+	// the function workers on those platforms.
 	//
 	// This field is used when validating configurations and only platforms
 	// with this field set to true may be configured as the runtime platform
 	// of an implementation. All platform values may be used to express
-	// data-dependencies between analyzers.
+	// data-dependencies between functions.
 	HasRuntime bool `protobuf:"varint,3,opt,name=has_runtime,json=hasRuntime" json:"has_runtime,omitempty"`
 }
 

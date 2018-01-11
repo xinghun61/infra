@@ -101,7 +101,7 @@ func TestProgress(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(state, ShouldEqual, tricium.State_SUCCESS)
 			So(len(progress), ShouldEqual, 1)
-			So(progress[0].Analyzer, ShouldEqual, analyzerName)
+			So(progress[0].Name, ShouldEqual, analyzerName)
 			So(progress[0].Platform, ShouldEqual, platform)
 			So(progress[0].NumComments, ShouldEqual, 1)
 			So(progress[0].State, ShouldEqual, tricium.State_SUCCESS)

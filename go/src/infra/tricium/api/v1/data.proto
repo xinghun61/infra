@@ -8,7 +8,7 @@ package tricium;
 
 // Tricium data types.
 //
-// Any data type provided or needed by a Tricium analyzer.
+// Any data type provided or needed by a Tricium function.
 message Data {
   // Available data types should be listed in this enum and have a
   // corresponding nested message with a mandatory platforms fields,
