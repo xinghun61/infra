@@ -455,48 +455,6 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
         analysis, CompileTryJobResult.FromSerializable(result))
     self.assertEqual(status, result_status.NOT_FOUND_INCORRECT)
 
-  def testGetUpdatedAnalysisResultNoAnalysis(self):
-    result, flaky = try_job_service.GetUpdatedAnalysisResult(None, None)
-    self.assertEqual({}, result)
-    self.assertFalse(flaky)
-
-  def testGetUpdatedAnalysisResult(self):
-    analysis = WfAnalysis.Create('m', 'b', 1)
-    analysis.result = {
-        'failures': [
-            {
-                'step_name': 'compile',
-                'suspected_cls': [
-                    {
-                        'revision': 'r1',
-                    },
-                ],
-            },
-        ]
-    }
-    analysis.put()
-
-    flaky_failures = {'compile': []}
-
-    expected_result = {
-        'failures': [
-            {
-                'step_name': 'compile',
-                'suspected_cls': [
-                    {
-                        'revision': 'r1',
-                    },
-                ],
-                'flaky': True
-            },
-        ]
-    }
-
-    result, flaky = try_job_service.GetUpdatedAnalysisResult(
-        analysis, flaky_failures)
-    self.assertEqual(expected_result, result)
-    self.assertTrue(flaky)
-
   def testGetBuildPropertiesWithSuspectedRevision(self):
     master_name = 'm'
     builder_name = 'b'
@@ -1297,7 +1255,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     build_data = {
         'id': try_job_id,
         'url': 'https://ci.chromium.org/p/chromium/builders/'
-        'luci.chromium.findit/findit_variable/102',
+               'luci.chromium.findit/findit_variable/102',
         'status': 'COMPLETED',
         'completed_ts': '1454367574000000',
         'created_ts': '1454367570000000',
@@ -1342,7 +1300,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     build_data = {
         'id': try_job_id,
         'url': 'https://ci.chromium.org/p/chromium/builders/'
-        'luci.chromium.findit/findit_variable/102',
+               'luci.chromium.findit/findit_variable/102',
         'status': 'COMPLETED',
         'completed_ts': '1454367574000000',
         'created_ts': '1454367570000000',
@@ -1378,7 +1336,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     build_data = {
         'id': try_job_id,
         'url': 'https://ci.chromium.org/p/chromium/builders/'
-        'luci.chromium.findit/findit_variable/102',
+               'luci.chromium.findit/findit_variable/102',
         'status': 'COMPLETED',
         'completed_ts': '1454367574000000',
         'created_ts': '1454367570000000',

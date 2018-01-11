@@ -277,17 +277,6 @@ def GetResultAnalysisStatus(analysis, result):
   return old_result_status
 
 
-def GetUpdatedAnalysisResult(analysis, flaky_failures):
-  if not analysis or not analysis.result or not analysis.result.get('failures'):
-    return {}, False
-
-  analysis_result = copy.deepcopy(analysis.result)
-  all_flaky = swarming_util.UpdateAnalysisResult(analysis_result,
-                                                 flaky_failures)
-
-  return analysis_result, all_flaky
-
-
 def GetBuildProperties(pipeline_input, try_job_type):
   master_name, builder_name, build_number = pipeline_input.build_key.GetParts()
   properties = {
