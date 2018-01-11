@@ -31,7 +31,7 @@ deps = {
 
   "infra/go/src/go.chromium.org/luci":
     ("https://chromium.googlesource.com/infra/luci/luci-go"
-     "@a9603b62bacdad9e4ec807bdfc254a95fde8c15d"),
+     "@94f59dfc7055cde0f89c170af4977419d3b55996"),
 
   "infra/go/src/go.chromium.org/gae":
     ("https://chromium.googlesource.com/infra/luci/gae"
