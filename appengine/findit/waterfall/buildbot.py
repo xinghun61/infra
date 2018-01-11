@@ -305,7 +305,7 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   build_info.parent_buildername = parent_buildername
   build_info.parent_mastername = parent_mastername
 
-  changes = data_json.get('sourceStamp', {}).get('changes', [])
+  changes = data_json.get('sourceStamp', {}).get('changes') or []
   for change in changes:
     if change['revision'] not in build_info.blame_list:
       build_info.blame_list.append(change['revision'])
