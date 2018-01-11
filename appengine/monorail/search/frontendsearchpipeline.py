@@ -46,7 +46,7 @@ from tracker import tracker_helpers
 
 # Fail-fast responses usually finish in less than 50ms.  If we see a failure
 # in under that amount of time, we don't bother logging it.
-FAIL_FAST_LIMIT_SEC = 0.050
+FAIL_FAST_LIMIT_SEC = 0.1
 
 # The choices help balance the cost of choosing samples vs. the cost of
 # selecting issues that are in a range bounded by neighboring samples.
@@ -841,6 +841,8 @@ def _HandleBackendSearchResponse(
     logging.info('got json text: %r length %r',
                  json_content[:framework_constants.LOGGING_MAX_LENGTH],
                  len(json_content))
+    if json_content == '':
+      raise Exception('Fast fail')
     json_data = json.loads(json_content)
     unfiltered_iids[shard_key] = json_data['unfiltered_iids']
     search_limit_reached[shard_key] = json_data['search_limit_reached']
@@ -891,6 +893,8 @@ def _HandleBackendNonviewableResponse(
     logging.info('got json text: %r length %r',
                  json_content[:framework_constants.LOGGING_MAX_LENGTH],
                  len(json_content))
+    if json_content == '':
+      raise Exception('Fast fail')
     json_data = json.loads(json_content)
     nonviewable_iids[shard_id] = set(json_data['nonviewable'])
 
