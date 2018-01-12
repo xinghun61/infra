@@ -14,3 +14,19 @@ reports_processed = gae_ts_mon.CounterMetric(
      gae_ts_mon.BooleanField('has_regression_range'),
      gae_ts_mon.StringField('client_id'),
      gae_ts_mon.BooleanField('success')])
+
+
+wrong_cls = gae_ts_mon.GaugeMetric(
+    'predator/wrong_cls',
+    'Number of wrong suspected cls found by Predator per '
+    'day. Contains fields describing which client this wrong cl comes from, '
+    'can be clusterfuzz or cracas.',
+    [gae_ts_mon.StringField('client_id')])
+
+
+wrong_components = gae_ts_mon.GaugeMetric(
+    'predator/wrong_components',
+    'Number of wrong suspected components found by '
+    'Predator per day. Contains fields describing which client this wrong cl '
+    'comes from, can be clusterfuzz or cracas.',
+    [gae_ts_mon.StringField('client_id')])
