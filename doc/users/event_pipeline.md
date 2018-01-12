@@ -9,6 +9,8 @@ See [katthomas's 2017 Opstoberfest
 presentation](https://docs.google.com/a/google.com/presentation/d/11DoVXM5hrmSk9pgrj2vjQNd5ihr2_9dKtPYewPbLpjA/edit?usp=sharing)
 for an overview of the components of the pipeline, with pictures!
 
+[TOC]
+
 # Step 1: Create a BigQuery table
 
 ## Table Organization
@@ -18,13 +20,9 @@ Tables are commonly identified by `<project-id>.<dataset_id>.<table_id>`.
 BigQuery tables belong to datasets. Dataset IDs and table IDs should be
 underscore delimited, e.g. `test_results`.
 
-For Google Cloud Projects, tables should be created in their own project, under
-the dataset "events."
-
-Other projects can use the chrome-infra-events project id and create a dataset
-specific to the team, product, or service. For example, CQ events are store in
-`chrome-infra-events.cq.raw_events`.  In either case, table names are up to the
-owner's discretion.
+For services which already have corresponding Google Cloud Projects, tables
+should be created in their own project, under the dataset "events." For other
+services, create a new GCP project.
 
 Datasets can be created in the easy-to-use [console](bigquery.cloud.google.com).
 
@@ -40,15 +38,17 @@ policies for their logs so they don’t write over each other.
 
 Tables are defined by schemas. Schemas are stored in .proto form. Therefore we
 have version control and can use the protoc tool to create language-specific
-instances. Use the
+instances. Use
 [bqschemaupdater](https://chromium.googlesource.com/infra/luci/luci-go/+/master/tools/cmd/bqschemaupdater/README.md)
 to create new tables or modify existing tables in BigQuery. As of right now,
-this tool must be run manually. Running the go environment setup script from
+this tool must be run manually. Run the go environment setup script from
 infra.git:
 
     eval `go/env.py`
 
-and this should install bqschemaupdater in your path.
+and this should install bqschemaupdater in your path. See the
+[docs](https://chromium.googlesource.com/infra/luci/luci-go/+/master/tools/cmd/bqschemaupdater/README.md)
+or run `bqschemaupdater --help` for more information.
 
 # Step 2: Send events to BigQuery
 
@@ -85,12 +85,14 @@ internal.
 ### TLDR
 
 Go: use
-[eventupload](https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/libs/eventupload)
+[eventupload](https://chromium.googlesource.com/infra/luci/luci-go/+/master/common/eventupload/)
 [example CL](https://chromium-review.googlesource.com/c/infra/infra/+/719962)
+[docs](https://godoc.org/go.chromium.org/luci/common/eventupload)
 
 Python: use
 [infra.libs.bigquery](https://cs.chromium.org/chromium/infra/infra/libs/bigquery/helper.py)
 [example CL](https://chrome-internal-review.googlesource.com/c/infra/infra_internal/+/445955)
+[docs](https://chromium.googlesource.com/infra/infra/+/master/infra/libs/bigquery/README.md)
 
 
 ### Options
@@ -124,13 +126,13 @@ to your configuration. You will also not be able to use the bqschemaupdater
 
 ### From Go: eventupload
 
-[eventuploader](https://godoc.org/chromium.googlesource.com/infra/infra.git/go/src/infra/libs/eventupload)
+[eventupload](https://godoc.org/go.chromium.org/luci/common/eventupload)
 takes care of some boilerplate and makes it easy to add monitoring for uploads.
 It also takes care of adding insert IDs, which BigQuery uses to deduplicate
 rows. If you are not using `eventuploader`, check out
-[insertid](https://codesearch.chromium.org/chromium/infra/go/src/infra/libs/eventupload/insertid.go?q=insertid.go&sq=package:chromium&l=1).
+[insertid](https://chromium.googlesource.com/infra/luci/luci-go/+/master/common/eventupload/insertid.go).
 
-With `eventuploader`, you can construct a synchronous `Uploader` or asynchronous
+With `eventupload`, you can construct a synchronous `Uploader` or asynchronous
 `BatchUploader` depending on your needs.
 
 [kitchen](../../go/src/infra/tools/kitchen/monitoring.go) is an example of a
@@ -199,3 +201,16 @@ alerting for builder failures.
 # Step 3: Analyze/Track/Graph Events
 
 TODO
+
+# Limits
+
+BigQuery and Dataflow limits are documented for tools when they are relevant.
+Because many components of the pipeline make API requests to BigQuery, that is
+documented here.
+
+API Request limits are per user. In our case, the use is most often a service
+account. Check the [BigQuery
+docs](https://cloud.google.com/bigquery/quotas#apirequests) for the most up to
+date limits. At the time of writing, there are limits on requests per second and
+concurrent api requests. The client is responsible for ensuring it does not
+exceed these limits.
