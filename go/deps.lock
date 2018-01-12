@@ -1,8 +1,8 @@
-hash: 43f8453b164f506b2dbb17e47a9f503c31fb0de7f9e9d6e1146b11c9a565eaae
-updated: 2018-01-04T16:55:26.664216421-08:00
+hash: 9ca18ff0895045033fc794683b22fc09571a3e9732fe8fac11af1b9b203015c9
+updated: 2018-01-16T15:43:58.851814138-08:00
 imports:
 - name: cloud.google.com/go
-  version: 2107a43168e297b90d86797885a627ffec2fb22b
+  version: 31bbc669abf6a1b02e619cbe75de1f3482881f1c
   repo: https://code.googlesource.com/gocloud.git
   subpackages:
   - bigtable
@@ -44,10 +44,10 @@ imports:
   version: a41e3c4b706f6ae8dfbff342b06e40fa4d2d0506
   repo: https://chromium.googlesource.com/external/github.com/go-ole/go-ole.git
 - name: github.com/go-sql-driver/mysql
-  version: 9181e3a86a19bacd63e68d43ae8b7b36320d8092
+  version: 2cc627ac8defc45d65066ae98f898166f580f9a4
   repo: https://chromium.googlesource.com/external/github.com/go-sql-driver/mysql.git
 - name: github.com/golang/lint
-  version: f635bddafc7154957bd70209ee858a4b97e64a9b
+  version: e14d9b0f1d332b1420c1ffa32562ad2dc84d645d
   repo: https://chromium.googlesource.com/external/github.com/golang/lint.git
   subpackages:
   - golint
@@ -102,7 +102,7 @@ imports:
   version: d6ce6262d87e3a4e153e86023ff56ae771554a41
   repo: https://chromium.googlesource.com/external/github.com/kisielk/gotool.git
 - name: github.com/klauspost/compress
-  version: ea08389e0dc46025380296f7dd04ab0e8de36adb
+  version: b88785bfd699aa994985ea91b90ee8a1721c3fe1
   repo: https://chromium.googlesource.com/external/github.com/klauspost/compress.git
   subpackages:
   - zlib
@@ -155,7 +155,7 @@ imports:
   - database/mysql
   - source/file
 - name: github.com/Microsoft/go-winio
-  version: 78439966b38d69bf38227fbf57ac8a6fee70f69a
+  version: 7da180ee92d8bd8bb8c37fc560e673e6557c392f
   repo: https://chromium.googlesource.com/external/github.com/Microsoft/go-winio.git
 - name: github.com/mitchellh/go-homedir
   version: b8bc1bf767474819792c23f32d8286a45736f1c6
@@ -188,7 +188,7 @@ imports:
   subpackages:
   - convey
 - name: github.com/StackExchange/wmi
-  version: ea383cf3ba6ec950874b8486cd72356d007c768f
+  version: 5d049714c4a64225c3c79a7cf7d02f7fb5b96338
   repo: https://chromium.googlesource.com/external/github.com/StackExchange/wmi.git
 - name: github.com/texttheater/golang-levenshtein
   version: 1a14278c506abae7c17b3cb0b84ae863c7300454
@@ -198,6 +198,9 @@ imports:
 - name: github.com/VividCortex/godaemon
   version: 3d9f6e0b234fe7d17448b345b2e14ac05814a758
   repo: https://chromium.googlesource.com/external/github.com/VividCortex/godaemon.git
+- name: github.com/VividCortex/mysqlerr
+  version: 6c6b55f8796f578c870b7e19bafb16103bc40095
+  repo: https://chromium.googlesource.com/external/github.com/VividCortex/mysqlerr.git
 - name: github.com/xtgo/set
   version: 4431f6b51265b1e0b76af4dafc09d6f12c2bdcd0
   repo: https://chromium.googlesource.com/external/github.com/xtgo/set.git
@@ -217,7 +220,7 @@ imports:
   subpackages:
   - cmd/gomobile
 - name: golang.org/x/net
-  version: d866cfc389cec985d6fda2859936a575a55a3ab6
+  version: 5ccada7d0a7ba9aeb5d3aca8d3501b4c2a509fec
   repo: https://go.googlesource.com/net.git
   subpackages:
   - context
@@ -234,7 +237,7 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: a3f2cbd54cf5dfe3fbaccf76375fdb12f67654c8
+  version: fff93fa7cd278d84afc205751523809c464168ab
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - windows
@@ -242,7 +245,7 @@ imports:
   version: e19ae1496984b1c655b8044a65c0300a3c878dd3
   repo: https://go.googlesource.com/text.git
 - name: golang.org/x/tools
-  version: 951512dfed6ce3af7c9c8aa37505a03c9b0c348d
+  version: 8ea45f96742f825c49e900f42a01928554b5a6a0
   repo: https://go.googlesource.com/tools.git
   subpackages:
   - cmd/callgraph
@@ -255,7 +258,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: 2c6d8d196bf34219b5c8f453dd2ec079b7f1ab0c
+  version: ff5d3c38820f8fd8bd04f917bc656d894edf390d
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2
@@ -289,7 +292,7 @@ imports:
   - googleapis/...
   - protobuf/...
 - name: google.golang.org/grpc
-  version: 8a8ac82f1f7f141a47430dd8be7aa90b92141603
+  version: 1cd234627e6f392ade0527d593eb3fe53e832d4a
   repo: https://chromium.googlesource.com/external/github.com/grpc/grpc-go.git
   subpackages:
   - codes
@@ -301,7 +304,7 @@ imports:
   version: c1b8fa8bdccecb0b8db834ee0b92fdbcfa606dd6
   repo: https://chromium.googlesource.com/external/github.com/natefinch/npipe.git
 - name: gopkg.in/yaml.v2
-  version: 0e4404da71227dcc02fb1deee803d93e86d08f72
+  version: d670f9405373e636a5a2765eea47fac0c9bc91a4
   repo: https://chromium.googlesource.com/external/github.com/go-yaml/yaml.git
 - name: howett.net/plist
   version: 233df3c4f07b0c562da0e8a6fb850681ac49bb90
