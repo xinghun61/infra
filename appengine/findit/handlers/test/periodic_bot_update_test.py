@@ -11,7 +11,7 @@ from common.waterfall import buildbucket_client
 from common.waterfall import pubsub_callback
 from gae_libs import token
 from handlers import periodic_bot_update
-from waterfall import swarming_util
+from services import swarmbot_util
 from waterfall.test import wf_testcase
 
 
@@ -34,8 +34,7 @@ class PeriodicBotUpdateTest(wf_testcase.WaterfallTestCase):
     }), None)]
     response = self.test_app.get(
         '/periodic-bot-update',
-        headers={'X-AppEngine-Cron': 'true'},
-    )
+        headers={'X-AppEngine-Cron': 'true'},)
     self.assertEqual(200, response.status_int)
     self.assertIsInstance(response.json_body, dict)
     self.assertIn('builds', response.json_body)
@@ -95,12 +94,12 @@ class PeriodicBotUpdateTest(wf_testcase.WaterfallTestCase):
         request_mac.ToBuildbucketRequest()['parameters_json'])
     self.assertIn('mac_chromium_variable', mac_params['builder_name'])
 
-  @mock.patch.object(swarming_util, 'GetBotsByDimension')
+  @mock.patch.object(swarmbot_util, 'GetBotsByDimension')
   def testTriggerUpdateJobsNoBots(self, mock_get_bots):
     mock_get_bots.return_value = []
     self.assertEqual([], periodic_bot_update._TriggerUpdateJobs())
 
-  @mock.patch.object(swarming_util, 'GetBotsByDimension')
+  @mock.patch.object(swarmbot_util, 'GetBotsByDimension')
   @mock.patch.object(buildbucket_client, 'TriggerTryJobs')
   def testTriggerUpdateJobs(self, mock_trigger, mock_get_bots):
     mock_get_bots.return_value = [{

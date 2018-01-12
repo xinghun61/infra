@@ -8,7 +8,7 @@ from common.findit_http_client import FinditHttpClient
 from common.waterfall import buildbucket_client
 from gae_libs.handlers.base_handler import BaseHandler
 from gae_libs.handlers.base_handler import Permission
-from waterfall import swarming_util
+from services import swarmbot_util
 
 _FINDIT_SWARMING_POOL = 'luci.chromium.findit'
 _TARGET_MASTER = 'luci.chromium.findit'
@@ -18,9 +18,9 @@ _PLATFORM_BUILDER_MAP = {
     'Windows': 'win_chromium_variable',
 }
 _PLATFORM_CACHE_NAME_MAP = {
-    'Linux': swarming_util.GetCacheName('chromium.linux', 'Linux Builder'),
-    'Mac': swarming_util.GetCacheName('chromium.mac', 'Mac Builder'),
-    'Windows': swarming_util.GetCacheName('chromium.win', 'Win Builder'),
+    'Linux': swarmbot_util.GetCacheName('chromium.linux', 'Linux Builder'),
+    'Mac': swarmbot_util.GetCacheName('chromium.mac', 'Mac Builder'),
+    'Windows': swarmbot_util.GetCacheName('chromium.win', 'Win Builder'),
 }
 _BOT_UPDATE_RECIPE = 'findit/chromium/preemptive_bot_update'
 
@@ -45,8 +45,8 @@ def _TriggerUpdateJobs():
   http_client = FinditHttpClient()
   for os_name in _PLATFORM_BUILDER_MAP:
     dimensions = ['pool:%s' % _FINDIT_SWARMING_POOL, 'os:%s' % os_name]
-    bots = swarming_util.GetBotsByDimension(dimensions, http_client)
-    for b in swarming_util.OnlyAvailable(bots):
+    bots = swarmbot_util.GetBotsByDimension(dimensions, http_client)
+    for b in swarmbot_util.OnlyAvailable(bots):
       tryjobs.append(_BotUpdateTryJob(b['bot_id'], os_name))
   return buildbucket_client.TriggerTryJobs(tryjobs)
 

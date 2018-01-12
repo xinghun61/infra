@@ -26,6 +26,7 @@ from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from services import build_failure_analysis
 from services import git
+from services import swarmbot_util
 from services import try_job as try_job_service
 from services.parameters import RunTestTryJobParameters
 from services.test_failure import ci_test_failure
@@ -247,7 +248,7 @@ def GetParametersToScheduleTestTryJob(master_name,
   parent_buildername = failure_info.get('parent_buildername') or builder_name
   parameters['dimensions'] = waterfall_config.GetTrybotDimensions(
       parent_mastername, parent_buildername)
-  parameters['cache_name'] = swarming_util.GetCacheName(parent_mastername,
+  parameters['cache_name'] = swarmbot_util.GetCacheName(parent_mastername,
                                                         parent_buildername)
   return RunTestTryJobParameters.FromSerializable(parameters)
 

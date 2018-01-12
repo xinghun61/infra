@@ -20,7 +20,7 @@ class ScheduleFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
     super(ScheduleFlakeTryJobPipelineTest, self).setUp()
-    self.mock_select = mock.patch('waterfall.swarming_util.AssignWarmCacheHost')
+    self.mock_select = mock.patch('services.swarmbot_util.AssignWarmCacheHost')
     self.mock_select.start()
 
   def tearDown(self):

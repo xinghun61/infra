@@ -9,6 +9,7 @@ from libs import analysis_status
 from libs import time_util
 
 from common import monitoring
+from services import swarmbot_util
 from services.flake_failure import heuristic_analysis
 from waterfall import build_util
 from waterfall import swarming_util
@@ -249,7 +250,7 @@ class InitializeFlakeTryJobPipeline(BasePipeline):
                                                triggering_build_number)
           parent_mastername = build_info.parent_mastername or master_name
           parent_buildername = build_info.parent_buildername or builder_name
-          cache_name = swarming_util.GetCacheName(
+          cache_name = swarmbot_util.GetCacheName(
               parent_mastername,
               parent_buildername,
               suffix=flake_constants.FLAKE_CACHE_SUFFIX)

@@ -31,6 +31,7 @@ from pipelines.flake_failure.create_bug_for_flake_pipeline import (
 from pipelines.flake_failure.create_bug_for_flake_pipeline import (
     CreateBugForFlakePipelineInputObject)
 
+from services import swarmbot_util
 from services.flake_failure import flake_try_job
 from services.flake_failure import heuristic_analysis
 
@@ -52,7 +53,7 @@ from waterfall.flake.update_flake_bug_pipeline import UpdateFlakeBugPipeline
 from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
-_DEFAULT_CACHE_NAME = swarming_util.GetCacheName(None, None)
+_DEFAULT_CACHE_NAME = swarmbot_util.GetCacheName(None, None)
 
 
 class RecursiveFlakeTryJobPipelineTest(wf_testcase.WaterfallTestCase):

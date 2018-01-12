@@ -785,7 +785,7 @@ class CompileTryJobTest(wf_testcase.WaterfallTestCase):
         compile_try_job._GetGoodRevisionCompile(master_name, builder_name,
                                                 build_number, failure_info))
 
-  @mock.patch.object(swarming_util, 'GetCacheName', return_value='cache')
+  @mock.patch('services.swarmbot_util.GetCacheName', return_value='cache')
   def testGetParametersToScheduleTestTryJob(self, *_):
     master_name = u'm'
     builder_name = u'b'

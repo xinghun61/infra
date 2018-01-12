@@ -76,7 +76,7 @@ DEFAULT_MINIMUM_NUMBER_AVAILABLE_BOTS = 5
 DEFAULT_MINIMUM_PERCENTAGE_AVAILABLE_BOTS = 0.1
 
 
-def _SwarmingHost():
+def SwarmingHost():
   return waterfall_config.GetSwarmingSettings().get('server_host')
 
 
@@ -101,10 +101,10 @@ def _OnConnectionFailed(url, exception_type):
   })
 
 
-def _SendRequestToServer(url, http_client, post_data=None):
+def SendRequestToServer(url, http_client, post_data=None):
   """Sends GET/POST request to arbitrary url and returns response content.
 
-  Because the Swarming and Isolated servers that _SendRequestToServer tries to
+  Because the Swarming and Isolated servers that SendRequestToServer tries to
   contact are prone to outages, exceptions trying to reach them may occur thus
   this method should retry. We want to monitor and document these occurrences
   even if the request eventually succeeds after retrying, with the last error
@@ -191,8 +191,8 @@ def _SendRequestToServer(url, http_client, post_data=None):
 
 def GetSwarmingTaskRequest(task_id, http_client):
   """Returns an instance of SwarmingTaskRequest representing the given task."""
-  url = TASK_ID_URL % (_SwarmingHost(), task_id)
-  content, error = _SendRequestToServer(url, http_client)
+  url = TASK_ID_URL % (SwarmingHost(), task_id)
+  content, error = SendRequestToServer(url, http_client)
 
   # TODO(lijeffrey): Handle/report error in calling functions.
   if not error:
@@ -219,8 +219,8 @@ def TriggerSwarmingTask(request, http_client):
 
   request.tags.extend(['findit:1', 'project:Chromium', 'purpose:post-commit'])
 
-  response_data, error = _SendRequestToServer(NEW_TASK_URL % _SwarmingHost(),
-                                              http_client, request.Serialize())
+  response_data, error = SendRequestToServer(NEW_TASK_URL % SwarmingHost(),
+                                             http_client, request.Serialize())
 
   if not error:
     return json.loads(response_data)['task_id'], None
@@ -268,7 +268,7 @@ def ListSwarmingTasksDataByTags(master_name,
       url = base_url
     else:
       url = base_url + '&cursor=%s' % urllib.quote(cursor)
-    new_data, _ = _SendRequestToServer(url, http_client)
+    new_data, _ = SendRequestToServer(url, http_client)
 
     # TODO(lijeffrey): handle error in calling functions.
     if not new_data:
@@ -298,10 +298,10 @@ def GenerateIsolatedData(outputs_ref):
 
 def GetSwarmingTaskResultById(task_id, http_client):
   """Gets swarming result, checks state and returns outputs ref if needed."""
-  base_url = TASK_RESULT_URL % (_SwarmingHost(), task_id)
+  base_url = TASK_RESULT_URL % (SwarmingHost(), task_id)
   json_data = {}
 
-  data, error = _SendRequestToServer(base_url, http_client)
+  data, error = SendRequestToServer(base_url, http_client)
 
   if not error:
     json_data = json.loads(data)
@@ -417,7 +417,7 @@ def _FetchOutputJsonInfoFromIsolatedServer(isolated_data, http_client):
   url = '%s/_ah/api/isolateservice/v1/retrieve' % (
       isolated_data['isolatedserver'])
 
-  return _SendRequestToServer(url, http_client, post_data)
+  return SendRequestToServer(url, http_client, post_data)
 
 
 def _ProcessRetrievedContent(output_json_content, http_client):
@@ -429,7 +429,7 @@ def _ProcessRetrievedContent(output_json_content, http_client):
   json_content = json.loads(output_json_content)
   output_json_url = json_content.get('url')
   if output_json_url:
-    get_content, _ = _SendRequestToServer(output_json_url, http_client)
+    get_content, _ = SendRequestToServer(output_json_url, http_client)
     # TODO(lijeffrey): handle error in calling function.
   elif json_content.get('content'):
     get_content = base64.b64decode(json_content['content'])
@@ -568,7 +568,7 @@ def GetIsolatedOutputForTask(task_id, http_client):
   return output_json
 
 
-def _DimensionsToQueryString(dimensions):
+def DimensionsToQueryString(dimensions):
   if isinstance(dimensions, dict):
     dimension_list = ['%s:%s' % (k, v) for k, v in dimensions.iteritems()]
   else:
@@ -616,9 +616,9 @@ def GetSwarmingBotCounts(dimensions, http_client):
   if not dimensions:
     return {}
 
-  url = BOT_COUNT_URL % (_SwarmingHost(), _DimensionsToQueryString(dimensions))
+  url = BOT_COUNT_URL % (SwarmingHost(), DimensionsToQueryString(dimensions))
 
-  content, error = _SendRequestToServer(url, http_client)
+  content, error = SendRequestToServer(url, http_client)
   if error or not content:
     return {}
 
@@ -689,224 +689,6 @@ def UpdateAnalysisResult(analysis_result, flaky_failures):
         all_flaked = False
 
   return all_flaked
-
-
-def GetCacheName(master, builder, suffix=""):
-  hash_part = hashlib.sha256('%s:%s' % (master, builder)).hexdigest()
-  result = 'builder_%s' % hash_part
-  if suffix:
-    result = '%s_%s' % (result, suffix)
-  return result
-
-
-def GetBot(build):
-  """Parses the swarming bot from the buildbucket response"""
-  assert build
-  if build.response:
-    details = json.loads(build.response.get('result_details_json', '{}'))
-    if details:
-      return details.get('swarming', {}).get('task_result', {}).get('bot_id')
-  return None
-
-
-def GetBuilderCacheName(build):
-  """Gets the named cache's name from the buildbucket response"""
-  assert build
-  parameters = json.loads(build.response.get('parameters_json', '{}'))
-  if parameters:
-    swarming_params = parameters.get('swarming', {}).get(
-        'override_builder_cfg', {})
-    for cache in swarming_params.get('caches', []):
-      if cache.get('path') == 'builder':
-        return cache.get('name')
-  return None
-
-
-def GetBotsByDimension(dimensions, http_client):
-  url = BOT_LIST_URL % (_SwarmingHost(), _DimensionsToQueryString(dimensions))
-
-  content, error = _SendRequestToServer(url, http_client)
-  if error:
-    logging.error('failed to list bots by dimension with %s, falling back to '
-                  'any selecting any bot', error)
-    return []
-
-  if not content:
-    logging.warning('got blank response from %s', url)
-    return []
-
-  content_data = json.loads(content)
-  return content_data.get('items', [])
-
-
-def GetAllBotsWithCache(dimensions, cache_name, http_client):
-  dimensions['caches'] = cache_name
-  return GetBotsByDimension(dimensions, http_client)
-
-
-def OnlyAvailable(bots):
-  return [
-      b for b in bots
-      if not (b.get('task_id') or b.get('is_dead') or b.get('quarantined') or
-              b.get('deleted'))
-  ]
-
-
-def _HaveCommitPositionInLocalGitCache(bots, commit_position):
-  result = []
-  for b in bots:
-    bot_id = b.get('bot_id')
-    if WfTryBot.Get(bot_id).newest_synced_revision >= commit_position:
-      result.append(b)
-  return result
-
-
-def _SortByDistanceToCommitPosition(bots, cache_name, commit_position,
-                                    include_later):
-  cache_stats = WfTryBotCache.Get(cache_name)
-
-  def _distance(bot_id):
-    # If the bot is new, the bot_id will not be present, but if it failed to get
-    # the revision, the key will be present with a value of None.
-    local_cp = cache_stats.checked_out_commit_positions.get(bot_id) or 0
-    return commit_position - local_cp
-
-  if include_later:
-    distance = lambda x: abs(_distance(x))
-  else:
-    distance = _distance
-  result = sorted(
-      [b for b in bots if distance(b['bot_id']) >= 0],
-      key=lambda x: distance(x['bot_id']))
-  return result
-
-
-def _ClosestEarlier(bots, cache_name, commit_position):
-  result = _SortByDistanceToCommitPosition(bots, cache_name, commit_position,
-                                           False)
-  return result[0] if result else None
-
-
-def _ClosestLater(bots, cache_name, commit_position):
-  result = _SortByDistanceToCommitPosition(bots, cache_name, commit_position,
-                                           True)
-  return result[0] if result else None
-
-
-def _GetBotWithFewestNamedCaches(bots):
-  """Selects the bot that has the fewest named caches.
-
-  To break ties, the bot with the most available disk space is selected.
-
-  Args:
-    bots(list): A list of bot dicts as returned by the swarming.bots.list api
-      with a minimum length of 1.
-
-  Returns:
-    One bot from the list.
-  """
-  # This list will contain a triplet (cache_count, -free_space, bot) for each
-  # bot.
-  candidates = []
-  for b in bots:
-    try:
-      caches_dimension = [
-          d['value'] for d in b['dimensions'] if d['key'] == 'caches'
-      ][0]
-      # We only care about caches whose name starts with 'builder_' as that is
-      # the convention that we use in GetCacheName.
-      cache_count = len(
-          [cache for cache in caches_dimension if cache.startswith('builder_')])
-      bot_state = json.loads(b['state'])
-      free_space = sum(
-          [disk['free_mb'] for _, disk in bot_state['disks'].iteritems()])
-    except (KeyError, TypeError, ValueError):
-      # If we can't determine the values, we add the bot to the end of the list.
-      candidates.append((1000, 0, b))
-    else:
-      # We use negative free space in this triplet so that a single sort will
-      # put the one with the most free space first if there is a tie in cache
-      # count with a single sort.
-      candidates.append((cache_count, -free_space, b))
-  return sorted(candidates)[0][2]
-
-
-def AssignWarmCacheHost(tryjob, cache_name, http_client):
-  """Selects the best possible slave for a given tryjob.
-
-  We try to get as many of the following conditions as possible:
-   - The bot is available,
-   - The bot has the named cached requested by the tryjob,
-   - The revision to test has already been fetched to the bot's local git cache,
-   - The currently checked out revision at the named cache is the closest
-     to the revision to test, and if possible it's earlier to it (so that
-     bot_update only moves forward, preferably)
-  If a match is found, it is added to the tryjob parameter as a dimension.
-
-  Args:
-    tryjob (buildbucket_client.TryJob): The ready-to-be-scheduled job.
-    cache_name (str): Previously computed name of the cache to match the
-        referred build's builder and master.
-    http_client: http_client to use for swarming and gitiles requests.
-  """
-  if not tryjob.is_swarmbucket_build:
-    return
-  request_dimensions = dict([x.split(':', 1) for x in tryjob.dimensions])
-  bots_with_cache = OnlyAvailable(
-      GetAllBotsWithCache(request_dimensions, cache_name, http_client))
-
-  if bots_with_cache:
-
-    # Flake tryjobs check out older code, so there's little benefit in trying to
-    # optimize the way we do for non-flake tryjobs, we do however select the bot
-    # with the fewest named caches in an effort to avoid unnecessary cache
-    # evictions.
-    if cache_name and cache_name.endswith(flake_constants.FLAKE_CACHE_SUFFIX):
-      selected_bot = _GetBotWithFewestNamedCaches(bots_with_cache)['bot_id']
-      tryjob.dimensions.append('id:%s' % selected_bot)
-      return
-
-    git_repo = CachedGitilesRepository(
-        http_client, 'https://chromium.googlesource.com/chromium/src.git')
-    # TODO(crbug.com/800107): Pass revision as a parameter.
-    revision = (tryjob.properties.get('bad_revision') or
-                tryjob.properties.get('test_revision'))
-    if not revision:
-      logging.error('Tryjob %s does not have a specified revision.' % tryjob)
-      return
-    target_commit_position = git_repo.GetChangeLog(revision).commit_position
-
-    bots_with_rev = _HaveCommitPositionInLocalGitCache(bots_with_cache,
-                                                       target_commit_position)
-    if not bots_with_rev:
-      selected_bot = _GetBotWithFewestNamedCaches(bots_with_cache)['bot_id']
-      tryjob.dimensions.append('id:' + selected_bot)
-      return
-
-    bots_with_latest_earlier_rev_checked_out = _ClosestEarlier(
-        bots_with_rev, cache_name, target_commit_position)
-    if bots_with_latest_earlier_rev_checked_out:
-      tryjob.dimensions.append(
-          'id:' + bots_with_latest_earlier_rev_checked_out['bot_id'])
-      return
-
-    bots_with_earliest_later_rev_checked_out = _ClosestLater(
-        bots_with_rev, cache_name, target_commit_position)
-    if bots_with_earliest_later_rev_checked_out:
-      tryjob.dimensions.append(
-          'id:' + bots_with_earliest_later_rev_checked_out['bot_id'])
-      return
-
-    selected_bot = _GetBotWithFewestNamedCaches(bots_with_rev)['bot_id']
-    tryjob.dimensions.append('id:' + selected_bot)
-    return
-
-  else:
-    idle_bots = OnlyAvailable(
-        GetBotsByDimension(request_dimensions, http_client))
-    if idle_bots:
-      selected_bot = _GetBotWithFewestNamedCaches(idle_bots)['bot_id']
-      tryjob.dimensions.append('id:' + selected_bot)
 
 
 def GetETAToStartAnalysis(manually_triggered):

@@ -3,7 +3,6 @@
 # found in the LICENSE file.
 
 from datetime import datetime
-from datetime import timedelta
 import copy
 import mock
 
@@ -13,8 +12,8 @@ from libs import analysis_status
 from libs import time_util
 from model.flake.flake_swarming_task import FlakeSwarmingTask
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from model.wf_swarming_task import WfSwarmingTask
 from pipelines.delay_pipeline import DelayPipeline
+from services import swarmbot_util
 from waterfall import build_util
 from waterfall import swarming_util
 from waterfall import waterfall_config
@@ -26,14 +25,10 @@ from waterfall.flake.finish_build_analysis_pipeline import (
     FinishBuildAnalysisPipeline)
 from waterfall.flake.next_build_number_pipeline import NextBuildNumberPipeline
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
-from waterfall.flake.save_last_attempted_swarming_task_id_pipeline import (
-    SaveLastAttemptedSwarmingTaskIdPipeline)
-from waterfall.flake.update_flake_analysis_data_points_pipeline import (
-    UpdateFlakeAnalysisDataPointsPipeline)
 from waterfall.test import wf_testcase
 from waterfall.test.wf_testcase import DEFAULT_CONFIG_DATA
 
-_DEFAULT_CACHE_NAME = swarming_util.GetCacheName('pm', 'pb')
+_DEFAULT_CACHE_NAME = swarmbot_util.GetCacheName('pm', 'pb')
 
 
 class MOCK_INFO(object):

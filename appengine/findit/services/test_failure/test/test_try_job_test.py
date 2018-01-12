@@ -841,7 +841,7 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
                                           build_number, failure_info))
 
   @mock.patch.object(test_try_job, 'GetReliableTests', return_value={})
-  @mock.patch.object(swarming_util, 'GetCacheName', return_value='cache')
+  @mock.patch('services.swarmbot_util.GetCacheName', return_value='cache')
   def testGetParametersToScheduleTestTryJob(self, *_):
     master_name = 'm'
     builder_name = 'b'

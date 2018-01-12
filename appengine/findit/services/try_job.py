@@ -44,6 +44,7 @@ from model.wf_try_bot_cache import WfTryBotCache
 from model.wf_try_job_data import WfTryJobData
 from services import gtest
 from services import monitoring
+from services import swarmbot_util
 from waterfall import buildbot
 from waterfall import swarming_util
 from waterfall import waterfall_config
@@ -321,7 +322,7 @@ def TriggerTryJob(master_name, builder_name, tryserver_mastername,
       tryserver_mastername, tryserver_buildername, None, properties, [],
       additional_parameters, cache_name, dimensions)
   # This is a no-op if the tryjob is not on swarmbucket.
-  swarming_util.AssignWarmCacheHost(try_job, cache_name, FinditHttpClient())
+  swarmbot_util.AssignWarmCacheHost(try_job, cache_name, FinditHttpClient())
   error, build = buildbucket_client.TriggerTryJobs([try_job],
                                                    notification_id)[0]
 
@@ -555,8 +556,8 @@ def _RecordCacheStats(build, report):
   These are saved as commit positions rather than revision hashes for faster
   comparisons when selecting a bot for new tryjobs.
   """
-  bot = swarming_util.GetBot(build)
-  cache_name = swarming_util.GetBuilderCacheName(build)
+  bot = swarmbot_util.GetBot(build)
+  cache_name = swarmbot_util.GetBuilderCacheName(build)
   if bot and cache_name:
     git_repo = CachedGitilesRepository(
         FinditHttpClient(),

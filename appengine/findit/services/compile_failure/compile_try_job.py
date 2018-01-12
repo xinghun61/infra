@@ -25,11 +25,11 @@ from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
 from services import build_failure_analysis
 from services import git
+from services import swarmbot_util
 from services import try_job as try_job_service
 from services.parameters import RunCompileTryJobParameters
 from waterfall import build_util
 from waterfall import suspected_cl_util
-from waterfall import swarming_util
 from waterfall import waterfall_config
 
 
@@ -203,7 +203,7 @@ def GetParametersToScheduleCompileTryJob(master_name,
       signals, master_name, builder_name)
   parameters['dimensions'] = waterfall_config.GetTrybotDimensions(
       master_name, builder_name)
-  parameters['cache_name'] = swarming_util.GetCacheName(master_name,
+  parameters['cache_name'] = swarmbot_util.GetCacheName(master_name,
                                                         builder_name)
 
   return RunCompileTryJobParameters.FromSerializable(parameters)

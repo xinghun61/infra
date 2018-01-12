@@ -27,6 +27,7 @@ from model.wf_build import WfBuild
 from model.wf_failure_group import WfFailureGroup
 from model.wf_try_job import WfTryJob
 from model.wf_try_job_data import WfTryJobData
+from services import swarmbot_util
 from services import try_job as try_job_service
 from services.parameters import BuildKey
 from services.parameters import CompileTryJobResult
@@ -43,7 +44,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
     super(TryJobTest, self).setUp()
-    self.patcher = mock.patch('waterfall.swarming_util.GetBotsByDimension')
+    self.patcher = mock.patch('services.swarmbot_util.GetBotsByDimension')
     self.patcher.start()
 
   def tearDown(self):
@@ -733,9 +734,9 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(try_job_data.error, expected_error_dict)
     self.assertEqual(try_job_data.error_code, try_job_error.TIMEOUT)
 
-  @mock.patch('waterfall.swarming_util.GetBot', return_value='BotName')
+  @mock.patch('services.swarmbot_util.GetBot', return_value='BotName')
   @mock.patch(
-      'waterfall.swarming_util.GetBuilderCacheName', return_value='CacheName')
+      'services.swarmbot_util.GetBuilderCacheName', return_value='CacheName')
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
   def testRecordCacheStats(self, mock_cl, *_):
     cases = [(None, None, '100', 100), ('100', '100', '200', 200),
@@ -770,8 +771,8 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
                                              if checked_out_revision else None,
                                              synced_revision)
 
-  @mock.patch.object(swarming_util, 'GetBot', return_value=None)
-  @mock.patch.object(swarming_util, 'GetBuilderCacheName', return_value=None)
+  @mock.patch.object(swarmbot_util, 'GetBot', return_value=None)
+  @mock.patch.object(swarmbot_util, 'GetBuilderCacheName', return_value=None)
   @mock.patch.object(CachedGitilesRepository, 'GetChangeLog')
   def testRecordCacheStatsNotEnoughInfo(self, mock_fn, *_):
     try_job_service._RecordCacheStats(None, None)
