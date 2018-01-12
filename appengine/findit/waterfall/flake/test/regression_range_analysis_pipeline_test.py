@@ -10,7 +10,6 @@ from libs import analysis_status
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
 from waterfall import build_util
-from waterfall import buildbot
 from waterfall.build_info import BuildInfo
 from waterfall.flake import regression_range_analysis_pipeline
 from waterfall.flake.next_build_number_pipeline import NextBuildNumberPipeline
@@ -133,8 +132,8 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(build_util, 'GetBoundingBuilds')
   @mock.patch.object(build_util, 'GetLatestBuildNumber')
-  def testGetEarliestBuildNumberFromRelativeBuildNumber(
-      self, mock_build, mock_bound):
+  def testGetEarliestBuildNumberFromRelativeBuildNumber(self, mock_build,
+                                                        mock_bound):
     data_point_1 = DataPoint()
     data_point_1.build_number = 1
     data_point_1.commit_position = 20
@@ -185,9 +184,10 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
       return_value=(None, None))
   @mock.patch.object(
       build_util, 'GetBuildInfo', return_value=BuildInfo('m', 'b', 123))
-  @mock.patch.object(build_util, 'GetBoundingBuilds',
-                     return_value=(BuildInfo('m', 'b', 122),
-                                   BuildInfo('m', 'b', 123)))
+  @mock.patch.object(
+      build_util,
+      'GetBoundingBuilds',
+      return_value=(BuildInfo('m', 'b', 122), BuildInfo('m', 'b', 123)))
   def testGetEarliestBuildNumberNoDataPoints(self, *_):
     self.assertEqual(
         123,
@@ -243,7 +243,9 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
         regression_range_analysis_pipeline._CanStartManualAnalysis(analysis))
 
   @mock.patch.object(
-      buildbot, 'GetStepLog', return_value={'dimensions': {
+      build_util,
+      'GetWaterfallBuildStepLog',
+      return_value={'dimensions': {
           'os': 'OS'
       }})
   def testRegressionRangeAnalysisPipeline(self, _):
@@ -293,7 +295,9 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     self.execute_queued_tasks()
 
   @mock.patch.object(
-      buildbot, 'GetStepLog', return_value={'dimensions': {
+      build_util,
+      'GetWaterfallBuildStepLog',
+      return_value={'dimensions': {
           'os': 'OS'
       }})
   def testRegressionRangeAnalysisPipelineCantStartIfStillRunning(self, _):
@@ -344,7 +348,9 @@ class RegressionRangeAnalysisPipelineTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(data_points, analysis.data_points)
 
   @mock.patch.object(
-      buildbot, 'GetStepLog', return_value={'dimensions': {
+      build_util,
+      'GetWaterfallBuildStepLog',
+      return_value={'dimensions': {
           'os': 'OS'
       }})
   def testRegressionRangeAnalysisPipelineEndToEnd(self, _):

@@ -10,7 +10,7 @@ from gae_libs import appengine_util
 from libs import analysis_status
 from libs import time_util
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from waterfall import buildbot
+from waterfall import build_util
 from waterfall import waterfall_config
 from waterfall.flake import triggering_sources
 from waterfall.flake.recursive_flake_pipeline import RecursiveFlakePipeline
@@ -156,7 +156,7 @@ def ScheduleAnalysisIfNeeded(
         'will be captured in version %s',
         repr(normalized_test), repr(original_test), analysis.version_number)
 
-    step_metadata = buildbot.GetStepLog(
+    step_metadata = build_util.GetWaterfallBuildStepLog(
         normalized_test.master_name, normalized_test.builder_name,
         normalized_test.build_number, normalized_test.step_name,
         FinditHttpClient(), 'step_metadata')

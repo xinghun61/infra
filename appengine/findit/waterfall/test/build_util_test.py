@@ -4,17 +4,29 @@
 
 import datetime
 import json
+import logging
 import mock
 
+from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
-
+from infra_api_clients import logdog_util
 from model.wf_build import WfBuild
-
 from waterfall import build_util
 from waterfall import buildbot
 from waterfall import swarming_util
 from waterfall.build_info import BuildInfo
 from waterfall.test import wf_testcase
+
+
+class MockBuild(object):
+
+  def __init__(self, response):
+    self.response = response
+
+
+MOCK_BUILDS = [(None, MockBuild({
+    'tags': ['swarming_tag:log_location:logdog://host/project/path']
+}))]
 
 
 def _MockedGetBuildInfo(master_name, builder_name, build_number):
@@ -26,6 +38,11 @@ def _MockedGetBuildInfo(master_name, builder_name, build_number):
 class BuildUtilTest(wf_testcase.WaterfallTestCase):
 
   def setUp(self):
+    self.master_name = 'm'
+    self.builder_name = 'b'
+    self.build_number = 123
+    self.buildbucket_id = '88123'
+    self.step_name = 'browser_tests on platform'
     super(BuildUtilTest, self).setUp()
 
     with self.mock_urlfetch() as urlfetch:
@@ -235,7 +252,7 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     lower_bound_build_number = 3
     lower_bound, upper_bound = build_util.GetBoundingBuilds(
         'm', 'b', lower_bound_build_number, 100, 10)
-    
+
     self.assertIsNone(lower_bound)
     self.assertEqual(lower_bound_build_number, upper_bound.build_number)
 
@@ -260,9 +277,8 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(build_util, 'GetBuildInfo', _MockedGetBuildInfo)
   @mock.patch.object(build_util, 'GetLatestBuildNumber', return_value=None)
   def testGetBoundingBuildsNoLatestBuild(self, *_):
-    self.assertEqual(
-        (None, None),
-        build_util.GetBoundingBuilds('m', 'b', None, None, 50))
+    self.assertEqual((None, None),
+                     build_util.GetBoundingBuilds('m', 'b', None, None, 50))
 
   @mock.patch.object(swarming_util, 'ListSwarmingTasksDataByTags')
   def testFindValidBuildNumberForStepNearby(self, mock_list_fn):
@@ -296,3 +312,76 @@ class BuildUtilTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(None,
                      build_util.FindValidBuildNumberForStepNearby(
                          'm', 'b', 's', 5))
+
+  @mock.patch.object(
+      logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
+  @mock.patch.object(
+      logdog_util, '_GetStreamForStep', return_value='log_stream')
+  @mock.patch.object(
+      logdog_util,
+      'GetStepLogLegacy',
+      return_value=json.dumps(wf_testcase.SAMPLE_STEP_METADATA))
+  def testGetStepMetadata(self, *_):
+    step_metadata = build_util.GetWaterfallBuildStepLog(
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        None, 'step_metadata')
+    self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
+
+  @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value=':')
+  def testMalformattedNinjaInfo(self, _):
+    step_metadata = build_util.GetWaterfallBuildStepLog(
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        None, 'json.output[ninja_info]')
+    self.assertIsNone(step_metadata)
+
+  @mock.patch.object(
+      logdog_util, '_GetAnnotationsProtoForPath', return_value=None)
+  def testGetStepMetadataStepNone(self, _):
+    step_metadata = build_util.GetWaterfallBuildStepLog(
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        None, 'step_metadata')
+    self.assertIsNone(step_metadata)
+
+  @mock.patch.object(
+      logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
+  @mock.patch.object(logdog_util, '_GetStreamForStep', return_value=None)
+  def testGetStepMetadataStreamNone(self, *_):
+    step_metadata = build_util.GetWaterfallBuildStepLog(
+        self.master_name, self.builder_name, self.build_number, self.step_name,
+        None, 'step_metadata')
+    self.assertIsNone(step_metadata)
+
+  @mock.patch.object(
+      logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
+  @mock.patch.object(logdog_util, '_GetStreamForStep', return_value='stream')
+  @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value='log1/nlog2')
+  def testGetStepLogStdio(self, *_):
+    self.assertEqual('log1/nlog2',
+                     build_util.GetWaterfallBuildStepLog(
+                         self.master_name, self.builder_name, self.build_number,
+                         self.step_name, None))
+
+  @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value='log')
+  @mock.patch.object(logging, 'error')
+  def testGetStepLogNotJosonLoadable(self, mocked_log, _):
+    self.assertEqual('log',
+                     build_util.GetWaterfallBuildStepLog(
+                         self.master_name, self.builder_name, self.build_number,
+                         self.step_name, None, 'step_metadata'))
+    mocked_log.assert_called_with(
+        'Failed to json load data for step_metadata. Data is: log.')
+
+  @mock.patch.object(
+      buildbucket_client, 'GetTryJobs', return_value=[(Exception(), None)])
+  def testGetTryJobStepLogError(self, _):
+    self.assertIsNone(
+        build_util.GetTryJobStepLog(self.buildbucket_id, self.step_name, None))
+
+  @mock.patch.object(buildbucket_client, 'GetTryJobs', return_value=MOCK_BUILDS)
+  @mock.patch.object(logdog_util, 'GetStepLogForBuild', return_value='log')
+  @mock.patch.object(build_util, '_ReturnStepLog', return_value='log')
+  def testGetTryJobStepLog(self, *_):
+    self.assertEqual('log',
+                     build_util.GetTryJobStepLog(self.buildbucket_id,
+                                                 self.step_name, None,
+                                                 'step_metadata'))

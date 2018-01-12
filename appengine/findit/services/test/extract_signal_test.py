@@ -9,9 +9,8 @@ import os
 from google.appengine.api.urlfetch import ResponseTooLargeError
 
 from model.wf_analysis import WfAnalysis
-from model.wf_step import WfStep
 from services import extract_signal
-from waterfall import buildbot
+from waterfall import build_util
 from waterfall.test import wf_testcase
 
 ABC_TEST_FAILURE_LOG = """
@@ -94,7 +93,7 @@ class ExtractSignalTest(wf_testcase.WaterfallTestCase):
     result = extract_signal.ExtractStorablePortionOfLog(log_data, True)
     self.assertEqual('', result)
 
-  @mock.patch.object(buildbot, 'GetStepLog')
+  @mock.patch.object(build_util, 'GetWaterfallBuildStepLog')
   def testResponseTooLarge(self, mock_fun):
     mock_fun.side_effect = ResponseTooLargeError('test')
 

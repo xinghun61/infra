@@ -9,7 +9,7 @@ from common import constants
 from libs import analysis_status
 from model.flake.master_flake_analysis import DataPoint
 from model.flake.master_flake_analysis import MasterFlakeAnalysis
-from waterfall import buildbot
+from waterfall import build_util
 from waterfall.flake import initialize_flake_pipeline
 from waterfall.test import wf_testcase
 from waterfall.test_info import TestInfo
@@ -144,7 +144,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
       self.assertFalse(need_analysis)
       self.assertIsNotNone(analysis)
 
-  @mock.patch.object(buildbot, 'GetStepLog', return_value={})
+  @mock.patch.object(build_util, 'GetWaterfallBuildStepLog', return_value={})
   @mock.patch.object(initialize_flake_pipeline, '_NeedANewAnalysis')
   @mock.patch(
       'waterfall.flake.initialize_flake_pipeline.RecursiveFlakePipeline')
@@ -177,7 +177,7 @@ class InitializeFlakePipelineTest(wf_testcase.WaterfallTestCase):
         mock.call().start(queue_name=constants.DEFAULT_QUEUE),
     ])
 
-  @mock.patch.object(buildbot, 'GetStepLog', return_value={})
+  @mock.patch.object(build_util, 'GetWaterfallBuildStepLog', return_value={})
   @mock.patch.object(initialize_flake_pipeline, '_NeedANewAnalysis')
   @mock.patch(
       'waterfall.flake.initialize_flake_pipeline.RecursiveFlakePipeline')

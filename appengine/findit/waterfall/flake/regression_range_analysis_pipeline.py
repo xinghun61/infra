@@ -168,8 +168,7 @@ def _GetEarliestContainingBuildNumber(commit_position, master_flake_analysis):
     return lower_bound
 
   _, upper_bound_build = build_util.GetBoundingBuilds(
-      master_name, builder_name, lower_bound, upper_bound,
-      commit_position)
+      master_name, builder_name, lower_bound, upper_bound, commit_position)
   return upper_bound_build.build_number
 
 
@@ -217,7 +216,7 @@ class RegressionRangeAnalysisPipeline(BasePipeline):
         lower_bound_commit_position, analysis)
     upper_bound_build_number = _GetEarliestContainingBuildNumber(
         upper_bound_commit_position, analysis)
-    step_metadata = buildbot.GetStepLog(
+    step_metadata = build_util.GetWaterfallBuildStepLog(
         analysis.master_name, analysis.builder_name, analysis.build_number,
         analysis.step_name, FinditHttpClient(), 'step_metadata')
 

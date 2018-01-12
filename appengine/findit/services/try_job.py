@@ -46,7 +46,7 @@ from services import gtest
 from services import monitoring
 from services import swarmbot_util
 from waterfall import buildbot
-from waterfall import swarming_util
+from waterfall import build_util
 from waterfall import waterfall_config
 
 UNKNOWN = 'UNKNOWN'
@@ -694,8 +694,8 @@ def OnTryJobCompleted(params, try_job_data, build, error):
       no_retry_codes=[200, 302, 401, 403, 409, 501]))
 
   try:
-    report = swarming_util.GetStepLog(try_job_id, 'report', http_client,
-                                      'report')
+    report = build_util.GetTryJobStepLog(try_job_id, 'report', http_client,
+                                         'report')
     if report:
       _RecordCacheStats(build, report)
   except (ValueError, TypeError) as e:

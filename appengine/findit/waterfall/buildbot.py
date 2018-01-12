@@ -349,37 +349,6 @@ def ExtractBuildInfo(master_name, builder_name, build_number, build_data):
   return build_info
 
 
-def GetStepLog(master_name,
-               builder_name,
-               build_number,
-               full_step_name,
-               http_client,
-               log_type='stdout'):
-  """Returns sepcific log of the specified step."""
-
-  data = logdog_util.GetStepLogLegacy(master_name, builder_name, build_number,
-                                      full_step_name, log_type, http_client)
-  if not data:
-    return None
-
-  if log_type.lower() == 'json.output[ninja_info]':
-    # Check if data is malformatted.
-    try:
-      json.loads(data)
-    except ValueError:
-      logging.error('json.output[ninja_info] is malformatted')
-      return None
-
-  if log_type.lower() not in ['stdout', 'json.output[ninja_info]']:
-    try:
-      return json.loads(data) if data else None
-    except ValueError:
-      logging.error('Failed to json load data for %s. Data is: %s.' % (log_type,
-                                                                       data))
-
-  return data
-
-
 def ValidateBuildUrl(url):
   return bool(
       _MILO_MASTER_URL_PATTERN.match(url) or
@@ -390,7 +359,6 @@ def ValidateBuildUrl(url):
 def GetBuildInfo(build, http_client):
   master, builder, build_number = ParseBuildUrl(build)
   request = {
-
       'buildbot': {
           'masterName': master,
           'builderName': builder,

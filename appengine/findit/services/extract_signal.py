@@ -11,7 +11,7 @@ import logging
 from google.appengine.api.urlfetch import ResponseTooLargeError
 
 from model.wf_analysis import WfAnalysis
-from waterfall import buildbot
+from waterfall import build_util
 
 # Limit stored log data to 1000 KB, because a datastore entity has a size
 # limit of 1 MB. And Leave 24 KB for other possible usage later.
@@ -43,8 +43,8 @@ def ExtractStorablePortionOfLog(log_data, json_format=False):
 def GetStdoutLog(master_name, builder_name, build_number, step_name,
                  http_client):
   try:
-    return buildbot.GetStepLog(master_name, builder_name, build_number,
-                               step_name, http_client)
+    return build_util.GetWaterfallBuildStepLog(
+        master_name, builder_name, build_number, step_name, http_client)
 
   except ResponseTooLargeError:
     logging.exception('Log of step "%s" is too large for urlfetch.', step_name)

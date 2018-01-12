@@ -3,14 +3,13 @@
 # found in the LICENSE file.
 
 from datetime import datetime
-import logging
 import mock
 
 from common import acl
 from common import constants
 from gae_libs.pipelines import pipeline_handlers
 from model.flake.flake_swarming_task import FlakeSwarmingTask
-from waterfall import buildbot
+from waterfall import build_util
 from waterfall import swarming_util
 from waterfall.flake import trigger_flake_swarming_task_service_pipeline
 from waterfall.flake.trigger_flake_swarming_task_service_pipeline import (
@@ -28,7 +27,7 @@ class TriggerFlakeSwarmingTaskServicePipelineTest(
   app_module = pipeline_handlers._APP
 
   @mock.patch.object(acl, 'CanTriggerNewAnalysis', return_value=True)
-  @mock.patch.object(buildbot, 'GetStepLog', return_value={})
+  @mock.patch.object(build_util, 'GetWaterfallBuildStepLog', return_value={})
   @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=True)
   def testScheduleFlakeSwarmingTaskBotsAvailable(self, *_):
     master_name = 'm'
@@ -52,7 +51,7 @@ class TriggerFlakeSwarmingTaskServicePipelineTest(
       mocked_trigger_task.assert_called_with(queue_name=queue_name)
 
   @mock.patch.object(acl, 'CanTriggerNewAnalysis', return_value=True)
-  @mock.patch.object(buildbot, 'GetStepLog', return_value={})
+  @mock.patch.object(build_util, 'GetWaterfallBuildStepLog', return_value={})
   @mock.patch.object(swarming_util, 'BotsAvailableForTask', return_value=False)
   @mock.patch.object(
       swarming_util, 'GetETAToStartAnalysis', return_value=datetime(2017, 7, 5))

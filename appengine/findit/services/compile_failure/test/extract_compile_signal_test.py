@@ -10,7 +10,7 @@ from model.wf_step import WfStep
 from services import extract_signal
 from services.compile_failure import extract_compile_signal
 from services.parameters import CompileFailureInfo
-from waterfall import buildbot
+from waterfall import build_util
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
@@ -45,7 +45,8 @@ class ExtractCompileSignalTest(wf_testcase.WaterfallTestCase):
     analysis = WfAnalysis.Create(master_name, builder_name, build_number)
     analysis.put()
 
-  @mock.patch.object(buildbot, 'GetStepLog', return_value=_NINJA_OUTPUT_JSON)
+  @mock.patch.object(
+      build_util, 'GetWaterfallBuildStepLog', return_value=_NINJA_OUTPUT_JSON)
   def testGetCompileStepSignalFromNinjaJsonOutput(self, _):
     master_name = 'm'
     builder_name = 'b'

@@ -20,7 +20,7 @@ from services import try_job as try_job_service
 from services.compile_failure import compile_try_job
 from services.parameters import BuildKey
 from services.parameters import RunCompileTryJobParameters
-from waterfall import buildbot
+from waterfall import build_util
 from waterfall.test import wf_testcase
 
 
@@ -28,7 +28,7 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(compile_try_job, 'ScheduleCompileTryJob', return_value='1')
   @mock.patch.object(try_job_service, 'OnTryJobCompleted')
-  @mock.patch.object(buildbot, 'GetStepLog')
+  @mock.patch.object(build_util, 'GetWaterfallBuildStepLog')
   @mock.patch.object(buildbucket_client, 'GetTryJobs')
   def testGetTryJobsForCompileSuccessSerializedCallback(
       self, mock_buildbucket, mock_report, mock_result, _):
@@ -126,7 +126,7 @@ class RunCompileTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(try_job_service, '_UpdateTryJobEntity')
   @mock.patch.object(compile_try_job, 'ScheduleCompileTryJob', return_value='3')
   @mock.patch.object(try_job_service, 'OnTryJobCompleted')
-  @mock.patch.object(buildbot, 'GetStepLog')
+  @mock.patch.object(build_util, 'GetWaterfallBuildStepLog')
   @mock.patch.object(buildbucket_client, 'GetTryJobs')
   def testGetTryJobsForCompileMissingTryJobData(self, mock_buildbucket,
                                                 mock_report, mock_result, *_):

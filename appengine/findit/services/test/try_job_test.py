@@ -32,7 +32,7 @@ from services import try_job as try_job_service
 from services.parameters import BuildKey
 from services.parameters import CompileTryJobResult
 from services.parameters import RunCompileTryJobParameters
-from waterfall import swarming_util
+from waterfall import build_util
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
@@ -1156,7 +1156,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
       try_job_service, '_UpdateTryJobEntity', return_value=['result'])
-  @mock.patch.object(swarming_util, 'GetStepLog')
+  @mock.patch.object(build_util, 'GetTryJobStepLog')
   def testOnTryJobCompletedBuildbot(self, mock_report, *_):
     try_job_id = '1'
     params = {
@@ -1199,7 +1199,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
       try_job_service, '_UpdateTryJobEntity', return_value=['result'])
-  @mock.patch.object(swarming_util, 'GetStepLog', side_effect=TypeError)
+  @mock.patch.object(build_util, 'GetTryJobStepLog', side_effect=TypeError)
   @mock.patch.object(logging, 'exception')
   def testOnTryJobCompletedBuildbotNoReport(self, mock_log, *_):
     try_job_id = '1'
@@ -1237,7 +1237,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
       try_job_service, '_UpdateTryJobEntity', return_value=['result'])
-  @mock.patch.object(swarming_util, 'GetStepLog')
+  @mock.patch.object(build_util, 'GetTryJobStepLog')
   def testOnTryJobCompletedSwarmingbot(self, mock_report, *_):
     try_job_id = '1'
     params = {
@@ -1281,7 +1281,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
       try_job_service, '_UpdateTryJobEntity', return_value=['result'])
-  @mock.patch.object(swarming_util, 'GetStepLog', return_value=None)
+  @mock.patch.object(build_util, 'GetTryJobStepLog', return_value=None)
   @mock.patch.object(try_job_service, '_RecordCacheStats')
   def testOnTryJobCompletedSwarmingbotNoReport(self, mock_fn, *_):
     try_job_id = '1'
@@ -1317,7 +1317,7 @@ class TryJobTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(try_job_service, 'UpdateTryJobMetadata')
   @mock.patch.object(
       try_job_service, '_UpdateTryJobEntity', return_value=['result'])
-  @mock.patch.object(swarming_util, 'GetStepLog', side_effect=TypeError)
+  @mock.patch.object(build_util, 'GetTryJobStepLog', side_effect=TypeError)
   @mock.patch.object(logging, 'exception')
   def testOnTryJobCompletedSwarmingbotException(self, mock_log, *_):
     try_job_id = '1'

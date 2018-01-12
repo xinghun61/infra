@@ -377,64 +377,6 @@ class BuildBotTest(unittest.TestCase):
     self.assertEqual(438538,
                      buildbot._GetCommitPosition('refs/heads/master@{#438538}'))
 
-  @mock.patch.object(
-      logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
-  @mock.patch.object(
-      logdog_util, '_GetStreamForStep', return_value='log_stream')
-  @mock.patch.object(
-      logdog_util,
-      'GetStepLogLegacy',
-      return_value=json.dumps(wf_testcase.SAMPLE_STEP_METADATA))
-  def testGetStepMetadata(self, *_):
-    step_metadata = buildbot.GetStepLog(self.master_name, self.builder_name,
-                                        self.build_number, self.step_name,
-                                        self.http_client, 'step_metadata')
-    self.assertEqual(step_metadata, wf_testcase.SAMPLE_STEP_METADATA)
-
-  @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value=':')
-  def testMalformattedNinjaInfo(self, _):
-    step_metadata = buildbot.GetStepLog(
-        self.master_name, self.builder_name, self.build_number, self.step_name,
-        self.http_client, 'json.output[ninja_info]')
-    self.assertIsNone(step_metadata)
-
-  @mock.patch.object(
-      logdog_util, '_GetAnnotationsProtoForPath', return_value=None)
-  def testGetStepMetadataStepNone(self, _):
-    step_metadata = buildbot.GetStepLog(self.master_name, self.builder_name,
-                                        self.build_number, self.step_name,
-                                        self.http_client, 'step_metadata')
-    self.assertIsNone(step_metadata)
-
-  @mock.patch.object(
-      logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
-  @mock.patch.object(logdog_util, '_GetStreamForStep', return_value=None)
-  def testGetStepMetadataStreamNone(self, *_):
-    step_metadata = buildbot.GetStepLog(self.master_name, self.builder_name,
-                                        self.build_number, self.step_name,
-                                        self.http_client, 'step_metadata')
-    self.assertIsNone(step_metadata)
-
-  @mock.patch.object(
-      logdog_util, '_GetAnnotationsProtoForPath', return_value='step')
-  @mock.patch.object(logdog_util, '_GetStreamForStep', return_value='stream')
-  @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value='log1/nlog2')
-  def testGetStepLogStdio(self, *_):
-    self.assertEqual('log1/nlog2',
-                     buildbot.GetStepLog(self.master_name, self.builder_name,
-                                         self.build_number, self.step_name,
-                                         self.http_client))
-
-  @mock.patch.object(logdog_util, 'GetStepLogLegacy', return_value='log')
-  @mock.patch.object(logging, 'error')
-  def testGetStepLogNotJosonLoadable(self, mocked_log, _):
-    self.assertEqual('log',
-                     buildbot.GetStepLog(self.master_name, self.builder_name,
-                                         self.build_number, self.step_name,
-                                         self.http_client, 'step_metadata'))
-    mocked_log.assert_called_with(
-        'Failed to json load data for step_metadata. Data is: log.')
-
   def testValidateBuildUrl(self):
     swarm_url = 'https://luci-milo.appspot.com/swarming/task/3595be5002f4bc10'
     non_swarm_url = ('https://luci-milo.appspot.com/buildbot/chromium.linux'

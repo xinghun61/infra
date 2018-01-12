@@ -8,7 +8,7 @@ from gae_libs import appengine_util
 from gae_libs.pipelines import pipeline
 from gae_libs.pipeline_wrapper import BasePipeline
 from model.flake.flake_swarming_task import FlakeSwarmingTask
-from waterfall import buildbot
+from waterfall import build_util
 from waterfall import swarming_util
 from waterfall.process_flake_swarming_task_result_pipeline import (
     ProcessFlakeSwarmingTaskResultPipeline)
@@ -27,9 +27,9 @@ def ScheduleFlakeSwarmingTask(master_name, builder_name, build_number,
   pipeline_job.target = appengine_util.GetTargetNameForModule(
       constants.WATERFALL_BACKEND)
 
-  step_metadata = buildbot.GetStepLog(master_name, builder_name, build_number,
-                                      step_name,
-                                      FinditHttpClient(), 'step_metadata')
+  step_metadata = build_util.GetWaterfallBuildStepLog(
+      master_name, builder_name, build_number, step_name,
+      FinditHttpClient(), 'step_metadata')
 
   if swarming_util.BotsAvailableForTask(step_metadata):
     # Sufficient bots are avialable, trigger the swarming task immediately.

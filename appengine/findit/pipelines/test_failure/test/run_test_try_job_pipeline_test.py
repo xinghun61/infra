@@ -2,7 +2,6 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
-from datetime import datetime
 import json
 import logging
 import mock
@@ -21,7 +20,7 @@ from services import try_job as try_job_service
 from services.test_failure import test_try_job
 from services.parameters import BuildKey
 from services.parameters import RunTestTryJobParameters
-from waterfall import buildbot
+from waterfall import build_util
 from waterfall.test import wf_testcase
 
 
@@ -29,7 +28,7 @@ class RunTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
 
   @mock.patch.object(test_try_job, 'ScheduleTestTryJob', return_value='1')
   @mock.patch.object(try_job_service, 'OnTryJobCompleted')
-  @mock.patch.object(buildbot, 'GetStepLog')
+  @mock.patch.object(build_util, 'GetWaterfallBuildStepLog')
   @mock.patch.object(buildbucket_client, 'GetTryJobs')
   def testGetTryJobsForTestSuccessSerializedCallback(
       self, mock_buildbucket, mock_report, mock_result, _):
@@ -227,7 +226,7 @@ class RunTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(try_job_service, '_UpdateTryJobEntity')
   @mock.patch.object(test_try_job, 'ScheduleTestTryJob', return_value='3')
   @mock.patch.object(try_job_service, 'OnTryJobCompleted')
-  @mock.patch.object(buildbot, 'GetStepLog')
+  @mock.patch.object(build_util, 'GetWaterfallBuildStepLog')
   @mock.patch.object(buildbucket_client, 'GetTryJobs')
   def testGetTryJobsForTestMissingTryJobData(self, mock_buildbucket,
                                              mock_report, mock_result, *_):
@@ -473,7 +472,7 @@ class RunTestTryJobPipelineTest(wf_testcase.WaterfallTestCase):
   @mock.patch.object(try_job_service, '_UpdateTryJobEntity')
   @mock.patch.object(test_try_job, 'ScheduleTestTryJob', return_value='1')
   @mock.patch.object(try_job_service, 'OnTryJobCompleted')
-  @mock.patch.object(buildbot, 'GetStepLog')
+  @mock.patch.object(build_util, 'GetWaterfallBuildStepLog')
   @mock.patch.object(buildbucket_client, 'GetTryJobs')
   def testGetTryJobsForTestSuccessBackwardCompatibleCallback(
       self, mock_buildbucket, mock_report, mock_result, *_):

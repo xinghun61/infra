@@ -1,11 +1,15 @@
 # Copyright 2015 The Chromium Authors. All rights reserved.
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
+
+import json
 import logging
 
 from common import constants
 from common.findit_http_client import FinditHttpClient
+from common.waterfall import buildbucket_client
 from common.waterfall import failure_type
+from infra_api_clients import logdog_util
 from libs import time_util
 from model.wf_build import WfBuild
 from waterfall import buildbot
@@ -227,3 +231,55 @@ def FindValidBuildNumberForStepNearby(master_name,
       return build
 
   return None
+
+
+def _ReturnStepLog(data, log_type):
+  if not data:
+    return None
+
+  if log_type.lower() == 'json.output[ninja_info]':
+    # Check if data is malformatted.
+    try:
+      json.loads(data)
+    except ValueError:
+      logging.error('json.output[ninja_info] is malformatted')
+      return None
+
+  if log_type.lower() not in ['stdout', 'json.output[ninja_info]']:
+    try:
+      return json.loads(data) if data else None
+    except ValueError:
+      logging.error('Failed to json load data for %s. Data is: %s.' % (log_type,
+                                                                       data))
+
+  return data
+
+
+def GetTryJobStepLog(try_job_id, full_step_name, http_client,
+                     log_type='stdout'):
+  """Returns specific log of the specified step."""
+
+  error, build = buildbucket_client.GetTryJobs([try_job_id])[0]
+  if error:
+    logging.exception('Error retrieving buildbucket build id: %s' % try_job_id)
+    return None
+
+  # 1. Get log.
+  data = logdog_util.GetStepLogForBuild(build.response, full_step_name,
+                                        log_type, http_client)
+
+  return _ReturnStepLog(data, log_type)
+
+
+def GetWaterfallBuildStepLog(master_name,
+                             builder_name,
+                             build_number,
+                             full_step_name,
+                             http_client,
+                             log_type='stdout'):
+  """Returns sepcific log of the specified step."""
+
+  data = logdog_util.GetStepLogLegacy(master_name, builder_name, build_number,
+                                      full_step_name, log_type, http_client)
+
+  return _ReturnStepLog(data, log_type)

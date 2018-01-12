@@ -12,7 +12,7 @@ from model.wf_step import WfStep
 from services import extract_signal
 from services.parameters import TestFailureInfo
 from services.test_failure import extract_test_signal
-from waterfall import buildbot
+from waterfall import build_util
 from waterfall import swarming_util
 from waterfall.test import wf_testcase
 
@@ -64,7 +64,10 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
       swarming_util,
       'RetrieveShardedTestResultsFromIsolatedServer',
       return_value=None)
-  @mock.patch.object(buildbot, 'GetStepLog', return_value=_ABC_TEST_FAILURE_LOG)
+  @mock.patch.object(
+      build_util,
+      'GetWaterfallBuildStepLog',
+      return_value=_ABC_TEST_FAILURE_LOG)
   def testBailOutForUnsupportedStep(self, *_):
     master_name = 'm'
     builder_name = 'b'
@@ -93,7 +96,10 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
         TestFailureInfo.FromSerializable(failure_info), None)
     self.assertEqual(_FAILURE_SIGNALS, signals)
 
-  @mock.patch.object(buildbot, 'GetStepLog', return_value=_ABC_TEST_FAILURE_LOG)
+  @mock.patch.object(
+      build_util,
+      'GetWaterfallBuildStepLog',
+      return_value=_ABC_TEST_FAILURE_LOG)
   @mock.patch.object(swarming_util,
                      'RetrieveShardedTestResultsFromIsolatedServer')
   def testGetSignalFromStepLog(self, mock_gtest, _):
@@ -118,7 +124,10 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     self.assertIsNotNone(step.log_data)
     self.assertEqual(expected_files, signals['abc_test']['files'])
 
-  @mock.patch.object(buildbot, 'GetStepLog', return_value=_ABC_TEST_FAILURE_LOG)
+  @mock.patch.object(
+      build_util,
+      'GetWaterfallBuildStepLog',
+      return_value=_ABC_TEST_FAILURE_LOG)
   @mock.patch.object(swarming_util,
                      'RetrieveShardedTestResultsFromIsolatedServer')
   def testGetSignalFromStepLogFlaky(self, mock_gtest, _):
@@ -156,7 +165,9 @@ class ExtractTestSignalTest(wf_testcase.WaterfallTestCase):
     self.assertEqual({}, signals['abc_test']['files'])
 
   @mock.patch.object(
-      buildbot, 'GetStepLog', return_value='If used, test should fail!')
+      build_util,
+      'GetWaterfallBuildStepLog',
+      return_value='If used, test should fail!')
   def testWfStepStdioLogAlreadyDownloaded(self, _):
     master_name = 'm'
     builder_name = 'b'
