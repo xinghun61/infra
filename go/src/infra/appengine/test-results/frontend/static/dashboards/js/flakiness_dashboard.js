@@ -845,19 +845,23 @@ function htmlForTestTable(rowsHTML, opt_excludeHeaders)
     return html + '<tbody>' + rowsHTML + '</tbody></table>';
 }
 
-function appendHTML(html, id)
+function appendHTML(html, id, opt_append)
 {
     // InnerHTML to a div that's not in the document. This is
     // ~300ms faster in Safari 4 and Chrome 4 on mac.
     var div = document.createElement('div');
-    div.id = id;
     div.innerHTML = html;
 
     // Replace previous occupant of this ID if one exists.
     var oldDiv = document.getElementById(id);
-    if (oldDiv) {
+
+    if (oldDiv && opt_append) {
+      oldDiv.appendChild(div);
+    } else if (oldDiv) {
+      div.id = id;
       document.body.replaceChild(div, oldDiv);
     } else {
+      div.id = id;
       document.body.appendChild(div);
     }
     postHeightChangedMessage();
@@ -1381,8 +1385,12 @@ function generatePageForIndividualTests(tests)
 {
     if (g_history.dashboardSpecificState.showChrome)
         appendHTML(htmlForNavBar(), 'navbar');
+      var el = document.getElementById('individual-test');
+      if (el) {
+        el.parentElement.removeChild(el);
+      }
     performChunkedAction(function(test) {
-            appendHTML(htmlForIndividualTest(test), 'individual-test');
+            appendHTML(htmlForIndividualTest(test), 'individual-test', true);
         },
         appendExpectations,
         tests);
