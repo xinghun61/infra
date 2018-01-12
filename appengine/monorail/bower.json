@@ -1,0 +1,19 @@
+{
+  "name": "monorail",
+   "version": "1.0.0",
+  "moduleType": [
+    "es6"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "bower_components",
+    "test"
+  ],
+  "dependencies": {
+    "polymer": "Polymer/polymer#^2.0.0",
+    "webcomponentsjs": "webcomponents/webcomponentsjs#^1.0.1"
+  },
+   "resolutions": {
+    "webcomponentsjs": "^v1.0.0"
+  }
+}

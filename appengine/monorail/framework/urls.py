@@ -94,6 +94,7 @@ HOTLIST_NEW_NOTES_JSON = '/updatenote'
 USER_HOTLISTS_JSON = '/hosting/hotlists'
 
 # URLs of issue tracker project pages
+ISSUE_APPROVAL = '/issues/approval'
 ISSUE_LIST = '/issues/list'
 ISSUE_DETAIL = '/issues/detail'
 ISSUE_PEEK = '/issues/peek'  # not served, only used in issuepeek.py

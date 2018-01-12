@@ -28,6 +28,14 @@ handlers:
   static_files: static/database-maintenance.html
   upload: static/database-maintenance.html
 
+- url: /bower_components
+  static_dir: bower_components
+  secure: always
+
+- url: /elements
+  static_dir: elements
+  secure: always
+
 - url: /static
   static_dir: static
 

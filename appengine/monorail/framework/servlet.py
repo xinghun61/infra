@@ -606,6 +606,8 @@ class Servlet(webapp2.RequestHandler):
         'True': ezt.boolean(True),
         'False': ezt.boolean(False),
 
+        'dev_mode': ezt.boolean(settings.dev_mode),
+
         'site_name': settings.site_name,
         'show_search_metadata': ezt.boolean(False),
         'page_template': self._PAGE_TEMPLATE,

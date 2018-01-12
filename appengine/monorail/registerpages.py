@@ -77,6 +77,7 @@ from tracker import componentcreate
 from tracker import componentdetail
 from tracker import fieldcreate
 from tracker import fielddetail
+from tracker import issueapproval
 from tracker import issueupdatehotlists
 from tracker import issueadmin
 from tracker import issueadvsearch
@@ -216,6 +217,7 @@ class ServletRegistry(object):
         })
 
     self._SetupProjectServlets({
+        urls.ISSUE_APPROVAL: issueapproval.IssueApproval,
         urls.ISSUE_LIST: issuelist.IssueList,
         urls.ISSUE_LIST_CSV: issuelistcsv.IssueListCsv,
         urls.ISSUE_REINDEX: issuereindex.IssueReindex,

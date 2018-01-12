@@ -15,6 +15,9 @@ DEV_APPSERVER_FLAGS?=
 FRONTEND_MODULES?= default
 BACKEND_MODULES?= besearch
 
+VULCANIZE_PATH = ./node_modules/vulcanize/bin/vulcanize
+CRISPER_PATH = ./node_modules/crisper/bin/crisper
+
 default: help
 
 check:
@@ -37,17 +40,17 @@ coverage:
 	../../test.py test appengine/monorail --html-report ~/monorail-coverage
 
 # Commands for running locally using dev_appserver.
-serve:
+serve: deps
 	@echo "---[Starting SDK AppEngine Server]---"
 	$(GAE_PY) devserver -- $(DEV_APPSERVER_FLAGS)
 
-serve_email:
+serve_email: deps
 	@echo "---[Starting SDK AppEngine Server]---"
 	$(GAE_PY) devserver -- $(DEV_APPSERVER_FLAGS) --enable_sendmail=True
 
 # The _remote commands expose the app on 0.0.0.0, so that it is externally
 # accessible by hostname:port, rather than just localhost:port.
-serve_remote:
+serve_remote: deps
 	@echo "---[Starting SDK AppEngine Server]---"
 	$(GAE_PY) devserver -o -- $(DEV_APPSERVER_FLAGS)
 
@@ -57,21 +60,31 @@ serve_remote_email:
 
 run: serve
 
+deps:
+	bower install
+	npm install
+
+vulcanize: deps
+	$(VULCANIZE_PATH) elements/approval-page.html --inline-script | $(CRISPER_PATH) --html elements/approval-page.vulcanized.html --js elements/approval-page.vulcanized.js --only-split
+
+clean_vulcanized:
+	rm -f elements/approval-page.vulcanized.js elements/approval-page.vulcanized.html
+
 
 # AppEngine apps can be tested locally and in non-default versions upload to
 # the main app-id, but it is still sometimes useful to have a completely
 # separate app-id.  E.g., for testing inbound email, load testing, or using
 # throwaway databases.
-deploy_staging:
+deploy_staging: vulcanize
 	@echo "---[Staging $(STAGEID)]---"
 	$(GAE_PY) upload -A $(STAGEID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
-
+	make clean_vulcanized
 
 # This is our production server that users actually use.
-deploy_prod:
+deploy_prod: vulcanize
 	@echo "---[Deploying prod instance $(PRODID)]---"
 	$(GAE_PY) upload -A $(PRODID) $(FRONTEND_MODULES) $(BACKEND_MODULES)
-
+	make clean_vulcanized
 
 # Note that we do not provide a command-line way to make the newly-uploaded
 # version the default version. This is for two reasons: a) You should be using

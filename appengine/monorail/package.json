@@ -1,0 +1,15 @@
+{
+  "name": "monorail",
+  "version": "1.0.0",
+  "description": "polymer monorail skeleton",
+  "directories": {},
+  "dependencies": {
+    "vulcanize": "~1.14.8"
+  },
+  "devDependencies": {
+    "crisper": "~2.0.2"
+  },
+  "scripts": {},
+  "author": "",
+  "license": "ISC"
+}

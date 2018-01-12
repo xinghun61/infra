@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<title>Approval Issue</title>
+<meta name=viewport content="width=device-width, user-scalable=no">
+
+[if-any dev_mode]
+<link rel="import" href="/elements/approval-page.html?version=[app_version]" nonce="[nonce]">
+[else]
+<link rel="import" href="/elements/approval-page.vulcanized.html?version=[app_version]" nonce="[nonce]">
+<script src="/elements/approval-page.vulcanized.js?version=[app_version]" nonce="[nonce]"></script>
+[end]
+
+<approval-page></approval-page>
