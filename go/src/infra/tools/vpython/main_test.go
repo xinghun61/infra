@@ -174,7 +174,7 @@ func (tc *testCase) getDelegateCommand(c context.Context, root string, env envir
 		"-vpython-root", root,
 	}
 	if *vpythonDebug {
-		args = append(args, "-log-level", "debug")
+		args = append(args, "-vpython-log-level", "debug")
 	}
 	args = append(args, "-u", tc.script)
 
