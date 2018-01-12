@@ -2,7 +2,7 @@
 Use of this source code is governed by a BSD-style license that can be
 found in the LICENSE file. -->
 
-<script src="../cipd.js"></script>
+<link rel="import" href="cipd-mixin.html">
 
 <!-- Simple component with links to all levels of a path's hierarchy.
 
@@ -18,39 +18,55 @@ This creates text with links to the root, to infra, and to infra/auth. -->
       margin-right: 0.3ex;
     }
     </style>
-    <span id="breadcrumb"></span>
+    <span id="breadcrumb">
+      <template is="dom-repeat" items="[[_pathParts]]" as="part">
+        <a href="[[part.link]]">[[part.text]]</a>
+        <span class="sep">/</span>
+      </template>
+    </span>
   </template>
   <script>
-    Polymer({
-      is: "cipd-breadcrumb",
-      ready: function() {
-      },
-      properties: {
-        path: {
-          type: String,
-          observer: 'pathChanged'
+    'use strict';
+
+    class CipdBreadcrumb extends CipdMixin(Polymer.Element) {
+      static get is() {
+        return 'cipd-breadcrumb';
+      }
+
+      static get properties() {
+        return {
+          path: String,
+          _pathParts: {
+            type: Array,
+            computed: '_computePathParts(path)'
+          },
+        };
+      }
+
+      _computePathParts(path) {
+        if (path == '') {
+          return [];
         }
-      },
-      directoryLink: cipd.directoryLink,
-      suffix: cipd.suffix,
-      pathChanged: function() {
-        var parts = this.path.split('/');
-        if (this.path == '') {
-          parts = [];
-        }
+        var parts = path.split('/');
+
         var subParts = [];
-        var paths = ['<a href="{1}">{2}</a>'.assign(
-            this.directoryLink(''), '&lt;root>')];
+        var paths = [{
+          'link': this.directoryLink(''),
+          'text': '<root>',
+        }];
         var newPath;
         for (var i = 0; i < parts.length; i++) {
           subParts.push(parts[i]);
           newPath = subParts.join('/');
-          paths.push('<a href="{1}">{2}</a>'.assign(
-              this.directoryLink(newPath), parts[i]));
+          paths.push({
+            'link': this.directoryLink(newPath),
+            'text': parts[i],
+          });
         }
-        this.$.breadcrumb.innerHTML = paths.join(
-            '<span class="sep">/</span>');
+        return paths;
       }
-    });
+    }
+
+    customElements.define(CipdBreadcrumb.is, CipdBreadcrumb);
   </script>
 </dom-module>

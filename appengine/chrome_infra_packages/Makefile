@@ -23,13 +23,15 @@ build:
 devserver: clean
 	${APP_DIR}/tools/gae devserver
 
-deploy_staging:	build
-	${APP_DIR}/tools/gae upload -A chrome-infra-packages-dev
-	rm -f ${APP_DIR}/static/html/*-vulcanized.html
+deploy_staging:	build deploy_staging_run clean
 
-deploy_prod:	build
+deploy_staging_run:
+	${APP_DIR}/tools/gae upload -A chrome-infra-packages-dev
+
+deploy_prod: build deploy_prod_run clean
+
+deploy_prod_run:
 	${APP_DIR}/tools/gae upload -A chrome-infra-packages
-	rm -f ${APP_DIR}/static/html/*-vulcanized.html
 
 test:
 	${APP_DIR}/tools/run_tests.sh

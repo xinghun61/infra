@@ -7,7 +7,7 @@ found in the LICENSE file. -->
 <link rel="import" href="../bower_components/paper-progress/paper-progress.html">
 <link rel="import" href="cipd-breadcrumb.html">
 
-<script src="../cipd.js"></script>
+<link rel="import" href="cipd-mixin.html">
 
 <!-- Component for a directory view page. -->
 <dom-module id="cipd-dir-view" attributes="path">
@@ -62,25 +62,31 @@ found in the LICENSE file. -->
     <paper-progress hidden$="{{!loading}}" indeterminate="true"></paper-progress>
   </template>
   <script>
-    Polymer({
-      is: "cipd-dir-view",
-      properties: {
-        directories: Array,
-        packages: Array,
-        path: {
-          type: String,
-          observer: 'populatePage'
-        },
-        loading: Boolean,
-      },
-      suffix: cipd.suffix,
-      directoryLink: cipd.directoryLink,
-      packageLink: cipd.packageLink,
-      apiLoaded: function() {
+    'use strict';
+
+    class CipdDirView extends CipdMixin(Polymer.Element) {
+      static get is() {
+        return 'cipd-dir-view';
+      }
+
+      static get properties() {
+        return {
+          directories: Array,
+          packages: Array,
+          path: {
+            type: String,
+            observer: 'populatePage'
+          },
+          loading: Boolean,
+        };
+      }
+
+      apiLoaded() {
         console.log('API loaded.');
         this.populatePage();
-      },
-      populatePage: function() {
+      }
+
+      populatePage() {
         var self = this;
         self.loading = true;
 
@@ -102,6 +108,8 @@ found in the LICENSE file. -->
           self.loading = false;
         });
       }
-    });
+    }
+
+    customElements.define(CipdDirView.is, CipdDirView);
   </script>
 </dom-module>

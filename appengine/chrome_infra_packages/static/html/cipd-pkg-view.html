@@ -7,7 +7,7 @@ found in the LICENSE file. -->
 <link rel="import" href="../bower_components/paper-progress/paper-progress.html">
 <link rel="import" href="cipd-breadcrumb.html">
 
-<script src="../cipd.js"></script>
+<link rel="import" href="cipd-mixin.html">
 
 <!-- Component for a directory view page. -->
 <dom-module id="cipd-pkg-view" attributes="path">
@@ -54,26 +54,35 @@ found in the LICENSE file. -->
     <paper-progress hidden$="{{!loading}}" indeterminate="true"></paper-progress>
   </template>
   <script>
-    Polymer({
-      is: "cipd-pkg-view",
-      properties: {
-        path: {
-          type: String,
-          observer: 'populatePage',
-        },
-        forbidden: {
-          type: Boolean,
-          value: false
-        },
-        loading: {
-          type: Boolean,
-          value: true
-        }
-      },
-      apiLoaded: function() {
+    'use strict';
+
+    class CipdPkgView extends CipdMixin(Polymer.Element) {
+      static get is() {
+        return 'cipd-pkg-view';
+      }
+
+      static get properties() {
+        return {
+          path: {
+            type: String,
+            observer: 'populatePage',
+          },
+          forbidden: {
+            type: Boolean,
+            value: false
+          },
+          loading: {
+            type: Boolean,
+            value: true
+          }
+        };
+      }
+
+      apiLoaded() {
         this.populatePage();
-      },
-      populatePage: function() {
+      }
+
+      populatePage() {
         // TODO(estaab): Add support to CIPD server for accessing instance
         // information for packages.
         var self = this;
@@ -91,6 +100,8 @@ found in the LICENSE file. -->
               self.loading = false;
             });
       }
-    });
+    }
+
+    customElements.define(CipdPkgView.is, CipdPkgView);
   </script>
 </dom-module>
