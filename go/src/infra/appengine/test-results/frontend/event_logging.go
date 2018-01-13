@@ -8,8 +8,8 @@ import (
 	"golang.org/x/net/context"
 
 	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/common/bq"
 	"go.chromium.org/luci/common/errors"
-	"go.chromium.org/luci/common/eventupload"
 	"go.chromium.org/luci/common/logging"
 
 	"infra/appengine/test-results/model"
@@ -33,7 +33,7 @@ func sendEventsToBigQuery(c context.Context, tres []*gen.TestResultEvent) error 
 	if err != nil {
 		return err
 	}
-	up := eventupload.NewUploader(c, client, bqTestResultsDataset, bqTestResultsTable)
+	up := bq.NewUploader(c, client, bqTestResultsDataset, bqTestResultsTable)
 	up.SkipInvalidRows = true
 	up.IgnoreUnknownValues = true
 	return up.Put(c, tres)

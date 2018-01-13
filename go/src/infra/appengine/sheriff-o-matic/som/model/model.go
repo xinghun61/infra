@@ -23,9 +23,9 @@ import (
 
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
+	"go.chromium.org/luci/common/bq"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/data/stringset"
-	"go.chromium.org/luci/common/eventupload"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/server/auth"
 	"golang.org/x/net/context"
@@ -353,7 +353,7 @@ func writeAnnotationEvent(c context.Context, evt *gen.SOMAnnotationEvent) error 
 	if err != nil {
 		return err
 	}
-	up := eventupload.NewUploader(c, client, bqDatasetID, bqTableID)
+	up := bq.NewUploader(c, client, bqDatasetID, bqTableID)
 	up.SkipInvalidRows = true
 	up.IgnoreUnknownValues = true
 

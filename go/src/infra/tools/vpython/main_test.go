@@ -112,7 +112,9 @@ func (tdc *testDelegateCommand) Wait(t *testing.T) error {
 }
 
 func (tdc *testDelegateCommand) CheckOutput(t *testing.T) bool {
-	matches := bytes.Equal(tdc.output.Bytes(), tdc.tc.output)
+	matches := bytes.Equal(
+		bytes.Replace(tdc.output.Bytes(), []byte("\r\n"), []byte("\n"), -1),
+		tdc.tc.output)
 	if !matches {
 		t.Errorf("Outputs do not match. Expected:\n%s", tdc.tc.output)
 	}

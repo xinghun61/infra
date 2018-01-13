@@ -17,9 +17,9 @@ import (
 	"infra/tools/kitchen/build"
 
 	cipdVersion "go.chromium.org/luci/cipd/version"
+	"go.chromium.org/luci/common/bq"
 	"go.chromium.org/luci/common/clock"
 	"go.chromium.org/luci/common/errors"
-	"go.chromium.org/luci/common/eventupload"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/proto/google"
 	"go.chromium.org/luci/common/proto/milo"
@@ -40,8 +40,8 @@ const (
 // monitoringEventSender is an interface for a concurrency-safe object that can
 // accept event structs.
 //
-// It is designed to match an eventupload.Uploader. However, we use an interface
-// here so we can capture output events for testing.
+// It is designed to match an bq.Uploader. However, we use an interface here so
+// we can capture output events for testing.
 type monitoringEventSender interface {
 	Put(context.Context, string, string, interface{}) error
 }
@@ -52,7 +52,7 @@ type bigQueryMonitoringEventSender struct {
 }
 
 func (es *bigQueryMonitoringEventSender) Put(ctx context.Context, datasetID, tableID string, event interface{}) error {
-	up := eventupload.NewUploader(ctx, es.client, datasetID, tableID)
+	up := bq.NewUploader(ctx, es.client, datasetID, tableID)
 	up.SkipInvalidRows = true
 	up.IgnoreUnknownValues = true
 	if err := up.Put(ctx, event); err != nil {

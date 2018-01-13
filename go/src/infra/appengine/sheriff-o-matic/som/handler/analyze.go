@@ -23,7 +23,7 @@ import (
 	"go.chromium.org/gae/service/datastore"
 	"go.chromium.org/gae/service/info"
 	tq "go.chromium.org/gae/service/taskqueue"
-	"go.chromium.org/luci/common/eventupload"
+	"go.chromium.org/luci/common/bq"
 	"go.chromium.org/luci/common/logging"
 	"go.chromium.org/luci/common/sync/parallel"
 	"go.chromium.org/luci/common/tsmon/field"
@@ -428,7 +428,7 @@ func putAlertsBigQuery(c context.Context, tree string, alertsSummary *messages.A
 	if err != nil {
 		return err
 	}
-	up := eventupload.NewUploader(c, client, bqDatasetID, bqTableID)
+	up := bq.NewUploader(c, client, bqDatasetID, bqTableID)
 	up.SkipInvalidRows = true
 	up.IgnoreUnknownValues = true
 
