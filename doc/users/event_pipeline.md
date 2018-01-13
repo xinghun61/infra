@@ -85,14 +85,13 @@ internal.
 ### TLDR
 
 Go: use
-[eventupload](https://chromium.googlesource.com/infra/luci/luci-go/+/master/common/eventupload/)
-[example CL](https://chromium-review.googlesource.com/c/infra/infra/+/719962)
-[docs](https://godoc.org/go.chromium.org/luci/common/eventupload)
+[go.chromium.org/luci/common/bq](https://godoc.org/go.chromium.org/luci/common/bq),
+[example CL](https://chromium-review.googlesource.com/c/infra/infra/+/719962).
 
 Python: use
-[infra.libs.bigquery](https://cs.chromium.org/chromium/infra/infra/libs/bigquery/helper.py)
-[example CL](https://chrome-internal-review.googlesource.com/c/infra/infra_internal/+/445955)
-[docs](https://chromium.googlesource.com/infra/infra/+/master/infra/libs/bigquery/README.md)
+[infra.libs.bigquery](https://cs.chromium.org/chromium/infra/infra/libs/bigquery/helper.py),
+[example CL](https://chrome-internal-review.googlesource.com/c/infra/infra_internal/+/445955),
+[docs](https://chromium.googlesource.com/infra/infra/+/master/infra/libs/bigquery/README.md).
 
 
 ### Options
@@ -105,38 +104,41 @@ they have some rough edges and failure modes that our chrome infra libs address
 for you._
 
 If you don’t need transactional integrity, and prefer a simpler configuration,
-use the client library in [infra/libs/eventupload](https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/libs/eventupload).  This should be your default
-choice if you’re just starting out.
+use [bq.Uploader](https://godoc.org/go.chromium.org/luci/common/bq#Uploader)
+This should be your default choice if you’re just starting out.
 
 If you need ~8ms latency on inserts, or transactional integrity with datastore
 operations, use
-[bqlog](https://cs.chromium.org/chromium/infra/go/src/go.chromium.org/luci/tokenserver/appengine/impl/utils/bqlog/bqlog.go) [TODO: update this link if/when bqlog moves out of
-tokenserver into a shared location].
+[bqlog](https://godoc.org/go.chromium.org/luci/tokenserver/appengine/impl/utils/bqlog)
+[TODO: update this link if/when bqlog moves out of tokenserver into a shared
+location].
 
-Design trade-offs for using infra/libs/eventupload instead of bqlog: lower
+Design trade-offs for using bq instead of bqlog: lower
 accuracy and precision. Some events may be duplicated in logs (say, if an
 operation that logs events has to be retried due to datastore contention).
 Intermittent failures in other supporting infrastructure may also cause events
 to be lost.
 
-Design trade-offs for using bqlog instead of eventupload: You will have to
+Design trade-offs for using bqlog instead of bq: You will have to
 enable task queues in your app if you haven’t already, and add a new cron task
 to your configuration. You will also not be able to use the bqschemaupdater
 (described below) tool to manage your logging schema code generation.
 
-### From Go: eventupload
+### From Go: bq package
 
-[eventupload](https://godoc.org/go.chromium.org/luci/common/eventupload)
+Package [bq](https://godoc.org/go.chromium.org/luci/common/bq)
 takes care of some boilerplate and makes it easy to add monitoring for uploads.
 It also takes care of adding insert IDs, which BigQuery uses to deduplicate
-rows. If you are not using `eventuploader`, check out
-[insertid](https://chromium.googlesource.com/infra/luci/luci-go/+/master/common/eventupload/insertid.go).
+rows. If you are not using
+[bq.Uploader](https://godoc.org/go.chromium.org/luci/common/bq#Uploader),
+check out
+[bq.InsertIDGenerator](https://godoc.org/go.chromium.org/luci/common/bq#InsertIDGenerator).
 
-With `eventupload`, you can construct a synchronous `Uploader` or asynchronous
+With `bq`, you can construct a synchronous `Uploader` or asynchronous
 `BatchUploader` depending on your needs.
 
 [kitchen](../../go/src/infra/tools/kitchen/monitoring.go) is an example of a
-tool that uses eventuploader.
+tool that uses bq.
 
 ### From Python: infra/libs/bigquery
 
