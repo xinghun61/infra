@@ -168,7 +168,11 @@
       "GOMA_FALLBACK": "false",
       "GOMA_USE_LOCAL": "false"
     },
-    "name": "link"
+    "name": "link",
+    "~followup_annotations": [
+      "step returned non-zero exit code: 1",
+      "@@@STEP_FAILURE@@@"
+    ]
   },
   {
     "cmd": [],
@@ -260,7 +264,7 @@
       "--json-status",
       "[TMP_BASE]/goma_jsonstatus.json",
       "--ninja-log-exit-status",
-      "0",
+      "1",
       "--buildbot-buildername",
       "test_builder",
       "--buildbot-mastername",
@@ -298,14 +302,9 @@
     ]
   },
   {
-    "cmd": [
-      "[TMP_BASE]/compiled_binary"
-    ],
-    "name": "run"
-  },
-  {
     "name": "$result",
+    "reason": "Step('link') failed with return_code 1",
     "recipe_result": null,
-    "status_code": 0
+    "status_code": 1
   }
 ]

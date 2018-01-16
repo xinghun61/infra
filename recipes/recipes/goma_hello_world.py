@@ -61,6 +61,7 @@ def RunSteps(api):
 
   gomacc = api.goma.goma_dir.join('gomacc')
   out = root_dir.join('compiled_binary')
+  build_exit_status = None
 
   try:
     # We want goma proxy to actually hit the backends, so disable fallback to
@@ -78,8 +79,12 @@ def RunSteps(api):
             [gomacc, 'g++', '-c', root_dir.join(name), '-o', obj])
         objs.append(obj)
       api.step('link', [gomacc, 'g++', '-o', out] + objs)
+      build_exit_status = 0
+  except api.step.StepFailure as e:
+    build_exit_status = e.retcode
+    raise e
   finally:
-    api.goma.stop()
+    api.goma.stop(ninja_log_exit_status=build_exit_status)
 
   api.step('run', [out])
 
@@ -91,3 +96,11 @@ def GenTests(api):
       api.properties.generic(
           buildername='test_builder',
           mastername='test_master'))
+
+  yield (
+      api.test('linux_fail') +
+      api.platform.name('linux') +
+      api.properties.generic(
+          buildername='test_builder',
+          mastername='test_master') +
+      api.step_data('link', retcode=1))
