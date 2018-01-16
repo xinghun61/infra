@@ -58,7 +58,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 			Analyzers:         analyzers,
 		}
 		if err := ds.Put(c, run); err != nil {
-			return fmt.Errorf("failed to store WorkflowRun entity (run ID: %d): %v", run.ID, err)
+			return fmt.Errorf("failed to store WorkflowRun entity (run ID: %d): %v", req.RunId, err)
 		}
 		runKey := ds.KeyForObj(c, run)
 		ops := []func() error{
