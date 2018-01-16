@@ -24,9 +24,9 @@ from services.parameters import IdentifyTestTryJobCulpritParameters
 from services.parameters import RunTestTryJobParameters
 from services.parameters import TestTryJobAllStepsResult
 from services.parameters import TestTryJobResult
+from services.test_failure import test_failure_analysis
 from services.test_failure import test_try_job
 from waterfall import suspected_cl_util
-from waterfall import swarming_util
 from waterfall import waterfall_config
 from waterfall.test import wf_testcase
 
@@ -1248,7 +1248,10 @@ class TestTryJobTest(wf_testcase.WaterfallTestCase):
     self.assertEqual(([], False),
                      test_try_job._GetUpdatedAnalysisResult(None, {}))
 
-  @mock.patch.object(swarming_util, 'UpdateAnalysisResult', return_value=True)
+  @mock.patch.object(
+      test_failure_analysis,
+      'UpdateAnalysisResultWithFlakeInfo',
+      return_value=True)
   def testGetUpdatedAnalysisResult(self, _):
     result = {'failures': [{'step_name': 'step1'}]}
 

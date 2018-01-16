@@ -9,7 +9,7 @@ from google.appengine.ext import ndb
 from gae_libs.pipeline_wrapper import BasePipeline
 from model import result_status
 from model.wf_analysis import WfAnalysis
-from waterfall import swarming_util
+from services.test_failure import test_failure_analysis
 
 
 def _GetFlakyTests(task_results):
@@ -32,7 +32,8 @@ def _UpdateAnalysisWithFlakeInfo(master_name, builder_name, build_number,
   if not analysis or not analysis.result:
     return False
 
-  all_flaked = swarming_util.UpdateAnalysisResult(analysis.result, flaky_tests)
+  all_flaked = test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
+      analysis.result, flaky_tests)
   if all_flaked:
     analysis.result_status = result_status.FLAKY
   analysis.put()

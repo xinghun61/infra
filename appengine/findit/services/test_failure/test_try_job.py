@@ -30,9 +30,9 @@ from services import swarmbot_util
 from services import try_job as try_job_service
 from services.parameters import RunTestTryJobParameters
 from services.test_failure import ci_test_failure
+from services.test_failure import test_failure_analysis
 from waterfall import build_util
 from waterfall import suspected_cl_util
-from waterfall import swarming_util
 from waterfall import waterfall_config
 
 
@@ -346,8 +346,8 @@ def _GetUpdatedAnalysisResult(analysis, flaky_failures):
     return [], False
 
   analysis_result = copy.deepcopy(analysis.result)
-  all_flaky = swarming_util.UpdateAnalysisResult(analysis_result,
-                                                 flaky_failures)
+  all_flaky = test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
+      analysis_result, flaky_failures)
 
   return analysis_result, all_flaky
 

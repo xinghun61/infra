@@ -458,3 +458,153 @@ class TestFailureAnalysisTest(wf_testcase.WaterfallTestCase):
     }
     self.assertEqual(
         TestHeuristicAnalysisOutput.FromSerializable(expected_result), result)
+
+  def testUpdateAnalysisResult(self):
+    analysis_result = {
+        'failures': [
+            {
+                'step_name': 'another_step1',
+                'flaky': True
+            },
+            {
+                'tests': [
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test1'
+                    },
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test2'
+                    },
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test3'
+                    },
+                ],
+                'step_name':
+                    'browser_tests on platform'
+            },
+            {
+                'step_name': 'another_step2'
+            },
+        ]
+    }
+
+    flaky_failures = {
+        'browser_tests on platform': ['TestSuite1.test1', 'TestSuite1.test2']
+    }
+
+    all_flaked = test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
+        analysis_result, flaky_failures)
+
+    expected_result = {
+        'failures': [
+            {
+                'step_name': 'another_step1',
+                'flaky': True
+            },
+            {
+                'tests': [
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test1',
+                        'flaky': True
+                    },
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test2',
+                        'flaky': True
+                    },
+                    {
+                        'last_pass': 123,
+                        'first_failure': 123,
+                        'suspected_cls': [],
+                        'test_name': 'TestSuite1.test3'
+                    },
+                ],
+                'step_name':
+                    'browser_tests on platform',
+                'flaky':
+                    False
+            },
+            {
+                'step_name': 'another_step2'
+            },
+        ]
+    }
+
+    self.assertFalse(all_flaked)
+    self.assertEqual(expected_result, analysis_result)
+
+  def testUpdateAnalysisResultAllFlaky(self):
+    analysis_result = {
+        'failures': [{
+            'tests': [{
+                'last_pass': 123,
+                'first_failure': 123,
+                'suspected_cls': [],
+                'test_name': 'TestSuite1.test1'
+            }, {
+                'last_pass': 123,
+                'first_failure': 123,
+                'suspected_cls': [],
+                'test_name': 'TestSuite1.test2'
+            }],
+            'step_name':
+                'browser_tests on platform'
+        }]
+    }
+
+    flaky_failures = {
+        'browser_tests on platform': ['TestSuite1.test1', 'TestSuite1.test2']
+    }
+
+    all_flaked = test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
+        analysis_result, flaky_failures)
+
+    expected_result = {
+        'failures': [{
+            'tests': [{
+                'last_pass': 123,
+                'first_failure': 123,
+                'suspected_cls': [],
+                'test_name': 'TestSuite1.test1',
+                'flaky': True
+            }, {
+                'last_pass': 123,
+                'first_failure': 123,
+                'suspected_cls': [],
+                'test_name': 'TestSuite1.test2',
+                'flaky': True
+            }],
+            'step_name':
+                'browser_tests on platform',
+            'flaky':
+                True
+        }]
+    }
+
+    self.assertTrue(all_flaked)
+    self.assertEqual(expected_result, analysis_result)
+
+  def testUpdateAnalysisResultOnlyStep(self):
+    analysis_result = {'failures': [{'step_name': 'another_step1'}]}
+
+    flaky_failures = {
+        'browser_tests on platform': ['TestSuite1.test1', 'TestSuite1.test2']
+    }
+
+    all_flaked = test_failure_analysis.UpdateAnalysisResultWithFlakeInfo(
+        analysis_result, flaky_failures)
+
+    self.assertFalse(all_flaked)

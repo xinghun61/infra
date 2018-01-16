@@ -223,3 +223,28 @@ def HeuristicAnalysisForTest(heuristic_params):
   return TestHeuristicAnalysisOutput(
       failure_info=failure_info,
       heuristic_result=TestHeuristicResult.FromSerializable(heuristic_result))
+
+
+def UpdateAnalysisResultWithFlakeInfo(analysis_result, flaky_failures):
+  """Updates WfAnalysis' result and result_analysis on flaky failures.
+
+  If found flaky tests from swarming reruns, or flaky tests or compile from
+  try jobs, updates WfAnalysis.
+  """
+  all_flaked = True
+  for failure in analysis_result.get('failures', {}):
+    step_name = failure.get('step_name')
+    if step_name in flaky_failures:
+      failure['flaky'] = True
+      for test in failure.get('tests', []):
+        if test.get('test_name') in flaky_failures[step_name]:
+          test['flaky'] = True
+        else:
+          all_flaked = False
+          failure['flaky'] = False
+    else:
+      # Checks all other steps to see if all failed steps/ tests are flaky.
+      if not failure.get('flaky'):
+        all_flaked = False
+
+  return all_flaked
