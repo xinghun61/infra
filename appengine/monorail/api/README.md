@@ -15,5 +15,6 @@ In order to regenerate the python server and client stubs from the `.proto`
 files, follow these steps:
 
 ```bash
-$ PATH=../components/prpc:$PATH protoc --python_out=. --prpc-python_out=. *.proto
+$ PATH=../components/../tools:$PATH ../../../cipd/protoc \
+  --python_out=. --prpc-python_out=. *.proto
 ```
