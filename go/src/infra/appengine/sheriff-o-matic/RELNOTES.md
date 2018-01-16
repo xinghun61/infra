@@ -1,3 +1,23 @@
+# Release Notes sheriff-o-matic 2018-01-16
+
+- 2 commits, 2 bugs affected since 6dcee01 (2018-01-09T22:17:27Z)
+- 2 Authors:
+  - iannucci@chromium.org
+  - katthomas@google.com
+
+## Changes in this release
+
+- [Roll luci-go [9 commits]](https://chromium-review.googlesource.com/866210) (iannucci@chromium.org)
+- [[eventupload] complete move to luci](https://chromium-review.googlesource.com/862253) (katthomas@google.com)
+
+
+## Bugs updated, by author
+- iannucci@chromium.org:
+  -  [https://crbug.com/800662](https://crbug.com/800662)
+
+- katthomas@google.com:
+  -  [https://crbug.com/798430](https://crbug.com/798430)
+
 # Release Notes sheriff-o-matic 2018-01-09
 
 - 3 commits, 2 bugs affected since 05c64a3 (2018-01-04T17:09:23Z)
