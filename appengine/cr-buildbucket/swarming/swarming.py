@@ -481,9 +481,10 @@ def _create_task_def_async(
 
   swarming_tags = task.setdefault('tags', [])
   _extend_unique(swarming_tags, [
-    'buildbucket_hostname:%s' % app_identity.get_default_version_hostname(),
     'buildbucket_bucket:%s' % build.bucket,
     'buildbucket_build_id:%s' % build.key.id(),
+    'buildbucket_hostname:%s' % app_identity.get_default_version_hostname(),
+    'buildbucket_template_canary:%s' % ('1' if build.canary else '0'),
     'buildbucket_template_revision:%s' % task_template_rev,
   ])
   if is_recipe:  # pragma: no branch

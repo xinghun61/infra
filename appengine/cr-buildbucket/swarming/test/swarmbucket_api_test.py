@@ -158,6 +158,7 @@ class SwarmbucketApiTest(testing.EndpointsTestCase):
         'buildbucket_bucket:luci.chromium.try',
         'buildbucket_build_id:1',
         'buildbucket_hostname:cr-buildbucket.appspot.com',
+        'buildbucket_template_canary:0',
         'buildbucket_template_revision:rev',
         'builder:linux_chromium_rel_ng',
         'recipe_name:presubmit',
