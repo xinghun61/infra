@@ -9,6 +9,7 @@ from analysis import callstack_detectors
 from analysis.callstack_filters import FilterFramesAfterBlinkGeneratedCode
 from analysis.callstack_filters import (
     FilterFramesBeforeAndInBetweenSignatureParts)
+from analysis.callstack_filters import FilterJavaCallStackIfNotCrashStack
 from analysis.callstack_filters import FilterJavaJreSdkFrames
 from analysis.callstack_filters import FilterV8FramesForV8APIBindingCode
 from analysis.callstack_filters import FilterV8FramesIfV8NotInTopFrames
@@ -92,6 +93,7 @@ class ClusterfuzzParser(object):
             crash_address=None, root_path=None, root_repo_url=None):
     """Parse clusterfuzz stacktrace string into Stacktrace instance."""
     filters = [FilterFramesBeforeAndInBetweenSignatureParts(signature),
+               FilterJavaCallStackIfNotCrashStack(),
                FilterJavaJreSdkFrames(),
                KeepV8FramesIfV8GeneratedJITCrash(),
                FilterV8FramesForV8APIBindingCode(crash_address),

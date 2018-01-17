@@ -2,6 +2,8 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+import copy
+
 from analysis import callstack_filters
 from analysis.analysis_testcase import AnalysisTestCase
 from analysis.stacktrace import StackFrame
@@ -462,4 +464,58 @@ class FilterFramesBeforeAndInBetweenSignaturePartsTest(AnalysisTestCase):
     self._VerifyTwoCallStacksEqual(
         callstack_filters.FilterFramesBeforeAndInBetweenSignatureParts(
             'b.cc\nd.cc')(stack_buffer),
+        expected_stack_buffer)
+
+
+class FilterJavaCallStackIfNotCrashStackTest(AnalysisTestCase):
+  """Tests ``FilterJavaCallStackIfNotCrashStackTest`` filter."""
+
+  def testFilterJavaCallStackIfNotCrashStack(self):
+    """Tests filtering the java callstack if it's not the crash stack."""
+    frame_list = [
+        StackFrame(
+            0, 'android', 'func0', 'a.java', 'a.java', [1]),
+        StackFrame(
+            1, 'android', 'func1', 'b.java', 'b.java', [1]),
+    ]
+
+    stack_buffer = CallStackBuffer(frame_list=frame_list,
+                                   language_type=LanguageType.JAVA)
+    expected_stack_buffer = CallStackBuffer(frame_list=[],
+                                            language_type=LanguageType.JAVA)
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.FilterJavaCallStackIfNotCrashStack()(stack_buffer),
+        expected_stack_buffer)
+
+  def testDoNotFilterJavaCallStackIfCrashStack(self):
+    """Tests do not filtering the java callstack if it's the crash stack."""
+    frame_list = [
+        StackFrame(
+            0, 'android', 'func0', 'a.java', 'a.java', [1]),
+        StackFrame(
+            1, 'android', 'func1', 'b.java', 'b.java', [1]),
+    ]
+
+    stack_buffer = CallStackBuffer(frame_list=frame_list,
+                                   language_type=LanguageType.JAVA,
+                                   metadata={'is_signature_stack': True})
+    expected_stack_buffer = copy.deepcopy(stack_buffer)
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.FilterJavaCallStackIfNotCrashStack()(stack_buffer),
+        expected_stack_buffer)
+
+  def testDoNotFilterNonJavaCallStack(self):
+    """Tests do not filtering non java callstack."""
+    frame_list = [
+        StackFrame(
+            0, 'src', 'func0', 'a.cc', 'a.cc', [1]),
+        StackFrame(
+            1, 'src', 'func1', 'b.cc', 'b.cc', [1]),
+    ]
+
+    stack_buffer = CallStackBuffer(frame_list=frame_list,
+                                   language_type=LanguageType.CPP)
+    expected_stack_buffer = copy.deepcopy(stack_buffer)
+    self._VerifyTwoCallStacksEqual(
+        callstack_filters.FilterJavaCallStackIfNotCrashStack()(stack_buffer),
         expected_stack_buffer)

@@ -296,3 +296,14 @@ class FilterFramesBeforeAndInBetweenSignatureParts(CallStackFilter):
       stack_buffer.metadata['is_signature_stack'] = True
 
     return stack_buffer
+
+
+class FilterJavaCallStackIfNotCrashStack(CallStackFilter):
+  """Filters the stack if it is a Java stack and not the crash stack."""
+
+  def __call__(self, stack_buffer):
+    if (stack_buffer.language_type == LanguageType.JAVA and
+        not stack_buffer.metadata.get('is_signature_stack')):
+      stack_buffer.frames = []
+
+    return stack_buffer
