@@ -12,3 +12,5 @@ htmlcov
 .DS_Store
 workspace.xml
 new_static/components/*\.vulcanized.html
+bower_components
+node_modules
