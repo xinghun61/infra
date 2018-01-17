@@ -908,6 +908,7 @@ SPECS = {s.spec.tag: s for s in (
   Universal('selenium', '3.4.1'),
   Universal('setuptools', '34.3.2'),
   Universal('six', '1.10.0'),
+  UniversalSource('tlslite', '0.4.9'),
   Universal('uritemplate', '3.0.0'),
   Universal('urllib3', '1.22'),
 
