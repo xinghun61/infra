@@ -1,0 +1,12 @@
+package: infra/machine-db/crimson/${platform}
+description: Machine Database Crimson client.
+builders:
+  - infra-continuous-mac-10.13-64
+  - infra-continuous-trusty-64
+  - infra-continuous-win-64
+go_packages:
+  - go.chromium.org/luci/machine-db/client/cmd/crimson
+root: ../../go/bin
+data:
+  - file: crimson${exe_suffix}
+  - version_file: .versions/crimson${exe_suffix}.cipd_version
