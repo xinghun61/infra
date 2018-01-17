@@ -5,3 +5,4 @@
 from monorail_api.issue_tracker_api import IssueTrackerAPI
 from monorail_api.issue import Issue
 from monorail_api.comment import Comment
+from monorail_api.customized_field import CustomizedField

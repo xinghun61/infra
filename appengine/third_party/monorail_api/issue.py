@@ -7,9 +7,12 @@
 import copy
 import re
 from monorail_api.change_tracking_list import ChangeTrackingList
+from monorail_api.customized_field import CustomizedField
+
 from monorail_api.utils import parseDateTime
 
-_LIST_FIELDS = ['blocked_on', 'blocking', 'labels', 'components', 'cc']
+_LIST_FIELDS = ['blocked_on', 'blocking', 'cc',
+                'components', 'field_values', 'labels']
 
 class Issue(object):
   def __init__(self, issue_entry):
@@ -40,6 +43,9 @@ class Issue(object):
     self.components = ChangeTrackingList(issue_entry.get('components', []))
     self.cc = ChangeTrackingList([e['name'] for e in issue_entry.get('cc', [])])
     self.project_id = issue_entry.get('projectId')
+    self.field_values = ChangeTrackingList(
+        [CustomizedField.ConvertFromDict(field)
+         for field in issue_entry.get('fieldValues', [])])
 
     self.setClean()
 

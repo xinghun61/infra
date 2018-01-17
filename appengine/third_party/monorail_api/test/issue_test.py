@@ -10,6 +10,7 @@ import monorail_api
 
 class IssueTestCase(unittest.TestCase):
   def test_creates_issue(self):
+    field = CustomizedField('name', 'value')
     issue = monorail_api.Issue({
       'id': '123',
       'summary': 'TestSummary',
@@ -28,6 +29,7 @@ class IssueTestCase(unittest.TestCase):
       'mergedInto': {'issueId': '456'},
       'blockedOn': [{'issueId': '788'}],
       'blocking': [{'issueId': '789'}],
+      'fieldValues': [field]
     })
 
     self.assertEquals(issue.id, '123')
@@ -50,6 +52,7 @@ class IssueTestCase(unittest.TestCase):
     self.assertEquals(issue.labels, ['My-Label-1', 'My-Label-2'])
     self.assertEquals(issue.components, ['Component-1', 'Component-2'])
     self.assertEquals(issue.cc, ['test2@example.com', 'test3@example.com'])
+    self.assertEqual(issue.field_values, [field])
     self.assertFalse(issue.dirty)
 
   def test_handles_dirty_status_and_list_of_changes_correctly(self):

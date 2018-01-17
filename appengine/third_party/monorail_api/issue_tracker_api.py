@@ -8,6 +8,7 @@ import httplib2
 from endpoints_client import endpoints
 from monorail_api.issue import Issue
 from monorail_api.comment import Comment
+from monorail_api.customized_field import CustomizedField
 
 DISCOVERY_URL = ('https://monorail%s.appspot.com/_ah/api/discovery/v1/apis/'
                  '{api}/{apiVersion}/rest')
@@ -44,6 +45,10 @@ class IssueTrackerAPI(object):
       body['components'] = issue.components
     if issue.cc:
       body['cc'] = [{'name': user} for user in issue.cc]
+    if issue.field_values:
+      body['fieldValues'] = [field.to_dict() for
+                             field in issue.field_values]
+
     request = self.client.issues().insert(
         projectId=self.project_name, sendEmail=send_email, body=body)
     tmp = endpoints.retry_request(request)
@@ -74,6 +79,15 @@ class IssueTrackerAPI(object):
     if issue.cc.isChanged():
       updates['cc'] = list(issue.cc.added)
       updates['cc'].extend('-%s' % cc for cc in issue.cc.removed)
+
+    if issue.field_values.isChanged():
+      updates['fieldValues'] = [value.to_dict() for
+                                value in issue.field_values.added]
+      removed = [value for value in issue.field_values.removed]
+      for value in removed:  # Change the operator for removed elements.
+        value.operator = CustomizedField.OPERATOR_REMOVE
+      removed_json = [value.to_dict() for value in removed]
+      updates['fieldValues'].extend(removed_json)
 
     body = {'id': issue.id, 'updates': updates}
 

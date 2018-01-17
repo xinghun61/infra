@@ -7,6 +7,7 @@ import mock
 import unittest
 
 import monorail_api
+from monorail_api.customized_field import CustomizedField
 
 
 class IssueTrackerAPITestCase(unittest.TestCase):
@@ -52,6 +53,7 @@ class IssueTrackerAPITestCase(unittest.TestCase):
             }, {
                 'name': 'test3@example.com'
             }],
+            'fieldValues': [monorail_api.CustomizedField('name', 'value')]
         }))
     self.assertEquals(issue.id, '123')
     self.assertEquals(insert_method.call_count, 1)
@@ -71,6 +73,12 @@ class IssueTrackerAPITestCase(unittest.TestCase):
         }, {
             'name': 'test3@example.com'
         }],
+        'field_values': [{
+          'operator': CustomizedField.OPERATOR_ADD,
+          'fieldName': 'name',
+          'derived': False,
+          'fieldValue': 'value'
+        }]
     })
 
   def test_create_issue_clears_dirty_flag_and_does_not_send_email(self):
@@ -97,7 +105,8 @@ class IssueTrackerAPITestCase(unittest.TestCase):
     issue = monorail_api.Issue({
         'id': '123',
         'summary': 'TestSummary',
-        'labels': ['Label-Y']
+        'labels': ['Label-Y'],
+        'fieldValues': [monorail_api.CustomizedField('name', 'value')]
     })
     issue.summary = 'NewSummary'
     issue.status = 'Assigned'
@@ -107,6 +116,7 @@ class IssueTrackerAPITestCase(unittest.TestCase):
     issue.labels.remove('Label-Y')
     issue.components.append('Test>Flaky')
     issue.cc.append('test2@example.com')
+    issue.field_values.remove(issue.field_values[0])
     insert_method = self.client.issues.return_value.comments.return_value.insert
     insert_method.return_value.execute.return_value = {'id': '345'}
     self.assertTrue(issue.dirty)
@@ -126,7 +136,13 @@ class IssueTrackerAPITestCase(unittest.TestCase):
             'owner': '----',
             'status': 'Assigned',
             'summary': 'NewSummary'
-        }
+        },
+        'field_values': [{
+          'operator': CustomizedField.OPERATOR_REMOVE,
+          'fieldName': 'name',
+          'derived': False,
+          'fieldValue': 'value'
+        }]
     })
 
   def test_updates_issue_with_comment(self):
