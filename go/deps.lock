@@ -1,5 +1,5 @@
-hash: 9ca18ff0895045033fc794683b22fc09571a3e9732fe8fac11af1b9b203015c9
-updated: 2018-01-16T15:43:58.851814138-08:00
+hash: 8914149215555141b6ddee67afff43d1168ec4347ef7d4451d54c2b88aa223f1
+updated: 2018-01-16T16:44:33.435584552-08:00
 imports:
 - name: cloud.google.com/go
   version: 31bbc669abf6a1b02e619cbe75de1f3482881f1c
@@ -237,7 +237,7 @@ imports:
   subpackages:
   - errgroup
 - name: golang.org/x/sys
-  version: fff93fa7cd278d84afc205751523809c464168ab
+  version: 52ba35ddf9b65dc3ad27218743aa2444fe13b690
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - windows
@@ -258,7 +258,7 @@ imports:
   - cmd/oracle
   - cmd/stringer
 - name: google.golang.org/api
-  version: ff5d3c38820f8fd8bd04f917bc656d894edf390d
+  version: 373a4c220f5c90e5b7ff7101779c5be385d171be
   repo: https://code.googlesource.com/google-api-go-client.git
   subpackages:
   - bigquery/v2

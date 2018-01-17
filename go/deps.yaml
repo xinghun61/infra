@@ -207,7 +207,7 @@ import:
   subpackages:
   - errgroup
 - package: golang.org/x/sys
-  version: master
+  version: 52ba35ddf9b65dc3ad27218743aa2444fe13b690  # next commit has an illegal redeclaration
   repo: https://go.googlesource.com/sys.git
   subpackages:
   - windows
