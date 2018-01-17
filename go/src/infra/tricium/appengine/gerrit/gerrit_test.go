@@ -89,6 +89,9 @@ func TestCreateRobotComment(t *testing.T) {
 				StartChar: startChar,
 				EndChar:   endChar,
 			})
+			So(roco.Message, ShouldEqual, "Message")
+			So(roco.RobotID, ShouldEqual, "Hello")
+			So(roco.Properties["tricium_comment_uuid"], ShouldEqual, uuid)
 			So(roco.Line, ShouldEqual, startLine)
 			So(roco.Range, ShouldNotBeNil)
 			So(roco.Range.StartLine, ShouldEqual, startLine)

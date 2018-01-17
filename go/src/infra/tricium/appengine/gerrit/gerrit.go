@@ -58,14 +58,15 @@ type reviewInput struct {
 }
 
 type robotCommentInput struct {
-	RobotID    string        `json:"robot_id"`
-	RobotRunID string        `json:"robot_run_id"`
-	URL        string        `json:"url,omitempty"`
-	ID         string        `json:"id"`
-	Path       string        `json:"path"`
-	Line       int           `json:"line,omitempty"`
-	Range      *commentRange `json:"range,omitempty"`
-	Message    string        `json:"message"`
+	RobotID    string            `json:"robot_id"`
+	RobotRunID string            `json:"robot_run_id"`
+	URL        string            `json:"url,omitempty"`
+	Properties map[string]string `json:"properties"`
+	ID         string            `json:"id"`
+	Path       string            `json:"path"`
+	Line       int               `json:"line,omitempty"`
+	Range      *commentRange     `json:"range,omitempty"`
+	Message    string            `json:"message"`
 }
 
 type commentRange struct {
@@ -142,12 +143,12 @@ func (g gerritServer) PostRobotComments(ctx context.Context, host, change, revis
 // line comments, and comments with character ranges.
 func createRobotComment(runID int64, comment tricium.Data_Comment) *robotCommentInput {
 	roco := &robotCommentInput{
-		ID:         comment.Id,
 		Message:    comment.Message,
 		RobotID:    comment.Category,
 		RobotRunID: strconv.FormatInt(runID, 10),
 		URL:        comment.Url,
 		Path:       comment.Path,
+		Properties: map[string]string{"tricium_comment_uuid": comment.Id},
 	}
 	if comment.StartLine > 0 {
 		roco.Line = int(comment.StartLine)
