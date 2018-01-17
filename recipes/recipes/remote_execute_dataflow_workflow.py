@@ -2,6 +2,21 @@
 # Use of this source code is governed by a BSD-style license that can be
 # found in the LICENSE file.
 
+"""
+This recipe is used to execute Dataflow workflows.
+
+If you want a workflow to run at regular intervals, you can configure a builder
+to run this recipe. Dataflow workflows run on an internal builder, so this step
+must be completed by a Google employee. See this change for an example:
+https://chrome-internal-review.googlesource.com/c/chrome/tools/build/+/412934
+
+Builders configured with the name matching "dataflow-workflow-.*" will be
+automatically monitored for failures.
+
+This recipe uses the dataflow-launcher service account. That account must have
+the permission to schedule a Dataflow job for your project.
+"""
+
 from recipe_engine.recipe_api import Property
 
 DEPS = [
@@ -18,7 +33,8 @@ DEPS = [
 PROPERTIES = {
   'workflow': Property(
       kind=str, help=('Path to the dataflow workflow you would like to '
-                      'execute. Will be appended to the infra checkout path.')),
+                      'execute. Will be appended to the infra checkout path. '
+                      'The path should begin with "packages/dataflow".')),
   'job_name': Property(
       kind=str, help=('Name that appears on the Dataflow console. Must match '
                       'the regular expression [a-z]([-a-z0-9]{0,38}[a-z0-9])')),
