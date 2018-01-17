@@ -90,25 +90,19 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Functio
 	if err := ds.Get(c, requestRes); err != nil {
 		return tricium.State_PENDING, nil, fmt.Errorf("failed to get AnalyzeRequestResult: %v", err)
 	}
-	run := &track.WorkflowRun{ID: 1, Parent: requestKey}
-	if err := ds.Get(c, run); err != nil {
-		return tricium.State_PENDING, nil, fmt.Errorf("failed to get AnalyzeRequestResult: %v", err)
+	workflowRun := &track.WorkflowRun{ID: 1, Parent: requestKey}
+	if err := ds.Get(c, workflowRun); err != nil {
+		return tricium.State_PENDING, nil, fmt.Errorf("failed to get WorkflowRun: %v", err)
 	}
-	runKey := ds.KeyForObj(c, run)
-	// TODO(emso): extract a common GetAnalyzerRunsForWorkflowRun function
-	var analyzers []*track.AnalyzerRun
-	for _, analyzerName := range run.Analyzers {
-		analyzers = append(analyzers, &track.AnalyzerRun{ID: analyzerName, Parent: runKey})
-	}
-	logging.Debugf(c, "Reading results for analyzers: %v, run: %v", analyzers, run)
-	if err := ds.Get(c, analyzers); err != nil {
-		return tricium.State_PENDING, nil, fmt.Errorf("failed to get AnalyzerRun entities: %v", err)
+	functions, err := getFunctionRunsForWorkflowRun(c, workflowRun)
+	if err != nil {
+		return tricium.State_PENDING, nil, fmt.Errorf("failed to get FunctionRun entities: %v", err)
 	}
 	var workerResults []*track.WorkerRunResult
-	for _, analyzer := range analyzers {
-		analyzerKey := ds.KeyForObj(c, analyzer)
-		for _, workerName := range analyzer.Workers {
-			workerKey := ds.NewKey(c, "WorkerRun", workerName, 0, analyzerKey)
+	for _, function := range functions {
+		functionKey := ds.KeyForObj(c, function)
+		for _, workerName := range function.Workers {
+			workerKey := ds.NewKey(c, "WorkerRun", workerName, 0, functionKey)
 			workerResults = append(workerResults, &track.WorkerRunResult{ID: 1, Parent: workerKey})
 		}
 	}
@@ -125,7 +119,7 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Functio
 			NumComments: int32(wr.NumComments),
 		}
 		if len(wr.SwarmingTaskID) > 0 {
-			p.SwarmingUrl = run.SwarmingServerURL
+			p.SwarmingUrl = workflowRun.SwarmingServerURL
 			p.SwarmingTaskId = wr.SwarmingTaskID
 		}
 		res = append(res, p)
@@ -137,4 +131,22 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Functio
 	}
 	progressRequestCount.Add(c, 1, request.Project, strconv.FormatInt(runID, 10))
 	return requestRes.State, res, nil
+}
+
+func getFunctionRunsForWorkflowRun(
+	c context.Context, run *track.WorkflowRun) ([]*track.FunctionRun, error) {
+	runKey := ds.KeyForObj(c, run)
+	request := &track.AnalyzeRequest{ID: runKey.Parent().IntID()}
+	if err := ds.Get(c, request); err != nil {
+		logging.Debugf(c, "AnalyzeRequest: %v", request)
+	}
+	var functions []*track.FunctionRun
+	for _, name := range run.Analyzers {
+		functions = append(functions, &track.FunctionRun{ID: name, Parent: runKey})
+	}
+	logging.Debugf(c, "Reading results for functions: %v, WorkflowRun: %v", functions, run)
+	if err := ds.Get(c, functions); err != nil {
+		return nil, fmt.Errorf("failed to get FunctionRun entities: %v", err)
+	}
+	return functions, nil
 }

@@ -45,12 +45,12 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 	// Compute needed keys.
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 	runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
-	analyzerName, _, err := track.ExtractAnalyzerPlatform(req.Worker)
+	name, _, err := track.ExtractFunctionPlatform(req.Worker)
 	if err != nil {
-		return fmt.Errorf("failed to extract analyzer name: %v", err)
+		return fmt.Errorf("failed to extract function name: %v", err)
 	}
-	analyzerKey := ds.NewKey(c, "AnalyzerRun", analyzerName, 0, runKey)
-	workerKey := ds.NewKey(c, "WorkerRun", req.Worker, 0, analyzerKey)
+	functionRunKey := ds.NewKey(c, "FunctionRun", name, 0, runKey)
+	workerKey := ds.NewKey(c, "WorkerRun", req.Worker, 0, functionRunKey)
 	ops := []func() error{
 		// Update worker state to launched.
 		func() error {
@@ -70,16 +70,16 @@ func workerLaunched(c context.Context, req *admin.WorkerLaunchedRequest) error {
 			}
 			return nil
 		},
-		// Maybe update analyzer state to launched.
+		// Maybe update function state to launched.
 		func() error {
-			ar := &track.AnalyzerRunResult{ID: 1, Parent: analyzerKey}
-			if err := ds.Get(c, ar); err != nil {
-				return fmt.Errorf("failed to get AnalyzerRunResult: %v", err)
+			fr := &track.FunctionRunResult{ID: 1, Parent: functionRunKey}
+			if err := ds.Get(c, fr); err != nil {
+				return fmt.Errorf("failed to get FunctionRunResult: %v", err)
 			}
-			if ar.State == tricium.State_PENDING {
-				ar.State = tricium.State_RUNNING
-				if err := ds.Put(c, ar); err != nil {
-					return fmt.Errorf("failed to update AnalyzerRunResult to launched: %v", err)
+			if fr.State == tricium.State_PENDING {
+				fr.State = tricium.State_RUNNING
+				if err := ds.Put(c, fr); err != nil {
+					return fmt.Errorf("failed to update FunctionRunResult to launched: %v", err)
 				}
 			}
 			return nil

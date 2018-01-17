@@ -22,7 +22,7 @@ func TestReportResultsRequest(t *testing.T) {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
 
-		analyzerName := "Lint"
+		functionName := "Lint"
 
 		request := &track.AnalyzeRequest{
 			GitRepo: "https://chromium-review.googlesource.com",
@@ -33,26 +33,26 @@ func TestReportResultsRequest(t *testing.T) {
 		run := &track.WorkflowRun{ID: 1, Parent: requestKey}
 		So(ds.Put(ctx, run), ShouldBeNil)
 		runKey := ds.KeyForObj(ctx, run)
-		So(ds.Put(ctx, &track.AnalyzerRun{
-			ID:     analyzerName,
+		So(ds.Put(ctx, &track.FunctionRun{
+			ID:     functionName,
 			Parent: runKey,
 		}), ShouldBeNil)
-		analyzerKey := ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
-		So(ds.Put(ctx, &track.AnalyzerRunResult{
+		analyzerKey := ds.NewKey(ctx, "FunctionRun", functionName, 0, runKey)
+		So(ds.Put(ctx, &track.FunctionRunResult{
 			ID:          1,
 			Parent:      analyzerKey,
-			Name:        analyzerName,
+			Name:        functionName,
 			NumComments: 2,
 		}), ShouldBeNil)
-		workerName := analyzerName + "_UBUNTU"
+		workerName := functionName + "_UBUNTU"
 		So(ds.Put(ctx, &track.WorkerRun{
 			ID:     workerName,
 			Parent: analyzerKey,
 		}), ShouldBeNil)
 		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
-		json1, err := json.Marshal(fmt.Sprintf("{\"category\": %s,\"message\":\"Line too long\"}", analyzerName))
+		json1, err := json.Marshal(fmt.Sprintf("{\"category\": %s,\"message\":\"Line too long\"}", functionName))
 		So(err, ShouldBeNil)
-		json2, err := json.Marshal(fmt.Sprintf("{\"category\": %s,\"message\":\"Line too short\"}", analyzerName))
+		json2, err := json.Marshal(fmt.Sprintf("{\"category\": %s,\"message\":\"Line too short\"}", functionName))
 		So(err, ShouldBeNil)
 		results := []*track.Comment{
 			{
@@ -77,7 +77,7 @@ func TestReportResultsRequest(t *testing.T) {
 			mock := &mockRestAPI{}
 			err := reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
-				Analyzer: analyzerName,
+				Analyzer: functionName,
 			}, mock)
 			So(err, ShouldBeNil)
 			So(len(mock.LastComments), ShouldEqual, len(results)-1) // only include the two selected comments
@@ -89,7 +89,7 @@ func TestReportResultsRequest(t *testing.T) {
 			mock := &mockRestAPI{}
 			err := reportResults(ctx, &admin.ReportResultsRequest{
 				RunId:    run.ID,
-				Analyzer: analyzerName,
+				Analyzer: functionName,
 			}, mock)
 			So(err, ShouldBeNil)
 			So(len(mock.LastComments), ShouldEqual, 0) // only include the two selected comments

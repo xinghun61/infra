@@ -48,13 +48,13 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 
 	// Get keys for entities.
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
-	runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
-	analyzerName, platformName, err := track.ExtractAnalyzerPlatform(req.Worker)
+	workflowRunKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
+	functionName, platformName, err := track.ExtractFunctionPlatform(req.Worker)
 	if err != nil {
-		return fmt.Errorf("failed to extract analyzer name: %v", err)
+		return fmt.Errorf("failed to extract function name: %v", err)
 	}
-	analyzerKey := ds.NewKey(c, "AnalyzerRun", analyzerName, 0, runKey)
-	workerKey := ds.NewKey(c, "WorkerRun", req.Worker, 0, analyzerKey)
+	functionRunKey := ds.NewKey(c, "FunctionRun", functionName, 0, workflowRunKey)
+	workerKey := ds.NewKey(c, "WorkerRun", req.Worker, 0, functionRunKey)
 
 	// If this worker is already marked as done, abort.
 	workerRes := &track.WorkerRunResult{ID: 1, Parent: workerKey}
@@ -75,49 +75,49 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	// Process isolated output and collect comments.
 	// NB! This only applies to successful analyzer functions outputting comments.
 	comments, err := collectComments(c, req.State, req.Provides, isolator, run.IsolateServerURL,
-		req.IsolatedOutputHash, analyzerName, workerKey)
+		req.IsolatedOutputHash, functionName, workerKey)
 	if err != nil {
 		return fmt.Errorf("failed to get worker results: %v", err)
 	}
 
-	// Compute state of parent analyzer.
-	analyzer := &track.AnalyzerRun{ID: analyzerName, Parent: runKey}
-	if err := ds.Get(c, analyzer); err != nil {
-		return fmt.Errorf("failed to get AnalyzerRun entity: %v", err)
+	// Compute state of parent function.
+	functionRun := &track.FunctionRun{ID: functionName, Parent: workflowRunKey}
+	if err := ds.Get(c, functionRun); err != nil {
+		return fmt.Errorf("failed to get FunctionRun entity: %v", err)
 	}
 	workerResults := []*track.WorkerRunResult{}
-	for _, workerName := range analyzer.Workers {
-		workerKey := ds.NewKey(c, "WorkerRun", workerName, 0, analyzerKey)
+	for _, workerName := range functionRun.Workers {
+		workerKey := ds.NewKey(c, "WorkerRun", workerName, 0, functionRunKey)
 		workerResults = append(workerResults, &track.WorkerRunResult{ID: 1, Parent: workerKey})
 	}
 	if err := ds.Get(c, workerResults); err != nil {
 		return fmt.Errorf("failed to get WorkerRunResult entities: %v", err)
 	}
-	analyzerState := tricium.State_SUCCESS
-	analyzerNumComments := len(comments)
+	functionState := tricium.State_SUCCESS
+	functionNumComments := len(comments)
 	for _, wr := range workerResults {
 		if wr.Name == req.Worker {
 			wr.State = req.State // Setting state to what we will store in the below transaction.
 		} else {
-			analyzerNumComments += wr.NumComments
+			functionNumComments += wr.NumComments
 		}
 		// When all workers are done, aggregate the result.
-		// All worker SUCCESSS -> analyzer SUCCESS
-		// One or more workers FAILURE -> analyzer FAILURE
+		// All worker SUCCESSS -> function SUCCESS
+		// One or more workers FAILURE -> function FAILURE
 		if tricium.IsDone(wr.State) {
 			if wr.State == tricium.State_FAILURE {
-				analyzerState = tricium.State_FAILURE
+				functionState = tricium.State_FAILURE
 			}
 		} else {
 			// Found non-done worker, no change to be made - abort.
-			analyzerState = tricium.State_RUNNING // reset to launched.
+			functionState = tricium.State_RUNNING // reset to launched.
 			break
 		}
 	}
 
-	// If analyzer is done then we should merge results if needed.
-	if tricium.IsDone(analyzerState) {
-		logging.Infof(c, "Analyzer %s completed with %d comments", analyzerName, analyzerNumComments)
+	// If function is done then we should merge results if needed.
+	if tricium.IsDone(functionState) {
+		logging.Infof(c, "Analyzer %s completed with %d comments", functionName, functionNumComments)
 		// TODO(emso): merge results.
 		// Review comments in this invocation and stored comments from sibling workers.
 		// Comments are included by default. For conflicting comments, select which comments
@@ -125,39 +125,39 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	}
 
 	// Compute run state.
-	var analyzerResults []*track.AnalyzerRunResult
-	for _, analyzerName := range run.Analyzers {
-		analyzerKey := ds.NewKey(c, "AnalyzerRun", analyzerName, 0, runKey)
-		analyzerResults = append(analyzerResults, &track.AnalyzerRunResult{ID: 1, Parent: analyzerKey})
+	var runResults []*track.FunctionRunResult
+	for _, name := range run.Analyzers {
+		functionRunKey := ds.NewKey(c, "FunctionRun", name, 0, workflowRunKey)
+		runResults = append(runResults, &track.FunctionRunResult{ID: 1, Parent: functionRunKey})
 	}
-	if err := ds.Get(c, analyzerResults); err != nil {
-		return fmt.Errorf("failed to retrieve AnalyzerRunResult entities: %v", err)
+	if err := ds.Get(c, runResults); err != nil {
+		return fmt.Errorf("failed to retrieve FunctionRunResult entities: %v", err)
 	}
 	runState := tricium.State_SUCCESS
-	runNumComments := analyzerNumComments
-	for _, ar := range analyzerResults {
-		if ar.Name == analyzerName {
-			ar.State = analyzerState // Setting state to what will be stored in the below transaction.
+	runNumComments := functionNumComments
+	for _, fr := range runResults {
+		if fr.Name == functionName {
+			fr.State = functionState // Setting state to what will be stored in the below transaction.
 		} else {
-			runNumComments += ar.NumComments
+			runNumComments += fr.NumComments
 		}
-		// When all analyzers are done, aggregate the result.
-		// All analyzers SUCCESSS -> run SUCCESS
-		// One or more analyzers FAILURE -> run FAILURE
-		if tricium.IsDone(ar.State) {
-			if ar.State == tricium.State_FAILURE {
+		// When all functions are done, aggregate the result.
+		// All functions SUCCESSS -> run SUCCESS
+		// One or more functions FAILURE -> run FAILURE
+		if tricium.IsDone(fr.State) {
+			if fr.State == tricium.State_FAILURE {
 				runState = tricium.State_FAILURE
 			}
 		} else {
-			// Found non-done analyzer, nothing to update - abort.
+			// Found non-done function, nothing to update - abort.
 			runState = tricium.State_RUNNING // reset to launched.
 			break
 		}
 	}
 
 	// Write state changes and results in parallel in a transaction.
-	logging.Infof(c, "Updating state: worker %s: %s, analyzer %s: %s, run %d, %s",
-		req.Worker, req.State, analyzerName, analyzerState, req.RunId, runState)
+	logging.Infof(c, "Updating state: worker %s: %s, function %s: %s, run %d, %s",
+		req.Worker, req.State, functionName, functionState, req.RunId, runState)
 
 	// Now that all prerequisite data was loaded, run the mutations in a transaction.
 	ops := []func() error{
@@ -186,7 +186,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 				return fmt.Errorf("failed to add CommentSelection/CommentFeedback entries: %v", err)
 			}
 			// Monitor comment count per category.
-			commentCount.Set(c, int64(len(comments)), analyzerName, platformName)
+			commentCount.Set(c, int64(len(comments)), functionName, platformName)
 			return nil
 		},
 		// Update worker state, isolated output, and number of result comments.
@@ -199,31 +199,31 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 			}
 			// Monitor worker success/failure.
 			if req.State == tricium.State_SUCCESS {
-				workerSuccessCount.Add(c, 1, analyzerName, platformName)
+				workerSuccessCount.Add(c, 1, functionName, platformName)
 			} else {
-				workerFailureCount.Add(c, 1, analyzerName, platformName, req.State)
+				workerFailureCount.Add(c, 1, functionName, platformName, req.State)
 			}
 			return nil
 		},
-		// Update analyzer state.
+		// Update function state.
 		func() error {
-			ar := &track.AnalyzerRunResult{ID: 1, Parent: analyzerKey}
-			if err := ds.Get(c, ar); err != nil {
-				return fmt.Errorf("failed to get AnalyzerRunResult (analyzer:%s): %v", analyzerName, err)
+			fr := &track.FunctionRunResult{ID: 1, Parent: functionRunKey}
+			if err := ds.Get(c, fr); err != nil {
+				return fmt.Errorf("failed to get FunctionRunResult (function: %s): %v", functionName, err)
 			}
-			if ar.State != analyzerState {
-				ar.State = analyzerState
-				ar.NumComments = analyzerNumComments
-				logging.Debugf(c, "[tracker] Updating state of analyzer %s, num comments: %d", ar.Name, ar.NumComments)
-				if err := ds.Put(c, ar); err != nil {
-					return fmt.Errorf("failed to update AnalyzerRunResult: %v", err)
+			if fr.State != functionState {
+				fr.State = functionState
+				fr.NumComments = functionNumComments
+				logging.Debugf(c, "[tracker] Updating state of function %s, num comments: %d", fr.Name, fr.NumComments)
+				if err := ds.Put(c, fr); err != nil {
+					return fmt.Errorf("failed to update FunctionRunResult: %v", err)
 				}
 			}
 			return nil
 		},
 		// Update run state.
 		func() error {
-			rr := &track.WorkflowRunResult{ID: 1, Parent: runKey}
+			rr := &track.WorkflowRunResult{ID: 1, Parent: workflowRunKey}
 			if err := ds.Get(c, rr); err != nil {
 				return fmt.Errorf("failed to get WorkflowRunResult entity: %v", err)
 			}
@@ -266,14 +266,14 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 	}
 	switch request.Consumer {
 	case tricium.Consumer_GERRIT:
-		if tricium.IsDone(analyzerState) {
+		if tricium.IsDone(functionState) {
 			// Only report results if there were comments.
 			if len(comments) == 0 {
 				return nil
 			}
 			b, err := proto.Marshal(&admin.ReportResultsRequest{
 				RunId:    req.RunId,
-				Analyzer: analyzer.ID,
+				Analyzer: functionRun.ID,
 			})
 			if err != nil {
 				return fmt.Errorf("failed to encode ReportResults request: %v", err)
@@ -302,9 +302,9 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 }
 
 func collectComments(c context.Context, state tricium.State, t tricium.Data_Type, isolator common.IsolateAPI,
-	isolateServerURL, isolatedOutputHash, analyzer string, workerKey *ds.Key) ([]*track.Comment, error) {
+	isolateServerURL, isolatedOutputHash, analyzerName string, workerKey *ds.Key) ([]*track.Comment, error) {
 	comments := []*track.Comment{}
-	// Only collect comments if analyzer function completed successfully.
+	// Only collect comments if function completed successfully.
 	if state != tricium.State_SUCCESS {
 		return comments, nil
 	}
@@ -334,7 +334,7 @@ func collectComments(c context.Context, state tricium.State, t tricium.Data_Type
 				UUID:         uuid.String(),
 				CreationTime: clock.Now(c).UTC(),
 				Comment:      j,
-				Analyzer:     analyzer,
+				Analyzer:     analyzerName,
 				Category:     comment.Category,
 				Platforms:    results.Platforms,
 			})

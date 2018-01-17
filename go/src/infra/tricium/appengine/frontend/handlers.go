@@ -101,7 +101,7 @@ func analyzeFormHandler(ctx *router.Context) {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	logging.Infof(c, "Analyzer handler successfully completed, run ID: %s", res.RunId)
+	logging.Infof(c, "Analyze handler successfully completed, run ID: %s", res.RunId)
 	templates.MustRender(c, w, "pages/index.html", map[string]interface{}{
 		"StatusMsg": fmt.Sprintf("Analysis request sent, run ID: %s", res.RunId),
 	})

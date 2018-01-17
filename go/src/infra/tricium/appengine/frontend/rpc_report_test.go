@@ -23,19 +23,19 @@ func TestReport(t *testing.T) {
 		ctx := tt.Context()
 
 		commentID := "7ef59cda-183c-48b3-8343-d9036a7f1419"
-		analyzerName := "Spacey"
+		functionName := "Spacey"
 		platform := tricium.Platform_UBUNTU
 		// Add comment entity with ancestors:
-		// AnalyzerRequest>WorkflowRun>AnalyzerRun>WorkerRun>Comment>CommentFeedback
+		// AnalyzeRequest>WorkflowRun>FunctionRun>WorkerRun>Comment>CommentFeedback
 		request := &track.AnalyzeRequest{}
 		So(ds.Put(ctx, request), ShouldBeNil)
 		run := &track.WorkflowRun{ID: 1, Parent: ds.KeyForObj(ctx, request)}
 		So(ds.Put(ctx, run), ShouldBeNil)
-		analyzer := &track.AnalyzerRun{ID: analyzerName, Parent: ds.KeyForObj(ctx, run)}
-		So(ds.Put(ctx, analyzer), ShouldBeNil)
+		analyzerRun := &track.FunctionRun{ID: functionName, Parent: ds.KeyForObj(ctx, run)}
+		So(ds.Put(ctx, analyzerRun), ShouldBeNil)
 		worker := &track.WorkerRun{
-			ID:     fmt.Sprintf("%s_%s", analyzerName, platform),
-			Parent: ds.KeyForObj(ctx, analyzer),
+			ID:     fmt.Sprintf("%s_%s", functionName, platform),
+			Parent: ds.KeyForObj(ctx, analyzerRun),
 		}
 		So(ds.Put(ctx, worker), ShouldBeNil)
 		comment := &track.Comment{UUID: commentID, Parent: ds.KeyForObj(ctx, worker), Platforms: 1}

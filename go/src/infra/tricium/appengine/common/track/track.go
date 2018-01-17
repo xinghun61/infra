@@ -21,15 +21,15 @@
 //                               +----------------------+
 //                               |                      |
 //                           +---+-------------+ +---+-------------+
-//                           |WorkflowRunResult| |AnalyzerRun      |
-//                           |id=1             | |id=<analyzerName>|
+//                           |WorkflowRunResult| |FunctionRun      |
+//                           |id=1             | |id=<functionName>|
 //                           +-----------------+ +---+-------------+
 //                                                   |
 //                               +-------------------+
 //                               |                   |
 //                           +---+-------------+ +---+----------------------+
-//                           |AnalyzerRunResult| |WorkerRun                 |
-//                           |id=1             | |id=<analyzerName_platform>|
+//                           |FunctionRunResult| |WorkerRun                 |
+//                           |id=1             | |id=<functionName_platform>|
 //                           +-----------------+ +---+----------------------+
 //                                                   |
 //                                          +--------+---------+
@@ -108,6 +108,7 @@ type WorkflowRun struct {
 	// Name of analyzers included in this workflow.
 	//
 	// Included here to allow for direct access without queries.
+	// TODO(qyearsley, crbug.com/793735) Rename this to "Functions".
 	Analyzers []string `gae:",noindex"`
 	// Isolate server URL.
 	IsolateServerURL string `gae:",noindex"`
@@ -133,11 +134,11 @@ type WorkflowRunResult struct {
 	HasMergedResults bool
 }
 
-// AnalyzerRun declares a request to execute an analyzer.
+// FunctionRun declares a request to execute an analyzer.
 //
 // Immutable entity.
-// LUCI datastore ID (="AnalyzerName") and parent (=key to WorkflowRun entity) fields.
-type AnalyzerRun struct {
+// LUCI datastore ID (="FunctionName") and parent (=key to WorkflowRun entity) fields.
+type FunctionRun struct {
 	ID     string  `gae:"$id"`
 	Parent *ds.Key `gae:"$parent"`
 	// Name of workers launched for this analyzer.
@@ -146,11 +147,11 @@ type AnalyzerRun struct {
 	Workers []string `gae:",noindex"`
 }
 
-// AnalyzerRunResult tracks the state of an analyzer run.
+// FunctionRunResult tracks the state of an analyzer run.
 //
 // Mutable entity.
-// LUCI datastore ID (=1) and parent (=key to AnalyzerRun entity) fields.
-type AnalyzerRunResult struct {
+// LUCI datastore ID (=1) and parent (=key to FunctionRun entity) fields.
+type FunctionRunResult struct {
 	ID     int64   `gae:"$id"`
 	Parent *ds.Key `gae:"$parent"`
 	// Name of analyzer.
@@ -174,7 +175,7 @@ type AnalyzerRunResult struct {
 // WorkerRun declare a request to execute an analyzer worker.
 //
 // Immutable entity.
-// LUCI datastore ID (="WorkerName") and parent (=key to AnalyzerRun entity) fields.
+// LUCI datastore ID (="WorkerName") and parent (=key to FunctionRun entity) fields.
 type WorkerRun struct {
 	ID     string  `gae:"$id"`
 	Parent *ds.Key `gae:"$parent"`
@@ -196,10 +197,11 @@ type WorkerRunResult struct {
 	// Stored here, in addition to in the parent ID, for indexing
 	// and convenience.
 	Name string
-	// Analyzer this worker is running.
+	// Name of the function for this worker run.
 	//
 	// Stored here, in addition to in the ID of ancestors, for indexing
 	// and convenience.
+	// TODO(qyearsley, crbug.com/793735) Rename this to "Function".
 	Analyzer string
 	// Platform this worker is running on.
 	Platform tricium.Platform_Name
@@ -240,7 +242,7 @@ type Comment struct {
 	// The comment must be an encoded tricium.Data_Comment JSON message
 	// TODO(emso): Consider storing structured comment data.
 	Comment []byte `gae:",noindex"`
-	// Analyzer name.
+	// Analyzer function name.
 	//
 	// This field allows for filtering on analyzer name.
 	Analyzer string
@@ -290,10 +292,10 @@ type CommentFeedback struct {
 
 const workerSeparator = "_"
 
-// ExtractAnalyzerPlatform extracts the analyzer and platform name from a worker name.
+// ExtractFunctionPlatform extracts the analyzer and platform name from a worker name.
 //
-// The worker name must be on the form 'AnalyzerName_PLATFORM'.
-func ExtractAnalyzerPlatform(workerName string) (string, string, error) {
+// The worker name must be on the form 'FunctionName_PLATFORM'.
+func ExtractFunctionPlatform(workerName string) (string, string, error) {
 	parts := strings.SplitN(workerName, workerSeparator, 2)
 	if len(parts) != 2 {
 		return "", "", fmt.Errorf("malformed worker name: %s", workerName)

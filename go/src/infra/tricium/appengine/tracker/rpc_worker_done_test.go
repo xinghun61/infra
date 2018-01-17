@@ -53,7 +53,7 @@ func TestWorkerDoneRequest(t *testing.T) {
 		tt := &trit.Testing{}
 		ctx := tt.Context()
 
-		analyzerName, _, err := track.ExtractAnalyzerPlatform(fileIsolator)
+		name, _, err := track.ExtractFunctionPlatform(fileIsolator)
 		So(err, ShouldBeNil)
 
 		// Add pending run entry.
@@ -91,19 +91,19 @@ func TestWorkerDoneRequest(t *testing.T) {
 		}, &mockIsolator{})
 		So(err, ShouldBeNil)
 
-		analyzerKey := ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
+		functionRunKey := ds.NewKey(ctx, "FunctionRun", name, 0, runKey)
 
 		Convey("Marks worker as done", func() {
-			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, analyzerKey)
+			workerKey := ds.NewKey(ctx, "WorkerRun", fileIsolator, 0, functionRunKey)
 			wr := &track.WorkerRunResult{ID: 1, Parent: workerKey}
 			So(ds.Get(ctx, wr), ShouldBeNil)
 			So(wr.State, ShouldEqual, tricium.State_SUCCESS)
 		})
 
-		Convey("Marks analyzer as done and adds no comments", func() {
-			ar := &track.AnalyzerRunResult{ID: 1, Parent: analyzerKey}
-			So(ds.Get(ctx, ar), ShouldBeNil)
-			So(ar.State, ShouldEqual, tricium.State_SUCCESS)
+		Convey("Marks function as done and adds no comments", func() {
+			fr := &track.FunctionRunResult{ID: 1, Parent: functionRunKey}
+			So(ds.Get(ctx, fr), ShouldBeNil)
+			So(fr.State, ShouldEqual, tricium.State_SUCCESS)
 		})
 
 		// Mark remaining workers as done.
@@ -135,6 +135,6 @@ func TestWorkerDoneRequest(t *testing.T) {
 			So(ar.State, ShouldEqual, tricium.State_SUCCESS)
 		})
 
-		// TODO(emso): Multi-platform analyzer is half done, analyzer stays launched.
+		// TODO(emso): Multi-platform function is half done, function stays launched.
 	})
 }

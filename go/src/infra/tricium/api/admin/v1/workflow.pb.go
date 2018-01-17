@@ -59,10 +59,10 @@ func (m *Workflow) GetIsolateServer() string {
 	return ""
 }
 
-// A Tricium worker includes the details needed to execute an analyzer on a
+// A Tricium worker includes the details needed to execute a function on a
 // specific platform as swarming task.
 type Worker struct {
-	// Name of worker is a mangled name from the analyzer name and the platform
+	// Name of worker is a mangled name from the function name and the platform
 	// for which results are provided for, e.g, ‘GitFileIsolator_LINUX’.
 	Name string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
 	// Includes data dependencies for runtime type checking.

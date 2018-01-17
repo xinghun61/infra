@@ -44,19 +44,19 @@ func TestResults(t *testing.T) {
 			Parent: runKey,
 			State:  tricium.State_SUCCESS,
 		}), ShouldBeNil)
-		analyzerName := "Hello"
+		functionName := "Hello"
 		platform := tricium.Platform_UBUNTU
-		analyzerKey := ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
-		So(ds.Put(ctx, &track.AnalyzerRun{
-			ID:     analyzerName,
+		analyzerKey := ds.NewKey(ctx, "FunctionRun", functionName, 0, runKey)
+		So(ds.Put(ctx, &track.FunctionRun{
+			ID:     functionName,
 			Parent: runKey,
 		}), ShouldBeNil)
-		So(ds.Put(ctx, &track.AnalyzerRunResult{
+		So(ds.Put(ctx, &track.FunctionRunResult{
 			ID:     1,
 			Parent: analyzerKey,
 			State:  tricium.State_SUCCESS,
 		}), ShouldBeNil)
-		workerName := analyzerName + "_UBUNTU"
+		workerName := functionName + "_UBUNTU"
 		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
 		So(ds.Put(ctx, &track.WorkerRun{
 			ID:       workerName,
@@ -70,13 +70,13 @@ func TestResults(t *testing.T) {
 			NumComments: 1,
 		}), ShouldBeNil)
 		json, err := json.Marshal(tricium.Data_Comment{
-			Category: analyzerName,
+			Category: functionName,
 			Message:  "Hello",
 		})
 		So(err, ShouldBeNil)
 		comment := &track.Comment{
 			Parent:    workerKey,
-			Category:  analyzerName,
+			Category:  functionName,
 			Comment:   json,
 			Platforms: 0,
 		}
@@ -89,7 +89,7 @@ func TestResults(t *testing.T) {
 		}), ShouldBeNil)
 		comment = &track.Comment{
 			Parent:    workerKey,
-			Category:  analyzerName,
+			Category:  functionName,
 			Comment:   json,
 			Platforms: 0,
 		}
@@ -111,7 +111,7 @@ func TestResults(t *testing.T) {
 			So(len(results.Comments), ShouldEqual, 1)
 			So(isMerged, ShouldBeTrue)
 			comment := results.Comments[0]
-			So(comment.Category, ShouldEqual, analyzerName)
+			So(comment.Category, ShouldEqual, functionName)
 		})
 	})
 }

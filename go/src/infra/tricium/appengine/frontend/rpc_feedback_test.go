@@ -34,7 +34,7 @@ func TestFeedback(t *testing.T) {
 		})
 		ds.GetTestable(ctx).CatchupIndexes()
 		// Add comment entities with ancestors:
-		// AnalyzerRequest>WorkflowRun>AnalyzerRun>WorkerRun>Comment>CommentFeedback
+		// AnalyzeRequest>WorkflowRun>FunctionRun>WorkerRun>Comment>CommentFeedback
 		stime := tc.Now().UTC().Add(3 * time.Minute)
 		etime := tc.Now().UTC().Add(7 * time.Minute)
 		ctime1 := tc.Now().UTC().Add(2 * time.Minute) // before stime
@@ -42,7 +42,7 @@ func TestFeedback(t *testing.T) {
 		ctx, _ = testclock.UseTime(ctx, now.Add(10*time.Minute))
 		commentID1 := "7ef59cda-183c-48b3-8343-d9036a7f1419"
 		commentID2 := "9400f12d-b425-4cf6-85d5-5636fc4e55a4"
-		analyzerName := "Spacey"
+		functionName := "Spacey"
 		category1 := "Spacey/MixedSpace"
 		category2 := "Spacey/TrailingSpace"
 		platform := tricium.Platform_UBUNTU
@@ -50,18 +50,18 @@ func TestFeedback(t *testing.T) {
 		So(ds.Put(ctx, request), ShouldBeNil)
 		run := &track.WorkflowRun{ID: 1, Parent: ds.KeyForObj(ctx, request)}
 		So(ds.Put(ctx, run), ShouldBeNil)
-		analyzer := &track.AnalyzerRun{ID: analyzerName, Parent: ds.KeyForObj(ctx, run)}
-		So(ds.Put(ctx, analyzer), ShouldBeNil)
+		functionRun := &track.FunctionRun{ID: functionName, Parent: ds.KeyForObj(ctx, run)}
+		So(ds.Put(ctx, functionRun), ShouldBeNil)
 		worker := &track.WorkerRun{
-			ID:     fmt.Sprintf("%s_%s", analyzerName, platform),
-			Parent: ds.KeyForObj(ctx, analyzer),
+			ID:     fmt.Sprintf("%s_%s", functionName, platform),
+			Parent: ds.KeyForObj(ctx, functionRun),
 		}
 		So(ds.Put(ctx, worker), ShouldBeNil)
 		comment1 := &track.Comment{
 			UUID:         commentID1,
 			Parent:       ds.KeyForObj(ctx, worker),
 			Platforms:    1,
-			Analyzer:     analyzerName,
+			Analyzer:     functionName,
 			Category:     category1,
 			CreationTime: ctime1,
 		}
@@ -82,7 +82,7 @@ func TestFeedback(t *testing.T) {
 			UUID:         commentID2,
 			Parent:       ds.KeyForObj(ctx, worker),
 			Platforms:    1,
-			Analyzer:     analyzerName,
+			Analyzer:     functionName,
 			Category:     category2,
 			CreationTime: ctime2,
 		}
@@ -113,8 +113,8 @@ func TestFeedback(t *testing.T) {
 		})
 
 		Convey("Feedback request for known analyzer name", func() {
-			st, et, _ := validateFeedbackRequest(ctx, &tricium.FeedbackRequest{Category: analyzerName})
-			count, reports, issues, err := feedback(ctx, analyzerName, st, et)
+			st, et, _ := validateFeedbackRequest(ctx, &tricium.FeedbackRequest{Category: functionName})
+			count, reports, issues, err := feedback(ctx, functionName, st, et)
 			So(err, ShouldBeNil)
 			So(count, ShouldEqual, 2)
 			So(reports, ShouldEqual, 3)
@@ -123,7 +123,7 @@ func TestFeedback(t *testing.T) {
 		})
 
 		Convey("Feedback request for time period", func() {
-			count, reports, issues, err := feedback(ctx, analyzerName, stime, etime)
+			count, reports, issues, err := feedback(ctx, functionName, stime, etime)
 			So(err, ShouldBeNil)
 			So(count, ShouldEqual, 1)
 			So(reports, ShouldEqual, 1)

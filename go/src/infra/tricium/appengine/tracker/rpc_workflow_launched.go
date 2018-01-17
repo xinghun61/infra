@@ -29,7 +29,8 @@ type trackerServer struct{}
 var server = &trackerServer{}
 
 // WorkflowLaunched tracks the launch of a workflow.
-func (*trackerServer) WorkflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest) (*admin.WorkflowLaunchedResponse, error) {
+func (*trackerServer) WorkflowLaunched(
+	c context.Context, req *admin.WorkflowLaunchedRequest) (*admin.WorkflowLaunchedResponse, error) {
 	if req.RunId == 0 {
 		return nil, grpc.Errorf(codes.InvalidArgument, "missing run ID")
 	}
@@ -44,23 +45,23 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 	if err != nil {
 		return fmt.Errorf("failed to read workflow config: %v", err)
 	}
-	// Prepare analyzer and worker invocation tracking entries to store.
-	aw, analyzers := extractAnalyzerWorkerStructure(c, wf)
-	logging.Debugf(c, "Extracted analyzer/worker entries for tracking: %#v", aw)
+	// Prepare function and worker invocation tracking entries to store.
+	fw, functions := extractFunctionWorkerStructure(c, wf)
+	logging.Debugf(c, "Extracted function/worker entries for tracking: %#v", fw)
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 	if err := ds.RunInTransaction(c, func(c context.Context) (err error) {
 		// Store the root of the workflow.
-		run := &track.WorkflowRun{
+		workflowRun := &track.WorkflowRun{
 			ID:                1,
 			Parent:            requestKey,
 			IsolateServerURL:  wf.IsolateServer,
 			SwarmingServerURL: wf.SwarmingServer,
-			Analyzers:         analyzers,
+			Analyzers:         functions,
 		}
-		if err := ds.Put(c, run); err != nil {
+		if err := ds.Put(c, workflowRun); err != nil {
 			return fmt.Errorf("failed to store WorkflowRun entity (run ID: %d): %v", req.RunId, err)
 		}
-		runKey := ds.KeyForObj(c, run)
+		runKey := ds.KeyForObj(c, workflowRun)
 		ops := []func() error{
 			// Update AnalyzeRequestResult to RUNNING.
 			func() error {
@@ -86,23 +87,23 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 				}
 				return nil
 			},
-			// Store analyzer and worker run entities for tracking.
+			// Store Function and WorkerRun entities for tracking.
 			func() error {
-				entities := make([]interface{}, 0, len(aw))
-				for _, v := range aw {
-					v.Analyzer.Parent = runKey
-					analyzerKey := ds.KeyForObj(c, v.Analyzer)
+				entities := make([]interface{}, 0, len(fw))
+				for _, v := range fw {
+					v.Function.Parent = runKey
+					functionKey := ds.KeyForObj(c, v.Function)
 					entities = append(entities, []interface{}{
-						v.Analyzer,
-						&track.AnalyzerRunResult{
+						v.Function,
+						&track.FunctionRunResult{
 							ID:     1,
-							Parent: analyzerKey,
-							Name:   v.Analyzer.ID,
+							Parent: functionKey,
+							Name:   v.Function.ID,
 							State:  tricium.State_PENDING,
 						},
 					}...)
 					for _, worker := range v.Workers {
-						worker.Parent = analyzerKey
+						worker.Parent = functionKey
 						entities = append(entities, worker)
 						workerKey := ds.KeyForObj(c, worker)
 						entities = append(entities, []interface{}{
@@ -110,7 +111,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 							&track.WorkerRunResult{
 								ID:       1,
 								Name:     worker.ID,
-								Analyzer: v.Analyzer.ID,
+								Analyzer: v.Function.ID,
 								Parent:   workerKey,
 								State:    tricium.State_PENDING,
 							},
@@ -118,7 +119,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 					}
 				}
 				if err := ds.Put(c, entities); err != nil {
-					return fmt.Errorf("failed to store analyzer and worker entities: %v", err)
+					return fmt.Errorf("failed to store function and worker entities: %v", err)
 				}
 				return nil
 			},
@@ -147,33 +148,35 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 	return nil
 }
 
-type analyzerToWorkers struct {
-	Analyzer *track.AnalyzerRun
+type functionRunWorkers struct {
+	Function *track.FunctionRun
 	Workers  []*track.WorkerRun
 }
 
-// extractAnalyzerWorkerStructure extracts analyzer-*worker structure from workflow config.
-func extractAnalyzerWorkerStructure(c context.Context, wf *admin.Workflow) (map[string]*analyzerToWorkers, []string) {
-	m := map[string]*analyzerToWorkers{}
-	var analyzers []string
+// extractFunctionWorkerStructure extracts a map of function names to
+// functionRunWorkers structures from a workflow config.
+func extractFunctionWorkerStructure(
+	c context.Context, wf *admin.Workflow) (map[string]*functionRunWorkers, []string) {
+	m := map[string]*functionRunWorkers{}
+	var functions []string
 	for _, w := range wf.Workers {
-		analyzer, _, err := track.ExtractAnalyzerPlatform(w.Name)
+		function, _, err := track.ExtractFunctionPlatform(w.Name)
 		if err != nil {
-			logging.Errorf(c, "Failed to extract analyzer name: %v", err)
+			logging.Errorf(c, "Failed to extract function name: %v", err)
 		}
-		a, ok := m[analyzer]
+		a, ok := m[function]
 		if !ok {
-			a = &analyzerToWorkers{Analyzer: &track.AnalyzerRun{ID: analyzer}}
-			m[analyzer] = a
+			a = &functionRunWorkers{Function: &track.FunctionRun{ID: function}}
+			m[function] = a
 		}
-		aw := &track.WorkerRun{ID: w.Name, Platform: w.ProvidesForPlatform}
+		workerRun := &track.WorkerRun{ID: w.Name, Platform: w.ProvidesForPlatform}
 		for _, n := range w.Next {
-			aw.Next = append(aw.Next, n)
+			workerRun.Next = append(workerRun.Next, n)
 		}
-		a.Workers = append(a.Workers, aw)
-		a.Analyzer.Workers = append(a.Analyzer.Workers, w.Name)
-		analyzers = append(analyzers, analyzer)
-		logging.Debugf(c, "Found analyzer/worker: %v", a)
+		a.Workers = append(a.Workers, workerRun)
+		a.Function.Workers = append(a.Function.Workers, w.Name)
+		functions = append(functions, function)
+		logging.Debugf(c, "Found function/worker: %v", a)
 	}
-	return m, analyzers
+	return m, functions
 }

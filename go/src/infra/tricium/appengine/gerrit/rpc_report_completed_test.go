@@ -29,28 +29,28 @@ func TestReportCompletedRequest(t *testing.T) {
 		run := &track.WorkflowRun{ID: 1, Parent: requestKey}
 		So(ds.Put(ctx, run), ShouldBeNil)
 		runKey := ds.KeyForObj(ctx, run)
-		analyzerName := "Hello"
-		So(ds.Put(ctx, &track.AnalyzerRun{
-			ID:     analyzerName,
+		functionName := "Hello"
+		So(ds.Put(ctx, &track.FunctionRun{
+			ID:     functionName,
 			Parent: runKey,
 		}), ShouldBeNil)
-		analyzerKey := ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
-		So(ds.Put(ctx, &track.AnalyzerRunResult{
+		functionRunKey := ds.NewKey(ctx, "FunctionRun", functionName, 0, runKey)
+		So(ds.Put(ctx, &track.FunctionRunResult{
 			ID:          1,
-			Parent:      analyzerKey,
-			Name:        analyzerName,
+			Parent:      functionRunKey,
+			Name:        functionName,
 			NumComments: 1,
 		}), ShouldBeNil)
-		analyzerName = "Lint"
-		So(ds.Put(ctx, &track.AnalyzerRun{
-			ID:     analyzerName,
+		functionName = "Lint"
+		So(ds.Put(ctx, &track.FunctionRun{
+			ID:     functionName,
 			Parent: runKey,
 		}), ShouldBeNil)
-		analyzerKey = ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
-		So(ds.Put(ctx, &track.AnalyzerRunResult{
+		functionRunKey = ds.NewKey(ctx, "FunctionRun", functionName, 0, runKey)
+		So(ds.Put(ctx, &track.FunctionRunResult{
 			ID:          1,
-			Parent:      analyzerKey,
-			Name:        analyzerName,
+			Parent:      functionRunKey,
+			Name:        functionName,
 			NumComments: 2,
 		}), ShouldBeNil)
 

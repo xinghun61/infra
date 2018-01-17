@@ -49,7 +49,7 @@ func reportResults(c context.Context, req *admin.ReportResultsRequest, gerrit AP
 		func() error {
 			requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 			runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
-			analyzerKey := ds.NewKey(c, "AnalyzerRun", req.Analyzer, 0, runKey)
+			analyzerKey := ds.NewKey(c, "FunctionRun", req.Analyzer, 0, runKey)
 			var comms []*track.Comment
 			if err := ds.GetAll(c, ds.NewQuery("Comment").Ancestor(analyzerKey), &comms); err != nil {
 				return fmt.Errorf("failed to retrieve comments: %v", err)

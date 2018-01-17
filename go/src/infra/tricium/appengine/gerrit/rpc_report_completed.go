@@ -35,7 +35,7 @@ func (r *gerritReporter) ReportCompleted(c context.Context, req *admin.ReportCom
 
 func reportCompleted(c context.Context, req *admin.ReportCompletedRequest, gerrit API) error {
 	request := &track.AnalyzeRequest{ID: req.RunId}
-	var analyzerResults []*track.AnalyzerRunResult
+	var functionResults []*track.FunctionRunResult
 	ops := []func() error{
 		// Get Git details.
 		func() error {
@@ -46,12 +46,12 @@ func reportCompleted(c context.Context, req *admin.ReportCompletedRequest, gerri
 			}
 			return nil
 		},
-		// Get analyzer results.
+		// Get function results.
 		func() error {
 			requestKey := ds.NewKey(c, "AnalyzeRequest", "", req.RunId, nil)
 			runKey := ds.NewKey(c, "WorkflowRun", "", 1, requestKey)
-			if err := ds.GetAll(c, ds.NewQuery("AnalyzerRunResult").Ancestor(runKey), &analyzerResults); err != nil {
-				return fmt.Errorf("failed to get AnalyzerRunResult entities: %v", err)
+			if err := ds.GetAll(c, ds.NewQuery("FunctionRunResult").Ancestor(runKey), &functionResults); err != nil {
+				return fmt.Errorf("failed to get FunctionRunResult entities: %v", err)
 			}
 			return nil
 		},
@@ -66,9 +66,9 @@ func reportCompleted(c context.Context, req *admin.ReportCompletedRequest, gerri
 	// Create result message.
 	n := 0
 	var buf bytes.Buffer
-	for _, ar := range analyzerResults {
-		n += ar.NumComments
-		buf.WriteString(fmt.Sprintf("  %s: %d\n", ar.Name, ar.NumComments))
+	for _, fr := range functionResults {
+		n += fr.NumComments
+		buf.WriteString(fmt.Sprintf("  %s: %d\n", fr.Name, fr.NumComments))
 	}
 	results := fmt.Sprintf("%d result", n)
 	if n > 1 {

@@ -38,11 +38,11 @@ func TestProgress(t *testing.T) {
 			Parent: requestKey,
 			State:  tricium.State_SUCCESS,
 		}), ShouldBeNil)
-		analyzerName := "Hello"
+		functionName := "Hello"
 		run := &track.WorkflowRun{
 			ID:        1,
 			Parent:    requestKey,
-			Analyzers: []string{analyzerName},
+			Analyzers: []string{functionName},
 		}
 		So(ds.Put(ctx, run), ShouldBeNil)
 		runKey := ds.KeyForObj(ctx, run)
@@ -52,22 +52,22 @@ func TestProgress(t *testing.T) {
 			State:  tricium.State_SUCCESS,
 		}), ShouldBeNil)
 		platform := tricium.Platform_UBUNTU
-		analyzerKey := ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
-		workerName := analyzerName + "_UBUNTU"
-		So(ds.Put(ctx, &track.AnalyzerRun{
-			ID:      analyzerName,
+		functionKey := ds.NewKey(ctx, "FunctionRun", functionName, 0, runKey)
+		workerName := functionName + "_UBUNTU"
+		So(ds.Put(ctx, &track.FunctionRun{
+			ID:      functionName,
 			Parent:  runKey,
 			Workers: []string{workerName},
 		}), ShouldBeNil)
-		So(ds.Put(ctx, &track.AnalyzerRunResult{
+		So(ds.Put(ctx, &track.FunctionRunResult{
 			ID:     1,
-			Parent: analyzerKey,
+			Parent: functionKey,
 			State:  tricium.State_SUCCESS,
 		}), ShouldBeNil)
-		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
+		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, functionKey)
 		worker := &track.WorkerRun{
 			ID:       workerName,
-			Parent:   analyzerKey,
+			Parent:   functionKey,
 			Platform: platform,
 		}
 		So(ds.Put(ctx, worker), ShouldBeNil)
@@ -75,7 +75,7 @@ func TestProgress(t *testing.T) {
 		So(ds.Put(ctx, &track.WorkerRunResult{
 			ID:          1,
 			Parent:      workerKey,
-			Analyzer:    analyzerName,
+			Analyzer:    functionName,
 			Platform:    tricium.Platform_UBUNTU,
 			State:       tricium.State_SUCCESS,
 			NumComments: 1,
@@ -101,7 +101,7 @@ func TestProgress(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(state, ShouldEqual, tricium.State_SUCCESS)
 			So(len(progress), ShouldEqual, 1)
-			So(progress[0].Name, ShouldEqual, analyzerName)
+			So(progress[0].Name, ShouldEqual, functionName)
 			So(progress[0].Platform, ShouldEqual, platform)
 			So(progress[0].NumComments, ShouldEqual, 1)
 			So(progress[0].State, ShouldEqual, tricium.State_SUCCESS)

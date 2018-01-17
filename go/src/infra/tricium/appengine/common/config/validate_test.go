@@ -15,7 +15,7 @@ import (
 func TestValidate(t *testing.T) {
 	Convey("Test Environment", t, func() {
 		project := "playground"
-		analyzer := "PyLint"
+		functionName := "PyLint"
 		platform := tricium.Platform_UBUNTU
 		config := "enable"
 		sd := &tricium.ServiceConfig{
@@ -47,7 +47,7 @@ func TestValidate(t *testing.T) {
 		functions := []*tricium.Function{
 			{
 				Type:     tricium.Function_ANALYZER,
-				Name:     analyzer,
+				Name:     functionName,
 				Needs:    tricium.Data_FILES,
 				Provides: tricium.Data_RESULTS,
 				Impls: []*tricium.Impl{
@@ -76,7 +76,7 @@ func TestValidate(t *testing.T) {
 				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
-						Function: analyzer,
+						Function: functionName,
 						Platform: platform,
 					},
 				},
@@ -90,7 +90,7 @@ func TestValidate(t *testing.T) {
 				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
-						Function: analyzer,
+						Function: functionName,
 						Platform: tricium.Platform_WINDOWS,
 					},
 				},
@@ -104,7 +104,7 @@ func TestValidate(t *testing.T) {
 				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
-						Function: analyzer,
+						Function: functionName,
 						Platform: platform,
 						Configs: []*tricium.Config{
 							{
@@ -124,7 +124,7 @@ func TestValidate(t *testing.T) {
 				Functions: functions,
 				Selections: []*tricium.Selection{
 					{
-						Function: analyzer,
+						Function: functionName,
 						Platform: platform,
 						Configs: []*tricium.Config{
 							{
@@ -142,7 +142,7 @@ func TestValidate(t *testing.T) {
 
 func TestMergeFunctions(t *testing.T) {
 	Convey("Test Environment", t, func() {
-		analyzer := "PyLint"
+		functionName := "PyLint"
 		platform := tricium.Platform_UBUNTU
 		sc := &tricium.ServiceConfig{
 			Platforms: []*tricium.Platform_Details{
@@ -164,25 +164,25 @@ func TestMergeFunctions(t *testing.T) {
 		}
 
 		Convey("Project function def without service def must have data deps", func() {
-			_, err := mergeFunctions(analyzer, sc, nil, &tricium.Function{
+			_, err := mergeFunctions(functionName, sc, nil, &tricium.Function{
 				Type: tricium.Function_ANALYZER,
-				Name: analyzer,
+				Name: functionName,
 			})
 			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Service function def must have data deps", func() {
-			_, err := mergeFunctions(analyzer, sc, &tricium.Function{
+			_, err := mergeFunctions(functionName, sc, &tricium.Function{
 				Type: tricium.Function_ANALYZER,
-				Name: analyzer,
+				Name: functionName,
 			}, nil)
 			So(err, ShouldNotBeNil)
 		})
 
 		Convey("No service function config is OK", func() {
-			_, err := mergeFunctions(analyzer, sc, nil, &tricium.Function{
+			_, err := mergeFunctions(functionName, sc, nil, &tricium.Function{
 				Type:     tricium.Function_ANALYZER,
-				Name:     analyzer,
+				Name:     functionName,
 				Needs:    tricium.Data_FILES,
 				Provides: tricium.Data_RESULTS,
 			})
@@ -190,9 +190,9 @@ func TestMergeFunctions(t *testing.T) {
 		})
 
 		Convey("No project function config is OK", func() {
-			_, err := mergeFunctions(analyzer, sc, &tricium.Function{
+			_, err := mergeFunctions(functionName, sc, &tricium.Function{
 				Type:     tricium.Function_ANALYZER,
-				Name:     analyzer,
+				Name:     functionName,
 				Needs:    tricium.Data_FILES,
 				Provides: tricium.Data_RESULTS,
 			}, nil)
@@ -200,21 +200,21 @@ func TestMergeFunctions(t *testing.T) {
 		})
 
 		Convey("Change of service data deps not allowed", func() {
-			_, err := mergeFunctions(analyzer, sc, &tricium.Function{
+			_, err := mergeFunctions(functionName, sc, &tricium.Function{
 				Type:     tricium.Function_ANALYZER,
-				Name:     analyzer,
+				Name:     functionName,
 				Needs:    tricium.Data_FILES,
 				Provides: tricium.Data_RESULTS,
 			}, &tricium.Function{
 				Type:     tricium.Function_ISOLATOR,
-				Name:     analyzer,
+				Name:     functionName,
 				Provides: tricium.Data_CLANG_DETAILS,
 			})
 			So(err, ShouldNotBeNil)
 		})
 
 		Convey("Neither service nor function config not OK", func() {
-			_, err := mergeFunctions(analyzer, sc, nil, nil)
+			_, err := mergeFunctions(functionName, sc, nil, nil)
 			So(err, ShouldNotBeNil)
 		})
 
@@ -223,9 +223,9 @@ func TestMergeFunctions(t *testing.T) {
 			comp := "someonesComp"
 			exec := "cat"
 			deadline := int32(120)
-			a, err := mergeFunctions(analyzer, sc, &tricium.Function{
+			a, err := mergeFunctions(functionName, sc, &tricium.Function{
 				Type:              tricium.Function_ANALYZER,
-				Name:              analyzer,
+				Name:              functionName,
 				Needs:             tricium.Data_FILES,
 				Provides:          tricium.Data_RESULTS,
 				PathFilters:       []string{"*\\.py", "*\\.pypy"},
@@ -245,7 +245,7 @@ func TestMergeFunctions(t *testing.T) {
 				},
 			}, &tricium.Function{
 				Type:              tricium.Function_ANALYZER,
-				Name:              analyzer,
+				Name:              functionName,
 				PathFilters:       []string{"*\\.py"},
 				Owner:             user,
 				MonorailComponent: comp,
