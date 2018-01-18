@@ -276,3 +276,23 @@ class GeneralSanitizerDetector(CallStackDetector):
                               LanguageType.CPP, {})
 
     return None
+
+
+class CheckFailureDetector(CallStackDetector):
+  """A detector which detects check failure stack.
+
+  [FATAL:Vector.h(1829)] Check failed: position <= size() (1 vs. 0)
+  #0 0x6175963d in logging::LogMessage::~LogMessage() base/logging.cc:581:29
+  #1 0x6c79e803 in void WTF::Vector third_party/WebKit/Source/r.h:1829:3
+  #2 0x6c79e5ff in blink::AXNodeObject third_party/WebKit/S.cc:17
+  #3 0x6c79e21d in blink() third_party/WebKit/Source/t.cpp:2112:7
+  """
+  CHECK_FAILURE_REGEX = re.compile(
+      r'\s*[[][^]]*[:]([^](]*).*[]].*Check failed[:]\s*(.*)')
+
+  def __call__(self, line, flags=None):
+    if CheckFailureDetector.CHECK_FAILURE_REGEX.match(line):
+      return StartOfCallStack(0, CallStackFormatType.DEFAULT,
+                              LanguageType.CPP, {})
+
+    return None

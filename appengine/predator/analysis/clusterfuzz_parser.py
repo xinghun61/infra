@@ -40,6 +40,7 @@ STACKTRACE_FLAG_GROUP = 'stacktrace_flags'
 CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS = {
     CrashType.DIRECT_LEAK: callstack_detectors.DirectLeakDetector,
     CrashType.INDIRECT_LEAK: callstack_detectors.IndirectLeakDetector,
+    CrashType.CHECK_FAILURE: callstack_detectors.CheckFailureDetector,
 }
 
 
@@ -58,7 +59,8 @@ def GetCallStackDetectors(job_type, crash_type):
     return [callstack_detectors.AndroidJobDetector()] + default_detectors
 
   if crash_type in CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS:
-    return [CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS[crash_type]()]
+    return ([CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS[crash_type]()] +
+            default_detectors)
 
   return default_detectors
 

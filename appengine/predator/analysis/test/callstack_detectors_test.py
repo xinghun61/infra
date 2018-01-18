@@ -162,3 +162,12 @@ class CallStackDetectorTest(AnalysisTestCase):
         stack_detector('==28956==ERROR: UndefinedBehaviorSanitizer:'),
         StartOfCallStack(2, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
     self.assertIsNone(stack_detector('blabla...'))
+
+  def testCheckFailureDetector(self):
+    """Tests that ``CheckFailureDetector`` detects check failure stack."""
+    stack_detector = callstack_detectors.CheckFailureDetector()
+    self.assertTupleEqual(
+        stack_detector(
+            '[FATAL:Vector.h(1829)] Check failed: position <= size()'),
+        StartOfCallStack(0, CallStackFormatType.DEFAULT, LanguageType.CPP, {}))
+    self.assertIsNone(stack_detector('blabla...'))
