@@ -165,7 +165,12 @@
  [end]
 
  [is can_edit_any "Yes"]
-   <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
+   [if-any user_is_project_member]
+     <input type="submit" id="savechanges" name="btn" value="Save changes" class="submit">
+   [else]
+     <p>You have permission to edit a specific template, but you must also be
+        a project member to make edits.</p>
+   [end]
  [end]
 
  </div>[# section]

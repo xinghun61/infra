@@ -15,6 +15,8 @@ import itertools
 import logging
 import time
 
+from third_party import ezt
+
 from features import filterrules_helpers
 from features import filterrules_views
 from features import savedqueries_helpers
@@ -205,8 +207,11 @@ class AdminTemplates(IssueAdminBase):
         for fd in config.field_defs
         if not fd.is_deleted]
 
+    user_is_project_member = framework_bizobj.UserIsInProject(
+        mr.project, mr.auth.effective_ids)
     page_data.update({
         'fields': field_views,
+        'user_is_project_member': ezt.boolean(user_is_project_member),
         })
     return page_data
 
@@ -220,6 +225,12 @@ class AdminTemplates(IssueAdminBase):
     Returns:
       The URL of the page to show after processing.
     """
+    if not framework_bizobj.UserIsInProject(
+          mr.project, mr.auth.effective_ids):
+      raise permissions.PermissionException(
+          'Non-members are not allowed to edit templates due to '
+          'and implementation constraint.')
+
     templates = self._ParseAllTemplates(post_data, mr)
 
     default_template_id_for_developers = None

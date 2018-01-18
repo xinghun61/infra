@@ -29,7 +29,8 @@ class TestBase(unittest.TestCase):
         issue=fake.IssueService(),
         features=fake.FeaturesService())
     self.servlet = servlet_factory('req', 'res', services=self.services)
-    self.project = self.services.project.TestAddProject('proj', project_id=789)
+    self.project = self.services.project.TestAddProject(
+        'proj', project_id=789, contrib_ids=[333L])
     self.config = tracker_bizobj.MakeDefaultProjectIssueConfig(789)
     self.services.config.StoreConfig(None, self.config)
     self.cnxn = fake.MonorailConnection()
@@ -152,6 +153,8 @@ class AdminTemplatesTest(TestBase):
     self.test_template = tracker_bizobj.MakeIssueTemplate(
         'Test Template', 'sum', 'New', 111L, 'content', [], [], [], [])
     self.test_template.template_id = 12345
+    self.mr.auth.user_id = 333L
+    self.mr.auth.effective_ids = {333L}
 
   def testGatherPageData(self):
     self._mockGetUser()
@@ -160,7 +163,8 @@ class AdminTemplatesTest(TestBase):
     self.mox.VerifyAll()
 
     self.assertItemsEqual(
-        ['admin_tab_mode', 'config', 'fields'], page_data.keys())
+        ['admin_tab_mode', 'config', 'fields', 'user_is_project_member'],
+        page_data.keys())
     config_view = page_data['config']
     self.assertEqual(789, config_view.project_id)
     self.assertEqual([], page_data['fields'])
@@ -178,8 +182,21 @@ class AdminTemplatesTest(TestBase):
     self.assertEqual(0, self.config.default_template_for_developers)
     self.assertEqual(0, self.config.default_template_for_users)
 
-  def testProcessSubtabForm_Normal(self):
+  def testProcessSubtabForm_Nonmember(self):
     """If user lacks perms, ignore the attempt to set default templates."""
+    self.mr.auth.user_id = 999L
+    self.mr.auth.effective_ids = {999L}
+    self.config.templates.append(self.test_template)
+    post_data = fake.PostData(
+        default_template_for_developers=['Test Template'],
+        default_template_for_users=['Test Template'])
+    self.servlet._ParseAllTemplates = lambda x, y: self.config.templates
+    self.assertRaises(
+        permissions.PermissionException,
+        self.servlet.ProcessSubtabForm, post_data, self.mr)
+
+  def testProcessSubtabForm_Normal(self):
+    """If user has perms, set default templates."""
     self.config.templates.append(self.test_template)
     post_data = fake.PostData(
         default_template_for_developers=['Test Template'],
