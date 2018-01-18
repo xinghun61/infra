@@ -119,6 +119,34 @@ class BuildBotTest(unittest.TestCase):
       result = buildbot.ParseBuildUrl(url)
       self.assertEqual(expected_result, result)
 
+  @mock.patch.object(buildbot.buildbucket_client, 'SearchBuilds')
+  def testParseCIBuildLongUrl(self, mock_search):
+    url = ('https://ci.chromium.org/p/chromium/builders/luci.chromium.ci'
+           '/Linux%20Tests%20SANDBOX/3932')
+    master_name = 'chromium.sandbox'
+    parameters = {'properties': {'parent_mastername': master_name}}
+    mock_search.return_value = {
+        'builds': [{
+            'parameters_json': json.dumps(parameters)
+        }]
+    }
+    expected_result = (master_name, 'Linux Tests SANDBOX', 3932)
+    self.assertEqual(expected_result, buildbot.ParseBuildUrl(url))
+
+  @mock.patch.object(
+      buildbot.buildbucket_client, 'SearchBuilds', return_value={})
+  def testParseCIBuildLongUrlNoBuilds(self, _):
+    url = ('https://ci.chromium.org/p/chromium/builders/luci.chromium.ci'
+           '/Linux%20Tests%20SANDBOX/3932')
+    self.assertIsNone(buildbot.ParseBuildUrl(url))
+
+  @mock.patch.object(buildbot.buildbucket_client, 'SearchBuilds')
+  def testGetBuildbotMasterNameNotSerializable(self, mock_search):
+    url = ('https://ci.chromium.org/p/chromium/builders/luci.chromium.ci'
+           '/Linux%20Tests%20SANDBOX/3932')
+    mock_search.return_value = {'builds': [{'parameters_json': 'Not Found'}]}
+    self.assertIsNone(buildbot.ParseBuildUrl(url))
+
   def testParseStepUrl(self):
     cases = {
         None:
@@ -127,14 +155,14 @@ class BuildBotTest(unittest.TestCase):
             None,
         ('https://unknown_host/p/chromium/builders/Linux/builds/55833/'
          '/steps/compile'):
-             None,
+            None,
         'http://build.chromium.org/p/chromium/builders/Linux':
             None,
         ('http://build.chromium.org/p/chromium/builders/Linux/builds/55833'
          '/steps/compile'): ('chromium', 'Linux', 55833, 'compile'),
         ('http://build.chromium.org/p/chromium.win/builders/Win7%20Tests%20'
          '%281%29/builds/33911/steps/interactive_ui'): (
-             'chromium.win', 'Win7 Tests (1)', 33911, 'interactive_ui'),
+            'chromium.win', 'Win7 Tests (1)', 33911, 'interactive_ui'),
     }
 
     for url, expected_result in cases.iteritems():

@@ -6,6 +6,7 @@
 import collections
 import json
 import logging
+import urllib
 
 from gae_libs.http import auth_util
 
@@ -19,6 +20,9 @@ _BUILDBUCKET_PUT_GET_ENDPOINT = (
     'https://{hostname}/api/buildbucket/v1/builds'.format(
         hostname=_BUILDBUCKET_HOST))
 _LUCI_PREFIX = 'luci.'
+_BUILDBUCKET_SEARCH_ENDPOINT = (
+    'https://{hostname}/api/buildbucket/v1/search'.format(
+        hostname=_BUILDBUCKET_HOST))
 
 
 def _GetBucketName(master_name):
@@ -35,10 +39,10 @@ def _GetBucketName(master_name):
 
 
 class TryJob(
-    collections.namedtuple('TryJobNamedTuple',
-                           ('master_name', 'builder_name', 'revision',
-                            'properties', 'tags', 'additional_build_parameters',
-                            'cache_name', 'dimensions'))):
+    collections.namedtuple(
+        'TryJobNamedTuple',
+        ('master_name', 'builder_name', 'revision', 'properties', 'tags',
+         'additional_build_parameters', 'cache_name', 'dimensions'))):
   """Represents a try-job to be triggered through Buildbucket.
 
   Tag for "user_agent" should not be set, as it will be added automatically.
@@ -160,6 +164,13 @@ def _ConvertFuturesToResults(json_results):
   return results
 
 
+def _GetHeaders():
+  return {
+      'Authorization': 'Bearer ' + auth_util.GetAuthToken(),
+      'Content-Type': 'application/json; charset=UTF-8'
+  }
+
+
 def TriggerTryJobs(try_jobs, notification_id=''):
   """Triggers try-job in a batch.
 
@@ -174,16 +185,12 @@ def TriggerTryJobs(try_jobs, notification_id=''):
       build: an instance of BuildbucketBuild. None if error occurred.
   """
   json_results = []
-  headers = {
-      'Authorization': 'Bearer ' + auth_util.GetAuthToken(),
-      'Content-Type': 'application/json; charset=UTF-8'
-  }
 
   for try_job in try_jobs:
     status_code, content = FinditHttpClient().Put(
         _BUILDBUCKET_PUT_GET_ENDPOINT,
         json.dumps(try_job.ToBuildbucketRequest(notification_id)),
-        headers=headers)
+        headers=_GetHeaders())
     if status_code == 200:  # pragma: no cover
       json_results.append(json.loads(content))
     else:
@@ -205,14 +212,10 @@ def GetTryJobs(build_ids):
       build: an instance of BuildbucketBuild. None if error occurred.
   """
   json_results = []
-  headers = {
-      'Authorization': 'Bearer ' + auth_util.GetAuthToken(),
-      'Content-Type': 'application/json; charset=UTF-8'
-  }
 
   for build_id in build_ids:
     status_code, content = FinditHttpClient().Get(
-        _BUILDBUCKET_PUT_GET_ENDPOINT + '/' + build_id, headers=headers)
+        _BUILDBUCKET_PUT_GET_ENDPOINT + '/' + build_id, headers=_GetHeaders())
     if status_code == 200:  # pragma: no cover
       json_results.append(json.loads(content))
     else:
@@ -220,3 +223,28 @@ def GetTryJobs(build_ids):
       json_results.append(error_content)
 
   return _ConvertFuturesToResults(json_results)
+
+
+def SearchBuilds(tags):
+  """Returns data for builds that are searched by tags.
+
+  Args:
+    tags (list): A list of tags and their values in the format as
+      [('tag', 'buildername:Linux Tests'].
+
+  Returns:
+    data (dict): A dict of builds' info.
+  """
+  tag_str = urllib.urlencode(tags)
+  status_code, content = FinditHttpClient().Get(
+      _BUILDBUCKET_SEARCH_ENDPOINT + '?' + tag_str, headers=_GetHeaders())
+  if status_code == 200:
+    try:
+      return json.loads(content or '{}')
+    except (ValueError, TypeError):
+      logging.exception('Failed to search for builds using tags %s', tag_str)
+  else:
+    logging.error(
+        'Failed to search for builds using tags %s with status_code %d.',
+        tag_str, status_code)
+  return None

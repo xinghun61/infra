@@ -12,7 +12,7 @@ import re
 import urllib
 
 from common import rpc_util
-from infra_api_clients import logdog_util
+from common.waterfall import buildbucket_client
 from waterfall.build_info import BuildInfo
 
 # TODO(crbug.com/787676): Use an api rather than parse urls to get the relavant
@@ -67,7 +67,6 @@ _BUILD_URL_PATTERNS = [  # yapf: disable
     _BUILD_URL_PATTERN,
     _MILO_BUILD_URL_PATTERN,
     _CI_BUILD_URL_PATTERN,
-    _CI_BUILD_LONG_URL_PATTERN,
 ]
 
 _MILO_BUILDINFO_ENDPOINT = ('https://luci-milo.appspot.com/'
@@ -174,6 +173,42 @@ def GetMasterNameFromUrl(url):
   return match.group(1)
 
 
+# TODO(crbug/802940): Remove this when the API of getting LUCI build is ready.
+def _GetBuildbotMasterName(bucket_name, builder_name, build_number):
+  """Gets buildbot master name based on build_address."""
+  build_address = '%s/%s/%d' % (bucket_name, builder_name, build_number)
+  res = buildbucket_client.SearchBuilds(tags=[(
+      'tag', 'build_address:%s' % build_address)])
+  if not res or len(res.get('builds', [])) < 1:
+    return None
+
+  parameters_json = res['builds'][0].get('parameters_json')
+  try:
+    properties = json.loads(parameters_json).get('properties', {})
+    return properties.get('mastername') or properties.get('parent_mastername')
+  except (ValueError, TypeError):
+    logging.exception('Failed to get buildbot master name for luci build %s.',
+                      build_address)
+    return None
+
+
+# TODO(crbug/802940): Remove this when the API of getting LUCI build is ready.
+def _ParseCIBuildLongUrl(url):
+  """Parses urls in _CI_BUILD_LONG_URL_PATTERN pattern."""
+  match = _CI_BUILD_LONG_URL_PATTERN.match(url)
+  if not match:
+    return None
+
+  bucket_name, builder_name, build_number = match.groups()
+  builder_name = urllib.unquote(builder_name)
+  master_name = _GetBuildbotMasterName(bucket_name, builder_name,
+                                       int(build_number))
+  if not master_name:
+    return None
+
+  return master_name, builder_name, int(build_number)
+
+
 def ParseBuildUrl(url):
   """Parses the given build url.
 
@@ -189,7 +224,7 @@ def ParseBuildUrl(url):
     if match:
       break
   if not match:
-    return None
+    return _ParseCIBuildLongUrl(url)
 
   master_name, builder_name, build_number = match.groups()
   builder_name = urllib.unquote(builder_name)
