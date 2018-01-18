@@ -35,6 +35,9 @@ It has these top-level messages:
 	ProgressRequest
 	ProgressResponse
 	FunctionProgress
+	ProjectProgressRequest
+	ProjectProgressResponse
+	RunProgress
 	ResultsRequest
 	ResultsResponse
 	FeedbackRequest

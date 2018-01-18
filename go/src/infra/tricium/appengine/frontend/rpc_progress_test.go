@@ -97,7 +97,7 @@ func TestProgress(t *testing.T) {
 			ctx = auth.WithState(ctx, &authtest.FakeState{
 				Identity: identity.Identity(okACLUser),
 			})
-			state, progress, err := progress(ctx, runID)
+			state, progress, _, err := progress(ctx, runID)
 			So(err, ShouldBeNil)
 			So(state, ShouldEqual, tricium.State_SUCCESS)
 			So(len(progress), ShouldEqual, 1)

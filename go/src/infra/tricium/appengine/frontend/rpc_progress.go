@@ -26,10 +26,10 @@ func (r *TriciumServer) Progress(c context.Context, req *tricium.ProgressRequest
 	if err != nil {
 		return nil, err
 	}
-	runState, functionProgress, err := progress(c, runID)
+	runState, functionProgress, errCode, err := progress(c, runID)
 	if err != nil {
 		logging.WithError(err).Errorf(c, "progress failed: %v, run ID: %d", err, runID)
-		return nil, grpc.Errorf(codes.Internal, "failed to execute progress request")
+		return nil, grpc.Errorf(errCode, "failed to execute progress request")
 	}
 	logging.Infof(c, "[frontend] Function progress: %v", functionProgress)
 	return &tricium.ProgressResponse{
@@ -84,19 +84,19 @@ func validateProgressRequest(c context.Context, req *tricium.ProgressRequest) (i
 	return runID, nil
 }
 
-func progress(c context.Context, runID int64) (tricium.State, []*tricium.FunctionProgress, error) {
+func progress(c context.Context, runID int64) (tricium.State, []*tricium.FunctionProgress, codes.Code, error) {
 	requestKey := ds.NewKey(c, "AnalyzeRequest", "", runID, nil)
 	requestRes := &track.AnalyzeRequestResult{ID: 1, Parent: requestKey}
 	if err := ds.Get(c, requestRes); err != nil {
-		return tricium.State_PENDING, nil, fmt.Errorf("failed to get AnalyzeRequestResult: %v", err)
+		return tricium.State_PENDING, nil, codes.InvalidArgument, fmt.Errorf("failed to get AnalyzeRequestResult: %v", err)
 	}
 	workflowRun := &track.WorkflowRun{ID: 1, Parent: requestKey}
 	if err := ds.Get(c, workflowRun); err != nil {
-		return tricium.State_PENDING, nil, fmt.Errorf("failed to get WorkflowRun: %v", err)
+		return tricium.State_PENDING, nil, codes.Internal, fmt.Errorf("failed to get WorkflowRun: %v", err)
 	}
 	functions, err := getFunctionRunsForWorkflowRun(c, workflowRun)
 	if err != nil {
-		return tricium.State_PENDING, nil, fmt.Errorf("failed to get FunctionRun entities: %v", err)
+		return tricium.State_PENDING, nil, codes.Internal, fmt.Errorf("failed to get FunctionRun entities: %v", err)
 	}
 	var workerResults []*track.WorkerRunResult
 	for _, function := range functions {
@@ -108,7 +108,7 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Functio
 	}
 	logging.Debugf(c, "Reading worker results for %v", workerResults)
 	if err := ds.Get(c, workerResults); err != nil && err != ds.ErrNoSuchEntity {
-		return tricium.State_PENDING, nil, fmt.Errorf("failed to get WorkerRunResult entities: %v", err)
+		return tricium.State_PENDING, nil, codes.Internal, fmt.Errorf("failed to get WorkerRunResult entities: %v", err)
 	}
 	res := []*tricium.FunctionProgress{}
 	for _, wr := range workerResults {
@@ -127,10 +127,10 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Functio
 	// Monitor progress requests per project and run ID.
 	request := &track.AnalyzeRequest{ID: runID}
 	if err := ds.Get(c, request); err != nil {
-		return requestRes.State, res, fmt.Errorf("failed to get AnalyzeRequest: %v", err)
+		return requestRes.State, res, codes.Internal, fmt.Errorf("failed to get AnalyzeRequest: %v", err)
 	}
 	progressRequestCount.Add(c, 1, request.Project, strconv.FormatInt(runID, 10))
-	return requestRes.State, res, nil
+	return requestRes.State, res, codes.OK, nil
 }
 
 func getFunctionRunsForWorkflowRun(

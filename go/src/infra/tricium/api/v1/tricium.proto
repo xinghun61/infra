@@ -23,6 +23,12 @@ service Tricium {
   // A run corresponds to an analyze request and is identified with a run ID.
   rpc Progress(ProgressRequest) returns (ProgressResponse);
 
+  // ProjectProgress requests progress information for a project.
+  //
+  // A list of runs, connected to the project, will be returned together with their status.
+  // The provided project must be known to the queried Tricium instance.
+  rpc ProjectProgress(ProjectProgressRequest) returns (ProjectProgressResponse);
+
   // Results requests analysis results from a run.
   //
   // A run corresponds to an analyze request and is identified with a run ID.
@@ -145,6 +151,27 @@ message FunctionProgress {
   //
   // For analyzers that are done and produce comments.
   int32 num_comments = 6;
+}
+
+message ProjectProgressRequest {
+  // Project to get progress for.
+  //
+  // The provided project name must be known to the queried Tricium instance.
+  string project = 1;
+}
+
+message ProjectProgressResponse {
+  // Progress of runs for the matching project in the progress request.
+  //
+  // The returned list is sorted based on state and detailed run progress
+  // can be requested using the run ID of each listed run.
+  repeated RunProgress run_progress = 1;
+}
+
+message RunProgress {
+  string run_id = 1;
+  State state = 2;
+  int32 num_comments = 3;
 }
 
 message ResultsRequest {
