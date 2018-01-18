@@ -267,7 +267,6 @@ class PredatorApp(object):
     """Publishes results to related pub/sub topics."""
     self.PublishResultToClient(crash_identifiers)
 
-  def FindCulprit(self, crash_identifiers):
-    """Given a crash_identifiers, returns a ``Culprit``."""
-    analysis = self.GetAnalysis(crash_identifiers)
+  def FindCulprit(self, analysis):
+    """Given a CrashAnalysis report, returns a ``Culprit``."""
     return self._Predator().FindCulprit(analysis.ToCrashReport())

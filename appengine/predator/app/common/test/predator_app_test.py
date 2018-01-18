@@ -294,6 +294,6 @@ class PredatorTest(AppengineTestCase):
     analysis.status = analysis_status.COMPLETED
     analysis.put()
 
-    predator.FindCulprit(crash_identifiers)
+    predator.FindCulprit(analysis)
     self.assertTrue(mock_to_crash_report.called)
     self.assertTrue(mock_find_culprit.called)

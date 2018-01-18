@@ -171,7 +171,7 @@ class CrashAnalysisPipeline(CrashBasePipeline):
     analysis.put()
 
     # Actually do the analysis.
-    success, culprit = self._predator.FindCulprit(self._crash_identifiers)
+    success, culprit = self._predator.FindCulprit(analysis)
     result, tags = culprit.ToDicts()
 
     monitoring.reports_processed.increment({

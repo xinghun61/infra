@@ -158,7 +158,7 @@ class PredatorForClusterfuzz(PredatorApp):
     self.PublishResultToClient(crash_identifiers)
     self.PublishResultToTryBot(crash_identifiers)
 
-  def RedefineClassifierIfLargeRegressionRange(self, crash_identifiers):
+  def RedefineClassifierIfLargeRegressionRange(self, analysis):
     """Disable features for revisions in regression range > 100 commits.
 
     For crash with big regression range, it's easy to get false positives if we
@@ -166,7 +166,6 @@ class PredatorForClusterfuzz(PredatorApp):
     Because it has a big chance to hit these features and cause false positives.
     So we should disable these 2 features.
     """
-    analysis = self.GetAnalysis(crash_identifiers)
     if (analysis.commit_count_in_regression_range <
         _BIG_REGRESSION_RANGE_COMMITS_THRESHOLD):
       return
@@ -188,8 +187,7 @@ class PredatorForClusterfuzz(PredatorApp):
     self._predator.changelist_classifier = ChangelistClassifier(
         get_repository, meta_feature, meta_weight)
 
-  def FindCulprit(self, crash_identifiers):
+  def FindCulprit(self, analysis):
     """Given a crash_identifiers, returns a ``Culprit``."""
-    self.RedefineClassifierIfLargeRegressionRange(crash_identifiers)
-    analysis = self.GetAnalysis(crash_identifiers)
+    self.RedefineClassifierIfLargeRegressionRange(analysis)
     return self._predator.FindCulprit(analysis.ToCrashReport())

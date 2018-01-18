@@ -346,7 +346,7 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
     predator = PredatorForClusterfuzz(self.GetMockRepoFactory(),
                                       CrashConfig.Get())
     old_weights = predator._Predator().changelist_classifier._model._meta_weight
-    predator.RedefineClassifierIfLargeRegressionRange(analysis.identifiers)
+    predator.RedefineClassifierIfLargeRegressionRange(analysis)
     new_weights = predator._Predator().changelist_classifier._model._meta_weight
     self.assertTrue(new_weights == old_weights)
 
@@ -364,7 +364,7 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
 
     predator = PredatorForClusterfuzz(self.GetMockRepoFactory(),
                                       CrashConfig.Get())
-    predator.RedefineClassifierIfLargeRegressionRange(analysis.identifiers)
+    predator.RedefineClassifierIfLargeRegressionRange(analysis)
     weights = predator._Predator().changelist_classifier._model._meta_weight
     self.assertFalse('TouchCrashedComponent' in weights)
     self.assertFalse('TouchCrashedDirectory' in weights)
@@ -389,7 +389,7 @@ class PredatorForClusterfuzzTest(AppengineTestCase):
     analysis.status = analysis_status.COMPLETED
     analysis.put()
 
-    predator.FindCulprit(crash_identifiers)
+    predator.FindCulprit(analysis)
     self.assertTrue(mock_to_crash_report.called)
     self.assertTrue(mock_disable_features.called)
     self.assertTrue(mock_find_culprit.called)
