@@ -126,7 +126,7 @@ func workerDone(c context.Context, req *admin.WorkerDoneRequest, isolator common
 
 	// Compute run state.
 	var runResults []*track.FunctionRunResult
-	for _, name := range run.Analyzers {
+	for _, name := range run.Functions {
 		functionRunKey := ds.NewKey(c, "FunctionRun", name, 0, workflowRunKey)
 		runResults = append(runResults, &track.FunctionRunResult{ID: 1, Parent: functionRunKey})
 	}

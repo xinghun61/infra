@@ -39,11 +39,11 @@ func TestProjectProgress(t *testing.T) {
 			Parent: requestKey,
 			State:  tricium.State_SUCCESS,
 		}), ShouldBeNil)
-		analyzerName := "Hello"
+		functionName := "Hello"
 		run := &track.WorkflowRun{
 			ID:        1,
 			Parent:    requestKey,
-			Analyzers: []string{analyzerName},
+			Functions: []string{functionName},
 		}
 		So(ds.Put(ctx, run), ShouldBeNil)
 		runKey := ds.KeyForObj(ctx, run)
@@ -53,23 +53,23 @@ func TestProjectProgress(t *testing.T) {
 			State:  tricium.State_SUCCESS,
 		}), ShouldBeNil)
 		platform := tricium.Platform_UBUNTU
-		analyzerKey := ds.NewKey(ctx, "AnalyzerRun", analyzerName, 0, runKey)
-		workerName := analyzerName + "_UBUNTU"
+		functionKey := ds.NewKey(ctx, "FunctionRun", functionName, 0, runKey)
+		workerName := functionName + "_UBUNTU"
 		So(ds.Put(ctx, &track.FunctionRun{
-			ID:      analyzerName,
+			ID:      functionName,
 			Parent:  runKey,
 			Workers: []string{workerName},
 		}), ShouldBeNil)
 		So(ds.Put(ctx, &track.FunctionRunResult{
 			ID:          1,
-			Parent:      analyzerKey,
+			Parent:      functionKey,
 			State:       tricium.State_SUCCESS,
 			NumComments: 2, // NB! Only adding aggregated data and not the corresponding comments.
 		}), ShouldBeNil)
-		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, analyzerKey)
+		workerKey := ds.NewKey(ctx, "WorkerRun", workerName, 0, functionKey)
 		worker := &track.WorkerRun{
 			ID:       workerName,
-			Parent:   analyzerKey,
+			Parent:   functionKey,
 			Platform: platform,
 		}
 		So(ds.Put(ctx, worker), ShouldBeNil)
@@ -77,7 +77,7 @@ func TestProjectProgress(t *testing.T) {
 		So(ds.Put(ctx, &track.WorkerRunResult{
 			ID:          1,
 			Parent:      workerKey,
-			Analyzer:    analyzerName,
+			Function:    functionName,
 			Platform:    tricium.Platform_UBUNTU,
 			State:       tricium.State_SUCCESS,
 			NumComments: 1,

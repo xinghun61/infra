@@ -42,7 +42,7 @@ func TestProgress(t *testing.T) {
 		run := &track.WorkflowRun{
 			ID:        1,
 			Parent:    requestKey,
-			Analyzers: []string{functionName},
+			Functions: []string{functionName},
 		}
 		So(ds.Put(ctx, run), ShouldBeNil)
 		runKey := ds.KeyForObj(ctx, run)
@@ -75,7 +75,7 @@ func TestProgress(t *testing.T) {
 		So(ds.Put(ctx, &track.WorkerRunResult{
 			ID:          1,
 			Parent:      workerKey,
-			Analyzer:    functionName,
+			Function:    functionName,
 			Platform:    tricium.Platform_UBUNTU,
 			State:       tricium.State_SUCCESS,
 			NumComments: 1,

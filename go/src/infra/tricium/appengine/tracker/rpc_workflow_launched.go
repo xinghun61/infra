@@ -56,7 +56,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 			Parent:            requestKey,
 			IsolateServerURL:  wf.IsolateServer,
 			SwarmingServerURL: wf.SwarmingServer,
-			Analyzers:         functions,
+			Functions:         functions,
 		}
 		if err := ds.Put(c, workflowRun); err != nil {
 			return fmt.Errorf("failed to store WorkflowRun entity (run ID: %d): %v", req.RunId, err)
@@ -111,7 +111,7 @@ func workflowLaunched(c context.Context, req *admin.WorkflowLaunchedRequest, wp 
 							&track.WorkerRunResult{
 								ID:       1,
 								Name:     worker.ID,
-								Analyzer: v.Function.ID,
+								Function: v.Function.ID,
 								Parent:   workerKey,
 								State:    tricium.State_PENDING,
 							},

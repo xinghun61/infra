@@ -113,7 +113,7 @@ func progress(c context.Context, runID int64) (tricium.State, []*tricium.Functio
 	res := []*tricium.FunctionProgress{}
 	for _, wr := range workerResults {
 		p := &tricium.FunctionProgress{
-			Name:        wr.Analyzer,
+			Name:        wr.Function,
 			Platform:    wr.Platform,
 			State:       wr.State,
 			NumComments: int32(wr.NumComments),
@@ -141,7 +141,7 @@ func getFunctionRunsForWorkflowRun(
 		logging.Debugf(c, "AnalyzeRequest: %v", request)
 	}
 	var functions []*track.FunctionRun
-	for _, name := range run.Analyzers {
+	for _, name := range run.Functions {
 		functions = append(functions, &track.FunctionRun{ID: name, Parent: runKey})
 	}
 	logging.Debugf(c, "Reading results for functions: %v, WorkflowRun: %v", functions, run)

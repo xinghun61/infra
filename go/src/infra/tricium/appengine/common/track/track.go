@@ -108,8 +108,7 @@ type WorkflowRun struct {
 	// Name of analyzers included in this workflow.
 	//
 	// Included here to allow for direct access without queries.
-	// TODO(qyearsley, crbug.com/793735) Rename this to "Functions".
-	Analyzers []string `gae:",noindex"`
+	Functions []string `gae:",noindex"`
 	// Isolate server URL.
 	IsolateServerURL string `gae:",noindex"`
 	// Swarming server URL.
@@ -201,8 +200,7 @@ type WorkerRunResult struct {
 	//
 	// Stored here, in addition to in the ID of ancestors, for indexing
 	// and convenience.
-	// TODO(qyearsley, crbug.com/793735) Rename this to "Function".
-	Analyzer string
+	Function string
 	// Platform this worker is running on.
 	Platform tricium.Platform_Name
 	// State of the parent worker run; running, success, or failure.

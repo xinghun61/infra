@@ -88,7 +88,7 @@ func TestWorkflowLaunchedRequest(t *testing.T) {
 
 			Convey("Adds list of functions to WorkflowRun", func() {
 				So(ds.Get(ctx, run), ShouldBeNil)
-				So(len(run.Analyzers), ShouldEqual, 3)
+				So(len(run.Functions), ShouldEqual, 3)
 			})
 
 			Convey("Worker and function is marked pending", func() {
