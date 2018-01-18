@@ -1,13 +1,14 @@
 Name: govanityurls
 URL: https://github.com/GoogleCloudPlatform/govanityurls
-Revision: 560593c78895edd14d409af21e3edba8547396c9
+Revision: c4903dbca98cf7e110093dbe7c2c584f677cfa8c
 License: Apache v2 License
 
 Description:
 Standalone binary and appengine app to serve Go vanity URLs.
 
 Local Modifications:
-Modified vanity.yaml to contain URL mappings for go.chromium.org.
+Modified vanity.yaml to contain URL mappings for go.chromium.org
+and added govanityurls.infra_testing.
 
 To upload a new instance:
 gae.py upload -A chromium-go-url-redirector
