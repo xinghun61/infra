@@ -46,7 +46,7 @@ CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS = {
 
 def GetCallStackDetectors(job_type, crash_type):
   """Returns a list ``CallStackDetector`` to detect callstacks."""
-  default_detectors = [
+  detectors = [
       callstack_detectors.AsanDetector(),
       callstack_detectors.MsanDetector(),
       callstack_detectors.SyzyasanDetector(),
@@ -56,13 +56,13 @@ def GetCallStackDetectors(job_type, crash_type):
       callstack_detectors.GeneralSanitizerDetector()]
 
   if ANDROID_JOB_TYPE_MARKER in job_type:
-    return [callstack_detectors.AndroidJobDetector()] + default_detectors
+    detectors = [callstack_detectors.AndroidJobDetector()] + detectors
 
   if crash_type in CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS:
-    return ([CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS[crash_type]()] +
-            default_detectors)
+    detectors = ([CRASH_TYPE_TO_CALLSTACK_DETECTOR_CLASS[crash_type]()] +
+                 detectors)
 
-  return default_detectors
+  return detectors
 
 
 class ClusterfuzzParser(object):
@@ -130,6 +130,7 @@ class ClusterfuzzParser(object):
                                  root_repo_url=root_repo_url)
         if frame is not None:
           stack_buffer.frames.append(frame)
+
         # Turn on flags if condition met.
         self.flag_manager.ConditionallyTurnOnFlags(line)
 
