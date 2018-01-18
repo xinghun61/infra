@@ -40,7 +40,7 @@
   * [recipe_roll_tryjob](#recipes-recipe_roll_tryjob)
   * [recipe_simulation](#recipes-recipe_simulation) &mdash; A continuous builder which runs recipe tests.
   * [recipes_py_continuous](#recipes-recipes_py_continuous)
-  * [remote_execute_dataflow_workflow](#recipes-remote_execute_dataflow_workflow)
+  * [remote_execute_dataflow_workflow](#recipes-remote_execute_dataflow_workflow) &mdash; This recipe is used to execute Dataflow workflows.
   * [sheriff-o-matic-wct](#recipes-sheriff-o-matic-wct)
   * [sync_submodules](#recipes-sync_submodules)
   * [third_party_packages](#recipes-third_party_packages) &mdash; This recipe builds and packages third party software, such as Git.
@@ -412,9 +412,22 @@ A continuous builder which runs recipe tests.
 &mdash; **def [RunSteps](/recipes/recipes/recipes_py_continuous.py#22)(api, mastername, buildername, buildnumber):**
 ### *recipes* / [remote\_execute\_dataflow\_workflow](/recipes/recipes/remote_execute_dataflow_workflow.py)
 
-[DEPS](/recipes/recipes/remote_execute_dataflow_workflow.py#7): [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
+[DEPS](/recipes/recipes/remote_execute_dataflow_workflow.py#22): [build/puppet\_service\_account][build/recipe_modules/puppet_service_account], [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [recipe\_engine/context][recipe_engine/recipe_modules/context], [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/properties][recipe_engine/recipe_modules/properties], [recipe\_engine/python][recipe_engine/recipe_modules/python], [recipe\_engine/step][recipe_engine/recipe_modules/step]
 
-&mdash; **def [RunSteps](/recipes/recipes/remote_execute_dataflow_workflow.py#34)(api, workflow, job_name, gcp_project_id, num_workers, timeout):**
+This recipe is used to execute Dataflow workflows.
+
+If you want a workflow to run at regular intervals, you can configure a builder
+to run this recipe. Dataflow workflows run on an internal builder, so this step
+must be completed by a Google employee. See this change for an example:
+https://chrome-internal-review.googlesource.com/c/chrome/tools/build/+/412934
+
+Builders configured with the name matching "dataflow-workflow-.*" will be
+automatically monitored for failures.
+
+This recipe uses the dataflow-launcher service account. That account must have
+the permission to schedule a Dataflow job for your project.
+
+&mdash; **def [RunSteps](/recipes/recipes/remote_execute_dataflow_workflow.py#50)(api, workflow, job_name, gcp_project_id, num_workers, timeout):**
 ### *recipes* / [sheriff-o-matic-wct](/recipes/recipes/sheriff-o-matic-wct.py)
 
 [DEPS](/recipes/recipes/sheriff-o-matic-wct.py#5): [depot\_tools/bot\_update][depot_tools/recipe_modules/bot_update], [depot\_tools/cipd][depot_tools/recipe_modules/cipd], [depot\_tools/gclient][depot_tools/recipe_modules/gclient], [wct](#recipe_modules-wct), [recipe\_engine/path][recipe_engine/recipe_modules/path], [recipe\_engine/platform][recipe_engine/recipe_modules/platform], [recipe\_engine/step][recipe_engine/recipe_modules/step]
@@ -555,16 +568,16 @@ See: //docs/testing/web_platform_tests.md (https://goo.gl/rSRGmZ)
 
 Runs a step which adds a link to the current CL if there is one.
 
-[build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/a22802bd9fc203064840588f8c1ce7dfb0c50a6d/scripts/slave/README.recipes.md#recipe_modules-chromium
-[build/recipe_modules/chromium_checkout]: https://chromium.googlesource.com/chromium/tools/build.git/+/a22802bd9fc203064840588f8c1ce7dfb0c50a6d/scripts/slave/README.recipes.md#recipe_modules-chromium_checkout
-[build/recipe_modules/goma]: https://chromium.googlesource.com/chromium/tools/build.git/+/a22802bd9fc203064840588f8c1ce7dfb0c50a6d/scripts/slave/README.recipes.md#recipe_modules-goma
-[build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/a22802bd9fc203064840588f8c1ce7dfb0c50a6d/scripts/slave/README.recipes.md#recipe_modules-luci_config
-[build/recipe_modules/perf_dashboard]: https://chromium.googlesource.com/chromium/tools/build.git/+/a22802bd9fc203064840588f8c1ce7dfb0c50a6d/scripts/slave/README.recipes.md#recipe_modules-perf_dashboard
-[build/recipe_modules/puppet_service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/a22802bd9fc203064840588f8c1ce7dfb0c50a6d/scripts/slave/README.recipes.md#recipe_modules-puppet_service_account
-[build/recipe_modules/trigger]: https://chromium.googlesource.com/chromium/tools/build.git/+/a22802bd9fc203064840588f8c1ce7dfb0c50a6d/scripts/slave/README.recipes.md#recipe_modules-trigger
-[build/recipe_modules/v8]: https://chromium.googlesource.com/chromium/tools/build.git/+/a22802bd9fc203064840588f8c1ce7dfb0c50a6d/scripts/slave/README.recipes.md#recipe_modules-v8
-[build/recipe_modules/webrtc]: https://chromium.googlesource.com/chromium/tools/build.git/+/a22802bd9fc203064840588f8c1ce7dfb0c50a6d/scripts/slave/README.recipes.md#recipe_modules-webrtc
-[build/recipe_modules/zip]: https://chromium.googlesource.com/chromium/tools/build.git/+/a22802bd9fc203064840588f8c1ce7dfb0c50a6d/scripts/slave/README.recipes.md#recipe_modules-zip
+[build/recipe_modules/chromium]: https://chromium.googlesource.com/chromium/tools/build.git/+/cd08ff1f434c2e20d735aff1f5ec4bef951cf088/scripts/slave/README.recipes.md#recipe_modules-chromium
+[build/recipe_modules/chromium_checkout]: https://chromium.googlesource.com/chromium/tools/build.git/+/cd08ff1f434c2e20d735aff1f5ec4bef951cf088/scripts/slave/README.recipes.md#recipe_modules-chromium_checkout
+[build/recipe_modules/goma]: https://chromium.googlesource.com/chromium/tools/build.git/+/cd08ff1f434c2e20d735aff1f5ec4bef951cf088/scripts/slave/README.recipes.md#recipe_modules-goma
+[build/recipe_modules/luci_config]: https://chromium.googlesource.com/chromium/tools/build.git/+/cd08ff1f434c2e20d735aff1f5ec4bef951cf088/scripts/slave/README.recipes.md#recipe_modules-luci_config
+[build/recipe_modules/perf_dashboard]: https://chromium.googlesource.com/chromium/tools/build.git/+/cd08ff1f434c2e20d735aff1f5ec4bef951cf088/scripts/slave/README.recipes.md#recipe_modules-perf_dashboard
+[build/recipe_modules/puppet_service_account]: https://chromium.googlesource.com/chromium/tools/build.git/+/cd08ff1f434c2e20d735aff1f5ec4bef951cf088/scripts/slave/README.recipes.md#recipe_modules-puppet_service_account
+[build/recipe_modules/trigger]: https://chromium.googlesource.com/chromium/tools/build.git/+/cd08ff1f434c2e20d735aff1f5ec4bef951cf088/scripts/slave/README.recipes.md#recipe_modules-trigger
+[build/recipe_modules/v8]: https://chromium.googlesource.com/chromium/tools/build.git/+/cd08ff1f434c2e20d735aff1f5ec4bef951cf088/scripts/slave/README.recipes.md#recipe_modules-v8
+[build/recipe_modules/webrtc]: https://chromium.googlesource.com/chromium/tools/build.git/+/cd08ff1f434c2e20d735aff1f5ec4bef951cf088/scripts/slave/README.recipes.md#recipe_modules-webrtc
+[build/recipe_modules/zip]: https://chromium.googlesource.com/chromium/tools/build.git/+/cd08ff1f434c2e20d735aff1f5ec4bef951cf088/scripts/slave/README.recipes.md#recipe_modules-zip
 [depot_tools/recipe_modules/bot_update]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/dbc809fcd3be3d9a39b77af038bbcdcc3db25e2f/recipes/README.recipes.md#recipe_modules-bot_update
 [depot_tools/recipe_modules/cipd]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/dbc809fcd3be3d9a39b77af038bbcdcc3db25e2f/recipes/README.recipes.md#recipe_modules-cipd
 [depot_tools/recipe_modules/depot_tools]: https://chromium.googlesource.com/chromium/tools/depot_tools.git/+/dbc809fcd3be3d9a39b77af038bbcdcc3db25e2f/recipes/README.recipes.md#recipe_modules-depot_tools
