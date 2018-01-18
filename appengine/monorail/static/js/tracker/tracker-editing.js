@@ -339,7 +339,6 @@ function TKR_addTemplateHiddenFields(templateIndex, templateName) {
     'owner_defaults_to_member_' + templateIndex, 'yes');
   TKR_appendHiddenField(parentEl, 'component_required_' + templateIndex);
   TKR_appendHiddenField(parentEl, 'components_' + templateIndex);
-  TKR_appendHiddenField(parentEl, 'members_only_' + templateIndex);
 
   var i = 0;
   while ($('label_0_' + i)) {
