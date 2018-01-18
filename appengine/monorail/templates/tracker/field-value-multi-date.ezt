@@ -4,7 +4,9 @@
            [if-any fields.field_def.min_value]min="[fields.field_def.min_value]"[end]
            [if-any fields.field_def.max_value]max="[fields.field_def.max_value]"[end]
            [if-index fields.values first]
-             [if-any fields.field_def.is_required_bool]required="required"[end]
+             [is arg0 "hidden"][else]
+               [if-any fields.field_def.is_required_bool]required="required"[end]
+             [end]
            [end]
            style="text-align:right; width:12em" class="multivalued customfield">
     [if-index fields.values first][else]
@@ -20,7 +22,9 @@
     <input type="date" name="custom_[fields.field_id]" value=""
            [if-any fields.field_def.min_value]min="[fields.field_def.min_value]"[end]
            [if-any fields.field_def.max_value]max="[fields.field_def.max_value]"[end]
-           [if-any fields.field_def.is_required_bool]required="required"[end]
+           [is arg0 "hidden"][else]
+             [if-any fields.field_def.is_required_bool]required="required"[end]
+           [end]
            style="text-align:right; width:12em" class="multivalued customfield">
     <u class="addMultiFieldValueWidget" data-field-type="[fields.field_id]" data-field-type="date"
        data-validate-1="[fields.field_def.min_value]" data-validate-2="[fields.field_def.max_value]">Add a value</u>

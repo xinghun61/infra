@@ -3,7 +3,9 @@
     <input type="text" name="custom_[fields.field_id]" value="[fields.values.val]"
            [# TODO(jrobbins): include fields.min_value and fields.max_value attrs]
            [if-index fields.values first]
-             [if-any fields.field_def.is_required_bool]required="required"[end]
+             [is arg0 "hidden"][else]
+               [if-any fields.field_def.is_required_bool]required="required"[end]
+             [end]
            [end]
            style="width:12em" class="multivalued userautocomplete customfield" autocomplete="off">
         [if-index fields.values first][else]
@@ -15,7 +17,9 @@
   [end]
 [else]
   <input type="text" name="custom_[fields.field_id]" value=""
-         [if-any fields.field_def.is_required_bool]required="required"[end]
+         [is arg0 "hidden"][else]
+           [if-any fields.field_def.is_required_bool]required="required"[end]
+         [end]
          style="width:12em" class="multivalued userautocomplete customfield" autocomplete="off">
     <u class="addMultiFieldValueWidget" data-field-id="[fields.field_id]" data-field-type="user">Add a value</u>
 [end]

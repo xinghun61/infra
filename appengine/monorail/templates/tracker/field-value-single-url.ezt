@@ -13,7 +13,9 @@
   [if-index fields.values first]
     <input name="custom_[fields.field_id]" value="[fields.values.val]"
            class="multivalued customfield"
-           [if-any fields.field_def.is_required_bool]required="required"[end]
+           [is arg0 "hidden"][else]
+             [if-any fields.field_def.is_required_bool]required="required"[end]
+           [end]
            style="width: 12em"><br>
   [else]
     <span>
