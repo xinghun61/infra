@@ -842,6 +842,13 @@ SPECS = {s.spec.tag: s for s in (
   BuildWheel('grpcio', '1.4.0'),
   BuildWheel('scan-build', '2.0.8', packaged=()),
 
+  BuildWheel('simplejson', '3.13.2',
+      packaged=[
+        'windows-x86',
+        'windows-x64',
+      ],
+  ),
+
   # Prefer to use 'cryptography' instead of PyCrypto, if possible. We have to
   # use PyCrypto for GAE dev server (it's the only crypto package available on
   # GAE). Since we support it only on Linux and OSX, build only for these
@@ -901,6 +908,9 @@ SPECS = {s.spec.tag: s for s in (
   Universal('pyasn1', '0.2.3'),
   Universal('pyasn1_modules', '0.0.8'),
   UniversalSource('pycparser', '2.17'),
+  UniversalSource('pyftpdlib', '0.7.0'),
+  UniversalSource('pyftpdlib', '1.0.0'),
+  UniversalSource('pyftpdlib', '1.5.3'),
   Universal('pyopenssl', '17.2.0'),
   Universal('pyparsing', '2.2.0'),
   Universal('requests', '2.13.0'),
