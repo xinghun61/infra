@@ -7,6 +7,8 @@
 
 import unittest
 
+from google.appengine.ext import testbed
+
 import settings
 from framework import emailfmt
 from framework import framework_views
@@ -18,9 +20,15 @@ from google.appengine.api import apiproxy_stub_map
 
 class EmailFmtTest(unittest.TestCase):
 
-  @unittest.skipIf('memcache' not in
-                   apiproxy_stub_map.apiproxy._APIProxyStubMap__stub_map,
-                   'memcache api proxy will not be found')
+  def setUp(self):
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_datastore_v3_stub()
+    self.testbed.init_memcache_stub()
+
+  def tearDown(self):
+    self.testbed.deactivate()
+
   def testValidateReferencesHeader(self):
     project = project_pb2.Project()
     project.project_name = 'open-open'
@@ -319,9 +327,15 @@ class NormalizeHeaderWhitespaceTest(unittest.TestCase):
 
 class MakeMessageIDTest(unittest.TestCase):
 
-  @unittest.skipIf('memcache' not in
-                   apiproxy_stub_map.apiproxy._APIProxyStubMap__stub_map,
-                   'memcache api proxy will not be found')
+  def setUp(self):
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_datastore_v3_stub()
+    self.testbed.init_memcache_stub()
+
+  def tearDown(self):
+    self.testbed.deactivate()
+
   def testMakeMessageIDTest(self):
     message_id = emailfmt.MakeMessageID(
         'to@to.com', 'subject', 'from@from.com')
@@ -356,14 +370,20 @@ class MakeMessageIDTest(unittest.TestCase):
 
 class GetReferencesTest(unittest.TestCase):
 
+  def setUp(self):
+    self.testbed = testbed.Testbed()
+    self.testbed.activate()
+    self.testbed.init_datastore_v3_stub()
+    self.testbed.init_memcache_stub()
+
+  def tearDown(self):
+    self.testbed.deactivate()
+
   def testNotPartOfThread(self):
     refs = emailfmt.GetReferences(
         'a@a.com', 'hi', None, emailfmt.NoReplyAddress())
     self.assertEqual(0, len(refs))
 
-  @unittest.skipIf('memcache' not in
-                   apiproxy_stub_map.apiproxy._APIProxyStubMap__stub_map,
-                   'memcache api proxy will not be found')
   def testAnywhereInThread(self):
     refs = emailfmt.GetReferences(
         'a@a.com', 'hi', 0, emailfmt.NoReplyAddress())
