@@ -1,4 +1,4 @@
-package: infra/tricium/analyzer/spacey
+package: infra/tricium/function/spacey
 install_mode: symlink
 data:
   - file: spacey

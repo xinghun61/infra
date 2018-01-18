@@ -26,5 +26,5 @@ Deploy a new version of the analyzer using CIPD:
 $ go build
 $ cipd create -pkg-def=cipd.yaml
 <outputs the VERSION>
-$ cipd set-ref infra/tricium/analyzer/spacey -ref live -version VERSION
+$ cipd set-ref infra/tricium/function/spacey -ref live -version VERSION
 ```

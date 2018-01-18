@@ -20,5 +20,5 @@ Deploy a new version of the analyzer using CIPD:
 $ go build
 $ cipd create -pkg-def=cipd.yaml
 <outputs the VERSION>
-$ cipd set-ref infra/tricium/analyzer/hello -ref live -version VERSION
+$ cipd set-ref infra/tricium/function/hello -ref live -version VERSION
 ```

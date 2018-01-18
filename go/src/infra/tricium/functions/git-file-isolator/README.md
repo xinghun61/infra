@@ -13,11 +13,11 @@ $ ./isolator --input=test --output=output
 
 ## Deployment
 
-Deploy a new version of the analyzer using CIPD:
+Deploy a new version of the isolator function using CIPD:
 
 ```
 $ go build -o isolator
 $ cipd create -pkg-def=cipd.yaml
 <outputs the VERSION>
-$ cipd set-ref infra/tricium/analyzer/git-file-isolator -ref live -version VERSION
+$ cipd set-ref infra/tricium/function/git-file-isolator -ref live -version VERSION
 ```
