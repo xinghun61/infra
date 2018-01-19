@@ -11,6 +11,14 @@ for an overview of the components of the pipeline, with pictures!
 
 [TOC]
 
+# Exploring Tables
+
+Lists of tables and their descriptions are available by project (e.g. infra or
+infra_internal) at doc/bigquery_tables.md. Table owners are responsible for
+updating those lists.
+
+[infra tables](../bigquery_tables.md)
+
 # Step 1: Create a BigQuery table
 
 ## Table Organization
