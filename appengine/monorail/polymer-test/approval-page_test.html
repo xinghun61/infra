@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<title>ApprovalPage</title>
+<meta charset="utf-8">
+<script src="/bower_components/webcomponentsjs/webcomponents-lite.js"></script>
+<script src="/bower_components/web-component-tester/browser.js"></script>
+<link rel="import" href="/elements/approval-page.html">
+
+<test-fixture id="approval-page-test">
+  <template>
+    <approval-page></approval-page>
+  </template>
+</test-fixture>
+
+<script>
+  'use strict';
+
+  suite('approval-page', function() {
+    let element;
+    setup(function() {
+      element = fixture('approval-page-test');
+
+    });
+
+    test('TEST DESCRIPTION', function(done) {
+      assert.equal(2,2); // temporary sanity check.
+      done();
+    });
+
+  });
+</script>
