@@ -185,7 +185,7 @@ _GIT_HASH_RE = re.compile(
 
 # This is for SVN revisions and Git commit posisitons.
 _SVN_REF_RE = re.compile(
-    r'\b(?P<prefix>r(evision\s+#?)?)(?P<revnum>([0-9]{1,7}))\b',
+    r'\b(?P<prefix>r(evision\s+#?)?)(?P<revnum>([0-9]{4,7}))\b',
     re.IGNORECASE | re.MULTILINE)
 
 

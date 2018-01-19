@@ -691,7 +691,8 @@ class VCAutolinkTest(unittest.TestCase):
           GIT_HASH_1, GIT_HASH_2, GIT_HASH_3,
           GIT_HASH_1.upper(), GIT_HASH_2.upper(), GIT_HASH_3.upper()))
   SVN_COMMENT_TEXT = (
-      'This is a fix for r12 and R34, by r2d2, who also authored revision r4, '
+      'This is a fix for r12 and R3400, by r2d2, who also authored '
+      'revision r4, '
       'revision #1234567, revision 789, and revision 9025.  If you have '
       'questions, call me at 18005551212')
 
@@ -717,8 +718,9 @@ class VCAutolinkTest(unittest.TestCase):
       new_refs = autolink.ExtractRevNums(None, match)
       refs.extend(new_refs)
 
+    # Note that we only autolink rNNNN with at least 4 digits.
     self.assertEquals(
-        refs, ['12', '34', '4', '1234567', '789', '9025'])
+        refs, ['3400', '1234567', '9025'])
 
 
   def DoReplaceRevisionRef(self, content, project=None):
