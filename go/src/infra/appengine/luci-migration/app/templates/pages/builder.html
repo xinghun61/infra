@@ -28,23 +28,23 @@ limitations under the License. */}}
 {{end}}
 
 {{define "content"}}
-  {{with .Model}}
+  {{with $b := .Model}}
 <ol class="breadcrumb">
   <li class="active">
     <a href="/">All masters</a>
   </li>
   <li class="active">
-    <a href="/masters/{{.Builder.ID.Master}}/">{{.Builder.ID.Master}}</a>
+    <a href="/masters/{{$b.Builder.ID.Master}}/">{{$b.Builder.ID.Master}}</a>
   </li>
   <li class="active">
-    <a href="/masters/{{.Builder.ID.Master}}/builders/{{.Builder.ID.Builder}}/">{{.Builder.ID.Builder}}</a>
+    <a href="/masters/{{$b.Builder.ID.Master}}/builders/{{$b.Builder.ID.Builder}}/">{{$b.Builder.ID.Builder}}</a>
   </li>
 </ol>
 
 <div class="container">
   <div class="row">
     <div class="col-sm-12">
-      <h2>Builder {{.Builder.ID.Builder}}</h2>
+      <h2>Builder {{$b.Builder.ID.Builder}}</h2>
 
       <p>
         <a href="https://chromium.googlesource.com/infra/infra/+/master/go/src/infra/appengine/luci-migration/README.md">
@@ -53,28 +53,28 @@ limitations under the License. */}}
 
       <div>
         Buildbot:
-        <a href="https://ci.chromium.org/buildbot/{{.Builder.ID.Master}}/{{.Builder.ID.Builder}}/">builds</a>,
-        <a href="https://goto.google.com/buildbucket-dashboard?duration=1w&bucket=master.{{.Builder.ID.Master}}&amp;builder={{.Builder.ID.Builder}}">metrics</a>.
+        <a href="https://ci.chromium.org/buildbot/{{$b.Builder.ID.Master}}/{{$b.Builder.ID.Builder}}/">builds</a>,
+        <a href="https://goto.google.com/buildbucket-dashboard?duration=1w&bucket=master.{{$b.Builder.ID.Master}}&amp;builder={{$b.Builder.ID.Builder}}">metrics</a>.
       </div>
 
       <div>
         LUCI:
-        <a href="https://ci.chromium.org/buildbucket/{{.LUCIBucket}}/{{.Builder.ID.Builder}}/">builds</a>,
-        <a href="https://goto.google.com/buildbucket-dashboard?duration=1w&bucket={{.LUCIBucket}}&amp;builder={{.Builder.ID.Builder}}">metrics</a>.
+        <a href="https://ci.chromium.org/buildbucket/{{$b.LUCIBucket}}/{{$b.Builder.ID.Builder}}/">builds</a>,
+        <a href="https://goto.google.com/buildbucket-dashboard?duration=1w&bucket={{$b.LUCIBucket}}&amp;builder={{$b.Builder.ID.Builder}}">metrics</a>.
       </div>
 
       <div>
         Tracking bug:
-        <a href="{{.Builder.IssueID.URL}}">{{.Builder.IssueID.URL}}</a>
+        <a href="{{$b.Builder.IssueID.URL}}">{{$b.Builder.IssueID.URL}}</a>
       </div>
 
       <form method="post" class="form-inline">
         <input type="hidden" id="xsrf_token" name="xsrf_token" value="{{$.XsrfToken}}">
         <input type="hidden" id="action" name="action" value="update">
-        {{if .TryBuilder}}
+        {{if $b.TryBuilder}}
         <div class="form-group">
           <label for="experimentPercentage">Experiment percentage</label>
-          <input id="experimentPercentage" name="experimentPercentage" type="range" list="tickmarks" value="{{.Builder.ExperimentPercentage}}">
+          <input id="experimentPercentage" name="experimentPercentage" type="range" list="tickmarks" value="{{$b.Builder.ExperimentPercentage}}">
           <datalist id="tickmarks">
             <option value="0">
             <option value="10">
@@ -91,20 +91,20 @@ limitations under the License. */}}
         </div>
         {{else}}
         <label>
-          <input id="luciIsProd" name="luciIsProd" type="checkbox" {{if .Builder.LUCIIsProd}}checked{{end}}> LUCI Is Prod?
+          <input id="luciIsProd" name="luciIsProd" type="checkbox" {{if $b.Builder.LUCIIsProd}}checked{{end}}> LUCI Is Prod?
         </label>
         {{end}}
         <button type="submit" class="btn btn-default">Update</button>
       </form>
 
-    {{if .TryBuilder}}
+    {{if $b.TryBuilder}}
       <form method="post" class="form-inline">
           <input type="hidden" id="xsrf_token" name="xsrf_token" value="{{$.XsrfToken}}">
           <input type="hidden" id="action" name="action" value="analyze">
         <button type="submit" class="btn btn-default">Start analysis now</button>
         it may take a minute or two
       </form>
-      {{if not .StatusKnown}}
+      {{if not $b.StatusKnown}}
       <div class="alert alert-info" role="alert" style="margin-top: 10px">
         Migration status is unknown.
         Perhaps this builder was not analyzed yet.
@@ -112,22 +112,22 @@ limitations under the License. */}}
       {{else}}
       <h2>Latest comparison</h2>
       <div class="status">
-        Status: <span class="label label-{{.StatusClassSuffix}}">{{.Builder.Migration.Status}}</span>
+        Status: <span class="label label-{{$b.StatusClassSuffix}}">{{$b.Builder.Migration.Status}}</span>
         as of
-        <span class="{{if .StatusOutdated}}outdated{{end}}">
-          {{.StatusAge | durationString}} ago
+        <span class="{{if $b.StatusOutdated}}outdated{{end}}">
+          {{$b.StatusAge | durationString}} ago
         </span>
       </div>
       <div>
         LUCI Correctness:
-        {{.Builder.Migration.Correctness | percent}}%
+        {{$b.Builder.Migration.Correctness | percent}}%
       </div>
       <div>
-        LUCI Speed: {{.Builder.Migration.Speed | percent}}%
+        LUCI Speed: {{$b.Builder.Migration.Speed | percent}}%
       </div>
 
       <h3>Why?</h3>
-      <div>{{.Details}}</div>
+      <div>{{$b.Details}}</div>
       {{end}}
     {{end}}
     </div>

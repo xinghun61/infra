@@ -35,14 +35,14 @@ limitations under the License. */}}
           </tr>
         </thead>
         <tbody>
-    {{range .Masters}}
+    {{range $m := .Masters}}
           <tr>
             <td>
-              <a href="masters/{{.Name}}/">{{.Name}}</a>
+              <a href="masters/{{$m.Name}}/">{{$m.Name}}</a>
             </td>
-            <td>{{.TotalBuilderCount}}</td>
-            <td>{{.WAIBuilderCount}} ({{.WAIBuilderPercent}}%)</td>
-            <td>{{.MigratedBuilderCount}} ({{.MigratedBuilderPercent}}%)</td>
+            <td>{{$m.TotalBuilderCount}}</td>
+            <td>{{$m.WAIBuilderCount}} ({{$m.WAIBuilderPercent}}%)</td>
+            <td>{{$m.MigratedBuilderCount}} ({{$m.MigratedBuilderPercent}}%)</td>
           </tr>
     {{end}}
         </tbody>

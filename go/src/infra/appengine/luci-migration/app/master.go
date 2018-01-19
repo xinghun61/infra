@@ -24,11 +24,13 @@ import (
 	"go.chromium.org/luci/server/router"
 	"go.chromium.org/luci/server/templates"
 
+	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 )
 
 type masterViewModel struct {
-	Name     string
+	*config.Master
+	Tryjobs  bool
 	Builders []masterBuilderViewModel
 }
 
@@ -38,17 +40,19 @@ type masterBuilderViewModel struct {
 }
 
 func handleMasterPage(c *router.Context) error {
-	master := c.Params.ByName("master")
-	if master == "" {
+	masterName := c.Params.ByName("master")
+	if masterName == "" {
 		http.Error(c.Writer, "master unspecified in URL", http.StatusBadRequest)
 		return nil
 	}
 
-	viewModel, err := masterPage(c.Context, master)
-	if err == errNotFound {
+	master := config.Get(c.Context).FindMaster(masterName)
+	if master == nil {
 		http.NotFound(c.Writer, c.Request)
 		return nil
 	}
+
+	viewModel, err := masterPage(c.Context, master)
 	if err != nil {
 		return err
 	}
@@ -56,9 +60,12 @@ func handleMasterPage(c *router.Context) error {
 	return nil
 }
 
-func masterPage(c context.Context, master string) (*masterViewModel, error) {
-	model := &masterViewModel{Name: master}
-	q := storage.BuilderMasterFilter(c, nil, master)
+func masterPage(c context.Context, master *config.Master) (*masterViewModel, error) {
+	model := &masterViewModel{
+		Master:  master,
+		Tryjobs: master.SchedulingType == config.SchedulingType_TRYJOBS,
+	}
+	q := storage.BuilderMasterFilter(c, nil, master.Name)
 	err := datastore.Run(c, q, func(b *storage.Builder) {
 		model.Builders = append(model.Builders, masterBuilderViewModel{
 			Builder:    b,
@@ -82,8 +89,6 @@ func masterPage(c context.Context, master string) (*masterViewModel, error) {
 	switch {
 	case err != nil:
 		return nil, err
-	case len(model.Builders) == 0:
-		return nil, errNotFound
 	default:
 		return model, nil
 	}

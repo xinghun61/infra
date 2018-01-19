@@ -24,6 +24,7 @@ import (
 	"go.chromium.org/luci/server/auth/authtest"
 	"go.chromium.org/luci/server/templates"
 
+	"infra/appengine/luci-migration/config"
 	"infra/appengine/luci-migration/storage"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -34,10 +35,14 @@ func TestMaster(t *testing.T) {
 
 	Convey("Master", t, func() {
 		c := testContext()
+		c = auth.WithState(c, &authtest.FakeState{
+			Identity: "user:user@example.com",
+		})
+
 		datastore.GetTestable(c).Consistent(true)
 
-		handle := func(c context.Context) (*masterViewModel, error) {
-			model, err := masterPage(c, "tryserver.chromium.linux")
+		handle := func(c context.Context, master *config.Master) (*masterViewModel, error) {
+			model, err := masterPage(c, master)
 			if err == nil {
 				// assert renders
 				_, err := templates.Render(c, "pages/master.html", templates.Args{"Model": model})
@@ -46,16 +51,7 @@ func TestMaster(t *testing.T) {
 			return model, err
 		}
 
-		Convey("master not found", func() {
-			_, err := handle(c)
-			So(err, ShouldEqual, errNotFound)
-		})
-
-		Convey("works", func() {
-			c := auth.WithState(c, &authtest.FakeState{
-				Identity: "user:user@example.com",
-			})
-
+		Convey("try server", func() {
 			presubmit := &storage.Builder{
 				ID: storage.BuilderID{
 					Master:  "tryserver.chromium.linux",
@@ -91,10 +87,15 @@ func TestMaster(t *testing.T) {
 			err := datastore.Put(c, presubmit, asanRelNg, relNg)
 			So(err, ShouldBeNil)
 
-			model, err := handle(c)
+			master := &config.Master{
+				Name:           "tryserver.chromium.linux",
+				SchedulingType: config.SchedulingType_TRYJOBS,
+			}
+			model, err := handle(c, master)
 			So(err, ShouldBeNil)
 			So(model, ShouldResemble, &masterViewModel{
-				Name: "tryserver.chromium.linux",
+				Master:  master,
+				Tryjobs: true,
 				Builders: []masterBuilderViewModel{
 					{
 						Builder: presubmit,
@@ -107,6 +108,40 @@ func TestMaster(t *testing.T) {
 						Builder:    relNg,
 						ShowScores: true,
 					},
+				},
+			})
+		})
+
+		Convey("waterfall", func() {
+			linuxBuilder := &storage.Builder{
+				ID: storage.BuilderID{
+					Master:  "chromium.linux",
+					Builder: "Linux Builder",
+				},
+				Kind: storage.BuilderKind,
+			}
+			linuxTester := &storage.Builder{
+				ID: storage.BuilderID{
+					Master:  "chromium.linux",
+					Builder: "Linux Tester",
+				},
+				Kind: storage.BuilderKind,
+			}
+
+			err := datastore.Put(c, linuxBuilder, linuxTester)
+			So(err, ShouldBeNil)
+
+			master := &config.Master{
+				Name:           "chromium.linux",
+				SchedulingType: config.SchedulingType_CONTINUOUS,
+			}
+			model, err := handle(c, master)
+			So(err, ShouldBeNil)
+			So(model, ShouldResemble, &masterViewModel{
+				Master: master,
+				Builders: []masterBuilderViewModel{
+					{Builder: linuxBuilder},
+					{Builder: linuxTester},
 				},
 			})
 		})

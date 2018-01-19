@@ -15,42 +15,50 @@ limitations under the License. */}}
 {{define "title"}}Masters{{end}}
 
 {{define "content"}}
-  {{with .Model}}
+  {{with $m := .Model}}
 <ol class="breadcrumb">
   <li class="active"><a href="/">All masters</a></li>
-  <li class="active"><a href="/masters/{{.Name}}/">{{.Name}}</a></li>
+  <li class="active"><a href="/masters/{{$m.Name}}/">{{$m.Name}}</a></li>
 </ol>
 
 <div class="container">
   <div class="row">
     <div class="col-sm-12">
 
-      <h2>Master {{.Name}}</h2>
+      <h2>Master {{$m.Name}}</h2>
       <table class="table">
         <thead>
           <tr>
             <td>Builder</td>
+    {{if $m.Tryjobs}}
             <td>Migration Status</td>
             <td>Experiment percentage</td>
             <td>LUCI Correctness</td>
             <td>LUCI Speed</td>
+    {{else}}
+            <td>LUCI is Prod</td>
+    {{end}}
           </tr>
         </thead>
         <tbody>
-    {{range .Builders}}
+    {{range $b := $m.Builders}}
           <tr>
             <td>
-              <a href="builders/{{.ID.Builder}}">{{.ID.Builder}}</a>
+              <a href="builders/{{$b.ID.Builder}}">{{$b.ID.Builder}}</a>
             </td>
-            <td>{{.Migration.Status}}</td>
-            <td>{{.ExperimentPercentage}}%</td>
+      {{if $m.Tryjobs}}
+            <td>{{$b.Migration.Status}}</td>
+            <td>{{$b.ExperimentPercentage}}%</td>
             <td>
-      {{if .ShowScores}}
-              {{.Migration.Correctness | percent}}%
-      {{end}}
+        {{if $b.ShowScores}}
+              {{$b.Migration.Correctness | percent}}%
+        {{end}}
             </td>
-            <td>{{if .ShowScores}}{{.Migration.Speed | percent}}%{{end}}</td>
+            <td>{{if $b.ShowScores}}{{$b.Migration.Speed | percent}}%{{end}}</td>
           </tr>
+      {{else}}
+          <td>{{$b.LUCIIsProd}}</td>
+      {{end}}
     {{end}}
         </tbody>
       </table>
